@@ -1,4 +1,5 @@
 import "dotenv/config";
+import os from "os";
 import { MainRouter } from "./routers/main-router";
 import { WatcherRouter } from "./routers/watcher-router";
 import { DockerResourcesRouter } from "./routers/docker-resources-router";
@@ -728,7 +729,6 @@ export class DockgeServer {
      * Utilisé en fallback quand aucun hostname n'est configuré.
      */
     private getLocalIP(): string | null {
-        const os = require("os") as typeof import("os");
         for (const ifaces of Object.values(os.networkInterfaces())) {
             for (const iface of ifaces ?? []) {
                 if (iface.family === "IPv4" && !iface.internal) {

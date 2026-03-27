@@ -419,6 +419,22 @@ async function api(method: string, path: string, body?: unknown) {
     return res.json();
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────
+
+/** Fusionne les settings chargés depuis le serveur en préservant
+ *  les sous-objets destination (sftp/s3/rest) qui peuvent être absents
+ *  du fichier sauvegardé si on n'a configuré que "local". */
+function mergeSettings(loaded: Partial<Settings>): Settings {
+    return {
+        ...settings.value,
+        ...loaded,
+        destination: {
+            ...settings.value.destination,   // garde sftp/s3/rest par défaut
+            ...(loaded.destination ?? {}),
+        },
+    };
+}
+
 // ─── Init ─────────────────────────────────────────────────────────
 
 onMounted(async () => {
@@ -428,7 +444,7 @@ onMounted(async () => {
         api("GET", "/backup/snapshots"),
     ]);
     if (settingsRes.ok) {
-        settings.value = { ...settings.value, ...settingsRes.data };
+        settings.value = mergeSettings(settingsRes.data);
         discordWebhooks.value = settingsRes.data.discordWebhooks ?? [];
     }
     if (histRes.ok) history.value = histRes.data;
@@ -447,7 +463,7 @@ async function save() {
             // (notamment le champ "enabled" qui peut repartir à false sinon)
             const reloaded = await api("GET", "/backup/settings");
             if (reloaded.ok) {
-                settings.value = { ...settings.value, ...reloaded.data };
+                settings.value = mergeSettings(reloaded.data);
                 discordWebhooks.value = reloaded.data.discordWebhooks ?? [];
             }
         } else {
