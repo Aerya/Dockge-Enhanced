@@ -326,7 +326,7 @@ const i18n = {
             total: "images",
             unused: "inutilisées",
             dangling: "orphelines",
-            cols: { image: "Image", size: "Taille", created: "Créé", status: "Statut", containers: "Conteneurs", action: "" },
+            cols: { image: "Image", size: "Taille", created: "Construit", status: "Utilisation", containers: "Conteneurs", action: "" },
             status: { running: "En cours", stopped: "Arrêtée", unused: "Inutilisée", dangling: "Orpheline" } as Record<string, string>,
             confirm1Warning: "Cette image est utilisée par des conteneurs arrêtés.",
             confirm2Body: "⚠️ Suppression irréversible. Les données liées pourraient être perdues.",
@@ -366,7 +366,7 @@ const i18n = {
             total: "images",
             unused: "unused",
             dangling: "dangling",
-            cols: { image: "Image", size: "Size", created: "Created", status: "Status", containers: "Containers", action: "" },
+            cols: { image: "Image", size: "Size", created: "Built", status: "Usage", containers: "Containers", action: "" },
             status: { running: "Running", stopped: "Stopped", unused: "Unused", dangling: "Dangling" } as Record<string, string>,
             confirm1Warning: "This image is used by stopped containers.",
             confirm2Body: "⚠️ This action is irreversible. Related data may be lost.",
@@ -651,7 +651,6 @@ onMounted(() => {
 
     th {
         font-size: 0.75rem;
-        text-transform: uppercase;
         letter-spacing: .04em;
         color: #888;
         border-bottom: 1px solid rgba(255,255,255,.08);
@@ -659,12 +658,8 @@ onMounted(() => {
 
     // Hover : fond subtil sans écraser le texte
     tbody tr:hover td {
-        background-color: rgba(255, 255, 255, 0.06);
-        color: inherit;
-    }
-    .dark & tbody tr:hover td {
-        background-color: rgba(255, 255, 255, 0.05);
-        color: inherit;
+        background-color: rgba(255, 255, 255, 0.06) !important;
+        color: inherit !important;
     }
 
     // Ligne : conteneur Dockge arrêté → orange à gauche
@@ -727,7 +722,10 @@ onMounted(() => {
     .resources-table {
         color: $dark-font-color;
         th { color: #888; }
-        tr:hover td { background-color: $dark-bg2; }
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.06) !important;
+            color: $dark-font-color !important;
+        }
     }
     .modal-card {
         background-color: $dark-bg;

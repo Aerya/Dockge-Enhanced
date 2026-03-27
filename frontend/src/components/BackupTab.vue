@@ -441,7 +441,18 @@ async function save() {
     saving.value = true;
     try {
         const res = await api("POST", "/backup/settings", { ...settings.value, discordWebhooks: discordWebhooks.value });
-        showToast(res.ok ? t('watcher.backup.saved') : `❌ ${res.message}`, res.ok);
+        if (res.ok) {
+            showToast(t('watcher.backup.saved'));
+            // Resync depuis le serveur pour éviter les désynchronisations
+            // (notamment le champ "enabled" qui peut repartir à false sinon)
+            const reloaded = await api("GET", "/backup/settings");
+            if (reloaded.ok) {
+                settings.value = { ...settings.value, ...reloaded.data };
+                discordWebhooks.value = reloaded.data.discordWebhooks ?? [];
+            }
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
     } finally { saving.value = false; }
 }
 

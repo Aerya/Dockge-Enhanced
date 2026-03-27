@@ -90,51 +90,92 @@ function normalizeImage(image: string): {
     return { registry, name, tag };
 }
 
-async function getBearerToken(
+const MANIFEST_ACCEPT = [
+    "application/vnd.docker.distribution.manifest.list.v2+json",
+    "application/vnd.docker.distribution.manifest.v2+json",
+    "application/vnd.oci.image.index.v1+json",
+    "application/vnd.oci.image.manifest.v1+json",
+].join(", ");
+
+/**
+ * Résout un challenge WWW-Authenticate Bearer en récupérant un token
+ * depuis le realm indiqué. Fonctionne pour tout registry v2 conforme
+ * (Docker Hub, ghcr.io, lscr.io, quay.io, etc.)
+ */
+async function resolveChallenge(
+    wwwAuthenticate: string,
+    credentials: RegistryCredential[],
+    registry: string
+): Promise<string> {
+    const realmM   = wwwAuthenticate.match(/realm="([^"]+)"/);
+    const serviceM = wwwAuthenticate.match(/service="([^"]+)"/);
+    const scopeM   = wwwAuthenticate.match(/scope="([^"]+)"/);
+    if (!realmM) return "";
+
+    const params = new URLSearchParams();
+    if (serviceM) params.set("service", serviceM[1]);
+    if (scopeM)   params.set("scope",   scopeM[1]);
+    const tokenUrl = `${realmM[1]}?${params.toString()}`;
+
+    // Utilise les credentials si disponibles (registry exact ou domaine du realm)
+    const cred = credentials.find(c =>
+        c.registry === registry || realmM[1].includes(c.registry)
+    );
+
+    try {
+        const res = cred
+            ? await axios.get(tokenUrl, {
+                auth: { username: cred.username, password: cred.token },
+                timeout: 10000,
+              })
+            : await axios.get(tokenUrl, { timeout: 10000 });
+        const token = res.data.token ?? res.data.access_token;
+        return token ? `Bearer ${token}` : "";
+    } catch {
+        return "";
+    }
+}
+
+/**
+ * Renvoie le header Authorization pour un registry donné.
+ * Essaie d'abord les credentials explicitement configurés,
+ * sinon obtient un token anonyme via l'endpoint standard.
+ */
+async function getInitialAuth(
     registry: string,
     name: string,
     credentials: RegistryCredential[]
 ): Promise<string> {
-    // Docker Hub
-    if (registry === "registry-1.docker.io") {
-        const res = await axios.get(
-            `https://auth.docker.io/token?service=registry.docker.io&scope=repository:${name}:pull`,
-            { timeout: 10000 }
-        );
-        return `Bearer ${res.data.token}`;
+    // Credentials explicites → Basic auth (fonctionne pour ghcr.io, registries privés, etc.)
+    const cred = credentials.find(c => c.registry === registry);
+    if (cred) {
+        return `Basic ${Buffer.from(`${cred.username}:${cred.token}`).toString("base64")}`;
     }
 
-    // ghcr.io — PAT GitHub pour les images privées, token anonyme pour les publiques
-    if (registry === "ghcr.io") {
-        const cred = credentials.find(c => c.registry === "ghcr.io");
-        if (cred) {
-            // Basic Auth : base64(username:token) — standard OAuth2 pour ghcr.io
-            return `Basic ${Buffer.from(`${cred.username}:${cred.token}`).toString("base64")}`;
-        }
+    // Docker Hub → token anonyme via auth.docker.io
+    if (registry === "registry-1.docker.io") {
         try {
             const res = await axios.get(
-                `https://ghcr.io/token?scope=repository:${name}:pull`,
+                `https://auth.docker.io/token?service=registry.docker.io&scope=repository:${name}:pull`,
                 { timeout: 10000 }
             );
             return `Bearer ${res.data.token}`;
-        } catch {
-            return "";
-        }
+        } catch { return ""; }
     }
 
-    // Registry privé générique — Basic auth
-    const cred = credentials.find(c => c.registry === registry);
-    if (cred) {
-        const b64 = Buffer.from(`${cred.username}:${cred.token}`).toString("base64");
-        return `Basic ${b64}`;
-    }
-
+    // Autres registries (ghcr.io, lscr.io…) : on tente sans auth d'abord
+    // et on résoudra le challenge 401 si nécessaire dans getRemoteDigest().
     return "";
 }
 
 /**
  * Interroge l'API Registry v2 pour récupérer le digest distant du manifest.
- * N'effectue AUCUN téléchargement de layer — uniquement un HEAD/GET sur /manifests/.
+ * Implémente le flux auth complet (RFC 7235 + Distribution Auth spec) :
+ *   1. Requête sans auth ou avec auth si credentials disponibles
+ *   2. Si 401 → parse WWW-Authenticate → obtient token depuis le realm
+ *   3. Réessaie avec Bearer token
+ * Fonctionne avec Docker Hub, ghcr.io, lscr.io, quay.io, etc.
+ * N'effectue AUCUN téléchargement de layer — HEAD/GET sur /manifests/ uniquement.
  */
 async function getRemoteDigest(
     image: string,
@@ -142,41 +183,47 @@ async function getRemoteDigest(
 ): Promise<string> {
     const { registry, name, tag } = normalizeImage(image);
 
-    // Image déjà épinglée sur un digest → pas de mise à jour possible
+    // Image épinglée sur un digest → pas de mise à jour possible
     if (tag.startsWith("sha256:")) return tag;
-
-    const auth = await getBearerToken(registry, name, credentials);
 
     const baseUrl = registry === "registry-1.docker.io"
         ? "https://registry-1.docker.io"
         : `https://${registry}`;
 
-    const headers: Record<string, string> = {
-        Accept: [
-            "application/vnd.docker.distribution.manifest.list.v2+json",
-            "application/vnd.docker.distribution.manifest.v2+json",
-            "application/vnd.oci.image.index.v1+json",
-            "application/vnd.oci.image.manifest.v1+json",
-        ].join(", "),
-    };
-    if (auth) headers["Authorization"] = auth;
+    const manifestUrl = `${baseUrl}/v2/${name}/manifests/${tag}`;
 
-    // HEAD d'abord (plus léger), fallback GET si le registry ne supporte pas HEAD
+    let auth = await getInitialAuth(registry, name, credentials);
+
+    const makeHeaders = (): Record<string, string> => {
+        const h: Record<string, string> = { Accept: MANIFEST_ACCEPT };
+        if (auth) h["Authorization"] = auth;
+        return h;
+    };
+
+    // Tentative HEAD
     try {
-        const res = await axios.head(
-            `${baseUrl}/v2/${name}/manifests/${tag}`,
-            { headers, timeout: 15000 }
-        );
+        const res = await axios.head(manifestUrl, { headers: makeHeaders(), timeout: 15000 });
         const digest = res.headers["docker-content-digest"];
         if (digest) return digest as string;
-    } catch {
-        // fallback GET
+    } catch (err: any) {
+        if (err.response?.status === 401) {
+            // Résout le challenge Bearer pour obtenir un token anonyme ou authentifié
+            const challenge = err.response.headers["www-authenticate"] as string ?? "";
+            if (challenge) {
+                auth = await resolveChallenge(challenge, credentials, registry);
+            }
+        }
     }
 
-    const res = await axios.get(
-        `${baseUrl}/v2/${name}/manifests/${tag}`,
-        { headers, timeout: 15000 }
-    );
+    // Tentative HEAD après auth (ou fallback GET)
+    try {
+        const res = await axios.head(manifestUrl, { headers: makeHeaders(), timeout: 15000 });
+        const digest = res.headers["docker-content-digest"];
+        if (digest) return digest as string;
+    } catch { /* fallback GET */ }
+
+    // GET final
+    const res = await axios.get(manifestUrl, { headers: makeHeaders(), timeout: 15000 });
     const digest = res.headers["docker-content-digest"];
     if (!digest) throw new Error("Header Docker-Content-Digest absent dans la réponse");
     return digest as string;

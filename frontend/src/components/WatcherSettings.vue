@@ -299,11 +299,83 @@
                                 <span v-if="savingTrivy" class="spinner-border spinner-border-sm me-1" />
                                 <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.trivy.save') }}
                             </button>
-                            <button class="btn btn-warning" @click="runScan()" :disabled="scanning">
+                            <button class="btn btn-warning" @click="runScanAndRefresh()" :disabled="scanning">
                                 <span v-if="scanning" class="spinner-border spinner-border-sm me-1" />
                                 <font-awesome-icon v-else icon="shield-alt" class="me-1" />{{ $t('watcher.trivy.scanNow') }}
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- TRIVY STATUS -->
+                <div class="shadow-box big-padding mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="settings-subheading mb-0">
+                            <font-awesome-icon icon="shield-alt" class="me-2" />{{ $t('watcher.trivy.status.heading') }}
+                        </h5>
+                        <div class="d-flex align-items-center gap-3">
+                            <small v-if="trivyStatus.lastScanAt" class="form-text">
+                                {{ $t('watcher.trivy.status.lastScan') }} :
+                                {{ new Date(trivyStatus.lastScanAt).toLocaleString() }}
+                            </small>
+                            <button class="btn btn-sm btn-normal" @click="loadTrivyStatus">
+                                <font-awesome-icon icon="sync" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="trivyStatus.running" class="text-center py-3 text-warning">
+                        <span class="spinner-border spinner-border-sm me-2" />
+                        {{ $t('watcher.trivy.status.running') }}
+                    </div>
+                    <div v-else-if="!trivyStatus.lastScanAt" class="text-center form-text fst-italic py-3">
+                        {{ $t('watcher.trivy.status.never') }}
+                    </div>
+                    <div v-else class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>{{ $t('watcher.trivy.status.stack') }}</th>
+                                    <th>{{ $t('watcher.trivy.status.image') }}</th>
+                                    <th>{{ $t('watcher.trivy.status.maxSeverity') }}</th>
+                                    <th>{{ $t('watcher.trivy.status.vulns') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="r in trivyStatus.lastResults" :key="r.image + r.stack">
+                                    <td><span class="badge bg-secondary">{{ r.stack }}</span></td>
+                                    <td><code class="small">{{ r.image }}</code></td>
+                                    <td>
+                                        <span v-if="r.error" class="badge bg-danger" :title="r.error">
+                                            <font-awesome-icon icon="exclamation-triangle" class="me-1" />Erreur
+                                        </span>
+                                        <span v-else-if="r.maxSeverity === 'UNKNOWN' && !r.counts?.CRITICAL && !r.counts?.HIGH && !r.counts?.MEDIUM && !r.counts?.LOW"
+                                            class="badge bg-success">
+                                            <font-awesome-icon icon="check-circle" class="me-1" />{{ $t('watcher.trivy.status.ok') }}
+                                        </span>
+                                        <span v-else class="badge"
+                                            :class="{
+                                                'bg-danger': r.maxSeverity === 'CRITICAL',
+                                                'bg-warning text-dark': r.maxSeverity === 'HIGH',
+                                                'bg-primary': r.maxSeverity === 'MEDIUM',
+                                                'bg-info text-dark': r.maxSeverity === 'LOW',
+                                                'bg-secondary': r.maxSeverity === 'UNKNOWN',
+                                            }">
+                                            {{ r.maxSeverity }}
+                                        </span>
+                                    </td>
+                                    <td class="small">
+                                        <span v-if="r.counts">
+                                            <span v-if="r.counts.CRITICAL" class="me-2">🔴 {{ r.counts.CRITICAL }}</span>
+                                            <span v-if="r.counts.HIGH" class="me-2">🟠 {{ r.counts.HIGH }}</span>
+                                            <span v-if="r.counts.MEDIUM" class="me-2">🟡 {{ r.counts.MEDIUM }}</span>
+                                            <span v-if="r.counts.LOW" class="me-2">🔵 {{ r.counts.LOW }}</span>
+                                            <span v-if="!r.counts.CRITICAL && !r.counts.HIGH && !r.counts.MEDIUM && !r.counts.LOW" class="text-muted">—</span>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -338,6 +410,20 @@ interface ImageStatus {
     image: string; stack: string;
     localDigest: string; remoteDigest: string;
     hasUpdate: boolean; lastChecked: string; error?: string;
+}
+
+interface TrivyScanResult {
+    image: string; stack: string;
+    maxSeverity: string;
+    counts: Record<string, number>;
+    error?: string;
+}
+
+interface TrivyStatus {
+    running: boolean;
+    lastScanAt: string | null;
+    scannedCount: number;
+    lastResults: TrivyScanResult[];
 }
 
 // ─── State ────────────────────────────────────────────────────────
@@ -385,6 +471,8 @@ const credentials = ref<Cred[]>([]);
 const newCred = ref<Cred>({ registry: "", username: "", token: "" });
 const imageStatuses = ref<ImageStatus[]>([]);
 
+const trivyStatus = ref<TrivyStatus>({ running: false, lastScanAt: null, scannedCount: 0, lastResults: [] });
+
 const saving = ref(false);
 const savingTrivy = ref(false);
 const running = ref(false);
@@ -426,10 +514,11 @@ function showToast(msg: string, ok = true) {
 // ─── Init & polling ───────────────────────────────────────────────
 
 onMounted(async () => {
-    const [imgRes, trivyRes, statusRes] = await Promise.all([
+    const [imgRes, trivyRes, statusRes, trivyStatusRes] = await Promise.all([
         api("GET", "/image/settings"),
         api("GET", "/trivy/settings"),
         api("GET", "/image/status"),
+        api("GET", "/trivy/status"),
     ]);
     if (imgRes.ok) {
         imgSettings.value = {
@@ -441,6 +530,7 @@ onMounted(async () => {
     }
     if (trivyRes.ok) trivySettings.value = trivyRes.data;
     if (statusRes.ok) imageStatuses.value = statusRes.data;
+    if (trivyStatusRes.ok) trivyStatus.value = trivyStatusRes.data;
     pollTimer = setInterval(loadStatus, 10000);
 });
 
@@ -496,12 +586,28 @@ async function runCheck() {
     } finally { running.value = false; }
 }
 
+async function loadTrivyStatus() {
+    const res = await api("GET", "/trivy/status");
+    if (res.ok) trivyStatus.value = res.data;
+}
+
 async function runScan(image?: string) {
     scanning.value = true;
     try {
         await api("POST", "/trivy/run", image ? { image } : {});
         showToast(t('watcher.trivy.scanning'));
     } finally { scanning.value = false; }
+}
+
+async function runScanAndRefresh(image?: string) {
+    await runScan(image);
+    // Polling du statut toutes les 3s pendant 2 minutes max
+    let attempts = 0;
+    const poll = setInterval(async () => {
+        await loadTrivyStatus();
+        attempts++;
+        if (!trivyStatus.value.running || attempts >= 40) clearInterval(poll);
+    }, 3000);
 }
 
 async function testWebhook(url: string, context: "img" | "trivy") {

@@ -150,6 +150,10 @@ export class WatcherRouter extends Router {
             res.json({ ok: true, message: "Scan lancé" });
         });
 
+        router.get("/trivy/status", (_req: Request, res: Response) => {
+            res.json({ ok: true, data: TrivyScanner.getInstance().getStatus() });
+        });
+
         // ════════════════════════════════════════════════════════════════
         // DISCORD — Test webhook
         // ════════════════════════════════════════════════════════════════

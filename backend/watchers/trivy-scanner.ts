@@ -75,12 +75,38 @@ interface ScanResult {
     error?: string;
 }
 
+interface ScanSummary {
+    image: string;
+    stack: string;
+    maxSeverity: Severity;
+    counts: Record<Severity, number>;
+    error?: string;
+}
+
+interface ScanStatus {
+    running: boolean;
+    lastScanAt: string | null;
+    scannedCount: number;
+    lastResults: ScanSummary[];
+}
+
 export class TrivyScanner {
     private static instance: TrivyScanner;
     private cronJob: cron.ScheduledTask | null = null;
     private baseUrl: string = "";
 
+    private scanStatus: ScanStatus = {
+        running: false,
+        lastScanAt: null,
+        scannedCount: 0,
+        lastResults: [],
+    };
+
     setBaseUrl(url: string): void { this.baseUrl = url; }
+
+    getStatus(): ScanStatus {
+        return { ...this.scanStatus };
+    }
 
     private settings: ScannerSettings = {
         enabled: false,
@@ -163,11 +189,13 @@ export class TrivyScanner {
     /** Lance un scan manuel immédiat */
     async runScan(targetImage?: string): Promise<ScanResult[]> {
         console.log("[TrivyScanner] Début du scan de sécurité...");
+        this.scanStatus.running = true;
         const scanResults: ScanResult[] = [];
 
         const trivyAvailable = await this.isTrivyInstalled();
         if (!trivyAvailable && !this.settings.useTrivyDocker) {
             console.error("[TrivyScanner] Trivy n'est pas installé et useTrivyDocker est désactivé.");
+            this.scanStatus.running = false;
             return [];
         }
 
@@ -175,7 +203,7 @@ export class TrivyScanner {
             let images: Array<{ image: string; stack: string }>;
 
             if (targetImage) {
-                images = [{ image: targetImage, stack: "manual" }];
+                images = [{ image: targetImage, stack: "manuel" }];
             } else {
                 images = await this.getAllRunningImages();
             }
@@ -189,6 +217,20 @@ export class TrivyScanner {
         } catch (e) {
             console.error("[TrivyScanner] Erreur lors du scan:", e);
         }
+
+        // Mise à jour du statut
+        this.scanStatus = {
+            running: false,
+            lastScanAt: new Date().toISOString(),
+            scannedCount: scanResults.length,
+            lastResults: scanResults.map(r => ({
+                image: r.image,
+                stack: r.stack,
+                maxSeverity: r.maxSeverity,
+                counts: r.counts,
+                error: r.error,
+            })),
+        };
 
         return scanResults;
     }

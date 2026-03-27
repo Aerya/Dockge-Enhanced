@@ -226,6 +226,20 @@ export class BackupManager {
     }
 
     async saveSettings(partial: Partial<BackupSettings>): Promise<void> {
+        // Deep-merge destination pour ne pas écraser les champs non envoyés
+        // et préserver les vrais secrets quand le frontend renvoie "***" (valeur masquée)
+        if (partial.destination) {
+            const orig = this.settings.destination;
+            partial.destination = { ...orig, ...partial.destination };
+            if (partial.destination.resticPassword === "***")
+                partial.destination.resticPassword = orig.resticPassword;
+            if (partial.destination.sftp?.password === "***")
+                partial.destination.sftp!.password = orig.sftp?.password;
+            if (partial.destination.s3?.secretAccessKey === "***")
+                partial.destination.s3!.secretAccessKey = orig.s3?.secretAccessKey ?? "";
+            if (partial.destination.rest?.password === "***")
+                partial.destination.rest!.password = orig.rest?.password;
+        }
         this.settings = { ...this.settings, ...partial };
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
