@@ -12,13 +12,14 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  # ─── Build par plateforme sur runner natif (pas de QEMU) ──────────
+  # ─── Build natif par plateforme (sans BuildKit, sans Docker Hub) ──────
   build:
     strategy:
       fail-fast: false
@@ -26,8 +27,10 @@ jobs:
         include:
           - platform: linux/amd64
             runner: ubuntu-latest
+            tag: amd64
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
+            tag: arm64
 
     runs-on: ${{ matrix.runner }}
 
@@ -39,9 +42,6 @@ jobs:
         id: image
         run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
-      - name: 🔧 Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: 🔑 Login GHCR
         uses: docker/login-action@v3
         with:
@@ -49,50 +49,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🏗️ Build & Push par digest
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile
-          platforms: ${{ matrix.platform }}
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ steps.image.outputs.name }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=${{ matrix.platform }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
-
-      - name: 📤 Export digest
+      - name: 🏗️ Build & Push (tag plateforme)
         run: |
-          mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
+          docker build \
+            --platform ${{ matrix.platform }} \
+            -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }} \
+            .
+          docker push ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }}
 
-      - name: 📦 Upload digest
-        uses: actions/upload-artifact@v4
-        with:
-          name: digest-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
-          path: /tmp/digests/*
-          if-no-files-found: error
-          retention-days: 1
-
-  # ─── Merge des deux digests en un manifest multi-arch ─────────────
+  # ─── Merge des deux images en un manifest multi-arch ─────────────────
   merge:
     runs-on: ubuntu-latest
     needs: build
 
     steps:
-      - name: 📥 Download digests
-        uses: actions/download-artifact@v4
-        with:
-          path: /tmp/digests
-          pattern: digest-*
-          merge-multiple: true
-
       - name: 🔡 Image name en minuscules
         id: image
         run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
-      - name: 🔧 Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: 🔑 Login GHCR
         uses: docker/login-action@v3
@@ -100,6 +73,11 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔧 Setup Buildx (driver local, sans Docker Hub)
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
       - name: 🏷️ Metadata (tags & labels)
         id: meta
@@ -112,8 +90,8 @@ jobs:
             type=raw,value={{date 'YYYYMMDD'}}
 
       - name: 🔀 Créer manifest multi-arch et push
-        working-directory: /tmp/digests
         run: |
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY }}/${{ steps.image.outputs.name }}@sha256:%s ' *)
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:amd64 \
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:arm64
