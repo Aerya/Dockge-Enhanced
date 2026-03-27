@@ -1,0 +1,150 @@
+name: 🔄 Sync Upstream Dockge
+
+on:
+  schedule:
+    # Vérifie chaque jour à 6h UTC si une nouvelle release stable existe
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag upstream à merger (ex: v1.5.1). Vide = dernier tag stable."
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Enhanced
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔗 Ajouter upstream remote
+        run: |
+          git remote add upstream https://github.com/louislam/dockge.git || true
+          git fetch upstream --tags
+
+      - name: 🏷️ Déterminer le tag cible
+        id: target
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            # Dernier tag stable (pas de -beta, -rc, etc.)
+            TAG=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "🎯 Tag cible : $TAG"
+
+      - name: 📌 Vérifier si déjà synchronisé
+        id: check
+        run: |
+          TAG="${{ steps.target.outputs.tag }}"
+          # Vérifie si on a déjà un tag synced-TAG
+          if git tag -l | grep -q "^synced-${TAG}$"; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "✅ Déjà synchronisé avec $TAG"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "🆕 Nouvelle version détectée : $TAG"
+          fi
+
+      - name: 🔀 Merge upstream
+        if: steps.check.outputs.skip == 'false'
+        id: merge
+        run: |
+          TAG="${{ steps.target.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Crée une branche pour le merge
+          BRANCH="sync/upstream-${TAG}"
+          git checkout -b "$BRANCH"
+
+          # Tente le merge
+          if git merge "$TAG" --no-edit -m "🔄 Sync upstream Dockge $TAG"; then
+            echo "conflict=false" >> $GITHUB_OUTPUT
+            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+            echo "✅ Merge réussi sans conflit"
+          else
+            # En cas de conflit, on garde NOS versions des fichiers modifiés
+            echo "⚠️ Conflits détectés — résolution automatique (ours pour nos fichiers)"
+
+            ENHANCED_FILES=(
+              "backend/dockge-server.ts"
+              "frontend/src/layouts/Layout.vue"
+              "frontend/src/router.ts"
+              "frontend/src/icon.ts"
+              "frontend/src/components/StackListItem.vue"
+              "frontend/src/components/settings/About.vue"
+              "package.json"
+              "docker/Dockerfile.local"
+              ".dockerignore"
+              "README.md"
+            )
+
+            for f in "${ENHANCED_FILES[@]}"; do
+              if git diff --name-only --diff-filter=U | grep -q "^${f}$"; then
+                echo "  → Conflit sur $f : on garde notre version Enhanced"
+                git checkout --ours "$f"
+                git add "$f"
+              fi
+            done
+
+            # Si d'autres conflits restent, les résoudre aussi en faveur d'ours
+            REMAINING=$(git diff --name-only --diff-filter=U || true)
+            if [ -n "$REMAINING" ]; then
+              echo "  → Conflits restants résolus avec ours :"
+              echo "$REMAINING"
+              git checkout --ours $REMAINING
+              git add $REMAINING
+              echo "conflict=true" >> $GITHUB_OUTPUT
+            else
+              echo "conflict=false" >> $GITHUB_OUTPUT
+            fi
+
+            git commit --no-edit -m "🔄 Sync upstream Dockge $TAG (conflits résolus auto)"
+            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📤 Push et créer PR
+        if: steps.check.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.target.outputs.tag }}"
+          BRANCH="${{ steps.merge.outputs.branch }}"
+          CONFLICT="${{ steps.merge.outputs.conflict }}"
+
+          git push origin "$BRANCH"
+
+          BODY="## 🔄 Sync avec Dockge upstream \`$TAG\`
+
+          Ce merge a été créé automatiquement.
+
+          **Conflits ?** $([ "$CONFLICT" = "true" ] && echo "⚠️ Oui — résolus automatiquement en gardant nos modifications Enhanced. **Vérifie que tout est correct.**" || echo "✅ Non — merge propre.")
+
+          ### Checklist avant merge
+          - [ ] Vérifier que le build Docker fonctionne
+          - [ ] Vérifier les changements dans \`package.json\` (nouvelles dépendances upstream ?)
+          - [ ] Tester l'interface Surveillance
+          "
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "🔄 Sync upstream Dockge $TAG" \
+            --body "$BODY" \
+            --label "upstream-sync"
+
+      - name: 🏷️ Marquer comme synchronisé
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          TAG="${{ steps.target.outputs.tag }}"
+          git tag "synced-${TAG}"
+          git push origin "synced-${TAG}"

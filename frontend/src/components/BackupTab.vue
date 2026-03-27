@@ -1,0 +1,541 @@
+<template>
+    <div>
+        <!-- ═══ DESTINATION ═══ -->
+        <div class="shadow-box big-padding mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="archive" class="me-2" />{{ $t('watcher.backup.heading') }}
+                </h5>
+                <div class="form-check form-switch mb-0">
+                    <input v-model="settings.enabled" class="form-check-input" type="checkbox"
+                        id="backupEnabled" role="switch" />
+                    <label class="form-check-label" for="backupEnabled">
+                        <span :class="settings.enabled ? 'text-success' : ''">
+                            {{ settings.enabled ? $t('watcher.backup.enabled') : $t('watcher.backup.disabled') }}
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <!-- Type de destination -->
+                <div class="col-md-4">
+                    <label class="form-label">{{ $t('watcher.backup.destination') }}</label>
+                    <select v-model="settings.destination.type" class="form-select">
+                        <option value="local">{{ $t('watcher.backup.destLocal') }}</option>
+                        <option value="sftp">{{ $t('watcher.backup.destSftp') }}</option>
+                        <option value="s3">{{ $t('watcher.backup.destS3') }}</option>
+                        <option value="rest">{{ $t('watcher.backup.destRest') }}</option>
+                    </select>
+                </div>
+
+                <!-- Intervalle -->
+                <div class="col-md-3">
+                    <label class="form-label">{{ $t('watcher.backup.frequency') }}</label>
+                    <select v-model.number="settings.intervalHours" class="form-select">
+                        <option :value="6">{{ $t('watcher.backup.every6h') }}</option>
+                        <option :value="12">{{ $t('watcher.backup.every12h') }}</option>
+                        <option :value="24">{{ $t('watcher.backup.everyDay') }}</option>
+                        <option :value="48">{{ $t('watcher.backup.every2days') }}</option>
+                        <option :value="168">{{ $t('watcher.backup.everyWeek') }}</option>
+                    </select>
+                </div>
+
+                <!-- Mot de passe Restic -->
+                <div class="col-md-5">
+                    <label class="form-label">{{ $t('watcher.backup.resticPassword') }}</label>
+                    <input v-model="settings.destination.resticPassword" type="password"
+                        class="form-control" :placeholder="$t('watcher.backup.resticPasswordPlaceholder')"
+                        autocomplete="new-password" />
+                    <small class="text-danger">{{ $t('watcher.backup.resticPasswordWarning') }}</small>
+                </div>
+
+                <!-- ── Config LOCAL ── -->
+                <template v-if="settings.destination.type === 'local'">
+                    <div class="col-12">
+                        <label class="form-label">{{ $t('watcher.backup.localPath') }}</label>
+                        <input v-model="settings.destination.local!.path" type="text"
+                            class="form-control" placeholder="/opt/backups/dockge" />
+                    </div>
+                </template>
+
+                <!-- ── Config SFTP ── -->
+                <template v-if="settings.destination.type === 'sftp'">
+                    <div class="col-md-5">
+                        <label class="form-label">{{ $t('watcher.backup.sftpHost') }}</label>
+                        <input v-model="settings.destination.sftp!.host" type="text"
+                            class="form-control" placeholder="192.168.1.100 ou nas.local" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">{{ $t('watcher.backup.sftpPort') }}</label>
+                        <input v-model.number="settings.destination.sftp!.port" type="number"
+                            class="form-control" placeholder="22" />
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">{{ $t('watcher.backup.sftpUser') }}</label>
+                        <input v-model="settings.destination.sftp!.user" type="text"
+                            class="form-control" placeholder="backup-user" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ $t('watcher.backup.sftpRemotePath') }}</label>
+                        <input v-model="settings.destination.sftp!.path" type="text"
+                            class="form-control" placeholder="/volume1/backups/dockge" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ $t('watcher.backup.sftpKeyPath') }}</label>
+                        <input v-model="settings.destination.sftp!.keyPath" type="text"
+                            class="form-control" placeholder="/root/.ssh/id_rsa" />
+                        <small class="form-text">{{ $t('watcher.backup.sftpKeyPathHint') }}</small>
+                    </div>
+                </template>
+
+                <!-- ── Config S3 / B2 ── -->
+                <template v-if="settings.destination.type === 's3'">
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            {{ $t('watcher.backup.s3Endpoint') }}
+                            <small class="form-text">{{ $t('watcher.backup.s3EndpointHint') }}</small>
+                        </label>
+                        <input v-model="settings.destination.s3!.endpoint" type="text"
+                            class="form-control" placeholder="https://s3.us-west-004.backblazeb2.com" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ $t('watcher.backup.s3Bucket') }}</label>
+                        <input v-model="settings.destination.s3!.bucket" type="text"
+                            class="form-control" placeholder="mon-bucket" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ $t('watcher.backup.s3Path') }}</label>
+                        <input v-model="settings.destination.s3!.path" type="text"
+                            class="form-control" placeholder="dockge/backups" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ $t('watcher.backup.s3AccessKey') }}</label>
+                        <input v-model="settings.destination.s3!.accessKeyId" type="text"
+                            class="form-control" placeholder="AKIAIOSFODNN7EXAMPLE" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ $t('watcher.backup.s3SecretKey') }}</label>
+                        <input v-model="settings.destination.s3!.secretAccessKey" type="password"
+                            class="form-control" autocomplete="new-password" />
+                    </div>
+                </template>
+
+                <!-- ── Config REST ── -->
+                <template v-if="settings.destination.type === 'rest'">
+                    <div class="col-md-6">
+                        <label class="form-label">{{ $t('watcher.backup.restUrl') }}</label>
+                        <input v-model="settings.destination.rest!.url" type="text"
+                            class="form-control" placeholder="https://restic.exemple.com/dockge" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ $t('watcher.backup.restUser') }}</label>
+                        <input v-model="settings.destination.rest!.user" type="text" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ $t('watcher.backup.restPassword') }}</label>
+                        <input v-model="settings.destination.rest!.password" type="password"
+                            class="form-control" autocomplete="new-password" />
+                    </div>
+                </template>
+
+                <!-- Options communes -->
+                <div class="col-12 d-flex gap-4 flex-wrap">
+                    <div class="form-check">
+                        <input v-model="settings.includeEnvFiles" type="checkbox"
+                            class="form-check-input" id="includeEnv" />
+                        <label class="form-check-label" for="includeEnv">
+                            <span v-html="$t('watcher.backup.includeEnv')"></span>
+                            <small class="form-text">{{ $t('watcher.backup.includeEnvHint') }}</small>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Notifications Discord -->
+                <div class="col-12">
+                    <label class="form-label">
+                        {{ $t('watcher.backup.webhooks') }}
+                        <small class="form-text">{{ $t('watcher.backup.webhooksHint') }}</small>
+                    </label>
+                    <div v-for="(wh, idx) in discordWebhooks" :key="idx"
+                        class="d-flex align-items-center gap-2 mb-2">
+                        <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
+                            {{ wh.replace(/(\/[^/]{6})[^/]+$/, '$1***') }}
+                        </span>
+                        <button class="btn btn-sm btn-normal" @click="testWebhook(wh)" :disabled="testing">
+                            <span v-if="testing" class="spinner-border spinner-border-sm" />
+                            <span v-else><font-awesome-icon icon="paper-plane" /></span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @click="removeWebhook(idx)">
+                            <font-awesome-icon icon="trash" />
+                        </button>
+                    </div>
+                    <p v-if="discordWebhooks.length === 0" class="form-text fst-italic mb-2">
+                        {{ $t('watcher.backup.noWebhook') }}
+                    </p>
+                    <div class="input-group">
+                        <input v-model="newWebhook" type="password" class="form-control form-control-sm"
+                            placeholder="https://discord.com/api/webhooks/…" autocomplete="off" />
+                        <button class="btn btn-sm btn-success" @click="addWebhook" :disabled="!newWebhook">
+                            <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ RÉTENTION ═══ -->
+        <div class="shadow-box big-padding mb-4">
+            <h5 class="settings-subheading mb-3">
+                <font-awesome-icon icon="history" class="me-2" />{{ $t('watcher.backup.retention.heading') }}
+            </h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">{{ $t('watcher.backup.retention.keepLast') }}</label>
+                    <input v-model.number="settings.retention.keepLast" type="number"
+                        class="form-control" min="1" max="100" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">{{ $t('watcher.backup.retention.keepDaily') }}</label>
+                    <input v-model.number="settings.retention.keepDaily" type="number"
+                        class="form-control" min="0" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">{{ $t('watcher.backup.retention.keepWeekly') }}</label>
+                    <input v-model.number="settings.retention.keepWeekly" type="number"
+                        class="form-control" min="0" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">{{ $t('watcher.backup.retention.keepMonthly') }}</label>
+                    <input v-model.number="settings.retention.keepMonthly" type="number"
+                        class="form-control" min="0" />
+                </div>
+            </div>
+            <small class="form-text mt-2 d-block">{{ $t('watcher.backup.retention.hint') }}</small>
+        </div>
+
+        <!-- ═══ ACTIONS ═══ -->
+        <div class="d-flex gap-2 flex-wrap mb-4">
+            <button class="btn btn-primary" @click="save" :disabled="saving">
+                <span v-if="saving" class="spinner-border spinner-border-sm me-1" />
+                <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.backup.saveConfig') }}
+            </button>
+            <button class="btn btn-normal" @click="initRepo" :disabled="initing">
+                <span v-if="initing" class="spinner-border spinner-border-sm me-1" />
+                <font-awesome-icon v-else icon="database" class="me-1" />{{ $t('watcher.backup.initRepo') }}
+            </button>
+            <button class="btn btn-success" @click="runBackup" :disabled="running">
+                <span v-if="running" class="spinner-border spinner-border-sm me-1" />
+                <font-awesome-icon v-else icon="cloud-upload-alt" class="me-1" />{{ $t('watcher.backup.runNow') }}
+            </button>
+            <button class="btn btn-normal" @click="loadSnapshots" :disabled="loadingSnaps">
+                <span v-if="loadingSnaps" class="spinner-border spinner-border-sm me-1" />
+                <font-awesome-icon v-else icon="sync" class="me-1" />{{ $t('watcher.backup.refreshSnapshots') }}
+            </button>
+        </div>
+
+        <!-- ═══ HISTORIQUE ═══ -->
+        <div class="shadow-box big-padding mb-4">
+            <h5 class="settings-subheading mb-3">
+                <font-awesome-icon icon="chart-line" class="me-2" />{{ $t('watcher.backup.history.heading') }}
+            </h5>
+            <div v-if="history.length === 0" class="text-center form-text fst-italic py-3">
+                {{ $t('watcher.backup.history.none') }}
+            </div>
+            <div v-else class="table-responsive">
+                <table class="table table-hover mb-0 table-sm">
+                    <thead>
+                        <tr>
+                            <th>{{ $t('watcher.backup.history.date') }}</th>
+                            <th>{{ $t('watcher.backup.history.status') }}</th>
+                            <th>{{ $t('watcher.backup.history.snapshot') }}</th>
+                            <th>{{ $t('watcher.backup.history.dataAdded') }}</th>
+                            <th>{{ $t('watcher.backup.history.files') }}</th>
+                            <th>{{ $t('watcher.backup.history.duration') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(h, i) in history" :key="i">
+                            <td class="small form-text">{{ new Date(h.timestamp).toLocaleString() }}</td>
+                            <td>
+                                <span v-if="h.success" class="badge bg-success">✓ OK</span>
+                                <span v-else class="badge bg-danger" :title="h.error">✗ {{ $t('watcher.status.error') }}</span>
+                            </td>
+                            <td><code class="small">{{ h.snapshotId ?? "—" }}</code></td>
+                            <td class="small">{{ h.dataAdded ? formatBytes(h.dataAdded) : "—" }}</td>
+                            <td class="small form-text">
+                                {{ h.filesNew ?? 0 }} {{ $t('watcher.backup.history.new') }} ·
+                                {{ h.filesChanged ?? 0 }} {{ $t('watcher.backup.history.modified') }}
+                            </td>
+                            <td class="small form-text">{{ formatDuration(h.duration) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══ SNAPSHOTS RESTIC ═══ -->
+        <div class="shadow-box big-padding mb-4">
+            <h5 class="settings-subheading mb-3">
+                <font-awesome-icon icon="camera" class="me-2" />{{ $t('watcher.backup.snapshots.heading') }}
+            </h5>
+            <div v-if="snapshots.length === 0" class="text-center form-text fst-italic py-3">
+                {{ $t('watcher.backup.snapshots.none') }}
+            </div>
+            <div v-else class="table-responsive">
+                <table class="table table-hover mb-0 table-sm">
+                    <thead>
+                        <tr>
+                            <th>{{ $t('watcher.backup.snapshots.id') }}</th>
+                            <th>{{ $t('watcher.backup.snapshots.date') }}</th>
+                            <th>{{ $t('watcher.backup.snapshots.tags') }}</th>
+                            <th>{{ $t('watcher.backup.snapshots.paths') }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="snap in snapshots" :key="snap.id">
+                            <td><code>{{ snap.short_id }}</code></td>
+                            <td class="small form-text">{{ new Date(snap.time).toLocaleString() }}</td>
+                            <td>
+                                <span v-for="tag in (snap.tags ?? [])" :key="tag"
+                                    class="badge bg-secondary me-1 small">{{ tag }}</span>
+                            </td>
+                            <td class="small form-text">{{ snap.paths.length }} {{ $t('watcher.backup.snapshots.path') }}</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-danger"
+                                    @click="deleteSnapshot(snap.short_id)"
+                                    :title="`${$t('watcher.backup.snapshots.deleteConfirm', [snap.short_id])}`">
+                                    <font-awesome-icon icon="trash" />
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TOAST -->
+        <Transition name="slide-fade">
+            <div v-if="toast.msg" class="toast-float" :class="toast.ok ? 'toast-ok' : 'toast-err'">
+                {{ toast.msg }}
+            </div>
+        </Transition>
+    </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
+
+const { t } = useI18n();
+
+// ─── Types ────────────────────────────────────────────────────────
+
+interface LocalConfig { path: string }
+interface SftpConfig { host: string; port: number; user: string; path: string; keyPath?: string; password?: string }
+interface S3Config { endpoint?: string; bucket: string; path: string; accessKeyId: string; secretAccessKey: string }
+interface RestConfig { url: string; user?: string; password?: string }
+interface Destination {
+    type: "local" | "sftp" | "s3" | "rest";
+    resticPassword: string;
+    local?: LocalConfig;
+    sftp?: SftpConfig;
+    s3?: S3Config;
+    rest?: RestConfig;
+}
+interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
+interface Settings { enabled: boolean; intervalHours: number; destination: Destination; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[] }
+interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
+interface BackupResult { success: boolean; snapshotId?: string; duration: number; dataAdded?: number; filesNew?: number; filesChanged?: number; error?: string; timestamp: string }
+
+// ─── State ────────────────────────────────────────────────────────
+
+const settings = ref<Settings>({
+    enabled: false,
+    intervalHours: 24,
+    destination: {
+        type: "local",
+        resticPassword: "",
+        local: { path: "/opt/backups/dockge" },
+        sftp: { host: "", port: 22, user: "", path: "" },
+        s3: { endpoint: "", bucket: "", path: "dockge", accessKeyId: "", secretAccessKey: "" },
+        rest: { url: "", user: "", password: "" },
+    },
+    retention: { keepLast: 10, keepDaily: 7, keepWeekly: 4, keepMonthly: 3 },
+    includeEnvFiles: true,
+});
+const discordWebhooks = ref<string[]>([]);
+const newWebhook = ref("");
+const snapshots = ref<Snapshot[]>([]);
+const history = ref<BackupResult[]>([]);
+
+const saving = ref(false);
+const initing = ref(false);
+const running = ref(false);
+const loadingSnaps = ref(false);
+const testing = ref(false);
+const toast = ref({ msg: "", ok: true });
+
+function addWebhook() {
+    const url = newWebhook.value.trim();
+    if (!url || discordWebhooks.value.includes(url)) return;
+    discordWebhooks.value.push(url);
+    newWebhook.value = "";
+}
+function removeWebhook(idx: number) {
+    discordWebhooks.value.splice(idx, 1);
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────
+
+function formatBytes(b: number): string {
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 ** 2) return `${(b / 1024).toFixed(1)} KB`;
+    if (b < 1024 ** 3) return `${(b / 1024 ** 2).toFixed(1)} MB`;
+    return `${(b / 1024 ** 3).toFixed(2)} GB`;
+}
+function formatDuration(ms: number): string {
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
+}
+function showToast(msg: string, ok = true) {
+    toast.value = { msg, ok };
+    setTimeout(() => (toast.value.msg = ""), 3500);
+}
+
+const API = "/api/watcher";
+async function api(method: string, path: string, body?: unknown) {
+    const token = localStorage.getItem("token") ?? "";
+    const res = await fetch(API + path, {
+        method,
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    return res.json();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+
+onMounted(async () => {
+    const [settingsRes, histRes, snapsRes] = await Promise.all([
+        api("GET", "/backup/settings"),
+        api("GET", "/backup/history"),
+        api("GET", "/backup/snapshots"),
+    ]);
+    if (settingsRes.ok) {
+        settings.value = { ...settings.value, ...settingsRes.data };
+        discordWebhooks.value = settingsRes.data.discordWebhooks ?? [];
+    }
+    if (histRes.ok) history.value = histRes.data;
+    if (snapsRes.ok) snapshots.value = snapsRes.data;
+});
+
+// ─── Actions ──────────────────────────────────────────────────────
+
+async function save() {
+    saving.value = true;
+    try {
+        const res = await api("POST", "/backup/settings", { ...settings.value, discordWebhooks: discordWebhooks.value });
+        showToast(res.ok ? t('watcher.backup.saved') : `❌ ${res.message}`, res.ok);
+    } finally { saving.value = false; }
+}
+
+async function initRepo() {
+    initing.value = true;
+    try {
+        const res = await api("POST", "/backup/init");
+        showToast(res.ok ? t('watcher.backup.repoInit') : `❌ ${res.message}`, res.ok);
+    } finally { initing.value = false; }
+}
+
+async function runBackup() {
+    running.value = true;
+    try {
+        await api("POST", "/backup/run");
+        showToast(t('watcher.backup.launched'));
+        setTimeout(async () => {
+            const res = await api("GET", "/backup/history");
+            if (res.ok) history.value = res.data;
+        }, 5000);
+    } finally { running.value = false; }
+}
+
+async function loadSnapshots() {
+    loadingSnaps.value = true;
+    try {
+        const res = await api("GET", "/backup/snapshots");
+        if (res.ok) snapshots.value = res.data;
+        else showToast(`❌ ${res.message}`, false);
+    } finally { loadingSnaps.value = false; }
+}
+
+async function deleteSnapshot(id: string) {
+    if (!confirm(t('watcher.backup.snapshots.deleteConfirm', [id]))) return;
+    const res = await api("DELETE", `/backup/snapshots/${id}`);
+    if (res.ok) {
+        snapshots.value = snapshots.value.filter(s => s.short_id !== id);
+        showToast(t('watcher.backup.snapshots.deleted'));
+    } else {
+        showToast(`❌ ${res.message}`, false);
+    }
+}
+
+async function testWebhook(url: string) {
+    testing.value = true;
+    try {
+        const res = await api("POST", "/discord/test", { webhookUrl: url });
+        showToast(res.ok ? t('watcher.discord.testOk') : t('watcher.discord.testFail'), res.ok);
+    } finally { testing.value = false; }
+}
+</script>
+
+<style lang="scss" scoped>
+@import "../styles/vars.scss";
+
+.settings-subheading {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.table th {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    opacity: .55;
+    border-bottom-color: $dark-border-color;
+}
+
+.table td {
+    vertical-align: middle;
+    border-bottom-color: $dark-border-color;
+}
+
+.toast-float {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 9999;
+    padding: .65rem 1.25rem;
+    border-radius: 50rem;
+    font-size: .875rem;
+    font-weight: 500;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+}
+
+.toast-ok {
+    background: #166534;
+    color: #bbf7d0;
+    border: 1px solid #15803d;
+}
+
+.toast-err {
+    background: #7f1d1d;
+    color: #fecaca;
+    border: 1px solid #b91c1c;
+}
+</style>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     version="1.1" width="640" height="640" viewBox="0 0 640 640">
+  <defs>
+    <!-- Dégradé original Dockge -->
+    <linearGradient id="blob-grad" gradientUnits="userSpaceOnUse"
+                    gradientTransform="matrix(1 0 0 1 -236.647 -213.944)"
+                    x1="259.78" y1="261.15" x2="463.85" y2="456.49">
+      <stop offset="0%"   stop-color="#74C2FF"/>
+      <stop offset="100%" stop-color="#86E6A9"/>
+    </linearGradient>
+    <!-- Ombre douce pour le badge -->
+    <filter id="badge-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="rgba(0,0,0,0.35)"/>
+    </filter>
+  </defs>
+
+  <!-- ── Blob original Dockge (identique à l'original) ── -->
+  <g transform="matrix(0.9544918218 0 0 0.9544918218 320 325.5657767239)">
+    <path style="stroke: rgb(242,242,242); stroke-opacity: 0.51; stroke-width: 190;
+                 fill: url(#blob-grad); fill-rule: nonzero; opacity: 1;"
+          d="M 131.8665 -139.04883
+             C 159.01022 -111.20969 170.12421 -99.45396 203.1185 -51.72057
+             C 236.1128 -3.98718 264.4415 83.98417 187.33995 144.05073
+             C 177.72729 151.53955 166.73827 158.8119 154.65933 165.65813
+             C 69.85515 213.72434 -68.67309 240.78578 -161.79279 174.28329
+             C -268.17583 98.30863 -260.10282 -68.66557 -144.35093 -170.50579
+             C -28.59904 -272.34602 104.72278 -166.88797 131.8665 -139.04883 Z"
+          stroke-linecap="round"/>
+  </g>
+
+  <!-- ── Badge "Enhanced" : cercle ambre + croix "+" ── -->
+  <circle cx="492" cy="152" r="68" fill="#F59E0B" filter="url(#badge-shadow)"/>
+  <!-- Barre verticale du "+" -->
+  <rect x="482" y="122" width="20" height="60" rx="5" fill="white"/>
+  <!-- Barre horizontale du "+" -->
+  <rect x="462" y="142" width="60" height="20" rx="5" fill="white"/>
+</svg>

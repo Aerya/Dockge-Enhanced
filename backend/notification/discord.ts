@@ -1,0 +1,101 @@
+/**
+ * DiscordNotifier — Envoi de notifications via webhook Discord.
+ * Fichier : backend/notification/discord.ts
+ */
+
+import axios from "axios";
+
+interface EmbedField {
+    name: string;
+    value: string;
+    inline?: boolean;
+}
+
+interface EmbedOptions {
+    title: string;
+    description?: string;
+    color?: number;
+    fields?: EmbedField[];
+    footer?: string;
+    thumbnail?: string;
+    url?: string;           // lien cliquable sur le titre de l'embed
+}
+
+export class DiscordNotifier {
+    private urls: string[];
+
+    /**
+     * Accepte un ou plusieurs webhooks.
+     * Passer un string unique reste compatible avec l'ancien code.
+     */
+    constructor(webhooks: string | string[]) {
+        this.urls = (Array.isArray(webhooks) ? webhooks : [webhooks]).filter(Boolean);
+    }
+
+    private async sendEmbedToUrl(url: string, options: EmbedOptions): Promise<void> {
+        const embed: Record<string, unknown> = {
+            title: options.title,
+            color: options.color ?? 0x5865f2,
+            timestamp: new Date().toISOString(),
+        };
+
+        if (options.url)         embed.url         = options.url;
+        if (options.description) embed.description = options.description;
+        if (options.fields && options.fields.length > 0) embed.fields = options.fields;
+        if (options.footer)      embed.footer      = { text: options.footer };
+        if (options.thumbnail)   embed.thumbnail   = { url: options.thumbnail };
+
+        const payload = {
+            username:   "Dockge Enhanced",
+            avatar_url: "https://dockge.kuma.pet/icon.svg",
+            embeds: [embed],
+        };
+
+        try {
+            await axios.post(url, payload, {
+                headers: { "Content-Type": "application/json" },
+                timeout: 10000,
+            });
+        } catch (e: unknown) {
+            if (axios.isAxiosError(e)) {
+                console.error(`[DiscordNotifier] Erreur HTTP ${e.response?.status} (${url}):`, e.response?.data);
+            } else {
+                console.error(`[DiscordNotifier] Erreur réseau (${url}):`, e);
+            }
+        }
+    }
+
+    /** Envoie l'embed sur tous les webhooks configurés en parallèle */
+    async sendEmbed(options: EmbedOptions): Promise<void> {
+        if (this.urls.length === 0) {
+            console.warn("[DiscordNotifier] Aucun webhook configuré, notification ignorée.");
+            return;
+        }
+        await Promise.all(this.urls.map(url => this.sendEmbedToUrl(url, options)));
+        console.log(`[DiscordNotifier] Notification envoyée (${this.urls.length} webhook(s)) : ${options.title}`);
+    }
+
+    /** Envoie un message texte simple sur tous les webhooks */
+    async sendMessage(content: string): Promise<void> {
+        if (this.urls.length === 0) return;
+        await Promise.all(this.urls.map(url =>
+            axios.post(url, { username: "Dockge Enhanced", content }, { timeout: 10000 })
+                .catch(e => console.error(`[DiscordNotifier] Erreur envoi message (${url}):`, e))
+        ));
+    }
+
+    /** Teste le premier webhook de la liste */
+    async testWebhook(): Promise<boolean> {
+        try {
+            await this.sendEmbed({
+                title: "✅ Test de notification Dockge Enhanced",
+                description: "Le webhook Discord est correctement configuré !",
+                color: 0x22c55e,
+                footer: "Dockge Enhanced",
+            });
+            return true;
+        } catch {
+            return false;
+        }
+    }
+}

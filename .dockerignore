@@ -1,0 +1,19 @@
+# Ignore dev/build artifacts
+.env
+node_modules
+.idea
+data
+stacks
+tmp
+/private
+dockge-fork
+
+# Version control
+.git
+.gitignore
+.editorconfig
+.eslintrc.cjs
+README.md
+CONTRIBUTING.md
+SECURITY.md
+.github
