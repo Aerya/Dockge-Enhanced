@@ -55,7 +55,7 @@
                     <div class="col-12">
                         <label class="form-label">{{ $t('watcher.backup.localPath') }}</label>
                         <input v-model="settings.destination.local!.path" type="text"
-                            class="form-control" placeholder="/opt/backups/dockge" />
+                            class="form-control" placeholder="/app/data/backups" />
                     </div>
                 </template>
 
@@ -357,7 +357,7 @@ const settings = ref<Settings>({
     destination: {
         type: "local",
         resticPassword: "",
-        local: { path: "/opt/backups/dockge" },
+        local: { path: "/app/data/backups" },
         sftp: { host: "", port: 22, user: "", path: "" },
         s3: { endpoint: "", bucket: "", path: "dockge", accessKeyId: "", secretAccessKey: "" },
         rest: { url: "", user: "", password: "" },

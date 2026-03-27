@@ -192,7 +192,7 @@ export class BackupManager {
         destination: {
             type: "local",
             resticPassword: "",
-            local: { path: "/opt/backups/dockge" },
+            local: { path: "/app/data/backups" },
         },
         retention: {
             keepLast: 10,
