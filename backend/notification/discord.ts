@@ -33,6 +33,16 @@ export class DiscordNotifier {
     }
 
     private async sendEmbedToUrl(url: string, options: EmbedOptions): Promise<boolean> {
+        // Validation basique : rejette silencieusement les URLs manifestement invalides
+        try { new URL(url); } catch {
+            console.error(`[DiscordNotifier] URL invalide ignorée : ${url.slice(0, 80)}…`);
+            return false;
+        }
+        if (!url.startsWith("https://discord.com/api/webhooks/")) {
+            console.error(`[DiscordNotifier] URL non-Discord ignorée : ${url.slice(0, 80)}…`);
+            return false;
+        }
+
         const embed: Record<string, unknown> = {
             title: options.title,
             color: options.color ?? 0x5865f2,

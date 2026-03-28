@@ -8,6 +8,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import * as path from "path";
 import { DiscordNotifier } from "../notification/discord";
+import { mergeWebhooks } from "./backup-manager";
 
 const execAsync = promisify(exec);
 
@@ -137,16 +138,9 @@ export class TrivyScanner {
     }
 
     async saveSettings(partial: Partial<ScannerSettings>): Promise<void> {
-        // Restaure les URLs réelles si le frontend renvoie des webhooks masqués ("/***)
-        if (partial.discordWebhooks) {
-            const existing = this.settings.discordWebhooks;
-            partial.discordWebhooks = partial.discordWebhooks
-                .map(url => {
-                    if (!url.endsWith("/***")) return url;
-                    const prefix = url.slice(0, -3);
-                    return existing.find(e => e.startsWith(prefix)) ?? null;
-                })
-                .filter((u): u is string => !!u);
+        // Restaure les URLs réelles si le frontend renvoie des webhooks masqués ("/***")
+        if (partial.discordWebhooks !== undefined) {
+            partial.discordWebhooks = mergeWebhooks(partial.discordWebhooks, this.settings.discordWebhooks);
         }
         this.settings = { ...this.settings, ...partial };
         const fs = await import("fs/promises");
@@ -203,8 +197,8 @@ export class TrivyScanner {
 
         try {
             // Pull de la dernière image Trivy avant chaque scan
-            console.log("[TrivyScanner] Pull de aquasec/trivy:latest...");
-            await execAsync("docker pull aquasec/trivy:latest");
+            console.log("[TrivyScanner] Pull de ghcr.io/aquasecurity/trivy:latest...");
+            await execAsync("docker pull ghcr.io/aquasecurity/trivy:latest");
 
             let images: Array<{ image: string; stack: string }>;
 
@@ -224,7 +218,7 @@ export class TrivyScanner {
             console.error("[TrivyScanner] Erreur lors du scan:", e);
         } finally {
             // Suppression de l'image Trivy après le scan pour libérer l'espace disque
-            execAsync("docker rmi aquasec/trivy:latest").catch(() => { /* silencieux */ });
+            execAsync("docker rmi ghcr.io/aquasecurity/trivy:latest").catch(() => { /* silencieux */ });
         }
 
         // Mise à jour du statut
@@ -249,7 +243,7 @@ export class TrivyScanner {
         // Toujours via Docker — image pulléе juste avant le scan, supprimée après
         return `docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:latest image \
+            ghcr.io/aquasecurity/trivy:latest image \
             --format json --quiet ${ignoreUnfixed} ${image}`;
     }
 

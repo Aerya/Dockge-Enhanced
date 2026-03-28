@@ -195,6 +195,33 @@ function formatDuration(ms: number): string {
     return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
 }
 
+/**
+ * Fusionne les webhooks entrants (potentiellement masqués) avec les webhooks
+ * existants en mémoire.
+ * - URLs réelles (non masquées) → conservées telles quelles
+ * - URLs masquées ("/***")      → on cherche l'URL réelle dans `existing`
+ * - Si TOUTES les URLs sont masquées ET qu'aucune n'a pu être restaurée
+ *   (ex : mémoire corrompue) → on retourne les existantes pour éviter d'écraser
+ *   les vrais tokens par `***`
+ * - Tableau vide → l'utilisateur a tout supprimé, on respecte ça
+ */
+export function mergeWebhooks(incoming: string[], existing: string[]): string[] {
+    if (incoming.length === 0) return [];
+
+    const processed = incoming.map(url => {
+        if (!url.endsWith("/***")) return url;
+        const prefix = url.slice(0, -3);
+        return existing.find(e => e.startsWith(prefix)) ?? null;
+    }).filter((u): u is string => !!u);
+
+    // Tous masqués et aucun restauré → mémoire hors-sync, on garde l'existant
+    const allMasked = incoming.every(u => u.endsWith("/***"));
+    if (allMasked && processed.length === 0 && existing.length > 0) {
+        return existing;
+    }
+    return processed;
+}
+
 // ─── Classe principale ────────────────────────────────────────────
 
 export class BackupManager {
@@ -256,15 +283,8 @@ export class BackupManager {
                 partial.destination.rest!.password = orig.rest?.password;
         }
         // Restaure les URLs réelles si le frontend renvoie des webhooks masqués ("/***")
-        if (partial.discordWebhooks) {
-            const existing = this.settings.discordWebhooks;
-            partial.discordWebhooks = partial.discordWebhooks
-                .map(url => {
-                    if (!url.endsWith("/***")) return url;
-                    const prefix = url.slice(0, -3);
-                    return existing.find(e => e.startsWith(prefix)) ?? null;
-                })
-                .filter((u): u is string => !!u);
+        if (partial.discordWebhooks !== undefined) {
+            partial.discordWebhooks = mergeWebhooks(partial.discordWebhooks, this.settings.discordWebhooks);
         }
         this.settings = { ...this.settings, ...partial };
         await fs.mkdir(DATA_DIR, { recursive: true });

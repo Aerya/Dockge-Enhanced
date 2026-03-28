@@ -13,6 +13,7 @@ import * as path from "path";
 import * as yaml from "js-yaml";
 import axios from "axios";
 import { DiscordNotifier } from "../notification/discord";
+import { mergeWebhooks } from "./backup-manager";
 
 const execAsync = promisify(exec);
 
@@ -299,15 +300,8 @@ export class ImageWatcher {
 
     async saveSettings(partial: Partial<WatcherSettings>): Promise<void> {
         // Restaure les URLs réelles si le frontend renvoie des webhooks masqués ("/***")
-        if (partial.discordWebhooks) {
-            const existing = this.settings.discordWebhooks;
-            partial.discordWebhooks = partial.discordWebhooks
-                .map(url => {
-                    if (!url.endsWith("/***")) return url;
-                    const prefix = url.slice(0, -3);
-                    return existing.find(e => e.startsWith(prefix)) ?? null;
-                })
-                .filter((u): u is string => !!u);
+        if (partial.discordWebhooks !== undefined) {
+            partial.discordWebhooks = mergeWebhooks(partial.discordWebhooks, this.settings.discordWebhooks);
         }
         this.settings = { ...this.settings, ...partial };
         await fs.mkdir(DATA_DIR, { recursive: true });
