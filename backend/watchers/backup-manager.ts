@@ -282,10 +282,6 @@ export class BackupManager {
             if (partial.destination.rest?.password === "***")
                 partial.destination.rest!.password = orig.rest?.password;
         }
-        // Restaure les URLs réelles si le frontend renvoie des webhooks masqués ("/***")
-        if (partial.discordWebhooks !== undefined) {
-            partial.discordWebhooks = mergeWebhooks(partial.discordWebhooks, this.settings.discordWebhooks);
-        }
         this.settings = { ...this.settings, ...partial };
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
@@ -299,7 +295,6 @@ export class BackupManager {
         if (s.destination.sftp?.password)      s.destination.sftp.password       = "***";
         if (s.destination.s3?.secretAccessKey) s.destination.s3.secretAccessKey  = "***";
         if (s.destination.rest?.password)      s.destination.rest.password       = "***";
-        s.discordWebhooks = s.discordWebhooks.map(w => w.replace(/\/[\w-]{6}[\w-]+$/, "/***"));
         return s;
     }
 

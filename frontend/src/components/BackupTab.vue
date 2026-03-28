@@ -160,7 +160,7 @@
                     <div v-for="(wh, idx) in discordWebhooks" :key="idx"
                         class="d-flex align-items-center gap-2 mb-2">
                         <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
-                            {{ wh.replace(/(\/[^/]{6})[^/]+$/, '$1***') }}
+                            {{ wh }}
                         </span>
                         <button class="btn btn-sm btn-normal" @click="testWebhook(wh)" :disabled="testing">
                             <span v-if="testing" class="spinner-border spinner-border-sm" />

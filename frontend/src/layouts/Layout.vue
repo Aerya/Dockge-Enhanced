@@ -11,17 +11,19 @@
 
         <!-- Desktop header -->
         <header v-if="! $root.isMobile" class="d-flex flex-wrap justify-content-center py-3 mb-3 border-bottom">
-            <router-link to="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
-                <object class="bi me-2 ms-4" width="40" height="40" data="/icon.svg" />
-                <span class="fs-4 title">Dockge-Enhanced</span>
+            <div class="d-flex align-items-center mb-3 mb-md-0 me-md-auto">
+                <router-link to="/" class="d-flex align-items-center text-dark text-decoration-none">
+                    <object class="bi me-2 ms-4" width="40" height="40" data="/icon.svg" />
+                    <span class="fs-4 title">Dockge-Enhanced</span>
+                </router-link>
                 <span class="ms-2 d-flex gap-1 align-items-center" style="font-size:.72rem">
-                    <a href="https://github.com/louislam/dockge" target="_blank"
+                    <a href="https://github.com/louislam/dockge" target="_blank" rel="noopener"
                         class="github-badge" title="Dockge upstream">Dockge</a>
                     <span style="opacity:.35">+</span>
-                    <a href="https://github.com/Aerya/dockge-enhanced" target="_blank"
+                    <a href="https://github.com/Aerya/dockge-enhanced" target="_blank" rel="noopener"
                         class="github-badge github-badge-enhanced" title="Dockge Enhanced">Enhanced</a>
                 </span>
-            </router-link>
+            </div>
 
             <a v-if="hasNewVersion" target="_blank" href="https://github.com/louislam/dockge/releases" class="btn btn-warning me-3">
                 <font-awesome-icon icon="arrow-alt-circle-up" /> {{ $t("newUpdate") }}

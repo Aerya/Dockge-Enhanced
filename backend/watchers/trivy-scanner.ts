@@ -8,7 +8,6 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import * as path from "path";
 import { DiscordNotifier } from "../notification/discord";
-import { mergeWebhooks } from "./backup-manager";
 
 const execAsync = promisify(exec);
 
@@ -108,7 +107,7 @@ export class TrivyScanner {
         return { ...this.scanStatus };
     }
 
-    private settings: ScannerSettings = {
+    settings: ScannerSettings = {
         enabled: false,
         intervalHours: 24,
         discordWebhooks: [],
@@ -138,10 +137,6 @@ export class TrivyScanner {
     }
 
     async saveSettings(partial: Partial<ScannerSettings>): Promise<void> {
-        // Restaure les URLs réelles si le frontend renvoie des webhooks masqués ("/***")
-        if (partial.discordWebhooks !== undefined) {
-            partial.discordWebhooks = mergeWebhooks(partial.discordWebhooks, this.settings.discordWebhooks);
-        }
         this.settings = { ...this.settings, ...partial };
         const fs = await import("fs/promises");
         await fs.mkdir(DATA_DIR, { recursive: true });
@@ -150,12 +145,7 @@ export class TrivyScanner {
     }
 
     getSettings(): ScannerSettings {
-        return {
-            ...this.settings,
-            discordWebhooks: this.settings.discordWebhooks.map(w =>
-                w.replace(/\/[\w-]{6}[\w-]+$/, "/***")
-            ),
-        };
+        return { ...this.settings };
     }
 
     async startIfEnabled(): Promise<void> {

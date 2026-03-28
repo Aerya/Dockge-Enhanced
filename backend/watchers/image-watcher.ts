@@ -13,7 +13,6 @@ import * as path from "path";
 import * as yaml from "js-yaml";
 import axios from "axios";
 import { DiscordNotifier } from "../notification/discord";
-import { mergeWebhooks } from "./backup-manager";
 
 const execAsync = promisify(exec);
 
@@ -299,10 +298,6 @@ export class ImageWatcher {
     }
 
     async saveSettings(partial: Partial<WatcherSettings>): Promise<void> {
-        // Restaure les URLs réelles si le frontend renvoie des webhooks masqués ("/***")
-        if (partial.discordWebhooks !== undefined) {
-            partial.discordWebhooks = mergeWebhooks(partial.discordWebhooks, this.settings.discordWebhooks);
-        }
         this.settings = { ...this.settings, ...partial };
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
@@ -312,9 +307,6 @@ export class ImageWatcher {
     getSettingsSafe(): WatcherSettings {
         return {
             ...this.settings,
-            discordWebhooks: this.settings.discordWebhooks.map(w =>
-                w.replace(/\/[\w-]{6}[\w-]+$/, "/***")
-            ),
             credentials: this.settings.credentials.map(c => ({ ...c, token: "***" })),
         };
     }
