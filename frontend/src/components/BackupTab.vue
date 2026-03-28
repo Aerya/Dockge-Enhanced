@@ -768,6 +768,20 @@ async function testWebhook(url: string) {
 }
 
 .snapshot-files-panel {
+    // Force le texte clair dans le panneau de fichiers (dark background)
+    color: #e5e7eb;
+    --bs-table-color: #e5e7eb;
+    --bs-table-striped-color: #e5e7eb;
+
+    code {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: #e5e7eb;
+        padding: 0.1em 0.35em;
+        border-radius: 3px;
+    }
+}
+
+.snapshot-files-panel {
     border-left: 3px solid #f59e0b;
 }
 </style>
