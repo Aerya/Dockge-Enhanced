@@ -346,8 +346,17 @@ export class BackupManager {
             console.log("[BackupManager] Repo Restic déjà initialisé.");
         } catch {
             console.log("[BackupManager] Initialisation du repo Restic...");
-            await this.restic("init");
-            console.log("[BackupManager] Repo initialisé.");
+            try {
+                await this.restic("init");
+                console.log("[BackupManager] Repo initialisé.");
+            } catch (e: any) {
+                // Repo déjà initialisé (ex : snapshots a échoué pour une autre raison)
+                if ((e?.message ?? "").includes("config file already exists")) {
+                    console.log("[BackupManager] Repo déjà initialisé, init ignoré.");
+                    return;
+                }
+                throw e;
+            }
         }
     }
 

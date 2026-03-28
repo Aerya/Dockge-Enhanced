@@ -306,9 +306,10 @@ export class TrivyScanner {
                 return { image: e.image, stack: e.stack };
             }));
 
-            // Déduplique (même image + même stack)
+            // Déduplique (même image + même stack) et exclut dockge-enhanced lui-même
             const seen = new Set<string>();
             return resolved.filter(e => {
+                if (e.image.includes("dockge-enhanced")) return false;
                 const key = `${e.image}|${e.stack}`;
                 if (seen.has(key)) return false;
                 seen.add(key);
