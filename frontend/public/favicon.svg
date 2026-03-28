@@ -17,4 +17,4 @@
              C 69.85515 213.72434 -68.67309 240.78578 -161.79279 174.28329
              C -268.17583 98.30863 -260.10282 -68.66557 -144.35093 -170.50579
              C -28.59904 -272.34602 104.72278 -166.88797 131.8665 -139.04883 Z" stroke-linecap="round"></path>
-  </g><circle cx="492" cy="152" r="68" fill="#F59E0B" filter="url(#badge-shadow)"></circle><rect x="482" y="122" width="20" height="60" rx="5" fill="white"></rect><rect x="462" y="142" width="60" height="20" rx="5" fill="white"></rect></svg>
+  </g><circle cx="490" cy="150" r="148" fill="hsla(38,60%,50%,1)" filter="url(#badge-shadow)"></circle><rect x="479" y="55" width="22" height="190" rx="11" fill="hsla(240,8%,12%,1)"></rect><rect x="395" y="139" width="190" height="22" rx="11" fill="hsla(240,8%,12%,1)"></rect></svg>

@@ -22,38 +22,40 @@ const STARTUP_DELAY    = 30_000;              // 30s après démarrage
 // ─── Helpers ──────────────────────────────────────────────────────
 
 async function fetchRemoteDigest(): Promise<string> {
-    let auth = "";
+    let token = "";
     try {
         const res = await axios.get(
             `https://ghcr.io/token?scope=repository:${SELF_REPO}:pull`,
             { timeout: 10000 }
         );
-        auth = `Bearer ${res.data.token}`;
+        token = res.data.token ?? "";
     } catch { /* repo public — continue sans token */ }
 
     const headers: Record<string, string> = {
+        Authorization: token ? `Bearer ${token}` : "",
         Accept: [
             "application/vnd.docker.distribution.manifest.list.v2+json",
-            "application/vnd.docker.distribution.manifest.v2+json",
             "application/vnd.oci.image.index.v1+json",
-            "application/vnd.oci.image.manifest.v1+json",
         ].join(", "),
     };
-    if (auth) headers["Authorization"] = auth;
+    if (!token) delete headers["Authorization"];
 
     const url = `https://ghcr.io/v2/${SELF_REPO}/manifests/${SELF_TAG}`;
-
-    // HEAD d'abord (plus léger), fallback GET
-    try {
-        const res = await axios.head(url, { headers, timeout: 15000 });
-        const d = res.headers["docker-content-digest"];
-        if (d) return d as string;
-    } catch { /* fallback */ }
-
     const res = await axios.get(url, { headers, timeout: 15000 });
+    const manifestList = res.data;
+
+    // Trouve le manifest de la plateforme courante (amd64 ou arm64)
+    // pour comparer le même digest que ce que Docker stocke en local
+    const arch = process.arch === "arm64" ? "arm64" : "amd64";
+    const entry = (manifestList.manifests ?? []).find(
+        (m: any) => m.platform?.os === "linux" && m.platform?.architecture === arch
+    );
+    if (entry?.digest) return entry.digest as string;
+
+    // Fallback : digest du manifest list lui-même
     const d = res.headers["docker-content-digest"];
-    if (!d) throw new Error("Digest absent dans la réponse GHCR");
-    return d as string;
+    if (d) return String(d);
+    throw new Error("Digest absent dans la réponse GHCR");
 }
 
 /** Appel HTTP via le socket Docker (sans CLI). */
@@ -82,7 +84,7 @@ async function fetchLocalDigest(): Promise<string> {
         const container = await dockerSocketGet(`/containers/${id}/json`);
         const imageId: string = container?.Image ?? "";
         if (!imageId) return "";
-        const image = await dockerSocketGet(`/images/${encodeURIComponent(imageId)}/json`);
+        const image = await dockerSocketGet(`/images/${imageId}/json`);
         const repoDigests: string[] = image?.RepoDigests ?? [];
         const digest = repoDigests.find((d) => d.includes("dockge-enhanced"));
         if (!digest) return "";
