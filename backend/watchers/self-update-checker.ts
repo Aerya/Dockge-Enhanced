@@ -223,8 +223,9 @@ export class SelfUpdateChecker {
                 "**Pour mettre à jour :**",
                 "```bash",
                 `docker pull ghcr.io/${SELF_REPO}:${SELF_TAG}`,
-                `docker restart ${containerName}`,
+                `docker compose up -d`,
                 "```",
+                "_Exécuter depuis le dossier contenant votre compose.yaml_",
             ].join("\n"),
         });
     }

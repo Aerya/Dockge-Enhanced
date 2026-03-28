@@ -31,7 +31,7 @@
             <div v-if="selfUpdate.available && !selfUpdate.dismissed" class="self-update-banner me-3">
                 <font-awesome-icon icon="arrow-circle-up" class="me-1" />
                 Dockge-Enhanced : nouvelle version disponible —
-                <code class="mx-2">docker pull ghcr.io/aerya/dockge-enhanced:latest && docker restart {{ selfUpdate.containerName }}</code>
+                <code class="mx-2">docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d</code>
                 <button class="btn-copy ms-1" @click="copyUpdateCmd" :title="selfUpdate.copied ? 'Copié !' : 'Copier'">
                     {{ selfUpdate.copied ? '✓' : '⧉' }}
                 </button>
@@ -195,7 +195,7 @@ export default {
         },
 
         copyUpdateCmd() {
-            const cmd = `docker pull ghcr.io/aerya/dockge-enhanced:latest && docker restart ${this.selfUpdate.containerName}`;
+            const cmd = `docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`;
             const markCopied = () => {
                 this.selfUpdate.copied = true;
                 setTimeout(() => { this.selfUpdate.copied = false; }, 2000);
