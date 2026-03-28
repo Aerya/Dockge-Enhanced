@@ -26,9 +26,24 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Docker CLI + Compose plugin (nécessaires pour gérer les stacks)
-# Restic (backups chiffrés)
 # Trivy n'est pas installé ici — le scanner utilise aquasec/trivy:latest via Docker
-RUN apk add --no-cache docker-cli docker-cli-compose restic
+RUN apk add --no-cache docker-cli docker-cli-compose
+
+# Restic depuis GitHub releases — compilé avec Go récent (fix CVE stdlib).
+# Mettre à jour RESTIC_VERSION dès qu'une nouvelle release est disponible :
+# https://github.com/restic/restic/releases
+ARG RESTIC_VERSION=0.18.1
+RUN case "$(uname -m)" in \
+        aarch64) ARCH=arm64 ;; \
+        armv7l)  ARCH=arm   ;; \
+        *)       ARCH=amd64 ;; \
+    esac \
+    && wget -qO /tmp/restic.bz2 \
+       "https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}/restic_${RESTIC_VERSION}_linux_${ARCH}.bz2" \
+    && bunzip2 /tmp/restic.bz2 \
+    && mv /tmp/restic /usr/local/bin/restic \
+    && chmod +x /usr/local/bin/restic \
+    && rm -f /tmp/restic.bz2
 
 # node_modules déjà compilés (pas de recompilation nécessaire)
 COPY --from=builder /app/node_modules ./node_modules

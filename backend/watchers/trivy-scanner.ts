@@ -287,17 +287,43 @@ export class TrivyScanner {
 
     private async getAllRunningImages(): Promise<Array<{ image: string; stack: string }>> {
         try {
+            // Inclut l'ID du conteneur pour résoudre les images sans tag
             const { stdout } = await execAsync(
-                `docker ps --format '{{.Image}}|{{.Label "com.docker.compose.project"}}' | sort -u`
+                `docker ps --format '{{.ID}}|{{.Image}}|{{.Label "com.docker.compose.project"}}'`
             );
-            return stdout
+            const entries = stdout
                 .trim()
                 .split("\n")
                 .filter(Boolean)
                 .map(line => {
-                    const [image, stack] = line.split("|");
-                    return { image: image.trim(), stack: (stack || "unknown").trim() };
+                    const [id, image, stack] = line.split("|");
+                    return { id: id.trim(), image: image.trim(), stack: (stack || "unknown").trim() };
                 });
+
+            // Résout les hashes vers le nom d'origine via le config du conteneur.
+            // Cas typique : docker compose pull a mis à jour 'latest', l'ancien conteneur
+            // tourne encore sur l'image dé-taguée → {{.Image}} retourne un hash court.
+            const resolved = await Promise.all(entries.map(async e => {
+                if (/^[a-f0-9]{6,64}$/.test(e.image)) {
+                    try {
+                        const { stdout: name } = await execAsync(
+                            `docker inspect ${e.id} --format '{{.Config.Image}}'`
+                        );
+                        const resolved = name.trim();
+                        if (resolved) return { image: resolved, stack: e.stack };
+                    } catch { /* garde le hash */ }
+                }
+                return { image: e.image, stack: e.stack };
+            }));
+
+            // Déduplique (même image + même stack)
+            const seen = new Set<string>();
+            return resolved.filter(e => {
+                const key = `${e.image}|${e.stack}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
         } catch {
             return [];
         }
@@ -393,6 +419,26 @@ export class TrivyScanner {
 
         const uiUrl = this.baseUrl || null;
 
+        // Champ "Images scannées" : image + top 2 CVEs les plus sévères pour chaque image
+        const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
+        const imagesValue = results.map(r => {
+            const header = `${SEVERITY_EMOJI[r.maxSeverity]} \`${r.image}\` (${r.stack})`;
+            if (r.error) return `${header}\n  ⚠️ Erreur de scan`;
+
+            const topVulns = r.results
+                .flatMap(res => res.Vulnerabilities || [])
+                .filter(v => SEVERITY_LEVELS[v.Severity] >= minLevel)
+                .sort((a, b) => SEVERITY_LEVELS[b.Severity] - SEVERITY_LEVELS[a.Severity])
+                .slice(0, 2);
+
+            if (topVulns.length === 0) return header;
+
+            const vulnLine = topVulns
+                .map(v => `${SEVERITY_EMOJI[v.Severity]} \`${v.VulnerabilityID}\` ${v.PkgName}`)
+                .join("  |  ");
+            return `${header}\n  ${vulnLine}`;
+        }).join("\n");
+
         await notifier.sendEmbed({
             title: hasCritical
                 ? `🚨 Rapport de sécurité — Vulnérabilités détectées`
@@ -405,9 +451,7 @@ export class TrivyScanner {
             fields: [
                 {
                     name: "Images scannées",
-                    value: results.map(r =>
-                        `${SEVERITY_EMOJI[r.maxSeverity]} \`${r.image}\` (${r.stack})`
-                    ).join("\n"),
+                    value: imagesValue,
                     inline: false,
                 }
             ],
