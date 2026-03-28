@@ -39,7 +39,8 @@ export class DiscordNotifier {
             timestamp: new Date().toISOString(),
         };
 
-        if (options.url)         embed.url         = options.url;
+        // embed.url (titre cliquable) rejeté par Discord pour les IPs privées —
+        // le lien est inclus dans la description à la place
         if (options.description) embed.description = options.description;
         if (options.fields && options.fields.length > 0) embed.fields = options.fields;
         if (options.footer)      embed.footer      = { text: options.footer };
