@@ -379,7 +379,7 @@ export class TrivyScanner {
             url:   uiUrl ?? undefined,
             description:
                 `Stack : **${result.stack}**\nSévérité max : **${result.maxSeverity}**` +
-                (uiUrl ? `\n\n👉 [Ouvrir Dockge](${uiUrl})` : ""),
+                (uiUrl ? `\n\n[Ouvrir Dockge](${uiUrl})` : ""),
             fields,
             footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString("fr-FR")}`,
         });
@@ -413,7 +413,7 @@ export class TrivyScanner {
             url:   uiUrl ?? undefined,
             description:
                 (summaryLines || "Aucune vulnérabilité significative détectée.") +
-                (uiUrl ? `\n\n👉 [Ouvrir Dockge](${uiUrl})` : ""),
+                (uiUrl ? `\n\n[Ouvrir Dockge](${uiUrl})` : ""),
             fields: [
                 {
                     name: "Images scannées",

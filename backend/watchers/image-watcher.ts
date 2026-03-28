@@ -422,7 +422,7 @@ export class ImageWatcher {
             description:
                 `${totalChecked} image(s) vérifiée(s) · ${new Date().toLocaleString("fr-FR")}\n` +
                 (uiUrl
-                    ? `👉 [Ouvrir Dockge](${uiUrl}) pour décider des mises à jour.`
+                    ? `[Ouvrir Dockge](${uiUrl}) pour décider des mises à jour.`
                     : `Connectez-vous à **Dockge** pour décider des mises à jour.`),
             fields: updates.map(u => ({
                 name: `🔄 \`${u.image}\``,

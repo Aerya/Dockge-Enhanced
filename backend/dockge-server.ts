@@ -712,16 +712,15 @@ export class DockgeServer {
     }
 
     /**
-     * Retourne l'URL de base de la WebUI, utilisée dans les notifications Discord.
-     * Priorité : hostname configuré > IP locale > localhost.
-     * Si le port est standard (80/443), il n'est pas ajouté à l'URL.
+     * Retourne l'URL publique de la WebUI pour les notifications Discord.
+     * Priorité : variable d'env DOCKGE_PUBLIC_URL (recommandée derrière un proxy).
+     * Si absente → chaîne vide (pas de lien dans les notifications).
+     * L'IP interne Docker (172.x.x.x) est inutilisable depuis l'extérieur,
+     * c'est pourquoi on ne fait plus de fallback automatique.
      */
     getBaseUrl(): string {
-        const protocol = this.isSSL() ? "https" : "http";
-        const port     = this.config.port;
-        const host     = this.config.hostname || this.getLocalIP() || "localhost";
-        const isStandardPort = (this.isSSL() && port === 443) || (!this.isSSL() && port === 80);
-        return isStandardPort ? `${protocol}://${host}` : `${protocol}://${host}:${port}`;
+        const envUrl = process.env.DOCKGE_PUBLIC_URL?.trim().replace(/\/$/, "");
+        return envUrl || "";
     }
 
     /**
