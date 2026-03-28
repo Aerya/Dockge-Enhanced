@@ -46,6 +46,7 @@ interface ScannerSettings {
     discordWebhooks: string[];    // liste de webhooks (migration auto depuis discordWebhook)
     minSeverityAlert: Severity;
     ignoreUnfixed: boolean;
+    scanTimeoutMinutes: number;
 }
 
 interface Vulnerability {
@@ -130,6 +131,7 @@ export class TrivyScanner {
         discordWebhooks: [],
         minSeverityAlert: "HIGH",
         ignoreUnfixed: false,
+        scanTimeoutMinutes: 10,
     };
 
     static getInstance(): TrivyScanner {
@@ -250,6 +252,7 @@ export class TrivyScanner {
                     .flatMap(t => t.Vulnerabilities || [])
                     .filter(v => SEVERITY_LEVELS[v.Severity] >= minLevel)
                     .sort((a, b) => SEVERITY_LEVELS[b.Severity] - SEVERITY_LEVELS[a.Severity])
+                    .filter((v, i, arr) => arr.findIndex(x => x.VulnerabilityID === v.VulnerabilityID) === i)
                     .map(v => ({
                         id:        v.VulnerabilityID,
                         pkg:       v.PkgName,
@@ -286,7 +289,10 @@ export class TrivyScanner {
         try {
             console.log(`[TrivyScanner] Scan de ${image}...`);
             const command = this.buildTrivyCommand(image);
-            const { stdout } = await execAsync(command, { maxBuffer: 50 * 1024 * 1024 });
+            const { stdout } = await execAsync(command, {
+                maxBuffer: 50 * 1024 * 1024,
+                timeout: this.settings.scanTimeoutMinutes * 60 * 1000,
+            });
 
             if (!stdout.trim()) return result;
 
@@ -403,6 +409,7 @@ export class TrivyScanner {
         const topVulns = allVulns
             .filter(v => SEVERITY_LEVELS[v.Severity] >= SEVERITY_LEVELS[this.settings.minSeverityAlert])
             .sort((a, b) => SEVERITY_LEVELS[b.Severity] - SEVERITY_LEVELS[a.Severity])
+            .filter((v, i, arr) => arr.findIndex(x => x.VulnerabilityID === v.VulnerabilityID) === i)
             .slice(0, 5);
 
         if (topVulns.length > 0) {

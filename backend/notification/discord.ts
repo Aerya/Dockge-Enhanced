@@ -62,20 +62,44 @@ export class DiscordNotifier {
             embeds: [embed],
         };
 
-        try {
-            await axios.post(url, payload, {
-                headers: { "Content-Type": "application/json" },
-                timeout: 10000,
-            });
-            return true;
-        } catch (e: unknown) {
-            if (axios.isAxiosError(e)) {
-                console.error(`[DiscordNotifier] Erreur HTTP ${e.response?.status} (${url}):`, e.response?.data);
-            } else {
-                console.error(`[DiscordNotifier] Erreur réseau (${url}):`, e);
+        const MAX_RETRIES = 3;
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                await axios.post(url, payload, {
+                    headers: { "Content-Type": "application/json" },
+                    timeout: 10000,
+                });
+                return true;
+            } catch (e: unknown) {
+                if (axios.isAxiosError(e)) {
+                    const status = e.response?.status;
+                    // Rate limit — attend retry-after puis réessaie
+                    if (status === 429 && attempt < MAX_RETRIES) {
+                        const retryAfter = Number(e.response?.headers?.["retry-after"] ?? 1) * 1000;
+                        console.warn(`[DiscordNotifier] Rate limit (429), retry dans ${retryAfter}ms (${attempt + 1}/${MAX_RETRIES})`);
+                        await new Promise(r => setTimeout(r, retryAfter));
+                        continue;
+                    }
+                    // Erreur serveur transitoire — backoff exponentiel
+                    if (status && status >= 500 && attempt < MAX_RETRIES) {
+                        const delay = 1000 * (attempt + 1);
+                        console.warn(`[DiscordNotifier] Erreur ${status}, retry dans ${delay}ms`);
+                        await new Promise(r => setTimeout(r, delay));
+                        continue;
+                    }
+                    console.error(`[DiscordNotifier] Erreur HTTP ${status} (${url}):`, e.response?.data);
+                } else {
+                    // Erreur réseau — backoff et retry
+                    if (attempt < MAX_RETRIES) {
+                        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                        continue;
+                    }
+                    console.error(`[DiscordNotifier] Erreur réseau (${url}):`, e);
+                }
+                return false;
             }
-            return false;
         }
+        return false;
     }
 
     /** Envoie l'embed sur tous les webhooks configurés en parallèle */

@@ -124,6 +124,30 @@
             <router-view v-if="$root.loggedIn" />
             <Login v-if="! $root.loggedIn && $root.allowLoginDialog" />
         </main>
+
+        <!-- Mobile bottom nav -->
+        <nav v-if="$root.isMobile && $root.loggedIn" class="bottom-nav">
+            <router-link to="/">
+                <div><font-awesome-icon icon="home" /></div>
+                {{ $t("home") }}
+            </router-link>
+            <router-link to="/console">
+                <div><font-awesome-icon icon="terminal" /></div>
+                {{ $t("console") }}
+            </router-link>
+            <router-link to="/watcher">
+                <div><font-awesome-icon icon="shield-alt" /></div>
+                Surveillance
+            </router-link>
+            <router-link to="/resources">
+                <div><font-awesome-icon icon="cube" /></div>
+                Ressources
+            </router-link>
+            <router-link to="/settings/general">
+                <div><font-awesome-icon icon="cog" /></div>
+                {{ $t("Settings") }}
+            </router-link>
+        </nav>
     </div>
 </template>
 
@@ -286,7 +310,7 @@ export default {
 
     a {
         text-align: center;
-        width: 25%;
+        width: 20%;
         display: inline-block;
         height: 100%;
         padding: 8px 10px 0;

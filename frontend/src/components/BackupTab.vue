@@ -236,9 +236,15 @@
 
         <!-- ═══ HISTORIQUE ═══ -->
         <div class="shadow-box big-padding mb-4">
-            <h5 class="settings-subheading mb-3">
-                <font-awesome-icon icon="chart-line" class="me-2" />{{ $t('watcher.backup.history.heading') }}
-            </h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="chart-line" class="me-2" />{{ $t('watcher.backup.history.heading') }}
+                </h5>
+                <small v-if="nextBackupDate" class="form-text">
+                    <font-awesome-icon icon="clock" class="me-1" />
+                    Prochain backup : {{ nextBackupDate.toLocaleString() }}
+                </small>
+            </div>
             <div v-if="history.length === 0" class="text-center form-text fst-italic py-3">
                 {{ $t('watcher.backup.history.none') }}
             </div>
@@ -291,6 +297,7 @@
                             <th>{{ $t('watcher.backup.snapshots.date') }}</th>
                             <th>{{ $t('watcher.backup.snapshots.tags') }}</th>
                             <th>{{ $t('watcher.backup.snapshots.paths') }}</th>
+                            <th>{{ $t('watcher.backup.snapshots.size') }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -311,6 +318,9 @@
                                         class="badge bg-secondary me-1 small">{{ tag }}</span>
                                 </td>
                                 <td class="small form-text">{{ snap.paths.length }} {{ $t('watcher.backup.snapshots.path') }}</td>
+                                <td class="small form-text">
+                                    {{ snapshotSizeMap.has(snap.short_id) ? formatBytes(snapshotSizeMap.get(snap.short_id)!) : '—' }}
+                                </td>
                                 <td class="text-end" @click.stop>
                                     <button class="btn btn-sm btn-outline-danger"
                                         @click="deleteSnapshot(snap.short_id)"
@@ -322,7 +332,7 @@
 
                             <!-- Ligne expandable : liste des fichiers -->
                             <tr v-if="expandedSnapshot === snap.short_id" class="snapshot-files-row">
-                                <td colspan="6" class="p-0">
+                                <td colspan="7" class="p-0">
                                     <div class="snapshot-files-panel px-4 py-3">
 
                                         <!-- Loading -->
@@ -444,7 +454,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 
 const { t } = useI18n();
@@ -565,6 +575,24 @@ function mergeSettings(loaded: Partial<Settings>): Settings {
         },
     };
 }
+
+// ─── Computed ─────────────────────────────────────────────────────
+
+const nextBackupDate = computed(() => {
+    if (!settings.value.enabled || history.value.length === 0) return null;
+    const last = new Date(history.value[0].timestamp).getTime();
+    return new Date(last + settings.value.intervalHours * 3_600_000);
+});
+
+const snapshotSizeMap = computed(() => {
+    const map = new Map<string, number>();
+    for (const h of history.value) {
+        if (h.snapshotId && h.dataAdded != null) {
+            map.set(h.snapshotId.slice(0, 8), h.dataAdded);
+        }
+    }
+    return map;
+});
 
 // ─── Init ─────────────────────────────────────────────────────────
 

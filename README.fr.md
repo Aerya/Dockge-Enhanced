@@ -16,15 +16,17 @@ Fork de [**Dockge**](https://github.com/louislam/dockge) par louislam — ajoute
 
 **🔄 Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io et les registries privés. Fréquence configurable (1h → 24h). Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
 
-**🛡️ Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution avec [Trivy](https://trivy.dev/). `aquasec/trivy:latest` est automatiquement pull avant chaque scan et supprimée après — toujours à jour, aucune place occupée entre les scans. Seuil d'alerte configurable, résultats visibles dans l'UI et envoyés sur Discord.
+**🛡️ Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution avec [Trivy](https://trivy.dev/). `aquasec/trivy:latest` est automatiquement pull avant chaque scan et supprimée après — toujours à jour, aucune place occupée entre les scans. Seuil d'alerte et timeout de scan configurables. Résultats visibles dans l'UI avec un bouton de scan manuel par image. Déduplication des CVE (chaque vulnérabilité n'apparaît qu'une seule fois par image). Alertes envoyées sur Discord avec retry/backoff en cas de rate limit.
 
-**☁️ Backup Restic** — Sauvegarde automatique des `compose.yaml` et `.env` de chaque stack avec [Restic](https://restic.net/). 4 destinations : local, SFTP/NAS, S3/Backblaze B2, REST Server. Politique de rétention configurable. Clique sur un snapshot pour le dérouler et voir chaque fichier avec deux indicateurs de statut : **vs snapshot précédent** (Nouveau / Modifié / Inchangé) et **vs disque actuel** (Disque OK / Modifié depuis / Absent). Sélectionne des fichiers individuellement et restaure-les en un clic.
+**☁️ Backup Restic** — Sauvegarde automatique des `compose.yaml` et `.env` de chaque stack avec [Restic](https://restic.net/). 4 destinations : local, SFTP/NAS, S3/Backblaze B2, REST Server. Politique de rétention configurable. La date du prochain backup est affichée dans l'UI. Clique sur un snapshot pour le dérouler et voir chaque fichier avec deux indicateurs de statut : **vs snapshot précédent** (Nouveau / Modifié / Inchangé) et **vs disque actuel** (Disque OK / Modifié depuis / Absent). Chaque snapshot affiche la quantité de données ajoutées. Sélectionne des fichiers individuellement et restaure-les en un clic.
 
-**📢 Notifications Discord** — Embeds colorés pour les mises à jour d'images, alertes sécurité et résultats de backup. Plusieurs webhooks supportés par fonctionnalité. Définis `DOCKGE_PUBLIC_URL` pour inclure un lien cliquable dans les notifications.
+**📢 Notifications Discord** — Embeds colorés pour les mises à jour d'images, alertes sécurité et résultats de backup. Plusieurs webhooks supportés par fonctionnalité. Définis `DOCKGE_PUBLIC_URL` pour inclure un lien cliquable dans les notifications. Retry automatique avec backoff exponentiel en cas de rate limit (HTTP 429) ou d'erreur serveur.
 
 **🗂️ Ressources Docker** — Liste et suppression des images et volumes Docker depuis l'UI (`/resources`). Met en évidence les images/volumes liés à des stacks Dockge arrêtées, avec double confirmation avant toute suppression destructive.
 
 **🌐 Interface FR/EN** — Les pages `/watcher` et `/resources` disposent d'un bouton 🇫🇷/🇬🇧 pour changer la langue indépendamment du paramètre global de l'application.
+
+**📱 Navigation mobile** — Barre de navigation bas complète sur mobile avec toutes les sections : Accueil, Console, Surveillance, Ressources, Paramètres.
 
 ---
 

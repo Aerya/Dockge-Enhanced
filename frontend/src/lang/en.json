@@ -198,6 +198,8 @@
     "watcher.trivy.critical": "\uD83D\uDD34 CRITICAL only",
     "watcher.trivy.ignoreUnfixed": "Ignore vulnerabilities without available fix",
     "watcher.trivy.dockerInfo": "⬇️ aquasec/trivy:latest is pulled before each scan and removed afterwards — always up-to-date, no disk usage between scans.",
+    "watcher.trivy.timeout": "Scan timeout",
+    "watcher.trivy.scanImage": "Scan this image",
     "watcher.trivy.save": "Save",
     "watcher.trivy.scanNow": "Scan all images",
     "watcher.trivy.saved": "\u2705 Settings saved",
@@ -311,5 +313,6 @@
     "watcher.backup.snapshots.restoreConfirm": "Restore {0} file(s) from snapshot {1}? Current files will be overwritten.",
     "watcher.backup.snapshots.restoring": "Restoring…",
     "watcher.backup.snapshots.restoreOk": "✅ {0} file(s) restored successfully",
-    "watcher.backup.snapshots.restoreErr": "❌ Restore error"
+    "watcher.backup.snapshots.restoreErr": "❌ Restore error",
+    "watcher.backup.snapshots.size": "Added size"
 }

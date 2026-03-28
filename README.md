@@ -16,15 +16,17 @@ A fork of [**Dockge**](https://github.com/louislam/dockge) by louislam — adds 
 
 **🔄 Image Watcher** — Automatically checks for image updates by comparing local and remote digests (no pull required). Supports Docker Hub, ghcr.io, and private registries. Configurable frequency (1h → 24h). Click **View project →** next to any image to search for it instantly.
 
-**🛡️ Trivy Scanner** — Scans running container images for known vulnerabilities (CVE) via [Trivy](https://trivy.dev/). `aquasec/trivy:latest` is automatically pulled before each scan and removed afterwards — always up-to-date, zero disk footprint between scans. Configurable severity threshold, results visible in the UI and sent to Discord.
+**🛡️ Trivy Scanner** — Scans running container images for known vulnerabilities (CVE) via [Trivy](https://trivy.dev/). `aquasec/trivy:latest` is automatically pulled before each scan and removed afterwards — always up-to-date, zero disk footprint between scans. Configurable severity threshold and scan timeout. Results visible in the UI with a per-image manual scan button. CVE deduplication ensures each vulnerability appears only once per image. Alerts sent to Discord with retry/backoff on rate limits.
 
-**☁️ Restic Backup** — Automatic backup of all stack `compose.yaml` and `.env` files with [Restic](https://restic.net/). 4 destinations: local, SFTP/NAS, S3/Backblaze B2, REST Server. Configurable retention policy. Click any snapshot to expand it and see each file with two status indicators: **vs previous snapshot** (New / Modified / Unchanged) and **vs current disk** (Disk OK / Modified since / Missing). Select individual files and restore them in one click.
+**☁️ Restic Backup** — Automatic backup of all stack `compose.yaml` and `.env` files with [Restic](https://restic.net/). 4 destinations: local, SFTP/NAS, S3/Backblaze B2, REST Server. Configurable retention policy. The next scheduled backup time is shown in the UI. Click any snapshot to expand it and see each file with two status indicators: **vs previous snapshot** (New / Modified / Unchanged) and **vs current disk** (Disk OK / Modified since / Missing). Each snapshot displays the amount of data added. Select individual files and restore them in one click.
 
-**📢 Discord Notifications** — Rich embeds for image updates, security alerts, and backup results. Supports multiple webhooks per feature. Set `DOCKGE_PUBLIC_URL` to include a clickable link in notifications.
+**📢 Discord Notifications** — Rich embeds for image updates, security alerts, and backup results. Supports multiple webhooks per feature. Set `DOCKGE_PUBLIC_URL` to include a clickable link in notifications. Automatic retry with exponential backoff on rate limits (HTTP 429) and server errors.
 
 **🗂️ Docker Resources** — List and delete Docker images and volumes directly from the UI (`/resources`). Highlights images/volumes linked to stopped Dockge stacks, with double confirmation before any destructive action.
 
 **🌐 FR/EN interface** — The `/watcher` and `/resources` pages have a 🇫🇷/🇬🇧 toggle to switch languages independently of the global app setting.
+
+**📱 Mobile navigation** — Full bottom navigation bar on mobile with all sections: Home, Console, Surveillance, Resources, Settings.
 
 ---
 

@@ -282,6 +282,16 @@
                             </select>
                         </div>
 
+                        <div class="col-lg-2">
+                            <label class="form-label">{{ $t('watcher.trivy.timeout') }}</label>
+                            <select v-model.number="trivySettings.scanTimeoutMinutes" class="form-select">
+                                <option :value="5">5 min</option>
+                                <option :value="10">10 min</option>
+                                <option :value="20">20 min</option>
+                                <option :value="30">30 min</option>
+                            </select>
+                        </div>
+
                         <div class="col-12 d-flex gap-4 flex-wrap">
                             <div class="form-check">
                                 <input v-model="trivySettings.ignoreUnfixed" type="checkbox"
@@ -342,6 +352,7 @@
                                     <th>{{ $t('watcher.trivy.status.maxSeverity') }}</th>
                                     <th>{{ $t('watcher.trivy.status.vulns') }}</th>
                                     <th></th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -377,6 +388,15 @@
                                             <span v-if="!r.counts.CRITICAL && !r.counts.HIGH && !r.counts.MEDIUM && !r.counts.LOW" class="text-muted">—</span>
                                         </span>
                                     </td>
+                                    <td class="text-end" style="width:36px" @click.stop>
+                                        <button class="btn btn-xs btn-outline-secondary"
+                                            style="font-size:.7rem;padding:1px 5px"
+                                            :disabled="scanning"
+                                            :title="`Scanner ${r.image}`"
+                                            @click="runScanSingle(r.image)">
+                                            <font-awesome-icon icon="shield-alt" />
+                                        </button>
+                                    </td>
                                     <td class="text-end pe-2" style="width:30px">
                                         <font-awesome-icon
                                             :icon="expandedTrivyImage === r.image + r.stack ? 'chevron-up' : 'chevron-down'"
@@ -384,7 +404,7 @@
                                     </td>
                                 </tr>
                                 <tr v-if="expandedTrivyImage === r.image + r.stack" class="trivy-detail-row">
-                                    <td colspan="5" class="p-0">
+                                    <td colspan="6" class="p-0">
                                         <div class="trivy-detail-panel">
                                             <div v-if="!fullResultFor(r.image, r.stack)?.vulns?.length" class="fst-italic text-muted p-2">
                                                 Aucune vulnérabilité au-dessus du seuil.
@@ -450,7 +470,7 @@ interface Cred { registry: string; username: string; token: string }
 interface ImgSettings { enabled: boolean; intervalHours: number; discordWebhooks: string[] }
 interface TrivySettings {
     enabled: boolean; intervalHours: number; discordWebhooks: string[];
-    minSeverityAlert: string; ignoreUnfixed: boolean;
+    minSeverityAlert: string; ignoreUnfixed: boolean; scanTimeoutMinutes: number;
 }
 interface ImageStatus {
     image: string; stack: string;
@@ -522,7 +542,7 @@ const imgSettings = ref<ImgSettings>({ enabled: false, intervalHours: 6, discord
 const imgWebhook = ref("");
 const trivySettings = ref<TrivySettings>({
     enabled: false, intervalHours: 24, discordWebhooks: [],
-    minSeverityAlert: "HIGH", ignoreUnfixed: false,
+    minSeverityAlert: "HIGH", ignoreUnfixed: false, scanTimeoutMinutes: 10,
 });
 const trivyWebhook = ref("");
 const credentials = ref<Cred[]>([]);
@@ -688,6 +708,16 @@ async function runScan(image?: string) {
         await api("POST", "/trivy/run", image ? { image } : {});
         showToast(t('watcher.trivy.scanning'));
     } finally { scanning.value = false; }
+}
+
+async function runScanSingle(image: string) {
+    await runScan(image);
+    let attempts = 0;
+    const poll = setInterval(async () => {
+        await loadTrivyStatus();
+        attempts++;
+        if (!trivyStatus.value.running || attempts >= 40) clearInterval(poll);
+    }, 3000);
 }
 
 async function runScanAndRefresh(image?: string) {
