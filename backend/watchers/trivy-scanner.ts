@@ -13,6 +13,7 @@ const execAsync = promisify(exec);
 
 const DATA_DIR      = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH = path.join(DATA_DIR, "trivy-settings.json");
+const STATUS_PATH   = path.join(DATA_DIR, "trivy-status.json");
 
 type Severity = "UNKNOWN" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -153,6 +154,30 @@ export class TrivyScanner {
             }
             this.settings = { ...this.settings, ...data as Partial<ScannerSettings> };
         } catch { /* config absente ou première utilisation */ }
+        await this.loadStatus();
+    }
+
+    private async loadStatus(): Promise<void> {
+        try {
+            const fs  = await import("fs/promises");
+            const raw = await fs.readFile(STATUS_PATH, "utf8");
+            const data = JSON.parse(raw) as Partial<ScanStatus>;
+            this.scanStatus = {
+                running: false, // jamais "en cours" au démarrage
+                lastScanAt:    data.lastScanAt    ?? null,
+                scannedCount:  data.scannedCount  ?? 0,
+                lastResults:   data.lastResults   ?? [],
+                lastFullResults: data.lastFullResults ?? [],
+            };
+        } catch { /* pas encore de fichier de statut */ }
+    }
+
+    private async saveStatus(): Promise<void> {
+        try {
+            const fs = await import("fs/promises");
+            await fs.mkdir(DATA_DIR, { recursive: true });
+            await fs.writeFile(STATUS_PATH, JSON.stringify(this.scanStatus, null, 2));
+        } catch { /* silencieux */ }
     }
 
     async saveSettings(partial: Partial<ScannerSettings>): Promise<void> {
@@ -265,6 +290,7 @@ export class TrivyScanner {
             })),
         };
 
+        await this.saveStatus();
         return scanResults;
     }
 

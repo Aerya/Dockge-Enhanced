@@ -322,7 +322,7 @@ const i18n = {
             heading: "Images Docker",
             refresh: "Rafraîchir",
             pruneBtn: "Purger les images orphelines",
-            pruneConfirm: "Supprimer toutes les images orphelines (sans tag, non utilisées) ?",
+            pruneConfirm: "Supprimer toutes les images orphelines (sans tag) ? Note : des couches intermédiaires non listées seront également supprimées.",
             total: "images",
             unused: "inutilisées",
             dangling: "orphelines",
@@ -362,7 +362,7 @@ const i18n = {
             heading: "Docker Images",
             refresh: "Refresh",
             pruneBtn: "Remove dangling",
-            pruneConfirm: "Remove all untagged (dangling) images?",
+            pruneConfirm: "Remove all untagged (dangling) images? Note: unlisted intermediate layers will also be removed.",
             total: "images",
             unused: "unused",
             dangling: "dangling",
@@ -648,18 +648,26 @@ onMounted(() => {
 // ── Table ────────────────────────────────────────────────────────
 .resources-table {
     font-size: 0.875rem;
+    --bs-table-bg: transparent;
+    --bs-table-color: #e5e7eb;
 
     th {
         font-size: 0.75rem;
         letter-spacing: .04em;
-        color: #888;
-        border-bottom: 1px solid rgba(255,255,255,.08);
+        color: #9ca3af;
+        border-bottom: 1px solid rgba(255,255,255,.1);
+        opacity: 1;
+    }
+
+    > :not(caption) > * > * {
+        color: #e5e7eb;
+        border-bottom-color: rgba(255,255,255,.06);
     }
 
     // Hover : fond subtil sans écraser le texte
     tbody tr:hover td {
         background-color: rgba(255, 255, 255, 0.06) !important;
-        color: inherit !important;
+        color: #e5e7eb !important;
     }
 
     // Ligne : conteneur Dockge arrêté → orange à gauche
@@ -720,11 +728,9 @@ onMounted(() => {
 // ── Dark mode ────────────────────────────────────────────────────
 .dark {
     .resources-table {
-        color: $dark-font-color;
-        th { color: #888; }
         tr:hover td {
             background-color: rgba(255, 255, 255, 0.06) !important;
-            color: $dark-font-color !important;
+            color: #e5e7eb !important;
         }
     }
     .modal-card {

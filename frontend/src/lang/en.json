@@ -289,7 +289,7 @@
     "watcher.backup.snapshots.date": "Date",
     "watcher.backup.snapshots.tags": "Tags",
     "watcher.backup.snapshots.paths": "Included paths",
-    "watcher.backup.snapshots.path": "path(s)",
+    "watcher.backup.snapshots.path": "file(s)",
     "watcher.backup.snapshots.deleteConfirm": "Delete snapshot {0}? This action is irreversible.",
     "watcher.backup.snapshots.deleted": "\uD83D\uDDD1\uFE0F Snapshot deleted",
     "watcher.backup.snapshots.expand": "View files",

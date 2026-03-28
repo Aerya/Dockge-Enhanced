@@ -282,7 +282,7 @@
     "watcher.backup.snapshots.date": "Date",
     "watcher.backup.snapshots.tags": "Tags",
     "watcher.backup.snapshots.paths": "Fichiers inclus",
-    "watcher.backup.snapshots.path": "chemin(s)",
+    "watcher.backup.snapshots.path": "fichier(s)",
     "watcher.backup.snapshots.size": "Taille ajoutée",
     "watcher.backup.snapshots.deleteConfirm": "Supprimer le snapshot {0} ? Cette action est irréversible.",
     "watcher.backup.snapshots.deleted": "\uD83D\uDDD1\uFE0F Snapshot supprimé",

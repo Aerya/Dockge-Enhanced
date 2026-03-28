@@ -261,7 +261,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(h, i) in history" :key="i">
+                        <tr v-for="(h, i) in history" :key="i" :class="h.success ? 'history-row-ok' : 'history-row-err'">
                             <td class="small form-text">{{ new Date(h.timestamp).toLocaleString() }}</td>
                             <td>
                                 <span v-if="h.success" class="badge bg-success">✓ OK</span>
@@ -748,6 +748,36 @@ async function testWebhook(url: string) {
     font-size: 1.1rem;
     font-weight: 600;
 }
+
+// Tables Historique + Snapshots : même look que WatcherSettings
+.table-responsive .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: #e5e7eb;
+
+    > thead > tr > th {
+        color: #9ca3af;
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        border-bottom-color: rgba(255,255,255,.1);
+        opacity: 1;
+    }
+
+    > tbody > tr > td {
+        color: #e5e7eb;
+        border-bottom-color: rgba(255,255,255,.06);
+        vertical-align: middle;
+    }
+
+    > tbody > tr:hover > td {
+        background: rgba(255,255,255,.04);
+    }
+}
+
+// Coloration par statut : bordure gauche sur la 1ère cellule
+.history-row-ok  > td:first-child { border-left: 3px solid #22c55e; }
+.history-row-err > td:first-child { border-left: 3px solid #ef4444; }
+.snapshot-row    > td:first-child { border-left: 3px solid #f59e0b; }
 
 .table th {
     font-size: .72rem;
