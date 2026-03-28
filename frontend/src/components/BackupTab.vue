@@ -180,6 +180,16 @@
                             <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
                         </button>
                     </div>
+                    <!-- Langue des notifications -->
+                    <div class="mt-2 d-flex align-items-center gap-2">
+                        <small class="form-text">{{ $t('watcher.notifLang') }}</small>
+                        <div class="notif-lang-toggle">
+                            <button :class="['notif-lang-btn', settings.notificationLang !== 'en' && 'active']"
+                                @click="settings.notificationLang = 'fr'">🇫🇷</button>
+                            <button :class="['notif-lang-btn', settings.notificationLang === 'en' && 'active']"
+                                @click="settings.notificationLang = 'en'">🇬🇧</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -474,7 +484,7 @@ interface Destination {
     rest?: RestConfig;
 }
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
-interface Settings { enabled: boolean; intervalHours: number; destination: Destination; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[] }
+interface Settings { enabled: boolean; intervalHours: number; destination: Destination; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en" }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
     path: string; name: string; stack: string; type: "compose" | "env" | "other";
@@ -853,5 +863,30 @@ async function testWebhook(url: string) {
 
 .snapshot-files-panel {
     border-left: 3px solid #f59e0b;
+}
+
+.notif-lang-toggle {
+    display: inline-flex;
+    gap: 2px;
+    background: rgba(255,255,255,.05);
+    border-radius: 50rem;
+    padding: 2px 4px;
+    border: 1px solid rgba(255,255,255,.08);
+}
+.notif-lang-btn {
+    background: none;
+    border: none;
+    font-size: .9rem;
+    line-height: 1;
+    padding: 1px 4px;
+    border-radius: 50rem;
+    cursor: pointer;
+    opacity: .4;
+    transition: opacity .15s, background .15s;
+    &:hover { opacity: .75; }
+    &.active {
+        opacity: 1;
+        background: rgba(255,255,255,.1);
+    }
 }
 </style>

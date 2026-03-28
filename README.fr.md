@@ -30,6 +30,66 @@ Fork de [**Dockge**](https://github.com/louislam/dockge) par louislam — ajoute
 
 ---
 
+## 📸 Captures d'écran
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/enhanced3.png"><img src="screens/enhanced3.png" width="100%"/></a>
+      <sub>Interface principale</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/enhanced4.png"><img src="screens/enhanced4.png" width="100%"/></a>
+      <sub>Image Watcher — surveillance des mises à jour</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/enhanced5.png"><img src="screens/enhanced5.png" width="100%"/></a>
+      <sub>Trivy Scanner — configuration</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/enhanced6.png"><img src="screens/enhanced6.png" width="100%"/></a>
+      <sub>Trivy Scanner — résultats CVE</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/enhanced8.png"><img src="screens/enhanced8.png" width="100%"/></a>
+      <sub>Backup Restic — configuration</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/enhanced9.png"><img src="screens/enhanced9.png" width="100%"/></a>
+      <sub>Backup Restic — détail snapshot & restauration</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/enhanced11.png"><img src="screens/enhanced11.png" width="100%"/></a>
+      <sub>Ressources Docker</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/enhanced7.png"><img src="screens/enhanced7.png" width="100%"/></a>
+      <sub>Discord — alertes sécurité Trivy</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/enhanced10.png"><img src="screens/enhanced10.png" width="100%"/></a>
+      <sub>Discord — notification backup</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/enhanced1.png"><img src="screens/enhanced1.png" width="100%"/></a>
+      <sub>Bandeau de mise à jour in-app</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/enhanced2.png"><img src="screens/enhanced2.png" width="100%"/></a>
+      <sub>Discord — alerte mise à jour Dockge Enhanced</sub>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+---
+
 ## 🚀 Installation
 
 ```yaml

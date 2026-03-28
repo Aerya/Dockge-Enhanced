@@ -74,6 +74,7 @@ export interface BackupSettings {
     discordWebhooks: string[];      // liste de webhooks (migration auto depuis discordWebhook)
     includeEnvFiles: boolean;
     extraPaths: string[];
+    notificationLang: "fr" | "en";
 }
 
 export interface ResticSnapshot {
@@ -245,6 +246,7 @@ export class BackupManager {
         discordWebhooks: [],
         includeEnvFiles: true,
         extraPaths: [],
+        notificationLang: "fr",
     };
 
     static getInstance(): BackupManager {
@@ -616,32 +618,40 @@ export class BackupManager {
 
     private async sendDiscordNotification(result: BackupResult): Promise<void> {
         const notifier = new DiscordNotifier(this.settings.discordWebhooks);
+        const en       = (this.settings.notificationLang ?? "fr") === "en";
+        const locale   = en ? "en-GB" : "fr-FR";
+        const t        = (fr: string, enStr: string) => en ? enStr : fr;
 
         if (result.success) {
             await notifier.sendEmbed({
-                title: "✅ Backup Dockge réussi",
+                title: t("✅ Backup Dockge réussi", "✅ Dockge backup successful"),
                 color: 0x22c55e,
-                description: `Snapshot \`${result.snapshotId}\` créé avec succès`,
+                description: `Snapshot \`${result.snapshotId}\` ${t("créé avec succès", "created successfully")}`,
                 fields: [
-                    { name: "Durée",          value: formatDuration(result.duration),         inline: true },
-                    { name: "Données ajoutées", value: formatBytes(result.dataAdded ?? 0),    inline: true },
-                    { name: "Fichiers",
-                      value: `${result.filesNew} nouveaux · ${result.filesChanged} modifiés`, inline: true },
+                    { name: t("Durée", "Duration"),
+                      value: formatDuration(result.duration),                                  inline: true },
+                    { name: t("Données ajoutées", "Data added"),
+                      value: formatBytes(result.dataAdded ?? 0),                               inline: true },
+                    { name: t("Fichiers", "Files"),
+                      value: `${result.filesNew} ${t("nouveaux", "new")} · ${result.filesChanged} ${t("modifiés", "modified")}`,
+                      inline: true },
                     { name: "Destination",
                       value: `\`${this.settings.destination.type}\``,                          inline: true },
                 ],
-                footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString("fr-FR")}`,
+                footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString(locale)}`,
             });
         } else {
             await notifier.sendEmbed({
-                title: "❌ Échec du backup Dockge",
+                title: t("❌ Échec du backup Dockge", "❌ Dockge backup failed"),
                 color: 0xef4444,
-                description: `**Erreur :** ${result.error}`,
+                description: `**${t("Erreur", "Error")} :** ${result.error}`,
                 fields: [
-                    { name: "Durée",      value: formatDuration(result.duration),       inline: true },
-                    { name: "Destination", value: `\`${this.settings.destination.type}\``, inline: true },
+                    { name: t("Durée", "Duration"),
+                      value: formatDuration(result.duration),                                  inline: true },
+                    { name: "Destination",
+                      value: `\`${this.settings.destination.type}\``,                          inline: true },
                 ],
-                footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString("fr-FR")}`,
+                footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString(locale)}`,
             });
         }
     }

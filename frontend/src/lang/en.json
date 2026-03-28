@@ -149,6 +149,7 @@
     "watcher.img.noWebhook": "No webhook configured.",
     "watcher.img.webhookPlaceholder": "https://discord.com/api/webhooks/\u2026",
     "watcher.img.addWebhook": "Add",
+    "watcher.notifLang": "Discord notification language:",
     "watcher.img.frequency": "Check frequency",
     "watcher.img.every1h": "Every hour",
     "watcher.img.every3h": "Every 3h",

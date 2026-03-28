@@ -82,6 +82,16 @@
                                     <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
                                 </button>
                             </div>
+                            <!-- Langue des notifications -->
+                            <div class="mt-2 d-flex align-items-center gap-2">
+                                <small class="form-text">{{ $t('watcher.notifLang') }}</small>
+                                <div class="notif-lang-toggle">
+                                    <button :class="['notif-lang-btn', imgSettings.notificationLang !== 'en' && 'active']"
+                                        @click="imgSettings.notificationLang = 'fr'">🇫🇷</button>
+                                    <button :class="['notif-lang-btn', imgSettings.notificationLang === 'en' && 'active']"
+                                        @click="imgSettings.notificationLang = 'en'">🇬🇧</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Intervalle -->
@@ -259,6 +269,16 @@
                                 <button class="btn btn-sm btn-success" @click="addTrivyWebhook" :disabled="!trivyWebhook">
                                     <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
                                 </button>
+                            </div>
+                            <!-- Langue des notifications -->
+                            <div class="mt-2 d-flex align-items-center gap-2">
+                                <small class="form-text">{{ $t('watcher.notifLang') }}</small>
+                                <div class="notif-lang-toggle">
+                                    <button :class="['notif-lang-btn', trivySettings.notificationLang !== 'en' && 'active']"
+                                        @click="trivySettings.notificationLang = 'fr'">🇫🇷</button>
+                                    <button :class="['notif-lang-btn', trivySettings.notificationLang === 'en' && 'active']"
+                                        @click="trivySettings.notificationLang = 'en'">🇬🇧</button>
+                                </div>
                             </div>
                         </div>
 
@@ -467,10 +487,11 @@ import BackupTab from "./BackupTab.vue";
 // ─── Types ────────────────────────────────────────────────────────
 
 interface Cred { registry: string; username: string; token: string }
-interface ImgSettings { enabled: boolean; intervalHours: number; discordWebhooks: string[] }
+interface ImgSettings { enabled: boolean; intervalHours: number; discordWebhooks: string[]; notificationLang: "fr" | "en" }
 interface TrivySettings {
     enabled: boolean; intervalHours: number; discordWebhooks: string[];
     minSeverityAlert: string; ignoreUnfixed: boolean; scanTimeoutMinutes: number;
+    notificationLang: "fr" | "en";
 }
 interface ImageStatus {
     image: string; stack: string;
@@ -538,11 +559,11 @@ onMounted(async () => {
 
 const tab = ref("images");
 
-const imgSettings = ref<ImgSettings>({ enabled: false, intervalHours: 6, discordWebhooks: [] });
+const imgSettings = ref<ImgSettings>({ enabled: false, intervalHours: 6, discordWebhooks: [], notificationLang: "fr" });
 const imgWebhook = ref("");
 const trivySettings = ref<TrivySettings>({
     enabled: false, intervalHours: 24, discordWebhooks: [],
-    minSeverityAlert: "HIGH", ignoreUnfixed: false, scanTimeoutMinutes: 10,
+    minSeverityAlert: "HIGH", ignoreUnfixed: false, scanTimeoutMinutes: 10, notificationLang: "fr",
 });
 const trivyWebhook = ref("");
 const credentials = ref<Cred[]>([]);
@@ -875,6 +896,32 @@ async function removeCred(registry: string) {
     &.active {
         opacity: 1;
         background: rgba(255,255,255,.12);
+    }
+}
+
+// Toggle langue notifications Discord (plus petit que le lang-toggle principal)
+.notif-lang-toggle {
+    display: inline-flex;
+    gap: 2px;
+    background: rgba(255,255,255,.05);
+    border-radius: 50rem;
+    padding: 2px 4px;
+    border: 1px solid rgba(255,255,255,.08);
+}
+.notif-lang-btn {
+    background: none;
+    border: none;
+    font-size: .9rem;
+    line-height: 1;
+    padding: 1px 4px;
+    border-radius: 50rem;
+    cursor: pointer;
+    opacity: .4;
+    transition: opacity .15s, background .15s;
+    &:hover { opacity: .75; }
+    &.active {
+        opacity: 1;
+        background: rgba(255,255,255,.1);
     }
 }
 

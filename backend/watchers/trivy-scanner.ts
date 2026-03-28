@@ -48,6 +48,7 @@ interface ScannerSettings {
     minSeverityAlert: Severity;
     ignoreUnfixed: boolean;
     scanTimeoutMinutes: number;
+    notificationLang: "fr" | "en";
 }
 
 interface Vulnerability {
@@ -133,6 +134,7 @@ export class TrivyScanner {
         minSeverityAlert: "HIGH",
         ignoreUnfixed: false,
         scanTimeoutMinutes: 10,
+        notificationLang: "fr",
     };
 
     static getInstance(): TrivyScanner {
@@ -418,19 +420,21 @@ export class TrivyScanner {
     }
 
     private async sendImageAlert(notifier: DiscordNotifier, result: ScanResult): Promise<void> {
+        const en     = (this.settings.notificationLang ?? "fr") === "en";
+        const locale = en ? "en-GB" : "fr-FR";
+        const t      = (fr: string, enStr: string) => en ? enStr : fr;
+
         const fields = [];
 
-        // Résumé des comptages
         const countLines = (Object.entries(result.counts) as [Severity, number][])
             .filter(([, count]) => count > 0)
             .map(([sev, count]) => `${SEVERITY_EMOJI[sev]} ${sev}: **${count}**`)
             .join("\n");
 
         if (countLines) {
-            fields.push({ name: "Résumé", value: countLines, inline: true });
+            fields.push({ name: t("Résumé", "Summary"), value: countLines, inline: true });
         }
 
-        // Top 5 des vulnérabilités les plus critiques
         const allVulns: Vulnerability[] = result.results.flatMap(r => r.Vulnerabilities || []);
         const topVulns = allVulns
             .filter(v => SEVERITY_LEVELS[v.Severity] >= SEVERITY_LEVELS[this.settings.minSeverityAlert])
@@ -440,28 +444,34 @@ export class TrivyScanner {
 
         if (topVulns.length > 0) {
             const vulnLines = topVulns.map(v => {
-                const fix = v.FixedVersion ? `→ fix: ${v.FixedVersion}` : "→ pas de fix";
+                const fix = v.FixedVersion
+                    ? `→ fix: ${v.FixedVersion}`
+                    : t("→ pas de fix", "→ no fix");
                 const url = v.PrimaryURL ?? `https://nvd.nist.gov/vuln/detail/${v.VulnerabilityID}`;
                 return `${SEVERITY_EMOJI[v.Severity]} [${v.VulnerabilityID}](${url}) **${v.PkgName}** ${v.InstalledVersion} ${fix}`;
             }).join("\n");
-            fields.push({ name: "Top vulnérabilités", value: vulnLines, inline: false });
+            fields.push({ name: t("Top vulnérabilités", "Top vulnerabilities"), value: vulnLines, inline: false });
         }
 
         const uiUrl = this.baseUrl || null;
 
         await notifier.sendEmbed({
-            title: `${SEVERITY_EMOJI[result.maxSeverity]} Alerte sécurité — ${result.image}`,
+            title: `${SEVERITY_EMOJI[result.maxSeverity]} ${t("Alerte sécurité", "Security alert")} — ${result.image}`,
             color: SEVERITY_COLORS[result.maxSeverity],
             url:   uiUrl ?? undefined,
             description:
-                `Stack : **${result.stack}**\nSévérité max : **${result.maxSeverity}**` +
-                (uiUrl ? `\n\n[Ouvrir Dockge](${uiUrl})` : ""),
+                `${t("Stack", "Stack")} : **${result.stack}**\n${t("Sévérité max", "Max severity")} : **${result.maxSeverity}**` +
+                (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl})` : ""),
             fields,
-            footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString("fr-FR")}`,
+            footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString(locale)}`,
         });
     }
 
     private async sendSummary(notifier: DiscordNotifier, results: ScanResult[]): Promise<void> {
+        const en     = (this.settings.notificationLang ?? "fr") === "en";
+        const locale = en ? "en-GB" : "fr-FR";
+        const t      = (fr: string, enStr: string) => en ? enStr : fr;
+
         const totalCounts: Record<Severity, number> = {
             UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0
         };
@@ -478,14 +488,12 @@ export class TrivyScanner {
             .join(" | ");
 
         const hasCritical = totalCounts.CRITICAL > 0 || totalCounts.HIGH > 0;
-
         const uiUrl = this.baseUrl || null;
 
-        // Champ "Images scannées" : image + top 2 CVEs les plus sévères pour chaque image
         const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
         const imagesValue = results.map(r => {
             const header = `${SEVERITY_EMOJI[r.maxSeverity]} \`${r.image}\` (${r.stack})`;
-            if (r.error) return `${header}\n  ⚠️ Erreur de scan`;
+            if (r.error) return `${header}\n  ${t("⚠️ Erreur de scan", "⚠️ Scan error")}`;
 
             const topVulns = r.results
                 .flatMap(res => res.Vulnerabilities || [])
@@ -503,21 +511,21 @@ export class TrivyScanner {
 
         await notifier.sendEmbed({
             title: hasCritical
-                ? `🚨 Rapport de sécurité — Vulnérabilités détectées`
-                : `✅ Rapport de sécurité — ${results.length} image(s) scannée(s)`,
+                ? `🚨 ${t("Rapport de sécurité — Vulnérabilités détectées", "Security report — Vulnerabilities detected")}`
+                : `✅ ${t(`Rapport de sécurité — ${results.length} image(s) scannée(s)`, `Security report — ${results.length} image(s) scanned`)}`,
             color: hasCritical ? 0xef4444 : 0x22c55e,
             url:   uiUrl ?? undefined,
             description:
-                (summaryLines || "Aucune vulnérabilité significative détectée.") +
-                (uiUrl ? `\n\n[Ouvrir Dockge](${uiUrl})` : ""),
+                (summaryLines || t("Aucune vulnérabilité significative détectée.", "No significant vulnerabilities detected.")) +
+                (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl})` : ""),
             fields: [
                 {
-                    name: "Images scannées",
+                    name: t("Images scannées", "Scanned images"),
                     value: imagesValue,
                     inline: false,
                 }
             ],
-            footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString("fr-FR")}`,
+            footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString(locale)}`,
         });
     }
 }

@@ -33,6 +33,7 @@ export interface WatcherSettings {
     intervalHours: number;
     discordWebhooks: string[];   // liste de webhooks (migration auto depuis discordWebhook)
     credentials: RegistryCredential[];
+    notificationLang: "fr" | "en";
 }
 
 export interface ImageStatus {
@@ -275,6 +276,7 @@ export class ImageWatcher {
         intervalHours: 6,
         discordWebhooks: [],
         credentials: [],
+        notificationLang: "fr",
     };
 
     static getInstance(): ImageWatcher {
@@ -409,24 +411,32 @@ export class ImageWatcher {
     }
 
     private async notify(updates: ImageStatus[], totalChecked: number): Promise<void> {
-        const notifier  = new DiscordNotifier(this.settings.discordWebhooks);
-        const uiUrl     = this.baseUrl || null;
+        const notifier = new DiscordNotifier(this.settings.discordWebhooks);
+        const uiUrl    = this.baseUrl || null;
+        const en       = (this.settings.notificationLang ?? "fr") === "en";
+        const locale   = en ? "en-GB" : "fr-FR";
+        const t        = (fr: string, enStr: string) => en ? enStr : fr;
 
         await notifier.sendEmbed({
-            title: `🐳 ${updates.length} mise(s) à jour disponible(s)`,
+            title: t(
+                `🐳 ${updates.length} mise(s) à jour disponible(s)`,
+                `🐳 ${updates.length} update(s) available`
+            ),
             color: 0xf59e0b,
             url:   uiUrl ?? undefined,
             description:
-                `${totalChecked} image(s) vérifiée(s) · ${new Date().toLocaleString("fr-FR")}\n` +
+                `${totalChecked} ${t("image(s) vérifiée(s)", "image(s) checked")} · ${new Date().toLocaleString(locale)}\n` +
                 (uiUrl
-                    ? `[Ouvrir Dockge](${uiUrl}) pour décider des mises à jour.`
-                    : `Connectez-vous à **Dockge** pour décider des mises à jour.`),
+                    ? `[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl}) ${t("pour décider des mises à jour.", "to review updates.")}`
+                    : t("Connectez-vous à **Dockge** pour décider des mises à jour.", "Log in to **Dockge** to review updates.")),
             fields: updates.map(u => ({
                 name: `🔄 \`${u.image}\``,
                 value:
-                    `Stack : **${u.stack}**\n` +
-                    `Distant : \`${u.remoteDigest.slice(0, 19)}…\`\n` +
-                    (u.localDigest ? `Local   : \`${u.localDigest.slice(0, 19)}…\`` : "⚠️ Image non présente localement"),
+                    `${t("Stack", "Stack")} : **${u.stack}**\n` +
+                    `${t("Distant", "Remote")} : \`${u.remoteDigest.slice(0, 19)}…\`\n` +
+                    (u.localDigest
+                        ? `${t("Local", "Local")}   : \`${u.localDigest.slice(0, 19)}…\``
+                        : t("⚠️ Image non présente localement", "⚠️ Image not present locally")),
                 inline: false,
             })),
             footer: "Dockge Enhanced — Image Watcher",
