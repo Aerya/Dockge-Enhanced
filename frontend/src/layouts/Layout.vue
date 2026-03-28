@@ -24,7 +24,7 @@
             <div v-if="selfUpdate.available && !selfUpdate.dismissed" class="self-update-banner me-3">
                 <font-awesome-icon icon="arrow-circle-up" class="me-1" />
                 Dockge-Enhanced : nouvelle version disponible —
-                <code class="mx-2">docker restart {{ selfUpdate.containerName }}</code>
+                <code class="mx-2">docker pull ghcr.io/aerya/dockge-enhanced:latest && docker restart {{ selfUpdate.containerName }}</code>
                 <button class="btn-copy ms-1" @click="copyUpdateCmd" :title="selfUpdate.copied ? 'Copié !' : 'Copier'">
                     {{ selfUpdate.copied ? '✓' : '⧉' }}
                 </button>
@@ -189,10 +189,27 @@ export default {
 
         copyUpdateCmd() {
             const cmd = `docker pull ghcr.io/aerya/dockge-enhanced:latest && docker restart ${this.selfUpdate.containerName}`;
-            navigator.clipboard?.writeText(cmd).then(() => {
+            const markCopied = () => {
                 this.selfUpdate.copied = true;
                 setTimeout(() => { this.selfUpdate.copied = false; }, 2000);
-            });
+            };
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(cmd).then(markCopied).catch(() => this.copyFallback(cmd, markCopied));
+            } else {
+                this.copyFallback(cmd, markCopied);
+            }
+        },
+
+        copyFallback(text, cb) {
+            const el = document.createElement("textarea");
+            el.value = text;
+            el.style.position = "fixed";
+            el.style.opacity = "0";
+            document.body.appendChild(el);
+            el.focus();
+            el.select();
+            try { document.execCommand("copy"); cb(); } catch { /* silencieux */ }
+            document.body.removeChild(el);
         },
 
         scanFolder() {
