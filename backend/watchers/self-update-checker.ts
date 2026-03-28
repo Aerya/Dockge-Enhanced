@@ -22,23 +22,30 @@ const STARTUP_DELAY    = 30_000;              // 30s après démarrage
 // ─── Helpers ──────────────────────────────────────────────────────
 
 async function fetchRemoteDigest(): Promise<string> {
+    // GHCR_TOKEN = GitHub PAT avec scope read:packages (requis si repo privé)
+    const ghcrToken = process.env.GHCR_TOKEN?.trim() ?? "";
+
     let token = "";
     try {
         const res = await axios.get(
             `https://ghcr.io/token?scope=repository:${SELF_REPO}:pull`,
-            { timeout: 10000 }
+            {
+                timeout: 10000,
+                ...(ghcrToken
+                    ? { auth: { username: "token", password: ghcrToken } }
+                    : {}),
+            }
         );
         token = res.data.token ?? "";
-    } catch { /* repo public — continue sans token */ }
+    } catch { /* continue sans token si repo public */ }
 
     const headers: Record<string, string> = {
-        Authorization: token ? `Bearer ${token}` : "",
         Accept: [
             "application/vnd.docker.distribution.manifest.list.v2+json",
             "application/vnd.oci.image.index.v1+json",
         ].join(", "),
     };
-    if (!token) delete headers["Authorization"];
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
     const url = `https://ghcr.io/v2/${SELF_REPO}/manifests/${SELF_TAG}`;
     const res = await axios.get(url, { headers, timeout: 15000 });
@@ -107,19 +114,23 @@ async function fetchContainerName(): Promise<string> {
     }
 }
 
-/** Lit les webhooks Discord depuis les settings du watcher existant. */
+/** Lit les webhooks Discord depuis les settings du watcher images. */
 async function loadWebhooks(): Promise<string[]> {
-    try {
-        const raw = await fs.readFile(SETTINGS_PATH, "utf8");
-        const data = JSON.parse(raw);
-        // Prend les webhooks du premier onglet configuré (image → trivy → backup)
-        return data?.image?.discordWebhooks
-            ?? data?.trivy?.discordWebhooks
-            ?? data?.backup?.discordWebhooks
-            ?? [];
-    } catch {
-        return [];
+    // Essaie successivement watcher-settings.json (image-watcher) puis trivy-settings.json
+    const candidates = [
+        path.join(DATA_DIR, "watcher-settings.json"),
+        path.join(DATA_DIR, "trivy-settings.json"),
+        path.join(DATA_DIR, "backup-settings.json"),
+    ];
+    for (const p of candidates) {
+        try {
+            const raw  = await fs.readFile(p, "utf8");
+            const data = JSON.parse(raw) as Record<string, unknown>;
+            const webhooks = data?.discordWebhooks;
+            if (Array.isArray(webhooks) && webhooks.length > 0) return webhooks as string[];
+        } catch { /* fichier absent, on essaie le suivant */ }
     }
+    return [];
 }
 
 // ─── Types exposés au router ──────────────────────────────────────
