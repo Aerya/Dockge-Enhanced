@@ -14,6 +14,13 @@
             <router-link to="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
                 <object class="bi me-2 ms-4" width="40" height="40" data="/icon.svg" />
                 <span class="fs-4 title">Dockge-Enhanced</span>
+                <span class="ms-2 d-flex gap-1 align-items-center" style="font-size:.72rem">
+                    <a href="https://github.com/louislam/dockge" target="_blank"
+                        class="github-badge" title="Dockge upstream">Dockge</a>
+                    <span style="opacity:.35">+</span>
+                    <a href="https://github.com/Aerya/dockge-enhanced" target="_blank"
+                        class="github-badge github-badge-enhanced" title="Dockge Enhanced">Enhanced</a>
+                </span>
             </router-link>
 
             <a v-if="hasNewVersion" target="_blank" href="https://github.com/louislam/dockge/releases" class="btn btn-warning me-3">
@@ -303,6 +310,30 @@ main {
 
 .title {
     font-weight: bold;
+}
+
+.github-badge {
+    color: #9ca3af;
+    text-decoration: none;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 50rem;
+    padding: 1px 7px;
+    transition: color .15s, border-color .15s;
+
+    &:hover {
+        color: #e5e7eb;
+        border-color: rgba(255,255,255,.4);
+    }
+}
+
+.github-badge-enhanced {
+    color: #f59e0b;
+    border-color: rgba(245,158,11,.35);
+
+    &:hover {
+        color: #fcd34d;
+        border-color: rgba(245,158,11,.7);
+    }
 }
 
 .nav {

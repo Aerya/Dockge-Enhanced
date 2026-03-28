@@ -59,7 +59,7 @@
                         <!-- Webhooks Discord -->
                         <div class="col-12">
                             <label class="form-label">{{ $t('watcher.img.webhooks') }}</label>
-                            <div v-for="(wh, idx) in imgSettings.discordWebhooks" :key="idx"
+                            <div v-for="(wh, idx) in (imgSettings.discordWebhooks ?? [])" :key="idx"
                                 class="d-flex align-items-center gap-2 mb-2">
                                 <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
                                     {{ wh.replace(/(\/[^/]{6})[^/]+$/, '$1***') }}
@@ -72,7 +72,7 @@
                                     <font-awesome-icon icon="trash" />
                                 </button>
                             </div>
-                            <p v-if="imgSettings.discordWebhooks.length === 0" class="form-text fst-italic mb-2">
+                            <p v-if="!imgSettings.discordWebhooks?.length" class="form-text fst-italic mb-2">
                                 {{ $t('watcher.img.noWebhook') }}
                             </p>
                             <div class="input-group">
@@ -237,7 +237,7 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">{{ $t('watcher.trivy.webhooks') }}</label>
-                            <div v-for="(wh, idx) in trivySettings.discordWebhooks" :key="idx"
+                            <div v-for="(wh, idx) in (trivySettings.discordWebhooks ?? [])" :key="idx"
                                 class="d-flex align-items-center gap-2 mb-2">
                                 <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
                                     {{ wh.replace(/(\/[^/]{6})[^/]+$/, '$1***') }}
@@ -250,7 +250,7 @@
                                     <font-awesome-icon icon="trash" />
                                 </button>
                             </div>
-                            <p v-if="trivySettings.discordWebhooks.length === 0" class="form-text fst-italic mb-2">
+                            <p v-if="!trivySettings.discordWebhooks?.length" class="form-text fst-italic mb-2">
                                 {{ $t('watcher.trivy.noWebhook') }}
                             </p>
                             <div class="input-group">
@@ -383,7 +383,7 @@
             </div>
 
             <!-- ═══ TAB: BACKUP ═══ -->
-            <BackupTab v-if="tab === 'backup'" />
+            <BackupTab v-show="tab === 'backup'" />
         </div>
 
         <!-- TOAST -->
@@ -536,9 +536,19 @@ onMounted(async () => {
         };
         credentials.value = imgRes.data.credentials ?? [];
     }
-    if (trivyRes.ok) trivySettings.value = trivyRes.data;
-    if (statusRes.ok) imageStatuses.value = statusRes.data;
-    if (trivyStatusRes.ok) trivyStatus.value = trivyStatusRes.data;
+    if (trivyRes.ok) trivySettings.value = {
+        ...trivySettings.value,
+        ...trivyRes.data,
+        discordWebhooks: Array.isArray(trivyRes.data.discordWebhooks)
+            ? trivyRes.data.discordWebhooks
+            : trivySettings.value.discordWebhooks,
+    };
+    if (statusRes.ok) imageStatuses.value = statusRes.data ?? [];
+    if (trivyStatusRes.ok) trivyStatus.value = {
+        ...trivyStatus.value,
+        ...trivyStatusRes.data,
+        lastResults: trivyStatusRes.data.lastResults ?? [],
+    };
     pollTimer = setInterval(loadStatus, 10000);
 });
 
