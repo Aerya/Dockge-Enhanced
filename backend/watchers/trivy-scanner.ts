@@ -138,8 +138,19 @@ export class TrivyScanner {
         } catch { /* config absente ou première utilisation */ }
     }
 
-    async saveSettings(settings: Partial<ScannerSettings>): Promise<void> {
-        this.settings = { ...this.settings, ...settings };
+    async saveSettings(partial: Partial<ScannerSettings>): Promise<void> {
+        // Restaure les URLs réelles si le frontend renvoie des webhooks masqués ("/***)
+        if (partial.discordWebhooks) {
+            const existing = this.settings.discordWebhooks;
+            partial.discordWebhooks = partial.discordWebhooks
+                .map(url => {
+                    if (!url.endsWith("/***")) return url;
+                    const prefix = url.slice(0, -3);
+                    return existing.find(e => e.startsWith(prefix)) ?? null;
+                })
+                .filter((u): u is string => !!u);
+        }
+        this.settings = { ...this.settings, ...partial };
         const fs = await import("fs/promises");
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));

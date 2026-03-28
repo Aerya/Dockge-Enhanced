@@ -240,6 +240,17 @@ export class BackupManager {
             if (partial.destination.rest?.password === "***")
                 partial.destination.rest!.password = orig.rest?.password;
         }
+        // Restaure les URLs réelles si le frontend renvoie des webhooks masqués ("/***")
+        if (partial.discordWebhooks) {
+            const existing = this.settings.discordWebhooks;
+            partial.discordWebhooks = partial.discordWebhooks
+                .map(url => {
+                    if (!url.endsWith("/***")) return url;
+                    const prefix = url.slice(0, -3);
+                    return existing.find(e => e.startsWith(prefix)) ?? null;
+                })
+                .filter((u): u is string => !!u);
+        }
         this.settings = { ...this.settings, ...partial };
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));

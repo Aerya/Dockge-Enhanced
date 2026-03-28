@@ -32,7 +32,7 @@ export class DiscordNotifier {
         this.urls = (Array.isArray(webhooks) ? webhooks : [webhooks]).filter(Boolean);
     }
 
-    private async sendEmbedToUrl(url: string, options: EmbedOptions): Promise<void> {
+    private async sendEmbedToUrl(url: string, options: EmbedOptions): Promise<boolean> {
         const embed: Record<string, unknown> = {
             title: options.title,
             color: options.color ?? 0x5865f2,
@@ -56,12 +56,14 @@ export class DiscordNotifier {
                 headers: { "Content-Type": "application/json" },
                 timeout: 10000,
             });
+            return true;
         } catch (e: unknown) {
             if (axios.isAxiosError(e)) {
                 console.error(`[DiscordNotifier] Erreur HTTP ${e.response?.status} (${url}):`, e.response?.data);
             } else {
                 console.error(`[DiscordNotifier] Erreur réseau (${url}):`, e);
             }
+            return false;
         }
     }
 
@@ -71,8 +73,11 @@ export class DiscordNotifier {
             console.warn("[DiscordNotifier] Aucun webhook configuré, notification ignorée.");
             return;
         }
-        await Promise.all(this.urls.map(url => this.sendEmbedToUrl(url, options)));
-        console.log(`[DiscordNotifier] Notification envoyée (${this.urls.length} webhook(s)) : ${options.title}`);
+        const results = await Promise.all(this.urls.map(url => this.sendEmbedToUrl(url, options)));
+        const sent = results.filter(Boolean).length;
+        const failed = this.urls.length - sent;
+        if (sent > 0) console.log(`[DiscordNotifier] Notification envoyée (${sent}/${this.urls.length} webhook(s)) : ${options.title}`);
+        if (failed > 0 && sent === 0) console.error(`[DiscordNotifier] Échec total — aucun webhook n'a reçu : ${options.title}`);
     }
 
     /** Envoie un message texte simple sur tous les webhooks */
