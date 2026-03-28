@@ -88,7 +88,10 @@
                                         <span v-if="img.repository !== '<none>'">
                                             {{ img.repository }}<span class="text-muted">:{{ img.tag }}</span>
                                         </span>
-                                        <span v-else class="text-muted fst-italic">{{ img.id }}</span>
+                                        <span v-else>
+                                            <span class="text-muted fst-italic">{{ img.id }}</span>
+                                            <span class="ms-2 badge bg-secondary" style="font-family:sans-serif;font-size:.65rem;font-style:normal">ancienne image</span>
+                                        </span>
                                     </div>
                                 </td>
                                 <td class="small text-muted align-middle">{{ img.size }}</td>
@@ -327,7 +330,7 @@ const i18n = {
             unused: "inutilisées",
             dangling: "orphelines",
             cols: { image: "Image", size: "Taille", created: "Construit", status: "Utilisation", containers: "Conteneurs", action: "" },
-            status: { running: "En cours", stopped: "Arrêtée", unused: "Inutilisée", dangling: "Orpheline" } as Record<string, string>,
+            status: { running: "En cours", stopped: "Arrêtée", unused: "Inutilisée", dangling: "Orpheline (sans tag)" } as Record<string, string>,
             confirm1Warning: "Cette image est utilisée par des conteneurs arrêtés.",
             confirm2Body: "⚠️ Suppression irréversible. Les données liées pourraient être perdues.",
             noImages: "Aucune image trouvée.",
@@ -367,7 +370,7 @@ const i18n = {
             unused: "unused",
             dangling: "dangling",
             cols: { image: "Image", size: "Size", created: "Built", status: "Usage", containers: "Containers", action: "" },
-            status: { running: "Running", stopped: "Stopped", unused: "Unused", dangling: "Dangling" } as Record<string, string>,
+            status: { running: "Running", stopped: "Stopped", unused: "Unused", dangling: "Dangling (untagged)" } as Record<string, string>,
             confirm1Warning: "This image is used by stopped containers.",
             confirm2Body: "⚠️ This action is irreversible. Related data may be lost.",
             noImages: "No images found.",
@@ -668,6 +671,11 @@ onMounted(() => {
     tbody tr:hover td {
         background-color: rgba(255, 255, 255, 0.06) !important;
         color: #e5e7eb !important;
+    }
+
+    // text-muted dans Bootstrap dark → gris quasi-noir, on force un gris lisible
+    .text-muted {
+        color: #9ca3af !important;
     }
 
     // Ligne : conteneur Dockge arrêté → orange à gauche

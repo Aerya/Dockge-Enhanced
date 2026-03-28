@@ -144,12 +144,20 @@ export class DockerResourcesRouter extends Router {
 
         router.get("/images", auth, async (_req: Request, res: Response) => {
             try {
-                const [rawImgs, rawCtrs] = await Promise.all([
+                const [rawImgs, allDangling, rawCtrs] = await Promise.all([
                     dockerJsonLines("docker images --format '{{json .}}'"),
+                    // -a --filter dangling=true capture les couches intermédiaires orphelines
+                    // que docker images (sans -a) ne montre pas, mais que docker image prune supprime
+                    dockerJsonLines("docker images -a --filter dangling=true --format '{{json .}}'"),
                     dockerJsonLines("docker ps -a --format '{{json .}}'"),
                 ]);
 
-                const images = rawImgs.map(img => {
+                // Merge : on ajoute les dangling intermédiaires absents de la liste principale
+                const seenIds = new Set(rawImgs.map(img => img["ID"]));
+                const extraDangling = allDangling.filter(img => !seenIds.has(img["ID"]));
+                const mergedImgs = [...rawImgs, ...extraDangling];
+
+                const images = mergedImgs.map(img => {
                     const isDangling = img["Repository"] === "<none>" && img["Tag"] === "<none>";
                     const name = isDangling ? img["ID"]! : `${img["Repository"]}:${img["Tag"]}`;
                     const containers = imgContainers(rawCtrs, name, img["ID"] ?? "");
