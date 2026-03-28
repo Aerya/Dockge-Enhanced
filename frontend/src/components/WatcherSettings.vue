@@ -293,7 +293,7 @@
                         </div>
 
                         <div class="col-12">
-                            <small class="form-text text-muted">{{ $t('watcher.trivy.dockerInfo') }}</small>
+                            <small style="color:#9ca3af">{{ $t('watcher.trivy.dockerInfo') }}</small>
                         </div>
 
                         <div class="col-12 d-flex gap-2 flex-wrap">
@@ -654,6 +654,12 @@ async function removeCred(registry: string) {
 
 <style lang="scss" scoped>
 @import "../styles/vars.scss";
+
+.form-control::placeholder,
+.form-control-sm::placeholder {
+    color: #9ca3af !important;
+    opacity: 1;
+}
 
 .shadow-box-settings {
     padding: 20px;

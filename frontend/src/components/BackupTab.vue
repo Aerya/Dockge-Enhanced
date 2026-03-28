@@ -710,6 +710,12 @@ async function testWebhook(url: string) {
 <style lang="scss" scoped>
 @import "../styles/vars.scss";
 
+.form-control::placeholder,
+.form-control-sm::placeholder {
+    color: #9ca3af !important;
+    opacity: 1;
+}
+
 .settings-subheading {
     font-size: 1.1rem;
     font-weight: 600;
