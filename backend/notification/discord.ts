@@ -47,7 +47,7 @@ export class DiscordNotifier {
 
         const payload = {
             username:   "Dockge Enhanced",
-            avatar_url: "https://dockge.kuma.pet/icon.svg",
+            avatar_url: "https://raw.githubusercontent.com/Aerya/dockge-enhanced/main/frontend/public/icon-192x192.png",
             embeds: [embed],
         };
 

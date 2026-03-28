@@ -188,7 +188,13 @@
                             <tbody>
                                 <tr v-for="s in imageStatuses" :key="s.stack + s.image">
                                     <td><span class="badge bg-secondary">{{ s.stack }}</span></td>
-                                    <td><code>{{ s.image }}</code></td>
+                                    <td>
+                                        <code>{{ s.image }}</code>
+                                        <button class="btn btn-sm btn-link p-0 ms-2" style="font-size:.75rem;opacity:.7"
+                                            @click="searchImage(s.image)">
+                                            {{ $t('watcher.status.searchProject') }}
+                                        </button>
+                                    </td>
                                     <td>
                                         <span v-if="s.error" class="badge bg-danger" :title="s.error">
                                             <font-awesome-icon icon="exclamation-triangle" class="me-1" />{{ $t('watcher.status.error') }}
@@ -472,6 +478,12 @@ const newCred = ref<Cred>({ registry: "", username: "", token: "" });
 const imageStatuses = ref<ImageStatus[]>([]);
 
 const trivyStatus = ref<TrivyStatus>({ running: false, lastScanAt: null, scannedCount: 0, lastResults: [] });
+
+// ─── Recherche DuckDuckGo pour une image ──────────────────────────
+function searchImage(image: string): void {
+    const noTag = image.replace(/:[\w.-]+$/, "");
+    window.open(`https://duckduckgo.com/?q=${encodeURIComponent(noTag)}`, "_blank");
+}
 
 const saving = ref(false);
 const savingTrivy = ref(false);

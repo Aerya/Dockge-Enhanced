@@ -253,7 +253,7 @@ export class BackupManager {
         if (s.destination.sftp?.password)      s.destination.sftp.password       = "***";
         if (s.destination.s3?.secretAccessKey) s.destination.s3.secretAccessKey  = "***";
         if (s.destination.rest?.password)      s.destination.rest.password       = "***";
-        s.discordWebhooks = s.discordWebhooks.map(w => w.replace(/\/\w{6}\w+$/, "/***"));
+        s.discordWebhooks = s.discordWebhooks.map(w => w.replace(/\/[\w-]{6}[\w-]+$/, "/***"));
         return s;
     }
 

@@ -183,6 +183,7 @@
     "watcher.status.error": "Error",
     "watcher.status.updateAvailable": "Update available",
     "watcher.status.upToDate": "Up to date",
+    "watcher.status.searchProject": "View project →",
 
     "watcher.trivy.heading": "Security scan (Trivy)",
     "watcher.trivy.enabled": "Enabled",

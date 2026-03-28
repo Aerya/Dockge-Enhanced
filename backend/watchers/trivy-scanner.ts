@@ -150,7 +150,7 @@ export class TrivyScanner {
         return {
             ...this.settings,
             discordWebhooks: this.settings.discordWebhooks.map(w =>
-                w.replace(/\/\w{6}\w+$/, "/***")
+                w.replace(/\/[\w-]{6}[\w-]+$/, "/***")
             ),
         };
     }

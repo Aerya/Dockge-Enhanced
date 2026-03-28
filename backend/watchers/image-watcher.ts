@@ -308,7 +308,7 @@ export class ImageWatcher {
         return {
             ...this.settings,
             discordWebhooks: this.settings.discordWebhooks.map(w =>
-                w.replace(/\/\w{6}\w+$/, "/***")
+                w.replace(/\/[\w-]{6}[\w-]+$/, "/***")
             ),
             credentials: this.settings.credentials.map(c => ({ ...c, token: "***" })),
         };

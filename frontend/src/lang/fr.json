@@ -176,6 +176,7 @@
     "watcher.status.error": "Erreur",
     "watcher.status.updateAvailable": "Mise à jour dispo",
     "watcher.status.upToDate": "À jour",
+    "watcher.status.searchProject": "Voir le projet →",
 
     "watcher.trivy.heading": "Scan de sécurité (Trivy)",
     "watcher.trivy.enabled": "Activé",
