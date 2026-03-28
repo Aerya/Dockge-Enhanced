@@ -49,20 +49,13 @@ async function fetchRemoteDigest(): Promise<string> {
 
     const url = `https://ghcr.io/v2/${SELF_REPO}/manifests/${SELF_TAG}`;
     const res = await axios.get(url, { headers, timeout: 15000 });
-    const manifestList = res.data;
 
-    // Trouve le manifest de la plateforme courante (amd64 ou arm64)
-    // pour comparer le même digest que ce que Docker stocke en local
-    const arch = process.arch === "arm64" ? "arm64" : "amd64";
-    const entry = (manifestList.manifests ?? []).find(
-        (m: any) => m.platform?.os === "linux" && m.platform?.architecture === arch
-    );
-    if (entry?.digest) return entry.digest as string;
-
-    // Fallback : digest du manifest list lui-même
+    // Docker stocke dans RepoDigests le digest du manifest list (multi-arch index),
+    // pas le digest de la plateforme — on compare donc le même digest.
     const d = res.headers["docker-content-digest"];
     if (d) return String(d);
-    throw new Error("Digest absent dans la réponse GHCR");
+
+    throw new Error("Header docker-content-digest absent dans la réponse GHCR");
 }
 
 /** Appel HTTP via le socket Docker (sans CLI). */
