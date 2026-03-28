@@ -389,7 +389,7 @@
                                             <div v-if="!fullResultFor(r.image, r.stack)?.vulns?.length" class="fst-italic text-muted p-2">
                                                 Aucune vulnérabilité au-dessus du seuil.
                                             </div>
-                                            <table v-else class="table table-sm mb-0 trivy-vuln-table">
+                                            <table v-else class="table table-sm mb-0 trivy-vuln-table" style="font-size:.8rem">
                                                 <thead>
                                                     <tr>
                                                         <th>CVE</th>
@@ -756,9 +756,33 @@ async function removeCred(registry: string) {
         border-bottom-color: rgba(255,255,255,.06);
     }
 
-    &.trivy-vuln-table > thead > tr > th {
+    // "Voir le projet →" : btn-link force $link-color:#111, on l'écrase
+    .btn-link {
+        color: $primary;
+        &:hover { color: lighten(#74c2ff, 10%); }
+    }
+}
+
+// Panneau CVE Trivy (hors table-responsive)
+.trivy-detail-panel .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: #e5e7eb;
+
+    > :not(caption) > * > * {
+        color: #e5e7eb;
+    }
+
+    > thead > tr > th {
         color: #9ca3af;
         font-weight: 500;
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        border-bottom-color: rgba(255,255,255,.1);
+    }
+
+    > tbody > tr > td {
+        border-bottom-color: rgba(255,255,255,.06);
     }
 }
 
@@ -774,11 +798,6 @@ async function removeCred(registry: string) {
     border-top: 1px solid rgba(255,255,255,.08);
 }
 
-.trivy-vuln-table {
-    font-size: .8rem;
-    th { color: #9ca3af; font-weight: 500; border-bottom-color: rgba(255,255,255,.1); }
-    td { border-bottom-color: rgba(255,255,255,.06); vertical-align: middle; }
-}
 
 .cve-link {
     font-family: monospace;
