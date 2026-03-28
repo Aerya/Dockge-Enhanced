@@ -16,7 +16,7 @@ Fork de [**Dockge**](https://github.com/louislam/dockge) par louislam — ajoute
 
 **🔄 Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io et les registries privés. Fréquence configurable (1h → 24h). Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
 
-**🛡️ Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution avec [Trivy](https://trivy.dev/) (installé nativement, pas besoin de Docker-in-Docker). Seuil d'alerte configurable, résultats visibles dans l'UI et envoyés sur Discord.
+**🛡️ Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution avec [Trivy](https://trivy.dev/). `aquasec/trivy:latest` est automatiquement pull avant chaque scan et supprimée après — toujours à jour, aucune place occupée entre les scans. Seuil d'alerte configurable, résultats visibles dans l'UI et envoyés sur Discord.
 
 **☁️ Backup Restic** — Sauvegarde automatique des `compose.yaml` et `.env` de chaque stack avec [Restic](https://restic.net/). 4 destinations : local, SFTP/NAS, S3/Backblaze B2, REST Server. Politique de rétention configurable, gestion des snapshots depuis l'UI.
 

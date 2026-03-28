@@ -45,7 +45,6 @@ interface ScannerSettings {
     intervalHours: number;
     discordWebhooks: string[];    // liste de webhooks (migration auto depuis discordWebhook)
     minSeverityAlert: Severity;
-    useTrivyDocker: boolean;
     ignoreUnfixed: boolean;
 }
 
@@ -113,7 +112,6 @@ export class TrivyScanner {
         intervalHours: 24,
         discordWebhooks: [],
         minSeverityAlert: "HIGH",
-        useTrivyDocker: true,
         ignoreUnfixed: false,
     };
 
@@ -203,14 +201,11 @@ export class TrivyScanner {
         this.scanStatus.running = true;
         const scanResults: ScanResult[] = [];
 
-        const trivyAvailable = await this.isTrivyInstalled();
-        if (!trivyAvailable && !this.settings.useTrivyDocker) {
-            console.error("[TrivyScanner] Trivy n'est pas installé et useTrivyDocker est désactivé.");
-            this.scanStatus.running = false;
-            return [];
-        }
-
         try {
+            // Pull de la dernière image Trivy avant chaque scan
+            console.log("[TrivyScanner] Pull de aquasec/trivy:latest...");
+            await execAsync("docker pull aquasec/trivy:latest");
+
             let images: Array<{ image: string; stack: string }>;
 
             if (targetImage) {
@@ -220,13 +215,16 @@ export class TrivyScanner {
             }
 
             for (const { image, stack } of images) {
-                const result = await this.scanImage(image, stack, trivyAvailable);
+                const result = await this.scanImage(image, stack);
                 scanResults.push(result);
             }
 
             await this.sendDiscordNotifications(scanResults);
         } catch (e) {
             console.error("[TrivyScanner] Erreur lors du scan:", e);
+        } finally {
+            // Suppression de l'image Trivy après le scan pour libérer l'espace disque
+            execAsync("docker rmi aquasec/trivy:latest").catch(() => { /* silencieux */ });
         }
 
         // Mise à jour du statut
@@ -246,31 +244,16 @@ export class TrivyScanner {
         return scanResults;
     }
 
-    private async isTrivyInstalled(): Promise<boolean> {
-        try {
-            await execAsync("trivy --version");
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    private buildTrivyCommand(image: string, trivyLocal: boolean): string {
+    private buildTrivyCommand(image: string): string {
         const ignoreUnfixed = this.settings.ignoreUnfixed ? "--ignore-unfixed" : "";
-
-        if (trivyLocal) {
-            return `trivy image --format json --quiet ${ignoreUnfixed} ${image}`;
-        } else {
-            // Utilisation via Docker avec cache persisté
-            return `docker run --rm \
-                -v /var/run/docker.sock:/var/run/docker.sock \
-                -v trivy-cache:/root/.cache/trivy \
-                aquasec/trivy:latest image \
-                --format json --quiet ${ignoreUnfixed} ${image}`;
-        }
+        // Toujours via Docker — image pulléе juste avant le scan, supprimée après
+        return `docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image \
+            --format json --quiet ${ignoreUnfixed} ${image}`;
     }
 
-    private async scanImage(image: string, stack: string, trivyLocal: boolean): Promise<ScanResult> {
+    private async scanImage(image: string, stack: string): Promise<ScanResult> {
         const result: ScanResult = {
             image,
             stack,
@@ -281,7 +264,7 @@ export class TrivyScanner {
 
         try {
             console.log(`[TrivyScanner] Scan de ${image}...`);
-            const command = this.buildTrivyCommand(image, trivyLocal);
+            const command = this.buildTrivyCommand(image);
             const { stdout } = await execAsync(command, { maxBuffer: 50 * 1024 * 1024 });
 
             if (!stdout.trim()) return result;

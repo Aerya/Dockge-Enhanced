@@ -16,7 +16,7 @@ A fork of [**Dockge**](https://github.com/louislam/dockge) by louislam — adds 
 
 **🔄 Image Watcher** — Automatically checks for image updates by comparing local and remote digests (no pull required). Supports Docker Hub, ghcr.io, and private registries. Configurable frequency (1h → 24h). Click **View project →** next to any image to search for it instantly.
 
-**🛡️ Trivy Scanner** — Scans running container images for known vulnerabilities (CVE) via [Trivy](https://trivy.dev/) (installed natively, no Docker-in-Docker needed). Configurable severity threshold, results visible in the UI and sent to Discord.
+**🛡️ Trivy Scanner** — Scans running container images for known vulnerabilities (CVE) via [Trivy](https://trivy.dev/). `aquasec/trivy:latest` is automatically pulled before each scan and removed afterwards — always up-to-date, zero disk footprint between scans. Configurable severity threshold, results visible in the UI and sent to Discord.
 
 **☁️ Restic Backup** — Automatic backup of all stack `compose.yaml` and `.env` files with [Restic](https://restic.net/). 4 destinations: local, SFTP/NAS, S3/Backblaze B2, REST Server. Configurable retention policy, snapshot browser included.
 

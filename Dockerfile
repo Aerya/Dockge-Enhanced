@@ -27,9 +27,8 @@ ENV NODE_ENV=production
 
 # Docker CLI + Compose plugin (nécessaires pour gérer les stacks)
 # Restic (backups chiffrés)
-RUN apk add --no-cache docker-cli docker-cli-compose restic curl \
-    && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin \
-    && apk del curl
+# Trivy n'est pas installé ici — le scanner utilise aquasec/trivy:latest via Docker
+RUN apk add --no-cache docker-cli docker-cli-compose restic
 
 # node_modules déjà compilés (pas de recompilation nécessaire)
 COPY --from=builder /app/node_modules ./node_modules
