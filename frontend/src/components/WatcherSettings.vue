@@ -738,6 +738,30 @@ async function removeCred(registry: string) {
 <style lang="scss" scoped>
 @import "../styles/vars.scss";
 
+// Tables État des images + Résultats du dernier scan
+.table-responsive .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: #e5e7eb;
+
+    > thead > tr > th {
+        color: #9ca3af;
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        border-bottom-color: rgba(255,255,255,.1);
+    }
+
+    > tbody > tr > td {
+        color: #e5e7eb;
+        border-bottom-color: rgba(255,255,255,.06);
+    }
+
+    &.trivy-vuln-table > thead > tr > th {
+        color: #9ca3af;
+        font-weight: 500;
+    }
+}
+
 .trivy-row {
     cursor: pointer;
     &:hover { background: rgba(255,255,255,.04); }

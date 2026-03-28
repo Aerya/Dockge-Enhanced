@@ -344,18 +344,27 @@ export class BackupManager {
         try {
             await this.restic("snapshots --quiet");
             console.log("[BackupManager] Repo Restic déjà initialisé.");
-        } catch {
+        } catch (e: any) {
+            const msg = e?.message ?? "";
+            // Mauvais mot de passe → inutile de tenter init, on propage immédiatement
+            if (msg.includes("wrong password") || msg.includes("no key found")) {
+                throw new Error(
+                    "Mot de passe incorrect — le dépôt de sauvegarde existe déjà avec un autre mot de passe. " +
+                    "Corrigez le mot de passe dans les paramètres, ou supprimez le dossier de sauvegarde " +
+                    "(data/backups) pour repartir de zéro."
+                );
+            }
+            // Repo absent → on l'initialise
             console.log("[BackupManager] Initialisation du repo Restic...");
             try {
                 await this.restic("init");
                 console.log("[BackupManager] Repo initialisé.");
-            } catch (e: any) {
-                // Repo déjà initialisé (ex : snapshots a échoué pour une autre raison)
-                if ((e?.message ?? "").includes("config file already exists")) {
+            } catch (initErr: any) {
+                if ((initErr?.message ?? "").includes("config file already exists")) {
                     console.log("[BackupManager] Repo déjà initialisé, init ignoré.");
                     return;
                 }
-                throw e;
+                throw initErr;
             }
         }
     }

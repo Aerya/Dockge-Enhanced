@@ -768,10 +768,22 @@ async function testWebhook(url: string) {
 }
 
 .snapshot-files-panel {
-    // Force le texte clair dans le panneau de fichiers (dark background)
     color: #e5e7eb;
-    --bs-table-color: #e5e7eb;
-    --bs-table-striped-color: #e5e7eb;
+
+    // Bootstrap applique color via --bs-table-color sur les cellules — on force direct
+    .table {
+        --bs-table-bg: transparent;
+        --bs-table-color: #e5e7eb;
+
+        > :not(caption) > * > * {
+            color: #e5e7eb;
+        }
+
+        > thead > tr > th {
+            opacity: 1; // annule le .55 du scope global
+            color: #9ca3af;
+        }
+    }
 
     code {
         background-color: rgba(255, 255, 255, 0.08);
