@@ -224,6 +224,29 @@ export class WatcherRouter extends Router {
             }
         });
 
+        router.get("/backup/snapshots/:id/files", async (req: Request, res: Response) => {
+            try {
+                const files = await BackupManager.getInstance().listSnapshotFiles(req.params.id);
+                res.json({ ok: true, data: files });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.post("/backup/snapshots/:id/restore", async (req: Request, res: Response) => {
+            try {
+                const { files } = req.body as { files: string[] };
+                if (!Array.isArray(files) || files.length === 0) {
+                    res.status(400).json({ ok: false, message: "Aucun fichier sélectionné" });
+                    return;
+                }
+                const result = await BackupManager.getInstance().restoreFiles(req.params.id, files);
+                res.json({ ok: result.errors.length === 0, ...result });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
         router.get("/backup/history", (_req: Request, res: Response) => {
             res.json({ ok: true, data: BackupManager.getInstance().getHistory() });
         });

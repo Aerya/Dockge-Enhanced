@@ -286,6 +286,7 @@
                 <table class="table table-hover mb-0 table-sm">
                     <thead>
                         <tr>
+                            <th style="width:1rem"></th>
                             <th>{{ $t('watcher.backup.snapshots.id') }}</th>
                             <th>{{ $t('watcher.backup.snapshots.date') }}</th>
                             <th>{{ $t('watcher.backup.snapshots.tags') }}</th>
@@ -294,22 +295,140 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="snap in snapshots" :key="snap.id">
-                            <td><code>{{ snap.short_id }}</code></td>
-                            <td class="small form-text">{{ new Date(snap.time).toLocaleString() }}</td>
-                            <td>
-                                <span v-for="tag in (snap.tags ?? [])" :key="tag"
-                                    class="badge bg-secondary me-1 small">{{ tag }}</span>
-                            </td>
-                            <td class="small form-text">{{ snap.paths.length }} {{ $t('watcher.backup.snapshots.path') }}</td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-danger"
-                                    @click="deleteSnapshot(snap.short_id)"
-                                    :title="`${$t('watcher.backup.snapshots.deleteConfirm', [snap.short_id])}`">
-                                    <font-awesome-icon icon="trash" />
-                                </button>
-                            </td>
-                        </tr>
+                        <template v-for="snap in snapshots" :key="snap.id">
+                            <!-- Ligne principale du snapshot -->
+                            <tr class="snapshot-row" @click="toggleSnapshotFiles(snap.short_id)"
+                                style="cursor:pointer">
+                                <td>
+                                    <font-awesome-icon
+                                        :icon="expandedSnapshot === snap.short_id ? 'chevron-down' : 'chevron-right'"
+                                        class="text-muted" style="font-size:.75rem" />
+                                </td>
+                                <td><code>{{ snap.short_id }}</code></td>
+                                <td class="small form-text">{{ new Date(snap.time).toLocaleString() }}</td>
+                                <td>
+                                    <span v-for="tag in (snap.tags ?? [])" :key="tag"
+                                        class="badge bg-secondary me-1 small">{{ tag }}</span>
+                                </td>
+                                <td class="small form-text">{{ snap.paths.length }} {{ $t('watcher.backup.snapshots.path') }}</td>
+                                <td class="text-end" @click.stop>
+                                    <button class="btn btn-sm btn-outline-danger"
+                                        @click="deleteSnapshot(snap.short_id)"
+                                        :title="`${$t('watcher.backup.snapshots.deleteConfirm', [snap.short_id])}`">
+                                        <font-awesome-icon icon="trash" />
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Ligne expandable : liste des fichiers -->
+                            <tr v-if="expandedSnapshot === snap.short_id" class="snapshot-files-row">
+                                <td colspan="6" class="p-0">
+                                    <div class="snapshot-files-panel px-4 py-3">
+
+                                        <!-- Loading -->
+                                        <div v-if="loadingFiles" class="text-center form-text py-2">
+                                            <span class="spinner-border spinner-border-sm me-2" />
+                                            {{ $t('watcher.backup.snapshots.loading') }}
+                                        </div>
+
+                                        <!-- Aucun fichier -->
+                                        <div v-else-if="snapshotFiles.length === 0"
+                                            class="form-text fst-italic">
+                                            {{ $t('watcher.backup.snapshots.noFiles') }}
+                                        </div>
+
+                                        <!-- Liste des fichiers -->
+                                        <template v-else>
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <input type="checkbox" class="form-check-input"
+                                                        :checked="selectedFiles.size === snapshotFiles.length"
+                                                        @change="toggleSelectAll"
+                                                        :title="$t('watcher.backup.snapshots.selectAll')" />
+                                                    <small class="form-text">
+                                                        {{ selectedFiles.size }}/{{ snapshotFiles.length }} sélectionné(s)
+                                                    </small>
+                                                </div>
+                                                <button class="btn btn-sm btn-warning"
+                                                    :disabled="selectedFiles.size === 0 || restoring"
+                                                    @click="restoreSelected(snap.short_id)">
+                                                    <span v-if="restoring" class="spinner-border spinner-border-sm me-1" />
+                                                    <font-awesome-icon v-else icon="undo" class="me-1" />
+                                                    {{ $t('watcher.backup.snapshots.restoreSelected') }}
+                                                </button>
+                                            </div>
+
+                                            <table class="table table-sm mb-0" style="font-size:.82rem">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:1.5rem"></th>
+                                                        <th style="width:8rem">Stack</th>
+                                                        <th>Fichier</th>
+                                                        <th class="text-center" style="width:9rem">
+                                                            {{ $t('watcher.backup.snapshots.colSnapDiff') }}
+                                                        </th>
+                                                        <th class="text-center" style="width:9rem">
+                                                            {{ $t('watcher.backup.snapshots.colDiskStatus') }}
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr v-for="f in snapshotFiles" :key="f.path"
+                                                        :class="{ 'opacity-50': f.diskStatus === 'missing' }">
+                                                        <td>
+                                                            <input type="checkbox" class="form-check-input"
+                                                                :checked="selectedFiles.has(f.path)"
+                                                                @change="toggleFile(f.path)" />
+                                                        </td>
+                                                        <td class="fw-semibold">
+                                                            <code>{{ f.stack }}</code>
+                                                        </td>
+                                                        <td>
+                                                            <font-awesome-icon
+                                                                :icon="f.type === 'compose' ? 'file-code' : 'key'"
+                                                                class="me-1 text-muted" />
+                                                            {{ f.name }}
+                                                        </td>
+                                                        <!-- Badge snapDiff -->
+                                                        <td class="text-center">
+                                                            <span v-if="f.prevSnapshotId === null"
+                                                                class="badge bg-secondary">
+                                                                {{ $t('watcher.backup.snapshots.firstSnapshot') }}
+                                                            </span>
+                                                            <span v-else-if="f.snapDiff === 'added'"
+                                                                class="badge bg-success">
+                                                                {{ $t('watcher.backup.snapshots.diffAdded') }}
+                                                            </span>
+                                                            <span v-else-if="f.snapDiff === 'modified'"
+                                                                class="badge bg-warning text-dark">
+                                                                {{ $t('watcher.backup.snapshots.diffModified') }}
+                                                            </span>
+                                                            <span v-else class="badge bg-secondary opacity-50">
+                                                                {{ $t('watcher.backup.snapshots.diffUnchanged') }}
+                                                            </span>
+                                                        </td>
+                                                        <!-- Badge diskStatus -->
+                                                        <td class="text-center">
+                                                            <span v-if="f.diskStatus === 'unchanged'"
+                                                                class="badge bg-success">
+                                                                {{ $t('watcher.backup.snapshots.diskUnchanged') }}
+                                                            </span>
+                                                            <span v-else-if="f.diskStatus === 'modified'"
+                                                                class="badge bg-warning text-dark">
+                                                                {{ $t('watcher.backup.snapshots.diskModified') }}
+                                                            </span>
+                                                            <span v-else class="badge bg-secondary">
+                                                                {{ $t('watcher.backup.snapshots.diskMissing') }}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </template>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
@@ -347,6 +466,13 @@ interface Destination {
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
 interface Settings { enabled: boolean; intervalHours: number; destination: Destination; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[] }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
+interface SnapshotFile {
+    path: string; name: string; stack: string; type: "compose" | "env" | "other";
+    size: number; mtime: string;
+    diskStatus: "unchanged" | "modified" | "missing";
+    snapDiff:   "added" | "modified" | "unchanged";
+    prevSnapshotId: string | null;
+}
 interface BackupResult { success: boolean; snapshotId?: string; duration: number; dataAdded?: number; filesNew?: number; filesChanged?: number; error?: string; timestamp: string }
 
 // ─── State ────────────────────────────────────────────────────────
@@ -374,6 +500,11 @@ const saving = ref(false);
 const initing = ref(false);
 const running = ref(false);
 const loadingSnaps = ref(false);
+const expandedSnapshot  = ref<string | null>(null);
+const snapshotFiles     = ref<SnapshotFile[]>([]);
+const selectedFiles     = ref<Set<string>>(new Set());
+const loadingFiles      = ref(false);
+const restoring         = ref(false);
 const testing = ref(false);
 const toast = ref({ msg: "", ok: true });
 
@@ -512,6 +643,61 @@ async function deleteSnapshot(id: string) {
     }
 }
 
+async function toggleSnapshotFiles(shortId: string) {
+    if (expandedSnapshot.value === shortId) {
+        expandedSnapshot.value = null;
+        snapshotFiles.value = [];
+        selectedFiles.value = new Set();
+        return;
+    }
+    expandedSnapshot.value = shortId;
+    snapshotFiles.value = [];
+    selectedFiles.value = new Set();
+    loadingFiles.value = true;
+    try {
+        const res = await api("GET", `/backup/snapshots/${shortId}/files`);
+        if (res.ok) snapshotFiles.value = res.data;
+        else showToast(`❌ ${res.message}`, false);
+    } finally {
+        loadingFiles.value = false;
+    }
+}
+
+function toggleFile(filePath: string) {
+    const s = new Set(selectedFiles.value);
+    if (s.has(filePath)) s.delete(filePath);
+    else s.add(filePath);
+    selectedFiles.value = s;
+}
+
+function toggleSelectAll() {
+    if (selectedFiles.value.size === snapshotFiles.value.length) {
+        selectedFiles.value = new Set();
+    } else {
+        selectedFiles.value = new Set(snapshotFiles.value.map(f => f.path));
+    }
+}
+
+async function restoreSelected(shortId: string) {
+    const paths = [...selectedFiles.value];
+    if (paths.length === 0) return;
+    if (!confirm(t('watcher.backup.snapshots.restoreConfirm', [paths.length, shortId]))) return;
+    restoring.value = true;
+    try {
+        const res = await api("POST", `/backup/snapshots/${shortId}/restore`, { files: paths });
+        if (res.ok) {
+            showToast(t('watcher.backup.snapshots.restoreOk', [res.restored]));
+            // Rafraîchit les statuts des fichiers
+            const refresh = await api("GET", `/backup/snapshots/${shortId}/files`);
+            if (refresh.ok) snapshotFiles.value = refresh.data;
+        } else {
+            showToast(t('watcher.backup.snapshots.restoreErr'), false);
+        }
+    } finally {
+        restoring.value = false;
+    }
+}
+
 async function testWebhook(url: string) {
     testing.value = true;
     try {
@@ -564,5 +750,18 @@ async function testWebhook(url: string) {
     background: #7f1d1d;
     color: #fecaca;
     border: 1px solid #b91c1c;
+}
+
+.snapshot-row:hover td {
+    background: rgba(255,255,255,.04);
+}
+
+.snapshot-files-row td {
+    background: rgba(0,0,0,.2) !important;
+    border-bottom: 2px solid $dark-border-color !important;
+}
+
+.snapshot-files-panel {
+    border-left: 3px solid #f59e0b;
 }
 </style>

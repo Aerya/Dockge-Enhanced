@@ -92,6 +92,21 @@ export interface ResticSnapshot {
     };
 }
 
+export interface SnapshotFile {
+    path: string;
+    name: string;
+    stack: string;
+    type: "compose" | "env" | "other";
+    size: number;
+    mtime: string;
+    /** Statut vs fichier actuellement sur le disque */
+    diskStatus: "unchanged" | "modified" | "missing";
+    /** Statut vs snapshot précédent (restic diff) */
+    snapDiff: "added" | "modified" | "unchanged";
+    /** ID court du snapshot précédent utilisé pour la comparaison (null = premier snapshot) */
+    prevSnapshotId: string | null;
+}
+
 export interface BackupResult {
     success: boolean;
     snapshotId?: string;
@@ -458,6 +473,105 @@ export class BackupManager {
 
     async deleteSnapshot(id: string): Promise<void> {
         await this.restic(`forget ${id} --prune`);
+    }
+
+    /**
+     * Liste les fichiers compose/env d'un snapshot avec deux dimensions de statut :
+     *   - diskStatus  : comparaison vs fichier actuellement sur le disque
+     *   - snapDiff    : comparaison vs snapshot précédent (via restic diff)
+     */
+    async listSnapshotFiles(snapshotId: string): Promise<SnapshotFile[]> {
+        try {
+            // ── 1. Trouve le snapshot précédent ─────────────────────────
+            const allSnaps = await this.listSnapshots();
+            allSnaps.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+            const idx = allSnaps.findIndex(
+                s => s.id.startsWith(snapshotId) || s.short_id === snapshotId
+            );
+            const prevSnap = idx > 0 ? allSnaps[idx - 1] : null;
+
+            // ── 2. Liste les fichiers du snapshot courant ────────────────
+            const stdout = await this.restic(`ls ${snapshotId} --json --long`);
+            const files: SnapshotFile[] = [];
+            const fileMap = new Map<string, SnapshotFile>();
+
+            for (const line of stdout.split("\n").filter(Boolean)) {
+                let entry: Record<string, unknown>;
+                try { entry = JSON.parse(line); } catch { continue; }
+                if (entry.struct_type !== "node" || entry.type !== "file") continue;
+
+                const filePath = entry.path as string;
+                const name = path.basename(filePath);
+                const isCompose = /^(compose|docker-compose)(\.ya?ml)?$/.test(name);
+                const isEnv = name === ".env";
+                if (!isCompose && !isEnv) continue;
+
+                // Extrait le nom de la stack depuis le chemin
+                const stacksBase = path.basename(STACKS_DIR);
+                const parts = filePath.split("/");
+                const stacksIdx = parts.lastIndexOf(stacksBase);
+                const stack = stacksIdx >= 0 && parts.length > stacksIdx + 1
+                    ? parts[stacksIdx + 1] : "unknown";
+
+                // Statut vs disque
+                let diskStatus: "unchanged" | "modified" | "missing";
+                try {
+                    const stat = await fs.stat(filePath);
+                    const snapMtime = new Date(entry.mtime as string).getTime();
+                    diskStatus = stat.mtime.getTime() > snapMtime + 2000 ? "modified" : "unchanged";
+                } catch { diskStatus = "missing"; }
+
+                const file: SnapshotFile = {
+                    path: filePath, name, stack,
+                    type: isCompose ? "compose" : "env",
+                    size: (entry.size as number) ?? 0,
+                    mtime: entry.mtime as string,
+                    diskStatus,
+                    snapDiff: prevSnap ? "unchanged" : "added",  // sera affiné par diff
+                    prevSnapshotId: prevSnap?.short_id ?? null,
+                };
+                files.push(file);
+                fileMap.set(filePath, file);
+            }
+
+            // ── 3. Diff vs snapshot précédent ────────────────────────────
+            if (prevSnap) {
+                try {
+                    const diffOut = await this.restic(`diff ${prevSnap.short_id} ${snapshotId}`);
+                    for (const line of diffOut.split("\n").filter(Boolean)) {
+                        let change: Record<string, unknown>;
+                        try { change = JSON.parse(line); } catch { continue; }
+                        if (change.message_type !== "change") continue;
+                        const f = fileMap.get(change.path as string);
+                        if (!f) continue;
+                        const mod = change.modifier as string;
+                        if (mod === "+")      f.snapDiff = "added";
+                        else if (mod === "M") f.snapDiff = "modified";
+                    }
+                } catch { /* diff indisponible, on garde "unchanged" */ }
+            }
+
+            return files.sort((a, b) => {
+                if (a.stack !== b.stack) return a.stack.localeCompare(b.stack);
+                return a.type === "compose" ? -1 : 1;
+            });
+        } catch (e) {
+            console.error("[BackupManager] listSnapshotFiles error:", e);
+            return [];
+        }
+    }
+
+    /** Restaure une liste de fichiers depuis un snapshot à leur emplacement d'origine */
+    async restoreFiles(snapshotId: string, filePaths: string[]): Promise<{ restored: number; errors: string[] }> {
+        if (filePaths.length === 0) return { restored: 0, errors: [] };
+        const includes = filePaths.map(p => `--include "${p}"`).join(" ");
+        try {
+            await this.restic(`restore ${snapshotId} --target / ${includes}`);
+            return { restored: filePaths.length, errors: [] };
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            return { restored: 0, errors: [msg] };
+        }
     }
 
     /** Retourne une copie de l'historique en lecture seule */

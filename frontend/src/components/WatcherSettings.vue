@@ -284,20 +284,16 @@
 
                         <div class="col-12 d-flex gap-4 flex-wrap">
                             <div class="form-check">
-                                <input v-model="trivySettings.useTrivyDocker" type="checkbox"
-                                    class="form-check-input" id="trivyDocker" />
-                                <label class="form-check-label" for="trivyDocker">
-                                    {{ $t('watcher.trivy.useDocker') }}
-                                    <small class="form-text">{{ $t('watcher.trivy.useDockerHint') }}</small>
-                                </label>
-                            </div>
-                            <div class="form-check">
                                 <input v-model="trivySettings.ignoreUnfixed" type="checkbox"
                                     class="form-check-input" id="ignoreUnfixed" />
                                 <label class="form-check-label" for="ignoreUnfixed">
                                     {{ $t('watcher.trivy.ignoreUnfixed') }}
                                 </label>
                             </div>
+                        </div>
+
+                        <div class="col-12">
+                            <small class="form-text text-muted">{{ $t('watcher.trivy.dockerInfo') }}</small>
                         </div>
 
                         <div class="col-12 d-flex gap-2 flex-wrap">
@@ -410,7 +406,7 @@ interface Cred { registry: string; username: string; token: string }
 interface ImgSettings { enabled: boolean; intervalHours: number; discordWebhooks: string[] }
 interface TrivySettings {
     enabled: boolean; intervalHours: number; discordWebhooks: string[];
-    minSeverityAlert: string; useTrivyDocker: boolean; ignoreUnfixed: boolean;
+    minSeverityAlert: string; ignoreUnfixed: boolean;
 }
 interface ImageStatus {
     image: string; stack: string;
@@ -470,7 +466,7 @@ const imgSettings = ref<ImgSettings>({ enabled: false, intervalHours: 6, discord
 const imgWebhook = ref("");
 const trivySettings = ref<TrivySettings>({
     enabled: false, intervalHours: 24, discordWebhooks: [],
-    minSeverityAlert: "HIGH", useTrivyDocker: true, ignoreUnfixed: false,
+    minSeverityAlert: "HIGH", ignoreUnfixed: false,
 });
 const trivyWebhook = ref("");
 const credentials = ref<Cred[]>([]);

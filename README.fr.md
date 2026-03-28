@@ -18,7 +18,7 @@ Fork de [**Dockge**](https://github.com/louislam/dockge) par louislam — ajoute
 
 **🛡️ Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution avec [Trivy](https://trivy.dev/). `aquasec/trivy:latest` est automatiquement pull avant chaque scan et supprimée après — toujours à jour, aucune place occupée entre les scans. Seuil d'alerte configurable, résultats visibles dans l'UI et envoyés sur Discord.
 
-**☁️ Backup Restic** — Sauvegarde automatique des `compose.yaml` et `.env` de chaque stack avec [Restic](https://restic.net/). 4 destinations : local, SFTP/NAS, S3/Backblaze B2, REST Server. Politique de rétention configurable, gestion des snapshots depuis l'UI.
+**☁️ Backup Restic** — Sauvegarde automatique des `compose.yaml` et `.env` de chaque stack avec [Restic](https://restic.net/). 4 destinations : local, SFTP/NAS, S3/Backblaze B2, REST Server. Politique de rétention configurable. Clique sur un snapshot pour le dérouler et voir chaque fichier avec deux indicateurs de statut : **vs snapshot précédent** (Nouveau / Modifié / Inchangé) et **vs disque actuel** (Disque OK / Modifié depuis / Absent). Sélectionne des fichiers individuellement et restaure-les en un clic.
 
 **📢 Notifications Discord** — Embeds colorés pour les mises à jour d'images, alertes sécurité et résultats de backup. Plusieurs webhooks supportés par fonctionnalité. Définis `DOCKGE_PUBLIC_URL` pour inclure un lien cliquable dans les notifications.
 
