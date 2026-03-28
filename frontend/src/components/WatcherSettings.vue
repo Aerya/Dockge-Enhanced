@@ -341,10 +341,12 @@
                                     <th>{{ $t('watcher.trivy.status.image') }}</th>
                                     <th>{{ $t('watcher.trivy.status.maxSeverity') }}</th>
                                     <th>{{ $t('watcher.trivy.status.vulns') }}</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="r in trivyStatus.lastResults" :key="r.image + r.stack">
+                                <template v-for="r in trivyStatus.lastResults" :key="r.image + r.stack">
+                                <tr class="trivy-row" @click="toggleTrivyDetail(r.image + r.stack)">
                                     <td><span class="badge bg-secondary">{{ r.stack }}</span></td>
                                     <td><code class="small">{{ r.image }}</code></td>
                                     <td>
@@ -375,7 +377,49 @@
                                             <span v-if="!r.counts.CRITICAL && !r.counts.HIGH && !r.counts.MEDIUM && !r.counts.LOW" class="text-muted">—</span>
                                         </span>
                                     </td>
+                                    <td class="text-end pe-2" style="width:30px">
+                                        <font-awesome-icon
+                                            :icon="expandedTrivyImage === r.image + r.stack ? 'chevron-up' : 'chevron-down'"
+                                            class="text-muted small" />
+                                    </td>
                                 </tr>
+                                <tr v-if="expandedTrivyImage === r.image + r.stack" class="trivy-detail-row">
+                                    <td colspan="5" class="p-0">
+                                        <div class="trivy-detail-panel">
+                                            <div v-if="!fullResultFor(r.image, r.stack)?.vulns?.length" class="fst-italic text-muted p-2">
+                                                Aucune vulnérabilité au-dessus du seuil.
+                                            </div>
+                                            <table v-else class="table table-sm mb-0 trivy-vuln-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>CVE</th>
+                                                        <th>Package</th>
+                                                        <th>Version installée</th>
+                                                        <th>Fix disponible</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr v-for="v in fullResultFor(r.image, r.stack)!.vulns" :key="v.id + v.pkg">
+                                                        <td>
+                                                            <a :href="v.url" target="_blank" rel="noopener"
+                                                                class="cve-link"
+                                                                :class="`cve-${v.severity.toLowerCase()}`">
+                                                                {{ v.id }}
+                                                            </a>
+                                                        </td>
+                                                        <td><code class="small">{{ v.pkg }}</code></td>
+                                                        <td><code class="small">{{ v.installed }}</code></td>
+                                                        <td>
+                                                            <span v-if="v.fixed" class="text-success small">{{ v.fixed }}</span>
+                                                            <span v-else class="text-muted small fst-italic">—</span>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </td>
+                                </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -421,11 +465,23 @@ interface TrivyScanResult {
     error?: string;
 }
 
+interface TrivyVuln {
+    id: string; pkg: string; installed: string;
+    fixed: string; severity: string; url: string; title: string;
+}
+
+interface TrivyFullResult {
+    image: string; stack: string;
+    vulns: TrivyVuln[];
+    error?: string;
+}
+
 interface TrivyStatus {
     running: boolean;
     lastScanAt: string | null;
     scannedCount: number;
     lastResults: TrivyScanResult[];
+    lastFullResults: TrivyFullResult[];
 }
 
 // ─── State ────────────────────────────────────────────────────────
@@ -473,7 +529,18 @@ const credentials = ref<Cred[]>([]);
 const newCred = ref<Cred>({ registry: "", username: "", token: "" });
 const imageStatuses = ref<ImageStatus[]>([]);
 
-const trivyStatus = ref<TrivyStatus>({ running: false, lastScanAt: null, scannedCount: 0, lastResults: [] });
+const trivyStatus = ref<TrivyStatus>({ running: false, lastScanAt: null, scannedCount: 0, lastResults: [], lastFullResults: [] });
+const expandedTrivyImage = ref<string | null>(null);
+
+function toggleTrivyDetail(key: string) {
+    expandedTrivyImage.value = expandedTrivyImage.value === key ? null : key;
+}
+function fullResultFor(image: string, stack: string): TrivyFullResult | undefined {
+    return trivyStatus.value.lastFullResults?.find(r => r.image === image && r.stack === stack);
+}
+const SEVERITY_COLOR: Record<string, string> = {
+    CRITICAL: "danger", HIGH: "warning", MEDIUM: "primary", LOW: "info", UNKNOWN: "secondary",
+};
 
 // ─── Recherche DuckDuckGo pour une image ──────────────────────────
 function searchImage(image: string): void {
@@ -548,6 +615,7 @@ onMounted(async () => {
         ...trivyStatus.value,
         ...trivyStatusRes.data,
         lastResults: trivyStatusRes.data.lastResults ?? [],
+        lastFullResults: trivyStatusRes.data.lastFullResults ?? [],
     };
     pollTimer = setInterval(loadStatus, 10000);
 });
@@ -606,7 +674,12 @@ async function runCheck() {
 
 async function loadTrivyStatus() {
     const res = await api("GET", "/trivy/status");
-    if (res.ok) trivyStatus.value = res.data;
+    if (res.ok) trivyStatus.value = {
+        ...trivyStatus.value,
+        ...res.data,
+        lastResults: res.data.lastResults ?? [],
+        lastFullResults: res.data.lastFullResults ?? [],
+    };
 }
 
 async function runScan(image?: string) {
@@ -664,6 +737,36 @@ async function removeCred(registry: string) {
 
 <style lang="scss" scoped>
 @import "../styles/vars.scss";
+
+.trivy-row {
+    cursor: pointer;
+    &:hover { background: rgba(255,255,255,.04); }
+}
+
+.trivy-detail-row td { padding: 0 !important; }
+
+.trivy-detail-panel {
+    background: rgba(0,0,0,.15);
+    border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.trivy-vuln-table {
+    font-size: .8rem;
+    th { color: #9ca3af; font-weight: 500; border-bottom-color: rgba(255,255,255,.1); }
+    td { border-bottom-color: rgba(255,255,255,.06); vertical-align: middle; }
+}
+
+.cve-link {
+    font-family: monospace;
+    font-size: .78rem;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+    &.cve-critical { color: #ef4444; }
+    &.cve-high     { color: #f97316; }
+    &.cve-medium   { color: #f59e0b; }
+    &.cve-low      { color: #3b82f6; }
+    &.cve-unknown  { color: #9ca3af; }
+}
 
 .form-control::placeholder,
 .form-control-sm::placeholder {

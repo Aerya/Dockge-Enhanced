@@ -82,11 +82,27 @@ interface ScanSummary {
     error?: string;
 }
 
+interface ScanDetailEntry {
+    image: string;
+    stack: string;
+    vulns: Array<{
+        id: string;
+        pkg: string;
+        installed: string;
+        fixed: string;
+        severity: Severity;
+        url: string;
+        title: string;
+    }>;
+    error?: string;
+}
+
 interface ScanStatus {
     running: boolean;
     lastScanAt: string | null;
     scannedCount: number;
     lastResults: ScanSummary[];
+    lastFullResults: ScanDetailEntry[];
 }
 
 export class TrivyScanner {
@@ -99,6 +115,7 @@ export class TrivyScanner {
         lastScanAt: null,
         scannedCount: 0,
         lastResults: [],
+        lastFullResults: [],
     };
 
     setBaseUrl(url: string): void { this.baseUrl = url; }
@@ -211,6 +228,8 @@ export class TrivyScanner {
             execAsync("docker rmi ghcr.io/aquasecurity/trivy:latest").catch(() => { /* silencieux */ });
         }
 
+        const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
+
         // Mise à jour du statut
         this.scanStatus = {
             running: false,
@@ -222,6 +241,24 @@ export class TrivyScanner {
                 maxSeverity: r.maxSeverity,
                 counts: r.counts,
                 error: r.error,
+            })),
+            lastFullResults: scanResults.map(r => ({
+                image: r.image,
+                stack: r.stack,
+                error: r.error,
+                vulns: r.results
+                    .flatMap(t => t.Vulnerabilities || [])
+                    .filter(v => SEVERITY_LEVELS[v.Severity] >= minLevel)
+                    .sort((a, b) => SEVERITY_LEVELS[b.Severity] - SEVERITY_LEVELS[a.Severity])
+                    .map(v => ({
+                        id:        v.VulnerabilityID,
+                        pkg:       v.PkgName,
+                        installed: v.InstalledVersion,
+                        fixed:     v.FixedVersion ?? "",
+                        severity:  v.Severity,
+                        url:       v.PrimaryURL ?? `https://nvd.nist.gov/vuln/detail/${v.VulnerabilityID}`,
+                        title:     v.Title ?? "",
+                    })),
             })),
         };
 
@@ -371,7 +408,8 @@ export class TrivyScanner {
         if (topVulns.length > 0) {
             const vulnLines = topVulns.map(v => {
                 const fix = v.FixedVersion ? `→ fix: ${v.FixedVersion}` : "→ pas de fix";
-                return `${SEVERITY_EMOJI[v.Severity]} \`${v.VulnerabilityID}\` **${v.PkgName}** ${v.InstalledVersion} ${fix}`;
+                const url = v.PrimaryURL ?? `https://nvd.nist.gov/vuln/detail/${v.VulnerabilityID}`;
+                return `${SEVERITY_EMOJI[v.Severity]} [${v.VulnerabilityID}](${url}) **${v.PkgName}** ${v.InstalledVersion} ${fix}`;
             }).join("\n");
             fields.push({ name: "Top vulnérabilités", value: vulnLines, inline: false });
         }
