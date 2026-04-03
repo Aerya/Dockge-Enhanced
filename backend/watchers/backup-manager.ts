@@ -148,12 +148,6 @@ function buildResticEnv(dest: BackupDestination): Record<string, string> {
         if (dest.s3.region) env.AWS_DEFAULT_REGION = dest.s3.region;
     }
 
-    // SFTP avec mot de passe → passe le mot de passe à sshpass via SSHPASS
-    // (évite que le mot de passe apparaisse dans la ligne de commande)
-    if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
-        env.SSHPASS = dest.sftp.password;
-    }
-
     // REST : les credentials sont déjà encodés dans l'URL par buildRepoUrl()
     // Aucune variable d'env supplémentaire nécessaire.
 
@@ -162,17 +156,19 @@ function buildResticEnv(dest: BackupDestination): Record<string, string> {
 
 /**
  * Construit les options supplémentaires à passer à restic pour le mode SFTP.
- * - Clé SSH : -o sftp.args pour forcer l'usage de la clé
- * - Mot de passe : -o sftp.command utilisant sshpass -e (lit depuis SSHPASS)
+ * - Clé SSH    : -o sftp.args pour forcer l'usage de la clé
+ * - Mot de passe : -o sftp.command utilisant sshpass -f <tmpFile>
+ *   (le chemin du fichier temporaire est créé par resticFor() avant l'appel)
  */
-function buildSftpOptions(dest: BackupDestination): string {
+function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string {
     if (dest.type !== "sftp" || !dest.sftp) return "";
     const s = dest.sftp;
     const port = s.port && s.port !== 22 ? s.port : 22;
 
-    if (s.authMode === "password") {
-        // sshpass -e : lit le mot de passe depuis la variable d'env SSHPASS
-        const sshCmd = `sshpass -e ssh -l ${s.user} -p ${port} -o StrictHostKeyChecking=no -o BatchMode=no`;
+    if (s.authMode === "password" && tmpFile) {
+        // sshpass -f : lit le mot de passe depuis un fichier temporaire (chmod 600)
+        // BatchMode=yes car sshpass gère l'interaction — on ne veut pas de prompt
+        const sshCmd = `sshpass -f ${tmpFile} ssh -l ${s.user} -p ${port} -o StrictHostKeyChecking=no -o BatchMode=yes`;
         return `-o sftp.command="${sshCmd} ${s.host} -s sftp"`;
     }
 
@@ -396,18 +392,31 @@ export class BackupManager {
     // ── Restic helpers ────────────────────────────────────────────
 
     private async resticFor(dest: BackupDestination, args: string, extraEnv: Record<string, string> = {}): Promise<string> {
-        const repoEnv  = buildResticEnv(dest);
-        const repo     = buildRepoUrl(dest);
-        const sftpOpts = buildSftpOptions(dest);
+        const repoEnv = buildResticEnv(dest);
+        const repo    = buildRepoUrl(dest);
+        const allEnv  = { ...repoEnv, ...extraEnv };
 
-        const allEnv = { ...repoEnv, ...extraEnv };
-        const cmd = `restic --repo "${repo}" --json ${sftpOpts} ${args}`;
-        const { stdout } = await execAsync(cmd, {
-            maxBuffer: 20 * 1024 * 1024,
-            timeout:   30 * 60 * 1000,
-            env:       { ...process.env, ...allEnv },
-        });
-        return stdout.trim();
+        // SFTP + mot de passe → écrit dans un fichier tmp (chmod 600) pour sshpass -f
+        // On ne passe PAS le mot de passe via env var car restic spawne sshpass
+        // dans un sous-processus où l'héritage de SSHPASS n'est pas fiable.
+        let tmpFile: string | null = null;
+        try {
+            if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
+                tmpFile = `/tmp/dockge_sshpass_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                await fs.writeFile(tmpFile, dest.sftp.password, { mode: 0o600 });
+            }
+
+            const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
+            const cmd = `restic --repo "${repo}" --json ${sftpOpts} ${args}`;
+            const { stdout } = await execAsync(cmd, {
+                maxBuffer: 20 * 1024 * 1024,
+                timeout:   30 * 60 * 1000,
+                env:       { ...process.env, ...allEnv },
+            });
+            return stdout.trim();
+        } finally {
+            if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
+        }
     }
 
     /** Initialise le repo d'une destination si pas encore fait */
@@ -740,8 +749,11 @@ export class BackupManager {
                     { name: t("Fichiers", "Files"),
                       value: `${result.filesNew} ${t("nouveaux", "new")} · ${result.filesChanged} ${t("modifiés", "modified")}`,
                       inline: true },
-                    { name: "Destination",
-                      value: `\`${this.settings.destination.type}\``,                          inline: true },
+                    { name: t("Destinations", "Destinations"),
+                      value: (result.destinations ?? [])
+                          .map(d => `${d.success ? "✅" : "❌"} ${d.label}`)
+                          .join("\n") || "—",
+                      inline: true },
                 ],
                 footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString(locale)}`,
             });
@@ -753,8 +765,11 @@ export class BackupManager {
                 fields: [
                     { name: t("Durée", "Duration"),
                       value: formatDuration(result.duration),                                  inline: true },
-                    { name: "Destination",
-                      value: `\`${this.settings.destination.type}\``,                          inline: true },
+                    { name: t("Destinations", "Destinations"),
+                      value: (result.destinations ?? [])
+                          .map(d => `${d.success ? "✅" : "❌"} ${d.label}`)
+                          .join("\n") || "—",
+                      inline: true },
                 ],
                 footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString(locale)}`,
             });
