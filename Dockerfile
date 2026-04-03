@@ -27,7 +27,7 @@ ENV NODE_ENV=production
 
 # Docker CLI + Compose plugin (nécessaires pour gérer les stacks)
 # Trivy n'est pas installé ici — le scanner utilise aquasec/trivy:latest via Docker
-RUN apk add --no-cache docker-cli docker-cli-compose
+RUN apk add --no-cache docker-cli docker-cli-compose sshpass
 
 # Restic depuis GitHub releases — compilé avec Go récent (fix CVE stdlib).
 # Mettre à jour RESTIC_VERSION dès qu'une nouvelle release est disponible :

@@ -216,6 +216,8 @@
     "watcher.backup.enabled": "Activée",
     "watcher.backup.disabled": "Désactivée",
     "watcher.backup.destination": "Destination",
+    "watcher.backup.destLabel": "Nom de la destination",
+    "watcher.backup.addDest": "Ajouter une destination",
     "watcher.backup.destLocal": "\uD83D\uDCC1 Local",
     "watcher.backup.destSftp": "\uD83D\uDDA7 SFTP / NAS",
     "watcher.backup.destS3": "\u2601\uFE0F S3 / Backblaze B2",

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <!-- ═══ DESTINATION ═══ -->
+        <!-- ═══ DESTINATIONS ═══ -->
         <div class="shadow-box big-padding mb-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="settings-subheading mb-0">
@@ -17,20 +17,9 @@
                 </div>
             </div>
 
-            <div class="row g-3">
-                <!-- Type de destination -->
+            <!-- Intervalle global -->
+            <div class="row g-3 mb-4">
                 <div class="col-md-4">
-                    <label class="form-label">{{ $t('watcher.backup.destination') }}</label>
-                    <select v-model="settings.destination.type" class="form-select">
-                        <option value="local">{{ $t('watcher.backup.destLocal') }}</option>
-                        <option value="sftp">{{ $t('watcher.backup.destSftp') }}</option>
-                        <option value="s3">{{ $t('watcher.backup.destS3') }}</option>
-                        <option value="rest">{{ $t('watcher.backup.destRest') }}</option>
-                    </select>
-                </div>
-
-                <!-- Intervalle -->
-                <div class="col-md-3">
                     <label class="form-label">{{ $t('watcher.backup.frequency') }}</label>
                     <select v-model.number="settings.intervalHours" class="form-select">
                         <option :value="6">{{ $t('watcher.backup.every6h') }}</option>
@@ -40,134 +29,171 @@
                         <option :value="168">{{ $t('watcher.backup.everyWeek') }}</option>
                     </select>
                 </div>
+            </div>
 
-                <!-- Mot de passe Restic -->
-                <div class="col-md-5">
-                    <label class="form-label">{{ $t('watcher.backup.resticPassword') }}</label>
-                    <input v-model="settings.destination.resticPassword" type="password"
-                        class="form-control" :placeholder="$t('watcher.backup.resticPasswordPlaceholder')"
-                        autocomplete="new-password" />
-                    <small class="text-danger">{{ $t('watcher.backup.resticPasswordWarning') }}</small>
+            <!-- ── Liste des destinations ── -->
+            <div v-for="(dest, idx) in settings.destinations" :key="idx" class="dest-card mb-3">
+
+                <!-- En-tête de la carte -->
+                <div class="dest-card-header d-flex align-items-center gap-2">
+                    <div class="form-check form-switch mb-0">
+                        <input :id="`destEnabled${idx}`" v-model="dest.enabled"
+                            class="form-check-input" type="checkbox" role="switch" />
+                    </div>
+                    <input v-model="dest.label" type="text" class="form-control form-control-sm dest-label-input"
+                        :placeholder="$t('watcher.backup.destLabel')" />
+                    <select v-model="dest.type" class="form-select form-select-sm dest-type-select"
+                        @change="onDestTypeChange(dest)">
+                        <option value="local">{{ $t('watcher.backup.destLocal') }}</option>
+                        <option value="sftp">{{ $t('watcher.backup.destSftp') }}</option>
+                        <option value="s3">{{ $t('watcher.backup.destS3') }}</option>
+                        <option value="rest">{{ $t('watcher.backup.destRest') }}</option>
+                    </select>
+                    <button class="btn btn-sm btn-link dest-toggle-btn" @click="toggleDest(idx)">
+                        <font-awesome-icon :icon="expandedDest === idx ? 'chevron-up' : 'chevron-down'" />
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger ms-auto"
+                        :disabled="settings.destinations.length <= 1"
+                        @click="removeDestination(idx)">
+                        <font-awesome-icon icon="trash" />
+                    </button>
                 </div>
 
-                <!-- ── Config LOCAL ── -->
-                <template v-if="settings.destination.type === 'local'">
-                    <div class="col-12">
-                        <label class="form-label">{{ $t('watcher.backup.localPath') }}</label>
-                        <input v-model="settings.destination.local!.path" type="text"
-                            class="form-control" placeholder="/app/data/backups" />
-                    </div>
-                </template>
+                <!-- Corps de la carte (dépliable) -->
+                <div v-show="expandedDest === idx" class="dest-card-body row g-3 mt-1">
 
-                <!-- ── Config SFTP ── -->
-                <template v-if="settings.destination.type === 'sftp'">
+                    <!-- Mot de passe Restic (par destination) -->
                     <div class="col-md-5">
-                        <label class="form-label">{{ $t('watcher.backup.sftpHost') }}</label>
-                        <input v-model="settings.destination.sftp!.host" type="text"
-                            class="form-control" placeholder="192.168.1.100 ou nas.local" />
+                        <label class="form-label">{{ $t('watcher.backup.resticPassword') }}</label>
+                        <input v-model="dest.resticPassword" type="password"
+                            class="form-control" :placeholder="$t('watcher.backup.resticPasswordPlaceholder')"
+                            autocomplete="new-password" />
+                        <small class="text-danger">{{ $t('watcher.backup.resticPasswordWarning') }}</small>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label">{{ $t('watcher.backup.sftpPort') }}</label>
-                        <input v-model.number="settings.destination.sftp!.port" type="number"
-                            class="form-control" placeholder="22" />
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label">{{ $t('watcher.backup.sftpUser') }}</label>
-                        <input v-model="settings.destination.sftp!.user" type="text"
-                            class="form-control" placeholder="backup-user" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">{{ $t('watcher.backup.sftpRemotePath') }}</label>
-                        <input v-model="settings.destination.sftp!.path" type="text"
-                            class="form-control" placeholder="/volume1/backups/dockge" />
-                    </div>
-                    <!-- Choix du mode d'authentification -->
-                    <div class="col-12">
-                        <label class="form-label">{{ $t('watcher.backup.sftpAuthMode') }}</label>
-                        <div class="d-flex gap-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" id="sftpAuthKey"
-                                    v-model="settings.destination.sftp!.authMode" value="key" />
-                                <label class="form-check-label" for="sftpAuthKey">
-                                    <font-awesome-icon icon="key" class="me-1" />{{ $t('watcher.backup.sftpAuthKey') }}
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" id="sftpAuthPassword"
-                                    v-model="settings.destination.sftp!.authMode" value="password" />
-                                <label class="form-check-label" for="sftpAuthPassword">
-                                    <font-awesome-icon icon="lock" class="me-1" />{{ $t('watcher.backup.sftpAuthPassword') }}
-                                </label>
+
+                    <!-- ── Config LOCAL ── -->
+                    <template v-if="dest.type === 'local'">
+                        <div class="col-md-7">
+                            <label class="form-label">{{ $t('watcher.backup.localPath') }}</label>
+                            <input v-model="dest.local!.path" type="text"
+                                class="form-control" placeholder="/app/data/backups" />
+                        </div>
+                    </template>
+
+                    <!-- ── Config SFTP ── -->
+                    <template v-if="dest.type === 'sftp'">
+                        <div class="col-md-5">
+                            <label class="form-label">{{ $t('watcher.backup.sftpHost') }}</label>
+                            <input v-model="dest.sftp!.host" type="text"
+                                class="form-control" placeholder="192.168.1.100 ou nas.local" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">{{ $t('watcher.backup.sftpPort') }}</label>
+                            <input v-model.number="dest.sftp!.port" type="number"
+                                class="form-control" placeholder="22" />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">{{ $t('watcher.backup.sftpUser') }}</label>
+                            <input v-model="dest.sftp!.user" type="text"
+                                class="form-control" placeholder="backup-user" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ $t('watcher.backup.sftpRemotePath') }}</label>
+                            <input v-model="dest.sftp!.path" type="text"
+                                class="form-control" placeholder="/volume1/backups/dockge" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{{ $t('watcher.backup.sftpAuthMode') }}</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" :id="`sftpAuthKey${idx}`"
+                                        v-model="dest.sftp!.authMode" value="key" />
+                                    <label class="form-check-label" :for="`sftpAuthKey${idx}`">
+                                        <font-awesome-icon icon="key" class="me-1" />{{ $t('watcher.backup.sftpAuthKey') }}
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" :id="`sftpAuthPwd${idx}`"
+                                        v-model="dest.sftp!.authMode" value="password" />
+                                    <label class="form-check-label" :for="`sftpAuthPwd${idx}`">
+                                        <font-awesome-icon icon="lock" class="me-1" />{{ $t('watcher.backup.sftpAuthPassword') }}
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <!-- Clé SSH -->
-                    <div v-if="settings.destination.sftp!.authMode !== 'password'" class="col-md-6">
-                        <label class="form-label">{{ $t('watcher.backup.sftpKeyPath') }}</label>
-                        <input v-model="settings.destination.sftp!.keyPath" type="text"
-                            class="form-control" placeholder="/root/.ssh/id_rsa" />
-                        <small class="form-text">{{ $t('watcher.backup.sftpKeyPathHint') }}</small>
-                    </div>
-                    <!-- Mot de passe -->
-                    <div v-if="settings.destination.sftp!.authMode === 'password'" class="col-md-6">
-                        <label class="form-label">{{ $t('watcher.backup.sftpSshPassword') }}</label>
-                        <input v-model="settings.destination.sftp!.password" type="password"
-                            class="form-control" autocomplete="new-password" />
-                        <small class="form-text">{{ $t('watcher.backup.sftpSshPasswordHint') }}</small>
-                    </div>
-                </template>
+                        <div v-if="dest.sftp!.authMode !== 'password'" class="col-md-6">
+                            <label class="form-label">{{ $t('watcher.backup.sftpKeyPath') }}</label>
+                            <input v-model="dest.sftp!.keyPath" type="text"
+                                class="form-control" placeholder="/root/.ssh/id_rsa" />
+                            <small class="form-text">{{ $t('watcher.backup.sftpKeyPathHint') }}</small>
+                        </div>
+                        <div v-if="dest.sftp!.authMode === 'password'" class="col-md-6">
+                            <label class="form-label">{{ $t('watcher.backup.sftpSshPassword') }}</label>
+                            <input v-model="dest.sftp!.password" type="password"
+                                class="form-control" autocomplete="new-password" />
+                            <small class="form-text">{{ $t('watcher.backup.sftpSshPasswordHint') }}</small>
+                        </div>
+                    </template>
 
-                <!-- ── Config S3 / B2 ── -->
-                <template v-if="settings.destination.type === 's3'">
-                    <div class="col-md-6">
-                        <label class="form-label">
-                            {{ $t('watcher.backup.s3Endpoint') }}
-                            <small class="form-text">{{ $t('watcher.backup.s3EndpointHint') }}</small>
-                        </label>
-                        <input v-model="settings.destination.s3!.endpoint" type="text"
-                            class="form-control" placeholder="https://s3.us-west-004.backblazeb2.com" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ $t('watcher.backup.s3Bucket') }}</label>
-                        <input v-model="settings.destination.s3!.bucket" type="text"
-                            class="form-control" placeholder="mon-bucket" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ $t('watcher.backup.s3Path') }}</label>
-                        <input v-model="settings.destination.s3!.path" type="text"
-                            class="form-control" placeholder="dockge/backups" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">{{ $t('watcher.backup.s3AccessKey') }}</label>
-                        <input v-model="settings.destination.s3!.accessKeyId" type="text"
-                            class="form-control" placeholder="AKIAIOSFODNN7EXAMPLE" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">{{ $t('watcher.backup.s3SecretKey') }}</label>
-                        <input v-model="settings.destination.s3!.secretAccessKey" type="password"
-                            class="form-control" autocomplete="new-password" />
-                    </div>
-                </template>
+                    <!-- ── Config S3 / B2 ── -->
+                    <template v-if="dest.type === 's3'">
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                {{ $t('watcher.backup.s3Endpoint') }}
+                                <small class="form-text">{{ $t('watcher.backup.s3EndpointHint') }}</small>
+                            </label>
+                            <input v-model="dest.s3!.endpoint" type="text"
+                                class="form-control" placeholder="https://s3.us-west-004.backblazeb2.com" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ $t('watcher.backup.s3Bucket') }}</label>
+                            <input v-model="dest.s3!.bucket" type="text"
+                                class="form-control" placeholder="mon-bucket" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ $t('watcher.backup.s3Path') }}</label>
+                            <input v-model="dest.s3!.path" type="text"
+                                class="form-control" placeholder="dockge/backups" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ $t('watcher.backup.s3AccessKey') }}</label>
+                            <input v-model="dest.s3!.accessKeyId" type="text"
+                                class="form-control" placeholder="AKIAIOSFODNN7EXAMPLE" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ $t('watcher.backup.s3SecretKey') }}</label>
+                            <input v-model="dest.s3!.secretAccessKey" type="password"
+                                class="form-control" autocomplete="new-password" />
+                        </div>
+                    </template>
 
-                <!-- ── Config REST ── -->
-                <template v-if="settings.destination.type === 'rest'">
-                    <div class="col-md-6">
-                        <label class="form-label">{{ $t('watcher.backup.restUrl') }}</label>
-                        <input v-model="settings.destination.rest!.url" type="text"
-                            class="form-control" placeholder="https://restic.exemple.com/dockge" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ $t('watcher.backup.restUser') }}</label>
-                        <input v-model="settings.destination.rest!.user" type="text" class="form-control" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ $t('watcher.backup.restPassword') }}</label>
-                        <input v-model="settings.destination.rest!.password" type="password"
-                            class="form-control" autocomplete="new-password" />
-                    </div>
-                </template>
+                    <!-- ── Config REST ── -->
+                    <template v-if="dest.type === 'rest'">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ $t('watcher.backup.restUrl') }}</label>
+                            <input v-model="dest.rest!.url" type="text"
+                                class="form-control" placeholder="https://restic.exemple.com/dockge" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ $t('watcher.backup.restUser') }}</label>
+                            <input v-model="dest.rest!.user" type="text" class="form-control" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ $t('watcher.backup.restPassword') }}</label>
+                            <input v-model="dest.rest!.password" type="password"
+                                class="form-control" autocomplete="new-password" />
+                        </div>
+                    </template>
+                </div>
+            </div>
 
-                <!-- Options communes -->
+            <!-- Bouton ajouter destination -->
+            <button class="btn btn-normal btn-sm mt-1" @click="addDestination">
+                <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.backup.addDest') }}
+            </button>
+
+            <!-- Options communes -->
+            <div class="row g-3 mt-2">
                 <div class="col-12 d-flex gap-4 flex-wrap">
                     <div class="form-check">
                         <input v-model="settings.includeEnvFiles" type="checkbox"
@@ -504,6 +530,8 @@ interface SftpConfig { host: string; port: number; user: string; path: string; a
 interface S3Config { endpoint?: string; bucket: string; path: string; accessKeyId: string; secretAccessKey: string }
 interface RestConfig { url: string; user?: string; password?: string }
 interface Destination {
+    label: string;
+    enabled: boolean;
     type: "local" | "sftp" | "s3" | "rest";
     resticPassword: string;
     local?: LocalConfig;
@@ -512,7 +540,7 @@ interface Destination {
     rest?: RestConfig;
 }
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
-interface Settings { enabled: boolean; intervalHours: number; destination: Destination; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en" }
+interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en" }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
     path: string; name: string; stack: string; type: "compose" | "env" | "other";
@@ -525,20 +553,25 @@ interface BackupResult { success: boolean; snapshotId?: string; duration: number
 
 // ─── State ────────────────────────────────────────────────────────
 
+const DEFAULT_DEST = (): Destination => ({
+    label: "Local",
+    enabled: true,
+    type: "local",
+    resticPassword: "",
+    local: { path: "/app/data/backups" },
+    sftp: { host: "", port: 22, user: "", path: "", authMode: "key" },
+    s3: { endpoint: "", bucket: "", path: "dockge", accessKeyId: "", secretAccessKey: "" },
+    rest: { url: "", user: "", password: "" },
+});
+
 const settings = ref<Settings>({
     enabled: false,
     intervalHours: 24,
-    destination: {
-        type: "local",
-        resticPassword: "",
-        local: { path: "/app/data/backups" },
-        sftp: { host: "", port: 22, user: "", path: "", authMode: "key" },
-        s3: { endpoint: "", bucket: "", path: "dockge", accessKeyId: "", secretAccessKey: "" },
-        rest: { url: "", user: "", password: "" },
-    },
+    destinations: [DEFAULT_DEST()],
     retention: { keepLast: 10, keepDaily: 7, keepWeekly: 4, keepMonthly: 3 },
     includeEnvFiles: true,
 });
+const expandedDest = ref<number>(0);
 const discordWebhooks = ref<string[]>([]);
 const newWebhook = ref("");
 const snapshots = ref<Snapshot[]>([]);
@@ -555,6 +588,29 @@ const loadingFiles      = ref(false);
 const restoring         = ref(false);
 const testing = ref(false);
 const toast = ref({ msg: "", ok: true });
+
+function addDestination() {
+    const d = DEFAULT_DEST();
+    d.label = `Destination ${settings.value.destinations.length + 1}`;
+    settings.value.destinations.push(d);
+    expandedDest.value = settings.value.destinations.length - 1;
+}
+function removeDestination(idx: number) {
+    if (settings.value.destinations.length <= 1) return;
+    settings.value.destinations.splice(idx, 1);
+    if (expandedDest.value >= settings.value.destinations.length) {
+        expandedDest.value = settings.value.destinations.length - 1;
+    }
+}
+function toggleDest(idx: number) {
+    expandedDest.value = expandedDest.value === idx ? -1 : idx;
+}
+function onDestTypeChange(dest: Destination) {
+    if (!dest.local) dest.local = { path: "/app/data/backups" };
+    if (!dest.sftp)  dest.sftp  = { host: "", port: 22, user: "", path: "", authMode: "key" };
+    if (!dest.s3)    dest.s3    = { endpoint: "", bucket: "", path: "dockge", accessKeyId: "", secretAccessKey: "" };
+    if (!dest.rest)  dest.rest  = { url: "", user: "", password: "" };
+}
 
 function addWebhook() {
     const url = newWebhook.value.trim();
@@ -604,18 +660,25 @@ async function api(method: string, path: string, body?: unknown) {
  *  les sous-objets destination (sftp/s3/rest) qui peuvent être absents
  *  du fichier sauvegardé si on n'a configuré que "local". */
 function mergeSettings(loaded: Partial<Settings>): Settings {
-    const dest = {
-        ...settings.value.destination,   // garde sftp/s3/rest par défaut
-        ...(loaded.destination ?? {}),
-    };
-    // Migration : authMode absent dans les configs sauvegardées avant cette version
-    if (dest.sftp && !dest.sftp.authMode) {
-        dest.sftp.authMode = dest.sftp.keyPath ? "key" : "password";
-    }
+    const loadedDests: Destination[] = loaded.destinations ?? [];
+    const merged = loadedDests.map((d, idx) => {
+        const def = settings.value.destinations[idx] ?? DEFAULT_DEST();
+        const dest: Destination = { ...def, ...d };
+        // Migration authMode
+        if (dest.sftp && !dest.sftp.authMode) {
+            dest.sftp.authMode = dest.sftp.keyPath ? "key" : "password";
+        }
+        // Assure que les sous-objets de config existent
+        if (!dest.local) dest.local = { path: "/app/data/backups" };
+        if (!dest.sftp)  dest.sftp  = { host: "", port: 22, user: "", path: "", authMode: "key" };
+        if (!dest.s3)    dest.s3    = { endpoint: "", bucket: "", path: "dockge", accessKeyId: "", secretAccessKey: "" };
+        if (!dest.rest)  dest.rest  = { url: "", user: "", password: "" };
+        return dest;
+    });
     return {
         ...settings.value,
         ...loaded,
-        destination: dest,
+        destinations: merged.length > 0 ? merged : [DEFAULT_DEST()],
     };
 }
 
@@ -818,6 +881,38 @@ async function testWebhook(url: string) {
 }
 
 // Coloration par statut : bordure gauche sur la 1ère cellule
+// ── Cartes destinations ──────────────────────────────────────────
+.dest-card {
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+.dest-card-header {
+    padding: .6rem .9rem;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.dest-card-body {
+    padding: .75rem 1rem 1rem;
+}
+.dest-label-input {
+    max-width: 180px;
+    background: rgba(255,255,255,.05);
+    border-color: rgba(255,255,255,.15);
+    color: #e5e7eb;
+}
+.dest-type-select {
+    max-width: 140px;
+    background: rgba(255,255,255,.05);
+    border-color: rgba(255,255,255,.15);
+    color: #e5e7eb;
+}
+.dest-toggle-btn {
+    color: #9ca3af;
+    padding: 2px 6px;
+    &:hover { color: #e5e7eb; }
+}
+
 .history-row-ok  > td:first-child { border-left: 3px solid #22c55e; }
 .history-row-err > td:first-child { border-left: 3px solid #ef4444; }
 .snapshot-row    > td:first-child { border-left: 3px solid #f59e0b; }

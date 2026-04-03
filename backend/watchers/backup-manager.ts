@@ -51,6 +51,8 @@ export interface RestConfig {
 }
 
 export interface BackupDestination {
+    label: string;                  // nom affiché (ex: "NAS local", "Backblaze B2")
+    enabled: boolean;               // activer/désactiver sans supprimer
     type: DestinationType;
     local?: LocalConfig;
     sftp?: SftpConfig;
@@ -69,9 +71,9 @@ export interface RetentionPolicy {
 export interface BackupSettings {
     enabled: boolean;
     intervalHours: number;
-    destination: BackupDestination;
+    destinations: BackupDestination[];   // tableau de destinations (migration auto depuis destination)
     retention: RetentionPolicy;
-    discordWebhooks: string[];      // liste de webhooks (migration auto depuis discordWebhook)
+    discordWebhooks: string[];
     includeEnvFiles: boolean;
     extraPaths: string[];
     notificationLang: "fr" | "en";
@@ -108,15 +110,25 @@ export interface SnapshotFile {
     prevSnapshotId: string | null;
 }
 
-export interface BackupResult {
+export interface DestinationResult {
+    label: string;
+    type: string;
     success: boolean;
     snapshotId?: string;
+    dataAdded?: number;
+    error?: string;
+}
+
+export interface BackupResult {
+    success: boolean;               // true si toutes les destinations ont réussi
+    snapshotId?: string;            // premier snapshotId réussi (affichage)
     duration: number;               // ms
-    dataAdded?: number;             // bytes
+    dataAdded?: number;             // bytes (somme)
     filesNew?: number;
     filesChanged?: number;
-    error?: string;
+    error?: string;                 // première erreur rencontrée
     timestamp: string;
+    destinations?: DestinationResult[];
 }
 
 // Historique en mémoire (les 20 derniers) — accès via BackupManager.getInstance().getHistory()
@@ -262,11 +274,15 @@ export class BackupManager {
     settings: BackupSettings = {
         enabled: false,
         intervalHours: 24,
-        destination: {
-            type: "local",
-            resticPassword: "",
-            local: { path: "/app/data/backups" },
-        },
+        destinations: [
+            {
+                label: "Local",
+                enabled: true,
+                type: "local",
+                resticPassword: "",
+                local: { path: "/app/data/backups" },
+            },
+        ],
         retention: {
             keepLast: 10,
             keepDaily: 7,
@@ -290,37 +306,51 @@ export class BackupManager {
         try {
             const raw  = await fs.readFile(SETTINGS_PATH, "utf8");
             const data = JSON.parse(raw) as Record<string, unknown>;
+
             // Migration : ancien champ discordWebhook (string) → discordWebhooks (string[])
             if (typeof data.discordWebhook === "string" && !data.discordWebhooks) {
                 data.discordWebhooks = data.discordWebhook ? [data.discordWebhook] : [];
                 delete data.discordWebhook;
             }
+
+            // Migration : ancien champ destination (objet) → destinations (tableau)
+            if (data.destination && !data.destinations) {
+                const old = data.destination as BackupDestination;
+                data.destinations = [{
+                    label: old.type === "local" ? "Local" : old.type.toUpperCase(),
+                    enabled: true,
+                    ...old,
+                }];
+                delete data.destination;
+            }
+
             this.settings = { ...this.settings, ...data as Partial<BackupSettings> };
         } catch { /* première utilisation */ }
     }
 
     async saveSettings(partial: Partial<BackupSettings>): Promise<void> {
-        // Deep-merge destination pour ne pas écraser les champs non envoyés
-        // et préserver les vrais secrets quand le frontend renvoie "***" (valeur masquée)
-        if (partial.destination) {
-            const orig = this.settings.destination;
-            partial.destination = { ...orig, ...partial.destination };
-            if (partial.destination.resticPassword === "***")
-                partial.destination.resticPassword = orig.resticPassword;
-            if (partial.destination.sftp?.password === "***")
-                partial.destination.sftp!.password = orig.sftp?.password;
-            // Quand on passe en mode clé, on efface le mot de passe stocké et vice-versa
-            if (partial.destination.sftp) {
-                if (partial.destination.sftp.authMode === "key") {
-                    partial.destination.sftp.password = undefined;
-                } else if (partial.destination.sftp.authMode === "password") {
-                    partial.destination.sftp.keyPath = undefined;
-                }
-            }
-            if (partial.destination.s3?.secretAccessKey === "***")
-                partial.destination.s3!.secretAccessKey = orig.s3?.secretAccessKey ?? "";
-            if (partial.destination.rest?.password === "***")
-                partial.destination.rest!.password = orig.rest?.password;
+        // Deep-merge destinations[] : pour chaque destination entrante, restaure
+        // les secrets masqués ("***") depuis les destinations existantes (même index).
+        if (partial.destinations) {
+            partial.destinations = partial.destinations.map((incoming, idx) => {
+                const orig = this.settings.destinations[idx];
+                const merged: BackupDestination = orig ? { ...orig, ...incoming } : { ...incoming };
+
+                if (merged.resticPassword === "***")
+                    merged.resticPassword = orig?.resticPassword ?? "";
+                if (merged.sftp?.password === "***")
+                    merged.sftp!.password = orig?.sftp?.password;
+                if (merged.sftp?.authMode === "key")
+                    merged.sftp!.password = undefined;
+                else if (merged.sftp?.authMode === "password")
+                    merged.sftp!.keyPath = undefined;
+                if (merged.s3?.secretAccessKey === "***")
+                    merged.s3!.secretAccessKey = orig?.s3?.secretAccessKey ?? "";
+                if (merged.rest?.password === "***")
+                    merged.rest!.password = orig?.rest?.password;
+
+                return merged;
+            });
         }
         this.settings = { ...this.settings, ...partial };
         await fs.mkdir(DATA_DIR, { recursive: true });
@@ -331,10 +361,12 @@ export class BackupManager {
     /** Retourne les settings sans exposer les secrets */
     getSettingsSafe(): BackupSettings {
         const s = JSON.parse(JSON.stringify(this.settings)) as BackupSettings;
-        if (s.destination.resticPassword)      s.destination.resticPassword      = "***";
-        if (s.destination.sftp?.password)      s.destination.sftp.password       = "***";
-        if (s.destination.s3?.secretAccessKey) s.destination.s3.secretAccessKey  = "***";
-        if (s.destination.rest?.password)      s.destination.rest.password       = "***";
+        for (const dest of s.destinations) {
+            if (dest.resticPassword)      dest.resticPassword           = "***";
+            if (dest.sftp?.password)      dest.sftp.password            = "***";
+            if (dest.s3?.secretAccessKey) dest.s3.secretAccessKey       = "***";
+            if (dest.rest?.password)      dest.rest.password            = "***";
+        }
         return s;
     }
 
@@ -363,51 +395,53 @@ export class BackupManager {
 
     // ── Restic helpers ────────────────────────────────────────────
 
-    private async restic(args: string, extraEnv: Record<string, string> = {}): Promise<string> {
-        const dest = this.settings.destination;
-        const repoEnv   = buildResticEnv(dest);
-        const repo      = buildRepoUrl(dest);
-        const sftpOpts  = buildSftpOptions(dest);
+    private async resticFor(dest: BackupDestination, args: string, extraEnv: Record<string, string> = {}): Promise<string> {
+        const repoEnv  = buildResticEnv(dest);
+        const repo     = buildRepoUrl(dest);
+        const sftpOpts = buildSftpOptions(dest);
 
         const allEnv = { ...repoEnv, ...extraEnv };
-
         const cmd = `restic --repo "${repo}" --json ${sftpOpts} ${args}`;
         const { stdout } = await execAsync(cmd, {
             maxBuffer: 20 * 1024 * 1024,
-            timeout:   30 * 60 * 1000,   // 30 min max — évite un blocage infini
+            timeout:   30 * 60 * 1000,
             env:       { ...process.env, ...allEnv },
         });
         return stdout.trim();
     }
 
-    /** Initialise le repo si pas encore fait */
-    async initRepo(): Promise<void> {
+    /** Initialise le repo d'une destination si pas encore fait */
+    async initRepoFor(dest: BackupDestination): Promise<void> {
         try {
-            await this.restic("snapshots --quiet");
-            console.log("[BackupManager] Repo Restic déjà initialisé.");
+            await this.resticFor(dest, "snapshots --quiet");
+            console.log(`[BackupManager] "${dest.label}" déjà initialisé.`);
         } catch (e: any) {
             const msg = e?.message ?? "";
-            // Mauvais mot de passe → inutile de tenter init, on propage immédiatement
             if (msg.includes("wrong password") || msg.includes("no key found")) {
                 throw new Error(
-                    "Mot de passe incorrect — le dépôt de sauvegarde existe déjà avec un autre mot de passe. " +
-                    "Corrigez le mot de passe dans les paramètres, ou supprimez le dossier de sauvegarde " +
-                    "(data/backups) pour repartir de zéro."
+                    `"${dest.label}" — Mot de passe incorrect. ` +
+                    "Corrigez-le ou supprimez le dépôt pour repartir de zéro."
                 );
             }
-            // Repo absent → on l'initialise
-            console.log("[BackupManager] Initialisation du repo Restic...");
+            console.log(`[BackupManager] Initialisation du repo "${dest.label}"...`);
             try {
-                await this.restic("init");
-                console.log("[BackupManager] Repo initialisé.");
+                await this.resticFor(dest, "init");
+                console.log(`[BackupManager] "${dest.label}" initialisé.`);
             } catch (initErr: any) {
                 if ((initErr?.message ?? "").includes("config file already exists")) {
-                    console.log("[BackupManager] Repo déjà initialisé, init ignoré.");
+                    console.log(`[BackupManager] "${dest.label}" déjà initialisé (init ignoré).`);
                     return;
                 }
                 throw initErr;
             }
         }
+    }
+
+    /** Initialise la première destination activée (compat route /backup/init) */
+    async initRepo(): Promise<void> {
+        const dest = this.settings.destinations.find(d => d.enabled);
+        if (!dest) throw new Error("Aucune destination activée");
+        await this.initRepoFor(dest);
     }
 
     // ── Backup ────────────────────────────────────────────────────
@@ -418,65 +452,90 @@ export class BackupManager {
             success: false,
             duration: 0,
             timestamp: new Date().toISOString(),
+            destinations: [],
         };
 
-        try {
-            if (!this.settings.destination.resticPassword) {
-                throw new Error("Mot de passe Restic non configuré");
-            }
-
-            await this.initRepo();
-
-            // Construit la liste des chemins à sauvegarder
-            const paths = await this.buildBackupPaths();
-            if (paths.length === 0) throw new Error("Aucun fichier à sauvegarder");
-
-            const pathArgs = paths.map(p => `"${p}"`).join(" ");
-            const tagArg   = `--tag dockge-enhanced --tag ${new Date().toISOString().slice(0,10)}`;
-
-            // Exclut les fichiers non pertinents
-            const excludes = [
-                "--exclude '*.log'",
-                "--exclude '__pycache__'",
-                "--exclude 'node_modules'",
-            ].join(" ");
-
-            const stdout = await this.restic(`backup ${pathArgs} ${tagArg} ${excludes}`);
-
-            // Parse le résumé JSON (dernière ligne de la sortie)
-            const lines = stdout.split("\n").filter(Boolean);
-            const summary = lines.reduce<Record<string, unknown> | null>((acc, line) => {
-                try {
-                    const obj = JSON.parse(line) as Record<string, unknown>;
-                    return obj.message_type === "summary" ? obj : acc;
-                } catch { return acc; }
-            }, null);
-
-            result.success      = true;
-            result.snapshotId   = (summary?.snapshot_id as string)?.slice(0, 8);
-            result.dataAdded    = summary?.data_added as number ?? 0;
-            result.filesNew     = summary?.files_new as number ?? 0;
-            result.filesChanged = summary?.files_changed as number ?? 0;
-            result.duration     = Date.now() - start;
-
-            // Prune automatique selon la politique de rétention
-            await this.runForget();
-
-            console.log(
-                `[BackupManager] ✅ Snapshot ${result.snapshotId} — ` +
-                `+${formatBytes(result.dataAdded)} en ${formatDuration(result.duration)}`
-            );
-        } catch (e: unknown) {
-            result.error    = e instanceof Error ? e.message : String(e);
-            result.duration = Date.now() - start;
-            console.error("[BackupManager] ❌ Échec du backup:", result.error);
+        const activeDests = this.settings.destinations.filter(d => d.enabled);
+        if (activeDests.length === 0) {
+            result.error = "Aucune destination de backup activée";
+            backupHistory.unshift(result);
+            return result;
         }
 
-        // Sauvegarde dans l'historique (20 max)
+        const paths = await this.buildBackupPaths();
+        if (paths.length === 0) {
+            result.error = "Aucun fichier à sauvegarder";
+            backupHistory.unshift(result);
+            return result;
+        }
+
+        const pathArgs = paths.map(p => `"${p}"`).join(" ");
+        const tagArg   = `--tag dockge-enhanced --tag ${new Date().toISOString().slice(0,10)}`;
+        const excludes = [
+            "--exclude '*.log'",
+            "--exclude '__pycache__'",
+            "--exclude 'node_modules'",
+        ].join(" ");
+
+        let totalDataAdded = 0;
+        let allSuccess = true;
+
+        for (const dest of activeDests) {
+            const destResult: DestinationResult = {
+                label: dest.label,
+                type:  dest.type,
+                success: false,
+            };
+
+            try {
+                if (!dest.resticPassword) {
+                    throw new Error(`Mot de passe Restic non configuré pour "${dest.label}"`);
+                }
+
+                await this.initRepoFor(dest);
+
+                const stdout = await this.resticFor(dest, `backup ${pathArgs} ${tagArg} ${excludes}`);
+
+                const lines = stdout.split("\n").filter(Boolean);
+                const summary = lines.reduce<Record<string, unknown> | null>((acc, line) => {
+                    try {
+                        const obj = JSON.parse(line) as Record<string, unknown>;
+                        return obj.message_type === "summary" ? obj : acc;
+                    } catch { return acc; }
+                }, null);
+
+                destResult.success    = true;
+                destResult.snapshotId = (summary?.snapshot_id as string)?.slice(0, 8);
+                destResult.dataAdded  = summary?.data_added as number ?? 0;
+                totalDataAdded       += destResult.dataAdded;
+
+                if (!result.snapshotId) result.snapshotId = destResult.snapshotId;
+                if (!result.filesNew)     result.filesNew     = summary?.files_new     as number ?? 0;
+                if (!result.filesChanged) result.filesChanged = summary?.files_changed as number ?? 0;
+
+                await this.runForgetFor(dest);
+
+                console.log(
+                    `[BackupManager] ✅ "${dest.label}" — Snapshot ${destResult.snapshotId} ` +
+                    `+${formatBytes(destResult.dataAdded)} en ${formatDuration(Date.now() - start)}`
+                );
+            } catch (e: unknown) {
+                destResult.error = e instanceof Error ? e.message : String(e);
+                allSuccess = false;
+                if (!result.error) result.error = destResult.error;
+                console.error(`[BackupManager] ❌ "${dest.label}":`, destResult.error);
+            }
+
+            result.destinations!.push(destResult);
+        }
+
+        result.success   = allSuccess;
+        result.dataAdded = totalDataAdded;
+        result.duration  = Date.now() - start;
+
         backupHistory.unshift(result);
         if (backupHistory.length > 20) backupHistory.splice(20);
 
-        // Notification Discord
         if (this.settings.discordWebhooks.length > 0) {
             await this.sendDiscordNotification(result);
         }
@@ -521,7 +580,7 @@ export class BackupManager {
         return paths;
     }
 
-    private async runForget(): Promise<void> {
+    private async runForgetFor(dest: BackupDestination): Promise<void> {
         const r = this.settings.retention;
         const args = [
             `--keep-last ${r.keepLast}`,
@@ -531,14 +590,21 @@ export class BackupManager {
             "--tag dockge-enhanced",
             "--prune",
         ].join(" ");
-        await this.restic(`forget ${args}`);
+        await this.resticFor(dest, `forget ${args}`);
+    }
+
+    /** Retourne la première destination activée (pour snapshots/restore) */
+    private primaryDest(): BackupDestination {
+        const d = this.settings.destinations.find(dest => dest.enabled);
+        if (!d) throw new Error("Aucune destination de backup activée");
+        return d;
     }
 
     // ── Snapshots ─────────────────────────────────────────────────
 
     async listSnapshots(): Promise<ResticSnapshot[]> {
         try {
-            const stdout = await this.restic("snapshots --tag dockge-enhanced");
+            const stdout = await this.resticFor(this.primaryDest(), "snapshots --tag dockge-enhanced");
             return JSON.parse(stdout) as ResticSnapshot[];
         } catch {
             return [];
@@ -546,7 +612,7 @@ export class BackupManager {
     }
 
     async deleteSnapshot(id: string): Promise<void> {
-        await this.restic(`forget ${id} --prune`);
+        await this.resticFor(this.primaryDest(), `forget ${id} --prune`);
     }
 
     /**
@@ -557,7 +623,7 @@ export class BackupManager {
     async listSnapshotFiles(snapshotId: string): Promise<SnapshotFile[]> {
         try {
             // ── 1. Trouve le snapshot précédent ─────────────────────────
-            const allSnaps = await this.listSnapshots();
+            const allSnaps = await this.listSnapshots(); // utilise primaryDest()
             allSnaps.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
             const idx = allSnaps.findIndex(
                 s => s.id.startsWith(snapshotId) || s.short_id === snapshotId
@@ -565,7 +631,7 @@ export class BackupManager {
             const prevSnap = idx > 0 ? allSnaps[idx - 1] : null;
 
             // ── 2. Liste les fichiers du snapshot courant ────────────────
-            const stdout = await this.restic(`ls ${snapshotId} --json --long`);
+            const stdout = await this.resticFor(this.primaryDest(), `ls ${snapshotId} --json --long`);
             const files: SnapshotFile[] = [];
             const fileMap = new Map<string, SnapshotFile>();
 
@@ -611,7 +677,7 @@ export class BackupManager {
             // ── 3. Diff vs snapshot précédent ────────────────────────────
             if (prevSnap) {
                 try {
-                    const diffOut = await this.restic(`diff ${prevSnap.short_id} ${snapshotId}`);
+                    const diffOut = await this.resticFor(this.primaryDest(), `diff ${prevSnap.short_id} ${snapshotId}`);
                     for (const line of diffOut.split("\n").filter(Boolean)) {
                         let change: Record<string, unknown>;
                         try { change = JSON.parse(line); } catch { continue; }
@@ -640,7 +706,7 @@ export class BackupManager {
         if (filePaths.length === 0) return { restored: 0, errors: [] };
         const includes = filePaths.map(p => `--include "${p}"`).join(" ");
         try {
-            await this.restic(`restore ${snapshotId} --target / ${includes}`);
+            await this.resticFor(this.primaryDest(), `restore ${snapshotId} --target / ${includes}`);
             return { restored: filePaths.length, errors: [] };
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : String(e);
