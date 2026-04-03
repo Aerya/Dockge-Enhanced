@@ -166,9 +166,11 @@ function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string {
     const port = s.port && s.port !== 22 ? s.port : 22;
 
     if (s.authMode === "password" && tmpFile) {
-        // sshpass -f : lit le mot de passe depuis un fichier temporaire (chmod 600)
-        // BatchMode=yes car sshpass gère l'interaction — on ne veut pas de prompt
-        const sshCmd = `sshpass -f ${tmpFile} ssh -l ${s.user} -p ${port} -o StrictHostKeyChecking=no -o BatchMode=yes`;
+        // Chemins absolus obligatoires : restic spawne le sftp.command dans un
+        // sous-processus Go dont le PATH peut être différent du PATH Node.js.
+        // Sans chemin absolu, sshpass trouve bien `ssh` dans son propre PATH mais
+        // le sous-processus spawné par restic échoue avec ENOENT sur `ssh`.
+        const sshCmd = `/usr/bin/sshpass -f ${tmpFile} /usr/bin/ssh -l ${s.user} -p ${port} -o StrictHostKeyChecking=no -o BatchMode=yes`;
         return `-o sftp.command="${sshCmd} ${s.host} -s sftp"`;
     }
 
@@ -411,7 +413,11 @@ export class BackupManager {
             const { stdout } = await execAsync(cmd, {
                 maxBuffer: 20 * 1024 * 1024,
                 timeout:   30 * 60 * 1000,
-                env:       { ...process.env, ...allEnv },
+                env: {
+                    PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                    ...process.env,
+                    ...allEnv,
+                },
             });
             return stdout.trim();
         } finally {
