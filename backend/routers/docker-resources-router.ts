@@ -108,21 +108,30 @@ function imgContainers(containers: Record<string, string>[], imgName: string, im
         }));
 }
 
-/** Conteneurs utilisant un volume (par nom dans Mounts) */
-function volContainers(containers: Record<string, string>[], volName: string): ContainerRef[] {
-    return containers
+/**
+ * Conteneurs utilisant un volume — basé sur docker inspect (fiable pour les
+ * volumes anonymes dont le nom est un hash SHA256, absents de "docker ps Mounts").
+ */
+function volContainersFromInspect(
+    inspectData: Record<string, unknown>[],
+    volName: string
+): ContainerRef[] {
+    return inspectData
         .filter(c => {
-            const mounts = (c["Mounts"] ?? "").split(",").map(m => m.trim());
-            return mounts.includes(volName);
+            const mounts = (c["Mounts"] as Record<string, string>[]) ?? [];
+            return mounts.some(m => m["Name"] === volName || m["Source"] === volName);
         })
-        .map(c => ({
-            id: c["ID"] ?? "",
-            name: (c["Names"] ?? "").replace(/^\//, ""),
-            state: c["State"] ?? "",
-            status: c["Status"] ?? "",
-            stackName: label(c["Labels"] ?? "", "com.docker.compose.project"),
-            service: label(c["Labels"] ?? "", "com.docker.compose.service"),
-        }));
+        .map(c => {
+            const labelsObj = (c["Config"] as any)?.Labels ?? {};
+            return {
+                id: ((c["Id"] as string) ?? "").slice(0, 12),
+                name: ((c["Name"] as string) ?? "").replace(/^\//, ""),
+                state: (c["State"] as any)?.Status ?? "",
+                status: (c["State"] as any)?.Status ?? "",
+                stackName: labelsObj["com.docker.compose.project"],
+                service: labelsObj["com.docker.compose.service"],
+            };
+        });
 }
 
 function computeStatus(containers: ContainerRef[], dangling = false): string {
@@ -207,13 +216,24 @@ export class DockerResourcesRouter extends Router {
 
         router.get("/volumes", auth, async (_req: Request, res: Response) => {
             try {
-                const [rawVols, rawCtrs] = await Promise.all([
-                    dockerJsonLines("docker volume ls --format '{{json .}}'"),
-                    dockerJsonLines("docker ps -a --format '{{json .}}'"),
-                ]);
+                const rawVols = await dockerJsonLines("docker volume ls --format '{{json .}}'");
+
+                // docker inspect donne les vrais noms de volumes (y compris anonymes SHA256)
+                let inspectData: Record<string, unknown>[] = [];
+                try {
+                    const { stdout: ids } = await execAsync("docker ps -aq 2>/dev/null || true");
+                    const idList = ids.trim();
+                    if (idList) {
+                        const { stdout: inspectOut } = await execAsync(
+                            `docker inspect ${idList.split("\n").join(" ")}`,
+                            { maxBuffer: 20 * 1024 * 1024 }
+                        );
+                        inspectData = JSON.parse(inspectOut) as Record<string, unknown>[];
+                    }
+                } catch { /* pas de conteneurs ou docker indisponible */ }
 
                 const volumes = rawVols.map(vol => {
-                    const containers = volContainers(rawCtrs, vol["Name"] ?? "");
+                    const containers = volContainersFromInspect(inspectData, vol["Name"] ?? "");
                     const status = computeStatus(containers);
                     const dockgeStacks = [...new Set(containers.map(c => c.stackName).filter(Boolean))];
                     return {
@@ -249,6 +269,49 @@ export class DockerResourcesRouter extends Router {
                 res.json({ ok: true, message: stdout.trim() || "Terminé" });
             } catch (e: any) {
                 res.status(500).json({ ok: false, message: e.message });
+            }
+        });
+
+        // ── Containers ────────────────────────────────────────────
+
+        router.get("/containers", auth, async (_req: Request, res: Response) => {
+            try {
+                const rawCtrs = await dockerJsonLines("docker ps -a --format '{{json .}}'");
+                const containers = rawCtrs.map(c => ({
+                    id: c["ID"] ?? "",
+                    name: (c["Names"] ?? "").replace(/^\//, ""),
+                    image: c["Image"] ?? "",
+                    state: c["State"] ?? "",
+                    status: c["Status"] ?? "",
+                    createdSince: c["RunningFor"] ?? c["CreatedAt"] ?? "",
+                    stackName: label(c["Labels"] ?? "", "com.docker.compose.project"),
+                    service: label(c["Labels"] ?? "", "com.docker.compose.service"),
+                }));
+                res.json({ ok: true, containers });
+            } catch (e: any) {
+                res.status(500).json({ ok: false, message: e.message });
+            }
+        });
+
+        router.post("/containers/:id/stop", auth, async (req: Request, res: Response) => {
+            const id = req.params["id"];
+            try {
+                const { stdout, stderr } = await execAsync(`docker stop ${id}`);
+                res.json({ ok: true, message: (stdout || stderr || "Arrêté").trim() });
+            } catch (e: any) {
+                res.status(500).json({ ok: false, message: (e.stderr || e.message || "Erreur").trim() });
+            }
+        });
+
+        router.delete("/containers/:id", auth, async (req: Request, res: Response) => {
+            const id = req.params["id"];
+            const force = req.query["force"] === "true";
+            try {
+                const cmd = force ? `docker rm --force ${id}` : `docker rm ${id}`;
+                const { stdout, stderr } = await execAsync(cmd);
+                res.json({ ok: true, message: (stdout || stderr || "Supprimé").trim() });
+            } catch (e: any) {
+                res.status(500).json({ ok: false, message: (e.stderr || e.message || "Erreur").trim() });
             }
         });
 

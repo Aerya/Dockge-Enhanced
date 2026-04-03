@@ -638,9 +638,10 @@ onMounted(async () => {
     ]);
     if (imgRes.ok) {
         imgSettings.value = {
-            enabled:         imgRes.data.enabled,
-            intervalHours:   imgRes.data.intervalHours,
-            discordWebhooks: imgRes.data.discordWebhooks ?? [],
+            enabled:          imgRes.data.enabled,
+            intervalHours:    imgRes.data.intervalHours,
+            discordWebhooks:  imgRes.data.discordWebhooks ?? [],
+            notificationLang: imgRes.data.notificationLang ?? "fr",
         };
         credentials.value = imgRes.data.credentials ?? [];
     }
@@ -778,10 +779,16 @@ async function addCred() {
 }
 
 async function removeCred(registry: string) {
-    const res = await api("DELETE", `/image/credentials/${registry}`);
-    if (res.ok) {
-        credentials.value = credentials.value.filter(c => c.registry !== registry);
-        showToast(t('watcher.creds.removed'));
+    try {
+        const res = await api("DELETE", `/image/credentials/${encodeURIComponent(registry)}`);
+        if (res.ok) {
+            credentials.value = credentials.value.filter(c => c.registry !== registry);
+            showToast(t('watcher.creds.removed'));
+        } else {
+            showToast(`❌ ${res.message ?? "Erreur lors de la suppression"}`, false);
+        }
+    } catch {
+        showToast("❌ Erreur réseau lors de la suppression", false);
     }
 }
 </script>

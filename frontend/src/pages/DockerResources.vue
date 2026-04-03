@@ -33,6 +33,13 @@
                             :class="volBadgeClass">{{ volumes.length }}</span>
                     </button>
                 </li>
+                <li class="nav-item">
+                    <button class="nav-link" :class="{ active: tab === 'containers' }" @click="tab = 'containers'">
+                        <font-awesome-icon icon="layer-group" class="me-1" />{{ t.tab.containers }}
+                        <span v-if="!loadingContainers" class="ms-1 badge rounded-pill"
+                            :class="ctrBadgeClass">{{ containers.length }}</span>
+                    </button>
+                </li>
             </ul>
 
             <!-- ═══ TAB: IMAGES ═══ -->
@@ -218,6 +225,92 @@
                 <div v-else class="text-center text-muted py-4">{{ t.volumes.noVolumes }}</div>
             </div>
 
+            <!-- ═══ TAB: CONTAINERS ═══ -->
+            <div v-show="tab === 'containers'">
+
+                <!-- Barre d'actions + stats -->
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <button class="btn btn-normal btn-sm" @click="loadContainers" :disabled="loadingContainers">
+                        <span v-if="loadingContainers" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="arrows-rotate" class="me-1" />{{ t.containers.refresh }}
+                    </button>
+                    <div v-if="!loadingContainers" class="ms-auto text-muted small">
+                        <span class="me-3">{{ containers.length }} {{ t.containers.total }}</span>
+                        <span v-if="orphanCount > 0" class="text-warning">
+                            {{ orphanCount }} {{ t.containers.orphan }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Info -->
+                <div v-if="!loadingContainers && orphanCount > 0" class="alert alert-warning py-2 small mb-3">
+                    <font-awesome-icon icon="exclamation-triangle" class="me-1" />
+                    {{ t.containers.orphanHint }}
+                </div>
+
+                <!-- Loading / Error -->
+                <div v-if="loadingContainers" class="text-center py-4 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2" />{{ t.loading }}
+                </div>
+                <div v-else-if="containerError" class="alert alert-danger py-2">
+                    <font-awesome-icon icon="exclamation-triangle" class="me-1" />{{ containerError }}
+                </div>
+
+                <!-- Table containers -->
+                <div v-else-if="containers.length > 0" class="table-responsive">
+                    <table class="table resources-table">
+                        <thead>
+                            <tr>
+                                <th>{{ t.containers.cols.name }}</th>
+                                <th>{{ t.containers.cols.image }}</th>
+                                <th>{{ t.containers.cols.status }}</th>
+                                <th>{{ t.containers.cols.stack }}</th>
+                                <th class="text-end">{{ t.containers.cols.action }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="ctr in containers" :key="ctr.id"
+                                :class="ctr.stackName ? '' : (ctr.state === 'running' ? 'row-orphan-running' : 'row-stopped')">
+                                <td>
+                                    <div class="fw-semibold font-monospace small">{{ ctr.name || ctr.id }}</div>
+                                    <div class="text-muted" style="font-size:.7rem">{{ ctr.id }}</div>
+                                </td>
+                                <td class="small text-muted align-middle">{{ ctr.image }}</td>
+                                <td class="align-middle">
+                                    <span class="badge" :class="statusBadge(ctr.state)">
+                                        {{ t.containers.state[ctr.state] ?? ctr.status }}
+                                    </span>
+                                </td>
+                                <td class="align-middle">
+                                    <span v-if="ctr.stackName" class="badge badge-stack">
+                                        <font-awesome-icon icon="layer-group" class="me-1" />
+                                        {{ ctr.stackName }}/{{ ctr.service ?? ctr.name }}
+                                    </span>
+                                    <span v-else class="badge bg-secondary small">{{ t.containers.noStack }}</span>
+                                </td>
+                                <td class="align-middle text-end">
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <button v-if="ctr.state === 'running'"
+                                            class="btn btn-sm btn-warning"
+                                            :disabled="stoppingContainer === ctr.id"
+                                            @click="stopContainer(ctr)">
+                                            <span v-if="stoppingContainer === ctr.id" class="spinner-border spinner-border-sm" />
+                                            <font-awesome-icon v-else icon="stop" />
+                                        </button>
+                                        <button v-if="ctr.state !== 'running'"
+                                            class="btn btn-sm btn-outline-danger"
+                                            @click="askDeleteContainer(ctr)">
+                                            <font-awesome-icon icon="trash" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-else class="text-center text-muted py-4">{{ t.containers.noContainers }}</div>
+            </div>
+
         </div><!-- /shadow-box -->
 
         <!-- ═══ MODALE CONFIRM 1 ═══ -->
@@ -231,9 +324,9 @@
                     {{ t.confirm1Body }}
                     <strong class="font-monospace">{{ pendingItem?.label }}</strong>
                 </p>
-                <div v-if="pendingItem?.status === 'stopped'" class="alert alert-warning py-2 small mb-3">
+                <div v-if="pendingItem?.status === 'stopped' || pendingItem?.status === 'exited'" class="alert alert-warning py-2 small mb-3">
                     <font-awesome-icon icon="exclamation-triangle" class="me-1" />
-                    {{ pendingItem?.type === 'image' ? t.images.confirm1Warning : t.volumes.confirm1Warning }}
+                    {{ pendingItem?.type === 'image' ? t.images.confirm1Warning : pendingItem?.type === 'volume' ? t.volumes.confirm1Warning : t.containers.confirm1Warning }}
                     <div v-if="pendingItem?.dockgeStacks?.length > 0" class="mt-1">
                         <strong>{{ t.stack }}:</strong> {{ pendingItem.dockgeStacks.join(", ") }}
                     </div>
@@ -253,7 +346,7 @@
                     {{ t.confirm2Title }}
                 </h5>
                 <p class="mb-3">
-                    {{ pendingItem?.type === 'image' ? t.images.confirm2Body : t.volumes.confirm2Body }}
+                    {{ pendingItem?.type === 'image' ? t.images.confirm2Body : pendingItem?.type === 'volume' ? t.volumes.confirm2Body : t.containers.confirm2Body }}
                 </p>
                 <div class="d-flex gap-2 justify-content-end">
                     <button class="btn btn-sm btn-normal" @click="cancelDelete">{{ t.cancelBtn }}</button>
@@ -306,12 +399,23 @@ interface DockerVolume {
     dockgeStacks: string[];
 }
 
+interface DockerContainer {
+    id: string;
+    name: string;
+    image: string;
+    state: string;
+    status: string;
+    createdSince: string;
+    stackName?: string;
+    service?: string;
+}
+
 interface PendingItem {
-    type: "image" | "volume";
+    type: "image" | "volume" | "container";
     label: string;
     status: string;
     dockgeStacks: string[];
-    id?: string;   // image id
+    id?: string;   // image id / container id
     name?: string; // volume name
 }
 
@@ -320,7 +424,7 @@ interface PendingItem {
 const i18n = {
     fr: {
         title: "Ressources Docker",
-        tab: { images: "Images", volumes: "Volumes" },
+        tab: { images: "Images", volumes: "Volumes", containers: "Conteneurs" },
         images: {
             heading: "Images Docker",
             refresh: "Rafraîchir",
@@ -348,6 +452,18 @@ const i18n = {
             confirm2Body: "⚠️ Suppression irréversible. Toutes les données du volume seront définitivement perdues.",
             noVolumes: "Aucun volume trouvé.",
         },
+        containers: {
+            refresh: "Rafraîchir",
+            total: "conteneurs",
+            orphan: "hors Dockge",
+            orphanHint: "Ces conteneurs fonctionnent en dehors de Dockge. Arrêtez-les puis supprimez-les pour libérer les ressources.",
+            noStack: "Hors Dockge",
+            noContainers: "Aucun conteneur trouvé.",
+            cols: { name: "Nom", image: "Image", status: "État", stack: "Stack", action: "" },
+            state: { running: "En cours", exited: "Arrêté", created: "Créé", paused: "Pausé", restarting: "Redémarrage", removing: "Suppression", dead: "Mort" } as Record<string, string>,
+            confirm1Warning: "Ce conteneur sera définitivement supprimé.",
+            confirm2Body: "⚠️ Suppression irréversible du conteneur.",
+        },
         confirm1Title: "Confirmer la suppression",
         confirm1Body: "Supprimer :",
         confirm2Title: "Confirmation finale",
@@ -360,7 +476,7 @@ const i18n = {
     },
     en: {
         title: "Docker Resources",
-        tab: { images: "Images", volumes: "Volumes" },
+        tab: { images: "Images", volumes: "Volumes", containers: "Containers" },
         images: {
             heading: "Docker Images",
             refresh: "Refresh",
@@ -388,6 +504,18 @@ const i18n = {
             confirm2Body: "⚠️ This action is irreversible. All volume data will be permanently lost.",
             noVolumes: "No volumes found.",
         },
+        containers: {
+            refresh: "Refresh",
+            total: "containers",
+            orphan: "outside Dockge",
+            orphanHint: "These containers run outside of Dockge. Stop them then delete to free resources.",
+            noStack: "Outside Dockge",
+            noContainers: "No containers found.",
+            cols: { name: "Name", image: "Image", status: "State", stack: "Stack", action: "" },
+            state: { running: "Running", exited: "Stopped", created: "Created", paused: "Paused", restarting: "Restarting", removing: "Removing", dead: "Dead" } as Record<string, string>,
+            confirm1Warning: "This container will be permanently deleted.",
+            confirm2Body: "⚠️ This action is irreversible.",
+        },
         confirm1Title: "Confirm deletion",
         confirm1Body: "Delete:",
         confirm2Title: "Final confirmation",
@@ -403,16 +531,20 @@ const i18n = {
 // ─── State ────────────────────────────────────────────────────────
 
 const lang = ref<"fr" | "en">("fr");
-const tab = ref<"images" | "volumes">("images");
+const tab = ref<"images" | "volumes" | "containers">("images");
 
 const images = ref<DockerImage[]>([]);
 const volumes = ref<DockerVolume[]>([]);
+const containers = ref<DockerContainer[]>([]);
 const loadingImages = ref(false);
 const loadingVolumes = ref(false);
+const loadingContainers = ref(false);
 const pruningImages = ref(false);
 const pruningVolumes = ref(false);
 const imageError = ref("");
 const volumeError = ref("");
+const containerError = ref("");
+const stoppingContainer = ref<string | null>(null);
 
 const confirmStep = ref(0); // 0 = rien, 1 = première modale, 2 = deuxième modale
 const pendingItem = ref<PendingItem | null>(null);
@@ -438,6 +570,13 @@ const imgBadgeClass = computed(() => {
 });
 const volBadgeClass = computed(() => {
     if (unusedVolumesCount.value > 0) return "bg-secondary";
+    return "bg-success";
+});
+const orphanCount = computed(() =>
+    containers.value.filter(c => !c.stackName).length
+);
+const ctrBadgeClass = computed(() => {
+    if (orphanCount.value > 0) return "bg-warning text-dark";
     return "bg-success";
 });
 
@@ -524,6 +663,45 @@ async function pruneVolumes() {
     }
 }
 
+async function loadContainers() {
+    loadingContainers.value = true;
+    containerError.value = "";
+    try {
+        const data = await api("GET", "containers");
+        if (data.ok) {
+            containers.value = data.containers;
+        } else {
+            containerError.value = data.message ?? t.value.errorLoad;
+        }
+    } catch {
+        containerError.value = t.value.errorLoad;
+    } finally {
+        loadingContainers.value = false;
+    }
+}
+
+async function stopContainer(ctr: DockerContainer) {
+    stoppingContainer.value = ctr.id;
+    try {
+        const data = await api("POST", `containers/${encodeURIComponent(ctr.id)}/stop`);
+        showToast(data.ok, data.message ?? "");
+        if (data.ok) await loadContainers();
+    } finally {
+        stoppingContainer.value = null;
+    }
+}
+
+function askDeleteContainer(ctr: DockerContainer) {
+    pendingItem.value = {
+        type: "container",
+        label: ctr.name || ctr.id,
+        status: ctr.state,
+        dockgeStacks: ctr.stackName ? [ctr.stackName] : [],
+        id: ctr.id,
+    };
+    confirmStep.value = 1;
+}
+
 // ─── Suppression ──────────────────────────────────────────────────
 
 function askDeleteImage(img: DockerImage) {
@@ -567,12 +745,16 @@ async function executeDelete() {
         if (item.type === "image") {
             const force = item.status === "stopped";
             data = await api("DELETE", `images/${encodeURIComponent(item.id ?? "")}${force ? "?force=true" : ""}`);
-        } else {
+        } else if (item.type === "volume") {
             data = await api("DELETE", `volumes/${encodeURIComponent(item.name ?? "")}`);
+        } else {
+            data = await api("DELETE", `containers/${encodeURIComponent(item.id ?? "")}`);
         }
         showToast(data.ok, data.message ?? "");
         if (data.ok) {
-            item.type === "image" ? await loadImages() : await loadVolumes();
+            if (item.type === "image") await loadImages();
+            else if (item.type === "volume") await loadVolumes();
+            else await loadContainers();
         }
     } catch {
         showToast(false, t.value.errorLoad);
@@ -621,6 +803,7 @@ onMounted(() => {
     }
     loadImages();
     loadVolumes();
+    loadContainers();
 });
 </script>
 
@@ -687,6 +870,10 @@ onMounted(() => {
     }
     .row-dangling td:first-child {
         border-left: 3px solid #dc3545;
+    }
+    // Ligne : conteneur orphelin en cours → rouge-orange
+    .row-orphan-running td:first-child {
+        border-left: 3px solid #ef4444;
     }
 }
 

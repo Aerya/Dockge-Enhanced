@@ -352,6 +352,9 @@ export class ImageWatcher {
             return [];
         }
 
+        // Collecte les clés traitées ce cycle pour purger les entrées obsolètes
+        const processedKeys = new Set<string>();
+
         for (const stack of entries) {
             // Cherche compose.yaml ou docker-compose.yml
             const candidates = [
@@ -368,9 +371,18 @@ export class ImageWatcher {
 
             const images = extractImagesFromCompose(composePath);
             for (const image of images) {
+                const key = `${stack}::${image}`;
+                processedKeys.add(key);
                 const status = await this.checkOneImage(image, stack);
                 results.push(status);
-                imageStatusStore.set(`${stack}::${image}`, status);
+                imageStatusStore.set(key, status);
+            }
+        }
+
+        // Supprime les entrées du store qui ne correspondent plus à aucune image active
+        for (const key of imageStatusStore.keys()) {
+            if (!processedKeys.has(key)) {
+                imageStatusStore.delete(key);
             }
         }
 
