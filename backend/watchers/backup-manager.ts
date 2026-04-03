@@ -30,9 +30,9 @@ export interface SftpConfig {
     port: number;                   // défaut 22
     user: string;
     path: string;                   // ex: /backups/dockge
-    // Clé SSH : monter la clé via volume Docker, indiquer le chemin
-    keyPath?: string;               // ex: /root/.ssh/id_rsa
-    password?: string;              // si pas de clé SSH
+    authMode: "key" | "password";   // mode d'authentification SSH
+    keyPath?: string;               // chemin clé SSH (authMode = "key")
+    password?: string;              // mot de passe SSH (authMode = "password") — via sshpass
 }
 
 export interface S3Config {
@@ -136,10 +136,40 @@ function buildResticEnv(dest: BackupDestination): Record<string, string> {
         if (dest.s3.region) env.AWS_DEFAULT_REGION = dest.s3.region;
     }
 
+    // SFTP avec mot de passe → passe le mot de passe à sshpass via SSHPASS
+    // (évite que le mot de passe apparaisse dans la ligne de commande)
+    if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
+        env.SSHPASS = dest.sftp.password;
+    }
+
     // REST : les credentials sont déjà encodés dans l'URL par buildRepoUrl()
     // Aucune variable d'env supplémentaire nécessaire.
 
     return env;
+}
+
+/**
+ * Construit les options supplémentaires à passer à restic pour le mode SFTP.
+ * - Clé SSH : -o sftp.args pour forcer l'usage de la clé
+ * - Mot de passe : -o sftp.command utilisant sshpass -e (lit depuis SSHPASS)
+ */
+function buildSftpOptions(dest: BackupDestination): string {
+    if (dest.type !== "sftp" || !dest.sftp) return "";
+    const s = dest.sftp;
+    const port = s.port && s.port !== 22 ? s.port : 22;
+
+    if (s.authMode === "password") {
+        // sshpass -e : lit le mot de passe depuis la variable d'env SSHPASS
+        const sshCmd = `sshpass -e ssh -l ${s.user} -p ${port} -o StrictHostKeyChecking=no -o BatchMode=no`;
+        return `-o sftp.command="${sshCmd} ${s.host} -s sftp"`;
+    }
+
+    if (s.authMode === "key" && s.keyPath) {
+        const sshArgs = `-i ${s.keyPath} -o StrictHostKeyChecking=no`;
+        return `-o sftp.args="${sshArgs}"`;
+    }
+
+    return "";
 }
 
 function buildRepoUrl(dest: BackupDestination): string {
@@ -279,6 +309,14 @@ export class BackupManager {
                 partial.destination.resticPassword = orig.resticPassword;
             if (partial.destination.sftp?.password === "***")
                 partial.destination.sftp!.password = orig.sftp?.password;
+            // Quand on passe en mode clé, on efface le mot de passe stocké et vice-versa
+            if (partial.destination.sftp) {
+                if (partial.destination.sftp.authMode === "key") {
+                    partial.destination.sftp.password = undefined;
+                } else if (partial.destination.sftp.authMode === "password") {
+                    partial.destination.sftp.keyPath = undefined;
+                }
+            }
             if (partial.destination.s3?.secretAccessKey === "***")
                 partial.destination.s3!.secretAccessKey = orig.s3?.secretAccessKey ?? "";
             if (partial.destination.rest?.password === "***")
@@ -327,12 +365,13 @@ export class BackupManager {
 
     private async restic(args: string, extraEnv: Record<string, string> = {}): Promise<string> {
         const dest = this.settings.destination;
-        const repoEnv = buildResticEnv(dest);
-        const repo    = buildRepoUrl(dest);
+        const repoEnv   = buildResticEnv(dest);
+        const repo      = buildRepoUrl(dest);
+        const sftpOpts  = buildSftpOptions(dest);
 
         const allEnv = { ...repoEnv, ...extraEnv };
 
-        const cmd = `restic --repo "${repo}" --json ${args}`;
+        const cmd = `restic --repo "${repo}" --json ${sftpOpts} ${args}`;
         const { stdout } = await execAsync(cmd, {
             maxBuffer: 20 * 1024 * 1024,
             timeout:   30 * 60 * 1000,   // 30 min max — évite un blocage infini

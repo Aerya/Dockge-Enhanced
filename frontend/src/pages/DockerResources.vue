@@ -264,13 +264,12 @@
                                 <th>{{ t.containers.cols.name }}</th>
                                 <th>{{ t.containers.cols.image }}</th>
                                 <th>{{ t.containers.cols.status }}</th>
-                                <th>{{ t.containers.cols.stack }}</th>
                                 <th class="text-end">{{ t.containers.cols.action }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="ctr in containers" :key="ctr.id"
-                                :class="ctr.stackName ? '' : (ctr.state === 'running' ? 'row-orphan-running' : 'row-stopped')">
+                                :class="ctr.state === 'running' ? 'row-orphan-running' : 'row-stopped'">
                                 <td>
                                     <div class="fw-semibold font-monospace small">{{ ctr.name || ctr.id }}</div>
                                     <div class="text-muted" style="font-size:.7rem">{{ ctr.id }}</div>
@@ -280,13 +279,6 @@
                                     <span class="badge" :class="statusBadge(ctr.state)">
                                         {{ t.containers.state[ctr.state] ?? ctr.status }}
                                     </span>
-                                </td>
-                                <td class="align-middle">
-                                    <span v-if="ctr.stackName" class="badge badge-stack">
-                                        <font-awesome-icon icon="layer-group" class="me-1" />
-                                        {{ ctr.stackName }}/{{ ctr.service ?? ctr.name }}
-                                    </span>
-                                    <span v-else class="badge bg-secondary small">{{ t.containers.noStack }}</span>
                                 </td>
                                 <td class="align-middle text-end">
                                     <div class="d-flex gap-1 justify-content-end">
@@ -424,7 +416,7 @@ interface PendingItem {
 const i18n = {
     fr: {
         title: "Ressources Docker",
-        tab: { images: "Images", volumes: "Volumes", containers: "Conteneurs" },
+        tab: { images: "Images", volumes: "Volumes", containers: "Hors Dockge" },
         images: {
             heading: "Images Docker",
             refresh: "Rafraîchir",
@@ -476,7 +468,7 @@ const i18n = {
     },
     en: {
         title: "Docker Resources",
-        tab: { images: "Images", volumes: "Volumes", containers: "Containers" },
+        tab: { images: "Images", volumes: "Volumes", containers: "Unmanaged" },
         images: {
             heading: "Docker Images",
             refresh: "Refresh",
@@ -572,9 +564,7 @@ const volBadgeClass = computed(() => {
     if (unusedVolumesCount.value > 0) return "bg-secondary";
     return "bg-success";
 });
-const orphanCount = computed(() =>
-    containers.value.filter(c => !c.stackName).length
-);
+const orphanCount = computed(() => containers.value.length);
 const ctrBadgeClass = computed(() => {
     if (orphanCount.value > 0) return "bg-warning text-dark";
     return "bg-success";
@@ -669,7 +659,8 @@ async function loadContainers() {
     try {
         const data = await api("GET", "containers");
         if (data.ok) {
-            containers.value = data.containers;
+            // On ne garde que les conteneurs hors Dockge (pas de stack compose)
+            containers.value = data.containers.filter((c: DockerContainer) => !c.stackName);
         } else {
             containerError.value = data.message ?? t.value.errorLoad;
         }

@@ -81,11 +81,39 @@
                         <input v-model="settings.destination.sftp!.path" type="text"
                             class="form-control" placeholder="/volume1/backups/dockge" />
                     </div>
-                    <div class="col-md-6">
+                    <!-- Choix du mode d'authentification -->
+                    <div class="col-12">
+                        <label class="form-label">{{ $t('watcher.backup.sftpAuthMode') }}</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" id="sftpAuthKey"
+                                    v-model="settings.destination.sftp!.authMode" value="key" />
+                                <label class="form-check-label" for="sftpAuthKey">
+                                    <font-awesome-icon icon="key" class="me-1" />{{ $t('watcher.backup.sftpAuthKey') }}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" id="sftpAuthPassword"
+                                    v-model="settings.destination.sftp!.authMode" value="password" />
+                                <label class="form-check-label" for="sftpAuthPassword">
+                                    <font-awesome-icon icon="lock" class="me-1" />{{ $t('watcher.backup.sftpAuthPassword') }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Clé SSH -->
+                    <div v-if="settings.destination.sftp!.authMode !== 'password'" class="col-md-6">
                         <label class="form-label">{{ $t('watcher.backup.sftpKeyPath') }}</label>
                         <input v-model="settings.destination.sftp!.keyPath" type="text"
                             class="form-control" placeholder="/root/.ssh/id_rsa" />
                         <small class="form-text">{{ $t('watcher.backup.sftpKeyPathHint') }}</small>
+                    </div>
+                    <!-- Mot de passe -->
+                    <div v-if="settings.destination.sftp!.authMode === 'password'" class="col-md-6">
+                        <label class="form-label">{{ $t('watcher.backup.sftpSshPassword') }}</label>
+                        <input v-model="settings.destination.sftp!.password" type="password"
+                            class="form-control" autocomplete="new-password" />
+                        <small class="form-text">{{ $t('watcher.backup.sftpSshPasswordHint') }}</small>
                     </div>
                 </template>
 
@@ -472,7 +500,7 @@ const { t } = useI18n();
 // ─── Types ────────────────────────────────────────────────────────
 
 interface LocalConfig { path: string }
-interface SftpConfig { host: string; port: number; user: string; path: string; keyPath?: string; password?: string }
+interface SftpConfig { host: string; port: number; user: string; path: string; authMode: "key" | "password"; keyPath?: string; password?: string }
 interface S3Config { endpoint?: string; bucket: string; path: string; accessKeyId: string; secretAccessKey: string }
 interface RestConfig { url: string; user?: string; password?: string }
 interface Destination {
@@ -504,7 +532,7 @@ const settings = ref<Settings>({
         type: "local",
         resticPassword: "",
         local: { path: "/app/data/backups" },
-        sftp: { host: "", port: 22, user: "", path: "" },
+        sftp: { host: "", port: 22, user: "", path: "", authMode: "key" },
         s3: { endpoint: "", bucket: "", path: "dockge", accessKeyId: "", secretAccessKey: "" },
         rest: { url: "", user: "", password: "" },
     },
@@ -576,13 +604,18 @@ async function api(method: string, path: string, body?: unknown) {
  *  les sous-objets destination (sftp/s3/rest) qui peuvent être absents
  *  du fichier sauvegardé si on n'a configuré que "local". */
 function mergeSettings(loaded: Partial<Settings>): Settings {
+    const dest = {
+        ...settings.value.destination,   // garde sftp/s3/rest par défaut
+        ...(loaded.destination ?? {}),
+    };
+    // Migration : authMode absent dans les configs sauvegardées avant cette version
+    if (dest.sftp && !dest.sftp.authMode) {
+        dest.sftp.authMode = dest.sftp.keyPath ? "key" : "password";
+    }
     return {
         ...settings.value,
         ...loaded,
-        destination: {
-            ...settings.value.destination,   // garde sftp/s3/rest par défaut
-            ...(loaded.destination ?? {}),
-        },
+        destination: dest,
     };
 }
 
