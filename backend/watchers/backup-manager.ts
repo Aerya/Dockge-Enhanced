@@ -170,7 +170,7 @@ function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string {
         // sous-processus Go dont le PATH peut être différent du PATH Node.js.
         // Sans chemin absolu, sshpass trouve bien `ssh` dans son propre PATH mais
         // le sous-processus spawné par restic échoue avec ENOENT sur `ssh`.
-        const sshCmd = `/usr/bin/sshpass -f ${tmpFile} /usr/bin/ssh -l ${s.user} -p ${port} -o StrictHostKeyChecking=no -o BatchMode=yes`;
+        const sshCmd = `/usr/bin/sshpass -f ${tmpFile} /usr/bin/ssh -l ${s.user} -p ${port} -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o BatchMode=no`;
         return `-o sftp.command="${sshCmd} ${s.host} -s sftp"`;
     }
 
