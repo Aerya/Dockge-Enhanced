@@ -40,6 +40,19 @@
                 <button class="btn-dismiss ms-2" @click="selfUpdate.dismissed = true" title="Fermer">✕</button>
             </div>
 
+            <!-- System Stats (desktop uniquement) -->
+            <div v-if="$root.loggedIn && systemStats" class="system-stats d-none d-lg-flex align-items-center gap-3 me-auto ms-4">
+                <span class="stat-pill" :class="statClass(systemStats.cpu)">
+                    <font-awesome-icon icon="microchip" class="me-1" />{{ systemStats.cpu }}%
+                </span>
+                <span class="stat-pill" :class="statClass(systemStats.ram.percent)">
+                    <font-awesome-icon icon="memory" class="me-1" />{{ formatBytes(systemStats.ram.used) }}/{{ formatBytes(systemStats.ram.total) }}
+                </span>
+                <span class="stat-pill" :class="statClass(systemStats.disk.percent)">
+                    <font-awesome-icon icon="floppy-disk" class="me-1" />{{ systemStats.disk.mount }} {{ systemStats.disk.percent }}%
+                </span>
+            </div>
+
             <ul class="nav nav-pills">
                 <li v-if="$root.loggedIn" class="nav-item me-2">
                     <router-link to="/" class="nav-link">
@@ -170,6 +183,8 @@ export default {
                 dismissed:     false,
                 copied:        false,
             },
+            systemStats:      null,
+            statsTimer:       null,
         };
     },
 
@@ -199,10 +214,12 @@ export default {
 
     mounted() {
         this.checkSelfUpdate();
+        this.fetchSystemStats();
+        this.statsTimer = setInterval(this.fetchSystemStats, 5000);
     },
 
     beforeUnmount() {
-
+        if (this.statsTimer) clearInterval(this.statsTimer);
     },
 
     methods: {
@@ -243,6 +260,31 @@ export default {
             el.select();
             try { document.execCommand("copy"); cb(); } catch { /* silencieux */ }
             document.body.removeChild(el);
+        },
+
+        async fetchSystemStats() {
+            try {
+                const token = localStorage.getItem("token") ?? "";
+                const res = await fetch("/api/system/stats", {
+                    headers: { "Authorization": `Bearer ${token}` },
+                });
+                const data = await res.json();
+                if (data.ok) this.systemStats = data.data;
+            } catch { /* silencieux */ }
+        },
+
+        statClass(percent) {
+            if (percent >= 85) return "stat-danger";
+            if (percent >= 70) return "stat-warning";
+            return "stat-ok";
+        },
+
+        formatBytes(bytes) {
+            if (bytes === 0) return "0 B";
+            const gb = bytes / (1024 ** 3);
+            if (gb >= 1) return gb.toFixed(1) + " GB";
+            const mb = bytes / (1024 ** 2);
+            return mb.toFixed(0) + " MB";
         },
 
         scanFolder() {
@@ -359,6 +401,34 @@ main {
     &:hover {
         color: #fcd34d;
         border-color: rgba(245,158,11,.7);
+    }
+}
+
+.system-stats {
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+.stat-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 50rem;
+    border: 1px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+
+    &.stat-ok {
+        color: #4ade80;
+        border-color: rgba(74, 222, 128, 0.3);
+    }
+    &.stat-warning {
+        color: #fbbf24;
+        border-color: rgba(251, 191, 36, 0.35);
+    }
+    &.stat-danger {
+        color: #f87171;
+        border-color: rgba(248, 113, 113, 0.35);
     }
 }
 

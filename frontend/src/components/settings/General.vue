@@ -57,6 +57,21 @@
                 <div class="form-text"></div>
             </div>
 
+            <!-- Partition disque à surveiller -->
+            <div class="mb-4">
+                <label class="form-label" for="diskPartition">
+                    <font-awesome-icon icon="floppy-disk" class="me-1" /> Partition disque surveillée
+                </label>
+                <input
+                    id="diskPartition"
+                    v-model="settings.diskPartition"
+                    class="form-control"
+                    placeholder="/"
+                    style="max-width: 260px"
+                />
+                <div class="form-text">Partition affichée dans la barre de navigation (ex : <code>/</code>, <code>/mnt/data</code>).</div>
+            </div>
+
             <!-- Save Button -->
             <div>
                 <button class="btn btn-primary" type="submit">

@@ -72,6 +72,9 @@ import {
     faArrowCircleUp,
     faCube,
     faLayerGroup,
+    faMicrochip,
+    faMemory,
+    faFloppyDisk,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -145,6 +148,9 @@ library.add(
     faArrowCircleUp,
     faCube,
     faLayerGroup,
+    faMicrochip,
+    faMemory,
+    faFloppyDisk,
 );
 
 export { FontAwesomeIcon };

@@ -3,6 +3,7 @@ import os from "os";
 import { MainRouter } from "./routers/main-router";
 import { WatcherRouter } from "./routers/watcher-router";
 import { DockerResourcesRouter } from "./routers/docker-resources-router";
+import { SystemStatsRouter } from "./routers/system-stats-router";
 import { ImageWatcher } from "./watchers/image-watcher";
 import { TrivyScanner } from "./watchers/trivy-scanner";
 import { BackupManager } from "./watchers/backup-manager";
@@ -60,6 +61,7 @@ export class DockgeServer {
         new MainRouter(),
         new WatcherRouter(),
         new DockerResourcesRouter(),
+        new SystemStatsRouter(),
     ];
 
     /**
