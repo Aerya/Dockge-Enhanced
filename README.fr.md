@@ -14,6 +14,16 @@ Fork de [**Dockge**](https://github.com/louislam/dockge) par louislam — ajoute
 
 ---
 
+## 🆕 Nouveautés récentes
+
+- **📊 Stats système dans la navbar** — CPU, RAM et espace disque affichés en permanence dans la barre du haut, avec des indicateurs couleur pastel. La partition disque surveillée est configurable dans Paramètres → Général.
+- **📊 Stats CPU/RAM par stack** — Consommation CPU% et RAM affichée à côté de chaque nom de compose dans la liste, mise à jour toutes les 10 s. Activable/désactivable dans Paramètres → Général.
+- **☑️ Suppression d'images en masse** — Cases à cocher multi-sélection sur l'onglet Ressources → Images pour sélectionner et supprimer plusieurs images inutilisées en un seul clic.
+- **🔧 Fix : badge MàJ** — Le badge de mise à jour sur les stacks disparaît immédiatement après une mise à jour réussie, sans attendre le prochain cycle du watcher.
+- **🔧 Fix : suppression d'images** — Les images référencées par plusieurs dépôts ne génèrent plus d'erreur à la suppression (utilisation de `repo:tag` au lieu de l'ID d'image).
+
+---
+
 ## ✨ Fonctionnalités ajoutées
 
 **🔄 Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io et les registries privés. Fréquence configurable (1h → 24h). Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
@@ -24,7 +34,9 @@ Fork de [**Dockge**](https://github.com/louislam/dockge) par louislam — ajoute
 
 **📢 Notifications Discord** — Embeds colorés pour les mises à jour d'images, alertes sécurité et résultats de backup. Plusieurs webhooks supportés par fonctionnalité. Définis `DOCKGE_PUBLIC_URL` pour inclure un lien cliquable dans les notifications. Retry automatique avec backoff exponentiel en cas de rate limit (HTTP 429) ou d'erreur serveur.
 
-**🗂️ Ressources Docker** — Liste et suppression des images, volumes et conteneurs non gérés depuis l'UI (`/resources`). L'onglet **Hors Dockge** liste les conteneurs qui tournent en dehors de Dockge (lancés par un autre outil) — arrête-les et supprime-les directement depuis l'interface. Met en évidence les images/volumes liés à des stacks Dockge arrêtées, avec double confirmation avant toute suppression destructive. Le badge MàJ des stacks disparaît automatiquement une fois les images à jour.
+**🗂️ Ressources Docker** — Liste et suppression des images, volumes et conteneurs non gérés depuis l'UI (`/resources`). L'onglet **Hors Dockge** liste les conteneurs qui tournent en dehors de Dockge (lancés par un autre outil) — arrête-les et supprime-les directement depuis l'interface. Met en évidence les images/volumes liés à des stacks Dockge arrêtées, avec double confirmation avant toute suppression destructive. Le badge MàJ des stacks disparaît automatiquement une fois les images à jour. **Cases à cocher multi-sélection** sur l'onglet Images pour sélectionner et supprimer plusieurs images inutilisées en un seul clic.
+
+**📊 Stats système & par stack** — CPU, RAM et espace disque affichés dans la barre de navigation (mis à jour toutes les 5 s), avec indicateurs couleur pastel (vert → jaune → rouge). La consommation CPU% et RAM de chaque stack est affichée à côté de son nom dans la liste (mis à jour toutes les 10 s, via un seul appel `docker stats --no-stream`). Activable/désactivable dans **Paramètres → Général**. La partition disque surveillée est configurable.
 
 **🌐 Interface FR/EN** — Les pages `/watcher` et `/resources` disposent d'un bouton 🇫🇷/🇬🇧 pour changer la langue indépendamment du paramètre global de l'application.
 
@@ -38,7 +50,7 @@ Fork de [**Dockge**](https://github.com/louislam/dockge) par louislam — ajoute
   <tr>
     <td align="center" width="33%">
       <a href="screens/enhanced3.png"><img src="screens/enhanced3.png" width="100%"/></a>
-      <sub>Interface principale</sub>
+      <sub>Interface principale — stats CPU/RAM par stack</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/enhanced4.png"><img src="screens/enhanced4.png" width="100%"/></a>
@@ -51,33 +63,23 @@ Fork de [**Dockge**](https://github.com/louislam/dockge) par louislam — ajoute
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/enhanced6.png"><img src="screens/enhanced6.png" width="100%"/></a>
-      <sub>Trivy Scanner — résultats CVE</sub>
-    </td>
-    <td align="center" width="33%">
-      <a href="screens/enhanced8.png"><img src="screens/enhanced8.png" width="100%"/></a>
-      <sub>Backup Restic — configuration</sub>
-    </td>
-    <td align="center" width="33%">
       <a href="screens/enhanced9.png"><img src="screens/enhanced9.png" width="100%"/></a>
-      <sub>Backup Restic — détail snapshot & restauration</sub>
+      <sub>Backup Restic — configuration & snapshots</sub>
     </td>
-  </tr>
-  <tr>
     <td align="center" width="33%">
       <a href="screens/enhanced11.png"><img src="screens/enhanced11.png" width="100%"/></a>
-      <sub>Ressources Docker</sub>
+      <sub>Ressources Docker — sélection multiple d'images</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/enhanced7.png"><img src="screens/enhanced7.png" width="100%"/></a>
       <sub>Discord — alertes sécurité Trivy</sub>
     </td>
+  </tr>
+  <tr>
     <td align="center" width="33%">
       <a href="screens/enhanced10.png"><img src="screens/enhanced10.png" width="100%"/></a>
       <sub>Discord — notification backup</sub>
     </td>
-  </tr>
-  <tr>
     <td align="center" width="33%">
       <a href="screens/enhanced1.png"><img src="screens/enhanced1.png" width="100%"/></a>
       <sub>Bandeau de mise à jour in-app</sub>
@@ -86,7 +88,6 @@ Fork de [**Dockge**](https://github.com/louislam/dockge) par louislam — ajoute
       <a href="screens/enhanced2.png"><img src="screens/enhanced2.png" width="100%"/></a>
       <sub>Discord — alerte mise à jour Dockge Enhanced</sub>
     </td>
-    <td></td>
   </tr>
 </table>
 
