@@ -93,6 +93,85 @@ async function requireAuth(
     }
 }
 
+// ─── Stack stats collector ───────────────────────────────────────
+
+interface StackStat {
+    cpu:     number; // % cumulé des conteneurs du stack
+    memUsed: number; // bytes cumulés
+}
+
+/** Convertit "128MiB", "1.2GiB", "500kB"… en bytes */
+function parseDockerBytes(str: string): number {
+    const s = str.trim();
+    const units: Record<string, number> = {
+        B: 1,
+        kB: 1e3, KB: 1e3,
+        MB: 1e6, MiB: 1024 ** 2,
+        GB: 1e9, GiB: 1024 ** 3,
+        TB: 1e12, TiB: 1024 ** 4,
+    };
+    const m = s.match(/^([\d.]+)\s*([A-Za-z]+)$/);
+    if (!m) return 0;
+    return Math.round(parseFloat(m[1]) * (units[m[2]] ?? 1));
+}
+
+const stackStatsCache = new Map<string, StackStat>();
+let stackCollectorStarted = false;
+
+async function updateStackStats(): Promise<void> {
+    try {
+        const [{ stdout: statsOut }, { stdout: psOut }] = await Promise.all([
+            execAsync("docker stats --no-stream --format '{{json .}}' 2>/dev/null"),
+            execAsync("docker ps --format '{{json .}}' 2>/dev/null"),
+        ]);
+
+        // containerID (short) → stackName
+        const idToStack = new Map<string, string>();
+        for (const line of psOut.trim().split("\n")) {
+            if (!line) continue;
+            try {
+                const c = JSON.parse(line);
+                const labels: string = c["Labels"] ?? "";
+                const m = labels.match(/com\.docker\.compose\.project=([^,]+)/);
+                if (m) idToStack.set(c["ID"], m[1].trim());
+            } catch { /* ligne invalide */ }
+        }
+
+        // Agrégation par stack
+        const aggr = new Map<string, StackStat>();
+        for (const line of statsOut.trim().split("\n")) {
+            if (!line) continue;
+            try {
+                const s = JSON.parse(line);
+                const stackName = idToStack.get(s["ID"]) ?? idToStack.get(s["Container"]);
+                if (!stackName) continue;
+
+                const cpu     = parseFloat((s["CPUPerc"] ?? "0").replace("%", "")) || 0;
+                const memUsed = parseDockerBytes((s["MemUsage"] ?? "0B / 0B").split("/")[0]);
+
+                const cur = aggr.get(stackName);
+                if (cur) { cur.cpu += cpu; cur.memUsed += memUsed; }
+                else aggr.set(stackName, { cpu, memUsed });
+            } catch { /* ligne invalide */ }
+        }
+
+        stackStatsCache.clear();
+        for (const [name, stat] of aggr) {
+            stackStatsCache.set(name, {
+                cpu:     Math.round(stat.cpu * 10) / 10,
+                memUsed: stat.memUsed,
+            });
+        }
+    } catch { /* docker non dispo */ }
+}
+
+function startStackCollector(): void {
+    if (stackCollectorStarted) return;
+    stackCollectorStarted = true;
+    updateStackStats().catch(() => {});
+    setInterval(() => updateStackStats().catch(() => {}), 10000);
+}
+
 // ─── Router ───────────────────────────────────────────────────────
 
 export class SystemStatsRouter extends Router {
@@ -101,6 +180,7 @@ export class SystemStatsRouter extends Router {
         router.use(express.json());
 
         startCpuCollector();
+        startStackCollector();
 
         const auth = (req: Request, res: Response, next: NextFunction) =>
             requireAuth(req, res, next, server.jwtSecret);
@@ -148,6 +228,14 @@ export class SystemStatsRouter extends Router {
             } catch (e: any) {
                 res.status(500).json({ ok: false, message: e.message });
             }
+        });
+
+        // ── Stats par stack ───────────────────────────────────────
+
+        router.get("/stack-stats", auth, (_req: Request, res: Response) => {
+            const data: Record<string, StackStat> = {};
+            for (const [k, v] of stackStatsCache) data[k] = v;
+            res.json({ ok: true, data });
         });
 
         const mountRouter = express.Router();

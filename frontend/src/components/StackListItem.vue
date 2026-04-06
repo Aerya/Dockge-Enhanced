@@ -4,6 +4,7 @@
         <div class="title">
             <span>{{ stackName }}</span>
             <StackUpdateBadge :stack-name="stackName" />
+            <StackStatsBadge :stack-name="stackName" />
             <div v-if="$root.agentCount > 1" class="endpoint">{{ endpointDisplay }}</div>
         </div>
     </router-link>
@@ -12,11 +13,13 @@
 <script>
 import Uptime from "./Uptime.vue";
 import StackUpdateBadge from "./StackUpdateBadge.vue";
+import StackStatsBadge from "./StackStatsBadge.vue";
 
 export default {
     components: {
         Uptime,
         StackUpdateBadge,
+        StackStatsBadge,
     },
     props: {
         /** Stack this represents */

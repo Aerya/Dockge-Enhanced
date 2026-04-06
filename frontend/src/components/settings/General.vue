@@ -57,6 +57,23 @@
                 <div class="form-text"></div>
             </div>
 
+            <!-- Stats par stack -->
+            <div class="mb-4">
+                <div class="form-check form-switch">
+                    <input
+                        id="stackStatsEnabled"
+                        v-model="localStackStatsEnabled"
+                        class="form-check-input"
+                        type="checkbox"
+                        role="switch"
+                    />
+                    <label class="form-check-label" for="stackStatsEnabled">
+                        Afficher les stats CPU / RAM par stack
+                    </label>
+                </div>
+                <div class="form-text">Affiche la consommation de chaque compose dans la liste (mis à jour toutes les 10 s).</div>
+            </div>
+
             <!-- Partition disque à surveiller -->
             <div class="mb-4">
                 <label class="form-label" for="diskPartition">
@@ -85,11 +102,23 @@
 <script>
 
 import dayjs from "dayjs";
+import { ref, watch } from "vue";
 import { timezoneList } from "../../util-frontend";
+import { stackStatsEnabled } from "../../composables/useStackStats";
 
 export default {
     components: {
 
+    },
+
+    setup() {
+        // Copie locale liée au toggle UI — on sync avec le ref global au save
+        const localStackStatsEnabled = ref(stackStatsEnabled.value);
+        watch(localStackStatsEnabled, (val) => {
+            stackStatsEnabled.value = val;
+            localStorage.setItem("stackStatsEnabled", String(val));
+        });
+        return { localStackStatsEnabled };
     },
 
     data() {

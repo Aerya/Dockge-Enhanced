@@ -55,6 +55,11 @@
                         <span v-if="pruningImages" class="spinner-border spinner-border-sm me-1" />
                         <font-awesome-icon v-else icon="trash" class="me-1" />{{ t.images.pruneBtn }}
                     </button>
+                    <button v-if="someImagesSelected" class="btn btn-danger btn-sm"
+                        @click="deleteSelectedImages">
+                        <font-awesome-icon icon="trash" class="me-1" />{{ t.images.deleteSelected }}
+                        <span class="badge bg-white text-danger ms-1">{{ selectedImages.size }}</span>
+                    </button>
                     <div v-if="!loadingImages" class="ms-auto text-muted small">
                         <span class="me-3">{{ images.length }} {{ t.images.total }}</span>
                         <span v-if="unusedImagesCount > 0" class="me-2 text-secondary">
@@ -79,6 +84,15 @@
                     <table class="table resources-table">
                         <thead>
                             <tr>
+                                <th style="width:36px">
+                                    <input type="checkbox"
+                                        class="form-check-input"
+                                        :checked="allDeletableSelected"
+                                        :indeterminate.prop="someImagesSelected && !allDeletableSelected"
+                                        @change="toggleSelectAllImages"
+                                        title="Tout sélectionner / désélectionner"
+                                    />
+                                </th>
                                 <th>{{ t.images.cols.image }}</th>
                                 <th>{{ t.images.cols.size }}</th>
                                 <th>{{ t.images.cols.created }}</th>
@@ -90,6 +104,14 @@
                         <tbody>
                             <tr v-for="img in images" :key="img.id"
                                 :class="rowClass(img.status, img.dockgeStacks)">
+                                <td>
+                                    <input v-if="img.status !== 'running'"
+                                        type="checkbox"
+                                        class="form-check-input"
+                                        :checked="selectedImages.has(imgKey(img))"
+                                        @change="toggleSelectImage(img)"
+                                    />
+                                </td>
                                 <td>
                                     <div class="fw-semibold font-monospace small">
                                         <span v-if="img.repository !== '<none>'">
@@ -430,6 +452,8 @@ const i18n = {
             confirm1Warning: "Cette image est utilisée par des conteneurs arrêtés.",
             confirm2Body: "⚠️ Suppression irréversible. Les données liées pourraient être perdues.",
             noImages: "Aucune image trouvée.",
+            deleteSelected: "Supprimer la sélection",
+            deleteSelectedConfirm: (n: number) => `Supprimer ${n} image(s) sélectionnée(s) ?`,
         },
         volumes: {
             heading: "Volumes Docker",
@@ -482,6 +506,8 @@ const i18n = {
             confirm1Warning: "This image is used by stopped containers.",
             confirm2Body: "⚠️ This action is irreversible. Related data may be lost.",
             noImages: "No images found.",
+            deleteSelected: "Delete selected",
+            deleteSelectedConfirm: (n: number) => `Delete ${n} selected image(s)?`,
         },
         volumes: {
             heading: "Docker Volumes",
@@ -541,6 +567,8 @@ const stoppingContainer = ref<string | null>(null);
 const confirmStep = ref(0); // 0 = rien, 1 = première modale, 2 = deuxième modale
 const pendingItem = ref<PendingItem | null>(null);
 
+const selectedImages = ref<Set<string>>(new Set());
+
 const toast = ref({ show: false, ok: true, msg: "" });
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -550,6 +578,21 @@ const t = computed(() => i18n[lang.value]);
 
 const unusedImagesCount = computed(() =>
     images.value.filter(i => i.status === "unused" || i.status === "dangling").length);
+
+// ─── Sélection multiple images ────────────────────────────────────
+
+function imgKey(img: DockerImage): string {
+    return img.repository !== "<none>" ? `${img.repository}:${img.tag}` : img.id;
+}
+
+const deletableImages = computed(() => images.value.filter(i => i.status !== "running"));
+
+const allDeletableSelected = computed(() =>
+    deletableImages.value.length > 0 &&
+    deletableImages.value.every(img => selectedImages.value.has(imgKey(img)))
+);
+
+const someImagesSelected = computed(() => selectedImages.value.size > 0);
 const danglingCount = computed(() =>
     images.value.filter(i => i.status === "dangling").length);
 const unusedVolumesCount = computed(() =>
@@ -602,6 +645,7 @@ async function loadImages() {
         const data = await api("GET", "images");
         if (data.ok) {
             images.value = data.images;
+            selectedImages.value.clear();
         } else {
             imageError.value = data.message ?? t.value.errorLoad;
         }
@@ -610,6 +654,44 @@ async function loadImages() {
     } finally {
         loadingImages.value = false;
     }
+}
+
+function toggleSelectImage(img: DockerImage) {
+    const key = imgKey(img);
+    const next = new Set(selectedImages.value);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    selectedImages.value = next;
+}
+
+function toggleSelectAllImages() {
+    if (allDeletableSelected.value) {
+        selectedImages.value = new Set();
+    } else {
+        selectedImages.value = new Set(deletableImages.value.map(imgKey));
+    }
+}
+
+async function deleteSelectedImages() {
+    const keys = [...selectedImages.value];
+    if (keys.length === 0) return;
+    if (!confirm(t.value.images.deleteSelectedConfirm(keys.length))) return;
+
+    let ok = 0, fail = 0;
+    for (const key of keys) {
+        const img = images.value.find(i => imgKey(i) === key);
+        const force = img?.status === "stopped";
+        try {
+            const data = await api("DELETE", `images/${encodeURIComponent(key)}${force ? "?force=true" : ""}`);
+            if (data.ok) ok++; else fail++;
+        } catch { fail++; }
+    }
+    selectedImages.value = new Set();
+    await loadImages();
+    showToast(fail === 0, fail === 0
+        ? `${ok} image(s) supprimée(s)`
+        : `${ok} supprimée(s), ${fail} échec(s)`
+    );
 }
 
 async function loadVolumes() {

@@ -415,21 +415,12 @@ main {
     align-items: center;
     padding: 3px 9px;
     border-radius: 50rem;
-    border: 1px solid transparent;
-    transition: color 0.2s, border-color 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: color 0.3s;
 
-    &.stat-ok {
-        color: #4ade80;
-        border-color: rgba(74, 222, 128, 0.3);
-    }
-    &.stat-warning {
-        color: #fbbf24;
-        border-color: rgba(251, 191, 36, 0.35);
-    }
-    &.stat-danger {
-        color: #f87171;
-        border-color: rgba(248, 113, 113, 0.35);
-    }
+    &.stat-ok      { color: #a8d8b0; } // vert menthe pastel
+    &.stat-warning  { color: #f0d898; } // jaune blé pastel
+    &.stat-danger   { color: #f0a8a8; } // rose saumon pastel
 }
 
 .nav {
