@@ -3,6 +3,7 @@ import { DockgeServer } from "../dockge-server";
 import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
 import { Stack } from "../stack";
 import { AgentSocket } from "../../common/agent-socket";
+import { imageStatusStore } from "../watchers/image-watcher";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -185,6 +186,12 @@ export class DockerSocketHandler extends AgentSocketHandler {
 
                 const stack = await Stack.getStack(server, stackName);
                 await stack.update(socket);
+                // Clear update badges for this stack — images are now up to date
+                for (const key of imageStatusStore.keys()) {
+                    if (key.startsWith(`${stackName}::`)) {
+                        imageStatusStore.delete(key);
+                    }
+                }
                 callbackResult({
                     ok: true,
                     msg: "Updated",

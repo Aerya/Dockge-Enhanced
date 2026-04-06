@@ -735,7 +735,9 @@ async function executeDelete() {
         let data: any;
         if (item.type === "image") {
             const force = item.status === "stopped";
-            data = await api("DELETE", `images/${encodeURIComponent(item.id ?? "")}${force ? "?force=true" : ""}`);
+            // Use repo:tag when available to avoid "referenced in multiple repositories" error
+            const deleteTarget = item.label !== item.id ? (item.label ?? item.id ?? "") : (item.id ?? "");
+            data = await api("DELETE", `images/${encodeURIComponent(deleteTarget)}${force ? "?force=true" : ""}`);
         } else if (item.type === "volume") {
             data = await api("DELETE", `volumes/${encodeURIComponent(item.name ?? "")}`);
         } else {
