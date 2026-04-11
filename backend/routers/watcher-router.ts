@@ -9,7 +9,7 @@
 import { DockgeServer } from "../dockge-server";
 import { Router } from "../router";
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";
-import { ImageWatcher, imageStatusStore, RegistryCredential } from "../watchers/image-watcher";
+import { ImageWatcher, imageStatusStore, RegistryCredential, WatcherSettings } from "../watchers/image-watcher";
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { BackupManager } from "../watchers/backup-manager";
@@ -125,7 +125,10 @@ export class WatcherRouter extends Router {
                 autoUpdateConfig[key] = mode === "scheduled"
                     ? { mode, time: time ?? "02:00" }
                     : { mode };
-                await watcher.saveSettings({ autoUpdateConfig });
+                // Active automatiquement le watcher si ce n'est pas déjà le cas
+                const patch: Partial<WatcherSettings> = { autoUpdateConfig };
+                if (!watcher.settings.enabled) patch.enabled = true;
+                await watcher.saveSettings(patch);
             }
             return res.json({ ok: true });
         });

@@ -319,9 +319,14 @@ export class ImageWatcher {
 
     async saveSettings(partial: Partial<WatcherSettings>): Promise<void> {
         this.settings = { ...this.settings, ...partial };
+        await this.persistToFile();
+        this.restart();
+    }
+
+    /** Écrit les settings sur disque SANS redémarrer le watcher (usage interne) */
+    private async persistToFile(): Promise<void> {
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
-        this.restart();
     }
 
     getSettingsSafe(): WatcherSettings {
@@ -431,10 +436,11 @@ export class ImageWatcher {
             }
         }
 
-        // Enregistre les nouvelles màj en attente
+        // Enregistre les nouvelles màj en attente (sans restart — watcher déjà actif)
         if (newlyPending.length > 0) {
             const merged = [...currentPending, ...newlyPending];
-            await this.saveSettings({ pendingAutoUpdates: merged });
+            this.settings.pendingAutoUpdates = merged;
+            await this.persistToFile();
             console.log(`[ImageWatcher] ${newlyPending.length} image(s) mise(s) en attente de màj planifiée`);
         }
 
@@ -477,9 +483,9 @@ export class ImageWatcher {
         if (toApply.length === 0) return;
 
         // Retire les clés traitées du pending avant d'appliquer (évite double-tir si la màj est longue)
-        await this.saveSettings({
-            pendingAutoUpdates: pending.filter(k => !toApply.includes(k)),
-        });
+        // Pas de restart — le watcher tourne déjà, on veut juste persister l'état
+        this.settings.pendingAutoUpdates = pending.filter(k => !toApply.includes(k));
+        await this.persistToFile();
 
         console.log(`[ImageWatcher] Màj planifiée à ${currentTime} : ${toApply.length} image(s)`);
 
