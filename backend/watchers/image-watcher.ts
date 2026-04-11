@@ -34,6 +34,7 @@ export interface WatcherSettings {
     discordWebhooks: string[];   // liste de webhooks (migration auto depuis discordWebhook)
     credentials: RegistryCredential[];
     notificationLang: "fr" | "en";
+    autoUpdateImages: string[];  // clés "stack::image" des images à mettre à jour automatiquement
 }
 
 export interface ImageStatus {
@@ -277,6 +278,7 @@ export class ImageWatcher {
         discordWebhooks: [],
         credentials: [],
         notificationLang: "fr",
+        autoUpdateImages: [],
     };
 
     static getInstance(): ImageWatcher {
@@ -354,6 +356,8 @@ export class ImageWatcher {
 
         // Collecte les clés traitées ce cycle pour purger les entrées obsolètes
         const processedKeys = new Set<string>();
+        // Map stack → composePath pour l'auto-update
+        const composePathByStack = new Map<string, string>();
 
         for (const stack of entries) {
             // Cherche compose.yaml ou docker-compose.yml
@@ -368,6 +372,7 @@ export class ImageWatcher {
                 try { await fs.access(c); composePath = c; break; } catch { /* next */ }
             }
             if (!composePath) continue;
+            composePathByStack.set(stack, composePath);
 
             const images = extractImagesFromCompose(composePath);
             for (const image of images) {
@@ -387,15 +392,63 @@ export class ImageWatcher {
         }
 
         const updates = results.filter(r => r.hasUpdate && !r.error);
+
+        // Auto-update : lance la màj pour les images qui ont l'option activée
+        const autoUpdateSet = new Set(this.settings.autoUpdateImages ?? []);
+        const toAutoUpdate = updates.filter(r => autoUpdateSet.has(`${r.stack}::${r.image}`));
+        const autoUpdated: ImageStatus[] = [];
+        for (const item of toAutoUpdate) {
+            const composePath = composePathByStack.get(item.stack);
+            if (composePath) {
+                const success = await this.performAutoUpdate(item, composePath);
+                if (success) autoUpdated.push(item);
+            }
+        }
+
+        // Notif Discord après les màj auto, pour tout signaler en un seul embed
         if (updates.length > 0 && this.settings.discordWebhooks.length > 0) {
-            await this.notify(updates, results.length);
+            await this.notify(updates, results.length, autoUpdated);
         }
 
         console.log(
             `[ImageWatcher] ${results.length} image(s) vérifiée(s), ` +
-            `${updates.length} mise(s) à jour disponible(s)`
+            `${updates.length} mise(s) à jour disponible(s)` +
+            (autoUpdated.length ? `, ${autoUpdated.length} mise(s) à jour automatique(s) effectuée(s)` : "")
         );
         return results;
+    }
+
+    /** Trouve le nom du service docker compose qui utilise une image donnée */
+    private findServiceForImage(composePath: string, image: string): string | null {
+        try {
+            const raw = require("fs").readFileSync(composePath, "utf8");
+            const doc = yaml.load(raw) as Record<string, unknown>;
+            if (!doc?.services) return null;
+            const services = doc.services as Record<string, { image?: string }>;
+            for (const [name, svc] of Object.entries(services)) {
+                if (svc?.image?.trim() === image.trim()) return name;
+            }
+        } catch { /* ignore */ }
+        return null;
+    }
+
+    /** Tire et redémarre une image via docker compose. Retourne true si succès. */
+    private async performAutoUpdate(status: ImageStatus, composePath: string): Promise<boolean> {
+        const service = this.findServiceForImage(composePath, status.image);
+        const serviceArg = service ? ` ${service}` : "";
+        console.log(`[ImageWatcher] Auto-update: ${status.stack}/${status.image}${service ? ` (service: ${service})` : ""}`);
+        try {
+            await execAsync(`docker compose -f "${composePath}" pull${serviceArg}`, { timeout: 180000 });
+            await execAsync(`docker compose -f "${composePath}" up -d${serviceArg}`, { timeout: 60000 });
+            // Recheck pour mettre à jour le digest dans le store
+            const newStatus = await this.checkOneImage(status.image, status.stack);
+            imageStatusStore.set(`${status.stack}::${status.image}`, newStatus);
+            console.log(`[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`);
+            return true;
+        } catch (e) {
+            console.error(`[ImageWatcher] Auto-update échouée: ${status.stack}/${status.image}:`, e);
+            return false;
+        }
     }
 
     private async checkOneImage(image: string, stack: string): Promise<ImageStatus> {
@@ -422,35 +475,64 @@ export class ImageWatcher {
         return status;
     }
 
-    private async notify(updates: ImageStatus[], totalChecked: number): Promise<void> {
+    private async notify(updates: ImageStatus[], totalChecked: number, autoUpdated: ImageStatus[] = []): Promise<void> {
         const notifier = new DiscordNotifier(this.settings.discordWebhooks);
         const uiUrl    = this.baseUrl || null;
         const en       = (this.settings.notificationLang ?? "fr") === "en";
         const locale   = en ? "en-GB" : "fr-FR";
         const t        = (fr: string, enStr: string) => en ? enStr : fr;
 
-        await notifier.sendEmbed({
-            title: t(
+        const autoUpdatedKeys = new Set(autoUpdated.map(u => `${u.stack}::${u.image}`));
+        const manual  = updates.filter(u => !autoUpdatedKeys.has(`${u.stack}::${u.image}`));
+
+        // Titre selon ce qui s'est passé
+        let title: string;
+        if (autoUpdated.length > 0 && manual.length === 0) {
+            title = t(
+                `✅ ${autoUpdated.length} image(s) mise(s) à jour automatiquement`,
+                `✅ ${autoUpdated.length} image(s) auto-updated`
+            );
+        } else if (autoUpdated.length > 0) {
+            title = t(
+                `🐳 ${updates.length} mise(s) à jour — ${autoUpdated.length} auto, ${manual.length} manuelle(s)`,
+                `🐳 ${updates.length} update(s) — ${autoUpdated.length} auto, ${manual.length} manual`
+            );
+        } else {
+            title = t(
                 `🐳 ${updates.length} mise(s) à jour disponible(s)`,
                 `🐳 ${updates.length} update(s) available`
-            ),
-            color: 0xf59e0b,
+            );
+        }
+
+        const makeField = (u: ImageStatus, wasAutoUpdated: boolean) => ({
+            name: wasAutoUpdated ? `✅ \`${u.image}\`` : `🔄 \`${u.image}\``,
+            value:
+                `${t("Stack", "Stack")} : **${u.stack}**\n` +
+                (wasAutoUpdated
+                    ? t("Mise à jour automatique effectuée.", "Automatically updated.")
+                    : `${t("Distant", "Remote")} : \`${u.remoteDigest.slice(0, 19)}…\`\n` +
+                      (u.localDigest
+                          ? `${t("Local", "Local")}   : \`${u.localDigest.slice(0, 19)}…\``
+                          : t("⚠️ Image non présente localement", "⚠️ Image not present locally"))
+                ),
+            inline: false,
+        });
+
+        await notifier.sendEmbed({
+            title,
+            color: autoUpdated.length > 0 && manual.length === 0 ? 0x22c55e : 0xf59e0b,
             url:   uiUrl ?? undefined,
             description:
                 `${totalChecked} ${t("image(s) vérifiée(s)", "image(s) checked")} · ${new Date().toLocaleString(locale)}\n` +
-                (uiUrl
-                    ? `[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl}) ${t("pour décider des mises à jour.", "to review updates.")}`
-                    : t("Connectez-vous à **Dockge** pour décider des mises à jour.", "Log in to **Dockge** to review updates.")),
-            fields: updates.map(u => ({
-                name: `🔄 \`${u.image}\``,
-                value:
-                    `${t("Stack", "Stack")} : **${u.stack}**\n` +
-                    `${t("Distant", "Remote")} : \`${u.remoteDigest.slice(0, 19)}…\`\n` +
-                    (u.localDigest
-                        ? `${t("Local", "Local")}   : \`${u.localDigest.slice(0, 19)}…\``
-                        : t("⚠️ Image non présente localement", "⚠️ Image not present locally")),
-                inline: false,
-            })),
+                (manual.length > 0
+                    ? (uiUrl
+                        ? `[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl}) ${t("pour décider des mises à jour manuelles.", "to review manual updates.")}`
+                        : t("Connectez-vous à **Dockge** pour décider des mises à jour manuelles.", "Log in to **Dockge** to review manual updates."))
+                    : ""),
+            fields: [
+                ...autoUpdated.map(u => makeField(u, true)),
+                ...manual.map(u => makeField(u, false)),
+            ],
             footer: "Dockge Enhanced — Image Watcher",
         });
     }

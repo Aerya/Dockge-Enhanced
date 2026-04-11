@@ -104,6 +104,24 @@ export class WatcherRouter extends Router {
         });
 
         // ════════════════════════════════════════════════════════════════
+        // IMAGE WATCHER — Toggle auto-update par image
+        // ════════════════════════════════════════════════════════════════
+
+        router.post("/image/auto-update", async (req: Request, res: Response) => {
+            const { key, enabled } = req.body as { key: string; enabled: boolean };
+            if (!key) return res.status(400).json({ ok: false, message: "key requis (format: stack::image)" });
+            const watcher = ImageWatcher.getInstance();
+            let autoUpdateImages = [...(watcher.settings.autoUpdateImages ?? [])];
+            if (enabled) {
+                if (!autoUpdateImages.includes(key)) autoUpdateImages.push(key);
+            } else {
+                autoUpdateImages = autoUpdateImages.filter(k => k !== key);
+            }
+            await watcher.saveSettings({ autoUpdateImages });
+            return res.json({ ok: true });
+        });
+
+        // ════════════════════════════════════════════════════════════════
         // CREDENTIALS — Ajout / suppression de credentials registry
         // ════════════════════════════════════════════════════════════════
 

@@ -185,6 +185,10 @@
     "watcher.status.updateAvailable": "Update available",
     "watcher.status.upToDate": "Up to date",
     "watcher.status.searchProject": "View project →",
+    "watcher.status.autoUpdate": "Auto-update",
+    "watcher.status.autoUpdateHint": "If enabled, the image will be pulled and the service restarted automatically when an update is detected.",
+    "watcher.status.autoUpdateOn": "✅ Auto-update enabled",
+    "watcher.status.autoUpdateOff": "⏸ Auto-update disabled",
 
     "watcher.trivy.heading": "Security scan (Trivy)",
     "watcher.trivy.enabled": "Enabled",

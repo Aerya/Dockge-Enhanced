@@ -178,6 +178,10 @@
     "watcher.status.updateAvailable": "Mise à jour dispo",
     "watcher.status.upToDate": "À jour",
     "watcher.status.searchProject": "Voir le projet →",
+    "watcher.status.autoUpdate": "Màj auto",
+    "watcher.status.autoUpdateHint": "Si activé, l'image sera tirée et le service redémarré automatiquement lors d'une mise à jour détectée.",
+    "watcher.status.autoUpdateOn": "✅ Mise à jour automatique activée",
+    "watcher.status.autoUpdateOff": "⏸ Mise à jour automatique désactivée",
 
     "watcher.trivy.heading": "Scan de sécurité (Trivy)",
     "watcher.trivy.enabled": "Activé",

@@ -16,17 +16,14 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 ## 🆕 Nouveautés récentes
 
-- **📊 Stats système dans la navbar** — CPU, RAM et espace disque affichés en permanence dans la barre du haut, avec des indicateurs couleur pastel. La partition disque surveillée est configurable dans Paramètres → Général.
-- **📊 Stats CPU/RAM par stack** — Consommation CPU% et RAM affichée à côté de chaque nom de compose dans la liste, mise à jour toutes les 10 s. Activable/désactivable dans Paramètres → Général.
-- **☑️ Suppression d'images en masse** — Cases à cocher multi-sélection sur l'onglet Ressources → Images pour sélectionner et supprimer plusieurs images inutilisées en un seul clic.
-- **🔧 Fix : badge MàJ** — Le badge de mise à jour sur les stacks disparaît immédiatement après une mise à jour réussie, sans attendre le prochain cycle du watcher.
-- **🔧 Fix : suppression d'images** — Les images référencées par plusieurs dépôts ne génèrent plus d'erreur à la suppression (utilisation de `repo:tag` au lieu de l'ID d'image).
+- **⚡ Mise à jour automatique par image** — Un interrupteur sur l'onglet Images de `/watcher` permet d'activer la mise à jour automatique image par image. Dès qu'une mise à jour est détectée, Dockge Enhanced exécute automatiquement `docker compose pull` + `docker compose up -d` pour ce service — aucune action manuelle requise.
+- **📢 Notifications Discord enrichies** — L'embed de mise à jour d'images distingue désormais les images mises à jour automatiquement (✅, envoyé *après* la mise à jour) de celles qui attendent une action manuelle (🔄). L'embed passe au vert quand tout a été traité automatiquement.
 
 ---
 
 ## ✨ Fonctionnalités ajoutées
 
-**🔄 Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io et les registries privés. Fréquence configurable (1h → 24h). Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
+**🔄 Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io et les registries privés. Fréquence configurable (1h → 24h). **Interrupteur de màj automatique par image** : active-le sur une image et Dockge Enhanced la pull et redémarre le service dès qu'une mise à jour est détectée. Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
 
 **🛡️ Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution avec [Trivy](https://trivy.dev/). `aquasec/trivy:latest` est automatiquement pull avant chaque scan et supprimée après — toujours à jour, aucune place occupée entre les scans. Seuil d'alerte et timeout de scan configurables. Résultats visibles dans l'UI avec un bouton de scan manuel par image. Déduplication des CVE (chaque vulnérabilité n'apparaît qu'une seule fois par image). Alertes envoyées sur Discord avec retry/backoff en cas de rate limit.
 

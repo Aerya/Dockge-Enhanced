@@ -193,6 +193,9 @@
                                     <th>{{ $t('watcher.status.localDigest') }}</th>
                                     <th>{{ $t('watcher.status.remoteDigest') }}</th>
                                     <th>{{ $t('watcher.status.checkedAt') }}</th>
+                                    <th :title="$t('watcher.status.autoUpdateHint')" style="white-space:nowrap">
+                                        {{ $t('watcher.status.autoUpdate') }}
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -219,6 +222,18 @@
                                     <td><code class="small">{{ s.localDigest ? s.localDigest.slice(7, 19) + '…' : '—' }}</code></td>
                                     <td><code class="small">{{ s.remoteDigest ? s.remoteDigest.slice(7, 19) + '…' : '—' }}</code></td>
                                     <td class="small form-text">{{ s.lastChecked ? new Date(s.lastChecked).toLocaleString() : '—' }}</td>
+                                    <td>
+                                        <div class="form-check form-switch mb-0">
+                                            <input
+                                                class="form-check-input auto-update-switch"
+                                                type="checkbox"
+                                                role="switch"
+                                                :id="`au-${s.stack}-${s.image}`"
+                                                :checked="autoUpdateKeys.has(`${s.stack}::${s.image}`)"
+                                                @change="toggleAutoUpdate(s)"
+                                            />
+                                        </div>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -487,7 +502,7 @@ import BackupTab from "./BackupTab.vue";
 // ─── Types ────────────────────────────────────────────────────────
 
 interface Cred { registry: string; username: string; token: string }
-interface ImgSettings { enabled: boolean; intervalHours: number; discordWebhooks: string[]; notificationLang: "fr" | "en" }
+interface ImgSettings { enabled: boolean; intervalHours: number; discordWebhooks: string[]; notificationLang: "fr" | "en"; autoUpdateImages: string[] }
 interface TrivySettings {
     enabled: boolean; intervalHours: number; discordWebhooks: string[];
     minSeverityAlert: string; ignoreUnfixed: boolean; scanTimeoutMinutes: number;
@@ -559,7 +574,8 @@ onMounted(async () => {
 
 const tab = ref("images");
 
-const imgSettings = ref<ImgSettings>({ enabled: false, intervalHours: 6, discordWebhooks: [], notificationLang: "fr" });
+const imgSettings = ref<ImgSettings>({ enabled: false, intervalHours: 6, discordWebhooks: [], notificationLang: "fr", autoUpdateImages: [] });
+const autoUpdateKeys = computed(() => new Set(imgSettings.value.autoUpdateImages));
 const imgWebhook = ref("");
 const trivySettings = ref<TrivySettings>({
     enabled: false, intervalHours: 24, discordWebhooks: [],
@@ -642,6 +658,7 @@ onMounted(async () => {
             intervalHours:    imgRes.data.intervalHours,
             discordWebhooks:  imgRes.data.discordWebhooks ?? [],
             notificationLang: imgRes.data.notificationLang ?? "fr",
+            autoUpdateImages: imgRes.data.autoUpdateImages ?? [],
         };
         credentials.value = imgRes.data.credentials ?? [];
     }
@@ -773,6 +790,22 @@ async function addCred() {
             .concat({ ...newCred.value, token: "***" });
         newCred.value = { registry: "", username: "", token: "" };
         showToast(t('watcher.creds.added'));
+    } else {
+        showToast(`❌ ${res.message}`, false);
+    }
+}
+
+async function toggleAutoUpdate(s: ImageStatus) {
+    const key = `${s.stack}::${s.image}`;
+    const enabled = !autoUpdateKeys.value.has(key);
+    const res = await api("POST", "/image/auto-update", { key, enabled });
+    if (res.ok) {
+        if (enabled) {
+            imgSettings.value.autoUpdateImages.push(key);
+        } else {
+            imgSettings.value.autoUpdateImages = imgSettings.value.autoUpdateImages.filter(k => k !== key);
+        }
+        showToast(enabled ? t('watcher.status.autoUpdateOn') : t('watcher.status.autoUpdateOff'));
     } else {
         showToast(`❌ ${res.message}`, false);
     }
@@ -935,6 +968,11 @@ async function removeCred(registry: string) {
 .settings-subheading {
     font-size: 1.1rem;
     font-weight: 600;
+}
+
+.auto-update-switch {
+    cursor: pointer;
+    &:checked { background-color: #22c55e; border-color: #16a34a; }
 }
 
 .table th {
