@@ -108,16 +108,25 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.post("/image/auto-update", async (req: Request, res: Response) => {
-            const { key, enabled } = req.body as { key: string; enabled: boolean };
+            const { key, mode, time } = req.body as { key: string; mode: "off" | "immediate" | "scheduled"; time?: string };
             if (!key) return res.status(400).json({ ok: false, message: "key requis (format: stack::image)" });
-            const watcher = ImageWatcher.getInstance();
-            let autoUpdateImages = [...(watcher.settings.autoUpdateImages ?? [])];
-            if (enabled) {
-                if (!autoUpdateImages.includes(key)) autoUpdateImages.push(key);
-            } else {
-                autoUpdateImages = autoUpdateImages.filter(k => k !== key);
+            if (!["off", "immediate", "scheduled"].includes(mode)) {
+                return res.status(400).json({ ok: false, message: "mode invalide (off | immediate | scheduled)" });
             }
-            await watcher.saveSettings({ autoUpdateImages });
+            const watcher = ImageWatcher.getInstance();
+            const autoUpdateConfig = { ...(watcher.settings.autoUpdateConfig ?? {}) };
+            let pendingAutoUpdates = [...(watcher.settings.pendingAutoUpdates ?? [])];
+
+            if (mode === "off") {
+                delete autoUpdateConfig[key];
+                pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
+                await watcher.saveSettings({ autoUpdateConfig, pendingAutoUpdates });
+            } else {
+                autoUpdateConfig[key] = mode === "scheduled"
+                    ? { mode, time: time ?? "02:00" }
+                    : { mode };
+                await watcher.saveSettings({ autoUpdateConfig });
+            }
             return res.json({ ok: true });
         });
 

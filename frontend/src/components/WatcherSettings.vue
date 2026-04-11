@@ -193,7 +193,7 @@
                                     <th>{{ $t('watcher.status.localDigest') }}</th>
                                     <th>{{ $t('watcher.status.remoteDigest') }}</th>
                                     <th>{{ $t('watcher.status.checkedAt') }}</th>
-                                    <th :title="$t('watcher.status.autoUpdateHint')" style="white-space:nowrap">
+                                    <th :title="$t('watcher.status.autoUpdateHint')" style="white-space:nowrap;min-width:160px">
                                         {{ $t('watcher.status.autoUpdate') }}
                                     </th>
                                 </tr>
@@ -223,15 +223,25 @@
                                     <td><code class="small">{{ s.remoteDigest ? s.remoteDigest.slice(7, 19) + '…' : '—' }}</code></td>
                                     <td class="small form-text">{{ s.lastChecked ? new Date(s.lastChecked).toLocaleString() : '—' }}</td>
                                     <td>
-                                        <div class="form-check form-switch mb-0">
-                                            <input
-                                                class="form-check-input auto-update-switch"
-                                                type="checkbox"
-                                                role="switch"
-                                                :id="`au-${s.stack}-${s.image}`"
-                                                :checked="autoUpdateKeys.has(`${s.stack}::${s.image}`)"
-                                                @change="toggleAutoUpdate(s)"
-                                            />
+                                        <div class="au-cell">
+                                            <select
+                                                class="form-select form-select-sm au-select"
+                                                :value="getAutoUpdateMode(s)"
+                                                @change="setAutoUpdateMode(s, ($event.target as HTMLSelectElement).value as 'off'|'immediate'|'scheduled')"
+                                            >
+                                                <option value="off">{{ $t('watcher.status.auOff') }}</option>
+                                                <option value="immediate">⚡ {{ $t('watcher.status.auImmediate') }}</option>
+                                                <option value="scheduled">🕐 {{ $t('watcher.status.auScheduled') }}</option>
+                                            </select>
+                                            <template v-if="getAutoUpdateMode(s) === 'scheduled'">
+                                                <input
+                                                    type="time"
+                                                    class="form-control form-control-sm au-time"
+                                                    :value="getAutoUpdateTime(s)"
+                                                    @change="setAutoUpdateMode(s, 'scheduled', ($event.target as HTMLInputElement).value)"
+                                                />
+                                                <span v-if="isPending(s)" class="au-pending" :title="$t('watcher.status.auPendingHint')">⏳</span>
+                                            </template>
                                         </div>
                                     </td>
                                 </tr>
@@ -502,7 +512,8 @@ import BackupTab from "./BackupTab.vue";
 // ─── Types ────────────────────────────────────────────────────────
 
 interface Cred { registry: string; username: string; token: string }
-interface ImgSettings { enabled: boolean; intervalHours: number; discordWebhooks: string[]; notificationLang: "fr" | "en"; autoUpdateImages: string[] }
+interface AutoUpdateEntry { mode: "immediate" | "scheduled"; time?: string }
+interface ImgSettings { enabled: boolean; intervalHours: number; discordWebhooks: string[]; notificationLang: "fr" | "en"; autoUpdateConfig: Record<string, AutoUpdateEntry>; pendingAutoUpdates: string[] }
 interface TrivySettings {
     enabled: boolean; intervalHours: number; discordWebhooks: string[];
     minSeverityAlert: string; ignoreUnfixed: boolean; scanTimeoutMinutes: number;
@@ -574,8 +585,7 @@ onMounted(async () => {
 
 const tab = ref("images");
 
-const imgSettings = ref<ImgSettings>({ enabled: false, intervalHours: 6, discordWebhooks: [], notificationLang: "fr", autoUpdateImages: [] });
-const autoUpdateKeys = computed(() => new Set(imgSettings.value.autoUpdateImages));
+const imgSettings = ref<ImgSettings>({ enabled: false, intervalHours: 6, discordWebhooks: [], notificationLang: "fr", autoUpdateConfig: {}, pendingAutoUpdates: [] });
 const imgWebhook = ref("");
 const trivySettings = ref<TrivySettings>({
     enabled: false, intervalHours: 24, discordWebhooks: [],
@@ -658,7 +668,8 @@ onMounted(async () => {
             intervalHours:    imgRes.data.intervalHours,
             discordWebhooks:  imgRes.data.discordWebhooks ?? [],
             notificationLang: imgRes.data.notificationLang ?? "fr",
-            autoUpdateImages: imgRes.data.autoUpdateImages ?? [],
+            autoUpdateConfig:  imgRes.data.autoUpdateConfig  ?? {},
+            pendingAutoUpdates: imgRes.data.pendingAutoUpdates ?? [],
         };
         credentials.value = imgRes.data.credentials ?? [];
     }
@@ -795,17 +806,32 @@ async function addCred() {
     }
 }
 
-async function toggleAutoUpdate(s: ImageStatus) {
+function getAutoUpdateMode(s: ImageStatus): "off" | "immediate" | "scheduled" {
+    const cfg = imgSettings.value.autoUpdateConfig[`${s.stack}::${s.image}`];
+    return cfg?.mode ?? "off";
+}
+function getAutoUpdateTime(s: ImageStatus): string {
+    return imgSettings.value.autoUpdateConfig[`${s.stack}::${s.image}`]?.time ?? "02:00";
+}
+function isPending(s: ImageStatus): boolean {
+    return imgSettings.value.pendingAutoUpdates.includes(`${s.stack}::${s.image}`);
+}
+
+async function setAutoUpdateMode(s: ImageStatus, mode: "off" | "immediate" | "scheduled", time?: string) {
     const key = `${s.stack}::${s.image}`;
-    const enabled = !autoUpdateKeys.value.has(key);
-    const res = await api("POST", "/image/auto-update", { key, enabled });
+    const body: Record<string, unknown> = { key, mode };
+    if (mode === "scheduled") body.time = time ?? getAutoUpdateTime(s);
+    const res = await api("POST", "/image/auto-update", body);
     if (res.ok) {
-        if (enabled) {
-            imgSettings.value.autoUpdateImages.push(key);
+        if (mode === "off") {
+            delete imgSettings.value.autoUpdateConfig[key];
+            imgSettings.value.pendingAutoUpdates = imgSettings.value.pendingAutoUpdates.filter(k => k !== key);
         } else {
-            imgSettings.value.autoUpdateImages = imgSettings.value.autoUpdateImages.filter(k => k !== key);
+            imgSettings.value.autoUpdateConfig[key] = mode === "scheduled"
+                ? { mode, time: (body.time as string) }
+                : { mode };
         }
-        showToast(enabled ? t('watcher.status.autoUpdateOn') : t('watcher.status.autoUpdateOff'));
+        showToast(t('watcher.status.autoUpdateSaved'));
     } else {
         showToast(`❌ ${res.message}`, false);
     }
@@ -970,9 +996,26 @@ async function removeCred(registry: string) {
     font-weight: 600;
 }
 
-.auto-update-switch {
-    cursor: pointer;
-    &:checked { background-color: #22c55e; border-color: #16a34a; }
+.au-cell {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.au-select {
+    width: auto;
+    min-width: 120px;
+    font-size: .78rem;
+    padding: 2px 6px;
+}
+.au-time {
+    width: 90px;
+    font-size: .78rem;
+    padding: 2px 4px;
+}
+.au-pending {
+    font-size: .85rem;
+    opacity: .75;
+    cursor: default;
 }
 
 .table th {

@@ -16,14 +16,14 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 ## 🆕 Nouveautés récentes
 
-- **⚡ Mise à jour automatique par image** — Un interrupteur sur l'onglet Images de `/watcher` permet d'activer la mise à jour automatique image par image. Dès qu'une mise à jour est détectée, Dockge Enhanced exécute automatiquement `docker compose pull` + `docker compose up -d` pour ce service — aucune action manuelle requise.
-- **📢 Notifications Discord enrichies** — L'embed de mise à jour d'images distingue désormais les images mises à jour automatiquement (✅, envoyé *après* la mise à jour) de celles qui attendent une action manuelle (🔄). L'embed passe au vert quand tout a été traité automatiquement.
+- **🕐 Màj auto immédiate ou planifiée par image** — Chaque image de l'onglet Images de `/watcher` dispose d'un sélecteur à 3 états : **Désactivé** / **⚡ Immédiat** (màj dès la détection) / **🕐 Planifié** (heure au choix, ex: `02:00`). Les màj planifiées sont mises en attente à la détection et appliquées par un cron interne à la minute — un indicateur ⏳ signale les images en attente. La configuration survit aux redémarrages.
+- **📢 Notifications Discord enrichies** — L'embed de mise à jour d'images distingue les images mises à jour automatiquement (✅, envoyé *après* la mise à jour) de celles qui attendent une action manuelle (🔄). L'embed passe au vert quand tout a été traité automatiquement.
 
 ---
 
 ## ✨ Fonctionnalités ajoutées
 
-**🔄 Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io et les registries privés. Fréquence configurable (1h → 24h). **Interrupteur de màj automatique par image** : active-le sur une image et Dockge Enhanced la pull et redémarre le service dès qu'une mise à jour est détectée. Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
+**🔄 Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io et les registries privés. Fréquence configurable (1h → 24h). **Màj automatique par image** : choisis *Immédiat* pour màj dès la détection, ou *Planifié* pour appliquer la mise à jour à une heure précise (ex : `02:00` pour les heures creuses). Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
 
 **🛡️ Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution avec [Trivy](https://trivy.dev/). `aquasec/trivy:latest` est automatiquement pull avant chaque scan et supprimée après — toujours à jour, aucune place occupée entre les scans. Seuil d'alerte et timeout de scan configurables. Résultats visibles dans l'UI avec un bouton de scan manuel par image. Déduplication des CVE (chaque vulnérabilité n'apparaît qu'une seule fois par image). Alertes envoyées sur Discord avec retry/backoff en cas de rate limit.
 

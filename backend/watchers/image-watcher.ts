@@ -28,13 +28,19 @@ export interface RegistryCredential {
     token: string;      // PAT GitHub ou password
 }
 
+export interface AutoUpdateEntry {
+    mode: "immediate" | "scheduled";
+    time?: string;   // "HH:MM" — uniquement pour mode scheduled
+}
+
 export interface WatcherSettings {
     enabled: boolean;
     intervalHours: number;
     discordWebhooks: string[];   // liste de webhooks (migration auto depuis discordWebhook)
     credentials: RegistryCredential[];
     notificationLang: "fr" | "en";
-    autoUpdateImages: string[];  // clés "stack::image" des images à mettre à jour automatiquement
+    autoUpdateConfig: Record<string, AutoUpdateEntry>;  // clé "stack::image" → config màj auto
+    pendingAutoUpdates: string[];                        // clés en attente de màj planifiée
 }
 
 export interface ImageStatus {
@@ -268,6 +274,7 @@ function extractImagesFromCompose(composePath: string): string[] {
 export class ImageWatcher {
     private static _instance: ImageWatcher;
     private cronJob: cron.ScheduledTask | null = null;
+    private minuteCron: cron.ScheduledTask | null = null;
     private baseUrl: string = "";
 
     setBaseUrl(url: string): void { this.baseUrl = url; }
@@ -278,7 +285,8 @@ export class ImageWatcher {
         discordWebhooks: [],
         credentials: [],
         notificationLang: "fr",
-        autoUpdateImages: [],
+        autoUpdateConfig: {},
+        pendingAutoUpdates: [],
     };
 
     static getInstance(): ImageWatcher {
@@ -296,6 +304,14 @@ export class ImageWatcher {
             if (typeof data.discordWebhook === "string" && !data.discordWebhooks) {
                 data.discordWebhooks = data.discordWebhook ? [data.discordWebhook] : [];
                 delete data.discordWebhook;
+            }
+            // Migration : autoUpdateImages (string[]) → autoUpdateConfig (Record)
+            if (Array.isArray(data.autoUpdateImages) && !data.autoUpdateConfig) {
+                data.autoUpdateConfig = {};
+                for (const key of data.autoUpdateImages as string[]) {
+                    (data.autoUpdateConfig as Record<string, AutoUpdateEntry>)[key] = { mode: "immediate" };
+                }
+                delete data.autoUpdateImages;
             }
             this.settings = { ...this.settings, ...data as Partial<WatcherSettings> };
         } catch { /* première utilisation */ }
@@ -327,6 +343,8 @@ export class ImageWatcher {
         const expr = `0 */${this.settings.intervalHours} * * *`;
         console.log(`[ImageWatcher] Démarrage — vérification toutes les ${this.settings.intervalHours}h`);
         this.cronJob = cron.schedule(expr, () => this.runCheck());
+        // Cron minutaire pour appliquer les màj planifiées
+        this.minuteCron = cron.schedule("* * * * *", () => this.applyPendingUpdates().catch(console.error));
         // Check immédiat au démarrage
         this.runCheck().catch(console.error);
     }
@@ -334,6 +352,8 @@ export class ImageWatcher {
     stop(): void {
         this.cronJob?.stop();
         this.cronJob = null;
+        this.minuteCron?.stop();
+        this.minuteCron = null;
     }
 
     restart(): void {
@@ -393,11 +413,34 @@ export class ImageWatcher {
 
         const updates = results.filter(r => r.hasUpdate && !r.error);
 
-        // Auto-update : lance la màj pour les images qui ont l'option activée
-        const autoUpdateSet = new Set(this.settings.autoUpdateImages ?? []);
-        const toAutoUpdate = updates.filter(r => autoUpdateSet.has(`${r.stack}::${r.image}`));
+        // ── Auto-update ───────────────────────────────────────────
+        const autoUpdateConfig = this.settings.autoUpdateConfig ?? {};
+        const currentPending   = new Set(this.settings.pendingAutoUpdates ?? []);
+
+        const toImmediate:  ImageStatus[] = [];
+        const newlyPending: string[]      = [];
+
+        for (const r of updates) {
+            const key = `${r.stack}::${r.image}`;
+            const cfg = autoUpdateConfig[key];
+            if (!cfg) continue;
+            if (cfg.mode === "immediate") {
+                toImmediate.push(r);
+            } else if (cfg.mode === "scheduled" && !currentPending.has(key)) {
+                newlyPending.push(key);
+            }
+        }
+
+        // Enregistre les nouvelles màj en attente
+        if (newlyPending.length > 0) {
+            const merged = [...currentPending, ...newlyPending];
+            await this.saveSettings({ pendingAutoUpdates: merged });
+            console.log(`[ImageWatcher] ${newlyPending.length} image(s) mise(s) en attente de màj planifiée`);
+        }
+
+        // Applique les màj immédiates
         const autoUpdated: ImageStatus[] = [];
-        for (const item of toAutoUpdate) {
+        for (const item of toImmediate) {
             const composePath = composePathByStack.get(item.stack);
             if (composePath) {
                 const success = await this.performAutoUpdate(item, composePath);
@@ -413,9 +456,65 @@ export class ImageWatcher {
         console.log(
             `[ImageWatcher] ${results.length} image(s) vérifiée(s), ` +
             `${updates.length} mise(s) à jour disponible(s)` +
-            (autoUpdated.length ? `, ${autoUpdated.length} mise(s) à jour automatique(s) effectuée(s)` : "")
+            (autoUpdated.length ? `, ${autoUpdated.length} immédiate(s) effectuée(s)` : "") +
+            (newlyPending.length ? `, ${newlyPending.length} planifiée(s) en attente` : "")
         );
         return results;
+    }
+
+    /** Applique les màj planifiées dont l'heure correspond à l'heure courante (appelé chaque minute) */
+    private async applyPendingUpdates(): Promise<void> {
+        const pending = this.settings.pendingAutoUpdates ?? [];
+        if (pending.length === 0) return;
+
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+        const toApply = pending.filter(key => {
+            const cfg = this.settings.autoUpdateConfig?.[key];
+            return cfg?.mode === "scheduled" && cfg.time === currentTime;
+        });
+        if (toApply.length === 0) return;
+
+        // Retire les clés traitées du pending avant d'appliquer (évite double-tir si la màj est longue)
+        await this.saveSettings({
+            pendingAutoUpdates: pending.filter(k => !toApply.includes(k)),
+        });
+
+        console.log(`[ImageWatcher] Màj planifiée à ${currentTime} : ${toApply.length} image(s)`);
+
+        const applied: ImageStatus[] = [];
+        for (const key of toApply) {
+            const sepIdx = key.indexOf("::");
+            if (sepIdx === -1) continue;
+            const stack = key.slice(0, sepIdx);
+            const image = key.slice(sepIdx + 2);
+
+            // Trouve le fichier compose
+            const candidates = [
+                path.join(STACKS_DIR, stack, "compose.yaml"),
+                path.join(STACKS_DIR, stack, "docker-compose.yml"),
+                path.join(STACKS_DIR, stack, "docker-compose.yaml"),
+            ];
+            let composePath = "";
+            for (const c of candidates) {
+                try { await fs.access(c); composePath = c; break; } catch { /* next */ }
+            }
+            if (!composePath) continue;
+
+            // Récupère le statut connu ou fait un check rapide
+            const status: ImageStatus = imageStatusStore.get(key) ?? {
+                image, stack, localDigest: "", remoteDigest: "",
+                hasUpdate: true, lastChecked: new Date().toISOString(),
+            };
+
+            const success = await this.performAutoUpdate(status, composePath);
+            if (success) applied.push(status);
+        }
+
+        if (applied.length > 0 && this.settings.discordWebhooks.length > 0) {
+            await this.notify(applied, applied.length, applied);
+        }
     }
 
     /** Trouve le nom du service docker compose qui utilise une image donnée */

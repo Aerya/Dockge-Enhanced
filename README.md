@@ -16,14 +16,14 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 
 ## 🆕 Recent changes
 
-- **⚡ Auto-update per image** — A toggle switch on the `/watcher` Images tab lets you enable automatic updates image by image. When an update is detected, Dockge Enhanced automatically runs `docker compose pull` + `docker compose up -d` for that service — no manual action required.
-- **📢 Smarter Discord notifications** — The image update embed now includes both auto-updated images (✅, sent *after* the update is applied) and images still awaiting manual action (🔄). The embed turns green when everything was handled automatically.
+- **🕐 Immediate or scheduled auto-update per image** — Each image in the `/watcher` Images tab now has a 3-state selector: **Disabled** / **⚡ Immediate** (update as soon as detected) / **🕐 Scheduled** (pick an exact time, e.g. `02:00`). Scheduled updates are queued on detection and applied by an internal per-minute cron — a ⏳ indicator shows images waiting for their slot. Settings survive restarts.
+- **📢 Smarter Discord notifications** — The image update embed distinguishes auto-updated images (✅, sent *after* the update) from those still awaiting manual action (🔄). The embed turns green when everything was handled automatically.
 
 ---
 
 ## ✨ Added features
 
-**🔄 Image Watcher** — Automatically checks for image updates by comparing local and remote digests (no pull required). Supports Docker Hub, ghcr.io, and private registries. Configurable frequency (1h → 24h). **Per-image auto-update toggle**: enable it for any image and Dockge Enhanced will automatically pull and restart the service as soon as an update is detected. Click **View project →** next to any image to search for it instantly.
+**🔄 Image Watcher** — Automatically checks for image updates by comparing local and remote digests (no pull required). Supports Docker Hub, ghcr.io, and private registries. Configurable frequency (1h → 24h). **Per-image auto-update**: choose *Immediate* to update on detection, or *Scheduled* to apply the update at a specific time of day (e.g. `02:00` for off-peak hours). Click **View project →** next to any image to search for it instantly.
 
 **🛡️ Trivy Scanner** — Scans running container images for known vulnerabilities (CVE) via [Trivy](https://trivy.dev/). `aquasec/trivy:latest` is automatically pulled before each scan and removed afterwards — always up-to-date, zero disk footprint between scans. Configurable severity threshold and scan timeout. Results visible in the UI with a per-image manual scan button. CVE deduplication ensures each vulnerability appears only once per image. Alerts sent to Discord with retry/backoff on rate limits.
 
