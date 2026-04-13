@@ -876,9 +876,8 @@ function removeAppriseUrl(idx: number) {
 async function saveAppriseSettings() {
     savingApprise.value = true;
     try {
-        // Persiste dans les settings image (stockage global)
+        // Mise à jour partielle : le backend merge avec les settings existants
         const res = await api("POST", "/image/settings", {
-            ...imgSettings.value,
             appriseServerUrl: appriseSettings.value.serverUrl,
             appriseUrls:      appriseSettings.value.urls,
         });
