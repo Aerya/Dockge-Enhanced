@@ -15,6 +15,62 @@
             </div>
         </div>
 
+        <!-- ═══ APPRISE — Config globale ═══ -->
+        <div class="shadow-box big-padding mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="bell" class="me-2" />{{ $t('watcher.apprise.heading') }}
+                </h5>
+                <small class="form-text">{{ $t('watcher.apprise.global') }}</small>
+            </div>
+
+            <div class="row g-3">
+                <!-- URL Serveur -->
+                <div class="col-md-6">
+                    <label class="form-label small">{{ $t('watcher.apprise.serverUrl') }}</label>
+                    <input v-model="appriseSettings.serverUrl" type="url" class="form-control form-control-sm"
+                        :placeholder="$t('watcher.apprise.serverUrlPlaceholder')" autocomplete="off" />
+                </div>
+
+                <!-- Notification URLs -->
+                <div class="col-12">
+                    <label class="form-label small">{{ $t('watcher.apprise.urls') }}</label>
+                    <div v-for="(url, idx) in appriseSettings.urls" :key="idx"
+                        class="d-flex align-items-center gap-2 mb-2">
+                        <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
+                            {{ url }}
+                        </span>
+                        <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl(idx)">
+                            <font-awesome-icon icon="trash" />
+                        </button>
+                    </div>
+                    <p v-if="!appriseSettings.urls.length" class="form-text fst-italic mb-2">
+                        {{ $t('watcher.apprise.noUrl') }}
+                    </p>
+                    <div class="input-group">
+                        <input v-model="newAppriseUrl" type="text" class="form-control form-control-sm"
+                            :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
+                        <button class="btn btn-sm btn-success" @click="addAppriseUrl" :disabled="!newAppriseUrl">
+                            <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.apprise.addUrl') }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="col-12 d-flex gap-2 flex-wrap">
+                    <button class="btn btn-primary btn-sm" @click="saveAppriseSettings" :disabled="savingApprise">
+                        <span v-if="savingApprise" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.apprise.save') }}
+                    </button>
+                    <button class="btn btn-normal btn-sm" @click="testApprise"
+                        :disabled="testingApprise || !appriseSettings.serverUrl">
+                        <span v-if="testingApprise" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t('watcher.apprise.test') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="shadow-box shadow-box-settings">
             <!-- ═══ TAB BAR ═══ -->
             <ul class="nav nav-pills mb-4">
@@ -511,6 +567,7 @@ import BackupTab from "./BackupTab.vue";
 
 // ─── Types ────────────────────────────────────────────────────────
 
+interface AppriseSettings { serverUrl: string; urls: string[] }
 interface Cred { registry: string; username: string; token: string }
 interface AutoUpdateEntry { mode: "immediate" | "scheduled"; time?: string }
 interface ImgSettings { enabled: boolean; intervalHours: number; discordWebhooks: string[]; notificationLang: "fr" | "en"; autoUpdateConfig: Record<string, AutoUpdateEntry>; pendingAutoUpdates: string[] }
@@ -615,6 +672,11 @@ function searchImage(image: string): void {
     window.open(`https://duckduckgo.com/?q=${encodeURIComponent(noTag)}`, "_blank");
 }
 
+const appriseSettings = ref<AppriseSettings>({ serverUrl: "", urls: [] });
+const newAppriseUrl   = ref("");
+const savingApprise   = ref(false);
+const testingApprise  = ref(false);
+
 const saving = ref(false);
 const savingTrivy = ref(false);
 const running = ref(false);
@@ -662,6 +724,13 @@ onMounted(async () => {
         api("GET", "/image/status"),
         api("GET", "/trivy/status"),
     ]);
+    // Charge la config Apprise depuis les settings image (stockée globalement)
+    if (imgRes.ok && imgRes.data) {
+        appriseSettings.value = {
+            serverUrl: imgRes.data.appriseServerUrl ?? "",
+            urls:      Array.isArray(imgRes.data.appriseUrls) ? imgRes.data.appriseUrls : [],
+        };
+    }
     if (imgRes.ok) {
         imgSettings.value = {
             enabled:          imgRes.data.enabled,
@@ -791,6 +860,40 @@ async function testWebhook(url: string, context: "img" | "trivy") {
         if (context === "img") testingImg.value = false;
         else testingTrivy.value = false;
     }
+}
+
+// ─── Apprise ─────────────────────────────────────────────────────
+
+function addAppriseUrl() {
+    const url = newAppriseUrl.value.trim();
+    if (!url || appriseSettings.value.urls.includes(url)) return;
+    appriseSettings.value.urls.push(url);
+    newAppriseUrl.value = "";
+}
+function removeAppriseUrl(idx: number) {
+    appriseSettings.value.urls.splice(idx, 1);
+}
+async function saveAppriseSettings() {
+    savingApprise.value = true;
+    try {
+        // Persiste dans les settings image (stockage global)
+        const res = await api("POST", "/image/settings", {
+            ...imgSettings.value,
+            appriseServerUrl: appriseSettings.value.serverUrl,
+            appriseUrls:      appriseSettings.value.urls,
+        });
+        showToast(res.ok ? t('watcher.apprise.saved') : `❌ ${res.message}`, res.ok);
+    } finally { savingApprise.value = false; }
+}
+async function testApprise() {
+    testingApprise.value = true;
+    try {
+        const res = await api("POST", "/apprise/test", {
+            serverUrl: appriseSettings.value.serverUrl,
+            urls:      appriseSettings.value.urls,
+        });
+        showToast(res.ok ? t('watcher.apprise.testOk') : t('watcher.apprise.testFail'), res.ok);
+    } finally { testingApprise.value = false; }
 }
 
 async function addCred() {

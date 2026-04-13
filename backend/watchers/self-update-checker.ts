@@ -11,6 +11,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import axios from "axios";
 import { DiscordNotifier } from "../notification/discord";
+import { AppriseNotifier } from "../notification/apprise";
 
 const SELF_REPO        = "aerya/dockge-enhanced";
 const SELF_TAG         = "latest";
@@ -211,22 +212,41 @@ export class SelfUpdateChecker {
 
     private async _notifyDiscord(containerName: string): Promise<void> {
         const webhooks = await loadWebhooks();
-        if (webhooks.length === 0) return;
+        const apprise  = await this._loadApprise();
+        if (webhooks.length === 0 && !apprise) return;
 
-        const notifier = new DiscordNotifier(webhooks);
-        await notifier.sendEmbed({
-            title:       "🔔 Mise à jour Dockge-Enhanced disponible",
-            color:       0xF59E0B,
-            description: [
-                "Une nouvelle image est disponible sur GHCR.",
-                "",
-                "**Pour mettre à jour :**",
-                "```bash",
-                `docker pull ghcr.io/${SELF_REPO}:${SELF_TAG}`,
-                `docker compose up -d`,
-                "```",
-                "_Exécuter depuis le dossier contenant votre compose.yaml_",
-            ].join("\n"),
-        });
+        const title = "🔔 Mise à jour Dockge-Enhanced disponible";
+        const body  = [
+            "Une nouvelle image est disponible sur GHCR.",
+            "",
+            "**Pour mettre à jour :**",
+            "```bash",
+            `docker pull ghcr.io/${SELF_REPO}:${SELF_TAG}`,
+            `docker compose up -d`,
+            "```",
+            "_Exécuter depuis le dossier contenant votre compose.yaml_",
+        ].join("\n");
+
+        if (webhooks.length > 0) {
+            await new DiscordNotifier(webhooks).sendEmbed({
+                title, color: 0xF59E0B, description: body,
+            });
+        }
+        if (apprise) {
+            await apprise.send({ title, body, type: "warning" });
+        }
+    }
+
+    private async _loadApprise(): Promise<AppriseNotifier | null> {
+        try {
+            const raw  = await fs.readFile(SETTINGS_PATH, "utf8");
+            const data = JSON.parse(raw) as Record<string, unknown>;
+            const serverUrl = typeof data.appriseServerUrl === "string" ? data.appriseServerUrl : "";
+            const urls = Array.isArray(data.appriseUrls) ? data.appriseUrls as string[] : [];
+            if (!serverUrl) return null;
+            return new AppriseNotifier(serverUrl, urls);
+        } catch {
+            return null;
+        }
     }
 }

@@ -78,11 +78,9 @@ export default {
 .btn-check:active + .btn-outline-primary,
 .btn-check:checked + .btn-outline-primary,
 .btn-check:hover + .btn-outline-primary {
-    color: #fff;
-
-    .dark & {
-        color: #000;
-    }
+    background-color: $primary;
+    border-color: $primary;
+    color: #000;
 }
 
 .dark {

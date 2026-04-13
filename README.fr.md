@@ -16,20 +16,22 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 ## 🆕 Nouveautés récentes
 
-- **🕐 Màj auto immédiate ou planifiée par image** — Chaque image de l'onglet Images de `/watcher` dispose d'un sélecteur à 3 états : **Désactivé** / **⚡ Immédiat** (màj dès la détection) / **🕐 Planifié** (heure au choix, ex: `02:00`). Les màj planifiées sont mises en attente à la détection et appliquées par un cron interne à la minute — un indicateur ⏳ signale les images en attente. La configuration survit aux redémarrages.
-- **📢 Notifications Discord enrichies** — L'embed de mise à jour d'images distingue les images mises à jour automatiquement (✅, envoyé *après* la mise à jour) de celles qui attendent une action manuelle (🔄). L'embed passe au vert quand tout a été traité automatiquement.
+- **🔔 Notifications Apprise** — Passerelle de notifications vers 60+ services (Telegram, ntfy, Slack, Gotify, Pushover…) configurable depuis `/watcher`. Se déploie en conteneur Docker séparé. Fonctionne en complément de Discord — configuré une fois, les alertes de mises à jour d'images, scans de sécurité et backups passent toutes par là.
+- **🐛 Corrections thème sombre** — La flèche du sélecteur de langue est maintenant visible en mode sombre ; les boutons actifs du sélecteur de thème (Clair/Sombre/Auto) sont correctement stylisés.
 
 ---
 
 ## ✨ Fonctionnalités ajoutées
 
-**🔄 Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io et les registries privés. Fréquence configurable (1h → 24h). **Màj automatique par image** : choisis *Immédiat* pour màj dès la détection, ou *Planifié* pour appliquer la mise à jour à une heure précise (ex : `02:00` pour les heures creuses). Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
+**🔄 Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io et les registries privés. Fréquence configurable (1h → 24h). **Màj automatique par image** : choisis *Immédiat* pour màj dès la détection, ou *Planifié* pour appliquer la mise à jour à une heure précise (ex : `02:00` pour les heures creuses) — un indicateur ⏳ signale les images en attente. L'embed distingue les images mises à jour automatiquement (✅) de celles qui attendent une action manuelle (🔄), et passe au vert quand tout est traité. Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
 
-**🛡️ Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution avec [Trivy](https://trivy.dev/). `aquasec/trivy:latest` est automatiquement pull avant chaque scan et supprimée après — toujours à jour, aucune place occupée entre les scans. Seuil d'alerte et timeout de scan configurables. Résultats visibles dans l'UI avec un bouton de scan manuel par image. Déduplication des CVE (chaque vulnérabilité n'apparaît qu'une seule fois par image). Alertes envoyées sur Discord avec retry/backoff en cas de rate limit.
+**🛡️ Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution avec [Trivy](https://trivy.dev/). `aquasec/trivy:latest` est automatiquement pull avant chaque scan et supprimée après — toujours à jour, aucune place occupée entre les scans. Seuil d'alerte et timeout de scan configurables. Résultats visibles dans l'UI avec un bouton de scan manuel par image. Déduplication des CVE (chaque vulnérabilité n'apparaît qu'une seule fois par image). Alertes envoyées sur Discord/Apprise avec retry/backoff en cas de rate limit.
 
 **☁️ Backup Restic** — Sauvegarde automatique des `compose.yaml` et `.env` de chaque stack avec [Restic](https://restic.net/). **Plusieurs destinations en parallèle** — ajoutes-en autant que tu veux (ex : local + SFTP) et toutes sont sauvegardées à chaque exécution. 4 types de destination : local, SFTP/NAS, S3/Backblaze B2, REST Server. Le mode SFTP supporte **clé SSH** ou **mot de passe** (`sshpass` est intégré dans le conteneur). Politique de rétention configurable. La date du prochain backup est affichée dans l'UI. Clique sur un snapshot pour le dérouler et voir chaque fichier avec deux indicateurs de statut : **vs snapshot précédent** (Nouveau / Modifié / Inchangé) et **vs disque actuel** (Disque OK / Modifié depuis / Absent). Chaque snapshot affiche la quantité de données ajoutées. Sélectionne des fichiers individuellement et restaure-les en un clic.
 
 **📢 Notifications Discord** — Embeds colorés pour les mises à jour d'images, alertes sécurité et résultats de backup. Plusieurs webhooks supportés par fonctionnalité. Définis `DOCKGE_PUBLIC_URL` pour inclure un lien cliquable dans les notifications. Retry automatique avec backoff exponentiel en cas de rate limit (HTTP 429) ou d'erreur serveur.
+
+**🔔 Notifications Apprise** — Envoie les alertes vers 60+ services (Telegram, ntfy, Slack, Gotify, Pushover, Matrix…) via un conteneur [Apprise](https://github.com/caronc/apprise-api). Configuré une fois dans `/watcher`, s'applique à tous les types d'alertes. Passe les URLs de notification directement (mode stateless) ou laisse Apprise utiliser ses services pré-configurés. Fonctionne en parallèle de Discord.
 
 **🗂️ Ressources Docker** — Liste et suppression des images, volumes et conteneurs non gérés depuis l'UI (`/resources`). L'onglet **Hors Dockge** liste les conteneurs qui tournent en dehors de Dockge (lancés par un autre outil) — arrête-les et supprime-les directement depuis l'interface. Met en évidence les images/volumes liés à des stacks Dockge arrêtées, avec double confirmation avant toute suppression destructive. Le badge MàJ des stacks disparaît automatiquement une fois les images à jour. **Cases à cocher multi-sélection** sur l'onglet Images pour sélectionner et supprimer plusieurs images inutilisées en un seul clic.
 
@@ -149,3 +151,4 @@ Ce fork suit les releases stables de Dockge automatiquement via GitHub Actions :
 - [**Dockge**](https://github.com/louislam/dockge) par louislam — le projet d'origine (licence MIT)
 - [**Trivy**](https://github.com/aquasecurity/trivy) — scanner de vulnérabilités
 - [**Restic**](https://restic.net/) — outil de backup chiffré
+- [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes

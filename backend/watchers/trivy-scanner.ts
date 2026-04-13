@@ -8,11 +8,13 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import * as path from "path";
 import { DiscordNotifier } from "../notification/discord";
+import { AppriseNotifier } from "../notification/apprise";
 
 const execAsync = promisify(exec);
 
-const DATA_DIR      = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
-const SETTINGS_PATH = path.join(DATA_DIR, "trivy-settings.json");
+const DATA_DIR           = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const SETTINGS_PATH      = path.join(DATA_DIR, "trivy-settings.json");
+const WATCHER_SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 const STATUS_PATH   = path.join(DATA_DIR, "trivy-status.json");
 
 type Severity = "UNKNOWN" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
@@ -391,8 +393,24 @@ export class TrivyScanner {
         }
     }
 
+    /** Charge la config Apprise depuis les settings du watcher images (config globale) */
+    private async loadAppriseNotifier(): Promise<AppriseNotifier | null> {
+        try {
+            const fsp  = await import("fs/promises");
+            const raw  = await fsp.readFile(WATCHER_SETTINGS_PATH, "utf8");
+            const data = JSON.parse(raw) as Record<string, unknown>;
+            const serverUrl = typeof data.appriseServerUrl === "string" ? data.appriseServerUrl : "";
+            const urls = Array.isArray(data.appriseUrls) ? data.appriseUrls as string[] : [];
+            if (!serverUrl) return null;
+            return new AppriseNotifier(serverUrl, urls);
+        } catch {
+            return null;
+        }
+    }
+
     private async sendDiscordNotifications(scanResults: ScanResult[]): Promise<void> {
-        if (this.settings.discordWebhooks.length === 0) return;
+        const appriseNotifier = await this.loadAppriseNotifier();
+        if (this.settings.discordWebhooks.length === 0 && !appriseNotifier) return;
 
         const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
 
@@ -406,20 +424,22 @@ export class TrivyScanner {
             return;
         }
 
-        const notifier = new DiscordNotifier(this.settings.discordWebhooks);
+        const discordNotifier = this.settings.discordWebhooks.length > 0
+            ? new DiscordNotifier(this.settings.discordWebhooks)
+            : null;
 
         // Envoie une notification par image (pour ne pas dépasser les limites Discord)
         for (const result of alertResults) {
-            await this.sendImageAlert(notifier, result);
+            await this.sendImageAlert(discordNotifier, appriseNotifier, result);
             // Petite pause pour éviter le rate-limiting Discord
             await new Promise(res => setTimeout(res, 500));
         }
 
         // Message récapitulatif global
-        await this.sendSummary(notifier, scanResults);
+        await this.sendSummary(discordNotifier, appriseNotifier, scanResults);
     }
 
-    private async sendImageAlert(notifier: DiscordNotifier, result: ScanResult): Promise<void> {
+    private async sendImageAlert(discord: DiscordNotifier | null, apprise: AppriseNotifier | null, result: ScanResult): Promise<void> {
         const en     = (this.settings.notificationLang ?? "fr") === "en";
         const locale = en ? "en-GB" : "fr-FR";
         const t      = (fr: string, enStr: string) => en ? enStr : fr;
@@ -454,20 +474,33 @@ export class TrivyScanner {
         }
 
         const uiUrl = this.baseUrl || null;
+        const title = `${SEVERITY_EMOJI[result.maxSeverity]} ${t("Alerte sécurité", "Security alert")} — ${result.image}`;
+        const description =
+            `${t("Stack", "Stack")} : **${result.stack}**\n${t("Sévérité max", "Max severity")} : **${result.maxSeverity}**` +
+            (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl})` : "");
 
-        await notifier.sendEmbed({
-            title: `${SEVERITY_EMOJI[result.maxSeverity]} ${t("Alerte sécurité", "Security alert")} — ${result.image}`,
-            color: SEVERITY_COLORS[result.maxSeverity],
-            url:   uiUrl ?? undefined,
-            description:
-                `${t("Stack", "Stack")} : **${result.stack}**\n${t("Sévérité max", "Max severity")} : **${result.maxSeverity}**` +
-                (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl})` : ""),
-            fields,
-            footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString(locale)}`,
-        });
+        if (discord) {
+            await discord.sendEmbed({
+                title,
+                color: SEVERITY_COLORS[result.maxSeverity],
+                url:   uiUrl ?? undefined,
+                description,
+                fields,
+                footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString(locale)}`,
+            });
+        }
+
+        if (apprise) {
+            const vulnBody = fields.map(f => `**${f.name}**\n${f.value}`).join("\n\n");
+            await apprise.send({
+                title,
+                body:  `${description}\n\n${vulnBody}`.trim(),
+                type:  result.maxSeverity === "CRITICAL" ? "failure" : "warning",
+            });
+        }
     }
 
-    private async sendSummary(notifier: DiscordNotifier, results: ScanResult[]): Promise<void> {
+    private async sendSummary(discord: DiscordNotifier | null, apprise: AppriseNotifier | null, results: ScanResult[]): Promise<void> {
         const en     = (this.settings.notificationLang ?? "fr") === "en";
         const locale = en ? "en-GB" : "fr-FR";
         const t      = (fr: string, enStr: string) => en ? enStr : fr;
@@ -509,23 +542,36 @@ export class TrivyScanner {
             return `${header}\n  ${vulnLine}`;
         }).join("\n");
 
-        await notifier.sendEmbed({
-            title: hasCritical
-                ? `🚨 ${t("Rapport de sécurité — Vulnérabilités détectées", "Security report — Vulnerabilities detected")}`
-                : `✅ ${t(`Rapport de sécurité — ${results.length} image(s) scannée(s)`, `Security report — ${results.length} image(s) scanned`)}`,
-            color: hasCritical ? 0xef4444 : 0x22c55e,
-            url:   uiUrl ?? undefined,
-            description:
-                (summaryLines || t("Aucune vulnérabilité significative détectée.", "No significant vulnerabilities detected.")) +
-                (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl})` : ""),
-            fields: [
-                {
-                    name: t("Images scannées", "Scanned images"),
-                    value: imagesValue,
-                    inline: false,
-                }
-            ],
-            footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString(locale)}`,
-        });
+        const title = hasCritical
+            ? `🚨 ${t("Rapport de sécurité — Vulnérabilités détectées", "Security report — Vulnerabilities detected")}`
+            : `✅ ${t(`Rapport de sécurité — ${results.length} image(s) scannée(s)`, `Security report — ${results.length} image(s) scanned`)}`;
+        const description =
+            (summaryLines || t("Aucune vulnérabilité significative détectée.", "No significant vulnerabilities detected.")) +
+            (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl})` : "");
+
+        if (discord) {
+            await discord.sendEmbed({
+                title,
+                color: hasCritical ? 0xef4444 : 0x22c55e,
+                url:   uiUrl ?? undefined,
+                description,
+                fields: [
+                    {
+                        name: t("Images scannées", "Scanned images"),
+                        value: imagesValue,
+                        inline: false,
+                    }
+                ],
+                footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString(locale)}`,
+            });
+        }
+
+        if (apprise) {
+            await apprise.send({
+                title,
+                body:  `${description}\n\n**${t("Images scannées", "Scanned images")}**\n${imagesValue}`.trim(),
+                type:  hasCritical ? "failure" : "success",
+            });
+        }
     }
 }

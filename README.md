@@ -16,20 +16,22 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 
 ## 🆕 Recent changes
 
-- **🕐 Immediate or scheduled auto-update per image** — Each image in the `/watcher` Images tab now has a 3-state selector: **Disabled** / **⚡ Immediate** (update as soon as detected) / **🕐 Scheduled** (pick an exact time, e.g. `02:00`). Scheduled updates are queued on detection and applied by an internal per-minute cron — a ⏳ indicator shows images waiting for their slot. Settings survive restarts.
-- **📢 Smarter Discord notifications** — The image update embed distinguishes auto-updated images (✅, sent *after* the update) from those still awaiting manual action (🔄). The embed turns green when everything was handled automatically.
+- **🔔 Apprise notifications** — Global notification gateway to 60+ services (Telegram, ntfy, Slack, Gotify, Pushover…) configurable from `/watcher`. Deploys as a separate Docker container. Works alongside Discord — configure once, alerts for image updates, security scans, and backups all go through it.
+- **🐛 Dark mode fixes** — Language selector arrow now visible in dark mode; active theme buttons (Light/Dark/Auto) correctly styled.
 
 ---
 
 ## ✨ Added features
 
-**🔄 Image Watcher** — Automatically checks for image updates by comparing local and remote digests (no pull required). Supports Docker Hub, ghcr.io, and private registries. Configurable frequency (1h → 24h). **Per-image auto-update**: choose *Immediate* to update on detection, or *Scheduled* to apply the update at a specific time of day (e.g. `02:00` for off-peak hours). Click **View project →** next to any image to search for it instantly.
+**🔄 Image Watcher** — Automatically checks for image updates by comparing local and remote digests (no pull required). Supports Docker Hub, ghcr.io, and private registries. Configurable frequency (1h → 24h). **Per-image auto-update**: choose *Immediate* to update on detection, or *Scheduled* to apply the update at a specific time of day (e.g. `02:00` for off-peak hours) — a ⏳ indicator shows images waiting for their slot. The embed distinguishes auto-updated images (✅) from those awaiting manual action (🔄), and turns green when everything was handled automatically. Click **View project →** next to any image to search for it instantly.
 
-**🛡️ Trivy Scanner** — Scans running container images for known vulnerabilities (CVE) via [Trivy](https://trivy.dev/). `aquasec/trivy:latest` is automatically pulled before each scan and removed afterwards — always up-to-date, zero disk footprint between scans. Configurable severity threshold and scan timeout. Results visible in the UI with a per-image manual scan button. CVE deduplication ensures each vulnerability appears only once per image. Alerts sent to Discord with retry/backoff on rate limits.
+**🛡️ Trivy Scanner** — Scans running container images for known vulnerabilities (CVE) via [Trivy](https://trivy.dev/). `aquasec/trivy:latest` is automatically pulled before each scan and removed afterwards — always up-to-date, zero disk footprint between scans. Configurable severity threshold and scan timeout. Results visible in the UI with a per-image manual scan button. CVE deduplication ensures each vulnerability appears only once per image. Alerts sent to Discord/Apprise with retry/backoff on rate limits.
 
 **☁️ Restic Backup** — Automatic backup of all stack `compose.yaml` and `.env` files with [Restic](https://restic.net/). **Multiple destinations in parallel** — add as many as you want (e.g. local + SFTP) and all are backed up on every run. 4 destination types: local, SFTP/NAS, S3/Backblaze B2, REST Server. SFTP supports both **SSH key** and **password** authentication (`sshpass` is bundled in the container). Configurable retention policy. The next scheduled backup time is shown in the UI. Click any snapshot to expand it and see each file with two status indicators: **vs previous snapshot** (New / Modified / Unchanged) and **vs current disk** (Disk OK / Modified since / Missing). Each snapshot displays the amount of data added. Select individual files and restore them in one click.
 
 **📢 Discord Notifications** — Rich embeds for image updates, security alerts, and backup results. Supports multiple webhooks per feature. Set `DOCKGE_PUBLIC_URL` to include a clickable link in notifications. Automatic retry with exponential backoff on rate limits (HTTP 429) and server errors.
+
+**🔔 Apprise Notifications** — Send alerts to 60+ services (Telegram, ntfy, Slack, Gotify, Pushover, Matrix…) via an [Apprise](https://github.com/caronc/apprise-api) container. Configured once in `/watcher` and applies to all alert types. Pass notification URLs directly (stateless mode) or let Apprise use its pre-configured services. Works alongside Discord.
 
 **🗂️ Docker Resources** — List and delete Docker images, volumes, and unmanaged containers directly from the UI (`/resources`). The **Unmanaged** tab lists containers running outside Dockge (e.g. started by another tool) — stop and delete them from the UI. Highlights images/volumes linked to stopped Dockge stacks, with double confirmation before any destructive action. The MàJ badge on stacks is automatically cleared once images are up to date. **Multi-select checkboxes** on the Images tab let you select and bulk-delete multiple unused images in one click.
 
@@ -149,3 +151,4 @@ This fork tracks upstream Dockge releases automatically via GitHub Actions:
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — the original project (MIT licence)
 - [**Trivy**](https://github.com/aquasecurity/trivy) — vulnerability scanner
 - [**Restic**](https://restic.net/) — encrypted backup tool
+- [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway

@@ -13,6 +13,7 @@ import * as path from "path";
 import * as yaml from "js-yaml";
 import axios from "axios";
 import { DiscordNotifier } from "../notification/discord";
+import { AppriseNotifier } from "../notification/apprise";
 
 const execAsync = promisify(exec);
 
@@ -41,6 +42,8 @@ export interface WatcherSettings {
     notificationLang: "fr" | "en";
     autoUpdateConfig: Record<string, AutoUpdateEntry>;  // clé "stack::image" → config màj auto
     pendingAutoUpdates: string[];                        // clés en attente de màj planifiée
+    appriseServerUrl: string;    // URL du serveur Apprise (ex: "http://apprise:8000")
+    appriseUrls: string[];       // URLs Apprise (ntfy://, tgram://, etc.)
 }
 
 export interface ImageStatus {
@@ -287,6 +290,8 @@ export class ImageWatcher {
         notificationLang: "fr",
         autoUpdateConfig: {},
         pendingAutoUpdates: [],
+        appriseServerUrl: "",
+        appriseUrls: [],
     };
 
     static getInstance(): ImageWatcher {
@@ -454,8 +459,8 @@ export class ImageWatcher {
             }
         }
 
-        // Notif Discord après les màj auto, pour tout signaler en un seul embed
-        if (updates.length > 0 && this.settings.discordWebhooks.length > 0) {
+        // Notifications après les màj auto, pour tout signaler en un seul embed
+        if (updates.length > 0 && (this.settings.discordWebhooks.length > 0 || this.settings.appriseServerUrl)) {
             await this.notify(updates, results.length, autoUpdated);
         }
 
@@ -518,7 +523,7 @@ export class ImageWatcher {
             if (success) applied.push(status);
         }
 
-        if (applied.length > 0 && this.settings.discordWebhooks.length > 0) {
+        if (applied.length > 0 && (this.settings.discordWebhooks.length > 0 || this.settings.appriseServerUrl)) {
             await this.notify(applied, applied.length, applied);
         }
     }
@@ -581,7 +586,12 @@ export class ImageWatcher {
     }
 
     private async notify(updates: ImageStatus[], totalChecked: number, autoUpdated: ImageStatus[] = []): Promise<void> {
-        const notifier = new DiscordNotifier(this.settings.discordWebhooks);
+        const discordNotifier = this.settings.discordWebhooks.length > 0
+            ? new DiscordNotifier(this.settings.discordWebhooks)
+            : null;
+        const appriseNotifier = this.settings.appriseServerUrl
+            ? new AppriseNotifier(this.settings.appriseServerUrl, this.settings.appriseUrls)
+            : null;
         const uiUrl    = this.baseUrl || null;
         const en       = (this.settings.notificationLang ?? "fr") === "en";
         const locale   = en ? "en-GB" : "fr-FR";
@@ -623,22 +633,37 @@ export class ImageWatcher {
             inline: false,
         });
 
-        await notifier.sendEmbed({
-            title,
-            color: autoUpdated.length > 0 && manual.length === 0 ? 0x22c55e : 0xf59e0b,
-            url:   uiUrl ?? undefined,
-            description:
-                `${totalChecked} ${t("image(s) vérifiée(s)", "image(s) checked")} · ${new Date().toLocaleString(locale)}\n` +
-                (manual.length > 0
-                    ? (uiUrl
-                        ? `[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl}) ${t("pour décider des mises à jour manuelles.", "to review manual updates.")}`
-                        : t("Connectez-vous à **Dockge** pour décider des mises à jour manuelles.", "Log in to **Dockge** to review manual updates."))
-                    : ""),
-            fields: [
-                ...autoUpdated.map(u => makeField(u, true)),
-                ...manual.map(u => makeField(u, false)),
-            ],
-            footer: "Dockge Enhanced — Image Watcher",
-        });
+        const description =
+            `${totalChecked} ${t("image(s) vérifiée(s)", "image(s) checked")} · ${new Date().toLocaleString(locale)}\n` +
+            (manual.length > 0
+                ? (uiUrl
+                    ? `[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl}) ${t("pour décider des mises à jour manuelles.", "to review manual updates.")}`
+                    : t("Connectez-vous à **Dockge** pour décider des mises à jour manuelles.", "Log in to **Dockge** to review manual updates."))
+                : "");
+
+        const fields = [
+            ...autoUpdated.map(u => makeField(u, true)),
+            ...manual.map(u => makeField(u, false)),
+        ];
+
+        if (discordNotifier) {
+            await discordNotifier.sendEmbed({
+                title,
+                color: autoUpdated.length > 0 && manual.length === 0 ? 0x22c55e : 0xf59e0b,
+                url:   uiUrl ?? undefined,
+                description,
+                fields,
+                footer: "Dockge Enhanced — Image Watcher",
+            });
+        }
+
+        if (appriseNotifier) {
+            const imageLines = fields.map(f => `**${f.name}**\n${f.value}`).join("\n\n");
+            await appriseNotifier.send({
+                title,
+                body:  `${description}\n\n${imageLines}`.trim(),
+                type:  autoUpdated.length > 0 && manual.length === 0 ? "success" : "warning",
+            });
+        }
     }
 }

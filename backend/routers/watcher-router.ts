@@ -14,6 +14,7 @@ import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { BackupManager } from "../watchers/backup-manager";
 import { DiscordNotifier } from "../notification/discord";
+import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
 import jwt from "jsonwebtoken";
 import { JWTDecoded } from "../util-server";
@@ -195,6 +196,18 @@ export class WatcherRouter extends Router {
             const url = Array.isArray(webhookUrl) ? webhookUrl[0] : webhookUrl;
             const ok  = await new DiscordNotifier(url).testWebhook();
             return res.json({ ok, message: ok ? "Webhook fonctionnel !" : "Échec — vérifie l'URL" });
+        });
+
+        // ════════════════════════════════════════════════════════════════
+        // APPRISE — Test
+        // ════════════════════════════════════════════════════════════════
+
+        router.post("/apprise/test", async (req: Request, res: Response) => {
+            const { serverUrl, urls } = req.body as { serverUrl?: string; urls?: string[] };
+            if (!serverUrl) return res.status(400).json({ ok: false, message: "serverUrl requis" });
+            const notifier = new AppriseNotifier(serverUrl, Array.isArray(urls) ? urls : []);
+            const ok = await notifier.test();
+            return res.json({ ok, message: ok ? "Apprise fonctionnel !" : "Échec — vérifie l'URL du serveur" });
         });
 
         // ════════════════════════════════════════════════════════════════

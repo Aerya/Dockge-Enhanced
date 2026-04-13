@@ -10,12 +10,14 @@ import { promisify } from "util";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { DiscordNotifier } from "../notification/discord";
+import { AppriseNotifier } from "../notification/apprise";
 
 const execAsync = promisify(exec);
 
-const STACKS_DIR    = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
-const DATA_DIR      = process.env.DOCKGE_DATA_DIR   ?? "/opt/dockge/data";
-const SETTINGS_PATH = path.join(DATA_DIR, "backup-settings.json");
+const STACKS_DIR         = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
+const DATA_DIR           = process.env.DOCKGE_DATA_DIR   ?? "/opt/dockge/data";
+const SETTINGS_PATH      = path.join(DATA_DIR, "backup-settings.json");
+const WATCHER_SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -551,9 +553,7 @@ export class BackupManager {
         backupHistory.unshift(result);
         if (backupHistory.length > 20) backupHistory.splice(20);
 
-        if (this.settings.discordWebhooks.length > 0) {
-            await this.sendDiscordNotification(result);
-        }
+        await this.sendNotification(result);
 
         return result;
     }
@@ -734,51 +734,83 @@ export class BackupManager {
         return backupHistory;
     }
 
-    // ── Discord ───────────────────────────────────────────────────
+    // ── Notifications (Discord + Apprise) ────────────────────────
 
-    private async sendDiscordNotification(result: BackupResult): Promise<void> {
-        const notifier = new DiscordNotifier(this.settings.discordWebhooks);
+    private async loadAppriseNotifier(): Promise<AppriseNotifier | null> {
+        try {
+            const raw  = await fs.readFile(WATCHER_SETTINGS_PATH, "utf8");
+            const data = JSON.parse(raw) as Record<string, unknown>;
+            const serverUrl = typeof data.appriseServerUrl === "string" ? data.appriseServerUrl : "";
+            const urls = Array.isArray(data.appriseUrls) ? data.appriseUrls as string[] : [];
+            if (!serverUrl) return null;
+            return new AppriseNotifier(serverUrl, urls);
+        } catch {
+            return null;
+        }
+    }
+
+    private async sendNotification(result: BackupResult): Promise<void> {
+        const discord  = this.settings.discordWebhooks.length > 0
+            ? new DiscordNotifier(this.settings.discordWebhooks)
+            : null;
+        const apprise  = await this.loadAppriseNotifier();
+        if (!discord && !apprise) return;
+
         const en       = (this.settings.notificationLang ?? "fr") === "en";
         const locale   = en ? "en-GB" : "fr-FR";
         const t        = (fr: string, enStr: string) => en ? enStr : fr;
 
         if (result.success) {
-            await notifier.sendEmbed({
-                title: t("✅ Backup Dockge réussi", "✅ Dockge backup successful"),
-                color: 0x22c55e,
-                description: `Snapshot \`${result.snapshotId}\` ${t("créé avec succès", "created successfully")}`,
-                fields: [
-                    { name: t("Durée", "Duration"),
-                      value: formatDuration(result.duration),                                  inline: true },
-                    { name: t("Données ajoutées", "Data added"),
-                      value: formatBytes(result.dataAdded ?? 0),                               inline: true },
-                    { name: t("Fichiers", "Files"),
-                      value: `${result.filesNew} ${t("nouveaux", "new")} · ${result.filesChanged} ${t("modifiés", "modified")}`,
-                      inline: true },
-                    { name: t("Destinations", "Destinations"),
-                      value: (result.destinations ?? [])
-                          .map(d => `${d.success ? "✅" : "❌"} ${d.label}`)
-                          .join("\n") || "—",
-                      inline: true },
-                ],
-                footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString(locale)}`,
-            });
+            const title  = t("✅ Backup Dockge réussi", "✅ Dockge backup successful");
+            const descr  = `Snapshot \`${result.snapshotId}\` ${t("créé avec succès", "created successfully")}`;
+            const fields = [
+                { name: t("Durée", "Duration"),
+                  value: formatDuration(result.duration),                                  inline: true },
+                { name: t("Données ajoutées", "Data added"),
+                  value: formatBytes(result.dataAdded ?? 0),                               inline: true },
+                { name: t("Fichiers", "Files"),
+                  value: `${result.filesNew} ${t("nouveaux", "new")} · ${result.filesChanged} ${t("modifiés", "modified")}`,
+                  inline: true },
+                { name: t("Destinations", "Destinations"),
+                  value: (result.destinations ?? [])
+                      .map(d => `${d.success ? "✅" : "❌"} ${d.label}`)
+                      .join("\n") || "—",
+                  inline: true },
+            ];
+
+            if (discord) {
+                await discord.sendEmbed({
+                    title, color: 0x22c55e, description: descr, fields,
+                    footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString(locale)}`,
+                });
+            }
+            if (apprise) {
+                const body = `${descr}\n\n${fields.map(f => `**${f.name}**: ${f.value}`).join("\n")}`;
+                await apprise.send({ title, body, type: "success" });
+            }
         } else {
-            await notifier.sendEmbed({
-                title: t("❌ Échec du backup Dockge", "❌ Dockge backup failed"),
-                color: 0xef4444,
-                description: `**${t("Erreur", "Error")} :** ${result.error}`,
-                fields: [
-                    { name: t("Durée", "Duration"),
-                      value: formatDuration(result.duration),                                  inline: true },
-                    { name: t("Destinations", "Destinations"),
-                      value: (result.destinations ?? [])
-                          .map(d => `${d.success ? "✅" : "❌"} ${d.label}`)
-                          .join("\n") || "—",
-                      inline: true },
-                ],
-                footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString(locale)}`,
-            });
+            const title  = t("❌ Échec du backup Dockge", "❌ Dockge backup failed");
+            const descr  = `**${t("Erreur", "Error")} :** ${result.error}`;
+            const fields = [
+                { name: t("Durée", "Duration"),
+                  value: formatDuration(result.duration),                                  inline: true },
+                { name: t("Destinations", "Destinations"),
+                  value: (result.destinations ?? [])
+                      .map(d => `${d.success ? "✅" : "❌"} ${d.label}`)
+                      .join("\n") || "—",
+                  inline: true },
+            ];
+
+            if (discord) {
+                await discord.sendEmbed({
+                    title, color: 0xef4444, description: descr, fields,
+                    footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString(locale)}`,
+                });
+            }
+            if (apprise) {
+                const body = `${descr}\n\n${fields.map(f => `**${f.name}**: ${f.value}`).join("\n")}`;
+                await apprise.send({ title, body, type: "failure" });
+            }
         }
     }
 }
