@@ -244,7 +244,8 @@ async function getRemoteDigest(
 async function getLocalDigest(image: string): Promise<string> {
     try {
         const { stdout } = await execAsync(
-            `docker image inspect --format '{{index .RepoDigests 0}}' ${image} 2>/dev/null`
+            `docker image inspect --format '{{index .RepoDigests 0}}' ${image} 2>/dev/null`,
+            { timeout: 15000 }
         );
         const raw = stdout.trim();
         const match = raw.match(/sha256:[a-f0-9]{64}/);
@@ -261,13 +262,27 @@ function extractImagesFromCompose(composePath: string): string[] {
         const doc = yaml.load(raw) as Record<string, unknown>;
         if (!doc?.services) return [];
         const images: string[] = [];
-        for (const svc of Object.values(
-            doc.services as Record<string, { image?: string }>
-        )) {
-            if (svc?.image) images.push(svc.image.trim());
+        for (const svc of Object.values(doc.services as Record<string, unknown>)) {
+            if (!svc || typeof svc !== "object") continue;
+            const service = svc as Record<string, unknown>;
+            // Champ image direct
+            if (typeof service.image === "string" && service.image) {
+                images.push(service.image.trim());
+                continue;
+            }
+            // js-yaml v4 ne résout pas les ancres <<: (YAML merge keys) — elles apparaissent
+            // comme une clé littérale "<<" pointant vers l'objet fusionné. On inspecte ce niveau.
+            const mergeVal = service["<<"];
+            if (mergeVal && typeof mergeVal === "object") {
+                const merged = mergeVal as Record<string, unknown>;
+                if (typeof merged.image === "string" && merged.image) {
+                    images.push(merged.image.trim());
+                }
+            }
         }
         return [...new Set(images)];
-    } catch {
+    } catch (err) {
+        console.warn(`[ImageWatcher] extractImagesFromCompose: erreur lecture ${composePath}:`, err);
         return [];
     }
 }
@@ -390,27 +405,34 @@ export class ImageWatcher {
         const composePathByStack = new Map<string, string>();
 
         for (const stack of entries) {
-            // Cherche compose.yaml ou docker-compose.yml
-            const candidates = [
-                path.join(STACKS_DIR, stack, "compose.yaml"),
-                path.join(STACKS_DIR, stack, "docker-compose.yml"),
-                path.join(STACKS_DIR, stack, "docker-compose.yaml"),
-            ];
+            try {
+                // Cherche compose.yaml ou docker-compose.yml
+                const candidates = [
+                    path.join(STACKS_DIR, stack, "compose.yaml"),
+                    path.join(STACKS_DIR, stack, "docker-compose.yml"),
+                    path.join(STACKS_DIR, stack, "docker-compose.yaml"),
+                ];
 
-            let composePath = "";
-            for (const c of candidates) {
-                try { await fs.access(c); composePath = c; break; } catch { /* next */ }
-            }
-            if (!composePath) continue;
-            composePathByStack.set(stack, composePath);
+                let composePath = "";
+                for (const c of candidates) {
+                    try { await fs.access(c); composePath = c; break; } catch { /* next */ }
+                }
+                if (!composePath) continue;
+                composePathByStack.set(stack, composePath);
 
-            const images = extractImagesFromCompose(composePath);
-            for (const image of images) {
-                const key = `${stack}::${image}`;
-                processedKeys.add(key);
-                const status = await this.checkOneImage(image, stack);
-                results.push(status);
-                imageStatusStore.set(key, status);
+                const images = extractImagesFromCompose(composePath);
+                if (images.length === 0) {
+                    console.log(`[ImageWatcher] ${stack}: aucune image trouvée dans ${composePath}`);
+                }
+                for (const image of images) {
+                    const key = `${stack}::${image}`;
+                    processedKeys.add(key);
+                    const status = await this.checkOneImage(image, stack);
+                    results.push(status);
+                    imageStatusStore.set(key, status);
+                }
+            } catch (err) {
+                console.error(`[ImageWatcher] Erreur lors du traitement de la stack "${stack}":`, err);
             }
         }
 
