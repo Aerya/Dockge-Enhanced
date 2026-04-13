@@ -483,7 +483,7 @@ export class ImageWatcher {
 
         // Notifications après les màj auto, pour tout signaler en un seul embed
         if (updates.length > 0 && (this.settings.discordWebhooks.length > 0 || this.settings.appriseServerUrl)) {
-            await this.notify(updates, results.length, autoUpdated);
+            await this.notify(updates, results.length, autoUpdated, this.settings.autoUpdateConfig);
         }
 
         console.log(
@@ -546,7 +546,7 @@ export class ImageWatcher {
         }
 
         if (applied.length > 0 && (this.settings.discordWebhooks.length > 0 || this.settings.appriseServerUrl)) {
-            await this.notify(applied, applied.length, applied);
+            await this.notify(applied, applied.length, applied, this.settings.autoUpdateConfig);
         }
     }
 
@@ -607,7 +607,12 @@ export class ImageWatcher {
         return status;
     }
 
-    private async notify(updates: ImageStatus[], totalChecked: number, autoUpdated: ImageStatus[] = []): Promise<void> {
+    private async notify(
+        updates: ImageStatus[],
+        totalChecked: number,
+        autoUpdated: ImageStatus[] = [],
+        cfg: Record<string, AutoUpdateEntry> = {},
+    ): Promise<void> {
         const discordNotifier = this.settings.discordWebhooks.length > 0
             ? new DiscordNotifier(this.settings.discordWebhooks)
             : null;
@@ -620,19 +625,26 @@ export class ImageWatcher {
         const t        = (fr: string, enStr: string) => en ? enStr : fr;
 
         const autoUpdatedKeys = new Set(autoUpdated.map(u => `${u.stack}::${u.image}`));
-        const manual  = updates.filter(u => !autoUpdatedKeys.has(`${u.stack}::${u.image}`));
+        const notAuto = updates.filter(u => !autoUpdatedKeys.has(`${u.stack}::${u.image}`));
+        const scheduled = notAuto.filter(u => cfg[`${u.stack}::${u.image}`]?.mode === "scheduled");
+        const manual    = notAuto.filter(u => cfg[`${u.stack}::${u.image}`]?.mode !== "scheduled");
 
         // Titre selon ce qui s'est passé
         let title: string;
-        if (autoUpdated.length > 0 && manual.length === 0) {
+        if (autoUpdated.length > 0 && notAuto.length === 0) {
             title = t(
                 `✅ ${autoUpdated.length} image(s) mise(s) à jour automatiquement`,
                 `✅ ${autoUpdated.length} image(s) auto-updated`
             );
         } else if (autoUpdated.length > 0) {
+            const parts = [
+                autoUpdated.length > 0 ? `${autoUpdated.length} ${t("auto", "auto")}` : "",
+                scheduled.length > 0   ? `${scheduled.length} ${t("planifiée(s)", "scheduled")}` : "",
+                manual.length > 0      ? `${manual.length} ${t("manuelle(s)", "manual")}` : "",
+            ].filter(Boolean).join(", ");
             title = t(
-                `🐳 ${updates.length} mise(s) à jour — ${autoUpdated.length} auto, ${manual.length} manuelle(s)`,
-                `🐳 ${updates.length} update(s) — ${autoUpdated.length} auto, ${manual.length} manual`
+                `🐳 ${updates.length} mise(s) à jour — ${parts}`,
+                `🐳 ${updates.length} update(s) — ${parts}`
             );
         } else {
             title = t(
@@ -641,37 +653,47 @@ export class ImageWatcher {
             );
         }
 
-        const makeField = (u: ImageStatus, wasAutoUpdated: boolean) => ({
-            name: wasAutoUpdated ? `✅ \`${u.image}\`` : `🔄 \`${u.image}\``,
-            value:
-                `${t("Stack", "Stack")} : **${u.stack}**\n` +
-                (wasAutoUpdated
-                    ? t("Mise à jour automatique effectuée.", "Automatically updated.")
-                    : `${t("Distant", "Remote")} : \`${u.remoteDigest.slice(0, 19)}…\`\n` +
-                      (u.localDigest
-                          ? `${t("Local", "Local")}   : \`${u.localDigest.slice(0, 19)}…\``
-                          : t("⚠️ Image non présente localement", "⚠️ Image not present locally"))
-                ),
-            inline: false,
-        });
+        const makeField = (u: ImageStatus, wasAutoUpdated: boolean) => {
+            const key     = `${u.stack}::${u.image}`;
+            const entry   = cfg[key];
+            const isSched = !wasAutoUpdated && entry?.mode === "scheduled";
+            return {
+                name: wasAutoUpdated ? `✅ \`${u.image}\``
+                    : isSched        ? `🕐 \`${u.image}\``
+                    :                  `🔄 \`${u.image}\``,
+                value:
+                    `${t("Stack", "Stack")} : **${u.stack}**\n` +
+                    (wasAutoUpdated
+                        ? t("Mise à jour immédiate effectuée.", "Immediate update applied.")
+                        : isSched
+                            ? t(`Mise à jour planifiée à **${entry!.time}**.`,
+                                `Scheduled update at **${entry!.time}**.`)
+                            : `${t("Distant", "Remote")} : \`${u.remoteDigest.slice(0, 19)}…\`\n` +
+                              (u.localDigest
+                                  ? `${t("Local", "Local")}   : \`${u.localDigest.slice(0, 19)}…\``
+                                  : t("⚠️ Image non présente localement", "⚠️ Image not present locally"))
+                    ),
+                inline: false,
+            };
+        };
 
         const description =
             `${totalChecked} ${t("image(s) vérifiée(s)", "image(s) checked")} · ${new Date().toLocaleString(locale)}\n` +
-            (manual.length > 0
+            (notAuto.length > 0
                 ? (uiUrl
-                    ? `[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl}) ${t("pour décider des mises à jour manuelles.", "to review manual updates.")}`
-                    : t("Connectez-vous à **Dockge** pour décider des mises à jour manuelles.", "Log in to **Dockge** to review manual updates."))
+                    ? `[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl}) ${t("pour décider des mises à jour en attente.", "to review pending updates.")}`
+                    : t("Connectez-vous à **Dockge** pour décider des mises à jour en attente.", "Log in to **Dockge** to review pending updates."))
                 : "");
 
         const fields = [
             ...autoUpdated.map(u => makeField(u, true)),
-            ...manual.map(u => makeField(u, false)),
+            ...notAuto.map(u => makeField(u, false)),
         ];
 
         if (discordNotifier) {
             await discordNotifier.sendEmbed({
                 title,
-                color: autoUpdated.length > 0 && manual.length === 0 ? 0x22c55e : 0xf59e0b,
+                color: autoUpdated.length > 0 && notAuto.length === 0 ? 0x22c55e : 0xf59e0b,
                 url:   uiUrl ?? undefined,
                 description,
                 fields,
@@ -684,7 +706,7 @@ export class ImageWatcher {
             await appriseNotifier.send({
                 title,
                 body:  `${description}\n\n${imageLines}`.trim(),
-                type:  autoUpdated.length > 0 && manual.length === 0 ? "success" : "warning",
+                type:  autoUpdated.length > 0 && notAuto.length === 0 ? "success" : "warning",
             });
         }
     }

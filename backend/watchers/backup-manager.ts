@@ -176,8 +176,9 @@ function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string {
         return `-o sftp.command="${sshCmd} ${s.host} -s sftp"`;
     }
 
-    if (s.authMode === "key" && s.keyPath) {
-        const sshArgs = `-i ${s.keyPath} -o StrictHostKeyChecking=no`;
+    if (s.authMode === "key") {
+        const keyArg = s.keyPath ? `-i ${s.keyPath} ` : "";
+        const sshArgs = `${keyArg}-p ${port} -o StrictHostKeyChecking=no`;
         return `-o sftp.args="${sshArgs}"`;
     }
 
@@ -191,8 +192,8 @@ function buildRepoUrl(dest: BackupDestination): string {
 
         case "sftp": {
             const s = dest.sftp!;
-            const port = s.port !== 22 ? `:${s.port}` : "";
-            return `sftp:${s.user}@${s.host}${port}:${s.path}`;
+            // Le port est passé via sftp.args/-o sftp.command, pas dans l'URL
+            return `sftp:${s.user}@${s.host}:${s.path}`;
         }
 
         case "s3": {

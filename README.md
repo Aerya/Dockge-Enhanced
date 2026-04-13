@@ -16,6 +16,10 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 
 ## 🆕 Recent changes
 
+- **🌍 TZ variable** — Add `TZ=Europe/Paris` (or your timezone) to the compose file so scheduled auto-updates fire at the correct local time instead of UTC.
+- **🔔 Notification update types** — Discord/Apprise alerts now distinguish ✅ immediate update applied, 🕐 scheduled at HH:MM, and 🔄 manual action required — per image.
+- **🐛 SFTP custom port** — SFTP backups now correctly use any port (not just 22).
+- **🐛 Image Watcher: missing stacks** — Fixed stacks with `network_mode: host`, external networks or `<<:` YAML anchors not appearing in the watcher.
 - **🔔 Apprise notifications** — Global notification gateway to 60+ services (Telegram, ntfy, Slack, Gotify, Pushover…) configurable from `/watcher`. Deploys as a separate Docker container. Works alongside Discord — configure once, alerts for image updates, security scans, and backups all go through it.
 - **🐛 Dark mode fixes** — Language selector arrow now visible in dark mode; active theme buttons (Light/Dark/Auto) correctly styled.
 
@@ -111,6 +115,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
       - DOCKGE_PUBLIC_URL=http://192.168.1.100:5001   # your machine's IP or domain
+      - TZ=Europe/Paris                                # your timezone (affects scheduled updates)
 ```
 
 ```bash
@@ -128,6 +133,7 @@ Open **http://localhost:5001**, create your admin account, then click **Monitori
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directory containing Docker Compose stacks |
 | `DOCKGE_DATA_DIR` | `/opt/dockge/data` | Dockge data directory (set to `/app/data`) |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |
+| `TZ` | `UTC` | Container timezone — **important** for scheduled auto-updates to fire at the right local time (e.g. `Europe/Paris`) |
 | `DOCKGE_PORT` | `5001` | Web UI port |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Enable HTTPS |
 

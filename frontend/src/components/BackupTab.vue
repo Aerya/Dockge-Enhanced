@@ -897,13 +897,13 @@ async function testWebhook(url: string) {
 }
 .dest-label-input {
     max-width: 180px;
-    background: rgba(255,255,255,.05);
+    background-color: rgba(255,255,255,.05);
     border-color: rgba(255,255,255,.15);
     color: #e5e7eb;
 }
 .dest-type-select {
     max-width: 140px;
-    background: rgba(255,255,255,.05);
+    background-color: rgba(255,255,255,.05);
     border-color: rgba(255,255,255,.15);
     color: #e5e7eb;
 }

@@ -12,3 +12,4 @@ services:
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
+      - TZ=Europe/Paris

@@ -16,6 +16,10 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 ## 🆕 Nouveautés récentes
 
+- **🌍 Variable TZ** — Ajoute `TZ=Europe/Paris` (ou ton fuseau) dans le compose pour que les MàJ planifiées se déclenchent à la bonne heure locale et non en UTC.
+- **🔔 Type de MàJ dans les notifications** — Les alertes Discord/Apprise distinguent maintenant ✅ MàJ immédiate effectuée, 🕐 planifiée à HH:MM, et 🔄 action manuelle requise — par image.
+- **🐛 Port SFTP personnalisable** — Les backups SFTP utilisent désormais correctement n'importe quel port (pas seulement le 22).
+- **🐛 Image Watcher : stacks manquantes** — Correction des stacks avec `network_mode: host`, réseaux externes ou ancres YAML `<<:` qui n'apparaissaient pas dans le watcher.
 - **🔔 Notifications Apprise** — Passerelle de notifications vers 60+ services (Telegram, ntfy, Slack, Gotify, Pushover…) configurable depuis `/watcher`. Se déploie en conteneur Docker séparé. Fonctionne en complément de Discord — configuré une fois, les alertes de mises à jour d'images, scans de sécurité et backups passent toutes par là.
 - **🐛 Corrections thème sombre** — La flèche du sélecteur de langue est maintenant visible en mode sombre ; les boutons actifs du sélecteur de thème (Clair/Sombre/Auto) sont correctement stylisés.
 
@@ -111,6 +115,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
       - DOCKGE_PUBLIC_URL=http://192.168.1.100:5001   # IP de ta machine ou domaine
+      - TZ=Europe/Paris                                # ton fuseau horaire (affecte les MàJ planifiées)
 ```
 
 ```bash
@@ -128,6 +133,7 @@ Ouvre **http://localhost:5001**, crée ton compte admin, puis clique sur **Surve
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Dossier contenant les stacks Docker Compose |
 | `DOCKGE_DATA_DIR` | `/opt/dockge/data` | Dossier de données Dockge (à définir sur `/app/data`) |
 | `DOCKGE_PUBLIC_URL` | *(aucun)* | URL publique utilisée dans les liens des notifications Discord (ex : `https://dockge.mondomaine.fr`) |
+| `TZ` | `UTC` | Fuseau horaire du conteneur — **important** pour que les MàJ planifiées se déclenchent à la bonne heure locale (ex : `Europe/Paris`) |
 | `DOCKGE_PORT` | `5001` | Port de la WebUI |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Activer HTTPS |
 
