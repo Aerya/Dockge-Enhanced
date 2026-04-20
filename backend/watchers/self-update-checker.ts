@@ -17,6 +17,7 @@ const SELF_REPO        = "aerya/dockge-enhanced";
 const SELF_TAG         = "latest";
 const DATA_DIR         = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH    = path.join(DATA_DIR, "watcher-settings.json");
+const DIGEST_CACHE     = path.join(DATA_DIR, "self-update-digest.json");
 const CHECK_INTERVAL   = 6 * 60 * 60 * 1000; // 6h
 const STARTUP_DELAY    = 30_000;              // 30s après démarrage
 
@@ -152,8 +153,10 @@ export class SelfUpdateChecker {
         error:           null,
     };
 
-    /** Digest pour lequel on a déjà envoyé la notif Discord (évite le spam) */
-    private _notifiedDigest = "";
+    /** Digest distant pour lequel on a déjà envoyé la notif "dispo" (évite le spam) */
+    private _notifiedRemoteDigest = "";
+    /** Dernier digest local connu, persisté sur disque pour survivre aux redémarrages */
+    private _lastKnownLocalDigest = "";
 
     private _startupTimer:   ReturnType<typeof setTimeout>  | null = null;
     private _intervalTimer:  ReturnType<typeof setInterval> | null = null;
@@ -168,8 +171,25 @@ export class SelfUpdateChecker {
     }
 
     start(): void {
-        this._startupTimer  = setTimeout(() => this.check(), STARTUP_DELAY);
-        this._intervalTimer = setInterval(() => this.check(), CHECK_INTERVAL);
+        this._loadDigestCache().then(() => {
+            this._startupTimer  = setTimeout(() => this.check(), STARTUP_DELAY);
+            this._intervalTimer = setInterval(() => this.check(), CHECK_INTERVAL);
+        });
+    }
+
+    private async _loadDigestCache(): Promise<void> {
+        try {
+            const raw  = await fs.readFile(DIGEST_CACHE, "utf8");
+            const data = JSON.parse(raw) as Record<string, unknown>;
+            this._lastKnownLocalDigest = typeof data.localDigest === "string" ? data.localDigest : "";
+        } catch { /* premier démarrage */ }
+    }
+
+    private async _saveDigestCache(localDigest: string): Promise<void> {
+        try {
+            await fs.mkdir(DATA_DIR, { recursive: true });
+            await fs.writeFile(DIGEST_CACHE, JSON.stringify({ localDigest }));
+        } catch { /* non bloquant */ }
     }
 
     stop(): void {
@@ -187,6 +207,18 @@ export class SelfUpdateChecker {
 
             const updateAvailable = !!(localDigest && remoteDigest && localDigest !== remoteDigest);
 
+            // Détecte une mise à jour appliquée automatiquement (digest local a changé)
+            const wasUpdated = !!(
+                localDigest &&
+                this._lastKnownLocalDigest &&
+                localDigest !== this._lastKnownLocalDigest
+            );
+
+            if (localDigest && localDigest !== this._lastKnownLocalDigest) {
+                this._lastKnownLocalDigest = localDigest;
+                await this._saveDigestCache(localDigest);
+            }
+
             this._status = {
                 updateAvailable,
                 localDigest,
@@ -196,10 +228,15 @@ export class SelfUpdateChecker {
                 error: null,
             };
 
-            // Notification Discord — une seule fois par digest distant
-            if (updateAvailable && this._notifiedDigest !== remoteDigest) {
-                this._notifiedDigest = remoteDigest;
-                await this._notifyDiscord(containerName);
+            // Notif "mise à jour appliquée" — le digest local a changé depuis le dernier check
+            if (wasUpdated) {
+                await this._notifyApplied(containerName, localDigest);
+            }
+
+            // Notif "mise à jour disponible" — une seule fois par digest distant
+            if (updateAvailable && this._notifiedRemoteDigest !== remoteDigest) {
+                this._notifiedRemoteDigest = remoteDigest;
+                await this._notifyAvailable(containerName);
             }
         } catch (e: any) {
             this._status = {
@@ -210,7 +247,7 @@ export class SelfUpdateChecker {
         }
     }
 
-    private async _notifyDiscord(containerName: string): Promise<void> {
+    private async _notifyAvailable(containerName: string): Promise<void> {
         const webhooks = await loadWebhooks();
         const apprise  = await this._loadApprise();
         if (webhooks.length === 0 && !apprise) return;
@@ -234,6 +271,27 @@ export class SelfUpdateChecker {
         }
         if (apprise) {
             await apprise.send({ title, body, type: "warning" });
+        }
+    }
+
+    private async _notifyApplied(containerName: string, newDigest: string): Promise<void> {
+        const webhooks = await loadWebhooks();
+        const apprise  = await this._loadApprise();
+        if (webhooks.length === 0 && !apprise) return;
+
+        const title = "✅ Dockge-Enhanced mis à jour";
+        const body  = [
+            `Le conteneur **${containerName}** a été mis à jour automatiquement.`,
+            `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
+        ].join("\n");
+
+        if (webhooks.length > 0) {
+            await new DiscordNotifier(webhooks).sendEmbed({
+                title, color: 0x22c55e, description: body,
+            });
+        }
+        if (apprise) {
+            await apprise.send({ title, body, type: "success" });
         }
     }
 
