@@ -109,10 +109,10 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.post("/image/auto-update", async (req: Request, res: Response) => {
-            const { key, mode, time } = req.body as { key: string; mode: "off" | "immediate" | "scheduled"; time?: string };
+            const { key, mode, time } = req.body as { key: string; mode: "off" | "immediate" | "scheduled" | "ignored"; time?: string };
             if (!key) return res.status(400).json({ ok: false, message: "key requis (format: stack::image)" });
-            if (!["off", "immediate", "scheduled"].includes(mode)) {
-                return res.status(400).json({ ok: false, message: "mode invalide (off | immediate | scheduled)" });
+            if (!["off", "immediate", "scheduled", "ignored"].includes(mode)) {
+                return res.status(400).json({ ok: false, message: "mode invalide (off | immediate | scheduled | ignored)" });
             }
             const watcher = ImageWatcher.getInstance();
             const autoUpdateConfig = { ...(watcher.settings.autoUpdateConfig ?? {}) };
@@ -123,12 +123,13 @@ export class WatcherRouter extends Router {
                 pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
                 await watcher.saveSettings({ autoUpdateConfig, pendingAutoUpdates });
             } else {
+                pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
                 autoUpdateConfig[key] = mode === "scheduled"
                     ? { mode, time: time ?? "02:00" }
                     : { mode };
                 // Active automatiquement le watcher si ce n'est pas déjà le cas
-                const patch: Partial<WatcherSettings> = { autoUpdateConfig };
-                if (!watcher.settings.enabled) patch.enabled = true;
+                const patch: Partial<WatcherSettings> = { autoUpdateConfig, pendingAutoUpdates };
+                if (!watcher.settings.enabled && mode !== "ignored") patch.enabled = true;
                 await watcher.saveSettings(patch);
             }
             return res.json({ ok: true });

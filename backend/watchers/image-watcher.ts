@@ -30,7 +30,7 @@ export interface RegistryCredential {
 }
 
 export interface AutoUpdateEntry {
-    mode: "immediate" | "scheduled";
+    mode: "immediate" | "scheduled" | "ignored";
     time?: string;   // "HH:MM" — uniquement pour mode scheduled
 }
 
@@ -53,6 +53,7 @@ export interface ImageStatus {
     remoteDigest: string;
     hasUpdate: boolean;
     lastChecked: string;    // ISO date
+    ignored?: boolean;
     error?: string;
 }
 
@@ -240,11 +241,20 @@ async function getRemoteDigest(
     return digest as string;
 }
 
+/** Retourne l'image avec tag explicite (ajoute :latest si aucun tag ni digest) */
+function withExplicitTag(image: string): string {
+    if (image.includes("@")) return image;
+    const colonIdx = image.lastIndexOf(":");
+    if (colonIdx > image.lastIndexOf("/")) return image;
+    return `${image}:latest`;
+}
+
 /** Digest de l'image actuellement présente localement */
 async function getLocalDigest(image: string): Promise<string> {
     try {
+        const ref = withExplicitTag(image);
         const { stdout } = await execAsync(
-            `docker image inspect --format '{{index .RepoDigests 0}}' ${image} 2>/dev/null`,
+            `docker image inspect --format '{{index .RepoDigests 0}}' ${ref} 2>/dev/null`,
             { timeout: 15000 }
         );
         const raw = stdout.trim();
@@ -427,6 +437,15 @@ export class ImageWatcher {
                 for (const image of images) {
                     const key = `${stack}::${image}`;
                     processedKeys.add(key);
+                    const cfg = (this.settings.autoUpdateConfig ?? {})[key];
+                    if (cfg?.mode === "ignored") {
+                        const prev = imageStatusStore.get(key);
+                        const ignored: ImageStatus = prev
+                            ? { ...prev, ignored: true, hasUpdate: false }
+                            : { image, stack, localDigest: "", remoteDigest: "", hasUpdate: false, lastChecked: new Date().toISOString(), ignored: true };
+                        imageStatusStore.set(key, ignored);
+                        continue;
+                    }
                     const status = await this.checkOneImage(image, stack);
                     results.push(status);
                     imageStatusStore.set(key, status);

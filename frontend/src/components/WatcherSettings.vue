@@ -283,9 +283,10 @@
                                             <select
                                                 class="form-select form-select-sm au-select"
                                                 :value="getAutoUpdateMode(s)"
-                                                @change="setAutoUpdateMode(s, ($event.target as HTMLSelectElement).value as 'off'|'immediate'|'scheduled')"
+                                                @change="setAutoUpdateMode(s, ($event.target as HTMLSelectElement).value as 'off'|'ignored'|'immediate'|'scheduled')"
                                             >
                                                 <option value="off">{{ $t('watcher.status.auOff') }}</option>
+                                                <option value="ignored">🚫 {{ $t('watcher.status.auIgnored') }}</option>
                                                 <option value="immediate">⚡ {{ $t('watcher.status.auImmediate') }}</option>
                                                 <option value="scheduled">🕐 {{ $t('watcher.status.auScheduled') }}</option>
                                             </select>
@@ -569,7 +570,7 @@ import BackupTab from "./BackupTab.vue";
 
 interface AppriseSettings { serverUrl: string; urls: string[] }
 interface Cred { registry: string; username: string; token: string }
-interface AutoUpdateEntry { mode: "immediate" | "scheduled"; time?: string }
+interface AutoUpdateEntry { mode: "immediate" | "scheduled" | "ignored"; time?: string }
 interface ImgSettings { enabled: boolean; intervalHours: number; discordWebhooks: string[]; notificationLang: "fr" | "en"; autoUpdateConfig: Record<string, AutoUpdateEntry>; pendingAutoUpdates: string[] }
 interface TrivySettings {
     enabled: boolean; intervalHours: number; discordWebhooks: string[];
@@ -908,7 +909,7 @@ async function addCred() {
     }
 }
 
-function getAutoUpdateMode(s: ImageStatus): "off" | "immediate" | "scheduled" {
+function getAutoUpdateMode(s: ImageStatus): "off" | "ignored" | "immediate" | "scheduled" {
     const cfg = imgSettings.value.autoUpdateConfig[`${s.stack}::${s.image}`];
     return cfg?.mode ?? "off";
 }
@@ -919,7 +920,7 @@ function isPending(s: ImageStatus): boolean {
     return imgSettings.value.pendingAutoUpdates.includes(`${s.stack}::${s.image}`);
 }
 
-async function setAutoUpdateMode(s: ImageStatus, mode: "off" | "immediate" | "scheduled", time?: string) {
+async function setAutoUpdateMode(s: ImageStatus, mode: "off" | "ignored" | "immediate" | "scheduled", time?: string) {
     const key = `${s.stack}::${s.image}`;
     const body: Record<string, unknown> = { key, mode };
     if (mode === "scheduled") body.time = time ?? getAutoUpdateTime(s);
