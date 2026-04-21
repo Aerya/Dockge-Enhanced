@@ -12,6 +12,9 @@ import * as fsSync from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
 import axios from "axios";
+import { EventEmitter } from "events";
+
+EventEmitter.defaultMaxListeners = 50;
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 
@@ -304,6 +307,8 @@ export class ImageWatcher {
     private cronJob: cron.ScheduledTask | null = null;
     private minuteCron: cron.ScheduledTask | null = null;
     private baseUrl: string = "";
+    private _checkRunning = false;
+    private _updatingImages = new Set<string>();
 
     setBaseUrl(url: string): void { this.baseUrl = url; }
 
@@ -398,6 +403,11 @@ export class ImageWatcher {
     // ── Check principal ───────────────────────────────────────────
 
     async runCheck(): Promise<ImageStatus[]> {
+        if (this._checkRunning) {
+            console.log("[ImageWatcher] Check déjà en cours, ignoré.");
+            return [];
+        }
+        this._checkRunning = true;
         console.log("[ImageWatcher] Vérification des images...");
         const results: ImageStatus[] = [];
 
@@ -406,6 +416,7 @@ export class ImageWatcher {
             entries = await fs.readdir(STACKS_DIR);
         } catch {
             console.error(`[ImageWatcher] Impossible de lire ${STACKS_DIR}`);
+            this._checkRunning = false;
             return [];
         }
 
@@ -511,6 +522,7 @@ export class ImageWatcher {
             (autoUpdated.length ? `, ${autoUpdated.length} immédiate(s) effectuée(s)` : "") +
             (newlyPending.length ? `, ${newlyPending.length} planifiée(s) en attente` : "")
         );
+        this._checkRunning = false;
         return results;
     }
 
@@ -585,19 +597,27 @@ export class ImageWatcher {
 
     /** Tire et redémarre une image via docker compose. Retourne true si succès. */
     private async performAutoUpdate(status: ImageStatus, composePath: string): Promise<boolean> {
+        const key = `${status.stack}::${status.image}`;
+        if (this._updatingImages.has(key)) {
+            console.log(`[ImageWatcher] Auto-update ${key} déjà en cours, ignorée.`);
+            return false;
+        }
+        this._updatingImages.add(key);
         const service = this.findServiceForImage(composePath, status.image);
         const serviceArg = service ? ` ${service}` : "";
         console.log(`[ImageWatcher] Auto-update: ${status.stack}/${status.image}${service ? ` (service: ${service})` : ""}`);
         try {
-            await execAsync(`docker compose -f "${composePath}" pull${serviceArg}`, { timeout: 180000 });
-            await execAsync(`docker compose -f "${composePath}" up -d${serviceArg}`, { timeout: 60000 });
+            await execAsync(`docker compose -f "${composePath}" pull${serviceArg}`, { timeout: 600000 });
+            await execAsync(`docker compose -f "${composePath}" up -d${serviceArg}`, { timeout: 120000 });
             // Recheck pour mettre à jour le digest dans le store
             const newStatus = await this.checkOneImage(status.image, status.stack);
             imageStatusStore.set(`${status.stack}::${status.image}`, newStatus);
             console.log(`[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`);
+            this._updatingImages.delete(key);
             return true;
         } catch (e) {
             console.error(`[ImageWatcher] Auto-update échouée: ${status.stack}/${status.image}:`, e);
+            this._updatingImages.delete(key);
             return false;
         }
     }
