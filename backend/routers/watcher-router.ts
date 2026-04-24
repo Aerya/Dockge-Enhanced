@@ -325,13 +325,21 @@ export class WatcherRouter extends Router {
             res.json({ ok: true, data: BackupManager.getInstance().getHistory() });
         });
 
-        // Passe les volumes personnalisés pour calculer leur taille en même temps
         router.get("/backup/dir-sizes", async (req: Request, res: Response) => {
             try {
                 const raw = typeof req.query["volumes"] === "string" ? req.query["volumes"] : "";
-                const customVolumes = raw ? raw.split(",").map(v => v.trim()).filter(Boolean) : [];
-                const sizes = await BackupManager.getInstance().getDirSizes(customVolumes);
+                const selectedVolumes = raw ? raw.split(",").map(v => v.trim()).filter(Boolean) : [];
+                const sizes = await BackupManager.getInstance().getDirSizes(selectedVolumes);
                 res.json({ ok: true, data: sizes });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.get("/backup/mounted-volumes", async (_req: Request, res: Response) => {
+            try {
+                const vols = await BackupManager.getInstance().getMountedVolumes();
+                res.json({ ok: true, data: vols });
             } catch (e) {
                 res.status(500).json({ ok: false, message: String(e) });
             }

@@ -259,10 +259,10 @@
                     <font-awesome-icon icon="hdd" class="me-2" />{{ $t('watcher.backup.volumes.heading') }}
                     <span v-if="volumesCollapsed" class="badge-summary ms-2">
                         <span v-if="settings.volumeBackup.includeAppData">/app/data</span>
-                        <span v-if="settings.volumeBackup.customVolumes.length > 0">
-                            {{ settings.volumeBackup.includeAppData ? ' · ' : '' }}{{ settings.volumeBackup.customVolumes.length }} vol.
+                        <span v-if="settings.volumeBackup.selectedVolumes.length > 0">
+                            {{ settings.volumeBackup.includeAppData ? ' · ' : '' }}{{ settings.volumeBackup.selectedVolumes.length }} vol.
                         </span>
-                        <span v-if="!settings.volumeBackup.includeAppData && settings.volumeBackup.customVolumes.length === 0" class="text-muted">{{ $t('watcher.backup.volumes.noneSelected') }}</span>
+                        <span v-if="!settings.volumeBackup.includeAppData && settings.volumeBackup.selectedVolumes.length === 0" class="text-muted">{{ $t('watcher.backup.volumes.noneSelected') }}</span>
                     </span>
                 </h5>
                 <div class="d-flex align-items-center gap-2">
@@ -294,37 +294,37 @@
                             </span>
                         </div>
                     </div>
-                    <!-- Volumes personnalisés -->
+                    <!-- Volumes montés auto-détectés -->
                     <div class="col-12">
                         <p class="form-label mb-2">
-                            <font-awesome-icon icon="folder-open" class="me-1" />{{ $t('watcher.backup.volumes.customHeading') }}
-                            <small class="form-text ms-2">{{ $t('watcher.backup.volumes.customHint') }}</small>
+                            <font-awesome-icon icon="folder-open" class="me-1" />{{ $t('watcher.backup.volumes.mountedHeading') }}
                         </p>
-                        <!-- Liste des volumes ajoutés -->
-                        <div v-if="settings.volumeBackup.customVolumes.length > 0" class="custom-vol-list mb-2">
-                            <div v-for="(vol, idx) in settings.volumeBackup.customVolumes" :key="vol"
-                                class="vol-row active">
-                                <div class="d-flex align-items-center gap-2">
-                                    <code class="vol-path">{{ vol }}</code>
-                                    <span v-if="dirSizes.volumes[vol]" class="vol-size">
-                                        <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.volumes[vol] }}
-                                    </span>
-                                </div>
-                                <button type="button" class="btn btn-xs btn-outline-danger"
-                                    @click="removeVolume(idx)" title="Retirer">
-                                    <font-awesome-icon icon="times" />
-                                </button>
-                            </div>
+                        <!-- Chargement -->
+                        <div v-if="loadingMountedVols" class="text-muted" style="font-size:.82rem">
+                            <span class="spinner-border spinner-border-sm me-1" />{{ $t('watcher.backup.volumes.detecting') }}
                         </div>
-                        <!-- Input ajouter -->
-                        <div class="input-group input-group-sm">
-                            <input v-model="newVolume" type="text" class="form-control"
-                                :placeholder="$t('watcher.backup.volumes.customPlaceholder')"
-                                @keyup.enter="addVolume" />
-                            <button type="button" class="btn btn-normal" @click="addVolume"
-                                :disabled="!newVolume.trim()">
-                                <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.backup.volumes.customAdd') }}
-                            </button>
+                        <!-- Aucun volume détecté -->
+                        <div v-else-if="mountedVols.length === 0" class="text-muted" style="font-size:.82rem">
+                            {{ $t('watcher.backup.volumes.noneDetected') }}
+                        </div>
+                        <!-- Liste -->
+                        <div v-else class="custom-vol-list">
+                            <div v-for="vol in mountedVols" :key="vol.destination"
+                                class="vol-row" :class="{ active: isVolSelected(vol.destination) }"
+                                @click="toggleVol(vol.destination)" style="cursor:pointer">
+                                <div class="form-check mb-0">
+                                    <input type="checkbox" class="form-check-input"
+                                        :checked="isVolSelected(vol.destination)"
+                                        @click.stop="toggleVol(vol.destination)" />
+                                    <label class="form-check-label" @click.stop="toggleVol(vol.destination)">
+                                        <code class="vol-path">{{ vol.destination }}</code>
+                                        <span class="vol-source ms-2">{{ vol.source }}</span>
+                                    </label>
+                                </div>
+                                <span v-if="dirSizes.volumes[vol.destination]" class="vol-size">
+                                    <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.volumes[vol.destination] }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -623,7 +623,8 @@ interface Destination {
     rest?: RestConfig;
 }
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
-interface VolumeBackupConfig { includeAppData: boolean; customVolumes: string[] }
+interface VolumeBackupConfig { includeAppData: boolean; selectedVolumes: string[] }
+interface MountedVolume { source: string; destination: string }
 interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
@@ -654,12 +655,13 @@ const settings = ref<Settings>({
     destinations: [DEFAULT_DEST()],
     retention: { keepLast: 10, keepDaily: 7, keepWeekly: 4, keepMonthly: 3 },
     includeEnvFiles: true,
-    volumeBackup: { includeAppData: false, customVolumes: [] },
+    volumeBackup: { includeAppData: false, selectedVolumes: [] },
 });
 
 const dirSizes = ref<{ appData: string; volumes: Record<string, string> }>({ appData: "…", volumes: {} });
 const loadingDirSizes = ref(false);
-const newVolume = ref("");
+const mountedVols = ref<MountedVolume[]>([]);
+const loadingMountedVols = ref(false);
 const volumesCollapsed = ref(localStorage.getItem("backupVolumesCollapsed") === "1");
 function toggleVolumes() {
     volumesCollapsed.value = !volumesCollapsed.value;
@@ -775,7 +777,7 @@ function mergeSettings(loaded: Partial<Settings>): Settings {
         destinations: merged.length > 0 ? merged : [DEFAULT_DEST()],
         volumeBackup: {
             includeAppData: loaded.volumeBackup?.includeAppData ?? false,
-            customVolumes: loaded.volumeBackup?.customVolumes ?? [],
+            selectedVolumes: loaded.volumeBackup?.selectedVolumes ?? [],
         } as VolumeBackupConfig,
     };
 }
@@ -803,23 +805,34 @@ const snapshotSizeMap = computed(() => {
 async function loadDirSizes() {
     loadingDirSizes.value = true;
     try {
-        const vols = settings.value.volumeBackup.customVolumes.join(",");
-        const res = await api("GET", `/backup/dir-sizes${vols ? `?volumes=${encodeURIComponent(vols)}` : ""}`);
+        // Calcule les tailles de tous les volumes montés (pas juste les sélectionnés)
+        const allDests = mountedVols.value.map(v => v.destination).join(",");
+        const res = await api("GET", `/backup/dir-sizes${allDests ? `?volumes=${encodeURIComponent(allDests)}` : ""}`);
         if (res.ok) dirSizes.value = res.data;
     } finally {
         loadingDirSizes.value = false;
     }
 }
 
-function addVolume() {
-    const p = newVolume.value.trim();
-    if (!p || settings.value.volumeBackup.customVolumes.includes(p)) return;
-    settings.value.volumeBackup.customVolumes.push(p);
-    newVolume.value = "";
+async function loadMountedVols() {
+    loadingMountedVols.value = true;
+    try {
+        const res = await api("GET", "/backup/mounted-volumes");
+        if (res.ok) mountedVols.value = res.data as MountedVolume[];
+    } finally {
+        loadingMountedVols.value = false;
+    }
 }
 
-function removeVolume(idx: number) {
-    settings.value.volumeBackup.customVolumes.splice(idx, 1);
+function isVolSelected(dest: string): boolean {
+    return settings.value.volumeBackup.selectedVolumes.includes(dest);
+}
+
+function toggleVol(dest: string) {
+    const sel = settings.value.volumeBackup.selectedVolumes;
+    const idx = sel.indexOf(dest);
+    if (idx === -1) sel.push(dest);
+    else sel.splice(idx, 1);
 }
 
 onMounted(async () => {
@@ -834,6 +847,7 @@ onMounted(async () => {
     }
     if (histRes.ok) history.value = histRes.data;
     if (snapsRes.ok) snapshots.value = snapsRes.data;
+    await loadMountedVols();
     await loadDirSizes();
 });
 
@@ -1163,6 +1177,12 @@ async function testWebhook(url: string) {
     display: flex;
     flex-direction: column;
     gap: 6px;
+
+    .vol-source {
+        font-size: .75rem;
+        color: #6b7280;
+        font-family: monospace;
+    }
 }
 
 .snapshot-row:hover td {

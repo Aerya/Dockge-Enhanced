@@ -72,9 +72,26 @@ export interface RetentionPolicy {
 }
 
 export interface VolumeBackupConfig {
-    includeAppData: boolean;   // inclure DATA_DIR (/app/data) en entier
-    customVolumes: string[];   // chemins Docker arbitraires à sauvegarder (ex : /dockers-data)
+    includeAppData: boolean;    // inclure DATA_DIR (/app/data) en entier
+    selectedVolumes: string[];  // chemins conteneur sélectionnés parmi les volumes montés
 }
+
+export interface MountedVolume {
+    source: string;       // chemin sur l'hôte (ex: /home/aerya/docker)
+    destination: string;  // chemin dans le conteneur (ex: /dockers-data)
+}
+
+// Volumes à exclure de la liste (système + gérés séparément + destinations backup)
+const EXCLUDED_VOL_DESTINATIONS = new Set([
+    DATA_DIR,
+    STACKS_DIR,
+    "/backup",
+    "/var/run/docker.sock",
+    "/etc/hosts",
+    "/etc/hostname",
+    "/etc/resolv.conf",
+]);
+const EXCLUDED_VOL_PREFIXES = ["/proc", "/sys", "/dev", "/run", "/tmp"];
 
 export interface BackupSettings {
     enabled: boolean;
@@ -319,7 +336,7 @@ export class BackupManager {
         includeEnvFiles: true,
         extraPaths: [],
         notificationLang: "fr",
-        volumeBackup: { includeAppData: false, customVolumes: [] },
+        volumeBackup: { includeAppData: false, selectedVolumes: [] },
     };
 
     static getInstance(): BackupManager {
@@ -625,10 +642,10 @@ export class BackupManager {
         if (vb?.includeAppData) {
             try { await fs.access(DATA_DIR); paths.push(DATA_DIR); } catch { /* absent */ }
         }
-        for (const vol of vb?.customVolumes ?? []) {
-            const p = vol.trim();
+        for (const dest of vb?.selectedVolumes ?? []) {
+            const p = dest.trim();
             if (p) {
-                try { await fs.access(p); paths.push(p); } catch { /* absent ou non monté */ }
+                try { await fs.access(p); paths.push(p); } catch { /* non monté */ }
             }
         }
 
@@ -640,8 +657,8 @@ export class BackupManager {
         return paths;
     }
 
-    /** Retourne la taille sur disque de DATA_DIR et des volumes personnalisés */
-    async getDirSizes(customVolumes: string[] = []): Promise<{ appData: string; volumes: Record<string, string> }> {
+    /** Retourne la taille sur disque de DATA_DIR et des volumes sélectionnés */
+    async getDirSizes(selectedVolumes: string[] = []): Promise<{ appData: string; volumes: Record<string, string> }> {
         const du = async (dir: string): Promise<string> => {
             try {
                 const { stdout } = await execAsync(`du -sh "${dir}" 2>/dev/null`, { timeout: 15000 });
@@ -653,11 +670,36 @@ export class BackupManager {
         const appData = await du(DATA_DIR);
         const volumes: Record<string, string> = {};
         await Promise.all(
-            customVolumes.filter(v => v.trim()).map(async v => {
+            selectedVolumes.filter(v => v.trim()).map(async v => {
                 volumes[v] = await du(v);
             })
         );
         return { appData, volumes };
+    }
+
+    /** Retourne les volumes montés dans le conteneur (filtrés) via docker inspect */
+    async getMountedVolumes(): Promise<MountedVolume[]> {
+        try {
+            const { stdout: hostOut } = await execAsync("hostname", { timeout: 5000 });
+            const containerId = hostOut.trim();
+            const { stdout } = await execAsync(
+                `docker inspect --format '{{json .Mounts}}' ${containerId}`,
+                { timeout: 10000 }
+            );
+            const raw = JSON.parse(stdout) as Array<{
+                Type: string;
+                Source: string;
+                Destination: string;
+            }>;
+            return raw.filter(m => {
+                if (m.Type === "tmpfs") return false;
+                if (EXCLUDED_VOL_DESTINATIONS.has(m.Destination)) return false;
+                if (EXCLUDED_VOL_PREFIXES.some(p => m.Destination.startsWith(p))) return false;
+                return true;
+            }).map(m => ({ source: m.Source, destination: m.Destination }));
+        } catch {
+            return [];
+        }
     }
 
     private async runForgetFor(dest: BackupDestination): Promise<void> {
