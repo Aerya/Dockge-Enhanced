@@ -72,9 +72,8 @@ export interface RetentionPolicy {
 }
 
 export interface VolumeBackupConfig {
-    includeAppData: boolean;          // inclure DATA_DIR (/app/data) en entier
-    includeStacks: boolean;           // inclure STACKS_DIR (/opt/stacks) en entier
-    selectedStackDirs: string[];      // sous-dossiers de STACKS_DIR à inclure ([] = tout)
+    includeAppData: boolean;   // inclure DATA_DIR (/app/data) en entier
+    customVolumes: string[];   // chemins Docker arbitraires à sauvegarder (ex : /dockers-data)
 }
 
 export interface BackupSettings {
@@ -320,7 +319,7 @@ export class BackupManager {
         includeEnvFiles: true,
         extraPaths: [],
         notificationLang: "fr",
-        volumeBackup: { includeAppData: false, includeStacks: false },
+        volumeBackup: { includeAppData: false, customVolumes: [] },
     };
 
     static getInstance(): BackupManager {
@@ -621,22 +620,15 @@ export class BackupManager {
             console.error("[BackupManager] Impossible de lire STACKS_DIR:", e);
         }
 
-        // Volumes complets (si activés)
+        // Volumes (si activés)
         const vb = this.settings.volumeBackup;
         if (vb?.includeAppData) {
             try { await fs.access(DATA_DIR); paths.push(DATA_DIR); } catch { /* absent */ }
         }
-        if (vb?.includeStacks) {
-            const selected = vb.selectedStackDirs ?? [];
-            if (selected.length === 0) {
-                // Tout STACKS_DIR
-                try { await fs.access(STACKS_DIR); paths.push(STACKS_DIR); } catch { /* absent */ }
-            } else {
-                // Seulement les sous-dossiers sélectionnés
-                for (const dir of selected) {
-                    const p = path.join(STACKS_DIR, dir);
-                    try { await fs.access(p); paths.push(p); } catch { /* absent */ }
-                }
+        for (const vol of vb?.customVolumes ?? []) {
+            const p = vol.trim();
+            if (p) {
+                try { await fs.access(p); paths.push(p); } catch { /* absent ou non monté */ }
             }
         }
 
@@ -648,8 +640,8 @@ export class BackupManager {
         return paths;
     }
 
-    /** Retourne la taille sur disque de DATA_DIR et STACKS_DIR */
-    async getDirSizes(): Promise<{ appData: string; stacks: string }> {
+    /** Retourne la taille sur disque de DATA_DIR et des volumes personnalisés */
+    async getDirSizes(customVolumes: string[] = []): Promise<{ appData: string; volumes: Record<string, string> }> {
         const du = async (dir: string): Promise<string> => {
             try {
                 const { stdout } = await execAsync(`du -sh "${dir}" 2>/dev/null`, { timeout: 15000 });
@@ -658,39 +650,14 @@ export class BackupManager {
                 return "?";
             }
         };
-        const [appData, stacks] = await Promise.all([du(DATA_DIR), du(STACKS_DIR)]);
-        return { appData, stacks };
-    }
-
-    /** Liste les sous-dossiers de STACKS_DIR (sans tailles) */
-    async getStackDirs(): Promise<string[]> {
-        try {
-            const entries = await fs.readdir(STACKS_DIR, { withFileTypes: true });
-            return entries
-                .filter(e => e.isDirectory())
-                .map(e => e.name)
-                .sort();
-        } catch {
-            return [];
-        }
-    }
-
-    /** Calcule la taille de chaque sous-dossier de STACKS_DIR */
-    async getStackSizes(): Promise<Record<string, string>> {
-        const dirs = await this.getStackDirs();
-        const results: Record<string, string> = {};
+        const appData = await du(DATA_DIR);
+        const volumes: Record<string, string> = {};
         await Promise.all(
-            dirs.map(async dir => {
-                const p = path.join(STACKS_DIR, dir);
-                try {
-                    const { stdout } = await execAsync(`du -sh "${p}" 2>/dev/null`, { timeout: 30000 });
-                    results[dir] = stdout.split("\t")[0].trim() || "?";
-                } catch {
-                    results[dir] = "?";
-                }
+            customVolumes.filter(v => v.trim()).map(async v => {
+                volumes[v] = await du(v);
             })
         );
-        return results;
+        return { appData, volumes };
     }
 
     private async runForgetFor(dest: BackupDestination): Promise<void> {
