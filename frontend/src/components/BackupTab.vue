@@ -73,10 +73,13 @@
 
                     <!-- ── Config LOCAL ── -->
                     <template v-if="dest.type === 'local'">
-                        <div class="col-md-7">
+                        <div class="col-12">
                             <label class="form-label">{{ $t('watcher.backup.localPath') }}</label>
                             <input v-model="dest.local!.path" type="text"
-                                class="form-control" placeholder="/app/data/backups" />
+                                class="form-control" placeholder="/backup" />
+                            <p class="form-text mt-1">
+                                <font-awesome-icon icon="info-circle" class="me-1" />{{ $t('watcher.backup.volumes.backupVolHint') }}
+                            </p>
                         </div>
                     </template>
 
@@ -323,9 +326,6 @@
                                 <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.backup.volumes.customAdd') }}
                             </button>
                         </div>
-                        <p class="form-text mt-2">
-                            <font-awesome-icon icon="info-circle" class="me-1" />{{ $t('watcher.backup.volumes.backupVolHint') }}
-                        </p>
                     </div>
                 </div>
             </div>
