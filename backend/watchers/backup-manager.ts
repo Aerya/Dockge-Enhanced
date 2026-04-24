@@ -18,6 +18,7 @@ const STACKS_DIR         = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 const DATA_DIR           = process.env.DOCKGE_DATA_DIR   ?? "/opt/dockge/data";
 const SETTINGS_PATH      = path.join(DATA_DIR, "backup-settings.json");
 const WATCHER_SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
+const HISTORY_PATH       = path.join(DATA_DIR, "backup-history.json");
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -139,8 +140,26 @@ export interface BackupResult {
     destinations?: DestinationResult[];
 }
 
-// Historique en mémoire (les 20 derniers) — accès via BackupManager.getInstance().getHistory()
+// Historique persisté sur disque (les 20 derniers) — rechargé au démarrage
 const backupHistory: BackupResult[] = [];
+
+async function loadHistory(): Promise<void> {
+    try {
+        const raw = await fs.readFile(HISTORY_PATH, "utf8");
+        const arr = JSON.parse(raw) as BackupResult[];
+        backupHistory.splice(0, backupHistory.length, ...arr.slice(0, 20));
+        console.log(`[BackupManager] Historique chargé — ${backupHistory.length} entrée(s)`);
+    } catch { /* première utilisation */ }
+}
+
+async function saveHistory(): Promise<void> {
+    try {
+        await fs.mkdir(DATA_DIR, { recursive: true });
+        await fs.writeFile(HISTORY_PATH, JSON.stringify(backupHistory, null, 2));
+    } catch (e) {
+        console.error("[BackupManager] Impossible de sauvegarder l'historique:", e);
+    }
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
@@ -382,6 +401,7 @@ export class BackupManager {
 
     async startIfEnabled(): Promise<void> {
         await this.loadSettings();
+        await loadHistory();
         if (this.settings.enabled) this.start();
     }
 
@@ -484,6 +504,8 @@ export class BackupManager {
         if (activeDests.length === 0) {
             result.error = "Aucune destination de backup activée";
             backupHistory.unshift(result);
+            if (backupHistory.length > 20) backupHistory.splice(20);
+            await saveHistory();
             return result;
         }
 
@@ -491,6 +513,8 @@ export class BackupManager {
         if (paths.length === 0) {
             result.error = "Aucun fichier à sauvegarder";
             backupHistory.unshift(result);
+            if (backupHistory.length > 20) backupHistory.splice(20);
+            await saveHistory();
             return result;
         }
 
@@ -560,6 +584,7 @@ export class BackupManager {
 
         backupHistory.unshift(result);
         if (backupHistory.length > 20) backupHistory.splice(20);
+        await saveHistory();
 
         await this.sendNotification(result);
 
