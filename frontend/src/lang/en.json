@@ -297,7 +297,7 @@
     "watcher.backup.webhooksHint": "(success & failures)",
     "watcher.backup.noWebhook": "No webhook configured.",
 
-    "watcher.backup.volumes.heading": "Docker volumes",
+    "watcher.backup.volumes.heading": "Docker volumes to backup",
     "watcher.backup.volumes.hint": "Include full volume directories in the Restic backup (in addition to compose/env files).",
     "watcher.backup.volumes.appDataHint": "Dockge database, settings and keys",
     "watcher.backup.volumes.mountedHeading": "Mounted volumes",
@@ -306,6 +306,12 @@
     "watcher.backup.volumes.noneSelected": "none",
     "watcher.backup.volumes.refresh": "Refresh sizes",
     "watcher.backup.volumes.backupVolHint": "Tip: mount a dedicated backup volume (e.g. /backup:/backup in your compose) and point your local destination to /backup.",
+    "watcher.backup.volumes.browse": "Browse subdirectories",
+    "watcher.backup.volumes.selectAll": "All",
+    "watcher.backup.volumes.selectNone": "None",
+    "watcher.backup.volumes.calcSizes": "Calculate sizes",
+    "watcher.backup.volumes.loadingDirs": "Loading directories…",
+    "watcher.backup.volumes.noDirs": "No subdirectory found.",
 
     "watcher.backup.retention.heading": "Retention policy",
     "watcher.backup.retention.keepLast": "Keep last N",

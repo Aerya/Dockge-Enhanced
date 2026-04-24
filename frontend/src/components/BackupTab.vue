@@ -258,72 +258,89 @@
                 <h5 class="settings-subheading mb-0">
                     <font-awesome-icon icon="hdd" class="me-2" />{{ $t('watcher.backup.volumes.heading') }}
                     <span v-if="volumesCollapsed" class="badge-summary ms-2">
-                        <span v-if="settings.volumeBackup.includeAppData">/app/data</span>
-                        <span v-if="settings.volumeBackup.selectedVolumes.length > 0">
-                            {{ settings.volumeBackup.includeAppData ? ' · ' : '' }}{{ settings.volumeBackup.selectedVolumes.length }} vol.
-                        </span>
-                        <span v-if="!settings.volumeBackup.includeAppData && settings.volumeBackup.selectedVolumes.length === 0" class="text-muted">{{ $t('watcher.backup.volumes.noneSelected') }}</span>
+                        <span v-if="volBadge">{{ volBadge }}</span>
+                        <span v-else class="text-muted">{{ $t('watcher.backup.volumes.noneSelected') }}</span>
                     </span>
                 </h5>
-                <div class="d-flex align-items-center gap-2">
-                    <button v-if="!volumesCollapsed" class="btn btn-sm btn-normal" @click.stop="loadDirSizes"
-                        :disabled="loadingDirSizes" :title="$t('watcher.backup.volumes.refresh')">
-                        <span v-if="loadingDirSizes" class="spinner-border spinner-border-sm" />
-                        <font-awesome-icon v-else icon="sync-alt" />
-                    </button>
-                    <font-awesome-icon :icon="volumesCollapsed ? 'chevron-down' : 'chevron-up'" class="chevron-icon" />
-                </div>
+                <font-awesome-icon :icon="volumesCollapsed ? 'chevron-down' : 'chevron-up'" class="chevron-icon" />
             </div>
             <!-- Body -->
             <div v-if="!volumesCollapsed" class="vol-section-body">
                 <p class="form-text mb-3">{{ $t('watcher.backup.volumes.hint') }}</p>
-                <div class="row g-3">
-                    <!-- /app/data -->
-                    <div class="col-12">
-                        <div class="vol-row" :class="{ active: settings.volumeBackup.includeAppData }">
-                            <div class="form-check mb-0">
-                                <input v-model="settings.volumeBackup.includeAppData" type="checkbox"
-                                    class="form-check-input" id="volAppData" />
-                                <label class="form-check-label" for="volAppData">
-                                    <code class="vol-path">/app/data</code>
-                                    <small class="form-text ms-2">{{ $t('watcher.backup.volumes.appDataHint') }}</small>
-                                </label>
+                <!-- Chargement des volumes montés -->
+                <div v-if="loadingMountedVols" class="text-muted mb-2" style="font-size:.82rem">
+                    <span class="spinner-border spinner-border-sm me-1" />{{ $t('watcher.backup.volumes.detecting') }}
+                </div>
+                <!-- Liste unifiée : /app/data + volumes montés -->
+                <div class="vol-list">
+                    <div v-for="vol in allBackupVols" :key="vol.destination" class="vol-entry"
+                        :class="{ 'vol-entry-active': volState(vol.destination) !== 'none' }">
+                        <!-- Ligne principale du volume -->
+                        <div class="vol-row" :class="{
+                            active: volState(vol.destination) !== 'none',
+                            partial: volState(vol.destination) === 'partial'
+                        }">
+                            <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
+                                <input type="checkbox" class="form-check-input flex-shrink-0"
+                                    :checked="volState(vol.destination) !== 'none'"
+                                    @change="toggleWholeVol(vol.destination)" />
+                                <code class="vol-path">{{ vol.destination }}</code>
+                                <span v-if="vol.source" class="vol-source text-truncate">{{ vol.source }}</span>
                             </div>
-                            <span class="vol-size">
-                                <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.appData }}
-                            </span>
+                            <button type="button" class="btn btn-xs btn-normal flex-shrink-0"
+                                @click.stop="toggleExpand(vol.destination)"
+                                :title="$t('watcher.backup.volumes.browse')">
+                                <font-awesome-icon :icon="expandedVols.has(vol.destination) ? 'chevron-up' : 'chevron-down'" />
+                            </button>
                         </div>
-                    </div>
-                    <!-- Volumes montés auto-détectés -->
-                    <div class="col-12">
-                        <p class="form-label mb-2">
-                            <font-awesome-icon icon="folder-open" class="me-1" />{{ $t('watcher.backup.volumes.mountedHeading') }}
-                        </p>
-                        <!-- Chargement -->
-                        <div v-if="loadingMountedVols" class="text-muted" style="font-size:.82rem">
-                            <span class="spinner-border spinner-border-sm me-1" />{{ $t('watcher.backup.volumes.detecting') }}
-                        </div>
-                        <!-- Aucun volume détecté -->
-                        <div v-else-if="mountedVols.length === 0" class="text-muted" style="font-size:.82rem">
-                            {{ $t('watcher.backup.volumes.noneDetected') }}
-                        </div>
-                        <!-- Liste -->
-                        <div v-else class="custom-vol-list">
-                            <div v-for="vol in mountedVols" :key="vol.destination"
-                                class="vol-row" :class="{ active: isVolSelected(vol.destination) }"
-                                @click="toggleVol(vol.destination)" style="cursor:pointer">
-                                <div class="form-check mb-0">
-                                    <input type="checkbox" class="form-check-input"
-                                        :checked="isVolSelected(vol.destination)"
-                                        @click.stop="toggleVol(vol.destination)" />
-                                    <label class="form-check-label" @click.stop="toggleVol(vol.destination)">
-                                        <code class="vol-path">{{ vol.destination }}</code>
-                                        <span class="vol-source ms-2">{{ vol.source }}</span>
-                                    </label>
+                        <!-- Panel sous-dossiers -->
+                        <div v-if="expandedVols.has(vol.destination)" class="vol-subdirs-panel">
+                            <!-- Barre d'actions -->
+                            <div class="vol-subdirs-actions">
+                                <button type="button" class="btn btn-xs btn-normal"
+                                    @click="selectAllDirs(vol.destination)">
+                                    {{ $t('watcher.backup.volumes.selectAll') }}
+                                </button>
+                                <button type="button" class="btn btn-xs btn-normal ms-1"
+                                    @click="selectNoneDirs(vol.destination)">
+                                    {{ $t('watcher.backup.volumes.selectNone') }}
+                                </button>
+                                <button type="button" class="btn btn-xs btn-normal ms-2"
+                                    @click="loadVolSizes(vol.destination)"
+                                    :disabled="loadingVolSizes[vol.destination]">
+                                    <span v-if="loadingVolSizes[vol.destination]" class="spinner-border spinner-border-sm me-1" />
+                                    <font-awesome-icon v-else icon="weight-hanging" class="me-1" />
+                                    {{ $t('watcher.backup.volumes.calcSizes') }}
+                                </button>
+                            </div>
+                            <!-- Chargement dossiers -->
+                            <div v-if="loadingVolDirs[vol.destination]"
+                                class="text-muted py-2 ps-3" style="font-size:.82rem">
+                                <span class="spinner-border spinner-border-sm me-1" />{{ $t('watcher.backup.volumes.loadingDirs') }}
+                            </div>
+                            <!-- Dossier vide -->
+                            <div v-else-if="(volDirs[vol.destination] ?? []).length === 0"
+                                class="text-muted py-2 ps-3" style="font-size:.82rem">
+                                {{ $t('watcher.backup.volumes.noDirs') }}
+                            </div>
+                            <!-- Liste des sous-dossiers -->
+                            <div v-else class="vol-dir-list">
+                                <div v-for="dir in volDirs[vol.destination]" :key="dir"
+                                    class="vol-dir-row"
+                                    :class="{ active: isSubdirSelected(vol.destination, dir) }"
+                                    @click="toggleSubdir(vol.destination, dir)">
+                                    <div class="form-check mb-0">
+                                        <input type="checkbox" class="form-check-input"
+                                            :checked="isSubdirSelected(vol.destination, dir)"
+                                            @click.stop="toggleSubdir(vol.destination, dir)" />
+                                        <label class="form-check-label" @click.stop="toggleSubdir(vol.destination, dir)">
+                                            <code class="vol-path">{{ dir }}</code>
+                                        </label>
+                                    </div>
+                                    <span v-if="volSizes[vol.destination + '/' + dir]" class="vol-size">
+                                        <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ volSizes[vol.destination + '/' + dir] }}
+                                    </span>
                                 </div>
-                                <span v-if="dirSizes.volumes[vol.destination]" class="vol-size">
-                                    <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.volumes[vol.destination] }}
-                                </span>
                             </div>
                         </div>
                     </div>
@@ -389,7 +406,7 @@
                 </h5>
                 <small v-if="nextBackupDate" class="form-text">
                     <font-awesome-icon icon="clock" class="me-1" />
-                    Prochain backup : {{ nextBackupDate.toLocaleString() }}
+                    Prochain backup : {{ fmtDate(nextBackupDate) }}
                 </small>
             </div>
             <div v-if="history.length === 0" class="text-center form-text fst-italic py-3">
@@ -409,7 +426,7 @@
                     </thead>
                     <tbody>
                         <tr v-for="(h, i) in history" :key="i" :class="h.success ? 'history-row-ok' : 'history-row-err'">
-                            <td class="small form-text">{{ new Date(h.timestamp).toLocaleString() }}</td>
+                            <td class="small form-text">{{ fmtDate(h.timestamp) }}</td>
                             <td>
                                 <span v-if="h.success" class="badge bg-success">✓ OK</span>
                                 <span v-else class="badge bg-danger" :title="h.error">✗ {{ $t('watcher.status.error') }}</span>
@@ -459,7 +476,7 @@
                                         class="text-muted" style="font-size:.75rem" />
                                 </td>
                                 <td><code>{{ snap.short_id }}</code></td>
-                                <td class="small form-text">{{ new Date(snap.time).toLocaleString() }}</td>
+                                <td class="small form-text">{{ fmtDate(snap.time) }}</td>
                                 <td>
                                     <span v-for="tag in (snap.tags ?? [])" :key="tag"
                                         class="badge bg-secondary me-1 small">{{ tag }}</span>
@@ -603,6 +620,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
+import { initServerTz, fmtDate } from "../composables/useServerTz";
 
 const { t } = useI18n();
 
@@ -623,7 +641,7 @@ interface Destination {
     rest?: RestConfig;
 }
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
-interface VolumeBackupConfig { includeAppData: boolean; selectedVolumes: string[] }
+interface VolumeBackupConfig { selectedVolumes: string[] }
 interface MountedVolume { source: string; destination: string }
 interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
@@ -655,13 +673,37 @@ const settings = ref<Settings>({
     destinations: [DEFAULT_DEST()],
     retention: { keepLast: 10, keepDaily: 7, keepWeekly: 4, keepMonthly: 3 },
     includeEnvFiles: true,
-    volumeBackup: { includeAppData: false, selectedVolumes: [] },
+    volumeBackup: { selectedVolumes: [] },
 });
 
-const dirSizes = ref<{ appData: string; volumes: Record<string, string> }>({ appData: "…", volumes: {} });
-const loadingDirSizes = ref(false);
 const mountedVols = ref<MountedVolume[]>([]);
 const loadingMountedVols = ref(false);
+const expandedVols = ref<Set<string>>(new Set());
+const volDirs = ref<Record<string, string[]>>({});
+const volSizes = ref<Record<string, string>>({});
+const loadingVolDirs = ref<Record<string, boolean>>({});
+const loadingVolSizes = ref<Record<string, boolean>>({});
+
+const APP_DATA = "/app/data";
+
+// Tous les volumes affichables : /app/data en premier, puis les volumes montés détectés
+const allBackupVols = computed<MountedVolume[]>(() => [
+    { destination: APP_DATA, source: "" },
+    ...mountedVols.value,
+]);
+
+// Badge résumé pour le header rétractable
+const volBadge = computed(() => {
+    const sel = settings.value.volumeBackup.selectedVolumes;
+    if (sel.length === 0) return null;
+    const allPaths = allBackupVols.value.map(v => v.destination);
+    const tops = new Set(sel.map(p => allPaths.find(v => p === v || p.startsWith(v + "/")) ?? p));
+    const parts: string[] = [];
+    if (tops.has(APP_DATA)) parts.push("/app/data");
+    const others = [...tops].filter(v => v !== APP_DATA).length;
+    if (others > 0) parts.push(`${others} vol.`);
+    return parts.join(" · ") || null;
+});
 const volumesCollapsed = ref(localStorage.getItem("backupVolumesCollapsed") === "1");
 function toggleVolumes() {
     volumesCollapsed.value = !volumesCollapsed.value;
@@ -776,8 +818,14 @@ function mergeSettings(loaded: Partial<Settings>): Settings {
         ...loaded,
         destinations: merged.length > 0 ? merged : [DEFAULT_DEST()],
         volumeBackup: {
-            includeAppData: loaded.volumeBackup?.includeAppData ?? false,
-            selectedVolumes: loaded.volumeBackup?.selectedVolumes ?? [],
+            // Migration : si l'ancienne config avait includeAppData=true, l'ajouter à selectedVolumes
+            selectedVolumes: (() => {
+                const sel: string[] = loaded.volumeBackup?.selectedVolumes ?? [];
+                if ((loaded.volumeBackup as any)?.includeAppData && !sel.includes(APP_DATA)) {
+                    return [APP_DATA, ...sel];
+                }
+                return sel;
+            })(),
         } as VolumeBackupConfig,
     };
 }
@@ -802,18 +850,6 @@ const snapshotSizeMap = computed(() => {
 
 // ─── Init ─────────────────────────────────────────────────────────
 
-async function loadDirSizes() {
-    loadingDirSizes.value = true;
-    try {
-        // Calcule les tailles de tous les volumes montés (pas juste les sélectionnés)
-        const allDests = mountedVols.value.map(v => v.destination).join(",");
-        const res = await api("GET", `/backup/dir-sizes${allDests ? `?volumes=${encodeURIComponent(allDests)}` : ""}`);
-        if (res.ok) dirSizes.value = res.data;
-    } finally {
-        loadingDirSizes.value = false;
-    }
-}
-
 async function loadMountedVols() {
     loadingMountedVols.value = true;
     try {
@@ -824,15 +860,104 @@ async function loadMountedVols() {
     }
 }
 
-function isVolSelected(dest: string): boolean {
-    return settings.value.volumeBackup.selectedVolumes.includes(dest);
+// ── Sélection volumes ───────────────────────────────────────────
+
+function volState(volPath: string): "none" | "all" | "partial" {
+    const sel = settings.value.volumeBackup.selectedVolumes;
+    if (sel.includes(volPath)) return "all";
+    if (sel.some(p => p.startsWith(volPath + "/"))) return "partial";
+    return "none";
 }
 
-function toggleVol(dest: string) {
+function toggleWholeVol(volPath: string) {
+    const state = volState(volPath);
     const sel = settings.value.volumeBackup.selectedVolumes;
-    const idx = sel.indexOf(dest);
-    if (idx === -1) sel.push(dest);
-    else sel.splice(idx, 1);
+    const filtered = sel.filter(p => p !== volPath && !p.startsWith(volPath + "/"));
+    settings.value.volumeBackup.selectedVolumes = state === "none" ? [...filtered, volPath] : filtered;
+}
+
+function isSubdirSelected(volPath: string, dir: string): boolean {
+    const sel = settings.value.volumeBackup.selectedVolumes;
+    return sel.includes(volPath) || sel.includes(`${volPath}/${dir}`);
+}
+
+function toggleSubdir(volPath: string, dir: string) {
+    const fullPath = `${volPath}/${dir}`;
+    const sel = settings.value.volumeBackup.selectedVolumes;
+    const dirs = volDirs.value[volPath] ?? [];
+    if (sel.includes(volPath)) {
+        // Tout sélectionné → passer en mode partiel : tous sauf ce dossier
+        settings.value.volumeBackup.selectedVolumes = [
+            ...sel.filter(p => p !== volPath),
+            ...dirs.filter(d => d !== dir).map(d => `${volPath}/${d}`),
+        ];
+    } else {
+        const idx = sel.indexOf(fullPath);
+        if (idx === -1) {
+            sel.push(fullPath);
+            // Si tous les sous-dossiers sont maintenant cochés → revenir au vol entier
+            if (dirs.length > 0 && dirs.every(d => sel.includes(`${volPath}/${d}`))) {
+                settings.value.volumeBackup.selectedVolumes = [
+                    ...sel.filter(p => !p.startsWith(volPath + "/")),
+                    volPath,
+                ];
+            }
+        } else {
+            sel.splice(idx, 1);
+        }
+    }
+}
+
+function selectAllDirs(volPath: string) {
+    const sel = settings.value.volumeBackup.selectedVolumes;
+    settings.value.volumeBackup.selectedVolumes = [
+        ...sel.filter(p => p !== volPath && !p.startsWith(volPath + "/")),
+        volPath,
+    ];
+}
+
+function selectNoneDirs(volPath: string) {
+    settings.value.volumeBackup.selectedVolumes =
+        settings.value.volumeBackup.selectedVolumes.filter(
+            p => p !== volPath && !p.startsWith(volPath + "/")
+        );
+}
+
+async function toggleExpand(volPath: string) {
+    const next = new Set(expandedVols.value);
+    if (next.has(volPath)) {
+        next.delete(volPath);
+    } else {
+        next.add(volPath);
+        if (!volDirs.value[volPath]) await loadVolDirs(volPath);
+    }
+    expandedVols.value = next;
+}
+
+async function loadVolDirs(volPath: string) {
+    loadingVolDirs.value = { ...loadingVolDirs.value, [volPath]: true };
+    try {
+        const res = await api("GET", `/backup/volume-dirs?path=${encodeURIComponent(volPath)}`);
+        if (res.ok) volDirs.value = { ...volDirs.value, [volPath]: res.data as string[] };
+    } finally {
+        loadingVolDirs.value = { ...loadingVolDirs.value, [volPath]: false };
+    }
+}
+
+async function loadVolSizes(volPath: string) {
+    loadingVolSizes.value = { ...loadingVolSizes.value, [volPath]: true };
+    try {
+        const res = await api("GET", `/backup/volume-sizes?path=${encodeURIComponent(volPath)}`);
+        if (res.ok) {
+            const newSizes = { ...volSizes.value };
+            for (const [dir, size] of Object.entries(res.data as Record<string, string>)) {
+                newSizes[`${volPath}/${dir}`] = size as string;
+            }
+            volSizes.value = newSizes;
+        }
+    } finally {
+        loadingVolSizes.value = { ...loadingVolSizes.value, [volPath]: false };
+    }
 }
 
 onMounted(async () => {
@@ -847,8 +972,8 @@ onMounted(async () => {
     }
     if (histRes.ok) history.value = histRes.data;
     if (snapsRes.ok) snapshots.value = snapsRes.data;
+    await initServerTz(api);
     await loadMountedVols();
-    await loadDirSizes();
 });
 
 // ─── Actions ──────────────────────────────────────────────────────
@@ -1138,13 +1263,10 @@ async function testWebhook(url: string) {
     justify-content: space-between;
     align-items: center;
     padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,.08);
     background: rgba(0,0,0,.15);
-    transition: border-color .15s, background .15s;
+    transition: background .15s;
 
     &.active {
-        border-color: rgba(116,194,255,.35);
         background: rgba(116,194,255,.07);
     }
 
@@ -1172,16 +1294,78 @@ async function testWebhook(url: string) {
     border-radius: 4px;
 }
 
-
-.custom-vol-list {
+// ─── Liste unifiée de volumes ──────────────────────────────────────
+.vol-list {
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
 
-    .vol-source {
-        font-size: .75rem;
-        color: #6b7280;
+.vol-entry {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+    transition: border-color .15s;
+
+    &.vol-entry-active {
+        border-color: rgba(116,194,255,.35);
+    }
+}
+
+.vol-source {
+    font-size: .75rem;
+    color: #6b7280;
+    font-family: monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+// ─── Panel sous-dossiers ──────────────────────────────────────────
+.vol-subdirs-panel {
+    border-top: 1px solid rgba(255,255,255,.07);
+    background: rgba(0,0,0,.12);
+    padding: 10px 14px 12px;
+}
+
+.vol-subdirs-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.vol-dir-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.vol-dir-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background .12s;
+
+    &:hover { background: rgba(255,255,255,.05); }
+
+    &.active {
+        background: rgba(116,194,255,.08);
+        .form-check-label code { color: #74c2ff; }
+    }
+
+    .vol-size {
+        font-size: .78rem;
         font-family: monospace;
+        color: #9ca3af;
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-left: 8px;
     }
 }
 

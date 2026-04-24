@@ -301,7 +301,7 @@
                                     </td>
                                     <td><code class="small">{{ s.localDigest ? s.localDigest.slice(7, 19) + '…' : '—' }}</code></td>
                                     <td><code class="small">{{ s.remoteDigest ? s.remoteDigest.slice(7, 19) + '…' : '—' }}</code></td>
-                                    <td class="small form-text">{{ s.lastChecked ? new Date(s.lastChecked).toLocaleString() : '—' }}</td>
+                                    <td class="small form-text">{{ s.lastChecked ? fmtDate(s.lastChecked) : '—' }}</td>
                                     <td>
                                         <div class="au-cell">
                                             <select
@@ -330,7 +330,7 @@
                                         <template v-if="rollbackFor(s)">
                                             <div class="rollback-cell">
                                                 <div class="d-flex align-items-center gap-1 mb-1">
-                                                    <span class="rollback-countdown" :title="$t('watcher.rollback.expiresAt') + ' ' + new Date(rollbackFor(s)!.expiresAt).toLocaleString()">
+                                                    <span class="rollback-countdown" :title="$t('watcher.rollback.expiresAt') + ' ' + fmtDate(rollbackFor(s)!.expiresAt)">
                                                         ⏳ {{ rollbackCountdown(rollbackFor(s)!) }}
                                                     </span>
                                                 </div>
@@ -483,7 +483,7 @@
                         <div class="d-flex align-items-center gap-3">
                             <small v-if="trivyStatus.lastScanAt" class="form-text">
                                 {{ $t('watcher.trivy.status.lastScan') }} :
-                                {{ new Date(trivyStatus.lastScanAt).toLocaleString() }}
+                                {{ fmtDate(trivyStatus.lastScanAt) }}
                             </small>
                             <button class="btn btn-sm btn-normal" @click="loadTrivyStatus">
                                 <font-awesome-icon icon="sync" />
@@ -618,6 +618,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import BackupTab from "./BackupTab.vue";
+import { initServerTz, fmtDate } from "../composables/useServerTz";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -761,7 +762,7 @@ const lastCheckDisplay = computed(() => {
     if (!imageStatuses.value.length) return t('watcher.status.never');
     const dates = imageStatuses.value.map(s => new Date(s.lastChecked).getTime()).filter(Boolean);
     if (!dates.length) return '—';
-    return new Date(Math.max(...dates)).toLocaleString();
+    return fmtDate(new Date(Math.max(...dates)));
 });
 
 // ─── API ──────────────────────────────────────────────────────────
@@ -788,6 +789,7 @@ function showToast(msg: string, ok = true) {
 // ─── Init & polling ───────────────────────────────────────────────
 
 onMounted(async () => {
+    await initServerTz(api);
     const [imgRes, trivyRes, statusRes, trivyStatusRes, rollbackRes] = await Promise.all([
         api("GET", "/image/settings"),
         api("GET", "/trivy/settings"),

@@ -72,8 +72,7 @@ export interface RetentionPolicy {
 }
 
 export interface VolumeBackupConfig {
-    includeAppData: boolean;    // inclure DATA_DIR (/app/data) en entier
-    selectedVolumes: string[];  // chemins conteneur sélectionnés parmi les volumes montés
+    selectedVolumes: string[];  // chemins à sauvegarder : volume entier ou sous-dossiers spécifiques
 }
 
 export interface MountedVolume {
@@ -336,7 +335,7 @@ export class BackupManager {
         includeEnvFiles: true,
         extraPaths: [],
         notificationLang: "fr",
-        volumeBackup: { includeAppData: false, selectedVolumes: [] },
+        volumeBackup: { selectedVolumes: [] },
     };
 
     static getInstance(): BackupManager {
@@ -637,15 +636,11 @@ export class BackupManager {
             console.error("[BackupManager] Impossible de lire STACKS_DIR:", e);
         }
 
-        // Volumes (si activés)
-        const vb = this.settings.volumeBackup;
-        if (vb?.includeAppData) {
-            try { await fs.access(DATA_DIR); paths.push(DATA_DIR); } catch { /* absent */ }
-        }
-        for (const dest of vb?.selectedVolumes ?? []) {
+        // Volumes sélectionnés (entiers ou sous-dossiers spécifiques)
+        for (const dest of this.settings.volumeBackup?.selectedVolumes ?? []) {
             const p = dest.trim();
             if (p) {
-                try { await fs.access(p); paths.push(p); } catch { /* non monté */ }
+                try { await fs.access(p); paths.push(p); } catch { /* absent ou non monté */ }
             }
         }
 
@@ -700,6 +695,28 @@ export class BackupManager {
         } catch {
             return [];
         }
+    }
+
+    /** Liste les sous-dossiers immédiats d'un chemin (sans tailles, rapide) */
+    async getVolumeDirs(volPath: string): Promise<string[]> {
+        try {
+            const entries = await fs.readdir(volPath, { withFileTypes: true });
+            return entries.filter(e => e.isDirectory()).map(e => e.name).sort();
+        } catch { return []; }
+    }
+
+    /** Calcule la taille de chaque sous-dossier d'un chemin (du -sh, à la demande) */
+    async getVolumeSubdirSizes(volPath: string): Promise<Record<string, string>> {
+        const dirs = await this.getVolumeDirs(volPath);
+        const results: Record<string, string> = {};
+        await Promise.all(dirs.map(async dir => {
+            const p = path.join(volPath, dir);
+            try {
+                const { stdout } = await execAsync(`du -sh "${p}" 2>/dev/null`, { timeout: 60000 });
+                results[dir] = stdout.split("\t")[0].trim() || "?";
+            } catch { results[dir] = "?"; }
+        }));
+        return results;
     }
 
     private async runForgetFor(dest: BackupDestination): Promise<void> {

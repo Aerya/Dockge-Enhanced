@@ -345,12 +345,41 @@ export class WatcherRouter extends Router {
             }
         });
 
+        // Sous-dossiers d'un volume (rapide, sans tailles)
+        router.get("/backup/volume-dirs", async (req: Request, res: Response) => {
+            try {
+                const volPath = typeof req.query["path"] === "string" ? req.query["path"] : "";
+                if (!volPath) { res.status(400).json({ ok: false, message: "path requis" }); return; }
+                const dirs = await BackupManager.getInstance().getVolumeDirs(volPath);
+                res.json({ ok: true, data: dirs });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        // Tailles des sous-dossiers d'un volume (lent, à la demande)
+        router.get("/backup/volume-sizes", async (req: Request, res: Response) => {
+            try {
+                const volPath = typeof req.query["path"] === "string" ? req.query["path"] : "";
+                if (!volPath) { res.status(400).json({ ok: false, message: "path requis" }); return; }
+                const sizes = await BackupManager.getInstance().getVolumeSubdirSizes(volPath);
+                res.json({ ok: true, data: sizes });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
         // ════════════════════════════════════════════════════════════════
         // SELF-UPDATE — Statut de la mise à jour de Dockge-Enhanced
         // ════════════════════════════════════════════════════════════════
 
         router.get("/self/status", (_req: Request, res: Response) => {
             res.json({ ok: true, ...SelfUpdateChecker.getInstance().getStatus() });
+        });
+
+        // Fuseau horaire du serveur (utilisé par le frontend pour formater les dates)
+        router.get("/server-tz", (_req: Request, res: Response) => {
+            res.json({ ok: true, tz: process.env.TZ || "UTC" });
         });
 
         // Mount everything under /api/watcher
