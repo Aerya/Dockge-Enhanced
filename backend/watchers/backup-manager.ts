@@ -72,8 +72,9 @@ export interface RetentionPolicy {
 }
 
 export interface VolumeBackupConfig {
-    includeAppData: boolean;   // inclure DATA_DIR (/app/data) en entier
-    includeStacks: boolean;    // inclure STACKS_DIR (/opt/stacks) en entier
+    includeAppData: boolean;          // inclure DATA_DIR (/app/data) en entier
+    includeStacks: boolean;           // inclure STACKS_DIR (/opt/stacks) en entier
+    selectedStackDirs: string[];      // sous-dossiers de STACKS_DIR à inclure ([] = tout)
 }
 
 export interface BackupSettings {
@@ -626,7 +627,17 @@ export class BackupManager {
             try { await fs.access(DATA_DIR); paths.push(DATA_DIR); } catch { /* absent */ }
         }
         if (vb?.includeStacks) {
-            try { await fs.access(STACKS_DIR); paths.push(STACKS_DIR); } catch { /* absent */ }
+            const selected = vb.selectedStackDirs ?? [];
+            if (selected.length === 0) {
+                // Tout STACKS_DIR
+                try { await fs.access(STACKS_DIR); paths.push(STACKS_DIR); } catch { /* absent */ }
+            } else {
+                // Seulement les sous-dossiers sélectionnés
+                for (const dir of selected) {
+                    const p = path.join(STACKS_DIR, dir);
+                    try { await fs.access(p); paths.push(p); } catch { /* absent */ }
+                }
+            }
         }
 
         // Chemins supplémentaires configurés
@@ -649,6 +660,37 @@ export class BackupManager {
         };
         const [appData, stacks] = await Promise.all([du(DATA_DIR), du(STACKS_DIR)]);
         return { appData, stacks };
+    }
+
+    /** Liste les sous-dossiers de STACKS_DIR (sans tailles) */
+    async getStackDirs(): Promise<string[]> {
+        try {
+            const entries = await fs.readdir(STACKS_DIR, { withFileTypes: true });
+            return entries
+                .filter(e => e.isDirectory())
+                .map(e => e.name)
+                .sort();
+        } catch {
+            return [];
+        }
+    }
+
+    /** Calcule la taille de chaque sous-dossier de STACKS_DIR */
+    async getStackSizes(): Promise<Record<string, string>> {
+        const dirs = await this.getStackDirs();
+        const results: Record<string, string> = {};
+        await Promise.all(
+            dirs.map(async dir => {
+                const p = path.join(STACKS_DIR, dir);
+                try {
+                    const { stdout } = await execAsync(`du -sh "${p}" 2>/dev/null`, { timeout: 30000 });
+                    results[dir] = stdout.split("\t")[0].trim() || "?";
+                } catch {
+                    results[dir] = "?";
+                }
+            })
+        );
+        return results;
     }
 
     private async runForgetFor(dest: BackupDestination): Promise<void> {

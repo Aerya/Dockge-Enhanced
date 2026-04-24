@@ -292,6 +292,59 @@
                             <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.stacks }}
                         </span>
                     </div>
+                    <!-- Per-stack selection (visible quand includeStacks est actif) -->
+                    <div v-if="settings.volumeBackup.includeStacks" class="stack-dirs-panel mt-2">
+                        <div class="stack-dirs-header">
+                            <span class="text-muted" style="font-size:.82rem">
+                                <span v-if="settings.volumeBackup.selectedStackDirs.length === 0">
+                                    {{ $t('watcher.backup.volumes.allSelected') }}
+                                </span>
+                                <span v-else>
+                                    {{ settings.volumeBackup.selectedStackDirs.length }}
+                                    {{ $t('watcher.backup.volumes.nSelected') }}
+                                </span>
+                            </span>
+                            <div class="stack-dirs-actions">
+                                <button type="button" class="btn btn-xs btn-normal" @click="selectAllStackDirs">
+                                    {{ $t('watcher.backup.volumes.selectAll') }}
+                                </button>
+                                <button type="button" class="btn btn-xs btn-normal ms-1" @click="selectNoneStackDirs">
+                                    {{ $t('watcher.backup.volumes.selectNone') }}
+                                </button>
+                                <button type="button" class="btn btn-xs btn-normal ms-2"
+                                    @click="loadStackSizes" :disabled="loadingStackSizes"
+                                    :title="$t('watcher.backup.volumes.calcSizes')">
+                                    <span v-if="loadingStackSizes" class="spinner-border spinner-border-sm" />
+                                    <font-awesome-icon v-else icon="weight-hanging" class="me-1" />{{ $t('watcher.backup.volumes.calcSizes') }}
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Loading state -->
+                        <div v-if="loadingStackDirs" class="text-muted text-center py-2" style="font-size:.82rem">
+                            <span class="spinner-border spinner-border-sm me-1" />{{ $t('watcher.backup.volumes.loadingDirs') }}
+                        </div>
+                        <!-- Dir list -->
+                        <div v-else-if="stackDirs.length > 0" class="stack-dir-list">
+                            <div v-for="dir in stackDirs" :key="dir" class="stack-dir-row"
+                                :class="{ active: isStackDirSelected(dir) }"
+                                @click="toggleStackDir(dir)">
+                                <div class="form-check mb-0">
+                                    <input type="checkbox" class="form-check-input"
+                                        :checked="isStackDirSelected(dir)"
+                                        @click.stop="toggleStackDir(dir)" />
+                                    <label class="form-check-label" @click.stop="toggleStackDir(dir)">
+                                        <code class="vol-path">{{ dir }}</code>
+                                    </label>
+                                </div>
+                                <span class="vol-size" v-if="stackSizes[dir]">
+                                    <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ stackSizes[dir] }}
+                                </span>
+                            </div>
+                        </div>
+                        <div v-else class="text-muted text-center py-2" style="font-size:.82rem">
+                            {{ $t('watcher.backup.volumes.noDirs') }}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -566,7 +619,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 
 const { t } = useI18n();
@@ -588,7 +641,7 @@ interface Destination {
     rest?: RestConfig;
 }
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
-interface VolumeBackupConfig { includeAppData: boolean; includeStacks: boolean }
+interface VolumeBackupConfig { includeAppData: boolean; includeStacks: boolean; selectedStackDirs: string[] }
 interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
@@ -619,11 +672,15 @@ const settings = ref<Settings>({
     destinations: [DEFAULT_DEST()],
     retention: { keepLast: 10, keepDaily: 7, keepWeekly: 4, keepMonthly: 3 },
     includeEnvFiles: true,
-    volumeBackup: { includeAppData: false, includeStacks: false },
+    volumeBackup: { includeAppData: false, includeStacks: false, selectedStackDirs: [] },
 });
 
 const dirSizes = ref<{ appData: string; stacks: string }>({ appData: "…", stacks: "…" });
 const loadingDirSizes = ref(false);
+const stackDirs = ref<string[]>([]);
+const stackSizes = ref<Record<string, string>>({});
+const loadingStackDirs = ref(false);
+const loadingStackSizes = ref(false);
 const expandedDest = ref<number>(0);
 const discordWebhooks = ref<string[]>([]);
 const newWebhook = ref("");
@@ -732,7 +789,11 @@ function mergeSettings(loaded: Partial<Settings>): Settings {
         ...settings.value,
         ...loaded,
         destinations: merged.length > 0 ? merged : [DEFAULT_DEST()],
-        volumeBackup: (loaded.volumeBackup ?? settings.value.volumeBackup) as VolumeBackupConfig,
+        volumeBackup: {
+            ...settings.value.volumeBackup,
+            ...(loaded.volumeBackup ?? {}),
+            selectedStackDirs: loaded.volumeBackup?.selectedStackDirs ?? [],
+        } as VolumeBackupConfig,
     };
 }
 
@@ -766,6 +827,69 @@ async function loadDirSizes() {
     }
 }
 
+async function loadStackDirs() {
+    loadingStackDirs.value = true;
+    try {
+        const res = await api("GET", "/backup/stack-dirs");
+        if (res.ok) {
+            stackDirs.value = res.data as string[];
+            // Auto-sélectionner tous si aucune sélection précédente
+            if (settings.value.volumeBackup.selectedStackDirs.length === 0) {
+                // Laisser vide = tout (comportement par défaut)
+            }
+        }
+    } finally {
+        loadingStackDirs.value = false;
+    }
+}
+
+async function loadStackSizes() {
+    loadingStackSizes.value = true;
+    try {
+        const res = await api("GET", "/backup/stack-sizes");
+        if (res.ok) stackSizes.value = res.data as Record<string, string>;
+    } finally {
+        loadingStackSizes.value = false;
+    }
+}
+
+function isStackDirSelected(dir: string): boolean {
+    const sel = settings.value.volumeBackup.selectedStackDirs;
+    return sel.length === 0 || sel.includes(dir);
+}
+
+function toggleStackDir(dir: string) {
+    const sel = settings.value.volumeBackup.selectedStackDirs;
+    if (sel.length === 0) {
+        // Tout était sélectionné → basculer vers "tous sauf dir"
+        settings.value.volumeBackup.selectedStackDirs = stackDirs.value.filter(d => d !== dir);
+    } else {
+        const idx = sel.indexOf(dir);
+        if (idx === -1) {
+            sel.push(dir);
+            // Si tout est maintenant sélectionné → revenir à [] (= tout)
+            if (sel.length === stackDirs.value.length) {
+                settings.value.volumeBackup.selectedStackDirs = [];
+            }
+        } else {
+            sel.splice(idx, 1);
+        }
+    }
+}
+
+function selectAllStackDirs() {
+    settings.value.volumeBackup.selectedStackDirs = [];
+}
+
+function selectNoneStackDirs() {
+    settings.value.volumeBackup.selectedStackDirs = [];
+    // On met une liste vide mais on va activer un flag "none" ?
+    // Non : on choisit que "none" = tableau avec un élément fictif ou géré côté backend
+    // Implémentation : selectedStackDirs = ["__none__"] si aucun sélectionné
+    // Mais plus simple: on désactive simplement includeStacks
+    settings.value.volumeBackup.includeStacks = false;
+}
+
 onMounted(async () => {
     const [settingsRes, histRes, snapsRes] = await Promise.all([
         api("GET", "/backup/settings"),
@@ -779,7 +903,21 @@ onMounted(async () => {
     if (histRes.ok) history.value = histRes.data;
     if (snapsRes.ok) snapshots.value = snapsRes.data;
     await loadDirSizes();
+    // Si les stacks sont déjà activées, charger la liste
+    if (settings.value.volumeBackup.includeStacks) {
+        await loadStackDirs();
+    }
 });
+
+// Charger la liste des stacks dès que l'utilisateur active le toggle /opt/stacks
+watch(
+    () => settings.value.volumeBackup.includeStacks,
+    async (val) => {
+        if (val && stackDirs.value.length === 0) {
+            await loadStackDirs();
+        }
+    }
+);
 
 // ─── Actions ──────────────────────────────────────────────────────
 
@@ -1048,6 +1186,63 @@ async function testWebhook(url: string) {
         font-family: monospace;
         color: #9ca3af;
         white-space: nowrap;
+    }
+}
+
+// Boutons extra-petits
+.btn-xs {
+    padding: 2px 8px;
+    font-size: .75rem;
+    line-height: 1.4;
+    border-radius: 4px;
+}
+
+// ─── Stack dirs panel (sélection par stack) ──────────────────────
+.stack-dirs-panel {
+    border: 1px solid rgba(116,194,255,.2);
+    border-radius: 8px;
+    background: rgba(0,0,0,.1);
+    overflow: hidden;
+}
+
+.stack-dirs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    background: rgba(0,0,0,.15);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.stack-dirs-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.stack-dir-list {
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.stack-dir-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background .1s;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: rgba(255,255,255,.04); }
+    &.active { background: rgba(116,194,255,.06); }
+
+    .form-check-label {
+        cursor: pointer;
     }
 }
 

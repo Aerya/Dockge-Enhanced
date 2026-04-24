@@ -334,6 +334,24 @@ export class WatcherRouter extends Router {
             }
         });
 
+        router.get("/backup/stack-dirs", async (_req: Request, res: Response) => {
+            try {
+                const dirs = await BackupManager.getInstance().getStackDirs();
+                res.json({ ok: true, data: dirs });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.get("/backup/stack-sizes", async (_req: Request, res: Response) => {
+            try {
+                const sizes = await BackupManager.getInstance().getStackSizes();
+                res.json({ ok: true, data: sizes });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
         // ════════════════════════════════════════════════════════════════
         // SELF-UPDATE — Statut de la mise à jour de Dockge-Enhanced
         // ════════════════════════════════════════════════════════════════

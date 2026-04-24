@@ -294,6 +294,13 @@
     "watcher.backup.volumes.hint": "Inclure les répertoires de volumes entiers dans le backup Restic (en plus des compose/env).",
     "watcher.backup.volumes.appDataHint": "Base de données, paramètres, clés",
     "watcher.backup.volumes.stacksHint": "Tous les fichiers de stacks (compose + env + données)",
+    "watcher.backup.volumes.allSelected": "Toutes les stacks incluses",
+    "watcher.backup.volumes.nSelected": "stack(s) sélectionnée(s)",
+    "watcher.backup.volumes.selectAll": "Tout",
+    "watcher.backup.volumes.selectNone": "Désactiver",
+    "watcher.backup.volumes.calcSizes": "Calculer les tailles",
+    "watcher.backup.volumes.loadingDirs": "Chargement des dossiers…",
+    "watcher.backup.volumes.noDirs": "Aucun dossier trouvé dans /opt/stacks",
 
     "watcher.backup.retention.heading": "Politique de rétention",
     "watcher.backup.retention.keepLast": "Garder les N derniers",
