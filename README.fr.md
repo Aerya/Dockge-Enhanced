@@ -109,12 +109,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/app/data
       - /opt/stacks:/opt/stacks
+      - /backup:/backup          # optionnel — volume dédié au backup local
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
       - DOCKGE_PUBLIC_URL=http://192.168.1.100:5001   # IP de ta machine ou domaine
       - TZ=Europe/Paris                                # ton fuseau horaire (affecte les MàJ planifiées)
 ```
+
+> 💾 Le volume `/backup:/backup` est optionnel mais recommandé si tu utilises **local** comme destination Restic — pointe la destination sur `/backup` pour que les snapshots atterrissent dans un répertoire dédié sur l'hôte, hors du conteneur.
 
 ```bash
 docker compose up -d

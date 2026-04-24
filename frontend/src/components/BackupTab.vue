@@ -249,65 +249,83 @@
         </div>
 
         <!-- ═══ VOLUMES ═══ -->
-        <div class="shadow-box big-padding mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="shadow-box mb-4 vol-section" :class="{ collapsed: volumesCollapsed }">
+            <!-- Header cliquable -->
+            <div class="vol-section-header" @click="toggleVolumes">
                 <h5 class="settings-subheading mb-0">
                     <font-awesome-icon icon="hdd" class="me-2" />{{ $t('watcher.backup.volumes.heading') }}
-                </h5>
-                <button class="btn btn-sm btn-normal" @click="loadDirSizes" :disabled="loadingDirSizes" title="Rafraîchir les tailles">
-                    <span v-if="loadingDirSizes" class="spinner-border spinner-border-sm" />
-                    <font-awesome-icon v-else icon="sync-alt" />
-                </button>
-            </div>
-            <p class="form-text mb-3">{{ $t('watcher.backup.volumes.hint') }}</p>
-            <div class="row g-3">
-                <!-- /app/data -->
-                <div class="col-12">
-                    <div class="vol-row" :class="{ active: settings.volumeBackup.includeAppData }">
-                        <div class="form-check mb-0">
-                            <input v-model="settings.volumeBackup.includeAppData" type="checkbox"
-                                class="form-check-input" id="volAppData" />
-                            <label class="form-check-label" for="volAppData">
-                                <code class="vol-path">/app/data</code>
-                                <small class="form-text ms-2">{{ $t('watcher.backup.volumes.appDataHint') }}</small>
-                            </label>
-                        </div>
-                        <span class="vol-size">
-                            <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.appData }}
+                    <span v-if="volumesCollapsed" class="badge-summary ms-2">
+                        <span v-if="settings.volumeBackup.includeAppData">/app/data</span>
+                        <span v-if="settings.volumeBackup.customVolumes.length > 0">
+                            {{ settings.volumeBackup.includeAppData ? ' · ' : '' }}{{ settings.volumeBackup.customVolumes.length }} vol.
                         </span>
-                    </div>
+                        <span v-if="!settings.volumeBackup.includeAppData && settings.volumeBackup.customVolumes.length === 0" class="text-muted">{{ $t('watcher.backup.volumes.noneSelected') }}</span>
+                    </span>
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <button v-if="!volumesCollapsed" class="btn btn-sm btn-normal" @click.stop="loadDirSizes"
+                        :disabled="loadingDirSizes" :title="$t('watcher.backup.volumes.refresh')">
+                        <span v-if="loadingDirSizes" class="spinner-border spinner-border-sm" />
+                        <font-awesome-icon v-else icon="sync-alt" />
+                    </button>
+                    <font-awesome-icon :icon="volumesCollapsed ? 'chevron-down' : 'chevron-up'" class="chevron-icon" />
                 </div>
-                <!-- Volumes personnalisés -->
-                <div class="col-12">
-                    <p class="form-label mb-2">
-                        <font-awesome-icon icon="folder-open" class="me-1" />{{ $t('watcher.backup.volumes.customHeading') }}
-                        <small class="form-text ms-2">{{ $t('watcher.backup.volumes.customHint') }}</small>
-                    </p>
-                    <!-- Liste des volumes ajoutés -->
-                    <div v-if="settings.volumeBackup.customVolumes.length > 0" class="custom-vol-list mb-2">
-                        <div v-for="(vol, idx) in settings.volumeBackup.customVolumes" :key="vol"
-                            class="vol-row active">
-                            <div class="d-flex align-items-center gap-2">
-                                <code class="vol-path">{{ vol }}</code>
-                                <span v-if="dirSizes.volumes[vol]" class="vol-size">
-                                    <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.volumes[vol] }}
-                                </span>
+            </div>
+            <!-- Body -->
+            <div v-if="!volumesCollapsed" class="vol-section-body">
+                <p class="form-text mb-3">{{ $t('watcher.backup.volumes.hint') }}</p>
+                <div class="row g-3">
+                    <!-- /app/data -->
+                    <div class="col-12">
+                        <div class="vol-row" :class="{ active: settings.volumeBackup.includeAppData }">
+                            <div class="form-check mb-0">
+                                <input v-model="settings.volumeBackup.includeAppData" type="checkbox"
+                                    class="form-check-input" id="volAppData" />
+                                <label class="form-check-label" for="volAppData">
+                                    <code class="vol-path">/app/data</code>
+                                    <small class="form-text ms-2">{{ $t('watcher.backup.volumes.appDataHint') }}</small>
+                                </label>
                             </div>
-                            <button type="button" class="btn btn-xs btn-outline-danger"
-                                @click="removeVolume(idx)" title="Retirer">
-                                <font-awesome-icon icon="times" />
+                            <span class="vol-size">
+                                <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.appData }}
+                            </span>
+                        </div>
+                    </div>
+                    <!-- Volumes personnalisés -->
+                    <div class="col-12">
+                        <p class="form-label mb-2">
+                            <font-awesome-icon icon="folder-open" class="me-1" />{{ $t('watcher.backup.volumes.customHeading') }}
+                            <small class="form-text ms-2">{{ $t('watcher.backup.volumes.customHint') }}</small>
+                        </p>
+                        <!-- Liste des volumes ajoutés -->
+                        <div v-if="settings.volumeBackup.customVolumes.length > 0" class="custom-vol-list mb-2">
+                            <div v-for="(vol, idx) in settings.volumeBackup.customVolumes" :key="vol"
+                                class="vol-row active">
+                                <div class="d-flex align-items-center gap-2">
+                                    <code class="vol-path">{{ vol }}</code>
+                                    <span v-if="dirSizes.volumes[vol]" class="vol-size">
+                                        <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.volumes[vol] }}
+                                    </span>
+                                </div>
+                                <button type="button" class="btn btn-xs btn-outline-danger"
+                                    @click="removeVolume(idx)" title="Retirer">
+                                    <font-awesome-icon icon="times" />
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Input ajouter -->
+                        <div class="input-group input-group-sm">
+                            <input v-model="newVolume" type="text" class="form-control"
+                                :placeholder="$t('watcher.backup.volumes.customPlaceholder')"
+                                @keyup.enter="addVolume" />
+                            <button type="button" class="btn btn-normal" @click="addVolume"
+                                :disabled="!newVolume.trim()">
+                                <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.backup.volumes.customAdd') }}
                             </button>
                         </div>
-                    </div>
-                    <!-- Input ajouter -->
-                    <div class="input-group input-group-sm">
-                        <input v-model="newVolume" type="text" class="form-control"
-                            :placeholder="$t('watcher.backup.volumes.customPlaceholder')"
-                            @keyup.enter="addVolume" />
-                        <button type="button" class="btn btn-normal" @click="addVolume"
-                            :disabled="!newVolume.trim()">
-                            <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.backup.volumes.customAdd') }}
-                        </button>
+                        <p class="form-text mt-2">
+                            <font-awesome-icon icon="info-circle" class="me-1" />{{ $t('watcher.backup.volumes.backupVolHint') }}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -642,6 +660,11 @@ const settings = ref<Settings>({
 const dirSizes = ref<{ appData: string; volumes: Record<string, string> }>({ appData: "…", volumes: {} });
 const loadingDirSizes = ref(false);
 const newVolume = ref("");
+const volumesCollapsed = ref(localStorage.getItem("backupVolumesCollapsed") === "1");
+function toggleVolumes() {
+    volumesCollapsed.value = !volumesCollapsed.value;
+    localStorage.setItem("backupVolumesCollapsed", volumesCollapsed.value ? "1" : "0");
+}
 const expandedDest = ref<number>(0);
 const discordWebhooks = ref<string[]>([]);
 const newWebhook = ref("");
@@ -1050,6 +1073,49 @@ async function testWebhook(url: string) {
     background: #7f1d1d;
     color: #fecaca;
     border: 1px solid #b91c1c;
+}
+
+// ─── Section Volumes rétractable ────────────────────────────────
+.vol-section {
+    padding: 0 !important;
+    overflow: hidden;
+
+    &.collapsed .vol-section-header {
+        border-bottom: none;
+    }
+}
+
+.vol-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    user-select: none;
+    transition: background .15s;
+
+    &:hover { background: rgba(255,255,255,.03); }
+
+    .chevron-icon {
+        font-size: .8rem;
+        color: #6b7280;
+        transition: transform .2s;
+    }
+
+    .badge-summary {
+        font-size: .72rem;
+        font-weight: 400;
+        color: #74c2ff;
+        background: rgba(116,194,255,.12);
+        padding: 2px 8px;
+        border-radius: 50rem;
+        vertical-align: middle;
+    }
+}
+
+.vol-section-body {
+    padding: 16px 20px 20px;
 }
 
 // ─── Vol-rows (sélection volumes) ────────────────────────────────

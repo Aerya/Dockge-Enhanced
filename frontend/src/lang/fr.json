@@ -297,6 +297,9 @@
     "watcher.backup.volumes.customHint": "Ajoute les chemins de volumes Docker à inclure dans le backup (ex : /dockers-data).",
     "watcher.backup.volumes.customPlaceholder": "/dockers-data",
     "watcher.backup.volumes.customAdd": "Ajouter",
+    "watcher.backup.volumes.noneSelected": "aucun",
+    "watcher.backup.volumes.refresh": "Rafraîchir les tailles",
+    "watcher.backup.volumes.backupVolHint": "Astuce : monte un volume dédié au backup local (ex : /backup:/backup dans ton compose) et pointe ta destination locale sur /backup.",
 
     "watcher.backup.retention.heading": "Politique de rétention",
     "watcher.backup.retention.keepLast": "Garder les N derniers",

@@ -304,6 +304,9 @@
     "watcher.backup.volumes.customHint": "Add Docker volume paths to include in the backup (e.g. /dockers-data).",
     "watcher.backup.volumes.customPlaceholder": "/dockers-data",
     "watcher.backup.volumes.customAdd": "Add",
+    "watcher.backup.volumes.noneSelected": "none",
+    "watcher.backup.volumes.refresh": "Refresh sizes",
+    "watcher.backup.volumes.backupVolHint": "Tip: mount a dedicated backup volume (e.g. /backup:/backup in your compose) and point your local destination to /backup.",
 
     "watcher.backup.retention.heading": "Retention policy",
     "watcher.backup.retention.keepLast": "Keep last N",

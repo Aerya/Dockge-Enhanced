@@ -9,6 +9,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/app/data
       - /opt/stacks:/opt/stacks
+      - /backup:/backup          # optionnel — volume dédié au backup local Restic
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
