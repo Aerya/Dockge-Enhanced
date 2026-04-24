@@ -248,6 +248,54 @@
             </div>
         </div>
 
+        <!-- ═══ VOLUMES ═══ -->
+        <div class="shadow-box big-padding mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="hdd" class="me-2" />{{ $t('watcher.backup.volumes.heading') }}
+                </h5>
+                <button class="btn btn-sm btn-normal" @click="loadDirSizes" :disabled="loadingDirSizes" title="Rafraîchir les tailles">
+                    <span v-if="loadingDirSizes" class="spinner-border spinner-border-sm" />
+                    <font-awesome-icon v-else icon="sync-alt" />
+                </button>
+            </div>
+            <p class="form-text mb-3">{{ $t('watcher.backup.volumes.hint') }}</p>
+            <div class="row g-3">
+                <!-- /app/data -->
+                <div class="col-12">
+                    <div class="vol-row" :class="{ active: settings.volumeBackup.includeAppData }">
+                        <div class="form-check mb-0">
+                            <input v-model="settings.volumeBackup.includeAppData" type="checkbox"
+                                class="form-check-input" id="volAppData" />
+                            <label class="form-check-label" for="volAppData">
+                                <code class="vol-path">/app/data</code>
+                                <small class="form-text ms-2">{{ $t('watcher.backup.volumes.appDataHint') }}</small>
+                            </label>
+                        </div>
+                        <span class="vol-size">
+                            <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.appData }}
+                        </span>
+                    </div>
+                </div>
+                <!-- /opt/stacks -->
+                <div class="col-12">
+                    <div class="vol-row" :class="{ active: settings.volumeBackup.includeStacks }">
+                        <div class="form-check mb-0">
+                            <input v-model="settings.volumeBackup.includeStacks" type="checkbox"
+                                class="form-check-input" id="volStacks" />
+                            <label class="form-check-label" for="volStacks">
+                                <code class="vol-path">/opt/stacks</code>
+                                <small class="form-text ms-2">{{ $t('watcher.backup.volumes.stacksHint') }}</small>
+                            </label>
+                        </div>
+                        <span class="vol-size">
+                            <font-awesome-icon icon="weight-hanging" class="me-1 text-muted" />{{ dirSizes.stacks }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ═══ RÉTENTION ═══ -->
         <div class="shadow-box big-padding mb-4">
             <h5 class="settings-subheading mb-3">
@@ -540,7 +588,8 @@ interface Destination {
     rest?: RestConfig;
 }
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
-interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en" }
+interface VolumeBackupConfig { includeAppData: boolean; includeStacks: boolean }
+interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
     path: string; name: string; stack: string; type: "compose" | "env" | "other";
@@ -570,7 +619,11 @@ const settings = ref<Settings>({
     destinations: [DEFAULT_DEST()],
     retention: { keepLast: 10, keepDaily: 7, keepWeekly: 4, keepMonthly: 3 },
     includeEnvFiles: true,
+    volumeBackup: { includeAppData: false, includeStacks: false },
 });
+
+const dirSizes = ref<{ appData: string; stacks: string }>({ appData: "…", stacks: "…" });
+const loadingDirSizes = ref(false);
 const expandedDest = ref<number>(0);
 const discordWebhooks = ref<string[]>([]);
 const newWebhook = ref("");
@@ -679,6 +732,7 @@ function mergeSettings(loaded: Partial<Settings>): Settings {
         ...settings.value,
         ...loaded,
         destinations: merged.length > 0 ? merged : [DEFAULT_DEST()],
+        volumeBackup: (loaded.volumeBackup ?? settings.value.volumeBackup) as VolumeBackupConfig,
     };
 }
 
@@ -702,6 +756,16 @@ const snapshotSizeMap = computed(() => {
 
 // ─── Init ─────────────────────────────────────────────────────────
 
+async function loadDirSizes() {
+    loadingDirSizes.value = true;
+    try {
+        const res = await api("GET", "/backup/dir-sizes");
+        if (res.ok) dirSizes.value = res.data;
+    } finally {
+        loadingDirSizes.value = false;
+    }
+}
+
 onMounted(async () => {
     const [settingsRes, histRes, snapsRes] = await Promise.all([
         api("GET", "/backup/settings"),
@@ -714,6 +778,7 @@ onMounted(async () => {
     }
     if (histRes.ok) history.value = histRes.data;
     if (snapsRes.ok) snapshots.value = snapsRes.data;
+    await loadDirSizes();
 });
 
 // ─── Actions ──────────────────────────────────────────────────────
@@ -952,6 +1017,38 @@ async function testWebhook(url: string) {
     background: #7f1d1d;
     color: #fecaca;
     border: 1px solid #b91c1c;
+}
+
+// ─── Vol-rows (sélection volumes) ────────────────────────────────
+.vol-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(0,0,0,.15);
+    transition: border-color .15s, background .15s;
+
+    &.active {
+        border-color: rgba(116,194,255,.35);
+        background: rgba(116,194,255,.07);
+    }
+
+    .vol-path {
+        font-size: .82rem;
+        color: #74c2ff;
+        background: rgba(116,194,255,.1);
+        padding: 1px 6px;
+        border-radius: 4px;
+    }
+
+    .vol-size {
+        font-size: .82rem;
+        font-family: monospace;
+        color: #9ca3af;
+        white-space: nowrap;
+    }
 }
 
 .snapshot-row:hover td {

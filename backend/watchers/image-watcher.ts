@@ -23,6 +23,9 @@ const execAsync = promisify(exec);
 const STACKS_DIR    = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 const DATA_DIR      = process.env.DOCKGE_DATA_DIR   ?? "/opt/dockge/data";
 const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
+const ROLLBACK_PATH = path.join(DATA_DIR, "rollback-registry.json");
+
+const ROLLBACK_WINDOW_MS = 24 * 3_600_000; // 24 heures
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -60,8 +63,20 @@ export interface ImageStatus {
     error?: string;
 }
 
-// Store partagé — lu par le router pour le polling frontend
+export interface RollbackEntry {
+    key: string;            // "stack::image"
+    image: string;          // ex: "nginx:latest"
+    stack: string;
+    composePath: string;    // chemin absolu vers le compose.yaml
+    service: string | null; // nom du service docker compose
+    oldImageId: string;     // sha256:... de l'image avant màj
+    updatedAt: string;      // ISO date de la màj
+    expiresAt: string;      // ISO date = updatedAt + 24h
+}
+
+// Stores partagés — lus par le router pour le polling frontend
 export const imageStatusStore = new Map<string, ImageStatus>();
+export const rollbackStore    = new Map<string, RollbackEntry>();
 
 // ─── Helpers registry ─────────────────────────────────────────────
 
@@ -306,6 +321,7 @@ export class ImageWatcher {
     private static _instance: ImageWatcher;
     private cronJob: cron.ScheduledTask | null = null;
     private minuteCron: cron.ScheduledTask | null = null;
+    private cleanupCron: cron.ScheduledTask | null = null;
     private baseUrl: string = "";
     private _checkRunning = false;
     private _updatingImages = new Set<string>();
@@ -375,6 +391,7 @@ export class ImageWatcher {
 
     async startIfEnabled(): Promise<void> {
         await this.loadSettings();
+        await this.loadRollbackRegistry();
         if (this.settings.enabled) this.start();
     }
 
@@ -385,6 +402,8 @@ export class ImageWatcher {
         this.cronJob = cron.schedule(expr, () => this.runCheck());
         // Cron minutaire pour appliquer les màj planifiées
         this.minuteCron = cron.schedule("* * * * *", () => this.applyPendingUpdates().catch(console.error));
+        // Cron horaire pour supprimer les anciennes images dont le rollback a expiré
+        this.cleanupCron = cron.schedule("0 * * * *", () => this.cleanExpiredRollbacks().catch(console.error));
         // Check immédiat au démarrage
         this.runCheck().catch(console.error);
     }
@@ -394,6 +413,8 @@ export class ImageWatcher {
         this.cronJob = null;
         this.minuteCron?.stop();
         this.minuteCron = null;
+        this.cleanupCron?.stop();
+        this.cleanupCron = null;
     }
 
     restart(): void {
@@ -607,11 +628,38 @@ export class ImageWatcher {
         const serviceArg = service ? ` ${service}` : "";
         console.log(`[ImageWatcher] Auto-update: ${status.stack}/${status.image}${service ? ` (service: ${service})` : ""}`);
         try {
+            // ── Capture l'ID de l'image actuelle avant le pull (pour rollback) ──
+            let oldImageId = "";
+            try {
+                const ref = withExplicitTag(status.image);
+                const { stdout } = await execAsync(
+                    `docker image inspect --format '{{.Id}}' "${ref}" 2>/dev/null`,
+                    { timeout: 10000 }
+                );
+                oldImageId = stdout.trim();
+            } catch { /* image absente localement, rollback impossible */ }
+
             await execAsync(`docker compose -f "${composePath}" pull${serviceArg}`, { timeout: 600000 });
             await execAsync(`docker compose -f "${composePath}" up -d${serviceArg}`, { timeout: 120000 });
+
+            // ── Sauvegarde l'entrée de rollback si on avait une image antérieure ──
+            if (oldImageId) {
+                const now = new Date();
+                await this.saveRollbackEntry({
+                    key,
+                    image: status.image,
+                    stack: status.stack,
+                    composePath,
+                    service: service ?? null,
+                    oldImageId,
+                    updatedAt: now.toISOString(),
+                    expiresAt: new Date(now.getTime() + ROLLBACK_WINDOW_MS).toISOString(),
+                });
+            }
+
             // Recheck pour mettre à jour le digest dans le store
             const newStatus = await this.checkOneImage(status.image, status.stack);
-            imageStatusStore.set(`${status.stack}::${status.image}`, newStatus);
+            imageStatusStore.set(key, newStatus);
             console.log(`[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`);
             this._updatingImages.delete(key);
             return true;
@@ -620,6 +668,86 @@ export class ImageWatcher {
             this._updatingImages.delete(key);
             return false;
         }
+    }
+
+    // ── Rollback ──────────────────────────────────────────────────────
+
+    private async loadRollbackRegistry(): Promise<void> {
+        try {
+            const raw = await fs.readFile(ROLLBACK_PATH, "utf8");
+            const entries = JSON.parse(raw) as RollbackEntry[];
+            rollbackStore.clear();
+            const now = new Date();
+            for (const e of entries) {
+                if (new Date(e.expiresAt) > now) rollbackStore.set(e.key, e);
+            }
+            console.log(`[ImageWatcher] Registre rollback chargé — ${rollbackStore.size} entrée(s) active(s)`);
+        } catch { /* première utilisation */ }
+    }
+
+    private async saveRollbackRegistry(): Promise<void> {
+        await fs.mkdir(DATA_DIR, { recursive: true });
+        await fs.writeFile(ROLLBACK_PATH, JSON.stringify([...rollbackStore.values()], null, 2));
+    }
+
+    private async saveRollbackEntry(entry: RollbackEntry): Promise<void> {
+        rollbackStore.set(entry.key, entry);
+        await this.saveRollbackRegistry();
+        const exp = new Date(entry.expiresAt).toLocaleString("fr-FR");
+        console.log(`[ImageWatcher] Rollback disponible pour ${entry.key} jusqu'au ${exp}`);
+    }
+
+    async cleanExpiredRollbacks(): Promise<void> {
+        const now = new Date();
+        let changed = false;
+        for (const [key, entry] of rollbackStore) {
+            if (new Date(entry.expiresAt) <= now) {
+                console.log(`[ImageWatcher] Expiration rollback — suppression image ${entry.oldImageId.slice(0, 19)}`);
+                try {
+                    await execAsync(`docker rmi "${entry.oldImageId}" 2>/dev/null`, { timeout: 30000 });
+                } catch { /* peut déjà être supprimée ou utilisée ailleurs */ }
+                rollbackStore.delete(key);
+                changed = true;
+            }
+        }
+        if (changed) await this.saveRollbackRegistry();
+    }
+
+    async performRollback(key: string): Promise<void> {
+        const entry = rollbackStore.get(key);
+        if (!entry) throw new Error("Aucune entrée de rollback pour cette image");
+        if (new Date() > new Date(entry.expiresAt)) {
+            rollbackStore.delete(key);
+            await this.saveRollbackRegistry();
+            throw new Error("Fenêtre de rollback expirée (24h dépassées)");
+        }
+
+        const image = withExplicitTag(entry.image);
+        const serviceArg = entry.service ? ` ${entry.service}` : "";
+        console.log(`[ImageWatcher] Rollback: ${entry.stack}/${entry.image} → ${entry.oldImageId.slice(0, 19)}`);
+
+        // Re-tag l'ancienne image pour lui redonner son nom (détache la nouvelle)
+        await execAsync(`docker tag "${entry.oldImageId}" "${image}"`, { timeout: 30000 });
+        // Redémarre le container avec l'ancienne image
+        await execAsync(`docker compose -f "${entry.composePath}" up -d${serviceArg}`, { timeout: 120000 });
+
+        rollbackStore.delete(key);
+        await this.saveRollbackRegistry();
+
+        // Met à jour le status dans le store
+        const newStatus = await this.checkOneImage(entry.image, entry.stack);
+        imageStatusStore.set(key, newStatus);
+        console.log(`[ImageWatcher] Rollback terminé: ${entry.stack}/${entry.image}`);
+    }
+
+    async deleteRollbackEntry(key: string): Promise<void> {
+        const entry = rollbackStore.get(key);
+        if (!entry) return;
+        try {
+            await execAsync(`docker rmi "${entry.oldImageId}" 2>/dev/null`, { timeout: 30000 });
+        } catch { /* déjà supprimée */ }
+        rollbackStore.delete(key);
+        await this.saveRollbackRegistry();
     }
 
     private async checkOneImage(image: string, stack: string): Promise<ImageStatus> {

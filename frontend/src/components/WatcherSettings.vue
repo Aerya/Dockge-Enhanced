@@ -273,6 +273,9 @@
                                     <th :title="$t('watcher.status.autoUpdateHint')" style="white-space:nowrap;min-width:160px">
                                         {{ $t('watcher.status.autoUpdate') }}
                                     </th>
+                                    <th style="white-space:nowrap;min-width:130px">
+                                        {{ $t('watcher.rollback.col') }}
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -321,6 +324,35 @@
                                                 <span v-if="isPending(s)" class="au-pending" :title="$t('watcher.status.auPendingHint')">⏳</span>
                                             </template>
                                         </div>
+                                    </td>
+                                    <!-- ─── Rollback ─── -->
+                                    <td>
+                                        <template v-if="rollbackFor(s)">
+                                            <div class="rollback-cell">
+                                                <div class="d-flex align-items-center gap-1 mb-1">
+                                                    <span class="rollback-countdown" :title="$t('watcher.rollback.expiresAt') + ' ' + new Date(rollbackFor(s)!.expiresAt).toLocaleString()">
+                                                        ⏳ {{ rollbackCountdown(rollbackFor(s)!) }}
+                                                    </span>
+                                                </div>
+                                                <div class="d-flex gap-1">
+                                                    <button
+                                                        class="btn btn-xs btn-rollback"
+                                                        :disabled="rollbackingKey === `${s.stack}::${s.image}`"
+                                                        @click="doRollback(s)"
+                                                        :title="$t('watcher.rollback.btnTitle')"
+                                                    >
+                                                        <span v-if="rollbackingKey === `${s.stack}::${s.image}`" class="spinner-border spinner-border-sm" />
+                                                        <template v-else>↩ {{ $t('watcher.rollback.btn') }}</template>
+                                                    </button>
+                                                    <button
+                                                        class="btn btn-xs btn-outline-secondary"
+                                                        @click="dismissRollback(s)"
+                                                        :title="$t('watcher.rollback.dismiss')"
+                                                    >✕</button>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <span v-else class="form-text">—</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -604,6 +636,14 @@ interface ImageStatus {
     hasUpdate: boolean; lastChecked: string; error?: string;
 }
 
+interface RollbackEntry {
+    key: string;
+    image: string; stack: string;
+    oldImageId: string;
+    updatedAt: string;
+    expiresAt: string;
+}
+
 interface TrivyScanResult {
     image: string; stack: string;
     maxSeverity: string;
@@ -673,7 +713,9 @@ const trivySettings = ref<TrivySettings>({
 const trivyWebhook = ref("");
 const credentials = ref<Cred[]>([]);
 const newCred = ref<Cred>({ registry: "", username: "", token: "" });
-const imageStatuses = ref<ImageStatus[]>([]);
+const imageStatuses    = ref<ImageStatus[]>([]);
+const rollbackEntries  = ref<RollbackEntry[]>([]);
+const rollbackingKey   = ref<string | null>(null);
 
 const trivyStatus = ref<TrivyStatus>({ running: false, lastScanAt: null, scannedCount: 0, lastResults: [], lastFullResults: [] });
 const expandedTrivyImage = ref<string | null>(null);
@@ -746,11 +788,12 @@ function showToast(msg: string, ok = true) {
 // ─── Init & polling ───────────────────────────────────────────────
 
 onMounted(async () => {
-    const [imgRes, trivyRes, statusRes, trivyStatusRes] = await Promise.all([
+    const [imgRes, trivyRes, statusRes, trivyStatusRes, rollbackRes] = await Promise.all([
         api("GET", "/image/settings"),
         api("GET", "/trivy/settings"),
         api("GET", "/image/status"),
         api("GET", "/trivy/status"),
+        api("GET", "/image/rollback"),
     ]);
     // Charge la config Apprise depuis les settings image (stockée globalement)
     if (imgRes.ok && imgRes.data) {
@@ -777,7 +820,8 @@ onMounted(async () => {
             ? trivyRes.data.discordWebhooks
             : trivySettings.value.discordWebhooks,
     };
-    if (statusRes.ok) imageStatuses.value = statusRes.data ?? [];
+    if (statusRes.ok)   imageStatuses.value   = statusRes.data ?? [];
+    if (rollbackRes.ok) rollbackEntries.value = rollbackRes.data ?? [];
     if (trivyStatusRes.ok) trivyStatus.value = {
         ...trivyStatus.value,
         ...trivyStatusRes.data,
@@ -790,8 +834,50 @@ onMounted(async () => {
 onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
 
 async function loadStatus() {
-    const res = await api("GET", "/image/status");
-    if (res.ok) imageStatuses.value = res.data;
+    const [statusRes, rollbackRes] = await Promise.all([
+        api("GET", "/image/status"),
+        api("GET", "/image/rollback"),
+    ]);
+    if (statusRes.ok)   imageStatuses.value   = statusRes.data;
+    if (rollbackRes.ok) rollbackEntries.value = rollbackRes.data;
+}
+
+function rollbackFor(s: ImageStatus): RollbackEntry | undefined {
+    return rollbackEntries.value.find(r => r.key === `${s.stack}::${s.image}`);
+}
+
+function rollbackCountdown(entry: RollbackEntry): string {
+    const ms = new Date(entry.expiresAt).getTime() - Date.now();
+    if (ms <= 0) return t('watcher.rollback.expired');
+    const h = Math.floor(ms / 3_600_000);
+    const m = Math.floor((ms % 3_600_000) / 60_000);
+    return h > 0 ? `${h}h${String(m).padStart(2, "0")}` : `${m}min`;
+}
+
+async function doRollback(s: ImageStatus) {
+    const key = `${s.stack}::${s.image}`;
+    if (!confirm(t('watcher.rollback.confirm', { image: s.image, stack: s.stack }))) return;
+    rollbackingKey.value = key;
+    try {
+        const res = await api("POST", "/image/rollback", { key });
+        if (res.ok) {
+            showToast(t('watcher.rollback.done', { image: s.image }));
+            await loadStatus();
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally {
+        rollbackingKey.value = null;
+    }
+}
+
+async function dismissRollback(s: ImageStatus) {
+    const key = `${s.stack}::${s.image}`;
+    const res = await api("DELETE", `/image/rollback/${encodeURIComponent(key)}`);
+    if (res.ok) {
+        rollbackEntries.value = rollbackEntries.value.filter(r => r.key !== key);
+        showToast(t('watcher.rollback.dismissed'));
+    }
 }
 
 // ─── Actions ──────────────────────────────────────────────────────
@@ -1010,6 +1096,32 @@ async function removeCred(registry: string) {
     }
 }
 
+// ─── Rollback ─────────────────────────────────────────────────────
+.rollback-cell {
+    min-width: 120px;
+}
+.rollback-countdown {
+    font-size: .72rem;
+    font-family: monospace;
+    color: #f59e0b;
+    cursor: default;
+}
+.btn-xs {
+    padding: 2px 7px;
+    font-size: .72rem;
+    line-height: 1.4;
+    border-radius: 4px;
+}
+.btn-rollback {
+    background: rgba(251,191,36,.15);
+    border: 1px solid rgba(251,191,36,.4);
+    color: #fbbf24;
+    &:hover:not(:disabled) {
+        background: rgba(251,191,36,.28);
+    }
+    &:disabled { opacity: .5; }
+}
+
 // Panneau CVE Trivy (hors table-responsive)
 .trivy-detail-panel .table {
     --bs-table-bg: transparent;
@@ -1105,10 +1217,11 @@ async function removeCred(registry: string) {
 .watcher-tab {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 5px;
-    padding: 10px 8px;
+    justify-content: center;
+    gap: 6px;
+    padding: 5px 8px;
     border: none;
     border-radius: 7px;
     background: transparent;
@@ -1120,7 +1233,7 @@ async function removeCred(registry: string) {
     transition: background .15s, color .15s, box-shadow .15s;
 
     .watcher-tab-icon {
-        font-size: 1.1rem;
+        font-size: .9rem;
     }
 
     &:hover:not(.active) {

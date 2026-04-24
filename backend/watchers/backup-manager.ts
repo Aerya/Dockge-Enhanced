@@ -70,6 +70,11 @@ export interface RetentionPolicy {
     keepMonthly: number;
 }
 
+export interface VolumeBackupConfig {
+    includeAppData: boolean;   // inclure DATA_DIR (/app/data) en entier
+    includeStacks: boolean;    // inclure STACKS_DIR (/opt/stacks) en entier
+}
+
 export interface BackupSettings {
     enabled: boolean;
     intervalHours: number;
@@ -78,6 +83,7 @@ export interface BackupSettings {
     discordWebhooks: string[];
     includeEnvFiles: boolean;
     extraPaths: string[];
+    volumeBackup: VolumeBackupConfig;
     notificationLang: "fr" | "en";
 }
 
@@ -294,6 +300,7 @@ export class BackupManager {
         includeEnvFiles: true,
         extraPaths: [],
         notificationLang: "fr",
+        volumeBackup: { includeAppData: false, includeStacks: false },
     };
 
     static getInstance(): BackupManager {
@@ -588,12 +595,35 @@ export class BackupManager {
             console.error("[BackupManager] Impossible de lire STACKS_DIR:", e);
         }
 
+        // Volumes complets (si activés)
+        const vb = this.settings.volumeBackup;
+        if (vb?.includeAppData) {
+            try { await fs.access(DATA_DIR); paths.push(DATA_DIR); } catch { /* absent */ }
+        }
+        if (vb?.includeStacks) {
+            try { await fs.access(STACKS_DIR); paths.push(STACKS_DIR); } catch { /* absent */ }
+        }
+
         // Chemins supplémentaires configurés
         for (const extra of this.settings.extraPaths) {
             try { await fs.access(extra); paths.push(extra); } catch { /* absent */ }
         }
 
         return paths;
+    }
+
+    /** Retourne la taille sur disque de DATA_DIR et STACKS_DIR */
+    async getDirSizes(): Promise<{ appData: string; stacks: string }> {
+        const du = async (dir: string): Promise<string> => {
+            try {
+                const { stdout } = await execAsync(`du -sh "${dir}" 2>/dev/null`, { timeout: 15000 });
+                return stdout.split("\t")[0].trim() || "?";
+            } catch {
+                return "?";
+            }
+        };
+        const [appData, stacks] = await Promise.all([du(DATA_DIR), du(STACKS_DIR)]);
+        return { appData, stacks };
     }
 
     private async runForgetFor(dest: BackupDestination): Promise<void> {

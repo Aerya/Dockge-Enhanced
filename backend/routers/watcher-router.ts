@@ -9,7 +9,7 @@
 import { DockgeServer } from "../dockge-server";
 import { Router } from "../router";
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";
-import { ImageWatcher, imageStatusStore, RegistryCredential, WatcherSettings } from "../watchers/image-watcher";
+import { ImageWatcher, imageStatusStore, rollbackStore, RegistryCredential, WatcherSettings } from "../watchers/image-watcher";
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { BackupManager } from "../watchers/backup-manager";
@@ -93,6 +93,36 @@ export class WatcherRouter extends Router {
         router.get("/image/status", (_req: Request, res: Response) => {
             const entries = [...imageStatusStore.values()];
             res.json({ ok: true, data: entries });
+        });
+
+        // ════════════════════════════════════════════════════════════════
+        // IMAGE WATCHER — Rollback
+        // ════════════════════════════════════════════════════════════════
+
+        router.get("/image/rollback", (_req: Request, res: Response) => {
+            res.json({ ok: true, data: [...rollbackStore.values()] });
+        });
+
+        router.post("/image/rollback", async (req: Request, res: Response) => {
+            const { key } = req.body as { key: string };
+            if (!key) return res.status(400).json({ ok: false, message: "key requis" });
+            try {
+                await ImageWatcher.getInstance().performRollback(key);
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.delete("/image/rollback/:key", async (req: Request, res: Response) => {
+            try {
+                await ImageWatcher.getInstance().deleteRollbackEntry(
+                    decodeURIComponent(req.params.key)
+                );
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
         });
 
         // ════════════════════════════════════════════════════════════════
@@ -293,6 +323,15 @@ export class WatcherRouter extends Router {
 
         router.get("/backup/history", (_req: Request, res: Response) => {
             res.json({ ok: true, data: BackupManager.getInstance().getHistory() });
+        });
+
+        router.get("/backup/dir-sizes", async (_req: Request, res: Response) => {
+            try {
+                const sizes = await BackupManager.getInstance().getDirSizes();
+                res.json({ ok: true, data: sizes });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
         });
 
         // ════════════════════════════════════════════════════════════════

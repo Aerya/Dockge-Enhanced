@@ -55,6 +55,10 @@
                         <span v-if="pruningImages" class="spinner-border spinner-border-sm me-1" />
                         <font-awesome-icon v-else icon="trash" class="me-1" />{{ t.images.pruneBtn }}
                     </button>
+                    <button class="btn btn-outline-warning btn-sm" @click="pruneUnusedImages" :disabled="pruningUnusedImages">
+                        <span v-if="pruningUnusedImages" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="trash" class="me-1" />{{ t.images.pruneUnusedBtn }}
+                    </button>
                     <button v-if="someImagesSelected" class="btn btn-danger btn-sm"
                         @click="deleteSelectedImages">
                         <font-awesome-icon icon="trash" class="me-1" />{{ t.images.deleteSelected }}
@@ -442,8 +446,10 @@ const i18n = {
         images: {
             heading: "Images Docker",
             refresh: "Rafraîchir",
-            pruneBtn: "Purger les images orphelines",
+            pruneBtn: "Purger les orphelines",
             pruneConfirm: "Supprimer toutes les images orphelines (sans tag) ? Note : des couches intermédiaires non listées seront également supprimées.",
+            pruneUnusedBtn: "Purger les inutilisées",
+            pruneUnusedConfirm: "Supprimer toutes les images non utilisées par un conteneur actif (y compris les images taguées inutilisées) ?",
             total: "images",
             unused: "inutilisées",
             dangling: "orphelines",
@@ -498,6 +504,8 @@ const i18n = {
             refresh: "Refresh",
             pruneBtn: "Remove dangling",
             pruneConfirm: "Remove all untagged (dangling) images? Note: unlisted intermediate layers will also be removed.",
+            pruneUnusedBtn: "Remove unused",
+            pruneUnusedConfirm: "Remove all images not used by any active container (including tagged but unused images)?",
             total: "images",
             unused: "unused",
             dangling: "dangling",
@@ -558,6 +566,7 @@ const loadingImages = ref(false);
 const loadingVolumes = ref(false);
 const loadingContainers = ref(false);
 const pruningImages = ref(false);
+const pruningUnusedImages = ref(false);
 const pruningVolumes = ref(false);
 const imageError = ref("");
 const volumeError = ref("");
@@ -720,6 +729,18 @@ async function pruneImages() {
         if (data.ok) await loadImages();
     } finally {
         pruningImages.value = false;
+    }
+}
+
+async function pruneUnusedImages() {
+    if (!confirm(t.value.images.pruneUnusedConfirm)) return;
+    pruningUnusedImages.value = true;
+    try {
+        const data = await api("POST", "images/prune-unused");
+        showToast(data.ok, data.message ?? "");
+        if (data.ok) await loadImages();
+    } finally {
+        pruningUnusedImages.value = false;
     }
 }
 

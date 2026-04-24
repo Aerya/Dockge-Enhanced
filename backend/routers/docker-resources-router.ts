@@ -212,6 +212,16 @@ export class DockerResourcesRouter extends Router {
             }
         });
 
+        // Supprime toutes les images non utilisées par un conteneur (orphelines + inutilisées taguées)
+        router.post("/images/prune-unused", auth, async (_req: Request, res: Response) => {
+            try {
+                const { stdout } = await execAsync("docker image prune -a -f");
+                res.json({ ok: true, message: stdout.trim() || "Terminé" });
+            } catch (e: any) {
+                res.status(500).json({ ok: false, message: e.message });
+            }
+        });
+
         // ── Volumes ───────────────────────────────────────────────
 
         router.get("/volumes", auth, async (_req: Request, res: Response) => {

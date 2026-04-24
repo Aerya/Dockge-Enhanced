@@ -190,6 +190,16 @@
     "watcher.status.autoUpdateSaved": "✅ Auto-update configured",
     "watcher.status.auOff": "Manual",
     "watcher.status.auIgnored": "Ignore",
+
+    "watcher.rollback.col": "Rollback",
+    "watcher.rollback.btn": "Rollback",
+    "watcher.rollback.btnTitle": "Restore previous version",
+    "watcher.rollback.expiresAt": "Expires",
+    "watcher.rollback.expired": "expired",
+    "watcher.rollback.dismiss": "Delete old image now",
+    "watcher.rollback.confirm": "Restore {image} (stack {stack}) to its previous version?",
+    "watcher.rollback.done": "↩ Rollback done for {image}",
+    "watcher.rollback.dismissed": "Old image deleted",
     "watcher.status.auImmediate": "Immediate",
     "watcher.status.auScheduled": "Scheduled",
     "watcher.status.auPendingHint": "Update pending — will be applied at the scheduled time.",
@@ -286,6 +296,11 @@
     "watcher.backup.webhooks": "Discord webhooks",
     "watcher.backup.webhooksHint": "(success & failures)",
     "watcher.backup.noWebhook": "No webhook configured.",
+
+    "watcher.backup.volumes.heading": "Docker volumes",
+    "watcher.backup.volumes.hint": "Include full volume directories in the Restic backup (in addition to compose/env files).",
+    "watcher.backup.volumes.appDataHint": "Database, settings, keys",
+    "watcher.backup.volumes.stacksHint": "All stack files (compose + env + data)",
 
     "watcher.backup.retention.heading": "Retention policy",
     "watcher.backup.retention.keepLast": "Keep last N",
