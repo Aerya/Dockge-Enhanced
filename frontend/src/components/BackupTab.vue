@@ -929,9 +929,13 @@ async function toggleExpand(volPath: string) {
         next.delete(volPath);
     } else {
         next.add(volPath);
-        if (!volDirs.value[volPath]) await loadVolDirs(volPath);
     }
+    // Mise à jour immédiate → le chevron et le panel réagissent tout de suite
     expandedVols.value = next;
+    // Chargement des sous-dossiers uniquement si le volume vient d'être ouvert
+    if (next.has(volPath) && !volDirs.value[volPath]) {
+        await loadVolDirs(volPath);
+    }
 }
 
 async function loadVolDirs(volPath: string) {
