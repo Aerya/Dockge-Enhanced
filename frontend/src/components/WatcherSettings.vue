@@ -15,81 +15,102 @@
             </div>
         </div>
 
-        <!-- ═══ APPRISE — Config globale ═══ -->
-        <div class="shadow-box big-padding mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="settings-subheading mb-0">
-                    <font-awesome-icon icon="bell" class="me-2" />{{ $t('watcher.apprise.heading') }}
-                </h5>
-                <small class="form-text">{{ $t('watcher.apprise.global') }}</small>
+        <!-- ═══ APPRISE — Config globale (rétractable) ═══ -->
+        <div class="shadow-box apprise-box mb-3">
+            <div class="apprise-header" @click="toggleApprise">
+                <div class="d-flex align-items-center gap-2">
+                    <font-awesome-icon icon="bell" class="apprise-icon" />
+                    <h5 class="settings-subheading mb-0">{{ $t('watcher.apprise.heading') }}</h5>
+                    <span v-if="appriseCollapsed && appriseSettings.urls.length" class="badge bg-secondary ms-1">
+                        {{ appriseSettings.urls.length }} URL{{ appriseSettings.urls.length > 1 ? 's' : '' }}
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <small v-if="!appriseCollapsed" class="form-text">{{ $t('watcher.apprise.global') }}</small>
+                    <font-awesome-icon
+                        :icon="appriseCollapsed ? 'chevron-down' : 'chevron-up'"
+                        class="apprise-chevron"
+                    />
+                </div>
             </div>
 
-            <div class="row g-3">
-                <!-- URL Serveur -->
-                <div class="col-md-6">
-                    <label class="form-label small">{{ $t('watcher.apprise.serverUrl') }}</label>
-                    <input v-model="appriseSettings.serverUrl" type="url" class="form-control form-control-sm"
-                        :placeholder="$t('watcher.apprise.serverUrlPlaceholder')" autocomplete="off" />
-                </div>
+            <div v-show="!appriseCollapsed" class="apprise-body">
+                <div class="row g-3">
+                    <!-- URL Serveur -->
+                    <div class="col-md-6">
+                        <label class="form-label small">{{ $t('watcher.apprise.serverUrl') }}</label>
+                        <input v-model="appriseSettings.serverUrl" type="url" class="form-control form-control-sm"
+                            :placeholder="$t('watcher.apprise.serverUrlPlaceholder')" autocomplete="off" />
+                    </div>
 
-                <!-- Notification URLs -->
-                <div class="col-12">
-                    <label class="form-label small">{{ $t('watcher.apprise.urls') }}</label>
-                    <div v-for="(url, idx) in appriseSettings.urls" :key="idx"
-                        class="d-flex align-items-center gap-2 mb-2">
-                        <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
-                            {{ url }}
-                        </span>
-                        <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl(idx)">
-                            <font-awesome-icon icon="trash" />
+                    <!-- Notification URLs -->
+                    <div class="col-12">
+                        <label class="form-label small">{{ $t('watcher.apprise.urls') }}</label>
+                        <div v-for="(url, idx) in appriseSettings.urls" :key="idx"
+                            class="d-flex align-items-center gap-2 mb-2">
+                            <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
+                                {{ url }}
+                            </span>
+                            <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl(idx)">
+                                <font-awesome-icon icon="trash" />
+                            </button>
+                        </div>
+                        <p v-if="!appriseSettings.urls.length" class="form-text fst-italic mb-2">
+                            {{ $t('watcher.apprise.noUrl') }}
+                        </p>
+                        <div class="input-group">
+                            <input v-model="newAppriseUrl" type="text" class="form-control form-control-sm"
+                                :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
+                            <button class="btn btn-sm btn-success" @click="addAppriseUrl" :disabled="!newAppriseUrl">
+                                <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.apprise.addUrl') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="col-12 d-flex gap-2 flex-wrap">
+                        <button class="btn btn-primary btn-sm" @click.stop="saveAppriseSettings" :disabled="savingApprise">
+                            <span v-if="savingApprise" class="spinner-border spinner-border-sm me-1" />
+                            <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.apprise.save') }}
+                        </button>
+                        <button class="btn btn-normal btn-sm" @click.stop="testApprise"
+                            :disabled="testingApprise || !appriseSettings.serverUrl">
+                            <span v-if="testingApprise" class="spinner-border spinner-border-sm me-1" />
+                            <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t('watcher.apprise.test') }}
                         </button>
                     </div>
-                    <p v-if="!appriseSettings.urls.length" class="form-text fst-italic mb-2">
-                        {{ $t('watcher.apprise.noUrl') }}
-                    </p>
-                    <div class="input-group">
-                        <input v-model="newAppriseUrl" type="text" class="form-control form-control-sm"
-                            :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
-                        <button class="btn btn-sm btn-success" @click="addAppriseUrl" :disabled="!newAppriseUrl">
-                            <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.apprise.addUrl') }}
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="col-12 d-flex gap-2 flex-wrap">
-                    <button class="btn btn-primary btn-sm" @click="saveAppriseSettings" :disabled="savingApprise">
-                        <span v-if="savingApprise" class="spinner-border spinner-border-sm me-1" />
-                        <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.apprise.save') }}
-                    </button>
-                    <button class="btn btn-normal btn-sm" @click="testApprise"
-                        :disabled="testingApprise || !appriseSettings.serverUrl">
-                        <span v-if="testingApprise" class="spinner-border spinner-border-sm me-1" />
-                        <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t('watcher.apprise.test') }}
-                    </button>
                 </div>
             </div>
         </div>
 
         <div class="shadow-box shadow-box-settings">
             <!-- ═══ TAB BAR ═══ -->
-            <ul class="nav nav-pills mb-4">
-                <li class="nav-item">
-                    <button class="nav-link" :class="{ active: tab === 'images' }" @click="tab = 'images'">
-                        <font-awesome-icon icon="sync-alt" class="me-1" />{{ $t('watcher.tab.images') }}
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" :class="{ active: tab === 'trivy' }" @click="tab = 'trivy'">
-                        <font-awesome-icon icon="bug" class="me-1" />{{ $t('watcher.tab.security') }}
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" :class="{ active: tab === 'backup' }" @click="tab = 'backup'">
-                        <font-awesome-icon icon="archive" class="me-1" />{{ $t('watcher.tab.backup') }}
-                    </button>
-                </li>
-            </ul>
+            <div class="watcher-tab-bar mb-4">
+                <button
+                    class="watcher-tab"
+                    :class="{ active: tab === 'images' }"
+                    @click="tab = 'images'"
+                >
+                    <font-awesome-icon icon="sync-alt" class="watcher-tab-icon" />
+                    <span>{{ $t('watcher.tab.images') }}</span>
+                </button>
+                <button
+                    class="watcher-tab"
+                    :class="{ active: tab === 'trivy' }"
+                    @click="tab = 'trivy'"
+                >
+                    <font-awesome-icon icon="bug" class="watcher-tab-icon" />
+                    <span>{{ $t('watcher.tab.security') }}</span>
+                </button>
+                <button
+                    class="watcher-tab"
+                    :class="{ active: tab === 'backup' }"
+                    @click="tab = 'backup'"
+                >
+                    <font-awesome-icon icon="archive" class="watcher-tab-icon" />
+                    <span>{{ $t('watcher.tab.backup') }}</span>
+                </button>
+            </div>
 
             <!-- ═══ TAB: IMAGES ═══ -->
             <div v-show="tab === 'images'">
@@ -678,6 +699,12 @@ const newAppriseUrl   = ref("");
 const savingApprise   = ref(false);
 const testingApprise  = ref(false);
 
+const appriseCollapsed = ref(localStorage.getItem("appriseCollapsed") === "1");
+function toggleApprise() {
+    appriseCollapsed.value = !appriseCollapsed.value;
+    localStorage.setItem("appriseCollapsed", appriseCollapsed.value ? "1" : "0");
+}
+
 const saving = ref(false);
 const savingTrivy = ref(false);
 const running = ref(false);
@@ -1035,6 +1062,77 @@ async function removeCred(registry: string) {
 .form-control-sm::placeholder {
     color: #9ca3af !important;
     opacity: 1;
+}
+
+// ─── Apprise collapsible ──────────────────────────────────────────
+.apprise-box {
+    padding: 0;
+    overflow: hidden;
+}
+
+.apprise-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s;
+
+    &:hover { background: rgba(255,255,255,.04); }
+
+    .apprise-icon { color: #f59e0b; font-size: .9rem; }
+    .apprise-chevron { color: #9ca3af; font-size: .8rem; transition: transform .2s; }
+    .settings-subheading { font-size: .95rem; }
+}
+
+.apprise-body {
+    padding: 0 20px 18px;
+    border-top: 1px solid rgba(255,255,255,.07);
+    padding-top: 16px;
+}
+
+// ─── Onglets surveillance / sécurité / backup ─────────────────────
+.watcher-tab-bar {
+    display: flex;
+    gap: 6px;
+    background: rgba(0,0,0,.2);
+    border-radius: 10px;
+    padding: 5px;
+    border: 1px solid rgba(255,255,255,.07);
+}
+
+.watcher-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 8px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: #9ca3af;
+    font-size: .82rem;
+    font-weight: 500;
+    letter-spacing: .02em;
+    cursor: pointer;
+    transition: background .15s, color .15s, box-shadow .15s;
+
+    .watcher-tab-icon {
+        font-size: 1.1rem;
+    }
+
+    &:hover:not(.active) {
+        background: rgba(255,255,255,.06);
+        color: #d1d5db;
+    }
+
+    &.active {
+        background: rgba(116,194,255,.15);
+        color: #74c2ff;
+        box-shadow: 0 0 0 1px rgba(116,194,255,.25);
+    }
 }
 
 .shadow-box-settings {
