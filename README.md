@@ -134,6 +134,7 @@ Open **http://localhost:5001**, create your admin account, then click **Monitori
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directory containing Docker Compose stacks |
 | `DOCKGE_DATA_DIR` | `/opt/dockge/data` | Dockge data directory (set to `/app/data`) |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |
+| `DOCKER_API_VERSION` | *(none)* | Fixes the Docker API version negotiated by the client — useful on certain NAS systems, for example with DSM 7.x on Synology DS220+ |
 | `TZ` | `UTC` | Container timezone — **important** for scheduled auto-updates to fire at the right local time (e.g. `Europe/Paris`) |
 | `DOCKGE_PORT` | `5001` | Web UI port |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Enable HTTPS |

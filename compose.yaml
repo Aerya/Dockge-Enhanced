@@ -13,4 +13,5 @@ services:
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
+      - DOCKER_API_VERSION=x.xx  # optionnel — pour certains NAS où Docker ne supporte pas d'API récente
       - TZ=Europe/Paris

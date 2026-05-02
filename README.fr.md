@@ -134,6 +134,7 @@ Ouvre **http://localhost:5001**, crée ton compte admin, puis clique sur **Surve
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Dossier contenant les stacks Docker Compose |
 | `DOCKGE_DATA_DIR` | `/opt/dockge/data` | Dossier de données Dockge (à définir sur `/app/data`) |
 | `DOCKGE_PUBLIC_URL` | *(aucun)* | URL publique utilisée dans les liens des notifications Discord (ex : `https://dockge.mondomaine.fr`) |
+| `DOCKER_API_VERSION` | *(aucun)* | Fixe la version d'API Docker négociée par le client — utile sur certains NAS comme par exemple avec DSM 7.x sur Synology DS220+ |
 | `TZ` | `UTC` | Fuseau horaire du conteneur — **important** pour que les MàJ planifiées se déclenchent à la bonne heure locale (ex : `Europe/Paris`) |
 | `DOCKGE_PORT` | `5001` | Port de la WebUI |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Activer HTTPS |
