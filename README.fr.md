@@ -90,6 +90,12 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
       <sub>Discord — alerte mise à jour Dockge Enhanced</sub>
     </td>
   </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/enhanced12.png"><img src="screens/enhanced12.png" width="100%"/></a>
+      <sub>Backup Restic — ajout volume supplémentaire </sub>
+    </td>
+  </tr>
 </table>
 
 ---
@@ -107,14 +113,15 @@ services:
       - 5001:5001
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/app/data
-      - /opt/stacks:/opt/stacks
-      - /backup:/backup          # optionnel — volume dédié au backup local
+      - ../../data:/app/data
+      - ../../opt/stacks:/opt/stacks
+      - ../../backup/dockge:/backup          # optionnel — volume dédié au backup local
+      - ../../docker:/dockers-data           # optionnel — données des Dockers pour savuvegarde
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
-      - DOCKGE_PUBLIC_URL=http://192.168.1.100:5001   # IP de ta machine ou domaine
-      - TZ=Europe/Paris                                # ton fuseau horaire (affecte les MàJ planifiées)
+#      - DOCKER_API_VERSION=x.xx                       # optionnel — pour certains NAS où Docker ne supporte pas d'API récente
+      - TZ=Europe/Paris                               # fuseau horaire (affecte les MàJ planifiées)
 ```
 
 > 💾 Le volume `/backup:/backup` est optionnel mais recommandé si tu utilises **local** comme destination Restic — pointe la destination sur `/backup` pour que les snapshots atterrissent dans un répertoire dédié sur l'hôte, hors du conteneur.

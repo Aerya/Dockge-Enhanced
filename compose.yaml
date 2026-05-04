@@ -7,11 +7,12 @@ services:
       - 5001:5001
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/app/data
-      - /opt/stacks:/opt/stacks
-      - /backup:/backup          # optionnel — volume dédié au backup local Restic
+      - ../../data:/app/data
+      - ../../data/stacks:/opt/stacks
+      - ../../backup/dockge:/backup          # optionnel — volume dédié au backup local
+      - ../../docker:/dockers-data           # optionnel — données des Dockers pour savuvegarde
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
-      - DOCKER_API_VERSION=x.xx  # optionnel — pour certains NAS où Docker ne supporte pas d'API récente
+#      - DOCKER_API_VERSION=x.xx                       # optionnel — pour certains NAS où Docker ne supporte pas d'API récente
       - TZ=Europe/Paris
