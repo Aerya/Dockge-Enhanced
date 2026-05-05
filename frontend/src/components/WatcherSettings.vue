@@ -174,7 +174,6 @@
                         <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
-                                    <th>{{ $t('watcher.status.stack') }}</th>
                                     <th>{{ $t('watcher.status.image') }}</th>
                                     <th>{{ $t('watcher.status.state') }}</th>
                                     <th>{{ $t('watcher.status.localDigest') }}</th>
@@ -189,8 +188,15 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="s in imageStatuses" :key="s.stack + s.image">
-                                    <td><span class="badge bg-secondary">{{ s.stack }}</span></td>
+                                <template v-for="group in imagesByStack" :key="group.stack">
+                                    <tr class="stack-group-header">
+                                        <td colspan="7">
+                                            <font-awesome-icon icon="layer-group" class="me-2 opacity-75" />
+                                            <strong>{{ group.stack }}</strong>
+                                            <span class="ms-2 text-muted" style="font-size:.8rem;font-weight:400">{{ group.items.length }} image{{ group.items.length > 1 ? 's' : '' }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr v-for="s in group.items" :key="s.stack + s.image">
                                     <td>
                                         <code>{{ s.image }}</code>
                                         <button class="btn btn-sm btn-link p-0 ms-2" style="font-size:.75rem;opacity:.7"
@@ -292,6 +298,7 @@
                                         <span v-else class="form-text">—</span>
                                     </td>
                                 </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -406,7 +413,6 @@
                         <table class="table mb-0">
                             <thead>
                                 <tr>
-                                    <th>{{ $t('watcher.trivy.status.stack') }}</th>
                                     <th>{{ $t('watcher.trivy.status.image') }}</th>
                                     <th>{{ $t('watcher.trivy.status.maxSeverity') }}</th>
                                     <th>{{ $t('watcher.trivy.status.vulns') }}</th>
@@ -415,9 +421,16 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <template v-for="r in trivyStatus.lastResults" :key="r.image + r.stack">
+                                <template v-for="group in trivyByStack" :key="group.stack">
+                                    <tr class="stack-group-header">
+                                        <td colspan="5">
+                                            <font-awesome-icon icon="layer-group" class="me-2 opacity-75" />
+                                            <strong>{{ group.stack }}</strong>
+                                            <span class="ms-2 text-muted" style="font-size:.8rem;font-weight:400">{{ group.items.length }} image{{ group.items.length > 1 ? 's' : '' }}</span>
+                                        </td>
+                                    </tr>
+                                <template v-for="r in group.items" :key="r.image + r.stack">
                                 <tr class="trivy-row" @click="toggleTrivyDetail(r.image + r.stack)">
-                                    <td><span class="badge bg-secondary">{{ r.stack }}</span></td>
                                     <td><code class="small">{{ r.image }}</code></td>
                                     <td>
                                         <span v-if="r.error" class="badge bg-danger" :title="r.error">
@@ -498,6 +511,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                </template>
                                 </template>
                             </tbody>
                         </table>
@@ -855,6 +869,24 @@ const lastCheckDisplay = computed(() => {
 const nextTrivyDate = computed(() => {
     if (!trivySettings.value.enabled || !trivyStatus.value.lastScanAt) return null;
     return new Date(new Date(trivyStatus.value.lastScanAt).getTime() + trivySettings.value.intervalHours * 3_600_000);
+});
+
+const imagesByStack = computed(() => {
+    const map = new Map<string, ImageStatus[]>();
+    for (const s of imageStatuses.value) {
+        if (!map.has(s.stack)) map.set(s.stack, []);
+        map.get(s.stack)!.push(s);
+    }
+    return [...map.entries()].map(([stack, items]) => ({ stack, items }));
+});
+
+const trivyByStack = computed(() => {
+    const map = new Map<string, typeof trivyStatus.value.lastResults>();
+    for (const r of trivyStatus.value.lastResults) {
+        if (!map.has(r.stack)) map.set(r.stack, []);
+        map.get(r.stack)!.push(r);
+    }
+    return [...map.entries()].map(([stack, items]) => ({ stack, items }));
 });
 
 // ─── API ──────────────────────────────────────────────────────────
@@ -1306,6 +1338,18 @@ async function removeCred(registry: string) {
 .trivy-row {
     cursor: pointer;
     &:hover { background: rgba(255,255,255,.04); }
+}
+
+.stack-group-header {
+    td {
+        background: rgba(255, 255, 255, .05);
+        border-top: 2px solid rgba(255, 255, 255, .1);
+        padding: .45rem .75rem;
+        font-size: .85rem;
+        letter-spacing: .02em;
+        color: #d1d5db;
+    }
+    &:first-child td { border-top-color: transparent; }
 }
 
 .trivy-detail-row td { padding: 0 !important; }
