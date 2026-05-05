@@ -4,6 +4,7 @@ import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationErro
 import { Stack } from "../stack";
 import { AgentSocket } from "../../common/agent-socket";
 import { imageStatusStore } from "../watchers/image-watcher";
+import { BackupManager } from "../watchers/backup-manager";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -13,6 +14,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
             try {
                 checkLogin(socket);
                 const stack = await this.saveStack(server, name, composeYAML, composeENV, isAdd);
+                BackupManager.getInstance().triggerBackupOnSave(typeof name === "string" ? name : "unknown");
                 await stack.deploy(socket);
                 server.sendStackList();
                 callbackResult({
@@ -30,6 +32,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
             try {
                 checkLogin(socket);
                 await this.saveStack(server, name, composeYAML, composeENV, isAdd);
+                BackupManager.getInstance().triggerBackupOnSave(typeof name === "string" ? name : "unknown");
                 callbackResult({
                     ok: true,
                     msg: "Saved",

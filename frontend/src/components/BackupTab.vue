@@ -19,7 +19,7 @@
             </div>
 
             <!-- Intervalle global -->
-            <div class="row g-3 mb-4">
+            <div class="row g-3 mb-3">
                 <div class="col-md-4">
                     <label class="form-label">{{ $t('watcher.backup.frequency') }}</label>
                     <select v-model.number="settings.intervalHours" class="form-select">
@@ -29,6 +29,18 @@
                         <option :value="48">{{ $t('watcher.backup.every2days') }}</option>
                         <option :value="168">{{ $t('watcher.backup.everyWeek') }}</option>
                     </select>
+                </div>
+                <div class="col-md-8 d-flex align-items-end">
+                    <div>
+                        <div class="form-check form-switch mb-0">
+                            <input v-model="settings.backupOnSave" class="form-check-input" type="checkbox"
+                                id="backupOnSave" role="switch" />
+                            <label class="form-check-label fw-semibold" for="backupOnSave">
+                                {{ $t('watcher.backup.backupOnSave') }}
+                            </label>
+                        </div>
+                        <small class="form-text">{{ $t('watcher.backup.backupOnSaveHint') }}</small>
+                    </div>
                 </div>
             </div>
 
@@ -751,7 +763,7 @@ interface Destination {
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
 interface VolumeBackupConfig { selectedVolumes: string[] }
 interface MountedVolume { source: string; destination: string }
-interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[] }
+interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
     path: string; name: string; stack: string; type: "compose" | "env" | "volume" | "other";
@@ -787,6 +799,7 @@ const settings = ref<Settings>({
     includeEnvFiles: true,
     volumeBackup: { selectedVolumes: [] },
     extraPaths: [],
+    backupOnSave: true,
 });
 
 const mountedVols = ref<MountedVolume[]>([]);

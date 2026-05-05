@@ -258,6 +258,8 @@
     "watcher.backup.everyDay": "Une fois par jour",
     "watcher.backup.every2days": "Tous les 2 jours",
     "watcher.backup.everyWeek": "Une fois par semaine",
+    "watcher.backup.backupOnSave": "Backup à la sauvegarde",
+    "watcher.backup.backupOnSaveHint": "Déclenche un backup immédiat à chaque fois qu'un compose.yaml est sauvegardé depuis Dockge (cooldown de 60 s entre deux déclenchements).",
     "watcher.backup.resticPassword": "Mot de passe de chiffrement Restic",
     "watcher.backup.resticPasswordPlaceholder": "Mot de passe fort — conserve-le précieusement !",
     "watcher.backup.resticPasswordWarning": "⚠️ Sans ce mot de passe, tes backups sont irrécupérables.",

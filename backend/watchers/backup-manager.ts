@@ -103,6 +103,7 @@ export interface BackupSettings {
     extraPaths: string[];
     volumeBackup: VolumeBackupConfig;
     notificationLang: "fr" | "en";
+    backupOnSave: boolean;               // déclenche un backup immédiat quand un compose est sauvegardé
 }
 
 export interface ResticSnapshot {
@@ -364,9 +365,10 @@ export function mergeWebhooks(incoming: string[], existing: string[]): string[] 
 
 export class BackupManager {
     private static _instance: BackupManager;
-    private cronJob:       cron.ScheduledTask | null = null;
-    private stalenessCron: cron.ScheduledTask | null = null;
+    private cronJob:          cron.ScheduledTask | null = null;
+    private stalenessCron:    cron.ScheduledTask | null = null;
     private lastStalenessNotif = 0;
+    private lastOnSaveTrigger  = 0;
 
     settings: BackupSettings = {
         enabled: false,
@@ -391,6 +393,7 @@ export class BackupManager {
         extraPaths: [],
         notificationLang: "fr",
         volumeBackup: { selectedVolumes: [] },
+        backupOnSave: true,
     };
 
     static getInstance(): BackupManager {
@@ -567,7 +570,25 @@ export class BackupManager {
 
     // ── Backup ────────────────────────────────────────────────────
 
-    async runBackup(): Promise<BackupResult> {
+    /**
+     * Déclenche un backup immédiat si le backup est activé et si l'option
+     * backupOnSave est activée. Un cooldown de 60 s évite les déclenchements
+     * en rafale lors de sauvegardes successives rapides.
+     */
+    triggerBackupOnSave(stackName: string): void {
+        if (!this.settings.enabled || !this.settings.backupOnSave) return;
+        const now = Date.now();
+        if (now - this.lastOnSaveTrigger < 60_000) {
+            console.log(`[BackupManager] on-save ignoré (cooldown) — stack "${stackName}"`);
+            return;
+        }
+        this.lastOnSaveTrigger = now;
+        console.log(`[BackupManager] Backup déclenché par la sauvegarde de "${stackName}"`);
+        this.runBackup({ skipForget: true, tag: "on-save" })
+            .catch(e => console.error("[BackupManager] Backup on-save échoué:", e));
+    }
+
+    async runBackup(opts: { skipForget?: boolean; tag?: string } = {}): Promise<BackupResult> {
         const start = Date.now();
         const result: BackupResult = {
             success: false,
@@ -598,7 +619,9 @@ export class BackupManager {
         }
 
         const pathArgs = paths.map(shellQuote).join(" ");
-        const tagArg   = ["--tag", shellQuote("dockge-enhanced"), "--tag", shellQuote(new Date().toISOString().slice(0,10))].join(" ");
+        const tags = ["dockge-enhanced", new Date().toISOString().slice(0, 10)];
+        if (opts.tag) tags.push(opts.tag);
+        const tagArg = tags.map(t => `--tag ${shellQuote(t)}`).join(" ");
         const excludes = [
             `--exclude ${shellQuote("*.log")}`,
             `--exclude ${shellQuote("__pycache__")}`,
@@ -642,11 +665,14 @@ export class BackupManager {
                 if (!result.filesNew)     result.filesNew     = summary?.files_new     as number ?? 0;
                 if (!result.filesChanged) result.filesChanged = summary?.files_changed as number ?? 0;
 
-                await this.runForgetFor(dest);
+                if (!opts.skipForget) {
+                    await this.runForgetFor(dest);
+                }
 
                 console.log(
                     `[BackupManager] ✅ "${dest.label}" — Snapshot ${destResult.snapshotId} ` +
-                    `+${formatBytes(destResult.dataAdded)} en ${formatDuration(Date.now() - start)}`
+                    `+${formatBytes(destResult.dataAdded)} en ${formatDuration(Date.now() - start)}` +
+                    (opts.skipForget ? " [on-save, pruning différé]" : "")
                 );
             } catch (e: unknown) {
                 destResult.error = e instanceof Error ? e.message : String(e);

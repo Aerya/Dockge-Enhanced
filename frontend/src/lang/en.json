@@ -265,6 +265,8 @@
     "watcher.backup.everyDay": "Once a day",
     "watcher.backup.every2days": "Every 2 days",
     "watcher.backup.everyWeek": "Once a week",
+    "watcher.backup.backupOnSave": "Backup on compose save",
+    "watcher.backup.backupOnSaveHint": "Triggers an immediate backup whenever a compose.yaml is saved from Dockge (60 s cooldown between triggers).",
     "watcher.backup.resticPassword": "Restic encryption password",
     "watcher.backup.resticPasswordPlaceholder": "Strong password — keep it safe!",
     "watcher.backup.resticPasswordWarning": "⚠️ Without this password, your backups are unrecoverable.",
