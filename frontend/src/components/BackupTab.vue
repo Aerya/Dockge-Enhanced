@@ -5,6 +5,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="settings-subheading mb-0">
                     <font-awesome-icon icon="archive" class="me-2" />{{ $t('watcher.backup.heading') }}
+                    <span v-if="isBackupStale" class="badge bg-warning text-dark ms-2" style="font-size:.72rem;font-weight:500">{{ $t('watcher.backup.stale') }}</span>
                 </h5>
                 <div class="form-check form-switch mb-0">
                     <input v-model="settings.enabled" class="form-check-input" type="checkbox"
@@ -554,6 +555,12 @@
                                                             class="snap-chevron" />
                                                         <code class="snap-stack-name">{{ sg.name }}</code>
                                                         <span class="snap-count">{{ sg.totalCount }}</span>
+                                                        <button class="btn btn-xs btn-warning ms-auto flex-shrink-0"
+                                                            :disabled="restoring"
+                                                            @click.stop="restoreStack(snap.short_id, sg)"
+                                                            :title="$t('watcher.backup.snapshots.restoreStack')">
+                                                            <font-awesome-icon icon="undo" />
+                                                        </button>
                                                     </div>
 
                                                     <!-- Contenu de la stack -->
@@ -577,6 +584,12 @@
                                                                 :title="f.aliases!.join('\n')">
                                                                 {{ $t('watcher.backup.snapshots.aliases', [f.aliases!.length]) }}
                                                             </span>
+                                                            <button v-if="f.type === 'compose' || f.type === 'env'"
+                                                                class="btn btn-xs btn-normal flex-shrink-0 snap-preview-btn"
+                                                                @click.stop="openPreview(snap.short_id, f)"
+                                                                :title="$t('watcher.backup.snapshots.preview')">
+                                                                <font-awesome-icon icon="eye" />
+                                                            </button>
                                                             <div class="snap-badges">
                                                                 <span v-if="f.prevSnapshotId === null" class="badge bg-secondary">{{ $t('watcher.backup.snapshots.firstSnapshot') }}</span>
                                                                 <span v-else-if="f.snapDiff === 'added'" class="badge bg-success">{{ $t('watcher.backup.snapshots.diffAdded') }}</span>
@@ -661,6 +674,70 @@
             </div>
         </div>
 
+        <!-- ═══ MODAL APERÇU / DIFF ═══ -->
+        <Teleport to="body">
+            <div v-if="preview.open" class="preview-overlay" @click.self="preview.open = false">
+                <div class="preview-modal">
+
+                    <!-- En-tête -->
+                    <div class="preview-header">
+                        <code class="preview-filename">{{ preview.fileName }}</code>
+                        <div class="preview-tabs">
+                            <button :class="['preview-tab-btn', preview.tab === 'preview' && 'active']"
+                                @click="preview.tab = 'preview'">
+                                <font-awesome-icon icon="eye" class="me-1" />{{ $t('watcher.backup.snapshots.previewTab') }}
+                            </button>
+                            <button :class="['preview-tab-btn', preview.tab === 'diff' && 'active']"
+                                :disabled="preview.loading || !preview.diskContent"
+                                @click="preview.tab = 'diff'">
+                                <font-awesome-icon icon="code-branch" class="me-1" />{{ $t('watcher.backup.snapshots.diffTab') }}
+                            </button>
+                        </div>
+                        <button class="preview-close-btn" @click="preview.open = false">
+                            <font-awesome-icon icon="times" />
+                        </button>
+                    </div>
+
+                    <!-- Chargement -->
+                    <div v-if="preview.loading" class="preview-loading">
+                        <span class="spinner-border spinner-border-sm me-2" />{{ $t('watcher.backup.snapshots.loading') }}
+                    </div>
+
+                    <!-- Corps -->
+                    <div v-else class="preview-body">
+
+                        <!-- Onglet Aperçu -->
+                        <pre v-if="preview.tab === 'preview'" class="preview-code">{{ preview.snapshotContent }}</pre>
+
+                        <!-- Onglet Diff -->
+                        <div v-else class="diff-view">
+                            <div v-if="!preview.diskContent" class="form-text fst-italic p-3">
+                                {{ $t('watcher.backup.snapshots.diffMissing') }}
+                            </div>
+                            <template v-else>
+                                <div class="diff-legend">
+                                    <span class="diff-leg-rm">− {{ $t('watcher.backup.snapshots.diffLegendSnapshot') }}</span>
+                                    <span class="diff-leg-add">+ {{ $t('watcher.backup.snapshots.diffLegendDisk') }}</span>
+                                    <span v-if="diffResult.every(l => l.type === 'same')" class="diff-leg-ok">
+                                        ✓ {{ $t('watcher.backup.snapshots.diffIdentical') }}
+                                    </span>
+                                </div>
+                                <div class="diff-lines">
+                                    <div v-for="(ln, i) in diffResult" :key="i"
+                                        :class="['diff-line', `diff-${ln.type}`]">
+                                        <span class="diff-lnum">{{ i + 1 }}</span>
+                                        <span class="diff-marker">{{ ln.type === 'removed' ? '−' : ln.type === 'added' ? '+' : ' ' }}</span>
+                                        <span class="diff-text">{{ ln.line }}</span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </Teleport>
+
         <!-- TOAST -->
         <Transition name="slide-fade">
             <div v-if="toast.msg" class="toast-float" :class="toast.ok ? 'toast-ok' : 'toast-err'">
@@ -709,6 +786,7 @@ interface SnapshotFile {
     prevSnapshotId: string | null;
 }
 interface BackupResult { success: boolean; snapshotId?: string; duration: number; dataAdded?: number; filesNew?: number; filesChanged?: number; error?: string; warnings?: string[]; timestamp: string }
+interface DiffLine { type: "same" | "added" | "removed"; line: string }
 
 // ─── State ────────────────────────────────────────────────────────
 
@@ -781,6 +859,16 @@ const snapshotFiles     = ref<SnapshotFile[]>([]);
 const selectedFiles     = ref<Set<string>>(new Set());
 const loadingFiles      = ref(false);
 const restoring         = ref(false);
+const preview = ref({
+    open: false,
+    snapId: "",
+    filePath: "",
+    fileName: "",
+    snapshotContent: "",
+    diskContent: null as string | null,
+    loading: false,
+    tab: "preview" as "preview" | "diff",
+});
 const expandedStacks    = ref<Set<string>>(new Set());
 const expandedFolders   = ref<Set<string>>(new Set());
 const testing = ref(false);
@@ -899,6 +987,52 @@ function toggleFolderSelect(folder: VolFolder) {
     selectedFiles.value = s;
 }
 
+// ─── Aperçu / Diff ───────────────────────────────────────────────
+
+function diffLines(aText: string, bText: string): DiffLine[] {
+    const a = aText.split("\n");
+    const b = bText.split("\n");
+    const m = a.length, n = b.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 1; i <= m; i++)
+        for (let j = 1; j <= n; j++)
+            dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    const result: DiffLine[] = [];
+    let i = m, j = n;
+    while (i > 0 || j > 0) {
+        if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
+            result.unshift({ type: "same", line: a[i - 1] });
+            i--; j--;
+        } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+            result.unshift({ type: "added", line: b[j - 1] });
+            j--;
+        } else {
+            result.unshift({ type: "removed", line: a[i - 1] });
+            i--;
+        }
+    }
+    return result;
+}
+
+async function openPreview(snapId: string, f: SnapshotFile) {
+    preview.value = {
+        open: true, snapId, filePath: f.path, fileName: f.name,
+        snapshotContent: "", diskContent: null, loading: true, tab: "preview",
+    };
+    try {
+        const res = await api("GET", `/backup/snapshots/${snapId}/file-content?path=${encodeURIComponent(f.path)}`);
+        if (res.ok) {
+            preview.value.snapshotContent = res.data.snapshot ?? "";
+            preview.value.diskContent     = res.data.disk ?? null;
+        } else {
+            showToast(`❌ ${res.message}`, false);
+            preview.value.open = false;
+        }
+    } finally {
+        preview.value.loading = false;
+    }
+}
+
 function addWebhook() {
     const url = newWebhook.value.trim();
     if (!url || discordWebhooks.value.includes(url)) return;
@@ -985,6 +1119,18 @@ const nextBackupDate = computed(() => {
     if (!settings.value.enabled || history.value.length === 0) return null;
     const last = new Date(history.value[0].timestamp).getTime();
     return new Date(last + settings.value.intervalHours * 3_600_000);
+});
+
+const isBackupStale = computed(() => {
+    if (!settings.value.enabled) return false;
+    const lastSuccess = history.value.find(h => h.success);
+    if (!lastSuccess) return false;
+    return Date.now() - new Date(lastSuccess.timestamp).getTime() > 2 * (settings.value.intervalHours ?? 24) * 3_600_000;
+});
+
+const diffResult = computed<DiffLine[]>(() => {
+    if (!preview.value.diskContent || !preview.value.snapshotContent) return [];
+    return diffLines(preview.value.snapshotContent, preview.value.diskContent);
 });
 
 const snapshotSizeMap = computed(() => {
@@ -1243,6 +1389,25 @@ async function restoreSelected(shortId: string) {
         if (res.ok) {
             showToast(t('watcher.backup.snapshots.restoreOk', [res.restored]));
             // Rafraîchit les statuts des fichiers
+            const refresh = await api("GET", `/backup/snapshots/${shortId}/files`);
+            if (refresh.ok) snapshotFiles.value = refresh.data;
+        } else {
+            showToast(t('watcher.backup.snapshots.restoreErr'), false);
+        }
+    } finally {
+        restoring.value = false;
+    }
+}
+
+async function restoreStack(shortId: string, sg: StackGroup) {
+    const paths = getAllStackFiles(sg).map(f => f.path);
+    if (paths.length === 0) return;
+    if (!confirm(t('watcher.backup.snapshots.restoreStackConfirm', [sg.name, shortId]))) return;
+    restoring.value = true;
+    try {
+        const res = await api("POST", `/backup/snapshots/${shortId}/restore`, { files: paths });
+        if (res.ok) {
+            showToast(t('watcher.backup.snapshots.restoreOk', [res.restored]));
             const refresh = await api("GET", `/backup/snapshots/${shortId}/files`);
             if (refresh.ok) snapshotFiles.value = refresh.data;
         } else {
@@ -1698,6 +1863,182 @@ async function testWebhook(url: string) {
 .snap-alias {
     font-size: .62rem;
     flex-shrink: 0;
+}
+
+// ─── Bouton aperçu (œil) ────────────────────────────────────────
+.snap-preview-btn {
+    opacity: 0;
+    transition: opacity .15s;
+    .snap-file-row:hover & { opacity: 1; }
+}
+.snap-file-row:hover .snap-preview-btn { opacity: 1; }
+
+// ─── Modal Aperçu / Diff ─────────────────────────────────────────
+.preview-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .72);
+    z-index: 10000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 16px 32px;
+    overflow-y: auto;
+}
+
+.preview-modal {
+    background: #1a1d2e;
+    border: 1px solid rgba(255, 255, 255, .13);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 96px);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, .6);
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, .1);
+    flex-shrink: 0;
+
+    .preview-filename {
+        font-size: .82rem;
+        color: #74c2ff;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.preview-tabs {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.preview-tab-btn {
+    background: rgba(255, 255, 255, .06);
+    border: 1px solid rgba(255, 255, 255, .1);
+    color: #9ca3af;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: .78rem;
+    cursor: pointer;
+    transition: background .12s, color .12s;
+
+    &:hover:not(:disabled) { background: rgba(255, 255, 255, .11); color: #e5e7eb; }
+    &.active { background: rgba(116, 194, 255, .15); color: #74c2ff; border-color: rgba(116, 194, 255, .3); }
+    &:disabled { opacity: .35; cursor: not-allowed; }
+}
+
+.preview-close-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    flex-shrink: 0;
+    &:hover { color: #e5e7eb; }
+}
+
+.preview-loading {
+    padding: 2.5rem;
+    text-align: center;
+    color: #9ca3af;
+    font-size: .85rem;
+}
+
+.preview-body {
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.preview-code {
+    margin: 0;
+    padding: 16px 20px;
+    font-size: .78rem;
+    color: #e5e7eb;
+    background: transparent;
+    line-height: 1.6;
+    white-space: pre;
+    overflow: visible;
+    tab-size: 2;
+}
+
+.diff-view { display: flex; flex-direction: column; height: 100%; }
+
+.diff-legend {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    padding: 7px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, .07);
+    font-size: .74rem;
+    flex-shrink: 0;
+
+    .diff-leg-rm  { color: #f87171; }
+    .diff-leg-add { color: #4ade80; }
+    .diff-leg-ok  { color: #9ca3af; margin-left: auto; }
+}
+
+.diff-lines {
+    overflow: auto;
+    flex: 1;
+    font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+    font-size: .74rem;
+    line-height: 1.45;
+}
+
+.diff-line {
+    display: flex;
+    align-items: stretch;
+    white-space: pre;
+
+    &.diff-removed { background: rgba(239, 68, 68, .12); }
+    &.diff-added   { background: rgba(74, 222, 128, .09); }
+    &:hover        { filter: brightness(1.2); }
+
+    .diff-lnum {
+        min-width: 46px;
+        text-align: right;
+        padding: 1px 8px 1px 4px;
+        color: #374151;
+        user-select: none;
+        border-right: 1px solid rgba(255, 255, 255, .06);
+        flex-shrink: 0;
+    }
+
+    .diff-marker {
+        min-width: 20px;
+        text-align: center;
+        padding: 1px 3px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    &.diff-removed .diff-marker { color: #f87171; }
+    &.diff-added   .diff-marker { color: #4ade80; }
+    &.diff-same    .diff-marker { color: transparent; }
+
+    .diff-text {
+        padding: 1px 10px;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #d1d5db;
+    }
+
+    &.diff-removed .diff-text { color: #fca5a5; }
+    &.diff-added   .diff-text { color: #bbf7d0; }
 }
 
 .notif-lang-toggle {

@@ -360,5 +360,16 @@
     "watcher.backup.history.warnings": "Warnings",
     "watcher.backup.snapshots.selected": "selected",
     "watcher.backup.snapshots.colServices": "Services",
-    "watcher.backup.snapshots.aliases": "+{0} alias"
+    "watcher.backup.snapshots.aliases": "+{0} alias",
+    "watcher.backup.stale": "⚠️ Backup overdue",
+    "watcher.backup.snapshots.restoreStack": "Restore stack",
+    "watcher.backup.snapshots.restoreStackConfirm": "Restore all {0} files from snapshot {1}? Current files will be overwritten.",
+    "watcher.trivy.nextScan": "Next scan",
+    "watcher.backup.snapshots.preview": "Preview file",
+    "watcher.backup.snapshots.previewTab": "Preview",
+    "watcher.backup.snapshots.diffTab": "Diff vs disk",
+    "watcher.backup.snapshots.diffMissing": "File missing from disk — diff unavailable.",
+    "watcher.backup.snapshots.diffIdentical": "Files are identical",
+    "watcher.backup.snapshots.diffLegendSnapshot": "from snapshot (will be restored)",
+    "watcher.backup.snapshots.diffLegendDisk": "on disk (will be overwritten)"
 }

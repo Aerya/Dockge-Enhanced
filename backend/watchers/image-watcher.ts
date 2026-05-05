@@ -27,6 +27,12 @@ const ROLLBACK_PATH = path.join(DATA_DIR, "rollback-registry.json");
 
 const ROLLBACK_WINDOW_MS = 24 * 3_600_000; // 24 heures
 
+// Génère un tag Docker local qui protège l'ancienne image des `docker image prune`
+function rollbackTag(key: string): string {
+    const safe = key.toLowerCase().replace(/[^a-z0-9._-]/g, "-").slice(0, 80);
+    return `dockge-rollback-${safe}:keep`;
+}
+
 // ─── Types ────────────────────────────────────────────────────────
 
 export interface RegistryCredential {
@@ -705,8 +711,17 @@ export class ImageWatcher {
     }
 
     private async saveRollbackEntry(entry: RollbackEntry): Promise<void> {
+        // Si une entrée existe déjà pour cette clé (double màj dans la fenêtre), retire l'ancien tag
+        const existing = rollbackStore.get(entry.key);
+        if (existing) {
+            try { await execAsync(`docker rmi ${shellQuote(rollbackTag(existing.key))} 2>/dev/null`, { timeout: 10000 }); } catch {}
+        }
         rollbackStore.set(entry.key, entry);
         await this.saveRollbackRegistry();
+        // Tague l'ancienne image pour la protéger des `docker image prune`
+        try {
+            await execAsync(`docker tag ${shellQuote(entry.oldImageId)} ${shellQuote(rollbackTag(entry.key))}`, { timeout: 10000 });
+        } catch { /* non-bloquant — l'image sera juste non protégée */ }
         const exp = new Date(entry.expiresAt).toLocaleString("fr-FR");
         console.log(`[ImageWatcher] Rollback disponible pour ${entry.key} jusqu'au ${exp}`);
     }
@@ -717,6 +732,7 @@ export class ImageWatcher {
         for (const [key, entry] of rollbackStore) {
             if (new Date(entry.expiresAt) <= now) {
                 console.log(`[ImageWatcher] Expiration rollback — suppression image ${entry.oldImageId.slice(0, 19)}`);
+                try { await execAsync(`docker rmi ${shellQuote(rollbackTag(key))} 2>/dev/null`, { timeout: 10000 }); } catch {}
                 try {
                     await execAsync(`docker rmi ${shellQuote(entry.oldImageId)} 2>/dev/null`, { timeout: 30000 });
                 } catch { /* peut déjà être supprimée ou utilisée ailleurs */ }
@@ -742,6 +758,8 @@ export class ImageWatcher {
 
         // Re-tag l'ancienne image pour lui redonner son nom (détache la nouvelle)
         await execAsync(`docker tag ${shellQuote(entry.oldImageId)} ${shellQuote(image)}`, { timeout: 30000 });
+        // Retire le tag de protection — l'image est de nouveau la production active
+        try { await execAsync(`docker rmi ${shellQuote(rollbackTag(entry.key))} 2>/dev/null`, { timeout: 10000 }); } catch {}
         // Redémarre le container avec l'ancienne image
         await execAsync(`docker compose -f ${shellQuote(entry.composePath)} up -d${serviceArg}`, { timeout: 120000 });
 
@@ -755,10 +773,10 @@ export class ImageWatcher {
     }
 
     async deleteRollbackEntry(key: string): Promise<void> {
-        const entry = rollbackStore.get(key);
-        if (!entry) return;
+        if (!rollbackStore.has(key)) return;
         try {
-            await execAsync(`docker rmi ${shellQuote(entry.oldImageId)} 2>/dev/null`, { timeout: 30000 });
+            // Retire le tag de protection — Docker supprime l'image si plus aucun autre tag ne la référence
+            await execAsync(`docker rmi ${shellQuote(rollbackTag(key))} 2>/dev/null`, { timeout: 30000 });
         } catch { /* déjà supprimée */ }
         rollbackStore.delete(key);
         await this.saveRollbackRegistry();

@@ -485,6 +485,10 @@
                                 {{ $t('watcher.trivy.status.lastScan') }} :
                                 {{ fmtDate(trivyStatus.lastScanAt) }}
                             </small>
+                            <small v-if="nextTrivyDate" class="form-text">
+                                {{ $t('watcher.trivy.nextScan') }} :
+                                {{ fmtDate(nextTrivyDate) }}
+                            </small>
                             <button class="btn btn-sm btn-normal" @click="loadTrivyStatus">
                                 <font-awesome-icon icon="sync" />
                             </button>
@@ -763,6 +767,11 @@ const lastCheckDisplay = computed(() => {
     const dates = imageStatuses.value.map(s => new Date(s.lastChecked).getTime()).filter(Boolean);
     if (!dates.length) return '—';
     return fmtDate(new Date(Math.max(...dates)));
+});
+
+const nextTrivyDate = computed(() => {
+    if (!trivySettings.value.enabled || !trivyStatus.value.lastScanAt) return null;
+    return new Date(new Date(trivyStatus.value.lastScanAt).getTime() + trivySettings.value.intervalHours * 3_600_000);
 });
 
 // ─── API ──────────────────────────────────────────────────────────

@@ -353,5 +353,16 @@
     "watcher.backup.history.warnings": "Alertes",
     "watcher.backup.snapshots.selected": "sélectionné(s)",
     "watcher.backup.snapshots.colServices": "Services",
-    "watcher.backup.snapshots.aliases": "+{0} alias"
+    "watcher.backup.snapshots.aliases": "+{0} alias",
+    "watcher.backup.stale": "⚠️ Backup en retard",
+    "watcher.backup.snapshots.restoreStack": "Restaurer la stack",
+    "watcher.backup.snapshots.restoreStackConfirm": "Restaurer les {0} fichiers de la stack \"{1}\" depuis ce snapshot ? Les fichiers actuels seront écrasés.",
+    "watcher.trivy.nextScan": "Prochain scan",
+    "watcher.backup.snapshots.preview": "Aperçu du fichier",
+    "watcher.backup.snapshots.previewTab": "Aperçu",
+    "watcher.backup.snapshots.diffTab": "Diff vs disque",
+    "watcher.backup.snapshots.diffMissing": "Fichier absent du disque — diff indisponible.",
+    "watcher.backup.snapshots.diffIdentical": "Fichiers identiques",
+    "watcher.backup.snapshots.diffLegendSnapshot": "dans le snapshot (sera restauré)",
+    "watcher.backup.snapshots.diffLegendDisk": "sur le disque (sera écrasé)"
 }

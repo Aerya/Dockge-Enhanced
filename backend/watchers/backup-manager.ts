@@ -364,7 +364,9 @@ export function mergeWebhooks(incoming: string[], existing: string[]): string[] 
 
 export class BackupManager {
     private static _instance: BackupManager;
-    private cronJob: cron.ScheduledTask | null = null;
+    private cronJob:       cron.ScheduledTask | null = null;
+    private stalenessCron: cron.ScheduledTask | null = null;
+    private lastStalenessNotif = 0;
 
     settings: BackupSettings = {
         enabled: false,
@@ -481,11 +483,14 @@ export class BackupManager {
         const cronExpr = cronExpressionForIntervalHours(intervalHours);
         console.log(`[BackupManager] Démarrage — backup toutes les ${intervalHours}h (${cronExpr})`);
         this.cronJob = cron.schedule(cronExpr, () => this.runBackup());
+        this.stalenessCron = cron.schedule("0 * * * *", () => this.checkStaleness().catch(console.error));
     }
 
     stop(): void {
         this.cronJob?.stop();
         this.cronJob = null;
+        this.stalenessCron?.stop();
+        this.stalenessCron = null;
     }
 
     restart(): void {
@@ -1033,6 +1038,88 @@ export class BackupManager {
     /** Retourne une copie de l'historique en lecture seule */
     getHistory(): Readonly<BackupResult[]> {
         return backupHistory;
+    }
+
+    // ── Contenu de fichier dans un snapshot ──────────────────────
+
+    /** Exécute `restic dump` sans `--json` pour récupérer le contenu brut d'un fichier */
+    private async resticDump(dest: BackupDestination, snapshotId: string, filePath: string): Promise<string> {
+        const repoEnv = buildResticEnv(dest);
+        const repo    = buildRepoUrl(dest);
+        let tmpFile: string | null = null;
+        try {
+            if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
+                tmpFile = `/tmp/dockge_sshpass_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                await fs.writeFile(tmpFile, dest.sftp.password, { mode: 0o600 });
+            }
+            const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
+            const cmd = `restic --repo ${shellQuote(repo)} ${sftpOpts} dump ${shellQuote(snapshotId)} ${shellQuote(filePath)}`;
+            const { stdout } = await execAsync(cmd, {
+                maxBuffer: 2 * 1024 * 1024,
+                timeout: 30_000,
+                env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...repoEnv },
+            });
+            return stdout;
+        } finally {
+            if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
+        }
+    }
+
+    /** Retourne le contenu d'un fichier texte depuis un snapshot + sa version disque actuelle */
+    async getSnapshotFileContent(snapshotId: string, filePath: string): Promise<{ snapshot: string; disk: string | null }> {
+        const safeId = assertSafeResticId(snapshotId);
+        if (!filePath.startsWith("/") || filePath.includes("..") || filePath.length > 1000) {
+            throw new Error("Chemin de fichier invalide");
+        }
+        const snapshotContent = await this.resticDump(this.primaryDest(), safeId, filePath);
+        let disk: string | null = null;
+        try {
+            const stat = await fs.stat(filePath);
+            if (stat.size <= 500 * 1024) {
+                disk = await fs.readFile(filePath, "utf8");
+            }
+        } catch { /* fichier absent */ }
+        return { snapshot: snapshotContent, disk };
+    }
+
+    // ── Surveillance de fraîcheur ────────────────────────────────
+
+    private async checkStaleness(): Promise<void> {
+        if (!this.settings.enabled) return;
+        const intervalHours = sanitizeIntervalHours(this.settings.intervalHours);
+        const maxAgeMs = 2 * intervalHours * 3_600_000;
+        const lastSuccess = backupHistory.find(h => h.success);
+        if (!lastSuccess) return; // pas encore de backup — pas d'alerte
+        const ageMs = Date.now() - new Date(lastSuccess.timestamp).getTime();
+        if (ageMs < maxAgeMs) return;
+        // En retard — n'envoyer qu'une notif par fenêtre d'intervalHours
+        if (Date.now() - this.lastStalenessNotif < intervalHours * 3_600_000) return;
+        this.lastStalenessNotif = Date.now();
+        await this.sendStalenessNotification(ageMs);
+    }
+
+    private async sendStalenessNotification(ageMs: number): Promise<void> {
+        const discord = this.settings.discordWebhooks.length > 0
+            ? new DiscordNotifier(this.settings.discordWebhooks)
+            : null;
+        const apprise = await this.loadAppriseNotifier();
+        if (!discord && !apprise) return;
+
+        const en     = (this.settings.notificationLang ?? "fr") === "en";
+        const locale = en ? "en-GB" : "fr-FR";
+        const hours  = Math.floor(ageMs / 3_600_000);
+        const title  = en ? "⚠️ Dockge backup overdue" : "⚠️ Backup Dockge en retard";
+        const descr  = en
+            ? `No successful backup in the last **${hours}h**. Please check your backup configuration.`
+            : `Aucun backup réussi depuis **${hours}h**. Vérifiez votre configuration de backup.`;
+
+        if (discord) {
+            await discord.sendEmbed({
+                title, color: 0xf59e0b, description: descr, fields: [],
+                footer: `Dockge Enhanced — Backup · ${new Date().toLocaleString(locale)}`,
+            });
+        }
+        if (apprise) await apprise.send({ title, body: descr, type: "failure" });
     }
 
     // ── Notifications (Discord + Apprise) ────────────────────────

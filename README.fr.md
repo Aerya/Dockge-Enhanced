@@ -17,6 +17,11 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 ## 🆕 Nouveautés récentes
 
 - **🗂️ Parcourir les données de volumes dans les snapshots** — Le visualiseur de snapshots liste désormais les **fichiers de données des volumes** sauvegardés aux côtés des compose/env. Chaque fichier affiche le nom du projet (premier segment de chemin dans le volume), son chemin relatif dans le volume, et les deux mêmes indicateurs de statut que les compose : **vs snapshot précédent** (Nouveau / Modifié / Inchangé) et **vs disque actuel** (OK / Modifié / Absent). Sélectionne n'importe quelle combinaison de fichiers compose, env et volume et restaure-les en un seul clic.
+- **🔒 Protection de l'image de rollback** — L'image de rollback est désormais taguée `dockge-rollback-<clé>:keep` immédiatement après chaque mise à jour automatique, empêchant `docker image prune` (ou tout autre outil) de la supprimer avant l'expiration de la fenêtre de 24 h. Le tag de protection est nettoyé automatiquement lors du rollback ou à l'expiration.
+- **⚠️ Badge de fraîcheur du backup** — Un badge `⚠️ Backup en retard` apparaît dans l'en-tête de la section backup lorsque le dernier backup réussi date de plus du double de l'intervalle configuré. Une notification Discord/Apprise est également envoyée une fois par intervalle (FR/EN).
+- **🕐 Date du prochain scan Trivy** — L'en-tête du statut Trivy affiche désormais la date du dernier scan **et** la date du **prochain scan planifié** à côté.
+- **↩ Restauration par stack** — Chaque tiroir de stack dans le visualiseur de snapshots dispose d'un bouton **Restaurer la stack** en un clic, qui restaure tous les fichiers de cette stack (compose, env et volumes) sans avoir à les sélectionner individuellement.
+- **🔍 Aperçu et diff de snapshot** — Pour les fichiers texte (compose.yaml, .env), un bouton œil ouvre une modale avec deux onglets : **Aperçu** (contenu brut du snapshot) et **Diff vs disque** (diff ligne par ligne LCS montrant exactement ce qu'une restauration changerait — les lignes en rouge disparaîtront, les lignes en vert seront ajoutées).
 
 ---
 

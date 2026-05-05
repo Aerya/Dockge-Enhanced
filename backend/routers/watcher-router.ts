@@ -7,6 +7,7 @@
  */
 
 import { DockgeServer } from "../dockge-server";
+import { basename as pathBasename } from "path";
 import { Router } from "../router";
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";
 import { ImageWatcher, imageStatusStore, rollbackStore, RegistryCredential, WatcherSettings } from "../watchers/image-watcher";
@@ -293,6 +294,26 @@ export class WatcherRouter extends Router {
             try {
                 await BackupManager.getInstance().deleteSnapshot(req.params.id);
                 res.json({ ok: true });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.get("/backup/snapshots/:id/file-content", async (req: Request, res: Response) => {
+            try {
+                const filePath = typeof req.query.path === "string" ? req.query.path : "";
+                if (!filePath) {
+                    res.status(400).json({ ok: false, message: "Paramètre path manquant" });
+                    return;
+                }
+                const name = pathBasename(filePath);
+                const isText = name === ".env" || /\.(ya?ml|env|txt|conf|cfg|json|toml|ini)$/.test(name);
+                if (!isText) {
+                    res.status(400).json({ ok: false, message: "Type de fichier non supporté pour l'aperçu" });
+                    return;
+                }
+                const result = await BackupManager.getInstance().getSnapshotFileContent(req.params.id, filePath);
+                res.json({ ok: true, data: result });
             } catch (e) {
                 res.status(500).json({ ok: false, message: String(e) });
             }
