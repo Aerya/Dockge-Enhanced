@@ -267,12 +267,24 @@ function withExplicitTag(image: string): string {
     return `${image}:latest`;
 }
 
+/** Protège une valeur passée comme argument à une commande shell */
+function shellQuote(value: string): string {
+    return '"' + value.replace(/(["\\$`])/g, "\\$1") + '"';
+}
+
+/** Normalise l'intervalle cron en heures pour éviter les expressions invalides */
+function sanitizeIntervalHours(value: unknown, fallback = 6): number {
+    const interval = Number(value);
+    if (!Number.isFinite(interval)) return fallback;
+    return Math.min(24, Math.max(1, Math.floor(interval)));
+}
+
 /** Digest de l'image actuellement présente localement */
 async function getLocalDigest(image: string): Promise<string> {
     try {
         const ref = withExplicitTag(image);
         const { stdout } = await execAsync(
-            `docker image inspect --format '{{index .RepoDigests 0}}' ${ref} 2>/dev/null`,
+            `docker image inspect --format '{{index .RepoDigests 0}}' ${shellQuote(ref)} 2>/dev/null`,
             { timeout: 15000 }
         );
         const raw = stdout.trim();
@@ -397,8 +409,10 @@ export class ImageWatcher {
 
     start(): void {
         this.stop();
-        const expr = `0 */${this.settings.intervalHours} * * *`;
-        console.log(`[ImageWatcher] Démarrage — vérification toutes les ${this.settings.intervalHours}h`);
+        const intervalHours = sanitizeIntervalHours(this.settings.intervalHours);
+        this.settings.intervalHours = intervalHours;
+        const expr = `0 */${intervalHours} * * *`;
+        console.log(`[ImageWatcher] Démarrage — vérification toutes les ${intervalHours}h`);
         this.cronJob = cron.schedule(expr, () => this.runCheck());
         // Cron minutaire pour appliquer les màj planifiées
         this.minuteCron = cron.schedule("* * * * *", () => this.applyPendingUpdates().catch(console.error));
@@ -605,7 +619,7 @@ export class ImageWatcher {
     /** Trouve le nom du service docker compose qui utilise une image donnée */
     private findServiceForImage(composePath: string, image: string): string | null {
         try {
-            const raw = require("fs").readFileSync(composePath, "utf8");
+            const raw = fsSync.readFileSync(composePath, "utf8");
             const doc = yaml.load(raw) as Record<string, unknown>;
             if (!doc?.services) return null;
             const services = doc.services as Record<string, { image?: string }>;
@@ -625,7 +639,7 @@ export class ImageWatcher {
         }
         this._updatingImages.add(key);
         const service = this.findServiceForImage(composePath, status.image);
-        const serviceArg = service ? ` ${service}` : "";
+        const serviceArg = service ? ` ${shellQuote(service)}` : "";
         console.log(`[ImageWatcher] Auto-update: ${status.stack}/${status.image}${service ? ` (service: ${service})` : ""}`);
         try {
             // ── Capture l'ID de l'image actuelle avant le pull (pour rollback) ──
@@ -633,14 +647,14 @@ export class ImageWatcher {
             try {
                 const ref = withExplicitTag(status.image);
                 const { stdout } = await execAsync(
-                    `docker image inspect --format '{{.Id}}' "${ref}" 2>/dev/null`,
+                    `docker image inspect --format '{{.Id}}' ${shellQuote(ref)} 2>/dev/null`,
                     { timeout: 10000 }
                 );
                 oldImageId = stdout.trim();
             } catch { /* image absente localement, rollback impossible */ }
 
-            await execAsync(`docker compose -f "${composePath}" pull${serviceArg}`, { timeout: 600000 });
-            await execAsync(`docker compose -f "${composePath}" up -d${serviceArg}`, { timeout: 120000 });
+            await execAsync(`docker compose -f ${shellQuote(composePath)} pull${serviceArg}`, { timeout: 600000 });
+            await execAsync(`docker compose -f ${shellQuote(composePath)} up -d${serviceArg}`, { timeout: 120000 });
 
             // ── Sauvegarde l'entrée de rollback si on avait une image antérieure ──
             if (oldImageId) {
@@ -704,7 +718,7 @@ export class ImageWatcher {
             if (new Date(entry.expiresAt) <= now) {
                 console.log(`[ImageWatcher] Expiration rollback — suppression image ${entry.oldImageId.slice(0, 19)}`);
                 try {
-                    await execAsync(`docker rmi "${entry.oldImageId}" 2>/dev/null`, { timeout: 30000 });
+                    await execAsync(`docker rmi ${shellQuote(entry.oldImageId)} 2>/dev/null`, { timeout: 30000 });
                 } catch { /* peut déjà être supprimée ou utilisée ailleurs */ }
                 rollbackStore.delete(key);
                 changed = true;
@@ -723,13 +737,13 @@ export class ImageWatcher {
         }
 
         const image = withExplicitTag(entry.image);
-        const serviceArg = entry.service ? ` ${entry.service}` : "";
+        const serviceArg = entry.service ? ` ${shellQuote(entry.service)}` : "";
         console.log(`[ImageWatcher] Rollback: ${entry.stack}/${entry.image} → ${entry.oldImageId.slice(0, 19)}`);
 
         // Re-tag l'ancienne image pour lui redonner son nom (détache la nouvelle)
-        await execAsync(`docker tag "${entry.oldImageId}" "${image}"`, { timeout: 30000 });
+        await execAsync(`docker tag ${shellQuote(entry.oldImageId)} ${shellQuote(image)}`, { timeout: 30000 });
         // Redémarre le container avec l'ancienne image
-        await execAsync(`docker compose -f "${entry.composePath}" up -d${serviceArg}`, { timeout: 120000 });
+        await execAsync(`docker compose -f ${shellQuote(entry.composePath)} up -d${serviceArg}`, { timeout: 120000 });
 
         rollbackStore.delete(key);
         await this.saveRollbackRegistry();
@@ -744,7 +758,7 @@ export class ImageWatcher {
         const entry = rollbackStore.get(key);
         if (!entry) return;
         try {
-            await execAsync(`docker rmi "${entry.oldImageId}" 2>/dev/null`, { timeout: 30000 });
+            await execAsync(`docker rmi ${shellQuote(entry.oldImageId)} 2>/dev/null`, { timeout: 30000 });
         } catch { /* déjà supprimée */ }
         rollbackStore.delete(key);
         await this.saveRollbackRegistry();

@@ -43,6 +43,22 @@ const SEVERITY_EMOJI: Record<Severity, string> = {
     CRITICAL: "🔴",
 };
 
+function shellQuote(value: string): string {
+    return '"' + value.replace(/(["\\$`])/g, "\\$1") + '"';
+}
+
+function sanitizeIntervalHours(value: unknown, fallback = 24): number {
+    const interval = Number(value);
+    if (!Number.isFinite(interval)) return fallback;
+    return Math.min(24, Math.max(1, Math.floor(interval)));
+}
+
+function sanitizeTimeoutMinutes(value: unknown, fallback = 10): number {
+    const timeout = Number(value);
+    if (!Number.isFinite(timeout)) return fallback;
+    return Math.min(120, Math.max(1, Math.floor(timeout)));
+}
+
 interface ScannerSettings {
     enabled: boolean;
     intervalHours: number;
@@ -205,7 +221,8 @@ export class TrivyScanner {
 
     start(): void {
         this.stop();
-        const { intervalHours } = this.settings;
+        const intervalHours = sanitizeIntervalHours(this.settings.intervalHours);
+        this.settings.intervalHours = intervalHours;
         const cronExpr = `0 */${intervalHours} * * *`;
         console.log(`[TrivyScanner] Démarrage — scan toutes les ${intervalHours}h`);
         this.cronJob = cron.schedule(cronExpr, () => this.runScan());
@@ -299,12 +316,20 @@ export class TrivyScanner {
     }
 
     private buildTrivyCommand(image: string): string {
-        const ignoreUnfixed = this.settings.ignoreUnfixed ? "--ignore-unfixed" : "";
-        // Toujours via Docker — image pulléе juste avant le scan, supprimée après
-        return `docker run --rm \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            ghcr.io/aquasecurity/trivy:latest image \
-            --format json --quiet ${ignoreUnfixed} ${image}`;
+        const args = [
+            "docker run --rm",
+            "-v /var/run/docker.sock:/var/run/docker.sock",
+            "ghcr.io/aquasecurity/trivy:latest image",
+            "--format json",
+            "--quiet",
+        ];
+
+        if (this.settings.ignoreUnfixed) {
+            args.push("--ignore-unfixed");
+        }
+
+        args.push(shellQuote(image));
+        return args.join(" ");
     }
 
     private async scanImage(image: string, stack: string): Promise<ScanResult> {
@@ -321,7 +346,7 @@ export class TrivyScanner {
             const command = this.buildTrivyCommand(image);
             const { stdout } = await execAsync(command, {
                 maxBuffer: 50 * 1024 * 1024,
-                timeout: this.settings.scanTimeoutMinutes * 60 * 1000,
+                timeout: sanitizeTimeoutMinutes(this.settings.scanTimeoutMinutes) * 60 * 1000,
             });
 
             if (!stdout.trim()) return result;
@@ -370,7 +395,7 @@ export class TrivyScanner {
                 if (/^[a-f0-9]{6,64}$/.test(e.image)) {
                     try {
                         const { stdout: name } = await execAsync(
-                            `docker inspect ${e.id} --format '{{.Config.Image}}'`
+                            `docker inspect ${shellQuote(e.id)} --format '{{.Config.Image}}'`
                         );
                         const resolved = name.trim();
                         if (resolved) return { image: resolved, stack: e.stack };

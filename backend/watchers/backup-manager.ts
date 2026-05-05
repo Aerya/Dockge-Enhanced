@@ -9,6 +9,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs/promises";
 import * as path from "path";
+import * as yaml from "js-yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 
@@ -124,7 +125,10 @@ export interface SnapshotFile {
     path: string;
     name: string;
     stack: string;
-    type: "compose" | "env" | "other";
+    relativePath?: string;     // chemin relatif depuis le mount point (volumes uniquement)
+    services?: string[];       // noms de services (compose uniquement)
+    aliases?: string[];        // chemins alternatifs dans le snapshot (même fichier physique)
+    type: "compose" | "env" | "volume" | "other";
     size: number;
     mtime: string;
     /** Statut vs fichier actuellement sur le disque */
@@ -142,6 +146,7 @@ export interface DestinationResult {
     snapshotId?: string;
     dataAdded?: number;
     error?: string;
+    warnings?: string[];
 }
 
 export interface BackupResult {
@@ -152,8 +157,14 @@ export interface BackupResult {
     filesNew?: number;
     filesChanged?: number;
     error?: string;                 // première erreur rencontrée
+    warnings?: string[];            // chemins demandés mais absents / ignorés
     timestamp: string;
     destinations?: DestinationResult[];
+}
+
+interface BackupPathsResult {
+    paths: string[];
+    warnings: string[];
 }
 
 // Historique persisté sur disque (les 20 derniers) — rechargé au démarrage
@@ -178,6 +189,42 @@ async function saveHistory(): Promise<void> {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
+
+function shellQuote(value: string): string {
+    return `"${String(value).replace(/(["\\$`])/g, "\\$1")}"`;
+}
+
+function sanitizeIntervalHours(value: unknown, fallback = 24): number {
+    const interval = Number(value);
+    if (!Number.isFinite(interval)) return fallback;
+    return Math.min(168, Math.max(1, Math.floor(interval)));
+}
+
+function cronExpressionForIntervalHours(intervalHours: number): string {
+    if (intervalHours >= 168) return "0 0 * * 0";      // une fois par semaine
+    if (intervalHours >= 48) return "0 0 */2 * *";      // tous les 2 jours
+    if (intervalHours === 24) return "0 0 * * *";       // une fois par jour
+    return `0 */${Math.max(1, Math.min(23, intervalHours))} * * *`;
+}
+
+function sanitizePort(value: unknown, fallback = 22): number {
+    const port = Number(value);
+    if (!Number.isFinite(port)) return fallback;
+    return Math.min(65535, Math.max(1, Math.floor(port)));
+}
+
+function sanitizeRetention(value: unknown): number {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.floor(n));
+}
+
+function assertSafeResticId(id: string): string {
+    if (!/^[a-zA-Z0-9_-]{1,128}$/.test(id)) {
+        throw new Error("Identifiant de snapshot invalide");
+    }
+    return id;
+}
 
 function buildResticEnv(dest: BackupDestination): Record<string, string> {
     const env: Record<string, string> = {
@@ -206,21 +253,33 @@ function buildResticEnv(dest: BackupDestination): Record<string, string> {
 function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string {
     if (dest.type !== "sftp" || !dest.sftp) return "";
     const s = dest.sftp;
-    const port = s.port && s.port !== 22 ? s.port : 22;
+    const port = sanitizePort(s.port);
 
     if (s.authMode === "password" && tmpFile) {
         // Chemins absolus obligatoires : restic spawne le sftp.command dans un
         // sous-processus Go dont le PATH peut être différent du PATH Node.js.
-        // Sans chemin absolu, sshpass trouve bien `ssh` dans son propre PATH mais
-        // le sous-processus spawné par restic échoue avec ENOENT sur `ssh`.
-        const sshCmd = `/usr/bin/sshpass -f ${tmpFile} /usr/bin/ssh -l ${s.user} -p ${port} -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o BatchMode=no`;
-        return `-o sftp.command="${sshCmd} ${s.host} -s sftp"`;
+        const sshCommand = [
+            "/usr/bin/sshpass",
+            "-f", shellQuote(tmpFile),
+            "/usr/bin/ssh",
+            "-l", shellQuote(s.user),
+            "-p", String(port),
+            "-o", "StrictHostKeyChecking=no",
+            "-o", "PreferredAuthentications=password",
+            "-o", "BatchMode=no",
+            shellQuote(s.host),
+            "-s", "sftp",
+        ].join(" ");
+        return `-o ${shellQuote(`sftp.command=${sshCommand}`)}`;
     }
 
     if (s.authMode === "key") {
-        const keyArg = s.keyPath ? `-i ${s.keyPath} ` : "";
-        const sshArgs = `${keyArg}-p ${port} -o StrictHostKeyChecking=no`;
-        return `-o sftp.args="${sshArgs}"`;
+        const sshArgs = [
+            ...(s.keyPath ? ["-i", shellQuote(s.keyPath)] : []),
+            "-p", String(port),
+            "-o", "StrictHostKeyChecking=no",
+        ].join(" ");
+        return `-o ${shellQuote(`sftp.args=${sshArgs}`)}`;
     }
 
     return "";
@@ -259,12 +318,6 @@ function buildRepoUrl(dest: BackupDestination): string {
             return `rest:${r.url}`;
         }
     }
-}
-
-function envToString(env: Record<string, string>): string {
-    return Object.entries(env)
-        .map(([k, v]) => `${k}="${v.replace(/"/g, '\\"')}"`)
-        .join(" ");
 }
 
 function formatBytes(bytes: number): string {
@@ -423,9 +476,11 @@ export class BackupManager {
 
     start(): void {
         this.stop();
-        const { intervalHours } = this.settings;
-        console.log(`[BackupManager] Démarrage — backup toutes les ${intervalHours}h`);
-        this.cronJob = cron.schedule(`0 */${intervalHours} * * *`, () => this.runBackup());
+        const intervalHours = sanitizeIntervalHours(this.settings.intervalHours);
+        this.settings.intervalHours = intervalHours;
+        const cronExpr = cronExpressionForIntervalHours(intervalHours);
+        console.log(`[BackupManager] Démarrage — backup toutes les ${intervalHours}h (${cronExpr})`);
+        this.cronJob = cron.schedule(cronExpr, () => this.runBackup());
     }
 
     stop(): void {
@@ -455,7 +510,7 @@ export class BackupManager {
             }
 
             const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
-            const cmd = `restic --repo "${repo}" --json ${sftpOpts} ${args}`;
+            const cmd = `restic --repo ${shellQuote(repo)} --json ${sftpOpts} ${args}`;
             const { stdout } = await execAsync(cmd, {
                 maxBuffer: 20 * 1024 * 1024,
                 timeout:   30 * 60 * 1000,
@@ -525,21 +580,24 @@ export class BackupManager {
             return result;
         }
 
-        const paths = await this.buildBackupPaths();
+        const { paths, warnings } = await this.buildBackupPaths();
+        result.warnings = warnings;
         if (paths.length === 0) {
-            result.error = "Aucun fichier à sauvegarder";
+            result.error = warnings.length > 0
+                ? `Aucun fichier à sauvegarder — ${warnings.join(" ; ")}`
+                : "Aucun fichier à sauvegarder";
             backupHistory.unshift(result);
             if (backupHistory.length > 20) backupHistory.splice(20);
             await saveHistory();
             return result;
         }
 
-        const pathArgs = paths.map(p => `"${p}"`).join(" ");
-        const tagArg   = `--tag dockge-enhanced --tag ${new Date().toISOString().slice(0,10)}`;
+        const pathArgs = paths.map(shellQuote).join(" ");
+        const tagArg   = ["--tag", shellQuote("dockge-enhanced"), "--tag", shellQuote(new Date().toISOString().slice(0,10))].join(" ");
         const excludes = [
-            "--exclude '*.log'",
-            "--exclude '__pycache__'",
-            "--exclude 'node_modules'",
+            `--exclude ${shellQuote("*.log")}`,
+            `--exclude ${shellQuote("__pycache__")}`,
+            `--exclude ${shellQuote("node_modules")}`,
         ].join(" ");
 
         let totalDataAdded = 0;
@@ -550,6 +608,7 @@ export class BackupManager {
                 label: dest.label,
                 type:  dest.type,
                 success: false,
+                warnings,
             };
 
             try {
@@ -607,8 +666,24 @@ export class BackupManager {
         return result;
     }
 
-    private async buildBackupPaths(): Promise<string[]> {
+    private async buildBackupPaths(): Promise<BackupPathsResult> {
         const paths: string[] = [];
+        const warnings: string[] = [];
+        const seen = new Set<string>();
+
+        const addExistingPath = async (candidate: string, label: string): Promise<void> => {
+            const p = candidate.trim();
+            if (!p) return;
+            try {
+                await fs.access(p);
+                if (!seen.has(p)) {
+                    seen.add(p);
+                    paths.push(p);
+                }
+            } catch {
+                warnings.push(`${label} absent ou non monté : ${p}`);
+            }
+        };
 
         // Parcourt les stacks
         try {
@@ -620,43 +695,56 @@ export class BackupManager {
                     if (!stat.isDirectory()) continue;
                 } catch { continue; }
 
-                // compose.yaml / docker-compose.yml
+                let composeFound = false;
                 for (const name of ["compose.yaml", "docker-compose.yml", "docker-compose.yaml"]) {
                     const p = path.join(stackDir, name);
-                    try { await fs.access(p); paths.push(p); break; } catch { /* next */ }
+                    try {
+                        await fs.access(p);
+                        if (!seen.has(p)) {
+                            seen.add(p);
+                            paths.push(p);
+                        }
+                        composeFound = true;
+                        break;
+                    } catch { /* next */ }
                 }
+                if (!composeFound) warnings.push(`Compose introuvable pour la stack : ${stack}`);
 
-                // .env
                 if (this.settings.includeEnvFiles) {
                     const envPath = path.join(stackDir, ".env");
-                    try { await fs.access(envPath); paths.push(envPath); } catch { /* absent */ }
+                    try {
+                        await fs.access(envPath);
+                        if (!seen.has(envPath)) {
+                            seen.add(envPath);
+                            paths.push(envPath);
+                        }
+                    } catch { /* .env optionnel */ }
                 }
             }
         } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            warnings.push(`Impossible de lire STACKS_DIR (${STACKS_DIR}) : ${msg}`);
             console.error("[BackupManager] Impossible de lire STACKS_DIR:", e);
         }
 
         // Volumes sélectionnés (entiers ou sous-dossiers spécifiques)
-        for (const dest of this.settings.volumeBackup?.selectedVolumes ?? []) {
-            const p = dest.trim();
-            if (p) {
-                try { await fs.access(p); paths.push(p); } catch { /* absent ou non monté */ }
-            }
+        for (const selected of this.settings.volumeBackup?.selectedVolumes ?? []) {
+            await addExistingPath(selected, "Volume sélectionné");
         }
 
         // Chemins supplémentaires configurés
-        for (const extra of this.settings.extraPaths) {
-            try { await fs.access(extra); paths.push(extra); } catch { /* absent */ }
+        for (const extra of this.settings.extraPaths ?? []) {
+            await addExistingPath(extra, "Chemin supplémentaire");
         }
 
-        return paths;
+        return { paths, warnings };
     }
 
     /** Retourne la taille sur disque de DATA_DIR et des volumes sélectionnés */
     async getDirSizes(selectedVolumes: string[] = []): Promise<{ appData: string; volumes: Record<string, string> }> {
         const du = async (dir: string): Promise<string> => {
             try {
-                const { stdout } = await execAsync(`du -sh "${dir}" 2>/dev/null`, { timeout: 15000 });
+                const { stdout } = await execAsync(`du -sh ${shellQuote(dir)} 2>/dev/null`, { timeout: 15000 });
                 return stdout.split("\t")[0].trim() || "?";
             } catch {
                 return "?";
@@ -678,7 +766,7 @@ export class BackupManager {
             const { stdout: hostOut } = await execAsync("hostname", { timeout: 5000 });
             const containerId = hostOut.trim();
             const { stdout } = await execAsync(
-                `docker inspect --format '{{json .Mounts}}' ${containerId}`,
+                `docker inspect --format '{{json .Mounts}}' ${shellQuote(containerId)}`,
                 { timeout: 10000 }
             );
             const raw = JSON.parse(stdout) as Array<{
@@ -712,7 +800,7 @@ export class BackupManager {
         await Promise.all(dirs.map(async dir => {
             const p = path.join(volPath, dir);
             try {
-                const { stdout } = await execAsync(`du -sh "${p}" 2>/dev/null`, { timeout: 60000 });
+                const { stdout } = await execAsync(`du -sh ${shellQuote(p)} 2>/dev/null`, { timeout: 60000 });
                 results[dir] = stdout.split("\t")[0].trim() || "?";
             } catch { results[dir] = "?"; }
         }));
@@ -722,11 +810,11 @@ export class BackupManager {
     private async runForgetFor(dest: BackupDestination): Promise<void> {
         const r = this.settings.retention;
         const args = [
-            `--keep-last ${r.keepLast}`,
-            `--keep-daily ${r.keepDaily}`,
-            `--keep-weekly ${r.keepWeekly}`,
-            `--keep-monthly ${r.keepMonthly}`,
-            "--tag dockge-enhanced",
+            `--keep-last ${sanitizeRetention(r.keepLast)}`,
+            `--keep-daily ${sanitizeRetention(r.keepDaily)}`,
+            `--keep-weekly ${sanitizeRetention(r.keepWeekly)}`,
+            `--keep-monthly ${sanitizeRetention(r.keepMonthly)}`,
+            "--tag", shellQuote("dockge-enhanced"),
             "--prune",
         ].join(" ");
         await this.resticFor(dest, `forget ${args}`);
@@ -743,7 +831,7 @@ export class BackupManager {
 
     async listSnapshots(): Promise<ResticSnapshot[]> {
         try {
-            const stdout = await this.resticFor(this.primaryDest(), "snapshots --tag dockge-enhanced");
+            const stdout = await this.resticFor(this.primaryDest(), `snapshots --tag ${shellQuote("dockge-enhanced")}`);
             return JSON.parse(stdout) as ResticSnapshot[];
         } catch {
             return [];
@@ -751,28 +839,43 @@ export class BackupManager {
     }
 
     async deleteSnapshot(id: string): Promise<void> {
-        await this.resticFor(this.primaryDest(), `forget ${id} --prune`);
+        await this.resticFor(this.primaryDest(), `forget ${shellQuote(assertSafeResticId(id))} --prune`);
     }
 
     /**
-     * Liste les fichiers compose/env d'un snapshot avec deux dimensions de statut :
+     * Liste les fichiers d'un snapshot avec :
+     *   - déduplication des alias (même fichier physique accessible via plusieurs chemins montés)
+     *   - extraction des noms de services depuis les compose.yaml sur disque
      *   - diskStatus  : comparaison vs fichier actuellement sur le disque
      *   - snapDiff    : comparaison vs snapshot précédent (via restic diff)
      */
     async listSnapshotFiles(snapshotId: string): Promise<SnapshotFile[]> {
         try {
             // ── 1. Trouve le snapshot précédent ─────────────────────────
-            const allSnaps = await this.listSnapshots(); // utilise primaryDest()
+            const allSnaps = await this.listSnapshots();
             allSnaps.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
             const idx = allSnaps.findIndex(
                 s => s.id.startsWith(snapshotId) || s.short_id === snapshotId
             );
             const prevSnap = idx > 0 ? allSnaps[idx - 1] : null;
 
-            // ── 2. Liste les fichiers du snapshot courant ────────────────
-            const stdout = await this.resticFor(this.primaryDest(), `ls ${snapshotId} --json --long`);
-            const files: SnapshotFile[] = [];
-            const fileMap = new Map<string, SnapshotFile>();
+            // ── 1b. Charge les volumes montés pour identifier les fichiers de données ──
+            let mountedVols: MountedVolume[] = [];
+            try { mountedVols = await this.getMountedVolumes(); } catch {}
+            // Plus long en premier → on prend toujours le mount le plus spécifique
+            const sortedVols = [...mountedVols].sort((a, b) => b.destination.length - a.destination.length);
+
+            // ── 2. Liste tous les fichiers du snapshot ───────────────────
+            const stdout = await this.resticFor(this.primaryDest(), `ls ${shellQuote(assertSafeResticId(snapshotId))} --json --long`);
+
+            // ── 3. Parse et groupe par (stack, name) pour dédupliquer ────
+            // Un fichier est "direct dans la stack" s'il se trouve exactement au niveau
+            // <stacksBase>/<stack>/<file> — compose.yaml et .env uniquement.
+            // Les fichiers imbriqués plus profond (volumes) restent individuels.
+            const stacksBase = path.basename(STACKS_DIR);
+            type RawEntry = { path: string; name: string; stack: string; size: number; mtime: string; volumeRelPath?: string };
+            const groups = new Map<string, RawEntry[]>();
+            const standalones: RawEntry[] = [];
 
             for (const line of stdout.split("\n").filter(Boolean)) {
                 let entry: Record<string, unknown>;
@@ -781,42 +884,107 @@ export class BackupManager {
 
                 const filePath = entry.path as string;
                 const name = path.basename(filePath);
-                const isCompose = /^(compose|docker-compose)(\.ya?ml)?$/.test(name);
-                const isEnv = name === ".env";
-                if (!isCompose && !isEnv) continue;
-
-                // Extrait le nom de la stack depuis le chemin
-                const stacksBase = path.basename(STACKS_DIR);
                 const parts = filePath.split("/");
                 const stacksIdx = parts.lastIndexOf(stacksBase);
-                const stack = stacksIdx >= 0 && parts.length > stacksIdx + 1
-                    ? parts[stacksIdx + 1] : "unknown";
+                const isDirectInStack = stacksIdx >= 0 && parts.length - 1 === stacksIdx + 2;
+                const stack = isDirectInStack ? parts[stacksIdx + 1] : "unknown";
+
+                const raw: RawEntry = {
+                    path: filePath, name, stack,
+                    size: (entry.size as number) ?? 0,
+                    mtime: entry.mtime as string,
+                };
+
+                if (isDirectInStack) {
+                    const key = `${stack}::${name}`;
+                    if (!groups.has(key)) groups.set(key, []);
+                    groups.get(key)!.push(raw);
+                } else {
+                    // Tente de rattacher à un volume monté (plus long en premier = plus spécifique)
+                    for (const vol of sortedVols) {
+                        const prefix = vol.destination.endsWith("/") ? vol.destination : vol.destination + "/";
+                        if (filePath.startsWith(prefix)) {
+                            const rel = filePath.slice(prefix.length);
+                            const firstSeg = rel.split("/")[0];
+                            raw.stack = firstSeg || path.basename(vol.destination);
+                            raw.volumeRelPath = rel;
+                            break;
+                        }
+                    }
+                    standalones.push(raw);
+                }
+            }
+
+            // ── 4. Construit les SnapshotFile (chemin canonique + aliases) ──
+            const fileMap = new Map<string, SnapshotFile>();
+
+            const makeFile = async (entries: RawEntry[]): Promise<SnapshotFile> => {
+                // Préfère le chemin sous STACKS_DIR comme canonique, sinon le plus court
+                entries.sort((a, b) => {
+                    const aCanon = a.path.startsWith(STACKS_DIR + "/");
+                    const bCanon = b.path.startsWith(STACKS_DIR + "/");
+                    if (aCanon !== bCanon) return aCanon ? -1 : 1;
+                    return a.path.length - b.path.length;
+                });
+                const canon = entries[0];
+                const aliases = entries.length > 1 ? entries.slice(1).map(e => e.path) : undefined;
+
+                const isCompose = /^(compose|docker-compose)(\.ya?ml)?$/.test(canon.name);
+                const isEnv = canon.name === ".env";
+                const isVolume = !!canon.volumeRelPath;
 
                 // Statut vs disque
                 let diskStatus: "unchanged" | "modified" | "missing";
                 try {
-                    const stat = await fs.stat(filePath);
-                    const snapMtime = new Date(entry.mtime as string).getTime();
-                    diskStatus = stat.mtime.getTime() > snapMtime + 2000 ? "modified" : "unchanged";
+                    const stat = await fs.stat(canon.path);
+                    diskStatus = stat.mtime.getTime() > new Date(canon.mtime).getTime() + 2000
+                        ? "modified" : "unchanged";
                 } catch { diskStatus = "missing"; }
 
-                const file: SnapshotFile = {
-                    path: filePath, name, stack,
-                    type: isCompose ? "compose" : "env",
-                    size: (entry.size as number) ?? 0,
-                    mtime: entry.mtime as string,
+                // Noms de services depuis le compose.yaml sur disque (non-bloquant)
+                let services: string[] | undefined;
+                if (isCompose && diskStatus !== "missing") {
+                    try {
+                        const raw = await fs.readFile(canon.path, "utf8");
+                        const doc = yaml.load(raw) as Record<string, unknown>;
+                        if (doc?.services && typeof doc.services === "object") {
+                            services = Object.keys(doc.services as object).filter(Boolean);
+                        }
+                    } catch { /* non-bloquant */ }
+                }
+
+                return {
+                    path: canon.path,
+                    name: canon.name,
+                    stack: canon.stack,
+                    ...(canon.volumeRelPath ? { relativePath: canon.volumeRelPath } : {}),
+                    services,
+                    aliases,
+                    type: isCompose ? "compose" : isEnv ? "env" : isVolume ? "volume" : "other",
+                    size: canon.size,
+                    mtime: canon.mtime,
                     diskStatus,
-                    snapDiff: prevSnap ? "unchanged" : "added",  // sera affiné par diff
+                    snapDiff: prevSnap ? "unchanged" : "added",
                     prevSnapshotId: prevSnap?.short_id ?? null,
                 };
-                files.push(file);
-                fileMap.set(filePath, file);
+            };
+
+            const allGroups = [
+                ...[...groups.values()],
+                ...standalones.map(r => [r]),
+            ];
+            const files = await Promise.all(allGroups.map(makeFile));
+
+            // Enregistre canonical + aliases dans la map pour la résolution du diff
+            for (const file of files) {
+                fileMap.set(file.path, file);
+                for (const alias of (file.aliases ?? [])) fileMap.set(alias, file);
             }
 
-            // ── 3. Diff vs snapshot précédent ────────────────────────────
+            // ── 5. Diff vs snapshot précédent ────────────────────────────
             if (prevSnap) {
                 try {
-                    const diffOut = await this.resticFor(this.primaryDest(), `diff ${prevSnap.short_id} ${snapshotId}`);
+                    const diffOut = await this.resticFor(this.primaryDest(), `diff ${shellQuote(assertSafeResticId(prevSnap.short_id))} ${shellQuote(assertSafeResticId(snapshotId))}`);
                     for (const line of diffOut.split("\n").filter(Boolean)) {
                         let change: Record<string, unknown>;
                         try { change = JSON.parse(line); } catch { continue; }
@@ -830,9 +998,13 @@ export class BackupManager {
                 } catch { /* diff indisponible, on garde "unchanged" */ }
             }
 
+            const typeOrder: Record<string, number> = { compose: 0, env: 1, volume: 2, other: 3 };
             return files.sort((a, b) => {
                 if (a.stack !== b.stack) return a.stack.localeCompare(b.stack);
-                return a.type === "compose" ? -1 : 1;
+                const ao = typeOrder[a.type] ?? 3;
+                const bo = typeOrder[b.type] ?? 3;
+                if (ao !== bo) return ao - bo;
+                return (a.relativePath ?? a.name).localeCompare(b.relativePath ?? b.name);
             });
         } catch (e) {
             console.error("[BackupManager] listSnapshotFiles error:", e);
@@ -843,9 +1015,14 @@ export class BackupManager {
     /** Restaure une liste de fichiers depuis un snapshot à leur emplacement d'origine */
     async restoreFiles(snapshotId: string, filePaths: string[]): Promise<{ restored: number; errors: string[] }> {
         if (filePaths.length === 0) return { restored: 0, errors: [] };
-        const includes = filePaths.map(p => `--include "${p}"`).join(" ");
+        const safeSnapshotId = shellQuote(assertSafeResticId(snapshotId));
+        const includes = filePaths
+            .map(p => p.trim())
+            .filter(Boolean)
+            .map(p => `--include ${shellQuote(p)}`)
+            .join(" ");
         try {
-            await this.resticFor(this.primaryDest(), `restore ${snapshotId} --target / ${includes}`);
+            await this.resticFor(this.primaryDest(), `restore ${safeSnapshotId} --target ${shellQuote("/")} ${includes}`);
             return { restored: filePaths.length, errors: [] };
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : String(e);
@@ -887,7 +1064,7 @@ export class BackupManager {
         if (result.success) {
             const title  = t("✅ Backup Dockge réussi", "✅ Dockge backup successful");
             const descr  = `Snapshot \`${result.snapshotId}\` ${t("créé avec succès", "created successfully")}`;
-            const fields = [
+            const fields: Array<{ name: string; value: string; inline: boolean }> = [
                 { name: t("Durée", "Duration"),
                   value: formatDuration(result.duration),                                  inline: true },
                 { name: t("Données ajoutées", "Data added"),
@@ -902,6 +1079,14 @@ export class BackupManager {
                   inline: true },
             ];
 
+            if ((result.warnings ?? []).length > 0) {
+                fields.push({
+                    name: t("Avertissements", "Warnings"),
+                    value: result.warnings!.slice(0, 8).join("\n"),
+                    inline: false,
+                });
+            }
+
             if (discord) {
                 await discord.sendEmbed({
                     title, color: 0x22c55e, description: descr, fields,
@@ -915,7 +1100,7 @@ export class BackupManager {
         } else {
             const title  = t("❌ Échec du backup Dockge", "❌ Dockge backup failed");
             const descr  = `**${t("Erreur", "Error")} :** ${result.error}`;
-            const fields = [
+            const fields: Array<{ name: string; value: string; inline: boolean }> = [
                 { name: t("Durée", "Duration"),
                   value: formatDuration(result.duration),                                  inline: true },
                 { name: t("Destinations", "Destinations"),
@@ -924,6 +1109,14 @@ export class BackupManager {
                       .join("\n") || "—",
                   inline: true },
             ];
+
+            if ((result.warnings ?? []).length > 0) {
+                fields.push({
+                    name: t("Avertissements", "Warnings"),
+                    value: result.warnings!.slice(0, 8).join("\n"),
+                    inline: false,
+                });
+            }
 
             if (discord) {
                 await discord.sendEmbed({

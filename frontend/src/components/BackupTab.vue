@@ -422,6 +422,7 @@
                             <th>{{ $t('watcher.backup.history.dataAdded') }}</th>
                             <th>{{ $t('watcher.backup.history.files') }}</th>
                             <th>{{ $t('watcher.backup.history.duration') }}</th>
+                            <th>{{ $t('watcher.backup.history.warnings') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -438,6 +439,13 @@
                                 {{ h.filesChanged ?? 0 }} {{ $t('watcher.backup.history.modified') }}
                             </td>
                             <td class="small form-text">{{ formatDuration(h.duration) }}</td>
+                            <td class="small">
+                                <span v-if="h.warnings?.length" class="badge bg-warning text-dark"
+                                    :title="h.warnings.join('\\n')">
+                                    {{ h.warnings.length }}
+                                </span>
+                                <span v-else class="form-text">—</span>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -520,7 +528,7 @@
                                                         @change="toggleSelectAll"
                                                         :title="$t('watcher.backup.snapshots.selectAll')" />
                                                     <small class="form-text">
-                                                        {{ selectedFiles.size }}/{{ snapshotFiles.length }} sélectionné(s)
+                                                        {{ selectedFiles.size }}/{{ snapshotFiles.length }} {{ $t('watcher.backup.snapshots.selected') }}
                                                     </small>
                                                 </div>
                                                 <button class="btn btn-sm btn-warning"
@@ -538,6 +546,7 @@
                                                         <th style="width:1.5rem"></th>
                                                         <th style="width:8rem">Stack</th>
                                                         <th>Fichier</th>
+                                                        <th style="width:14rem">{{ $t('watcher.backup.snapshots.colServices') }}</th>
                                                         <th class="text-center" style="width:9rem">
                                                             {{ $t('watcher.backup.snapshots.colSnapDiff') }}
                                                         </th>
@@ -556,12 +565,30 @@
                                                         </td>
                                                         <td class="fw-semibold">
                                                             <code>{{ f.stack }}</code>
+                                                            <span v-if="f.type === 'volume'"
+                                                                class="badge bg-info ms-1"
+                                                                style="font-size:.62rem">vol</span>
                                                         </td>
                                                         <td>
                                                             <font-awesome-icon
-                                                                :icon="f.type === 'compose' ? 'file-code' : 'key'"
+                                                                :icon="fileIcon(f)"
                                                                 class="me-1 text-muted" />
-                                                            {{ f.name }}
+                                                            {{ f.relativePath ?? f.name }}
+                                                            <span v-if="f.aliases?.length"
+                                                                class="badge bg-secondary ms-1"
+                                                                style="font-size:.65rem"
+                                                                :title="f.aliases!.join('\n')">
+                                                                {{ $t('watcher.backup.snapshots.aliases', [f.aliases!.length]) }}
+                                                            </span>
+                                                        </td>
+                                                        <!-- Colonne Services -->
+                                                        <td>
+                                                            <template v-if="f.services?.length">
+                                                                <span v-for="svc in f.services" :key="svc"
+                                                                    class="badge bg-dark me-1"
+                                                                    style="font-size:.72rem">{{ svc }}</span>
+                                                            </template>
+                                                            <span v-else class="text-muted" style="font-size:.8rem">—</span>
                                                         </td>
                                                         <!-- Badge snapDiff -->
                                                         <td class="text-center">
@@ -643,16 +670,19 @@ interface Destination {
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
 interface VolumeBackupConfig { selectedVolumes: string[] }
 interface MountedVolume { source: string; destination: string }
-interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig }
+interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[] }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
-    path: string; name: string; stack: string; type: "compose" | "env" | "other";
+    path: string; name: string; stack: string; type: "compose" | "env" | "volume" | "other";
+    relativePath?: string;
+    services?: string[];
+    aliases?: string[];
     size: number; mtime: string;
     diskStatus: "unchanged" | "modified" | "missing";
     snapDiff:   "added" | "modified" | "unchanged";
     prevSnapshotId: string | null;
 }
-interface BackupResult { success: boolean; snapshotId?: string; duration: number; dataAdded?: number; filesNew?: number; filesChanged?: number; error?: string; timestamp: string }
+interface BackupResult { success: boolean; snapshotId?: string; duration: number; dataAdded?: number; filesNew?: number; filesChanged?: number; error?: string; warnings?: string[]; timestamp: string }
 
 // ─── State ────────────────────────────────────────────────────────
 
@@ -674,6 +704,7 @@ const settings = ref<Settings>({
     retention: { keepLast: 10, keepDaily: 7, keepWeekly: 4, keepMonthly: 3 },
     includeEnvFiles: true,
     volumeBackup: { selectedVolumes: [] },
+    extraPaths: [],
 });
 
 const mountedVols = ref<MountedVolume[]>([]);
@@ -748,6 +779,13 @@ function onDestTypeChange(dest: Destination) {
     if (!dest.sftp)  dest.sftp  = { host: "", port: 22, user: "", path: "", authMode: "key" };
     if (!dest.s3)    dest.s3    = { endpoint: "", bucket: "", path: "dockge", accessKeyId: "", secretAccessKey: "" };
     if (!dest.rest)  dest.rest  = { url: "", user: "", password: "" };
+}
+
+function fileIcon(file: SnapshotFile): string {
+    if (file.type === "compose") return "file-code";
+    if (file.type === "env") return "key";
+    if (file.type === "volume") return "hdd";
+    return "file-code";
 }
 
 function addWebhook() {
