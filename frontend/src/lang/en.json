@@ -142,7 +142,6 @@
     "watcher.tab.backup": "Backup",
     "watcher.tab.resources": "Resources",
     "watcher.tab.notifications": "Notifications",
-    "watcher.notif.backupNote": "Backup Discord webhooks are configured in the Backup tab.",
     "watcher.img.heading": "Image monitoring",
     "watcher.img.enabled": "Enabled",
     "watcher.img.disabled": "Disabled",

@@ -615,11 +615,47 @@
                     </div>
                 </div>
 
-                <!-- Backup note -->
+                <!-- Discord — Backup -->
                 <div class="shadow-box big-padding mb-4">
-                    <p class="form-text mb-0">
-                        <font-awesome-icon icon="info-circle" class="me-1" />{{ $t('watcher.notif.backupNote') }}
+                    <h5 class="settings-subheading mb-3">
+                        <font-awesome-icon icon="archive" class="me-2" />{{ $t('watcher.tab.backup') }} — Discord
+                    </h5>
+                    <div v-for="(wh, idx) in backupWebhooks" :key="idx"
+                        class="d-flex align-items-center gap-2 mb-2">
+                        <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
+                            {{ wh }}
+                        </span>
+                        <button class="btn btn-sm btn-normal" @click="testBackupWebhook(wh)" :disabled="backupTestingWh">
+                            <span v-if="backupTestingWh" class="spinner-border spinner-border-sm" />
+                            <span v-else><font-awesome-icon icon="paper-plane" /></span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @click="removeBackupWebhook(idx)">
+                            <font-awesome-icon icon="trash" />
+                        </button>
+                    </div>
+                    <p v-if="!backupWebhooks.length" class="form-text fst-italic mb-2">
+                        {{ $t('watcher.backup.noWebhook') }}
                     </p>
+                    <div class="input-group mb-2">
+                        <input v-model="backupNewWebhook" type="password" class="form-control form-control-sm"
+                            :placeholder="$t('watcher.img.webhookPlaceholder')" autocomplete="off" />
+                        <button class="btn btn-sm btn-success" @click="addBackupWebhook" :disabled="!backupNewWebhook">
+                            <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <small class="form-text">{{ $t('watcher.notifLang') }}</small>
+                        <div class="notif-lang-toggle">
+                            <button :class="['notif-lang-btn', backupNotifLang !== 'en' && 'active']"
+                                @click="backupNotifLang = 'fr'">🇫🇷</button>
+                            <button :class="['notif-lang-btn', backupNotifLang === 'en' && 'active']"
+                                @click="backupNotifLang = 'en'">🇬🇧</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" @click="saveBackupNotif" :disabled="savingBackupNotif">
+                        <span v-if="savingBackupNotif" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.apprise.save') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -762,6 +798,12 @@ const newAppriseUrl   = ref("");
 const savingApprise   = ref(false);
 const testingApprise  = ref(false);
 
+const backupWebhooks     = ref<string[]>([]);
+const backupNewWebhook   = ref("");
+const backupTestingWh    = ref(false);
+const backupNotifLang    = ref<"fr" | "en">("fr");
+const savingBackupNotif  = ref(false);
+
 const saving = ref(false);
 const savingTrivy = ref(false);
 const running = ref(false);
@@ -809,12 +851,13 @@ function showToast(msg: string, ok = true) {
 
 onMounted(async () => {
     await initServerTz(api);
-    const [imgRes, trivyRes, statusRes, trivyStatusRes, rollbackRes] = await Promise.all([
+    const [imgRes, trivyRes, statusRes, trivyStatusRes, rollbackRes, backupRes] = await Promise.all([
         api("GET", "/image/settings"),
         api("GET", "/trivy/settings"),
         api("GET", "/image/status"),
         api("GET", "/trivy/status"),
         api("GET", "/image/rollback"),
+        api("GET", "/backup/settings"),
     ]);
     // Charge la config Apprise depuis les settings image (stockée globalement)
     if (imgRes.ok && imgRes.data) {
@@ -843,6 +886,10 @@ onMounted(async () => {
     };
     if (statusRes.ok)   imageStatuses.value   = statusRes.data ?? [];
     if (rollbackRes.ok) rollbackEntries.value = rollbackRes.data ?? [];
+    if (backupRes.ok) {
+        backupWebhooks.value  = backupRes.data.discordWebhooks ?? [];
+        backupNotifLang.value = backupRes.data.notificationLang ?? "fr";
+    }
     if (trivyStatusRes.ok) trivyStatus.value = {
         ...trivyStatus.value,
         ...trivyStatusRes.data,
@@ -920,6 +967,30 @@ function addTrivyWebhook() {
 }
 function removeTrivyWebhook(idx: number) {
     trivySettings.value.discordWebhooks.splice(idx, 1);
+}
+
+function addBackupWebhook() {
+    const url = backupNewWebhook.value.trim();
+    if (!url || backupWebhooks.value.includes(url)) return;
+    backupWebhooks.value.push(url);
+    backupNewWebhook.value = "";
+}
+function removeBackupWebhook(idx: number) {
+    backupWebhooks.value.splice(idx, 1);
+}
+async function testBackupWebhook(url: string) {
+    backupTestingWh.value = true;
+    try {
+        const res = await api("POST", "/discord/test", { webhookUrl: url });
+        showToast(res.ok ? t('watcher.discord.testOk') : t('watcher.discord.testFail'), res.ok);
+    } finally { backupTestingWh.value = false; }
+}
+async function saveBackupNotif() {
+    savingBackupNotif.value = true;
+    try {
+        const res = await api("POST", "/backup/settings", { discordWebhooks: backupWebhooks.value, notificationLang: backupNotifLang.value });
+        showToast(res.ok ? t('watcher.backup.saved') : `❌ ${res.message}`, res.ok);
+    } finally { savingBackupNotif.value = false; }
 }
 
 async function saveImgSettings() {

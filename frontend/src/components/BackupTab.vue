@@ -209,46 +209,6 @@
                     </div>
                 </div>
 
-                <!-- Notifications Discord -->
-                <div class="col-12">
-                    <label class="form-label">
-                        {{ $t('watcher.backup.webhooks') }}
-                        <small class="form-text">{{ $t('watcher.backup.webhooksHint') }}</small>
-                    </label>
-                    <div v-for="(wh, idx) in discordWebhooks" :key="idx"
-                        class="d-flex align-items-center gap-2 mb-2">
-                        <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
-                            {{ wh }}
-                        </span>
-                        <button class="btn btn-sm btn-normal" @click="testWebhook(wh)" :disabled="testing">
-                            <span v-if="testing" class="spinner-border spinner-border-sm" />
-                            <span v-else><font-awesome-icon icon="paper-plane" /></span>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" @click="removeWebhook(idx)">
-                            <font-awesome-icon icon="trash" />
-                        </button>
-                    </div>
-                    <p v-if="discordWebhooks.length === 0" class="form-text fst-italic mb-2">
-                        {{ $t('watcher.backup.noWebhook') }}
-                    </p>
-                    <div class="input-group">
-                        <input v-model="newWebhook" type="password" class="form-control form-control-sm"
-                            placeholder="https://discord.com/api/webhooks/…" autocomplete="off" />
-                        <button class="btn btn-sm btn-success" @click="addWebhook" :disabled="!newWebhook">
-                            <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
-                        </button>
-                    </div>
-                    <!-- Langue des notifications -->
-                    <div class="mt-2 d-flex align-items-center gap-2">
-                        <small class="form-text">{{ $t('watcher.notifLang') }}</small>
-                        <div class="notif-lang-toggle">
-                            <button :class="['notif-lang-btn', settings.notificationLang !== 'en' && 'active']"
-                                @click="settings.notificationLang = 'fr'">🇫🇷</button>
-                            <button :class="['notif-lang-btn', settings.notificationLang === 'en' && 'active']"
-                                @click="settings.notificationLang = 'en'">🇬🇧</button>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -845,8 +805,6 @@ function toggleVolumes() {
     localStorage.setItem("backupVolumesCollapsed", volumesCollapsed.value ? "1" : "0");
 }
 const expandedDest = ref<number>(0);
-const discordWebhooks = ref<string[]>([]);
-const newWebhook = ref("");
 const snapshots = ref<Snapshot[]>([]);
 const history = ref<BackupResult[]>([]);
 
@@ -871,7 +829,6 @@ const preview = ref({
 });
 const expandedStacks    = ref<Set<string>>(new Set());
 const expandedFolders   = ref<Set<string>>(new Set());
-const testing = ref(false);
 const toast = ref({ msg: "", ok: true });
 
 function addDestination() {
@@ -1031,16 +988,6 @@ async function openPreview(snapId: string, f: SnapshotFile) {
     } finally {
         preview.value.loading = false;
     }
-}
-
-function addWebhook() {
-    const url = newWebhook.value.trim();
-    if (!url || discordWebhooks.value.includes(url)) return;
-    discordWebhooks.value.push(url);
-    newWebhook.value = "";
-}
-function removeWebhook(idx: number) {
-    discordWebhooks.value.splice(idx, 1);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────
@@ -1267,7 +1214,6 @@ onMounted(async () => {
     ]);
     if (settingsRes.ok) {
         settings.value = mergeSettings(settingsRes.data);
-        discordWebhooks.value = settingsRes.data.discordWebhooks ?? [];
     }
     if (histRes.ok) history.value = histRes.data;
     if (snapsRes.ok) snapshots.value = (snapsRes.data as Snapshot[]).sort(
@@ -1282,7 +1228,8 @@ onMounted(async () => {
 async function save() {
     saving.value = true;
     try {
-        const res = await api("POST", "/backup/settings", { ...settings.value, discordWebhooks: discordWebhooks.value });
+        const { discordWebhooks: _wh, notificationLang: _lang, ...settingsPayload } = settings.value;
+        const res = await api("POST", "/backup/settings", settingsPayload);
         if (res.ok) {
             showToast(t('watcher.backup.saved'));
             // Resync depuis le serveur pour éviter les désynchronisations
@@ -1290,7 +1237,6 @@ async function save() {
             const reloaded = await api("GET", "/backup/settings");
             if (reloaded.ok) {
                 settings.value = mergeSettings(reloaded.data);
-                discordWebhooks.value = reloaded.data.discordWebhooks ?? [];
             }
         } else {
             showToast(`❌ ${res.message}`, false);
@@ -1418,13 +1364,6 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     }
 }
 
-async function testWebhook(url: string) {
-    testing.value = true;
-    try {
-        const res = await api("POST", "/discord/test", { webhookUrl: url });
-        showToast(res.ok ? t('watcher.discord.testOk') : t('watcher.discord.testFail'), res.ok);
-    } finally { testing.value = false; }
-}
 </script>
 
 <style lang="scss" scoped>

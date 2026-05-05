@@ -135,7 +135,6 @@
     "watcher.tab.backup": "Sauvegarde",
     "watcher.tab.resources": "Ressources",
     "watcher.tab.notifications": "Notifications",
-    "watcher.notif.backupNote": "Les webhooks Discord de la sauvegarde se configurent dans l'onglet Sauvegarde.",
     "watcher.img.heading": "Surveillance des images",
     "watcher.img.enabled": "Activée",
     "watcher.img.disabled": "Désactivée",
