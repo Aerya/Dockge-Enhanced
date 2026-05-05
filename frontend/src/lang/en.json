@@ -186,7 +186,7 @@
     "watcher.status.autoUpdateSaved": "✅ Auto-update configured",
     "watcher.status.auOff": "Manual",
     "watcher.status.auIgnored": "Ignore",
-    "watcher.rollback.col": "Rollback",
+    "watcher.rollback.col": "Rollback (24h)",
     "watcher.rollback.btn": "Rollback",
     "watcher.rollback.btnTitle": "Restore previous version",
     "watcher.rollback.expiresAt": "Expires",

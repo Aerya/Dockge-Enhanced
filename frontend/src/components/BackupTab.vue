@@ -519,9 +519,9 @@
                                             {{ $t('watcher.backup.snapshots.noFiles') }}
                                         </div>
 
-                                        <!-- Liste des fichiers -->
+                                        <!-- Arborescence par stack -->
                                         <template v-else>
-                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <div class="d-flex align-items-center justify-content-between mb-3">
                                                 <div class="d-flex align-items-center gap-2">
                                                     <input type="checkbox" class="form-check-input"
                                                         :checked="selectedFiles.size === snapshotFiles.length"
@@ -540,91 +540,117 @@
                                                 </button>
                                             </div>
 
-                                            <table class="table table-sm mb-0" style="font-size:.82rem">
-                                                <thead>
-                                                    <tr>
-                                                        <th style="width:1.5rem"></th>
-                                                        <th style="width:8rem">Stack</th>
-                                                        <th>Fichier</th>
-                                                        <th style="width:14rem">{{ $t('watcher.backup.snapshots.colServices') }}</th>
-                                                        <th class="text-center" style="width:9rem">
-                                                            {{ $t('watcher.backup.snapshots.colSnapDiff') }}
-                                                        </th>
-                                                        <th class="text-center" style="width:9rem">
-                                                            {{ $t('watcher.backup.snapshots.colDiskStatus') }}
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr v-for="f in snapshotFiles" :key="f.path"
-                                                        :class="{ 'opacity-50': f.diskStatus === 'missing' }">
-                                                        <td>
-                                                            <input type="checkbox" class="form-check-input"
+                                            <div class="snap-tree">
+                                                <div v-for="sg in stackGroups" :key="sg.name" class="snap-stack">
+
+                                                    <!-- En-tête de stack (cliquable) -->
+                                                    <div class="snap-stack-header" @click="toggleStack(sg.name)">
+                                                        <input type="checkbox" class="form-check-input flex-shrink-0" @click.stop
+                                                            :checked="isStackAllSelected(sg)"
+                                                            :indeterminate.prop="isStackPartialSelected(sg)"
+                                                            @change.stop="toggleStackSelect(sg)" />
+                                                        <font-awesome-icon
+                                                            :icon="expandedStacks.has(sg.name) ? 'chevron-down' : 'chevron-right'"
+                                                            class="snap-chevron" />
+                                                        <code class="snap-stack-name">{{ sg.name }}</code>
+                                                        <span class="snap-count">{{ sg.totalCount }}</span>
+                                                    </div>
+
+                                                    <!-- Contenu de la stack -->
+                                                    <div v-if="expandedStacks.has(sg.name)" class="snap-stack-body">
+
+                                                        <!-- Fichiers directs (compose, env, other) -->
+                                                        <div v-for="f in sg.directFiles" :key="f.path"
+                                                            class="snap-file-row"
+                                                            :class="{ 'opacity-50': f.diskStatus === 'missing' }">
+                                                            <input type="checkbox" class="form-check-input flex-shrink-0"
                                                                 :checked="selectedFiles.has(f.path)"
                                                                 @change="toggleFile(f.path)" />
-                                                        </td>
-                                                        <td class="fw-semibold">
-                                                            <code>{{ f.stack }}</code>
-                                                            <span v-if="f.type === 'volume'"
-                                                                class="badge bg-info ms-1"
-                                                                style="font-size:.62rem">vol</span>
-                                                        </td>
-                                                        <td>
-                                                            <font-awesome-icon
-                                                                :icon="fileIcon(f)"
-                                                                class="me-1 text-muted" />
-                                                            {{ f.relativePath ?? f.name }}
+                                                            <font-awesome-icon :icon="fileIcon(f)" class="snap-file-icon" />
+                                                            <span class="snap-filename">{{ f.name }}</span>
+                                                            <span v-if="f.services?.length" class="snap-services">
+                                                                <span v-for="svc in f.services" :key="svc"
+                                                                    class="badge bg-dark" style="font-size:.68rem">{{ svc }}</span>
+                                                            </span>
                                                             <span v-if="f.aliases?.length"
-                                                                class="badge bg-secondary ms-1"
-                                                                style="font-size:.65rem"
+                                                                class="badge bg-secondary snap-alias"
                                                                 :title="f.aliases!.join('\n')">
                                                                 {{ $t('watcher.backup.snapshots.aliases', [f.aliases!.length]) }}
                                                             </span>
-                                                        </td>
-                                                        <!-- Colonne Services -->
-                                                        <td>
-                                                            <template v-if="f.services?.length">
-                                                                <span v-for="svc in f.services" :key="svc"
-                                                                    class="badge bg-dark me-1"
-                                                                    style="font-size:.72rem">{{ svc }}</span>
-                                                            </template>
-                                                            <span v-else class="text-muted" style="font-size:.8rem">—</span>
-                                                        </td>
-                                                        <!-- Badge snapDiff -->
-                                                        <td class="text-center">
-                                                            <span v-if="f.prevSnapshotId === null"
-                                                                class="badge bg-secondary">
-                                                                {{ $t('watcher.backup.snapshots.firstSnapshot') }}
-                                                            </span>
-                                                            <span v-else-if="f.snapDiff === 'added'"
-                                                                class="badge bg-success">
-                                                                {{ $t('watcher.backup.snapshots.diffAdded') }}
-                                                            </span>
-                                                            <span v-else-if="f.snapDiff === 'modified'"
-                                                                class="badge bg-warning text-dark">
-                                                                {{ $t('watcher.backup.snapshots.diffModified') }}
-                                                            </span>
-                                                            <span v-else class="badge bg-secondary opacity-50">
-                                                                {{ $t('watcher.backup.snapshots.diffUnchanged') }}
-                                                            </span>
-                                                        </td>
-                                                        <!-- Badge diskStatus -->
-                                                        <td class="text-center">
-                                                            <span v-if="f.diskStatus === 'unchanged'"
-                                                                class="badge bg-success">
-                                                                {{ $t('watcher.backup.snapshots.diskUnchanged') }}
-                                                            </span>
-                                                            <span v-else-if="f.diskStatus === 'modified'"
-                                                                class="badge bg-warning text-dark">
-                                                                {{ $t('watcher.backup.snapshots.diskModified') }}
-                                                            </span>
-                                                            <span v-else class="badge bg-secondary">
-                                                                {{ $t('watcher.backup.snapshots.diskMissing') }}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
+                                                            <div class="snap-badges">
+                                                                <span v-if="f.prevSnapshotId === null" class="badge bg-secondary">{{ $t('watcher.backup.snapshots.firstSnapshot') }}</span>
+                                                                <span v-else-if="f.snapDiff === 'added'" class="badge bg-success">{{ $t('watcher.backup.snapshots.diffAdded') }}</span>
+                                                                <span v-else-if="f.snapDiff === 'modified'" class="badge bg-warning text-dark">{{ $t('watcher.backup.snapshots.diffModified') }}</span>
+                                                                <span v-else class="badge bg-secondary opacity-50">{{ $t('watcher.backup.snapshots.diffUnchanged') }}</span>
+                                                                <span v-if="f.diskStatus === 'unchanged'" class="badge bg-success">{{ $t('watcher.backup.snapshots.diskUnchanged') }}</span>
+                                                                <span v-else-if="f.diskStatus === 'modified'" class="badge bg-warning text-dark">{{ $t('watcher.backup.snapshots.diskModified') }}</span>
+                                                                <span v-else class="badge bg-secondary">{{ $t('watcher.backup.snapshots.diskMissing') }}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Fichiers de volume directement dans le volume (sans sous-dossier) -->
+                                                        <div v-for="f in sg.volRootFiles" :key="f.path"
+                                                            class="snap-file-row"
+                                                            :class="{ 'opacity-50': f.diskStatus === 'missing' }">
+                                                            <input type="checkbox" class="form-check-input flex-shrink-0"
+                                                                :checked="selectedFiles.has(f.path)"
+                                                                @change="toggleFile(f.path)" />
+                                                            <font-awesome-icon icon="hdd" class="snap-file-icon" />
+                                                            <span class="snap-filename">{{ volFileInnerPath(f) }}</span>
+                                                            <div class="snap-badges">
+                                                                <span v-if="f.prevSnapshotId === null" class="badge bg-secondary">{{ $t('watcher.backup.snapshots.firstSnapshot') }}</span>
+                                                                <span v-else-if="f.snapDiff === 'added'" class="badge bg-success">{{ $t('watcher.backup.snapshots.diffAdded') }}</span>
+                                                                <span v-else-if="f.snapDiff === 'modified'" class="badge bg-warning text-dark">{{ $t('watcher.backup.snapshots.diffModified') }}</span>
+                                                                <span v-else class="badge bg-secondary opacity-50">{{ $t('watcher.backup.snapshots.diffUnchanged') }}</span>
+                                                                <span v-if="f.diskStatus === 'unchanged'" class="badge bg-success">{{ $t('watcher.backup.snapshots.diskUnchanged') }}</span>
+                                                                <span v-else-if="f.diskStatus === 'modified'" class="badge bg-warning text-dark">{{ $t('watcher.backup.snapshots.diskModified') }}</span>
+                                                                <span v-else class="badge bg-secondary">{{ $t('watcher.backup.snapshots.diskMissing') }}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Dossiers de volume (tiroirs) -->
+                                                        <div v-for="folder in sg.volFolders" :key="folder.name" class="snap-folder">
+
+                                                            <!-- En-tête du dossier (cliquable) -->
+                                                            <div class="snap-folder-header" @click="toggleFolder(sg.name, folder.name)">
+                                                                <input type="checkbox" class="form-check-input flex-shrink-0" @click.stop
+                                                                    :checked="isFolderAllSelected(folder)"
+                                                                    :indeterminate.prop="isFolderPartialSelected(folder)"
+                                                                    @change.stop="toggleFolderSelect(folder)" />
+                                                                <font-awesome-icon
+                                                                    :icon="expandedFolders.has(sg.name + '::' + folder.name) ? 'folder-open' : 'folder'"
+                                                                    class="snap-folder-icon" />
+                                                                <span class="snap-foldername">{{ folder.name }}/</span>
+                                                                <span class="snap-count">{{ folder.files.length }}</span>
+                                                            </div>
+
+                                                            <!-- Fichiers du dossier -->
+                                                            <div v-if="expandedFolders.has(sg.name + '::' + folder.name)" class="snap-folder-body">
+                                                                <div v-for="f in folder.files" :key="f.path"
+                                                                    class="snap-file-row snap-file-in-folder"
+                                                                    :class="{ 'opacity-50': f.diskStatus === 'missing' }">
+                                                                    <input type="checkbox" class="form-check-input flex-shrink-0"
+                                                                        :checked="selectedFiles.has(f.path)"
+                                                                        @change="toggleFile(f.path)" />
+                                                                    <font-awesome-icon icon="hdd" class="snap-file-icon" />
+                                                                    <span class="snap-filename">{{ volFileInFolder(f, folder.name) }}</span>
+                                                                    <div class="snap-badges">
+                                                                        <span v-if="f.prevSnapshotId === null" class="badge bg-secondary">{{ $t('watcher.backup.snapshots.firstSnapshot') }}</span>
+                                                                        <span v-else-if="f.snapDiff === 'added'" class="badge bg-success">{{ $t('watcher.backup.snapshots.diffAdded') }}</span>
+                                                                        <span v-else-if="f.snapDiff === 'modified'" class="badge bg-warning text-dark">{{ $t('watcher.backup.snapshots.diffModified') }}</span>
+                                                                        <span v-else class="badge bg-secondary opacity-50">{{ $t('watcher.backup.snapshots.diffUnchanged') }}</span>
+                                                                        <span v-if="f.diskStatus === 'unchanged'" class="badge bg-success">{{ $t('watcher.backup.snapshots.diskUnchanged') }}</span>
+                                                                        <span v-else-if="f.diskStatus === 'modified'" class="badge bg-warning text-dark">{{ $t('watcher.backup.snapshots.diskModified') }}</span>
+                                                                        <span v-else class="badge bg-secondary">{{ $t('watcher.backup.snapshots.diskMissing') }}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </template>
                                     </div>
                                 </td>
@@ -755,6 +781,8 @@ const snapshotFiles     = ref<SnapshotFile[]>([]);
 const selectedFiles     = ref<Set<string>>(new Set());
 const loadingFiles      = ref(false);
 const restoring         = ref(false);
+const expandedStacks    = ref<Set<string>>(new Set());
+const expandedFolders   = ref<Set<string>>(new Set());
 const testing = ref(false);
 const toast = ref({ msg: "", ok: true });
 
@@ -786,6 +814,89 @@ function fileIcon(file: SnapshotFile): string {
     if (file.type === "env") return "key";
     if (file.type === "volume") return "hdd";
     return "file-code";
+}
+
+// ─── Arborescence des fichiers d'un snapshot ─────────────────────
+
+interface VolFolder  { name: string; files: SnapshotFile[] }
+interface StackGroup { name: string; directFiles: SnapshotFile[]; volRootFiles: SnapshotFile[]; volFolders: VolFolder[]; totalCount: number }
+
+const stackGroups = computed<StackGroup[]>(() => {
+    const map = new Map<string, StackGroup>();
+    for (const f of snapshotFiles.value) {
+        if (!map.has(f.stack))
+            map.set(f.stack, { name: f.stack, directFiles: [], volRootFiles: [], volFolders: [], totalCount: 0 });
+        const sg = map.get(f.stack)!;
+        sg.totalCount++;
+        if (f.type !== "volume" || !f.relativePath) {
+            sg.directFiles.push(f);
+        } else {
+            const sep = f.relativePath.indexOf("/");
+            const innerPath = sep >= 0 ? f.relativePath.slice(sep + 1) : "";
+            if (!innerPath || !innerPath.includes("/")) {
+                sg.volRootFiles.push(f);
+            } else {
+                const topDir = innerPath.split("/")[0];
+                let folder = sg.volFolders.find(vf => vf.name === topDir);
+                if (!folder) { folder = { name: topDir, files: [] }; sg.volFolders.push(folder); }
+                folder.files.push(f);
+            }
+        }
+    }
+    return [...map.values()];
+});
+
+function volFileInnerPath(f: SnapshotFile): string {
+    if (!f.relativePath) return f.name;
+    const sep = f.relativePath.indexOf("/");
+    return sep >= 0 ? f.relativePath.slice(sep + 1) : f.name;
+}
+function volFileInFolder(f: SnapshotFile, folderName: string): string {
+    const inner = volFileInnerPath(f);
+    return inner.startsWith(folderName + "/") ? inner.slice(folderName.length + 1) : inner;
+}
+function toggleStack(name: string) {
+    const s = new Set(expandedStacks.value);
+    s.has(name) ? s.delete(name) : s.add(name);
+    expandedStacks.value = s;
+}
+function toggleFolder(stackName: string, folderName: string) {
+    const key = `${stackName}::${folderName}`;
+    const s = new Set(expandedFolders.value);
+    s.has(key) ? s.delete(key) : s.add(key);
+    expandedFolders.value = s;
+}
+function getAllStackFiles(sg: StackGroup): SnapshotFile[] {
+    return [...sg.directFiles, ...sg.volRootFiles, ...sg.volFolders.flatMap(vf => vf.files)];
+}
+function isStackAllSelected(sg: StackGroup): boolean {
+    const all = getAllStackFiles(sg);
+    return all.length > 0 && all.every(f => selectedFiles.value.has(f.path));
+}
+function isStackPartialSelected(sg: StackGroup): boolean {
+    const all = getAllStackFiles(sg);
+    const n = all.filter(f => selectedFiles.value.has(f.path)).length;
+    return n > 0 && n < all.length;
+}
+function toggleStackSelect(sg: StackGroup) {
+    const all = getAllStackFiles(sg);
+    const s = new Set(selectedFiles.value);
+    isStackAllSelected(sg) ? all.forEach(f => s.delete(f.path)) : all.forEach(f => s.add(f.path));
+    selectedFiles.value = s;
+}
+function isFolderAllSelected(folder: VolFolder): boolean {
+    return folder.files.length > 0 && folder.files.every(f => selectedFiles.value.has(f.path));
+}
+function isFolderPartialSelected(folder: VolFolder): boolean {
+    const n = folder.files.filter(f => selectedFiles.value.has(f.path)).length;
+    return n > 0 && n < folder.files.length;
+}
+function toggleFolderSelect(folder: VolFolder) {
+    const s = new Set(selectedFiles.value);
+    isFolderAllSelected(folder)
+        ? folder.files.forEach(f => s.delete(f.path))
+        : folder.files.forEach(f => s.add(f.path));
+    selectedFiles.value = s;
 }
 
 function addWebhook() {
@@ -1013,7 +1124,9 @@ onMounted(async () => {
         discordWebhooks.value = settingsRes.data.discordWebhooks ?? [];
     }
     if (histRes.ok) history.value = histRes.data;
-    if (snapsRes.ok) snapshots.value = snapsRes.data;
+    if (snapsRes.ok) snapshots.value = (snapsRes.data as Snapshot[]).sort(
+        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
+    );
     await initServerTz(api);
     await loadMountedVols();
 });
@@ -1063,7 +1176,9 @@ async function loadSnapshots() {
     loadingSnaps.value = true;
     try {
         const res = await api("GET", "/backup/snapshots");
-        if (res.ok) snapshots.value = res.data;
+        if (res.ok) snapshots.value = (res.data as Snapshot[]).sort(
+            (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
+        );
         else showToast(`❌ ${res.message}`, false);
     } finally { loadingSnaps.value = false; }
 }
@@ -1084,11 +1199,15 @@ async function toggleSnapshotFiles(shortId: string) {
         expandedSnapshot.value = null;
         snapshotFiles.value = [];
         selectedFiles.value = new Set();
+        expandedStacks.value = new Set();
+        expandedFolders.value = new Set();
         return;
     }
     expandedSnapshot.value = shortId;
     snapshotFiles.value = [];
     selectedFiles.value = new Set();
+    expandedStacks.value = new Set();
+    expandedFolders.value = new Set();
     loadingFiles.value = true;
     try {
         const res = await api("GET", `/backup/snapshots/${shortId}/files`);
@@ -1448,6 +1567,137 @@ async function testWebhook(url: string) {
 
 .snapshot-files-panel {
     border-left: 3px solid #f59e0b;
+}
+
+// ─── Arborescence snapshot (tiroirs / sous-tiroirs) ──────────────
+.snap-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: .82rem;
+}
+
+.snap-stack {
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 7px;
+    overflow: hidden;
+}
+
+.snap-stack-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: rgba(245,158,11,.07);
+    cursor: pointer;
+    user-select: none;
+    transition: background .12s;
+
+    &:hover { background: rgba(245,158,11,.12); }
+
+    .snap-stack-name {
+        font-size: .82rem;
+        color: #f59e0b;
+        background: rgba(245,158,11,.12);
+        padding: 1px 6px;
+        border-radius: 4px;
+        flex: 1;
+    }
+}
+
+.snap-stack-body {
+    background: rgba(0,0,0,.12);
+    border-top: 1px solid rgba(255,255,255,.07);
+}
+
+.snap-folder {
+    border-top: 1px solid rgba(255,255,255,.05);
+}
+
+.snap-folder-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 32px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(255,255,255,.02);
+    transition: background .12s;
+
+    &:hover { background: rgba(255,255,255,.05); }
+
+    .snap-foldername {
+        font-family: monospace;
+        font-size: .82rem;
+        color: #fbbf24;
+        flex: 1;
+    }
+}
+
+.snap-folder-body {
+    background: rgba(0,0,0,.08);
+    border-top: 1px solid rgba(255,255,255,.04);
+}
+
+.snap-file-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px 5px 32px;
+    border-top: 1px solid rgba(255,255,255,.04);
+    transition: background .1s;
+
+    &:hover { background: rgba(255,255,255,.03); }
+
+    &.snap-file-in-folder { padding-left: 52px; }
+}
+
+.snap-filename {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: monospace;
+    font-size: .8rem;
+}
+
+.snap-services {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.snap-badges {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.snap-chevron, .snap-file-icon {
+    font-size: .72rem;
+    color: #9ca3af;
+    flex-shrink: 0;
+}
+
+.snap-folder-icon {
+    font-size: .82rem;
+    color: #fbbf24;
+    flex-shrink: 0;
+}
+
+.snap-count {
+    font-size: .65rem;
+    background: rgba(255,255,255,.12);
+    color: #9ca3af;
+    padding: 1px 6px;
+    border-radius: 50rem;
+    flex-shrink: 0;
+}
+
+.snap-alias {
+    font-size: .62rem;
+    flex-shrink: 0;
 }
 
 .notif-lang-toggle {

@@ -179,7 +179,7 @@
     "watcher.status.autoUpdateSaved": "✅ Màj automatique configurée",
     "watcher.status.auOff": "Manuelle",
     "watcher.status.auIgnored": "Ignorer",
-    "watcher.rollback.col": "Rollback",
+    "watcher.rollback.col": "Rollback (24h)",
     "watcher.rollback.btn": "Rollback",
     "watcher.rollback.btnTitle": "Restaurer la version précédente",
     "watcher.rollback.expiresAt": "Expire le",
