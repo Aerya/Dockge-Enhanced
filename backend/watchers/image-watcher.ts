@@ -56,6 +56,7 @@ export interface WatcherSettings {
     pendingAutoUpdates: string[];                        // clés en attente de màj planifiée
     appriseServerUrl: string;    // URL du serveur Apprise (ex: "http://apprise:8000")
     appriseUrls: string[];       // URLs Apprise (ntfy://, tgram://, etc.)
+    ignoredDigests: Record<string, string[]>;            // clé "stack::image" → digests à ignorer
 }
 
 export interface ImageStatus {
@@ -66,6 +67,7 @@ export interface ImageStatus {
     hasUpdate: boolean;
     lastChecked: string;    // ISO date
     ignored?: boolean;
+    ignoredDigest?: string; // digest remote actuellement ignoré ("skip this release")
     error?: string;
 }
 
@@ -356,6 +358,7 @@ export class ImageWatcher {
         pendingAutoUpdates: [],
         appriseServerUrl: "",
         appriseUrls: [],
+        ignoredDigests: {},
     };
 
     static getInstance(): ImageWatcher {
@@ -499,6 +502,12 @@ export class ImageWatcher {
                         continue;
                     }
                     const status = await this.checkOneImage(image, stack);
+                    // Digest ignoré → on supprime le flag hasUpdate pour ce cycle
+                    const skipped = this.settings.ignoredDigests?.[key] ?? [];
+                    if (status.remoteDigest && skipped.includes(status.remoteDigest)) {
+                        status.hasUpdate = false;
+                        status.ignoredDigest = status.remoteDigest;
+                    }
                     results.push(status);
                     imageStatusStore.set(key, status);
                 }
@@ -688,6 +697,34 @@ export class ImageWatcher {
             this._updatingImages.delete(key);
             return false;
         }
+    }
+
+    // ── Ignore digest ─────────────────────────────────────────────────
+
+    async ignoreDigest(key: string, digest: string): Promise<void> {
+        const ignoredDigests = { ...(this.settings.ignoredDigests ?? {}) };
+        const existing = ignoredDigests[key] ?? [];
+        if (!existing.includes(digest)) existing.push(digest);
+        ignoredDigests[key] = existing;
+        // Mise à jour du store immédiatement sans redémarrer le watcher
+        this.settings = { ...this.settings, ignoredDigests };
+        const current = imageStatusStore.get(key);
+        if (current && current.remoteDigest === digest) {
+            imageStatusStore.set(key, { ...current, hasUpdate: false, ignoredDigest: digest });
+        }
+        await this.persistToFile();
+    }
+
+    async clearIgnoredDigests(key: string): Promise<void> {
+        const ignoredDigests = { ...(this.settings.ignoredDigests ?? {}) };
+        delete ignoredDigests[key];
+        this.settings = { ...this.settings, ignoredDigests };
+        const current = imageStatusStore.get(key);
+        if (current?.ignoredDigest) {
+            const { ignoredDigest: _, ...rest } = current;
+            imageStatusStore.set(key, { ...rest, hasUpdate: rest.localDigest !== rest.remoteDigest });
+        }
+        await this.persistToFile();
     }
 
     // ── Rollback ──────────────────────────────────────────────────────

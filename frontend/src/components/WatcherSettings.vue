@@ -202,9 +202,36 @@
                                         <span v-if="s.error" class="badge bg-danger" :title="s.error">
                                             <font-awesome-icon icon="exclamation-triangle" class="me-1" />{{ $t('watcher.status.error') }}
                                         </span>
-                                        <span v-else-if="s.hasUpdate" class="badge bg-warning text-dark">
-                                            <font-awesome-icon icon="arrow-circle-up" class="me-1" />{{ $t('watcher.status.updateAvailable') }}
-                                        </span>
+                                        <template v-else-if="s.hasUpdate">
+                                            <span class="badge bg-warning text-dark d-block mb-1">
+                                                <font-awesome-icon icon="arrow-circle-up" class="me-1" />{{ $t('watcher.status.updateAvailable') }}
+                                            </span>
+                                            <button
+                                                class="btn btn-xs btn-outline-secondary"
+                                                style="font-size:.7rem;padding:1px 5px;white-space:nowrap"
+                                                :disabled="ignoringKey === `${s.stack}::${s.image}`"
+                                                @click="ignoreVersion(s)"
+                                                :title="$t('watcher.status.ignoreVersion')"
+                                            >
+                                                <span v-if="ignoringKey === `${s.stack}::${s.image}`" class="spinner-border spinner-border-sm" />
+                                                <template v-else>⏭ {{ $t('watcher.status.ignoreVersion') }}</template>
+                                            </button>
+                                        </template>
+                                        <template v-else-if="s.ignoredDigest">
+                                            <span class="badge bg-secondary d-block mb-1">
+                                                ⏭ {{ $t('watcher.status.versionIgnored') }}
+                                            </span>
+                                            <button
+                                                class="btn btn-xs btn-outline-secondary"
+                                                style="font-size:.7rem;padding:1px 5px;white-space:nowrap"
+                                                :disabled="clearingKey === `${s.stack}::${s.image}`"
+                                                @click="clearIgnoredDigest(s)"
+                                                :title="$t('watcher.status.clearIgnored')"
+                                            >
+                                                <span v-if="clearingKey === `${s.stack}::${s.image}`" class="spinner-border spinner-border-sm" />
+                                                <template v-else>✕ {{ $t('watcher.status.clearIgnored') }}</template>
+                                            </button>
+                                        </template>
                                         <span v-else class="badge bg-success">
                                             <font-awesome-icon icon="check-circle" class="me-1" />{{ $t('watcher.status.upToDate') }}
                                         </span>
@@ -690,7 +717,9 @@ interface TrivySettings {
 interface ImageStatus {
     image: string; stack: string;
     localDigest: string; remoteDigest: string;
-    hasUpdate: boolean; lastChecked: string; error?: string;
+    hasUpdate: boolean; lastChecked: string;
+    ignoredDigest?: string;
+    error?: string;
 }
 
 interface RollbackEntry {
@@ -773,6 +802,8 @@ const newCred = ref<Cred>({ registry: "", username: "", token: "" });
 const imageStatuses    = ref<ImageStatus[]>([]);
 const rollbackEntries  = ref<RollbackEntry[]>([]);
 const rollbackingKey   = ref<string | null>(null);
+const ignoringKey      = ref<string | null>(null);
+const clearingKey      = ref<string | null>(null);
 
 const trivyStatus = ref<TrivyStatus>({ running: false, lastScanAt: null, scannedCount: 0, lastResults: [], lastFullResults: [] });
 const expandedTrivyImage = ref<string | null>(null);
@@ -1123,6 +1154,41 @@ function getAutoUpdateTime(s: ImageStatus): string {
 }
 function isPending(s: ImageStatus): boolean {
     return imgSettings.value.pendingAutoUpdates.includes(`${s.stack}::${s.image}`);
+}
+
+async function ignoreVersion(s: ImageStatus) {
+    const key = `${s.stack}::${s.image}`;
+    ignoringKey.value = key;
+    try {
+        const res = await api("POST", "/image/ignore-digest", { key, digest: s.remoteDigest });
+        if (res.ok) {
+            const idx = imageStatuses.value.findIndex(x => x.stack === s.stack && x.image === s.image);
+            if (idx !== -1) {
+                imageStatuses.value[idx] = { ...imageStatuses.value[idx], hasUpdate: false, ignoredDigest: s.remoteDigest };
+            }
+            showToast(t('watcher.status.ignoreVersionDone'));
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally { ignoringKey.value = null; }
+}
+
+async function clearIgnoredDigest(s: ImageStatus) {
+    const key = `${s.stack}::${s.image}`;
+    clearingKey.value = key;
+    try {
+        const res = await api("DELETE", "/image/ignore-digest", { key });
+        if (res.ok) {
+            const idx = imageStatuses.value.findIndex(x => x.stack === s.stack && x.image === s.image);
+            if (idx !== -1) {
+                const { ignoredDigest: _, ...rest } = imageStatuses.value[idx];
+                imageStatuses.value[idx] = { ...rest, hasUpdate: rest.localDigest !== rest.remoteDigest };
+            }
+            showToast(t('watcher.status.clearIgnoredDone'));
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally { clearingKey.value = null; }
 }
 
 async function setAutoUpdateMode(s: ImageStatus, mode: "off" | "ignored" | "immediate" | "scheduled", time?: string) {

@@ -167,6 +167,36 @@ export class WatcherRouter extends Router {
         });
 
         // ════════════════════════════════════════════════════════════════
+        // IMAGE WATCHER — Ignorer un digest spécifique ("skip this release")
+        // ════════════════════════════════════════════════════════════════
+
+        router.post("/image/ignore-digest", async (req: Request, res: Response) => {
+            const { key, digest } = req.body as { key?: string; digest?: string };
+            if (!key || !digest) {
+                return res.status(400).json({ ok: false, message: "key et digest requis" });
+            }
+            try {
+                await ImageWatcher.getInstance().ignoreDigest(key, digest);
+                return res.json({ ok: true });
+            } catch (e) {
+                return res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.delete("/image/ignore-digest", async (req: Request, res: Response) => {
+            const { key } = req.body as { key?: string };
+            if (!key) {
+                return res.status(400).json({ ok: false, message: "key requis" });
+            }
+            try {
+                await ImageWatcher.getInstance().clearIgnoredDigests(key);
+                return res.json({ ok: true });
+            } catch (e) {
+                return res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        // ════════════════════════════════════════════════════════════════
         // CREDENTIALS — Ajout / suppression de credentials registry
         // ════════════════════════════════════════════════════════════════
 
