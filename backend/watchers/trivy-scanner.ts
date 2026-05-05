@@ -470,10 +470,11 @@ export class TrivyScanner {
         const t      = (fr: string, enStr: string) => en ? enStr : fr;
 
         const fields = [];
+        const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
 
         const countLines = (Object.entries(result.counts) as [Severity, number][])
-            .filter(([, count]) => count > 0)
-            .map(([sev, count]) => `${SEVERITY_EMOJI[sev]} ${sev}: **${count}**`)
+            .filter(([sev, count]) => count > 0 && SEVERITY_LEVELS[sev as Severity] >= minLevel)
+            .map(([sev, count]) => `${SEVERITY_EMOJI[sev as Severity]} ${sev}: **${count}**`)
             .join("\n");
 
         if (countLines) {
@@ -530,25 +531,27 @@ export class TrivyScanner {
         const locale = en ? "en-GB" : "fr-FR";
         const t      = (fr: string, enStr: string) => en ? enStr : fr;
 
+        const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
+
         const totalCounts: Record<Severity, number> = {
             UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0
         };
 
         for (const r of results) {
             for (const [sev, count] of Object.entries(r.counts) as [Severity, number][]) {
-                totalCounts[sev] += count;
+                if (SEVERITY_LEVELS[sev as Severity] >= minLevel) {
+                    totalCounts[sev as Severity] += count;
+                }
             }
         }
 
         const summaryLines = (Object.entries(totalCounts) as [Severity, number][])
             .filter(([, count]) => count > 0)
-            .map(([sev, count]) => `${SEVERITY_EMOJI[sev]} ${sev}: **${count}**`)
+            .map(([sev, count]) => `${SEVERITY_EMOJI[sev as Severity]} ${sev}: **${count}**`)
             .join(" | ");
 
         const hasCritical = totalCounts.CRITICAL > 0 || totalCounts.HIGH > 0;
         const uiUrl = this.baseUrl || null;
-
-        const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
         const imagesValue = results.map(r => {
             const header = `${SEVERITY_EMOJI[r.maxSeverity]} \`${r.image}\` (${r.stack})`;
             if (r.error) return `${header}\n  ${t("⚠️ Erreur de scan", "⚠️ Scan error")}`;

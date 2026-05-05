@@ -483,7 +483,7 @@
 
             <!-- ═══ TAB: RESOURCES ═══ -->
             <div v-if="tab === 'resources'">
-                <DockerResources />
+                <DockerResources :externalLang="watcherLang" />
             </div>
 
             <!-- ═══ TAB: NOTIFICATIONS ═══ -->

@@ -357,6 +357,24 @@
                 <span v-if="loadingSnaps" class="spinner-border spinner-border-sm me-1" />
                 <font-awesome-icon v-else icon="sync" class="me-1" />{{ $t('watcher.backup.refreshSnapshots') }}
             </button>
+            <button class="btn btn-normal" @click="checkIntegrity" :disabled="checking">
+                <span v-if="checking" class="spinner-border spinner-border-sm me-1" />
+                <font-awesome-icon v-else icon="shield-alt" class="me-1" />
+                {{ checking ? $t('watcher.backup.checkRunning') : $t('watcher.backup.checkIntegrity') }}
+            </button>
+        </div>
+
+        <!-- ═══ CHECK RESULTS ═══ -->
+        <div v-if="checkResults.length > 0" class="mb-4">
+            <div v-for="r in checkResults" :key="r.destIndex"
+                class="shadow-box big-padding mb-2"
+                :style="r.ok ? 'border-left: 3px solid #22c55e' : 'border-left: 3px solid #ef4444'">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <strong>{{ r.ok ? $t('watcher.backup.checkOk') : $t('watcher.backup.checkFail') }}</strong>
+                    <span class="form-text">— {{ r.label }}</span>
+                </div>
+                <pre class="small form-text mb-0" style="white-space:pre-wrap;max-height:200px;overflow-y:auto">{{ r.output }}</pre>
+            </div>
         </div>
 
         <!-- ═══ HISTORIQUE ═══ -->
@@ -812,6 +830,9 @@ const saving = ref(false);
 const initing = ref(false);
 const running = ref(false);
 const loadingSnaps = ref(false);
+const checking = ref(false);
+type CheckResult = { destIndex: number; label: string; ok: boolean; output: string };
+const checkResults = ref<CheckResult[]>([]);
 const expandedSnapshot  = ref<string | null>(null);
 const snapshotFiles     = ref<SnapshotFile[]>([]);
 const selectedFiles     = ref<Set<string>>(new Set());
@@ -1273,6 +1294,19 @@ async function loadSnapshots() {
         );
         else showToast(`❌ ${res.message}`, false);
     } finally { loadingSnaps.value = false; }
+}
+
+async function checkIntegrity() {
+    checking.value = true;
+    checkResults.value = [];
+    try {
+        const res = await api("POST", "/backup/check");
+        if (res.ok) {
+            checkResults.value = res.data as CheckResult[];
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally { checking.value = false; }
 }
 
 async function deleteSnapshot(id: string) {

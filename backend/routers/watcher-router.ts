@@ -342,6 +342,16 @@ export class WatcherRouter extends Router {
             }
         });
 
+        router.post("/backup/check", async (req: Request, res: Response) => {
+            try {
+                const destIndex = typeof req.body?.destIndex === "number" ? req.body.destIndex : undefined;
+                const results = await BackupManager.getInstance().runCheck(destIndex);
+                res.json({ ok: true, data: results });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
         router.get("/backup/history", (_req: Request, res: Response) => {
             res.json({ ok: true, data: BackupManager.getInstance().getHistory() });
         });

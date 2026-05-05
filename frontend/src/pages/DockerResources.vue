@@ -5,14 +5,6 @@
             <h1 class="mb-0">
                 <font-awesome-icon icon="cube" /> {{ t.title }}
             </h1>
-            <div class="lang-toggle">
-                <button class="lang-btn" :class="{ active: lang === 'fr' }" @click="setLang('fr')" title="Français">
-                    🇫🇷
-                </button>
-                <button class="lang-btn" :class="{ active: lang === 'en' }" @click="setLang('en')" title="English">
-                    🇬🇧
-                </button>
-            </div>
         </div>
 
         <div class="shadow-box shadow-box-settings">
@@ -384,7 +376,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
+
+const props = defineProps<{ externalLang?: "fr" | "en" }>();
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -623,6 +617,8 @@ const ctrBadgeClass = computed(() => {
 });
 
 // ─── Lang ─────────────────────────────────────────────────────────
+
+watch(() => props.externalLang, (v) => { if (v) lang.value = v; });
 
 function setLang(l: "fr" | "en") {
     lang.value = l;
@@ -891,11 +887,15 @@ function showToast(ok: boolean, msg: string) {
 // ─── Lifecycle ────────────────────────────────────────────────────
 
 onMounted(() => {
-    const saved = localStorage.getItem("dockerResourcesLang");
-    if (saved === "fr" || saved === "en") lang.value = saved;
-    else {
-        const appLang = localStorage.getItem("lang") ?? "fr";
-        lang.value = appLang.startsWith("fr") ? "fr" : "en";
+    if (props.externalLang) {
+        lang.value = props.externalLang;
+    } else {
+        const saved = localStorage.getItem("dockerResourcesLang");
+        if (saved === "fr" || saved === "en") lang.value = saved;
+        else {
+            const appLang = localStorage.getItem("lang") ?? "fr";
+            lang.value = appLang.startsWith("fr") ? "fr" : "en";
+        }
     }
     loadImages();
     loadVolumes();

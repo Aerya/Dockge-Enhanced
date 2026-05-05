@@ -1065,6 +1065,50 @@ export class BackupManager {
         }
     }
 
+    /** Exécute `restic check` sans `--json` pour vérifier l'intégrité d'un repo */
+    private async resticCheck(dest: BackupDestination): Promise<string> {
+        const repoEnv = buildResticEnv(dest);
+        const repo    = buildRepoUrl(dest);
+        let tmpFile: string | null = null;
+        try {
+            if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
+                tmpFile = `/tmp/dockge_sshpass_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                await fs.writeFile(tmpFile, dest.sftp.password, { mode: 0o600 });
+            }
+            const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
+            const cmd = `restic --repo ${shellQuote(repo)} ${sftpOpts} check 2>&1`;
+            const { stdout } = await execAsync(cmd, {
+                maxBuffer: 2 * 1024 * 1024,
+                timeout: 5 * 60_000,
+                env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...repoEnv },
+            });
+            return stdout;
+        } finally {
+            if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
+        }
+    }
+
+    /** Vérifie l'intégrité de chaque destination activée */
+    async runCheck(destIndex?: number): Promise<Array<{ destIndex: number; label: string; ok: boolean; output: string }>> {
+        const activeDests = this.settings.destinations
+            .map((d, i) => ({ dest: d, idx: i }))
+            .filter(({ dest, idx }) => dest.enabled && (destIndex === undefined || idx === destIndex));
+
+        if (activeDests.length === 0) {
+            throw new Error("Aucune destination de backup activée");
+        }
+
+        return Promise.all(activeDests.map(async ({ dest, idx }) => {
+            try {
+                const output = await this.resticCheck(dest);
+                return { destIndex: idx, label: dest.label, ok: true, output };
+            } catch (e: unknown) {
+                const raw = e instanceof Error ? e.message : String(e);
+                return { destIndex: idx, label: dest.label, ok: false, output: raw };
+            }
+        }));
+    }
+
     /** Retourne le contenu d'un fichier texte depuis un snapshot + sa version disque actuelle */
     async getSnapshotFileContent(snapshotId: string, filePath: string): Promise<{ snapshot: string; disk: string | null }> {
         const safeId = assertSafeResticId(snapshotId);

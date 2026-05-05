@@ -75,6 +75,8 @@ import {
     faMicrochip,
     faMemory,
     faFloppyDisk,
+    faBell,
+    faBolt,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -151,6 +153,8 @@ library.add(
     faMicrochip,
     faMemory,
     faFloppyDisk,
+    faBell,
+    faBolt,
 );
 
 export { FontAwesomeIcon };
