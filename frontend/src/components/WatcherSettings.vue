@@ -2,7 +2,7 @@
     <div>
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="mb-0">
-                <font-awesome-icon icon="shield-alt" /> {{ $t('watcher.title') }}
+                <font-awesome-icon icon="bolt" /> {{ $t('watcher.title') }}
             </h1>
             <!-- Bouton bascule FR / EN -->
             <div class="lang-toggle">
@@ -12,74 +12,6 @@
                 <button class="lang-btn" :class="{ active: watcherLang === 'en' }" @click="setWatcherLang('en')" title="English">
                     🇬🇧
                 </button>
-            </div>
-        </div>
-
-        <!-- ═══ APPRISE — Config globale (rétractable) ═══ -->
-        <div class="shadow-box apprise-box mb-3">
-            <div class="apprise-header" @click="toggleApprise">
-                <div class="d-flex align-items-center gap-2">
-                    <font-awesome-icon icon="bell" class="apprise-icon" />
-                    <h5 class="settings-subheading mb-0">{{ $t('watcher.apprise.heading') }}</h5>
-                    <span v-if="appriseCollapsed && appriseSettings.urls.length" class="badge bg-secondary ms-1">
-                        {{ appriseSettings.urls.length }} URL{{ appriseSettings.urls.length > 1 ? 's' : '' }}
-                    </span>
-                </div>
-                <div class="d-flex align-items-center gap-3">
-                    <small v-if="!appriseCollapsed" class="form-text">{{ $t('watcher.apprise.global') }}</small>
-                    <font-awesome-icon
-                        :icon="appriseCollapsed ? 'chevron-down' : 'chevron-up'"
-                        class="apprise-chevron"
-                    />
-                </div>
-            </div>
-
-            <div v-show="!appriseCollapsed" class="apprise-body">
-                <div class="row g-3">
-                    <!-- URL Serveur -->
-                    <div class="col-md-6">
-                        <label class="form-label small">{{ $t('watcher.apprise.serverUrl') }}</label>
-                        <input v-model="appriseSettings.serverUrl" type="url" class="form-control form-control-sm"
-                            :placeholder="$t('watcher.apprise.serverUrlPlaceholder')" autocomplete="off" />
-                    </div>
-
-                    <!-- Notification URLs -->
-                    <div class="col-12">
-                        <label class="form-label small">{{ $t('watcher.apprise.urls') }}</label>
-                        <div v-for="(url, idx) in appriseSettings.urls" :key="idx"
-                            class="d-flex align-items-center gap-2 mb-2">
-                            <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
-                                {{ url }}
-                            </span>
-                            <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl(idx)">
-                                <font-awesome-icon icon="trash" />
-                            </button>
-                        </div>
-                        <p v-if="!appriseSettings.urls.length" class="form-text fst-italic mb-2">
-                            {{ $t('watcher.apprise.noUrl') }}
-                        </p>
-                        <div class="input-group">
-                            <input v-model="newAppriseUrl" type="text" class="form-control form-control-sm"
-                                :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
-                            <button class="btn btn-sm btn-success" @click="addAppriseUrl" :disabled="!newAppriseUrl">
-                                <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.apprise.addUrl') }}
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="col-12 d-flex gap-2 flex-wrap">
-                        <button class="btn btn-primary btn-sm" @click.stop="saveAppriseSettings" :disabled="savingApprise">
-                            <span v-if="savingApprise" class="spinner-border spinner-border-sm me-1" />
-                            <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.apprise.save') }}
-                        </button>
-                        <button class="btn btn-normal btn-sm" @click.stop="testApprise"
-                            :disabled="testingApprise || !appriseSettings.serverUrl">
-                            <span v-if="testingApprise" class="spinner-border spinner-border-sm me-1" />
-                            <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t('watcher.apprise.test') }}
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -110,6 +42,22 @@
                     <font-awesome-icon icon="archive" class="watcher-tab-icon" />
                     <span>{{ $t('watcher.tab.backup') }}</span>
                 </button>
+                <button
+                    class="watcher-tab"
+                    :class="{ active: tab === 'resources' }"
+                    @click="tab = 'resources'"
+                >
+                    <font-awesome-icon icon="cube" class="watcher-tab-icon" />
+                    <span>{{ $t('watcher.tab.resources') }}</span>
+                </button>
+                <button
+                    class="watcher-tab"
+                    :class="{ active: tab === 'notifications' }"
+                    @click="tab = 'notifications'"
+                >
+                    <font-awesome-icon icon="bell" class="watcher-tab-icon" />
+                    <span>{{ $t('watcher.tab.notifications') }}</span>
+                </button>
             </div>
 
             <!-- ═══ TAB: IMAGES ═══ -->
@@ -133,44 +81,6 @@
                     </div>
 
                     <div class="row g-3">
-                        <!-- Webhooks Discord -->
-                        <div class="col-12">
-                            <label class="form-label">{{ $t('watcher.img.webhooks') }}</label>
-                            <div v-for="(wh, idx) in (imgSettings.discordWebhooks ?? [])" :key="idx"
-                                class="d-flex align-items-center gap-2 mb-2">
-                                <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
-                                    {{ wh }}
-                                </span>
-                                <button class="btn btn-sm btn-normal" @click="testWebhook(wh, 'img')" :disabled="testingImg">
-                                    <span v-if="testingImg" class="spinner-border spinner-border-sm" />
-                                    <span v-else><font-awesome-icon icon="paper-plane" /></span>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" @click="removeImgWebhook(idx)">
-                                    <font-awesome-icon icon="trash" />
-                                </button>
-                            </div>
-                            <p v-if="!imgSettings.discordWebhooks?.length" class="form-text fst-italic mb-2">
-                                {{ $t('watcher.img.noWebhook') }}
-                            </p>
-                            <div class="input-group">
-                                <input v-model="imgWebhook" type="password" class="form-control form-control-sm"
-                                    :placeholder="$t('watcher.img.webhookPlaceholder')" autocomplete="off" />
-                                <button class="btn btn-sm btn-success" @click="addImgWebhook" :disabled="!imgWebhook">
-                                    <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
-                                </button>
-                            </div>
-                            <!-- Langue des notifications -->
-                            <div class="mt-2 d-flex align-items-center gap-2">
-                                <small class="form-text">{{ $t('watcher.notifLang') }}</small>
-                                <div class="notif-lang-toggle">
-                                    <button :class="['notif-lang-btn', imgSettings.notificationLang !== 'en' && 'active']"
-                                        @click="imgSettings.notificationLang = 'fr'">🇫🇷</button>
-                                    <button :class="['notif-lang-btn', imgSettings.notificationLang === 'en' && 'active']"
-                                        @click="imgSettings.notificationLang = 'en'">🇬🇧</button>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Intervalle -->
                         <div class="col-lg-3">
                             <label class="form-label">{{ $t('watcher.img.frequency') }}</label>
@@ -380,43 +290,6 @@
                     </div>
 
                     <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label">{{ $t('watcher.trivy.webhooks') }}</label>
-                            <div v-for="(wh, idx) in (trivySettings.discordWebhooks ?? [])" :key="idx"
-                                class="d-flex align-items-center gap-2 mb-2">
-                                <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
-                                    {{ wh }}
-                                </span>
-                                <button class="btn btn-sm btn-normal" @click="testWebhook(wh, 'trivy')" :disabled="testingTrivy">
-                                    <span v-if="testingTrivy" class="spinner-border spinner-border-sm" />
-                                    <span v-else><font-awesome-icon icon="paper-plane" /></span>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" @click="removeTrivyWebhook(idx)">
-                                    <font-awesome-icon icon="trash" />
-                                </button>
-                            </div>
-                            <p v-if="!trivySettings.discordWebhooks?.length" class="form-text fst-italic mb-2">
-                                {{ $t('watcher.trivy.noWebhook') }}
-                            </p>
-                            <div class="input-group">
-                                <input v-model="trivyWebhook" type="password" class="form-control form-control-sm"
-                                    :placeholder="$t('watcher.img.webhookPlaceholder')" autocomplete="off" />
-                                <button class="btn btn-sm btn-success" @click="addTrivyWebhook" :disabled="!trivyWebhook">
-                                    <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
-                                </button>
-                            </div>
-                            <!-- Langue des notifications -->
-                            <div class="mt-2 d-flex align-items-center gap-2">
-                                <small class="form-text">{{ $t('watcher.notifLang') }}</small>
-                                <div class="notif-lang-toggle">
-                                    <button :class="['notif-lang-btn', trivySettings.notificationLang !== 'en' && 'active']"
-                                        @click="trivySettings.notificationLang = 'fr'">🇫🇷</button>
-                                    <button :class="['notif-lang-btn', trivySettings.notificationLang === 'en' && 'active']"
-                                        @click="trivySettings.notificationLang = 'en'">🇬🇧</button>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="col-lg-2">
                             <label class="form-label">{{ $t('watcher.trivy.interval') }}</label>
                             <select v-model.number="trivySettings.intervalHours" class="form-select">
@@ -607,6 +480,148 @@
 
             <!-- ═══ TAB: BACKUP ═══ -->
             <BackupTab v-show="tab === 'backup'" />
+
+            <!-- ═══ TAB: RESOURCES ═══ -->
+            <div v-if="tab === 'resources'">
+                <DockerResources />
+            </div>
+
+            <!-- ═══ TAB: NOTIFICATIONS ═══ -->
+            <div v-show="tab === 'notifications'">
+                <!-- Apprise -->
+                <div class="shadow-box big-padding mb-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <font-awesome-icon icon="bell" class="text-warning" />
+                        <h5 class="settings-subheading mb-0">{{ $t('watcher.apprise.heading') }}</h5>
+                        <small class="form-text ms-2">{{ $t('watcher.apprise.global') }}</small>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small">{{ $t('watcher.apprise.serverUrl') }}</label>
+                            <input v-model="appriseSettings.serverUrl" type="url" class="form-control form-control-sm"
+                                :placeholder="$t('watcher.apprise.serverUrlPlaceholder')" autocomplete="off" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small">{{ $t('watcher.apprise.urls') }}</label>
+                            <div v-for="(url, idx) in appriseSettings.urls" :key="idx"
+                                class="d-flex align-items-center gap-2 mb-2">
+                                <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
+                                    {{ url }}
+                                </span>
+                                <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl(idx)">
+                                    <font-awesome-icon icon="trash" />
+                                </button>
+                            </div>
+                            <p v-if="!appriseSettings.urls.length" class="form-text fst-italic mb-2">
+                                {{ $t('watcher.apprise.noUrl') }}
+                            </p>
+                            <div class="input-group">
+                                <input v-model="newAppriseUrl" type="text" class="form-control form-control-sm"
+                                    :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
+                                <button class="btn btn-sm btn-success" @click="addAppriseUrl" :disabled="!newAppriseUrl">
+                                    <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.apprise.addUrl') }}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-12 d-flex gap-2 flex-wrap">
+                            <button class="btn btn-primary btn-sm" @click.stop="saveAppriseSettings" :disabled="savingApprise">
+                                <span v-if="savingApprise" class="spinner-border spinner-border-sm me-1" />
+                                <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.apprise.save') }}
+                            </button>
+                            <button class="btn btn-normal btn-sm" @click.stop="testApprise"
+                                :disabled="testingApprise || !appriseSettings.serverUrl">
+                                <span v-if="testingApprise" class="spinner-border spinner-border-sm me-1" />
+                                <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t('watcher.apprise.test') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discord — Images -->
+                <div class="shadow-box big-padding mb-4">
+                    <h5 class="settings-subheading mb-3">
+                        <font-awesome-icon icon="sync-alt" class="me-2" />{{ $t('watcher.img.heading') }} — Discord
+                    </h5>
+                    <div v-for="(wh, idx) in (imgSettings.discordWebhooks ?? [])" :key="idx"
+                        class="d-flex align-items-center gap-2 mb-2">
+                        <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
+                            {{ wh }}
+                        </span>
+                        <button class="btn btn-sm btn-normal" @click="testWebhook(wh, 'img')" :disabled="testingImg">
+                            <span v-if="testingImg" class="spinner-border spinner-border-sm" />
+                            <span v-else><font-awesome-icon icon="paper-plane" /></span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @click="removeImgWebhook(idx)">
+                            <font-awesome-icon icon="trash" />
+                        </button>
+                    </div>
+                    <p v-if="!imgSettings.discordWebhooks?.length" class="form-text fst-italic mb-2">
+                        {{ $t('watcher.img.noWebhook') }}
+                    </p>
+                    <div class="input-group mb-2">
+                        <input v-model="imgWebhook" type="password" class="form-control form-control-sm"
+                            :placeholder="$t('watcher.img.webhookPlaceholder')" autocomplete="off" />
+                        <button class="btn btn-sm btn-success" @click="addImgWebhook" :disabled="!imgWebhook">
+                            <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <small class="form-text">{{ $t('watcher.notifLang') }}</small>
+                        <div class="notif-lang-toggle">
+                            <button :class="['notif-lang-btn', imgSettings.notificationLang !== 'en' && 'active']"
+                                @click="imgSettings.notificationLang = 'fr'">🇫🇷</button>
+                            <button :class="['notif-lang-btn', imgSettings.notificationLang === 'en' && 'active']"
+                                @click="imgSettings.notificationLang = 'en'">🇬🇧</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discord — Security -->
+                <div class="shadow-box big-padding mb-4">
+                    <h5 class="settings-subheading mb-3">
+                        <font-awesome-icon icon="bug" class="me-2" />{{ $t('watcher.trivy.heading') }} — Discord
+                    </h5>
+                    <div v-for="(wh, idx) in (trivySettings.discordWebhooks ?? [])" :key="idx"
+                        class="d-flex align-items-center gap-2 mb-2">
+                        <span class="form-control form-control-sm text-truncate" style="font-family:monospace;font-size:.78rem">
+                            {{ wh }}
+                        </span>
+                        <button class="btn btn-sm btn-normal" @click="testWebhook(wh, 'trivy')" :disabled="testingTrivy">
+                            <span v-if="testingTrivy" class="spinner-border spinner-border-sm" />
+                            <span v-else><font-awesome-icon icon="paper-plane" /></span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @click="removeTrivyWebhook(idx)">
+                            <font-awesome-icon icon="trash" />
+                        </button>
+                    </div>
+                    <p v-if="!trivySettings.discordWebhooks?.length" class="form-text fst-italic mb-2">
+                        {{ $t('watcher.trivy.noWebhook') }}
+                    </p>
+                    <div class="input-group mb-2">
+                        <input v-model="trivyWebhook" type="password" class="form-control form-control-sm"
+                            :placeholder="$t('watcher.img.webhookPlaceholder')" autocomplete="off" />
+                        <button class="btn btn-sm btn-success" @click="addTrivyWebhook" :disabled="!trivyWebhook">
+                            <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <small class="form-text">{{ $t('watcher.notifLang') }}</small>
+                        <div class="notif-lang-toggle">
+                            <button :class="['notif-lang-btn', trivySettings.notificationLang !== 'en' && 'active']"
+                                @click="trivySettings.notificationLang = 'fr'">🇫🇷</button>
+                            <button :class="['notif-lang-btn', trivySettings.notificationLang === 'en' && 'active']"
+                                @click="trivySettings.notificationLang = 'en'">🇬🇧</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Backup note -->
+                <div class="shadow-box big-padding mb-4">
+                    <p class="form-text mb-0">
+                        <font-awesome-icon icon="info-circle" class="me-1" />{{ $t('watcher.notif.backupNote') }}
+                    </p>
+                </div>
+            </div>
         </div>
 
         <!-- TOAST -->
@@ -622,6 +637,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import BackupTab from "./BackupTab.vue";
+import DockerResources from "../pages/DockerResources.vue";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -745,12 +761,6 @@ const appriseSettings = ref<AppriseSettings>({ serverUrl: "", urls: [] });
 const newAppriseUrl   = ref("");
 const savingApprise   = ref(false);
 const testingApprise  = ref(false);
-
-const appriseCollapsed = ref(localStorage.getItem("appriseCollapsed") === "1");
-function toggleApprise() {
-    appriseCollapsed.value = !appriseCollapsed.value;
-    localStorage.setItem("appriseCollapsed", appriseCollapsed.value ? "1" : "0");
-}
 
 const saving = ref(false);
 const savingTrivy = ref(false);
@@ -1187,35 +1197,7 @@ async function removeCred(registry: string) {
     opacity: 1;
 }
 
-// ─── Apprise collapsible ──────────────────────────────────────────
-.apprise-box {
-    padding: 0;
-    overflow: hidden;
-}
-
-.apprise-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 20px;
-    cursor: pointer;
-    user-select: none;
-    transition: background .15s;
-
-    &:hover { background: rgba(255,255,255,.04); }
-
-    .apprise-icon { color: #f59e0b; font-size: .9rem; }
-    .apprise-chevron { color: #9ca3af; font-size: .8rem; transition: transform .2s; }
-    .settings-subheading { font-size: .95rem; }
-}
-
-.apprise-body {
-    padding: 0 20px 18px;
-    border-top: 1px solid rgba(255,255,255,.07);
-    padding-top: 16px;
-}
-
-// ─── Onglets surveillance / sécurité / backup ─────────────────────
+// ─── Onglets ─────────────────────────────────────────────────────
 .watcher-tab-bar {
     display: flex;
     gap: 6px;

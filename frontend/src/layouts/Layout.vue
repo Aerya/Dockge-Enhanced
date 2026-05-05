@@ -68,13 +68,7 @@
 
                 <li v-if="$root.loggedIn" class="nav-item me-2">
                     <router-link to="/watcher" class="nav-link">
-                        <font-awesome-icon icon="shield-alt" /> Surveillance
-                    </router-link>
-                </li>
-
-                <li v-if="$root.loggedIn" class="nav-item me-2">
-                    <router-link to="/resources" class="nav-link">
-                        <font-awesome-icon icon="cube" /> Ressources
+                        <font-awesome-icon icon="bolt" /> Enhanced
                     </router-link>
                 </li>
 
@@ -149,12 +143,8 @@
                 {{ $t("console") }}
             </router-link>
             <router-link to="/watcher">
-                <div><font-awesome-icon icon="shield-alt" /></div>
-                Surveillance
-            </router-link>
-            <router-link to="/resources">
-                <div><font-awesome-icon icon="cube" /></div>
-                Ressources
+                <div><font-awesome-icon icon="bolt" /></div>
+                Enhanced
             </router-link>
             <router-link to="/settings/general">
                 <div><font-awesome-icon icon="cog" /></div>
@@ -349,11 +339,16 @@ export default {
     text-align: center;
     white-space: nowrap;
     padding: 0 10px env(safe-area-inset-bottom);
+    display: flex;
+    align-items: stretch;
 
     a {
         text-align: center;
-        width: 20%;
-        display: inline-block;
+        flex: 1;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         height: 100%;
         padding: 8px 10px 0;
         font-size: 13px;

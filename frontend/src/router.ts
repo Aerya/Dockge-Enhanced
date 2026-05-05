@@ -8,7 +8,6 @@ import Console from "./pages/Console.vue";
 import Compose from "./pages/Compose.vue";
 import ContainerTerminal from "./pages/ContainerTerminal.vue";
 import WatcherSettings from "./components/WatcherSettings.vue";
-import DockerResources from "./pages/DockerResources.vue";
 
 const Settings = () => import("./pages/Settings.vue");
 
@@ -61,7 +60,7 @@ const routes = [
                             },
                             {
                                 path: "/resources",
-                                component: DockerResources,
+                                redirect: "/watcher",
                             },
                         ]
                     },
