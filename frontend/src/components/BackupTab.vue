@@ -46,7 +46,7 @@
                             <input v-model="settings.restoreTest" class="form-check-input" type="checkbox"
                                 id="restoreTest" role="switch" />
                             <label class="form-check-label fw-semibold" for="restoreTest">
-                                🔍 {{ $t('watcher.backup.restoreTest') }}
+                                {{ $t('watcher.backup.restoreTest') }}
                             </label>
                         </div>
                         <small class="form-text">{{ $t('watcher.backup.restoreTestHint') }}</small>
@@ -485,13 +485,13 @@
                                 <template v-if="restoreTestStatus(h) === 'ok'">
                                     <span class="badge bg-success"
                                         :title="(h.destinations ?? []).map(d => d.restoreTest?.testedFile ?? '').filter(Boolean).join('\n')">
-                                        🔍 {{ $t('watcher.backup.restoreTestOk') }}
+                                        {{ $t('watcher.backup.restoreTestOk') }}
                                     </span>
                                 </template>
                                 <template v-else-if="restoreTestStatus(h) === 'fail'">
                                     <span class="badge bg-danger"
                                         :title="(h.destinations ?? []).filter(d => d.restoreTest && !d.restoreTest.ok).map(d => `${d.label}: ${d.restoreTest?.error ?? '?'}`).join('\n')">
-                                        🔍 {{ $t('watcher.backup.restoreTestFail') }}
+                                        {{ $t('watcher.backup.restoreTestFail') }}
                                     </span>
                                 </template>
                                 <template v-else>
