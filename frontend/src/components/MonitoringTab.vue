@@ -13,7 +13,6 @@
             <div class="monitoring-cards">
                 <!-- Dernier backup -->
                 <div class="monitoring-card" :class="backupCardClass">
-                    <div class="mc-icon">💾</div>
                     <div class="mc-body">
                         <div class="mc-label">{{ $t('watcher.monitoring.lastBackup') }}</div>
                         <div class="mc-value" v-if="overview.backup.lastTimestamp">
@@ -28,7 +27,6 @@
 
                 <!-- Images en attente -->
                 <div class="monitoring-card" :class="overview.images.pendingCount > 0 ? 'mc-warn' : 'mc-ok'">
-                    <div class="mc-icon">🐳</div>
                     <div class="mc-body">
                         <div class="mc-label">{{ $t('watcher.monitoring.pendingUpdates') }}</div>
                         <div class="mc-value">
@@ -44,7 +42,6 @@
 
                 <!-- CVE critiques -->
                 <div class="monitoring-card" :class="overview.trivy.criticalCount > 0 ? 'mc-danger' : 'mc-ok'">
-                    <div class="mc-icon">🛡️</div>
                     <div class="mc-body">
                         <div class="mc-label">{{ $t('watcher.monitoring.criticalCves') }}</div>
                         <div class="mc-value">
@@ -60,7 +57,6 @@
 
                 <!-- Prochain scan Trivy -->
                 <div class="monitoring-card mc-neutral">
-                    <div class="mc-icon">⏰</div>
                     <div class="mc-body">
                         <div class="mc-label">{{ $t('watcher.monitoring.nextTrivy') }}</div>
                         <div class="mc-value" v-if="overview.trivy.nextScanAt">

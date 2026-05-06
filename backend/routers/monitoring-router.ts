@@ -40,6 +40,7 @@ function requireAuth(req: Request, res: Response, next: () => void): void {
 export class MonitoringRouter extends Router {
     create(_app: Express, _server: DockgeServer): express.Router {
         const router = express.Router();
+        router.use(express.json());
 
         // ── Settings ──────────────────────────────────────────────
 
@@ -147,6 +148,10 @@ export class MonitoringRouter extends Router {
             }
         });
 
-        return router;
+        // Mount under /api (same pattern as WatcherRouter → /api/watcher)
+        // Routes are defined as /monitoring/*, so final paths: /api/monitoring/*
+        const mountRouter = express.Router();
+        mountRouter.use("/api", router);
+        return mountRouter;
     }
 }
