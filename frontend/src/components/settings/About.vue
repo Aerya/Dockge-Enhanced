@@ -3,15 +3,9 @@
         <div class="logo d-flex flex-column justify-content-center align-items-center">
             <object class="my-4" width="200" height="200" data="/icon.svg" />
             <div class="fs-4 fw-bold">Dockge-Enhanced</div>
-            <div>{{ $t("Version") }}: {{ $root.info.version }}</div>
-            <div class="frontend-version">{{ $t("Frontend Version") }}: {{ $root.frontendVersion }}</div>
-
-            <div v-if="!$root.isFrontendBackendVersionMatched" class="alert alert-warning mt-4" role="alert">
-                ⚠️ {{ $t("Frontend Version do not match backend version!") }}
-            </div>
 
             <div class="my-3 update-link">
-                <a href="https://github.com/Aerya/Dockge-Enhanced" target="_blank" rel="noopener">🚀 Dockge-Enhanced sur GitHub</a>
+                <a href="https://github.com/Aerya/Dockge-Enhanced" target="_blank" rel="noopener">Dockge-Enhanced sur GitHub</a>
                 <span class="mx-2">·</span>
                 <a href="https://github.com/louislam/dockge/releases" target="_blank" rel="noopener">Dockge source code</a>
             </div>

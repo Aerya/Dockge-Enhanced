@@ -67,6 +67,7 @@ interface ScannerSettings {
     ignoreUnfixed: boolean;
     scanTimeoutMinutes: number;
     notificationLang: "fr" | "en";
+    ignoredCVEs: string[];        // CVE IDs ignorés globalement (pas de notif, masqués dans l'UI)
 }
 
 interface Vulnerability {
@@ -153,6 +154,7 @@ export class TrivyScanner {
         ignoreUnfixed: false,
         scanTimeoutMinutes: 10,
         notificationLang: "fr",
+        ignoredCVEs: [],
     };
 
     static getInstance(): TrivyScanner {
@@ -471,8 +473,19 @@ export class TrivyScanner {
 
         const fields = [];
         const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
+        const ignoredSet = new Set(this.settings.ignoredCVEs ?? []);
 
-        const countLines = (Object.entries(result.counts) as [Severity, number][])
+        // Recompute counts excluding ignored CVEs
+        const filteredCounts: Record<Severity, number> = { UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 };
+        for (const scanTarget of result.results) {
+            for (const v of scanTarget.Vulnerabilities ?? []) {
+                if (!ignoredSet.has(v.VulnerabilityID) && SEVERITY_LEVELS[v.Severity] >= minLevel) {
+                    filteredCounts[v.Severity] = (filteredCounts[v.Severity] || 0) + 1;
+                }
+            }
+        }
+
+        const countLines = (Object.entries(filteredCounts) as [Severity, number][])
             .filter(([sev, count]) => count > 0 && SEVERITY_LEVELS[sev as Severity] >= minLevel)
             .map(([sev, count]) => `${SEVERITY_EMOJI[sev as Severity]} ${sev}: **${count}**`)
             .join("\n");
@@ -484,6 +497,7 @@ export class TrivyScanner {
         const allVulns: Vulnerability[] = result.results.flatMap(r => r.Vulnerabilities || []);
         const topVulns = allVulns
             .filter(v => SEVERITY_LEVELS[v.Severity] >= SEVERITY_LEVELS[this.settings.minSeverityAlert])
+            .filter(v => !ignoredSet.has(v.VulnerabilityID))
             .sort((a, b) => SEVERITY_LEVELS[b.Severity] - SEVERITY_LEVELS[a.Severity])
             .filter((v, i, arr) => arr.findIndex(x => x.VulnerabilityID === v.VulnerabilityID) === i)
             .slice(0, 5);
@@ -532,15 +546,19 @@ export class TrivyScanner {
         const t      = (fr: string, enStr: string) => en ? enStr : fr;
 
         const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
+        const ignoredSet = new Set(this.settings.ignoredCVEs ?? []);
 
         const totalCounts: Record<Severity, number> = {
             UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0
         };
 
+        // Recompute counts excluding ignored CVEs
         for (const r of results) {
-            for (const [sev, count] of Object.entries(r.counts) as [Severity, number][]) {
-                if (SEVERITY_LEVELS[sev as Severity] >= minLevel) {
-                    totalCounts[sev as Severity] += count;
+            for (const scanTarget of r.results) {
+                for (const v of scanTarget.Vulnerabilities ?? []) {
+                    if (!ignoredSet.has(v.VulnerabilityID) && SEVERITY_LEVELS[v.Severity] >= minLevel) {
+                        totalCounts[v.Severity] = (totalCounts[v.Severity] || 0) + 1;
+                    }
                 }
             }
         }
@@ -559,6 +577,7 @@ export class TrivyScanner {
             const topVulns = r.results
                 .flatMap(res => res.Vulnerabilities || [])
                 .filter(v => SEVERITY_LEVELS[v.Severity] >= minLevel)
+                .filter(v => !ignoredSet.has(v.VulnerabilityID))
                 .sort((a, b) => SEVERITY_LEVELS[b.Severity] - SEVERITY_LEVELS[a.Severity])
                 .slice(0, 2);
 
@@ -601,5 +620,24 @@ export class TrivyScanner {
                 type:  hasCritical ? "failure" : "success",
             });
         }
+    }
+
+    /** Ajoute un CVE ID à la liste d'ignorés globaux (notifications + affichage frontend). */
+    async ignoreCVE(cveId: string): Promise<void> {
+        const list = this.settings.ignoredCVEs ?? [];
+        if (!list.includes(cveId)) {
+            this.settings.ignoredCVEs = [...list, cveId];
+            const fs = await import("fs/promises");
+            await fs.mkdir(DATA_DIR, { recursive: true });
+            await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
+        }
+    }
+
+    /** Retire un CVE ID de la liste d'ignorés. */
+    async clearIgnoredCVE(cveId: string): Promise<void> {
+        this.settings.ignoredCVEs = (this.settings.ignoredCVEs ?? []).filter(id => id !== cveId);
+        const fs = await import("fs/promises");
+        await fs.mkdir(DATA_DIR, { recursive: true });
+        await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
     }
 }

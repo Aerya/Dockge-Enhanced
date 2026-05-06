@@ -381,6 +381,32 @@
                     </div>
                 </div>
 
+                <!-- TRIVY — CVEs ignorés -->
+                <div v-if="trivySettings.ignoredCVEs?.length" class="shadow-box big-padding mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="settings-subheading mb-0">
+                            <span class="me-2" style="opacity:.7">⊘</span>{{ $t('watcher.trivy.ignoredCVEs') }}
+                            <span class="badge bg-secondary ms-2" style="font-size:.7rem">{{ trivySettings.ignoredCVEs.length }}</span>
+                        </h5>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <div v-for="cveId in trivySettings.ignoredCVEs" :key="cveId"
+                            class="d-flex align-items-center gap-1 badge-cve-ignored">
+                            <span class="cve-ignored-id">{{ cveId }}</span>
+                            <button class="btn-cve-clear"
+                                :disabled="clearingCVE === cveId"
+                                :title="$t('watcher.trivy.clearCVE')"
+                                @click="clearIgnoredCVE(cveId)">
+                                <span v-if="clearingCVE === cveId" class="spinner-border spinner-border-sm" style="width:.6rem;height:.6rem" />
+                                <template v-else>✕</template>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="form-text mt-2 mb-0" style="font-size:.75rem">
+                        {{ $t('watcher.trivy.ignoredCVEsHint') }}
+                    </p>
+                </div>
+
                 <!-- TRIVY STATUS -->
                 <div class="shadow-box big-padding mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -486,12 +512,13 @@
                                                     <tr>
                                                         <th>CVE</th>
                                                         <th>Package</th>
-                                                        <th>Version installée</th>
-                                                        <th>Fix disponible</th>
+                                                        <th>{{ $t('watcher.trivy.installedVersion') }}</th>
+                                                        <th>{{ $t('watcher.trivy.fixAvailable') }}</th>
+                                                        <th></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <tr v-for="v in fullResultFor(r.image, r.stack)!.vulns" :key="v.id + v.pkg">
+                                                    <tr v-for="v in (fullResultFor(r.image, r.stack)?.vulns ?? []).filter(v => !ignoredCVEsSet.has(v.id))" :key="v.id + v.pkg">
                                                         <td>
                                                             <a :href="v.url" target="_blank" rel="noopener"
                                                                 class="cve-link"
@@ -504,6 +531,22 @@
                                                         <td>
                                                             <span v-if="v.fixed" class="text-success small">{{ v.fixed }}</span>
                                                             <span v-else class="text-muted small fst-italic">—</span>
+                                                        </td>
+                                                        <td class="text-end" style="width:32px" @click.stop>
+                                                            <button class="btn btn-xs btn-outline-secondary"
+                                                                style="font-size:.65rem;padding:1px 4px;opacity:.6"
+                                                                :disabled="ignoringCVE === v.id"
+                                                                :title="$t('watcher.trivy.ignoreCVE')"
+                                                                @click="ignoreCVE(v.id)">
+                                                                <span v-if="ignoringCVE === v.id" class="spinner-border spinner-border-sm" />
+                                                                <template v-else>⊘</template>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                    <!-- Footer : CVEs ignorés pour cette image -->
+                                                    <tr v-if="(fullResultFor(r.image, r.stack)?.vulns ?? []).some(v => ignoredCVEsSet.has(v.id))">
+                                                        <td colspan="5" class="text-muted fst-italic" style="font-size:.73rem;padding:.25rem .5rem;border-bottom:none">
+                                                            ⊘ {{ $t('watcher.trivy.ignoredCount', { count: (fullResultFor(r.image, r.stack)?.vulns ?? []).filter(v => ignoredCVEsSet.has(v.id)).length }) }}
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -727,6 +770,7 @@ interface TrivySettings {
     enabled: boolean; intervalHours: number; discordWebhooks: string[];
     minSeverityAlert: string; ignoreUnfixed: boolean; scanTimeoutMinutes: number;
     notificationLang: "fr" | "en";
+    ignoredCVEs: string[];
 }
 interface ImageStatus {
     image: string; stack: string;
@@ -809,6 +853,7 @@ const imgWebhook = ref("");
 const trivySettings = ref<TrivySettings>({
     enabled: false, intervalHours: 24, discordWebhooks: [],
     minSeverityAlert: "HIGH", ignoreUnfixed: false, scanTimeoutMinutes: 10, notificationLang: "fr",
+    ignoredCVEs: [],
 });
 const trivyWebhook = ref("");
 const credentials = ref<Cred[]>([]);
@@ -821,6 +866,10 @@ const clearingKey      = ref<string | null>(null);
 
 const trivyStatus = ref<TrivyStatus>({ running: false, lastScanAt: null, scannedCount: 0, lastResults: [], lastFullResults: [] });
 const expandedTrivyImage = ref<string | null>(null);
+const ignoringCVE = ref<string | null>(null);
+const clearingCVE = ref<string | null>(null);
+
+const ignoredCVEsSet = computed(() => new Set(trivySettings.value.ignoredCVEs ?? []));
 
 function toggleTrivyDetail(key: string) {
     expandedTrivyImage.value = expandedTrivyImage.value === key ? null : key;
@@ -1223,6 +1272,35 @@ async function clearIgnoredDigest(s: ImageStatus) {
     } finally { clearingKey.value = null; }
 }
 
+async function ignoreCVE(cveId: string) {
+    ignoringCVE.value = cveId;
+    try {
+        const res = await api("POST", "/trivy/ignore-cve", { cveId });
+        if (res.ok) {
+            if (!trivySettings.value.ignoredCVEs) trivySettings.value.ignoredCVEs = [];
+            if (!trivySettings.value.ignoredCVEs.includes(cveId)) {
+                trivySettings.value.ignoredCVEs = [...trivySettings.value.ignoredCVEs, cveId];
+            }
+            showToast(t('watcher.trivy.ignoreCVEDone'));
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally { ignoringCVE.value = null; }
+}
+
+async function clearIgnoredCVE(cveId: string) {
+    clearingCVE.value = cveId;
+    try {
+        const res = await api("DELETE", "/trivy/ignore-cve", { cveId });
+        if (res.ok) {
+            trivySettings.value.ignoredCVEs = (trivySettings.value.ignoredCVEs ?? []).filter(id => id !== cveId);
+            showToast(t('watcher.trivy.clearCVEDone'));
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally { clearingCVE.value = null; }
+}
+
 async function setAutoUpdateMode(s: ImageStatus, mode: "off" | "ignored" | "immediate" | "scheduled", time?: string) {
     const key = `${s.stack}::${s.image}`;
     const body: Record<string, unknown> = { key, mode };
@@ -1370,6 +1448,30 @@ async function removeCred(registry: string) {
     &.cve-medium   { color: #f59e0b; }
     &.cve-low      { color: #3b82f6; }
     &.cve-unknown  { color: #9ca3af; }
+}
+
+// ─── CVE ignorés ─────────────────────────────────────────────────
+.badge-cve-ignored {
+    background: rgba(107,114,128,.18);
+    border: 1px solid rgba(107,114,128,.35);
+    border-radius: 5px;
+    padding: 2px 7px 2px 8px;
+}
+.cve-ignored-id {
+    font-family: monospace;
+    font-size: .78rem;
+    color: #9ca3af;
+}
+.btn-cve-clear {
+    background: none;
+    border: none;
+    padding: 0 0 0 4px;
+    font-size: .7rem;
+    color: #6b7280;
+    cursor: pointer;
+    line-height: 1;
+    &:hover:not(:disabled) { color: #ef4444; }
+    &:disabled { opacity: .4; cursor: default; }
 }
 
 .form-control::placeholder,

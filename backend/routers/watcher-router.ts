@@ -248,6 +248,36 @@ export class WatcherRouter extends Router {
         });
 
         // ════════════════════════════════════════════════════════════════
+        // TRIVY SCANNER — Ignorer un CVE spécifique
+        // ════════════════════════════════════════════════════════════════
+
+        router.post("/trivy/ignore-cve", async (req: Request, res: Response) => {
+            const { cveId } = req.body as { cveId?: string };
+            if (!cveId) {
+                return res.status(400).json({ ok: false, message: "cveId requis" });
+            }
+            try {
+                await TrivyScanner.getInstance().ignoreCVE(cveId);
+                return res.json({ ok: true });
+            } catch (e) {
+                return res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.delete("/trivy/ignore-cve", async (req: Request, res: Response) => {
+            const { cveId } = req.body as { cveId?: string };
+            if (!cveId) {
+                return res.status(400).json({ ok: false, message: "cveId requis" });
+            }
+            try {
+                await TrivyScanner.getInstance().clearIgnoredCVE(cveId);
+                return res.json({ ok: true });
+            } catch (e) {
+                return res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        // ════════════════════════════════════════════════════════════════
         // DISCORD — Test webhook
         // ════════════════════════════════════════════════════════════════
 
