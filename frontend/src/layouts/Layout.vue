@@ -48,8 +48,9 @@
                 <span class="stat-pill" :class="statClass(systemStats.ram.percent)">
                     <font-awesome-icon icon="memory" class="me-1" />{{ formatBytes(systemStats.ram.used) }}/{{ formatBytes(systemStats.ram.total) }}
                 </span>
-                <span class="stat-pill" :class="statClass(systemStats.disk.percent)">
-                    <font-awesome-icon icon="floppy-disk" class="me-1" />{{ systemStats.disk.mount }} {{ systemStats.disk.percent }}%
+                <span v-for="d in (systemStats.disks ?? [systemStats.disk])" :key="d.mount"
+                    class="stat-pill" :class="statClass(d.percent)">
+                    <font-awesome-icon icon="floppy-disk" class="me-1" />{{ d.mount }} {{ d.percent }}%
                 </span>
             </div>
 

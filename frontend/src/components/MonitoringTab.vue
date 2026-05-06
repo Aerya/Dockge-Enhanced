@@ -91,20 +91,32 @@
                     <small class="form-text">{{ $t('watcher.monitoring.stackStatsHint') }}</small>
                 </div>
 
-                <!-- Partition disque -->
-                <div class="col-md-6">
-                    <label class="form-label small" for="monDiskPartition">
+                <!-- Partitions disque -->
+                <div class="col-12">
+                    <label class="form-label small">
                         <font-awesome-icon icon="floppy-disk" class="me-1" />{{ $t('watcher.monitoring.diskPartition') }}
                     </label>
-                    <div class="input-group input-group-sm">
-                        <input id="monDiskPartition" v-model="diskPartition"
-                            class="form-control" placeholder="/" style="max-width: 200px" />
+                    <div v-for="(p, idx) in diskPartitions" :key="idx"
+                        class="d-flex align-items-center gap-2 mb-2">
+                        <code class="form-control form-control-sm" style="max-width:220px;background:rgba(255,255,255,.04)">{{ p }}</code>
+                        <button class="btn btn-sm btn-outline-danger" @click="removePartition(idx)">
+                            <font-awesome-icon icon="times" />
+                        </button>
+                    </div>
+                    <div class="input-group input-group-sm mt-1" style="max-width:320px">
+                        <input v-model="newPartition" type="text" class="form-control"
+                            placeholder="/" @keyup.enter="addPartition" />
+                        <button class="btn btn-success btn-sm" @click="addPartition" :disabled="!newPartition.trim()">
+                            <font-awesome-icon icon="plus" class="me-1" />{{ $t('Add') }}
+                        </button>
+                    </div>
+                    <small class="form-text">{{ $t('watcher.monitoring.diskPartitionHint') }}</small>
+                    <div class="mt-2">
                         <button class="btn btn-primary btn-sm" @click="saveDisplaySettings" :disabled="savingDisplay">
                             <span v-if="savingDisplay" class="spinner-border spinner-border-sm me-1" />
                             <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
                         </button>
                     </div>
-                    <small class="form-text">{{ $t('watcher.monitoring.diskPartitionHint') }}</small>
                 </div>
             </div>
         </div>
@@ -286,7 +298,8 @@ const monSettings = ref<MonitoringSettings>({
     notificationLang: "fr",
 });
 
-const diskPartition  = ref("/");
+const diskPartitions = ref<string[]>(["/"]);
+const newPartition   = ref("");
 const savingMon      = ref(false);
 const savingDisplay  = ref(false);
 const newWebhook     = ref("");
@@ -370,7 +383,10 @@ async function loadSettings() {
         api("GET", "/monitoring/display-settings"),
     ]);
     if (settingsRes.ok) monSettings.value = settingsRes.data as MonitoringSettings;
-    if (displayRes.ok) diskPartition.value = (displayRes.data as { diskPartition: string }).diskPartition ?? "/";
+    if (displayRes.ok) {
+        const d = displayRes.data as { diskPartitions?: string[] };
+        diskPartitions.value = d.diskPartitions?.length ? d.diskPartitions : ["/"];
+    }
 }
 
 async function saveMonSettings() {
@@ -381,10 +397,22 @@ async function saveMonSettings() {
     } finally { savingMon.value = false; }
 }
 
+function addPartition() {
+    const val = newPartition.value.trim();
+    if (val && !diskPartitions.value.includes(val)) {
+        diskPartitions.value.push(val);
+    }
+    newPartition.value = "";
+}
+
+function removePartition(idx: number) {
+    diskPartitions.value.splice(idx, 1);
+}
+
 async function saveDisplaySettings() {
     savingDisplay.value = true;
     try {
-        const res = await api("POST", "/monitoring/display-settings", { diskPartition: diskPartition.value });
+        const res = await api("POST", "/monitoring/display-settings", { diskPartitions: diskPartitions.value });
         showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
     } finally { savingDisplay.value = false; }
 }

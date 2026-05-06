@@ -192,21 +192,32 @@ export class SystemStatsRouter extends Router {
                 const freeMem  = os.freemem();
                 const usedMem  = totalMem - freeMem;
 
-                // Disque
-                const partition = (await Settings.get("diskPartition")) || "/";
-                let diskUsed = 0, diskTotal = 0, diskPercent = 0;
-                try {
-                    const { stdout } = await execAsync(
-                        `df -B1 "${partition.replace(/"/g, "")}" 2>/dev/null | tail -1`
-                    );
-                    const parts = stdout.trim().split(/\s+/);
-                    // Filesystem  1B-blocks  Used  Available  Use%  Mounted
-                    diskTotal   = parseInt(parts[1] ?? "0", 10) || 0;
-                    diskUsed    = parseInt(parts[2] ?? "0", 10) || 0;
-                    diskPercent = diskTotal > 0
-                        ? Math.round(diskUsed / diskTotal * 100)
-                        : 0;
-                } catch { /* df non dispo ou partition introuvable */ }
+                // Disques — support multi-partitions
+                // Lit diskPartitions (tableau JSON) ou diskPartition (ancien scalaire) en fallback
+                let partitions: string[] = [];
+                const rawArr = await Settings.get("diskPartitions");
+                if (rawArr) {
+                    try { partitions = JSON.parse(rawArr) as string[]; } catch { /* ignore */ }
+                }
+                if (partitions.length === 0) {
+                    const single = (await Settings.get("diskPartition")) || "/";
+                    partitions = [single];
+                }
+
+                const disks = await Promise.all(partitions.map(async (mount) => {
+                    try {
+                        const { stdout } = await execAsync(
+                            `df -B1 "${mount.replace(/"/g, "")}" 2>/dev/null | tail -1`
+                        );
+                        const parts = stdout.trim().split(/\s+/);
+                        const total   = parseInt(parts[1] ?? "0", 10) || 0;
+                        const used    = parseInt(parts[2] ?? "0", 10) || 0;
+                        const percent = total > 0 ? Math.round(used / total * 100) : 0;
+                        return { mount, used, total, percent };
+                    } catch {
+                        return { mount, used: 0, total: 0, percent: 0 };
+                    }
+                }));
 
                 res.json({
                     ok: true,
@@ -217,12 +228,9 @@ export class SystemStatsRouter extends Router {
                             total:   totalMem,
                             percent: Math.round(usedMem / totalMem * 100),
                         },
-                        disk: {
-                            used:    diskUsed,
-                            total:   diskTotal,
-                            percent: diskPercent,
-                            mount:   partition,
-                        },
+                        // disk kept for backward compat (first partition)
+                        disk:  disks[0] ?? { mount: "/", used: 0, total: 0, percent: 0 },
+                        disks,
                     },
                 });
             } catch (e: any) {

@@ -77,9 +77,9 @@ export class MonitoringRouter extends Router {
 
         router.post("/monitoring/display-settings", async (req: Request, res: Response) => {
             try {
-                const { diskPartition } = req.body as { diskPartition?: string };
-                if (diskPartition !== undefined) {
-                    await Settings.set("diskPartition", diskPartition);
+                const { diskPartitions } = req.body as { diskPartitions?: string[] };
+                if (Array.isArray(diskPartitions)) {
+                    await Settings.set("diskPartitions", JSON.stringify(diskPartitions));
                 }
                 res.json({ ok: true });
             } catch (e) {
@@ -88,8 +88,17 @@ export class MonitoringRouter extends Router {
         });
 
         router.get("/monitoring/display-settings", async (_req: Request, res: Response) => {
-            const diskPartition = await Settings.get("diskPartition") ?? "/";
-            res.json({ ok: true, data: { diskPartition } });
+            let diskPartitions: string[] = [];
+            const rawArr = await Settings.get("diskPartitions");
+            if (rawArr) {
+                try { diskPartitions = JSON.parse(rawArr) as string[]; } catch { /* ignore */ }
+            }
+            // Migrate old single-partition setting
+            if (diskPartitions.length === 0) {
+                const single = await Settings.get("diskPartition");
+                diskPartitions = [single || "/"];
+            }
+            res.json({ ok: true, data: { diskPartitions } });
         });
 
         // ── Overview (dashboard cards) ────────────────────────────
