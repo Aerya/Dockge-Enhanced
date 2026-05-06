@@ -107,11 +107,18 @@ export class MonitoringRouter extends Router {
             const pendingImages  = allStatuses.filter(s => s.hasUpdate);
 
             // Trivy
-            const trivyStatus    = TrivyScanner.getInstance().getStatus();
+            const trivyScanner   = TrivyScanner.getInstance();
+            const trivyStatus    = trivyScanner.getStatus();
+            const trivySettings  = trivyScanner.settings;
             const criticalImages = (trivyStatus.lastResults ?? [])
                 .filter((r: { maxSeverity?: string }) =>
                     r.maxSeverity === "CRITICAL" || r.maxSeverity === "HIGH",
                 );
+
+            // nextScanAt: same formula as WatcherSettings.vue (lastScanAt + intervalHours)
+            const nextScanAt = (trivySettings.enabled && trivyStatus.lastScanAt)
+                ? new Date(new Date(trivyStatus.lastScanAt).getTime() + trivySettings.intervalHours * 3_600_000).toISOString()
+                : null;
 
             // Crash events
             const crashes = MonitoringWatcher.getInstance().getRecentCrashEvents().slice(0, 10);
@@ -139,7 +146,7 @@ export class MonitoringRouter extends Router {
                             maxSeverity: r.maxSeverity,
                         })),
                         lastScanAt: trivyStatus.lastScanAt ?? null,
-                        nextScanAt: (trivyStatus as { nextScanAt?: string | null }).nextScanAt ?? null,
+                        nextScanAt,
                     },
                     crashes,
                 },
@@ -150,17 +157,6 @@ export class MonitoringRouter extends Router {
 
         router.get("/monitoring/crash-events", (_req: Request, res: Response) => {
             res.json({ ok: true, data: MonitoringWatcher.getInstance().getRecentCrashEvents() });
-        });
-
-        // ── Stack list (for threshold config UI) ──────────────────
-
-        router.get("/monitoring/stacks", async (_req: Request, res: Response) => {
-            try {
-                const stacks = await BackupManager.getInstance().listStacks();
-                res.json({ ok: true, data: stacks });
-            } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
-            }
         });
 
         // Mount under /api — final paths: /api/monitoring/*

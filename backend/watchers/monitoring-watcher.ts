@@ -1,16 +1,13 @@
 /**
- * MonitoringWatcher — Détection des crash loops + seuils CPU/RAM par stack.
+ * MonitoringWatcher — Détection des crash loops.
  * Notifications via Discord + Apprise globaux.
  */
 
-import { exec, spawn } from "child_process";
-import { promisify } from "util";
+import { spawn } from "child_process";
 import * as path from "path";
 import * as fs from "fs/promises";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
-
-const execAsync = promisify(exec);
 
 const DATA_DIR              = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH         = path.join(DATA_DIR, "monitoring-settings.json");
@@ -18,20 +15,11 @@ const WATCHER_SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 
 // ─── Types ────────────────────────────────────────────────────────
 
-export interface StackAlertConfig {
-    cpuPercent?: number;
-    ramMB?: number;
-}
-
 export interface MonitoringSettings {
     crashLoopEnabled: boolean;
     crashLoopThreshold: number;          // N redémarrages
     crashLoopWindowMinutes: number;      // dans X minutes
     crashLoopCooldownMinutes: number;    // anti-spam
-    stackAlertsEnabled: boolean;
-    stackAlerts: Record<string, StackAlertConfig>;
-    stackAlertsIntervalMinutes: number;
-    stackAlertsCooldownMinutes: number;
     discordWebhooks: string[];
     notificationLang: "fr" | "en";
 }
@@ -49,10 +37,6 @@ const DEFAULT_SETTINGS: MonitoringSettings = {
     crashLoopThreshold: 5,
     crashLoopWindowMinutes: 10,
     crashLoopCooldownMinutes: 60,
-    stackAlertsEnabled: false,
-    stackAlerts: {},
-    stackAlertsIntervalMinutes: 5,
-    stackAlertsCooldownMinutes: 30,
     discordWebhooks: [],
     notificationLang: "fr",
 };
@@ -64,16 +48,11 @@ export class MonitoringWatcher {
 
     settings: MonitoringSettings = { ...DEFAULT_SETTINGS };
 
-    // Crash loop tracking
     private crashTimestamps: Map<string, number[]> = new Map();
     private crashCooldowns:  Map<string, number>   = new Map();
     private recentCrashEvents: CrashEvent[] = [];
     private dockerEventProc: ReturnType<typeof spawn> | null = null;
     private dockerEventBuffer = "";
-
-    // Stack threshold tracking
-    private stackAlertCooldowns: Map<string, number> = new Map();
-    private stackAlertTimer: NodeJS.Timeout | null = null;
 
     static getInstance(): MonitoringWatcher {
         if (!MonitoringWatcher._instance) {
@@ -104,23 +83,16 @@ export class MonitoringWatcher {
 
     async startIfEnabled(): Promise<void> {
         await this.loadSettings();
-        this.stopAll();
+        this.stop();
         if (this.settings.crashLoopEnabled) {
             this.startDockerEvents();
         }
-        if (this.settings.stackAlertsEnabled) {
-            this.startStackAlerts();
-        }
     }
 
-    private stopAll(): void {
+    private stop(): void {
         if (this.dockerEventProc) {
             try { this.dockerEventProc.kill(); } catch { /* ignore */ }
             this.dockerEventProc = null;
-        }
-        if (this.stackAlertTimer) {
-            clearInterval(this.stackAlertTimer);
-            this.stackAlertTimer = null;
         }
     }
 
@@ -180,7 +152,6 @@ export class MonitoringWatcher {
                     timestamp:     new Date().toISOString(),
                 };
 
-                // Keep last 50 events, purge >24 h
                 this.recentCrashEvents.unshift(event);
                 if (this.recentCrashEvents.length > 50) this.recentCrashEvents.splice(50);
                 const cutoff = Date.now() - 86_400_000;
@@ -191,81 +162,6 @@ export class MonitoringWatcher {
                 this.sendCrashAlert(event).catch(() => { /* ignore */ });
             }
         }
-    }
-
-    // ── CPU/RAM threshold alerts ──────────────────────────────────
-
-    private startStackAlerts(): void {
-        const ms = this.settings.stackAlertsIntervalMinutes * 60_000;
-        this.checkStackThresholds().catch(() => { /* ignore */ });
-        this.stackAlertTimer = setInterval(
-            () => this.checkStackThresholds().catch(() => { /* ignore */ }),
-            ms,
-        );
-    }
-
-    private async checkStackThresholds(): Promise<void> {
-        if (!this.settings.stackAlertsEnabled) return;
-
-        let stdout: string;
-        try {
-            ({ stdout } = await execAsync("docker stats --no-stream --format '{{json .}}'"));
-        } catch { return; }
-
-        // Aggregate per stack
-        const stackStats = new Map<string, { cpu: number; memMB: number }>();
-
-        for (const line of stdout.split("\n").filter(Boolean)) {
-            try {
-                const stat = JSON.parse(line) as {
-                    Name?: string;
-                    CPUPerc?: string;
-                    MemUsage?: string;
-                };
-                const containerName = stat.Name ?? "";
-                const stackName     = this.stackFromContainerName(containerName);
-                if (!stackName) continue;
-
-                const cpu   = parseFloat((stat.CPUPerc ?? "0%").replace("%", "")) || 0;
-                const memMB = this.parseMemMB((stat.MemUsage ?? "0MiB / 0MiB").split(" / ")[0]);
-
-                const prev = stackStats.get(stackName) ?? { cpu: 0, memMB: 0 };
-                stackStats.set(stackName, { cpu: prev.cpu + cpu, memMB: prev.memMB + memMB });
-            } catch { /* ignore */ }
-        }
-
-        const now = Date.now();
-        for (const [stackName, cfg] of Object.entries(this.settings.stackAlerts)) {
-            const stats = stackStats.get(stackName);
-            if (!stats) continue;
-
-            const cpuOver = cfg.cpuPercent != null && stats.cpu > cfg.cpuPercent;
-            const ramOver = cfg.ramMB      != null && stats.memMB > cfg.ramMB;
-            if (!cpuOver && !ramOver) continue;
-
-            const lastAlert  = this.stackAlertCooldowns.get(stackName) ?? 0;
-            const cooldownMs = this.settings.stackAlertsCooldownMinutes * 60_000;
-            if (now - lastAlert >= cooldownMs) {
-                this.stackAlertCooldowns.set(stackName, now);
-                await this.sendStackAlert(stackName, stats.cpu, stats.memMB, cfg);
-            }
-        }
-    }
-
-    private stackFromContainerName(name: string): string | null {
-        // Compose v2 : <project>-<service>-<N>
-        // Compose v1 : <project>_<service>_<N>
-        const sep   = name.includes("_") ? "_" : "-";
-        const parts = name.split(sep);
-        return parts.length >= 2 ? parts[0] : null;
-    }
-
-    private parseMemMB(s: string): number {
-        const val = parseFloat(s);
-        if (/GiB|GB/i.test(s)) return val * 1024;
-        if (/MiB|MB/i.test(s)) return val;
-        if (/KiB|kB/i.test(s)) return val / 1024;
-        return val / (1024 * 1024); // bytes
     }
 
     // ── Notifications ─────────────────────────────────────────────
@@ -289,13 +185,13 @@ export class MonitoringWatcher {
         if (!discord && !apprise) return;
 
         const en = (this.settings.notificationLang ?? "fr") === "en";
-        const t  = (fr: string, enStr: string) => en ? enStr : fr;
+        const tr = (fr: string, enStr: string) => en ? enStr : fr;
 
-        const title = t(
+        const title = tr(
             `🔁 Boucle de crash — ${event.containerName}`,
             `🔁 Crash loop — ${event.containerName}`,
         );
-        const desc = t(
+        const desc = tr(
             `Le conteneur **${event.containerName}** a redémarré **${event.restartCount} fois** en ${event.windowMinutes} min.`,
             `Container **${event.containerName}** restarted **${event.restartCount} times** in ${event.windowMinutes} min.`,
         );
@@ -307,49 +203,6 @@ export class MonitoringWatcher {
             });
         }
         if (apprise) await apprise.send({ title, body: desc, type: "failure" });
-    }
-
-    private async sendStackAlert(
-        stack: string,
-        cpu: number,
-        memMB: number,
-        cfg: StackAlertConfig,
-    ): Promise<void> {
-        const discord = this.settings.discordWebhooks.length > 0
-            ? new DiscordNotifier(this.settings.discordWebhooks)
-            : null;
-        const apprise = await this.loadAppriseNotifier();
-        if (!discord && !apprise) return;
-
-        const en = (this.settings.notificationLang ?? "fr") === "en";
-        const t  = (fr: string, enStr: string) => en ? enStr : fr;
-
-        const title = t(
-            `⚠️ Seuil dépassé — Stack ${stack}`,
-            `⚠️ Threshold exceeded — Stack ${stack}`,
-        );
-        const lines: string[] = [];
-        if (cfg.cpuPercent != null && cpu > cfg.cpuPercent) {
-            lines.push(t(
-                `CPU : **${cpu.toFixed(1)}%** (seuil : ${cfg.cpuPercent}%)`,
-                `CPU: **${cpu.toFixed(1)}%** (threshold: ${cfg.cpuPercent}%)`,
-            ));
-        }
-        if (cfg.ramMB != null && memMB > cfg.ramMB) {
-            lines.push(t(
-                `RAM : **${memMB.toFixed(0)} MB** (seuil : ${cfg.ramMB} MB)`,
-                `RAM: **${memMB.toFixed(0)} MB** (threshold: ${cfg.ramMB} MB)`,
-            ));
-        }
-        const desc = lines.join("\n");
-
-        if (discord) {
-            await discord.sendEmbed({
-                title, color: 0xf59e0b, description: desc, fields: [],
-                footer: `Dockge Enhanced — Monitoring · ${new Date().toLocaleString(en ? "en-GB" : "fr-FR")}`,
-            });
-        }
-        if (apprise) await apprise.send({ title, body: desc, type: "warning" });
     }
 
     // ── Public accessors ──────────────────────────────────────────

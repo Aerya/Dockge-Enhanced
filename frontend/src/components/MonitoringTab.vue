@@ -57,14 +57,15 @@
 
                 <!-- Prochain scan Trivy -->
                 <div class="monitoring-card mc-neutral">
+                    <div class="mc-icon">⏰</div>
                     <div class="mc-body">
                         <div class="mc-label">{{ $t('watcher.monitoring.nextTrivy') }}</div>
                         <div class="mc-value" v-if="overview.trivy.nextScanAt">
-                            {{ formatAge(nextTrivyMinutes) }}
+                            {{ $t('watcher.monitoring.inTime') }} {{ formatAge(nextTrivyMinutes) }}
                         </div>
                         <div class="mc-value text-muted" v-else>{{ $t('watcher.monitoring.nextTrivyNone') }}</div>
                         <div class="mc-detail text-muted" v-if="overview.trivy.lastScanAt">
-                            {{ $t('watcher.monitoring.lastBackupAge') }} {{ formatAge(lastTrivyMinutes) }}
+                            {{ $t('watcher.monitoring.lastScan') }} {{ formatAge(lastTrivyMinutes) }}
                         </div>
                     </div>
                 </div>
@@ -213,83 +214,6 @@
             </div>
         </div>
 
-        <!-- ═══ SECTION 4 : SEUILS CPU/RAM PAR STACK ═══ -->
-        <div class="shadow-box big-padding mb-4">
-            <h5 class="settings-subheading mb-3">
-                <font-awesome-icon icon="gauge-high" class="me-2" />{{ $t('watcher.monitoring.stackAlertsHeading') }}
-            </h5>
-
-            <div class="row g-3 mb-3">
-                <!-- Intervalle de check -->
-                <div class="col-md-4">
-                    <label class="form-label small">{{ $t('watcher.monitoring.stackAlertsInterval') }}</label>
-                    <div class="input-group input-group-sm">
-                        <input v-model.number="monSettings.stackAlertsIntervalMinutes" type="number" min="1" max="60"
-                            class="form-control" style="max-width: 80px" />
-                        <span class="input-group-text">min</span>
-                    </div>
-                </div>
-
-                <!-- Cooldown -->
-                <div class="col-md-4">
-                    <label class="form-label small">{{ $t('watcher.monitoring.stackAlertsCooldown') }}</label>
-                    <div class="input-group input-group-sm">
-                        <input v-model.number="monSettings.stackAlertsCooldownMinutes" type="number" min="5" max="1440"
-                            class="form-control" style="max-width: 80px" />
-                        <span class="input-group-text">min</span>
-                    </div>
-                </div>
-
-                <!-- Tableau par stack -->
-                <div class="col-12">
-                    <div v-if="!stacksList.length" class="form-text fst-italic">
-                        {{ $t('watcher.monitoring.stackAlertsEmpty') }}
-                    </div>
-                    <table v-else class="table table-sm table-dark table-bordered small mb-0">
-                        <thead>
-                            <tr>
-                                <th>Stack</th>
-                                <th>{{ $t('watcher.monitoring.stackAlertsCpu') }}</th>
-                                <th>{{ $t('watcher.monitoring.stackAlertsRam') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="stack in stacksList" :key="stack">
-                                <td><code>{{ stack }}</code></td>
-                                <td>
-                                    <div class="input-group input-group-sm">
-                                        <input
-                                            :value="monSettings.stackAlerts[stack]?.cpuPercent ?? ''"
-                                            @input="setCpuThreshold(stack, ($event.target as HTMLInputElement).value)"
-                                            type="number" min="1" max="100" placeholder="—"
-                                            class="form-control form-control-sm"
-                                            style="max-width: 70px" />
-                                        <span class="input-group-text">%</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="input-group input-group-sm">
-                                        <input
-                                            :value="monSettings.stackAlerts[stack]?.ramMB ?? ''"
-                                            @input="setRamThreshold(stack, ($event.target as HTMLInputElement).value)"
-                                            type="number" min="1" placeholder="—"
-                                            class="form-control form-control-sm"
-                                            style="max-width: 80px" />
-                                        <span class="input-group-text">MB</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <button class="btn btn-primary btn-sm" @click="saveMonSettings" :disabled="savingMon">
-                <span v-if="savingMon" class="spinner-border spinner-border-sm me-1" />
-                <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
-            </button>
-        </div>
-
         <!-- Toast -->
         <Transition name="slide-fade">
             <div v-if="toast.msg" class="toast-float" :class="toast.ok ? 'toast-ok' : 'toast-err'">
@@ -316,10 +240,6 @@ interface MonitoringSettings {
     crashLoopThreshold: number;
     crashLoopWindowMinutes: number;
     crashLoopCooldownMinutes: number;
-    stackAlertsEnabled: boolean;
-    stackAlerts: Record<string, { cpuPercent?: number; ramMB?: number }>;
-    stackAlertsIntervalMinutes: number;
-    stackAlertsCooldownMinutes: number;
     discordWebhooks: string[];
     notificationLang: "fr" | "en";
 }
@@ -362,15 +282,10 @@ const monSettings = ref<MonitoringSettings>({
     crashLoopThreshold: 5,
     crashLoopWindowMinutes: 10,
     crashLoopCooldownMinutes: 60,
-    stackAlertsEnabled: false,
-    stackAlerts: {},
-    stackAlertsIntervalMinutes: 5,
-    stackAlertsCooldownMinutes: 30,
     discordWebhooks: [],
     notificationLang: "fr",
 });
 
-const stacksList     = ref<string[]>([]);
 const diskPartition  = ref("/");
 const savingMon      = ref(false);
 const savingDisplay  = ref(false);
@@ -426,24 +341,6 @@ function showToast(msg: string, ok = true) {
     setTimeout(() => { toast.value.msg = ""; }, 3000);
 }
 
-// ─── Stack threshold helpers ──────────────────────────────────────
-
-function setCpuThreshold(stack: string, val: string) {
-    const num = val === "" ? undefined : Number(val);
-    monSettings.value.stackAlerts[stack] = {
-        ...monSettings.value.stackAlerts[stack],
-        cpuPercent: num,
-    };
-}
-
-function setRamThreshold(stack: string, val: string) {
-    const num = val === "" ? undefined : Number(val);
-    monSettings.value.stackAlerts[stack] = {
-        ...monSettings.value.stackAlerts[stack],
-        ramMB: num,
-    };
-}
-
 // ─── Webhook helpers ──────────────────────────────────────────────
 
 function addWebhook() {
@@ -468,22 +365,18 @@ async function loadOverview() {
 }
 
 async function loadSettings() {
-    const [settingsRes, displayRes, stacksRes] = await Promise.all([
+    const [settingsRes, displayRes] = await Promise.all([
         api("GET", "/monitoring/settings"),
         api("GET", "/monitoring/display-settings"),
-        api("GET", "/monitoring/stacks"),
     ]);
     if (settingsRes.ok) monSettings.value = settingsRes.data as MonitoringSettings;
     if (displayRes.ok) diskPartition.value = (displayRes.data as { diskPartition: string }).diskPartition ?? "/";
-    if (stacksRes.ok)  stacksList.value    = stacksRes.data as string[];
 }
 
 async function saveMonSettings() {
     savingMon.value = true;
     try {
-        // stackAlertsEnabled is always true — the toggle has been removed
-        const payload = { ...monSettings.value, stackAlertsEnabled: true };
-        const res = await api("POST", "/monitoring/settings", payload);
+        const res = await api("POST", "/monitoring/settings", monSettings.value);
         showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
     } finally { savingMon.value = false; }
 }
@@ -514,19 +407,24 @@ onUnmounted(() => {
 /* ── Overview cards ── */
 .monitoring-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 600px) {
+    .monitoring-cards { grid-template-columns: 1fr; }
 }
 
 .monitoring-card {
-    border-radius: 10px;
-    padding: 14px 16px;
+    border-radius: 12px;
+    padding: 20px 22px;
     display: flex;
-    gap: 12px;
+    gap: 16px;
     align-items: flex-start;
     border: 1px solid rgba(255,255,255,.07);
     background: rgba(255,255,255,.04);
     transition: border-color .2s;
+    min-height: 90px;
 }
 
 .monitoring-card.mc-ok     { border-color: rgba(34,197,94,.35);  }
@@ -534,31 +432,33 @@ onUnmounted(() => {
 .monitoring-card.mc-danger { border-color: rgba(239,68,68,.35);  }
 .monitoring-card.mc-neutral{ border-color: rgba(255,255,255,.1); }
 
-.mc-icon { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
+.mc-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; padding-top: 2px; }
+
+.mc-body { flex: 1; min-width: 0; }
 
 .mc-label {
     font-size: .72rem;
     text-transform: uppercase;
     letter-spacing: .05em;
     color: #9ca3af;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 .mc-value {
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
+    line-height: 1.4;
 }
 .mc-detail {
-    font-size: .7rem;
+    font-size: .75rem;
     color: #9ca3af;
     font-weight: 400;
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    margin-top: 4px;
+    white-space: normal;
+    word-break: break-word;
 }
 
 /* ── Toast (clone du BackupTab) ── */
