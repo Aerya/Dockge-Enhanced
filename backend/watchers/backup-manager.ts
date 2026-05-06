@@ -106,6 +106,7 @@ export interface BackupSettings {
     notificationLang: "fr" | "en";
     backupOnSave: boolean;               // déclenche un backup immédiat quand un compose est sauvegardé
     excludedStacks: string[];            // stacks exclues de la sauvegarde
+    excludePatterns: string[];           // patterns restic --exclude supplémentaires (ex: *.wal, *.tmp)
     restoreTest: boolean;                // lit un fichier depuis chaque snapshot pour vérifier la lisibilité
 }
 
@@ -405,6 +406,7 @@ export class BackupManager {
         volumeBackup: { selectedVolumes: [] },
         backupOnSave: true,
         excludedStacks: [],
+        excludePatterns: [],
         restoreTest: true,
     };
 
@@ -514,7 +516,7 @@ export class BackupManager {
 
     // ── Restic helpers ────────────────────────────────────────────
 
-    private async resticFor(dest: BackupDestination, args: string, extraEnv: Record<string, string> = {}): Promise<string> {
+    private async resticFor(dest: BackupDestination, args: string, extraEnv: Record<string, string> = {}, toleratedExitCodes: number[] = []): Promise<string> {
         const repoEnv = buildResticEnv(dest);
         const repo    = buildRepoUrl(dest);
         const allEnv  = { ...repoEnv, ...extraEnv };
@@ -531,16 +533,23 @@ export class BackupManager {
 
             const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
             const cmd = `restic --repo ${shellQuote(repo)} --json ${sftpOpts} ${args}`;
-            const { stdout } = await execAsync(cmd, {
-                maxBuffer: 20 * 1024 * 1024,
-                timeout:   30 * 60 * 1000,
-                env: {
-                    PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
-                    ...process.env,
-                    ...allEnv,
-                },
-            });
-            return stdout.trim();
+            try {
+                const { stdout } = await execAsync(cmd, {
+                    maxBuffer: 20 * 1024 * 1024,
+                    timeout:   30 * 60 * 1000,
+                    env: {
+                        PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                        ...process.env,
+                        ...allEnv,
+                    },
+                });
+                return stdout.trim();
+            } catch (e: any) {
+                if (toleratedExitCodes.includes(e?.code) && typeof e?.stdout === "string") {
+                    return e.stdout.trim();
+                }
+                throw e;
+            }
         } finally {
             if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
         }
@@ -634,11 +643,10 @@ export class BackupManager {
         const tags = ["dockge-enhanced", new Date().toISOString().slice(0, 10)];
         if (opts.tag) tags.push(opts.tag);
         const tagArg = tags.map(t => `--tag ${shellQuote(t)}`).join(" ");
-        const excludes = [
-            `--exclude ${shellQuote("*.log")}`,
-            `--exclude ${shellQuote("__pycache__")}`,
-            `--exclude ${shellQuote("node_modules")}`,
-        ].join(" ");
+        const builtinExcludes = ["*.log", "__pycache__", "node_modules"];
+        const userExcludes    = this.settings.excludePatterns ?? [];
+        const excludes = [...builtinExcludes, ...userExcludes]
+            .map(p => `--exclude ${shellQuote(p)}`).join(" ");
 
         let totalDataAdded = 0;
         let allSuccess = true;
@@ -658,7 +666,7 @@ export class BackupManager {
 
                 await this.initRepoFor(dest);
 
-                const stdout = await this.resticFor(dest, `backup ${pathArgs} ${tagArg} ${excludes}`);
+                const stdout = await this.resticFor(dest, `backup ${pathArgs} ${tagArg} ${excludes}`, {}, [3]);
 
                 const lines = stdout.split("\n").filter(Boolean);
                 const summary = lines.reduce<Record<string, unknown> | null>((acc, line) => {
@@ -667,6 +675,24 @@ export class BackupManager {
                         return obj.message_type === "summary" ? obj : acc;
                     } catch { return acc; }
                 }, null);
+
+                // Collecte les fichiers non lisibles signalés par restic (exit 3)
+                const resticErrors = lines.flatMap(line => {
+                    try {
+                        const obj = JSON.parse(line) as Record<string, unknown>;
+                        if (obj.message_type === "error") {
+                            const msg = (obj.error as Record<string, unknown>)?.message ?? obj.item ?? line;
+                            return [String(msg)];
+                        }
+                    } catch { /* ignore */ }
+                    return [];
+                });
+                if (resticErrors.length > 0) {
+                    if (!result.warnings) result.warnings = [];
+                    result.warnings.push(...resticErrors.map(m => `[${dest.label}] ${m}`));
+                    if (!destResult.warnings) destResult.warnings = [];
+                    destResult.warnings.push(...resticErrors);
+                }
 
                 destResult.success    = true;
                 destResult.snapshotId = (summary?.snapshot_id as string)?.slice(0, 8);

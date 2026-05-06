@@ -331,6 +331,31 @@
             </div>
         </div>
 
+        <!-- ═══ PATTERNS D'EXCLUSION ═══ -->
+        <div class="shadow-box big-padding mb-4">
+            <h5 class="settings-subheading mb-1">
+                <font-awesome-icon icon="ban" class="me-2" />{{ $t('watcher.backup.excludePatterns.heading') }}
+            </h5>
+            <p class="form-text mb-3">{{ $t('watcher.backup.excludePatterns.hint') }}</p>
+            <div class="d-flex gap-2 mb-2">
+                <input v-model="newExcludePattern" type="text" class="form-control form-control-sm"
+                    :placeholder="$t('watcher.backup.excludePatterns.placeholder')"
+                    @keydown.enter.prevent="addExcludePattern" />
+                <button class="btn btn-sm btn-outline-primary" @click="addExcludePattern">
+                    <font-awesome-icon icon="plus" />
+                </button>
+            </div>
+            <div v-if="(settings.excludePatterns ?? []).length > 0" class="exclude-pattern-list">
+                <div v-for="(p, i) in settings.excludePatterns" :key="i" class="exclude-pattern-item">
+                    <code class="small">{{ p }}</code>
+                    <button class="btn btn-xs btn-link text-danger p-0" @click="removeExcludePattern(i)">
+                        <font-awesome-icon icon="times" />
+                    </button>
+                </div>
+            </div>
+            <p v-else class="form-text fst-italic mb-0">{{ $t('watcher.backup.excludePatterns.empty') }}</p>
+        </div>
+
         <!-- ═══ STACKS EXCLUES ═══ -->
         <div v-if="stacksList.length > 0" class="shadow-box big-padding mb-4 stacks-exclude-section">
             <!-- Header cliquable -->
@@ -880,7 +905,7 @@ interface Destination {
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
 interface VolumeBackupConfig { selectedVolumes: string[] }
 interface MountedVolume { source: string; destination: string }
-interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; excludedStacks: string[]; restoreTest: boolean }
+interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; excludedStacks: string[]; excludePatterns: string[]; restoreTest: boolean }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
     path: string; name: string; stack: string; type: "compose" | "env" | "volume" | "other";
@@ -920,10 +945,23 @@ const settings = ref<Settings>({
     extraPaths: [],
     backupOnSave: true,
     excludedStacks: [],
+    excludePatterns: [],
     restoreTest: true,
 });
 
 const stacksList = ref<string[]>([]);
+const newExcludePattern = ref("");
+function addExcludePattern() {
+    const p = newExcludePattern.value.trim();
+    if (!p) return;
+    if (!(settings.value.excludePatterns ?? []).includes(p)) {
+        settings.value.excludePatterns = [...(settings.value.excludePatterns ?? []), p];
+    }
+    newExcludePattern.value = "";
+}
+function removeExcludePattern(idx: number) {
+    settings.value.excludePatterns = (settings.value.excludePatterns ?? []).filter((_, i) => i !== idx);
+}
 const stacksCollapsed = ref(localStorage.getItem("backupStacksCollapsed") === "1");
 function toggleStacksSection() {
     stacksCollapsed.value = !stacksCollapsed.value;
@@ -1648,6 +1686,22 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     padding: 2px 6px;
     &:hover { color: #e5e7eb; }
 }
+
+.exclude-pattern-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.exclude-pattern-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 2px 8px 2px 10px;
+}
+.btn-xs { font-size: 0.7rem; line-height: 1; }
 
 .history-row-ok  > td:first-child { border-left: 3px solid #22c55e; }
 .history-row-err > td:first-child { border-left: 3px solid #ef4444; }
