@@ -321,6 +321,46 @@
             </div>
         </div>
 
+        <!-- ═══ STACKS EXCLUES ═══ -->
+        <div v-if="stacksList.length > 0" class="shadow-box big-padding mb-4 stacks-exclude-section">
+            <!-- Header cliquable -->
+            <div class="vol-section-header" @click="toggleStacksSection">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="layer-group" class="me-2" />{{ $t('watcher.backup.excludeStacks.heading') }}
+                    <span v-if="stacksCollapsed && (settings.excludedStacks?.length ?? 0) > 0" class="badge-summary ms-2">
+                        {{ $t('watcher.backup.excludeStacks.excludedCount', { count: settings.excludedStacks.length }) }}
+                    </span>
+                </h5>
+                <font-awesome-icon :icon="stacksCollapsed ? 'chevron-down' : 'chevron-up'" class="chevron-icon" />
+            </div>
+            <!-- Body -->
+            <div v-if="!stacksCollapsed" class="vol-section-body">
+                <p class="form-text mb-3">{{ $t('watcher.backup.excludeStacks.hint') }}</p>
+                <div class="stacks-grid">
+                    <div v-for="stack in stacksList" :key="stack"
+                        class="stack-toggle-item"
+                        :class="{ 'stack-excluded': isStackExcluded(stack) }">
+                        <div class="form-check form-switch mb-0">
+                            <input
+                                :id="`stackInclude_${stack}`"
+                                class="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                :checked="!isStackExcluded(stack)"
+                                @change="toggleStackExclusion(stack)" />
+                            <label :for="`stackInclude_${stack}`" class="form-check-label stack-toggle-label">
+                                <font-awesome-icon icon="layer-group" class="me-1 opacity-50" style="font-size:.75rem" />
+                                {{ stack }}
+                            </label>
+                        </div>
+                        <span v-if="isStackExcluded(stack)" class="badge bg-secondary stack-excluded-badge">
+                            {{ $t('watcher.backup.excludeStacks.excluded') }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ═══ RÉTENTION ═══ -->
         <div class="shadow-box big-padding mb-4">
             <h5 class="settings-subheading mb-3">
@@ -763,7 +803,7 @@ interface Destination {
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
 interface VolumeBackupConfig { selectedVolumes: string[] }
 interface MountedVolume { source: string; destination: string }
-interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean }
+interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; excludedStacks: string[] }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
     path: string; name: string; stack: string; type: "compose" | "env" | "volume" | "other";
@@ -800,7 +840,26 @@ const settings = ref<Settings>({
     volumeBackup: { selectedVolumes: [] },
     extraPaths: [],
     backupOnSave: true,
+    excludedStacks: [],
 });
+
+const stacksList = ref<string[]>([]);
+const stacksCollapsed = ref(localStorage.getItem("backupStacksCollapsed") === "1");
+function toggleStacksSection() {
+    stacksCollapsed.value = !stacksCollapsed.value;
+    localStorage.setItem("backupStacksCollapsed", stacksCollapsed.value ? "1" : "0");
+}
+function isStackExcluded(stack: string): boolean {
+    return (settings.value.excludedStacks ?? []).includes(stack);
+}
+function toggleStackExclusion(stack: string) {
+    const excluded = settings.value.excludedStacks ?? [];
+    if (excluded.includes(stack)) {
+        settings.value.excludedStacks = excluded.filter(s => s !== stack);
+    } else {
+        settings.value.excludedStacks = [...excluded, stack];
+    }
+}
 
 const mountedVols = ref<MountedVolume[]>([]);
 const loadingMountedVols = ref(false);
@@ -1241,10 +1300,11 @@ async function loadVolSizes(volPath: string) {
 }
 
 onMounted(async () => {
-    const [settingsRes, histRes, snapsRes] = await Promise.all([
+    const [settingsRes, histRes, snapsRes, stacksRes] = await Promise.all([
         api("GET", "/backup/settings"),
         api("GET", "/backup/history"),
         api("GET", "/backup/snapshots"),
+        api("GET", "/backup/stacks"),
     ]);
     if (settingsRes.ok) {
         settings.value = mergeSettings(settingsRes.data);
@@ -1253,6 +1313,7 @@ onMounted(async () => {
     if (snapsRes.ok) snapshots.value = (snapsRes.data as Snapshot[]).sort(
         (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
     );
+    if (stacksRes.ok) stacksList.value = stacksRes.data ?? [];
     await initServerTz(api);
     await loadMountedVols();
 });
@@ -2050,5 +2111,51 @@ async function restoreStack(shortId: string, sg: StackGroup) {
         opacity: 1;
         background: rgba(255,255,255,.1);
     }
+}
+
+// ─── Stacks exclues ──────────────────────────────────────────────
+.stacks-exclude-section {
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.stacks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: .5rem;
+}
+
+.stack-toggle-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .4rem .6rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.03);
+    transition: background .15s, border-color .15s;
+
+    &.stack-excluded {
+        background: rgba(107,114,128,.12);
+        border-color: rgba(107,114,128,.3);
+    }
+}
+
+.stack-toggle-label {
+    font-size: .85rem;
+    color: #d1d5db;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.stack-excluded-badge {
+    font-size: .65rem;
+    padding: .15em .4em;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 </style>

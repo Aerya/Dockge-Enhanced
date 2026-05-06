@@ -427,6 +427,15 @@ export class WatcherRouter extends Router {
             }
         });
 
+        router.get("/backup/stacks", async (_req: Request, res: Response) => {
+            try {
+                const stacks = await BackupManager.getInstance().listStacks();
+                res.json({ ok: true, data: stacks });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e), data: [] });
+            }
+        });
+
         router.get("/backup/mounted-volumes", async (_req: Request, res: Response) => {
             try {
                 const vols = await BackupManager.getInstance().getMountedVolumes();

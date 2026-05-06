@@ -104,6 +104,7 @@ export interface BackupSettings {
     volumeBackup: VolumeBackupConfig;
     notificationLang: "fr" | "en";
     backupOnSave: boolean;               // déclenche un backup immédiat quand un compose est sauvegardé
+    excludedStacks: string[];            // stacks exclues de la sauvegarde
 }
 
 export interface ResticSnapshot {
@@ -394,6 +395,7 @@ export class BackupManager {
         notificationLang: "fr",
         volumeBackup: { selectedVolumes: [] },
         backupOnSave: true,
+        excludedStacks: [],
     };
 
     static getInstance(): BackupManager {
@@ -717,6 +719,7 @@ export class BackupManager {
         };
 
         // Parcourt les stacks
+        const excludedSet = new Set(this.settings.excludedStacks ?? []);
         try {
             const stacks = await fs.readdir(STACKS_DIR);
             for (const stack of stacks) {
@@ -725,6 +728,11 @@ export class BackupManager {
                     const stat = await fs.stat(stackDir);
                     if (!stat.isDirectory()) continue;
                 } catch { continue; }
+
+                if (excludedSet.has(stack)) {
+                    console.log(`[BackupManager] Stack "${stack}" exclue de la sauvegarde — ignorée`);
+                    continue;
+                }
 
                 let composeFound = false;
                 for (const name of ["compose.yaml", "docker-compose.yml", "docker-compose.yaml"]) {
@@ -821,6 +829,17 @@ export class BackupManager {
         try {
             const entries = await fs.readdir(volPath, { withFileTypes: true });
             return entries.filter(e => e.isDirectory()).map(e => e.name).sort();
+        } catch { return []; }
+    }
+
+    /** Retourne la liste des stacks présentes dans STACKS_DIR */
+    async listStacks(): Promise<string[]> {
+        try {
+            const entries = await fs.readdir(STACKS_DIR, { withFileTypes: true });
+            return entries
+                .filter(e => e.isDirectory())
+                .map(e => e.name)
+                .sort();
         } catch { return []; }
     }
 
