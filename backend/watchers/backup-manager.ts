@@ -105,6 +105,7 @@ export interface BackupSettings {
     notificationLang: "fr" | "en";
     backupOnSave: boolean;               // déclenche un backup immédiat quand un compose est sauvegardé
     excludedStacks: string[];            // stacks exclues de la sauvegarde
+    restoreTest: boolean;                // lit un fichier depuis chaque snapshot pour vérifier la lisibilité
 }
 
 export interface ResticSnapshot {
@@ -141,6 +142,12 @@ export interface SnapshotFile {
     prevSnapshotId: string | null;
 }
 
+export interface RestoreTestResult {
+    ok: boolean;
+    testedFile?: string;
+    error?: string;
+}
+
 export interface DestinationResult {
     label: string;
     type: string;
@@ -149,6 +156,7 @@ export interface DestinationResult {
     dataAdded?: number;
     error?: string;
     warnings?: string[];
+    restoreTest?: RestoreTestResult;
 }
 
 export interface BackupResult {
@@ -396,6 +404,7 @@ export class BackupManager {
         volumeBackup: { selectedVolumes: [] },
         backupOnSave: true,
         excludedStacks: [],
+        restoreTest: true,
     };
 
     static getInstance(): BackupManager {
@@ -669,6 +678,22 @@ export class BackupManager {
 
                 if (!opts.skipForget) {
                     await this.runForgetFor(dest);
+
+                    // Restore test : lit un fichier depuis le snapshot pour prouver la lisibilité
+                    if (this.settings.restoreTest && destResult.snapshotId) {
+                        destResult.restoreTest = await this.runRestoreTest(dest, destResult.snapshotId);
+                        if (!destResult.restoreTest.ok) {
+                            const msg = destResult.restoreTest.error ?? "Lecture du snapshot impossible";
+                            if (!result.warnings) result.warnings = [];
+                            result.warnings.push(`[${dest.label}] Restore test échoué : ${msg}`);
+                            console.warn(`[BackupManager] ⚠️ Restore test "${dest.label}" échoué:`, msg);
+                        } else {
+                            console.log(
+                                `[BackupManager] 🔍 Restore test "${dest.label}" OK` +
+                                (destResult.restoreTest.testedFile ? ` — ${destResult.restoreTest.testedFile}` : "")
+                            );
+                        }
+                    }
                 }
 
                 console.log(
@@ -1087,6 +1112,49 @@ export class BackupManager {
 
     // ── Contenu de fichier dans un snapshot ──────────────────────
 
+    /**
+     * Teste la lisibilité d'un repo en lisant un fichier réel depuis le snapshot.
+     * Utilise `restic ls` pour trouver un compose.yaml puis `restic dump` pour le lire.
+     * Aucun fichier temporaire n'est créé sur le disque — tout reste en mémoire.
+     */
+    private async runRestoreTest(dest: BackupDestination, snapshotId: string): Promise<RestoreTestResult> {
+        try {
+            // 1. Lister les fichiers du snapshot (resticFor ajoute --json → NDJSON)
+            const lsOut = await this.resticFor(dest, `ls ${shellQuote(snapshotId)}`);
+
+            // 2. Trouver le premier compose.yaml dans le snapshot
+            let composePath: string | undefined;
+            for (const line of lsOut.split("\n").filter(Boolean)) {
+                try {
+                    const obj = JSON.parse(line) as Record<string, unknown>;
+                    if (obj.struct_type !== "node" || obj.type !== "file") continue;
+                    const name = path.basename(obj.path as string);
+                    if (/^(compose|docker-compose)(\.ya?ml)?$/.test(name)) {
+                        composePath = obj.path as string;
+                        break;
+                    }
+                } catch { continue; }
+            }
+
+            if (!composePath) {
+                // Snapshot vide ou sans compose — test trivial passé
+                console.log(`[BackupManager] Restore test "${dest.label}" — aucun compose trouvé dans le snapshot, test ignoré`);
+                return { ok: true };
+            }
+
+            // 3. Lire le fichier (déchiffrement + vérification de l'intégrité des données)
+            const content = await this.resticDump(dest, snapshotId, composePath);
+            if (!content.trim()) {
+                return { ok: false, testedFile: composePath, error: "Fichier vide retourné par le snapshot" };
+            }
+
+            return { ok: true, testedFile: composePath };
+        } catch (e: unknown) {
+            const raw = e instanceof Error ? e.message : String(e);
+            return { ok: false, error: raw.slice(0, 300) };
+        }
+    }
+
     /** Exécute `restic dump` sans `--json` pour récupérer le contenu brut d'un fichier */
     private async resticDump(dest: BackupDestination, snapshotId: string, filePath: string): Promise<string> {
         const repoEnv = buildResticEnv(dest);
@@ -1250,7 +1318,11 @@ export class BackupManager {
                   inline: true },
                 { name: t("Destinations", "Destinations"),
                   value: (result.destinations ?? [])
-                      .map(d => `${d.success ? "✅" : "❌"} ${d.label}`)
+                      .map(d => {
+                          const rt = d.restoreTest;
+                          const rtIcon = rt == null ? "" : (rt.ok ? " 🔍✅" : " 🔍❌");
+                          return `${d.success ? "✅" : "❌"} ${d.label}${rtIcon}`;
+                      })
                       .join("\n") || "—",
                   inline: true },
             ];

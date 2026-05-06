@@ -30,7 +30,7 @@
                         <option :value="168">{{ $t('watcher.backup.everyWeek') }}</option>
                     </select>
                 </div>
-                <div class="col-md-8 d-flex align-items-end">
+                <div class="col-md-8 d-flex align-items-end gap-4 flex-wrap">
                     <div>
                         <div class="form-check form-switch mb-0">
                             <input v-model="settings.backupOnSave" class="form-check-input" type="checkbox"
@@ -40,6 +40,16 @@
                             </label>
                         </div>
                         <small class="form-text">{{ $t('watcher.backup.backupOnSaveHint') }}</small>
+                    </div>
+                    <div>
+                        <div class="form-check form-switch mb-0">
+                            <input v-model="settings.restoreTest" class="form-check-input" type="checkbox"
+                                id="restoreTest" role="switch" />
+                            <label class="form-check-label fw-semibold" for="restoreTest">
+                                🔍 {{ $t('watcher.backup.restoreTest') }}
+                            </label>
+                        </div>
+                        <small class="form-text">{{ $t('watcher.backup.restoreTestHint') }}</small>
                     </div>
                 </div>
             </div>
@@ -453,6 +463,7 @@
                             <th>{{ $t('watcher.backup.history.dataAdded') }}</th>
                             <th>{{ $t('watcher.backup.history.files') }}</th>
                             <th>{{ $t('watcher.backup.history.duration') }}</th>
+                            <th>{{ $t('watcher.backup.history.restoreTest') }}</th>
                             <th>{{ $t('watcher.backup.history.warnings') }}</th>
                         </tr>
                     </thead>
@@ -470,6 +481,23 @@
                                 {{ h.filesChanged ?? 0 }} {{ $t('watcher.backup.history.modified') }}
                             </td>
                             <td class="small form-text">{{ formatDuration(h.duration) }}</td>
+                            <td class="small">
+                                <template v-if="restoreTestStatus(h) === 'ok'">
+                                    <span class="badge bg-success"
+                                        :title="(h.destinations ?? []).map(d => d.restoreTest?.testedFile ?? '').filter(Boolean).join('\n')">
+                                        🔍 {{ $t('watcher.backup.restoreTestOk') }}
+                                    </span>
+                                </template>
+                                <template v-else-if="restoreTestStatus(h) === 'fail'">
+                                    <span class="badge bg-danger"
+                                        :title="(h.destinations ?? []).filter(d => d.restoreTest && !d.restoreTest.ok).map(d => `${d.label}: ${d.restoreTest?.error ?? '?'}`).join('\n')">
+                                        🔍 {{ $t('watcher.backup.restoreTestFail') }}
+                                    </span>
+                                </template>
+                                <template v-else>
+                                    <span class="form-text">—</span>
+                                </template>
+                            </td>
                             <td class="small">
                                 <span v-if="h.warnings?.length" class="badge bg-warning text-dark"
                                     :title="h.warnings.join('\\n')">
@@ -803,7 +831,7 @@ interface Destination {
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
 interface VolumeBackupConfig { selectedVolumes: string[] }
 interface MountedVolume { source: string; destination: string }
-interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; excludedStacks: string[] }
+interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; excludedStacks: string[]; restoreTest: boolean }
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
     path: string; name: string; stack: string; type: "compose" | "env" | "volume" | "other";
@@ -815,7 +843,9 @@ interface SnapshotFile {
     snapDiff:   "added" | "modified" | "unchanged";
     prevSnapshotId: string | null;
 }
-interface BackupResult { success: boolean; snapshotId?: string; duration: number; dataAdded?: number; filesNew?: number; filesChanged?: number; error?: string; warnings?: string[]; timestamp: string }
+interface RestoreTestResult { ok: boolean; testedFile?: string; error?: string }
+interface DestinationResult { label: string; type: string; success: boolean; snapshotId?: string; dataAdded?: number; error?: string; warnings?: string[]; restoreTest?: RestoreTestResult }
+interface BackupResult { success: boolean; snapshotId?: string; duration: number; dataAdded?: number; filesNew?: number; filesChanged?: number; error?: string; warnings?: string[]; timestamp: string; destinations?: DestinationResult[] }
 interface DiffLine { type: "same" | "added" | "removed"; line: string }
 
 // ─── State ────────────────────────────────────────────────────────
@@ -841,6 +871,7 @@ const settings = ref<Settings>({
     extraPaths: [],
     backupOnSave: true,
     excludedStacks: [],
+    restoreTest: true,
 });
 
 const stacksList = ref<string[]>([]);
@@ -1084,6 +1115,12 @@ async function openPreview(snapId: string, f: SnapshotFile) {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────
+
+function restoreTestStatus(h: BackupResult): "ok" | "fail" | "none" {
+    const tests = (h.destinations ?? []).map(d => d.restoreTest).filter(Boolean) as RestoreTestResult[];
+    if (tests.length === 0) return "none";
+    return tests.every(t => t.ok) ? "ok" : "fail";
+}
 
 function formatBytes(b: number): string {
     if (b < 1024) return `${b} B`;

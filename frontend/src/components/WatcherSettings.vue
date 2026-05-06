@@ -575,8 +575,10 @@
                 <!-- Apprise -->
                 <div class="shadow-box big-padding mb-4">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <font-awesome-icon icon="bell" class="text-warning" />
-                        <h5 class="settings-subheading mb-0">{{ $t('watcher.apprise.heading') }}</h5>
+                        <font-awesome-icon icon="bell" />
+                        <h5 class="settings-subheading mb-0">
+                            <a href="https://github.com/caronc/apprise" target="_blank" rel="noopener" class="apprise-link">Apprise</a>
+                        </h5>
                         <small class="form-text ms-2">{{ $t('watcher.apprise.global') }}</small>
                     </div>
                     <div class="row g-3">
@@ -1472,6 +1474,12 @@ async function removeCred(registry: string) {
     line-height: 1;
     &:hover:not(:disabled) { color: #ef4444; }
     &:disabled { opacity: .4; cursor: default; }
+}
+
+.apprise-link {
+    color: inherit;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
 }
 
 .form-control::placeholder,
