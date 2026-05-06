@@ -468,11 +468,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(h, i) in history" :key="i" :class="h.success ? 'history-row-ok' : 'history-row-err'">
+                        <template v-for="(h, i) in history" :key="i">
+                        <tr :class="h.success ? 'history-row-ok' : 'history-row-err'">
                             <td class="small form-text">{{ fmtDate(h.timestamp) }}</td>
                             <td>
                                 <span v-if="h.success" class="badge bg-success">✓ OK</span>
-                                <span v-else class="badge bg-danger" :title="h.error">✗ {{ $t('watcher.status.error') }}</span>
+                                <span v-else class="badge bg-danger error-badge" @click="toggleError(i)">
+                                    ✗ {{ $t('watcher.status.error') }}
+                                    <span class="error-badge-caret">{{ expandedErrors.has(i) ? '▲' : '▼' }}</span>
+                                </span>
                             </td>
                             <td><code class="small">{{ h.snapshotId ?? "—" }}</code></td>
                             <td class="small">{{ h.dataAdded ? formatBytes(h.dataAdded) : "—" }}</td>
@@ -506,6 +510,22 @@
                                 <span v-else class="form-text">—</span>
                             </td>
                         </tr>
+                        <tr v-if="!h.success && expandedErrors.has(i)" class="history-row-err-detail">
+                            <td colspan="8">
+                                <div class="backup-error-detail">
+                                    <div v-if="h.error" class="backup-error-global">
+                                        <pre>{{ h.error }}</pre>
+                                    </div>
+                                    <template v-if="h.destinations?.some(d => d.error)">
+                                        <div v-for="d in h.destinations?.filter(d => d.error)" :key="d.label" class="backup-error-dest">
+                                            <span class="backup-error-dest-label">{{ d.label }}</span>
+                                            <pre>{{ d.error }}</pre>
+                                        </div>
+                                    </template>
+                                </div>
+                            </td>
+                        </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
@@ -957,6 +977,12 @@ function toggleVolumes() {
 const expandedDest = ref<number>(0);
 const snapshots = ref<Snapshot[]>([]);
 const history = ref<BackupResult[]>([]);
+const expandedErrors = ref<Set<number>>(new Set());
+function toggleError(i: number) {
+    const s = new Set(expandedErrors.value);
+    s.has(i) ? s.delete(i) : s.add(i);
+    expandedErrors.value = s;
+}
 
 const saving = ref(false);
 const initing = ref(false);
@@ -1626,6 +1652,41 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 .history-row-ok  > td:first-child { border-left: 3px solid #22c55e; }
 .history-row-err > td:first-child { border-left: 3px solid #ef4444; }
 .snapshot-row    > td:first-child { border-left: 3px solid #f59e0b; }
+
+.error-badge { cursor: pointer; user-select: none; }
+.error-badge-caret { font-size: 0.65em; margin-left: 4px; opacity: 0.8; }
+
+.history-row-err-detail > td {
+    padding: 0;
+    border-left: 3px solid #ef4444;
+    background: rgba(239,68,68,0.06);
+}
+.backup-error-detail {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.backup-error-detail pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: 0.78rem;
+    color: #f87171;
+    background: rgba(0,0,0,0.2);
+    border-radius: 4px;
+    padding: 8px 10px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.backup-error-dest { display: flex; flex-direction: column; gap: 4px; }
+.backup-error-dest-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fca5a5;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
 
 .table th {
     font-size: .72rem;
