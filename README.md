@@ -65,50 +65,61 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 <table>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/enhanced3.png"><img src="screens/enhanced3.png" width="100%"/></a>
-      <sub>Main interface — per-stack CPU/RAM stats</sub>
+      <a href="screens/LandingPage.png"><img src="screens/LandingPage.png" width="100%"/></a>
+      <sub>Landing page — vue d’ensemble de Dockge Enhanced</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/enhanced4.png"><img src="screens/enhanced4.png" width="100%"/></a>
-      <sub>Image Watcher — update monitoring</sub>
+      <a href="screens/Images.png"><img src="screens/Images.png" width="100%"/></a>
+      <sub>Gestion des images Docker</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/enhanced5.png"><img src="screens/enhanced5.png" width="100%"/></a>
-      <sub>Trivy Scanner — configuration</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="33%">
-      <a href="screens/enhanced9.png"><img src="screens/enhanced9.png" width="100%"/></a>
-      <sub>Restic Backup — configuration & snapshots</sub>
-    </td>
-    <td align="center" width="33%">
-      <a href="screens/enhanced11.png"><img src="screens/enhanced11.png" width="100%"/></a>
-      <sub>Docker Resources — bulk image selection</sub>
-    </td>
-    <td align="center" width="33%">
-      <a href="screens/enhanced7.png"><img src="screens/enhanced7.png" width="100%"/></a>
-      <sub>Discord — Trivy security alerts</sub>
+      <a href="screens/Sécurité.png"><img src="screens/Sécurité.png" width="100%"/></a>
+      <sub>Trivy Scanner — sécurité & vulnérabilités</sub>
     </td>
   </tr>
+
   <tr>
     <td align="center" width="33%">
-      <a href="screens/enhanced10.png"><img src="screens/enhanced10.png" width="100%"/></a>
-      <sub>Discord — backup notification</sub>
+      <a href="screens/Sauvegarde.png"><img src="screens/Sauvegarde.png" width="100%"/></a>
+      <sub>Backup Restic — sauvegardes & snapshots</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/enhanced1.png"><img src="screens/enhanced1.png" width="100%"/></a>
-      <sub>In-app update banner</sub>
+      <a href="screens/Ressources.png"><img src="screens/Ressources.png" width="100%"/></a>
+      <sub>Ressources Docker — CPU, RAM & stockage</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/enhanced2.png"><img src="screens/enhanced2.png" width="100%"/></a>
-      <sub>Discord — Dockge Enhanced update alert</sub>
+      <a href="screens/Notifications.png"><img src="screens/Notifications.png" width="100%"/></a>
+      <sub>Centre de notifications</sub>
     </td>
   </tr>
+
   <tr>
     <td align="center" width="33%">
-      <a href="screens/enhanced12.png"><img src="screens/enhanced12.png" width="100%"/></a>
-      <sub>Backup Restic — add an additional volume </sub>
+      <a href="screens/Monitoring.png"><img src="screens/Monitoring.png" width="100%"/></a>
+      <sub>Monitoring temps réel des stacks</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/EnhancedUpdate.png"><img src="screens/EnhancedUpdate.png" width="100%"/></a>
+      <sub>Mise à jour in-app de Dockge Enhanced</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/DiscordUpdates.png"><img src="screens/DiscordUpdates.png" width="100%"/></a>
+      <sub>Discord — alertes de mises à jour Docker</sub>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/DiscordTrivy.png"><img src="screens/DiscordTrivy.png" width="100%"/></a>
+      <sub>Discord — alertes sécurité Trivy</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/DiscordBackup.png"><img src="screens/DiscordBackup.png" width="100%"/></a>
+      <sub>Discord — notifications de sauvegarde</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/DiscordEnhancedUpdate.png"><img src="screens/DiscordEnhancedUpdate.png" width="100%"/></a>
+      <sub>Discord — alertes de mise à jour Dockge Enhanced</sub>
     </td>
   </tr>
 </table>
