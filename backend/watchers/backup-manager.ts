@@ -1360,7 +1360,7 @@ export class BackupManager {
                   value: (result.destinations ?? [])
                       .map(d => {
                           const rt = d.restoreTest;
-                          const rtIcon = rt == null ? "" : (rt.ok ? " 🔍✅" : " 🔍❌");
+                          const rtIcon = rt == null ? "" : (rt.ok ? " · Restore test ✅" : " · Restore test ❌");
                           return `${d.success ? "✅" : "❌"} ${d.label}${rtIcon}`;
                       })
                       .join("\n") || "—",
