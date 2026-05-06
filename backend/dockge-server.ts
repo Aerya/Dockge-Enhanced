@@ -4,9 +4,11 @@ import { MainRouter } from "./routers/main-router";
 import { WatcherRouter } from "./routers/watcher-router";
 import { DockerResourcesRouter } from "./routers/docker-resources-router";
 import { SystemStatsRouter } from "./routers/system-stats-router";
+import { MonitoringRouter } from "./routers/monitoring-router";
 import { ImageWatcher } from "./watchers/image-watcher";
 import { TrivyScanner } from "./watchers/trivy-scanner";
 import { BackupManager } from "./watchers/backup-manager";
+import { MonitoringWatcher } from "./watchers/monitoring-watcher";
 import { SelfUpdateChecker } from "./watchers/self-update-checker";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
@@ -62,6 +64,7 @@ export class DockgeServer {
         new WatcherRouter(),
         new DockerResourcesRouter(),
         new SystemStatsRouter(),
+        new MonitoringRouter(),
     ];
 
     /**
@@ -423,6 +426,7 @@ export class DockgeServer {
             ImageWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "ImageWatcher start error: " + e));
             TrivyScanner.getInstance().startIfEnabled().catch(e => log.error("server", "TrivyScanner start error: " + e));
             BackupManager.getInstance().startIfEnabled().catch(e => log.error("server", "BackupManager start error: " + e));
+            MonitoringWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "MonitoringWatcher start error: " + e));
             SelfUpdateChecker.getInstance().start();
         });
 

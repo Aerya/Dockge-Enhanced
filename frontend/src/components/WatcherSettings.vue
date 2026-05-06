@@ -58,6 +58,14 @@
                     <font-awesome-icon icon="bell" class="watcher-tab-icon" />
                     <span>{{ $t('watcher.tab.notifications') }}</span>
                 </button>
+                <button
+                    class="watcher-tab"
+                    :class="{ active: tab === 'monitoring' }"
+                    @click="tab = 'monitoring'"
+                >
+                    <font-awesome-icon icon="chart-line" class="watcher-tab-icon" />
+                    <span>{{ $t('watcher.tab.monitoring') }}</span>
+                </button>
             </div>
 
             <!-- ═══ TAB: IMAGES ═══ -->
@@ -744,6 +752,9 @@
                     </button>
                 </div>
             </div>
+
+            <!-- ═══ TAB: MONITORING ═══ -->
+            <MonitoringTab v-show="tab === 'monitoring'" />
         </div>
 
         <!-- TOAST -->
@@ -760,6 +771,7 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import BackupTab from "./BackupTab.vue";
 import DockerResources from "../pages/DockerResources.vue";
+import MonitoringTab from "./MonitoringTab.vue";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 
 // ─── Types ────────────────────────────────────────────────────────
