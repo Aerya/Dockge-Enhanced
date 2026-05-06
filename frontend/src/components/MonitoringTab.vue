@@ -224,81 +224,68 @@
             </h5>
 
             <div class="row g-3 mb-3">
-                <!-- Activer -->
-                <div class="col-12">
-                    <div class="form-check form-switch mb-0">
-                        <input id="stackAlertsEnabled" v-model="monSettings.stackAlertsEnabled"
-                            class="form-check-input" type="checkbox" role="switch" />
-                        <label class="form-check-label fw-semibold" for="stackAlertsEnabled">
-                            {{ $t('watcher.monitoring.stackAlertsEnabled') }}
-                        </label>
+                <!-- Intervalle de check -->
+                <div class="col-md-4">
+                    <label class="form-label small">{{ $t('watcher.monitoring.stackAlertsInterval') }}</label>
+                    <div class="input-group input-group-sm">
+                        <input v-model.number="monSettings.stackAlertsIntervalMinutes" type="number" min="1" max="60"
+                            class="form-control" style="max-width: 80px" />
+                        <span class="input-group-text">min</span>
                     </div>
                 </div>
 
-                <template v-if="monSettings.stackAlertsEnabled">
-                    <!-- Intervalle de check -->
-                    <div class="col-md-4">
-                        <label class="form-label small">{{ $t('watcher.monitoring.stackAlertsInterval') }}</label>
-                        <div class="input-group input-group-sm">
-                            <input v-model.number="monSettings.stackAlertsIntervalMinutes" type="number" min="1" max="60"
-                                class="form-control" style="max-width: 80px" />
-                            <span class="input-group-text">min</span>
-                        </div>
+                <!-- Cooldown -->
+                <div class="col-md-4">
+                    <label class="form-label small">{{ $t('watcher.monitoring.stackAlertsCooldown') }}</label>
+                    <div class="input-group input-group-sm">
+                        <input v-model.number="monSettings.stackAlertsCooldownMinutes" type="number" min="5" max="1440"
+                            class="form-control" style="max-width: 80px" />
+                        <span class="input-group-text">min</span>
                     </div>
+                </div>
 
-                    <!-- Cooldown -->
-                    <div class="col-md-4">
-                        <label class="form-label small">{{ $t('watcher.monitoring.stackAlertsCooldown') }}</label>
-                        <div class="input-group input-group-sm">
-                            <input v-model.number="monSettings.stackAlertsCooldownMinutes" type="number" min="5" max="1440"
-                                class="form-control" style="max-width: 80px" />
-                            <span class="input-group-text">min</span>
-                        </div>
+                <!-- Tableau par stack -->
+                <div class="col-12">
+                    <div v-if="!stacksList.length" class="form-text fst-italic">
+                        {{ $t('watcher.monitoring.stackAlertsEmpty') }}
                     </div>
-
-                    <!-- Tableau par stack -->
-                    <div class="col-12">
-                        <div v-if="!stacksList.length" class="form-text fst-italic">
-                            {{ $t('watcher.monitoring.stackAlertsEmpty') }}
-                        </div>
-                        <table v-else class="table table-sm table-dark table-bordered small mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Stack</th>
-                                    <th>{{ $t('watcher.monitoring.stackAlertsCpu') }}</th>
-                                    <th>{{ $t('watcher.monitoring.stackAlertsRam') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="stack in stacksList" :key="stack">
-                                    <td><code>{{ stack }}</code></td>
-                                    <td>
-                                        <div class="input-group input-group-sm">
-                                            <input
-                                                :value="monSettings.stackAlerts[stack]?.cpuPercent ?? ''"
-                                                @input="setCpuThreshold(stack, ($event.target as HTMLInputElement).value)"
-                                                type="number" min="1" max="100" placeholder="—"
-                                                class="form-control form-control-sm"
-                                                style="max-width: 70px" />
-                                            <span class="input-group-text">%</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="input-group input-group-sm">
-                                            <input
-                                                :value="monSettings.stackAlerts[stack]?.ramMB ?? ''"
-                                                @input="setRamThreshold(stack, ($event.target as HTMLInputElement).value)"
-                                                type="number" min="1" placeholder="—"
-                                                class="form-control form-control-sm"
-                                                style="max-width: 80px" />
-                                            <span class="input-group-text">MB</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </template>
+                    <table v-else class="table table-sm table-dark table-bordered small mb-0">
+                        <thead>
+                            <tr>
+                                <th>Stack</th>
+                                <th>{{ $t('watcher.monitoring.stackAlertsCpu') }}</th>
+                                <th>{{ $t('watcher.monitoring.stackAlertsRam') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="stack in stacksList" :key="stack">
+                                <td><code>{{ stack }}</code></td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input
+                                            :value="monSettings.stackAlerts[stack]?.cpuPercent ?? ''"
+                                            @input="setCpuThreshold(stack, ($event.target as HTMLInputElement).value)"
+                                            type="number" min="1" max="100" placeholder="—"
+                                            class="form-control form-control-sm"
+                                            style="max-width: 70px" />
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input
+                                            :value="monSettings.stackAlerts[stack]?.ramMB ?? ''"
+                                            @input="setRamThreshold(stack, ($event.target as HTMLInputElement).value)"
+                                            type="number" min="1" placeholder="—"
+                                            class="form-control form-control-sm"
+                                            style="max-width: 80px" />
+                                        <span class="input-group-text">MB</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <button class="btn btn-primary btn-sm" @click="saveMonSettings" :disabled="savingMon">
@@ -352,8 +339,9 @@ interface Overview {
 
 async function api(method: string, path: string, body?: unknown): Promise<{ ok: boolean; data?: unknown; message?: string }> {
     const token = localStorage.getItem("token") ?? "";
-    const sep = path.includes("?") ? "&" : "?";
-    const res = await fetch(`${path}${sep}token=${encodeURIComponent(token)}`, {
+    const fullPath = "/api" + path;
+    const sep = fullPath.includes("?") ? "&" : "?";
+    const res = await fetch(`${fullPath}${sep}token=${encodeURIComponent(token)}`, {
         method,
         headers: body ? { "Content-Type": "application/json" } : {},
         body: body ? JSON.stringify(body) : undefined,
@@ -495,7 +483,9 @@ async function loadSettings() {
 async function saveMonSettings() {
     savingMon.value = true;
     try {
-        const res = await api("POST", "/monitoring/settings", monSettings.value);
+        // stackAlertsEnabled is always true — the toggle has been removed
+        const payload = { ...monSettings.value, stackAlertsEnabled: true };
+        const res = await api("POST", "/monitoring/settings", payload);
         showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
     } finally { savingMon.value = false; }
 }
