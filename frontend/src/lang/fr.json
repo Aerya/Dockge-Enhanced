@@ -395,5 +395,9 @@
     "watcher.backup.snapshots.diffMissing": "Fichier absent du disque — diff indisponible.",
     "watcher.backup.snapshots.diffIdentical": "Fichiers identiques",
     "watcher.backup.snapshots.diffLegendSnapshot": "dans le snapshot (sera restauré)",
-    "watcher.backup.snapshots.diffLegendDisk": "sur le disque (sera écrasé)"
+    "watcher.backup.snapshots.diffLegendDisk": "sur le disque (sera écrasé)",
+    "watcher.backup.snapshots.snapDiffTab": "Diff vs snapshot préc.",
+    "watcher.backup.snapshots.snapDiffNoPrev": "Aucun snapshot précédent disponible pour ce fichier.",
+    "watcher.backup.snapshots.snapDiffLegendPrev": "dans le snapshot précédent (supprimé)",
+    "watcher.backup.snapshots.snapDiffLegendCurr": "dans ce snapshot (ajouté)"
 }

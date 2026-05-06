@@ -402,5 +402,9 @@
     "watcher.backup.snapshots.diffMissing": "File missing from disk — diff unavailable.",
     "watcher.backup.snapshots.diffIdentical": "Files are identical",
     "watcher.backup.snapshots.diffLegendSnapshot": "from snapshot (will be restored)",
-    "watcher.backup.snapshots.diffLegendDisk": "on disk (will be overwritten)"
+    "watcher.backup.snapshots.diffLegendDisk": "on disk (will be overwritten)",
+    "watcher.backup.snapshots.snapDiffTab": "Diff vs prev snapshot",
+    "watcher.backup.snapshots.snapDiffNoPrev": "No previous snapshot available for this file.",
+    "watcher.backup.snapshots.snapDiffLegendPrev": "in previous snapshot (was removed)",
+    "watcher.backup.snapshots.snapDiffLegendCurr": "in this snapshot (was added)"
 }

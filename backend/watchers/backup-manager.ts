@@ -1222,8 +1222,8 @@ export class BackupManager {
         }));
     }
 
-    /** Retourne le contenu d'un fichier texte depuis un snapshot + sa version disque actuelle */
-    async getSnapshotFileContent(snapshotId: string, filePath: string): Promise<{ snapshot: string; disk: string | null }> {
+    /** Retourne le contenu d'un fichier texte depuis un snapshot + sa version disque actuelle + version snapshot précédent */
+    async getSnapshotFileContent(snapshotId: string, filePath: string, prevSnapshotId?: string): Promise<{ snapshot: string; disk: string | null; prev: string | null }> {
         const safeId = assertSafeResticId(snapshotId);
         if (!filePath.startsWith("/") || filePath.includes("..") || filePath.length > 1000) {
             throw new Error("Chemin de fichier invalide");
@@ -1236,7 +1236,14 @@ export class BackupManager {
                 disk = await fs.readFile(filePath, "utf8");
             }
         } catch { /* fichier absent */ }
-        return { snapshot: snapshotContent, disk };
+        let prev: string | null = null;
+        if (prevSnapshotId) {
+            try {
+                const safePrev = assertSafeResticId(prevSnapshotId);
+                prev = await this.resticDump(this.primaryDest(), safePrev, filePath);
+            } catch { /* fichier absent du snapshot précédent */ }
+        }
+        return { snapshot: snapshotContent, disk, prev };
     }
 
     // ── Surveillance de fraîcheur ────────────────────────────────

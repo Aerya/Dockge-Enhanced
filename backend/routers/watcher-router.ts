@@ -372,7 +372,8 @@ export class WatcherRouter extends Router {
                     res.status(400).json({ ok: false, message: "Type de fichier non supporté pour l'aperçu" });
                     return;
                 }
-                const result = await BackupManager.getInstance().getSnapshotFileContent(req.params.id, filePath);
+                const prevId = typeof req.query.prevId === "string" ? req.query.prevId : undefined;
+                const result = await BackupManager.getInstance().getSnapshotFileContent(req.params.id, filePath, prevId);
                 res.json({ ok: true, data: result });
             } catch (e) {
                 res.status(500).json({ ok: false, message: String(e) });

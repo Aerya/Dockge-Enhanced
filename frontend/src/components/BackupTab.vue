@@ -745,10 +745,15 @@
                                 @click="preview.tab = 'preview'">
                                 <font-awesome-icon icon="eye" class="me-1" />{{ $t('watcher.backup.snapshots.previewTab') }}
                             </button>
+                            <button :class="['preview-tab-btn', preview.tab === 'snapdiff' && 'active']"
+                                :disabled="preview.loading || !preview.prevContent"
+                                @click="preview.tab = 'snapdiff'">
+                                <font-awesome-icon icon="code-branch" class="me-1" />{{ $t('watcher.backup.snapshots.snapDiffTab') }}
+                            </button>
                             <button :class="['preview-tab-btn', preview.tab === 'diff' && 'active']"
                                 :disabled="preview.loading || !preview.diskContent"
                                 @click="preview.tab = 'diff'">
-                                <font-awesome-icon icon="code-branch" class="me-1" />{{ $t('watcher.backup.snapshots.diffTab') }}
+                                <font-awesome-icon icon="hard-drive" class="me-1" />{{ $t('watcher.backup.snapshots.diffTab') }}
                             </button>
                         </div>
                         <button class="preview-close-btn" @click="preview.open = false">
@@ -767,7 +772,31 @@
                         <!-- Onglet Aperçu -->
                         <pre v-if="preview.tab === 'preview'" class="preview-code">{{ preview.snapshotContent }}</pre>
 
-                        <!-- Onglet Diff -->
+                        <!-- Onglet Diff entre snapshots -->
+                        <div v-else-if="preview.tab === 'snapdiff'" class="diff-view">
+                            <div v-if="!preview.prevContent" class="form-text fst-italic p-3">
+                                {{ $t('watcher.backup.snapshots.snapDiffNoPrev') }}
+                            </div>
+                            <template v-else>
+                                <div class="diff-legend">
+                                    <span class="diff-leg-rm">− {{ $t('watcher.backup.snapshots.snapDiffLegendPrev') }}</span>
+                                    <span class="diff-leg-add">+ {{ $t('watcher.backup.snapshots.snapDiffLegendCurr') }}</span>
+                                    <span v-if="snapDiffResult.every(l => l.type === 'same')" class="diff-leg-ok">
+                                        ✓ {{ $t('watcher.backup.snapshots.diffIdentical') }}
+                                    </span>
+                                </div>
+                                <div class="diff-lines">
+                                    <div v-for="(ln, i) in snapDiffResult" :key="i"
+                                        :class="['diff-line', `diff-${ln.type}`]">
+                                        <span class="diff-lnum">{{ i + 1 }}</span>
+                                        <span class="diff-marker">{{ ln.type === 'removed' ? '−' : ln.type === 'added' ? '+' : ' ' }}</span>
+                                        <span class="diff-text">{{ ln.line }}</span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Onglet Diff vs disque -->
                         <div v-else class="diff-view">
                             <div v-if="!preview.diskContent" class="form-text fst-italic p-3">
                                 {{ $t('watcher.backup.snapshots.diffMissing') }}
@@ -947,9 +976,10 @@ const preview = ref({
     filePath: "",
     fileName: "",
     snapshotContent: "",
-    diskContent: null as string | null,
+    diskContent:  null as string | null,
+    prevContent:  null as string | null,
     loading: false,
-    tab: "preview" as "preview" | "diff",
+    tab: "preview" as "preview" | "diff" | "snapdiff",
 });
 const expandedStacks    = ref<Set<string>>(new Set());
 const expandedFolders   = ref<Set<string>>(new Set());
@@ -1096,15 +1126,20 @@ function diffLines(aText: string, bText: string): DiffLine[] {
 }
 
 async function openPreview(snapId: string, f: SnapshotFile) {
+    const autoTab = (f.snapDiff === "modified" && f.prevSnapshotId) ? "snapdiff" : "preview";
     preview.value = {
         open: true, snapId, filePath: f.path, fileName: f.name,
-        snapshotContent: "", diskContent: null, loading: true, tab: "preview",
+        snapshotContent: "", diskContent: null, prevContent: null,
+        loading: true, tab: autoTab,
     };
     try {
-        const res = await api("GET", `/backup/snapshots/${snapId}/file-content?path=${encodeURIComponent(f.path)}`);
+        let url = `/backup/snapshots/${snapId}/file-content?path=${encodeURIComponent(f.path)}`;
+        if (f.prevSnapshotId) url += `&prevId=${encodeURIComponent(f.prevSnapshotId)}`;
+        const res = await api("GET", url);
         if (res.ok) {
             preview.value.snapshotContent = res.data.snapshot ?? "";
             preview.value.diskContent     = res.data.disk ?? null;
+            preview.value.prevContent     = res.data.prev ?? null;
         } else {
             showToast(`❌ ${res.message}`, false);
             preview.value.open = false;
@@ -1208,6 +1243,11 @@ const isBackupStale = computed(() => {
 const diffResult = computed<DiffLine[]>(() => {
     if (!preview.value.diskContent || !preview.value.snapshotContent) return [];
     return diffLines(preview.value.snapshotContent, preview.value.diskContent);
+});
+
+const snapDiffResult = computed<DiffLine[]>(() => {
+    if (!preview.value.prevContent || !preview.value.snapshotContent) return [];
+    return diffLines(preview.value.prevContent, preview.value.snapshotContent);
 });
 
 const snapshotSizeMap = computed(() => {
