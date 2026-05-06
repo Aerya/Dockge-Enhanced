@@ -57,7 +57,6 @@
 
                 <!-- Prochain scan Trivy -->
                 <div class="monitoring-card mc-neutral">
-                    <div class="mc-icon">⏰</div>
                     <div class="mc-body">
                         <div class="mc-label">{{ $t('watcher.monitoring.nextTrivy') }}</div>
                         <div class="mc-value" v-if="overview.trivy.nextScanAt">

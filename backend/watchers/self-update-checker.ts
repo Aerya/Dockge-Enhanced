@@ -12,6 +12,7 @@ import * as path from "path";
 import axios from "axios";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { Settings } from "../settings";
 
 const SELF_REPO        = "aerya/dockge-enhanced";
 const SELF_TAG         = "latest";
@@ -252,7 +253,11 @@ export class SelfUpdateChecker {
         const apprise  = await this._loadApprise();
         if (webhooks.length === 0 && !apprise) return;
 
-        const title = "🔔 Mise à jour Dockge-Enhanced disponible";
+        const hostname       = (await Settings.get("primaryHostname")) || "";
+        const hostnamePrefix = hostname ? `[${hostname}] ` : "";
+        const footerHost     = hostname ? ` · ${hostname}` : "";
+
+        const title = `${hostnamePrefix}🔔 Mise à jour Dockge-Enhanced disponible`;
         const body  = [
             "Une nouvelle image est disponible sur GHCR.",
             "",
@@ -267,6 +272,7 @@ export class SelfUpdateChecker {
         if (webhooks.length > 0) {
             await new DiscordNotifier(webhooks).sendEmbed({
                 title, color: 0xF59E0B, description: body,
+                footer: `Dockge Enhanced${footerHost}`,
             });
         }
         if (apprise) {
@@ -279,7 +285,11 @@ export class SelfUpdateChecker {
         const apprise  = await this._loadApprise();
         if (webhooks.length === 0 && !apprise) return;
 
-        const title = "✅ Dockge-Enhanced mis à jour";
+        const hostname       = (await Settings.get("primaryHostname")) || "";
+        const hostnamePrefix = hostname ? `[${hostname}] ` : "";
+        const footerHost     = hostname ? ` · ${hostname}` : "";
+
+        const title = `${hostnamePrefix}✅ Dockge-Enhanced mis à jour`;
         const body  = [
             `Le conteneur **${containerName}** a été mis à jour automatiquement.`,
             `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
@@ -288,6 +298,7 @@ export class SelfUpdateChecker {
         if (webhooks.length > 0) {
             await new DiscordNotifier(webhooks).sendEmbed({
                 title, color: 0x22c55e, description: body,
+                footer: `Dockge Enhanced${footerHost}`,
             });
         }
         if (apprise) {

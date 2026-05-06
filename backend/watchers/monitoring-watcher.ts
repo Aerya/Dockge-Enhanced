@@ -8,6 +8,7 @@ import * as path from "path";
 import * as fs from "fs/promises";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { Settings } from "../settings";
 
 const DATA_DIR              = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH         = path.join(DATA_DIR, "monitoring-settings.json");
@@ -184,10 +185,14 @@ export class MonitoringWatcher {
         const apprise = await this.loadAppriseNotifier();
         if (!discord && !apprise) return;
 
+        const hostname       = (await Settings.get("primaryHostname")) || "";
+        const hostnamePrefix = hostname ? `[${hostname}] ` : "";
+        const footerHost     = hostname ? ` · ${hostname}` : "";
+
         const en = (this.settings.notificationLang ?? "fr") === "en";
         const tr = (fr: string, enStr: string) => en ? enStr : fr;
 
-        const title = tr(
+        const title = `${hostnamePrefix}` + tr(
             `🔁 Boucle de crash — ${event.containerName}`,
             `🔁 Crash loop — ${event.containerName}`,
         );
@@ -199,7 +204,7 @@ export class MonitoringWatcher {
         if (discord) {
             await discord.sendEmbed({
                 title, color: 0xef4444, description: desc, fields: [],
-                footer: `Dockge Enhanced — Monitoring · ${new Date().toLocaleString(en ? "en-GB" : "fr-FR")}`,
+                footer: `Dockge Enhanced — Monitoring${footerHost} · ${new Date().toLocaleString(en ? "en-GB" : "fr-FR")}`,
             });
         }
         if (apprise) await apprise.send({ title, body: desc, type: "failure" });
