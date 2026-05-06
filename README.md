@@ -152,6 +152,8 @@ services:
 
 > 💾 The `/backup:/backup` volume is optional but recommended if you use **local** as a Restic backup destination — set the destination path to `/backup` so your snapshots land on a dedicated host directory outside the container.
 
+> 📂 **Backing up multiple data directories?** Add as many volumes as you need (e.g. `../../media:/media-data`), then register each container path in the Backup tab under **Additional paths** — Restic will include them all in every backup run.
+
 ```bash
 docker compose up -d
 ```
