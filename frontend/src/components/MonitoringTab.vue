@@ -333,9 +333,11 @@ interface Overview {
 
 // ─── API helper ───────────────────────────────────────────────────
 
+const API = "/api";
+
 async function api(method: string, path: string, body?: unknown): Promise<{ ok: boolean; data?: unknown; message?: string }> {
     const token = localStorage.getItem("token") ?? "";
-    const fullPath = "/api" + path;
+    const fullPath = API + path;
     const sep = fullPath.includes("?") ? "&" : "?";
     const res = await fetch(`${fullPath}${sep}token=${encodeURIComponent(token)}`, {
         method,

@@ -5,7 +5,7 @@
 
 import { DockgeServer } from "../dockge-server";
 import { Router } from "../router";
-import express, { Express, Request, Response } from "express";
+import express, { Express, Request, Response, NextFunction } from "express";
 import { MonitoringWatcher, MonitoringSettings } from "../watchers/monitoring-watcher";
 import { BackupManager } from "../watchers/backup-manager";
 import { TrivyScanner } from "../watchers/trivy-scanner";
@@ -14,41 +14,56 @@ import { Settings } from "../settings";
 import jwt from "jsonwebtoken";
 import { JWTDecoded } from "../util-server";
 
-// ─── Auth middleware (même pattern que watcher-router) ────────────
+// ─── Auth middleware (même pattern exact que watcher-router) ──────
 
-function requireAuth(req: Request, res: Response, next: () => void): void {
-    const token =
-        (req.headers.authorization?.startsWith("Bearer ")
-            ? req.headers.authorization.slice(7)
-            : null) ?? (req.query.token as string | undefined);
-
-    if (!token) {
-        res.status(401).json({ ok: false, message: "Unauthorized" });
+async function requireAuth(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    jwtSecret: string
+): Promise<void> {
+    if (await Settings.get("disableAuth")) {
+        next();
         return;
     }
+
+    const authHeader = req.headers["authorization"];
+    const token =
+        (authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined) ??
+        (typeof req.query.token === "string" ? req.query.token : undefined);
+
+    if (!token) {
+        res.status(401).json({ ok: false, message: "Authentification requise" });
+        return;
+    }
+
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET ?? "dockge") as JWTDecoded;
-        if (!decoded?.username) throw new Error("Invalid token");
+        jwt.verify(token, jwtSecret) as JWTDecoded;
         next();
     } catch {
-        res.status(401).json({ ok: false, message: "Unauthorized" });
+        res.status(401).json({ ok: false, message: "Token invalide ou expiré" });
     }
 }
 
 // ─── Router ───────────────────────────────────────────────────────
 
 export class MonitoringRouter extends Router {
-    create(_app: Express, _server: DockgeServer): express.Router {
+    create(_app: Express, server: DockgeServer): express.Router {
         const router = express.Router();
         router.use(express.json());
 
+        // Auth middleware on all routes — uses server.jwtSecret like WatcherRouter
+        router.use((req: Request, res: Response, next: NextFunction) => {
+            requireAuth(req, res, next, server.jwtSecret).catch(next);
+        });
+
         // ── Settings ──────────────────────────────────────────────
 
-        router.get("/monitoring/settings", requireAuth, (_req: Request, res: Response) => {
+        router.get("/monitoring/settings", (_req: Request, res: Response) => {
             res.json({ ok: true, data: MonitoringWatcher.getInstance().getSettingsSafe() });
         });
 
-        router.post("/monitoring/settings", requireAuth, async (req: Request, res: Response) => {
+        router.post("/monitoring/settings", async (req: Request, res: Response) => {
             try {
                 const partial = req.body as Partial<MonitoringSettings>;
                 await MonitoringWatcher.getInstance().saveSettings(partial);
@@ -60,7 +75,7 @@ export class MonitoringRouter extends Router {
 
         // ── Display settings (diskPartition — stored in SQLite) ───
 
-        router.post("/monitoring/display-settings", requireAuth, async (req: Request, res: Response) => {
+        router.post("/monitoring/display-settings", async (req: Request, res: Response) => {
             try {
                 const { diskPartition } = req.body as { diskPartition?: string };
                 if (diskPartition !== undefined) {
@@ -72,14 +87,14 @@ export class MonitoringRouter extends Router {
             }
         });
 
-        router.get("/monitoring/display-settings", requireAuth, async (_req: Request, res: Response) => {
+        router.get("/monitoring/display-settings", async (_req: Request, res: Response) => {
             const diskPartition = await Settings.get("diskPartition") ?? "/";
             res.json({ ok: true, data: { diskPartition } });
         });
 
         // ── Overview (dashboard cards) ────────────────────────────
 
-        router.get("/monitoring/overview", requireAuth, async (_req: Request, res: Response) => {
+        router.get("/monitoring/overview", async (_req: Request, res: Response) => {
             // Backup
             const history    = BackupManager.getInstance().getHistory();
             const lastBackup = history[0] ?? null;
@@ -133,13 +148,13 @@ export class MonitoringRouter extends Router {
 
         // ── Recent crash events ───────────────────────────────────
 
-        router.get("/monitoring/crash-events", requireAuth, (_req: Request, res: Response) => {
+        router.get("/monitoring/crash-events", (_req: Request, res: Response) => {
             res.json({ ok: true, data: MonitoringWatcher.getInstance().getRecentCrashEvents() });
         });
 
         // ── Stack list (for threshold config UI) ──────────────────
 
-        router.get("/monitoring/stacks", requireAuth, async (_req: Request, res: Response) => {
+        router.get("/monitoring/stacks", async (_req: Request, res: Response) => {
             try {
                 const stacks = await BackupManager.getInstance().listStacks();
                 res.json({ ok: true, data: stacks });
@@ -148,8 +163,7 @@ export class MonitoringRouter extends Router {
             }
         });
 
-        // Mount under /api (same pattern as WatcherRouter → /api/watcher)
-        // Routes are defined as /monitoring/*, so final paths: /api/monitoring/*
+        // Mount under /api — final paths: /api/monitoring/*
         const mountRouter = express.Router();
         mountRouter.use("/api", router);
         return mountRouter;
