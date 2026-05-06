@@ -17,6 +17,7 @@ import { EventEmitter } from "events";
 EventEmitter.defaultMaxListeners = 50;
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { Settings } from "../settings";
 
 const execAsync = promisify(exec);
 
@@ -859,6 +860,9 @@ export class ImageWatcher {
         const en       = (this.settings.notificationLang ?? "fr") === "en";
         const locale   = en ? "en-GB" : "fr-FR";
         const t        = (fr: string, enStr: string) => en ? enStr : fr;
+        const hostname: string = await Settings.get("primaryHostname") || "";
+        const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
+        const footerHost       = hostname ? ` · ${hostname}` : "";
 
         const autoUpdatedKeys = new Set(autoUpdated.map(u => `${u.stack}::${u.image}`));
         const notAuto = updates.filter(u => !autoUpdatedKeys.has(`${u.stack}::${u.image}`));
@@ -868,25 +872,25 @@ export class ImageWatcher {
         // Titre selon ce qui s'est passé
         let title: string;
         if (autoUpdated.length > 0 && notAuto.length === 0) {
-            title = t(
+            title = `${hostnamePrefix}${t(
                 `✅ ${autoUpdated.length} image(s) mise(s) à jour automatiquement`,
                 `✅ ${autoUpdated.length} image(s) auto-updated`
-            );
+            )}`;
         } else if (autoUpdated.length > 0) {
             const parts = [
                 autoUpdated.length > 0 ? `${autoUpdated.length} ${t("auto", "auto")}` : "",
                 scheduled.length > 0   ? `${scheduled.length} ${t("planifiée(s)", "scheduled")}` : "",
                 manual.length > 0      ? `${manual.length} ${t("manuelle(s)", "manual")}` : "",
             ].filter(Boolean).join(", ");
-            title = t(
+            title = `${hostnamePrefix}${t(
                 `🐳 ${updates.length} mise(s) à jour — ${parts}`,
                 `🐳 ${updates.length} update(s) — ${parts}`
-            );
+            )}`;
         } else {
-            title = t(
+            title = `${hostnamePrefix}${t(
                 `🐳 ${updates.length} mise(s) à jour disponible(s)`,
                 `🐳 ${updates.length} update(s) available`
-            );
+            )}`;
         }
 
         const makeField = (u: ImageStatus, wasAutoUpdated: boolean) => {
@@ -933,7 +937,7 @@ export class ImageWatcher {
                 url:   uiUrl ?? undefined,
                 description,
                 fields,
-                footer: "Dockge Enhanced — Image Watcher",
+                footer: `Dockge Enhanced — Image Watcher${footerHost}`,
             });
         }
 

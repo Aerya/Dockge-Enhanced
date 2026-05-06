@@ -9,6 +9,7 @@ import { promisify } from "util";
 import * as path from "path";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { Settings } from "../settings";
 
 const execAsync = promisify(exec);
 
@@ -470,6 +471,9 @@ export class TrivyScanner {
         const en     = (this.settings.notificationLang ?? "fr") === "en";
         const locale = en ? "en-GB" : "fr-FR";
         const t      = (fr: string, enStr: string) => en ? enStr : fr;
+        const hostname: string = await Settings.get("primaryHostname") || "";
+        const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
+        const footerHost       = hostname ? ` · ${hostname}` : "";
 
         const fields = [];
         const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
@@ -514,7 +518,7 @@ export class TrivyScanner {
         }
 
         const uiUrl = this.baseUrl || null;
-        const title = `${SEVERITY_EMOJI[result.maxSeverity]} ${t("Alerte sécurité", "Security alert")} — ${result.image}`;
+        const title = `${hostnamePrefix}${SEVERITY_EMOJI[result.maxSeverity]} ${t("Alerte sécurité", "Security alert")} — ${result.image}`;
         const description =
             `${t("Stack", "Stack")} : **${result.stack}**\n${t("Sévérité max", "Max severity")} : **${result.maxSeverity}**` +
             (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl})` : "");
@@ -526,7 +530,7 @@ export class TrivyScanner {
                 url:   uiUrl ?? undefined,
                 description,
                 fields,
-                footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString(locale)}`,
+                footer: `Dockge Enhanced — Trivy Scanner${footerHost} • ${new Date().toLocaleString(locale)}`,
             });
         }
 
@@ -544,6 +548,9 @@ export class TrivyScanner {
         const en     = (this.settings.notificationLang ?? "fr") === "en";
         const locale = en ? "en-GB" : "fr-FR";
         const t      = (fr: string, enStr: string) => en ? enStr : fr;
+        const hostname: string = await Settings.get("primaryHostname") || "";
+        const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
+        const footerHost       = hostname ? ` · ${hostname}` : "";
 
         const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
         const ignoredSet = new Set(this.settings.ignoredCVEs ?? []);
@@ -590,8 +597,8 @@ export class TrivyScanner {
         }).join("\n");
 
         const title = hasCritical
-            ? `🚨 ${t("Rapport de sécurité — Vulnérabilités détectées", "Security report — Vulnerabilities detected")}`
-            : `✅ ${t(`Rapport de sécurité — ${results.length} image(s) scannée(s)`, `Security report — ${results.length} image(s) scanned`)}`;
+            ? `${hostnamePrefix}🚨 ${t("Rapport de sécurité — Vulnérabilités détectées", "Security report — Vulnerabilities detected")}`
+            : `${hostnamePrefix}✅ ${t(`Rapport de sécurité — ${results.length} image(s) scannée(s)`, `Security report — ${results.length} image(s) scanned`)}`;
         const description =
             (summaryLines || t("Aucune vulnérabilité significative détectée.", "No significant vulnerabilities detected.")) +
             (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl})` : "");
@@ -609,7 +616,7 @@ export class TrivyScanner {
                         inline: false,
                     }
                 ],
-                footer: `Dockge Enhanced — Trivy Scanner • ${new Date().toLocaleString(locale)}`,
+                footer: `Dockge Enhanced — Trivy Scanner${footerHost} • ${new Date().toLocaleString(locale)}`,
             });
         }
 

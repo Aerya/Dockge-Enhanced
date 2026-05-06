@@ -12,6 +12,7 @@ import * as path from "path";
 import * as yaml from "js-yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { Settings } from "../settings";
 
 const execAsync = promisify(exec);
 
@@ -1271,8 +1272,11 @@ export class BackupManager {
 
         const en     = (this.settings.notificationLang ?? "fr") === "en";
         const locale = en ? "en-GB" : "fr-FR";
+        const hostname: string = await Settings.get("primaryHostname") || "";
+        const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
+        const footerHost       = hostname ? ` · ${hostname}` : "";
         const hours  = Math.floor(ageMs / 3_600_000);
-        const title  = en ? "⚠️ Dockge backup overdue" : "⚠️ Backup Dockge en retard";
+        const title  = `${hostnamePrefix}${en ? "⚠️ Dockge backup overdue" : "⚠️ Backup Dockge en retard"}`;
         const descr  = en
             ? `No successful backup in the last **${hours}h**. Please check your backup configuration.`
             : `Aucun backup réussi depuis **${hours}h**. Vérifiez votre configuration de backup.`;
@@ -1280,7 +1284,7 @@ export class BackupManager {
         if (discord) {
             await discord.sendEmbed({
                 title, color: 0xf59e0b, description: descr, fields: [],
-                footer: `Dockge Enhanced — Backup · ${new Date().toLocaleString(locale)}`,
+                footer: `Dockge Enhanced — Backup${footerHost} · ${new Date().toLocaleString(locale)}`,
             });
         }
         if (apprise) await apprise.send({ title, body: descr, type: "failure" });
@@ -1311,9 +1315,12 @@ export class BackupManager {
         const en       = (this.settings.notificationLang ?? "fr") === "en";
         const locale   = en ? "en-GB" : "fr-FR";
         const t        = (fr: string, enStr: string) => en ? enStr : fr;
+        const hostname: string = await Settings.get("primaryHostname") || "";
+        const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
+        const footerHost       = hostname ? ` · ${hostname}` : "";
 
         if (result.success) {
-            const title  = t("✅ Backup Dockge réussi", "✅ Dockge backup successful");
+            const title  = `${hostnamePrefix}${t("✅ Backup Dockge réussi", "✅ Dockge backup successful")}`;
             const descr  = `Snapshot \`${result.snapshotId}\` ${t("créé avec succès", "created successfully")}`;
             const fields: Array<{ name: string; value: string; inline: boolean }> = [
                 { name: t("Durée", "Duration"),
@@ -1345,7 +1352,7 @@ export class BackupManager {
             if (discord) {
                 await discord.sendEmbed({
                     title, color: 0x22c55e, description: descr, fields,
-                    footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString(locale)}`,
+                    footer: `Dockge Enhanced — Backup${footerHost} · ${new Date(result.timestamp).toLocaleString(locale)}`,
                 });
             }
             if (apprise) {
@@ -1353,7 +1360,7 @@ export class BackupManager {
                 await apprise.send({ title, body, type: "success" });
             }
         } else {
-            const title  = t("❌ Échec du backup Dockge", "❌ Dockge backup failed");
+            const title  = `${hostnamePrefix}${t("❌ Échec du backup Dockge", "❌ Dockge backup failed")}`;
             const descr  = `**${t("Erreur", "Error")} :** ${result.error}`;
             const fields: Array<{ name: string; value: string; inline: boolean }> = [
                 { name: t("Durée", "Duration"),
@@ -1376,7 +1383,7 @@ export class BackupManager {
             if (discord) {
                 await discord.sendEmbed({
                     title, color: 0xef4444, description: descr, fields,
-                    footer: `Dockge Enhanced — Backup · ${new Date(result.timestamp).toLocaleString(locale)}`,
+                    footer: `Dockge Enhanced — Backup${footerHost} · ${new Date(result.timestamp).toLocaleString(locale)}`,
                 });
             }
             if (apprise) {
