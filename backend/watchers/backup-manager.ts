@@ -536,7 +536,7 @@ export class BackupManager {
             try {
                 const { stdout } = await execAsync(cmd, {
                     maxBuffer: 20 * 1024 * 1024,
-                    timeout:   30 * 60 * 1000,
+                    timeout:   2 * 60 * 60 * 1000,  // 2 hours
                     env: {
                         PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
                         ...process.env,
@@ -663,6 +663,9 @@ export class BackupManager {
                 if (!dest.resticPassword) {
                     throw new Error(`Mot de passe Restic non configuré pour "${dest.label}"`);
                 }
+
+                // Libère un éventuel verrou obsolète avant toute opération restic
+                try { await this.resticFor(dest, "unlock"); } catch { /* ignore */ }
 
                 await this.initRepoFor(dest);
 
@@ -910,8 +913,9 @@ export class BackupManager {
     }
 
     private async runForgetFor(dest: BackupDestination): Promise<void> {
-        // Supprime un éventuel verrou obsolète laissé par un process précédent tué
+        // Libère un éventuel verrou laissé par le backup (ex: crash, timeout)
         try { await this.resticFor(dest, "unlock"); } catch { /* ignore */ }
+
         const r = this.settings.retention;
         const args = [
             `--keep-last ${sanitizeRetention(r.keepLast)}`,
