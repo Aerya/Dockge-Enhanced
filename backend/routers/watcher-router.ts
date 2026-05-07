@@ -10,7 +10,7 @@ import { DockgeServer } from "../dockge-server";
 import { basename as pathBasename } from "path";
 import { Router } from "../router";
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";
-import { ImageWatcher, imageStatusStore, rollbackStore, RegistryCredential, WatcherSettings } from "../watchers/image-watcher";
+import { ImageWatcher, imageStatusStore, rollbackStore, updateHistoryStore, RegistryCredential, WatcherSettings } from "../watchers/image-watcher";
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { BackupManager } from "../watchers/backup-manager";
@@ -124,6 +124,15 @@ export class WatcherRouter extends Router {
             } catch (e) {
                 res.status(500).json({ ok: false, message: String(e) });
             }
+        });
+
+        router.get("/image/update-history", (_req: Request, res: Response) => {
+            res.json({ ok: true, data: updateHistoryStore });
+        });
+
+        router.delete("/image/update-history", async (_req: Request, res: Response) => {
+            await ImageWatcher.getInstance().clearUpdateHistory();
+            res.json({ ok: true });
         });
 
         // ════════════════════════════════════════════════════════════════

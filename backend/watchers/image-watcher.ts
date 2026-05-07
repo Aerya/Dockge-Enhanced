@@ -21,12 +21,14 @@ import { Settings } from "../settings";
 
 const execAsync = promisify(exec);
 
-const STACKS_DIR    = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
-const DATA_DIR      = process.env.DOCKGE_DATA_DIR   ?? "/opt/dockge/data";
-const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
-const ROLLBACK_PATH = path.join(DATA_DIR, "rollback-registry.json");
+const STACKS_DIR          = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
+const DATA_DIR            = process.env.DOCKGE_DATA_DIR   ?? "/opt/dockge/data";
+const SETTINGS_PATH       = path.join(DATA_DIR, "watcher-settings.json");
+const ROLLBACK_PATH       = path.join(DATA_DIR, "rollback-registry.json");
+const UPDATE_HISTORY_PATH = path.join(DATA_DIR, "update-history.json");
 
-const ROLLBACK_WINDOW_MS = 24 * 3_600_000; // 24 heures
+const ROLLBACK_WINDOW_MS  = 24 * 3_600_000; // 24 heures
+const UPDATE_HISTORY_MAX  = 100;
 
 // Génère un tag Docker local qui protège l'ancienne image des `docker image prune`
 function rollbackTag(key: string): string {
@@ -83,9 +85,21 @@ export interface RollbackEntry {
     expiresAt: string;      // ISO date = updatedAt + 24h
 }
 
+export interface UpdateHistoryEntry {
+    timestamp: string;
+    stack:     string;
+    image:     string;
+    oldDigest: string;
+    newDigest: string;
+    mode:      "immediate" | "scheduled";
+    success:   boolean;
+    error?:    string;
+}
+
 // Stores partagés — lus par le router pour le polling frontend
-export const imageStatusStore = new Map<string, ImageStatus>();
-export const rollbackStore    = new Map<string, RollbackEntry>();
+export const imageStatusStore  = new Map<string, ImageStatus>();
+export const rollbackStore     = new Map<string, RollbackEntry>();
+export const updateHistoryStore: UpdateHistoryEntry[] = [];
 
 // ─── Helpers registry ─────────────────────────────────────────────
 
@@ -414,7 +428,22 @@ export class ImageWatcher {
     async startIfEnabled(): Promise<void> {
         await this.loadSettings();
         await this.loadRollbackRegistry();
+        await this._loadUpdateHistory();
         if (this.settings.enabled) this.start();
+    }
+
+    private async _loadUpdateHistory(): Promise<void> {
+        try {
+            const raw = await fs.readFile(UPDATE_HISTORY_PATH, "utf8");
+            const entries = JSON.parse(raw) as UpdateHistoryEntry[];
+            updateHistoryStore.length = 0;
+            updateHistoryStore.push(...entries.slice(0, UPDATE_HISTORY_MAX));
+        } catch { /* première utilisation */ }
+    }
+
+    async clearUpdateHistory(): Promise<void> {
+        updateHistoryStore.length = 0;
+        try { await fs.unlink(UPDATE_HISTORY_PATH); } catch { /* ignore */ }
     }
 
     start(): void {
@@ -557,7 +586,7 @@ export class ImageWatcher {
         for (const item of toImmediate) {
             const composePath = composePathByStack.get(item.stack);
             if (composePath) {
-                const success = await this.performAutoUpdate(item, composePath);
+                const success = await this.performAutoUpdate(item, composePath, "immediate");
                 if (success) autoUpdated.push(item);
             }
         }
@@ -623,7 +652,7 @@ export class ImageWatcher {
                 hasUpdate: true, lastChecked: new Date().toISOString(),
             };
 
-            const success = await this.performAutoUpdate(status, composePath);
+            const success = await this.performAutoUpdate(status, composePath, "scheduled");
             if (success) applied.push(status);
         }
 
@@ -647,7 +676,7 @@ export class ImageWatcher {
     }
 
     /** Tire et redémarre une image via docker compose. Retourne true si succès. */
-    private async performAutoUpdate(status: ImageStatus, composePath: string): Promise<boolean> {
+    private async performAutoUpdate(status: ImageStatus, composePath: string, mode: "immediate" | "scheduled" = "immediate"): Promise<boolean> {
         const key = `${status.stack}::${status.image}`;
         if (this._updatingImages.has(key)) {
             console.log(`[ImageWatcher] Auto-update ${key} déjà en cours, ignorée.`);
@@ -657,6 +686,7 @@ export class ImageWatcher {
         const service = this.findServiceForImage(composePath, status.image);
         const serviceArg = service ? ` ${shellQuote(service)}` : "";
         console.log(`[ImageWatcher] Auto-update: ${status.stack}/${status.image}${service ? ` (service: ${service})` : ""}`);
+        const oldDigest = status.localDigest ?? "";
         try {
             // ── Capture l'ID de l'image actuelle avant le pull (pour rollback) ──
             let oldImageId = "";
@@ -692,12 +722,45 @@ export class ImageWatcher {
             imageStatusStore.set(key, newStatus);
             console.log(`[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`);
             this._updatingImages.delete(key);
+
+            await this._recordUpdateHistory({
+                timestamp: new Date().toISOString(),
+                stack:     status.stack,
+                image:     status.image,
+                oldDigest,
+                newDigest: newStatus.localDigest ?? status.remoteDigest,
+                mode,
+                success:   true,
+            });
+
             return true;
         } catch (e) {
+            const errMsg = e instanceof Error ? e.message : String(e);
             console.error(`[ImageWatcher] Auto-update échouée: ${status.stack}/${status.image}:`, e);
             this._updatingImages.delete(key);
+
+            await this._recordUpdateHistory({
+                timestamp: new Date().toISOString(),
+                stack:     status.stack,
+                image:     status.image,
+                oldDigest,
+                newDigest: "",
+                mode,
+                success:   false,
+                error:     errMsg,
+            });
+
             return false;
         }
+    }
+
+    private async _recordUpdateHistory(entry: UpdateHistoryEntry): Promise<void> {
+        updateHistoryStore.unshift(entry);
+        if (updateHistoryStore.length > UPDATE_HISTORY_MAX) updateHistoryStore.splice(UPDATE_HISTORY_MAX);
+        try {
+            await fs.mkdir(DATA_DIR, { recursive: true });
+            await fs.writeFile(UPDATE_HISTORY_PATH, JSON.stringify(updateHistoryStore, null, 2));
+        } catch { /* non bloquant */ }
     }
 
     // ── Ignore digest ─────────────────────────────────────────────────

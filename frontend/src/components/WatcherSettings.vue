@@ -311,6 +311,60 @@
                         </table>
                     </div>
                 </div>
+            <!-- ═══ HISTORIQUE AUTO-UPDATES ═══ -->
+            <div class="shadow-box big-padding mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="settings-subheading mb-0">
+                        <font-awesome-icon icon="history" class="me-2" />{{ $t('watcher.updateHistory.heading') }}
+                    </h5>
+                    <button v-if="updateHistory.length > 0" class="btn btn-sm btn-outline-danger"
+                        @click="clearUpdateHistory">
+                        {{ $t('watcher.updateHistory.clear') }}
+                    </button>
+                </div>
+                <div v-if="updateHistory.length === 0" class="text-center form-text fst-italic py-3">
+                    {{ $t('watcher.updateHistory.empty') }}
+                </div>
+                <div v-else class="table-responsive">
+                    <table class="table table-sm table-borderless mb-0">
+                        <thead>
+                            <tr>
+                                <th>{{ $t('watcher.updateHistory.date') }}</th>
+                                <th>{{ $t('watcher.updateHistory.stack') }}</th>
+                                <th>{{ $t('watcher.updateHistory.image') }}</th>
+                                <th>{{ $t('watcher.updateHistory.digests') }}</th>
+                                <th>{{ $t('watcher.updateHistory.mode') }}</th>
+                                <th>{{ $t('watcher.updateHistory.status') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(h, i) in updateHistory" :key="i">
+                                <td class="small form-text text-nowrap">{{ fmtDate(h.timestamp) }}</td>
+                                <td class="small"><code>{{ h.stack }}</code></td>
+                                <td class="small update-history-image" :title="h.image">{{ h.image }}</td>
+                                <td class="small form-text font-monospace text-nowrap">
+                                    <template v-if="h.oldDigest && h.newDigest">
+                                        {{ h.oldDigest.slice(7, 19) }} → {{ h.newDigest.slice(7, 19) }}
+                                    </template>
+                                    <template v-else-if="h.oldDigest">
+                                        {{ h.oldDigest.slice(7, 19) }} → —
+                                    </template>
+                                    <span v-else class="form-text">—</span>
+                                </td>
+                                <td>
+                                    <span class="badge" :class="h.mode === 'immediate' ? 'bg-primary' : 'bg-secondary'">
+                                        {{ h.mode === 'immediate' ? $t('watcher.updateHistory.immediate') : $t('watcher.updateHistory.scheduled') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span v-if="h.success" class="badge bg-success">✓ OK</span>
+                                    <span v-else class="badge bg-danger" :title="h.error">✗ {{ $t('watcher.status.error') }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             </div>
 
             <!-- ═══ TAB: TRIVY ═══ -->
@@ -802,6 +856,17 @@ interface RollbackEntry {
     expiresAt: string;
 }
 
+interface UpdateHistoryEntry {
+    timestamp: string;
+    stack: string;
+    image: string;
+    oldDigest: string;
+    newDigest: string;
+    mode: "immediate" | "scheduled";
+    success: boolean;
+    error?: string;
+}
+
 interface TrivyScanResult {
     image: string; stack: string;
     maxSeverity: string;
@@ -874,6 +939,7 @@ const credentials = ref<Cred[]>([]);
 const newCred = ref<Cred>({ registry: "", username: "", token: "" });
 const imageStatuses    = ref<ImageStatus[]>([]);
 const rollbackEntries  = ref<RollbackEntry[]>([]);
+const updateHistory    = ref<UpdateHistoryEntry[]>([]);
 const rollbackingKey   = ref<string | null>(null);
 const ignoringKey      = ref<string | null>(null);
 const clearingKey      = ref<string | null>(null);
@@ -977,13 +1043,14 @@ function showToast(msg: string, ok = true) {
 
 onMounted(async () => {
     await initServerTz(api);
-    const [imgRes, trivyRes, statusRes, trivyStatusRes, rollbackRes, backupRes] = await Promise.all([
+    const [imgRes, trivyRes, statusRes, trivyStatusRes, rollbackRes, backupRes, histRes] = await Promise.all([
         api("GET", "/image/settings"),
         api("GET", "/trivy/settings"),
         api("GET", "/image/status"),
         api("GET", "/trivy/status"),
         api("GET", "/image/rollback"),
         api("GET", "/backup/settings"),
+        api("GET", "/image/update-history"),
     ]);
     // Charge la config Apprise depuis les settings image (stockée globalement)
     if (imgRes.ok && imgRes.data) {
@@ -1012,6 +1079,7 @@ onMounted(async () => {
     };
     if (statusRes.ok)   imageStatuses.value   = statusRes.data ?? [];
     if (rollbackRes.ok) rollbackEntries.value = rollbackRes.data ?? [];
+    if (histRes.ok)     updateHistory.value   = histRes.data ?? [];
     if (backupRes.ok) {
         backupWebhooks.value  = backupRes.data.discordWebhooks ?? [];
         backupNotifLang.value = backupRes.data.notificationLang ?? "fr";
@@ -1046,6 +1114,16 @@ function rollbackCountdown(entry: RollbackEntry): string {
     const h = Math.floor(ms / 3_600_000);
     const m = Math.floor((ms % 3_600_000) / 60_000);
     return h > 0 ? `${h}h${String(m).padStart(2, "0")}` : `${m}min`;
+}
+
+function fmtDate(iso: string): string {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleString(locale.value === "fr" ? "fr-FR" : "en-GB");
+}
+
+async function clearUpdateHistory() {
+    await api("DELETE", "/image/update-history");
+    updateHistory.value = [];
 }
 
 async function doRollback(s: ImageStatus) {
@@ -1626,6 +1704,13 @@ async function removeCred(registry: string) {
     font-size: .85rem;
     opacity: .75;
     cursor: default;
+}
+
+.update-history-image {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .table th {
