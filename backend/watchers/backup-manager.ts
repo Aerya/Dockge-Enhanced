@@ -268,26 +268,29 @@ function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string {
     const port = sanitizePort(s.port);
 
     if (s.authMode === "password" && tmpFile) {
-        // Chemins absolus obligatoires : restic spawne le sftp.command dans un
-        // sous-processus Go dont le PATH peut être différent du PATH Node.js.
+        // Restic parse la valeur de -o sftp.command= avec le parseur CSV de Go :
+        // les guillemets " dans un champ non-quoté provoquent "bare quote" error.
+        // Restic split ensuite la valeur par espace pour construire ses argv →
+        // pas besoin de shell-quoting ici, juste les valeurs brutes.
         const sshCommand = [
             "/usr/bin/sshpass",
-            "-f", shellQuote(tmpFile),
+            "-f", tmpFile,
             "/usr/bin/ssh",
-            "-l", shellQuote(s.user),
+            "-l", s.user,
             "-p", String(port),
             "-o", "StrictHostKeyChecking=no",
             "-o", "PreferredAuthentications=password",
             "-o", "BatchMode=no",
-            shellQuote(s.host),
+            s.host,
             "-s", "sftp",
         ].join(" ");
         return `-o ${shellQuote(`sftp.command=${sshCommand}`)}`;
     }
 
     if (s.authMode === "key") {
+        // Même raison : pas de guillemets dans sftp.args
         const sshArgs = [
-            ...(s.keyPath ? ["-i", shellQuote(s.keyPath)] : []),
+            ...(s.keyPath ? ["-i", s.keyPath] : []),
             "-p", String(port),
             "-o", "StrictHostKeyChecking=no",
         ].join(" ");
