@@ -678,7 +678,7 @@ export class BackupManager {
                 }
 
                 // Libère un éventuel verrou obsolète avant toute opération restic
-                try { await this.resticFor(dest, "unlock"); } catch { /* ignore */ }
+                try { await this.resticFor(dest, "unlock --remove-all"); } catch { /* ignore */ }
 
                 await this.initRepoFor(dest);
 
@@ -932,7 +932,7 @@ export class BackupManager {
 
     private async runForgetFor(dest: BackupDestination): Promise<void> {
         // Libère un éventuel verrou laissé par le backup (ex: crash, timeout)
-        try { await this.resticFor(dest, "unlock"); } catch { /* ignore */ }
+        try { await this.resticFor(dest, "unlock --remove-all"); } catch { /* ignore */ }
 
         const r = this.settings.retention;
         const args = [
