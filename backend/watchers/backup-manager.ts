@@ -1170,8 +1170,8 @@ export class BackupManager {
      */
     private async runRestoreTest(dest: BackupDestination, snapshotId: string): Promise<RestoreTestResult> {
         try {
-            // 1. Lister les fichiers du snapshot (resticFor ajoute --json → NDJSON)
-            const lsOut = await this.resticFor(dest, `ls ${shellQuote(snapshotId)}`);
+            // 1. Lister uniquement les fichiers sous STACKS_DIR (évite de parcourir les volumes)
+            const lsOut = await this.resticFor(dest, `ls ${shellQuote(snapshotId)} ${shellQuote(STACKS_DIR)}`);
 
             // 2. Trouver le premier compose.yaml dans le snapshot
             let composePath: string | undefined;
@@ -1219,7 +1219,7 @@ export class BackupManager {
             const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
             const cmd = `restic --repo ${shellQuote(repo)} ${sftpOpts} dump ${shellQuote(snapshotId)} ${shellQuote(filePath)}`;
             const { stdout } = await execAsync(cmd, {
-                maxBuffer: 2 * 1024 * 1024,
+                maxBuffer: 10 * 1024 * 1024,
                 timeout: 30_000,
                 env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...repoEnv },
             });
