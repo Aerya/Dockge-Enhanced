@@ -910,6 +910,8 @@ export class BackupManager {
     }
 
     private async runForgetFor(dest: BackupDestination): Promise<void> {
+        // Supprime un éventuel verrou obsolète laissé par un process précédent tué
+        try { await this.resticFor(dest, "unlock"); } catch { /* ignore */ }
         const r = this.settings.retention;
         const args = [
             `--keep-last ${sanitizeRetention(r.keepLast)}`,
