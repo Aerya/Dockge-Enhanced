@@ -666,7 +666,7 @@ export class BackupManager {
 
                 await this.initRepoFor(dest);
 
-                const stdout = await this.resticFor(dest, `backup ${pathArgs} ${tagArg} ${excludes}`, {}, [3]);
+                const stdout = await this.resticFor(dest, `backup -q ${pathArgs} ${tagArg} ${excludes}`, {}, [3]);
 
                 const lines = stdout.split("\n").filter(Boolean);
                 const summary = lines.reduce<Record<string, unknown> | null>((acc, line) => {

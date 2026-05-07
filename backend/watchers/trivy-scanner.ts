@@ -577,7 +577,7 @@ export class TrivyScanner {
 
         const hasCritical = totalCounts.CRITICAL > 0 || totalCounts.HIGH > 0;
         const uiUrl = this.baseUrl || null;
-        const imagesValue = results.map(r => {
+        const imageLines = results.map(r => {
             const header = `${SEVERITY_EMOJI[r.maxSeverity]} \`${r.image}\` (${r.stack})`;
             if (r.error) return `${header}\n  ${t("⚠️ Erreur de scan", "⚠️ Scan error")}`;
 
@@ -594,7 +594,22 @@ export class TrivyScanner {
                 .map(v => `${SEVERITY_EMOJI[v.Severity]} \`${v.VulnerabilityID}\` ${v.PkgName}`)
                 .join("  |  ");
             return `${header}\n  ${vulnLine}`;
-        }).join("\n");
+        });
+
+        // Discord field value limit = 1024 chars — truncate gracefully
+        let imagesValue = "";
+        let truncatedCount = 0;
+        for (const line of imageLines) {
+            const addition = (imagesValue ? "\n" : "") + line;
+            if (imagesValue.length + addition.length > 980) {
+                truncatedCount = imageLines.length - imageLines.indexOf(line);
+                break;
+            }
+            imagesValue += addition;
+        }
+        if (truncatedCount > 0) {
+            imagesValue += `\n_+${truncatedCount} ${t("autre(s) image(s)", "more image(s)")}_`;
+        }
 
         const title = hasCritical
             ? `${hostnamePrefix}🚨 ${t("Rapport de sécurité — Vulnérabilités détectées", "Security report — Vulnerabilities detected")}`
