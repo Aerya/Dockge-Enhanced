@@ -451,6 +451,16 @@
             </button>
         </div>
 
+        <!-- ═══ BACKUP EN COURS ═══ -->
+        <div v-if="runningDests.length > 0" class="backup-running-banner mb-3">
+            <span class="spinner-border spinner-border-sm me-2" style="color: var(--bs-primary)" />
+            <span class="fw-semibold me-2">{{ $t('watcher.backup.inProgress') }}</span>
+            <span v-for="d in runningDests" :key="d.label" class="backup-running-dest">
+                {{ d.label }}
+                <span class="text-muted ms-1">({{ formatElapsed(d.startedAt) }})</span>
+            </span>
+        </div>
+
         <!-- ═══ CHECK RESULTS ═══ -->
         <div v-if="checkResults.length > 0" class="mb-4">
             <div v-for="r in checkResults" :key="r.destIndex"
@@ -880,7 +890,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 
@@ -1025,6 +1035,42 @@ function toggleError(i: number) {
 const saving = ref(false);
 const initing = ref(false);
 const running = ref(false);
+
+// ── Backup en cours ──────────────────────────────────────────────
+type RunningDest = { label: string; startedAt: number };
+const runningDests   = ref<RunningDest[]>([]);
+const elapsedTick    = ref(0);  // s'incrémente toutes les secondes pour forcer le re-rendu
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+let tickTimer: ReturnType<typeof setInterval> | null = null;
+
+function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(async () => {
+        try {
+            const res = await api("GET", "/backup/running");
+            if (res.ok) runningDests.value = res.data;
+            if (runningDests.value.length === 0) stopPolling();
+        } catch { /* silencieux */ }
+    }, 3000);
+    tickTimer = setInterval(() => { elapsedTick.value++; }, 1000);
+}
+
+function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+}
+
+function formatElapsed(startedAt: number): string {
+    void elapsedTick.value; // dépendance réactive
+    const ms = Date.now() - startedAt;
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+}
+
+onUnmounted(stopPolling);
 const loadingSnaps = ref(false);
 const checking = ref(false);
 type CheckResult = { destIndex: number; label: string; ok: boolean; output: string };
@@ -1493,6 +1539,9 @@ async function runBackup() {
     try {
         await api("POST", "/backup/run");
         showToast(t('watcher.backup.launched'));
+        // Démarre le polling immédiatement (avec un léger délai pour que le backend enregistre la dest)
+        setTimeout(() => startPolling(), 1500);
+        // Recharge l'historique après la fin estimée (polling s'arrête tout seul)
         setTimeout(async () => {
             const res = await api("GET", "/backup/history");
             if (res.ok) history.value = res.data;
@@ -1706,6 +1755,28 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 .history-row-ok  > td:first-child { border-left: 3px solid #22c55e; }
 .history-row-err > td:first-child { border-left: 3px solid #ef4444; }
 .snapshot-row    > td:first-child { border-left: 3px solid #f59e0b; }
+
+.backup-running-banner {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(99, 172, 255, 0.35);
+    background: rgba(99, 172, 255, 0.08);
+    animation: banner-pulse 2s ease-in-out infinite;
+}
+.backup-running-dest {
+    background: rgba(255,255,255,0.07);
+    border-radius: 4px;
+    padding: 1px 8px;
+    font-size: 0.875rem;
+}
+@keyframes banner-pulse {
+    0%, 100% { border-color: rgba(99, 172, 255, 0.35); }
+    50%       { border-color: rgba(99, 172, 255, 0.75); }
+}
 
 .error-badge { cursor: pointer; user-select: none; }
 .error-badge-caret { font-size: 0.65em; margin-left: 4px; opacity: 0.8; }

@@ -390,6 +390,7 @@
     "watcher.backup.saved": "✅ Config saved",
     "watcher.backup.repoInit": "✅ Repo initialized",
     "watcher.backup.launched": "☁️ Backup launched in background",
+    "watcher.backup.inProgress": "Backup in progress",
     "watcher.backup.history.heading": "Recent history",
     "watcher.backup.history.none": "No backup performed yet.",
     "watcher.backup.history.date": "Date",

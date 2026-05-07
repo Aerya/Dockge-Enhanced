@@ -337,6 +337,10 @@ export class WatcherRouter extends Router {
             res.json({ ok: true, message: "Backup lancé en arrière-plan" });
         });
 
+        router.get("/backup/running", (_req: Request, res: Response) => {
+            res.json({ ok: true, data: BackupManager.getInstance().getRunningDests() });
+        });
+
         router.post("/backup/init", async (_req: Request, res: Response) => {
             try {
                 await BackupManager.getInstance().initRepo();

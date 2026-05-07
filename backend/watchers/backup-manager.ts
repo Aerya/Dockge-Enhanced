@@ -381,6 +381,13 @@ export class BackupManager {
     private lastStalenessNotif = 0;
     private lastOnSaveTrigger  = 0;
 
+    // Destinations dont le backup est actuellement en cours { label → timestamp démarrage }
+    private runningDests = new Map<string, number>();
+
+    getRunningDests(): { label: string; startedAt: number }[] {
+        return Array.from(this.runningDests.entries()).map(([label, startedAt]) => ({ label, startedAt }));
+    }
+
     settings: BackupSettings = {
         enabled: false,
         intervalHours: 24,
@@ -651,6 +658,8 @@ export class BackupManager {
         let totalDataAdded = 0;
         let allSuccess = true;
 
+        console.log(`[BackupManager] ▶ Backup démarré (${activeDests.length} destination(s))`);
+
         for (const dest of activeDests) {
             const destResult: DestinationResult = {
                 label: dest.label,
@@ -658,6 +667,10 @@ export class BackupManager {
                 success: false,
                 warnings,
             };
+
+            const destStart = Date.now();
+            this.runningDests.set(dest.label, destStart);
+            console.log(`[BackupManager] ▶ "${dest.label}" démarré…`);
 
             try {
                 if (!dest.resticPassword) {
@@ -727,19 +740,24 @@ export class BackupManager {
                 }
 
                 console.log(
-                    `[BackupManager] ✅ "${dest.label}" — Snapshot ${destResult.snapshotId} ` +
-                    `+${formatBytes(destResult.dataAdded)} en ${formatDuration(Date.now() - start)}` +
+                    `[BackupManager] ✓ "${dest.label}" terminé en ${formatDuration(Date.now() - destStart)}` +
+                    ` — Snapshot ${destResult.snapshotId} +${formatBytes(destResult.dataAdded)}` +
                     (opts.skipForget ? " [on-save, pruning différé]" : "")
                 );
             } catch (e: unknown) {
                 destResult.error = e instanceof Error ? e.message : String(e);
                 allSuccess = false;
                 if (!result.error) result.error = destResult.error;
-                console.error(`[BackupManager] ❌ "${dest.label}":`, destResult.error);
+                console.error(`[BackupManager] ❌ "${dest.label}" échoué en ${formatDuration(Date.now() - destStart)}:`, destResult.error);
+            } finally {
+                this.runningDests.delete(dest.label);
             }
 
             result.destinations!.push(destResult);
         }
+
+        console.log(`[BackupManager] ✓ Backup terminé en ${formatDuration(Date.now() - start)} — ${allSuccess ? "succès" : "échec(s)"}`);
+
 
         result.success   = allSuccess;
         result.dataAdded = totalDataAdded;
