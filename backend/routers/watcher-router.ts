@@ -14,6 +14,7 @@ import { ImageWatcher, imageStatusStore, rollbackStore, updateHistoryStore, Regi
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { BackupManager } from "../watchers/backup-manager";
+import { KulaManager } from "../watchers/kula-manager";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
@@ -478,6 +479,50 @@ export class WatcherRouter extends Router {
                 if (!volPath) { res.status(400).json({ ok: false, message: "path requis" }); return; }
                 const sizes = await BackupManager.getInstance().getVolumeSubdirSizes(volPath);
                 res.json({ ok: true, data: sizes });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        // ════════════════════════════════════════════════════════════════
+        // KULA — System Monitor
+        // ════════════════════════════════════════════════════════════════
+
+        router.get("/kula/settings", (_req: Request, res: Response) => {
+            res.json({ ok: true, data: KulaManager.getInstance().getSettingsSafe() });
+        });
+
+        router.post("/kula/settings", async (req: Request, res: Response) => {
+            try {
+                await KulaManager.getInstance().saveSettings(req.body);
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.get("/kula/status", async (_req: Request, res: Response) => {
+            try {
+                const status = await KulaManager.getInstance().getStatus();
+                res.json({ ok: true, status });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.post("/kula/start", async (_req: Request, res: Response) => {
+            try {
+                await KulaManager.getInstance().start();
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.post("/kula/stop", async (_req: Request, res: Response) => {
+            try {
+                await KulaManager.getInstance().stop();
+                res.json({ ok: true });
             } catch (e) {
                 res.status(500).json({ ok: false, message: String(e) });
             }

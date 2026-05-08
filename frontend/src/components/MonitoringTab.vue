@@ -225,6 +225,91 @@
             </div>
         </div>
 
+        <!-- ═══ SECTION 4 : KULA ═══ -->
+        <div class="shadow-box big-padding mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="chart-bar" class="me-2" />{{ $t('watcher.kula.heading') }}
+                    <span v-if="kulaStatus === 'running'" class="badge bg-success ms-2" style="font-size:.7rem">{{ $t('watcher.kula.running') }}</span>
+                    <span v-else-if="kulaSettings.enabled" class="badge bg-warning text-dark ms-2" style="font-size:.7rem">{{ $t('watcher.kula.stopped') }}</span>
+                </h5>
+                <div class="d-flex gap-2 align-items-center">
+                    <a v-if="kulaStatus === 'running'" :href="kulaEffectiveUrl" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t('watcher.kula.openExternal') }}
+                    </a>
+                    <button v-if="kulaStatus === 'running'" class="btn btn-sm btn-outline-secondary"
+                        @click="kulaIframeExpanded = !kulaIframeExpanded" :title="$t('watcher.kula.toggleIframe')">
+                        <font-awesome-icon :icon="kulaIframeExpanded ? 'compress' : 'expand'" />
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toggle + config -->
+            <div class="row g-3 mb-3">
+                <div class="col-12">
+                    <div class="form-check form-switch mb-0">
+                        <input id="kulaEnabled" v-model="kulaSettings.enabled"
+                            class="form-check-input" type="checkbox" role="switch" />
+                        <label class="form-check-label fw-semibold" for="kulaEnabled">
+                            {{ $t('watcher.kula.enable') }}
+                        </label>
+                    </div>
+                    <small class="form-text">{{ $t('watcher.kula.enableHint') }}</small>
+                </div>
+
+                <template v-if="kulaSettings.enabled">
+                    <!-- Port -->
+                    <div class="col-md-3">
+                        <label class="form-label small">{{ $t('watcher.kula.port') }}</label>
+                        <input v-model.number="kulaSettings.port" type="number" min="1024" max="65535"
+                            class="form-control form-control-sm" style="max-width:120px" />
+                    </div>
+
+                    <!-- Mode réseau -->
+                    <div class="col-md-4">
+                        <label class="form-label small">{{ $t('watcher.kula.networkMode') }}</label>
+                        <select v-model="kulaSettings.networkMode" class="form-select form-select-sm" style="max-width:160px">
+                            <option value="bridge">Bridge (-p port:27960)</option>
+                            <option value="host">Host (--network host)</option>
+                        </select>
+                    </div>
+
+                    <!-- URL personnalisée -->
+                    <div class="col-12">
+                        <label class="form-label small">{{ $t('watcher.kula.customUrl') }}</label>
+                        <input v-model="kulaSettings.customUrl" type="url" class="form-control form-control-sm"
+                            style="max-width:380px"
+                            :placeholder="`http://${windowHostname}:${kulaSettings.port}`" />
+                        <small class="form-text">{{ $t('watcher.kula.customUrlHint') }} <code>{{ kulaEffectiveUrl }}</code></small>
+                    </div>
+                </template>
+            </div>
+
+            <div class="d-flex gap-2 mb-3">
+                <button class="btn btn-primary btn-sm" @click="saveKulaSettings" :disabled="savingKula">
+                    <span v-if="savingKula" class="spinner-border spinner-border-sm me-1" />
+                    <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
+                </button>
+                <button v-if="kulaSettings.enabled && kulaStatus !== 'running'" class="btn btn-success btn-sm"
+                    @click="startKula" :disabled="kulaActionLoading">
+                    <span v-if="kulaActionLoading" class="spinner-border spinner-border-sm me-1" />
+                    <font-awesome-icon v-else icon="play" class="me-1" />{{ $t('watcher.kula.start') }}
+                </button>
+                <button v-if="kulaStatus === 'running'" class="btn btn-danger btn-sm"
+                    @click="stopKula" :disabled="kulaActionLoading">
+                    <span v-if="kulaActionLoading" class="spinner-border spinner-border-sm me-1" />
+                    <font-awesome-icon v-else icon="stop" class="me-1" />{{ $t('watcher.kula.stop') }}
+                </button>
+            </div>
+
+            <!-- Iframe kula -->
+            <div v-if="kulaStatus === 'running' && kulaIframeExpanded" class="kula-iframe-wrapper">
+                <iframe :src="kulaEffectiveUrl" class="kula-iframe" frameborder="0"
+                    allow="autoplay" sandbox="allow-scripts allow-same-origin allow-forms" />
+            </div>
+        </div>
+
         <!-- Toast -->
         <Transition name="slide-fade">
             <div v-if="toast.msg" class="toast-float" :class="toast.ok ? 'toast-ok' : 'toast-err'">
@@ -245,6 +330,13 @@ const { t } = useI18n();
 initServerTz();
 
 // ─── Types ────────────────────────────────────────────────────────
+
+interface KulaSettings {
+    enabled:     boolean;
+    port:        number;
+    customUrl:   string;
+    networkMode: "bridge" | "host";
+}
 
 interface MonitoringSettings {
     crashLoopEnabled: boolean;
@@ -303,6 +395,22 @@ const savingMon      = ref(false);
 const savingDisplay  = ref(false);
 const newWebhook     = ref("");
 const toast          = ref({ msg: "", ok: true });
+
+// ── Kula ──────────────────────────────────────────────────────────
+const kulaSettings = ref<KulaSettings>({
+    enabled: false, port: 27960, customUrl: "", networkMode: "bridge",
+});
+const kulaStatus        = ref<"running" | "stopped" | "error">("stopped");
+const savingKula        = ref(false);
+const kulaActionLoading = ref(false);
+const kulaIframeExpanded = ref(true);
+const windowHostname    = window.location.hostname;
+
+const kulaEffectiveUrl = computed(() =>
+    kulaSettings.value.customUrl?.trim()
+        ? kulaSettings.value.customUrl.trim()
+        : `http://${windowHostname}:${kulaSettings.value.port}`
+);
 
 // Sync with global stackStatsEnabled composable
 const localStackStatsEnabled = ref(stackStatsEnabled.value);
@@ -416,12 +524,63 @@ async function saveDisplaySettings() {
     } finally { savingDisplay.value = false; }
 }
 
+// ── Kula API ──────────────────────────────────────────────────────
+
+async function loadKulaSettings() {
+    const res = await api("GET", "/watcher/kula/settings");
+    if (res.ok) kulaSettings.value = res.data as KulaSettings;
+}
+
+async function loadKulaStatus() {
+    const res = await api("GET", "/watcher/kula/status") as { ok: boolean; status?: string };
+    if (res.ok && res.status) kulaStatus.value = res.status as "running" | "stopped" | "error";
+}
+
+async function saveKulaSettings() {
+    savingKula.value = true;
+    try {
+        const res = await api("POST", "/watcher/kula/settings", kulaSettings.value);
+        if (res.ok) {
+            showToast("✅ " + t("watcher.kula.saved"));
+            await loadKulaStatus();
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally { savingKula.value = false; }
+}
+
+async function startKula() {
+    kulaActionLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/kula/start");
+        if (res.ok) {
+            showToast("✅ " + t("watcher.kula.started"));
+            setTimeout(loadKulaStatus, 2000);
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally { kulaActionLoading.value = false; }
+}
+
+async function stopKula() {
+    kulaActionLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/kula/stop");
+        if (res.ok) {
+            showToast("✅ " + t("watcher.kula.stopp"));
+            kulaStatus.value = "stopped";
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally { kulaActionLoading.value = false; }
+}
+
 // ─── Polling ──────────────────────────────────────────────────────
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 onMounted(async () => {
-    await Promise.all([loadOverview(), loadSettings()]);
+    await Promise.all([loadOverview(), loadSettings(), loadKulaSettings(), loadKulaStatus()]);
     pollTimer = setInterval(loadOverview, 30_000);
 });
 
@@ -505,4 +664,18 @@ onUnmounted(() => {
 
 .slide-fade-enter-active, .slide-fade-leave-active { transition: all .25s ease; }
 .slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(12px); opacity: 0; }
+
+/* ── Kula iframe ── */
+.kula-iframe-wrapper {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.1);
+    margin-top: 4px;
+}
+.kula-iframe {
+    width: 100%;
+    height: 640px;
+    display: block;
+    background: #0f172a;
+}
 </style>
