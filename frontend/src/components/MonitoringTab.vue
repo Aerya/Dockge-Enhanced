@@ -238,10 +238,6 @@
                         class="btn btn-sm btn-outline-secondary">
                         <font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t('watcher.kula.openExternal') }}
                     </a>
-                    <button v-if="kulaStatus === 'running'" class="btn btn-sm btn-outline-secondary"
-                        @click="kulaIframeExpanded = !kulaIframeExpanded" :title="$t('watcher.kula.toggleIframe')">
-                        <font-awesome-icon :icon="kulaIframeExpanded ? 'compress' : 'expand'" />
-                    </button>
                 </div>
             </div>
 
@@ -303,10 +299,13 @@
                 </button>
             </div>
 
-            <!-- Iframe kula -->
-            <div v-if="kulaStatus === 'running' && kulaIframeExpanded" class="kula-iframe-wrapper">
-                <iframe :src="kulaEffectiveUrl" class="kula-iframe" frameborder="0"
-                    allow="autoplay" sandbox="allow-scripts allow-same-origin allow-forms" />
+            <!-- Lien vers kula -->
+            <div v-if="kulaStatus === 'running'" class="kula-open-hint mt-2">
+                <font-awesome-icon icon="circle-check" class="text-success me-2" />
+                {{ $t('watcher.kula.runningHint') }}
+                <a :href="kulaEffectiveUrl" target="_blank" class="kula-open-link ms-1">
+                    {{ kulaEffectiveUrl }} <font-awesome-icon icon="external-link-alt" class="ms-1" />
+                </a>
             </div>
         </div>
 
@@ -403,7 +402,6 @@ const kulaSettings = ref<KulaSettings>({
 const kulaStatus        = ref<"running" | "stopped" | "error">("stopped");
 const savingKula        = ref(false);
 const kulaActionLoading = ref(false);
-const kulaIframeExpanded = ref(true);
 const windowHostname    = window.location.hostname;
 
 const kulaEffectiveUrl = computed(() =>
@@ -665,17 +663,14 @@ onUnmounted(() => {
 .slide-fade-enter-active, .slide-fade-leave-active { transition: all .25s ease; }
 .slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(12px); opacity: 0; }
 
-/* ── Kula iframe ── */
-.kula-iframe-wrapper {
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,.1);
-    margin-top: 4px;
+/* ── Kula open link ── */
+.kula-open-hint {
+    font-size: .875rem;
+    color: #9ca3af;
 }
-.kula-iframe {
-    width: 100%;
-    height: 640px;
-    display: block;
-    background: #0f172a;
+.kula-open-link {
+    color: #93c5fd;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
 }
 </style>

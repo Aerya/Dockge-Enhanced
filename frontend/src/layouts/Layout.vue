@@ -52,6 +52,9 @@
                     class="stat-pill" :class="statClass(d.percent)">
                     <font-awesome-icon icon="floppy-disk" class="me-1" />{{ d.mount }} {{ d.percent }}%
                 </span>
+                <a v-if="kulaUrl" :href="kulaUrl" target="_blank" class="stat-pill stat-kula">
+                    <font-awesome-icon icon="chart-bar" class="me-1" />Kula
+                </a>
             </div>
 
             <ul class="nav nav-pills">
@@ -176,6 +179,7 @@ export default {
             },
             systemStats:      null,
             statsTimer:       null,
+            kulaUrl:          null,
         };
     },
 
@@ -206,6 +210,7 @@ export default {
     mounted() {
         this.checkSelfUpdate();
         this.fetchSystemStats();
+        this.fetchKulaStatus();
         this.statsTimer = setInterval(this.fetchSystemStats, 5000);
     },
 
@@ -276,6 +281,26 @@ export default {
             if (gb >= 1) return gb.toFixed(1) + " GB";
             const mb = bytes / (1024 ** 2);
             return mb.toFixed(0) + " MB";
+        },
+
+        async fetchKulaStatus() {
+            try {
+                const token = localStorage.getItem("token") ?? "";
+                const [settingsRes, statusRes] = await Promise.all([
+                    fetch("/api/watcher/kula/settings", { headers: { "Authorization": `Bearer ${token}` } }),
+                    fetch("/api/watcher/kula/status",   { headers: { "Authorization": `Bearer ${token}` } }),
+                ]);
+                const settings = await settingsRes.json();
+                const status   = await statusRes.json();
+                if (settings.ok && settings.data?.enabled && status.status === "running") {
+                    const s = settings.data;
+                    this.kulaUrl = s.customUrl?.trim()
+                        ? s.customUrl.trim()
+                        : `http://${window.location.hostname}:${s.port}`;
+                } else {
+                    this.kulaUrl = null;
+                }
+            } catch { /* silencieux */ }
         },
 
         scanFolder() {
@@ -417,6 +442,12 @@ main {
     &.stat-ok      { color: #a8d8b0; } // vert menthe pastel
     &.stat-warning  { color: #f0d898; } // jaune blé pastel
     &.stat-danger   { color: #f0a8a8; } // rose saumon pastel
+    &.stat-kula {
+        color: #93c5fd;
+        text-decoration: none;
+        border-color: rgba(99,172,255,.3);
+        &:hover { color: #bfdbfe; border-color: rgba(99,172,255,.6); }
+    }
 }
 
 .nav {

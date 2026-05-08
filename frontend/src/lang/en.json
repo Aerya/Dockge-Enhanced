@@ -186,6 +186,8 @@
     "watcher.kula.saved": "Kula settings saved",
     "watcher.kula.started": "Kula started",
     "watcher.kula.stopp": "Kula stopped",
+    "watcher.kula.runningHint": "Kula is running —",
+    "watcher.kula.toggleIframe": "Show / hide dashboard",
     "watcher.monitoring.ageJustNow": "just now",
     "watcher.img.heading": "Image monitoring",
     "watcher.img.enabled": "Enabled",

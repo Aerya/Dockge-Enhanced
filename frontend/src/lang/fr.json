@@ -179,6 +179,8 @@
     "watcher.kula.saved": "Paramètres Kula sauvegardés",
     "watcher.kula.started": "Kula démarré",
     "watcher.kula.stopp": "Kula arrêté",
+    "watcher.kula.runningHint": "Kula est en cours d'exécution —",
+    "watcher.kula.toggleIframe": "Afficher / masquer le dashboard",
     "watcher.monitoring.ageJustNow": "à l'instant",
     "watcher.img.heading": "Surveillance des images",
     "watcher.img.enabled": "Activée",
