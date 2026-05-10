@@ -1100,6 +1100,9 @@ export class BackupManager {
             const groups = new Map<string, RawEntry[]>();
             const standalones: RawEntry[] = [];
 
+            // DEBUG temporaire — à retirer après diagnostic
+            console.log(`[BackupManager] DEBUG lsLines[0..2]:`, lsLines.slice(0, 3).map(l => l.slice(0, 200)));
+
             for (const line of lsLines) {
                 let entry: Record<string, unknown>;
                 try { entry = JSON.parse(line); } catch { continue; }
@@ -1196,7 +1199,10 @@ export class BackupManager {
                 ...[...groups.values()],
                 ...standalones.map(r => [r]),
             ];
+            console.log(`[BackupManager] DEBUG groups=${groups.size} standalones=${standalones.length} stacksBase="${stacksBase}" STACKS_DIR="${STACKS_DIR}"`);
+            console.log(`[BackupManager] listSnapshotFiles: ${allGroups.length} fichiers, construction des métadonnées…`);
             const files = await Promise.all(allGroups.map(makeFile));
+            console.log(`[BackupManager] listSnapshotFiles: métadonnées prêtes, lancement du diff…`);
 
             // Enregistre canonical + aliases dans la map pour la résolution du diff
             for (const file of files) {
@@ -1204,10 +1210,21 @@ export class BackupManager {
                 for (const alias of (file.aliases ?? [])) fileMap.set(alias, file);
             }
 
-            // ── 5. Diff vs snapshot précédent ────────────────────────────
+            // ── 5. Diff vs snapshot précédent (timeout 15 s — info cosmétique) ─
+            // restic diff traverse les deux arbres complets ; sur les gros repos ça
+            // peut prendre plusieurs minutes. On abandonne si ça prend trop longtemps
+            // et on conserve "unchanged" comme valeur par défaut.
             if (prevSnap) {
+                const DIFF_TIMEOUT_MS = 15_000;
                 try {
-                    const diffOut = await this.resticFor(this.primaryDest(), `diff ${shellQuote(assertSafeResticId(prevSnap.short_id))} ${shellQuote(assertSafeResticId(snapshotId))}`);
+                    const diffPromise = this.resticFor(
+                        this.primaryDest(),
+                        `diff ${shellQuote(assertSafeResticId(prevSnap.short_id))} ${shellQuote(assertSafeResticId(snapshotId))}`
+                    );
+                    const timeoutPromise = new Promise<never>((_, rej) =>
+                        setTimeout(() => rej(new Error("restic diff timeout")), DIFF_TIMEOUT_MS)
+                    );
+                    const diffOut = await Promise.race([diffPromise, timeoutPromise]);
                     for (const line of diffOut.split("\n").filter(Boolean)) {
                         let change: Record<string, unknown>;
                         try { change = JSON.parse(line); } catch { continue; }
@@ -1218,7 +1235,11 @@ export class BackupManager {
                         if (mod === "+")      f.snapDiff = "added";
                         else if (mod === "M") f.snapDiff = "modified";
                     }
-                } catch { /* diff indisponible, on garde "unchanged" */ }
+                    console.log(`[BackupManager] listSnapshotFiles: diff terminé`);
+                } catch (e) {
+                    // Timeout ou erreur → on garde "unchanged" par défaut, pas bloquant
+                    console.warn(`[BackupManager] listSnapshotFiles: diff ignoré (${(e as Error).message})`);
+                }
             }
 
             const typeOrder: Record<string, number> = { compose: 0, env: 1, volume: 2, other: 3 };
