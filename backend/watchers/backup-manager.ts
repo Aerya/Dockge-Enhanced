@@ -1278,6 +1278,9 @@ export class BackupManager {
                 }
             }
 
+            // DEBUG temporaire
+            console.log(`[BackupManager] DEBUG currentSnap.paths:`, currentSnap?.paths);
+
             // ── 6. Dossiers de volumes depuis snapshot.paths ──────────────
             // Le champ paths du snapshot liste exactement ce qui a été sauvegardé.
             // Les chemins hors STACKS_DIR sont des dossiers de volumes — on les
