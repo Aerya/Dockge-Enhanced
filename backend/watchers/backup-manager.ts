@@ -5,8 +5,9 @@
  */
 
 import * as cron from "node-cron";
-import { exec } from "child_process";
+import { exec, spawn } from "child_process";
 import { promisify } from "util";
+import * as readline from "readline";
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as yaml from "js-yaml";
@@ -565,6 +566,65 @@ export class BackupManager {
         }
     }
 
+    /**
+     * Streams `restic ls <snapshotId> --json --long [paths...]` via spawn + readline.
+     * Évite la limite maxBuffer de execAsync sur les snapshots contenant des millions de fichiers.
+     * Retourne un tableau de lignes JSON brutes (NDJSON).
+     */
+    private resticLsLines(dest: BackupDestination, snapshotId: string, ...paths: string[]): Promise<string[]> {
+        return new Promise(async (resolve, reject) => {
+            const repoEnv = buildResticEnv(dest);
+            const repo    = buildRepoUrl(dest);
+            let tmpFile: string | null = null;
+
+            try {
+                if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
+                    tmpFile = `/tmp/dockge_sshpass_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                    await fs.writeFile(tmpFile, dest.sftp.password, { mode: 0o600 });
+                }
+
+                const sftpOpts  = buildSftpOptions(dest, tmpFile ?? undefined);
+                const safeId    = assertSafeResticId(snapshotId);
+                const pathArgs  = paths.map(p => shellQuote(p)).join(" ");
+                const cmd       = `restic --repo ${shellQuote(repo)} --json ${sftpOpts} ls ${shellQuote(safeId)} --json --long ${pathArgs}`;
+
+                const proc = spawn("sh", ["-c", cmd], {
+                    env: {
+                        PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                        ...process.env,
+                        ...repoEnv,
+                    },
+                });
+
+                const lines: string[] = [];
+                const rl = readline.createInterface({ input: proc.stdout });
+                rl.on("line", (line: string) => { if (line) lines.push(line); });
+
+                let stderr = "";
+                proc.stderr.on("data", (chunk: Buffer) => {
+                    stderr += chunk.toString();
+                });
+
+                proc.on("close", (code: number | null) => {
+                    if (tmpFile) fs.unlink(tmpFile).catch(() => {});
+                    if (code === 0 || code === null) {
+                        resolve(lines);
+                    } else {
+                        reject(new Error(`restic ls exited with code ${code}: ${stderr.slice(0, 500)}`));
+                    }
+                });
+
+                proc.on("error", (err: Error) => {
+                    if (tmpFile) fs.unlink(tmpFile).catch(() => {});
+                    reject(err);
+                });
+            } catch (err) {
+                if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
+                reject(err);
+            }
+        });
+    }
+
     /** Initialise le repo d'une destination si pas encore fait */
     async initRepoFor(dest: BackupDestination): Promise<void> {
         try {
@@ -994,8 +1054,8 @@ export class BackupManager {
             // Plus long en premier → on prend toujours le mount le plus spécifique
             const sortedVols = [...mountedVols].sort((a, b) => b.destination.length - a.destination.length);
 
-            // ── 2. Liste tous les fichiers du snapshot ───────────────────
-            const stdout = await this.resticFor(this.primaryDest(), `ls ${shellQuote(assertSafeResticId(snapshotId))} --json --long`);
+            // ── 2. Liste tous les fichiers du snapshot (streaming via spawn pour éviter maxBuffer) ──
+            const lsLines = await this.resticLsLines(this.primaryDest(), snapshotId);
 
             // ── 3. Parse et groupe par (stack, name) pour dédupliquer ────
             // Un fichier est "direct dans la stack" s'il se trouve exactement au niveau
@@ -1006,7 +1066,7 @@ export class BackupManager {
             const groups = new Map<string, RawEntry[]>();
             const standalones: RawEntry[] = [];
 
-            for (const line of stdout.split("\n").filter(Boolean)) {
+            for (const line of lsLines) {
                 let entry: Record<string, unknown>;
                 try { entry = JSON.parse(line); } catch { continue; }
                 if (entry.struct_type !== "node" || entry.type !== "file") continue;
