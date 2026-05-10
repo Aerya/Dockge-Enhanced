@@ -14,308 +14,462 @@ import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
 
-const SELF_REPO        = "aerya/dockge-enhanced";
-const SELF_TAG         = "latest";
-const DATA_DIR         = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
-const SETTINGS_PATH    = path.join(DATA_DIR, "watcher-settings.json");
-const DIGEST_CACHE     = path.join(DATA_DIR, "self-update-digest.json");
-const CHECK_INTERVAL   = 6 * 60 * 60 * 1000; // 6h
-const STARTUP_DELAY    = 30_000;              // 30s après démarrage
+const SELF_REPO = "aerya/dockge-enhanced";
+const SELF_TAG = "latest";
+const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
+const DIGEST_CACHE = path.join(DATA_DIR, "self-update-digest.json");
+const CHECK_INTERVAL = 6 * 60 * 60 * 1000; // 6h
+const STARTUP_DELAY = 30_000; // 30s après démarrage
+
+interface ImagePlatform {
+  os: string;
+  architecture: string;
+  variant?: string;
+}
+
+interface RemoteDigestInfo {
+  platformDigest: string;
+  indexDigest: string;
+  platform: ImagePlatform;
+}
+
+function normalizeArch(arch: string): string {
+  switch (arch) {
+    case "x64":
+      return "amd64";
+    case "aarch64":
+      return "arm64";
+    default:
+      return arch;
+  }
+}
+
+function normalizeOs(os: string): string {
+  return os === "win32" ? "windows" : os;
+}
+
+function parsePlatform(value: string): ImagePlatform | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  const [os, architecture, variant] = raw
+    .split("/")
+    .map((v) => v.trim())
+    .filter(Boolean);
+  if (!os || !architecture) return null;
+  return { os, architecture: normalizeArch(architecture), variant };
+}
+
+function getCurrentPlatform(preferred = ""): ImagePlatform {
+  return (
+    parsePlatform(preferred) ??
+    parsePlatform(process.env.DOCKGE_IMAGE_PLATFORM ?? "") ?? {
+      os: normalizeOs(process.platform),
+      architecture: normalizeArch(process.arch),
+      variant: process.env.DOCKGE_IMAGE_VARIANT?.trim() || undefined,
+    }
+  );
+}
+
+function platformToString(platform: ImagePlatform): string {
+  return `${platform.os}/${platform.architecture}${platform.variant ? `/${platform.variant}` : ""}`;
+}
+
+function platformMatches(candidate: any, wanted: ImagePlatform): boolean {
+  if (!candidate) return false;
+  if (candidate.os !== wanted.os) return false;
+  if (candidate.architecture !== wanted.architecture) return false;
+  if (
+    wanted.variant &&
+    candidate.variant &&
+    candidate.variant !== wanted.variant
+  )
+    return false;
+  return true;
+}
+
+function digestEquals(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const norm = (d: string) => d.replace(/^[^:]+:/, "");
+  return norm(a) === norm(b);
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-async function fetchRemoteDigest(): Promise<string> {
-    // GHCR_TOKEN = GitHub PAT avec scope read:packages (requis si repo privé)
-    const ghcrToken = process.env.GHCR_TOKEN?.trim() ?? "";
+async function fetchRemoteDigest(
+  preferredPlatform = "",
+): Promise<RemoteDigestInfo> {
+  // GHCR_TOKEN = GitHub PAT avec scope read:packages (requis si repo privé)
+  const ghcrToken = process.env.GHCR_TOKEN?.trim() ?? "";
+  const platform = getCurrentPlatform(preferredPlatform);
 
-    let token = "";
-    try {
-        const res = await axios.get(
-            `https://ghcr.io/token?scope=repository:${SELF_REPO}:pull`,
-            {
-                timeout: 10000,
-                ...(ghcrToken
-                    ? { auth: { username: "token", password: ghcrToken } }
-                    : {}),
-            }
-        );
-        token = res.data.token ?? "";
-    } catch { /* continue sans token si repo public */ }
+  let token = "";
+  try {
+    const res = await axios.get(
+      `https://ghcr.io/token?scope=repository:${SELF_REPO}:pull`,
+      {
+        timeout: 10000,
+        ...(ghcrToken
+          ? { auth: { username: "token", password: ghcrToken } }
+          : {}),
+      },
+    );
+    token = res.data.token ?? "";
+  } catch {
+    /* continue sans token si repo public */
+  }
 
-    const headers: Record<string, string> = {
-        Accept: [
-            "application/vnd.docker.distribution.manifest.list.v2+json",
-            "application/vnd.oci.image.index.v1+json",
-        ].join(", "),
-    };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+  const headers: Record<string, string> = {
+    Accept: [
+      "application/vnd.docker.distribution.manifest.list.v2+json",
+      "application/vnd.docker.distribution.manifest.v2+json",
+      "application/vnd.oci.image.index.v1+json",
+      "application/vnd.oci.image.manifest.v1+json",
+    ].join(", "),
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const url = `https://ghcr.io/v2/${SELF_REPO}/manifests/${SELF_TAG}`;
-    const res = await axios.get(url, { headers, timeout: 15000 });
+  const url = `https://ghcr.io/v2/${SELF_REPO}/manifests/${SELF_TAG}`;
+  const res = await axios.get(url, { headers, timeout: 15000 });
 
-    // Docker stocke dans RepoDigests le digest du manifest list (multi-arch index),
-    // pas le digest de la plateforme — on compare donc le même digest.
-    const d = res.headers["docker-content-digest"];
-    if (d) return String(d);
+  const indexDigest = String(res.headers["docker-content-digest"] ?? "");
+  const manifests = Array.isArray(res.data?.manifests)
+    ? res.data.manifests
+    : [];
 
-    throw new Error("Header docker-content-digest absent dans la réponse GHCR");
+  if (manifests.length === 0) {
+    if (!indexDigest)
+      throw new Error(
+        "Header docker-content-digest absent dans la réponse GHCR",
+      );
+    return { platformDigest: indexDigest, indexDigest: "", platform };
+  }
+
+  const match = manifests.find((m: any) =>
+    platformMatches(m.platform, platform),
+  );
+  if (!match?.digest) {
+    const available = manifests
+      .map((m: any) => (m.platform ? platformToString(m.platform) : ""))
+      .filter(Boolean)
+      .join(", ");
+
+    throw new Error(
+      `Aucun manifest distant Dockge-Enhanced pour ${platformToString(platform)}` +
+        (available ? `. Plateformes disponibles: ${available}` : ""),
+    );
+  }
+
+  return {
+    platformDigest: String(match.digest),
+    indexDigest,
+    platform,
+  };
 }
 
 /** Appel HTTP via le socket Docker (sans CLI). */
 function dockerSocketGet(apiPath: string): Promise<any> {
-    return new Promise((resolve) => {
-        const req = http.request(
-            { socketPath: "/var/run/docker.sock", path: apiPath, method: "GET" },
-            (res) => {
-                let data = "";
-                res.on("data", (chunk) => (data += chunk));
-                res.on("end", () => {
-                    try { resolve(JSON.parse(data)); } catch { resolve(null); }
-                });
-            }
-        );
-        req.on("error", () => resolve(null));
-        req.end();
-    });
+  return new Promise((resolve) => {
+    const req = http.request(
+      { socketPath: "/var/run/docker.sock", path: apiPath, method: "GET" },
+      (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch {
+            resolve(null);
+          }
+        });
+      },
+    );
+    req.on("error", () => resolve(null));
+    req.end();
+  });
 }
 
-async function fetchLocalDigest(): Promise<string> {
-    try {
-        // HOSTNAME = ID court du conteneur dans Docker
-        const id = process.env.HOSTNAME ?? "";
-        if (!id) return "";
-        const container = await dockerSocketGet(`/containers/${id}/json`);
-        const imageId: string = container?.Image ?? "";
-        if (!imageId) return "";
-        const image = await dockerSocketGet(`/images/${imageId}/json`);
-        const repoDigests: string[] = image?.RepoDigests ?? [];
-        const digest = repoDigests.find((d) => d.includes("dockge-enhanced"));
-        if (!digest) return "";
-        const m = digest.match(/sha256:[a-f0-9]{64}/);
-        return m ? m[0] : "";
-    } catch {
-        return "";
-    }
+async function fetchLocalImageInfo(): Promise<{
+  digest: string;
+  platform?: ImagePlatform;
+}> {
+  try {
+    // HOSTNAME = ID court du conteneur dans Docker
+    const id = process.env.HOSTNAME ?? "";
+    if (!id) return { digest: "" };
+    const container = await dockerSocketGet(`/containers/${id}/json`);
+    const imageId: string = container?.Image ?? "";
+    if (!imageId) return { digest: "" };
+    const image = await dockerSocketGet(`/images/${imageId}/json`);
+    const repoDigests: string[] = image?.RepoDigests ?? [];
+    const digest = repoDigests.find((d) => d.includes("dockge-enhanced")) ?? "";
+    const m = digest.match(/sha256:[a-f0-9]{64}/);
+    const os = typeof image?.Os === "string" ? image.Os : "";
+    const architecture =
+      typeof image?.Architecture === "string" ? image.Architecture : "";
+    const variant =
+      typeof image?.Variant === "string" ? image.Variant : undefined;
+
+    return {
+      digest: m ? m[0] : "",
+      platform:
+        os && architecture
+          ? { os, architecture: normalizeArch(architecture), variant }
+          : undefined,
+    };
+  } catch {
+    return { digest: "" };
+  }
 }
 
 /** Récupère le nom du conteneur courant via le socket Docker (sans CLI). */
 async function fetchContainerName(): Promise<string> {
-    try {
-        const id = process.env.HOSTNAME ?? "";
-        if (!id) return "dockge-enhanced";
-        const container = await dockerSocketGet(`/containers/${id}/json`);
-        return (container?.Name ?? "").replace(/^\//, "") || "dockge-enhanced";
-    } catch {
-        return "dockge-enhanced";
-    }
+  try {
+    const id = process.env.HOSTNAME ?? "";
+    if (!id) return "dockge-enhanced";
+    const container = await dockerSocketGet(`/containers/${id}/json`);
+    return (container?.Name ?? "").replace(/^\//, "") || "dockge-enhanced";
+  } catch {
+    return "dockge-enhanced";
+  }
 }
 
 /** Lit les webhooks Discord depuis les settings du watcher images. */
 async function loadWebhooks(): Promise<string[]> {
-    // Essaie successivement watcher-settings.json (image-watcher) puis trivy-settings.json
-    const candidates = [
-        path.join(DATA_DIR, "watcher-settings.json"),
-        path.join(DATA_DIR, "trivy-settings.json"),
-        path.join(DATA_DIR, "backup-settings.json"),
-    ];
-    for (const p of candidates) {
-        try {
-            const raw  = await fs.readFile(p, "utf8");
-            const data = JSON.parse(raw) as Record<string, unknown>;
-            const webhooks = data?.discordWebhooks;
-            if (Array.isArray(webhooks) && webhooks.length > 0) return webhooks as string[];
-        } catch { /* fichier absent, on essaie le suivant */ }
+  // Essaie successivement watcher-settings.json (image-watcher) puis trivy-settings.json
+  const candidates = [
+    path.join(DATA_DIR, "watcher-settings.json"),
+    path.join(DATA_DIR, "trivy-settings.json"),
+    path.join(DATA_DIR, "backup-settings.json"),
+  ];
+  for (const p of candidates) {
+    try {
+      const raw = await fs.readFile(p, "utf8");
+      const data = JSON.parse(raw) as Record<string, unknown>;
+      const webhooks = data?.discordWebhooks;
+      if (Array.isArray(webhooks) && webhooks.length > 0)
+        return webhooks as string[];
+    } catch {
+      /* fichier absent, on essaie le suivant */
     }
-    return [];
+  }
+  return [];
 }
 
 // ─── Types exposés au router ──────────────────────────────────────
 
 export interface SelfUpdateStatus {
-    updateAvailable: boolean;
-    localDigest:     string;
-    remoteDigest:    string;
-    containerName:   string;
-    checkedAt:       string | null;
-    error:           string | null;
+  updateAvailable: boolean;
+  localDigest: string;
+  remoteDigest: string;
+  containerName: string;
+  checkedAt: string | null;
+  error: string | null;
 }
 
 // ─── Singleton ────────────────────────────────────────────────────
 
 export class SelfUpdateChecker {
-    private static _instance: SelfUpdateChecker;
+  private static _instance: SelfUpdateChecker;
 
-    private _status: SelfUpdateStatus = {
-        updateAvailable: false,
-        localDigest:     "",
-        remoteDigest:    "",
-        containerName:   "dockge-enhanced",
-        checkedAt:       null,
-        error:           null,
-    };
+  private _status: SelfUpdateStatus = {
+    updateAvailable: false,
+    localDigest: "",
+    remoteDigest: "",
+    containerName: "dockge-enhanced",
+    checkedAt: null,
+    error: null,
+  };
 
-    /** Digest distant pour lequel on a déjà envoyé la notif "dispo" (évite le spam) */
-    private _notifiedRemoteDigest = "";
-    /** Dernier digest local connu, persisté sur disque pour survivre aux redémarrages */
-    private _lastKnownLocalDigest = "";
+  /** Digest distant pour lequel on a déjà envoyé la notif "dispo" (évite le spam) */
+  private _notifiedRemoteDigest = "";
+  /** Dernier digest local connu, persisté sur disque pour survivre aux redémarrages */
+  private _lastKnownLocalDigest = "";
 
-    private _startupTimer:   ReturnType<typeof setTimeout>  | null = null;
-    private _intervalTimer:  ReturnType<typeof setInterval> | null = null;
+  private _startupTimer: ReturnType<typeof setTimeout> | null = null;
+  private _intervalTimer: ReturnType<typeof setInterval> | null = null;
 
-    static getInstance(): SelfUpdateChecker {
-        if (!this._instance) this._instance = new SelfUpdateChecker();
-        return this._instance;
+  static getInstance(): SelfUpdateChecker {
+    if (!this._instance) this._instance = new SelfUpdateChecker();
+    return this._instance;
+  }
+
+  getStatus(): SelfUpdateStatus {
+    return { ...this._status };
+  }
+
+  start(): void {
+    this._loadDigestCache().then(() => {
+      this._startupTimer = setTimeout(() => this.check(), STARTUP_DELAY);
+      this._intervalTimer = setInterval(() => this.check(), CHECK_INTERVAL);
+    });
+  }
+
+  private async _loadDigestCache(): Promise<void> {
+    try {
+      const raw = await fs.readFile(DIGEST_CACHE, "utf8");
+      const data = JSON.parse(raw) as Record<string, unknown>;
+      this._lastKnownLocalDigest =
+        typeof data.localDigest === "string" ? data.localDigest : "";
+    } catch {
+      /* premier démarrage */
     }
+  }
 
-    getStatus(): SelfUpdateStatus {
-        return { ...this._status };
+  private async _saveDigestCache(localDigest: string): Promise<void> {
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      await fs.writeFile(DIGEST_CACHE, JSON.stringify({ localDigest }));
+    } catch {
+      /* non bloquant */
     }
+  }
 
-    start(): void {
-        this._loadDigestCache().then(() => {
-            this._startupTimer  = setTimeout(() => this.check(), STARTUP_DELAY);
-            this._intervalTimer = setInterval(() => this.check(), CHECK_INTERVAL);
-        });
+  stop(): void {
+    if (this._startupTimer) clearTimeout(this._startupTimer);
+    if (this._intervalTimer) clearInterval(this._intervalTimer);
+  }
+
+  async check(): Promise<void> {
+    try {
+      const [localInfo, containerName] = await Promise.all([
+        fetchLocalImageInfo(),
+        fetchContainerName(),
+      ]);
+      const preferredPlatform = localInfo.platform
+        ? platformToString(localInfo.platform)
+        : "";
+      const remoteInfo = await fetchRemoteDigest(preferredPlatform);
+      const localDigest = localInfo.digest;
+      const remoteDigest = remoteInfo.platformDigest;
+
+      // Docker/Podman peuvent exposer dans RepoDigests soit le digest du manifest plateforme,
+      // soit celui de l'index multi-arch. On accepte les deux pour éviter les faux positifs ARM64.
+      const updateAvailable = !!(
+        localDigest &&
+        remoteDigest &&
+        !digestEquals(localDigest, remoteInfo.platformDigest) &&
+        !digestEquals(localDigest, remoteInfo.indexDigest)
+      );
+
+      // Détecte une mise à jour appliquée automatiquement (digest local a changé)
+      const wasUpdated = !!(
+        localDigest &&
+        this._lastKnownLocalDigest &&
+        localDigest !== this._lastKnownLocalDigest
+      );
+
+      if (localDigest && localDigest !== this._lastKnownLocalDigest) {
+        this._lastKnownLocalDigest = localDigest;
+        await this._saveDigestCache(localDigest);
+      }
+
+      this._status = {
+        updateAvailable,
+        localDigest,
+        remoteDigest,
+        containerName,
+        checkedAt: new Date().toISOString(),
+        error: null,
+      };
+
+      // Notif "mise à jour appliquée" — le digest local a changé depuis le dernier check
+      if (wasUpdated) {
+        await this._notifyApplied(containerName, localDigest);
+      }
+
+      // Notif "mise à jour disponible" — une seule fois par digest distant
+      if (updateAvailable && this._notifiedRemoteDigest !== remoteDigest) {
+        this._notifiedRemoteDigest = remoteDigest;
+        await this._notifyAvailable(containerName);
+      }
+    } catch (e: any) {
+      this._status = {
+        ...this._status,
+        checkedAt: new Date().toISOString(),
+        error: e?.message ?? "Erreur inconnue",
+      };
     }
+  }
 
-    private async _loadDigestCache(): Promise<void> {
-        try {
-            const raw  = await fs.readFile(DIGEST_CACHE, "utf8");
-            const data = JSON.parse(raw) as Record<string, unknown>;
-            this._lastKnownLocalDigest = typeof data.localDigest === "string" ? data.localDigest : "";
-        } catch { /* premier démarrage */ }
+  private async _notifyAvailable(containerName: string): Promise<void> {
+    const webhooks = await loadWebhooks();
+    const apprise = await this._loadApprise();
+    if (webhooks.length === 0 && !apprise) return;
+
+    const hostname = (await Settings.get("primaryHostname")) || "";
+    const hostnamePrefix = hostname ? `[${hostname}] ` : "";
+    const footerHost = hostname ? ` · ${hostname}` : "";
+
+    const title = `${hostnamePrefix}🔔 Mise à jour Dockge-Enhanced disponible`;
+    const body = [
+      "Une nouvelle image est disponible sur GHCR.",
+      "",
+      "**Pour mettre à jour :**",
+      "```bash",
+      `docker pull ghcr.io/${SELF_REPO}:${SELF_TAG}`,
+      `docker compose up -d`,
+      "```",
+      "_Exécuter depuis le dossier contenant votre compose.yaml_",
+    ].join("\n");
+
+    if (webhooks.length > 0) {
+      await new DiscordNotifier(webhooks).sendEmbed({
+        title,
+        color: 0xf59e0b,
+        description: body,
+        footer: `Dockge Enhanced${footerHost}`,
+      });
     }
-
-    private async _saveDigestCache(localDigest: string): Promise<void> {
-        try {
-            await fs.mkdir(DATA_DIR, { recursive: true });
-            await fs.writeFile(DIGEST_CACHE, JSON.stringify({ localDigest }));
-        } catch { /* non bloquant */ }
+    if (apprise) {
+      await apprise.send({ title, body, type: "warning" });
     }
+  }
 
-    stop(): void {
-        if (this._startupTimer)  clearTimeout(this._startupTimer);
-        if (this._intervalTimer) clearInterval(this._intervalTimer);
+  private async _notifyApplied(
+    containerName: string,
+    newDigest: string,
+  ): Promise<void> {
+    const webhooks = await loadWebhooks();
+    const apprise = await this._loadApprise();
+    if (webhooks.length === 0 && !apprise) return;
+
+    const hostname = (await Settings.get("primaryHostname")) || "";
+    const hostnamePrefix = hostname ? `[${hostname}] ` : "";
+    const footerHost = hostname ? ` · ${hostname}` : "";
+
+    const title = `${hostnamePrefix}✅ Dockge-Enhanced mis à jour`;
+    const body = [
+      `Le conteneur **${containerName}** a été mis à jour automatiquement.`,
+      `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
+    ].join("\n");
+
+    if (webhooks.length > 0) {
+      await new DiscordNotifier(webhooks).sendEmbed({
+        title,
+        color: 0x22c55e,
+        description: body,
+        footer: `Dockge Enhanced${footerHost}`,
+      });
     }
-
-    async check(): Promise<void> {
-        try {
-            const [localDigest, remoteDigest, containerName] = await Promise.all([
-                fetchLocalDigest(),
-                fetchRemoteDigest(),
-                fetchContainerName(),
-            ]);
-
-            const updateAvailable = !!(localDigest && remoteDigest && localDigest !== remoteDigest);
-
-            // Détecte une mise à jour appliquée automatiquement (digest local a changé)
-            const wasUpdated = !!(
-                localDigest &&
-                this._lastKnownLocalDigest &&
-                localDigest !== this._lastKnownLocalDigest
-            );
-
-            if (localDigest && localDigest !== this._lastKnownLocalDigest) {
-                this._lastKnownLocalDigest = localDigest;
-                await this._saveDigestCache(localDigest);
-            }
-
-            this._status = {
-                updateAvailable,
-                localDigest,
-                remoteDigest,
-                containerName,
-                checkedAt: new Date().toISOString(),
-                error: null,
-            };
-
-            // Notif "mise à jour appliquée" — le digest local a changé depuis le dernier check
-            if (wasUpdated) {
-                await this._notifyApplied(containerName, localDigest);
-            }
-
-            // Notif "mise à jour disponible" — une seule fois par digest distant
-            if (updateAvailable && this._notifiedRemoteDigest !== remoteDigest) {
-                this._notifiedRemoteDigest = remoteDigest;
-                await this._notifyAvailable(containerName);
-            }
-        } catch (e: any) {
-            this._status = {
-                ...this._status,
-                checkedAt: new Date().toISOString(),
-                error: e?.message ?? "Erreur inconnue",
-            };
-        }
+    if (apprise) {
+      await apprise.send({ title, body, type: "success" });
     }
+  }
 
-    private async _notifyAvailable(containerName: string): Promise<void> {
-        const webhooks = await loadWebhooks();
-        const apprise  = await this._loadApprise();
-        if (webhooks.length === 0 && !apprise) return;
-
-        const hostname       = (await Settings.get("primaryHostname")) || "";
-        const hostnamePrefix = hostname ? `[${hostname}] ` : "";
-        const footerHost     = hostname ? ` · ${hostname}` : "";
-
-        const title = `${hostnamePrefix}🔔 Mise à jour Dockge-Enhanced disponible`;
-        const body  = [
-            "Une nouvelle image est disponible sur GHCR.",
-            "",
-            "**Pour mettre à jour :**",
-            "```bash",
-            `docker pull ghcr.io/${SELF_REPO}:${SELF_TAG}`,
-            `docker compose up -d`,
-            "```",
-            "_Exécuter depuis le dossier contenant votre compose.yaml_",
-        ].join("\n");
-
-        if (webhooks.length > 0) {
-            await new DiscordNotifier(webhooks).sendEmbed({
-                title, color: 0xF59E0B, description: body,
-                footer: `Dockge Enhanced${footerHost}`,
-            });
-        }
-        if (apprise) {
-            await apprise.send({ title, body, type: "warning" });
-        }
+  private async _loadApprise(): Promise<AppriseNotifier | null> {
+    try {
+      const raw = await fs.readFile(SETTINGS_PATH, "utf8");
+      const data = JSON.parse(raw) as Record<string, unknown>;
+      const serverUrl =
+        typeof data.appriseServerUrl === "string" ? data.appriseServerUrl : "";
+      const urls = Array.isArray(data.appriseUrls)
+        ? (data.appriseUrls as string[])
+        : [];
+      if (!serverUrl) return null;
+      return new AppriseNotifier(serverUrl, urls);
+    } catch {
+      return null;
     }
-
-    private async _notifyApplied(containerName: string, newDigest: string): Promise<void> {
-        const webhooks = await loadWebhooks();
-        const apprise  = await this._loadApprise();
-        if (webhooks.length === 0 && !apprise) return;
-
-        const hostname       = (await Settings.get("primaryHostname")) || "";
-        const hostnamePrefix = hostname ? `[${hostname}] ` : "";
-        const footerHost     = hostname ? ` · ${hostname}` : "";
-
-        const title = `${hostnamePrefix}✅ Dockge-Enhanced mis à jour`;
-        const body  = [
-            `Le conteneur **${containerName}** a été mis à jour automatiquement.`,
-            `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
-        ].join("\n");
-
-        if (webhooks.length > 0) {
-            await new DiscordNotifier(webhooks).sendEmbed({
-                title, color: 0x22c55e, description: body,
-                footer: `Dockge Enhanced${footerHost}`,
-            });
-        }
-        if (apprise) {
-            await apprise.send({ title, body, type: "success" });
-        }
-    }
-
-    private async _loadApprise(): Promise<AppriseNotifier | null> {
-        try {
-            const raw  = await fs.readFile(SETTINGS_PATH, "utf8");
-            const data = JSON.parse(raw) as Record<string, unknown>;
-            const serverUrl = typeof data.appriseServerUrl === "string" ? data.appriseServerUrl : "";
-            const urls = Array.isArray(data.appriseUrls) ? data.appriseUrls as string[] : [];
-            if (!serverUrl) return null;
-            return new AppriseNotifier(serverUrl, urls);
-        } catch {
-            return null;
-        }
-    }
+  }
 }
