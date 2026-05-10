@@ -403,6 +403,20 @@ export class WatcherRouter extends Router {
             }
         });
 
+        router.get("/backup/snapshots/:id/browse", async (req: Request, res: Response) => {
+            try {
+                const dirPath = (req.query.path as string) ?? "";
+                if (!dirPath.startsWith("/") || dirPath.includes("..") || dirPath.length > 1000) {
+                    res.status(400).json({ ok: false, message: "Chemin invalide" });
+                    return;
+                }
+                const entries = await BackupManager.getInstance().browseSnapshotPath(req.params.id, dirPath);
+                res.json({ ok: true, data: entries });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
         router.post("/backup/snapshots/:id/restore", async (req: Request, res: Response) => {
             try {
                 const { files } = req.body as { files: string[] };

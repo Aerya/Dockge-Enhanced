@@ -1278,18 +1278,15 @@ export class BackupManager {
                 }
             }
 
-            // DEBUG temporaire
-            console.log(`[BackupManager] DEBUG currentSnap.paths:`, currentSnap?.paths);
-
             // ── 6. Dossiers de volumes depuis snapshot.paths ──────────────
-            // Le champ paths du snapshot liste exactement ce qui a été sauvegardé.
             // Les chemins hors STACKS_DIR sont des dossiers de volumes — on les
             // ajoute directement sans restic ls supplémentaire.
+            // snapDiff : "added" si le chemin n'était pas dans le snapshot précédent,
+            // "unchanged" sinon (on ne peut pas calculer "modified" sans restic diff).
             if (currentSnap) {
+                const prevPaths = new Set(prevSnap?.paths ?? []);
                 for (const p of currentSnap.paths) {
-                    // Exclure les fichiers individuels sous STACKS_DIR (déjà listés)
                     if (p.startsWith(STACKS_DIR + "/") || p === STACKS_DIR) continue;
-                    // Exclure les chemins système non pertinents
                     if (p === "/var/run/docker.sock" || p === "/etc/hosts" || p === "/etc/hostname") continue;
                     const volName = path.basename(p);
                     let diskStatus: "unchanged" | "modified" | "missing" = "missing";
@@ -1302,7 +1299,7 @@ export class BackupManager {
                         size: 0,
                         mtime: currentSnap.time,
                         diskStatus,
-                        snapDiff: prevSnap ? "unchanged" : "added",
+                        snapDiff: prevPaths.has(p) ? "unchanged" : "added",
                         prevSnapshotId: prevSnap?.short_id ?? null,
                     });
                 }
@@ -1320,6 +1317,34 @@ export class BackupManager {
             console.error("[BackupManager] listSnapshotFiles error:", e);
             return [];
         }
+    }
+
+    /**
+     * Liste les enfants directs d'un chemin dans un snapshot (non-récursif).
+     * Utilisé pour le lazy-loading du navigateur de volumes.
+     */
+    async browseSnapshotPath(snapshotId: string, dirPath: string): Promise<Array<{
+        name: string; path: string; type: "file" | "dir"; size: number; mtime: string;
+    }>> {
+        const safeId   = shellQuote(assertSafeResticId(snapshotId));
+        const safePath = shellQuote(dirPath);
+        const out = await this.resticFor(this.primaryDest(), `ls ${safeId} ${safePath} --json --long`);
+        const results: Array<{ name: string; path: string; type: "file" | "dir"; size: number; mtime: string }> = [];
+        for (const line of out.split("\n").filter(Boolean)) {
+            try {
+                const e = JSON.parse(line) as Record<string, unknown>;
+                if ((e.type === "file" || e.type === "dir") && typeof e.path === "string" && e.path !== dirPath) {
+                    results.push({
+                        name:  e.name  as string ?? "",
+                        path:  e.path  as string,
+                        type:  e.type  as "file" | "dir",
+                        size:  (e.size as number)  ?? 0,
+                        mtime: (e.mtime as string) ?? "",
+                    });
+                }
+            } catch { /* ignore */ }
+        }
+        return results;
     }
 
     /** Restaure une liste de fichiers depuis un snapshot à leur emplacement d'origine */

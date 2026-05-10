@@ -680,7 +680,80 @@
                                                     <div v-if="expandedStacks.has(sg.name)" class="snap-stack-body">
 
                                                         <!-- Fichiers directs (compose, env, other) -->
-                                                        <div v-for="f in sg.directFiles" :key="f.path"
+                                                        <template v-for="f in sg.directFiles" :key="f.path">
+
+                                                        <!-- Volume directory → lazy-browse -->
+                                                        <template v-if="f.type === 'volume'">
+                                                            <div class="snap-vol-dir-header"
+                                                                @click="browseToggle(snap.short_id, f.path)">
+                                                                <input type="checkbox" class="form-check-input flex-shrink-0" @click.stop
+                                                                    :checked="selectedFiles.has(f.path)"
+                                                                    @change.stop="toggleFile(f.path)" />
+                                                                <font-awesome-icon
+                                                                    :icon="browseOpen[bKey(snap.short_id, f.path)] ? 'folder-open' : 'folder'"
+                                                                    class="snap-folder-icon" />
+                                                                <code class="snap-foldername">{{ f.path }}/</code>
+                                                                <span v-if="browseLoading[bKey(snap.short_id, f.path)]"
+                                                                    class="spinner-border spinner-border-sm ms-2" />
+                                                                <font-awesome-icon v-else
+                                                                    :icon="browseOpen[bKey(snap.short_id, f.path)] ? 'chevron-down' : 'chevron-right'"
+                                                                    class="ms-2 snap-chevron" />
+                                                                <div class="snap-badges ms-auto">
+                                                                    <span v-if="f.snapDiff === 'added'" class="badge bg-success">{{ $t('watcher.backup.snapshots.diffAdded') }}</span>
+                                                                    <span v-else class="badge bg-secondary opacity-50">{{ $t('watcher.backup.snapshots.diffUnchanged') }}</span>
+                                                                    <span v-if="f.diskStatus !== 'missing'" class="badge bg-success">{{ $t('watcher.backup.snapshots.diskUnchanged') }}</span>
+                                                                    <span v-else class="badge bg-secondary">{{ $t('watcher.backup.snapshots.diskMissing') }}</span>
+                                                                </div>
+                                                            </div>
+                                                            <!-- Enfants du volume (lazy-loaded) -->
+                                                            <div v-if="browseOpen[bKey(snap.short_id, f.path)]" class="snap-vol-children">
+                                                                <div v-for="child in (browseCache[bKey(snap.short_id, f.path)] ?? [])"
+                                                                    :key="child.path" class="snap-vol-child-row">
+                                                                    <template v-if="child.type === 'dir'">
+                                                                        <!-- Sous-dossier : cliquable pour descendre d'un niveau -->
+                                                                        <div class="snap-vol-subdir-header"
+                                                                            @click="browseToggle(snap.short_id, child.path)">
+                                                                            <input type="checkbox" class="form-check-input flex-shrink-0" @click.stop
+                                                                                :checked="selectedFiles.has(child.path)"
+                                                                                @change.stop="toggleFile(child.path)" />
+                                                                            <font-awesome-icon
+                                                                                :icon="browseOpen[bKey(snap.short_id, child.path)] ? 'folder-open' : 'folder'"
+                                                                                class="snap-folder-icon" />
+                                                                            <code class="snap-foldername">{{ child.name }}/</code>
+                                                                            <span v-if="browseLoading[bKey(snap.short_id, child.path)]"
+                                                                                class="spinner-border spinner-border-sm ms-2" />
+                                                                            <font-awesome-icon v-else
+                                                                                :icon="browseOpen[bKey(snap.short_id, child.path)] ? 'chevron-down' : 'chevron-right'"
+                                                                                class="ms-2 snap-chevron" />
+                                                                        </div>
+                                                                        <!-- Petits-enfants -->
+                                                                        <div v-if="browseOpen[bKey(snap.short_id, child.path)]" class="snap-vol-children snap-vol-children--l2">
+                                                                            <div v-for="gc in (browseCache[bKey(snap.short_id, child.path)] ?? [])"
+                                                                                :key="gc.path" class="snap-vol-child-row">
+                                                                                <input type="checkbox" class="form-check-input flex-shrink-0"
+                                                                                    :checked="selectedFiles.has(gc.path)"
+                                                                                    @change="toggleFile(gc.path)" />
+                                                                                <font-awesome-icon :icon="gc.type === 'dir' ? 'folder' : 'file'" class="snap-file-icon" />
+                                                                                <code class="snap-foldername">{{ gc.name }}{{ gc.type === 'dir' ? '/' : '' }}</code>
+                                                                                <span class="snap-filesize ms-auto text-muted" style="font-size:.75rem">{{ gc.type === 'file' ? formatBytes(gc.size) : '' }}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <template v-else>
+                                                                        <!-- Fichier direct dans le volume -->
+                                                                        <input type="checkbox" class="form-check-input flex-shrink-0"
+                                                                            :checked="selectedFiles.has(child.path)"
+                                                                            @change="toggleFile(child.path)" />
+                                                                        <font-awesome-icon icon="file" class="snap-file-icon" />
+                                                                        <code class="snap-foldername">{{ child.name }}</code>
+                                                                        <span class="snap-filesize ms-auto text-muted" style="font-size:.75rem">{{ formatBytes(child.size) }}</span>
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+
+                                                        <!-- Fichier normal (compose, env, other) -->
+                                                        <div v-else
                                                             class="snap-file-row"
                                                             :class="{ 'opacity-50': f.diskStatus === 'missing' }">
                                                             <input type="checkbox" class="form-check-input flex-shrink-0"
@@ -713,6 +786,8 @@
                                                                 <span v-else class="badge bg-secondary">{{ $t('watcher.backup.snapshots.diskMissing') }}</span>
                                                             </div>
                                                         </div>
+
+                                                        </template>
 
                                                         <!-- Fichiers de volume directement dans le volume (sans sous-dossier) -->
                                                         <div v-for="f in sg.volRootFiles" :key="f.path"
@@ -1093,6 +1168,27 @@ const preview = ref({
 });
 const expandedStacks    = ref<Set<string>>(new Set());
 const expandedFolders   = ref<Set<string>>(new Set());
+
+// ─── Lazy-browse des dossiers volumes ────────────────────────────
+interface BrowseEntry { name: string; path: string; type: "file" | "dir"; size: number; mtime: string }
+const browseCache   = ref<Record<string, BrowseEntry[]>>({});   // clé = snapshotId::path
+const browseLoading = ref<Record<string, boolean>>({});
+const browseOpen    = ref<Record<string, boolean>>({});
+
+function bKey(snapId: string, p: string) { return `${snapId}::${p}`; }
+
+async function browseToggle(snapId: string, dirPath: string) {
+    const k = bKey(snapId, dirPath);
+    if (browseOpen.value[k]) { browseOpen.value[k] = false; return; }
+    if (!browseCache.value[k]) {
+        browseLoading.value[k] = true;
+        try {
+            const res = await api("GET", `/backup/snapshots/${snapId}/browse?path=${encodeURIComponent(dirPath)}`);
+            if (res.ok) browseCache.value[k] = res.data as BrowseEntry[];
+        } finally { browseLoading.value[k] = false; }
+    }
+    browseOpen.value[k] = true;
+}
 const toast = ref({ msg: "", ok: true });
 
 function addDestination() {
@@ -2420,5 +2516,80 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     padding: .15em .4em;
     white-space: nowrap;
     flex-shrink: 0;
+}
+
+// ─── Volume lazy-browse tree ──────────────────────────────────────
+.snap-vol-dir-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 16px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(116,194,255,.04);
+    border-top: 1px solid rgba(255,255,255,.05);
+    transition: background .12s;
+
+    &:hover { background: rgba(116,194,255,.09); }
+
+    .snap-foldername { color: #74c2ff; }
+    .snap-folder-icon { color: #74c2ff; }
+}
+
+.snap-vol-children {
+    background: rgba(0,0,0,.12);
+    border-top: 1px solid rgba(255,255,255,.04);
+}
+
+.snap-vol-child-row {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid rgba(255,255,255,.03);
+}
+
+.snap-vol-subdir-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px 5px 32px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(116,194,255,.03);
+    transition: background .12s;
+
+    &:hover { background: rgba(116,194,255,.08); }
+
+    .snap-foldername { color: #74c2ff; font-size: .8rem; }
+    .snap-folder-icon { color: #74c2ff; font-size: .78rem; }
+}
+
+.snap-vol-children--l2 {
+    background: rgba(0,0,0,.1);
+
+    .snap-vol-child-row {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 12px 4px 52px;
+        border-top: 1px solid rgba(255,255,255,.03);
+        transition: background .1s;
+
+        &:hover { background: rgba(255,255,255,.03); }
+
+        .snap-foldername { font-size: .78rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    }
+}
+
+// Fichier direct dans un volume (l1)
+.snap-vol-children > .snap-vol-child-row:not(:has(.snap-vol-subdir-header)) {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 32px;
+    transition: background .1s;
+
+    &:hover { background: rgba(255,255,255,.03); }
+
+    .snap-foldername { font-size: .8rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 </style>
