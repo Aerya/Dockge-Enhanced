@@ -573,11 +573,17 @@ export class BackupManager {
      * puis vérifie le code de sortie pour rejeter en cas d'erreur.
      * Timeout configurable (défaut 120 s).
      */
+    /**
+     * lineFilter : filtre appliqué sur chaque ligne brute PENDANT le streaming,
+     * avant JSON.parse — évite d'accumuler des millions de lignes en mémoire.
+     * Utiliser des checks sur les chaînes (ex: line.includes('"type":"file"'))
+     * plutôt que JSON.parse pour rester rapide.
+     */
     private resticLsLines(
         dest: BackupDestination,
         snapshotId: string,
         timeoutMs: number = 120_000,
-        ...paths: string[]
+        lineFilter?: (line: string) => boolean,
     ): Promise<string[]> {
         return new Promise(async (resolve, reject) => {
             const repoEnv = buildResticEnv(dest);
@@ -605,8 +611,9 @@ export class BackupManager {
 
                 const sftpOpts  = buildSftpOptions(dest, tmpFile ?? undefined);
                 const safeId    = assertSafeResticId(snapshotId);
-                const pathArgs  = paths.map(p => shellQuote(p)).join(" ");
-                const cmd       = `restic --repo ${shellQuote(repo)} --json ${sftpOpts} ls ${shellQuote(safeId)} --json --long ${pathArgs}`;
+                // Pas de restriction de chemin : restic ls /chemin ne liste que les
+                // enfants directs (non récursif). On filtre en streaming à la place.
+                const cmd       = `restic --repo ${shellQuote(repo)} --json ${sftpOpts} ls ${shellQuote(safeId)} --json --long`;
 
                 console.log(`[BackupManager] resticLsLines cmd: ${cmd}`);
 
@@ -626,7 +633,11 @@ export class BackupManager {
 
                 const lines: string[] = [];
                 const rl = readline.createInterface({ input: proc.stdout, crlfDelay: Infinity });
-                rl.on("line", (line: string) => { if (line) lines.push(line); });
+                rl.on("line", (line: string) => {
+                    if (!line) return;
+                    if (lineFilter && !lineFilter(line)) return;
+                    lines.push(line);
+                });
 
                 let exitCode: number | null = null;
                 let stderr = "";
@@ -1059,7 +1070,9 @@ export class BackupManager {
     }
 
     async deleteSnapshot(id: string): Promise<void> {
-        await this.resticFor(this.primaryDest(), `forget ${shellQuote(assertSafeResticId(id))} --prune`);
+        const dest = this.primaryDest();
+        try { await this.resticFor(dest, "unlock --remove-all"); } catch { /* ignore */ }
+        await this.resticFor(dest, `forget ${shellQuote(assertSafeResticId(id))} --prune`);
     }
 
     /**
@@ -1085,11 +1098,19 @@ export class BackupManager {
             // Plus long en premier → on prend toujours le mount le plus spécifique
             const sortedVols = [...mountedVols].sort((a, b) => b.destination.length - a.destination.length);
 
-            // ── 2. Liste les fichiers du snapshot — restreint à STACKS_DIR pour éviter
-            //       de parcourir des millions de fichiers de volumes (docker data, etc.)
-            //       Timeout 60 s : ls d'un petit répertoire ne devrait pas dépasser ça.
-            console.log(`[BackupManager] listSnapshotFiles(${snapshotId}) → restic ls ${STACKS_DIR}`);
-            const lsLines = await this.resticLsLines(this.primaryDest(), snapshotId, 60_000, STACKS_DIR);
+            // ── 2. Liste les fichiers du snapshot via streaming filtré ──────────
+            // restic ls /chemin ne liste que les enfants directs (non récursif).
+            // On lance donc sans restriction de chemin et on filtre PENDANT le
+            // streaming (avant JSON.parse) pour ne garder que les fichiers de
+            // STACKS_DIR. Cela évite d'accumuler 1,4 M+ de lignes en mémoire.
+            const stacksDirPrefix = STACKS_DIR + "/";
+            console.log(`[BackupManager] listSnapshotFiles(${snapshotId}) → streaming filtré pour ${STACKS_DIR}`);
+            const lsLines = await this.resticLsLines(
+                this.primaryDest(),
+                snapshotId,
+                120_000,
+                (line) => line.includes('"type":"file"') && line.includes(stacksDirPrefix),
+            );
 
             // ── 3. Parse et groupe par (stack, name) pour dédupliquer ────
             // Un fichier est "direct dans la stack" s'il se trouve exactement au niveau
@@ -1099,14 +1120,6 @@ export class BackupManager {
             type RawEntry = { path: string; name: string; stack: string; size: number; mtime: string; volumeRelPath?: string };
             const groups = new Map<string, RawEntry[]>();
             const standalones: RawEntry[] = [];
-
-            // DEBUG temporaire
-            for (const line of lsLines) {
-                try {
-                    const e = JSON.parse(line) as Record<string, unknown>;
-                    console.log(`[DEBUG ls] type=${JSON.stringify(e.type)} path=${JSON.stringify(e.path)}`);
-                } catch { /* ignore */ }
-            }
 
             for (const line of lsLines) {
                 let entry: Record<string, unknown>;
