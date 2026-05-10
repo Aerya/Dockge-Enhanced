@@ -1090,7 +1090,8 @@ export class BackupManager {
             const idx = allSnaps.findIndex(
                 s => s.id.startsWith(snapshotId) || s.short_id === snapshotId
             );
-            const prevSnap = idx > 0 ? allSnaps[idx - 1] : null;
+            const prevSnap    = idx > 0 ? allSnaps[idx - 1] : null;
+            const currentSnap = idx >= 0 ? allSnaps[idx]   : null;
 
             // ── 1b. Charge les volumes montés pour identifier les fichiers de données ──
             let mountedVols: MountedVolume[] = [];
@@ -1098,19 +1099,35 @@ export class BackupManager {
             // Plus long en premier → on prend toujours le mount le plus spécifique
             const sortedVols = [...mountedVols].sort((a, b) => b.destination.length - a.destination.length);
 
-            // ── 2. Liste les fichiers du snapshot via streaming filtré ──────────
-            // restic ls /chemin ne liste que les enfants directs (non récursif).
-            // On lance donc sans restriction de chemin et on filtre PENDANT le
-            // streaming (avant JSON.parse) pour ne garder que les fichiers de
-            // STACKS_DIR. Cela évite d'accumuler 1,4 M+ de lignes en mémoire.
-            const stacksDirPrefix = STACKS_DIR + "/";
-            console.log(`[BackupManager] listSnapshotFiles(${snapshotId}) → streaming filtré pour ${STACKS_DIR}`);
-            const lsLines = await this.resticLsLines(
-                this.primaryDest(),
-                snapshotId,
-                120_000,
-                (line) => line.includes('"type":"file"') && line.includes(stacksDirPrefix),
-            );
+            // ── 2. Liste les fichiers du snapshot en deux passes ─────────────
+            // restic ls /chemin est NON-RÉCURSIF (enfants directs seulement).
+            // Passe A : ls /opt/stacks → liste les sous-dossiers de stacks.
+            // Passe B : ls /opt/stacks/stack1 /opt/stacks/stack2 … → liste les
+            //           fichiers directement dans chaque stack (compose.yaml, .env).
+            // Les deux appels sont petits → resticFor (exec) convient.
+            const safeId = shellQuote(assertSafeResticId(snapshotId));
+
+            // Passe A — sous-dossiers de STACKS_DIR
+            const passA = await this.resticFor(this.primaryDest(), `ls ${safeId} ${shellQuote(STACKS_DIR)} --json --long`);
+            const stackPaths: string[] = [];
+            for (const line of passA.split("\n").filter(Boolean)) {
+                try {
+                    const e = JSON.parse(line) as Record<string, unknown>;
+                    if (e.type === "dir" && typeof e.path === "string" && e.path !== STACKS_DIR) {
+                        const parentDir = path.dirname(e.path as string);
+                        if (parentDir === STACKS_DIR) stackPaths.push(e.path as string);
+                    }
+                } catch { /* ignore */ }
+            }
+            console.log(`[BackupManager] listSnapshotFiles: ${stackPaths.length} stacks détectés`);
+
+            if (stackPaths.length === 0) return [];
+
+            // Passe B — fichiers dans chaque stack (compose.yaml, .env…)
+            const stackArgs = stackPaths.map(p => shellQuote(p)).join(" ");
+            const passB = await this.resticFor(this.primaryDest(), `ls ${safeId} ${stackArgs} --json --long`);
+            const lsLines = passB.split("\n").filter(line => line.includes('"type":"file"'));
+            console.log(`[BackupManager] listSnapshotFiles: ${lsLines.length} fichiers trouvés`);
 
             // ── 3. Parse et groupe par (stack, name) pour dédupliquer ────
             // Un fichier est "direct dans la stack" s'il se trouve exactement au niveau
@@ -1258,6 +1275,33 @@ export class BackupManager {
                 } catch (e) {
                     // Timeout ou erreur → on garde "unchanged" par défaut, pas bloquant
                     console.warn(`[BackupManager] listSnapshotFiles: diff ignoré (${(e as Error).message})`);
+                }
+            }
+
+            // ── 6. Dossiers de volumes depuis snapshot.paths ──────────────
+            // Le champ paths du snapshot liste exactement ce qui a été sauvegardé.
+            // Les chemins hors STACKS_DIR sont des dossiers de volumes — on les
+            // ajoute directement sans restic ls supplémentaire.
+            if (currentSnap) {
+                for (const p of currentSnap.paths) {
+                    // Exclure les fichiers individuels sous STACKS_DIR (déjà listés)
+                    if (p.startsWith(STACKS_DIR + "/") || p === STACKS_DIR) continue;
+                    // Exclure les chemins système non pertinents
+                    if (p === "/var/run/docker.sock" || p === "/etc/hosts" || p === "/etc/hostname") continue;
+                    const volName = path.basename(p);
+                    let diskStatus: "unchanged" | "modified" | "missing" = "missing";
+                    try { await fs.stat(p); diskStatus = "unchanged"; } catch { /* absent */ }
+                    files.push({
+                        path: p,
+                        name: volName,
+                        stack: volName,
+                        type: "volume",
+                        size: 0,
+                        mtime: currentSnap.time,
+                        diskStatus,
+                        snapDiff: prevSnap ? "unchanged" : "added",
+                        prevSnapshotId: prevSnap?.short_id ?? null,
+                    });
                 }
             }
 
