@@ -1100,6 +1100,14 @@ export class BackupManager {
             const groups = new Map<string, RawEntry[]>();
             const standalones: RawEntry[] = [];
 
+            // DEBUG temporaire
+            for (const line of lsLines) {
+                try {
+                    const e = JSON.parse(line) as Record<string, unknown>;
+                    console.log(`[DEBUG ls] type=${JSON.stringify(e.type)} path=${JSON.stringify(e.path)}`);
+                } catch { /* ignore */ }
+            }
+
             for (const line of lsLines) {
                 let entry: Record<string, unknown>;
                 try { entry = JSON.parse(line); } catch { continue; }
