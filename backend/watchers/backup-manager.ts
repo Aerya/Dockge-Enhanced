@@ -568,14 +568,34 @@ export class BackupManager {
 
     /**
      * Streams `restic ls <snapshotId> --json --long [paths...]` via spawn + readline.
-     * Évite la limite maxBuffer de execAsync sur les snapshots contenant des millions de fichiers.
-     * Retourne un tableau de lignes JSON brutes (NDJSON).
+     * Évite la limite maxBuffer de execAsync sur les snapshots de grande taille.
+     * Attend la fermeture de readline (toutes les lignes traitées) avant de résoudre,
+     * puis vérifie le code de sortie pour rejeter en cas d'erreur.
+     * Timeout configurable (défaut 120 s).
      */
-    private resticLsLines(dest: BackupDestination, snapshotId: string, ...paths: string[]): Promise<string[]> {
+    private resticLsLines(
+        dest: BackupDestination,
+        snapshotId: string,
+        timeoutMs: number = 120_000,
+        ...paths: string[]
+    ): Promise<string[]> {
         return new Promise(async (resolve, reject) => {
             const repoEnv = buildResticEnv(dest);
             const repo    = buildRepoUrl(dest);
             let tmpFile: string | null = null;
+            let settled   = false;
+            let timer: ReturnType<typeof setTimeout> | null = null;
+
+            const cleanup = (tf: string | null) => {
+                if (timer) { clearTimeout(timer); timer = null; }
+                if (tf) fs.unlink(tf).catch(() => {});
+            };
+            const fail = (err: unknown, tf: string | null) => {
+                if (settled) return;
+                settled = true;
+                cleanup(tf);
+                reject(err);
+            };
 
             try {
                 if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
@@ -588,6 +608,8 @@ export class BackupManager {
                 const pathArgs  = paths.map(p => shellQuote(p)).join(" ");
                 const cmd       = `restic --repo ${shellQuote(repo)} --json ${sftpOpts} ls ${shellQuote(safeId)} --json --long ${pathArgs}`;
 
+                console.log(`[BackupManager] resticLsLines cmd: ${cmd}`);
+
                 const proc = spawn("sh", ["-c", cmd], {
                     env: {
                         PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
@@ -596,31 +618,40 @@ export class BackupManager {
                     },
                 });
 
+                // Timeout watchdog
+                timer = setTimeout(() => {
+                    proc.kill();
+                    fail(new Error(`restic ls timed out after ${timeoutMs / 1000}s`), tmpFile);
+                }, timeoutMs);
+
                 const lines: string[] = [];
-                const rl = readline.createInterface({ input: proc.stdout });
+                const rl = readline.createInterface({ input: proc.stdout, crlfDelay: Infinity });
                 rl.on("line", (line: string) => { if (line) lines.push(line); });
 
+                let exitCode: number | null = null;
                 let stderr = "";
-                proc.stderr.on("data", (chunk: Buffer) => {
-                    stderr += chunk.toString();
-                });
+                proc.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
 
-                proc.on("close", (code: number | null) => {
-                    if (tmpFile) fs.unlink(tmpFile).catch(() => {});
-                    if (code === 0 || code === null) {
+                // Capture exit code early; resolution happens on rl 'close'
+                // (guarantees all line events have fired before we resolve)
+                proc.on("exit", (code) => { exitCode = code; });
+
+                rl.on("close", () => {
+                    if (settled) return;
+                    settled = true;
+                    cleanup(tmpFile);
+                    if (exitCode === 0 || exitCode === null) {
+                        console.log(`[BackupManager] resticLsLines: ${lines.length} lignes reçues`);
                         resolve(lines);
                     } else {
-                        reject(new Error(`restic ls exited with code ${code}: ${stderr.slice(0, 500)}`));
+                        reject(new Error(`restic ls exited with code ${exitCode}: ${stderr.slice(0, 500)}`));
                     }
                 });
 
-                proc.on("error", (err: Error) => {
-                    if (tmpFile) fs.unlink(tmpFile).catch(() => {});
-                    reject(err);
-                });
+                proc.on("error", (err: Error) => fail(err, tmpFile));
+
             } catch (err) {
-                if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
-                reject(err);
+                fail(err, tmpFile);
             }
         });
     }
@@ -1054,8 +1085,11 @@ export class BackupManager {
             // Plus long en premier → on prend toujours le mount le plus spécifique
             const sortedVols = [...mountedVols].sort((a, b) => b.destination.length - a.destination.length);
 
-            // ── 2. Liste tous les fichiers du snapshot (streaming via spawn pour éviter maxBuffer) ──
-            const lsLines = await this.resticLsLines(this.primaryDest(), snapshotId);
+            // ── 2. Liste les fichiers du snapshot — restreint à STACKS_DIR pour éviter
+            //       de parcourir des millions de fichiers de volumes (docker data, etc.)
+            //       Timeout 60 s : ls d'un petit répertoire ne devrait pas dépasser ça.
+            console.log(`[BackupManager] listSnapshotFiles(${snapshotId}) → restic ls ${STACKS_DIR}`);
+            const lsLines = await this.resticLsLines(this.primaryDest(), snapshotId, 60_000, STACKS_DIR);
 
             // ── 3. Parse et groupe par (stack, name) pour dédupliquer ────
             // Un fichier est "direct dans la stack" s'il se trouve exactement au niveau
@@ -1294,6 +1328,9 @@ export class BackupManager {
 
     /** Exécute `restic check` sans `--json` pour vérifier l'intégrité d'un repo */
     private async resticCheck(dest: BackupDestination): Promise<string> {
+        // Libère un éventuel verrou obsolète avant le check (comme pour backup/forget)
+        try { await this.resticFor(dest, "unlock --remove-all"); } catch { /* ignore */ }
+
         const repoEnv = buildResticEnv(dest);
         const repo    = buildRepoUrl(dest);
         let tmpFile: string | null = null;
@@ -1304,12 +1341,18 @@ export class BackupManager {
             }
             const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
             const cmd = `restic --repo ${shellQuote(repo)} ${sftpOpts} check 2>&1`;
-            const { stdout } = await execAsync(cmd, {
-                maxBuffer: 2 * 1024 * 1024,
-                timeout: 5 * 60_000,
-                env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...repoEnv },
-            });
-            return stdout;
+            try {
+                const { stdout } = await execAsync(cmd, {
+                    maxBuffer: 2 * 1024 * 1024,
+                    timeout: 5 * 60_000,
+                    env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...repoEnv },
+                });
+                return stdout;
+            } catch (e: any) {
+                // execAsync échoue avec exit code non-zéro → on retourne le stdout réel (2>&1 le contient)
+                const output = (e?.stdout ?? e?.message ?? String(e)).trim();
+                throw new Error(output);
+            }
         } finally {
             if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
         }
