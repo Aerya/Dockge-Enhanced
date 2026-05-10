@@ -1100,13 +1100,12 @@ export class BackupManager {
             const groups = new Map<string, RawEntry[]>();
             const standalones: RawEntry[] = [];
 
-            // DEBUG temporaire — à retirer après diagnostic
-            console.log(`[BackupManager] DEBUG lsLines[0..2]:`, lsLines.slice(0, 3).map(l => l.slice(0, 200)));
-
             for (const line of lsLines) {
                 let entry: Record<string, unknown>;
                 try { entry = JSON.parse(line); } catch { continue; }
-                if (entry.struct_type !== "node" || entry.type !== "file") continue;
+                // restic ls --json : les nodes ont { type: "file"|"dir" }
+                // la ligne de résumé du snapshot n'a pas de champ "type"
+                if (entry.type !== "file") continue;
 
                 const filePath = entry.path as string;
                 const name = path.basename(filePath);
@@ -1199,7 +1198,6 @@ export class BackupManager {
                 ...[...groups.values()],
                 ...standalones.map(r => [r]),
             ];
-            console.log(`[BackupManager] DEBUG groups=${groups.size} standalones=${standalones.length} stacksBase="${stacksBase}" STACKS_DIR="${STACKS_DIR}"`);
             console.log(`[BackupManager] listSnapshotFiles: ${allGroups.length} fichiers, construction des métadonnées…`);
             const files = await Promise.all(allGroups.map(makeFile));
             console.log(`[BackupManager] listSnapshotFiles: métadonnées prêtes, lancement du diff…`);
