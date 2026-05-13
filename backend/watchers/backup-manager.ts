@@ -118,6 +118,8 @@ export interface ResticSnapshot {
     hostname: string;
     tags?: string[];
     paths: string[];
+    size?: number;
+    fileCount?: number;
     summary?: {
         files_new: number;
         files_changed: number;
@@ -125,6 +127,16 @@ export interface ResticSnapshot {
         data_added: number;         // bytes
         total_files_processed: number;
     };
+}
+
+export interface ResticSnapshotStats {
+    repositorySize?: number;
+    repositoryFileCount?: number;
+    snapshots: Record<string, {
+        size?: number;
+        fileCount?: number;
+    }>;
+    errors?: Record<string, string>;
 }
 
 export interface SnapshotFile {
@@ -238,6 +250,39 @@ function assertSafeResticId(id: string): string {
         throw new Error("Identifiant de snapshot invalide");
     }
     return id;
+}
+
+function parseResticStats(stdout: string): { size?: number; fileCount?: number } {
+    const lines = stdout.split("\n").map(line => line.trim()).filter(Boolean).reverse();
+    for (const line of lines) {
+        try {
+            const obj = JSON.parse(line) as Record<string, unknown>;
+            const size = Number(obj.total_size ?? obj.total_size_bytes ?? obj.total_bytes);
+            const fileCount = Number(obj.total_file_count ?? obj.total_files ?? obj.files);
+            return {
+                size: Number.isFinite(size) ? size : undefined,
+                fileCount: Number.isFinite(fileCount) ? fileCount : undefined,
+            };
+        } catch { /* try previous line */ }
+    }
+    return {};
+}
+
+async function mapLimit<T, R>(
+    items: T[],
+    limit: number,
+    worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+    const results = new Array<R>(items.length);
+    let next = 0;
+    const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (next < items.length) {
+            const index = next++;
+            results[index] = await worker(items[index], index);
+        }
+    });
+    await Promise.all(runners);
+    return results;
 }
 
 function buildResticEnv(dest: BackupDestination): Record<string, string> {
@@ -1070,6 +1115,39 @@ export class BackupManager {
         } catch {
             return [];
         }
+    }
+
+    async getSnapshotStats(): Promise<ResticSnapshotStats> {
+        const dest = this.primaryDest();
+        const stats: ResticSnapshotStats = { snapshots: {}, errors: {} };
+
+        const snapshots = await this.listSnapshots();
+
+        try {
+            const stdout = await this.resticFor(dest, "stats --mode raw-data");
+            const repoStats = parseResticStats(stdout);
+            stats.repositorySize = repoStats.size;
+            stats.repositoryFileCount = repoStats.fileCount;
+        } catch (e) {
+            stats.errors!.repository = e instanceof Error ? e.message : String(e);
+        }
+
+        await mapLimit(snapshots, 2, async (snapshot) => {
+            const id = assertSafeResticId(snapshot.short_id || snapshot.id);
+            try {
+                const stdout = await this.resticFor(dest, `stats --mode restore-size ${shellQuote(id)}`);
+                const parsed = parseResticStats(stdout);
+                stats.snapshots[snapshot.short_id] = {
+                    size: parsed.size,
+                    fileCount: parsed.fileCount,
+                };
+            } catch (e) {
+                stats.errors![snapshot.short_id] = e instanceof Error ? e.message : String(e);
+            }
+        });
+
+        if (Object.keys(stats.errors ?? {}).length === 0) delete stats.errors;
+        return stats;
     }
 
     async deleteSnapshot(id: string): Promise<void> {

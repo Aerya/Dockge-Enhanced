@@ -364,6 +364,15 @@ export class WatcherRouter extends Router {
             }
         });
 
+        router.get("/backup/snapshots/stats", async (_req: Request, res: Response) => {
+            try {
+                const stats = await BackupManager.getInstance().getSnapshotStats();
+                res.json({ ok: true, data: stats });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e), data: { snapshots: {} } });
+            }
+        });
+
         router.delete("/backup/snapshots/:id", async (req: Request, res: Response) => {
             try {
                 await BackupManager.getInstance().deleteSnapshot(req.params.id);

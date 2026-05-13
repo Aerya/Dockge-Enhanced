@@ -485,21 +485,8 @@
                     Prochain backup : {{ fmtDate(nextBackupDate) }}
                 </small>
             </div>
-            <div class="backup-filter-bar mb-3">
-                <button v-for="f in backupFilters"
-                    :key="f"
-                    type="button"
-                    class="backup-filter-btn"
-                    :class="{ active: backupFilter === f }"
-                    @click="backupFilter = f">
-                    {{ $t(`watcher.backup.filter.${f}`) }}
-                </button>
-            </div>
             <div v-if="history.length === 0" class="text-center form-text fst-italic py-3">
                 {{ $t('watcher.backup.history.none') }}
-            </div>
-            <div v-else-if="filteredHistory.length === 0" class="text-center form-text fst-italic py-3">
-                {{ $t('watcher.backup.history.noneFiltered') }}
             </div>
             <div v-else class="table-responsive">
                 <table class="table table-hover mb-0 table-sm">
@@ -587,9 +574,29 @@
 
         <!-- ═══ SNAPSHOTS RESTIC ═══ -->
         <div class="shadow-box big-padding mb-4">
-            <h5 class="settings-subheading mb-3">
-                <font-awesome-icon icon="camera" class="me-2" />{{ $t('watcher.backup.snapshots.heading') }}
-            </h5>
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-3 flex-wrap">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="camera" class="me-2" />{{ $t('watcher.backup.snapshots.heading') }}
+                </h5>
+                <small v-if="snapshotRepositorySizeLabel" class="form-text">
+                    {{ $t('watcher.backup.snapshots.repositorySize') }} :
+                    <strong>{{ snapshotRepositorySizeLabel }}</strong>
+                </small>
+                <small v-else-if="loadingSnapshotStats" class="form-text">
+                    <span class="spinner-border spinner-border-sm me-1" />
+                    {{ $t('watcher.backup.snapshots.loadingSizes') }}
+                </small>
+            </div>
+            <div class="backup-filter-bar mb-3">
+                <button v-for="f in snapshotFilters"
+                    :key="f"
+                    type="button"
+                    class="backup-filter-btn"
+                    :class="{ active: snapshotFilter === f }"
+                    @click="snapshotFilter = f">
+                    {{ $t(`watcher.backup.filter.${f}`) }}
+                </button>
+            </div>
             <div v-if="snapshots.length === 0" class="text-center form-text fst-italic py-3">
                 {{ $t('watcher.backup.snapshots.none') }}
             </div>
@@ -630,7 +637,9 @@
                                 </td>
                                 <td class="small form-text">{{ snap.paths.length }} {{ $t('watcher.backup.snapshots.path') }}</td>
                                 <td class="small form-text">
-                                    {{ snapshotSizeMap.has(snap.short_id) ? formatBytes(snapshotSizeMap.get(snap.short_id)!) : '—' }}
+                                    <span :title="snapshotFileCountLabel(snap)">
+                                        {{ snapshotSizeLabel(snap) }}
+                                    </span>
                                 </td>
                                 <td class="text-end" @click.stop>
                                     <button class="btn btn-sm btn-outline-danger"
@@ -1018,7 +1027,14 @@ interface MountedVolume { source: string; destination: string }
 interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; excludedStacks: string[]; excludePatterns: string[]; restoreTest: boolean }
 type BackupTrigger = "scheduled" | "manual" | "on-save";
 type BackupViewFilter = "scheduled" | "on-save" | "manual" | "all" | "errors";
-interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
+type SnapshotFilter = Exclude<BackupViewFilter, "errors">;
+interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[]; size?: number; fileCount?: number }
+interface SnapshotStats {
+    repositorySize?: number;
+    repositoryFileCount?: number;
+    snapshots: Record<string, { size?: number; fileCount?: number }>;
+    errors?: Record<string, string>;
+}
 interface SnapshotFile {
     path: string; name: string; stack: string; type: "compose" | "env" | "volume" | "other";
     relativePath?: string;
@@ -1127,8 +1143,10 @@ function toggleVolumes() {
 const expandedDest = ref<number>(0);
 const snapshots = ref<Snapshot[]>([]);
 const history = ref<BackupResult[]>([]);
-const backupFilters: BackupViewFilter[] = ["scheduled", "on-save", "manual", "all", "errors"];
-const backupFilter = ref<BackupViewFilter>("scheduled");
+const snapshotStats = ref<SnapshotStats | null>(null);
+const loadingSnapshotStats = ref(false);
+const snapshotFilters: SnapshotFilter[] = ["scheduled", "on-save", "manual", "all"];
+const snapshotFilter = ref<SnapshotFilter>("scheduled");
 const expandedErrors = ref<Set<number>>(new Set());
 function toggleError(i: number) {
     const s = new Set(expandedErrors.value);
@@ -1494,14 +1512,18 @@ function backupTriggerClass(trigger: BackupTrigger): string {
     return "bg-secondary";
 }
 
-function matchesBackupFilter(item: BackupResult | Snapshot): boolean {
-    if (backupFilter.value === "all") return true;
-    if (backupFilter.value === "errors") return "success" in item && !item.success;
-    return backupTrigger(item) === backupFilter.value;
+function matchesSnapshotFilter(item: Snapshot): boolean {
+    if (snapshotFilter.value === "all") return true;
+    return backupTrigger(item) === snapshotFilter.value;
 }
 
-const filteredHistory = computed(() => history.value.filter(matchesBackupFilter));
-const filteredSnapshots = computed(() => snapshots.value.filter(matchesBackupFilter));
+const filteredHistory = computed(() => history.value);
+const filteredSnapshots = computed(() => snapshots.value.filter(matchesSnapshotFilter));
+
+const snapshotRepositorySizeLabel = computed(() => {
+    const size = snapshotStats.value?.repositorySize;
+    return typeof size === "number" ? formatBytes(size) : "";
+});
 
 const diffResult = computed<DiffLine[]>(() => {
     if (!preview.value.diskContent || !preview.value.snapshotContent) return [];
@@ -1513,15 +1535,25 @@ const snapDiffResult = computed<DiffLine[]>(() => {
     return diffLines(preview.value.prevContent, preview.value.snapshotContent);
 });
 
-const snapshotSizeMap = computed(() => {
-    const map = new Map<string, number>();
-    for (const h of history.value) {
-        if (h.snapshotId && h.dataAdded != null) {
-            map.set(h.snapshotId.slice(0, 8), h.dataAdded);
-        }
-    }
-    return map;
-});
+function snapshotStat(snap: Snapshot): { size?: number; fileCount?: number } {
+    const stat = snapshotStats.value?.snapshots[snap.short_id];
+    return {
+        size: stat?.size ?? snap.size,
+        fileCount: stat?.fileCount ?? snap.fileCount,
+    };
+}
+
+function snapshotSizeLabel(snap: Snapshot): string {
+    const size = snapshotStat(snap).size;
+    if (typeof size === "number") return formatBytes(size);
+    return loadingSnapshotStats.value ? t("watcher.backup.snapshots.loadingSizes") : "—";
+}
+
+function snapshotFileCountLabel(snap: Snapshot): string {
+    const fileCount = snapshotStat(snap).fileCount;
+    if (typeof fileCount !== "number") return "";
+    return t("watcher.backup.snapshots.fileCount", [fileCount]);
+}
 
 // ─── Init ─────────────────────────────────────────────────────────
 
@@ -1654,6 +1686,7 @@ onMounted(async () => {
         (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
     );
     if (stacksRes.ok) stacksList.value = stacksRes.data ?? [];
+    if (snapsRes.ok) void loadSnapshotStats();
     await initServerTz(api);
     await loadMountedVols();
 });
@@ -1710,7 +1743,22 @@ async function loadSnapshots() {
             (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
         );
         else showToast(`❌ ${res.message}`, false);
+        if (res.ok) void loadSnapshotStats();
     } finally { loadingSnaps.value = false; }
+}
+
+async function loadSnapshotStats() {
+    if (snapshots.value.length === 0) {
+        snapshotStats.value = null;
+        return;
+    }
+    loadingSnapshotStats.value = true;
+    try {
+        const res = await api("GET", "/backup/snapshots/stats");
+        if (res.ok) snapshotStats.value = res.data as SnapshotStats;
+    } finally {
+        loadingSnapshotStats.value = false;
+    }
 }
 
 async function checkIntegrity() {
@@ -1731,6 +1779,11 @@ async function deleteSnapshot(id: string) {
     const res = await api("DELETE", `/backup/snapshots/${id}`);
     if (res.ok) {
         snapshots.value = snapshots.value.filter(s => s.short_id !== id);
+        if (snapshotStats.value) {
+            const nextStats = { ...snapshotStats.value, snapshots: { ...snapshotStats.value.snapshots } };
+            delete nextStats.snapshots[id];
+            snapshotStats.value = nextStats;
+        }
         showToast(t('watcher.backup.snapshots.deleted'));
     } else {
         showToast(`❌ ${res.message}`, false);
