@@ -516,41 +516,74 @@
           </div>
         </div>
         <!-- ═══ HISTORIQUE AUTO-UPDATES ═══ -->
-        <div class="shadow-box big-padding mb-4">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="settings-subheading mb-0">
+        <div class="shadow-box update-history-panel mb-4">
+          <button
+            class="update-history-toggle"
+            type="button"
+            @click="updateHistoryOpen = !updateHistoryOpen"
+          >
+            <span class="update-history-title">
               <font-awesome-icon icon="history" class="me-2" />{{
                 $t("watcher.updateHistory.heading")
               }}
-            </h5>
-            <button
-              v-if="updateHistory.length > 0"
-              class="btn btn-sm btn-outline-danger"
-              @click="clearUpdateHistory"
+            </span>
+            <span class="update-history-summary">
+              {{ updateHistorySummary }}
+            </span>
+            <font-awesome-icon
+              icon="chevron-down"
+              class="update-history-chevron"
+              :class="{ open: updateHistoryOpen }"
+            />
+          </button>
+          <div v-if="updateHistoryOpen" class="update-history-content">
+            <div class="d-flex justify-content-end mb-2">
+              <button
+                v-if="updateHistory.length > 0"
+                class="btn btn-sm btn-outline-danger"
+                @click="clearUpdateHistory"
+              >
+                {{ $t("watcher.updateHistory.clear") }}
+              </button>
+            </div>
+            <div
+              v-if="updateHistory.length === 0"
+              class="text-center form-text fst-italic py-3"
             >
-              {{ $t("watcher.updateHistory.clear") }}
-            </button>
-          </div>
-          <div
-            v-if="updateHistory.length === 0"
-            class="text-center form-text fst-italic py-3"
-          >
-            {{ $t("watcher.updateHistory.empty") }}
-          </div>
-          <div v-else class="table-responsive">
-            <table class="table table-sm table-borderless mb-0">
+              {{ $t("watcher.updateHistory.empty") }}
+            </div>
+            <table
+              v-else
+              class="table table-sm table-borderless mb-0 update-history-table"
+            >
               <thead>
                 <tr>
+                  <th></th>
                   <th>{{ $t("watcher.updateHistory.date") }}</th>
                   <th>{{ $t("watcher.updateHistory.stack") }}</th>
                   <th>{{ $t("watcher.updateHistory.image") }}</th>
-                  <th>{{ $t("watcher.updateHistory.digests") }}</th>
                   <th>{{ $t("watcher.updateHistory.mode") }}</th>
                   <th>{{ $t("watcher.updateHistory.status") }}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(h, i) in updateHistory" :key="i">
+                <template
+                  v-for="(h, i) in visibleUpdateHistory"
+                  :key="`${h.timestamp}-${i}`"
+                >
+                <tr>
+                  <td class="update-history-expand-cell">
+                    <button
+                      class="btn btn-xs btn-outline-secondary"
+                      type="button"
+                      @click="toggleUpdateHistoryDetail(i)"
+                    >
+                      <font-awesome-icon
+                        icon="chevron-down"
+                        :class="{ open: expandedUpdateHistoryRows.has(i) }"
+                      />
+                    </button>
+                  </td>
                   <td class="small form-text text-nowrap">
                     {{ fmtDate(h.timestamp) }}
                   </td>
@@ -559,16 +592,6 @@
                   </td>
                   <td class="small update-history-image" :title="h.image">
                     {{ h.image }}
-                  </td>
-                  <td class="small form-text font-monospace text-nowrap">
-                    <template v-if="h.oldDigest && h.newDigest">
-                      {{ h.oldDigest.slice(7, 19) }} →
-                      {{ h.newDigest.slice(7, 19) }}
-                    </template>
-                    <template v-else-if="h.oldDigest">
-                      {{ h.oldDigest.slice(7, 19) }} → —
-                    </template>
-                    <span v-else class="form-text">—</span>
                   </td>
                   <td>
                     <span
@@ -591,8 +614,41 @@
                     >
                   </td>
                 </tr>
+                <tr
+                  v-if="expandedUpdateHistoryRows.has(i)"
+                  class="update-history-detail-row"
+                >
+                  <td colspan="6">
+                    <div class="update-history-detail">
+                      <div>
+                        <span class="form-text">
+                          {{ $t("watcher.updateHistory.digests") }}
+                        </span>
+                        <code class="ms-2">
+                          {{ formatUpdateHistoryDigests(h) }}
+                        </code>
+                      </div>
+                      <div v-if="h.error" class="text-danger small mt-1">
+                        {{ h.error }}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                </template>
               </tbody>
             </table>
+            <button
+              v-if="updateHistory.length > visibleUpdateHistory.length"
+              class="btn btn-sm btn-normal mt-2"
+              type="button"
+              @click="showAllUpdateHistory = true"
+            >
+              {{
+                $t("watcher.updateHistory.showAll", {
+                  count: updateHistory.length,
+                })
+              }}
+            </button>
           </div>
         </div>
       </div>
@@ -1626,6 +1682,9 @@ const newCred = ref<Cred>({ registry: "", username: "", token: "" });
 const imageStatuses = ref<ImageStatus[]>([]);
 const rollbackEntries = ref<RollbackEntry[]>([]);
 const updateHistory = ref<UpdateHistoryEntry[]>([]);
+const updateHistoryOpen = ref(false);
+const showAllUpdateHistory = ref(false);
+const expandedUpdateHistoryRows = ref(new Set<number>());
 const rollbackingKey = ref<string | null>(null);
 const ignoringKey = ref<string | null>(null);
 const clearingKey = ref<string | null>(null);
@@ -1850,9 +1909,48 @@ function fmtDate(iso: string): string {
   );
 }
 
+const visibleUpdateHistory = computed(() =>
+  showAllUpdateHistory.value
+    ? updateHistory.value
+    : updateHistory.value.slice(0, 10),
+);
+
+const updateHistorySummary = computed(() => {
+  if (updateHistory.value.length === 0) return t("watcher.updateHistory.empty");
+  const failures = updateHistory.value.filter((h) => !h.success).length;
+  const last = updateHistory.value[0]?.timestamp
+    ? fmtDate(updateHistory.value[0].timestamp)
+    : "-";
+  return t("watcher.updateHistory.summary", {
+    count: updateHistory.value.length,
+    failures,
+    last,
+  });
+});
+
+function toggleUpdateHistoryDetail(index: number) {
+  const next = new Set(expandedUpdateHistoryRows.value);
+  if (next.has(index)) {
+    next.delete(index);
+  } else {
+    next.add(index);
+  }
+  expandedUpdateHistoryRows.value = next;
+}
+
+function formatUpdateHistoryDigests(h: UpdateHistoryEntry): string {
+  if (h.oldDigest && h.newDigest) {
+    return `${h.oldDigest.slice(7, 19)} -> ${h.newDigest.slice(7, 19)}`;
+  }
+  if (h.oldDigest) return `${h.oldDigest.slice(7, 19)} -> -`;
+  return "-";
+}
+
 async function clearUpdateHistory() {
   await api("DELETE", "/image/update-history");
   updateHistory.value = [];
+  showAllUpdateHistory.value = false;
+  expandedUpdateHistoryRows.value = new Set();
 }
 
 async function doRollback(s: ImageStatus) {
@@ -2551,6 +2649,80 @@ async function removeCred(registry: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.update-history-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.update-history-toggle {
+  width: 100%;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: minmax(180px, auto) 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.update-history-title {
+  font-weight: 600;
+}
+
+.update-history-summary {
+  min-width: 0;
+  color: #9ca3af;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.update-history-chevron,
+.update-history-expand-cell .svg-inline--fa {
+  transition: transform 0.15s ease;
+}
+
+.update-history-chevron.open,
+.update-history-expand-cell .open {
+  transform: rotate(180deg);
+}
+
+.update-history-content {
+  padding: 0 18px 16px;
+  overflow-x: auto;
+}
+
+.update-history-table th:first-child,
+.update-history-expand-cell {
+  width: 34px;
+}
+
+.update-history-detail-row > td {
+  padding-top: 0;
+}
+
+.update-history-detail {
+  margin-left: 34px;
+  padding: 8px 10px;
+  border-left: 2px solid rgba(116, 194, 255, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+}
+
+@media (max-width: 768px) {
+  .update-history-toggle {
+    grid-template-columns: 1fr auto;
+  }
+
+  .update-history-summary {
+    grid-column: 1 / -1;
+  }
 }
 
 .table th {

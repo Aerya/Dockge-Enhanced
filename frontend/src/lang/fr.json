@@ -248,6 +248,8 @@
     "watcher.updateHistory.status": "Statut",
     "watcher.updateHistory.immediate": "Immédiat",
     "watcher.updateHistory.scheduled": "Planifié",
+    "watcher.updateHistory.summary": "{count} entrées, {failures} échecs, dernière : {last}",
+    "watcher.updateHistory.showAll": "Afficher les {count} entrées",
     "watcher.status.auImmediate": "Immédiat",
     "watcher.status.auScheduled": "Planifié",
     "watcher.status.auPendingHint": "Mise à jour en attente — sera appliquée à l'heure planifiée.",

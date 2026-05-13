@@ -255,6 +255,8 @@
     "watcher.updateHistory.status": "Status",
     "watcher.updateHistory.immediate": "Immediate",
     "watcher.updateHistory.scheduled": "Scheduled",
+    "watcher.updateHistory.summary": "{count} entries, {failures} failed, last: {last}",
+    "watcher.updateHistory.showAll": "Show all {count} entries",
     "watcher.status.auImmediate": "Immediate",
     "watcher.status.auScheduled": "Scheduled",
     "watcher.status.auPendingHint": "Update pending — will be applied at the scheduled time.",
