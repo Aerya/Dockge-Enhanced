@@ -180,7 +180,6 @@
     "watcher.kula.started": "Kula démarré",
     "watcher.kula.stopp": "Kula arrêté",
     "watcher.kula.runningHint": "Kula est en cours d'exécution —",
-    "watcher.kula.toggleIframe": "Afficher / masquer le dashboard",
     "watcher.monitoring.ageJustNow": "à l'instant",
     "watcher.img.heading": "Surveillance des images",
     "watcher.img.enabled": "Activée",
@@ -464,5 +463,16 @@
     "watcher.backup.snapshots.snapDiffTab": "Diff vs snapshot préc.",
     "watcher.backup.snapshots.snapDiffNoPrev": "Aucun snapshot précédent disponible pour ce fichier.",
     "watcher.backup.snapshots.snapDiffLegendPrev": "dans le snapshot précédent (supprimé)",
-    "watcher.backup.snapshots.snapDiffLegendCurr": "dans ce snapshot (ajouté)"
+    "watcher.backup.snapshots.snapDiffLegendCurr": "dans ce snapshot (ajouté)",
+    "watcher.backup.history.noneFiltered": "Aucun backup pour ce filtre.",
+    "watcher.backup.history.type": "Type",
+    "watcher.backup.filter.scheduled": "Planifies",
+    "watcher.backup.filter.on-save": "On-save",
+    "watcher.backup.filter.manual": "Manuels",
+    "watcher.backup.filter.all": "Tous",
+    "watcher.backup.filter.errors": "Erreurs",
+    "watcher.backup.trigger.scheduled": "Planifie",
+    "watcher.backup.trigger.on-save": "On-save",
+    "watcher.backup.trigger.manual": "Manuel",
+    "watcher.backup.snapshots.noneFiltered": "Aucun snapshot pour ce filtre."
 }

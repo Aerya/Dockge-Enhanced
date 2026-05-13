@@ -485,14 +485,28 @@
                     Prochain backup : {{ fmtDate(nextBackupDate) }}
                 </small>
             </div>
+            <div class="backup-filter-bar mb-3">
+                <button v-for="f in backupFilters"
+                    :key="f"
+                    type="button"
+                    class="backup-filter-btn"
+                    :class="{ active: backupFilter === f }"
+                    @click="backupFilter = f">
+                    {{ $t(`watcher.backup.filter.${f}`) }}
+                </button>
+            </div>
             <div v-if="history.length === 0" class="text-center form-text fst-italic py-3">
                 {{ $t('watcher.backup.history.none') }}
+            </div>
+            <div v-else-if="filteredHistory.length === 0" class="text-center form-text fst-italic py-3">
+                {{ $t('watcher.backup.history.noneFiltered') }}
             </div>
             <div v-else class="table-responsive">
                 <table class="table table-hover mb-0 table-sm">
                     <thead>
                         <tr>
                             <th>{{ $t('watcher.backup.history.date') }}</th>
+                            <th>{{ $t('watcher.backup.history.type') }}</th>
                             <th>{{ $t('watcher.backup.history.status') }}</th>
                             <th>{{ $t('watcher.backup.history.snapshot') }}</th>
                             <th>{{ $t('watcher.backup.history.dataAdded') }}</th>
@@ -503,9 +517,14 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <template v-for="(h, i) in history" :key="i">
+                        <template v-for="(h, i) in filteredHistory" :key="`${h.timestamp}-${i}`">
                         <tr :class="h.success ? 'history-row-ok' : 'history-row-err'">
                             <td class="small form-text">{{ fmtDate(h.timestamp) }}</td>
+                            <td>
+                                <span class="badge" :class="backupTriggerClass(backupTrigger(h))">
+                                    {{ backupTriggerLabel(backupTrigger(h)) }}
+                                </span>
+                            </td>
                             <td>
                                 <span v-if="h.success" class="badge bg-success">✓ OK</span>
                                 <span v-else class="badge bg-danger error-badge" @click="toggleError(i)">
@@ -546,7 +565,7 @@
                             </td>
                         </tr>
                         <tr v-if="!h.success && expandedErrors.has(i)" class="history-row-err-detail">
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="backup-error-detail">
                                     <div v-if="h.error" class="backup-error-global">
                                         <pre>{{ h.error }}</pre>
@@ -574,6 +593,9 @@
             <div v-if="snapshots.length === 0" class="text-center form-text fst-italic py-3">
                 {{ $t('watcher.backup.snapshots.none') }}
             </div>
+            <div v-else-if="filteredSnapshots.length === 0" class="text-center form-text fst-italic py-3">
+                {{ $t('watcher.backup.snapshots.noneFiltered') }}
+            </div>
             <div v-else class="table-responsive">
                 <table class="table table-hover mb-0 table-sm">
                     <thead>
@@ -588,7 +610,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <template v-for="snap in snapshots" :key="snap.id">
+                        <template v-for="snap in filteredSnapshots" :key="snap.id">
                             <!-- Ligne principale du snapshot -->
                             <tr class="snapshot-row" @click="toggleSnapshotFiles(snap.short_id)"
                                 style="cursor:pointer">
@@ -600,6 +622,9 @@
                                 <td><code>{{ snap.short_id }}</code></td>
                                 <td class="small form-text">{{ fmtDate(snap.time) }}</td>
                                 <td>
+                                    <span class="badge me-1" :class="backupTriggerClass(backupTrigger(snap))">
+                                        {{ backupTriggerLabel(backupTrigger(snap)) }}
+                                    </span>
                                     <span v-for="tag in (snap.tags ?? [])" :key="tag"
                                         class="badge bg-secondary me-1 small">{{ tag }}</span>
                                 </td>
@@ -991,6 +1016,8 @@ interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; k
 interface VolumeBackupConfig { selectedVolumes: string[] }
 interface MountedVolume { source: string; destination: string }
 interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; excludedStacks: string[]; excludePatterns: string[]; restoreTest: boolean }
+type BackupTrigger = "scheduled" | "manual" | "on-save";
+type BackupViewFilter = "scheduled" | "on-save" | "manual" | "all" | "errors";
 interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[] }
 interface SnapshotFile {
     path: string; name: string; stack: string; type: "compose" | "env" | "volume" | "other";
@@ -1004,7 +1031,7 @@ interface SnapshotFile {
 }
 interface RestoreTestResult { ok: boolean; testedFile?: string; error?: string }
 interface DestinationResult { label: string; type: string; success: boolean; snapshotId?: string; dataAdded?: number; error?: string; warnings?: string[]; restoreTest?: RestoreTestResult }
-interface BackupResult { success: boolean; snapshotId?: string; duration: number; dataAdded?: number; filesNew?: number; filesChanged?: number; error?: string; warnings?: string[]; timestamp: string; destinations?: DestinationResult[] }
+interface BackupResult { success: boolean; trigger?: BackupTrigger; snapshotId?: string; duration: number; dataAdded?: number; filesNew?: number; filesChanged?: number; error?: string; warnings?: string[]; timestamp: string; destinations?: DestinationResult[] }
 interface DiffLine { type: "same" | "added" | "removed"; line: string }
 
 // ─── State ────────────────────────────────────────────────────────
@@ -1100,6 +1127,8 @@ function toggleVolumes() {
 const expandedDest = ref<number>(0);
 const snapshots = ref<Snapshot[]>([]);
 const history = ref<BackupResult[]>([]);
+const backupFilters: BackupViewFilter[] = ["scheduled", "on-save", "manual", "all", "errors"];
+const backupFilter = ref<BackupViewFilter>("scheduled");
 const expandedErrors = ref<Set<number>>(new Set());
 function toggleError(i: number) {
     const s = new Set(expandedErrors.value);
@@ -1445,6 +1474,34 @@ const isBackupStale = computed(() => {
     if (!lastSuccess) return false;
     return Date.now() - new Date(lastSuccess.timestamp).getTime() > 2 * (settings.value.intervalHours ?? 24) * 3_600_000;
 });
+
+function backupTrigger(item: BackupResult | Snapshot): BackupTrigger {
+    const direct = (item as BackupResult).trigger;
+    if (direct === "manual" || direct === "scheduled" || direct === "on-save") return direct;
+    const tags = (item as Snapshot).tags ?? [];
+    if (tags.includes("on-save")) return "on-save";
+    if (tags.includes("manual")) return "manual";
+    return "scheduled";
+}
+
+function backupTriggerLabel(trigger: BackupTrigger): string {
+    return t(`watcher.backup.trigger.${trigger}`);
+}
+
+function backupTriggerClass(trigger: BackupTrigger): string {
+    if (trigger === "on-save") return "bg-info text-dark";
+    if (trigger === "manual") return "bg-primary";
+    return "bg-secondary";
+}
+
+function matchesBackupFilter(item: BackupResult | Snapshot): boolean {
+    if (backupFilter.value === "all") return true;
+    if (backupFilter.value === "errors") return "success" in item && !item.success;
+    return backupTrigger(item) === backupFilter.value;
+}
+
+const filteredHistory = computed(() => history.value.filter(matchesBackupFilter));
+const filteredSnapshots = computed(() => snapshots.value.filter(matchesBackupFilter));
 
 const diffResult = computed<DiffLine[]>(() => {
     if (!preview.value.diskContent || !preview.value.snapshotContent) return [];
@@ -1851,6 +1908,36 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 .history-row-ok  > td:first-child { border-left: 3px solid #22c55e; }
 .history-row-err > td:first-child { border-left: 3px solid #ef4444; }
 .snapshot-row    > td:first-child { border-left: 3px solid #f59e0b; }
+
+.backup-filter-bar {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, .16);
+}
+
+.backup-filter-btn {
+    border: 0;
+    border-radius: 6px;
+    padding: 4px 10px;
+    background: transparent;
+    color: #9ca3af;
+    font-size: .78rem;
+    font-weight: 500;
+}
+
+.backup-filter-btn:hover {
+    background: rgba(255, 255, 255, .06);
+    color: #d1d5db;
+}
+
+.backup-filter-btn.active {
+    background: rgba(116, 194, 255, .16);
+    color: #74c2ff;
+}
 
 .backup-running-banner {
     display: flex;

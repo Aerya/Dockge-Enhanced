@@ -187,7 +187,6 @@
     "watcher.kula.started": "Kula started",
     "watcher.kula.stopp": "Kula stopped",
     "watcher.kula.runningHint": "Kula is running —",
-    "watcher.kula.toggleIframe": "Show / hide dashboard",
     "watcher.monitoring.ageJustNow": "just now",
     "watcher.img.heading": "Image monitoring",
     "watcher.img.enabled": "Enabled",
@@ -471,5 +470,16 @@
     "watcher.backup.snapshots.snapDiffTab": "Diff vs prev snapshot",
     "watcher.backup.snapshots.snapDiffNoPrev": "No previous snapshot available for this file.",
     "watcher.backup.snapshots.snapDiffLegendPrev": "in previous snapshot (was removed)",
-    "watcher.backup.snapshots.snapDiffLegendCurr": "in this snapshot (was added)"
+    "watcher.backup.snapshots.snapDiffLegendCurr": "in this snapshot (was added)",
+    "watcher.backup.history.noneFiltered": "No backup for this filter.",
+    "watcher.backup.history.type": "Type",
+    "watcher.backup.filter.scheduled": "Scheduled",
+    "watcher.backup.filter.on-save": "On-save",
+    "watcher.backup.filter.manual": "Manual",
+    "watcher.backup.filter.all": "All",
+    "watcher.backup.filter.errors": "Errors",
+    "watcher.backup.trigger.scheduled": "Scheduled",
+    "watcher.backup.trigger.on-save": "On-save",
+    "watcher.backup.trigger.manual": "Manual",
+    "watcher.backup.snapshots.noneFiltered": "No snapshot for this filter."
 }
