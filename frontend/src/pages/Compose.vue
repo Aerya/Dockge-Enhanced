@@ -151,11 +151,28 @@
 
                     <!-- Combined Terminal Output -->
                     <div v-show="!isEditMode">
-                        <h4 class="mb-3">{{ $t("terminal") }}</h4>
+                        <div class="terminal-toolbar mb-3">
+                            <h4 class="mb-0">{{ $t("terminal") }}</h4>
+                            <div v-if="logServiceOptions.length > 0" class="terminal-service-filter">
+                                <label class="form-label mb-0 small text-muted" for="log-service-select">Service</label>
+                                <select
+                                    id="log-service-select"
+                                    v-model="selectedLogService"
+                                    class="form-select form-select-sm"
+                                    @change="joinSelectedLogTerminal"
+                                >
+                                    <option value="">Tous</option>
+                                    <option v-for="service in logServiceOptions" :key="service" :value="service">
+                                        {{ service }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
                         <Terminal
+                            :key="selectedLogTerminalName"
                             ref="combinedTerminal"
                             class="mb-3 terminal"
-                            :name="combinedTerminalName"
+                            :name="selectedLogTerminalName"
                             :endpoint="endpoint"
                             :rows="combinedTerminalRows"
                             :cols="combinedTerminalCols"
@@ -257,6 +274,7 @@ import {
     copyYAMLComments, envsubstYAML,
     getCombinedTerminalName,
     getComposeTerminalName,
+    getStackLogsTerminalName,
     PROGRESS_TERMINAL_ROWS,
     RUNNING
 } from "../../../common/util-common";
@@ -338,6 +356,8 @@ export default {
             showDeleteDialog: false,
             newContainerName: "",
             stopServiceStatusTimeout: false,
+            selectedLogService: "",
+            joinedLogService: "",
         };
     },
     computed: {
@@ -404,6 +424,20 @@ export default {
                 return "";
             }
             return getCombinedTerminalName(this.endpoint, this.stack.name);
+        },
+
+        selectedLogTerminalName() {
+            if (!this.stack.name) {
+                return "";
+            }
+            return getStackLogsTerminalName(this.endpoint, this.stack.name, this.selectedLogService);
+        },
+
+        logServiceOptions() {
+            if (!this.jsonConfig.services || typeof this.jsonConfig.services !== "object") {
+                return [];
+            }
+            return Object.keys(this.jsonConfig.services);
         },
 
         networks() {
@@ -554,10 +588,45 @@ export default {
             // Leave Combined Terminal
             console.debug("leaveCombinedTerminal", this.endpoint, this.stack.name);
             this.$root.emitAgent(this.endpoint, "leaveCombinedTerminal", this.stack.name, () => {});
+            if (this.joinedLogService) {
+                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, () => {});
+            }
         },
 
         bindTerminal() {
             this.$refs.progressTerminal?.bind(this.endpoint, this.terminalName);
+            this.$refs.combinedTerminal?.bind(this.endpoint, this.selectedLogTerminalName);
+        },
+
+        joinSelectedLogTerminal() {
+            if (!this.stack.name) {
+                return;
+            }
+
+            const previousService = this.joinedLogService;
+            const nextService = this.selectedLogService;
+
+            if (previousService && previousService !== nextService) {
+                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, previousService, () => {});
+            }
+
+            this.$root.emitAgent(this.endpoint, "joinStackLogsTerminal", this.stack.name, nextService, (res) => {
+                if (res.ok) {
+                    this.joinedLogService = nextService;
+                    this.$nextTick(() => {
+                        this.$refs.combinedTerminal?.bind(this.endpoint, this.selectedLogTerminalName);
+                    });
+                } else {
+                    this.$root.toastRes(res);
+                }
+            });
+        },
+
+        normalizeLogServiceSelection() {
+            if (this.selectedLogService && !this.logServiceOptions.includes(this.selectedLogService)) {
+                this.selectedLogService = "";
+                this.joinSelectedLogTerminal();
+            }
         },
 
         loadStack() {
@@ -720,6 +789,7 @@ export default {
 
                 this.yamlDoc = doc;
                 this.jsonConfig = config;
+                this.normalizeLogServiceSelection();
 
                 let env = dotenv.parse(this.stack.composeENV);
                 let envYAML = envsubstYAML(this.stack.composeYAML, env);
@@ -786,6 +856,23 @@ export default {
 
 .terminal {
     height: 200px;
+}
+
+.terminal-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.terminal-service-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .form-select {
+        width: min(220px, 42vw);
+    }
 }
 
 .editor-box {

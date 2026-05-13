@@ -164,6 +164,7 @@ export interface DestinationResult {
 
 export interface BackupResult {
     success: boolean;               // true si toutes les destinations ont réussi
+    trigger?: "scheduled" | "manual" | "on-save";
     snapshotId?: string;            // premier snapshotId réussi (affichage)
     duration: number;               // ms
     dataAdded?: number;             // bytes (somme)
@@ -510,7 +511,7 @@ export class BackupManager {
         this.settings.intervalHours = intervalHours;
         const cronExpr = cronExpressionForIntervalHours(intervalHours);
         console.log(`[BackupManager] Démarrage — backup toutes les ${intervalHours}h (${cronExpr})`);
-        this.cronJob = cron.schedule(cronExpr, () => this.runBackup());
+        this.cronJob = cron.schedule(cronExpr, () => this.runBackup({ trigger: "scheduled" }));
         this.stalenessCron = cron.schedule("0 * * * *", () => this.checkStaleness().catch(console.error));
     }
 
@@ -717,14 +718,16 @@ export class BackupManager {
         }
         this.lastOnSaveTrigger = now;
         console.log(`[BackupManager] Backup déclenché par la sauvegarde de "${stackName}"`);
-        this.runBackup({ skipForget: true, tag: "on-save" })
+        this.runBackup({ skipForget: true, tag: "on-save", trigger: "on-save" })
             .catch(e => console.error("[BackupManager] Backup on-save échoué:", e));
     }
 
-    async runBackup(opts: { skipForget?: boolean; tag?: string } = {}): Promise<BackupResult> {
+    async runBackup(opts: { skipForget?: boolean; tag?: string; trigger?: "scheduled" | "manual" | "on-save" } = {}): Promise<BackupResult> {
         const start = Date.now();
+        const trigger = opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual");
         const result: BackupResult = {
             success: false,
+            trigger,
             duration: 0,
             timestamp: new Date().toISOString(),
             destinations: [],
@@ -752,8 +755,8 @@ export class BackupManager {
         }
 
         const pathArgs = paths.map(shellQuote).join(" ");
-        const tags = ["dockge-enhanced", new Date().toISOString().slice(0, 10)];
-        if (opts.tag) tags.push(opts.tag);
+        const tags = ["dockge-enhanced", new Date().toISOString().slice(0, 10), trigger];
+        if (opts.tag && !tags.includes(opts.tag)) tags.push(opts.tag);
         const tagArg = tags.map(t => `--tag ${shellQuote(t)}`).join(" ");
         const builtinExcludes = ["*.log", "__pycache__", "node_modules"];
         const userExcludes    = this.settings.excludePatterns ?? [];

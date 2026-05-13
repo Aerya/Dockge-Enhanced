@@ -205,6 +205,13 @@ export function getCombinedTerminalName(endpoint : string, stack : string) {
     return "combined-" + endpoint + "-" + stack;
 }
 
+export function getStackLogsTerminalName(endpoint : string, stack : string, service = "") {
+    if (!service) {
+        return getCombinedTerminalName(endpoint, stack);
+    }
+    return "combined-" + endpoint + "-" + stack + "-service-" + service;
+}
+
 export function getContainerTerminalName(endpoint : string, container : string) {
     return "container-" + endpoint + "-" + container;
 }
@@ -427,4 +434,3 @@ function traverseYAML(pair : Pair, env : DotenvParseOutput) : void {
         pair.value.value = envsubst(pair.value.value, env);
     }
 }
-

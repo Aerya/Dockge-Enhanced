@@ -165,6 +165,54 @@ export class TerminalSocketHandler extends AgentSocketHandler {
             }
         });
 
+        // Join filtered stack logs terminal
+        agentSocket.on("joinStackLogsTerminal", async (stackName : unknown, serviceName : unknown, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof(stackName) !== "string") {
+                    throw new ValidationError("Stack name must be a string.");
+                }
+
+                if (serviceName !== undefined && typeof(serviceName) !== "string") {
+                    throw new ValidationError("Service name must be a string.");
+                }
+
+                const stack = await Stack.getStack(server, stackName);
+                await stack.joinLogsTerminal(socket, serviceName || "");
+
+                callbackResult({
+                    ok: true,
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        // Leave filtered stack logs terminal
+        agentSocket.on("leaveStackLogsTerminal", async (stackName : unknown, serviceName : unknown, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof(stackName) !== "string") {
+                    throw new ValidationError("Stack name must be a string.");
+                }
+
+                if (serviceName !== undefined && typeof(serviceName) !== "string") {
+                    throw new ValidationError("Service name must be a string.");
+                }
+
+                const stack = await Stack.getStack(server, stackName);
+                await stack.leaveLogsTerminal(socket, serviceName || "");
+
+                callbackResult({
+                    ok: true,
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // Resize Terminal
         agentSocket.on("terminalResize", async (terminalName: unknown, rows: unknown, cols: unknown) => {
             log.info("terminalResize", `Terminal: ${terminalName}`);

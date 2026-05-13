@@ -10,8 +10,9 @@ import {
     COMBINED_TERMINAL_ROWS,
     CREATED_FILE,
     CREATED_STACK,
-    EXITED, getCombinedTerminalName,
+    EXITED,
     getComposeTerminalName, getContainerExecTerminalName,
+    getStackLogsTerminalName,
     PROGRESS_TERMINAL_ROWS,
     RUNNING, TERMINAL_ROWS,
     UNKNOWN
@@ -477,8 +478,15 @@ export class Stack {
     }
 
     async joinCombinedTerminal(socket: DockgeSocket) {
-        const terminalName = getCombinedTerminalName(socket.endpoint, this.name);
-        const terminal = Terminal.getOrCreateTerminal(this.server, terminalName, "docker", this.getComposeOptions("logs", "-f", "--tail", "100"), this.path);
+        await this.joinLogsTerminal(socket);
+    }
+
+    async joinLogsTerminal(socket: DockgeSocket, serviceName = "") {
+        const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName);
+        const args = serviceName
+            ? this.getComposeOptions("logs", "-f", "--tail", "100", serviceName)
+            : this.getComposeOptions("logs", "-f", "--tail", "100");
+        const terminal = Terminal.getOrCreateTerminal(this.server, terminalName, "docker", args, this.path);
         terminal.enableKeepAlive = true;
         terminal.rows = COMBINED_TERMINAL_ROWS;
         terminal.cols = COMBINED_TERMINAL_COLS;
@@ -487,7 +495,11 @@ export class Stack {
     }
 
     async leaveCombinedTerminal(socket: DockgeSocket) {
-        const terminalName = getCombinedTerminalName(socket.endpoint, this.name);
+        await this.leaveLogsTerminal(socket);
+    }
+
+    async leaveLogsTerminal(socket: DockgeSocket, serviceName = "") {
+        const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName);
         const terminal = Terminal.getTerminal(terminalName);
         if (terminal) {
             terminal.leave(socket);

@@ -334,7 +334,7 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.post("/backup/run", (_req: Request, res: Response) => {
-            BackupManager.getInstance().runBackup().catch(console.error);
+            BackupManager.getInstance().runBackup({ trigger: "manual" }).catch(console.error);
             res.json({ ok: true, message: "Backup lancé en arrière-plan" });
         });
 
