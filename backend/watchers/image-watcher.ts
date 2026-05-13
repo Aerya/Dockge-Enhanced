@@ -430,6 +430,19 @@ function shellQuote(value: string): string {
   return '"' + value.replace(/(["\\$`])/g, "\\$1") + '"';
 }
 
+function composeExecCommand(
+  composePath: string,
+  action: string,
+  serviceArg = "",
+): { command: string; cwd: string } {
+  const composeDir = path.dirname(composePath);
+  const composeFile = path.basename(composePath);
+  return {
+    command: `docker compose -f ${shellQuote(composeFile)} ${action}${serviceArg}`,
+    cwd: composeDir,
+  };
+}
+
 /** Normalise l'intervalle cron en heures pour éviter les expressions invalides */
 function sanitizeIntervalHours(value: unknown, fallback = 6): number {
   const interval = Number(value);
@@ -956,14 +969,16 @@ export class ImageWatcher {
         /* image absente localement, rollback impossible */
       }
 
-      await execAsync(
-        `docker compose -f ${shellQuote(composePath)} pull${serviceArg}`,
-        { timeout: 600000 },
-      );
-      await execAsync(
-        `docker compose -f ${shellQuote(composePath)} up -d${serviceArg}`,
-        { timeout: 120000 },
-      );
+      const pullCommand = composeExecCommand(composePath, "pull", serviceArg);
+      await execAsync(pullCommand.command, {
+        cwd: pullCommand.cwd,
+        timeout: 600000,
+      });
+      const upCommand = composeExecCommand(composePath, "up -d", serviceArg);
+      await execAsync(upCommand.command, {
+        cwd: upCommand.cwd,
+        timeout: 120000,
+      });
 
       // ── Sauvegarde l'entrée de rollback si on avait une image antérieure ──
       if (oldImageId) {
@@ -1184,10 +1199,11 @@ export class ImageWatcher {
       );
     } catch {}
     // Redémarre le container avec l'ancienne image
-    await execAsync(
-      `docker compose -f ${shellQuote(entry.composePath)} up -d${serviceArg}`,
-      { timeout: 120000 },
-    );
+    const upCommand = composeExecCommand(entry.composePath, "up -d", serviceArg);
+    await execAsync(upCommand.command, {
+      cwd: upCommand.cwd,
+      timeout: 120000,
+    });
 
     rollbackStore.delete(key);
     await this.saveRollbackRegistry();
