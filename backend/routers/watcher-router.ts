@@ -366,7 +366,13 @@ export class WatcherRouter extends Router {
 
         router.get("/backup/snapshots/stats", async (_req: Request, res: Response) => {
             try {
-                const stats = await BackupManager.getInstance().getSnapshotStats();
+                const rawIds = typeof _req.query.ids === "string" ? _req.query.ids : "";
+                const ids = rawIds
+                    .split(",")
+                    .map(id => id.trim())
+                    .filter(Boolean)
+                    .slice(0, 10);
+                const stats = await BackupManager.getInstance().getSnapshotStats(ids);
                 res.json({ ok: true, data: stats });
             } catch (e) {
                 res.status(500).json({ ok: false, message: String(e), data: { snapshots: {} } });

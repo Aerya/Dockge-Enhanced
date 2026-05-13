@@ -999,7 +999,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 
@@ -1028,7 +1028,20 @@ interface Settings { enabled: boolean; intervalHours: number; destinations: Dest
 type BackupTrigger = "scheduled" | "manual" | "on-save";
 type BackupViewFilter = "scheduled" | "on-save" | "manual" | "all" | "errors";
 type SnapshotFilter = Exclude<BackupViewFilter, "errors">;
-interface Snapshot { id: string; short_id: string; time: string; tags?: string[]; paths: string[]; size?: number; fileCount?: number }
+interface Snapshot {
+    id: string;
+    short_id: string;
+    time: string;
+    tags?: string[];
+    paths: string[];
+    size?: number;
+    fileCount?: number;
+    summary?: {
+        total_bytes_processed?: number;
+        total_files_processed?: number;
+        data_added?: number;
+    };
+}
 interface SnapshotStats {
     repositorySize?: number;
     repositoryFileCount?: number;
@@ -1525,6 +1538,8 @@ const snapshotRepositorySizeLabel = computed(() => {
     return typeof size === "number" ? formatBytes(size) : "";
 });
 
+const visibleSnapshotsForStats = computed(() => filteredSnapshots.value.slice(0, 10));
+
 const diffResult = computed<DiffLine[]>(() => {
     if (!preview.value.diskContent || !preview.value.snapshotContent) return [];
     return diffLines(preview.value.snapshotContent, preview.value.diskContent);
@@ -1538,8 +1553,8 @@ const snapDiffResult = computed<DiffLine[]>(() => {
 function snapshotStat(snap: Snapshot): { size?: number; fileCount?: number } {
     const stat = snapshotStats.value?.snapshots[snap.short_id];
     return {
-        size: stat?.size ?? snap.size,
-        fileCount: stat?.fileCount ?? snap.fileCount,
+        size: stat?.size ?? snap.size ?? snap.summary?.total_bytes_processed,
+        fileCount: stat?.fileCount ?? snap.fileCount ?? snap.summary?.total_files_processed,
     };
 }
 
@@ -1691,6 +1706,10 @@ onMounted(async () => {
     await loadMountedVols();
 });
 
+watch(snapshotFilter, () => {
+    void loadSnapshotStats();
+});
+
 // ─── Actions ──────────────────────────────────────────────────────
 
 async function save() {
@@ -1752,10 +1771,31 @@ async function loadSnapshotStats() {
         snapshotStats.value = null;
         return;
     }
+    const ids = visibleSnapshotsForStats.value
+        .filter(snap => typeof snapshotStat(snap).size !== "number")
+        .map(snap => snap.short_id)
+        .slice(0, 10);
+    if (ids.length === 0 && snapshotStats.value?.repositorySize != null) return;
+
     loadingSnapshotStats.value = true;
     try {
-        const res = await api("GET", "/backup/snapshots/stats");
-        if (res.ok) snapshotStats.value = res.data as SnapshotStats;
+        const query = ids.length > 0 ? `?ids=${encodeURIComponent(ids.join(","))}` : "";
+        const res = await api("GET", `/backup/snapshots/stats${query}`);
+        if (res.ok) {
+            const next = res.data as SnapshotStats;
+            snapshotStats.value = {
+                ...(snapshotStats.value ?? {}),
+                ...next,
+                snapshots: {
+                    ...(snapshotStats.value?.snapshots ?? {}),
+                    ...(next.snapshots ?? {}),
+                },
+                errors: {
+                    ...(snapshotStats.value?.errors ?? {}),
+                    ...(next.errors ?? {}),
+                },
+            };
+        }
     } finally {
         loadingSnapshotStats.value = false;
     }

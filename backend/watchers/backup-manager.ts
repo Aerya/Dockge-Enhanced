@@ -125,6 +125,7 @@ export interface ResticSnapshot {
         files_changed: number;
         files_unmodified: number;
         data_added: number;         // bytes
+        total_bytes_processed?: number;
         total_files_processed: number;
     };
 }
@@ -573,7 +574,13 @@ export class BackupManager {
 
     // ── Restic helpers ────────────────────────────────────────────
 
-    private async resticFor(dest: BackupDestination, args: string, extraEnv: Record<string, string> = {}, toleratedExitCodes: number[] = []): Promise<string> {
+    private async resticFor(
+        dest: BackupDestination,
+        args: string,
+        extraEnv: Record<string, string> = {},
+        toleratedExitCodes: number[] = [],
+        timeoutMs: number = 2 * 60 * 60 * 1000,
+    ): Promise<string> {
         const repoEnv = buildResticEnv(dest);
         const repo    = buildRepoUrl(dest);
         const allEnv  = { ...repoEnv, ...extraEnv };
@@ -593,7 +600,7 @@ export class BackupManager {
             try {
                 const { stdout } = await execAsync(cmd, {
                     maxBuffer: 20 * 1024 * 1024,
-                    timeout:   2 * 60 * 60 * 1000,  // 2 hours
+                    timeout:   timeoutMs,
                     env: {
                         PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
                         ...process.env,
@@ -1117,14 +1124,18 @@ export class BackupManager {
         }
     }
 
-    async getSnapshotStats(): Promise<ResticSnapshotStats> {
+    async getSnapshotStats(ids: string[] = []): Promise<ResticSnapshotStats> {
         const dest = this.primaryDest();
         const stats: ResticSnapshotStats = { snapshots: {}, errors: {} };
 
         const snapshots = await this.listSnapshots();
+        const wanted = new Set(ids.map(assertSafeResticId));
+        const selectedSnapshots = wanted.size > 0
+            ? snapshots.filter(snapshot => wanted.has(snapshot.short_id) || wanted.has(snapshot.id))
+            : snapshots.slice(0, 10);
 
         try {
-            const stdout = await this.resticFor(dest, "stats --mode raw-data");
+            const stdout = await this.resticFor(dest, "stats --mode raw-data", {}, [], 15_000);
             const repoStats = parseResticStats(stdout);
             stats.repositorySize = repoStats.size;
             stats.repositoryFileCount = repoStats.fileCount;
@@ -1132,10 +1143,18 @@ export class BackupManager {
             stats.errors!.repository = e instanceof Error ? e.message : String(e);
         }
 
-        await mapLimit(snapshots, 2, async (snapshot) => {
+        await mapLimit(selectedSnapshots, 2, async (snapshot) => {
             const id = assertSafeResticId(snapshot.short_id || snapshot.id);
             try {
-                const stdout = await this.resticFor(dest, `stats --mode restore-size ${shellQuote(id)}`);
+                if (typeof snapshot.summary?.total_bytes_processed === "number") {
+                    stats.snapshots[snapshot.short_id] = {
+                        size: snapshot.summary.total_bytes_processed,
+                        fileCount: snapshot.summary.total_files_processed,
+                    };
+                    return;
+                }
+
+                const stdout = await this.resticFor(dest, `stats --mode restore-size ${shellQuote(id)}`, {}, [], 8_000);
                 const parsed = parseResticStats(stdout);
                 stats.snapshots[snapshot.short_id] = {
                     size: parsed.size,
