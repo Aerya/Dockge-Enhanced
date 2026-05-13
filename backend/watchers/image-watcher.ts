@@ -169,6 +169,8 @@ interface RemoteDigestInfo {
 
 interface LocalImageInfo {
   digest: string;
+  comparable: boolean;
+  source: "repoDigest" | "digest" | "none";
   platform?: ImagePlatform;
 }
 
@@ -241,6 +243,45 @@ function digestEquals(a: string, b: string): boolean {
   if (!a || !b) return false;
   const norm = (d: string) => d.replace(/^[^:]+:/, "");
   return norm(a) === norm(b);
+}
+
+function extractShaDigest(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.match(/sha256:[a-f0-9]{64}/)?.[0] ?? "";
+}
+
+function normalizeRepoName(value: string): string {
+  let repo = value.trim().toLowerCase();
+  if (!repo) return "";
+  if (repo.includes("@")) repo = repo.split("@")[0];
+  if (repo.includes(":") && repo.lastIndexOf(":") > repo.lastIndexOf("/")) {
+    repo = repo.slice(0, repo.lastIndexOf(":"));
+  }
+  if (repo.startsWith("docker.io/")) repo = repo.slice("docker.io/".length);
+  if (repo.startsWith("registry-1.docker.io/")) {
+    repo = repo.slice("registry-1.docker.io/".length);
+  }
+  if (!repo.includes("/")) repo = `library/${repo}`;
+  return repo;
+}
+
+function findRepoDigestForImage(image: string, repoDigests: unknown): string {
+  if (!Array.isArray(repoDigests)) return "";
+  const digests = repoDigests.filter(
+    (digest): digest is string =>
+      typeof digest === "string" && digest.includes("@sha256:"),
+  );
+  if (digests.length === 0) return "";
+
+  const wantedRepo = normalizeRepoName(image);
+  const matchingDigest = digests.find((digest) => {
+    const repo = normalizeRepoName(digest);
+    return repo === wantedRepo || repo.endsWith(`/${wantedRepo}`);
+  });
+
+  return extractShaDigest(
+    matchingDigest ?? (digests.length === 1 ? digests[0] : ""),
+  );
 }
 
 /**
@@ -459,11 +500,8 @@ async function getLocalImageInfo(image: string): Promise<LocalImageInfo> {
       { timeout: 15000 },
     );
     const data = JSON.parse(stdout.trim());
-    const repoDigests: string[] = Array.isArray(data?.RepoDigests)
-      ? data.RepoDigests
-      : [];
-    const rawDigest = repoDigests[0] ?? "";
-    const match = rawDigest.match(/sha256:[a-f0-9]{64}/);
+    const repoDigest = findRepoDigestForImage(image, data?.RepoDigests);
+    const looseDigest = extractShaDigest(data?.Digest);
     const os = typeof data?.Os === "string" ? data.Os : "";
     const architecture =
       typeof data?.Architecture === "string" ? data.Architecture : "";
@@ -471,14 +509,16 @@ async function getLocalImageInfo(image: string): Promise<LocalImageInfo> {
       typeof data?.Variant === "string" ? data.Variant : undefined;
 
     return {
-      digest: match ? match[0] : "",
+      digest: repoDigest || looseDigest,
+      comparable: !!repoDigest,
+      source: repoDigest ? "repoDigest" : looseDigest ? "digest" : "none",
       platform:
         os && architecture
           ? { os, architecture: normalizeArch(architecture), variant }
           : undefined,
     };
   } catch {
-    return { digest: "" };
+    return { digest: "", comparable: false, source: "none" };
   }
 }
 
@@ -1078,11 +1118,13 @@ export class ImageWatcher {
     this.settings = { ...this.settings, ignoredDigests };
     const current = imageStatusStore.get(key);
     if (current?.ignoredDigest) {
-      const { ignoredDigest: _, ...rest } = current;
-      imageStatusStore.set(key, {
-        ...rest,
-        hasUpdate: rest.localDigest !== rest.remoteDigest,
-      });
+      const [stack, image] = key.split("::");
+      if (stack && image) {
+        imageStatusStore.set(key, await this.checkOneImage(image, stack));
+      } else {
+        const { ignoredDigest: _, ...rest } = current;
+        imageStatusStore.set(key, { ...rest, hasUpdate: false });
+      }
     }
     await this.persistToFile();
   }
@@ -1257,14 +1299,23 @@ export class ImageWatcher {
       status.localDigest = localInfo.digest;
       status.remoteDigest = remoteInfo.platformDigest || remoteInfo.digest;
 
+      const localMatchesRemote =
+        digestEquals(localInfo.digest, remoteInfo.platformDigest) ||
+        digestEquals(localInfo.digest, remoteInfo.indexDigest);
+
+      if (!localInfo.comparable) {
+        status.hasUpdate = false;
+        if (!localMatchesRemote) {
+          status.error = localInfo.digest
+            ? `Digest local non comparable (${localInfo.source})`
+            : "Digest local registry indisponible";
+        }
+        return status;
+      }
+
       // Selon Docker/Podman et le mode rootless, RepoDigests peut contenir soit le digest
       // du manifest plateforme, soit celui de l'index multi-arch. On accepte les deux.
-      status.hasUpdate =
-        !localInfo.digest ||
-        !(
-          digestEquals(localInfo.digest, remoteInfo.platformDigest) ||
-          digestEquals(localInfo.digest, remoteInfo.indexDigest)
-        );
+      status.hasUpdate = !!localInfo.digest && !localMatchesRemote;
     } catch (e: unknown) {
       status.error = e instanceof Error ? e.message : String(e);
       console.warn(`[ImageWatcher] ${stack}/${image}: ${status.error}`);

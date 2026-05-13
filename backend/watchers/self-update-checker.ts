@@ -19,6 +19,8 @@ const SELF_TAG = "latest";
 const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 const DIGEST_CACHE = path.join(DATA_DIR, "self-update-digest.json");
+const DOCKER_SOCKET =
+  process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock";
 const CHECK_INTERVAL = 6 * 60 * 60 * 1000; // 6h
 const STARTUP_DELAY = 30_000; // 30s après démarrage
 
@@ -92,6 +94,11 @@ function digestEquals(a: string, b: string): boolean {
   if (!a || !b) return false;
   const norm = (d: string) => d.replace(/^[^:]+:/, "");
   return norm(a) === norm(b);
+}
+
+function extractShaDigest(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.match(/sha256:[a-f0-9]{64}/)?.[0] ?? "";
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -171,7 +178,7 @@ async function fetchRemoteDigest(
 function dockerSocketGet(apiPath: string): Promise<any> {
   return new Promise((resolve) => {
     const req = http.request(
-      { socketPath: "/var/run/docker.sock", path: apiPath, method: "GET" },
+      { socketPath: DOCKER_SOCKET, path: apiPath, method: "GET" },
       (res) => {
         let data = "";
         res.on("data", (chunk) => (data += chunk));
@@ -191,6 +198,8 @@ function dockerSocketGet(apiPath: string): Promise<any> {
 
 async function fetchLocalImageInfo(): Promise<{
   digest: string;
+  comparable: boolean;
+  source: "repoDigest" | "none";
   platform?: ImagePlatform;
 }> {
   try {
@@ -201,9 +210,16 @@ async function fetchLocalImageInfo(): Promise<{
     const imageId: string = container?.Image ?? "";
     if (!imageId) return { digest: "" };
     const image = await dockerSocketGet(`/images/${imageId}/json`);
-    const repoDigests: string[] = image?.RepoDigests ?? [];
-    const digest = repoDigests.find((d) => d.includes("dockge-enhanced")) ?? "";
-    const m = digest.match(/sha256:[a-f0-9]{64}/);
+    const repoDigests: string[] = Array.isArray(image?.RepoDigests)
+      ? image.RepoDigests
+      : [];
+    const digest =
+      repoDigests.find(
+        (d) =>
+          typeof d === "string" &&
+          d.includes("dockge-enhanced") &&
+          d.includes("@sha256:"),
+      ) ?? "";
     const os = typeof image?.Os === "string" ? image.Os : "";
     const architecture =
       typeof image?.Architecture === "string" ? image.Architecture : "";
@@ -211,14 +227,16 @@ async function fetchLocalImageInfo(): Promise<{
       typeof image?.Variant === "string" ? image.Variant : undefined;
 
     return {
-      digest: m ? m[0] : "",
+      digest: extractShaDigest(digest),
+      comparable: !!digest,
+      source: digest ? "repoDigest" : "none",
       platform:
         os && architecture
           ? { os, architecture: normalizeArch(architecture), variant }
           : undefined,
     };
   } catch {
-    return { digest: "" };
+    return { digest: "", comparable: false, source: "none" };
   }
 }
 
@@ -346,6 +364,7 @@ export class SelfUpdateChecker {
       // Docker/Podman peuvent exposer dans RepoDigests soit le digest du manifest plateforme,
       // soit celui de l'index multi-arch. On accepte les deux pour éviter les faux positifs ARM64.
       const updateAvailable = !!(
+        localInfo.comparable &&
         localDigest &&
         remoteDigest &&
         !digestEquals(localDigest, remoteInfo.platformDigest) &&
@@ -370,7 +389,9 @@ export class SelfUpdateChecker {
         remoteDigest,
         containerName,
         checkedAt: new Date().toISOString(),
-        error: null,
+        error: localInfo.comparable
+          ? null
+          : "Digest local registry indisponible",
       };
 
       // Notif "mise à jour appliquée" — le digest local a changé depuis le dernier check

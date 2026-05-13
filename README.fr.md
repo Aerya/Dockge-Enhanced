@@ -16,6 +16,15 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 ## 🆕 Nouveautés récentes
 
+- **Rollback sans renommage inattendu des conteneurs** - Le rollback d'image et les mises à jour automatiques lancent désormais `docker compose` depuis le dossier de la stack, au lieu de s'appuyer uniquement sur le chemin absolu du compose. Cela évite que Compose déduise un mauvais nom de projet et recrée les conteneurs avec un préfixe inattendu.
+- **Correction de comparaison des digests ARM64 / Podman** - La surveillance d'images compare maintenant le digest distant au manifest spécifique à la plateforme et au digest d'index multi-arch, tout en évitant les faux positifs quand Docker ou Podman n'expose qu'un ID d'image local/non comparable. L'encart de mise à jour Dockge-Enhanced utilise la même logique, et `DOCKGE_DOCKER_SOCKET` peut pointer vers un socket rootless/Podman personnalisé.
+
+---
+
+## ✨ Fonctionnalités ajoutées
+
+### Fonctionnalités ajoutées récemment
+
 - **📋 Historique des mises à jour automatiques** — Un journal horodaté de chaque mise à jour automatique d'image est désormais enregistré et consultable directement dans l'onglet Image Watcher. Chaque entrée indique la date, la stack, le nom de l'image, l'ancien → nouveau digest (tronqué), le mode de mise à jour (Immédiat / Planifié), et le statut succès ou échec. L'historique est persisté entre les redémarrages (`update-history.json`) et peut être effacé en un clic. Les mises à jour échouées sont également enregistrées avec leur message d'erreur.
 - **📊 Intégration de Kula** — Une nouvelle section **Kula** dans l'onglet Monitoring permet d'activer [kula](https://github.com/c0m4r/kula), un moniteur système léger en Go (CPU, RAM, réseau, I/O disque, containers). Quand activé, Dockge Enhanced pull et démarre automatiquement le container `c0m4r/kula:latest` au démarrage. Configure le port (défaut 27960), le mode réseau (`bridge` avec `-p port:27960`, ou `host` avec `--network host`), et une URL personnalisée optionnelle pour les setups avec reverse proxy. Quand kula tourne, un lien **Kula** apparaît dans la barre de navigation en haut à côté des stats CPU/RAM/disque, et un lien direct est affiché dans l'onglet Monitoring. Le container redémarre automatiquement avec Docker (`--restart unless-stopped`). Kula est optionnel et totalement indépendant de Dockge — il peut être arrêté ou désactivé à tout moment.
 - **⏳ Progression du backup en direct** — Quand tu cliques sur **Lancer un backup maintenant**, une bannière bleue pulsante apparaît sous les boutons et affiche chaque destination en cours avec le temps écoulé (ex : `Local (2m 34s)`). Elle se met à jour chaque seconde et disparaît automatiquement à la fin du backup. Les logs du conteneur affichent désormais des lignes horodatées : `▶ "Local" démarré…` au début et `✓ "Local" terminé en 23m 41s` à la fin — utile pour confirmer qu'un long backup tourne toujours.
@@ -39,10 +48,6 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 - **🕐 Date du prochain scan Trivy** — L'en-tête du statut Trivy affiche désormais la date du dernier scan **et** la date du **prochain scan planifié** à côté.
 - **↩ Restauration par stack** — Chaque tiroir de stack dans le visualiseur de snapshots dispose d'un bouton **Restaurer la stack** en un clic, qui restaure tous les fichiers de cette stack (compose, env et volumes) sans avoir à les sélectionner individuellement.
 - **🔍 Aperçu et diff de snapshot** — Pour les fichiers texte (compose.yaml, .env), un bouton œil ouvre une modale avec deux onglets : **Aperçu** (contenu brut du snapshot) et **Diff vs disque** (diff ligne par ligne LCS montrant exactement ce qu'une restauration changerait — les lignes en rouge disparaîtront, les lignes en vert seront ajoutées).
-
----
-
-## ✨ Fonctionnalités ajoutées
 
 **🔄 Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io, les registries privés, et les stacks avec `network_mode: host`, réseaux externes ou ancres YAML. Fréquence configurable (1h → 24h). **Màj automatique par image** : choisis *Immédiat* pour màj dès la détection, *Planifié* pour appliquer à une heure précise (ex : `02:00` — utilise le fuseau `TZ` du conteneur), ou *Ignorer* pour ne jamais vérifier cette image. Un indicateur ⏳ signale les images en attente. **↩ Rollback** : après chaque mise à jour automatique, une fenêtre de 24 h s'ouvre — un compte à rebours et le bouton Rollback apparaissent dans le tableau ; l'ancienne image est purgée automatiquement à l'expiration. Les notifications distinguent ✅ màj auto effectuée, 🕐 planifiée à HH:MM et 🔄 action manuelle requise — par image. Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
 

@@ -16,6 +16,15 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 
 ## 🆕 Recent changes
 
+- **Rollback keeps Docker Compose project names stable** - Image rollback and auto-update now run `docker compose` from the stack directory instead of using only an absolute compose file path. This prevents Compose from deriving a wrong project name and recreating containers with unexpected prefixes before their names.
+- **ARM64 / Podman digest comparison fix** - Image checks now compare remote digests against the platform-specific manifest digest and the multi-arch index digest, while avoiding false positives when Docker or Podman only exposes a local image ID/non-registry digest. The self-update banner uses the same safer logic, and `DOCKGE_DOCKER_SOCKET` can point it at a custom rootless/Podman socket.
+
+---
+
+## ✨ Added features
+
+### Added feature highlights
+
 - **📋 Auto-update history** — A timestamped log of every automatic image update is now recorded and viewable directly in the Image Watcher tab. Each entry shows the date, stack, image name, old → new digest (truncated), update mode (Immediate / Scheduled), and success or failure status. History persists across restarts (stored in `update-history.json`) and can be cleared with one click. Failed updates are also recorded with their error message.
 - **📊 Kula system monitor integration** — A new **Kula** section in the Monitoring tab lets you enable [kula](https://github.com/c0m4r/kula), a lightweight Go-based server monitor (CPU, RAM, network, disk I/O, containers). When enabled, Dockge Enhanced automatically pulls and starts the `c0m4r/kula:latest` container on startup. Configure the port (default 27960), network mode (`bridge` with `-p port:27960`, or `host` with `--network host`), and an optional custom URL for reverse-proxy setups. When running, a **Kula** link appears in the top navbar alongside the CPU/RAM/disk stats, and a direct link is shown in the Monitoring tab. The container restarts automatically with Docker (`--restart unless-stopped`). Kula is optional and completely independent from Dockge — it can be stopped or disabled at any time.
 - **⏳ Live backup progress** — When you click **Run backup now**, a pulsing blue banner appears below the buttons showing each destination currently running and the elapsed time (e.g. `Local (2m 34s)`). It updates every second and disappears automatically when the backup finishes. The container logs also now show timestamped lines: `▶ "Local" démarré…` at start and `✓ "Local" terminé en 23m 41s` at end — useful to confirm a long backup is still running.
@@ -39,10 +48,6 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 - **🕐 Next Trivy scan date** — The Trivy status heading now shows both the last scan date and the **next scheduled scan** date alongside it.
 - **↩ Restore by stack** — Each stack accordion in the snapshot viewer has a one-click **Restore stack** button that restores all files from that stack (compose, env and volumes) without having to select them individually.
 - **🔍 Snapshot file preview & diff** — For text files (compose.yaml, .env), an eye button opens a modal with two tabs: **Preview** (raw snapshot content) and **Diff vs disk** (line-by-line LCS diff showing exactly what a restore would change — lines in red will disappear, lines in green will be added).
-
----
-
-## ✨ Added features
 
 **🔄 Image Watcher** — Automatically checks for image updates by comparing local and remote digests (no pull required). Supports Docker Hub, ghcr.io, private registries and images using `network_mode: host`, external networks or YAML anchors. Configurable frequency (1h → 24h). **Per-image auto-update**: choose *Immediate* to update on detection, *Scheduled* to apply the update at a specific time of day (e.g. `02:00` for off-peak hours — uses the container's `TZ` timezone), or *Ignore* to skip update checking entirely for that image. A ⏳ indicator shows images waiting for their slot. **↩ Rollback**: after each auto-update a 24 h window is open — a countdown timer and Rollback button appear in the table; the old image is automatically purged on expiry. Notifications distinguish ✅ auto-updated, 🕐 scheduled, and 🔄 manual action required — per image. Click **View project →** next to any image to search for it instantly.
 

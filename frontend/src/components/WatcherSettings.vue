@@ -2136,16 +2136,7 @@ async function clearIgnoredDigest(s: ImageStatus) {
   try {
     const res = await api("DELETE", "/image/ignore-digest", { key });
     if (res.ok) {
-      const idx = imageStatuses.value.findIndex(
-        (x) => x.stack === s.stack && x.image === s.image,
-      );
-      if (idx !== -1) {
-        const { ignoredDigest: _, ...rest } = imageStatuses.value[idx];
-        imageStatuses.value[idx] = {
-          ...rest,
-          hasUpdate: rest.localDigest !== rest.remoteDigest,
-        };
-      }
+      await loadStatus();
       showToast(t("watcher.status.clearIgnoredDone"));
     } else {
       showToast(`❌ ${res.message}`, false);
