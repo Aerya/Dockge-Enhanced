@@ -18,7 +18,7 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 - **Logs par service sur les pages Compose** - Le terminal de stack dispose maintenant d'un sélecteur `Service`. Garde `Tous` pour le flux groupé existant, ou choisis un service pour suivre uniquement ses logs avec `docker compose logs -f --tail 100 <service>`, directement depuis la page d'édition/lancement du compose.
 - **Rollback sans renommage inattendu des conteneurs** - Le rollback d'image et les mises à jour automatiques lancent désormais `docker compose` depuis le dossier de la stack, au lieu de s'appuyer uniquement sur le chemin absolu du compose. Cela évite que Compose déduise un mauvais nom de projet et recrée les conteneurs avec un préfixe inattendu.
-- **Correction de comparaison des digests ARM64 / Podman** - La surveillance d'images compare maintenant le digest distant au manifest spécifique à la plateforme et au digest d'index multi-arch, tout en évitant les faux positifs quand Docker ou Podman n'expose qu'un ID d'image local/non comparable. L'encart de mise à jour Dockge-Enhanced utilise la même logique, et `DOCKGE_DOCKER_SOCKET` peut pointer vers un socket rootless/Podman personnalisé.
+- **Correction de comparaison des digests ARM64 / Podman** - La surveillance d'images compare maintenant le digest distant à tous les `RepoDigests` locaux, dont le manifest spécifique à la plateforme et le digest d'index multi-arch, tout en évitant les faux positifs quand Docker ou Podman n'expose qu'un ID d'image local/non comparable. L'encart de mise à jour Dockge-Enhanced utilise la même logique, et `DOCKGE_DOCKER_SOCKET` peut pointer vers un socket rootless/Podman personnalisé.
 
 ---
 

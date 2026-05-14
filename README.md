@@ -18,7 +18,7 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 
 - **Per-service logs on Compose pages** - The stack terminal now includes a `Service` selector. Keep `All` for the existing combined stream, or pick one service to follow only its logs with `docker compose logs -f --tail 100 <service>`, directly from the compose edit/run page.
 - **Rollback keeps Docker Compose project names stable** - Image rollback and auto-update now run `docker compose` from the stack directory instead of using only an absolute compose file path. This prevents Compose from deriving a wrong project name and recreating containers with unexpected prefixes before their names.
-- **ARM64 / Podman digest comparison fix** - Image checks now compare remote digests against the platform-specific manifest digest and the multi-arch index digest, while avoiding false positives when Docker or Podman only exposes a local image ID/non-registry digest. The self-update banner uses the same safer logic, and `DOCKGE_DOCKER_SOCKET` can point it at a custom rootless/Podman socket.
+- **ARM64 / Podman digest comparison fix** - Image checks now compare remote digests against all local `RepoDigests`, including the platform-specific manifest digest and the multi-arch index digest, while avoiding false positives when Docker or Podman only exposes a local image ID/non-registry digest. The self-update banner uses the same safer logic, and `DOCKGE_DOCKER_SOCKET` can point it at a custom rootless/Podman socket.
 
 ---
 

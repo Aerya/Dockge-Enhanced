@@ -169,6 +169,7 @@ interface RemoteDigestInfo {
 
 interface LocalImageInfo {
   digest: string;
+  repoDigests: string[];
   comparable: boolean;
   source: "repoDigest" | "digest" | "none";
   platform?: ImagePlatform;
@@ -265,23 +266,26 @@ function normalizeRepoName(value: string): string {
   return repo;
 }
 
-function findRepoDigestForImage(image: string, repoDigests: unknown): string {
-  if (!Array.isArray(repoDigests)) return "";
+function findRepoDigestsForImage(image: string, repoDigests: unknown): string[] {
+  if (!Array.isArray(repoDigests)) return [];
   const digests = repoDigests.filter(
     (digest): digest is string =>
       typeof digest === "string" && digest.includes("@sha256:"),
   );
-  if (digests.length === 0) return "";
+  if (digests.length === 0) return [];
 
   const wantedRepo = normalizeRepoName(image);
-  const matchingDigest = digests.find((digest) => {
+  const matchingDigests = digests.filter((digest) => {
     const repo = normalizeRepoName(digest);
     return repo === wantedRepo || repo.endsWith(`/${wantedRepo}`);
   });
 
-  return extractShaDigest(
-    matchingDigest ?? (digests.length === 1 ? digests[0] : ""),
-  );
+  const selected = matchingDigests.length > 0 ? matchingDigests : digests;
+  return [
+    ...new Set(
+      selected.map((digest) => extractShaDigest(digest)).filter(Boolean),
+    ),
+  ];
 }
 
 /**
@@ -500,7 +504,7 @@ async function getLocalImageInfo(image: string): Promise<LocalImageInfo> {
       { timeout: 15000 },
     );
     const data = JSON.parse(stdout.trim());
-    const repoDigest = findRepoDigestForImage(image, data?.RepoDigests);
+    const repoDigests = findRepoDigestsForImage(image, data?.RepoDigests);
     const looseDigest = extractShaDigest(data?.Digest);
     const os = typeof data?.Os === "string" ? data.Os : "";
     const architecture =
@@ -509,16 +513,17 @@ async function getLocalImageInfo(image: string): Promise<LocalImageInfo> {
       typeof data?.Variant === "string" ? data.Variant : undefined;
 
     return {
-      digest: repoDigest || looseDigest,
-      comparable: !!repoDigest,
-      source: repoDigest ? "repoDigest" : looseDigest ? "digest" : "none",
+      digest: repoDigests[0] || looseDigest,
+      repoDigests,
+      comparable: repoDigests.length > 0,
+      source: repoDigests.length > 0 ? "repoDigest" : looseDigest ? "digest" : "none",
       platform:
         os && architecture
           ? { os, architecture: normalizeArch(architecture), variant }
           : undefined,
     };
   } catch {
-    return { digest: "", comparable: false, source: "none" };
+    return { digest: "", repoDigests: [], comparable: false, source: "none" };
   }
 }
 
@@ -1296,12 +1301,31 @@ export class ImageWatcher {
         preferredPlatform,
       );
 
-      status.localDigest = localInfo.digest;
       status.remoteDigest = remoteInfo.platformDigest || remoteInfo.digest;
 
+      const comparableLocalDigests =
+        localInfo.repoDigests.length > 0
+          ? localInfo.repoDigests
+          : localInfo.digest
+            ? [localInfo.digest]
+            : [];
+
       const localMatchesRemote =
-        digestEquals(localInfo.digest, remoteInfo.platformDigest) ||
-        digestEquals(localInfo.digest, remoteInfo.indexDigest);
+        comparableLocalDigests.some((digest) =>
+          digestEquals(digest, remoteInfo.platformDigest),
+        ) ||
+        comparableLocalDigests.some((digest) =>
+          digestEquals(digest, remoteInfo.indexDigest),
+        );
+
+      status.localDigest =
+        comparableLocalDigests.find((digest) =>
+          digestEquals(digest, remoteInfo.platformDigest),
+        ) ??
+        comparableLocalDigests.find((digest) =>
+          digestEquals(digest, remoteInfo.indexDigest),
+        ) ??
+        localInfo.digest;
 
       if (!localInfo.comparable) {
         status.hasUpdate = false;
@@ -1315,7 +1339,7 @@ export class ImageWatcher {
 
       // Selon Docker/Podman et le mode rootless, RepoDigests peut contenir soit le digest
       // du manifest plateforme, soit celui de l'index multi-arch. On accepte les deux.
-      status.hasUpdate = !!localInfo.digest && !localMatchesRemote;
+      status.hasUpdate = comparableLocalDigests.length > 0 && !localMatchesRemote;
     } catch (e: unknown) {
       status.error = e instanceof Error ? e.message : String(e);
       console.warn(`[ImageWatcher] ${stack}/${image}: ${status.error}`);
