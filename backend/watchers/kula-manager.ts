@@ -109,6 +109,8 @@ export class KulaManager {
             `    container_name: ${KULA_CONTAINER_NAME}`,
             "    pid: host",
             "    restart: unless-stopped",
+            "    security_opt:",
+            "      - apparmor:unconfined",
             networkSection,
             "    volumes:",
             "      - /proc:/proc:ro",
@@ -116,6 +118,7 @@ export class KulaManager {
             "",
             "volumes:",
             "  kula_dockge_data:",
+            "    external: true",
             "    name: kula_dockge_data",
             "",
         ].join("\n");
@@ -176,6 +179,13 @@ export class KulaManager {
 
         // Écrit le compose.yaml à jour (port, networkMode, etc.)
         await this._writeComposeFile();
+
+        // Crée le volume nommé s'il n'existe pas encore (idempotent)
+        try {
+            await execAsync("docker volume create kula_dockge_data");
+        } catch {
+            // Déjà existant ou non bloquant
+        }
 
         console.log(`[KulaManager] Démarrage via compose dans ${KULA_STACK_DIR}`);
         try {
