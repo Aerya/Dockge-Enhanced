@@ -2,9 +2,13 @@
  * KulaManager — Gère le container kula (https://github.com/c0m4r/kula)
  * Monitoring système léger : CPU, RAM, réseau, disque, containers.
  *
- * Déploiement via compose stack dans STACKS_DIR pour que l'ImageWatcher
- * surveille automatiquement les mises à jour de c0m4r/kula:latest.
- * La stack est créée à l'activation et supprimée à la désactivation.
+ * Stratégie hybride :
+ * - Le container est démarré/arrêté via `docker run` / `docker stop+rm`
+ *   (compatible avec tous les systèmes, dont Synology DSM dont Docker Compose v2
+ *   injecte un profil AppArmor que le kernel DSM ne peut pas appliquer).
+ * - Un compose.yaml est quand même écrit dans STACKS_DIR pour que l'ImageWatcher
+ *   détecte c0m4r/kula:latest et surveille les mises à jour comme les autres stacks.
+ * - Le compose.yaml est créé à l'activation et supprimé à la désactivation.
  *
  * Fichier : backend/watchers/kula-manager.ts
  */
@@ -16,15 +20,15 @@ import * as path from "path";
 
 const execAsync = promisify(exec);
 
-const DATA_DIR      = process.env.DOCKGE_DATA_DIR   ?? "/opt/dockge/data";
-const STACKS_DIR    = process.env.DOCKGE_STACKS_DIR  ?? "/opt/stacks";
+const DATA_DIR      = process.env.DOCKGE_DATA_DIR  ?? "/opt/dockge/data";
+const STACKS_DIR    = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 const SETTINGS_PATH = path.join(DATA_DIR, "kula-settings.json");
 
 export const KULA_STACK_NAME     = "kula-dockge-enhanced";
 export const KULA_CONTAINER_NAME = "kula-dockge-enhanced";
 export const KULA_IMAGE          = "c0m4r/kula:latest";
 
-/** Répertoire de la stack dans STACKS_DIR */
+/** Répertoire de la stack dans STACKS_DIR (pour l'ImageWatcher uniquement) */
 const KULA_STACK_DIR = path.join(STACKS_DIR, KULA_STACK_NAME);
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -85,60 +89,28 @@ export class KulaManager {
         return { ...this.settings };
     }
 
-    // ── Compose file ──────────────────────────────────────────────
+    // ── Compose file (ImageWatcher uniquement) ────────────────────
 
     /**
-     * Génère le compose.yaml correspondant aux settings actuels.
-     * - container_name fixe pour que getStatus() fonctionne avec docker inspect
-     * - volume nommé explicitement (name: kula_dockge_data) pour ne pas
-     *   hériter du préfixe de projet et préserver les données existantes
+     * Écrit un compose.yaml dans STACKS_DIR/kula-dockge-enhanced/ uniquement
+     * pour que l'ImageWatcher détecte c0m4r/kula:latest et surveille les MàJ.
+     * Ce fichier n'est PAS utilisé pour démarrer le container (docker run est utilisé).
      */
-    private _buildComposeYaml(): string {
-        const port = this.settings.port ?? 27960;
-        const isHost = this.settings.networkMode === "host";
-
-        const networkSection = isHost
-            ? "    network_mode: host"
-            : `    ports:\n      - "${port}:27960"`;
-
-        return [
-            "# Généré automatiquement par Dockge-Enhanced — ne pas modifier manuellement",
-            "services:",
-            "  kula:",
-            `    image: ${KULA_IMAGE}`,
-            `    container_name: ${KULA_CONTAINER_NAME}`,
-            "    pid: host",
-            "    privileged: true",
-            "    restart: unless-stopped",
-            networkSection,
-            "    volumes:",
-            "      - /proc:/proc:ro",
-            "      - kula_dockge_data:/app/data",
-            "",
-            "volumes:",
-            "  kula_dockge_data:",
-            "    external: true",
-            "    name: kula_dockge_data",
-            "",
-        ].join("\n");
-    }
-
     private async _writeComposeFile(): Promise<void> {
         await fs.mkdir(KULA_STACK_DIR, { recursive: true });
         await fs.writeFile(
             path.join(KULA_STACK_DIR, "compose.yaml"),
-            this._buildComposeYaml(),
+            [
+                "# Généré par Dockge-Enhanced — suivi ImageWatcher uniquement",
+                "# Le container est géré via docker run, pas docker compose.",
+                "services:",
+                "  kula:",
+                `    image: ${KULA_IMAGE}`,
+                `    container_name: ${KULA_CONTAINER_NAME}`,
+                "",
+            ].join("\n"),
             "utf8",
         );
-    }
-
-    private async _stackDirExists(): Promise<boolean> {
-        try {
-            await fs.access(KULA_STACK_DIR);
-            return true;
-        } catch {
-            return false;
-        }
     }
 
     private async _removeStackDir(): Promise<void> {
@@ -173,45 +145,42 @@ export class KulaManager {
     }
 
     private async _doStart(): Promise<void> {
-        // Arrête toute instance existante (ancienne docker run ou compose précédent)
         await this.stop();
 
-        // Écrit le compose.yaml à jour (port, networkMode, etc.)
+        // Écrit le compose.yaml pour l'ImageWatcher
         await this._writeComposeFile();
 
-        // Crée le volume nommé s'il n'existe pas encore (idempotent)
-        try {
-            await execAsync("docker volume create kula_dockge_data");
-        } catch {
-            // Déjà existant ou non bloquant
-        }
+        const port = this.settings.port ?? 27960;
+        const networkArgs = this.settings.networkMode === "host"
+            ? "--network host"
+            : `-p ${port}:27960`;
 
-        console.log(`[KulaManager] Démarrage via compose dans ${KULA_STACK_DIR}`);
+        const cmd = [
+            "docker run -d",
+            `--name ${KULA_CONTAINER_NAME}`,
+            "--pid host",
+            networkArgs,
+            "-v /proc:/proc:ro",
+            "-v kula_dockge_data:/app/data",
+            "--restart unless-stopped",
+            KULA_IMAGE,
+        ].join(" ");
+
+        console.log(`[KulaManager] Démarrage : ${cmd}`);
         try {
-            await execAsync("docker compose up -d", { cwd: KULA_STACK_DIR });
-            console.log(`[KulaManager] Container démarré (port ${this.settings.port})`);
+            await execAsync(cmd);
+            console.log(`[KulaManager] Container démarré (port ${port})`);
         } catch (e) {
-            console.error(`[KulaManager] Échec docker compose up :`, e);
+            console.error(`[KulaManager] Échec docker run :`, e);
             throw e;
         }
     }
 
     async stop(): Promise<void> {
-        // 1. Arrêt propre via compose si la stack existe
-        if (await this._stackDirExists()) {
-            try {
-                await execAsync("docker compose down", { cwd: KULA_STACK_DIR });
-                console.log("[KulaManager] Stack compose arrêtée");
-            } catch {
-                // Compose non disponible ou stack déjà arrêtée
-            }
-        }
-
-        // 2. Fallback : stoppe le container directement (migration depuis docker run)
         try {
             await execAsync(`docker stop ${KULA_CONTAINER_NAME}`);
             await execAsync(`docker rm ${KULA_CONTAINER_NAME}`);
-            console.log("[KulaManager] Container direct arrêté (migration docker run)");
+            console.log("[KulaManager] Container arrêté");
         } catch {
             // Container n'existait pas — normal
         }
