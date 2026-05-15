@@ -188,6 +188,12 @@ services:
 
 > 💾 Le volume `/backup:/backup` est optionnel mais recommandé si tu utilises **local** comme destination Restic — pointe la destination sur `/backup` pour que les snapshots atterrissent dans un répertoire dédié sur l'hôte, hors du conteneur.
 
+> 📊 **Tu veux surveiller une partition autre que `/` ?** Les stats disque sont lues depuis l'intérieur du container via `df`. Pour surveiller un chemin hôte comme `/mnt/data` ou `/mnt/stuff`, monte-le en lecture seule dans ce compose, puis ajoute-le dans l'onglet **Monitoring** sous *Partitions disque surveillées* :
+> ```yaml
+>       - /mnt/data:/mnt/data:ro
+>       - /mnt/stuff:/mnt/stuff:ro
+> ```
+
 ```bash
 docker compose up -d
 ```

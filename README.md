@@ -190,6 +190,12 @@ services:
 
 > 📂 **Backing up multiple data directories?** Add as many volumes as you need (e.g. `../../media:/media-data`), then register each container path in the Backup tab under **Additional paths** — Restic will include them all in every backup run.
 
+> 📊 **Monitoring a disk partition other than `/`?** Disk stats are read from inside the container with `df`. If you want to track a host path like `/mnt/data` or `/mnt/stuff`, mount it read-only in this compose file and then add it in the **Monitoring** tab under *Monitored disk partitions*:
+> ```yaml
+>       - /mnt/data:/mnt/data:ro
+>       - /mnt/stuff:/mnt/stuff:ro
+> ```
+
 ```bash
 docker compose up -d
 ```
