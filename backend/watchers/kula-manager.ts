@@ -160,7 +160,6 @@ export class KulaManager {
             `--name ${KULA_CONTAINER_NAME}`,
             "--pid host",
             networkArgs,
-            "-v /proc:/proc:ro",
             "-v kula_dockge_data:/app/data",
             "--restart unless-stopped",
             KULA_IMAGE,
