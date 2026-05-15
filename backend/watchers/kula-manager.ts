@@ -51,6 +51,7 @@ export class KulaManager {
     private static _instance: KulaManager;
 
     settings: KulaSettings = { ...DEFAULT_SETTINGS };
+    private _starting = false;
 
     static getInstance(): KulaManager {
         if (!KulaManager._instance) KulaManager._instance = new KulaManager();
@@ -157,6 +158,19 @@ export class KulaManager {
     }
 
     async start(): Promise<void> {
+        if (this._starting) {
+            console.log("[KulaManager] Démarrage déjà en cours, ignoré");
+            return;
+        }
+        this._starting = true;
+        try {
+            await this._doStart();
+        } finally {
+            this._starting = false;
+        }
+    }
+
+    private async _doStart(): Promise<void> {
         // Arrête toute instance existante (ancienne docker run ou compose précédent)
         await this.stop();
 
@@ -164,8 +178,13 @@ export class KulaManager {
         await this._writeComposeFile();
 
         console.log(`[KulaManager] Démarrage via compose dans ${KULA_STACK_DIR}`);
-        await execAsync("docker compose up -d --pull always", { cwd: KULA_STACK_DIR });
-        console.log(`[KulaManager] Container démarré (port ${this.settings.port})`);
+        try {
+            await execAsync("docker compose up -d", { cwd: KULA_STACK_DIR });
+            console.log(`[KulaManager] Container démarré (port ${this.settings.port})`);
+        } catch (e) {
+            console.error(`[KulaManager] Échec docker compose up :`, e);
+            throw e;
+        }
     }
 
     async stop(): Promise<void> {
