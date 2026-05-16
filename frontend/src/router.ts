@@ -54,15 +54,15 @@ const routes = [
                                 component: ContainerTerminal,
                                 name: "containerTerminalEndpoint",
                             },
-                            {
-                                path: "/watcher",
-                                component: WatcherSettings,
-                            },
-                            {
-                                path: "/resources",
-                                redirect: "/watcher",
-                            },
                         ]
+                    },
+                    {
+                        path: "/watcher",
+                        component: WatcherSettings,
+                    },
+                    {
+                        path: "/resources",
+                        redirect: "/watcher",
                     },
                     {
                         path: "/console",
