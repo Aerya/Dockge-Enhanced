@@ -176,8 +176,13 @@ export class MonitoringRouter extends Router {
 
         // ── Crash exclusions ──────────────────────────────────────
 
-        router.get("/monitoring/crash-exclusions", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: MonitoringWatcher.getInstance().getExclusions() });
+        router.get("/monitoring/crash-exclusions", async (_req: Request, res: Response) => {
+            try {
+                const data = await MonitoringWatcher.getInstance().getExclusions();
+                res.json({ ok: true, data });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
         });
 
         // Ajouter / mettre à jour une exclusion

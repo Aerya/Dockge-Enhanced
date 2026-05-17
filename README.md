@@ -16,7 +16,7 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 
 ## 🆕 Recent changes
 
-- **Crash alert exclusions** — Each container in the crash events table now has an **Ignore** button with a duration picker (1h, 6h, 24h, 72h, or permanent). Excluded containers are silenced from both alerts and the events list. Active exclusions appear below the table with their expiry date and can be removed individually or all at once. A **Clear list** button empties all crash events from memory. Exclusions persist across restarts (stored in `monitoring-settings.json`).
+- **Crash alert exclusions** — Each container in the crash events table now has an **Ignore** button with a duration picker (1h, 6h, 24h, 72h, or permanent). Excluded containers are silenced from both alerts and the events list. Active exclusions appear below the table with their expiry date and can be removed individually or all at once. A **Clear list** button empties all crash events from memory. Exclusions persist across restarts (stored in SQLite).
 - **Navigation menu active-state fix** — The Enhanced page (`/watcher`) no longer incorrectly highlights **Home** in the navigation menu when browsing the crash-loop / resource watcher section.
 
 ---
