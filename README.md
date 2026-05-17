@@ -16,9 +16,8 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 
 ## 🆕 Recent changes
 
-- **Per-service logs on Compose pages** - The stack terminal now includes a `Service` selector. Keep `All` for the existing combined stream, or pick one service to follow only its logs with `docker compose logs -f --tail 100 <service>`, directly from the compose edit/run page.
-- **Rollback keeps Docker Compose project names stable** - Image rollback and auto-update now run `docker compose` from the stack directory instead of using only an absolute compose file path. This prevents Compose from deriving a wrong project name and recreating containers with unexpected prefixes before their names.
-- **ARM64 / Podman digest comparison fix** - Image checks now compare remote digests against all local `RepoDigests`, including the platform-specific manifest digest and the multi-arch index digest, while avoiding false positives when Docker or Podman only exposes a local image ID/non-registry digest. The self-update banner uses the same safer logic, and `DOCKGE_DOCKER_SOCKET` can point it at a custom rootless/Podman socket.
+- **Crash alert exclusions** — Each container in the crash events table now has an **Ignore** button with a duration picker (1h, 6h, 24h, 72h, or permanent). Excluded containers are silenced from both alerts and the events list. Active exclusions appear below the table with their expiry date and can be removed individually or all at once. A **Clear list** button empties all crash events from memory. Exclusions persist across restarts (stored in `monitoring-settings.json`).
+- **Navigation menu active-state fix** — The Enhanced page (`/watcher`) no longer incorrectly highlights **Home** in the navigation menu when browsing the crash-loop / resource watcher section.
 
 ---
 
@@ -27,6 +26,10 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 ### Added feature highlights
 
 **Per-service stack logs** — On each compose page, the terminal header now has a `Service` selector. `All` keeps the grouped stack logs, while selecting a service starts a dedicated filtered stream for that service, so you can launch, inspect, stop, edit and relaunch a compose without leaving the page.
+
+**Rollback keeps Docker Compose project names stable** — Image rollback and auto-update now run `docker compose` from the stack directory instead of using only an absolute compose file path. This prevents Compose from deriving a wrong project name and recreating containers with unexpected prefixes before their names.
+
+**ARM64 / Podman digest comparison fix** — Image checks now compare remote digests against all local `RepoDigests`, including the platform-specific manifest digest and the multi-arch index digest, while avoiding false positives when Docker or Podman only exposes a local image ID/non-registry digest. The self-update banner uses the same safer logic, and `DOCKGE_DOCKER_SOCKET` can point it at a custom rootless/Podman socket.
 
 **Auto-update history** — A timestamped log of every automatic image update is now recorded and viewable directly in the Image Watcher tab. Each entry shows the date, stack, image name, old → new digest (truncated), update mode (Immediate / Scheduled), and success or failure status. History persists across restarts (stored in `update-history.json`) and can be cleared with one click. Failed updates are also recorded with their error message.
 

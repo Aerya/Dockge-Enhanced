@@ -16,6 +16,11 @@ const WATCHER_SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 
 // ─── Types ────────────────────────────────────────────────────────
 
+export interface CrashExclusion {
+    containerName: string;
+    expiresAt: string | null; // ISO date, ou null = permanent
+}
+
 export interface MonitoringSettings {
     crashLoopEnabled: boolean;
     crashLoopThreshold: number;          // N redémarrages
@@ -23,6 +28,7 @@ export interface MonitoringSettings {
     crashLoopCooldownMinutes: number;    // anti-spam
     discordWebhooks: string[];
     notificationLang: "fr" | "en";
+    crashExclusions: CrashExclusion[];
 }
 
 export interface CrashEvent {
@@ -40,6 +46,7 @@ const DEFAULT_SETTINGS: MonitoringSettings = {
     crashLoopCooldownMinutes: 60,
     discordWebhooks: [],
     notificationLang: "fr",
+    crashExclusions: [],
 };
 
 // ─── Singleton ────────────────────────────────────────────────────
@@ -75,9 +82,14 @@ export class MonitoringWatcher {
 
     async saveSettings(partial: Partial<MonitoringSettings>): Promise<void> {
         this.settings = { ...this.settings, ...partial };
+        await this.persistSettings();
+        await this.startIfEnabled();
+    }
+
+    /** Écrit les settings sur disque sans redémarrer le watcher. */
+    private async persistSettings(): Promise<void> {
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
-        await this.startIfEnabled();
     }
 
     // ── Lifecycle ─────────────────────────────────────────────────
@@ -131,6 +143,8 @@ export class MonitoringWatcher {
     }
 
     private onContainerDie(name: string, id: string): void {
+        if (this.isExcluded(name)) return;
+
         const now       = Date.now();
         const windowMs  = this.settings.crashLoopWindowMinutes * 60_000;
 
@@ -213,10 +227,60 @@ export class MonitoringWatcher {
     // ── Public accessors ──────────────────────────────────────────
 
     getRecentCrashEvents(): CrashEvent[] {
-        return this.recentCrashEvents;
+        // Exclure les containers marqués comme ignorés
+        return this.recentCrashEvents.filter(e => !this.isExcluded(e.containerName));
+    }
+
+    clearCrashEvents(): void {
+        this.recentCrashEvents = [];
     }
 
     getSettingsSafe(): MonitoringSettings {
         return { ...this.settings };
+    }
+
+    // ── Exclusions ────────────────────────────────────────────────
+
+    isExcluded(containerName: string): boolean {
+        const now   = Date.now();
+        const excl  = this.settings.crashExclusions.find(e => e.containerName === containerName);
+        if (!excl) return false;
+        if (excl.expiresAt === null) return true;                        // permanent
+        return new Date(excl.expiresAt).getTime() > now;                // non expiré
+    }
+
+    getExclusions(): CrashExclusion[] {
+        const now = Date.now();
+        // Nettoie les exclusions expirées au passage
+        this.settings.crashExclusions = this.settings.crashExclusions.filter(
+            e => e.expiresAt === null || new Date(e.expiresAt).getTime() > now,
+        );
+        return [...this.settings.crashExclusions];
+    }
+
+    async addExclusion(containerName: string, durationHours: number | null): Promise<void> {
+        const expiresAt = durationHours === null
+            ? null
+            : new Date(Date.now() + durationHours * 3_600_000).toISOString();
+
+        const idx = this.settings.crashExclusions.findIndex(e => e.containerName === containerName);
+        if (idx >= 0) {
+            this.settings.crashExclusions[idx] = { containerName, expiresAt };
+        } else {
+            this.settings.crashExclusions.push({ containerName, expiresAt });
+        }
+        await this.persistSettings();
+    }
+
+    async removeExclusion(containerName: string): Promise<void> {
+        this.settings.crashExclusions = this.settings.crashExclusions.filter(
+            e => e.containerName !== containerName,
+        );
+        await this.persistSettings();
+    }
+
+    async clearExclusions(): Promise<void> {
+        this.settings.crashExclusions = [];
+        await this.persistSettings();
     }
 }

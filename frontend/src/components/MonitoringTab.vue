@@ -200,7 +200,14 @@
 
             <!-- Tableau crash events -->
             <div v-if="monSettings.crashLoopEnabled">
-                <h6 class="form-text fw-semibold mb-2">{{ $t('watcher.monitoring.crashEventsHeading') }}</h6>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="form-text fw-semibold mb-0">{{ $t('watcher.monitoring.crashEventsHeading') }}</h6>
+                    <button v-if="overview.crashes.length" class="btn btn-sm btn-outline-secondary"
+                        @click="clearCrashEvents" :disabled="clearingEvents">
+                        <span v-if="clearingEvents" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="trash" class="me-1" />{{ $t('watcher.monitoring.crashClearList') }}
+                    </button>
+                </div>
                 <div v-if="!overview.crashes.length" class="form-text fst-italic">
                     {{ $t('watcher.monitoring.crashEventEmpty') }}
                 </div>
@@ -211,6 +218,7 @@
                             <th>{{ $t('watcher.monitoring.crashColCount') }}</th>
                             <th>{{ $t('watcher.monitoring.crashColWindow') }}</th>
                             <th>{{ $t('watcher.monitoring.crashColTime') }}</th>
+                            <th style="width:1%"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -219,9 +227,90 @@
                             <td><span class="badge bg-danger">{{ ev.restartCount }}×</span></td>
                             <td>{{ ev.windowMinutes }} min</td>
                             <td class="text-muted">{{ fmtDate(ev.timestamp) }}</td>
+                            <td>
+                                <!-- Dropdown durée d'exclusion -->
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-warning dropdown-toggle py-0 px-2"
+                                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                        :title="$t('watcher.monitoring.crashExcludeBtn')">
+                                        <font-awesome-icon icon="ban" />
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+                                        <li><h6 class="dropdown-header">{{ $t('watcher.monitoring.crashExcludeFor') }}</h6></li>
+                                        <li>
+                                            <a class="dropdown-item" href="#"
+                                                @click.prevent="excludeContainer(ev.containerName, 1)">
+                                                1 {{ $t('watcher.monitoring.crashExcludeHour') }}
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#"
+                                                @click.prevent="excludeContainer(ev.containerName, 6)">
+                                                6 {{ $t('watcher.monitoring.crashExcludeHours') }}
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#"
+                                                @click.prevent="excludeContainer(ev.containerName, 24)">
+                                                24 {{ $t('watcher.monitoring.crashExcludeHours') }}
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#"
+                                                @click.prevent="excludeContainer(ev.containerName, 72)">
+                                                72 {{ $t('watcher.monitoring.crashExcludeHours') }}
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="#"
+                                                @click.prevent="excludeContainer(ev.containerName, null)">
+                                                {{ $t('watcher.monitoring.crashExcludePermanent') }}
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
+
+                <!-- Section exclusions actives -->
+                <div v-if="exclusions.length" class="mt-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="form-text fw-semibold mb-0">
+                            <font-awesome-icon icon="ban" class="me-1 text-warning" />{{ $t('watcher.monitoring.crashExclusionsHeading') }}
+                        </h6>
+                        <button class="btn btn-sm btn-outline-danger" @click="clearExclusions">
+                            <font-awesome-icon icon="trash" class="me-1" />{{ $t('watcher.monitoring.crashExclusionsClear') }}
+                        </button>
+                    </div>
+                    <table class="table table-sm table-dark table-bordered small mb-0">
+                        <thead>
+                            <tr>
+                                <th>{{ $t('watcher.monitoring.crashColContainer') }}</th>
+                                <th>{{ $t('watcher.monitoring.crashExcludeExpiry') }}</th>
+                                <th style="width:1%"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="excl in exclusions" :key="excl.containerName">
+                                <td><code>{{ excl.containerName }}</code></td>
+                                <td class="text-muted">
+                                    <span v-if="!excl.expiresAt" class="badge bg-secondary">{{ $t('watcher.monitoring.crashExcludePermanent') }}</span>
+                                    <span v-else>{{ fmtDate(excl.expiresAt) }}</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger py-0 px-2"
+                                        @click="removeExclusion(excl.containerName)"
+                                        :title="$t('watcher.monitoring.crashExcludeRemove')">
+                                        <font-awesome-icon icon="times" />
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -330,6 +419,11 @@ initServerTz();
 
 // ─── Types ────────────────────────────────────────────────────────
 
+interface CrashExclusion {
+    containerName: string;
+    expiresAt: string | null;
+}
+
 interface KulaSettings {
     enabled:     boolean;
     port:        number;
@@ -394,6 +488,9 @@ const savingMon      = ref(false);
 const savingDisplay  = ref(false);
 const newWebhook     = ref("");
 const toast          = ref({ msg: "", ok: true });
+
+const exclusions     = ref<CrashExclusion[]>([]);
+const clearingEvents = ref(false);
 
 // ── Kula ──────────────────────────────────────────────────────────
 const kulaSettings = ref<KulaSettings>({
@@ -468,6 +565,57 @@ function addWebhook() {
 }
 function removeWebhook(idx: number) {
     monSettings.value.discordWebhooks.splice(idx, 1);
+}
+
+// ─── Crash exclusions ─────────────────────────────────────────────
+
+async function loadExclusions() {
+    const res = await api("GET", "/monitoring/crash-exclusions");
+    if (res.ok) exclusions.value = res.data as CrashExclusion[];
+}
+
+async function excludeContainer(containerName: string, durationHours: number | null) {
+    const res = await api("POST", "/monitoring/crash-exclusions", { containerName, durationHours });
+    if (res.ok) {
+        showToast("✅ " + t("watcher.monitoring.crashExcludeAdded"));
+        await Promise.all([loadExclusions(), loadOverview()]);
+    } else {
+        showToast(`❌ ${res.message}`, false);
+    }
+}
+
+async function removeExclusion(containerName: string) {
+    const encoded = encodeURIComponent(containerName);
+    const res = await api("DELETE", `/monitoring/crash-exclusions/${encoded}`);
+    if (res.ok) {
+        showToast("✅ " + t("watcher.monitoring.crashExcludeRemoved"));
+        await Promise.all([loadExclusions(), loadOverview()]);
+    } else {
+        showToast(`❌ ${res.message}`, false);
+    }
+}
+
+async function clearExclusions() {
+    const res = await api("DELETE", "/monitoring/crash-exclusions");
+    if (res.ok) {
+        showToast("✅ " + t("watcher.monitoring.crashExclusionsCleared"));
+        await Promise.all([loadExclusions(), loadOverview()]);
+    } else {
+        showToast(`❌ ${res.message}`, false);
+    }
+}
+
+async function clearCrashEvents() {
+    clearingEvents.value = true;
+    try {
+        const res = await api("DELETE", "/monitoring/crash-events");
+        if (res.ok) {
+            showToast("✅ " + t("watcher.monitoring.crashListCleared"));
+            await loadOverview();
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally { clearingEvents.value = false; }
 }
 
 // ─── API calls ────────────────────────────────────────────────────
@@ -578,7 +726,7 @@ async function stopKula() {
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 onMounted(async () => {
-    await Promise.all([loadOverview(), loadSettings(), loadKulaSettings(), loadKulaStatus()]);
+    await Promise.all([loadOverview(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadExclusions()]);
     pollTimer = setInterval(loadOverview, 30_000);
 });
 

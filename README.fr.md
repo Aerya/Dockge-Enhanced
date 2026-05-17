@@ -16,9 +16,8 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 ## 🆕 Nouveautés récentes
 
-- **Logs par service sur les pages Compose** - Le terminal de stack dispose maintenant d'un sélecteur `Service`. Garde `Tous` pour le flux groupé existant, ou choisis un service pour suivre uniquement ses logs avec `docker compose logs -f --tail 100 <service>`, directement depuis la page d'édition/lancement du compose.
-- **Rollback sans renommage inattendu des conteneurs** - Le rollback d'image et les mises à jour automatiques lancent désormais `docker compose` depuis le dossier de la stack, au lieu de s'appuyer uniquement sur le chemin absolu du compose. Cela évite que Compose déduise un mauvais nom de projet et recrée les conteneurs avec un préfixe inattendu.
-- **Correction de comparaison des digests ARM64 / Podman** - La surveillance d'images compare maintenant le digest distant à tous les `RepoDigests` locaux, dont le manifest spécifique à la plateforme et le digest d'index multi-arch, tout en évitant les faux positifs quand Docker ou Podman n'expose qu'un ID d'image local/non comparable. L'encart de mise à jour Dockge-Enhanced utilise la même logique, et `DOCKGE_DOCKER_SOCKET` peut pointer vers un socket rootless/Podman personnalisé.
+- **Exclusions d'alertes crash** — Chaque container dans le tableau des crash events dispose désormais d'un bouton **Ignorer** avec un sélecteur de durée (1h, 6h, 24h, 72h, ou permanent). Les containers exclus sont silencieux dans les alertes et n'apparaissent plus dans la liste. Les exclusions actives s'affichent sous le tableau avec leur date d'expiration et peuvent être retirées individuellement ou toutes en même temps. Un bouton **Effacer la liste** vide les crash events en mémoire. Les exclusions sont persistées entre les redémarrages (`monitoring-settings.json`).
+- **Correction du menu de navigation actif** — La page Enhanced (`/watcher`) ne met plus incorrectement **Accueil** en évidence dans le menu de navigation quand on navigue vers la section crash-loop / ressources.
 
 ---
 
@@ -27,6 +26,10 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 ### Fonctionnalités ajoutées récemment
 
 **Logs de stack par service** — Sur chaque page compose, l'en-tête du terminal dispose maintenant d'un sélecteur `Service`. `Tous` garde les logs groupés de la stack, tandis qu'un service précis ouvre un flux filtré dédié, pour lancer, inspecter, arrêter, modifier et relancer un compose sans quitter la page.
+
+**Rollback sans renommage inattendu des conteneurs** — Le rollback d'image et les mises à jour automatiques lancent désormais `docker compose` depuis le dossier de la stack, au lieu de s'appuyer uniquement sur le chemin absolu du compose. Cela évite que Compose déduise un mauvais nom de projet et recrée les conteneurs avec un préfixe inattendu.
+
+**Correction de comparaison des digests ARM64 / Podman** — La surveillance d'images compare maintenant le digest distant à tous les `RepoDigests` locaux, dont le manifest spécifique à la plateforme et le digest d'index multi-arch, tout en évitant les faux positifs quand Docker ou Podman n'expose qu'un ID d'image local/non comparable. L'encart de mise à jour Dockge-Enhanced utilise la même logique, et `DOCKGE_DOCKER_SOCKET` peut pointer vers un socket rootless/Podman personnalisé.
 
 **Historique des mises à jour automatiques** — Un journal horodaté de chaque mise à jour automatique d'image est désormais enregistré et consultable directement dans l'onglet Image Watcher. Chaque entrée indique la date, la stack, le nom de l'image, l'ancien → nouveau digest (tronqué), le mode de mise à jour (Immédiat / Planifié), et le statut succès ou échec. L'historique est persisté entre les redémarrages (`update-history.json`) et peut être effacé en un clic. Les mises à jour échouées sont également enregistrées avec leur message d'erreur.
 

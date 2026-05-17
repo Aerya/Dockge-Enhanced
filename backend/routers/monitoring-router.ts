@@ -6,7 +6,7 @@
 import { DockgeServer } from "../dockge-server";
 import { Router } from "../router";
 import express, { Express, Request, Response, NextFunction } from "express";
-import { MonitoringWatcher, MonitoringSettings } from "../watchers/monitoring-watcher";
+import { MonitoringWatcher, MonitoringSettings, CrashExclusion } from "../watchers/monitoring-watcher";
 import { BackupManager } from "../watchers/backup-manager";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { imageStatusStore } from "../watchers/image-watcher";
@@ -166,6 +166,57 @@ export class MonitoringRouter extends Router {
 
         router.get("/monitoring/crash-events", (_req: Request, res: Response) => {
             res.json({ ok: true, data: MonitoringWatcher.getInstance().getRecentCrashEvents() });
+        });
+
+        // Effacer la liste des crash events (en mémoire)
+        router.delete("/monitoring/crash-events", (_req: Request, res: Response) => {
+            MonitoringWatcher.getInstance().clearCrashEvents();
+            res.json({ ok: true });
+        });
+
+        // ── Crash exclusions ──────────────────────────────────────
+
+        router.get("/monitoring/crash-exclusions", (_req: Request, res: Response) => {
+            res.json({ ok: true, data: MonitoringWatcher.getInstance().getExclusions() });
+        });
+
+        // Ajouter / mettre à jour une exclusion
+        // body: { containerName: string, durationHours: number | null }
+        router.post("/monitoring/crash-exclusions", async (req: Request, res: Response) => {
+            try {
+                const { containerName, durationHours } = req.body as {
+                    containerName: string;
+                    durationHours: number | null;
+                };
+                if (!containerName) {
+                    res.status(400).json({ ok: false, message: "containerName requis" });
+                    return;
+                }
+                await MonitoringWatcher.getInstance().addExclusion(containerName, durationHours ?? null);
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        // Supprimer une exclusion spécifique
+        router.delete("/monitoring/crash-exclusions/:containerName", async (req: Request, res: Response) => {
+            try {
+                await MonitoringWatcher.getInstance().removeExclusion(req.params.containerName);
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        // Supprimer toutes les exclusions
+        router.delete("/monitoring/crash-exclusions", async (_req: Request, res: Response) => {
+            try {
+                await MonitoringWatcher.getInstance().clearExclusions();
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
         });
 
         // Mount under /api — final paths: /api/monitoring/*
