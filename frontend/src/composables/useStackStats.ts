@@ -27,7 +27,7 @@ export const stackStatsEnabled = ref<boolean>(
 
 async function fetchStackStats(): Promise<void> {
     try {
-        const token = localStorage.getItem("token") ?? "";
+        const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
         const res = await fetch("/api/system/stack-stats", {
             headers: token ? { "Authorization": `Bearer ${token}` } : {},
         });

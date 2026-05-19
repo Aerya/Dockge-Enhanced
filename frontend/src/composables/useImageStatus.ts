@@ -23,7 +23,7 @@ let subscribers = 0;
 
 async function fetchStatus() {
     try {
-        const token = localStorage.getItem("token") ?? "";
+        const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
         const res = await fetch("/api/watcher/image/status", {
             headers: token ? { "Authorization": `Bearer ${token}` } : {},
         });

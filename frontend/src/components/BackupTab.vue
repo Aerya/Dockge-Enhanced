@@ -1441,7 +1441,7 @@ function showToast(msg: string, ok = true) {
 
 const API = "/api/watcher";
 async function api(method: string, path: string, body?: unknown) {
-    const token = localStorage.getItem("token") ?? "";
+    const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
     const res = await fetch(API + path, {
         method,
         headers: {

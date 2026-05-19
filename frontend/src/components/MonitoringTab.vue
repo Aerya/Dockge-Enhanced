@@ -452,7 +452,7 @@ interface Overview {
 const API = "/api";
 
 async function api(method: string, path: string, body?: unknown): Promise<{ ok: boolean; data?: unknown; message?: string }> {
-    const token = localStorage.getItem("token") ?? "";
+    const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
     const fullPath = API + path;
     const sep = fullPath.includes("?") ? "&" : "?";
     const res = await fetch(`${fullPath}${sep}token=${encodeURIComponent(token)}`, {

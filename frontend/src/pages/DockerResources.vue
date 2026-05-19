@@ -628,7 +628,7 @@ function setLang(l: "fr" | "en") {
 // ─── API ──────────────────────────────────────────────────────────
 
 function token(): string {
-    return localStorage.getItem("token") ?? "";
+    return localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
 }
 
 async function api(method: string, path: string, body?: unknown) {

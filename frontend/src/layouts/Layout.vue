@@ -221,7 +221,7 @@ export default {
     methods: {
         async checkSelfUpdate() {
             try {
-                const token = localStorage.getItem("token") ?? "";
+                const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
                 const res = await fetch("/api/watcher/self/status", {
                     headers: { "Authorization": `Bearer ${token}` },
                 });
@@ -260,7 +260,7 @@ export default {
 
         async fetchSystemStats() {
             try {
-                const token = localStorage.getItem("token") ?? "";
+                const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
                 const res = await fetch("/api/system/stats", {
                     headers: { "Authorization": `Bearer ${token}` },
                 });
@@ -285,7 +285,7 @@ export default {
 
         async fetchKulaStatus() {
             try {
-                const token = localStorage.getItem("token") ?? "";
+                const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
                 const [settingsRes, statusRes] = await Promise.all([
                     fetch("/api/watcher/kula/settings", { headers: { "Authorization": `Bearer ${token}` } }),
                     fetch("/api/watcher/kula/status",   { headers: { "Authorization": `Bearer ${token}` } }),
