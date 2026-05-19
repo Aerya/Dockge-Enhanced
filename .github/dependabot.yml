@@ -1,0 +1,73 @@
+version: 2
+updates:
+
+  # ── npm — backend + frontend (un seul package.json à la racine) ──────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "deps"
+    ignore:
+      # ── Bloquer toutes les majors (changements d'API garantis) ──────────
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+      # ── Couche base de données — revue manuelle obligatoire ─────────────
+      # Knex et redbean-node touchent directement SQLite et les migrations
+      # Enhanced. Un minor peut changer le query builder silencieusement.
+      - dependency-name: "knex"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "redbean-node"
+        update-types: ["version-update:semver-minor"]
+
+      # ── Fork spécifique louislam — ne jamais toucher ─────────────────────
+      - dependency-name: "@louislam/sqlite3"
+
+      # ── Tags beta/RC — Dependabot ne peut pas les versionner correctement ─
+      # Ces packages utilisent des tags roulants (beta, rc) sans semver stable.
+      # Une mise à jour automatique pourrait casser le terminal ou les toasts.
+      - dependency-name: "@xterm/xterm"
+      - dependency-name: "@xterm/addon-fit"
+      - dependency-name: "xterm-addon-web-links"
+      - dependency-name: "vue-toastification"
+
+    groups:
+      # Regroupe tous les patches en une seule PR (moins de bruit)
+      npm-patches:
+        update-types:
+          - "patch"
+      # Regroupe tous les minors en une seule PR séparée (revue humaine)
+      npm-minors:
+        update-types:
+          - "minor"
+
+  # ── GitHub Actions ────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      actions-updates:
+        update-types:
+          - "minor"
+          - "patch"

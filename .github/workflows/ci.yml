@@ -1,0 +1,29 @@
+name: CI — Vérification build
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-check:
+    name: TypeScript + Frontend build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérification TypeScript (tsc --noEmit)
+        run: npm run check-ts
+
+      - name: Build frontend (Vite)
+        run: npm run build:frontend
