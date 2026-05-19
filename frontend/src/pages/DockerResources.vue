@@ -69,81 +69,125 @@
 
                 <!-- ── Panneau auto-prune ─────────────────────────── -->
                 <div v-if="autoPruneLoaded" class="auto-prune-panel mb-3">
-                    <button class="btn btn-link btn-sm p-0 text-muted text-decoration-none"
+                    <button class="btn btn-link btn-sm p-0 text-decoration-none ap-toggle-btn"
                         @click="autoPruneOpen = !autoPruneOpen">
                         <font-awesome-icon :icon="autoPruneOpen ? 'chevron-down' : 'chevron-right'" class="me-1" />
                         {{ t.autoPrune.heading }}
-                        <span v-if="autoPrune.enabled" class="badge bg-success ms-2" style="font-size:.7rem">
-                            {{ t.autoPrune.intervals[autoPrune.intervalHours] }}
+                        <span v-if="autoPrune.danglingEnabled" class="badge bg-success ms-2" style="font-size:.7rem">
+                            {{ t.autoPrune.danglingHeading }}
+                        </span>
+                        <span v-if="autoPrune.unusedEnabled" class="badge bg-info text-dark ms-1" style="font-size:.7rem">
+                            {{ t.autoPrune.unusedHeading }}
                         </span>
                     </button>
 
                     <div v-show="autoPruneOpen" class="auto-prune-body mt-2 p-3">
+                        <div class="auto-prune-sections">
 
-                        <!-- Toggle + intervalle -->
-                        <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" id="autoPruneToggle"
-                                    v-model="autoPrune.enabled" @change="saveAutoPrune">
-                                <label class="form-check-label" for="autoPruneToggle">
-                                    {{ t.autoPrune.enable }}
-                                </label>
-                            </div>
-                            <div v-if="autoPrune.enabled" class="d-flex align-items-center gap-2">
-                                <label class="text-muted small mb-0">{{ t.autoPrune.interval }} :</label>
-                                <select class="form-select form-select-sm" style="width:auto"
-                                    v-model.number="autoPrune.intervalHours" @change="saveAutoPrune"
-                                    :disabled="savingPrune">
-                                    <option :value="24">{{ t.autoPrune.intervals[24] }}</option>
-                                    <option :value="48">{{ t.autoPrune.intervals[48] }}</option>
-                                    <option :value="168">{{ t.autoPrune.intervals[168] }}</option>
-                                </select>
-                            </div>
-                            <button class="btn btn-outline-secondary btn-sm ms-auto"
-                                @click="runAutoPruneNow" :disabled="runningPrune">
-                                <span v-if="runningPrune" class="spinner-border spinner-border-sm me-1" />
-                                <font-awesome-icon v-else icon="play" class="me-1" />
-                                {{ runningPrune ? t.autoPrune.running : t.autoPrune.runNow }}
-                            </button>
-                        </div>
+                            <!-- ── Section 1 : Orphelines (dangling) ──────── -->
+                            <div class="auto-prune-section">
+                                <div class="auto-prune-section-title">{{ t.autoPrune.danglingHeading }}</div>
 
-                        <!-- Infos dernier / prochain run -->
-                        <div v-if="autoPrune.enabled" class="small text-muted mb-3 d-flex flex-wrap gap-3">
-                            <span>
-                                {{ t.autoPrune.lastRun }} :
-                                <strong>{{ fmtDate(autoPrune.lastRun) }}</strong>
-                                <span v-if="autoPrune.lastResult" class="ms-1 text-secondary">
-                                    ({{ autoPrune.lastResult }})
-                                </span>
-                            </span>
-                            <span>
-                                {{ t.autoPrune.nextRun }} :
-                                <strong>{{ fmtDate(autoPrune.nextRun) }}</strong>
-                            </span>
-                        </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="danglingToggle"
+                                        v-model="autoPrune.danglingEnabled" @change="saveAutoPrune">
+                                    <label class="form-check-label ap-label" for="danglingToggle">
+                                        {{ t.autoPrune.enable }}
+                                    </label>
+                                </div>
 
-                        <!-- Exclusions -->
-                        <div>
-                            <div class="small text-muted mb-1">
-                                {{ t.autoPrune.exclusions }}
-                                <span v-if="autoPrune.exclusions.length > 0"
-                                    class="badge bg-secondary ms-1">{{ autoPrune.exclusions.length }}</span>
+                                <div v-if="autoPrune.danglingEnabled" class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <select class="form-select form-select-sm ap-select"
+                                        v-model.number="autoPrune.danglingIntervalHours" @change="saveAutoPrune"
+                                        :disabled="savingPrune">
+                                        <option :value="24">{{ t.autoPrune.intervals[24] }}</option>
+                                        <option :value="48">{{ t.autoPrune.intervals[48] }}</option>
+                                        <option :value="168">{{ t.autoPrune.intervals[168] }}</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary btn-sm"
+                                        @click="runDanglingPruneNow" :disabled="runningDanglingPrune">
+                                        <span v-if="runningDanglingPrune" class="spinner-border spinner-border-sm me-1" />
+                                        <font-awesome-icon v-else icon="play" class="me-1" />
+                                        {{ runningDanglingPrune ? t.autoPrune.running : t.autoPrune.runNow }}
+                                    </button>
+                                </div>
+
+                                <div v-if="autoPrune.danglingEnabled" class="ap-meta">
+                                    <div>{{ t.autoPrune.lastRun }} :
+                                        <strong>{{ fmtDate(autoPrune.lastDanglingRun) }}</strong>
+                                        <span v-if="autoPrune.lastDanglingResult" class="ms-1">({{ autoPrune.lastDanglingResult }})</span>
+                                    </div>
+                                    <div>{{ t.autoPrune.nextRun }} :
+                                        <strong>{{ fmtDate(autoPrune.nextDanglingRun) }}</strong>
+                                    </div>
+                                </div>
                             </div>
-                            <p v-if="autoPrune.exclusions.length === 0" class="text-muted small fst-italic mb-0">
-                                {{ t.autoPrune.noExclusions }}
-                            </p>
-                            <div v-else class="d-flex flex-wrap gap-2">
-                                <span v-for="ex in autoPrune.exclusions" :key="ex"
-                                    class="badge bg-secondary d-flex align-items-center gap-1"
-                                    style="font-size:.8rem;font-weight:normal">
-                                    <code style="font-size:.75rem">{{ ex.slice(0, 12) }}</code>
-                                    <button class="btn-close btn-close-white"
-                                        style="font-size:.55rem"
-                                        @click="removePruneExclusion(ex)" />
-                                </span>
+
+                            <!-- ── Section 2 : Inutilisées (unused tagged) ── -->
+                            <div class="auto-prune-section">
+                                <div class="auto-prune-section-title">{{ t.autoPrune.unusedHeading }}</div>
+
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="unusedToggle"
+                                        v-model="autoPrune.unusedEnabled" @change="saveAutoPrune">
+                                    <label class="form-check-label ap-label" for="unusedToggle">
+                                        {{ t.autoPrune.enable }}
+                                    </label>
+                                </div>
+
+                                <div v-if="autoPrune.unusedEnabled" class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <select class="form-select form-select-sm ap-select"
+                                        v-model.number="autoPrune.unusedIntervalHours" @change="saveAutoPrune"
+                                        :disabled="savingPrune">
+                                        <option :value="24">{{ t.autoPrune.intervals[24] }}</option>
+                                        <option :value="48">{{ t.autoPrune.intervals[48] }}</option>
+                                        <option :value="168">{{ t.autoPrune.intervals[168] }}</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary btn-sm"
+                                        @click="runUnusedPruneNow" :disabled="runningUnusedPrune">
+                                        <span v-if="runningUnusedPrune" class="spinner-border spinner-border-sm me-1" />
+                                        <font-awesome-icon v-else icon="play" class="me-1" />
+                                        {{ runningUnusedPrune ? t.autoPrune.running : t.autoPrune.runNow }}
+                                    </button>
+                                </div>
+
+                                <div v-if="autoPrune.unusedEnabled" class="ap-meta mb-3">
+                                    <div>{{ t.autoPrune.lastRun }} :
+                                        <strong>{{ fmtDate(autoPrune.lastUnusedRun) }}</strong>
+                                        <span v-if="autoPrune.lastUnusedResult" class="ms-1">({{ autoPrune.lastUnusedResult }})</span>
+                                    </div>
+                                    <div>{{ t.autoPrune.nextRun }} :
+                                        <strong>{{ fmtDate(autoPrune.nextUnusedRun) }}</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Exclusions -->
+                                <div class="ap-exclusions">
+                                    <div class="ap-exclusions-label">
+                                        {{ t.autoPrune.exclusions }}
+                                        <span v-if="autoPrune.unusedExclusions.length > 0"
+                                            class="badge bg-secondary ms-1">{{ autoPrune.unusedExclusions.length }}</span>
+                                    </div>
+                                    <p v-if="autoPrune.unusedExclusions.length === 0" class="fst-italic ap-meta mb-1">
+                                        {{ t.autoPrune.noExclusions }}
+                                    </p>
+                                    <div v-else class="d-flex flex-wrap gap-2 mb-2">
+                                        <span v-for="ex in autoPrune.unusedExclusions" :key="ex"
+                                            class="badge ap-exclusion-badge d-flex align-items-center gap-1">
+                                            <code class="ap-exclusion-code">{{ ex }}</code>
+                                            <button class="btn-close btn-close-white"
+                                                style="font-size:.5rem"
+                                                :title="t.autoPrune.removeExclusion"
+                                                @click="removeUnusedExclusion(ex)" />
+                                        </span>
+                                    </div>
+                                    <p class="ap-hint mb-0">
+                                        <font-awesome-icon icon="circle-info" class="me-1" />{{ t.autoPrune.excludeHint }}
+                                    </p>
+                                </div>
                             </div>
-                            <p class="text-muted small mt-2 mb-0">{{ t.autoPrune.excludeHint }}</p>
-                        </div>
+
+                        </div><!-- /auto-prune-sections -->
                     </div>
                 </div>
 
@@ -222,15 +266,15 @@
                                 </td>
                                 <td class="align-middle text-end">
                                     <div class="d-flex justify-content-end gap-1">
-                                        <!-- Bouton exclure de l'auto-prune (dangling uniquement) -->
-                                        <button v-if="img.status === 'dangling' && autoPruneLoaded"
+                                        <!-- Bouton exclure de l'auto-prune (images inutilisées taguées uniquement) -->
+                                        <button v-if="img.status === 'unused' && autoPruneLoaded"
                                             class="btn btn-sm"
-                                            :class="isExcludedFromPrune(img) ? 'btn-secondary' : 'btn-outline-secondary'"
-                                            :title="isExcludedFromPrune(img) ? t.autoPrune.removeExclusion : t.autoPrune.excludeBtn"
-                                            @click="isExcludedFromPrune(img)
-                                                ? removePruneExclusion(img.id.replace('sha256:','').slice(0,12))
-                                                : addPruneExclusion(img.id.replace('sha256:','').slice(0,12))">
-                                            <font-awesome-icon :icon="isExcludedFromPrune(img) ? 'eye' : 'eye-slash'" />
+                                            :class="isExcludedFromUnusedPrune(img) ? 'btn-secondary' : 'btn-outline-secondary'"
+                                            :title="isExcludedFromUnusedPrune(img) ? t.autoPrune.removeExclusion : t.autoPrune.excludeBtn"
+                                            @click="isExcludedFromUnusedPrune(img)
+                                                ? removeUnusedExclusion(`${img.repository}:${img.tag}`)
+                                                : addUnusedExclusion(`${img.repository}:${img.tag}`)">
+                                            <font-awesome-icon :icon="isExcludedFromUnusedPrune(img) ? 'eye' : 'ban'" />
                                         </button>
                                         <!-- Bouton supprimer -->
                                         <button v-if="img.status !== 'running'"
@@ -574,21 +618,22 @@ const i18n = {
             confirm2Body: "⚠️ Suppression irréversible du conteneur.",
         },
         autoPrune: {
-            heading: "Purge automatique des orphelines",
-            enable: "Activer la purge planifiée",
+            heading: "Purge automatique",
+            danglingHeading: "Orphelines (sans tag)",
+            unusedHeading: "Inutilisées (avec tag)",
+            enable: "Activer",
             interval: "Fréquence",
             intervals: { 24: "Toutes les 24h", 48: "Toutes les 48h", 168: "Tous les 7 jours" } as Record<number, string>,
             lastRun: "Dernier run",
-            lastResult: "Résultat",
             nextRun: "Prochain run",
             never: "jamais",
-            runNow: "Lancer maintenant",
+            runNow: "Lancer",
             running: "En cours…",
             exclusions: "Images exclues",
             noExclusions: "Aucune exclusion",
-            excludeBtn: "Exclure",
-            excludeHint: "Les images exclues ne seront jamais supprimées automatiquement.",
-            removeExclusion: "Retirer",
+            excludeBtn: "Exclure de la purge",
+            excludeHint: "Pour exclure une image inutilisée, cliquez sur l'icône 🚫 dans le tableau ci-dessous.",
+            removeExclusion: "Retirer de l'exclusion",
         },
         confirm1Title: "Confirmer la suppression",
         confirm1Body: "Supprimer :",
@@ -647,21 +692,22 @@ const i18n = {
             confirm2Body: "⚠️ This action is irreversible.",
         },
         autoPrune: {
-            heading: "Auto-prune dangling images",
-            enable: "Enable scheduled prune",
+            heading: "Automatic prune",
+            danglingHeading: "Dangling (untagged)",
+            unusedHeading: "Unused (tagged)",
+            enable: "Enable",
             interval: "Frequency",
             intervals: { 24: "Every 24h", 48: "Every 48h", 168: "Every 7 days" } as Record<number, string>,
             lastRun: "Last run",
-            lastResult: "Result",
             nextRun: "Next run",
             never: "never",
-            runNow: "Run now",
+            runNow: "Run",
             running: "Running…",
             exclusions: "Excluded images",
             noExclusions: "No exclusions",
-            excludeBtn: "Exclude",
-            excludeHint: "Excluded images will never be automatically deleted.",
-            removeExclusion: "Remove",
+            excludeBtn: "Exclude from prune",
+            excludeHint: "To exclude an unused image, click the 🚫 icon in the table below.",
+            removeExclusion: "Remove exclusion",
         },
         confirm1Title: "Confirm deletion",
         confirm1Body: "Delete:",
@@ -705,23 +751,33 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 // ─── Auto-prune ───────────────────────────────────────────────────
 
 interface AutoPruneSettings {
-    enabled: boolean;
-    intervalHours: 24 | 48 | 168;
-    exclusions: string[];
-    lastRun?: string;
-    lastResult?: string;
-    nextRun?: string | null;
+    // Mode orphelines (dangling)
+    danglingEnabled:       boolean;
+    danglingIntervalHours: 24 | 48 | 168;
+    lastDanglingRun?:      string;
+    lastDanglingResult?:   string;
+    nextDanglingRun?:      string | null;
+    // Mode inutilisées (unused tagged)
+    unusedEnabled:         boolean;
+    unusedIntervalHours:   24 | 48 | 168;
+    unusedExclusions:      string[];
+    lastUnusedRun?:        string;
+    lastUnusedResult?:     string;
+    nextUnusedRun?:        string | null;
 }
 
 const autoPrune = ref<AutoPruneSettings>({
-    enabled: false,
-    intervalHours: 24,
-    exclusions: [],
+    danglingEnabled:       false,
+    danglingIntervalHours: 24,
+    unusedEnabled:         false,
+    unusedIntervalHours:   168,
+    unusedExclusions:      [],
 });
-const autoPruneOpen   = ref(false);
-const autoPruneLoaded = ref(false);
-const savingPrune     = ref(false);
-const runningPrune    = ref(false);
+const autoPruneOpen        = ref(false);
+const autoPruneLoaded      = ref(false);
+const savingPrune          = ref(false);
+const runningDanglingPrune = ref(false);
+const runningUnusedPrune   = ref(false);
 
 // ─── Computed ─────────────────────────────────────────────────────
 
@@ -1045,8 +1101,10 @@ async function saveAutoPrune() {
     savingPrune.value = true;
     try {
         await api("POST", "auto-prune/settings", {
-            enabled: autoPrune.value.enabled,
-            intervalHours: autoPrune.value.intervalHours,
+            danglingEnabled:       autoPrune.value.danglingEnabled,
+            danglingIntervalHours: autoPrune.value.danglingIntervalHours,
+            unusedEnabled:         autoPrune.value.unusedEnabled,
+            unusedIntervalHours:   autoPrune.value.unusedIntervalHours,
         });
         await loadAutoPrune();
     } finally {
@@ -1054,33 +1112,41 @@ async function saveAutoPrune() {
     }
 }
 
-async function addPruneExclusion(imageRef: string) {
-    await api("POST", "auto-prune/exclusions", { imageRef });
+async function addUnusedExclusion(nameTag: string) {
+    await api("POST", "auto-prune/exclusions/unused", { nameTag });
     await loadAutoPrune();
 }
 
-async function removePruneExclusion(imageRef: string) {
-    await api("DELETE", `auto-prune/exclusions/${encodeURIComponent(imageRef)}`);
+async function removeUnusedExclusion(nameTag: string) {
+    await api("DELETE", `auto-prune/exclusions/unused/${encodeURIComponent(nameTag)}`);
     await loadAutoPrune();
 }
 
-async function runAutoPruneNow() {
-    runningPrune.value = true;
+async function runDanglingPruneNow() {
+    runningDanglingPrune.value = true;
     try {
-        const data = await api("POST", "auto-prune/run");
+        const data = await api("POST", "auto-prune/run/dangling");
         showToast(data.ok, data.summary ?? data.message ?? "");
         if (data.ok) { await loadImages(); await loadAutoPrune(); }
     } finally {
-        runningPrune.value = false;
+        runningDanglingPrune.value = false;
     }
 }
 
-function isExcludedFromPrune(img: DockerImage): boolean {
-    const shortId = img.id.replace("sha256:", "").slice(0, 12);
-    return autoPrune.value.exclusions.some(ex =>
-        ex === shortId || ex === img.id ||
-        img.id.startsWith(ex) || shortId.startsWith(ex.slice(0, 12))
-    );
+async function runUnusedPruneNow() {
+    runningUnusedPrune.value = true;
+    try {
+        const data = await api("POST", "auto-prune/run/unused");
+        showToast(data.ok, data.summary ?? data.message ?? "");
+        if (data.ok) { await loadImages(); await loadAutoPrune(); }
+    } finally {
+        runningUnusedPrune.value = false;
+    }
+}
+
+function isExcludedFromUnusedPrune(img: DockerImage): boolean {
+    const nameTag = `${img.repository}:${img.tag}`;
+    return autoPrune.value.unusedExclusions.includes(nameTag);
 }
 
 function fmtDate(iso?: string | null): string {
@@ -1180,7 +1246,7 @@ onMounted(() => {
 
 // ── Auto-prune panel ─────────────────────────────────────────────
 .auto-prune-panel {
-    .btn-link {
+    .ap-toggle-btn {
         color: $dark-font-color;
         &:hover { color: #fff; }
     }
@@ -1191,27 +1257,82 @@ onMounted(() => {
     border: 1px solid $dark-border-color;
     border-radius: 4px;
     color: $dark-font-color;
+}
 
-    .form-check-label,
-    .form-select,
-    label {
-        color: $dark-font-color;
-    }
+.auto-prune-sections {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
 
-    .form-select {
-        background-color: $dark-bg;
-        border-color: $dark-border-color;
-        color: $dark-font-color;
-    }
+.auto-prune-section {
+    flex: 1;
+    min-width: 260px;
+}
 
-    .text-muted {
-        color: #6b7280 !important;
-    }
+.auto-prune-section-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid $dark-border-color;
+}
 
-    code {
-        color: $primary;
-        background: none;
+.ap-label {
+    color: $dark-font-color !important;
+}
+
+.ap-select {
+    width: auto;
+    background-color: $dark-bg;
+    border-color: $dark-border-color;
+    color: $dark-font-color;
+    &:focus {
+        border-color: $primary;
+        box-shadow: 0 0 0 2px rgba($primary, 0.25);
     }
+}
+
+.ap-meta {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    line-height: 1.6;
+    strong { color: $dark-font-color; }
+}
+
+.ap-exclusions {
+    border-top: 1px solid $dark-border-color;
+    padding-top: 0.6rem;
+    margin-top: 0.4rem;
+}
+
+.ap-exclusions-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $dark-font-color;
+    margin-bottom: 0.4rem;
+}
+
+.ap-exclusion-badge {
+    background-color: rgba(255,255,255,0.1);
+    border: 1px solid $dark-border-color;
+    font-weight: normal;
+    font-size: 0.78rem;
+}
+
+.ap-exclusion-code {
+    color: $primary;
+    background: none;
+    font-size: 0.75rem;
+}
+
+.ap-hint {
+    font-size: 0.78rem;
+    color: #6b7280;
+    font-style: italic;
 }
 
 // ── Badge stack Dockge ───────────────────────────────────────────

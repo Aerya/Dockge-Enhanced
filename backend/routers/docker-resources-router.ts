@@ -335,34 +335,48 @@ export class DockerResourcesRouter extends Router {
 
         router.post("/auto-prune/settings", auth, async (req: Request, res: Response) => {
             try {
-                const { enabled, intervalHours } = req.body ?? {};
-                await AutoPruneManager.getInstance().updateSettings({ enabled, intervalHours });
+                const { danglingEnabled, danglingIntervalHours, unusedEnabled, unusedIntervalHours } = req.body ?? {};
+                await AutoPruneManager.getInstance().updateSettings({
+                    danglingEnabled, danglingIntervalHours,
+                    unusedEnabled,   unusedIntervalHours,
+                });
                 res.json({ ok: true });
             } catch (e: any) {
                 res.status(500).json({ ok: false, message: e.message });
             }
         });
 
-        router.post("/auto-prune/exclusions", auth, (req: Request, res: Response) => {
-            const { imageRef } = req.body ?? {};
-            if (!imageRef) {
-                res.status(400).json({ ok: false, message: "imageRef requis" });
+        // Exclusions pour le mode "inutilisées" (repo:tag uniquement)
+        router.post("/auto-prune/exclusions/unused", auth, (req: Request, res: Response) => {
+            const { nameTag } = req.body ?? {};
+            if (!nameTag) {
+                res.status(400).json({ ok: false, message: "nameTag requis" });
                 return;
             }
-            AutoPruneManager.getInstance().addExclusion(imageRef);
+            AutoPruneManager.getInstance().addUnusedExclusion(nameTag);
             res.json({ ok: true });
         });
 
-        router.delete("/auto-prune/exclusions/:imageRef", auth, (req: Request, res: Response) => {
-            AutoPruneManager.getInstance().removeExclusion(
-                decodeURIComponent(req.params["imageRef"])
+        router.delete("/auto-prune/exclusions/unused/:nameTag", auth, (req: Request, res: Response) => {
+            AutoPruneManager.getInstance().removeUnusedExclusion(
+                decodeURIComponent(req.params["nameTag"])
             );
             res.json({ ok: true });
         });
 
-        router.post("/auto-prune/run", auth, async (_req: Request, res: Response) => {
+        // Exécution manuelle — un endpoint par mode
+        router.post("/auto-prune/run/dangling", auth, async (_req: Request, res: Response) => {
             try {
-                const result = await AutoPruneManager.getInstance().runPrune();
+                const result = await AutoPruneManager.getInstance().runDanglingPrune();
+                res.json({ ok: true, ...result });
+            } catch (e: any) {
+                res.status(500).json({ ok: false, message: e.message });
+            }
+        });
+
+        router.post("/auto-prune/run/unused", auth, async (_req: Request, res: Response) => {
+            try {
+                const result = await AutoPruneManager.getInstance().runUnusedPrune();
                 res.json({ ok: true, ...result });
             } catch (e: any) {
                 res.status(500).json({ ok: false, message: e.message });
