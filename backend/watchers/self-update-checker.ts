@@ -205,10 +205,10 @@ async function fetchLocalImageInfo(): Promise<{
   try {
     // HOSTNAME = ID court du conteneur dans Docker
     const id = process.env.HOSTNAME ?? "";
-    if (!id) return { digest: "" };
+    if (!id) return { digest: "", comparable: false, source: "none" };
     const container = await dockerSocketGet(`/containers/${id}/json`);
     const imageId: string = container?.Image ?? "";
-    if (!imageId) return { digest: "" };
+    if (!imageId) return { digest: "", comparable: false, source: "none" };
     const image = await dockerSocketGet(`/images/${imageId}/json`);
     const repoDigests: string[] = Array.isArray(image?.RepoDigests)
       ? image.RepoDigests

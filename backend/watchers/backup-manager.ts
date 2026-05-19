@@ -490,9 +490,9 @@ export class BackupManager {
             if (data.destination && !data.destinations) {
                 const old = data.destination as BackupDestination;
                 data.destinations = [{
+                    ...old,
                     label: old.type === "local" ? "Local" : old.type.toUpperCase(),
                     enabled: true,
-                    ...old,
                 }];
                 delete data.destination;
             }
