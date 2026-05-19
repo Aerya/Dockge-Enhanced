@@ -23,6 +23,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 ## Fonctionnalités
 
+🆕 **Purge planifiée des images orphelines** — Un nouveau panneau **Purge automatique** dans l'onglet Images des Ressources Docker permet de planifier la suppression automatique des images dangling (sans tag) toutes les 24h, 48h ou 7 jours. Chaque image dangling dans le tableau dispose d'un bouton **Exclure** — les images exclues ne sont jamais supprimées automatiquement et sont listées dans le panneau avec un bouton de retrait. Un bouton **Lancer maintenant** déclenche une purge immédiate. Le résultat du dernier run et le prochain run estimé sont affichés. Paramètres et exclusions persistés entre les redémarrages.
+
 🆕 **Exclusions d'alertes crash** — Chaque container dans le tableau des crash events dispose désormais d'un bouton **Ignorer** avec un sélecteur de durée (1h, 6h, 24h, 72h, ou permanent). Les containers exclus sont silencieux dans les alertes et n'apparaissent plus dans la liste. Les exclusions actives s'affichent sous le tableau avec leur date d'expiration et peuvent être retirées individuellement ou toutes en même temps. Un bouton **Effacer la liste** vide les crash events en mémoire. Les exclusions sont persistées entre les redémarrages en base de données SQLite.
 
 🆕 **Correction du menu de navigation actif** — La page Enhanced (`/watcher`) ne met plus incorrectement **Accueil** en évidence dans le menu de navigation quand on navigue vers la section crash-loop / ressources.

@@ -67,6 +67,86 @@
                     </div>
                 </div>
 
+                <!-- ── Panneau auto-prune ─────────────────────────── -->
+                <div v-if="autoPruneLoaded" class="auto-prune-panel mb-3">
+                    <button class="btn btn-link btn-sm p-0 text-muted text-decoration-none"
+                        @click="autoPruneOpen = !autoPruneOpen">
+                        <font-awesome-icon :icon="autoPruneOpen ? 'chevron-down' : 'chevron-right'" class="me-1" />
+                        {{ t.autoPrune.heading }}
+                        <span v-if="autoPrune.enabled" class="badge bg-success ms-2" style="font-size:.7rem">
+                            {{ t.autoPrune.intervals[autoPrune.intervalHours] }}
+                        </span>
+                    </button>
+
+                    <div v-show="autoPruneOpen" class="mt-2 p-3 rounded" style="background:rgba(255,255,255,0.05)">
+
+                        <!-- Toggle + intervalle -->
+                        <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="autoPruneToggle"
+                                    v-model="autoPrune.enabled" @change="saveAutoPrune">
+                                <label class="form-check-label" for="autoPruneToggle">
+                                    {{ t.autoPrune.enable }}
+                                </label>
+                            </div>
+                            <div v-if="autoPrune.enabled" class="d-flex align-items-center gap-2">
+                                <label class="text-muted small mb-0">{{ t.autoPrune.interval }} :</label>
+                                <select class="form-select form-select-sm" style="width:auto"
+                                    v-model.number="autoPrune.intervalHours" @change="saveAutoPrune"
+                                    :disabled="savingPrune">
+                                    <option :value="24">{{ t.autoPrune.intervals[24] }}</option>
+                                    <option :value="48">{{ t.autoPrune.intervals[48] }}</option>
+                                    <option :value="168">{{ t.autoPrune.intervals[168] }}</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm ms-auto"
+                                @click="runAutoPruneNow" :disabled="runningPrune">
+                                <span v-if="runningPrune" class="spinner-border spinner-border-sm me-1" />
+                                <font-awesome-icon v-else icon="play" class="me-1" />
+                                {{ runningPrune ? t.autoPrune.running : t.autoPrune.runNow }}
+                            </button>
+                        </div>
+
+                        <!-- Infos dernier / prochain run -->
+                        <div v-if="autoPrune.enabled" class="small text-muted mb-3 d-flex flex-wrap gap-3">
+                            <span>
+                                {{ t.autoPrune.lastRun }} :
+                                <strong>{{ fmtDate(autoPrune.lastRun) }}</strong>
+                                <span v-if="autoPrune.lastResult" class="ms-1 text-secondary">
+                                    ({{ autoPrune.lastResult }})
+                                </span>
+                            </span>
+                            <span>
+                                {{ t.autoPrune.nextRun }} :
+                                <strong>{{ fmtDate(autoPrune.nextRun) }}</strong>
+                            </span>
+                        </div>
+
+                        <!-- Exclusions -->
+                        <div>
+                            <div class="small text-muted mb-1">
+                                {{ t.autoPrune.exclusions }}
+                                <span v-if="autoPrune.exclusions.length > 0"
+                                    class="badge bg-secondary ms-1">{{ autoPrune.exclusions.length }}</span>
+                            </div>
+                            <p v-if="autoPrune.exclusions.length === 0" class="text-muted small fst-italic mb-0">
+                                {{ t.autoPrune.noExclusions }}
+                            </p>
+                            <div v-else class="d-flex flex-wrap gap-2">
+                                <span v-for="ex in autoPrune.exclusions" :key="ex"
+                                    class="badge bg-secondary d-flex align-items-center gap-1"
+                                    style="font-size:.8rem;font-weight:normal">
+                                    <code style="font-size:.75rem">{{ ex.slice(0, 12) }}</code>
+                                    <button class="btn-close btn-close-white"
+                                        style="font-size:.55rem"
+                                        @click="removePruneExclusion(ex)" />
+                                </span>
+                            </div>
+                            <p class="text-muted small mt-2 mb-0">{{ t.autoPrune.excludeHint }}</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Loading / Error -->
                 <div v-if="loadingImages" class="text-center py-4 text-muted">
                     <span class="spinner-border spinner-border-sm me-2" />{{ t.loading }}
@@ -141,13 +221,26 @@
                                     </div>
                                 </td>
                                 <td class="align-middle text-end">
-                                    <button v-if="img.status !== 'running'"
-                                        class="btn btn-sm"
-                                        :class="img.status === 'stopped' ? 'btn-warning' : 'btn-outline-danger'"
-                                        @click="askDeleteImage(img)">
-                                        <font-awesome-icon icon="trash" />
-                                    </button>
-                                    <span v-else class="text-muted small">—</span>
+                                    <div class="d-flex justify-content-end gap-1">
+                                        <!-- Bouton exclure de l'auto-prune (dangling uniquement) -->
+                                        <button v-if="img.status === 'dangling' && autoPruneLoaded"
+                                            class="btn btn-sm"
+                                            :class="isExcludedFromPrune(img) ? 'btn-secondary' : 'btn-outline-secondary'"
+                                            :title="isExcludedFromPrune(img) ? t.autoPrune.removeExclusion : t.autoPrune.excludeBtn"
+                                            @click="isExcludedFromPrune(img)
+                                                ? removePruneExclusion(img.id.replace('sha256:','').slice(0,12))
+                                                : addPruneExclusion(img.id.replace('sha256:','').slice(0,12))">
+                                            <font-awesome-icon :icon="isExcludedFromPrune(img) ? 'eye' : 'eye-slash'" />
+                                        </button>
+                                        <!-- Bouton supprimer -->
+                                        <button v-if="img.status !== 'running'"
+                                            class="btn btn-sm"
+                                            :class="img.status === 'stopped' ? 'btn-warning' : 'btn-outline-danger'"
+                                            @click="askDeleteImage(img)">
+                                            <font-awesome-icon icon="trash" />
+                                        </button>
+                                        <span v-else class="text-muted small">—</span>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -480,6 +573,23 @@ const i18n = {
             confirm1Warning: "Ce conteneur sera définitivement supprimé.",
             confirm2Body: "⚠️ Suppression irréversible du conteneur.",
         },
+        autoPrune: {
+            heading: "Purge automatique des orphelines",
+            enable: "Activer la purge planifiée",
+            interval: "Fréquence",
+            intervals: { 24: "Toutes les 24h", 48: "Toutes les 48h", 168: "Tous les 7 jours" } as Record<number, string>,
+            lastRun: "Dernier run",
+            lastResult: "Résultat",
+            nextRun: "Prochain run",
+            never: "jamais",
+            runNow: "Lancer maintenant",
+            running: "En cours…",
+            exclusions: "Images exclues",
+            noExclusions: "Aucune exclusion",
+            excludeBtn: "Exclure",
+            excludeHint: "Les images exclues ne seront jamais supprimées automatiquement.",
+            removeExclusion: "Retirer",
+        },
         confirm1Title: "Confirmer la suppression",
         confirm1Body: "Supprimer :",
         confirm2Title: "Confirmation finale",
@@ -536,6 +646,23 @@ const i18n = {
             confirm1Warning: "This container will be permanently deleted.",
             confirm2Body: "⚠️ This action is irreversible.",
         },
+        autoPrune: {
+            heading: "Auto-prune dangling images",
+            enable: "Enable scheduled prune",
+            interval: "Frequency",
+            intervals: { 24: "Every 24h", 48: "Every 48h", 168: "Every 7 days" } as Record<number, string>,
+            lastRun: "Last run",
+            lastResult: "Result",
+            nextRun: "Next run",
+            never: "never",
+            runNow: "Run now",
+            running: "Running…",
+            exclusions: "Excluded images",
+            noExclusions: "No exclusions",
+            excludeBtn: "Exclude",
+            excludeHint: "Excluded images will never be automatically deleted.",
+            removeExclusion: "Remove",
+        },
         confirm1Title: "Confirm deletion",
         confirm1Body: "Delete:",
         confirm2Title: "Final confirmation",
@@ -574,6 +701,27 @@ const selectedImages = ref<Set<string>>(new Set());
 
 const toast = ref({ show: false, ok: true, msg: "" });
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
+// ─── Auto-prune ───────────────────────────────────────────────────
+
+interface AutoPruneSettings {
+    enabled: boolean;
+    intervalHours: 24 | 48 | 168;
+    exclusions: string[];
+    lastRun?: string;
+    lastResult?: string;
+    nextRun?: string | null;
+}
+
+const autoPrune = ref<AutoPruneSettings>({
+    enabled: false,
+    intervalHours: 24,
+    exclusions: [],
+});
+const autoPruneOpen   = ref(false);
+const autoPruneLoaded = ref(false);
+const savingPrune     = ref(false);
+const runningPrune    = ref(false);
 
 // ─── Computed ─────────────────────────────────────────────────────
 
@@ -884,6 +1032,62 @@ function showToast(ok: boolean, msg: string) {
     toastTimer = setTimeout(() => { toast.value.show = false; }, 4000);
 }
 
+// ─── Auto-prune API ───────────────────────────────────────────────
+
+async function loadAutoPrune() {
+    try {
+        const data = await api("GET", "auto-prune/settings");
+        if (data.ok) { autoPrune.value = data.data; autoPruneLoaded.value = true; }
+    } catch { /* silencieux */ }
+}
+
+async function saveAutoPrune() {
+    savingPrune.value = true;
+    try {
+        await api("POST", "auto-prune/settings", {
+            enabled: autoPrune.value.enabled,
+            intervalHours: autoPrune.value.intervalHours,
+        });
+        await loadAutoPrune();
+    } finally {
+        savingPrune.value = false;
+    }
+}
+
+async function addPruneExclusion(imageRef: string) {
+    await api("POST", "auto-prune/exclusions", { imageRef });
+    await loadAutoPrune();
+}
+
+async function removePruneExclusion(imageRef: string) {
+    await api("DELETE", `auto-prune/exclusions/${encodeURIComponent(imageRef)}`);
+    await loadAutoPrune();
+}
+
+async function runAutoPruneNow() {
+    runningPrune.value = true;
+    try {
+        const data = await api("POST", "auto-prune/run");
+        showToast(data.ok, data.summary ?? data.message ?? "");
+        if (data.ok) { await loadImages(); await loadAutoPrune(); }
+    } finally {
+        runningPrune.value = false;
+    }
+}
+
+function isExcludedFromPrune(img: DockerImage): boolean {
+    const shortId = img.id.replace("sha256:", "").slice(0, 12);
+    return autoPrune.value.exclusions.some(ex =>
+        ex === shortId || ex === img.id ||
+        img.id.startsWith(ex) || shortId.startsWith(ex.slice(0, 12))
+    );
+}
+
+function fmtDate(iso?: string | null): string {
+    if (!iso) return t.value.autoPrune.never;
+    return new Date(iso).toLocaleString();
+}
+
 // ─── Lifecycle ────────────────────────────────────────────────────
 
 onMounted(() => {
@@ -900,6 +1104,7 @@ onMounted(() => {
     loadImages();
     loadVolumes();
     loadContainers();
+    loadAutoPrune();
 });
 </script>
 

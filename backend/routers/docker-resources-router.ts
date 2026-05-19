@@ -18,6 +18,7 @@ import jwt from "jsonwebtoken";
 import { JWTDecoded } from "../util-server";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { AutoPruneManager } from "../watchers/auto-prune-manager";
 
 const execAsync = promisify(exec);
 
@@ -322,6 +323,48 @@ export class DockerResourcesRouter extends Router {
                 res.json({ ok: true, message: (stdout || stderr || "Supprimé").trim() });
             } catch (e: any) {
                 res.status(500).json({ ok: false, message: (e.stderr || e.message || "Erreur").trim() });
+            }
+        });
+
+        // ── Auto-prune ────────────────────────────────────────────
+
+        router.get("/auto-prune/settings", auth, (_req: Request, res: Response) => {
+            res.json({ ok: true, data: AutoPruneManager.getInstance().getSettings() });
+        });
+
+        router.post("/auto-prune/settings", auth, async (req: Request, res: Response) => {
+            try {
+                const { enabled, intervalHours } = req.body ?? {};
+                await AutoPruneManager.getInstance().updateSettings({ enabled, intervalHours });
+                res.json({ ok: true });
+            } catch (e: any) {
+                res.status(500).json({ ok: false, message: e.message });
+            }
+        });
+
+        router.post("/auto-prune/exclusions", auth, (req: Request, res: Response) => {
+            const { imageRef } = req.body ?? {};
+            if (!imageRef) {
+                res.status(400).json({ ok: false, message: "imageRef requis" });
+                return;
+            }
+            AutoPruneManager.getInstance().addExclusion(imageRef);
+            res.json({ ok: true });
+        });
+
+        router.delete("/auto-prune/exclusions/:imageRef", auth, (req: Request, res: Response) => {
+            AutoPruneManager.getInstance().removeExclusion(
+                decodeURIComponent(req.params["imageRef"])
+            );
+            res.json({ ok: true });
+        });
+
+        router.post("/auto-prune/run", auth, async (_req: Request, res: Response) => {
+            try {
+                const result = await AutoPruneManager.getInstance().runPrune();
+                res.json({ ok: true, ...result });
+            } catch (e: any) {
+                res.status(500).json({ ok: false, message: e.message });
             }
         });
 

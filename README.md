@@ -23,6 +23,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 ## Features
 
+🆕 **Scheduled dangling image prune** — A new **Auto-prune** panel in the Images tab of Docker Resources lets you schedule automatic cleanup of dangling (untagged) images every 24h, 48h, or 7 days. Each dangling image in the table has an **Exclude** button — excluded images are never auto-deleted and are listed in the panel with a one-click remove. A **Run now** button triggers an immediate prune. The last run result and next scheduled run are displayed. Settings and exclusions persist across restarts.
+
 🆕 **Crash alert exclusions** — Each container in the crash events table now has an **Ignore** button with a duration picker (1h, 6h, 24h, 72h, or permanent). Excluded containers are silenced from both alerts and the events list. Active exclusions appear below the table with their expiry date and can be removed individually or all at once. A **Clear list** button empties all crash events from memory. Exclusions persist across restarts (stored in SQLite).
 
 🆕 **Navigation menu active-state fix** — The Enhanced page (`/watcher`) no longer incorrectly highlights **Home** in the navigation menu when browsing the crash-loop / resource watcher section.
