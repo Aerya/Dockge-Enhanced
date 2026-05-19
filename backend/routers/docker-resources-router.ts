@@ -147,6 +147,7 @@ function computeStatus(containers: ContainerRef[], dangling = false): string {
 export class DockerResourcesRouter extends Router {
     create(app: Express, server: DockgeServer): ExpressRouter {
         const router = express.Router();
+        router.use(express.json());
         const auth = (req: Request, res: Response, next: NextFunction) =>
             requireAuth(req, res, next, server.jwtSecret);
 

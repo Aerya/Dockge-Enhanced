@@ -78,7 +78,7 @@
                         </span>
                     </button>
 
-                    <div v-show="autoPruneOpen" class="mt-2 p-3 rounded" style="background:rgba(255,255,255,0.05)">
+                    <div v-show="autoPruneOpen" class="auto-prune-body mt-2 p-3">
 
                         <!-- Toggle + intervalle -->
                         <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
@@ -1175,6 +1175,42 @@ onMounted(() => {
     // Ligne : conteneur orphelin en cours → rouge-orange
     .row-orphan-running td:first-child {
         border-left: 3px solid #ef4444;
+    }
+}
+
+// ── Auto-prune panel ─────────────────────────────────────────────
+.auto-prune-panel {
+    .btn-link {
+        color: $dark-font-color;
+        &:hover { color: #fff; }
+    }
+}
+
+.auto-prune-body {
+    background-color: $dark-bg2;
+    border: 1px solid $dark-border-color;
+    border-radius: 4px;
+    color: $dark-font-color;
+
+    .form-check-label,
+    .form-select,
+    label {
+        color: $dark-font-color;
+    }
+
+    .form-select {
+        background-color: $dark-bg;
+        border-color: $dark-border-color;
+        color: $dark-font-color;
+    }
+
+    .text-muted {
+        color: #6b7280 !important;
+    }
+
+    code {
+        color: $primary;
+        background: none;
     }
 }
 
