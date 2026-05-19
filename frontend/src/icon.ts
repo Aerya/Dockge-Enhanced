@@ -77,6 +77,9 @@ import {
     faFloppyDisk,
     faBell,
     faBolt,
+    faBan,
+    faCircleInfo,
+    faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -155,6 +158,9 @@ library.add(
     faFloppyDisk,
     faBell,
     faBolt,
+    faBan,
+    faCircleInfo,
+    faChevronRight,
 );
 
 export { FontAwesomeIcon };
