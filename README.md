@@ -4,26 +4,28 @@
 
 # Dockge Enhanced
 
-> 💡 **Use it? Like it? [⭐ Star it!](https://github.com/Aerya/dockge-enhanced/stargazers)** — it only takes a second.
+A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image monitoring, security scanning, automatic backups, crash-loop detection and Docker resource management, all from the web UI.
 
-🇫🇷 [Version française](README.fr.md)
+> 🇫🇷 [Version française](README.fr.md) · [Presentation article (in French)](https://upandclear.org/2026/03/28/gerer-ses-conteneurs-docker-autrement-le-fork-dockge-enhanced-surveillance-dimages-scan-cve-backup-automatique-gestion-des-ressources/)
 
-> 📖 **[Gérer ses conteneurs Docker autrement : le fork Dockge Enhanced](https://upandclear.org/2026/03/28/gerer-ses-conteneurs-docker-autrement-le-fork-dockge-enhanced-surveillance-dimages-scan-cve-backup-automatique-gestion-des-ressources/)** — presentation article (in French)
+<p align="center">
+  <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
+  <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
+  <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
+  <img src="https://img.shields.io/badge/i18n-FR%20%7C%20EN-blue" alt="i18n">
+  <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
+</p>
 
-A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — adds image monitoring, security scanning, automatic backups and Docker resource management, all controllable from the web UI.
+> **Using it? Liking it? [⭐ Drop a star!](https://github.com/Aerya/Dockge-Enhanced/stargazers)** — takes two seconds.
 
 ---
 
-## 🆕 Recent changes
+## Features
 
-- **Crash alert exclusions** — Each container in the crash events table now has an **Ignore** button with a duration picker (1h, 6h, 24h, 72h, or permanent). Excluded containers are silenced from both alerts and the events list. Active exclusions appear below the table with their expiry date and can be removed individually or all at once. A **Clear list** button empties all crash events from memory. Exclusions persist across restarts (stored in SQLite).
-- **Navigation menu active-state fix** — The Enhanced page (`/watcher`) no longer incorrectly highlights **Home** in the navigation menu when browsing the crash-loop / resource watcher section.
+🆕 **Crash alert exclusions** — Each container in the crash events table now has an **Ignore** button with a duration picker (1h, 6h, 24h, 72h, or permanent). Excluded containers are silenced from both alerts and the events list. Active exclusions appear below the table with their expiry date and can be removed individually or all at once. A **Clear list** button empties all crash events from memory. Exclusions persist across restarts (stored in SQLite).
 
----
-
-## ✨ Added features
-
-### Added feature highlights
+🆕 **Navigation menu active-state fix** — The Enhanced page (`/watcher`) no longer incorrectly highlights **Home** in the navigation menu when browsing the crash-loop / resource watcher section.
 
 **Per-service stack logs** — On each compose page, the terminal header now has a `Service` selector. `All` keeps the grouped stack logs, while selecting a service starts a dedicated filtered stream for that service, so you can launch, inspect, stop, edit and relaunch a compose without leaving the page.
 
@@ -37,7 +39,7 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 
 > ℹ️ **Why does a `kula-dockge-enhanced` stack appear in the stacks list as inactive?** When Kula is enabled, Dockge Enhanced writes a minimal `compose.yaml` into the stacks directory solely so the **Image Watcher** can track updates to `c0m4r/kula:latest` alongside your other images. The container itself is managed via `docker run` (not `docker compose up`) — this is intentional: Docker Compose v2 injects an AppArmor profile into the OCI spec that certain hardened kernels (notably Synology DSM) cannot apply, causing the container to fail to start. The inactive stack entry is harmless and disappears when Kula is disabled.
 
-**Live backup progress** — When you click **Run backup now**, a pulsing blue banner appears below the buttons showing each destination currently running and the elapsed time (e.g. `Local (2m 34s)`). It updates every second and disappears automatically when the backup finishes. The container logs also now show timestamped lines: `▶ "Local" démarré…` at start and `✓ "Local" terminé en 23m 41s` at end — useful to confirm a long backup is still running.
+**Live backup progress** — When you click **Run backup now**, a pulsing blue banner appears below the buttons showing each destination currently running and the elapsed time (e.g. `Local (2m 34s)`). It updates every second and disappears automatically when the backup finishes. The container logs also now show timestamped lines: `▶ "Local" started…` at start and `✓ "Local" done in 23m 41s` at end — useful to confirm a long backup is still running.
 
 **Restic lock auto-unlock** — A stale restic lock (exit code 11) would previously block both the backup and the `forget --prune` step entirely. Dockge Enhanced now runs `restic unlock --remove-all` automatically before each operation (backup start and forget/prune). Using `--remove-all` is required when the lock was created by a different container (e.g. after a Docker image rebuild changes the container ID) — plain `unlock` only removes locks from the same host.
 
@@ -101,73 +103,70 @@ A plugin for [**Dockge**](https://github.com/louislam/dockge) by louislam — ad
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 <table>
   <tr>
     <td align="center" width="33%">
       <a href="screens/LandingPage.png"><img src="screens/LandingPage.png" width="100%"/></a>
-      <sub>Landing page — vue d’ensemble de Dockge Enhanced</sub>
+      <sub>Landing page — overview</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/Images.png"><img src="screens/Images.png" width="100%"/></a>
-      <sub>Gestion des images Docker</sub>
+      <sub>Docker image management</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/Sécurité.png"><img src="screens/Sécurité.png" width="100%"/></a>
-      <sub>Trivy Scanner — sécurité & vulnérabilités</sub>
+      <sub>Trivy Scanner — CVE & security</sub>
     </td>
   </tr>
-
   <tr>
     <td align="center" width="33%">
       <a href="screens/Sauvegarde.png"><img src="screens/Sauvegarde.png" width="100%"/></a>
-      <sub>Backup Restic — sauvegardes & snapshots</sub>
+      <sub>Restic Backup — snapshots</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/Ressources.png"><img src="screens/Ressources.png" width="100%"/></a>
-      <sub>Ressources Docker — CPU, RAM & stockage</sub>
+      <sub>Docker Resources — CPU, RAM & disk</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/Notifications.png"><img src="screens/Notifications.png" width="100%"/></a>
-      <sub>Centre de notifications</sub>
+      <sub>Notification centre</sub>
     </td>
   </tr>
-
   <tr>
     <td align="center" width="33%">
       <a href="screens/Monitoring.png"><img src="screens/Monitoring.png" width="100%"/></a>
-      <sub>Monitoring temps réel des stacks</sub>
+      <sub>Real-time stack monitoring</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/EnhancedUpdate.png"><img src="screens/EnhancedUpdate.png" width="100%"/></a>
-      <sub>Mise à jour in-app de Dockge Enhanced</sub>
+      <sub>In-app self-update</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/DiscordUpdates.png"><img src="screens/DiscordUpdates.png" width="100%"/></a>
-      <sub>Discord — alertes de mises à jour Docker</sub>
+      <sub>Discord — image update alerts</sub>
     </td>
   </tr>
-
   <tr>
     <td align="center" width="33%">
       <a href="screens/DiscordTrivy.png"><img src="screens/DiscordTrivy.png" width="100%"/></a>
-      <sub>Discord — alertes sécurité Trivy</sub>
+      <sub>Discord — Trivy security alerts</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/DiscordBackup.png"><img src="screens/DiscordBackup.png" width="100%"/></a>
-      <sub>Discord — notifications de sauvegarde</sub>
+      <sub>Discord — backup notifications</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/DiscordEnhancedUpdate.png"><img src="screens/DiscordEnhancedUpdate.png" width="100%"/></a>
-      <sub>Discord — alertes de mise à jour Dockge Enhanced</sub>
+      <sub>Discord — Dockge Enhanced update alerts</sub>
     </td>
   </tr>
 </table>
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ```yaml
 # compose.yaml
@@ -183,23 +182,13 @@ services:
       - ../../data:/app/data
       - ../../opt/stacks:/opt/stacks
       - ../../backup/dockge:/backup          # optional — dedicated local backup volume
-      - ../../docker:/dockers-data           # optional — Dockers data to backup
+      - ../../docker:/dockers-data           # optional — extra data to back up
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
-#      - DOCKER_API_VERSION=x.xx                       # optional — for some NAS devices where Docker does not support a recent API version
-      - TZ=Europe/Paris                               # timezone (affects scheduled updates)
+#      - DOCKER_API_VERSION=x.xx             # optional — for NAS devices with older Docker API
+      - TZ=Europe/Paris                      # timezone (affects scheduled updates)
 ```
-
-> 💾 The `/backup:/backup` volume is optional but recommended if you use **local** as a Restic backup destination — set the destination path to `/backup` so your snapshots land on a dedicated host directory outside the container.
-
-> 📂 **Backing up multiple data directories?** Add as many volumes as you need (e.g. `../../media:/media-data`), then register each container path in the Backup tab under **Additional paths** — Restic will include them all in every backup run.
-
-> 📊 **Monitoring a disk partition other than `/`?** Disk stats are read from inside the container with `df`. If you want to track a host path like `/mnt/data` or `/mnt/stuff`, mount it read-only in this compose file and then add it in the **Monitoring** tab under *Monitored disk partitions*:
-> ```yaml
->       - /mnt/data:/mnt/data:ro
->       - /mnt/stuff:/mnt/stuff:ro
-> ```
 
 ```bash
 docker compose up -d
@@ -207,16 +196,25 @@ docker compose up -d
 
 Open **http://localhost:5001**, create your admin account, then click **Monitoring** in the navigation bar.
 
+> The `/backup:/backup` volume is optional but recommended if you use **local** as a Restic backup destination — set the destination path to `/backup` so your snapshots land on a dedicated host directory outside the container.
+
+> **Backing up multiple data directories?** Add as many volumes as you need (e.g. `../../media:/media-data`), then register each container path in the Backup tab under **Additional paths** — Restic will include them all in every backup run.
+
+> **Monitoring a disk partition other than `/`?** Disk stats are read from inside the container with `df`. If you want to track a host path like `/mnt/data`, mount it read-only and add it in the **Monitoring** tab under *Monitored disk partitions*:
+> ```yaml
+>       - /mnt/data:/mnt/data:ro
+> ```
+
 ---
 
-## ⚙️ Environment variables
+## Environment variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directory containing Docker Compose stacks |
 | `DOCKGE_DATA_DIR` | `/opt/dockge/data` | Dockge data directory (set to `/app/data`) |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |
-| `DOCKER_API_VERSION` | *(none)* | Fixes the Docker API version negotiated by the client — useful on certain NAS systems, for example with DSM 7.x on Synology DS220+ |
+| `DOCKER_API_VERSION` | *(none)* | Fixes the Docker API version negotiated by the client — useful on certain NAS systems (e.g. Synology DSM 7.x) |
 | `TZ` | `UTC` | Container timezone — **important** for scheduled auto-updates to fire at the right local time (e.g. `Europe/Paris`) |
 | `DOCKGE_PORT` | `5001` | Web UI port |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Enable HTTPS |
@@ -227,7 +225,7 @@ Open **http://localhost:5001**, create your admin account, then click **Monitori
 
 ---
 
-## 🔄 Auto-updates
+## Auto-updates
 
 This fork tracks upstream Dockge releases automatically via GitHub Actions:
 - **Daily** — checks for a new stable release
@@ -236,10 +234,16 @@ This fork tracks upstream Dockge releases automatically via GitHub Actions:
 
 ---
 
-## 🙏 Credits
+## Credits
 
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — the original project (MIT licence)
 - [**Trivy**](https://github.com/aquasecurity/trivy) — vulnerability scanner
 - [**Restic**](https://restic.net/) — encrypted backup tool
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).

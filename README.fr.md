@@ -4,26 +4,28 @@
 
 # Dockge Enhanced
 
-> 💡 **Tu l'utilises ? Tu l'aimes ? [⭐ Mets une étoile !](https://github.com/Aerya/dockge-enhanced/stargazers)** — ça prend deux secondes.
+Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la surveillance d'images, le scan de sécurité, les sauvegardes automatiques, la détection de crash loop et la gestion des ressources Docker, le tout depuis l'interface web.
 
-🇬🇧 [English version](README.md)
+> 🇬🇧 [English version](README.md) · [Article de présentation](https://upandclear.org/2026/03/28/gerer-ses-conteneurs-docker-autrement-le-fork-dockge-enhanced-surveillance-dimages-scan-cve-backup-automatique-gestion-des-ressources/)
 
-> 📖 **[Gérer ses conteneurs Docker autrement : le fork Dockge Enhanced](https://upandclear.org/2026/03/28/gerer-ses-conteneurs-docker-autrement-le-fork-dockge-enhanced-surveillance-dimages-scan-cve-backup-automatique-gestion-des-ressources/)** — article de présentation
+<p align="center">
+  <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
+  <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
+  <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
+  <img src="https://img.shields.io/badge/i18n-FR%20%7C%20EN-blue" alt="i18n">
+  <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
+</p>
 
-Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam — ajoute la surveillance d'images, le scan de sécurité, les sauvegardes automatiques et la gestion des ressources Docker, le tout pilotable depuis l'interface web.
+> **Tu l'utilises ? Tu l'aimes ? [⭐ Mets une étoile !](https://github.com/Aerya/Dockge-Enhanced/stargazers)** — ça prend deux secondes.
 
 ---
 
-## 🆕 Nouveautés récentes
+## Fonctionnalités
 
-- **Exclusions d'alertes crash** — Chaque container dans le tableau des crash events dispose désormais d'un bouton **Ignorer** avec un sélecteur de durée (1h, 6h, 24h, 72h, ou permanent). Les containers exclus sont silencieux dans les alertes et n'apparaissent plus dans la liste. Les exclusions actives s'affichent sous le tableau avec leur date d'expiration et peuvent être retirées individuellement ou toutes en même temps. Un bouton **Effacer la liste** vide les crash events en mémoire. Les exclusions sont persistées entre les redémarrages en base de données SQLite.
-- **Correction du menu de navigation actif** — La page Enhanced (`/watcher`) ne met plus incorrectement **Accueil** en évidence dans le menu de navigation quand on navigue vers la section crash-loop / ressources.
+🆕 **Exclusions d'alertes crash** — Chaque container dans le tableau des crash events dispose désormais d'un bouton **Ignorer** avec un sélecteur de durée (1h, 6h, 24h, 72h, ou permanent). Les containers exclus sont silencieux dans les alertes et n'apparaissent plus dans la liste. Les exclusions actives s'affichent sous le tableau avec leur date d'expiration et peuvent être retirées individuellement ou toutes en même temps. Un bouton **Effacer la liste** vide les crash events en mémoire. Les exclusions sont persistées entre les redémarrages en base de données SQLite.
 
----
-
-## ✨ Fonctionnalités ajoutées
-
-### Fonctionnalités ajoutées récemment
+🆕 **Correction du menu de navigation actif** — La page Enhanced (`/watcher`) ne met plus incorrectement **Accueil** en évidence dans le menu de navigation quand on navigue vers la section crash-loop / ressources.
 
 **Logs de stack par service** — Sur chaque page compose, l'en-tête du terminal dispose maintenant d'un sélecteur `Service`. `Tous` garde les logs groupés de la stack, tandis qu'un service précis ouvre un flux filtré dédié, pour lancer, inspecter, arrêter, modifier et relancer un compose sans quitter la page.
 
@@ -35,7 +37,7 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 **Intégration de Kula** — Une nouvelle section **Kula** dans l'onglet Monitoring permet d'activer [kula](https://github.com/c0m4r/kula), un moniteur système léger en Go (CPU, RAM, réseau, I/O disque, containers). Quand activé, Dockge Enhanced pull et démarre automatiquement le container `c0m4r/kula:latest` au démarrage. Configure le port (défaut 27960), le mode réseau (`bridge` avec `-p port:27960`, ou `host` avec `--network host`), et une URL personnalisée optionnelle pour les setups avec reverse proxy. Quand kula tourne, un lien **Kula** apparaît dans la barre de navigation en haut à côté des stats CPU/RAM/disque, et un lien direct est affiché dans l'onglet Monitoring. Le container redémarre automatiquement avec Docker (`--restart unless-stopped`). Kula est optionnel et totalement indépendant de Dockge — il peut être arrêté ou désactivé à tout moment.
 
-> ℹ️ **Pourquoi une stack `kula-dockge-enhanced` apparaît-elle dans la liste comme inactive ?** Quand Kula est activé, Dockge Enhanced écrit un `compose.yaml` minimal dans le répertoire des stacks afin que le **Watcher d'images** puisse surveiller les mises à jour de `c0m4r/kula:latest` au même titre que tes autres images. Le container lui-même est géré via `docker run` (et non `docker compose up`) — c'est intentionnel : Docker Compose v2 injecte un profil AppArmor dans la spec OCI que certains kernels durcis ne peuvent pas appliquer, notamment sur **Synology DSM**, provoquant l'échec du démarrage. Cette entrée de stack inactive est sans conséquence et disparaît quand Kula est désactivé.
+> ℹ️ **Pourquoi une stack `kula-dockge-enhanced` apparaît-elle dans la liste comme inactive ?** Quand Kula est activé, Dockge Enhanced écrit un `compose.yaml` minimal dans le répertoire des stacks afin que le **Watcher d'images** puisse surveiller les mises à jour de `c0m4r/kula:latest` au même titre que tes autres images. Le container lui-même est géré via `docker run` (et non `docker compose up`) — c'est intentionnel : Docker Compose v2 injecte un profil AppArmor dans la spec OCI que certains kernels durcis (notamment Synology DSM) ne peuvent pas appliquer, provoquant l'échec du démarrage. Cette entrée de stack inactive est sans conséquence et disparaît quand Kula est désactivé.
 
 **Progression du backup en direct** — Quand tu cliques sur **Lancer un backup maintenant**, une bannière bleue pulsante apparaît sous les boutons et affiche chaque destination en cours avec le temps écoulé (ex : `Local (2m 34s)`). Elle se met à jour chaque seconde et disparaît automatiquement à la fin du backup. Les logs du conteneur affichent désormais des lignes horodatées : `▶ "Local" démarré…` au début et `✓ "Local" terminé en 23m 41s` à la fin — utile pour confirmer qu'un long backup tourne toujours.
 
@@ -49,11 +51,11 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 **Détail des erreurs de backup dans l'UI** — Lorsqu'une entrée d'historique affiche ✗ Erreur, un clic sur le badge déroule un panneau de détail directement sous la ligne — plus besoin d'aller fouiller les logs ou les notifications. Le message d'erreur complet s'affiche dans un bloc formaté. Si plusieurs destinations sont impliquées, chaque destination en échec est listée séparément avec son nom et son erreur.
 
-**Onglet Monitoring** — Un nouvel onglet **Monitoring** dans le menu Enhanced (`/watcher`) rassemble tout en un écran : **4 cartes de statut** (âge du dernier backup, mises à jour d'images en attente, CVE critiques, prochain scan Trivy), **détection de crash loop** (écoute les événements Docker en temps réel — alerte quand un conteneur redémarre N fois en X minutes, avec cooldown), et les **paramètres d'affichage** (toggle stats par stack et partition disque, déplacés depuis Paramètres → Général).
+**Onglet Monitoring** — Un nouvel onglet **Monitoring** dans le menu Enhanced (`/watcher`) rassemble tout en un écran : **4 cartes de statut** (âge du dernier backup, mises à jour d'images en attente, CVE critiques, prochain scan Trivy), **détection de crash loop** (écoute les événements Docker en temps réel — alerte quand un conteneur redémarre N fois en X minutes, avec cooldown et notifications Discord/Apprise), et les **paramètres d'affichage** (toggle stats par stack et partition disque, déplacés depuis Paramètres → Général).
 
 **Nom d'instance dans les notifications** — Toutes les notifications Discord et Apprise (mises à jour d'images, alertes Trivy, sauvegardes) incluent désormais le nom d'instance configuré dans **Paramètres → Général → Nom d'hôte principal**. Quand il est renseigné, le nom apparaît en préfixe `[mon-serveur]` dans le titre de la notification (Apprise) et dans le footer Discord à côté de l'horodatage. Utile quand tu fais tourner plusieurs instances de Dockge-Enhanced et que tu reçois les notifications dans le même canal.
 
-**Diff entre deux snapshots** — La modal de prévisualisation des fichiers dispose désormais d'un troisième onglet **Diff vs snapshot préc.** en plus de Preview et Diff vs disque. Il affiche un diff ligne à ligne (LCS) entre le fichier tel qu'il était dans le **snapshot précédent** et son contenu dans le **snapshot courant** — exactement les lignes ajoutées ou supprimées entre deux backups. L'onglet est sélectionné automatiquement à l'ouverture d'un fichier portant le badge *Modified*. Désactivé pour les nouveaux fichiers (pas de version précédente). Utilise le même moteur de diff coloré que le diff vs disque existant.
+**Diff entre deux snapshots** — La modal de prévisualisation des fichiers dispose désormais d'un troisième onglet **Diff vs snapshot préc.** en plus de Preview et Diff vs disque. Il affiche un diff ligne à ligne (LCS) entre le fichier tel qu'il était dans le **snapshot précédent** et son contenu dans le **snapshot courant** — exactement les lignes ajoutées ou supprimées entre deux backups. L'onglet est sélectionné automatiquement à l'ouverture d'un fichier portant le badge *Modifié*. Désactivé pour les nouveaux fichiers (pas de version précédente). Utilise le même moteur de diff coloré que le diff vs disque existant.
 
 **Restore test après chaque backup** — Après chaque backup planifié, Dockge Enhanced lit automatiquement un fichier depuis le snapshot fraîchement créé pour vérifier que le repo est réellement lisible — pas juste que restic a dit OK. Il trouve le premier `compose.yaml` dans le snapshot, le déchiffre et le lit en mémoire (aucun fichier temporaire sur le disque), et enregistre le résultat comme ✅ Lisible ou ❌ Échec directement dans le tableau de l'historique des backups. Une icône 🔍 apparaît également à côté de chaque destination dans les notifications Discord/Apprise. Les backups on-save sont ignorés (rapidité). La fonctionnalité peut être désactivée dans l'onglet Backup.
 
@@ -81,11 +83,11 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 **Image Watcher** — Vérifie automatiquement les mises à jour d'images en comparant les digests locaux et distants (sans pull). Supporte Docker Hub, ghcr.io, les registries privés, et les stacks avec `network_mode: host`, réseaux externes ou ancres YAML. Fréquence configurable (1h → 24h). **Màj automatique par image** : choisis *Immédiat* pour màj dès la détection, *Planifié* pour appliquer à une heure précise (ex : `02:00` — utilise le fuseau `TZ` du conteneur), ou *Ignorer* pour ne jamais vérifier cette image. Un indicateur ⏳ signale les images en attente. **Rollback** : après chaque mise à jour automatique, une fenêtre de 24 h s'ouvre — un compte à rebours et le bouton Rollback apparaissent dans le tableau ; l'ancienne image est purgée automatiquement à l'expiration. Les notifications distinguent ✅ màj auto effectuée, 🕐 planifiée à HH:MM et 🔄 action manuelle requise — par image. Clique sur **Voir le projet →** à côté de chaque image pour la rechercher instantanément.
 
-**Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution avec [Trivy](https://trivy.dev/). `aquasec/trivy:latest` est automatiquement pull avant chaque scan et supprimée après — toujours à jour, aucune place occupée entre les scans. Seuil d'alerte et timeout de scan configurables. Résultats visibles dans l'UI avec un bouton de scan manuel par image. Déduplication des CVE (chaque vulnérabilité n'apparaît qu'une seule fois par image). Alertes envoyées sur Discord/Apprise avec retry/backoff en cas de rate limit.
+**Trivy Scanner** — Scanne les images des conteneurs en cours d'exécution pour des vulnérabilités connues (CVE) via [Trivy](https://trivy.dev/). `aquasec/trivy:latest` est automatiquement pull avant chaque scan et supprimée après — toujours à jour, aucune place occupée entre les scans. Seuil d'alerte et timeout de scan configurables. Résultats visibles dans l'UI avec un bouton de scan manuel par image. Déduplication des CVE (chaque vulnérabilité n'apparaît qu'une seule fois par image). Alertes envoyées sur Discord/Apprise avec retry/backoff en cas de rate limit.
 
 **Backup Restic** — Sauvegarde automatique des `compose.yaml` et `.env` de chaque stack avec [Restic](https://restic.net/). **Plusieurs destinations en parallèle** — ajoutes-en autant que tu veux (ex : local + SFTP) et toutes sont sauvegardées à chaque exécution. 4 types de destination : local, SFTP/NAS (tout port, clé SSH ou mot de passe, `sshpass` intégré), S3/Backblaze B2, REST Server. **Backup des volumes** : inclus optionnellement `/app/data` (données Dockge) et/ou autant de **chemins personnalisés** que tu veux (ex : `/dockers-data`) — les tailles sont calculables et affichées à la demande. Politique de rétention configurable. La date du prochain backup est affichée. **Visualiseur de snapshots** : clique sur un snapshot pour le dérouler et parcourir les fichiers compose/env *et les données de volumes* côte à côte. Les fichiers de volumes affichent le nom du projet et leur chemin relatif dans le volume. Chaque fichier dispose de deux indicateurs : **vs snapshot précédent** (Nouveau / Modifié / Inchangé) et **vs disque actuel** (OK / Modifié / Absent). Sélectionne n'importe quelle combinaison et restaure en un clic.
 
-**Notifications Discord** — Embeds colorés pour les mises à jour d'images, alertes sécurité et résultats de backup. Plusieurs webhooks supportés par fonctionnalité. Définis `DOCKGE_PUBLIC_URL` pour inclure un lien cliquable. Retry automatique avec backoff exponentiel en cas de rate limit (HTTP 429) ou d'erreur serveur.
+**Notifications Discord** — Embeds colorés pour les mises à jour d'images, alertes sécurité et résultats de backup. Plusieurs webhooks supportés par fonctionnalité. Définis `DOCKGE_PUBLIC_URL` pour inclure un lien cliquable dans les notifications. Retry automatique avec backoff exponentiel en cas de rate limit (HTTP 429) ou d'erreur serveur.
 
 **Notifications Apprise** — Envoie les alertes vers 60+ services (Telegram, ntfy, Slack, Gotify, Pushover, Matrix…) via un conteneur [Apprise](https://github.com/caronc/apprise-api). Configuré une fois dans `/watcher` (section rétractable) et s'applique à tous les types d'alertes. Passe les URLs directement (mode stateless) ou laisse Apprise utiliser ses services pré-configurés. Fonctionne en parallèle de Discord.
 
@@ -101,13 +103,13 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 ---
 
-## 📸 Captures d'écran
+## Captures d'écran
 
 <table>
   <tr>
     <td align="center" width="33%">
       <a href="screens/LandingPage.png"><img src="screens/LandingPage.png" width="100%"/></a>
-      <sub>Landing page — vue d’ensemble de Dockge Enhanced</sub>
+      <sub>Landing page — vue d'ensemble</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/Images.png"><img src="screens/Images.png" width="100%"/></a>
@@ -115,14 +117,13 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
     </td>
     <td align="center" width="33%">
       <a href="screens/Sécurité.png"><img src="screens/Sécurité.png" width="100%"/></a>
-      <sub>Trivy Scanner — sécurité & vulnérabilités</sub>
+      <sub>Trivy Scanner — sécurité & CVE</sub>
     </td>
   </tr>
-
   <tr>
     <td align="center" width="33%">
       <a href="screens/Sauvegarde.png"><img src="screens/Sauvegarde.png" width="100%"/></a>
-      <sub>Backup Restic — sauvegardes & snapshots</sub>
+      <sub>Backup Restic — snapshots</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/Ressources.png"><img src="screens/Ressources.png" width="100%"/></a>
@@ -133,7 +134,6 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
       <sub>Centre de notifications</sub>
     </td>
   </tr>
-
   <tr>
     <td align="center" width="33%">
       <a href="screens/Monitoring.png"><img src="screens/Monitoring.png" width="100%"/></a>
@@ -145,10 +145,9 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
     </td>
     <td align="center" width="33%">
       <a href="screens/DiscordUpdates.png"><img src="screens/DiscordUpdates.png" width="100%"/></a>
-      <sub>Discord — alertes de mises à jour Docker</sub>
+      <sub>Discord — alertes de mises à jour d'images</sub>
     </td>
   </tr>
-
   <tr>
     <td align="center" width="33%">
       <a href="screens/DiscordTrivy.png"><img src="screens/DiscordTrivy.png" width="100%"/></a>
@@ -167,7 +166,7 @@ Un greffon pour [**Dockge**](https://github.com/louislam/dockge) de louislam —
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ```yaml
 # compose.yaml
@@ -183,21 +182,13 @@ services:
       - ../../data:/app/data
       - ../../opt/stacks:/opt/stacks
       - ../../backup/dockge:/backup          # optionnel — volume dédié au backup local
-      - ../../docker:/dockers-data           # optionnel — données des Dockers pour savuvegarde
+      - ../../docker:/dockers-data           # optionnel — données supplémentaires à sauvegarder
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
-#      - DOCKER_API_VERSION=x.xx                       # optionnel — pour certains NAS où Docker ne supporte pas d'API récente
-      - TZ=Europe/Paris                               # fuseau horaire (affecte les MàJ planifiées)
+#      - DOCKER_API_VERSION=x.xx             # optionnel — pour les NAS avec une API Docker ancienne
+      - TZ=Europe/Paris                      # fuseau horaire (affecte les MàJ planifiées)
 ```
-
-> 💾 Le volume `/backup:/backup` est optionnel mais recommandé si tu utilises **local** comme destination Restic — pointe la destination sur `/backup` pour que les snapshots atterrissent dans un répertoire dédié sur l'hôte, hors du conteneur.
-
-> 📊 **Tu veux surveiller une partition autre que `/` ?** Les stats disque sont lues depuis l'intérieur du container via `df`. Pour surveiller un chemin hôte comme `/mnt/data` ou `/mnt/stuff`, monte-le en lecture seule dans ce compose, puis ajoute-le dans l'onglet **Monitoring** sous *Partitions disque surveillées* :
-> ```yaml
->       - /mnt/data:/mnt/data:ro
->       - /mnt/stuff:/mnt/stuff:ro
-> ```
 
 ```bash
 docker compose up -d
@@ -205,17 +196,26 @@ docker compose up -d
 
 Ouvre **http://localhost:5001**, crée ton compte admin, puis clique sur **Surveillance** dans la barre de navigation.
 
+> Le volume `/backup:/backup` est optionnel mais recommandé si tu utilises **local** comme destination Restic — pointe la destination sur `/backup` pour que les snapshots atterrissent dans un répertoire dédié sur l'hôte, hors du container.
+
+> **Tu veux sauvegarder plusieurs répertoires de données ?** Ajoute autant de volumes que nécessaire (ex : `../../media:/media-data`), puis enregistre chaque chemin dans l'onglet Backup sous **Chemins supplémentaires** — Restic les inclura tous à chaque exécution.
+
+> **Tu veux surveiller une partition autre que `/` ?** Les stats disque sont lues depuis l'intérieur du container via `df`. Pour surveiller un chemin hôte comme `/mnt/data`, monte-le en lecture seule et ajoute-le dans l'onglet **Monitoring** sous *Partitions disque surveillées* :
+> ```yaml
+>       - /mnt/data:/mnt/data:ro
+> ```
+
 ---
 
-## ⚙️ Variables d'environnement
+## Variables d'environnement
 
 | Variable | Défaut | Description |
 |---|---|---|
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Dossier contenant les stacks Docker Compose |
 | `DOCKGE_DATA_DIR` | `/opt/dockge/data` | Dossier de données Dockge (à définir sur `/app/data`) |
 | `DOCKGE_PUBLIC_URL` | *(aucun)* | URL publique utilisée dans les liens des notifications Discord (ex : `https://dockge.mondomaine.fr`) |
-| `DOCKER_API_VERSION` | *(aucun)* | Fixe la version d'API Docker négociée par le client — utile sur certains NAS comme par exemple avec DSM 7.x sur Synology DS220+ |
-| `TZ` | `UTC` | Fuseau horaire du conteneur — **important** pour que les MàJ planifiées se déclenchent à la bonne heure locale (ex : `Europe/Paris`) |
+| `DOCKER_API_VERSION` | *(aucun)* | Fixe la version d'API Docker négociée par le client — utile sur certains NAS (ex : Synology DSM 7.x) |
+| `TZ` | `UTC` | Fuseau horaire du container — **important** pour que les MàJ planifiées se déclenchent à la bonne heure locale (ex : `Europe/Paris`) |
 | `DOCKGE_PORT` | `5001` | Port de la WebUI |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Activer HTTPS |
 
@@ -225,19 +225,25 @@ Ouvre **http://localhost:5001**, crée ton compte admin, puis clique sur **Surve
 
 ---
 
-## 🔄 Mises à jour automatiques
+## Mises à jour automatiques
 
 Ce fork suit les releases stables de Dockge automatiquement via GitHub Actions :
-- **Chaque jour** — vérifie si une nouvelle version est sortie
+- **Chaque jour** — vérifie si une nouvelle version est disponible
 - **Si oui** — merge les changements upstream et crée une PR
 - **Au merge** — rebuild et publie les images Docker (`amd64` + `arm64`) sur GHCR
 
 ---
 
-## 🙏 Crédits
+## Crédits
 
 - [**Dockge**](https://github.com/louislam/dockge) par louislam — le projet d'origine (licence MIT)
 - [**Trivy**](https://github.com/aquasecurity/trivy) — scanner de vulnérabilités
 - [**Restic**](https://restic.net/) — outil de backup chiffré
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
 - [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
+
+---
+
+## Licence
+
+MIT — voir [LICENSE](LICENSE).
