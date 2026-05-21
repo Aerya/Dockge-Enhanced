@@ -64,6 +64,7 @@ interface ScannerSettings {
     enabled: boolean;
     intervalHours: number;
     discordWebhooks: string[];    // liste de webhooks (migration auto depuis discordWebhook)
+    appriseUrls: string[];        // URLs Apprise propres au scanner Trivy
     minSeverityAlert: Severity;
     ignoreUnfixed: boolean;
     scanTimeoutMinutes: number;
@@ -151,6 +152,7 @@ export class TrivyScanner {
         enabled: false,
         intervalHours: 24,
         discordWebhooks: [],
+        appriseUrls: [],
         minSeverityAlert: "HIGH",
         ignoreUnfixed: false,
         scanTimeoutMinutes: 10,
@@ -421,15 +423,16 @@ export class TrivyScanner {
         }
     }
 
-    /** Charge la config Apprise depuis les settings du watcher images (config globale) */
+    /** Charge l'AppriseNotifier : serverUrl partagé (watcher-settings) + URLs propres à Trivy */
     private async loadAppriseNotifier(): Promise<AppriseNotifier | null> {
         try {
             const fsp  = await import("fs/promises");
             const raw  = await fsp.readFile(WATCHER_SETTINGS_PATH, "utf8");
             const data = JSON.parse(raw) as Record<string, unknown>;
             const serverUrl = typeof data.appriseServerUrl === "string" ? data.appriseServerUrl : "";
-            const urls = Array.isArray(data.appriseUrls) ? data.appriseUrls as string[] : [];
             if (!serverUrl) return null;
+            // URLs spécifiques à Trivy (pas les URLs globales images)
+            const urls = this.settings.appriseUrls.filter(Boolean);
             return new AppriseNotifier(serverUrl, urls);
         } catch {
             return null;

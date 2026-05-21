@@ -1124,26 +1124,18 @@
       <div v-show="tab === 'notifications'">
         <!-- Apprise -->
         <div class="shadow-box big-padding mb-4">
-          <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="d-flex align-items-center gap-2 mb-1">
             <font-awesome-icon icon="bell" />
             <h5 class="settings-subheading mb-0">
-              <a
-                href="https://github.com/caronc/apprise"
-                target="_blank"
-                rel="noopener"
-                class="apprise-link"
-                >Apprise</a
-              >
+              <a href="https://github.com/caronc/apprise" target="_blank" rel="noopener" class="apprise-link">Apprise</a>
             </h5>
-            <small class="form-text ms-2">{{
-              $t("watcher.apprise.global")
-            }}</small>
+            <small class="form-text ms-2">{{ $t("watcher.apprise.global") }}</small>
           </div>
-          <div class="row g-3">
+
+          <!-- URL du serveur Apprise — partagée par tous les canaux -->
+          <div class="row g-3 mb-4">
             <div class="col-md-6">
-              <label class="form-label small">{{
-                $t("watcher.apprise.serverUrl")
-              }}</label>
+              <label class="form-label small">{{ $t("watcher.apprise.serverUrl") }}</label>
               <input
                 v-model="appriseSettings.serverUrl"
                 type="url"
@@ -1152,81 +1144,83 @@
                 autocomplete="off"
               />
             </div>
-            <div class="col-12">
-              <label class="form-label small">{{
-                $t("watcher.apprise.urls")
-              }}</label>
-              <div
-                v-for="(url, idx) in appriseSettings.urls"
-                :key="idx"
-                class="d-flex align-items-center gap-2 mb-2"
-              >
-                <span
-                  class="form-control form-control-sm text-truncate"
-                  style="font-family: monospace; font-size: 0.78rem"
-                >
-                  {{ url }}
-                </span>
-                <button
-                  class="btn btn-sm btn-outline-danger"
-                  @click="removeAppriseUrl(idx)"
-                >
+          </div>
+
+          <!-- 3 canaux côte à côte -->
+          <div class="apprise-channels">
+
+            <!-- Canal : Surveillance images -->
+            <div class="apprise-channel">
+              <div class="apprise-channel-title">
+                <font-awesome-icon icon="sync-alt" class="me-1" />{{ $t("watcher.apprise.channelImages") }}
+              </div>
+              <div v-for="(url, idx) in appriseSettings.imagesUrls" :key="idx" class="d-flex align-items-center gap-2 mb-2">
+                <span class="form-control form-control-sm text-truncate apprise-url-display">{{ url }}</span>
+                <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl('imagesUrls', idx)">
                   <font-awesome-icon icon="trash" />
                 </button>
               </div>
-              <p
-                v-if="!appriseSettings.urls.length"
-                class="form-text fst-italic mb-2"
-              >
-                {{ $t("watcher.apprise.noUrl") }}
-              </p>
+              <p v-if="!appriseSettings.imagesUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
               <div class="input-group">
-                <input
-                  v-model="newAppriseUrl"
-                  type="text"
-                  class="form-control form-control-sm"
-                  :placeholder="$t('watcher.apprise.urlPlaceholder')"
-                  autocomplete="off"
-                />
-                <button
-                  class="btn btn-sm btn-success"
-                  @click="addAppriseUrl"
-                  :disabled="!newAppriseUrl"
-                >
-                  <font-awesome-icon icon="plus" class="me-1" />{{
-                    $t("watcher.apprise.addUrl")
-                  }}
+                <input v-model="newAppriseImagesUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
+                <button class="btn btn-sm btn-success" @click="addAppriseUrl('imagesUrls', newAppriseImagesUrl)" :disabled="!newAppriseImagesUrl">
+                  <font-awesome-icon icon="plus" />
                 </button>
               </div>
             </div>
-            <div class="col-12 d-flex gap-2 flex-wrap">
-              <button
-                class="btn btn-primary btn-sm"
-                @click.stop="saveAppriseSettings"
-                :disabled="savingApprise"
-              >
-                <span
-                  v-if="savingApprise"
-                  class="spinner-border spinner-border-sm me-1"
-                />
-                <font-awesome-icon v-else icon="save" class="me-1" />{{
-                  $t("watcher.apprise.save")
-                }}
-              </button>
-              <button
-                class="btn btn-normal btn-sm"
-                @click.stop="testApprise"
-                :disabled="testingApprise || !appriseSettings.serverUrl"
-              >
-                <span
-                  v-if="testingApprise"
-                  class="spinner-border spinner-border-sm me-1"
-                />
-                <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{
-                  $t("watcher.apprise.test")
-                }}
-              </button>
+
+            <!-- Canal : Trivy -->
+            <div class="apprise-channel">
+              <div class="apprise-channel-title">
+                <font-awesome-icon icon="shield-alt" class="me-1" />{{ $t("watcher.apprise.channelTrivy") }}
+              </div>
+              <div v-for="(url, idx) in appriseSettings.trivyUrls" :key="idx" class="d-flex align-items-center gap-2 mb-2">
+                <span class="form-control form-control-sm text-truncate apprise-url-display">{{ url }}</span>
+                <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl('trivyUrls', idx)">
+                  <font-awesome-icon icon="trash" />
+                </button>
+              </div>
+              <p v-if="!appriseSettings.trivyUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
+              <div class="input-group">
+                <input v-model="newAppriseTrivyUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
+                <button class="btn btn-sm btn-success" @click="addAppriseUrl('trivyUrls', newAppriseTrivyUrl)" :disabled="!newAppriseTrivyUrl">
+                  <font-awesome-icon icon="plus" />
+                </button>
+              </div>
             </div>
+
+            <!-- Canal : Sauvegarde -->
+            <div class="apprise-channel">
+              <div class="apprise-channel-title">
+                <font-awesome-icon icon="archive" class="me-1" />{{ $t("watcher.apprise.channelBackup") }}
+              </div>
+              <div v-for="(url, idx) in appriseSettings.backupUrls" :key="idx" class="d-flex align-items-center gap-2 mb-2">
+                <span class="form-control form-control-sm text-truncate apprise-url-display">{{ url }}</span>
+                <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl('backupUrls', idx)">
+                  <font-awesome-icon icon="trash" />
+                </button>
+              </div>
+              <p v-if="!appriseSettings.backupUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
+              <div class="input-group">
+                <input v-model="newAppriseBackupUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
+                <button class="btn btn-sm btn-success" @click="addAppriseUrl('backupUrls', newAppriseBackupUrl)" :disabled="!newAppriseBackupUrl">
+                  <font-awesome-icon icon="plus" />
+                </button>
+              </div>
+            </div>
+
+          </div><!-- /apprise-channels -->
+
+          <!-- Actions globales -->
+          <div class="d-flex gap-2 flex-wrap mt-4">
+            <button class="btn btn-primary btn-sm" @click.stop="saveAppriseSettings" :disabled="savingApprise">
+              <span v-if="savingApprise" class="spinner-border spinner-border-sm me-1" />
+              <font-awesome-icon v-else icon="save" class="me-1" />{{ $t("watcher.apprise.save") }}
+            </button>
+            <button class="btn btn-normal btn-sm" @click.stop="testApprise" :disabled="testingApprise || !appriseSettings.serverUrl">
+              <span v-if="testingApprise" class="spinner-border spinner-border-sm me-1" />
+              <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t("watcher.apprise.test") }}
+            </button>
           </div>
         </div>
 
@@ -1528,7 +1522,9 @@ import { initServerTz, fmtDate } from "../composables/useServerTz";
 
 interface AppriseSettings {
   serverUrl: string;
-  urls: string[];
+  imagesUrls: string[];   // URLs pour surveillance des images
+  trivyUrls:  string[];   // URLs pour Trivy
+  backupUrls: string[];   // URLs pour les sauvegardes
 }
 interface Cred {
   registry: string;
@@ -1732,10 +1728,17 @@ function searchImage(image: string): void {
   );
 }
 
-const appriseSettings = ref<AppriseSettings>({ serverUrl: "", urls: [] });
-const newAppriseUrl = ref("");
-const savingApprise = ref(false);
-const testingApprise = ref(false);
+const appriseSettings = ref<AppriseSettings>({
+  serverUrl:  "",
+  imagesUrls: [],
+  trivyUrls:  [],
+  backupUrls: [],
+});
+const newAppriseImagesUrl = ref("");
+const newAppriseTrivyUrl  = ref("");
+const newAppriseBackupUrl = ref("");
+const savingApprise   = ref(false);
+const testingApprise  = ref(false);
 
 const backupWebhooks = ref<string[]>([]);
 const backupNewWebhook = ref("");
@@ -1831,15 +1834,14 @@ onMounted(async () => {
     api("GET", "/backup/settings"),
     api("GET", "/image/update-history"),
   ]);
-  // Charge la config Apprise depuis les settings image (stockée globalement)
-  if (imgRes.ok && imgRes.data) {
-    appriseSettings.value = {
-      serverUrl: imgRes.data.appriseServerUrl ?? "",
-      urls: Array.isArray(imgRes.data.appriseUrls)
-        ? imgRes.data.appriseUrls
-        : [],
-    };
-  }
+  // serverUrl Apprise partagé (stocké dans watcher-settings / image)
+  // URLs Apprise séparées par watcher
+  appriseSettings.value = {
+    serverUrl:  imgRes.ok    ? (imgRes.data?.appriseServerUrl ?? "")                           : "",
+    imagesUrls: imgRes.ok    ? (Array.isArray(imgRes.data?.appriseUrls)    ? imgRes.data.appriseUrls    : []) : [],
+    trivyUrls:  trivyRes.ok  ? (Array.isArray(trivyRes.data?.appriseUrls)  ? trivyRes.data.appriseUrls  : []) : [],
+    backupUrls: backupRes.ok ? (Array.isArray(backupRes.data?.appriseUrls) ? backupRes.data.appriseUrls : []) : [],
+  };
   if (imgRes.ok) {
     imgSettings.value = {
       enabled: imgRes.data.enabled,
@@ -2128,37 +2130,55 @@ async function testWebhook(url: string, context: "img" | "trivy") {
 
 // ─── Apprise ─────────────────────────────────────────────────────
 
-function addAppriseUrl() {
-  const url = newAppriseUrl.value.trim();
-  if (!url || appriseSettings.value.urls.includes(url)) return;
-  appriseSettings.value.urls.push(url);
-  newAppriseUrl.value = "";
+type AppriseChannel = "imagesUrls" | "trivyUrls" | "backupUrls";
+
+function addAppriseUrl(channel: AppriseChannel, newUrlRef: { value: string }) {
+  const url = newUrlRef.value.trim();
+  if (!url || appriseSettings.value[channel].includes(url)) return;
+  appriseSettings.value[channel].push(url);
+  newUrlRef.value = "";
 }
-function removeAppriseUrl(idx: number) {
-  appriseSettings.value.urls.splice(idx, 1);
+function removeAppriseUrl(channel: AppriseChannel, idx: number) {
+  appriseSettings.value[channel].splice(idx, 1);
 }
+
 async function saveAppriseSettings() {
   savingApprise.value = true;
   try {
-    // Mise à jour partielle : le backend merge avec les settings existants
-    const res = await api("POST", "/image/settings", {
-      appriseServerUrl: appriseSettings.value.serverUrl,
-      appriseUrls: appriseSettings.value.urls,
-    });
+    // serverUrl partagé → image/settings ; URLs séparées → chaque endpoint
+    const [r1, r2, r3] = await Promise.all([
+      api("POST", "/image/settings", {
+        appriseServerUrl: appriseSettings.value.serverUrl,
+        appriseUrls:      appriseSettings.value.imagesUrls,
+      }),
+      api("POST", "/trivy/settings", {
+        appriseUrls: appriseSettings.value.trivyUrls,
+      }),
+      api("POST", "/backup/settings", {
+        appriseUrls: appriseSettings.value.backupUrls,
+      }),
+    ]);
+    const ok = r1.ok && r2.ok && r3.ok;
     showToast(
-      res.ok ? t("watcher.apprise.saved") : `❌ ${res.message}`,
-      res.ok,
+      ok ? t("watcher.apprise.saved") : `❌ ${r1.message ?? r2.message ?? r3.message}`,
+      ok,
     );
   } finally {
     savingApprise.value = false;
   }
 }
+
 async function testApprise() {
   testingApprise.value = true;
   try {
+    // Teste avec les premières URLs disponibles (images > trivy > backup)
+    const testUrls =
+      appriseSettings.value.imagesUrls.length > 0 ? appriseSettings.value.imagesUrls :
+      appriseSettings.value.trivyUrls.length  > 0 ? appriseSettings.value.trivyUrls  :
+      appriseSettings.value.backupUrls;
     const res = await api("POST", "/apprise/test", {
       serverUrl: appriseSettings.value.serverUrl,
-      urls: appriseSettings.value.urls,
+      urls: testUrls,
     });
     showToast(
       res.ok ? t("watcher.apprise.testOk") : t("watcher.apprise.testFail"),
@@ -2494,9 +2514,38 @@ async function removeCred(registry: string) {
 .apprise-link {
   color: inherit;
   text-decoration: none;
-  &:hover {
-    text-decoration: underline;
-  }
+  &:hover { text-decoration: underline; }
+}
+
+.apprise-channels {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.apprise-channel {
+  flex: 1;
+  min-width: 220px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+}
+
+.apprise-channel-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.apprise-url-display {
+  font-family: monospace;
+  font-size: 0.78rem;
 }
 
 .form-control::placeholder,

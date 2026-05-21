@@ -101,6 +101,7 @@ export interface BackupSettings {
     destinations: BackupDestination[];   // tableau de destinations (migration auto depuis destination)
     retention: RetentionPolicy;
     discordWebhooks: string[];
+    appriseUrls: string[];               // URLs Apprise propres aux sauvegardes
     includeEnvFiles: boolean;
     extraPaths: string[];
     volumeBackup: VolumeBackupConfig;
@@ -458,6 +459,7 @@ export class BackupManager {
             keepMonthly: 3,
         },
         discordWebhooks: [],
+        appriseUrls: [],
         includeEnvFiles: true,
         extraPaths: [],
         notificationLang: "fr",
@@ -1660,13 +1662,15 @@ export class BackupManager {
 
     // ── Notifications (Discord + Apprise) ────────────────────────
 
+    /** Charge l'AppriseNotifier : serverUrl partagé (watcher-settings) + URLs propres au backup */
     private async loadAppriseNotifier(): Promise<AppriseNotifier | null> {
         try {
             const raw  = await fs.readFile(WATCHER_SETTINGS_PATH, "utf8");
             const data = JSON.parse(raw) as Record<string, unknown>;
             const serverUrl = typeof data.appriseServerUrl === "string" ? data.appriseServerUrl : "";
-            const urls = Array.isArray(data.appriseUrls) ? data.appriseUrls as string[] : [];
             if (!serverUrl) return null;
+            // URLs spécifiques au backup (pas les URLs globales images)
+            const urls = (this.settings.appriseUrls ?? []).filter(Boolean);
             return new AppriseNotifier(serverUrl, urls);
         } catch {
             return null;

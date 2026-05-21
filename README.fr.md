@@ -27,7 +27,9 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 🆕 **Exclusions d'alertes crash** — Chaque container dans le tableau des crash events dispose désormais d'un bouton **Ignorer** avec un sélecteur de durée (1h, 6h, 24h, 72h, ou permanent). Les containers exclus sont silencieux dans les alertes et n'apparaissent plus dans la liste. Les exclusions actives s'affichent sous le tableau avec leur date d'expiration et peuvent être retirées individuellement ou toutes en même temps. Un bouton **Effacer la liste** vide les crash events en mémoire. Les exclusions sont persistées entre les redémarrages en base de données SQLite.
 
-🆕 **Correction du menu de navigation actif** — La page Enhanced (`/watcher`) ne met plus incorrectement **Accueil** en évidence dans le menu de navigation quand on navigue vers la section crash-loop / ressources.
+🆕 **Notifications Apprise par canal** — Les notifications Apprise sont désormais réparties en trois canaux indépendants : **Surveillance images**, **Sécurité (Trivy)** et **Sauvegardes**. Chaque canal dispose de sa propre liste d'URLs Apprise (ex : deux chats Telegram différents et une adresse e-mail), tandis que l'URL du serveur Apprise reste partagée. À configurer séparément dans l'onglet Notifications de `/watcher`.
+
+**Correction du menu de navigation actif** — La page Enhanced (`/watcher`) ne met plus incorrectement **Accueil** en évidence dans le menu de navigation quand on navigue vers la section crash-loop / ressources.
 
 **Logs de stack par service** — Sur chaque page compose, l'en-tête du terminal dispose maintenant d'un sélecteur `Service`. `Tous` garde les logs groupés de la stack, tandis qu'un service précis ouvre un flux filtré dédié, pour lancer, inspecter, arrêter, modifier et relancer un compose sans quitter la page.
 
