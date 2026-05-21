@@ -1191,7 +1191,7 @@
           <p v-if="!appriseSettings.imagesUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
           <div class="input-group mb-3">
             <input v-model="newAppriseImagesUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
-            <button class="btn btn-sm btn-success" @click="addAppriseUrl('imagesUrls', newAppriseImagesUrl)" :disabled="!newAppriseImagesUrl">
+            <button class="btn btn-sm btn-success" @click="addAppriseUrl('imagesUrls')" :disabled="!newAppriseImagesUrl">
               <font-awesome-icon icon="plus" />
             </button>
           </div>
@@ -1250,7 +1250,7 @@
           <p v-if="!appriseSettings.trivyUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
           <div class="input-group mb-3">
             <input v-model="newAppriseTrivyUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
-            <button class="btn btn-sm btn-success" @click="addAppriseUrl('trivyUrls', newAppriseTrivyUrl)" :disabled="!newAppriseTrivyUrl">
+            <button class="btn btn-sm btn-success" @click="addAppriseUrl('trivyUrls')" :disabled="!newAppriseTrivyUrl">
               <font-awesome-icon icon="plus" />
             </button>
           </div>
@@ -1309,7 +1309,7 @@
           <p v-if="!appriseSettings.backupUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
           <div class="input-group mb-3">
             <input v-model="newAppriseBackupUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
-            <button class="btn btn-sm btn-success" @click="addAppriseUrl('backupUrls', newAppriseBackupUrl)" :disabled="!newAppriseBackupUrl">
+            <button class="btn btn-sm btn-success" @click="addAppriseUrl('backupUrls')" :disabled="!newAppriseBackupUrl">
               <font-awesome-icon icon="plus" />
             </button>
           </div>
@@ -1980,11 +1980,17 @@ async function testWebhook(url: string, context: "img" | "trivy") {
 
 type AppriseChannel = "imagesUrls" | "trivyUrls" | "backupUrls";
 
-function addAppriseUrl(channel: AppriseChannel, newUrlRef: { value: string }) {
-  const url = newUrlRef.value.trim();
+function addAppriseUrl(channel: AppriseChannel) {
+  const inputMap: Record<AppriseChannel, typeof newAppriseImagesUrl> = {
+    imagesUrls: newAppriseImagesUrl,
+    trivyUrls:  newAppriseTrivyUrl,
+    backupUrls: newAppriseBackupUrl,
+  };
+  const inputRef = inputMap[channel];
+  const url = inputRef.value.trim();
   if (!url || appriseSettings.value[channel].includes(url)) return;
   appriseSettings.value[channel].push(url);
-  newUrlRef.value = "";
+  inputRef.value = "";
 }
 function removeAppriseUrl(channel: AppriseChannel, idx: number) {
   appriseSettings.value[channel].splice(idx, 1);
