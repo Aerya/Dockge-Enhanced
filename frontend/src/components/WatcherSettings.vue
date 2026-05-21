@@ -1132,8 +1132,7 @@
             <small class="form-text ms-2">{{ $t("watcher.apprise.global") }}</small>
           </div>
 
-          <!-- URL du serveur Apprise — partagée par tous les canaux -->
-          <div class="row g-3 mb-4">
+          <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label small">{{ $t("watcher.apprise.serverUrl") }}</label>
               <input
@@ -1144,352 +1143,194 @@
                 autocomplete="off"
               />
             </div>
+            <div class="col-12 d-flex gap-2 flex-wrap">
+              <button class="btn btn-primary btn-sm" @click.stop="saveAppriseSettings" :disabled="savingApprise">
+                <span v-if="savingApprise" class="spinner-border spinner-border-sm me-1" />
+                <font-awesome-icon v-else icon="save" class="me-1" />{{ $t("watcher.apprise.save") }}
+              </button>
+              <button class="btn btn-normal btn-sm" @click.stop="testApprise" :disabled="testingApprise || !appriseSettings.serverUrl">
+                <span v-if="testingApprise" class="spinner-border spinner-border-sm me-1" />
+                <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t("watcher.apprise.test") }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications — Surveillance images -->
+        <div class="shadow-box big-padding mb-4">
+          <h5 class="settings-subheading mb-3">
+            <font-awesome-icon icon="sync-alt" class="me-2" />{{ $t("watcher.img.heading") }}
+          </h5>
+
+          <p class="notif-provider-label">Discord</p>
+          <div v-for="(wh, idx) in imgSettings.discordWebhooks ?? []" :key="idx" class="d-flex align-items-center gap-2 mb-2">
+            <span class="form-control form-control-sm text-truncate notif-url-display">{{ wh }}</span>
+            <button class="btn btn-sm btn-normal" @click="testWebhook(wh, 'img')" :disabled="testingImg">
+              <span v-if="testingImg" class="spinner-border spinner-border-sm" />
+              <font-awesome-icon v-else icon="paper-plane" />
+            </button>
+            <button class="btn btn-sm btn-outline-danger" @click="removeImgWebhook(idx)">
+              <font-awesome-icon icon="trash" />
+            </button>
+          </div>
+          <p v-if="!imgSettings.discordWebhooks?.length" class="form-text fst-italic mb-2">{{ $t("watcher.img.noWebhook") }}</p>
+          <div class="input-group mb-3">
+            <input v-model="imgWebhook" type="password" class="form-control form-control-sm" :placeholder="$t('watcher.img.webhookPlaceholder')" autocomplete="off" />
+            <button class="btn btn-sm btn-success" @click="addImgWebhook" :disabled="!imgWebhook">
+              <font-awesome-icon icon="plus" />
+            </button>
           </div>
 
-          <!-- 3 canaux côte à côte -->
-          <div class="apprise-channels">
+          <p class="notif-provider-label">Apprise</p>
+          <div v-for="(url, idx) in appriseSettings.imagesUrls" :key="idx" class="d-flex align-items-center gap-2 mb-2">
+            <span class="form-control form-control-sm text-truncate notif-url-display">{{ url }}</span>
+            <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl('imagesUrls', idx)">
+              <font-awesome-icon icon="trash" />
+            </button>
+          </div>
+          <p v-if="!appriseSettings.imagesUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
+          <div class="input-group mb-3">
+            <input v-model="newAppriseImagesUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
+            <button class="btn btn-sm btn-success" @click="addAppriseUrl('imagesUrls', newAppriseImagesUrl)" :disabled="!newAppriseImagesUrl">
+              <font-awesome-icon icon="plus" />
+            </button>
+          </div>
 
-            <!-- Canal : Surveillance images -->
-            <div class="apprise-channel">
-              <div class="apprise-channel-title">
-                <font-awesome-icon icon="sync-alt" class="me-1" />{{ $t("watcher.apprise.channelImages") }}
-              </div>
-              <div v-for="(url, idx) in appriseSettings.imagesUrls" :key="idx" class="d-flex align-items-center gap-2 mb-2">
-                <span class="form-control form-control-sm text-truncate apprise-url-display">{{ url }}</span>
-                <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl('imagesUrls', idx)">
-                  <font-awesome-icon icon="trash" />
-                </button>
-              </div>
-              <p v-if="!appriseSettings.imagesUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
-              <div class="input-group">
-                <input v-model="newAppriseImagesUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
-                <button class="btn btn-sm btn-success" @click="addAppriseUrl('imagesUrls', newAppriseImagesUrl)" :disabled="!newAppriseImagesUrl">
-                  <font-awesome-icon icon="plus" />
-                </button>
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <small class="form-text">{{ $t("watcher.notifLang") }}</small>
+              <div class="notif-lang-toggle">
+                <button :class="['notif-lang-btn', imgSettings.notificationLang !== 'en' && 'active']" @click="imgSettings.notificationLang = 'fr'">🇫🇷</button>
+                <button :class="['notif-lang-btn', imgSettings.notificationLang === 'en' && 'active']" @click="imgSettings.notificationLang = 'en'">🇬🇧</button>
               </div>
             </div>
-
-            <!-- Canal : Trivy -->
-            <div class="apprise-channel">
-              <div class="apprise-channel-title">
-                <font-awesome-icon icon="shield-alt" class="me-1" />{{ $t("watcher.apprise.channelTrivy") }}
-              </div>
-              <div v-for="(url, idx) in appriseSettings.trivyUrls" :key="idx" class="d-flex align-items-center gap-2 mb-2">
-                <span class="form-control form-control-sm text-truncate apprise-url-display">{{ url }}</span>
-                <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl('trivyUrls', idx)">
-                  <font-awesome-icon icon="trash" />
-                </button>
-              </div>
-              <p v-if="!appriseSettings.trivyUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
-              <div class="input-group">
-                <input v-model="newAppriseTrivyUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
-                <button class="btn btn-sm btn-success" @click="addAppriseUrl('trivyUrls', newAppriseTrivyUrl)" :disabled="!newAppriseTrivyUrl">
-                  <font-awesome-icon icon="plus" />
-                </button>
-              </div>
-            </div>
-
-            <!-- Canal : Sauvegarde -->
-            <div class="apprise-channel">
-              <div class="apprise-channel-title">
-                <font-awesome-icon icon="archive" class="me-1" />{{ $t("watcher.apprise.channelBackup") }}
-              </div>
-              <div v-for="(url, idx) in appriseSettings.backupUrls" :key="idx" class="d-flex align-items-center gap-2 mb-2">
-                <span class="form-control form-control-sm text-truncate apprise-url-display">{{ url }}</span>
-                <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl('backupUrls', idx)">
-                  <font-awesome-icon icon="trash" />
-                </button>
-              </div>
-              <p v-if="!appriseSettings.backupUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
-              <div class="input-group">
-                <input v-model="newAppriseBackupUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
-                <button class="btn btn-sm btn-success" @click="addAppriseUrl('backupUrls', newAppriseBackupUrl)" :disabled="!newAppriseBackupUrl">
-                  <font-awesome-icon icon="plus" />
-                </button>
-              </div>
-            </div>
-
-          </div><!-- /apprise-channels -->
-
-          <!-- Actions globales -->
-          <div class="d-flex gap-2 flex-wrap mt-4">
-            <button class="btn btn-primary btn-sm" @click.stop="saveAppriseSettings" :disabled="savingApprise">
-              <span v-if="savingApprise" class="spinner-border spinner-border-sm me-1" />
+            <button class="btn btn-primary btn-sm" @click="saveImgNotif" :disabled="savingImgNotif">
+              <span v-if="savingImgNotif" class="spinner-border spinner-border-sm me-1" />
               <font-awesome-icon v-else icon="save" class="me-1" />{{ $t("watcher.apprise.save") }}
             </button>
-            <button class="btn btn-normal btn-sm" @click.stop="testApprise" :disabled="testingApprise || !appriseSettings.serverUrl">
-              <span v-if="testingApprise" class="spinner-border spinner-border-sm me-1" />
+            <button class="btn btn-normal btn-sm" @click="testAppriseSection('images')" :disabled="testingAppriseImages || !appriseSettings.serverUrl || !appriseSettings.imagesUrls.length">
+              <span v-if="testingAppriseImages" class="spinner-border spinner-border-sm me-1" />
               <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t("watcher.apprise.test") }}
             </button>
           </div>
         </div>
 
-        <!-- Discord — Images -->
+        <!-- Notifications — Sécurité (Trivy) -->
         <div class="shadow-box big-padding mb-4">
           <h5 class="settings-subheading mb-3">
-            <font-awesome-icon icon="sync-alt" class="me-2" />{{
-              $t("watcher.img.heading")
-            }}
-            — Discord
+            <font-awesome-icon icon="bug" class="me-2" />{{ $t("watcher.trivy.heading") }}
           </h5>
-          <div
-            v-for="(wh, idx) in imgSettings.discordWebhooks ?? []"
-            :key="idx"
-            class="d-flex align-items-center gap-2 mb-2"
-          >
-            <span
-              class="form-control form-control-sm text-truncate"
-              style="font-family: monospace; font-size: 0.78rem"
-            >
-              {{ wh }}
-            </span>
-            <button
-              class="btn btn-sm btn-normal"
-              @click="testWebhook(wh, 'img')"
-              :disabled="testingImg"
-            >
-              <span
-                v-if="testingImg"
-                class="spinner-border spinner-border-sm"
-              />
-              <span v-else><font-awesome-icon icon="paper-plane" /></span>
+
+          <p class="notif-provider-label">Discord</p>
+          <div v-for="(wh, idx) in trivySettings.discordWebhooks ?? []" :key="idx" class="d-flex align-items-center gap-2 mb-2">
+            <span class="form-control form-control-sm text-truncate notif-url-display">{{ wh }}</span>
+            <button class="btn btn-sm btn-normal" @click="testWebhook(wh, 'trivy')" :disabled="testingTrivy">
+              <span v-if="testingTrivy" class="spinner-border spinner-border-sm" />
+              <font-awesome-icon v-else icon="paper-plane" />
             </button>
-            <button
-              class="btn btn-sm btn-outline-danger"
-              @click="removeImgWebhook(idx)"
-            >
+            <button class="btn btn-sm btn-outline-danger" @click="removeTrivyWebhook(idx)">
               <font-awesome-icon icon="trash" />
             </button>
           </div>
-          <p
-            v-if="!imgSettings.discordWebhooks?.length"
-            class="form-text fst-italic mb-2"
-          >
-            {{ $t("watcher.img.noWebhook") }}
-          </p>
-          <div class="input-group mb-2">
-            <input
-              v-model="imgWebhook"
-              type="password"
-              class="form-control form-control-sm"
-              :placeholder="$t('watcher.img.webhookPlaceholder')"
-              autocomplete="off"
-            />
-            <button
-              class="btn btn-sm btn-success"
-              @click="addImgWebhook"
-              :disabled="!imgWebhook"
-            >
-              <font-awesome-icon icon="plus" class="me-1" />{{
-                $t("watcher.img.addWebhook")
-              }}
+          <p v-if="!trivySettings.discordWebhooks?.length" class="form-text fst-italic mb-2">{{ $t("watcher.trivy.noWebhook") }}</p>
+          <div class="input-group mb-3">
+            <input v-model="trivyWebhook" type="password" class="form-control form-control-sm" :placeholder="$t('watcher.img.webhookPlaceholder')" autocomplete="off" />
+            <button class="btn btn-sm btn-success" @click="addTrivyWebhook" :disabled="!trivyWebhook">
+              <font-awesome-icon icon="plus" />
             </button>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <small class="form-text">{{ $t("watcher.notifLang") }}</small>
-            <div class="notif-lang-toggle">
-              <button
-                :class="[
-                  'notif-lang-btn',
-                  imgSettings.notificationLang !== 'en' && 'active',
-                ]"
-                @click="imgSettings.notificationLang = 'fr'"
-              >
-                🇫🇷
-              </button>
-              <button
-                :class="[
-                  'notif-lang-btn',
-                  imgSettings.notificationLang === 'en' && 'active',
-                ]"
-                @click="imgSettings.notificationLang = 'en'"
-              >
-                🇬🇧
-              </button>
+
+          <p class="notif-provider-label">Apprise</p>
+          <div v-for="(url, idx) in appriseSettings.trivyUrls" :key="idx" class="d-flex align-items-center gap-2 mb-2">
+            <span class="form-control form-control-sm text-truncate notif-url-display">{{ url }}</span>
+            <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl('trivyUrls', idx)">
+              <font-awesome-icon icon="trash" />
+            </button>
+          </div>
+          <p v-if="!appriseSettings.trivyUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
+          <div class="input-group mb-3">
+            <input v-model="newAppriseTrivyUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
+            <button class="btn btn-sm btn-success" @click="addAppriseUrl('trivyUrls', newAppriseTrivyUrl)" :disabled="!newAppriseTrivyUrl">
+              <font-awesome-icon icon="plus" />
+            </button>
+          </div>
+
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <small class="form-text">{{ $t("watcher.notifLang") }}</small>
+              <div class="notif-lang-toggle">
+                <button :class="['notif-lang-btn', trivySettings.notificationLang !== 'en' && 'active']" @click="trivySettings.notificationLang = 'fr'">🇫🇷</button>
+                <button :class="['notif-lang-btn', trivySettings.notificationLang === 'en' && 'active']" @click="trivySettings.notificationLang = 'en'">🇬🇧</button>
+              </div>
             </div>
+            <button class="btn btn-primary btn-sm" @click="saveTrivyNotif" :disabled="savingTrivyNotif">
+              <span v-if="savingTrivyNotif" class="spinner-border spinner-border-sm me-1" />
+              <font-awesome-icon v-else icon="save" class="me-1" />{{ $t("watcher.apprise.save") }}
+            </button>
+            <button class="btn btn-normal btn-sm" @click="testAppriseSection('trivy')" :disabled="testingAppriseTrivy || !appriseSettings.serverUrl || !appriseSettings.trivyUrls.length">
+              <span v-if="testingAppriseTrivy" class="spinner-border spinner-border-sm me-1" />
+              <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t("watcher.apprise.test") }}
+            </button>
           </div>
         </div>
 
-        <!-- Discord — Security -->
+        <!-- Notifications — Sauvegarde -->
         <div class="shadow-box big-padding mb-4">
           <h5 class="settings-subheading mb-3">
-            <font-awesome-icon icon="bug" class="me-2" />{{
-              $t("watcher.trivy.heading")
-            }}
-            — Discord
+            <font-awesome-icon icon="archive" class="me-2" />{{ $t("watcher.tab.backup") }}
           </h5>
-          <div
-            v-for="(wh, idx) in trivySettings.discordWebhooks ?? []"
-            :key="idx"
-            class="d-flex align-items-center gap-2 mb-2"
-          >
-            <span
-              class="form-control form-control-sm text-truncate"
-              style="font-family: monospace; font-size: 0.78rem"
-            >
-              {{ wh }}
-            </span>
-            <button
-              class="btn btn-sm btn-normal"
-              @click="testWebhook(wh, 'trivy')"
-              :disabled="testingTrivy"
-            >
-              <span
-                v-if="testingTrivy"
-                class="spinner-border spinner-border-sm"
-              />
-              <span v-else><font-awesome-icon icon="paper-plane" /></span>
-            </button>
-            <button
-              class="btn btn-sm btn-outline-danger"
-              @click="removeTrivyWebhook(idx)"
-            >
-              <font-awesome-icon icon="trash" />
-            </button>
-          </div>
-          <p
-            v-if="!trivySettings.discordWebhooks?.length"
-            class="form-text fst-italic mb-2"
-          >
-            {{ $t("watcher.trivy.noWebhook") }}
-          </p>
-          <div class="input-group mb-2">
-            <input
-              v-model="trivyWebhook"
-              type="password"
-              class="form-control form-control-sm"
-              :placeholder="$t('watcher.img.webhookPlaceholder')"
-              autocomplete="off"
-            />
-            <button
-              class="btn btn-sm btn-success"
-              @click="addTrivyWebhook"
-              :disabled="!trivyWebhook"
-            >
-              <font-awesome-icon icon="plus" class="me-1" />{{
-                $t("watcher.img.addWebhook")
-              }}
-            </button>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <small class="form-text">{{ $t("watcher.notifLang") }}</small>
-            <div class="notif-lang-toggle">
-              <button
-                :class="[
-                  'notif-lang-btn',
-                  trivySettings.notificationLang !== 'en' && 'active',
-                ]"
-                @click="trivySettings.notificationLang = 'fr'"
-              >
-                🇫🇷
-              </button>
-              <button
-                :class="[
-                  'notif-lang-btn',
-                  trivySettings.notificationLang === 'en' && 'active',
-                ]"
-                @click="trivySettings.notificationLang = 'en'"
-              >
-                🇬🇧
-              </button>
-            </div>
-          </div>
-        </div>
 
-        <!-- Discord — Backup -->
-        <div class="shadow-box big-padding mb-4">
-          <h5 class="settings-subheading mb-3">
-            <font-awesome-icon icon="archive" class="me-2" />{{
-              $t("watcher.tab.backup")
-            }}
-            — Discord
-          </h5>
-          <div
-            v-for="(wh, idx) in backupWebhooks"
-            :key="idx"
-            class="d-flex align-items-center gap-2 mb-2"
-          >
-            <span
-              class="form-control form-control-sm text-truncate"
-              style="font-family: monospace; font-size: 0.78rem"
-            >
-              {{ wh }}
-            </span>
-            <button
-              class="btn btn-sm btn-normal"
-              @click="testBackupWebhook(wh)"
-              :disabled="backupTestingWh"
-            >
-              <span
-                v-if="backupTestingWh"
-                class="spinner-border spinner-border-sm"
-              />
-              <span v-else><font-awesome-icon icon="paper-plane" /></span>
+          <p class="notif-provider-label">Discord</p>
+          <div v-for="(wh, idx) in backupWebhooks" :key="idx" class="d-flex align-items-center gap-2 mb-2">
+            <span class="form-control form-control-sm text-truncate notif-url-display">{{ wh }}</span>
+            <button class="btn btn-sm btn-normal" @click="testBackupWebhook(wh)" :disabled="backupTestingWh">
+              <span v-if="backupTestingWh" class="spinner-border spinner-border-sm" />
+              <font-awesome-icon v-else icon="paper-plane" />
             </button>
-            <button
-              class="btn btn-sm btn-outline-danger"
-              @click="removeBackupWebhook(idx)"
-            >
+            <button class="btn btn-sm btn-outline-danger" @click="removeBackupWebhook(idx)">
               <font-awesome-icon icon="trash" />
             </button>
           </div>
-          <p v-if="!backupWebhooks.length" class="form-text fst-italic mb-2">
-            {{ $t("watcher.backup.noWebhook") }}
-          </p>
-          <div class="input-group mb-2">
-            <input
-              v-model="backupNewWebhook"
-              type="password"
-              class="form-control form-control-sm"
-              :placeholder="$t('watcher.img.webhookPlaceholder')"
-              autocomplete="off"
-            />
-            <button
-              class="btn btn-sm btn-success"
-              @click="addBackupWebhook"
-              :disabled="!backupNewWebhook"
-            >
-              <font-awesome-icon icon="plus" class="me-1" />{{
-                $t("watcher.img.addWebhook")
-              }}
+          <p v-if="!backupWebhooks.length" class="form-text fst-italic mb-2">{{ $t("watcher.backup.noWebhook") }}</p>
+          <div class="input-group mb-3">
+            <input v-model="backupNewWebhook" type="password" class="form-control form-control-sm" :placeholder="$t('watcher.img.webhookPlaceholder')" autocomplete="off" />
+            <button class="btn btn-sm btn-success" @click="addBackupWebhook" :disabled="!backupNewWebhook">
+              <font-awesome-icon icon="plus" />
             </button>
           </div>
-          <div class="d-flex align-items-center gap-2 mb-3">
-            <small class="form-text">{{ $t("watcher.notifLang") }}</small>
-            <div class="notif-lang-toggle">
-              <button
-                :class="[
-                  'notif-lang-btn',
-                  backupNotifLang !== 'en' && 'active',
-                ]"
-                @click="backupNotifLang = 'fr'"
-              >
-                🇫🇷
-              </button>
-              <button
-                :class="[
-                  'notif-lang-btn',
-                  backupNotifLang === 'en' && 'active',
-                ]"
-                @click="backupNotifLang = 'en'"
-              >
-                🇬🇧
-              </button>
-            </div>
+
+          <p class="notif-provider-label">Apprise</p>
+          <div v-for="(url, idx) in appriseSettings.backupUrls" :key="idx" class="d-flex align-items-center gap-2 mb-2">
+            <span class="form-control form-control-sm text-truncate notif-url-display">{{ url }}</span>
+            <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl('backupUrls', idx)">
+              <font-awesome-icon icon="trash" />
+            </button>
           </div>
-          <button
-            class="btn btn-primary btn-sm"
-            @click="saveBackupNotif"
-            :disabled="savingBackupNotif"
-          >
-            <span
-              v-if="savingBackupNotif"
-              class="spinner-border spinner-border-sm me-1"
-            />
-            <font-awesome-icon v-else icon="save" class="me-1" />{{
-              $t("watcher.apprise.save")
-            }}
-          </button>
+          <p v-if="!appriseSettings.backupUrls.length" class="form-text fst-italic mb-2">{{ $t("watcher.apprise.noUrl") }}</p>
+          <div class="input-group mb-3">
+            <input v-model="newAppriseBackupUrl" type="text" class="form-control form-control-sm" :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
+            <button class="btn btn-sm btn-success" @click="addAppriseUrl('backupUrls', newAppriseBackupUrl)" :disabled="!newAppriseBackupUrl">
+              <font-awesome-icon icon="plus" />
+            </button>
+          </div>
+
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <small class="form-text">{{ $t("watcher.notifLang") }}</small>
+              <div class="notif-lang-toggle">
+                <button :class="['notif-lang-btn', backupNotifLang !== 'en' && 'active']" @click="backupNotifLang = 'fr'">🇫🇷</button>
+                <button :class="['notif-lang-btn', backupNotifLang === 'en' && 'active']" @click="backupNotifLang = 'en'">🇬🇧</button>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" @click="saveBackupNotif" :disabled="savingBackupNotif">
+              <span v-if="savingBackupNotif" class="spinner-border spinner-border-sm me-1" />
+              <font-awesome-icon v-else icon="save" class="me-1" />{{ $t("watcher.apprise.save") }}
+            </button>
+            <button class="btn btn-normal btn-sm" @click="testAppriseSection('backup')" :disabled="testingAppriseBackup || !appriseSettings.serverUrl || !appriseSettings.backupUrls.length">
+              <span v-if="testingAppriseBackup" class="spinner-border spinner-border-sm me-1" />
+              <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t("watcher.apprise.test") }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1737,14 +1578,19 @@ const appriseSettings = ref<AppriseSettings>({
 const newAppriseImagesUrl = ref("");
 const newAppriseTrivyUrl  = ref("");
 const newAppriseBackupUrl = ref("");
-const savingApprise   = ref(false);
-const testingApprise  = ref(false);
+const savingApprise        = ref(false);
+const testingApprise       = ref(false);
+const testingAppriseImages = ref(false);
+const testingAppriseTrivy  = ref(false);
+const testingAppriseBackup = ref(false);
 
 const backupWebhooks = ref<string[]>([]);
 const backupNewWebhook = ref("");
 const backupTestingWh = ref(false);
 const backupNotifLang = ref<"fr" | "en">("fr");
 const savingBackupNotif = ref(false);
+const savingImgNotif   = ref(false);
+const savingTrivyNotif = ref(false);
 
 const saving = ref(false);
 const savingTrivy = ref(false);
@@ -2026,12 +1872,14 @@ async function testBackupWebhook(url: string) {
     backupTestingWh.value = false;
   }
 }
+// Sauvegarde notifs Backup (Discord + Apprise + langue)
 async function saveBackupNotif() {
   savingBackupNotif.value = true;
   try {
     const res = await api("POST", "/backup/settings", {
-      discordWebhooks: backupWebhooks.value,
+      discordWebhooks:  backupWebhooks.value,
       notificationLang: backupNotifLang.value,
+      appriseUrls:      appriseSettings.value.backupUrls,
     });
     showToast(res.ok ? t("watcher.backup.saved") : `❌ ${res.message}`, res.ok);
   } finally {
@@ -2142,29 +1990,46 @@ function removeAppriseUrl(channel: AppriseChannel, idx: number) {
   appriseSettings.value[channel].splice(idx, 1);
 }
 
+// Sauvegarde uniquement l'URL serveur Apprise (partagée)
 async function saveAppriseSettings() {
   savingApprise.value = true;
   try {
-    // serverUrl partagé → image/settings ; URLs séparées → chaque endpoint
-    const [r1, r2, r3] = await Promise.all([
-      api("POST", "/image/settings", {
-        appriseServerUrl: appriseSettings.value.serverUrl,
-        appriseUrls:      appriseSettings.value.imagesUrls,
-      }),
-      api("POST", "/trivy/settings", {
-        appriseUrls: appriseSettings.value.trivyUrls,
-      }),
-      api("POST", "/backup/settings", {
-        appriseUrls: appriseSettings.value.backupUrls,
-      }),
-    ]);
-    const ok = r1.ok && r2.ok && r3.ok;
-    showToast(
-      ok ? t("watcher.apprise.saved") : `❌ ${r1.message ?? r2.message ?? r3.message}`,
-      ok,
-    );
+    const res = await api("POST", "/image/settings", {
+      appriseServerUrl: appriseSettings.value.serverUrl,
+    });
+    showToast(res.ok ? t("watcher.apprise.saved") : `❌ ${res.message}`, res.ok);
   } finally {
     savingApprise.value = false;
+  }
+}
+
+// Sauvegarde notifs Images (Discord + Apprise + langue)
+async function saveImgNotif() {
+  savingImgNotif.value = true;
+  try {
+    const res = await api("POST", "/image/settings", {
+      discordWebhooks:  imgSettings.value.discordWebhooks,
+      notificationLang: imgSettings.value.notificationLang,
+      appriseUrls:      appriseSettings.value.imagesUrls,
+    });
+    showToast(res.ok ? t("watcher.img.saved") : `❌ ${res.message}`, res.ok);
+  } finally {
+    savingImgNotif.value = false;
+  }
+}
+
+// Sauvegarde notifs Trivy (Discord + Apprise + langue)
+async function saveTrivyNotif() {
+  savingTrivyNotif.value = true;
+  try {
+    const res = await api("POST", "/trivy/settings", {
+      discordWebhooks:  trivySettings.value.discordWebhooks,
+      notificationLang: trivySettings.value.notificationLang,
+      appriseUrls:      appriseSettings.value.trivyUrls,
+    });
+    showToast(res.ok ? t("watcher.trivy.saved") : `❌ ${res.message}`, res.ok);
+  } finally {
+    savingTrivyNotif.value = false;
   }
 }
 
@@ -2186,6 +2051,35 @@ async function testApprise() {
     );
   } finally {
     testingApprise.value = false;
+  }
+}
+
+async function testAppriseSection(section: "images" | "trivy" | "backup") {
+  if (!appriseSettings.value.serverUrl) return;
+  const urlMap = {
+    images: appriseSettings.value.imagesUrls,
+    trivy:  appriseSettings.value.trivyUrls,
+    backup: appriseSettings.value.backupUrls,
+  };
+  const flagMap = {
+    images: testingAppriseImages,
+    trivy:  testingAppriseTrivy,
+    backup: testingAppriseBackup,
+  };
+  const urls = urlMap[section];
+  if (!urls.length) return;
+  flagMap[section].value = true;
+  try {
+    const res = await api("POST", "/apprise/test", {
+      serverUrl: appriseSettings.value.serverUrl,
+      urls,
+    });
+    showToast(
+      res.ok ? t("watcher.apprise.testOk") : t("watcher.apprise.testFail"),
+      res.ok,
+    );
+  } finally {
+    flagMap[section].value = false;
   }
 }
 
@@ -2517,33 +2411,16 @@ async function removeCred(registry: string) {
   &:hover { text-decoration: underline; }
 }
 
-.apprise-channels {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.apprise-channel {
-  flex: 1;
-  min-width: 220px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 6px;
-  padding: 0.85rem 1rem;
-}
-
-.apprise-channel-title {
-  font-size: 0.72rem;
-  font-weight: 600;
+.notif-provider-label {
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #9ca3af;
-  margin-bottom: 0.65rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
 }
 
-.apprise-url-display {
+.notif-url-display {
   font-family: monospace;
   font-size: 0.78rem;
 }

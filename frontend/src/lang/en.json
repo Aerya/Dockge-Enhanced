@@ -319,7 +319,7 @@
     "watcher.discord.testOk": "✅ Webhook working!",
     "watcher.discord.testFail": "❌ Failed — check the URL",
     "watcher.apprise.heading": "Apprise — Notifications",
-    "watcher.apprise.global": "One shared server, three independent channels",
+    "watcher.apprise.global": "Server URL shared across all sections below",
     "watcher.apprise.serverUrl": "Apprise server URL (shared)",
     "watcher.apprise.serverUrlPlaceholder": "http://apprise:8000",
     "watcher.apprise.channelImages": "Image monitoring",
