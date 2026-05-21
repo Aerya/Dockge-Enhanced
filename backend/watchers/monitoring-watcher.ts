@@ -29,6 +29,7 @@ export interface MonitoringSettings {
     crashLoopWindowMinutes: number;      // dans X minutes
     crashLoopCooldownMinutes: number;    // anti-spam
     discordWebhooks: string[];
+    appriseUrls: string[];
     notificationLang: "fr" | "en";
 }
 
@@ -46,6 +47,7 @@ const DEFAULT_SETTINGS: MonitoringSettings = {
     crashLoopWindowMinutes: 10,
     crashLoopCooldownMinutes: 60,
     discordWebhooks: [],
+    appriseUrls: [],
     notificationLang: "fr",
 };
 
@@ -220,11 +222,14 @@ export class MonitoringWatcher {
 
     private async loadAppriseNotifier(): Promise<AppriseNotifier | null> {
         try {
+            // Le serverUrl est partagé (stocké dans watcher-settings.json)
             const raw  = await fs.readFile(WATCHER_SETTINGS_PATH, "utf8");
             const data = JSON.parse(raw) as Record<string, unknown>;
             const serverUrl = typeof data.appriseServerUrl === "string" ? data.appriseServerUrl : "";
-            const urls = Array.isArray(data.appriseUrls) ? data.appriseUrls as string[] : [];
             if (!serverUrl) return null;
+            // Les URLs sont propres au monitoring (stockées dans monitoring-settings.json)
+            const urls = this.settings.appriseUrls ?? [];
+            if (urls.length === 0) return null;
             return new AppriseNotifier(serverUrl, urls);
         } catch { return null; }
     }

@@ -171,30 +171,64 @@
 
                     <!-- Webhooks Discord -->
                     <div class="col-12">
-                        <label class="form-label small">{{ $t('watcher.img.discordWebhook') }}</label>
+                        <p class="notif-provider-label">Discord</p>
                         <div v-for="(wh, idx) in monSettings.discordWebhooks" :key="idx"
                             class="d-flex align-items-center gap-2 mb-2">
-                            <span class="form-control form-control-sm text-truncate"
-                                style="font-family:monospace;font-size:.78rem">{{ maskWebhook(wh) }}</span>
+                            <span class="form-control form-control-sm text-truncate notif-url-display">{{ maskWebhook(wh) }}</span>
                             <button class="btn btn-sm btn-outline-danger" @click="removeWebhook(idx)">
                                 <font-awesome-icon icon="times" />
                             </button>
                         </div>
+                        <p v-if="!monSettings.discordWebhooks.length" class="form-text fst-italic mb-2">{{ $t('watcher.img.noWebhook') }}</p>
                         <div class="input-group input-group-sm mt-1">
                             <input v-model="newWebhook" type="url" class="form-control"
                                 placeholder="https://discord.com/api/webhooks/..." autocomplete="off" />
                             <button class="btn btn-success btn-sm" @click="addWebhook" :disabled="!newWebhook">
-                                <font-awesome-icon icon="plus" class="me-1" />{{ $t('watcher.img.addWebhook') }}
+                                <font-awesome-icon icon="plus" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- URLs Apprise -->
+                    <div class="col-12">
+                        <p class="notif-provider-label">Apprise</p>
+                        <div v-for="(url, idx) in monSettings.appriseUrls" :key="idx"
+                            class="d-flex align-items-center gap-2 mb-2">
+                            <span class="form-control form-control-sm text-truncate notif-url-display">{{ url }}</span>
+                            <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl(idx)">
+                                <font-awesome-icon icon="times" />
+                            </button>
+                        </div>
+                        <p v-if="!monSettings.appriseUrls.length" class="form-text fst-italic mb-2">{{ $t('watcher.apprise.noUrl') }}</p>
+                        <div class="input-group input-group-sm mt-1">
+                            <input v-model="newAppriseUrl" type="text" class="form-control"
+                                :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
+                            <button class="btn btn-success btn-sm" @click="addAppriseUrl" :disabled="!newAppriseUrl">
+                                <font-awesome-icon icon="plus" />
                             </button>
                         </div>
                     </div>
                 </template>
             </div>
 
-            <div class="d-flex gap-2 mb-4">
+            <div class="d-flex align-items-center gap-3 flex-wrap mb-4">
+                <div class="d-flex align-items-center gap-2">
+                    <small class="form-text">{{ $t('watcher.notifLang') }}</small>
+                    <div class="notif-lang-toggle">
+                        <button :class="['notif-lang-btn', monSettings.notificationLang !== 'en' && 'active']"
+                            @click="monSettings.notificationLang = 'fr'">🇫🇷</button>
+                        <button :class="['notif-lang-btn', monSettings.notificationLang === 'en' && 'active']"
+                            @click="monSettings.notificationLang = 'en'">🇬🇧</button>
+                    </div>
+                </div>
                 <button class="btn btn-primary btn-sm" @click="saveMonSettings" :disabled="savingMon">
                     <span v-if="savingMon" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
+                </button>
+                <button class="btn btn-normal btn-sm" @click="testAppriseMonitoring"
+                    :disabled="testingApprise || !monSettings.appriseUrls.length">
+                    <span v-if="testingApprise" class="spinner-border spinner-border-sm me-1" />
+                    <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t('watcher.apprise.test') }}
                 </button>
             </div>
 
@@ -437,6 +471,7 @@ interface MonitoringSettings {
     crashLoopWindowMinutes: number;
     crashLoopCooldownMinutes: number;
     discordWebhooks: string[];
+    appriseUrls: string[];
     notificationLang: "fr" | "en";
 }
 
@@ -479,6 +514,7 @@ const monSettings = ref<MonitoringSettings>({
     crashLoopWindowMinutes: 10,
     crashLoopCooldownMinutes: 60,
     discordWebhooks: [],
+    appriseUrls: [],
     notificationLang: "fr",
 });
 
@@ -487,6 +523,8 @@ const newPartition   = ref("");
 const savingMon      = ref(false);
 const savingDisplay  = ref(false);
 const newWebhook     = ref("");
+const newAppriseUrl  = ref("");
+const testingApprise = ref(false);
 const toast          = ref({ msg: "", ok: true });
 
 const exclusions     = ref<CrashExclusion[]>([]);
@@ -567,6 +605,34 @@ function removeWebhook(idx: number) {
     monSettings.value.discordWebhooks.splice(idx, 1);
 }
 
+// ─── Apprise helpers ──────────────────────────────────────────────
+
+function addAppriseUrl() {
+    const url = newAppriseUrl.value.trim();
+    if (!url || monSettings.value.appriseUrls.includes(url)) return;
+    monSettings.value.appriseUrls.push(url);
+    newAppriseUrl.value = "";
+}
+function removeAppriseUrl(idx: number) {
+    monSettings.value.appriseUrls.splice(idx, 1);
+}
+async function testAppriseMonitoring() {
+    if (!monSettings.value.appriseUrls.length) return;
+    testingApprise.value = true;
+    try {
+        // Le serverUrl est partagé, on le récupère depuis /image/settings
+        const imgRes = await api("GET", "/image/settings");
+        const serverUrl = imgRes.ok ? ((imgRes.data as Record<string, unknown>)?.appriseServerUrl as string ?? "") : "";
+        const res = await api("POST", "/apprise/test", {
+            serverUrl,
+            urls: monSettings.value.appriseUrls,
+        });
+        showToast(res.ok ? "✅ " + t("watcher.apprise.testOk") : "❌ " + t("watcher.apprise.testFail"), res.ok);
+    } finally {
+        testingApprise.value = false;
+    }
+}
+
 // ─── Crash exclusions ─────────────────────────────────────────────
 
 async function loadExclusions() {
@@ -635,7 +701,10 @@ async function loadSettings() {
         api("GET", "/monitoring/settings"),
         api("GET", "/monitoring/display-settings"),
     ]);
-    if (settingsRes.ok) monSettings.value = settingsRes.data as MonitoringSettings;
+    if (settingsRes.ok) {
+        const d = settingsRes.data as MonitoringSettings;
+        monSettings.value = { ...monSettings.value, ...d, appriseUrls: Array.isArray(d.appriseUrls) ? d.appriseUrls : [] };
+    }
     if (displayRes.ok) {
         const d = displayRes.data as { diskPartitions?: string[] };
         diskPartitions.value = d.diskPartitions?.length ? d.diskPartitions : ["/"];
@@ -810,6 +879,47 @@ onUnmounted(() => {
 
 .slide-fade-enter-active, .slide-fade-leave-active { transition: all .25s ease; }
 .slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(12px); opacity: 0; }
+
+/* ── Notification providers ── */
+.notif-provider-label {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #6b7280;
+    margin-bottom: .5rem;
+}
+.notif-url-display {
+    font-family: monospace;
+    font-size: .78rem;
+}
+.notif-lang-toggle {
+    display: flex;
+    gap: .2rem;
+    background: rgba(255,255,255,.06);
+    border-radius: 50rem;
+    padding: 2px 4px;
+    border: 1px solid rgba(255,255,255,.1);
+}
+.notif-lang-btn {
+    background: transparent;
+    border: none;
+    border-radius: 50rem;
+    padding: 1px 6px;
+    font-size: .8rem;
+    cursor: pointer;
+    opacity: .5;
+    transition: opacity .15s, background .15s;
+    &.active { opacity: 1; background: rgba(255,255,255,.12); }
+    &:hover:not(.active) { opacity: .75; }
+}
+.btn-normal {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    color: #d1d5db;
+    &:hover { background: rgba(255,255,255,.14); color: #fff; }
+    &:disabled { opacity: .5; cursor: default; }
+}
 
 /* ── Kula open link ── */
 .kula-open-hint {
