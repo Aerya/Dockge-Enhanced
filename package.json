@@ -83,7 +83,7 @@
         "eslint": "~8.50.0",
         "eslint-plugin-jsdoc": "~46.10.1",
         "eslint-plugin-vue": "~9.33.0",
-        "sass": "~1.99.0",
+        "sass": "~1.100.0",
         "thememirror": "^2.0.1",
         "typescript": "~5.9.3",
         "unplugin-vue-components": "~0.28.0",
