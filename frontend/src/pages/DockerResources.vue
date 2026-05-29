@@ -836,11 +836,15 @@ function token(): string {
 }
 
 async function api(method: string, path: string, body?: unknown) {
-    const res = await fetch(`/api/docker/${path}`, {
+    const t = token();
+    const base = `/api/docker/${path}`;
+    const sep  = base.includes("?") ? "&" : "?";
+    const url  = t ? `${base}${sep}token=${encodeURIComponent(t)}` : base;
+    const res = await fetch(url, {
         method,
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token()}`,
+            ...(t ? { "Authorization": `Bearer ${t}` } : {}),
         },
         body: body ? JSON.stringify(body) : undefined,
     });
