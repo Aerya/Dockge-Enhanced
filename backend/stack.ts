@@ -554,10 +554,12 @@ export class Stack {
         let lastStartedAt: string | null = null;
 
         // ── lastUpdated : date du dernier déploiement/update/restart ─
+        // Priorité : fichier .dockge-deployed-at (écrit à chaque opération)
+        // Fallback  : lastStartedAt (container déjà tournant avant l'installation du fix)
         try {
             const deployedAtPath = path.join(this.path, ".dockge-deployed-at");
             lastUpdated = (await fsAsync.readFile(deployedAtPath, "utf8")).trim();
-        } catch { /* fichier absent = jamais déployé via cette instance */ }
+        } catch { /* fichier absent : fallback sur lastStartedAt appliqué après */ }
 
         try {
             let res = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--format", "json"), {
@@ -616,6 +618,12 @@ export class Stack {
                     }
                 }
             } catch { /* ignore */ }
+
+            // Fallback : si le fichier .dockge-deployed-at n'existe pas encore,
+            // on utilise lastStartedAt comme approximation de la dernière mise à jour
+            if (!lastUpdated && lastStartedAt) {
+                lastUpdated = lastStartedAt;
+            }
 
             return { serviceStatusList, lastUpdated, lastStartedAt };
         } catch (e) {
