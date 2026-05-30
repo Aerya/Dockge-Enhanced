@@ -481,11 +481,15 @@ export class Stack {
         await this.joinLogsTerminal(socket);
     }
 
-    async joinLogsTerminal(socket: DockgeSocket, serviceName = "") {
-        const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName);
+    async joinLogsTerminal(socket: DockgeSocket, serviceName = "", timestamps = false) {
+        const suffix = timestamps ? "_ts" : "";
+        const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName) + suffix;
+        const logFlags: string[] = timestamps
+            ? [ "logs", "-f", "--tail", "100", "--timestamps" ]
+            : [ "logs", "-f", "--tail", "100" ];
         const args = serviceName
-            ? this.getComposeOptions("logs", "-f", "--tail", "100", serviceName)
-            : this.getComposeOptions("logs", "-f", "--tail", "100");
+            ? this.getComposeOptions(...logFlags, serviceName)
+            : this.getComposeOptions(...logFlags);
         const terminal = Terminal.getOrCreateTerminal(this.server, terminalName, "docker", args, this.path);
         terminal.enableKeepAlive = true;
         terminal.rows = COMBINED_TERMINAL_ROWS;
@@ -498,8 +502,9 @@ export class Stack {
         await this.leaveLogsTerminal(socket);
     }
 
-    async leaveLogsTerminal(socket: DockgeSocket, serviceName = "") {
-        const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName);
+    async leaveLogsTerminal(socket: DockgeSocket, serviceName = "", timestamps = false) {
+        const suffix = timestamps ? "_ts" : "";
+        const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName) + suffix;
         const terminal = Terminal.getTerminal(terminalName);
         if (terminal) {
             terminal.leave(socket);
@@ -520,8 +525,21 @@ export class Stack {
         terminal.start();
     }
 
-    async getServiceStatusList() {
-        let statusList = new Map<string, { state: string, ports: string[] }>();
+    async getServiceStatusList() : Promise<{
+        serviceStatusList: Map<string, { state: string; ports: string[] }>;
+        lastUpdated: string | null;
+        lastStartedAt: string | null;
+    }> {
+        let serviceStatusList = new Map<string, { state: string; ports: string[] }>();
+        let lastUpdated: string | null = null;
+        let lastStartedAt: string | null = null;
+
+        // ── lastUpdated : mtime du fichier compose ────────────────
+        try {
+            const composePath = path.join(this.path, this._composeFileName);
+            const stat = await fsAsync.stat(composePath);
+            lastUpdated = stat.mtime.toISOString();
+        } catch { /* ignore */ }
 
         try {
             let res = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--format", "json"), {
@@ -530,7 +548,7 @@ export class Stack {
             });
 
             if (!res.stdout) {
-                return statusList;
+                return { serviceStatusList, lastUpdated, lastStartedAt };
             }
 
             let lines = res.stdout?.toString().split("\n");
@@ -542,12 +560,12 @@ export class Stack {
                         return s.indexOf("->") >= 0;
                     });
                     if (obj.Health === "") {
-                        statusList.set(obj.Service, {
+                        serviceStatusList.set(obj.Service, {
                             state: obj.State,
                             ports: ports
                         });
                     } else {
-                        statusList.set(obj.Service, {
+                        serviceStatusList.set(obj.Service, {
                             state: obj.Health,
                             ports: ports
                         });
@@ -556,11 +574,35 @@ export class Stack {
                 }
             }
 
-            return statusList;
+            // ── lastStartedAt : docker inspect sur les containers ─
+            try {
+                const psqRes = await childProcessAsync.spawn(
+                    "docker", this.getComposeOptions("ps", "-q"),
+                    { cwd: this.path, encoding: "utf-8" }
+                );
+                const ids = (psqRes.stdout?.toString() ?? "").trim().split("\n").filter(Boolean);
+                if (ids.length > 0) {
+                    const inspectRes = await childProcessAsync.spawn(
+                        "docker",
+                        [ "inspect", "--format", "{{.State.StartedAt}}", ...ids ],
+                        { cwd: this.path, encoding: "utf-8" }
+                    );
+                    const times = (inspectRes.stdout?.toString() ?? "")
+                        .trim().split("\n")
+                        .map(d => d.trim())
+                        .filter(d => d && d !== "0001-01-01T00:00:00Z")
+                        .map(d => new Date(d).getTime())
+                        .filter(t => !isNaN(t));
+                    if (times.length > 0) {
+                        lastStartedAt = new Date(Math.max(...times)).toISOString();
+                    }
+                }
+            } catch { /* ignore */ }
+
+            return { serviceStatusList, lastUpdated, lastStartedAt };
         } catch (e) {
             log.error("getServiceStatusList", e);
-            return statusList;
+            return { serviceStatusList, lastUpdated, lastStartedAt };
         }
-
     }
 }

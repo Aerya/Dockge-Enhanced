@@ -238,10 +238,12 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 }
 
                 const stack = await Stack.getStack(server, stackName, true);
-                const serviceStatusList = Object.fromEntries(await stack.getServiceStatusList());
+                const { serviceStatusList, lastUpdated, lastStartedAt } = await stack.getServiceStatusList();
                 callbackResult({
                     ok: true,
-                    serviceStatusList,
+                    serviceStatusList: Object.fromEntries(serviceStatusList),
+                    lastUpdated,
+                    lastStartedAt,
                 }, callback);
             } catch (e) {
                 callbackError(e, callback);

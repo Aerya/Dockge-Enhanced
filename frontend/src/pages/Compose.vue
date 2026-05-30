@@ -7,6 +7,14 @@
                 <span v-if="$root.agentCount > 1" class="agent-name">
                     ({{ endpointDisplay }})
                 </span>
+                <div v-if="lastUpdated || lastStartedAt" class="stack-meta-bar">
+                    <span v-if="lastUpdated" class="stack-meta-item" :title="new Date(lastUpdated).toLocaleString()">
+                        <font-awesome-icon icon="clock" class="me-1" />{{ $t('updatedAt') }} {{ relativeTime(lastUpdated) }}
+                    </span>
+                    <span v-if="lastStartedAt" class="stack-meta-item" :title="new Date(lastStartedAt).toLocaleString()">
+                        <font-awesome-icon icon="rotate" class="me-1" />{{ $t('restartedAt') }} {{ relativeTime(lastStartedAt) }}
+                    </span>
+                </div>
             </h1>
 
             <div v-if="stack.isManagedByDockge" class="mb-3">
@@ -153,7 +161,18 @@
                     <div v-show="!isEditMode">
                         <div class="terminal-toolbar mb-3">
                             <h4 class="mb-0">{{ $t("terminal") }}</h4>
-                            <div v-if="logServiceOptions.length > 0" class="terminal-service-filter">
+                            <div class="terminal-toolbar-right">
+                            <button
+                                class="btn btn-sm"
+                                :class="logTimestamps ? 'btn-primary' : 'btn-normal'"
+                                @click="toggleLogTimestamps"
+                                :title="$t('logTimestampsToggle')"
+                                style="font-size:0.78rem; padding: 2px 8px;"
+                            >
+                                <font-awesome-icon icon="clock" class="me-1" />{{ $t('logTimestamps') }}
+                            </button>
+                        </div>
+                        <div v-if="logServiceOptions.length > 0" class="terminal-service-filter">
                                 <label class="form-label mb-0 small text-muted" for="log-service-select">Service</label>
                                 <select
                                     id="log-service-select"
@@ -351,6 +370,9 @@ export default {
 
             },
             serviceStatusList: {},
+            lastUpdated: null,
+            lastStartedAt: null,
+            logTimestamps: false,
             isEditMode: false,
             submitted: false,
             showDeleteDialog: false,
@@ -430,7 +452,8 @@ export default {
             if (!this.stack.name) {
                 return "";
             }
-            return getStackLogsTerminalName(this.endpoint, this.stack.name, this.selectedLogService);
+            const base = getStackLogsTerminalName(this.endpoint, this.stack.name, this.selectedLogService);
+            return this.logTimestamps ? base + "_ts" : base;
         },
 
         logServiceOptions() {
@@ -543,6 +566,15 @@ export default {
 
     },
     methods: {
+        relativeTime(iso) {
+            if (!iso) return null;
+            const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+            if (diff < 60)   return `${diff}s`;
+            if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
+            return `${Math.floor(diff / 86400)} j`;
+        },
+
         startServiceStatusTimeout() {
             clearTimeout(serviceStatusTimeout);
             serviceStatusTimeout = setTimeout(async () => {
@@ -559,6 +591,8 @@ export default {
             this.$root.emitAgent(this.endpoint, "serviceStatusList", this.stack.name, (res) => {
                 if (res.ok) {
                     this.serviceStatusList = res.serviceStatusList;
+                    this.lastUpdated    = res.lastUpdated    ?? null;
+                    this.lastStartedAt  = res.lastStartedAt  ?? null;
                 }
                 if (!this.stopServiceStatusTimeout) {
                     this.startServiceStatusTimeout();
@@ -588,8 +622,8 @@ export default {
             // Leave Combined Terminal
             console.debug("leaveCombinedTerminal", this.endpoint, this.stack.name);
             this.$root.emitAgent(this.endpoint, "leaveCombinedTerminal", this.stack.name, () => {});
-            if (this.joinedLogService) {
-                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, () => {});
+            if (this.joinedLogService !== undefined) {
+                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, this.logTimestamps, () => {});
             }
         },
 
@@ -606,11 +640,11 @@ export default {
             const previousService = this.joinedLogService;
             const nextService = this.selectedLogService;
 
-            if (previousService && previousService !== nextService) {
-                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, previousService, () => {});
+            if (previousService !== undefined) {
+                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, previousService, this.logTimestamps, () => {});
             }
 
-            this.$root.emitAgent(this.endpoint, "joinStackLogsTerminal", this.stack.name, nextService, (res) => {
+            this.$root.emitAgent(this.endpoint, "joinStackLogsTerminal", this.stack.name, nextService, this.logTimestamps, (res) => {
                 if (res.ok) {
                     this.joinedLogService = nextService;
                     this.$nextTick(() => {
@@ -620,6 +654,16 @@ export default {
                     this.$root.toastRes(res);
                 }
             });
+        },
+
+        toggleLogTimestamps() {
+            // Quitte l'ancien terminal (sans timestamps) et rejoint le nouveau (avec)
+            if (this.joinedLogService !== undefined) {
+                const oldTs = !this.logTimestamps;
+                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, oldTs, () => {});
+            }
+            this.logTimestamps = !this.logTimestamps;
+            this.joinSelectedLogTerminal();
         },
 
         normalizeLogServiceSelection() {
@@ -863,6 +907,14 @@ export default {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
+}
+
+.terminal-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
 }
 
 .terminal-service-filter {
@@ -873,6 +925,20 @@ export default {
     .form-select {
         width: min(220px, 42vw);
     }
+}
+
+.stack-meta-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+.stack-meta-item {
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: #9ca3af;
+    cursor: default;
 }
 
 .editor-box {
