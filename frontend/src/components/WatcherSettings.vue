@@ -1643,7 +1643,10 @@ const trivyByStack = computed(() => {
 const API = "/api/watcher";
 async function api(method: string, path: string, body?: unknown) {
   const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
-  const res = await fetch(API + path, {
+  const base  = API + path;
+  const sep   = base.includes("?") ? "&" : "?";
+  const url   = token ? `${base}${sep}token=${encodeURIComponent(token)}` : base;
+  const res = await fetch(url, {
     method,
     headers: {
       "Content-Type": "application/json",
