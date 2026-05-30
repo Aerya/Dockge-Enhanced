@@ -8,7 +8,7 @@
                     ({{ endpointDisplay }})
                 </span>
                 <div v-if="lastUpdated || lastStartedAt" class="stack-meta-bar">
-                    <span v-if="lastUpdated && lastUpdated !== lastStartedAt" class="stack-meta-item" :title="new Date(lastUpdated).toLocaleString()">
+                    <span v-if="lastUpdated" class="stack-meta-item" :title="new Date(lastUpdated).toLocaleString()">
                         <font-awesome-icon icon="clock" class="me-1" />{{ $t('updatedAt') }} {{ relativeTime(lastUpdated) }}
                     </span>
                     <span v-if="lastStartedAt" class="stack-meta-item" :title="new Date(lastStartedAt).toLocaleString()">

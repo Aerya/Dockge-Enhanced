@@ -207,10 +207,22 @@ export class Stack {
         }
     }
 
-    /** Écrit la date de dernier déploiement dans .dockge-deployed-at */
-    private async writeDeployedAt(): Promise<void> {
+    /** Lit le fichier .dockge-meta.json du stack */
+    private async readMeta(): Promise<{ lastUpdated: string | null; lastStartedAt: string | null }> {
         try {
-            await fsAsync.writeFile(path.join(this.path, ".dockge-deployed-at"), new Date().toISOString(), "utf8");
+            const raw = await fsAsync.readFile(path.join(this.path, ".dockge-meta.json"), "utf8");
+            return JSON.parse(raw) as { lastUpdated: string | null; lastStartedAt: string | null };
+        } catch {
+            return { lastUpdated: null, lastStartedAt: null };
+        }
+    }
+
+    /** Met à jour un ou les deux champs dans .dockge-meta.json */
+    private async writeMeta(fields: { lastUpdated?: string; lastStartedAt?: string }): Promise<void> {
+        try {
+            const existing = await this.readMeta();
+            const updated = { ...existing, ...fields };
+            await fsAsync.writeFile(path.join(this.path, ".dockge-meta.json"), JSON.stringify(updated), "utf8");
         } catch { /* non bloquant */ }
     }
 
@@ -220,7 +232,8 @@ export class Stack {
         if (exitCode !== 0) {
             throw new Error("Failed to deploy, please check the terminal output for more information.");
         }
-        await this.writeDeployedAt();
+        const now = new Date().toISOString();
+        await this.writeMeta({ lastUpdated: now, lastStartedAt: now });
         return exitCode;
     }
 
@@ -434,7 +447,7 @@ export class Stack {
         if (exitCode !== 0) {
             throw new Error("Failed to start, please check the terminal output for more information.");
         }
-        await this.writeDeployedAt();
+        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
         return exitCode;
     }
 
@@ -453,7 +466,7 @@ export class Stack {
         if (exitCode !== 0) {
             throw new Error("Failed to restart, please check the terminal output for more information.");
         }
-        await this.writeDeployedAt();
+        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
         return exitCode;
     }
 
@@ -473,6 +486,9 @@ export class Stack {
             throw new Error("Failed to pull, please check the terminal output for more information.");
         }
 
+        // Le pull vient de réussir — on enregistre la date de mise à jour
+        await this.writeMeta({ lastUpdated: new Date().toISOString() });
+
         // If the stack is not running, we don't need to restart it
         await this.updateStatus();
         log.debug("update", "Status: " + this.status);
@@ -484,7 +500,8 @@ export class Stack {
         if (exitCode !== 0) {
             throw new Error("Failed to restart, please check the terminal output for more information.");
         }
-        await this.writeDeployedAt();
+        // Le up a réussi — on enregistre la date de relance
+        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
         return exitCode;
     }
 
@@ -553,13 +570,10 @@ export class Stack {
         let lastUpdated: string | null = null;
         let lastStartedAt: string | null = null;
 
-        // ── lastUpdated : date du dernier déploiement/update/restart ─
-        // Priorité : fichier .dockge-deployed-at (écrit à chaque opération)
-        // Fallback  : lastStartedAt (container déjà tournant avant l'installation du fix)
-        try {
-            const deployedAtPath = path.join(this.path, ".dockge-deployed-at");
-            lastUpdated = (await fsAsync.readFile(deployedAtPath, "utf8")).trim();
-        } catch { /* fichier absent : fallback sur lastStartedAt appliqué après */ }
+        // ── lastUpdated + lastStartedAt depuis .dockge-meta.json ─────
+        const meta = await this.readMeta();
+        lastUpdated   = meta.lastUpdated;
+        lastStartedAt = meta.lastStartedAt;
 
         try {
             let res = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--format", "json"), {
@@ -592,37 +606,6 @@ export class Stack {
                     }
                 } catch (e) {
                 }
-            }
-
-            // ── lastStartedAt : docker inspect sur les containers ─
-            try {
-                const psqRes = await childProcessAsync.spawn(
-                    "docker", this.getComposeOptions("ps", "-q"),
-                    { cwd: this.path, encoding: "utf-8" }
-                );
-                const ids = (psqRes.stdout?.toString() ?? "").trim().split("\n").filter(Boolean);
-                if (ids.length > 0) {
-                    const inspectRes = await childProcessAsync.spawn(
-                        "docker",
-                        [ "inspect", "--format", "{{.State.StartedAt}}", ...ids ],
-                        { cwd: this.path, encoding: "utf-8" }
-                    );
-                    const times = (inspectRes.stdout?.toString() ?? "")
-                        .trim().split("\n")
-                        .map(d => d.trim())
-                        .filter(d => d && d !== "0001-01-01T00:00:00Z")
-                        .map(d => new Date(d).getTime())
-                        .filter(t => !isNaN(t));
-                    if (times.length > 0) {
-                        lastStartedAt = new Date(Math.max(...times)).toISOString();
-                    }
-                }
-            } catch { /* ignore */ }
-
-            // Fallback : si le fichier .dockge-deployed-at n'existe pas encore,
-            // on utilise lastStartedAt comme approximation de la dernière mise à jour
-            if (!lastUpdated && lastStartedAt) {
-                lastUpdated = lastStartedAt;
             }
 
             return { serviceStatusList, lastUpdated, lastStartedAt };
