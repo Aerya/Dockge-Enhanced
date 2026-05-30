@@ -31,6 +31,7 @@ export class Terminal {
     protected _cols : number = TERMINAL_COLS;
 
     public enableKeepAlive : boolean = false;
+    public outputTransform?: (data: string) => string;
     protected keepAliveInterval? : NodeJS.Timeout;
     protected kickDisconnectedClientsInterval? : NodeJS.Timeout;
 
@@ -121,11 +122,12 @@ export class Terminal {
 
             // On Data
             this._ptyProcess.onData((data) => {
-                this.buffer.pushItem(data);
+                const out = this.outputTransform ? this.outputTransform(data) : data;
+                this.buffer.pushItem(out);
 
                 for (const socketID in this.socketList) {
                     const socket = this.socketList[socketID];
-                    socket.emitAgent("terminalWrite", this.name, data);
+                    socket.emitAgent("terminalWrite", this.name, out);
                 }
             });
 

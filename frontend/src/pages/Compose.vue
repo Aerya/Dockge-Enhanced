@@ -629,7 +629,8 @@ export default {
 
         bindTerminal() {
             this.$refs.progressTerminal?.bind(this.endpoint, this.terminalName);
-            this.$refs.combinedTerminal?.bind(this.endpoint, this.selectedLogTerminalName);
+            // Rejoint le bon terminal logs (avec ou sans timestamps selon l'état actuel)
+            this.joinSelectedLogTerminal();
         },
 
         joinSelectedLogTerminal() {
@@ -657,12 +658,12 @@ export default {
         },
 
         toggleLogTimestamps() {
-            // Quitte l'ancien terminal (sans timestamps) et rejoint le nouveau (avec)
+            // Quitte l'ancien terminal (état ACTUEL avant bascule) et rejoint le nouveau
+            const currentTs = this.logTimestamps;
             if (this.joinedLogService !== undefined) {
-                const oldTs = !this.logTimestamps;
-                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, oldTs, () => {});
+                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, currentTs, () => {});
             }
-            this.logTimestamps = !this.logTimestamps;
+            this.logTimestamps = !currentTs;
             this.joinSelectedLogTerminal();
         },
 

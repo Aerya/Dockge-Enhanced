@@ -207,12 +207,20 @@ export class Stack {
         }
     }
 
+    /** Écrit la date de dernier déploiement dans .dockge-deployed-at */
+    private async writeDeployedAt(): Promise<void> {
+        try {
+            await fsAsync.writeFile(path.join(this.path, ".dockge-deployed-at"), new Date().toISOString(), "utf8");
+        } catch { /* non bloquant */ }
+    }
+
     async deploy(socket : DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--remove-orphans"), this.path);
         if (exitCode !== 0) {
             throw new Error("Failed to deploy, please check the terminal output for more information.");
         }
+        await this.writeDeployedAt();
         return exitCode;
     }
 
@@ -426,6 +434,7 @@ export class Stack {
         if (exitCode !== 0) {
             throw new Error("Failed to start, please check the terminal output for more information.");
         }
+        await this.writeDeployedAt();
         return exitCode;
     }
 
@@ -444,6 +453,7 @@ export class Stack {
         if (exitCode !== 0) {
             throw new Error("Failed to restart, please check the terminal output for more information.");
         }
+        await this.writeDeployedAt();
         return exitCode;
     }
 
@@ -474,6 +484,7 @@ export class Stack {
         if (exitCode !== 0) {
             throw new Error("Failed to restart, please check the terminal output for more information.");
         }
+        await this.writeDeployedAt();
         return exitCode;
     }
 
@@ -494,6 +505,14 @@ export class Stack {
         terminal.enableKeepAlive = true;
         terminal.rows = COMBINED_TERMINAL_ROWS;
         terminal.cols = COMBINED_TERMINAL_COLS;
+        if (timestamps) {
+            // Reformate 2026-05-30T07:56:24.499026300Z → 2026.05.30-07:56:24
+            terminal.outputTransform = (data: string) =>
+                data.replace(
+                    /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.\d+Z/g,
+                    "$1.$2.$3-$4:$5:$6"
+                );
+        }
         terminal.join(socket);
         terminal.start();
     }
@@ -534,12 +553,11 @@ export class Stack {
         let lastUpdated: string | null = null;
         let lastStartedAt: string | null = null;
 
-        // ── lastUpdated : mtime du fichier compose ────────────────
+        // ── lastUpdated : date du dernier déploiement/update/restart ─
         try {
-            const composePath = path.join(this.path, this._composeFileName);
-            const stat = await fsAsync.stat(composePath);
-            lastUpdated = stat.mtime.toISOString();
-        } catch { /* ignore */ }
+            const deployedAtPath = path.join(this.path, ".dockge-deployed-at");
+            lastUpdated = (await fsAsync.readFile(deployedAtPath, "utf8")).trim();
+        } catch { /* fichier absent = jamais déployé via cette instance */ }
 
         try {
             let res = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--format", "json"), {
