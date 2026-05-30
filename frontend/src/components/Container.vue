@@ -12,6 +12,11 @@
                     <a v-for="port in (ports ?? envsubstService.ports)" :key="port" :href="parsePort(port).url" target="_blank">
                         <span class="badge me-1 bg-secondary">{{ parsePort(port).display }}</span>
                     </a>
+
+                    <span v-if="startedAt" class="container-started-at ms-1">
+                        <font-awesome-icon icon="rotate" />
+                        {{ relativeTime(startedAt) }}
+                    </span>
                 </div>
             </div>
             <div class="col-5">
@@ -163,6 +168,10 @@ export default defineComponent({
         ports: {
             type: Array,
             default: null
+        },
+        startedAt: {
+            type: String,
+            default: null
         }
     },
     emits: [
@@ -288,6 +297,14 @@ export default defineComponent({
         remove() {
             delete this.jsonObject.services[this.name];
         },
+        relativeTime(iso) {
+            if (!iso) return null;
+            const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+            if (diff < 60)    return diff + "s";
+            if (diff < 3600)  return Math.floor(diff / 60) + " min";
+            if (diff < 86400) return Math.floor(diff / 3600) + " h";
+            return Math.floor(diff / 86400) + " j";
+        },
     }
 });
 </script>
@@ -312,5 +329,11 @@ export default defineComponent({
         align-items: center;
         justify-content: end;
     }
+}
+
+.container-started-at {
+    font-size: 0.75rem;
+    color: #6b7280;
+    vertical-align: middle;
 }
 </style>

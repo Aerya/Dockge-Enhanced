@@ -562,21 +562,20 @@ export class Stack {
     }
 
     async getServiceStatusList() : Promise<{
-        serviceStatusList: Map<string, { state: string; ports: string[] }>;
+        serviceStatusList: Map<string, { state: string; ports: string[]; startedAt: string | null }>;
         lastUpdated: string | null;
         lastStartedAt: string | null;
     }> {
-        let serviceStatusList = new Map<string, { state: string; ports: string[] }>();
+        let serviceStatusList = new Map<string, { state: string; ports: string[]; startedAt: string | null }>();
         let lastUpdated: string | null = null;
         let lastStartedAt: string | null = null;
 
-        // ── lastUpdated + lastStartedAt depuis .dockge-meta.json ─────
+        // ── lastUpdated depuis .dockge-meta.json (écrit à chaque pull/deploy) ──
         const meta = await this.readMeta();
-        lastUpdated   = meta.lastUpdated;
-        lastStartedAt = meta.lastStartedAt;
+        lastUpdated = meta.lastUpdated ?? meta.lastStartedAt ?? null;
 
         try {
-            let res = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--format", "json"), {
+            const res = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--format", "json"), {
                 cwd: this.path,
                 encoding: "utf-8",
             });
@@ -585,28 +584,59 @@ export class Stack {
                 return { serviceStatusList, lastUpdated, lastStartedAt };
             }
 
-            let lines = res.stdout?.toString().split("\n");
+            // ── Parse docker compose ps ───────────────────────────────────────
+            const containerNameToService = new Map<string, string>();
 
-            for (let line of lines) {
+            for (const line of res.stdout.toString().split("\n")) {
                 try {
-                    let obj = JSON.parse(line);
-                    let ports = (obj.Ports as string).split(/,\s*/).filter((s) => {
-                        return s.indexOf("->") >= 0;
-                    });
-                    if (obj.Health === "") {
-                        serviceStatusList.set(obj.Service, {
-                            state: obj.State,
-                            ports: ports
-                        });
-                    } else {
-                        serviceStatusList.set(obj.Service, {
-                            state: obj.Health,
-                            ports: ports
-                        });
+                    const obj = JSON.parse(line);
+                    const ports = (obj.Ports as string).split(/,\s*/).filter((s: string) => s.includes("->"));
+                    const state = obj.Health === "" ? obj.State : obj.Health;
+                    serviceStatusList.set(obj.Service, { state, ports, startedAt: null });
+                    // Associe le nom du container (sans /) au service
+                    if (obj.Name) {
+                        containerNameToService.set((obj.Name as string).replace(/^\//, ""), obj.Service as string);
                     }
-                } catch (e) {
-                }
+                } catch { /* ligne vide ou invalide */ }
             }
+
+            // ── docker inspect : StartedAt par container ──────────────────────
+            const containerNames = [ ...containerNameToService.keys() ];
+            if (containerNames.length > 0) {
+                try {
+                    const inspectRes = await childProcessAsync.spawn(
+                        "docker",
+                        [ "inspect", "--format", "{{.Name}} {{.State.StartedAt}}", ...containerNames ],
+                        { encoding: "utf-8" }
+                    );
+
+                    const allTimes: number[] = [];
+                    for (const line of (inspectRes.stdout?.toString() ?? "").trim().split("\n")) {
+                        const parts = line.trim().split(" ");
+                        if (parts.length < 2) continue;
+                        const cName    = parts[0].replace(/^\//, "");
+                        const startedAt = parts[1];
+                        if (!startedAt || startedAt === "0001-01-01T00:00:00Z") continue;
+
+                        const svcName = containerNameToService.get(cName);
+                        if (svcName) {
+                            const entry = serviceStatusList.get(svcName);
+                            if (entry) entry.startedAt = startedAt;
+                        }
+                        const t = new Date(startedAt).getTime();
+                        if (!isNaN(t)) allTimes.push(t);
+                    }
+
+                    if (allTimes.length > 0) {
+                        lastStartedAt = new Date(Math.max(...allTimes)).toISOString();
+                    }
+                } catch { /* ignore — inspect non bloquant */ }
+            }
+
+            // Fallback lastUpdated si le fichier meta n'existe pas encore
+            if (!lastUpdated) lastUpdated = lastStartedAt;
+            // Fallback lastStartedAt depuis meta si aucun container running
+            if (!lastStartedAt) lastStartedAt = meta.lastStartedAt ?? null;
 
             return { serviceStatusList, lastUpdated, lastStartedAt };
         } catch (e) {

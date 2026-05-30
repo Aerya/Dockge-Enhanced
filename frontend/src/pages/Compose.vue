@@ -138,6 +138,7 @@
                             :first="name === Object.keys(jsonConfig.services)[0]"
                             :status="serviceStatusList[name]?.state"
                             :ports="serviceStatusList[name]?.ports"
+                            :started-at="serviceStatusList[name]?.startedAt ?? null"
                         />
                     </div>
 
