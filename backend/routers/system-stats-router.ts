@@ -121,29 +121,53 @@ let stackCollectorStarted = false;
 async function updateStackStats(): Promise<void> {
     try {
         const [{ stdout: statsOut }, { stdout: psOut }] = await Promise.all([
-            execAsync("docker stats --no-stream --format '{{json .}}' 2>/dev/null"),
-            execAsync("docker ps --format '{{json .}}' 2>/dev/null"),
+            execAsync("docker stats --no-stream --format '{{json .}}'"),
+            execAsync("docker ps --format '{{json .}}'"),
         ]);
 
-        // containerID (short) → stackName
-        const idToStack = new Map<string, string>();
+        // Index : short ID ET noms de container → stackName
+        // Robuste face aux socket-proxies qui peuvent changer le format de l'ID
+        const containerToStack = new Map<string, string>();
         for (const line of psOut.trim().split("\n")) {
-            if (!line) continue;
+            if (!line.trim()) continue;
             try {
                 const c = JSON.parse(line);
                 const labels: string = c["Labels"] ?? "";
                 const m = labels.match(/com\.docker\.compose\.project=([^,]+)/);
-                if (m) idToStack.set(c["ID"], m[1].trim());
+                if (!m) continue;
+                const stackName = m[1].trim();
+
+                // Par ID court (12 chars)
+                if (c["ID"]) containerToStack.set((c["ID"] as string).trim(), stackName);
+
+                // Par nom(s) — docker ps retourne parfois "/nom1,/nom2"
+                const names: string = c["Names"] ?? "";
+                for (const n of names.split(",")) {
+                    const clean = n.trim().replace(/^\//, "");
+                    if (clean) containerToStack.set(clean, stackName);
+                }
             } catch { /* ligne invalide */ }
         }
 
-        // Agrégation par stack
+        // Agrégation par stack — cherche le stackName par ID, Container ou Name
         const aggr = new Map<string, StackStat>();
         for (const line of statsOut.trim().split("\n")) {
-            if (!line) continue;
+            if (!line.trim()) continue;
             try {
                 const s = JSON.parse(line);
-                const stackName = idToStack.get(s["ID"]) ?? idToStack.get(s["Container"]);
+
+                const candidates = [
+                    s["ID"],
+                    s["Container"],
+                    s["Name"],
+                ].map((v: unknown) => (typeof v === "string" ? v.replace(/^\//, "").trim() : ""))
+                    .filter(Boolean);
+
+                let stackName: string | undefined;
+                for (const key of candidates) {
+                    stackName = containerToStack.get(key);
+                    if (stackName) break;
+                }
                 if (!stackName) continue;
 
                 const cpu     = parseFloat((s["CPUPerc"] ?? "0").replace("%", "")) || 0;
