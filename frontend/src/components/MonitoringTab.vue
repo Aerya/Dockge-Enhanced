@@ -620,10 +620,10 @@ async function testAppriseMonitoring() {
     if (!monSettings.value.appriseUrls.length) return;
     testingApprise.value = true;
     try {
-        // Le serverUrl est partagé, on le récupère depuis /image/settings
-        const imgRes = await api("GET", "/image/settings");
+        // Le serverUrl est partagé — stocké dans les settings image (watcher-router)
+        const imgRes = await api("GET", "/watcher/image/settings");
         const serverUrl = imgRes.ok ? ((imgRes.data as Record<string, unknown>)?.appriseServerUrl as string ?? "") : "";
-        const res = await api("POST", "/apprise/test", {
+        const res = await api("POST", "/watcher/apprise/test", {
             serverUrl,
             urls: monSettings.value.appriseUrls,
         });

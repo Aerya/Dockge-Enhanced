@@ -1715,7 +1715,7 @@ export class BackupManager {
 
             if ((result.warnings ?? []).length > 0) {
                 fields.push({
-                    name: t("Avertissements", "Warnings"),
+                    name: t("⚠️ Avertissements", "⚠️ Warnings"),
                     value: result.warnings!.slice(0, 8).join("\n"),
                     inline: false,
                 });
@@ -1746,7 +1746,7 @@ export class BackupManager {
 
             if ((result.warnings ?? []).length > 0) {
                 fields.push({
-                    name: t("Avertissements", "Warnings"),
+                    name: t("⚠️ Avertissements", "⚠️ Warnings"),
                     value: result.warnings!.slice(0, 8).join("\n"),
                     inline: false,
                 });
