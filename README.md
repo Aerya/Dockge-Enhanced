@@ -242,6 +242,24 @@ This fork tracks upstream Dockge releases automatically via GitHub Actions:
 
 ---
 
+## Mobile apps / third-party clients
+
+Dockge-Enhanced is free and open-source.
+
+There is currently no official iOS or Android app maintained by this project.
+
+Third-party clients may exist, but they are independent from Dockge-Enhanced unless explicitly listed here.
+
+---
+
+## Attribution
+
+If your app, service, article or integration uses Dockge-Enhanced features, API endpoints, screenshots, documentation or branding, please credit the project and link to this repository.
+
+Commercial third-party clients are allowed by the license, but must not imply official affiliation without permission.
+
+---
+
 ## Credits
 
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — the original project (MIT licence)
