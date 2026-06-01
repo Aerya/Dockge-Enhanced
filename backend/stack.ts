@@ -512,12 +512,14 @@ export class Stack {
     async joinLogsTerminal(socket: DockgeSocket, serviceName = "", timestamps = false) {
         const suffix = timestamps ? "_ts" : "";
         const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName) + suffix;
-        const logFlags: string[] = timestamps
-            ? [ "logs", "-f", "--tail", "100", "--timestamps" ]
-            : [ "logs", "-f", "--tail", "100" ];
-        const args = serviceName
-            ? this.getComposeOptions(...logFlags, serviceName)
-            : this.getComposeOptions(...logFlags);
+        const logOptions = [ "-f", "--tail", "100" ];
+        if (timestamps) {
+            logOptions.push("--timestamps");
+        }
+        if (serviceName) {
+            logOptions.push(serviceName);
+        }
+        const args = this.getComposeOptions("logs", ...logOptions);
         const terminal = Terminal.getOrCreateTerminal(this.server, terminalName, "docker", args, this.path);
         terminal.enableKeepAlive = true;
         terminal.rows = COMBINED_TERMINAL_ROWS;
