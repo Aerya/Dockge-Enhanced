@@ -214,7 +214,13 @@
                                     />
                                 </th>
                                 <th>{{ t.images.cols.image }}</th>
-                                <th>{{ t.images.cols.size }}</th>
+                                <th class="th-sortable" @click="toggleImgSizeSort" style="cursor:pointer;user-select:none;white-space:nowrap">
+                                    {{ t.images.cols.size }}
+                                    <span class="sort-indicator">
+                                        <span :style="{ opacity: imgSizeSort === 'desc' ? 1 : 0.25 }">▼</span>
+                                        <span :style="{ opacity: imgSizeSort === 'asc'  ? 1 : 0.25 }">▲</span>
+                                    </span>
+                                </th>
                                 <th>{{ t.images.cols.created }}</th>
                                 <th>{{ t.images.cols.status }}</th>
                                 <th>{{ t.images.cols.containers }}</th>
@@ -222,7 +228,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="img in images" :key="img.id"
+                            <tr v-for="img in sortedImages" :key="img.id"
                                 :class="rowClass(img.status, img.dockgeStacks)">
                                 <td>
                                     <input v-if="img.status !== 'running'"
@@ -805,6 +811,38 @@ const danglingCount = computed(() =>
 const unusedVolumesCount = computed(() =>
     volumes.value.filter(v => v.status === "unused").length);
 
+// ─── Tri par taille ───────────────────────────────────────────────
+
+const imgSizeSort = ref<"asc" | "desc" | null>(null);
+
+function parseImageSize(s: string): number {
+    const m = (s ?? "").trim().match(/^([\d.]+)\s*([A-Za-z]+)$/);
+    if (!m) return 0;
+    const val = parseFloat(m[1]);
+    const units: Record<string, number> = {
+        B: 1,
+        kB: 1e3, KB: 1e3,
+        MB: 1e6, MiB: 1024 ** 2,
+        GB: 1e9, GiB: 1024 ** 3,
+        TB: 1e12, TiB: 1024 ** 4,
+    };
+    return val * (units[m[2]] ?? 1);
+}
+
+const sortedImages = computed(() => {
+    if (!imgSizeSort.value) return images.value;
+    return [...images.value].sort((a, b) => {
+        const diff = parseImageSize(a.size) - parseImageSize(b.size);
+        return imgSizeSort.value === "asc" ? diff : -diff;
+    });
+});
+
+function toggleImgSizeSort() {
+    if (imgSizeSort.value === null)   imgSizeSort.value = "desc";
+    else if (imgSizeSort.value === "desc") imgSizeSort.value = "asc";
+    else imgSizeSort.value = null;
+}
+
 const imgBadgeClass = computed(() => {
     if (danglingCount.value > 0) return "bg-danger";
     if (unusedImagesCount.value > 0) return "bg-secondary";
@@ -1203,6 +1241,9 @@ onMounted(() => {
 }
 
 // ── Table ────────────────────────────────────────────────────────
+.th-sortable:hover { color: #d1d5db; }
+.sort-indicator { font-size: .65rem; margin-left: 3px; letter-spacing: -2px; }
+
 .resources-table {
     font-size: 0.875rem;
     --bs-table-bg: transparent;
