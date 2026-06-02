@@ -5,7 +5,7 @@
  * Export additionnel : `stackStatsEnabled` (ref<boolean>) pour le toggle UI.
  */
 
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 import { setLowPower, POLL, makePoller, type Poller } from "./useLowPower";
 
 export interface StackStat {
@@ -23,6 +23,12 @@ let subscribers = 0;
 export const stackStatsEnabled = ref<boolean>(
     localStorage.getItem("stackStatsEnabled") === "true"
 );
+
+// Activation du badge → rafraîchit tout de suite (sinon il faudrait attendre
+// le prochain tick du poller, jusqu'à 60 s en mode low-power).
+watch(stackStatsEnabled, (on) => {
+    if (on && subscribers > 0) void fetchStackStats();
+});
 
 // ─── Fetch ───────────────────────────────────────────────────────
 
