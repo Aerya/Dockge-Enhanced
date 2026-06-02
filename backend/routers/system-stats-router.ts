@@ -16,6 +16,7 @@ import { Router } from "../router";
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";
 import { DockgeServer } from "../dockge-server";
 import { Settings } from "../settings";
+import { isLowPower, intervals } from "../low-power";
 import jwt from "jsonwebtoken";
 import { JWTDecoded } from "../util-server";
 
@@ -41,29 +42,28 @@ async function readCpuTimes(): Promise<CpuTimes> {
     }
 }
 
-// Cache mis à jour toutes les 3 s en background
+// ─── CPU : échantillonnage LAZY (piloté par les requêtes /stats) ──
+// Pas de setInterval permanent : on échantillonne seulement quand un client
+// poll réellement, au maximum 1×/intervalle. Aucun client → aucun calcul.
 let cpuPercent = 0;
 let lastCpuTimes: CpuTimes | null = null;
-let collectorStarted = false;
+let lastCpuSampleAt = 0;
 
-function startCpuCollector(): void {
-    if (collectorStarted) return;
-    collectorStarted = true;
+async function sampleCpuIfDue(): Promise<void> {
+    const due = intervals().cpuSample;
+    if (Date.now() - lastCpuSampleAt < due) return;
 
-    readCpuTimes().then(t => { lastCpuTimes = t; }).catch(() => {});
-
-    setInterval(async () => {
-        const current = await readCpuTimes();
-        if (lastCpuTimes) {
-            const totalDiff = current.total - lastCpuTimes.total;
-            const idleDiff  = current.idle  - lastCpuTimes.idle;
-            if (totalDiff > 0) {
-                cpuPercent = Math.round((totalDiff - idleDiff) / totalDiff * 100);
-                cpuPercent = Math.max(0, Math.min(100, cpuPercent));
-            }
+    const current = await readCpuTimes();
+    if (lastCpuTimes) {
+        const totalDiff = current.total - lastCpuTimes.total;
+        const idleDiff  = current.idle  - lastCpuTimes.idle;
+        if (totalDiff > 0) {
+            cpuPercent = Math.round((totalDiff - idleDiff) / totalDiff * 100);
+            cpuPercent = Math.max(0, Math.min(100, cpuPercent));
         }
-        lastCpuTimes = current;
-    }, 3000);
+    }
+    lastCpuTimes   = current;
+    lastCpuSampleAt = Date.now();
 }
 
 // ─── Auth (même pattern que les autres routers Enhanced) ─────────
@@ -116,7 +116,8 @@ function parseDockerBytes(str: string): number {
 }
 
 const stackStatsCache = new Map<string, StackStat>();
-let stackCollectorStarted = false;
+let lastStackCollectAt = 0;
+let stackCollectInFlight: Promise<void> | null = null;
 
 async function updateStackStats(): Promise<void> {
     try {
@@ -189,11 +190,33 @@ async function updateStackStats(): Promise<void> {
     } catch { /* docker non dispo */ }
 }
 
-function startStackCollector(): void {
-    if (stackCollectorStarted) return;
-    stackCollectorStarted = true;
-    updateStackStats().catch(() => {});
-    setInterval(() => updateStackStats().catch(() => {}), 10000);
+/** Collecte unique, dédupliquée (un seul `docker stats` global en vol à la fois). */
+function collectStackStats(): Promise<void> {
+    if (stackCollectInFlight) return stackCollectInFlight;
+    stackCollectInFlight = updateStackStats()
+        .catch(() => { /* docker non dispo */ })
+        .finally(() => {
+            lastStackCollectAt   = Date.now();
+            stackCollectInFlight = null;
+        });
+    return stackCollectInFlight;
+}
+
+/**
+ * Déclenche une collecte SEULEMENT si le cache est périmé (lazy + throttle).
+ * Piloté par les requêtes HTTP : aucun client ne poll → aucune collecte.
+ * Premier chargement (cache vide) : on attend pour ne pas renvoyer du vide ;
+ * sinon on rafraîchit en arrière-plan sans bloquer la réponse.
+ */
+async function collectStackStatsIfDue(): Promise<void> {
+    const due = intervals().stackStats;
+    if (Date.now() - lastStackCollectAt < due) return;
+
+    if (stackStatsCache.size === 0) {
+        await collectStackStats();
+    } else {
+        void collectStackStats();
+    }
 }
 
 // ─── Router ───────────────────────────────────────────────────────
@@ -203,14 +226,18 @@ export class SystemStatsRouter extends Router {
         const router = express.Router();
         router.use(express.json());
 
-        startCpuCollector();
-        startStackCollector();
+        // Pas de collecteur en arrière-plan : tout est lazy, piloté par les
+        // requêtes des clients (cf. low-power.ts). Aucun onglet ouvert →
+        // aucun poll → aucun `docker stats` / `df` / lecture /proc/stat.
 
         const auth = (req: Request, res: Response, next: NextFunction) =>
             requireAuth(req, res, next, server.jwtSecret);
 
         router.get("/stats", auth, async (_req: Request, res: Response) => {
             try {
+                // CPU — échantillonné à la demande, throttlé selon le mode
+                await sampleCpuIfDue();
+
                 // RAM
                 const totalMem = os.totalmem();
                 const freeMem  = os.freemem();
@@ -256,6 +283,7 @@ export class SystemStatsRouter extends Router {
                         disk:  disks[0] ?? { mount: "/", used: 0, total: 0, percent: 0 },
                         disks,
                     },
+                    lowPowerMode: isLowPower(),
                 });
             } catch (e: any) {
                 res.status(500).json({ ok: false, message: e.message });
@@ -264,10 +292,12 @@ export class SystemStatsRouter extends Router {
 
         // ── Stats par stack ───────────────────────────────────────
 
-        router.get("/stack-stats", auth, (_req: Request, res: Response) => {
+        router.get("/stack-stats", auth, async (_req: Request, res: Response) => {
+            // Collecte lazy : ne lance `docker stats` que si le cache est périmé
+            await collectStackStatsIfDue();
             const data: Record<string, StackStat> = {};
             for (const [k, v] of stackStatsCache) data[k] = v;
-            res.json({ ok: true, data });
+            res.json({ ok: true, data, lowPowerMode: isLowPower() });
         });
 
         const mountRouter = express.Router();

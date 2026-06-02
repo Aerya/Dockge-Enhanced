@@ -302,6 +302,7 @@ import { BModal } from "bootstrap-vue-next";
 import NetworkInput from "../components/NetworkInput.vue";
 import dotenv from "dotenv";
 import { ref } from "vue";
+import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
 
 const template = `
 services:
@@ -562,9 +563,11 @@ export default {
         }
 
         this.requestServiceStatus();
+        document.addEventListener("visibilitychange", this.onVisibilityServiceStatus);
     },
     unmounted() {
-
+        document.removeEventListener("visibilitychange", this.onVisibilityServiceStatus);
+        clearTimeout(serviceStatusTimeout);
     },
     methods: {
         relativeTime(iso) {
@@ -578,9 +581,10 @@ export default {
 
         startServiceStatusTimeout() {
             clearTimeout(serviceStatusTimeout);
+            // Cadence selon le mode low-power (5 s / 30 s)
             serviceStatusTimeout = setTimeout(async () => {
                 this.requestServiceStatus();
-            }, 5000);
+            }, POLL.service());
         },
 
         requestServiceStatus() {
@@ -589,16 +593,33 @@ export default {
                 return;
             }
 
+            // Onglet caché : on ne sollicite pas docker (pause), on se contente
+            // de re-planifier ; le retour de visibilité forcera un refresh.
+            if (!isVisible()) {
+                if (!this.stopServiceStatusTimeout) {
+                    this.startServiceStatusTimeout();
+                }
+                return;
+            }
+
             this.$root.emitAgent(this.endpoint, "serviceStatusList", this.stack.name, (res) => {
                 if (res.ok) {
                     this.serviceStatusList = res.serviceStatusList;
                     this.lastUpdated    = res.lastUpdated    ?? null;
                     this.lastStartedAt  = res.lastStartedAt  ?? null;
+                    setLowPower(res.lowPowerMode);
                 }
                 if (!this.stopServiceStatusTimeout) {
                     this.startServiceStatusTimeout();
                 }
             });
+        },
+
+        onVisibilityServiceStatus() {
+            // Retour de visibilité : refresh immédiat
+            if (isVisible() && !this.stopServiceStatusTimeout && !this.isAdd) {
+                this.requestServiceStatus();
+            }
         },
 
         exitConfirm(next) {

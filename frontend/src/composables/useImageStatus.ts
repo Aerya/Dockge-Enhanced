@@ -5,6 +5,7 @@
  */
 
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { POLL, makePoller, type Poller } from "./useLowPower";
 
 export interface ImageStatus {
     image: string;
@@ -18,7 +19,7 @@ export interface ImageStatus {
 
 // Cache global partagé entre tous les composants qui utilisent ce composable
 const statusCache = ref<ImageStatus[]>([]);
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+let poller: Poller | null = null;
 let subscribers = 0;
 
 async function fetchStatus() {
@@ -39,17 +40,17 @@ export function useImageStatus() {
     onMounted(() => {
         subscribers++;
         if (subscribers === 1) {
-            // Premier abonné : démarre le polling
-            fetchStatus();
-            pollTimer = setInterval(fetchStatus, 15000);
+            // Premier abonné : démarre le polling (visibility-aware)
+            poller = makePoller({ fetch: fetchStatus, interval: POLL.image });
+            poller.start();
         }
     });
 
     onUnmounted(() => {
         subscribers--;
-        if (subscribers === 0 && pollTimer) {
-            clearInterval(pollTimer);
-            pollTimer = null;
+        if (subscribers === 0 && poller) {
+            poller.stop();
+            poller = null;
         }
     });
 

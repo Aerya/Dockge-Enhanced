@@ -23,6 +23,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 ## Features
 
+🆕 **Synology / low-power mode** — A new toggle in **Monitoring → Display settings** drastically cuts background activity for NAS and small setups. When enabled, system stats refresh every **30 s** (instead of 5 s) and per-container/per-stack stats every **60 s** (instead of 10 s). More importantly, all collection is now **on-demand**: the heavy `docker stats` / `docker inspect` commands run *only* when a client is actually watching — polling **pauses automatically** when no browser tab is open and when the current tab is hidden (`document.hidden`). A single global backend collector caches every Docker result so all connected clients read from one shared cache instead of each triggering its own queries. The mode applies live (no restart) and is remembered across sessions.
+
 🆕 **Stack metadata on compose pages** — Each compose stack page now displays two timestamps below the stack name: **Updated** (time since the `docker-compose.yml` was last saved or deployed, shown as a relative duration with a full date on hover) and **Restarted** (time since the most recently started container in the stack, derived from `docker inspect`). Both refresh every 5 seconds alongside the service status.
 
 🆕 **Log timestamps toggle** — A new **Timestamps** button in the log terminal toolbar toggles ISO 8601 timestamps on each log line (`docker compose logs --timestamps`). The button highlights in blue when active. Toggling seamlessly switches to a new terminal session without losing the current service filter selection.

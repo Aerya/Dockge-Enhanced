@@ -162,6 +162,7 @@
 import Login from "../components/Login.vue";
 import { compareVersions } from "compare-versions";
 import { ALL_ENDPOINTS } from "../../../common/util-common";
+import { setLowPower, POLL, makePoller } from "../composables/useLowPower";
 
 export default {
 
@@ -178,7 +179,7 @@ export default {
                 copied:        false,
             },
             systemStats:      null,
-            statsTimer:       null,
+            statsPoller:      null,
             kulaUrl:          null,
         };
     },
@@ -209,13 +210,17 @@ export default {
 
     mounted() {
         this.checkSelfUpdate();
-        this.fetchSystemStats();
         this.fetchKulaStatus();
-        this.statsTimer = setInterval(this.fetchSystemStats, 5000);
+        // Poll system stats : cadence selon le mode + pause si onglet caché
+        this.statsPoller = makePoller({
+            fetch:    () => this.fetchSystemStats(),
+            interval: POLL.system,
+        });
+        this.statsPoller.start();
     },
 
     beforeUnmount() {
-        if (this.statsTimer) clearInterval(this.statsTimer);
+        if (this.statsPoller) this.statsPoller.stop();
     },
 
     methods: {
@@ -266,6 +271,7 @@ export default {
                 });
                 const data = await res.json();
                 if (data.ok) this.systemStats = data.data;
+                setLowPower(data.lowPowerMode);
             } catch { /* silencieux */ }
         },
 

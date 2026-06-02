@@ -159,6 +159,8 @@
     "watcher.monitoring.displayHeading": "Display Settings",
     "watcher.monitoring.stackStats": "Show CPU / RAM stats per stack",
     "watcher.monitoring.stackStatsHint": "Shows resource usage for each compose in the list (updated every 10 s).",
+    "watcher.monitoring.lowPower": "Synology / low-power mode",
+    "watcher.monitoring.lowPowerHint": "Slows down refreshes (system stats 30 s, container stats 60 s) and pauses collection when no tab is open or visible. Ideal for NAS / small setups.",
     "watcher.monitoring.diskPartition": "Monitored disk partitions",
     "watcher.monitoring.diskPartitionHint": "Partitions shown in the navbar (e.g. / or /mnt/data). One per line.",
     "watcher.monitoring.crashHeading": "Crash Loop Detection",

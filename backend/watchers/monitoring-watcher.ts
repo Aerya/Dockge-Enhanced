@@ -31,6 +31,7 @@ export interface MonitoringSettings {
     discordWebhooks: string[];
     appriseUrls: string[];
     notificationLang: "fr" | "en";
+    lowPowerMode: boolean;               // Mode Synology / faible conso : ralentit les pollings + collecte lazy
 }
 
 export interface CrashEvent {
@@ -49,6 +50,7 @@ const DEFAULT_SETTINGS: MonitoringSettings = {
     discordWebhooks: [],
     appriseUrls: [],
     notificationLang: "fr",
+    lowPowerMode: false,
 };
 
 // ─── Singleton ────────────────────────────────────────────────────

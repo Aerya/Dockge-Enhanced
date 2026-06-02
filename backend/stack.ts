@@ -20,6 +20,18 @@ import {
 import { InteractiveTerminal, Terminal } from "./terminal";
 import childProcessAsync from "promisify-child-process";
 import { Settings } from "./settings";
+import { intervals } from "./low-power";
+
+// ─── Cache court de getServiceStatusList (point #9 : éviter `docker inspect`
+// de TOUS les containers à chaque refresh / chaque onglet ouvert). TTL piloté
+// par le mode low-power. Invalidé sur toute opération qui change l'état
+// (deploy/start/restart/update → writeMeta). ──────────────────────────────
+interface ServiceStatusResult {
+    serviceStatusList: Map<string, { state: string; ports: string[]; startedAt: string | null }>;
+    lastUpdated: string | null;
+    lastStartedAt: string | null;
+}
+const serviceStatusCache = new Map<string, { at: number; result: ServiceStatusResult }>();
 
 export class Stack {
 
@@ -219,6 +231,8 @@ export class Stack {
 
     /** Met à jour un ou les deux champs dans .dockge-meta.json */
     private async writeMeta(fields: { lastUpdated?: string; lastStartedAt?: string }): Promise<void> {
+        // L'état de la stack vient de changer : on invalide le cache de statut
+        serviceStatusCache.delete(this.name);
         try {
             const existing = await this.readMeta();
             const updated = { ...existing, ...fields };
@@ -572,6 +586,12 @@ export class Stack {
         let lastUpdated: string | null = null;
         let lastStartedAt: string | null = null;
 
+        // ── Cache court (point #9) : réutilise le dernier `inspect` si frais ──
+        const cached = serviceStatusCache.get(this.name);
+        if (cached && Date.now() - cached.at < intervals().serviceStatusTtl) {
+            return cached.result;
+        }
+
         // ── lastUpdated depuis .dockge-meta.json (écrit à chaque pull/deploy) ──
         const meta = await this.readMeta();
         lastUpdated = meta.lastUpdated ?? meta.lastStartedAt ?? null;
@@ -640,7 +660,9 @@ export class Stack {
             // Fallback lastStartedAt depuis meta si aucun container running
             if (!lastStartedAt) lastStartedAt = meta.lastStartedAt ?? null;
 
-            return { serviceStatusList, lastUpdated, lastStartedAt };
+            const result = { serviceStatusList, lastUpdated, lastStartedAt };
+            serviceStatusCache.set(this.name, { at: Date.now(), result });
+            return result;
         } catch (e) {
             log.error("getServiceStatusList", e);
             return { serviceStatusList, lastUpdated, lastStartedAt };

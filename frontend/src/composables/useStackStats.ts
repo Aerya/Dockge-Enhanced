@@ -6,6 +6,7 @@
  */
 
 import { ref, onMounted, onUnmounted } from "vue";
+import { setLowPower, POLL, makePoller, type Poller } from "./useLowPower";
 
 export interface StackStat {
     cpu:     number; // % cumulé (ex: 1.5)
@@ -15,7 +16,7 @@ export interface StackStat {
 // ─── État global partagé ─────────────────────────────────────────
 
 const statsCache   = ref<Record<string, StackStat>>({});
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+let poller: Poller | null = null;
 let subscribers = 0;
 
 /** Toggle persisté en localStorage — réactif pour tous les composants */
@@ -26,6 +27,8 @@ export const stackStatsEnabled = ref<boolean>(
 // ─── Fetch ───────────────────────────────────────────────────────
 
 async function fetchStackStats(): Promise<void> {
+    // Si le badge stats est désactivé, inutile de solliciter docker
+    if (!stackStatsEnabled.value) return;
     try {
         const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
         const res = await fetch("/api/system/stack-stats", {
@@ -34,6 +37,7 @@ async function fetchStackStats(): Promise<void> {
         if (res.status === 401) return;
         const json = await res.json();
         if (json.ok) statsCache.value = json.data;
+        setLowPower(json.lowPowerMode);
     } catch {
         // Silencieux — docker ou réseau indisponible
     }
@@ -45,16 +49,16 @@ export function useStackStats() {
     onMounted(() => {
         subscribers++;
         if (subscribers === 1) {
-            fetchStackStats();
-            pollTimer = setInterval(fetchStackStats, 10000);
+            poller = makePoller({ fetch: fetchStackStats, interval: POLL.stack });
+            poller.start();
         }
     });
 
     onUnmounted(() => {
         subscribers--;
-        if (subscribers === 0 && pollTimer) {
-            clearInterval(pollTimer);
-            pollTimer = null;
+        if (subscribers === 0 && poller) {
+            poller.stop();
+            poller = null;
         }
     });
 

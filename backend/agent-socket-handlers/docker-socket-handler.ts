@@ -5,6 +5,7 @@ import { Stack } from "../stack";
 import { AgentSocket } from "../../common/agent-socket";
 import { imageStatusStore } from "../watchers/image-watcher";
 import { BackupManager } from "../watchers/backup-manager";
+import { isLowPower } from "../low-power";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -244,6 +245,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     serviceStatusList: Object.fromEntries(serviceStatusList),
                     lastUpdated,
                     lastStartedAt,
+                    lowPowerMode: isLowPower(),
                 }, callback);
             } catch (e) {
                 callbackError(e, callback);

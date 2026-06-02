@@ -90,6 +90,19 @@
                     <small class="form-text">{{ $t('watcher.monitoring.stackStatsHint') }}</small>
                 </div>
 
+                <!-- Toggle mode low-power / Synology -->
+                <div class="col-12">
+                    <div class="form-check form-switch mb-0">
+                        <input id="monLowPower" v-model="monSettings.lowPowerMode"
+                            class="form-check-input" type="checkbox" role="switch"
+                            @change="toggleLowPower" />
+                        <label class="form-check-label fw-semibold" for="monLowPower">
+                            {{ $t('watcher.monitoring.lowPower') }}
+                        </label>
+                    </div>
+                    <small class="form-text">{{ $t('watcher.monitoring.lowPowerHint') }}</small>
+                </div>
+
                 <!-- Partitions disque -->
                 <div class="col-12">
                     <label class="form-label small">
@@ -447,6 +460,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 import { stackStatsEnabled } from "../composables/useStackStats";
+import { setLowPower, POLL, makePoller, type Poller } from "../composables/useLowPower";
 
 const { t } = useI18n();
 initServerTz();
@@ -473,6 +487,7 @@ interface MonitoringSettings {
     discordWebhooks: string[];
     appriseUrls: string[];
     notificationLang: "fr" | "en";
+    lowPowerMode: boolean;
 }
 
 interface Overview {
@@ -516,6 +531,7 @@ const monSettings = ref<MonitoringSettings>({
     discordWebhooks: [],
     appriseUrls: [],
     notificationLang: "fr",
+    lowPowerMode: false,
 });
 
 const diskPartitions = ref<string[]>(["/"]);
@@ -704,6 +720,8 @@ async function loadSettings() {
     if (settingsRes.ok) {
         const d = settingsRes.data as MonitoringSettings;
         monSettings.value = { ...monSettings.value, ...d, appriseUrls: Array.isArray(d.appriseUrls) ? d.appriseUrls : [] };
+        // Propage le mode low-power à toute l'app dès le chargement
+        setLowPower(monSettings.value.lowPowerMode);
     }
     if (displayRes.ok) {
         const d = displayRes.data as { diskPartitions?: string[] };
@@ -717,6 +735,12 @@ async function saveMonSettings() {
         const res = await api("POST", "/monitoring/settings", monSettings.value);
         showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
     } finally { savingMon.value = false; }
+}
+
+/** Bascule le mode low-power : effet immédiat dans l'app + persistance. */
+async function toggleLowPower() {
+    setLowPower(monSettings.value.lowPowerMode);
+    await saveMonSettings();
 }
 
 function addPartition() {
@@ -792,15 +816,17 @@ async function stopKula() {
 
 // ─── Polling ──────────────────────────────────────────────────────
 
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+let overviewPoller: Poller | null = null;
 
 onMounted(async () => {
     await Promise.all([loadOverview(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadExclusions()]);
-    pollTimer = setInterval(loadOverview, 30_000);
+    // Overview : cadence selon le mode + pause si onglet caché
+    overviewPoller = makePoller({ fetch: loadOverview, interval: POLL.overview });
+    overviewPoller.start();
 });
 
 onUnmounted(() => {
-    if (pollTimer) clearInterval(pollTimer);
+    if (overviewPoller) overviewPoller.stop();
 });
 </script>
 
