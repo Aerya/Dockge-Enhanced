@@ -20,7 +20,7 @@
         "@homebridge/node-pty-prebuilt-multiarch": "0.13.1",
         "@inventage/envsubst": "^0.17.0",
         "@louislam/sqlite3": "~15.1.6",
-        "axios": "^1.12.0",
+        "axios": "^1.17.0",
         "js-yaml": "^4.2.0",
         "bcryptjs": "~2.4.3",
         "check-password-strength": "~2.0.10",
