@@ -116,8 +116,10 @@
               <td>{{ entry.username || "system" }}</td>
               <td><code>{{ entry.action }}</code></td>
               <td>
-                <span class="audit-target-type">{{ entry.targetType }}</span>
-                <span v-if="entry.target"> {{ entry.target }}</span>
+                <span class="audit-target">
+                  <span class="audit-target-type">{{ entry.targetType }}</span>
+                  <span v-if="entry.target">{{ entry.target }}</span>
+                </span>
               </td>
               <td>
                 <span class="badge" :class="entry.status === 'failure' ? 'bg-danger' : 'bg-success'">
@@ -343,6 +345,12 @@ onMounted(async () => {
   color: #93c5fd;
   font-size: 0.82rem;
   font-weight: 600;
+}
+
+.audit-target {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
 }
 
 .audit-date {
