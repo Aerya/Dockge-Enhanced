@@ -49,21 +49,22 @@
                         {{ $t("updateStack") }}
                     </button>
 
+                    <button v-if="!isEditMode" class="btn btn-normal" :disabled="processing" @click="recreateStack">
+                        <font-awesome-icon icon="rotate" class="me-1" />
+                        {{ $t("recreateStack") }}
+                    </button>
+
+                    <button v-if="!isEditMode" class="btn btn-normal" :disabled="processing" @click="pullAndRecreateStack">
+                        <font-awesome-icon icon="cloud-arrow-down" class="me-1" />
+                        {{ $t("pullAndRecreateStack") }}
+                    </button>
+
                     <button v-if="!isEditMode && active" class="btn btn-normal" :disabled="processing" @click="stopStack">
                         <font-awesome-icon icon="stop" class="me-1" />
                         {{ $t("stopStack") }}
                     </button>
 
                     <BDropdown right text="" variant="normal">
-                        <BDropdownItem :disabled="processing" @click="recreateStack">
-                            <font-awesome-icon icon="rotate" class="me-1" />
-                            {{ $t("recreateStack") }}
-                        </BDropdownItem>
-                        <BDropdownItem :disabled="processing" @click="pullAndRecreateStack">
-                            <font-awesome-icon icon="cloud-arrow-down" class="me-1" />
-                            {{ $t("pullAndRecreateStack") }}
-                        </BDropdownItem>
-                        <li><hr class="dropdown-divider"></li>
                         <BDropdownItem @click="downStack">
                             <font-awesome-icon icon="stop" class="me-1" />
                             {{ $t("downStack") }}
