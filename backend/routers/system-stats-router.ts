@@ -254,6 +254,8 @@ export class SystemStatsRouter extends Router {
                     const single = (await Settings.get("diskPartition")) || "/";
                     partitions = [single];
                 }
+                const rawDisplayMode = await Settings.get("diskDisplayMode");
+                const diskDisplayMode = rawDisplayMode === "bar" ? "bar" : "compact";
 
                 const disks = await Promise.all(partitions.map(async (mount) => {
                     try {
@@ -282,6 +284,7 @@ export class SystemStatsRouter extends Router {
                         // disk kept for backward compat (first partition)
                         disk:  disks[0] ?? { mount: "/", used: 0, total: 0, percent: 0 },
                         disks,
+                        diskDisplayMode,
                     },
                     lowPowerMode: isLowPower(),
                 });
