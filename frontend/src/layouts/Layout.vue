@@ -53,7 +53,18 @@
                     <font-awesome-icon icon="floppy-disk" class="me-1" />
                     <template v-if="systemStats.diskDisplayMode === 'bar'">
                         {{ d.mount }}
-                        <span class="disk-bar ms-1">{{ diskUsageBar(d.percent) }}</span>
+                        <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(d.percent)">
+                            <span class="disk-bar-bracket">[</span>
+                            <span class="disk-bar-cells" aria-hidden="true">
+                                <span
+                                    v-for="(filled, index) in diskUsageCells(d.percent)"
+                                    :key="index"
+                                    class="disk-bar-cell"
+                                    :class="{ filled }"
+                                ></span>
+                            </span>
+                            <span class="disk-bar-bracket">]</span>
+                        </span>
                         <span class="ms-1">{{ d.percent }}%</span>
                         <span class="ms-1">{{ formatDiskTotal(d.total) }}</span>
                     </template>
@@ -298,7 +309,13 @@ export default {
             return mb.toFixed(0) + " MB";
         },
 
-        diskUsageBar(percent) {
+        diskUsageCells(percent) {
+            const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
+            const filled = Math.round(clamped / 10);
+            return Array.from({ length: 10 }, (_, index) => index < filled);
+        },
+
+        diskUsageBarLabel(percent) {
             const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
             const filled = Math.round(clamped / 10);
             return `[${"⣿".repeat(filled)}${" ".repeat(10 - filled)}]`;
@@ -488,9 +505,34 @@ main {
 }
 
 .disk-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
     font-family: "JetBrains Mono", monospace;
-    white-space: pre;
     line-height: 1;
+}
+
+.disk-bar-bracket {
+    line-height: 1;
+}
+
+.disk-bar-cells {
+    display: inline-grid;
+    grid-template-columns: repeat(10, 0.38rem);
+    align-items: center;
+    column-gap: 1px;
+    height: 0.7rem;
+}
+
+.disk-bar-cell {
+    display: block;
+    width: 0.38rem;
+    height: 0.58rem;
+    border-radius: 1px;
+
+    &.filled {
+        background: currentColor;
+    }
 }
 
 .nav {
