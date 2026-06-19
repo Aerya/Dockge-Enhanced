@@ -172,7 +172,7 @@
     "watcher.monitoring.diskPartitionHint": "Partitions shown in the navbar (e.g. / or /mnt/data). One per line.",
     "watcher.monitoring.diskDisplayMode": "Partition rendering",
     "watcher.monitoring.diskDisplayCompact": "Compact: /home 19%",
-    "watcher.monitoring.diskDisplayBar": "Bar: /home [⣿⣿        ] 19% 2Tio",
+    "watcher.monitoring.diskDisplayBar": "Bar:",
     "watcher.monitoring.diskDisplayModeHint": "Chooses how disk partitions are shown in the navbar.",
     "watcher.monitoring.crashHeading": "Crash Loop Detection",
     "watcher.monitoring.crashEnabled": "Enable crash loop detection",
