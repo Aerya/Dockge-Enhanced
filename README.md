@@ -23,6 +23,16 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 ## Features
 
+**Compose override editor** — Each stack page in edit mode now has a dedicated `compose.override.yaml` editor, alongside the main compose file and the `.env`. Docker Compose automatically merges this override on top of the main file at deploy time (automatic discovery, no explicit `-f`): handy for keeping a shared base separate from machine- or environment-specific overrides. The override is YAML-validated on save, written to the stack folder, and automatically removed if left empty.
+
+**Cloudflare Turnstile login protection** — An optional [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) captcha can be added to the login page (useful when the instance is exposed, even behind a reverse proxy). Enable it under **Settings → Security** with a site key and a secret key: the widget then appears under the login form and the token is verified server-side via the `siteverify` API before any authentication attempt. The secret key stays on the server; only the public site key is sent to the browser. 2FA and JWT token re-login are unaffected.
+
+**Variable highlighting in the YAML editor** — Variable references (`${VAR}`, `${VAR:-default}`, `$VAR`) are now highlighted in the compose, override and `.env` editors. **Defined** variables (present in `.env`) appear in blue, while **undefined** variables are underlined in red — so a typo or a forgotten variable jumps out immediately.
+
+**Fullscreen YAML editor + CodeMirror comfort** — A fullscreen button on each editor (compose, override, `.env`) expands editing to the whole screen, ideal for large stacks. The editor also gains **code folding**, **search** (Ctrl+F), **bracket auto-closing** and selection-match highlighting.
+
+**Conditional / force stack deletion** — The delete dialog offers two options. *Delete stack files from disk* (checked by default): when unchecked, containers are stopped and removed but the compose/`.env` files are kept and the stack stays editable. *Force delete even if shutdown fails*: keeps deleting the folder even if `docker compose down` returns an error, to clean up a stubborn stack.
+
 🆕 **Per-container update badges** — When the Image Watcher detects an available image update for a stack, the compose page now also marks the exact container image that needs attention. The stack-level badge remains for quick navigation, while the container list shows a compact **Update** badge next to the affected image name.
 
 🆕 **Recreate stack actions** — Compose stack pages now include two confirmed advanced actions in the stack toolbar: **Recreate** runs `docker compose up -d --force-recreate --remove-orphans` with the current compose configuration, while **Pull + recreate** first runs `docker compose pull` and then force-recreates the containers. Both stream through the existing progress terminal, refresh stack metadata/status, and keep the normal **Update** action available for the less disruptive pull + up workflow.

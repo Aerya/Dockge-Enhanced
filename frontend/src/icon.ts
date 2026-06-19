@@ -80,6 +80,8 @@ import {
     faBan,
     faCircleInfo,
     faChevronRight,
+    faExpand,
+    faCompress,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -161,6 +163,8 @@ library.add(
     faBan,
     faCircleInfo,
     faChevronRight,
+    faExpand,
+    faCompress,
 );
 
 export { FontAwesomeIcon };
