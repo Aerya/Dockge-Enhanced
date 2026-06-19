@@ -49,6 +49,7 @@
     "dependsOn": "Container Dependency | Container Dependencies",
     "addListItem": "Add {0}",
     "deleteContainer": "Delete",
+    "containerImageUpdateAvailable": "Update",
     "addContainer": "Add Container",
     "addNetwork": "Add Network",
     "disableauth.message1": "Are you sure want to <strong>disable authentication</strong>?",
