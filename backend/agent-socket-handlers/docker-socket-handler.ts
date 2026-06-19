@@ -6,6 +6,7 @@ import { AgentSocket } from "../../common/agent-socket";
 import { imageStatusStore } from "../watchers/image-watcher";
 import { BackupManager } from "../watchers/backup-manager";
 import { isLowPower } from "../low-power";
+import { AuditLogger } from "../audit-log";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -22,6 +23,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 const stack = await this.saveStack(server, name, composeYAML, composeENV, isAdd, composeOverrideYAML);
                 BackupManager.getInstance().triggerBackupOnSave(typeof name === "string" ? name : "unknown");
                 await stack.deploy(socket);
+                await this.auditStack(socket, "stack.deploy", String(name));
                 server.sendStackList();
                 callbackResult({
                     ok: true,
@@ -43,6 +45,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
             try {
                 checkLogin(socket);
                 await this.saveStack(server, name, composeYAML, composeENV, isAdd, composeOverrideYAML);
+                await this.auditStack(socket, "stack.save", String(name), "success", null, { isAdd: Boolean(isAdd) });
                 BackupManager.getInstance().triggerBackupOnSave(typeof name === "string" ? name : "unknown");
                 callbackResult({
                     ok: true,
@@ -72,10 +75,12 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 try {
                     await stack.delete(socket, opts);
                 } catch (e) {
+                    await this.auditStack(socket, "stack.delete", name, "failure", String(e), opts);
                     server.sendStackList();
                     throw e;
                 }
 
+                await this.auditStack(socket, "stack.delete", name, "success", null, opts);
                 server.sendStackList();
                 callbackResult({
                     ok: true,
@@ -137,6 +142,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
 
                 const stack = await Stack.getStack(server, stackName);
                 await stack.start(socket);
+                await this.auditStack(socket, "stack.start", stackName);
                 callbackResult({
                     ok: true,
                     msg: "Started",
@@ -162,6 +168,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
 
                 const stack = await Stack.getStack(server, stackName);
                 await stack.stop(socket);
+                await this.auditStack(socket, "stack.stop", stackName);
                 callbackResult({
                     ok: true,
                     msg: "Stopped",
@@ -184,6 +191,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
 
                 const stack = await Stack.getStack(server, stackName);
                 await stack.restart(socket);
+                await this.auditStack(socket, "stack.restart", stackName);
                 callbackResult({
                     ok: true,
                     msg: "Restarted",
@@ -206,6 +214,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
 
                 const stack = await Stack.getStack(server, stackName);
                 await stack.recreate(socket);
+                await this.auditStack(socket, "stack.recreate", stackName);
                 callbackResult({
                     ok: true,
                     msg: "Recreated",
@@ -228,6 +237,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
 
                 const stack = await Stack.getStack(server, stackName);
                 await stack.update(socket);
+                await this.auditStack(socket, "stack.update", stackName);
                 // Clear update badges for this stack — images are now up to date
                 for (const key of imageStatusStore.keys()) {
                     if (key.startsWith(`${stackName}::`)) {
@@ -256,6 +266,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
 
                 const stack = await Stack.getStack(server, stackName);
                 await stack.pullAndRecreate(socket);
+                await this.auditStack(socket, "stack.pull_and_recreate", stackName);
                 // Clear update badges for this stack — images are now up to date
                 for (const key of imageStatusStore.keys()) {
                     if (key.startsWith(`${stackName}::`)) {
@@ -284,6 +295,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
 
                 const stack = await Stack.getStack(server, stackName);
                 await stack.down(socket);
+                await this.auditStack(socket, "stack.down", stackName);
                 callbackResult({
                     ok: true,
                     msg: "Downed",
@@ -354,6 +366,25 @@ export class DockerSocketHandler extends AgentSocketHandler {
         const stack = new Stack(server, name, composeYAML, composeENV, false, composeOverrideYAML as string | undefined);
         await stack.save(isAdd as boolean);
         return stack;
+    }
+
+    private async auditStack(
+        socket: DockgeSocket,
+        action: string,
+        stackName: string,
+        status: "success" | "failure" = "success",
+        message?: string | null,
+        metadata?: unknown
+    ) {
+        await AuditLogger.getInstance().logFromSocket(socket, {
+            action,
+            category: "stack",
+            targetType: "stack",
+            target: stackName,
+            status,
+            message,
+            metadata,
+        });
     }
 
 }
