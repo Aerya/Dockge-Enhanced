@@ -6,7 +6,7 @@
           <h5 class="settings-subheading mb-1">
             <font-awesome-icon icon="history" class="me-2" />{{ $t("watcher.audit.heading") }}
           </h5>
-          <p class="text-muted mb-0">{{ $t("watcher.audit.hint") }}</p>
+          <p class="audit-muted mb-0">{{ $t("watcher.audit.hint") }}</p>
         </div>
         <button class="btn btn-primary" :disabled="savingSettings" @click="saveSettings">
           <font-awesome-icon v-if="savingSettings" icon="spinner" spin class="me-1" />
@@ -91,11 +91,11 @@
     <div class="shadow-box big-padding">
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <h5 class="settings-subheading mb-0">{{ $t("watcher.audit.entries") }}</h5>
-        <span class="text-muted">{{ $t("watcher.audit.total", { count: total }) }}</span>
+        <span class="audit-muted">{{ $t("watcher.audit.total", { count: total }) }}</span>
       </div>
 
       <div v-if="error" class="alert alert-danger">{{ error }}</div>
-      <div v-else-if="!loading && entries.length === 0" class="text-muted py-3">
+      <div v-else-if="!loading && entries.length === 0" class="audit-muted py-3">
         {{ $t("watcher.audit.empty") }}
       </div>
       <div v-else class="table-responsive">
@@ -116,7 +116,7 @@
               <td>{{ entry.username || "system" }}</td>
               <td><code>{{ entry.action }}</code></td>
               <td>
-                <span class="text-muted">{{ entry.targetType }}</span>
+                <span class="audit-target-type">{{ entry.targetType }}</span>
                 <span v-if="entry.target"> {{ entry.target }}</span>
               </td>
               <td>
@@ -140,7 +140,7 @@
         <button class="btn btn-outline-secondary" :disabled="offset === 0 || loading" @click="previousPage">
           {{ $t("watcher.audit.previous") }}
         </button>
-        <span class="text-muted">{{ pageLabel }}</span>
+        <span class="audit-muted">{{ pageLabel }}</span>
         <button class="btn btn-outline-secondary" :disabled="offset + limit >= total || loading" @click="nextPage">
           {{ $t("watcher.audit.next") }}
         </button>
@@ -167,7 +167,7 @@ interface AuditEntry {
 }
 
 const API = "/api/audit";
-const limit = 100;
+const limit = 15;
 
 const loading = ref(false);
 const savingSettings = ref(false);
@@ -319,6 +319,30 @@ onMounted(async () => {
 <style scoped>
 .audit-table {
   min-width: 980px;
+  --bs-table-bg: transparent;
+  --bs-table-color: #e5e7eb;
+  --bs-table-border-color: rgba(148, 163, 184, 0.28);
+  color: #e5e7eb;
+}
+
+.audit-table th {
+  color: #f8fafc;
+  border-bottom-color: rgba(148, 163, 184, 0.38);
+}
+
+.audit-table td {
+  color: #e5e7eb;
+  border-top-color: rgba(148, 163, 184, 0.18);
+}
+
+.audit-muted {
+  color: #cbd5e1;
+}
+
+.audit-target-type {
+  color: #93c5fd;
+  font-size: 0.82rem;
+  font-weight: 600;
 }
 
 .audit-date {
