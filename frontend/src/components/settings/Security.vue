@@ -80,6 +80,30 @@
                 </div>
             </div>
 
+            <!-- Cloudflare Turnstile -->
+            <div v-if="! settings.disableAuth" class="my-4">
+                <h5 class="my-4 settings-subheading">{{ $t("Cloudflare Turnstile") }}</h5>
+                <div class="form-text mb-3">{{ $t("turnstileHint") }}</div>
+
+                <div class="form-check form-switch mb-3">
+                    <input id="turnstile-enabled" v-model="settings.turnstileEnabled" type="checkbox" class="form-check-input">
+                    <label class="form-check-label" for="turnstile-enabled">{{ $t("Enable Turnstile") }}</label>
+                </div>
+
+                <template v-if="settings.turnstileEnabled">
+                    <div class="mb-3">
+                        <label for="turnstile-sitekey" class="form-label">{{ $t("Turnstile Site Key") }}</label>
+                        <input id="turnstile-sitekey" v-model="settings.turnstileSiteKey" type="text" class="form-control" autocomplete="off">
+                    </div>
+                    <div class="mb-3">
+                        <label for="turnstile-secret" class="form-label">{{ $t("Turnstile Secret Key") }}</label>
+                        <HiddenInput id="turnstile-secret" v-model="settings.turnstileSecret" autocomplete="new-password" />
+                    </div>
+                </template>
+
+                <button class="btn btn-primary" type="button" @click="saveTurnstile">{{ $t("Save") }}</button>
+            </div>
+
             <div class="my-4">
                 <!-- Advanced -->
                 <h5 class="my-4 settings-subheading">{{ $t("Advanced") }}</h5>
@@ -119,11 +143,13 @@
 <script>
 import Confirm from "../../components/Confirm.vue";
 import TwoFADialog from "../../components/TwoFADialog.vue";
+import HiddenInput from "../../components/HiddenInput.vue";
 
 export default {
     components: {
         Confirm,
-        TwoFADialog
+        TwoFADialog,
+        HiddenInput
     },
 
     data() {
@@ -198,6 +224,11 @@ export default {
         /** Show confirmation dialog for disable auth */
         confirmDisableAuth() {
             this.$refs.confirmDisableAuth.show();
+        },
+
+        /** Persist Cloudflare Turnstile settings */
+        saveTurnstile() {
+            this.saveSettings();
         },
 
     },

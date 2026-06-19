@@ -462,11 +462,16 @@ export class DockgeServer {
             isContainer = (process.env.DOCKGE_IS_CONTAINER === "1");
         }
 
+        // Config publique Cloudflare Turnstile (le secret reste côté serveur)
+        const generalSettings = await Settings.getSettings("general");
+
         socket.emit("info", {
             version: versionProperty,
             latestVersion: latestVersionProperty,
             isContainer,
             primaryHostname: await Settings.get("primaryHostname"),
+            turnstileEnabled: !!generalSettings.turnstileEnabled && !!generalSettings.turnstileSiteKey,
+            turnstileSiteKey: generalSettings.turnstileEnabled ? (generalSettings.turnstileSiteKey ?? "") : "",
             //serverTimezone: await this.getTimezone(),
             //serverTimezoneOffset: this.getTimezoneOffset(),
         });

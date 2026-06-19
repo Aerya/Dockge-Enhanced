@@ -11,10 +11,15 @@ export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         // Do not call super.create()
 
-        agentSocket.on("deployStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, callback) => {
+        agentSocket.on("deployStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, composeOverrideYAML : unknown, callback) => {
+            // Compat : ancien client sans override → le dernier arg est le callback
+            if (typeof composeOverrideYAML === "function") {
+                callback = composeOverrideYAML;
+                composeOverrideYAML = undefined;
+            }
             try {
                 checkLogin(socket);
-                const stack = await this.saveStack(server, name, composeYAML, composeENV, isAdd);
+                const stack = await this.saveStack(server, name, composeYAML, composeENV, isAdd, composeOverrideYAML);
                 BackupManager.getInstance().triggerBackupOnSave(typeof name === "string" ? name : "unknown");
                 await stack.deploy(socket);
                 server.sendStackList();
@@ -29,10 +34,15 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("saveStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, callback) => {
+        agentSocket.on("saveStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, composeOverrideYAML : unknown, callback) => {
+            // Compat : ancien client sans override → le dernier arg est le callback
+            if (typeof composeOverrideYAML === "function") {
+                callback = composeOverrideYAML;
+                composeOverrideYAML = undefined;
+            }
             try {
                 checkLogin(socket);
-                await this.saveStack(server, name, composeYAML, composeENV, isAdd);
+                await this.saveStack(server, name, composeYAML, composeENV, isAdd, composeOverrideYAML);
                 BackupManager.getInstance().triggerBackupOnSave(typeof name === "string" ? name : "unknown");
                 callbackResult({
                     ok: true,
@@ -45,16 +55,22 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("deleteStack", async (name : unknown, callback) => {
+        agentSocket.on("deleteStack", async (name : unknown, options : unknown, callback) => {
+            // Compat : ancien client sans options → le 2e arg est le callback
+            if (typeof options === "function") {
+                callback = options;
+                options = {};
+            }
             try {
                 checkLogin(socket);
                 if (typeof(name) !== "string") {
                     throw new ValidationError("Name must be a string");
                 }
+                const opts = (options && typeof options === "object") ? options as { removeFiles?: boolean; force?: boolean } : {};
                 const stack = await Stack.getStack(server, name);
 
                 try {
-                    await stack.delete(socket);
+                    await stack.delete(socket, opts);
                 } catch (e) {
                     server.sendStackList();
                     throw e;
@@ -317,7 +333,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
         });
     }
 
-    async saveStack(server : DockgeServer, name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown) : Promise<Stack> {
+    async saveStack(server : DockgeServer, name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, composeOverrideYAML : unknown = "") : Promise<Stack> {
         // Check types
         if (typeof(name) !== "string") {
             throw new ValidationError("Name must be a string");
@@ -328,12 +344,15 @@ export class DockerSocketHandler extends AgentSocketHandler {
         if (typeof(composeENV) !== "string") {
             throw new ValidationError("Compose ENV must be a string");
         }
-        if (typeof(isAdd) !== "boolean") {
+        if (isAdd !== undefined && typeof(isAdd) !== "boolean") {
             throw new ValidationError("isAdd must be a boolean");
         }
+        if (composeOverrideYAML !== undefined && typeof(composeOverrideYAML) !== "string") {
+            throw new ValidationError("Compose override YAML must be a string");
+        }
 
-        const stack = new Stack(server, name, composeYAML, composeENV, false);
-        await stack.save(isAdd);
+        const stack = new Stack(server, name, composeYAML, composeENV, false, composeOverrideYAML as string | undefined);
+        await stack.save(isAdd as boolean);
         return stack;
     }
 

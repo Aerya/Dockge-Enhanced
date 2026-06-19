@@ -33,12 +33,18 @@ interface ServiceStatusResult {
 }
 const serviceStatusCache = new Map<string, { at: number; result: ServiceStatusResult }>();
 
+// Nom du fichier d'override compose. Docker Compose le fusionne automatiquement
+// avec le fichier principal lorsqu'il est présent dans le dossier de la stack
+// (découverte automatique, sans `-f` explicite).
+const COMPOSE_OVERRIDE_FILE = "compose.override.yaml";
+
 export class Stack {
 
     name: string;
     protected _status: number = UNKNOWN;
     protected _composeYAML?: string;
     protected _composeENV?: string;
+    protected _composeOverrideYAML?: string;
     protected _configFilePath?: string;
     protected _composeFileName: string = "compose.yaml";
     protected server: DockgeServer;
@@ -47,11 +53,12 @@ export class Stack {
 
     protected static managedStackList: Map<string, Stack> = new Map();
 
-    constructor(server : DockgeServer, name : string, composeYAML? : string, composeENV? : string, skipFSOperations = false) {
+    constructor(server : DockgeServer, name : string, composeYAML? : string, composeENV? : string, skipFSOperations = false, composeOverrideYAML? : string) {
         this.name = name;
         this.server = server;
         this._composeYAML = composeYAML;
         this._composeENV = composeENV;
+        this._composeOverrideYAML = composeOverrideYAML;
 
         if (!skipFSOperations) {
             // Check if compose file name is different from compose.yaml
@@ -87,6 +94,7 @@ export class Stack {
             ...obj,
             composeYAML: this.composeYAML,
             composeENV: this.composeENV,
+            composeOverrideYAML: this.composeOverrideYAML,
             primaryHostname,
         };
     }
@@ -133,6 +141,11 @@ export class Stack {
         // Check YAML format
         yaml.parse(this.composeYAML);
 
+        // Check override YAML format (if any)
+        if (this.composeOverrideYAML.trim() !== "") {
+            yaml.parse(this.composeOverrideYAML);
+        }
+
         let lines = this.composeENV.split("\n");
 
         // Check if the .env is able to pass docker-compose
@@ -163,6 +176,17 @@ export class Stack {
             }
         }
         return this._composeENV;
+    }
+
+    get composeOverrideYAML() : string {
+        if (this._composeOverrideYAML === undefined) {
+            try {
+                this._composeOverrideYAML = fs.readFileSync(path.join(this.path, COMPOSE_OVERRIDE_FILE), "utf-8");
+            } catch (e) {
+                this._composeOverrideYAML = "";
+            }
+        }
+        return this._composeOverrideYAML;
     }
 
     get path() : string {
@@ -217,6 +241,17 @@ export class Stack {
         if (await fileExists(envPath) || this.composeENV.trim() !== "") {
             await fsAsync.writeFile(envPath, this.composeENV);
         }
+
+        // Write/overwrite/remove the compose.override.yaml
+        // Docker Compose le fusionne automatiquement avec le fichier principal.
+        const overridePath = path.join(dir, COMPOSE_OVERRIDE_FILE);
+        if (this.composeOverrideYAML.trim() !== "") {
+            await fsAsync.writeFile(overridePath, this.composeOverrideYAML);
+        } else if (await fileExists(overridePath)) {
+            // L'override a été vidé : on supprime le fichier pour éviter une
+            // fusion d'un fichier vide (et garder le dossier propre).
+            await fsAsync.rm(overridePath, { force: true });
+        }
     }
 
     /** Lit le fichier .dockge-meta.json du stack */
@@ -251,18 +286,32 @@ export class Stack {
         return exitCode;
     }
 
-    async delete(socket: DockgeSocket) : Promise<number> {
+    /**
+     * Supprime une stack.
+     * @param socket
+     * @param options
+     *   - removeFiles : si false, on exécute `down` mais on conserve les fichiers
+     *     sur le disque (la stack reste éditable). Défaut : true.
+     *   - force : si true, en cas d'échec du `down` on supprime quand même le
+     *     dossier (utile quand `down` échoue mais qu'on veut nettoyer). Défaut : false.
+     */
+    async delete(socket: DockgeSocket, options: { removeFiles?: boolean; force?: boolean } = {}) : Promise<number> {
+        const removeFiles = options.removeFiles ?? true;
+        const force = options.force ?? false;
+
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("down", "--remove-orphans"), this.path);
-        if (exitCode !== 0) {
+        if (exitCode !== 0 && !force) {
             throw new Error("Failed to delete, please check the terminal output for more information.");
         }
 
-        // Remove the stack folder
-        await fsAsync.rm(this.path, {
-            recursive: true,
-            force: true
-        });
+        // Remove the stack folder (sauf si on veut conserver les fichiers)
+        if (removeFiles) {
+            await fsAsync.rm(this.path, {
+                recursive: true,
+                force: true
+            });
+        }
 
         return exitCode;
     }

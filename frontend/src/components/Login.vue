@@ -30,6 +30,10 @@
                         </label>
                     </div>
                 </div>
+
+                <!-- Cloudflare Turnstile -->
+                <div v-if="turnstileEnabled && !tokenRequired" ref="turnstile" class="d-flex justify-content-center mb-3"></div>
+
                 <button class="w-100 btn btn-primary" type="submit" :disabled="processing">
                     {{ $t("Login") }}
                 </button>
@@ -52,11 +56,33 @@ export default {
             token: "",
             res: null,
             tokenRequired: false,
+            turnstileToken: "",
+            turnstileWidgetId: null,
         };
+    },
+
+    computed: {
+        turnstileEnabled() {
+            return !!this.$root.info?.turnstileEnabled;
+        },
+        turnstileSiteKey() {
+            return this.$root.info?.turnstileSiteKey ?? "";
+        },
+    },
+
+    watch: {
+        turnstileEnabled(enabled) {
+            if (enabled) {
+                this.$nextTick(() => this.loadTurnstile());
+            }
+        },
     },
 
     mounted() {
         document.title += " - Login";
+        if (this.turnstileEnabled) {
+            this.$nextTick(() => this.loadTurnstile());
+        }
     },
 
     unmounted() {
@@ -79,6 +105,65 @@ export default {
                 } else {
                     this.res = res;
                 }
+
+                // Réinitialise le widget Turnstile après une tentative (token à usage unique)
+                if (this.turnstileEnabled && window.turnstile && this.turnstileWidgetId !== null) {
+                    window.turnstile.reset(this.turnstileWidgetId);
+                    this.turnstileToken = "";
+                }
+            }, this.turnstileToken);
+        },
+
+        /**
+         * Charge le script Turnstile (une seule fois) puis rend le widget.
+         * @returns {void}
+         */
+        loadTurnstile() {
+            if (!this.turnstileSiteKey) {
+                return;
+            }
+
+            const render = () => this.renderTurnstile();
+
+            if (window.turnstile) {
+                render();
+                return;
+            }
+
+            const existing = document.getElementById("cf-turnstile-script");
+            if (existing) {
+                existing.addEventListener("load", render, { once: true });
+                return;
+            }
+
+            const script = document.createElement("script");
+            script.id = "cf-turnstile-script";
+            script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+            script.async = true;
+            script.defer = true;
+            script.addEventListener("load", render, { once: true });
+            document.head.appendChild(script);
+        },
+
+        /**
+         * Rend le widget Turnstile dans le conteneur dédié.
+         * @returns {void}
+         */
+        renderTurnstile() {
+            if (!window.turnstile || !this.$refs.turnstile || this.turnstileWidgetId !== null) {
+                return;
+            }
+            this.turnstileWidgetId = window.turnstile.render(this.$refs.turnstile, {
+                sitekey: this.turnstileSiteKey,
+                callback: (token) => {
+                    this.turnstileToken = token;
+                },
+                "expired-callback": () => {
+                    this.turnstileToken = "";
+                },
+                "error-callback": () => {
+                    this.turnstileToken = "";
+                },
             });
         },
 
