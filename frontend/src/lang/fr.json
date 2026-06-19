@@ -165,7 +165,7 @@
     "watcher.monitoring.diskPartitionHint": "Partitions affichées dans la barre de navigation (ex : / ou /mnt/data).",
     "watcher.monitoring.diskDisplayMode": "Rendu des partitions",
     "watcher.monitoring.diskDisplayCompact": "Compact : /home 19%",
-    "watcher.monitoring.diskDisplayBar": "Barre : /home [⣿⣿        ] 19% 2Tio",
+    "watcher.monitoring.diskDisplayBar": "Barre :",
     "watcher.monitoring.diskDisplayModeHint": "Choisit l'affichage des partitions dans la barre de navigation.",
     "watcher.monitoring.crashHeading": "Détection de crash loop",
     "watcher.monitoring.crashEnabled": "Activer la détection de crash loop",

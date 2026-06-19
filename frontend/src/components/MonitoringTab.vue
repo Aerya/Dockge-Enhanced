@@ -138,6 +138,22 @@
                                     class="form-check-input" type="radio" value="bar" />
                                 <label class="form-check-label" for="diskDisplayBar">
                                     {{ $t('watcher.monitoring.diskDisplayBar') }}
+                                    <span class="disk-display-example ms-1">
+                                        <span>/home</span>
+                                        <span class="disk-example-bar" aria-label="[⣿⣿        ]">
+                                            <span class="disk-example-bracket">[</span>
+                                            <span class="disk-example-cells" aria-hidden="true">
+                                                <span
+                                                    v-for="(filled, index) in diskDisplayExampleCells"
+                                                    :key="index"
+                                                    class="disk-example-cell"
+                                                    :class="{ filled }"
+                                                ></span>
+                                            </span>
+                                            <span class="disk-example-bracket">]</span>
+                                        </span>
+                                        <span>19% 2Tio</span>
+                                    </span>
                                 </label>
                             </div>
                         </div>
@@ -556,6 +572,7 @@ const monSettings = ref<MonitoringSettings>({
 
 const diskPartitions = ref<string[]>(["/"]);
 const diskDisplayMode = ref<"compact" | "bar">("compact");
+const diskDisplayExampleCells = [true, true, false, false, false, false, false, false, false, false];
 const newPartition   = ref("");
 const savingMon      = ref(false);
 const savingDisplay  = ref(false);
@@ -970,6 +987,43 @@ onUnmounted(() => {
     color: #d1d5db;
     &:hover { background: rgba(255,255,255,.14); color: #fff; }
     &:disabled { opacity: .5; cursor: default; }
+}
+
+.disk-display-example {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.disk-example-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    font-family: "JetBrains Mono", monospace;
+    line-height: 1;
+}
+
+.disk-example-bracket {
+    line-height: 1;
+}
+
+.disk-example-cells {
+    display: inline-grid;
+    grid-template-columns: repeat(10, 0.38rem);
+    align-items: center;
+    column-gap: 1px;
+    height: 0.7rem;
+}
+
+.disk-example-cell {
+    display: block;
+    width: 0.38rem;
+    height: 0.58rem;
+    border-radius: 1px;
+}
+
+.disk-example-cell.filled {
+    background: currentColor;
 }
 
 /* ── Kula open link ── */
