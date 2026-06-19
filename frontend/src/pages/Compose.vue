@@ -212,12 +212,20 @@
                     </div>
                 </div>
                 <div class="col-lg-6">
-                    <h4 class="mb-3">{{ stack.composeFileName }}</h4>
+                    <div class="editor-header mb-3">
+                        <h4 class="mb-0">{{ stack.composeFileName }}</h4>
+                        <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('yaml')">
+                            <font-awesome-icon :icon="fullscreenEditor === 'yaml' ? 'compress' : 'expand'" />
+                        </button>
+                    </div>
 
                     <!-- YAML editor -->
-                    <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode}">
+                    <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'yaml'}">
+                        <button v-if="fullscreenEditor === 'yaml'" type="button" class="btn btn-sm btn-normal editor-fullscreen-close" :title="$t('toggleFullscreen')" @click="toggleFullscreen('yaml')">
+                            <font-awesome-icon icon="compress" />
+                        </button>
                         <code-mirror
-                            ref="editor"
+                            ref="yamlEditor"
                             v-model="stack.composeYAML"
                             :extensions="extensions"
                             minimal
@@ -233,12 +241,47 @@
                         {{ yamlError }}
                     </div>
 
+                    <!-- Override editor -->
+                    <div v-if="isEditMode">
+                        <div class="editor-header mb-3">
+                            <h4 class="mb-0">compose.override.yaml</h4>
+                            <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('override')">
+                                <font-awesome-icon :icon="fullscreenEditor === 'override' ? 'compress' : 'expand'" />
+                            </button>
+                        </div>
+                        <div class="form-text mb-2">{{ $t("composeOverrideHint") }}</div>
+                        <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'override'}">
+                            <button v-if="fullscreenEditor === 'override'" type="button" class="btn btn-sm btn-normal editor-fullscreen-close" :title="$t('toggleFullscreen')" @click="toggleFullscreen('override')">
+                                <font-awesome-icon icon="compress" />
+                            </button>
+                            <code-mirror
+                                ref="overrideEditor"
+                                v-model="stack.composeOverrideYAML"
+                                :extensions="extensions"
+                                minimal
+                                wrap="true"
+                                dark="true"
+                                tab="true"
+                                :disabled="!isEditMode"
+                                :hasFocus="editorFocus"
+                            />
+                        </div>
+                    </div>
+
                     <!-- ENV editor -->
                     <div v-if="isEditMode">
-                        <h4 class="mb-3">.env</h4>
-                        <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode}">
+                        <div class="editor-header mb-3">
+                            <h4 class="mb-0">.env</h4>
+                            <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('env')">
+                                <font-awesome-icon :icon="fullscreenEditor === 'env' ? 'compress' : 'expand'" />
+                            </button>
+                        </div>
+                        <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'env'}">
+                            <button v-if="fullscreenEditor === 'env'" type="button" class="btn btn-sm btn-normal editor-fullscreen-close" :title="$t('toggleFullscreen')" @click="toggleFullscreen('env')">
+                                <font-awesome-icon icon="compress" />
+                            </button>
                             <code-mirror
-                                ref="editor"
+                                ref="envEditor"
                                 v-model="stack.composeENV"
                                 :extensions="extensionsEnv"
                                 minimal
@@ -284,7 +327,21 @@
 
             <!-- Delete Dialog -->
             <BModal v-model="showDeleteDialog" :cancelTitle="$t('cancel')" :okTitle="$t('deleteStack')" okVariant="danger" @ok="deleteDialog">
-                {{ $t("deleteStackMsg") }}
+                <p>{{ $t("deleteStackMsg") }}</p>
+                <div class="form-check mt-3">
+                    <input id="delete-remove-files" v-model="deleteRemoveFiles" type="checkbox" class="form-check-input">
+                    <label class="form-check-label" for="delete-remove-files">
+                        {{ $t("deleteStackRemoveFiles") }}
+                    </label>
+                    <div class="form-text">{{ $t("deleteStackRemoveFilesHint") }}</div>
+                </div>
+                <div class="form-check mt-2">
+                    <input id="delete-force" v-model="deleteForce" type="checkbox" class="form-check-input">
+                    <label class="form-check-label" for="delete-force">
+                        {{ $t("deleteStackForce") }}
+                    </label>
+                    <div class="form-text">{{ $t("deleteStackForceHint") }}</div>
+                </div>
             </BModal>
         </div>
     </transition>
@@ -295,8 +352,12 @@ import CodeMirror from "vue-codemirror6";
 import { yaml } from "@codemirror/lang-yaml";
 import { python } from "@codemirror/lang-python";
 import { dracula as editorTheme } from "thememirror";
-import { lineNumbers, EditorView } from "@codemirror/view";
+import { lineNumbers, EditorView, keymap } from "@codemirror/view";
+import { foldGutter, foldKeymap } from "@codemirror/language";
+import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { parseDocument, Document } from "yaml";
+import { yamlVariableHighlight, setDefinedVars } from "../composables/codemirrorVariables";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
@@ -352,10 +413,21 @@ export default {
             return null;
         };
 
+        // Extensions communes : repli de code, recherche, auto-fermeture des
+        // crochets, mise en évidence des sélections.
+        const commonEditing = [
+            foldGutter(),
+            closeBrackets(),
+            highlightSelectionMatches(),
+            keymap.of([ ...closeBracketsKeymap, ...searchKeymap, ...foldKeymap ]),
+        ];
+
         const extensions = [
             editorTheme,
             yaml(),
             lineNumbers(),
+            ...commonEditing,
+            yamlVariableHighlight,
             EditorView.focusChangeEffect.of(focusEffectHandler)
         ];
 
@@ -363,6 +435,8 @@ export default {
             editorTheme,
             python(),
             lineNumbers(),
+            ...commonEditing,
+            yamlVariableHighlight,
             EditorView.focusChangeEffect.of(focusEffectHandler)
         ];
 
@@ -392,6 +466,9 @@ export default {
             isEditMode: false,
             submitted: false,
             showDeleteDialog: false,
+            deleteRemoveFiles: true,
+            deleteForce: false,
+            fullscreenEditor: null,
             newContainerName: "",
             stopServiceStatusTimeout: false,
             selectedLogService: "",
@@ -565,6 +642,7 @@ export default {
                 name: "",
                 composeYAML,
                 composeENV,
+                composeOverrideYAML: "",
                 isManagedByDockge: true,
                 endpoint: "",
             };
@@ -770,7 +848,7 @@ export default {
 
             this.bindTerminal();
 
-            this.$root.emitAgent(this.stack.endpoint, "deployStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, (res) => {
+            this.$root.emitAgent(this.stack.endpoint, "deployStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, this.stack.composeOverrideYAML ?? "", (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
 
@@ -784,7 +862,7 @@ export default {
         saveStack() {
             this.processing = true;
 
-            this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, (res) => {
+            this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, this.stack.composeOverrideYAML ?? "", (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
 
@@ -865,12 +943,53 @@ export default {
         },
 
         deleteDialog() {
-            this.$root.emitAgent(this.endpoint, "deleteStack", this.stack.name, (res) => {
+            const options = {
+                removeFiles: this.deleteRemoveFiles,
+                force: this.deleteForce,
+            };
+            this.$root.emitAgent(this.endpoint, "deleteStack", this.stack.name, options, (res) => {
                 this.$root.toastRes(res);
                 if (res.ok) {
-                    this.$router.push("/");
+                    if (options.removeFiles) {
+                        this.$router.push("/");
+                    } else {
+                        // Fichiers conservés : la stack reste éditable, on recharge
+                        this.discardStack();
+                    }
                 }
             });
+        },
+
+        toggleFullscreen(target) {
+            this.fullscreenEditor = (this.fullscreenEditor === target) ? null : target;
+            // Laisse CodeMirror se redimensionner après le changement de layout
+            this.$nextTick(() => {
+                window.dispatchEvent(new Event("resize"));
+            });
+        },
+
+        /**
+         * Pousse la liste des variables définies (.env) vers les éditeurs
+         * CodeMirror pour la coloration définie/non définie.
+         */
+        applyDefinedVars() {
+            let names = [];
+            try {
+                names = Object.keys(dotenv.parse(this.stack.composeENV || ""));
+            } catch (e) {
+                names = [];
+            }
+            for (const refName of [ "yamlEditor", "overrideEditor", "envEditor" ]) {
+                const cm = this.$refs[refName];
+                if (!cm) {
+                    continue;
+                }
+                // `view` peut être exposé directement ou via une ref selon le contexte
+                const view = (cm.view && cm.view.dispatch) ? cm.view : cm.view?.value;
+                if (view && view.dispatch) {
+                    view.dispatch({ effects: setDefinedVars.of(names) });
+                }
+            }
         },
 
         discardStack() {
@@ -916,6 +1035,9 @@ export default {
 
                 clearTimeout(yamlErrorTimeout);
                 this.yamlError = "";
+
+                // Met à jour la coloration des variables définies/non définies
+                this.$nextTick(() => this.applyDefinedVars());
             } catch (e) {
                 clearTimeout(yamlErrorTimeout);
 
@@ -1019,6 +1141,45 @@ export default {
 .editor-box {
     font-family: 'JetBrains Mono', monospace;
     font-size: 14px;
+}
+
+.editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.editor-fullscreen-btn {
+    font-size: 0.78rem;
+    padding: 2px 10px;
+}
+
+.editor-box {
+    position: relative;
+}
+
+.editor-box.editor-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    margin: 0;
+    border-radius: 0;
+    overflow: auto;
+    padding: 32px 16px 16px;
+
+    :deep(.cm-editor) {
+        height: 100vh;
+    }
+}
+
+.editor-fullscreen-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    z-index: 1060;
+    font-size: 0.78rem;
+    padding: 2px 10px;
 }
 
 .agent-name {

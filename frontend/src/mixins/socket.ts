@@ -326,11 +326,12 @@ export default defineComponent({
          * @param {loginCB} callback Callback to call with result
          * @returns {void}
          */
-        login(username : string, password : string, token : string, callback) {
+        login(username : string, password : string, token : string, callback, turnstileToken = "") {
             this.getSocket().emit("login", {
                 username,
                 password,
                 token,
+                turnstileToken,
             }, (res) => {
                 if (res.tokenRequired) {
                     callback(res);

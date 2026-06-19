@@ -20,6 +20,38 @@ import jwt from "jsonwebtoken";
 import { Settings } from "../settings";
 import fs, { promises as fsAsync } from "fs";
 import path from "path";
+import axios from "axios";
+
+/**
+ * Vérifie un token Cloudflare Turnstile côté serveur via l'API siteverify.
+ * Retourne true si la protection est désactivée ou si le token est valide.
+ */
+async function verifyTurnstile(token : unknown, clientIP : string) : Promise<boolean> {
+    const settings = await Settings.getSettings("general");
+    if (!settings.turnstileEnabled || !settings.turnstileSecret) {
+        return true;
+    }
+    if (typeof token !== "string" || token === "") {
+        return false;
+    }
+    try {
+        const params = new URLSearchParams();
+        params.append("secret", settings.turnstileSecret);
+        params.append("response", token);
+        if (clientIP) {
+            params.append("remoteip", clientIP);
+        }
+        const res = await axios.post(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            params,
+            { timeout: 10000 }
+        );
+        return res.data?.success === true;
+    } catch (e) {
+        log.warn("auth", "Turnstile verification failed: " + (e instanceof Error ? e.message : String(e)));
+        return false;
+    }
+}
 
 export class MainSocketHandler extends SocketHandler {
     create(socket : DockgeSocket, server : DockgeServer) {
@@ -139,6 +171,21 @@ export class MainSocketHandler extends SocketHandler {
             if (!await loginRateLimiter.pass(callback)) {
                 log.info("auth", `Too many failed requests for user ${data.username}. IP=${clientIP}`);
                 return;
+            }
+
+            // Cloudflare Turnstile (si activé). On ne vérifie que la 1re étape
+            // (username + password) : pour la 2e étape 2FA, data.token est le code
+            // TOTP, pas un token Turnstile, donc on saute la vérification.
+            if (!data.token) {
+                if (!await verifyTurnstile(data.turnstileToken, clientIP)) {
+                    log.warn("auth", `Turnstile verification failed for user ${data.username}. IP=${clientIP}`);
+                    callback({
+                        ok: false,
+                        msg: "authTurnstileFailed",
+                        msgi18n: true,
+                    });
+                    return;
+                }
             }
 
             const user = await this.login(data.username, data.password);
