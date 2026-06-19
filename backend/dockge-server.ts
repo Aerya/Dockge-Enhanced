@@ -428,6 +428,7 @@ export class DockgeServer {
             ImageWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "ImageWatcher start error: " + e));
             TrivyScanner.getInstance().startIfEnabled().catch(e => log.error("server", "TrivyScanner start error: " + e));
             BackupManager.getInstance().startIfEnabled().catch(e => log.error("server", "BackupManager start error: " + e));
+            MonitoringWatcher.getInstance().setServer(this);
             MonitoringWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "MonitoringWatcher start error: " + e));
             KulaManager.getInstance().startIfEnabled().catch(e => log.error("server", "KulaManager start error: " + e));
             AutoPruneManager.getInstance().startIfEnabled().catch(e => log.error("server", "AutoPruneManager start error: " + e));

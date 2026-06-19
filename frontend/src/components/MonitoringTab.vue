@@ -399,6 +399,98 @@
 
         <!-- ═══ SECTION 4 : KULA ═══ -->
         <div class="shadow-box big-padding mb-4">
+            <h5 class="settings-subheading mb-3">
+                <font-awesome-icon icon="heartbeat" class="me-2" />{{ $t('watcher.monitoring.healthHeading') }}
+            </h5>
+
+            <div class="row g-3 mb-3">
+                <div class="col-12">
+                    <div class="form-check form-switch mb-0">
+                        <input id="healthEnabled" v-model="monSettings.healthcheckEnabled"
+                            class="form-check-input" type="checkbox" role="switch" />
+                        <label class="form-check-label fw-semibold" for="healthEnabled">
+                            {{ $t('watcher.monitoring.healthEnabled') }}
+                        </label>
+                    </div>
+                    <small class="form-text">{{ $t('watcher.monitoring.healthHint') }}</small>
+                </div>
+
+                <template v-if="monSettings.healthcheckEnabled">
+                    <div class="col-md-8">
+                        <label class="form-label small">{{ $t('watcher.monitoring.healthMode') }}</label>
+                        <select v-model="monSettings.healthcheckAutoHealMode" class="form-select form-select-sm">
+                            <option value="notify">{{ $t('watcher.monitoring.healthModeNotify') }}</option>
+                            <option value="restart_container">{{ $t('watcher.monitoring.healthModeRestartContainer') }}</option>
+                            <option value="restart_service">{{ $t('watcher.monitoring.healthModeRestartService') }}</option>
+                            <option value="stack_aware">{{ $t('watcher.monitoring.healthModeStackAware') }}</option>
+                        </select>
+                        <small class="form-text">{{ $t('watcher.monitoring.healthModeHint') }}</small>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small">{{ $t('watcher.monitoring.healthCooldown') }}</label>
+                        <div class="input-group input-group-sm">
+                            <input v-model.number="monSettings.healthcheckCooldownMinutes" type="number" min="1" max="1440"
+                                class="form-control" style="max-width: 80px" />
+                            <span class="input-group-text">min</span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 flex-wrap mb-4">
+                <button class="btn btn-primary btn-sm" @click="saveMonSettings" :disabled="savingMon">
+                    <span v-if="savingMon" class="spinner-border spinner-border-sm me-1" />
+                    <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
+                </button>
+            </div>
+
+            <div v-if="monSettings.healthcheckEnabled">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="form-text fw-semibold mb-0">{{ $t('watcher.monitoring.healthEventsHeading') }}</h6>
+                    <button v-if="overview.health.length" class="btn btn-sm btn-outline-secondary"
+                        @click="clearHealthEvents" :disabled="clearingHealthEvents">
+                        <span v-if="clearingHealthEvents" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="trash" class="me-1" />{{ $t('watcher.monitoring.crashClearList') }}
+                    </button>
+                </div>
+                <div v-if="!overview.health.length" class="form-text fst-italic">
+                    {{ $t('watcher.monitoring.healthEventEmpty') }}
+                </div>
+                <table v-else class="table table-sm table-dark table-bordered small mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ $t('watcher.monitoring.crashColContainer') }}</th>
+                            <th>{{ $t('watcher.monitoring.healthColStack') }}</th>
+                            <th>{{ $t('watcher.monitoring.healthColAction') }}</th>
+                            <th>{{ $t('watcher.monitoring.healthColStatus') }}</th>
+                            <th>{{ $t('watcher.monitoring.crashColTime') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(ev, i) in overview.health" :key="i">
+                            <td><code>{{ ev.containerName }}</code></td>
+                            <td>
+                                <span v-if="ev.stackName || ev.serviceName">
+                                    {{ ev.stackName || '-' }}<span v-if="ev.serviceName"> / {{ ev.serviceName }}</span>
+                                </span>
+                                <span v-else class="text-muted">-</span>
+                            </td>
+                            <td>{{ healthActionLabel(ev.action) }}</td>
+                            <td>
+                                <span :class="healthStatusBadge(ev.actionStatus)">
+                                    {{ healthStatusLabel(ev.actionStatus) }}
+                                </span>
+                                <span v-if="ev.message" class="text-muted ms-2">{{ ev.message }}</span>
+                            </td>
+                            <td class="text-muted">{{ fmtDate(ev.timestamp) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="shadow-box big-padding mb-4">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h5 class="settings-subheading mb-0">
                     <font-awesome-icon icon="chart-bar" class="me-2" />{{ $t('watcher.kula.heading') }}
@@ -508,6 +600,9 @@ interface CrashExclusion {
     expiresAt: string | null;
 }
 
+type HealthAutoHealMode = "notify" | "restart_container" | "restart_service" | "stack_aware";
+type HealthActionStatus = "notified" | "success" | "failed" | "skipped";
+
 interface KulaSettings {
     enabled:     boolean;
     port:        number;
@@ -520,6 +615,9 @@ interface MonitoringSettings {
     crashLoopThreshold: number;
     crashLoopWindowMinutes: number;
     crashLoopCooldownMinutes: number;
+    healthcheckEnabled: boolean;
+    healthcheckAutoHealMode: HealthAutoHealMode;
+    healthcheckCooldownMinutes: number;
     discordWebhooks: string[];
     appriseUrls: string[];
     notificationLang: "fr" | "en";
@@ -531,6 +629,15 @@ interface Overview {
     images: { pendingCount: number; pendingImages: { image: string; stack: string }[] };
     trivy:  { criticalCount: number; criticalImages: { image: string; stack: string; maxSeverity: string }[]; lastScanAt: string | null; nextScanAt: string | null };
     crashes: { containerName: string; restartCount: number; windowMinutes: number; timestamp: string }[];
+    health: {
+        containerName: string;
+        stackName: string | null;
+        serviceName: string | null;
+        action: HealthAutoHealMode;
+        actionStatus: HealthActionStatus;
+        message: string;
+        timestamp: string;
+    }[];
 }
 
 // ─── API helper ───────────────────────────────────────────────────
@@ -557,6 +664,7 @@ const overview = ref<Overview>({
     images:  { pendingCount: 0, pendingImages: [] },
     trivy:   { criticalCount: 0, criticalImages: [], lastScanAt: null, nextScanAt: null },
     crashes: [],
+    health: [],
 });
 
 const monSettings = ref<MonitoringSettings>({
@@ -564,6 +672,9 @@ const monSettings = ref<MonitoringSettings>({
     crashLoopThreshold: 5,
     crashLoopWindowMinutes: 10,
     crashLoopCooldownMinutes: 60,
+    healthcheckEnabled: false,
+    healthcheckAutoHealMode: "notify",
+    healthcheckCooldownMinutes: 30,
     discordWebhooks: [],
     appriseUrls: [],
     notificationLang: "fr",
@@ -583,6 +694,7 @@ const toast          = ref({ msg: "", ok: true });
 
 const exclusions     = ref<CrashExclusion[]>([]);
 const clearingEvents = ref(false);
+const clearingHealthEvents = ref(false);
 
 // ── Kula ──────────────────────────────────────────────────────────
 const kulaSettings = ref<KulaSettings>({
@@ -646,6 +758,20 @@ function maskWebhook(url: string): string {
 function showToast(msg: string, ok = true) {
     toast.value = { msg, ok };
     setTimeout(() => { toast.value.msg = ""; }, 3000);
+}
+
+function healthActionLabel(action: HealthAutoHealMode): string {
+    return t(`watcher.monitoring.healthAction.${action}`);
+}
+
+function healthStatusLabel(status: HealthActionStatus): string {
+    return t(`watcher.monitoring.healthStatus.${status}`);
+}
+
+function healthStatusBadge(status: HealthActionStatus): string {
+    if (status === "success") return "badge bg-success";
+    if (status === "failed") return "badge bg-danger";
+    return "badge bg-secondary";
 }
 
 // ─── Webhook helpers ──────────────────────────────────────────────
@@ -736,6 +862,19 @@ async function clearCrashEvents() {
             showToast(`❌ ${res.message}`, false);
         }
     } finally { clearingEvents.value = false; }
+}
+
+async function clearHealthEvents() {
+    clearingHealthEvents.value = true;
+    try {
+        const res = await api("DELETE", "/monitoring/health-events");
+        if (res.ok) {
+            showToast("✅ " + t("watcher.monitoring.healthListCleared"));
+            await loadOverview();
+        } else {
+            showToast(`❌ ${res.message}`, false);
+        }
+    } finally { clearingHealthEvents.value = false; }
 }
 
 // ─── API calls ────────────────────────────────────────────────────

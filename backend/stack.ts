@@ -533,11 +533,40 @@ export class Stack {
         return exitCode;
     }
 
+    async restartService(serviceName: string) : Promise<number> {
+        if (!serviceName) {
+            throw new ValidationError("Service name is required");
+        }
+        const res = await childProcessAsync.spawn("docker", this.getComposeOptions("restart", serviceName), {
+            cwd: this.path,
+            encoding: "utf-8",
+        });
+        const exitCode = res.code ?? 0;
+        if (exitCode !== 0) {
+            throw new Error(`Failed to restart service ${serviceName}`);
+        }
+        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
+        return exitCode;
+    }
+
     async recreate(socket: DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), this.path);
         if (exitCode !== 0) {
             throw new Error("Failed to recreate, please check the terminal output for more information.");
+        }
+        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
+        return exitCode;
+    }
+
+    async recreateInBackground() : Promise<number> {
+        const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), {
+            cwd: this.path,
+            encoding: "utf-8",
+        });
+        const exitCode = res.code ?? 0;
+        if (exitCode !== 0) {
+            throw new Error("Failed to recreate stack");
         }
         await this.writeMeta({ lastStartedAt: new Date().toISOString() });
         return exitCode;

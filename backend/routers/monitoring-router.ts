@@ -50,6 +50,7 @@ async function requireAuth(
 export class MonitoringRouter extends Router {
     create(_app: Express, server: DockgeServer): express.Router {
         const router = express.Router();
+        MonitoringWatcher.getInstance().setServer(server);
         router.use(express.json());
 
         // Auth middleware on all routes — uses server.jwtSecret like WatcherRouter
@@ -137,8 +138,9 @@ export class MonitoringRouter extends Router {
                 ? new Date(new Date(trivyStatus.lastScanAt).getTime() + trivySettings.intervalHours * 3_600_000).toISOString()
                 : null;
 
-            // Crash events
+            // Crash and health events
             const crashes = MonitoringWatcher.getInstance().getRecentCrashEvents().slice(0, 10);
+            const health = MonitoringWatcher.getInstance().getRecentHealthEvents().slice(0, 10);
 
             res.json({
                 ok: true,
@@ -166,6 +168,7 @@ export class MonitoringRouter extends Router {
                         nextScanAt,
                     },
                     crashes,
+                    health,
                 },
             });
         });
@@ -179,6 +182,15 @@ export class MonitoringRouter extends Router {
         // Effacer la liste des crash events (en mémoire)
         router.delete("/monitoring/crash-events", (_req: Request, res: Response) => {
             MonitoringWatcher.getInstance().clearCrashEvents();
+            res.json({ ok: true });
+        });
+
+        router.get("/monitoring/health-events", (_req: Request, res: Response) => {
+            res.json({ ok: true, data: MonitoringWatcher.getInstance().getRecentHealthEvents() });
+        });
+
+        router.delete("/monitoring/health-events", (_req: Request, res: Response) => {
+            MonitoringWatcher.getInstance().clearHealthEvents();
             res.json({ ok: true });
         });
 
