@@ -179,6 +179,28 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        // recreateStack
+        agentSocket.on("recreateStack", async (stackName : unknown, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof(stackName) !== "string") {
+                    throw new ValidationError("Stack name must be a string");
+                }
+
+                const stack = await Stack.getStack(server, stackName);
+                await stack.recreate(socket);
+                callbackResult({
+                    ok: true,
+                    msg: "Recreated",
+                    msgi18n: true,
+                }, callback);
+                server.sendStackList();
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // updateStack
         agentSocket.on("updateStack", async (stackName : unknown, callback) => {
             try {
@@ -199,6 +221,34 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 callbackResult({
                     ok: true,
                     msg: "Updated",
+                    msgi18n: true,
+                }, callback);
+                server.sendStackList();
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        // pullAndRecreateStack
+        agentSocket.on("pullAndRecreateStack", async (stackName : unknown, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof(stackName) !== "string") {
+                    throw new ValidationError("Stack name must be a string");
+                }
+
+                const stack = await Stack.getStack(server, stackName);
+                await stack.pullAndRecreate(socket);
+                // Clear update badges for this stack — images are now up to date
+                for (const key of imageStatusStore.keys()) {
+                    if (key.startsWith(`${stackName}::`)) {
+                        imageStatusStore.delete(key);
+                    }
+                }
+                callbackResult({
+                    ok: true,
+                    msg: "PulledAndRecreated",
                     msgi18n: true,
                 }, callback);
                 server.sendStackList();
