@@ -5,6 +5,9 @@
                 <h4>{{ name }}</h4>
                 <div class="image mb-2">
                     <span class="me-1">{{ imageName }}:</span><span class="tag">{{ imageTag }}</span>
+                    <span v-if="imageUpdate" class="container-image-update ms-2" :title="imageUpdateTitle">
+                        <font-awesome-icon icon="arrow-circle-up" class="me-1" />{{ $t("containerImageUpdateAvailable") }}
+                    </span>
                 </div>
                 <div v-if="!isEditMode">
                     <span class="badge me-1" :class="bgStyle">{{ status }}</span>
@@ -172,6 +175,10 @@ export default defineComponent({
         startedAt: {
             type: String,
             default: null
+        },
+        imageUpdate: {
+            type: Object,
+            default: null
         }
     },
     emits: [
@@ -279,6 +286,13 @@ export default defineComponent({
                 return "";
             }
         },
+
+        imageUpdateTitle() {
+            if (!this.imageUpdate) {
+                return "";
+            }
+            return `${this.imageUpdate.image}: ${this.$t("watcher.status.updateAvailable")}`;
+        },
     },
     mounted() {
         if (this.first) {
@@ -319,6 +333,21 @@ export default defineComponent({
         .tag {
             color: #33383b;
         }
+    }
+
+    .container-image-update {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px 7px;
+        border-radius: 50rem;
+        font-size: 0.68rem;
+        font-weight: 600;
+        line-height: 1;
+        color: $warning;
+        background: rgba(248, 163, 6, 0.14);
+        border: 1px solid rgba(248, 163, 6, 0.3);
+        vertical-align: middle;
     }
 
     .function {

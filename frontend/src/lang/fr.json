@@ -47,6 +47,7 @@
     "dependsOn": "Dépendance du conteneur | Dépendances du conteneur",
     "addListItem": "Ajouter {0}",
     "deleteContainer": "Supprimer",
+    "containerImageUpdateAvailable": "MàJ",
     "addContainer": "Ajouter un conteneur",
     "addNetwork": "Ajouter un réseau",
     "disableauth.message1": "Voulez-vous vraiment <strong>désactiver l'authentification</strong> ?",

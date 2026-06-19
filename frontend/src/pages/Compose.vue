@@ -148,6 +148,7 @@
                             :status="serviceStatusList[name]?.state"
                             :ports="serviceStatusList[name]?.ports"
                             :started-at="serviceStatusList[name]?.startedAt ?? null"
+                            :image-update="imageUpdateForService(name)"
                         />
                     </div>
 
@@ -312,6 +313,7 @@ import NetworkInput from "../components/NetworkInput.vue";
 import dotenv from "dotenv";
 import { ref } from "vue";
 import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
+import { useImageStatus } from "../composables/useImageStatus";
 
 const template = `
 services:
@@ -342,6 +344,7 @@ export default {
     },
     setup() {
         const editorFocus = ref(false);
+        const { statusCache: imageStatuses } = useImageStatus();
 
         const focusEffectHandler = (state, focusing) => {
             editorFocus.value = focusing;
@@ -364,7 +367,8 @@ export default {
 
         return { extensions,
             extensionsEnv,
-            editorFocus };
+            editorFocus,
+            imageStatuses };
     },
     yamlDoc: null,  // For keeping the yaml comments
     data() {
@@ -703,6 +707,20 @@ export default {
                 this.selectedLogService = "";
                 this.joinSelectedLogTerminal();
             }
+        },
+
+        imageUpdateForService(serviceName) {
+            const image = this.envsubstJSONConfig?.services?.[serviceName]?.image;
+            if (!image || !this.stack.name) {
+                return null;
+            }
+
+            return this.imageStatuses.find((status) =>
+                status.stack === this.stack.name
+                && status.image === image
+                && status.hasUpdate
+                && !status.error
+            ) ?? null;
         },
 
         loadStack() {
