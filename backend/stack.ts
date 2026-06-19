@@ -484,6 +484,16 @@ export class Stack {
         return exitCode;
     }
 
+    async recreate(socket: DockgeSocket) : Promise<number> {
+        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
+        const exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), this.path);
+        if (exitCode !== 0) {
+            throw new Error("Failed to recreate, please check the terminal output for more information.");
+        }
+        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
+        return exitCode;
+    }
+
     async down(socket: DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("down"), this.path);
@@ -515,6 +525,24 @@ export class Stack {
             throw new Error("Failed to restart, please check the terminal output for more information.");
         }
         // Le up a réussi — on enregistre la date de relance
+        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
+        return exitCode;
+    }
+
+    async pullAndRecreate(socket: DockgeSocket) : Promise<number> {
+        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
+        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("pull"), this.path);
+        if (exitCode !== 0) {
+            throw new Error("Failed to pull, please check the terminal output for more information.");
+        }
+
+        const now = new Date().toISOString();
+        await this.writeMeta({ lastUpdated: now });
+
+        exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), this.path);
+        if (exitCode !== 0) {
+            throw new Error("Failed to recreate, please check the terminal output for more information.");
+        }
         await this.writeMeta({ lastStartedAt: new Date().toISOString() });
         return exitCode;
     }

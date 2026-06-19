@@ -55,6 +55,15 @@
                     </button>
 
                     <BDropdown right text="" variant="normal">
+                        <BDropdownItem :disabled="processing" @click="recreateStack">
+                            <font-awesome-icon icon="rotate" class="me-1" />
+                            {{ $t("recreateStack") }}
+                        </BDropdownItem>
+                        <BDropdownItem :disabled="processing" @click="pullAndRecreateStack">
+                            <font-awesome-icon icon="cloud-arrow-down" class="me-1" />
+                            {{ $t("pullAndRecreateStack") }}
+                        </BDropdownItem>
+                        <li><hr class="dropdown-divider"></li>
                         <BDropdownItem @click="downStack">
                             <font-awesome-icon icon="stop" class="me-1" />
                             {{ $t("downStack") }}
@@ -803,10 +812,34 @@ export default {
             });
         },
 
+        recreateStack() {
+            if (!confirm(this.$t("recreateStackMsg"))) {
+                return;
+            }
+            this.processing = true;
+
+            this.$root.emitAgent(this.endpoint, "recreateStack", this.stack.name, (res) => {
+                this.processing = false;
+                this.$root.toastRes(res);
+            });
+        },
+
         updateStack() {
             this.processing = true;
 
             this.$root.emitAgent(this.endpoint, "updateStack", this.stack.name, (res) => {
+                this.processing = false;
+                this.$root.toastRes(res);
+            });
+        },
+
+        pullAndRecreateStack() {
+            if (!confirm(this.$t("pullAndRecreateStackMsg"))) {
+                return;
+            }
+            this.processing = true;
+
+            this.$root.emitAgent(this.endpoint, "pullAndRecreateStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
             });
