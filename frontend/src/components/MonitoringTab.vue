@@ -123,6 +123,26 @@
                         </button>
                     </div>
                     <small class="form-text">{{ $t('watcher.monitoring.diskPartitionHint') }}</small>
+                    <div class="mt-3">
+                        <label class="form-label small">{{ $t('watcher.monitoring.diskDisplayMode') }}</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check">
+                                <input id="diskDisplayCompact" v-model="diskDisplayMode"
+                                    class="form-check-input" type="radio" value="compact" />
+                                <label class="form-check-label" for="diskDisplayCompact">
+                                    {{ $t('watcher.monitoring.diskDisplayCompact') }}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input id="diskDisplayBar" v-model="diskDisplayMode"
+                                    class="form-check-input" type="radio" value="bar" />
+                                <label class="form-check-label" for="diskDisplayBar">
+                                    {{ $t('watcher.monitoring.diskDisplayBar') }}
+                                </label>
+                            </div>
+                        </div>
+                        <small class="form-text">{{ $t('watcher.monitoring.diskDisplayModeHint') }}</small>
+                    </div>
                     <div class="mt-2">
                         <button class="btn btn-primary btn-sm" @click="saveDisplaySettings" :disabled="savingDisplay">
                             <span v-if="savingDisplay" class="spinner-border spinner-border-sm me-1" />
@@ -535,6 +555,7 @@ const monSettings = ref<MonitoringSettings>({
 });
 
 const diskPartitions = ref<string[]>(["/"]);
+const diskDisplayMode = ref<"compact" | "bar">("compact");
 const newPartition   = ref("");
 const savingMon      = ref(false);
 const savingDisplay  = ref(false);
@@ -724,8 +745,9 @@ async function loadSettings() {
         setLowPower(monSettings.value.lowPowerMode);
     }
     if (displayRes.ok) {
-        const d = displayRes.data as { diskPartitions?: string[] };
+        const d = displayRes.data as { diskPartitions?: string[]; diskDisplayMode?: "compact" | "bar" };
         diskPartitions.value = d.diskPartitions?.length ? d.diskPartitions : ["/"];
+        diskDisplayMode.value = d.diskDisplayMode === "bar" ? "bar" : "compact";
     }
 }
 
@@ -758,7 +780,10 @@ function removePartition(idx: number) {
 async function saveDisplaySettings() {
     savingDisplay.value = true;
     try {
-        const res = await api("POST", "/monitoring/display-settings", { diskPartitions: diskPartitions.value });
+        const res = await api("POST", "/monitoring/display-settings", {
+            diskPartitions: diskPartitions.value,
+            diskDisplayMode: diskDisplayMode.value,
+        });
         showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
     } finally { savingDisplay.value = false; }
 }

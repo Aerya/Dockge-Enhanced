@@ -73,13 +73,19 @@ export class MonitoringRouter extends Router {
             }
         });
 
-        // ── Display settings (diskPartition — stored in SQLite) ───
+        // ── Display settings (disk partitions / navbar render mode) ───
 
         router.post("/monitoring/display-settings", async (req: Request, res: Response) => {
             try {
-                const { diskPartitions } = req.body as { diskPartitions?: string[] };
+                const { diskPartitions, diskDisplayMode } = req.body as {
+                    diskPartitions?: string[];
+                    diskDisplayMode?: string;
+                };
                 if (Array.isArray(diskPartitions)) {
                     await Settings.set("diskPartitions", JSON.stringify(diskPartitions));
+                }
+                if (diskDisplayMode === "compact" || diskDisplayMode === "bar") {
+                    await Settings.set("diskDisplayMode", diskDisplayMode);
                 }
                 res.json({ ok: true });
             } catch (e) {
@@ -98,7 +104,9 @@ export class MonitoringRouter extends Router {
                 const single = await Settings.get("diskPartition");
                 diskPartitions = [single || "/"];
             }
-            res.json({ ok: true, data: { diskPartitions } });
+            const rawDisplayMode = await Settings.get("diskDisplayMode");
+            const diskDisplayMode = rawDisplayMode === "bar" ? "bar" : "compact";
+            res.json({ ok: true, data: { diskPartitions, diskDisplayMode } });
         });
 
         // ── Overview (dashboard cards) ────────────────────────────

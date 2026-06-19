@@ -50,7 +50,16 @@
                 </span>
                 <span v-for="d in (systemStats.disks ?? [systemStats.disk])" :key="d.mount"
                     class="stat-pill" :class="statClass(d.percent)">
-                    <font-awesome-icon icon="floppy-disk" class="me-1" />{{ d.mount }} {{ d.percent }}%
+                    <font-awesome-icon icon="floppy-disk" class="me-1" />
+                    <template v-if="systemStats.diskDisplayMode === 'bar'">
+                        {{ d.mount }}
+                        <span class="disk-bar ms-1">{{ diskUsageBar(d.percent) }}</span>
+                        <span class="ms-1">{{ d.percent }}%</span>
+                        <span class="ms-1">{{ formatDiskTotal(d.total) }}</span>
+                    </template>
+                    <template v-else>
+                        {{ d.mount }} {{ d.percent }}%
+                    </template>
                 </span>
                 <a v-if="kulaUrl" :href="kulaUrl" target="_blank" class="stat-pill stat-kula">
                     <font-awesome-icon icon="chart-bar" class="me-1" />Kula
@@ -289,6 +298,25 @@ export default {
             return mb.toFixed(0) + " MB";
         },
 
+        diskUsageBar(percent) {
+            const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
+            const filled = Math.round(clamped / 10);
+            return `[${"⣿".repeat(filled)}${" ".repeat(10 - filled)}]`;
+        },
+
+        formatDiskTotal(bytes) {
+            if (!bytes) return "0B";
+            const units = ["B", "Kio", "Mio", "Gio", "Tio", "Pio"];
+            let value = bytes;
+            let unitIndex = 0;
+            while (value >= 1024 && unitIndex < units.length - 1) {
+                value /= 1024;
+                unitIndex += 1;
+            }
+            const precision = value >= 10 || unitIndex === 0 ? 0 : 1;
+            return `${value.toFixed(precision)}${units[unitIndex]}`;
+        },
+
         async fetchKulaStatus() {
             try {
                 const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
@@ -435,6 +463,8 @@ main {
     font-size: 0.78rem;
     font-weight: 500;
     letter-spacing: 0.01em;
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
 }
 
 .stat-pill {
@@ -444,6 +474,7 @@ main {
     border-radius: 50rem;
     border: 1px solid rgba(255, 255, 255, 0.12);
     transition: color 0.3s;
+    white-space: nowrap;
 
     &.stat-ok      { color: #a8d8b0; } // vert menthe pastel
     &.stat-warning  { color: #f0d898; } // jaune blé pastel
@@ -454,6 +485,12 @@ main {
         border-color: rgba(99,172,255,.3);
         &:hover { color: #bfdbfe; border-color: rgba(99,172,255,.6); }
     }
+}
+
+.disk-bar {
+    font-family: "JetBrains Mono", monospace;
+    white-space: pre;
+    line-height: 1;
 }
 
 .nav {
