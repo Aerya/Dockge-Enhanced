@@ -84,6 +84,14 @@
           <font-awesome-icon icon="history" class="watcher-tab-icon" />
           <span>{{ $t("watcher.tab.audit") }}</span>
         </button>
+        <button
+          class="watcher-tab"
+          :class="{ active: tab === 'capacity' }"
+          @click="tab = 'capacity'"
+        >
+          <font-awesome-icon icon="database" class="watcher-tab-icon" />
+          <span>{{ $t("watcher.tab.capacity") }}</span>
+        </button>
       </div>
 
       <!-- ═══ TAB: IMAGES ═══ -->
@@ -1347,6 +1355,8 @@
 
       <!-- ═══ TAB: AUDIT ═══ -->
       <AuditLogTab v-show="tab === 'audit'" />
+
+      <HomelabCapacityTab v-show="tab === 'capacity'" />
     </div>
 
     <!-- TOAST -->
@@ -1369,6 +1379,7 @@ import BackupTab from "./BackupTab.vue";
 import DockerResources from "../pages/DockerResources.vue";
 import MonitoringTab from "./MonitoringTab.vue";
 import AuditLogTab from "./AuditLogTab.vue";
+import HomelabCapacityTab from "./HomelabCapacityTab.vue";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 
 // ─── Types ────────────────────────────────────────────────────────

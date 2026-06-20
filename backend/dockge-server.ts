@@ -6,12 +6,14 @@ import { DockerResourcesRouter } from "./routers/docker-resources-router";
 import { SystemStatsRouter } from "./routers/system-stats-router";
 import { MonitoringRouter } from "./routers/monitoring-router";
 import { AuditLogRouter } from "./routers/audit-log-router";
+import { HomelabCapacityRouter } from "./routers/homelab-capacity-router";
 import { ImageWatcher } from "./watchers/image-watcher";
 import { TrivyScanner } from "./watchers/trivy-scanner";
 import { BackupManager } from "./watchers/backup-manager";
 import { MonitoringWatcher } from "./watchers/monitoring-watcher";
 import { KulaManager } from "./watchers/kula-manager";
 import { AutoPruneManager } from "./watchers/auto-prune-manager";
+import { HomelabCapacityManager } from "./watchers/homelab-capacity-manager";
 import { SelfUpdateChecker } from "./watchers/self-update-checker";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
@@ -69,6 +71,7 @@ export class DockgeServer {
         new SystemStatsRouter(),
         new MonitoringRouter(),
         new AuditLogRouter(),
+        new HomelabCapacityRouter(),
     ];
 
     /**
@@ -434,6 +437,7 @@ export class DockgeServer {
             MonitoringWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "MonitoringWatcher start error: " + e));
             KulaManager.getInstance().startIfEnabled().catch(e => log.error("server", "KulaManager start error: " + e));
             AutoPruneManager.getInstance().startIfEnabled().catch(e => log.error("server", "AutoPruneManager start error: " + e));
+            HomelabCapacityManager.getInstance().startIfEnabled().catch(e => log.error("server", "HomelabCapacityManager start error: " + e));
             SelfUpdateChecker.getInstance().start();
         });
 

@@ -21,6 +21,7 @@ declare module 'vue' {
     General: typeof import('./src/components/settings/General.vue')['default']
     GlobalEnv: typeof import('./src/components/settings/GlobalEnv.vue')['default']
     HiddenInput: typeof import('./src/components/HiddenInput.vue')['default']
+    HomelabCapacityTab: typeof import('./src/components/HomelabCapacityTab.vue')['default']
     Login: typeof import('./src/components/Login.vue')['default']
     MonitoringTab: typeof import('./src/components/MonitoringTab.vue')['default']
     NetworkInput: typeof import('./src/components/NetworkInput.vue')['default']
