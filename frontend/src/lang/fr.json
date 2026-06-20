@@ -223,7 +223,7 @@
     "watcher.capacity.volumes": "Volumes",
     "watcher.capacity.images": "Images anciennes / inutilisées",
     "watcher.capacity.containers": "Top containers",
-    "watcher.capacity.warnings": "Mesures incomplÃ¨tes",
+    "watcher.capacity.warnings": "Mesures incomplètes",
     "watcher.capacity.unknown": "Inconnu",
     "watcher.capacity.col.stack": "Stack",
     "watcher.capacity.col.total": "Total connu",
