@@ -7,7 +7,7 @@ import { imageStatusStore } from "../watchers/image-watcher";
 import { BackupManager } from "../watchers/backup-manager";
 import { isLowPower } from "../low-power";
 import { AuditLogger } from "../audit-log";
-import { getVolumeMounts, listDir, readFile, writeFile } from "../volume-files";
+import { getVolumeMounts, listDir, readFile, writeFile, createEntry, renameEntry, removeEntry, uploadFile } from "../volume-files";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -401,6 +401,87 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     status: "success",
                 });
                 callbackResult({ ok: true, msg: "Saved", msgi18n: true }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("volumeCreate", async (stackName : unknown, service : unknown, dirPath : unknown, name : unknown, kind : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof service !== "string" || typeof dirPath !== "string" || typeof name !== "string") {
+                    throw new ValidationError("Invalid parameters");
+                }
+                const entryKind = kind === "dir" ? "dir" : "file";
+                await createEntry(server, stackName, service, dirPath, name, entryKind);
+                await AuditLogger.getInstance().logFromSocket(socket, {
+                    action: "volume.create",
+                    category: "stack",
+                    targetType: "volume-file",
+                    target: `${stackName}/${service}:${dirPath}/${name}`,
+                    status: "success",
+                });
+                callbackResult({ ok: true, msg: "Created", msgi18n: true }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("volumeRename", async (stackName : unknown, service : unknown, targetPath : unknown, newName : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof service !== "string" || typeof targetPath !== "string" || typeof newName !== "string") {
+                    throw new ValidationError("Invalid parameters");
+                }
+                await renameEntry(server, stackName, service, targetPath, newName);
+                await AuditLogger.getInstance().logFromSocket(socket, {
+                    action: "volume.rename",
+                    category: "stack",
+                    targetType: "volume-file",
+                    target: `${stackName}/${service}:${targetPath} → ${newName}`,
+                    status: "success",
+                });
+                callbackResult({ ok: true, msg: "Renamed", msgi18n: true }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("volumeDelete", async (stackName : unknown, service : unknown, targetPath : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof service !== "string" || typeof targetPath !== "string") {
+                    throw new ValidationError("Invalid parameters");
+                }
+                await removeEntry(server, stackName, service, targetPath);
+                await AuditLogger.getInstance().logFromSocket(socket, {
+                    action: "volume.delete",
+                    category: "stack",
+                    targetType: "volume-file",
+                    target: `${stackName}/${service}:${targetPath}`,
+                    status: "success",
+                });
+                callbackResult({ ok: true, msg: "Deleted", msgi18n: true }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("volumeUpload", async (stackName : unknown, service : unknown, dirPath : unknown, name : unknown, base64 : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof service !== "string" || typeof dirPath !== "string" || typeof name !== "string" || typeof base64 !== "string") {
+                    throw new ValidationError("Invalid parameters");
+                }
+                await uploadFile(server, stackName, service, dirPath, name, base64);
+                await AuditLogger.getInstance().logFromSocket(socket, {
+                    action: "volume.upload",
+                    category: "stack",
+                    targetType: "volume-file",
+                    target: `${stackName}/${service}:${dirPath}/${name}`,
+                    status: "success",
+                });
+                callbackResult({ ok: true, msg: "Uploaded", msgi18n: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }

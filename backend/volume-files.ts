@@ -1,28 +1,36 @@
 /**
  * Navigateur/éditeur de fichiers de volumes.
  *
- * Le backend Dockge ne voit pas forcément les chemins hôte des binds/volumes
- * (ils ne sont pas montés dans son conteneur). On passe donc par le socket
- * Docker (`docker exec` / `docker inspect`) pour lister, lire et écrire les
- * fichiers directement dans l'espace de montage du conteneur du service.
+ * Approche : un conteneur helper busybox éphémère monte le volume concerné et
+ * exécute l'opération (ls/cat/mkdir/mv/rm/écriture). Avantages :
+ *   - fonctionne que le conteneur du service soit démarré OU arrêté (stopped) ;
+ *   - fonctionne même si l'image du service n'a pas de shell (distroless/scratch) ;
+ *   - le backend Dockge n'a pas besoin de voir le chemin hôte (tout passe par le
+ *     socket Docker).
  *
- * Sécurité : toute opération est restreinte aux points de montage déclarés du
- * conteneur (Destinations). On refuse tout chemin qui en sort. Le service donne
- * de toute façon déjà un accès shell complet via la console — ce navigateur
- * n'élargit pas la surface, il la rend juste plus pratique.
+ * Le chemin hôte (binds) ou le nom (volumes nommés) est obtenu via `docker
+ * inspect` du conteneur du service (qui doit exister — stopped est suffisant).
+ *
+ * Sécurité : chaque opération est restreinte aux points de montage déclarés du
+ * conteneur ; le helper ne monte que le volume ciblé sur /mnt, sans réseau.
  */
 import { Stack } from "./stack";
 import { DockgeServer } from "./dockge-server";
 import childProcessAsync from "promisify-child-process";
 import { spawn } from "child_process";
 import path from "path";
+import { log } from "./log";
 
-const MAX_FILE_SIZE = 512 * 1024; // 512 Kio — au-delà on refuse (éditeur texte)
+const HELPER_IMAGE = process.env.DOCKGE_VOLUME_HELPER_IMAGE || "busybox:stable";
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 Mio — limite éditeur texte
 const MAX_ENTRIES = 5000;
+
+let helperImageReady = false;
 
 export interface VolumeMount {
     type: string;        // bind | volume
-    source: string;      // chemin hôte ou nom de volume
+    source: string;      // chemin hôte (bind) ou mountpoint
+    name: string;        // nom du volume (volumes nommés)
     destination: string; // point de montage dans le conteneur
     rw: boolean;
 }
@@ -37,17 +45,42 @@ function shQuote(s: string): string {
     return "'" + s.replace(/'/g, "'\\''") + "'";
 }
 
-/** Résout l'ID du conteneur du service via `docker compose ps -q`. */
+/** Valide un nom de fichier/dossier simple (pas de séparateur ni de ..). */
+function assertSimpleName(name: string): string {
+    if (typeof name !== "string" || name.trim() === "") {
+        throw new Error("Nom invalide");
+    }
+    if (name === "." || name === ".." || /[/\\\0]/.test(name)) {
+        throw new Error("Nom invalide");
+    }
+    return name;
+}
+
+/** S'assure que l'image helper est disponible (pull au premier usage). */
+async function ensureHelperImage(): Promise<void> {
+    if (helperImageReady) {
+        return;
+    }
+    try {
+        await childProcessAsync.spawn("docker", [ "image", "inspect", HELPER_IMAGE ], { encoding: "utf-8" });
+    } catch {
+        log.info("volume-files", `Téléchargement de l'image helper ${HELPER_IMAGE}…`);
+        await childProcessAsync.spawn("docker", [ "pull", HELPER_IMAGE ], { encoding: "utf-8", timeout: 120000 });
+    }
+    helperImageReady = true;
+}
+
+/** Résout l'ID du conteneur du service (inclut les conteneurs arrêtés). */
 async function resolveContainerId(server: DockgeServer, stackName: string, service: string): Promise<string> {
     const stack = await Stack.getStack(server, stackName);
     const res = await childProcessAsync.spawn(
         "docker",
-        stack.getComposeOptions("ps", "-q", service),
+        stack.getComposeOptions("ps", "-a", "-q", service),
         { cwd: stack.path, encoding: "utf-8" }
     );
     const id = (res.stdout?.toString() ?? "").trim().split("\n")[0].trim();
     if (!id) {
-        throw new Error("Conteneur introuvable ou arrêté pour ce service");
+        throw new Error("Conteneur introuvable (stack jamais déployée ou supprimée)");
     }
     return id;
 }
@@ -68,22 +101,22 @@ async function inspectMounts(cid: string): Promise<VolumeMount[]> {
     return raw
         .map((m) => ({
             type: String(m.Type ?? ""),
-            source: String(m.Source ?? m.Name ?? ""),
+            source: String(m.Source ?? ""),
+            name: String(m.Name ?? ""),
             destination: String(m.Destination ?? ""),
             rw: m.RW !== false,
         }))
         .filter((m) => m.type === "bind" || m.type === "volume");
 }
 
-/** Prépare conteneur + montages en une fois. */
-async function prepare(server: DockgeServer, stackName: string, service: string): Promise<{ cid: string; mounts: VolumeMount[] }> {
+/** Prépare la liste des montages du conteneur. */
+async function prepare(server: DockgeServer, stackName: string, service: string): Promise<VolumeMount[]> {
     const cid = await resolveContainerId(server, stackName, service);
-    const mounts = await inspectMounts(cid);
-    return { cid, mounts };
+    return inspectMounts(cid);
 }
 
-/** Normalise et vérifie qu'un chemin reste dans un des montages du conteneur. */
-function assertWithinMounts(reqPath: string, mounts: VolumeMount[]): string {
+/** Trouve le montage contenant le chemin demandé et le chemin relatif associé. */
+function resolveMount(reqPath: string, mounts: VolumeMount[]): { mount: VolumeMount; rel: string } {
     if (typeof reqPath !== "string" || reqPath.trim() === "") {
         throw new Error("Chemin invalide");
     }
@@ -97,30 +130,93 @@ function assertWithinMounts(reqPath: string, mounts: VolumeMount[]): string {
         }
         const dest = path.posix.normalize(m.destination);
         if (norm === dest || norm.startsWith(dest.endsWith("/") ? dest : dest + "/")) {
-            return norm;
+            const rel = norm.slice(dest.length).replace(/^\/+/, "");
+            return { mount: m, rel };
         }
     }
     throw new Error("Chemin hors des volumes du conteneur");
 }
 
-/** Retourne la liste des montages éditables du service. */
+/** Source à monter dans le helper : nom pour un volume nommé, chemin pour un bind. */
+function helperSource(mount: VolumeMount): string {
+    if (mount.type === "volume" && mount.name) {
+        return mount.name;
+    }
+    return mount.source;
+}
+
+/** Construit le chemin dans le helper (/mnt/<rel>) en empêchant toute évasion. */
+function mntJoin(rel: string): string {
+    const p = path.posix.normalize("/mnt/" + (rel ?? ""));
+    if (p !== "/mnt" && !p.startsWith("/mnt/")) {
+        throw new Error("Chemin invalide");
+    }
+    return p;
+}
+
+interface HelperOpts {
+    rw?: boolean;
+    input?: Buffer | string;
+    encoding?: "utf-8" | "buffer";
+}
+
+/** Exécute une commande dans le helper busybox montant le volume ciblé. */
+async function helperRun(mount: VolumeMount, argv: string[], opts: HelperOpts = {}): Promise<Buffer> {
+    await ensureHelperImage();
+    const src = helperSource(mount);
+    if (!src) {
+        throw new Error("Volume non résolu");
+    }
+    const mode = opts.rw ? "" : ":ro";
+    const dockerArgs = [
+        "run", "--rm", "--network", "none",
+        ...(opts.input !== undefined ? [ "-i" ] : []),
+        "-v", `${src}:/mnt${mode}`,
+        HELPER_IMAGE,
+        ...argv,
+    ];
+
+    if (opts.input === undefined) {
+        const res = await childProcessAsync.spawn("docker", dockerArgs, {
+            encoding: "buffer",
+            maxBuffer: MAX_FILE_SIZE + 64 * 1024,
+        });
+        return Buffer.isBuffer(res.stdout) ? res.stdout : Buffer.from(res.stdout ?? "");
+    }
+
+    // Avec entrée standard (écriture)
+    return await new Promise<Buffer>((resolve, reject) => {
+        const proc = spawn("docker", dockerArgs);
+        const chunks: Buffer[] = [];
+        let err = "";
+        proc.stdout.on("data", (d) => chunks.push(Buffer.from(d)));
+        proc.stderr.on("data", (d) => (err += d.toString()));
+        proc.on("error", reject);
+        proc.on("close", (code) => {
+            if (code === 0) {
+                resolve(Buffer.concat(chunks));
+            } else {
+                reject(new Error(err.trim() || `Échec de l'opération (code ${code})`));
+            }
+        });
+        proc.stdin.on("error", () => { /* EPIPE si le helper se ferme tôt */ });
+        proc.stdin.write(opts.input);
+        proc.stdin.end();
+    });
+}
+
+/** Retourne les montages éditables du service. */
 export async function getVolumeMounts(server: DockgeServer, stackName: string, service: string): Promise<VolumeMount[]> {
-    const { mounts } = await prepare(server, stackName, service);
-    return mounts;
+    return prepare(server, stackName, service);
 }
 
 /** Liste le contenu d'un répertoire (dossiers d'abord, puis fichiers). */
 export async function listDir(server: DockgeServer, stackName: string, service: string, dirPath: string): Promise<DirEntry[]> {
-    const { cid, mounts } = await prepare(server, stackName, service);
-    const norm = assertWithinMounts(dirPath, mounts);
+    const mounts = await prepare(server, stackName, service);
+    const { mount, rel } = resolveMount(dirPath, mounts);
 
-    const res = await childProcessAsync.spawn(
-        "docker",
-        [ "exec", cid, "ls", "-1Ap", "--", norm ],
-        { encoding: "utf-8" }
-    );
-
-    const lines = (res.stdout?.toString() ?? "")
+    const out = await helperRun(mount, [ "ls", "-1Ap", "--", mntJoin(rel) ], {});
+    const lines = out.toString("utf-8")
         .split("\n")
         .map((l) => l.replace(/\r$/, ""))
         .filter((l) => l.length > 0)
@@ -128,14 +224,10 @@ export async function listDir(server: DockgeServer, stackName: string, service: 
 
     const entries: DirEntry[] = [];
     for (const line of lines) {
-        // `ls -p` suffixe les dossiers d'un /. On ignore les autres suffixes
-        // de type (@ lien, = socket, | fifo) en ne marquant que les dossiers.
         if (line.endsWith("/")) {
             entries.push({ name: line.slice(0, -1), type: "dir" });
         } else {
-            // Retire un éventuel suffixe de type non géré
-            const name = line.replace(/[*=|@]$/, "");
-            entries.push({ name, type: "file" });
+            entries.push({ name: line.replace(/[*=|@]$/, ""), type: "file" });
         }
     }
 
@@ -151,28 +243,22 @@ export async function listDir(server: DockgeServer, stackName: string, service: 
 
 /** Lit un fichier texte (refuse les fichiers trop gros ou binaires). */
 export async function readFile(server: DockgeServer, stackName: string, service: string, filePath: string): Promise<string> {
-    const { cid, mounts } = await prepare(server, stackName, service);
-    const norm = assertWithinMounts(filePath, mounts);
+    const mounts = await prepare(server, stackName, service);
+    const { mount, rel } = resolveMount(filePath, mounts);
 
-    // Taille
-    const sizeRes = await childProcessAsync.spawn(
-        "docker",
-        [ "exec", cid, "wc", "-c", norm ],
-        { encoding: "utf-8" }
-    );
-    const sizeMatch = (sizeRes.stdout?.toString() ?? "").trim().match(/^(\d+)/);
-    const size = sizeMatch ? parseInt(sizeMatch[1], 10) : NaN;
-    if (!isNaN(size) && size > MAX_FILE_SIZE) {
-        throw new Error(`Fichier trop volumineux (${Math.round(size / 1024)} Kio, max ${MAX_FILE_SIZE / 1024} Kio)`);
+    let buf: Buffer;
+    try {
+        buf = await helperRun(mount, [ "cat", "--", mntJoin(rel) ], { encoding: "buffer" });
+    } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/maxBuffer/i.test(msg)) {
+            throw new Error(`Fichier trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024} Mio)`);
+        }
+        throw e;
     }
-
-    // Contenu (buffer brut pour détecter le binaire)
-    const res = await childProcessAsync.spawn(
-        "docker",
-        [ "exec", cid, "cat", norm ],
-        { encoding: "buffer", maxBuffer: MAX_FILE_SIZE + 1024 }
-    );
-    const buf: Buffer = Buffer.isBuffer(res.stdout) ? res.stdout : Buffer.from(res.stdout ?? "");
+    if (buf.length > MAX_FILE_SIZE) {
+        throw new Error(`Fichier trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024} Mio)`);
+    }
     if (buf.includes(0)) {
         throw new Error("Fichier binaire — édition non supportée");
     }
@@ -185,26 +271,64 @@ export async function writeFile(server: DockgeServer, stackName: string, service
         throw new Error("Contenu invalide");
     }
     if (Buffer.byteLength(content, "utf-8") > MAX_FILE_SIZE) {
-        throw new Error(`Contenu trop volumineux (max ${MAX_FILE_SIZE / 1024} Kio)`);
+        throw new Error(`Contenu trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024} Mio)`);
     }
-    const { cid, mounts } = await prepare(server, stackName, service);
-    const norm = assertWithinMounts(filePath, mounts);
+    const mounts = await prepare(server, stackName, service);
+    const { mount, rel } = resolveMount(filePath, mounts);
+    // `cat > fichier` tronque en place : inode/owner/permissions préservés.
+    await helperRun(mount, [ "sh", "-c", `cat > ${shQuote(mntJoin(rel))}` ], { rw: true, input: content });
+}
 
-    await new Promise<void>((resolve, reject) => {
-        // `cat > fichier` tronque le fichier existant en place : son inode,
-        // son propriétaire et ses permissions sont préservés.
-        const proc = spawn("docker", [ "exec", "-i", cid, "sh", "-c", `cat > ${shQuote(norm)}` ]);
-        let err = "";
-        proc.stderr.on("data", (d) => (err += d.toString()));
-        proc.on("error", reject);
-        proc.on("close", (code) => {
-            if (code === 0) {
-                resolve();
-            } else {
-                reject(new Error(err.trim() || `Échec de l'écriture (code ${code})`));
-            }
-        });
-        proc.stdin.write(content);
-        proc.stdin.end();
-    });
+/** Crée un fichier vide ou un dossier dans un répertoire. */
+export async function createEntry(server: DockgeServer, stackName: string, service: string, dirPath: string, name: string, kind: "file" | "dir"): Promise<void> {
+    assertSimpleName(name);
+    const mounts = await prepare(server, stackName, service);
+    const { mount, rel } = resolveMount(dirPath, mounts);
+    const target = mntJoin(rel ? `${rel}/${name}` : name);
+    const q = shQuote(target);
+
+    if (kind === "dir") {
+        await helperRun(mount, [ "mkdir", "--", target ], { rw: true });
+    } else {
+        await helperRun(mount, [ "sh", "-c", `if [ -e ${q} ]; then echo "existe déjà" >&2; exit 1; fi; : > ${q}` ], { rw: true });
+    }
+}
+
+/** Renomme un fichier/dossier dans son répertoire. */
+export async function renameEntry(server: DockgeServer, stackName: string, service: string, targetPath: string, newName: string): Promise<void> {
+    assertSimpleName(newName);
+    const mounts = await prepare(server, stackName, service);
+    const { mount, rel } = resolveMount(targetPath, mounts);
+    if (rel === "") {
+        throw new Error("Impossible de renommer la racine du volume");
+    }
+    const parent = path.posix.dirname(rel);
+    const newRel = parent === "." ? newName : `${parent}/${newName}`;
+    await helperRun(mount, [ "mv", "--", mntJoin(rel), mntJoin(newRel) ], { rw: true });
+}
+
+/** Supprime un fichier ou un dossier (récursif). */
+export async function removeEntry(server: DockgeServer, stackName: string, service: string, targetPath: string): Promise<void> {
+    const mounts = await prepare(server, stackName, service);
+    const { mount, rel } = resolveMount(targetPath, mounts);
+    if (rel === "") {
+        throw new Error("Impossible de supprimer la racine du volume");
+    }
+    await helperRun(mount, [ "rm", "-rf", "--", mntJoin(rel) ], { rw: true });
+}
+
+/** Téléverse un fichier (contenu base64) dans un répertoire. */
+export async function uploadFile(server: DockgeServer, stackName: string, service: string, dirPath: string, name: string, base64: string): Promise<void> {
+    assertSimpleName(name);
+    if (typeof base64 !== "string") {
+        throw new Error("Contenu invalide");
+    }
+    const buf = Buffer.from(base64, "base64");
+    if (buf.length > MAX_FILE_SIZE) {
+        throw new Error(`Fichier trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024} Mio)`);
+    }
+    const mounts = await prepare(server, stackName, service);
+    const { mount, rel } = resolveMount(dirPath, mounts);
+    const target = mntJoin(rel ? `${rel}/${name}` : name);
+    await helperRun(mount, [ "sh", "-c", `cat > ${shQuote(target)}` ], { rw: true, input: buf });
 }

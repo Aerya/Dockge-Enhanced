@@ -47,12 +47,26 @@
                 </button>
             </div>
 
-            <!-- Fil d'Ariane -->
-            <div v-if="rootPath" class="vb-breadcrumb mb-2">
-                <span v-for="(crumb, i) in breadcrumbs" :key="i">
-                    <a href="#" @click.prevent="goTo(crumb.path)">{{ crumb.label }}</a>
-                    <span v-if="i < breadcrumbs.length - 1" class="vb-sep">/</span>
-                </span>
+            <!-- Fil d'Ariane + actions -->
+            <div v-if="rootPath" class="vb-actions mb-2">
+                <div class="vb-breadcrumb">
+                    <span v-for="(crumb, i) in breadcrumbs" :key="i">
+                        <a href="#" @click.prevent="goTo(crumb.path)">{{ crumb.label }}</a>
+                        <span v-if="i < breadcrumbs.length - 1" class="vb-sep">/</span>
+                    </span>
+                </div>
+                <div class="vb-actions-btns">
+                    <button class="btn btn-sm btn-normal" :title="$t('volumeNewFile')" @click="createEntry('file')">
+                        <font-awesome-icon icon="file" /> +
+                    </button>
+                    <button class="btn btn-sm btn-normal" :title="$t('volumeNewFolder')" @click="createEntry('dir')">
+                        <font-awesome-icon icon="folder" /> +
+                    </button>
+                    <button class="btn btn-sm btn-normal" :title="$t('volumeUpload')" @click="triggerUpload">
+                        <font-awesome-icon icon="upload" />
+                    </button>
+                    <input ref="uploadInput" type="file" class="d-none" @change="onUploadChange" />
+                </div>
             </div>
 
             <div v-if="loading" class="text-center py-3">
@@ -68,7 +82,15 @@
                     @click="onEntryClick(entry)"
                 >
                     <font-awesome-icon :icon="entry.type === 'dir' ? 'folder' : 'file'" class="me-2" :class="entry.type === 'dir' ? 'vb-dir' : 'vb-file'" />
-                    <span>{{ entry.name }}</span>
+                    <span class="vb-name">{{ entry.name }}</span>
+                    <span class="vb-row-actions">
+                        <button class="btn btn-sm btn-link p-0 me-2" :title="$t('rename')" @click.stop="renameEntry(entry)">
+                            <font-awesome-icon icon="pen" />
+                        </button>
+                        <button class="btn btn-sm btn-link p-0 text-danger" :title="$t('Delete')" @click.stop="deleteEntry(entry)">
+                            <font-awesome-icon icon="trash" />
+                        </button>
+                    </span>
                 </div>
             </div>
         </div>
@@ -230,6 +252,75 @@ export default {
             }
             this.editing = null;
         },
+
+        fullPath(name) {
+            const sep = this.currentPath.endsWith("/") ? "" : "/";
+            return this.currentPath + sep + name;
+        },
+
+        createEntry(kind) {
+            const label = kind === "dir" ? this.$t("volumeNewFolder") : this.$t("volumeNewFile");
+            const name = prompt(label);
+            if (!name) {
+                return;
+            }
+            this.$root.emitAgent(this.endpoint, "volumeCreate", this.stackName, this.serviceName, this.currentPath, name, kind, (res) => {
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.loadDir();
+                }
+            });
+        },
+
+        renameEntry(entry) {
+            const newName = prompt(this.$t("rename"), entry.name);
+            if (!newName || newName === entry.name) {
+                return;
+            }
+            this.$root.emitAgent(this.endpoint, "volumeRename", this.stackName, this.serviceName, this.fullPath(entry.name), newName, (res) => {
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.loadDir();
+                }
+            });
+        },
+
+        deleteEntry(entry) {
+            if (!confirm(this.$t("volumeDeleteConfirm", { name: entry.name }))) {
+                return;
+            }
+            this.$root.emitAgent(this.endpoint, "volumeDelete", this.stackName, this.serviceName, this.fullPath(entry.name), (res) => {
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.loadDir();
+                }
+            });
+        },
+
+        triggerUpload() {
+            this.$refs.uploadInput?.click();
+        },
+
+        onUploadChange(event) {
+            const file = event.target.files && event.target.files[0];
+            event.target.value = "";
+            if (!file) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                // reader.result = "data:...;base64,XXXX" → on garde la partie base64
+                const result = String(reader.result);
+                const base64 = result.includes(",") ? result.split(",")[1] : result;
+                this.$root.emitAgent(this.endpoint, "volumeUpload", this.stackName, this.serviceName, this.currentPath, file.name, base64, (res) => {
+                    this.$root.toastRes(res);
+                    if (res.ok) {
+                        this.loadDir();
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        },
     },
 };
 </script>
@@ -253,6 +344,20 @@ export default {
     overflow: auto;
 }
 
+.vb-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.vb-actions-btns {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
 .vb-breadcrumb {
     font-size: 0.85rem;
     a {
@@ -271,12 +376,28 @@ export default {
 }
 
 .vb-row {
+    display: flex;
+    align-items: center;
     padding: 5px 8px;
     cursor: pointer;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     &:hover {
         background: rgba(0, 0, 0, 0.05);
+        .vb-row-actions {
+            opacity: 1;
+        }
     }
+}
+
+.vb-name {
+    flex: 1;
+    word-break: break-all;
+}
+
+.vb-row-actions {
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.1s;
 }
 
 .vb-dir {
