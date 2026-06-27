@@ -34,6 +34,7 @@ declare module 'vue' {
     Terminal: typeof import('./src/components/Terminal.vue')['default']
     TwoFADialog: typeof import('./src/components/TwoFADialog.vue')['default']
     Uptime: typeof import('./src/components/Uptime.vue')['default']
+    VolumeBrowser: typeof import('./src/components/VolumeBrowser.vue')['default']
     WatcherSettings: typeof import('./src/components/WatcherSettings.vue')['default']
   }
 }
