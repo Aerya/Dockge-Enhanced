@@ -157,10 +157,16 @@ function mntJoin(rel: string): string {
 interface HelperOpts {
     rw?: boolean;
     input?: Buffer | string;
-    encoding?: "utf-8" | "buffer";
 }
 
-/** Exécute une commande dans le helper busybox montant le volume ciblé. */
+const SIZE_LIMIT_ERROR = "VOLUME_FILE_TOO_BIG";
+
+/**
+ * Exécute une commande dans le helper busybox montant le volume ciblé.
+ * On utilise un `spawn` brut (et non promisify-child-process) pour récupérer un
+ * Buffer fiable : `encoding: "buffer"` n'est pas une valeur valide et fait
+ * planter `Buffer.toString()` dans un callback d'event (exception fatale).
+ */
 async function helperRun(mount: VolumeMount, argv: string[], opts: HelperOpts = {}): Promise<Buffer> {
     await ensureHelperImage();
     const src = helperSource(mount);
@@ -176,32 +182,40 @@ async function helperRun(mount: VolumeMount, argv: string[], opts: HelperOpts = 
         ...argv,
     ];
 
-    if (opts.input === undefined) {
-        const res = await childProcessAsync.spawn("docker", dockerArgs, {
-            encoding: "buffer",
-            maxBuffer: MAX_FILE_SIZE + 64 * 1024,
-        });
-        return Buffer.isBuffer(res.stdout) ? res.stdout : Buffer.from(res.stdout ?? "");
-    }
-
-    // Avec entrée standard (écriture)
     return await new Promise<Buffer>((resolve, reject) => {
         const proc = spawn("docker", dockerArgs);
         const chunks: Buffer[] = [];
+        let size = 0;
         let err = "";
-        proc.stdout.on("data", (d) => chunks.push(Buffer.from(d)));
+        let killedForSize = false;
+
+        proc.stdout.on("data", (d) => {
+            size += d.length;
+            // Garde-fou : on ne bufferise jamais au-delà de la limite + marge
+            if (size > MAX_FILE_SIZE + 64 * 1024) {
+                killedForSize = true;
+                proc.kill("SIGKILL");
+                return;
+            }
+            chunks.push(Buffer.from(d));
+        });
         proc.stderr.on("data", (d) => (err += d.toString()));
         proc.on("error", reject);
         proc.on("close", (code) => {
-            if (code === 0) {
+            if (killedForSize) {
+                reject(new Error(SIZE_LIMIT_ERROR));
+            } else if (code === 0) {
                 resolve(Buffer.concat(chunks));
             } else {
                 reject(new Error(err.trim() || `Échec de l'opération (code ${code})`));
             }
         });
-        proc.stdin.on("error", () => { /* EPIPE si le helper se ferme tôt */ });
-        proc.stdin.write(opts.input);
-        proc.stdin.end();
+
+        if (opts.input !== undefined) {
+            proc.stdin.on("error", () => { /* EPIPE si le helper se ferme tôt */ });
+            proc.stdin.write(opts.input);
+            proc.stdin.end();
+        }
     });
 }
 
@@ -248,10 +262,10 @@ export async function readFile(server: DockgeServer, stackName: string, service:
 
     let buf: Buffer;
     try {
-        buf = await helperRun(mount, [ "cat", "--", mntJoin(rel) ], { encoding: "buffer" });
+        buf = await helperRun(mount, [ "cat", "--", mntJoin(rel) ]);
     } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        if (/maxBuffer/i.test(msg)) {
+        if (msg === SIZE_LIMIT_ERROR) {
             throw new Error(`Fichier trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024} Mio)`);
         }
         throw e;
