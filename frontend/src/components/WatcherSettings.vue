@@ -288,7 +288,34 @@
           >
             {{ $t("watcher.status.noData") }}
           </div>
-          <div v-else class="table-responsive">
+          <template v-else>
+            <div class="input-group input-group-sm mb-3 image-search">
+              <span class="input-group-text">
+                <font-awesome-icon icon="search" />
+              </span>
+              <input
+                v-model.trim="imageFilter"
+                class="form-control"
+                type="search"
+                :placeholder="$t('watcher.status.searchImage')"
+              />
+              <button
+                v-if="imageFilter"
+                class="btn btn-outline-secondary"
+                type="button"
+                @click="imageFilter = ''"
+              >
+                <font-awesome-icon icon="times" />
+              </button>
+            </div>
+            <div
+              v-if="imagesByStack.length === 0"
+              class="text-center form-text fst-italic py-3"
+            >
+              {{ $t("watcher.status.noMatch") }}
+            </div>
+          </template>
+          <div v-if="imageStatuses.length > 0 && imagesByStack.length > 0" class="table-responsive">
             <table class="table table-hover mb-0">
               <thead>
                 <tr>
@@ -1633,9 +1660,16 @@ const nextTrivyDate = computed(() => {
   );
 });
 
+const imageFilter = ref("");
+
 const imagesByStack = computed(() => {
+  const q = imageFilter.value.toLowerCase();
   const map = new Map<string, ImageStatus[]>();
   for (const s of imageStatuses.value) {
+    // Filtre sur le nom d'image ou le nom de stack
+    if (q && !s.image.toLowerCase().includes(q) && !s.stack.toLowerCase().includes(q)) {
+      continue;
+    }
     if (!map.has(s.stack)) map.set(s.stack, []);
     map.get(s.stack)!.push(s);
   }

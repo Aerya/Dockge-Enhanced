@@ -100,7 +100,7 @@ export function statusColor(status : number) : string {
 export const isDev = process.env.NODE_ENV === "development";
 export const TERMINAL_COLS = 105;
 export const TERMINAL_ROWS = 10;
-export const PROGRESS_TERMINAL_ROWS = 8;
+export const PROGRESS_TERMINAL_ROWS = 18;
 
 export const COMBINED_TERMINAL_COLS = 58;
 export const COMBINED_TERMINAL_ROWS = 20;
@@ -113,6 +113,80 @@ export const acceptedComposeFileNames = [
     "docker-compose.yml",
     "compose.yml",
 ];
+
+/**
+ * À partir d'une référence d'image Docker, retourne l'URL web de la page source
+ * (dépôt GitHub pour ghcr.io, page Docker Hub, dépôt Quay, etc.).
+ * Retourne null si on ne sait pas construire de lien fiable.
+ *
+ * Exemples :
+ *   ghcr.io/aerya/ddns-updater-enhanced:latest → https://github.com/aerya/ddns-updater-enhanced
+ *   nginx                                       → https://hub.docker.com/_/nginx
+ *   linuxserver/qbittorrent                     → https://hub.docker.com/r/linuxserver/qbittorrent
+ *   quay.io/prometheus/node-exporter            → https://quay.io/repository/prometheus/node-exporter
+ *   lscr.io/linuxserver/sonarr                  → https://hub.docker.com/r/linuxserver/sonarr
+ */
+export function imageRegistryUrl(image : string) : string | null {
+    if (!image || typeof image !== "string") {
+        return null;
+    }
+
+    // Retire le digest (@sha256:...) et le tag (:xxx)
+    let ref = image.trim().split("@")[0];
+
+    // Sépare un éventuel registre (host avec . ou : ou "localhost") du reste
+    let registry = "";
+    let remainder = ref;
+    const firstSlash = ref.indexOf("/");
+    if (firstSlash !== -1) {
+        const maybeHost = ref.slice(0, firstSlash);
+        if (maybeHost.includes(".") || maybeHost.includes(":") || maybeHost === "localhost") {
+            registry = maybeHost.toLowerCase();
+            remainder = ref.slice(firstSlash + 1);
+        }
+    }
+
+    // Retire le tag sur la dernière partie (path:tag)
+    const lastColon = remainder.lastIndexOf(":");
+    const lastSlash = remainder.lastIndexOf("/");
+    if (lastColon !== -1 && lastColon > lastSlash) {
+        remainder = remainder.slice(0, lastColon);
+    }
+
+    if (!remainder) {
+        return null;
+    }
+
+    switch (registry) {
+        case "ghcr.io":
+            // ghcr.io/owner/repo[/sub] → github.com/owner/repo
+            return "https://github.com/" + remainder.split("/").slice(0, 2).join("/");
+        case "quay.io":
+            return "https://quay.io/repository/" + remainder;
+        case "lscr.io":
+            // Registre LinuxServer : pointe vers la page Docker Hub correspondante
+            return "https://hub.docker.com/r/" + remainder;
+        case "registry.gitlab.com":
+            return "https://gitlab.com/" + remainder;
+        case "":
+        case "docker.io":
+        case "registry-1.docker.io":
+        case "index.docker.io": {
+            // Docker Hub
+            let parts = remainder.split("/");
+            if (parts[0] === "library") {
+                parts = parts.slice(1);
+            }
+            if (parts.length === 1) {
+                return "https://hub.docker.com/_/" + parts[0];
+            }
+            return "https://hub.docker.com/r/" + parts.slice(0, 2).join("/");
+        }
+        default:
+            // Registre privé/inconnu : pas de lien fiable
+            return null;
+    }
+}
 
 /**
  * Generate a decimal integer number from a string

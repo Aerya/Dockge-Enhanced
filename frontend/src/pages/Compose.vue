@@ -91,7 +91,7 @@
                 <Terminal
                     v-show="showProgressTerminal"
                     ref="progressTerminal"
-                    class="mb-3 terminal"
+                    class="mb-3 terminal progress-terminal"
                     :name="terminalName"
                     :endpoint="endpoint"
                     :rows="progressTerminalRows"
@@ -1097,6 +1097,16 @@ export default {
 
 .terminal {
     height: 200px;
+}
+
+/* Terminal de progression (deploy/restart/update) : plus haut pour afficher
+   davantage de conteneurs avant que Docker Compose ne tronque en "... N more".
+   Docker Compose se cale sur le nombre de lignes du PTY (≈ hauteur de l'encart). */
+.progress-terminal {
+    height: 360px;
+    :deep(.main-terminal) {
+        overflow-y: auto;
+    }
 }
 
 .terminal-toolbar {

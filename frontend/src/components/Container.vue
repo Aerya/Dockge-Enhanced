@@ -5,6 +5,16 @@
                 <h4>{{ name }}</h4>
                 <div class="image mb-2">
                     <span class="me-1">{{ imageName }}:</span><span class="tag">{{ imageTag }}</span>
+                    <a
+                        v-if="registryUrl"
+                        :href="registryUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="image-registry-link ms-2"
+                        :title="registryUrl"
+                    >
+                        <font-awesome-icon icon="external-link-square-alt" />
+                    </a>
                     <span v-if="imageUpdate" class="container-image-update ms-2" :title="imageUpdateTitle">
                         <font-awesome-icon icon="arrow-circle-up" class="me-1" />{{ $t("containerImageUpdateAvailable") }}
                     </span>
@@ -24,6 +34,10 @@
             </div>
             <div class="col-5">
                 <div class="function">
+                    <button v-if="!isEditMode" class="btn btn-normal me-2" :title="$t('volumeBrowserTitle')" @click="openVolumeBrowser">
+                        <font-awesome-icon icon="folder-open" />
+                        {{ $t("files") }}
+                    </button>
                     <router-link v-if="!isEditMode" class="btn btn-normal" :to="terminalRouteLink" disabled="">
                         <font-awesome-icon icon="terminal" />
                         Bash
@@ -31,6 +45,14 @@
                 </div>
             </div>
         </div>
+
+        <VolumeBrowser
+            v-if="!isEditMode"
+            ref="volumeBrowser"
+            :stack-name="stackName"
+            :service-name="name"
+            :endpoint="endpoint"
+        />
 
         <div v-if="isEditMode" class="mt-2">
             <button class="btn btn-normal me-2" @click="showConfig = !showConfig">
@@ -145,11 +167,13 @@
 <script>
 import { defineComponent } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { parseDockerPort } from "../../../common/util-common";
+import { parseDockerPort, imageRegistryUrl } from "../../../common/util-common";
+import VolumeBrowser from "./VolumeBrowser.vue";
 
 export default defineComponent({
     components: {
         FontAwesomeIcon,
+        VolumeBrowser,
     },
     props: {
         name: {
@@ -293,6 +317,13 @@ export default defineComponent({
             }
             return `${this.imageUpdate.image}: ${this.$t("watcher.status.updateAvailable")}`;
         },
+
+        registryUrl() {
+            if (!this.envsubstService.image) {
+                return null;
+            }
+            return imageRegistryUrl(this.envsubstService.image);
+        },
     },
     mounted() {
         if (this.first) {
@@ -310,6 +341,9 @@ export default defineComponent({
         },
         remove() {
             delete this.jsonObject.services[this.name];
+        },
+        openVolumeBrowser() {
+            this.$refs.volumeBrowser?.open();
         },
         relativeTime(iso) {
             if (!iso) return null;
@@ -332,6 +366,19 @@ export default defineComponent({
         color: #6c757d;
         .tag {
             color: #33383b;
+        }
+    }
+
+    .image-registry-link {
+        color: #6c757d;
+        opacity: 0.65;
+        text-decoration: none;
+        font-size: 0.75rem;
+        vertical-align: middle;
+
+        &:hover {
+            opacity: 1;
+            color: $primary;
         }
     }
 

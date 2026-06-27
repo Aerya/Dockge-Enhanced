@@ -82,6 +82,8 @@ import {
     faChevronRight,
     faExpand,
     faCompress,
+    faFolder,
+    faFolderOpen,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -165,6 +167,8 @@ library.add(
     faChevronRight,
     faExpand,
     faCompress,
+    faFolder,
+    faFolderOpen,
 );
 
 export { FontAwesomeIcon };

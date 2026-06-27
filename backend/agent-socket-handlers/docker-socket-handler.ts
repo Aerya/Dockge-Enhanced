@@ -7,6 +7,7 @@ import { imageStatusStore } from "../watchers/image-watcher";
 import { BackupManager } from "../watchers/backup-manager";
 import { isLowPower } from "../low-power";
 import { AuditLogger } from "../audit-log";
+import { getVolumeMounts, listDir, readFile, writeFile } from "../volume-files";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -339,6 +340,67 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     ok: true,
                     dockerNetworkList,
                 }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        // ── Navigateur/éditeur de fichiers de volumes ──────────────────────
+
+        agentSocket.on("volumeMounts", async (stackName : unknown, service : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof service !== "string") {
+                    throw new ValidationError("Stack and service must be strings");
+                }
+                const mounts = await getVolumeMounts(server, stackName, service);
+                callbackResult({ ok: true, mounts }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("volumeListDir", async (stackName : unknown, service : unknown, dirPath : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof service !== "string" || typeof dirPath !== "string") {
+                    throw new ValidationError("Invalid parameters");
+                }
+                const entries = await listDir(server, stackName, service, dirPath);
+                callbackResult({ ok: true, entries }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("volumeReadFile", async (stackName : unknown, service : unknown, filePath : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof service !== "string" || typeof filePath !== "string") {
+                    throw new ValidationError("Invalid parameters");
+                }
+                const content = await readFile(server, stackName, service, filePath);
+                callbackResult({ ok: true, content }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("volumeWriteFile", async (stackName : unknown, service : unknown, filePath : unknown, content : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof service !== "string" || typeof filePath !== "string" || typeof content !== "string") {
+                    throw new ValidationError("Invalid parameters");
+                }
+                await writeFile(server, stackName, service, filePath, content);
+                await AuditLogger.getInstance().logFromSocket(socket, {
+                    action: "volume.write",
+                    category: "stack",
+                    targetType: "volume-file",
+                    target: `${stackName}/${service}:${filePath}`,
+                    status: "success",
+                });
+                callbackResult({ ok: true, msg: "Saved", msgi18n: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
