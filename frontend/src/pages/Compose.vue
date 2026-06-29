@@ -125,32 +125,58 @@
                     </div>
 
                     <!-- Containers -->
-                    <h4 class="mb-3">{{ $tc("container", 2) }}</h4>
+                    <button
+                        type="button"
+                        class="containers-toggle mb-3"
+                        :aria-expanded="containersExpanded"
+                        :aria-label="$t(containersExpanded ? 'collapseContainers' : 'expandContainers')"
+                        aria-controls="stack-containers"
+                        :title="$t(containersExpanded ? 'collapseContainers' : 'expandContainers')"
+                        @click="toggleContainers"
+                    >
+                        <span class="containers-toggle-title">
+                            {{ $tc("container", 2) }}
+                            <span class="containers-count">{{ containerCount }}</span>
+                        </span>
+                        <span class="containers-toggle-status">
+                            <span
+                                v-for="item in containerStatusSummary"
+                                :key="item.state"
+                                class="container-status-summary"
+                                :class="containerStatusClass(item.state)"
+                            >
+                                {{ item.count }} {{ item.state }}
+                            </span>
+                            <font-awesome-icon :icon="containersExpanded ? 'chevron-down' : 'chevron-right'" />
+                        </span>
+                    </button>
 
-                    <div v-if="isEditMode" class="input-group mb-3">
-                        <input
-                            v-model="newContainerName"
-                            :placeholder="$t(`New Container Name...`)"
-                            class="form-control"
-                            @keyup.enter="addContainer"
-                        />
-                        <button class="btn btn-primary" @click="addContainer">
-                            {{ $t("addContainer") }}
-                        </button>
-                    </div>
+                    <div v-show="containersExpanded" id="stack-containers">
+                        <div v-if="isEditMode" class="input-group mb-3">
+                            <input
+                                v-model="newContainerName"
+                                :placeholder="$t(`New Container Name...`)"
+                                class="form-control"
+                                @keyup.enter="addContainer"
+                            />
+                            <button class="btn btn-primary" @click="addContainer">
+                                {{ $t("addContainer") }}
+                            </button>
+                        </div>
 
-                    <div ref="containerList">
-                        <Container
-                            v-for="(service, name) in jsonConfig.services"
-                            :key="name"
-                            :name="name"
-                            :is-edit-mode="isEditMode"
-                            :first="name === Object.keys(jsonConfig.services)[0]"
-                            :status="serviceStatusList[name]?.state"
-                            :ports="serviceStatusList[name]?.ports"
-                            :started-at="serviceStatusList[name]?.startedAt ?? null"
-                            :image-update="imageUpdateForService(name)"
-                        />
+                        <div ref="containerList">
+                            <Container
+                                v-for="(service, name) in jsonConfig.services"
+                                :key="name"
+                                :name="name"
+                                :is-edit-mode="isEditMode"
+                                :first="name === Object.keys(jsonConfig.services)[0]"
+                                :status="serviceStatusList[name]?.state"
+                                :ports="serviceStatusList[name]?.ports"
+                                :started-at="serviceStatusList[name]?.startedAt ?? null"
+                                :image-update="imageUpdateForService(name)"
+                            />
+                        </div>
                     </div>
 
                     <button v-if="false && isEditMode && jsonConfig.services && Object.keys(jsonConfig.services).length > 0" class="btn btn-normal mb-3" @click="addContainer">{{ $t("addContainer") }}</button>
@@ -174,17 +200,17 @@
                         <div class="terminal-toolbar mb-3">
                             <h4 class="mb-0">{{ $t("terminal") }}</h4>
                             <div class="terminal-toolbar-right">
-                            <button
-                                class="btn btn-sm"
-                                :class="logTimestamps ? 'btn-primary' : 'btn-normal'"
-                                @click="toggleLogTimestamps"
-                                :title="$t('logTimestampsToggle')"
-                                style="font-size:0.78rem; padding: 2px 8px;"
-                            >
-                                <font-awesome-icon icon="clock" class="me-1" />{{ $t('logTimestamps') }}
-                            </button>
-                        </div>
-                        <div v-if="logServiceOptions.length > 0" class="terminal-service-filter">
+                                <button
+                                    class="btn btn-sm"
+                                    :class="logTimestamps ? 'btn-primary' : 'btn-normal'"
+                                    :title="$t('logTimestampsToggle')"
+                                    style="font-size:0.78rem; padding: 2px 8px;"
+                                    @click="toggleLogTimestamps"
+                                >
+                                    <font-awesome-icon icon="clock" class="me-1" />{{ $t('logTimestamps') }}
+                                </button>
+                            </div>
+                            <div v-if="logServiceOptions.length > 0" class="terminal-service-filter">
                                 <label class="form-label mb-0 small text-muted" for="log-service-select">Service</label>
                                 <select
                                     id="log-service-select"
@@ -202,12 +228,12 @@
                         <Terminal
                             :key="selectedLogTerminalName"
                             ref="combinedTerminal"
-                            class="mb-3 terminal"
+                            class="mb-3 terminal combined-terminal"
+                            :class="{ 'logs-expanded': !containersExpanded }"
                             :name="selectedLogTerminalName"
                             :endpoint="endpoint"
                             :rows="combinedTerminalRows"
                             :cols="combinedTerminalCols"
-                            style="height: 315px;"
                         ></Terminal>
                     </div>
                 </div>
@@ -399,6 +425,7 @@ export default {
         BModal,
     },
     beforeRouteUpdate(to, from, next) {
+        this.containersExpanded = true;
         this.exitConfirm(next);
     },
     beforeRouteLeave(to, from, next) {
@@ -473,6 +500,7 @@ export default {
             stopServiceStatusTimeout: false,
             selectedLogService: "",
             joinedLogService: "",
+            containersExpanded: true,
         };
     },
     computed: {
@@ -554,6 +582,22 @@ export default {
                 return [];
             }
             return Object.keys(this.jsonConfig.services);
+        },
+
+        containerCount() {
+            return Object.keys(this.jsonConfig.services ?? {}).length;
+        },
+
+        containerStatusSummary() {
+            const counts = {};
+            for (const serviceName of Object.keys(this.jsonConfig.services ?? {})) {
+                const state = this.serviceStatusList[serviceName]?.state ?? "unknown";
+                counts[state] = (counts[state] ?? 0) + 1;
+            }
+            return Object.entries(counts).map(([ state, count ]) => ({
+                state,
+                count,
+            }));
         },
 
         networks() {
@@ -779,6 +823,23 @@ export default {
             }
             this.logTimestamps = !currentTs;
             this.joinSelectedLogTerminal();
+        },
+
+        toggleContainers() {
+            this.containersExpanded = !this.containersExpanded;
+            this.$nextTick(() => {
+                this.$refs.combinedTerminal?.updateTerminalSize();
+            });
+        },
+
+        containerStatusClass(state) {
+            if (state === "running" || state === "healthy") {
+                return "status-ok";
+            }
+            if (state === "unhealthy" || state === "exited" || state === "dead") {
+                return "status-error";
+            }
+            return "status-neutral";
         },
 
         normalizeLogServiceSelection() {
@@ -1053,6 +1114,7 @@ export default {
         },
 
         enableEditMode() {
+            this.containersExpanded = true;
             this.isEditMode = true;
         },
 
@@ -1115,6 +1177,89 @@ export default {
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
+}
+
+.containers-toggle {
+    width: 100%;
+    min-height: 34px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+}
+
+.containers-toggle:hover .containers-toggle-title {
+    color: $primary;
+}
+
+.containers-toggle-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+.containers-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    margin-left: 6px;
+    padding: 0 7px;
+    border-radius: 50rem;
+    font-size: 0.75rem;
+    color: $dark-font-color3;
+    background: rgba(127, 127, 127, 0.14);
+}
+
+.containers-toggle-status {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    color: $dark-font-color3;
+    font-size: 0.75rem;
+}
+
+.container-status-summary::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 4px;
+    border-radius: 50%;
+    background: #6b7280;
+}
+
+.container-status-summary.status-ok::before {
+    background: #16a34a;
+}
+
+.container-status-summary.status-error::before {
+    background: #dc2626;
+}
+
+.combined-terminal {
+    height: 315px;
+    transition: height 180ms ease;
+}
+
+.combined-terminal.logs-expanded {
+    height: clamp(420px, 55vh, 720px);
+}
+
+@media (max-width: 575px) {
+    .container-status-summary {
+        display: none;
+    }
+
+    .combined-terminal.logs-expanded {
+        height: 60vh;
+    }
 }
 
 .terminal-toolbar-right {
