@@ -384,6 +384,8 @@
     "watcher.status.auImmediate": "Immediate",
     "watcher.status.auScheduled": "Scheduled",
     "watcher.status.auPendingHint": "Update pending — will be applied at the scheduled time.",
+    "watcher.status.auPending": "Pending",
+    "watcher.status.auUpdating": "Updating",
     "watcher.status.ignoreVersion": "Skip this version",
     "watcher.status.versionIgnored": "Version skipped",
     "watcher.status.clearIgnored": "Resume",

@@ -19,6 +19,37 @@
                         <font-awesome-icon icon="arrow-circle-up" class="me-1" />{{ $t("containerImageUpdateAvailable") }}
                     </span>
                 </div>
+                <div v-if="!isEditMode && autoUpdate" class="container-auto-update mb-2">
+                    <label class="container-auto-update-label" :for="`auto-update-${name}`">
+                        {{ $t("watcher.status.autoUpdate") }}
+                    </label>
+                    <select
+                        :id="`auto-update-${name}`"
+                        class="form-select form-select-sm container-auto-update-select"
+                        :value="autoUpdate.mode"
+                        :disabled="autoUpdateSaving"
+                        @change="changeAutoUpdateMode"
+                    >
+                        <option value="off">{{ $t("watcher.status.auOff") }}</option>
+                        <option value="ignored">{{ $t("watcher.status.auIgnored") }}</option>
+                        <option value="immediate">{{ $t("watcher.status.auImmediate") }}</option>
+                        <option value="scheduled">{{ $t("watcher.status.auScheduled") }}</option>
+                    </select>
+                    <input
+                        v-if="autoUpdate.mode === 'scheduled'"
+                        type="time"
+                        class="form-control form-control-sm container-auto-update-time"
+                        :value="autoUpdate.time"
+                        :disabled="autoUpdateSaving"
+                        @change="changeAutoUpdateTime"
+                    />
+                    <span v-if="autoUpdate.updating" class="container-auto-update-state updating">
+                        <font-awesome-icon icon="spinner" spin /> {{ $t("watcher.status.auUpdating") }}
+                    </span>
+                    <span v-else-if="autoUpdate.pending" class="container-auto-update-state pending">
+                        {{ $t("watcher.status.auPending") }}
+                    </span>
+                </div>
                 <div v-if="!isEditMode">
                     <span class="badge me-1" :class="bgStyle">{{ status }}</span>
 
@@ -203,9 +234,18 @@ export default defineComponent({
         imageUpdate: {
             type: Object,
             default: null
+        },
+        autoUpdate: {
+            type: Object,
+            default: null
+        },
+        autoUpdateSaving: {
+            type: Boolean,
+            default: false
         }
     },
     emits: [
+        "auto-update-change",
     ],
     data() {
         return {
@@ -331,6 +371,19 @@ export default defineComponent({
         }
     },
     methods: {
+        changeAutoUpdateMode(event) {
+            const mode = event.target.value;
+            this.$emit("auto-update-change", {
+                mode,
+                time: mode === "scheduled" ? this.autoUpdate.time : undefined,
+            });
+        },
+        changeAutoUpdateTime(event) {
+            this.$emit("auto-update-change", {
+                mode: "scheduled",
+                time: event.target.value,
+            });
+        },
         parsePort(port) {
             if (this.stack.endpoint) {
                 return parseDockerPort(port, this.stack.primaryHostname);
@@ -395,6 +448,46 @@ export default defineComponent({
         background: rgba(248, 163, 6, 0.14);
         border: 1px solid rgba(248, 163, 6, 0.3);
         vertical-align: middle;
+    }
+
+    .container-auto-update {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .container-auto-update-label,
+    .container-auto-update-state {
+        font-size: 0.72rem;
+        color: #6b7280;
+
+        .dark & {
+            color: $dark-font-color;
+        }
+    }
+
+    .container-auto-update-select {
+        width: auto;
+        min-width: 118px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        font-size: 0.75rem;
+    }
+
+    .container-auto-update-time {
+        width: 104px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        font-size: 0.75rem;
+    }
+
+    .container-auto-update-state.pending {
+        color: $warning;
+    }
+
+    .container-auto-update-state.updating {
+        color: $primary;
     }
 
     .function {

@@ -178,6 +178,10 @@ export class WatcherRouter extends Router {
         // IMAGE WATCHER — Toggle auto-update par image
         // ════════════════════════════════════════════════════════════════
 
+        router.get("/image/auto-update", (_req: Request, res: Response) => {
+            res.json({ ok: true, data: ImageWatcher.getInstance().getAutoUpdateState() });
+        });
+
         router.post("/image/auto-update", async (req: Request, res: Response) => {
             const { key, mode, time } = req.body as { key: string; mode: "off" | "immediate" | "scheduled" | "ignored"; time?: string };
             if (!key) return res.status(400).json({ ok: false, message: "key requis (format: stack::image)" });

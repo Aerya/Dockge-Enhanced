@@ -659,6 +659,15 @@ export class ImageWatcher {
     };
   }
 
+  getAutoUpdateState() {
+    return {
+      enabled: this.settings.enabled,
+      autoUpdateConfig: this.settings.autoUpdateConfig ?? {},
+      pendingAutoUpdates: this.settings.pendingAutoUpdates ?? [],
+      updatingImages: [...this._updatingImages],
+    };
+  }
+
   // ── Cycle de vie ──────────────────────────────────────────────
 
   async startIfEnabled(): Promise<void> {

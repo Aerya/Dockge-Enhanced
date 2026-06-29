@@ -1,9 +1,3 @@
-/**
- * useImageStatus — Composable Vue 3 qui poll l'état des images.
- * Utilisé par le badge à injecter dans la liste des stacks Dockge.
- * Fichier : frontend/src/composables/useImageStatus.ts
- */
-
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { POLL, makePoller, type Poller } from "./useLowPower";
 
@@ -17,22 +11,58 @@ export interface ImageStatus {
     error?: string;
 }
 
-// Cache global partagé entre tous les composants qui utilisent ce composable
+export type AutoUpdateMode = "off" | "ignored" | "immediate" | "scheduled";
+
+export interface AutoUpdateStatus {
+    mode: AutoUpdateMode;
+    time: string;
+    pending: boolean;
+    updating: boolean;
+}
+
+interface AutoUpdateEntry {
+    mode: Exclude<AutoUpdateMode, "off">;
+    time?: string;
+}
+
 const statusCache = ref<ImageStatus[]>([]);
+const autoUpdateConfig = ref<Record<string, AutoUpdateEntry>>({});
+const pendingAutoUpdates = ref<string[]>([]);
+const updatingImages = ref<string[]>([]);
 let poller: Poller | null = null;
 let subscribers = 0;
 
+function authHeaders(json = false): Record<string, string> {
+    const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
+    return {
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        ...(json ? { "Content-Type": "application/json" } : {}),
+    };
+}
+
 async function fetchStatus() {
     try {
-        const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
-        const res = await fetch("/api/watcher/image/status", {
-            headers: token ? { "Authorization": `Bearer ${token}` } : {},
-        });
-        if (res.status === 401) return; // non connecté, on ne pollue pas la console
-        const json = await res.json();
-        if (json.ok) statusCache.value = json.data;
+        const [ statusRes, autoUpdateRes ] = await Promise.all([
+            fetch("/api/watcher/image/status", { headers: authHeaders() }),
+            fetch("/api/watcher/image/auto-update", { headers: authHeaders() }),
+        ]);
+        if (statusRes.status === 401 || autoUpdateRes.status === 401) {
+            return;
+        }
+
+        const statusJson = await statusRes.json();
+        if (statusJson.ok) {
+            statusCache.value = statusJson.data;
+        }
+
+        const autoUpdateJson = await autoUpdateRes.json();
+        if (autoUpdateJson.ok) {
+            autoUpdateConfig.value = autoUpdateJson.data?.autoUpdateConfig ?? {};
+            pendingAutoUpdates.value = autoUpdateJson.data?.pendingAutoUpdates ?? [];
+            updatingImages.value = autoUpdateJson.data?.updatingImages ?? [];
+        }
     } catch {
-        // Silencieux — le watcher est peut-être désactivé
+        // The watcher can be disabled or temporarily unavailable.
     }
 }
 
@@ -40,8 +70,10 @@ export function useImageStatus() {
     onMounted(() => {
         subscribers++;
         if (subscribers === 1) {
-            // Premier abonné : démarre le polling (visibility-aware)
-            poller = makePoller({ fetch: fetchStatus, interval: POLL.image });
+            poller = makePoller({
+                fetch: fetchStatus,
+                interval: POLL.image,
+            });
             poller.start();
         }
     });
@@ -54,22 +86,18 @@ export function useImageStatus() {
         }
     });
 
-    /** Retourne les statuts d'une stack donnée */
     function statusForStack(stackName: string): ImageStatus[] {
         return statusCache.value.filter(s => s.stack === stackName);
     }
 
-    /** true si au moins une image de la stack a une mise à jour disponible */
     function hasUpdates(stackName: string): boolean {
         return statusForStack(stackName).some(s => s.hasUpdate && !s.error);
     }
 
-    /** Nombre de mises à jour disponibles sur une stack */
     function updateCount(stackName: string): number {
         return statusForStack(stackName).filter(s => s.hasUpdate && !s.error).length;
     }
 
-    /** true si au moins une image de la stack est en erreur de vérification */
     function hasErrors(stackName: string): boolean {
         return statusForStack(stackName).some(s => !!s.error);
     }
@@ -78,5 +106,65 @@ export function useImageStatus() {
         statusCache.value.filter(s => s.hasUpdate && !s.error).length
     );
 
-    return { statusCache, statusForStack, hasUpdates, updateCount, hasErrors, totalUpdates };
+    function autoUpdateFor(stackName: string, image: string): AutoUpdateStatus {
+        const key = `${stackName}::${image}`;
+        const config = autoUpdateConfig.value[key];
+        return {
+            mode: config?.mode ?? "off",
+            time: config?.time ?? "02:00",
+            pending: pendingAutoUpdates.value.includes(key),
+            updating: updatingImages.value.includes(key),
+        };
+    }
+
+    async function setAutoUpdateMode(stackName: string, image: string, mode: AutoUpdateMode, time?: string) {
+        const key = `${stackName}::${image}`;
+        try {
+            const res = await fetch("/api/watcher/image/auto-update", {
+                method: "POST",
+                headers: authHeaders(true),
+                body: JSON.stringify({
+                    key,
+                    mode,
+                    ...(mode === "scheduled" ? { time: time ?? "02:00" } : {}),
+                }),
+            });
+            const json = await res.json();
+            if (!res.ok || !json.ok) {
+                return {
+                    ok: false,
+                    message: json.message ?? res.statusText,
+                };
+            }
+
+            pendingAutoUpdates.value = pendingAutoUpdates.value.filter(item => item !== key);
+            if (mode === "off") {
+                delete autoUpdateConfig.value[key];
+            } else {
+                autoUpdateConfig.value[key] = mode === "scheduled"
+                    ? {
+                        mode,
+                        time: time ?? "02:00",
+                    }
+                    : { mode };
+            }
+            return { ok: true };
+        } catch (error) {
+            return {
+                ok: false,
+                message: error instanceof Error ? error.message : String(error),
+            };
+        }
+    }
+
+    return {
+        statusCache,
+        statusForStack,
+        hasUpdates,
+        updateCount,
+        hasErrors,
+        totalUpdates,
+        autoUpdateFor,
+        setAutoUpdateMode,
+    };
 }
