@@ -18,7 +18,7 @@
             <div class="shadow-box vb-editor-box">
                 <code-mirror
                     v-model="editing.content"
-                    :extensions="extensions"
+                    :extensions="editorExtensions"
                     minimal
                     wrap="true"
                     dark="true"
@@ -100,6 +100,12 @@
 <script>
 import { BModal } from "bootstrap-vue-next";
 import CodeMirror from "vue-codemirror6";
+import { javascript } from "@codemirror/lang-javascript";
+import { json } from "@codemirror/lang-json";
+import { python } from "@codemirror/lang-python";
+import { yaml } from "@codemirror/lang-yaml";
+import { StreamLanguage } from "@codemirror/language";
+import { shell } from "@codemirror/legacy-modes/mode/shell";
 import { dracula as editorTheme } from "thememirror";
 import { lineNumbers } from "@codemirror/view";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -124,10 +130,6 @@ export default {
             default: "",
         },
     },
-    setup() {
-        const extensions = [ editorTheme, lineNumbers() ];
-        return { extensions };
-    },
     data() {
         return {
             visible: false,
@@ -142,6 +144,30 @@ export default {
         };
     },
     computed: {
+        editorExtensions() {
+            const extensions = [ editorTheme, lineNumbers() ];
+            const fileName = this.editing?.path?.split("/").pop()?.toLowerCase() ?? "";
+            const extension = fileName.includes(".") ? fileName.split(".").pop() : "";
+
+            if ([ "yaml", "yml" ].includes(extension)) {
+                extensions.push(yaml());
+            } else if ([ "json", "jsonc" ].includes(extension)) {
+                extensions.push(json());
+            } else if (extension === "py") {
+                extensions.push(python());
+            } else if ([ "sh", "bash", "zsh" ].includes(extension) || [ ".bashrc", ".zshrc", "dockerfile" ].includes(fileName)) {
+                extensions.push(StreamLanguage.define(shell));
+            } else if ([ "js", "mjs", "cjs", "jsx" ].includes(extension)) {
+                extensions.push(javascript({ jsx: extension === "jsx" }));
+            } else if ([ "ts", "mts", "cts", "tsx" ].includes(extension)) {
+                extensions.push(javascript({
+                    typescript: true,
+                    jsx: extension === "tsx",
+                }));
+            }
+
+            return extensions;
+        },
         modalTitle() {
             return `${this.serviceName} — ${this.$t("volumeBrowserTitle")}`;
         },
@@ -152,11 +178,17 @@ export default {
             // Segments depuis la racine du volume jusqu'au dossier courant
             const rel = this.currentPath.slice(this.rootPath.length).replace(/^\/+/, "");
             const parts = rel ? rel.split("/").filter(Boolean) : [];
-            const crumbs = [ { label: this.rootPath, path: this.rootPath } ];
+            const crumbs = [{
+                label: this.rootPath,
+                path: this.rootPath,
+            }];
             let acc = this.rootPath;
             for (const p of parts) {
                 acc = acc.replace(/\/+$/, "") + "/" + p;
-                crumbs.push({ label: p, path: acc });
+                crumbs.push({
+                    label: p,
+                    path: acc,
+                });
             }
             return crumbs;
         },
@@ -326,6 +358,8 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@import "../styles/vars.scss";
+
 .vb-toolbar {
     display: flex;
     align-items: center;
@@ -392,6 +426,11 @@ export default {
 .vb-name {
     flex: 1;
     word-break: break-all;
+    color: #212529;
+
+    .dark & {
+        color: $dark-font-color;
+    }
 }
 
 .vb-row-actions {
@@ -406,5 +445,9 @@ export default {
 
 .vb-file {
     color: #6c757d;
+
+    .dark & {
+        color: #9ca3af;
+    }
 }
 </style>
