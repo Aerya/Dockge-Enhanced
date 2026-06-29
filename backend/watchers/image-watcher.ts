@@ -18,6 +18,11 @@ EventEmitter.defaultMaxListeners = 50;
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
+import {
+  DockerRegistryCredential,
+  normalizeRegistryHost,
+  syncDockerRegistryCredentials,
+} from "../registry-auth";
 
 const execAsync = promisify(exec);
 
@@ -41,7 +46,7 @@ function rollbackTag(key: string): string {
 
 // ─── Types ────────────────────────────────────────────────────────
 
-export interface RegistryCredential {
+export interface RegistryCredential extends DockerRegistryCredential {
   registry: string; // "ghcr.io", "registry.example.com"
   username: string;
   token: string; // PAT GitHub ou password
@@ -628,14 +633,20 @@ export class ImageWatcher {
 
   async saveSettings(partial: Partial<WatcherSettings>): Promise<void> {
     this.settings = { ...this.settings, ...partial };
+    this.settings.credentials = this.settings.credentials.map((credential) => ({
+      ...credential,
+      registry: normalizeRegistryHost(credential.registry),
+    }));
     await this.persistToFile();
+    await syncDockerRegistryCredentials(this.settings.credentials);
     this.restart();
   }
 
   /** Écrit les settings sur disque SANS redémarrer le watcher (usage interne) */
   private async persistToFile(): Promise<void> {
     await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
+    await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2), { mode: 0o600 });
+    await fs.chmod(SETTINGS_PATH, 0o600).catch(() => {});
   }
 
   getSettingsSafe(): WatcherSettings {
@@ -652,6 +663,11 @@ export class ImageWatcher {
 
   async startIfEnabled(): Promise<void> {
     await this.loadSettings();
+    this.settings.credentials = this.settings.credentials.map((credential) => ({
+      ...credential,
+      registry: normalizeRegistryHost(credential.registry),
+    }));
+    await syncDockerRegistryCredentials(this.settings.credentials);
     await this.loadRollbackRegistry();
     await this._loadUpdateHistory();
     if (this.settings.enabled) this.start();
