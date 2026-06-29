@@ -145,7 +145,7 @@
                                 class="container-status-summary"
                                 :class="containerStatusClass(item.state)"
                             >
-                                {{ item.count }} {{ item.state }}
+                                {{ item.count }} {{ $tc(item.labelKey, item.count) }}
                             </span>
                             <font-awesome-icon :icon="containersExpanded ? 'chevron-down' : 'chevron-right'" />
                         </span>
@@ -592,12 +592,37 @@ export default {
             const counts = {};
             for (const serviceName of Object.keys(this.jsonConfig.services ?? {})) {
                 const state = this.serviceStatusList[serviceName]?.state ?? "unknown";
-                counts[state] = (counts[state] ?? 0) + 1;
+                const category = {
+                    healthy: "healthy",
+                    running: "noHealthcheck",
+                    unhealthy: "unhealthy",
+                    starting: "starting",
+                    restarting: "restarting",
+                    exited: "stopped",
+                    dead: "stopped",
+                    created: "stopped",
+                    paused: "paused",
+                }[state] ?? "unknown";
+                counts[category] = (counts[category] ?? 0) + 1;
             }
-            return Object.entries(counts).map(([ state, count ]) => ({
-                state,
-                count,
-            }));
+
+            const categories = [
+                [ "healthy", "containerStatusHealthy" ],
+                [ "noHealthcheck", "containerStatusNoHealthcheck" ],
+                [ "unhealthy", "containerStatusUnhealthy" ],
+                [ "starting", "containerStatusStarting" ],
+                [ "restarting", "containerStatusRestarting" ],
+                [ "stopped", "containerStatusStopped" ],
+                [ "paused", "containerStatusPaused" ],
+                [ "unknown", "containerStatusUnknown" ],
+            ];
+            return categories
+                .filter(([ state ]) => counts[state])
+                .map(([ state, labelKey ]) => ({
+                    state,
+                    labelKey,
+                    count: counts[state],
+                }));
         },
 
         networks() {
@@ -833,11 +858,14 @@ export default {
         },
 
         containerStatusClass(state) {
-            if (state === "running" || state === "healthy") {
+            if (state === "healthy" || state === "noHealthcheck") {
                 return "status-ok";
             }
-            if (state === "unhealthy" || state === "exited" || state === "dead") {
+            if (state === "unhealthy" || state === "stopped") {
                 return "status-error";
+            }
+            if (state === "starting" || state === "restarting") {
+                return "status-warning";
             }
             return "status-neutral";
         },
@@ -1241,6 +1269,10 @@ export default {
 
 .container-status-summary.status-error::before {
     background: #dc2626;
+}
+
+.container-status-summary.status-warning::before {
+    background: #f8a306;
 }
 
 .combined-terminal {
