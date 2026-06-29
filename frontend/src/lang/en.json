@@ -61,6 +61,8 @@
     "primaryHostname": "Primary Hostname",
     "general": "General",
     "container": "Container | Containers",
+    "collapseContainers": "Collapse container list",
+    "expandContainers": "Expand container list",
     "scanFolder": "Scan Stacks Folder",
     "dockerImage": "Image",
     "restartPolicyUnlessStopped": "Unless Stopped",

@@ -59,6 +59,8 @@
     "primaryHostname": "Nom d'hôte principal",
     "general": "Général",
     "container": "Conteneur | Conteneurs",
+    "collapseContainers": "Réduire la liste des conteneurs",
+    "expandContainers": "Afficher la liste des conteneurs",
     "scanFolder": "Analyser le dossier des piles",
     "dockerImage": "Image",
     "restartPolicyUnlessStopped": "Sauf arrêt",
