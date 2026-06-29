@@ -25,6 +25,7 @@ export class Terminal {
     protected file : string;
     protected args : string | string[];
     protected cwd : string;
+    protected env? : { [key: string]: string | undefined };
     protected callback? : (exitCode : number) => void;
 
     protected _rows : number = TERMINAL_ROWS;
@@ -37,13 +38,14 @@ export class Terminal {
 
     protected socketList : Record<string, DockgeSocket> = {};
 
-    constructor(server : DockgeServer, name : string, file : string, args : string | string[], cwd : string) {
+    constructor(server : DockgeServer, name : string, file : string, args : string | string[], cwd : string, env? : { [key: string]: string | undefined }) {
         this.server = server;
         this._name = name;
         //this._name = "terminal-" + Date.now() + "-" + getCryptoRandomInt(0, 1000000);
         this.file = file;
         this.args = args;
         this.cwd = cwd;
+        this.env = env;
 
         Terminal.terminalMap.set(this.name, this);
     }
@@ -118,6 +120,7 @@ export class Terminal {
                 cwd: this.cwd,
                 cols: TERMINAL_COLS,
                 rows: this.rows,
+                ...(this.env ? { env: this.env } : {}),
             });
 
             // On Data
@@ -231,7 +234,7 @@ export class Terminal {
                 return;
             }
 
-            let terminal = new Terminal(server, terminalName, file, args, cwd);
+            let terminal = new Terminal(server, terminalName, file, args, cwd, process.env);
             terminal.rows = PROGRESS_TERMINAL_ROWS;
 
             if (socket) {

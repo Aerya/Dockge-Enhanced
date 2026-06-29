@@ -21,6 +21,7 @@ import { Settings } from "../settings";
 import jwt from "jsonwebtoken";
 import { JWTDecoded } from "../util-server";
 import { AuditLogger, setAuditUser } from "../audit-log";
+import { normalizeRegistryHost } from "../registry-auth";
 
 // ─── Middleware d'authentification JWT ───────────────────────────
 //
@@ -248,6 +249,8 @@ export class WatcherRouter extends Router {
             if (!cred.registry || !cred.username || !cred.token) {
                 return res.status(400).json({ ok: false, message: "registry, username et token requis" });
             }
+            cred.registry = normalizeRegistryHost(cred.registry);
+            cred.username = cred.username.trim();
             const watcher = ImageWatcher.getInstance();
             const creds = watcher.settings.credentials.filter(c => c.registry !== cred.registry);
             creds.push(cred);
