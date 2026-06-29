@@ -377,6 +377,8 @@
     "watcher.status.auImmediate": "Immédiat",
     "watcher.status.auScheduled": "Planifié",
     "watcher.status.auPendingHint": "Mise à jour en attente — sera appliquée à l'heure planifiée.",
+    "watcher.status.auPending": "En attente",
+    "watcher.status.auUpdating": "Mise à jour en cours",
     "watcher.status.ignoreVersion": "Ignorer cette version",
     "watcher.status.versionIgnored": "Version ignorée",
     "watcher.status.clearIgnored": "Reprendre",

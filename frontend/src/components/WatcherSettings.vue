@@ -1780,12 +1780,17 @@ onUnmounted(() => {
 });
 
 async function loadStatus() {
-  const [statusRes, rollbackRes] = await Promise.all([
+  const [statusRes, rollbackRes, autoUpdateRes] = await Promise.all([
     api("GET", "/image/status"),
     api("GET", "/image/rollback"),
+    api("GET", "/image/auto-update"),
   ]);
   if (statusRes.ok) imageStatuses.value = statusRes.data;
   if (rollbackRes.ok) rollbackEntries.value = rollbackRes.data;
+  if (autoUpdateRes.ok) {
+    imgSettings.value.autoUpdateConfig = autoUpdateRes.data?.autoUpdateConfig ?? {};
+    imgSettings.value.pendingAutoUpdates = autoUpdateRes.data?.pendingAutoUpdates ?? [];
+  }
 }
 
 function rollbackFor(s: ImageStatus): RollbackEntry | undefined {

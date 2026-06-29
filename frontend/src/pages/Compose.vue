@@ -175,6 +175,9 @@
                                 :ports="serviceStatusList[name]?.ports"
                                 :started-at="serviceStatusList[name]?.startedAt ?? null"
                                 :image-update="imageUpdateForService(name)"
+                                :auto-update="autoUpdateForService(name)"
+                                :auto-update-saving="autoUpdateSaving[name] === true"
+                                @auto-update-change="setServiceAutoUpdate(name, $event)"
                             />
                         </div>
                     </div>
@@ -433,7 +436,11 @@ export default {
     },
     setup() {
         const editorFocus = ref(false);
-        const { statusCache: imageStatuses } = useImageStatus();
+        const {
+            statusCache: imageStatuses,
+            autoUpdateFor,
+            setAutoUpdateMode: saveAutoUpdateMode,
+        } = useImageStatus();
 
         const focusEffectHandler = (state, focusing) => {
             editorFocus.value = focusing;
@@ -470,7 +477,9 @@ export default {
         return { extensions,
             extensionsEnv,
             editorFocus,
-            imageStatuses };
+            imageStatuses,
+            autoUpdateFor,
+            saveAutoUpdateMode };
     },
     yamlDoc: null,  // For keeping the yaml comments
     data() {
@@ -501,6 +510,7 @@ export default {
             selectedLogService: "",
             joinedLogService: "",
             containersExpanded: true,
+            autoUpdateSaving: {},
         };
     },
     computed: {
@@ -889,6 +899,29 @@ export default {
                 && status.hasUpdate
                 && !status.error
             ) ?? null;
+        },
+
+        autoUpdateForService(serviceName) {
+            const image = this.envsubstJSONConfig?.services?.[serviceName]?.image;
+            if (!image || !this.stack.name || this.endpoint) {
+                return null;
+            }
+            return this.autoUpdateFor(this.stack.name, image);
+        },
+
+        async setServiceAutoUpdate(serviceName, { mode, time }) {
+            const image = this.envsubstJSONConfig?.services?.[serviceName]?.image;
+            if (!image || !this.stack.name) {
+                return;
+            }
+
+            this.autoUpdateSaving[serviceName] = true;
+            const result = await this.saveAutoUpdateMode(this.stack.name, image, mode, time);
+            this.autoUpdateSaving[serviceName] = false;
+            this.$root.toastRes({
+                ok: result.ok,
+                msg: result.ok ? this.$t("watcher.status.autoUpdateSaved") : result.message,
+            });
         },
 
         loadStack() {
