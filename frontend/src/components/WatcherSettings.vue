@@ -38,6 +38,14 @@
         </button>
         <button
           class="watcher-tab"
+          :class="{ active: tab === 'scheduler' }"
+          @click="tab = 'scheduler'"
+        >
+          <font-awesome-icon icon="calendar-days" class="watcher-tab-icon" />
+          <span>{{ $t("watcher.tab.scheduler") }}</span>
+        </button>
+        <button
+          class="watcher-tab"
           :class="{ active: tab === 'trivy' }"
           @click="tab = 'trivy'"
         >
@@ -1372,6 +1380,8 @@
       <!-- ═══ TAB: MONITORING ═══ -->
       <MonitoringTab v-show="tab === 'monitoring'" />
 
+      <StackSchedulerTab v-show="tab === 'scheduler'" />
+
       <!-- ═══ TAB: AUDIT ═══ -->
       <AuditLogTab v-show="tab === 'audit'" />
 
@@ -1397,6 +1407,7 @@ import BackupTab from "./BackupTab.vue";
 import DockerResources from "../pages/DockerResources.vue";
 import MonitoringTab from "./MonitoringTab.vue";
 import AuditLogTab from "./AuditLogTab.vue";
+import StackSchedulerTab from "./StackSchedulerTab.vue";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -2496,10 +2507,18 @@ async function removeCred(registry: string) {
 .watcher-tab-bar {
   display: flex;
   gap: 6px;
+  overflow-x: auto;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 10px;
   padding: 5px;
   border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+@media (max-width: 900px) {
+  .watcher-tab {
+    flex: 0 0 auto;
+    min-width: 105px;
+  }
 }
 
 .watcher-tab {

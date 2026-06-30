@@ -17,6 +17,13 @@
                 </div>
             </h1>
 
+            <div v-if="!isAdd && stack.isManagedByDockge && !endpoint" class="stack-scheduler-inline mb-3">
+                <div class="stack-scheduler-inline-title">
+                    <font-awesome-icon icon="calendar-days" class="me-1" />{{ $t("stackScheduler.heading") }}
+                </div>
+                <StackScheduleEditor :stack-name="stack.name" compact :show-heading="false" />
+            </div>
+
             <div v-if="stack.isManagedByDockge" class="mb-3">
                 <div class="btn-group me-2" role="group">
                     <button v-if="isEditMode" class="btn btn-primary" :disabled="processing" @click="deployStack">
@@ -405,6 +412,7 @@ import dotenv from "dotenv";
 import { ref } from "vue";
 import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
 import { useImageStatus } from "../composables/useImageStatus";
+import StackScheduleEditor from "../components/StackScheduleEditor.vue";
 
 const template = `
 services:
@@ -426,6 +434,7 @@ export default {
         FontAwesomeIcon,
         CodeMirror,
         BModal,
+        StackScheduleEditor,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
@@ -1220,6 +1229,18 @@ export default {
 
 .terminal {
     height: 200px;
+}
+
+.stack-scheduler-inline {
+    padding: 8px 12px;
+    border: 1px solid rgba(127, 127, 127, 0.18);
+    border-radius: 8px;
+}
+
+.stack-scheduler-inline-title {
+    color: $dark-font-color3;
+    font-size: 0.78rem;
+    font-weight: 600;
 }
 
 /* Terminal de progression (deploy/restart/update) : plus haut pour afficher

@@ -22,6 +22,7 @@ import jwt from "jsonwebtoken";
 import { JWTDecoded } from "../util-server";
 import { AuditLogger, setAuditUser } from "../audit-log";
 import { normalizeRegistryHost } from "../registry-auth";
+import { StackScheduler } from "../watchers/stack-scheduler";
 
 // ─── Middleware d'authentification JWT ───────────────────────────
 //
@@ -628,6 +629,37 @@ export class WatcherRouter extends Router {
         // Fuseau horaire du serveur (utilisé par le frontend pour formater les dates)
         router.get("/server-tz", (_req: Request, res: Response) => {
             res.json({ ok: true, tz: process.env.TZ || "UTC" });
+        });
+
+        router.get("/stack-schedules", async (_req: Request, res: Response) => {
+            try {
+                res.json({ ok: true, data: await StackScheduler.getInstance().list() });
+            } catch (e) {
+                res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        router.put("/stack-schedules/:stack", async (req: Request, res: Response) => {
+            const stack = decodeURIComponent(req.params.stack);
+            try {
+                const data = await StackScheduler.getInstance().save(stack, req.body);
+                await auditWatcherAction(req, "stack.schedule.configure", "stack", stack, "success", null, req.body);
+                res.json({ ok: true, data });
+            } catch (e) {
+                await auditWatcherAction(req, "stack.schedule.configure", "stack", stack, "failure", String(e));
+                res.status(400).json({ ok: false, message: e instanceof Error ? e.message : String(e) });
+            }
+        });
+
+        router.delete("/stack-schedules/:stack", async (req: Request, res: Response) => {
+            const stack = decodeURIComponent(req.params.stack);
+            try {
+                await StackScheduler.getInstance().clear(stack);
+                await auditWatcherAction(req, "stack.schedule.clear", "stack", stack);
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(400).json({ ok: false, message: e instanceof Error ? e.message : String(e) });
+            }
         });
 
         // Mount everything under /api/watcher
