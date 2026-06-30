@@ -523,6 +523,28 @@ export class Stack {
         return exitCode;
     }
 
+    async startScheduled(): Promise<number> {
+        const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--remove-orphans"), {
+            cwd: this.path,
+            encoding: "utf-8",
+        });
+        const exitCode = res.code ?? 0;
+        if (exitCode !== 0) throw new Error("Scheduled stack start failed");
+        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
+        return exitCode;
+    }
+
+    async stopScheduled(): Promise<number> {
+        const res = await childProcessAsync.spawn("docker", this.getComposeOptions("stop"), {
+            cwd: this.path,
+            encoding: "utf-8",
+        });
+        const exitCode = res.code ?? 0;
+        if (exitCode !== 0) throw new Error("Scheduled stack stop failed");
+        serviceStatusCache.delete(this.name);
+        return exitCode;
+    }
+
     async restart(socket: DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("restart"), this.path);

@@ -13,6 +13,7 @@ import { MonitoringWatcher } from "./watchers/monitoring-watcher";
 import { KulaManager } from "./watchers/kula-manager";
 import { AutoPruneManager } from "./watchers/auto-prune-manager";
 import { SelfUpdateChecker } from "./watchers/self-update-checker";
+import { StackScheduler } from "./watchers/stack-scheduler";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
@@ -434,6 +435,7 @@ export class DockgeServer {
             MonitoringWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "MonitoringWatcher start error: " + e));
             KulaManager.getInstance().startIfEnabled().catch(e => log.error("server", "KulaManager start error: " + e));
             AutoPruneManager.getInstance().startIfEnabled().catch(e => log.error("server", "AutoPruneManager start error: " + e));
+            StackScheduler.getInstance().start(this).catch(e => log.error("server", "StackScheduler start error: " + e));
             SelfUpdateChecker.getInstance().start();
         });
 
