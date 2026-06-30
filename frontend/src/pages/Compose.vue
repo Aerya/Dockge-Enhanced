@@ -1310,11 +1310,13 @@ export default {
 
 .combined-terminal {
     height: 315px;
-    transition: height 180ms ease;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
 }
 
 .combined-terminal.logs-expanded {
-    height: clamp(420px, 55vh, 720px);
+    height: clamp(340px, 38vh, 420px);
 }
 
 @media (max-width: 575px) {
@@ -1323,7 +1325,7 @@ export default {
     }
 
     .combined-terminal.logs-expanded {
-        height: 60vh;
+        height: min(45vh, 360px);
     }
 }
 
