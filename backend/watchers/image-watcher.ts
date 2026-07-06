@@ -13,11 +13,16 @@ import * as path from "path";
 import * as yaml from "js-yaml";
 import axios from "axios";
 import { EventEmitter } from "events";
+import { parse as parseDotenv } from "dotenv";
 
 EventEmitter.defaultMaxListeners = 50;
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
+import {
+  acceptedComposeFileNames,
+  envsubstYAML,
+} from "../../common/util-common";
 import {
   DockerRegistryCredential,
   normalizeRegistryHost,
@@ -532,10 +537,24 @@ async function getLocalImageInfo(image: string): Promise<LocalImageInfo> {
   }
 }
 
-/** Lit un compose.yaml et retourne les noms d'images déclarées dans `services.*.image` */
-function extractImagesFromCompose(composePath: string): string[] {
+/** Lit le YAML brut en repli lorsque Docker Compose ne peut pas résoudre la stack. */
+function extractImagesFromComposeYaml(composePath: string): string[] {
   try {
-    const raw = fsSync.readFileSync(composePath, "utf8");
+    let raw = fsSync.readFileSync(composePath, "utf8");
+    const shellEnv = Object.fromEntries(
+      Object.entries(process.env).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    );
+    let fileEnv: Record<string, string> = {};
+    try {
+      fileEnv = parseDotenv(
+        fsSync.readFileSync(path.join(path.dirname(composePath), ".env")),
+      );
+    } catch {
+      /* .env optionnel */
+    }
+    raw = envsubstYAML(raw, { ...fileEnv, ...shellEnv });
     const doc = yaml.load(raw) as Record<string, unknown>;
     if (!doc?.services) return [];
     const images: string[] = [];
@@ -565,6 +584,47 @@ function extractImagesFromCompose(composePath: string): string[] {
     );
     return [];
   }
+}
+
+/**
+ * Retourne toutes les images du modèle Compose résolu, même si la stack est arrêtée.
+ * `config --images` prend en charge les variables, ancres, extends et includes.
+ */
+async function extractImagesFromCompose(composePath: string): Promise<string[]> {
+  const configCommand = composeExecCommand(composePath, "config --images");
+  try {
+    const { stdout } = await execAsync(configCommand.command, {
+      cwd: configCommand.cwd,
+      timeout: 30000,
+    });
+    return [
+      ...new Set(
+        stdout
+          .split(/\r?\n/)
+          .map((image) => image.trim())
+          .filter(Boolean),
+      ),
+    ];
+  } catch (err) {
+    console.warn(
+      `[ImageWatcher] docker compose config --images a échoué pour ${composePath}, lecture YAML de repli:`,
+      err,
+    );
+    return extractImagesFromComposeYaml(composePath);
+  }
+}
+
+async function findComposePath(stackDir: string): Promise<string> {
+  for (const filename of acceptedComposeFileNames) {
+    const candidate = path.join(stackDir, filename);
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      /* next */
+    }
+  }
+  return "";
 }
 
 // ─── Classe principale ────────────────────────────────────────────
@@ -763,27 +823,11 @@ export class ImageWatcher {
 
     for (const stack of entries) {
       try {
-        // Cherche compose.yaml ou docker-compose.yml
-        const candidates = [
-          path.join(STACKS_DIR, stack, "compose.yaml"),
-          path.join(STACKS_DIR, stack, "docker-compose.yml"),
-          path.join(STACKS_DIR, stack, "docker-compose.yaml"),
-        ];
-
-        let composePath = "";
-        for (const c of candidates) {
-          try {
-            await fs.access(c);
-            composePath = c;
-            break;
-          } catch {
-            /* next */
-          }
-        }
+        const composePath = await findComposePath(path.join(STACKS_DIR, stack));
         if (!composePath) continue;
         composePathByStack.set(stack, composePath);
 
-        const images = extractImagesFromCompose(composePath);
+        const images = await extractImagesFromCompose(composePath);
         if (images.length === 0) {
           console.log(
             `[ImageWatcher] ${stack}: aucune image trouvée dans ${composePath}`,
@@ -939,21 +983,7 @@ export class ImageWatcher {
       const image = key.slice(sepIdx + 2);
 
       // Trouve le fichier compose
-      const candidates = [
-        path.join(STACKS_DIR, stack, "compose.yaml"),
-        path.join(STACKS_DIR, stack, "docker-compose.yml"),
-        path.join(STACKS_DIR, stack, "docker-compose.yaml"),
-      ];
-      let composePath = "";
-      for (const c of candidates) {
-        try {
-          await fs.access(c);
-          composePath = c;
-          break;
-        } catch {
-          /* next */
-        }
-      }
+      const composePath = await findComposePath(path.join(STACKS_DIR, stack));
       if (!composePath) continue;
 
       // Récupère le statut connu ou fait un check rapide

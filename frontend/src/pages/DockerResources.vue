@@ -34,6 +34,27 @@
                 </li>
             </ul>
 
+            <div class="input-group input-group-sm mb-4 resource-search">
+                <span class="input-group-text">
+                    <font-awesome-icon icon="search" />
+                </span>
+                <input
+                    v-model.trim="resourceFilter"
+                    class="form-control"
+                    type="search"
+                    :placeholder="t.searchPlaceholder"
+                />
+                <button
+                    v-if="resourceFilter"
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    :title="t.clearSearch"
+                    @click="resourceFilter = ''"
+                >
+                    <font-awesome-icon icon="times" />
+                </button>
+            </div>
+
             <!-- ═══ TAB: IMAGES ═══ -->
             <div v-show="tab === 'images'">
 
@@ -200,7 +221,7 @@
                 </div>
 
                 <!-- Table images -->
-                <div v-else-if="images.length > 0" class="table-responsive">
+                <div v-else-if="filteredImages.length > 0" class="table-responsive">
                     <table class="table resources-table">
                         <thead>
                             <tr>
@@ -296,7 +317,9 @@
                         </tbody>
                     </table>
                 </div>
-                <div v-else class="text-center text-muted py-4">{{ t.images.noImages }}</div>
+                <div v-else class="text-center text-muted py-4">
+                    {{ resourceFilter ? t.noSearchMatch : t.images.noImages }}
+                </div>
             </div>
 
             <!-- ═══ TAB: VOLUMES ═══ -->
@@ -329,7 +352,7 @@
                 </div>
 
                 <!-- Table volumes -->
-                <div v-else-if="volumes.length > 0" class="table-responsive">
+                <div v-else-if="filteredVolumes.length > 0" class="table-responsive">
                     <table class="table resources-table">
                         <thead>
                             <tr>
@@ -341,7 +364,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="vol in volumes" :key="vol.name"
+                            <tr v-for="vol in filteredVolumes" :key="vol.name"
                                 :class="rowClass(vol.status, vol.dockgeStacks)">
                                 <td>
                                     <div class="fw-semibold font-monospace small">{{ vol.name }}</div>
@@ -383,7 +406,9 @@
                         </tbody>
                     </table>
                 </div>
-                <div v-else class="text-center text-muted py-4">{{ t.volumes.noVolumes }}</div>
+                <div v-else class="text-center text-muted py-4">
+                    {{ resourceFilter ? t.noSearchMatch : t.volumes.noVolumes }}
+                </div>
             </div>
 
             <!-- ═══ TAB: CONTAINERS ═══ -->
@@ -418,7 +443,7 @@
                 </div>
 
                 <!-- Table containers -->
-                <div v-else-if="containers.length > 0" class="table-responsive">
+                <div v-else-if="filteredContainers.length > 0" class="table-responsive">
                     <table class="table resources-table">
                         <thead>
                             <tr>
@@ -429,7 +454,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="ctr in containers" :key="ctr.id"
+                            <tr v-for="ctr in filteredContainers" :key="ctr.id"
                                 :class="ctr.state === 'running' ? 'row-orphan-running' : 'row-stopped'">
                                 <td>
                                     <div class="fw-semibold font-monospace small">{{ ctr.name || ctr.id }}</div>
@@ -461,7 +486,9 @@
                         </tbody>
                     </table>
                 </div>
-                <div v-else class="text-center text-muted py-4">{{ t.containers.noContainers }}</div>
+                <div v-else class="text-center text-muted py-4">
+                    {{ resourceFilter ? t.noSearchMatch : t.containers.noContainers }}
+                </div>
             </div>
 
         </div><!-- /shadow-box -->
@@ -579,6 +606,9 @@ interface PendingItem {
 const i18n = {
     fr: {
         title: "Ressources Docker",
+        searchPlaceholder: "Rechercher par nom, image, stack ou conteneur…",
+        clearSearch: "Effacer la recherche",
+        noSearchMatch: "Aucune ressource ne correspond à cette recherche.",
         tab: { images: "Images", volumes: "Volumes", containers: "Hors Dockge" },
         images: {
             heading: "Images Docker",
@@ -653,6 +683,9 @@ const i18n = {
     },
     en: {
         title: "Docker Resources",
+        searchPlaceholder: "Search by name, image, stack, or container…",
+        clearSearch: "Clear search",
+        noSearchMatch: "No resource matches this search.",
         tab: { images: "Images", volumes: "Volumes", containers: "Unmanaged" },
         images: {
             heading: "Docker Images",
@@ -735,6 +768,7 @@ const tab = ref<"images" | "volumes" | "containers">("images");
 const images = ref<DockerImage[]>([]);
 const volumes = ref<DockerVolume[]>([]);
 const containers = ref<DockerContainer[]>([]);
+const resourceFilter = ref("");
 const loadingImages = ref(false);
 const loadingVolumes = ref(false);
 const loadingContainers = ref(false);
@@ -789,6 +823,51 @@ const runningUnusedPrune   = ref(false);
 
 const t = computed(() => i18n[lang.value]);
 
+const normalizedResourceFilter = computed(() => resourceFilter.value.toLowerCase());
+
+const filteredImages = computed(() => {
+    const q = normalizedResourceFilter.value;
+    if (!q) return images.value;
+    return images.value.filter((image) => [
+        image.repository,
+        image.tag,
+        image.id,
+        ...image.dockgeStacks,
+        ...image.containers.flatMap((container) => [
+            container.name,
+            container.stackName ?? "",
+            container.service ?? "",
+        ]),
+    ].some((value) => value.toLowerCase().includes(q)));
+});
+
+const filteredVolumes = computed(() => {
+    const q = normalizedResourceFilter.value;
+    if (!q) return volumes.value;
+    return volumes.value.filter((volume) => [
+        volume.name,
+        volume.driver,
+        ...volume.dockgeStacks,
+        ...volume.containers.flatMap((container) => [
+            container.name,
+            container.stackName ?? "",
+            container.service ?? "",
+        ]),
+    ].some((value) => value.toLowerCase().includes(q)));
+});
+
+const filteredContainers = computed(() => {
+    const q = normalizedResourceFilter.value;
+    if (!q) return containers.value;
+    return containers.value.filter((container) => [
+        container.name,
+        container.id,
+        container.image,
+        container.stackName ?? "",
+        container.service ?? "",
+    ].some((value) => value.toLowerCase().includes(q)));
+});
+
 const unusedImagesCount = computed(() =>
     images.value.filter(i => i.status === "unused" || i.status === "dangling").length);
 
@@ -798,7 +877,7 @@ function imgKey(img: DockerImage): string {
     return img.repository !== "<none>" ? `${img.repository}:${img.tag}` : img.id;
 }
 
-const deletableImages = computed(() => images.value.filter(i => i.status !== "running"));
+const deletableImages = computed(() => filteredImages.value.filter(i => i.status !== "running"));
 
 const allDeletableSelected = computed(() =>
     deletableImages.value.length > 0 &&
@@ -830,8 +909,8 @@ function parseImageSize(s: string): number {
 }
 
 const sortedImages = computed(() => {
-    if (!imgSizeSort.value) return images.value;
-    return [...images.value].sort((a, b) => {
+    if (!imgSizeSort.value) return filteredImages.value;
+    return [...filteredImages.value].sort((a, b) => {
         const diff = parseImageSize(a.size) - parseImageSize(b.size);
         return imgSizeSort.value === "asc" ? diff : -diff;
     });
