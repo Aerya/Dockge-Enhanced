@@ -51,12 +51,17 @@ jobs:
       - name: 📌 Vérifier si déjà synchronisé
         id: check
         if: steps.target.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ steps.target.outputs.tag }}"
-          # Vérifie si on a déjà un tag synced-TAG
-          if git tag -l | grep -q "^synced-${TAG}$"; then
+          BRANCH="sync/upstream-${TAG}"
+          if git merge-base --is-ancestor "$TAG" origin/main; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "✅ Déjà synchronisé avec $TAG"
+          elif git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "⏳ Une synchronisation de $TAG est déjà en attente"
           else
             echo "skip=false" >> $GITHUB_OUTPUT
             echo "🆕 Nouvelle version détectée : $TAG"
@@ -80,8 +85,24 @@ jobs:
             echo "branch=$BRANCH" >> $GITHUB_OUTPUT
             echo "✅ Merge réussi sans conflit"
           else
-            # En cas de conflit, on garde NOS versions des fichiers modifiés
+            echo "conflict=true" >> $GITHUB_OUTPUT
+            # En cas de conflit, on garde NOS versions et on exige une revue explicite
             echo "⚠️ Conflits détectés — résolution automatique (ours pour nos fichiers)"
+
+            AUTH_SENSITIVE_FILES=(
+              "backend/auth.ts"
+              "backend/dockge-server.ts"
+              "backend/socket-handlers/main-socket-handler.ts"
+              "frontend/src/mixins/socket.ts"
+            )
+            AUTH_CONFLICTS=()
+            for f in "${AUTH_SENSITIVE_FILES[@]}"; do
+              if git diff --name-only --diff-filter=U | grep -q "^${f}$"; then
+                AUTH_CONFLICTS+=("$f")
+              fi
+            done
+            AUTH_CONFLICTS_CSV=$(IFS=,; echo "${AUTH_CONFLICTS[*]}")
+            echo "auth_conflicts=$AUTH_CONFLICTS_CSV" >> $GITHUB_OUTPUT
 
             ENHANCED_FILES=(
               "backend/dockge-server.ts"
@@ -111,9 +132,6 @@ jobs:
               echo "$REMAINING"
               git checkout --ours $REMAINING
               git add $REMAINING
-              echo "conflict=true" >> $GITHUB_OUTPUT
-            else
-              echo "conflict=false" >> $GITHUB_OUTPUT
             fi
 
             git commit --no-edit -m "🔄 Sync upstream Dockge $TAG (conflits résolus auto)"
@@ -128,6 +146,7 @@ jobs:
           TAG="${{ steps.target.outputs.tag }}"
           BRANCH="${{ steps.merge.outputs.branch }}"
           CONFLICT="${{ steps.merge.outputs.conflict }}"
+          AUTH_CONFLICTS="${{ steps.merge.outputs.auth_conflicts }}"
 
           git push origin "$BRANCH"
 
@@ -137,10 +156,13 @@ jobs:
 
           **Conflits ?** $([ "$CONFLICT" = "true" ] && echo "⚠️ Oui — résolus automatiquement en gardant nos modifications Enhanced. **Vérifie que tout est correct.**" || echo "✅ Non — merge propre.")
 
+          $([ -n "$AUTH_CONFLICTS" ] && echo "**⚠️ Conflits d’authentification à examiner manuellement :** \`$AUTH_CONFLICTS\`" || true)
+
           ### Checklist avant merge
           - [ ] Vérifier que le build Docker fonctionne
           - [ ] Vérifier les changements dans \`package.json\` (nouvelles dépendances upstream ?)
           - [ ] Tester l'interface Surveillance
+          - [ ] Si l’authentification est touchée, comparer manuellement les versions upstream et Enhanced
           "
 
           gh pr create \
@@ -149,10 +171,3 @@ jobs:
             --title "🔄 Sync upstream Dockge $TAG" \
             --body "$BODY" \
             --label "upstream-sync"
-
-      - name: 🏷️ Marquer comme synchronisé
-        if: steps.target.outputs.found == 'true' && steps.check.outputs.skip == 'false'
-        run: |
-          TAG="${{ steps.target.outputs.tag }}"
-          git tag "synced-${TAG}"
-          git push origin "synced-${TAG}"

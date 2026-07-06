@@ -1,11 +1,15 @@
 <template>
     <div>
         <div v-if="settingsLoaded" class="my-4">
+            <div v-if="authModeManaged" class="alert alert-info">
+                {{ $t("authModeManaged", { mode: authMode }) }}
+            </div>
+
             <!-- Change Password -->
-            <template v-if="!settings.disableAuth">
+            <template v-if="authMode === 'local'">
                 <p>
                     {{ $t("Current User") }}: <strong>{{ $root.username }}</strong>
-                    <button v-if="! settings.disableAuth" id="logout-btn" class="btn btn-danger ms-4 me-2 mb-2" @click="$root.logout">{{ $t("Logout") }}</button>
+                    <button id="logout-btn" class="btn btn-danger ms-4 me-2 mb-2" @click="$root.logout">{{ $t("Logout") }}</button>
                 </p>
 
                 <h5 class="my-4 settings-subheading">{{ $t("Change Password") }}</h5>
@@ -65,7 +69,7 @@
             </template>
 
             <!-- TODO: Hidden for now -->
-            <div v-if="! settings.disableAuth && false" class="mt-5 mb-3">
+            <div v-if="authMode === 'local' && false" class="mt-5 mb-3">
                 <h5 class="my-4 settings-subheading">
                     {{ $t("Two Factor Authentication") }}
                 </h5>
@@ -81,7 +85,7 @@
             </div>
 
             <!-- Cloudflare Turnstile -->
-            <div v-if="! settings.disableAuth" class="my-4">
+            <div v-if="authMode === 'local'" class="my-4">
                 <h5 class="my-4 settings-subheading">{{ $t("Cloudflare Turnstile") }}</h5>
                 <div class="form-text mb-3">{{ $t("turnstileHint") }}</div>
 
@@ -104,7 +108,7 @@
                 <button class="btn btn-primary" type="button" @click="saveTurnstile">{{ $t("Save") }}</button>
             </div>
 
-            <div class="my-4">
+            <div v-if="!authModeManaged" class="my-4">
                 <!-- Advanced -->
                 <h5 class="my-4 settings-subheading">{{ $t("Advanced") }}</h5>
 
@@ -172,6 +176,12 @@ export default {
         },
         settingsLoaded() {
             return this.$parent.$parent.$parent.settingsLoaded;
+        },
+        authMode() {
+            return this.$root.info.authMode || (this.settings.disableAuth ? "disabled" : "local");
+        },
+        authModeManaged() {
+            return this.$root.info.authModeManaged === true;
         }
     },
 

@@ -108,6 +108,7 @@
     "Please use this option carefully!": "Veuillez utiliser cette option avec précaution !",
     "Enable Auth": "Activer l'Authentification",
     "Disable Auth": "Désactiver l'Authentification",
+    "authModeManaged": "Le mode d’authentification « {mode} » est géré par les variables d’environnement. Les contrôles locaux incompatibles sont désactivés.",
     "I understand, please disable": "Je comprends, veuillez désactiver",
     "Leave": "Quitter",
     "Frontend Version": "Version Frontend",

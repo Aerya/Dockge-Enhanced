@@ -23,6 +23,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 ## Fonctionnalités
 
+🆕 **Authentification locale, bootstrap et proxy de confiance** — Le mode historique reste inchangé par défaut, sans nouvelle variable ni modification du Compose. Les déploiements automatisés peuvent créer le premier administrateur depuis un secret, tandis que le mode optionnel `trusted-proxy` accepte une identité transmise par OAuth2 Proxy, Traefik ForwardAuth ou un autre proxy uniquement lorsque la connexion provient d’un réseau explicitement autorisé. Les API REST et Socket.IO appliquent la même politique, `/setup` est verrouillé durablement après initialisation et aucun chemin technique ne doit être rendu public.
+
 🆕 **Détection complète des images dans le watcher** — L’onglet **Images** de `/watcher` liste désormais les images déclarées par toutes les stacks locales, même lorsqu’elles sont arrêtées et que leurs conteneurs ou images locales ont été supprimés. La découverte suit les quatre noms de fichiers acceptés par Dockge (`compose.yaml`, `compose.yml`, `docker-compose.yaml` et `docker-compose.yml`) et s’appuie sur le modèle résolu par Docker Compose pour prendre en charge les variables, ancres, `extends` et `include`, sans devoir effectuer un pull au préalable.
 
 🆕 **Recherche dans les ressources Docker** — La page **Ressources Docker**, y compris lorsqu’elle est ouverte depuis `/watcher`, dispose d’un champ de recherche commun aux onglets Images, Volumes et Hors Dockge. Le filtre retrouve une ressource par nom, image, tag, identifiant, stack, service ou conteneur associé.
@@ -260,10 +262,49 @@ Ouvre **http://localhost:5001**, crée ton compte admin, puis clique sur **Surve
 | `TZ` | `UTC` | Fuseau horaire du container — **important** pour que les MàJ planifiées se déclenchent à la bonne heure locale (ex : `Europe/Paris`) |
 | `DOCKGE_PORT` | `5001` | Port de la WebUI |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Activer HTTPS |
+| `DOCKGE_AUTH_MODE` | *(non défini)* | Mode d’authentification : `local`, `disabled` ou `trusted-proxy`. Non défini, le comportement historique et le réglage `disableAuth` sont conservés |
+| `DOCKGE_AUTH_PROXY_HEADER` | `x-forwarded-user` | Header contenant l’identité validée par le proxy en mode `trusted-proxy` |
+| `DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS` | *(requis en mode proxy)* | Adresses ou CIDR autorisés à fournir le header d’identité, séparés par des virgules |
+| `DOCKGE_BOOTSTRAP_USERNAME` | *(aucun)* | Nom du premier administrateur à créer uniquement si la base ne contient encore aucun utilisateur |
+| `DOCKGE_BOOTSTRAP_PASSWORD_FILE` | *(aucun)* | Fichier secret contenant son mot de passe ; recommandé pour un bootstrap automatisé |
+| `DOCKGE_BOOTSTRAP_PASSWORD` | *(aucun)* | Alternative directe au fichier secret, moins sûre car visible dans l’environnement du conteneur |
 
 > ⚠️ Toujours définir `DOCKGE_DATA_DIR=/app/data` pour correspondre au montage de volume, sinon les paramètres ne seront pas persistés après un redémarrage.
 
 > ℹ️ `DOCKGE_PUBLIC_URL` est optionnel. Si absent, les notifications Discord sont envoyées sans lien. Compatible avec les reverse proxies et les domaines HTTPS.
+
+### Authentification et premier setup
+
+**Installation existante : rien à changer.** Sans les variables ci-dessus, les comptes, la page de connexion, la 2FA et le réglage **Désactiver l’authentification** fonctionnent comme avant. Au premier démarrage d’une installation neuve, ouvre simplement `/setup` et crée l’administrateur. Une fois l’installation terminée, le serveur refuse toute nouvelle tentative de setup, même si l’URL SPA reste connue.
+
+Pour un bootstrap non interactif, monte de préférence un secret puis renseigne uniquement ces variables optionnelles :
+
+```yaml
+services:
+  dockge:
+    environment:
+      - DOCKGE_BOOTSTRAP_USERNAME=admin
+      - DOCKGE_BOOTSTRAP_PASSWORD_FILE=/run/secrets/dockge_admin_password
+    secrets:
+      - dockge_admin_password
+
+secrets:
+  dockge_admin_password:
+    file: ./secrets/dockge_admin_password
+```
+
+Le bootstrap est ignoré dès qu’un utilisateur existe : il ne modifie ni mot de passe ni compte sur une installation déjà initialisée.
+
+Pour déléguer l’accès à [OAuth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/configuration/overview/) ou à Traefik ForwardAuth :
+
+```yaml
+environment:
+  - DOCKGE_AUTH_MODE=trusted-proxy
+  - DOCKGE_AUTH_PROXY_HEADER=x-forwarded-user
+  - DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS=172.20.0.0/24
+```
+
+Remplace le CIDR d’exemple par le réseau exact de ton proxy et configure celui-ci pour transmettre le header choisi. Le port Dockge ne doit pas être accessible directement : seuls les proxies déclarés peuvent fournir une identité. Tous les utilisateurs autorisés par le proxy disposent des droits administrateur dans Dockge Enhanced, qui ne propose pas encore de rôles distincts. Ne place jamais `/setup`, `/socket.io` ou `/api/*` dans une règle sans authentification ; le proxy doit transmettre les WebSockets et protéger tout le host.
 
 ---
 
@@ -273,6 +314,7 @@ Ce fork suit les releases stables de Dockge automatiquement via GitHub Actions :
 - **Chaque jour** — vérifie si une nouvelle version est disponible
 - **Si oui** — merge les changements upstream et crée une PR
 - **Au merge** — rebuild et publie les images Docker (`amd64` + `arm64`) sur GHCR
+- **En cas de conflit d’authentification** — conserve temporairement la version Enhanced dans la branche de synchronisation et signale explicitement les fichiers à comparer avant le merge
 
 ---
 

@@ -17,52 +17,10 @@ import { BackupManager } from "../watchers/backup-manager";
 import { KulaManager } from "../watchers/kula-manager";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
-import { Settings } from "../settings";
-import jwt from "jsonwebtoken";
-import { JWTDecoded } from "../util-server";
 import { AuditLogger, setAuditUser } from "../audit-log";
 import { normalizeRegistryHost } from "../registry-auth";
 import { StackScheduler } from "../watchers/stack-scheduler";
-
-// ─── Middleware d'authentification JWT ───────────────────────────
-//
-// Accepte le token dans :
-//   - Header Authorization: Bearer <token>
-//   - Query param   ?token=<token>  (pratique pour les appels fetch frontend)
-//
-// Respecte le setting "disableAuth" de Dockge (cohérent avec le reste de l'app).
-
-async function requireAuth(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    jwtSecret: string
-): Promise<void> {
-    // Si l'auth est globalement désactivée dans Dockge, on laisse passer
-    if (await Settings.get("disableAuth")) {
-        setAuditUser(req, { username: "auth-disabled" });
-        next();
-        return;
-    }
-
-    const authHeader = req.headers["authorization"];
-    const token =
-        (authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined) ??
-        (typeof req.query.token === "string" ? req.query.token : undefined);
-
-    if (!token) {
-        res.status(401).json({ ok: false, message: "Authentification requise" });
-        return;
-    }
-
-    try {
-        const decoded = jwt.verify(token, jwtSecret) as JWTDecoded;
-        setAuditUser(req, { username: decoded.username });
-        next();
-    } catch {
-        res.status(401).json({ ok: false, message: "Token invalide ou expiré" });
-    }
-}
+import { requireHttpAuth } from "../auth";
 
 async function auditWatcherAction(
     req: Request,
@@ -93,7 +51,9 @@ export class WatcherRouter extends Router {
 
         // Middleware auth sur toutes les routes de ce router
         router.use((req: Request, res: Response, next: NextFunction) => {
-            requireAuth(req, res, next, server.jwtSecret).catch(next);
+            requireHttpAuth(req, res, next, server.jwtSecret, (identity) => {
+                setAuditUser(req, { username: identity.username });
+            }).catch(next);
         });
 
         // ════════════════════════════════════════════════════════════════

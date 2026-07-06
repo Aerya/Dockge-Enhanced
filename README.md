@@ -23,6 +23,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 ## Features
 
+🆕 **Local authentication, bootstrap, and trusted proxy mode** — The historical behavior remains unchanged by default, with no new variable or Compose update required. Automated deployments can create the first administrator from a secret, while the optional `trusted-proxy` mode accepts an identity supplied by OAuth2 Proxy, Traefik ForwardAuth, or another proxy only when the connection originates from an explicitly trusted network. REST APIs and Socket.IO share the same policy, `/setup` is permanently locked after initialization, and no technical path needs to be exposed publicly.
+
 🆕 **Complete image discovery in the watcher** — The **Images** tab in `/watcher` now lists images declared by every local stack, even when a stack is stopped and its containers or local images have been removed. Discovery follows all four Compose filenames accepted by Dockge (`compose.yaml`, `compose.yml`, `docker-compose.yaml`, and `docker-compose.yml`) and uses Docker Compose’s resolved model to support variables, anchors, `extends`, and `include`, with no prior pull required.
 
 🆕 **Docker resource search** — The **Docker Resources** page, including when opened from `/watcher`, now provides one search field across the Images, Volumes, and Unmanaged tabs. Resources can be filtered by name, image, tag, ID, stack, service, or linked container.
@@ -260,10 +262,49 @@ Open **http://localhost:5001**, create your admin account, then click **Monitori
 | `TZ` | `UTC` | Container timezone — **important** for scheduled auto-updates to fire at the right local time (e.g. `Europe/Paris`) |
 | `DOCKGE_PORT` | `5001` | Web UI port |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Enable HTTPS |
+| `DOCKGE_AUTH_MODE` | *(unset)* | Authentication mode: `local`, `disabled`, or `trusted-proxy`. When unset, the historical behavior and `disableAuth` setting are preserved |
+| `DOCKGE_AUTH_PROXY_HEADER` | `x-forwarded-user` | Header containing the proxy-validated identity in `trusted-proxy` mode |
+| `DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS` | *(required in proxy mode)* | Comma-separated addresses or CIDRs allowed to provide the identity header |
+| `DOCKGE_BOOTSTRAP_USERNAME` | *(none)* | First administrator name, created only when the database contains no users |
+| `DOCKGE_BOOTSTRAP_PASSWORD_FILE` | *(none)* | Secret file containing the password; recommended for automated bootstrap |
+| `DOCKGE_BOOTSTRAP_PASSWORD` | *(none)* | Direct password alternative, less secure because it is visible in the container environment |
 
 > ⚠️ Always set `DOCKGE_DATA_DIR=/app/data` to match the volume mount, otherwise settings won't persist after a restart.
 
 > ℹ️ `DOCKGE_PUBLIC_URL` is optional. If not set, Discord notifications are sent without a link. Works with reverse proxies and HTTPS domains.
+
+### Authentication and initial setup
+
+**Existing installations require no changes.** Without the variables above, accounts, the login page, 2FA, and the **Disable authentication** setting work exactly as before. On the first start of a new installation, open `/setup` and create the administrator normally. Once initialized, the server rejects every further setup attempt even if the SPA URL remains known.
+
+For a non-interactive bootstrap, preferably mount a secret and set only these optional variables:
+
+```yaml
+services:
+  dockge:
+    environment:
+      - DOCKGE_BOOTSTRAP_USERNAME=admin
+      - DOCKGE_BOOTSTRAP_PASSWORD_FILE=/run/secrets/dockge_admin_password
+    secrets:
+      - dockge_admin_password
+
+secrets:
+  dockge_admin_password:
+    file: ./secrets/dockge_admin_password
+```
+
+Bootstrap is ignored as soon as a user exists, so it never changes an existing account or password.
+
+To delegate access to [OAuth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/configuration/overview/) or Traefik ForwardAuth:
+
+```yaml
+environment:
+  - DOCKGE_AUTH_MODE=trusted-proxy
+  - DOCKGE_AUTH_PROXY_HEADER=x-forwarded-user
+  - DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS=172.20.0.0/24
+```
+
+Replace the example CIDR with the proxy’s exact network and configure it to pass the selected header. The Dockge port must not be directly reachable: only declared proxies may provide an identity. Every user authorized by the proxy receives administrator rights because Dockge Enhanced does not currently provide separate roles. Never exempt `/setup`, `/socket.io`, or `/api/*` from authentication; the proxy must forward WebSockets and protect the entire host.
 
 ---
 
@@ -273,6 +314,7 @@ This fork tracks upstream Dockge releases automatically via GitHub Actions:
 - **Daily** — checks for a new stable release
 - **If found** — merges upstream changes and opens a PR
 - **On merge** — rebuilds and publishes Docker images (`amd64` + `arm64`) to GHCR
+- **On authentication conflicts** — temporarily keeps the Enhanced version in the sync branch and explicitly lists files that require comparison before merging
 
 ---
 

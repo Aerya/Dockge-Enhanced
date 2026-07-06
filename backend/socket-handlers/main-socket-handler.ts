@@ -21,6 +21,7 @@ import { Settings } from "../settings";
 import fs, { promises as fsAsync } from "fs";
 import path from "path";
 import axios from "axios";
+import { getAuthMode, isSetupCompleted, markSetupCompleted } from "../auth";
 
 /**
  * Vérifie un token Cloudflare Turnstile côté serveur via l'API siteverify.
@@ -62,7 +63,15 @@ export class MainSocketHandler extends SocketHandler {
 
         // Setup
         socket.on("setup", async (username, password, callback) => {
+            let setupClaimed = false;
             try {
+                if (
+                    await getAuthMode() !== "local" ||
+                    !server.needSetup ||
+                    await isSetupCompleted()
+                ) {
+                    throw new Error("Dockge has already been initialized.");
+                }
                 if (passwordStrength(password).value === "Too weak") {
                     throw new Error("Password is too weak. It should contain alphabetic and numeric characters. It must be at least 6 characters in length.");
                 }
@@ -71,12 +80,14 @@ export class MainSocketHandler extends SocketHandler {
                     throw new Error("Dockge has been initialized. If you want to run setup again, please delete the database.");
                 }
 
+                server.needSetup = false;
+                setupClaimed = true;
+
                 const user = R.dispense("user");
                 user.username = username;
                 user.password = generatePasswordHash(password);
                 await R.store(user);
-
-                server.needSetup = false;
+                await markSetupCompleted();
 
                 callback({
                     ok: true,
@@ -85,6 +96,13 @@ export class MainSocketHandler extends SocketHandler {
                 });
 
             } catch (e) {
+                if (
+                    setupClaimed &&
+                    await getAuthMode().catch(() => "local") === "local" &&
+                    Number((await R.knex("user").count("id as count").first()).count) === 0
+                ) {
+                    server.needSetup = true;
+                }
                 if (e instanceof Error) {
                     callback({
                         ok: false,
@@ -94,6 +112,10 @@ export class MainSocketHandler extends SocketHandler {
             }
         });
 
+        socket.on("needSetup", (callback) => {
+            if (typeof callback === "function") callback(server.needSetup);
+        });
+
         // Login by token
         socket.on("loginByToken", async (token, callback) => {
             const clientIP = await server.getClientIP(socket);
@@ -101,6 +123,9 @@ export class MainSocketHandler extends SocketHandler {
             log.info("auth", `Login by token. IP=${clientIP}`);
 
             try {
+                if (await getAuthMode() !== "local") {
+                    throw new Error("Local authentication is disabled.");
+                }
                 const decoded = jwt.verify(token, server.jwtSecret) as JWTDecoded;
 
                 log.info("auth", "Username from JWT: " + decoded.username);
@@ -164,6 +189,14 @@ export class MainSocketHandler extends SocketHandler {
             }
 
             if (!data) {
+                return;
+            }
+
+            if (await getAuthMode() !== "local") {
+                callback({
+                    ok: false,
+                    msg: "Local authentication is disabled.",
+                });
                 return;
             }
 
@@ -321,8 +354,12 @@ export class MainSocketHandler extends SocketHandler {
                 // Disabled Auth + Want to Enable Auth => No Check
                 // Enabled Auth + Want to Disable Auth => Check!!
                 // Enabled Auth + Want to Enable Auth => No Check
-                const currentDisabledAuth = await Settings.get("disableAuth");
-                if (!currentDisabledAuth && data.disableAuth) {
+                const currentAuthMode = await getAuthMode();
+                if (
+                    !process.env.DOCKGE_AUTH_MODE &&
+                    currentAuthMode === "local" &&
+                    data.disableAuth
+                ) {
                     await doubleCheckPassword(socket, currentPassword);
                 }
                 // Handle global.env

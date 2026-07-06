@@ -17,8 +17,7 @@ import express, { Express, Router as ExpressRouter, Request, Response, NextFunct
 import { DockgeServer } from "../dockge-server";
 import { Settings } from "../settings";
 import { isLowPower, intervals } from "../low-power";
-import jwt from "jsonwebtoken";
-import { JWTDecoded } from "../util-server";
+import { requireHttpAuth } from "../auth";
 
 const execAsync = promisify(exec);
 
@@ -64,33 +63,6 @@ async function sampleCpuIfDue(): Promise<void> {
     }
     lastCpuTimes   = current;
     lastCpuSampleAt = Date.now();
-}
-
-// ─── Auth (même pattern que les autres routers Enhanced) ─────────
-
-async function requireAuth(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    jwtSecret: string
-): Promise<void> {
-    if (await Settings.get("disableAuth")) { next(); return; }
-
-    const authHeader = req.headers["authorization"];
-    const token =
-        (authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined) ??
-        (typeof req.query["token"] === "string" ? req.query["token"] : undefined);
-
-    if (!token) {
-        res.status(401).json({ ok: false, message: "Authentification requise" });
-        return;
-    }
-    try {
-        jwt.verify(token, jwtSecret) as JWTDecoded;
-        next();
-    } catch {
-        res.status(401).json({ ok: false, message: "Token invalide ou expiré" });
-    }
 }
 
 // ─── Stack stats collector ───────────────────────────────────────
@@ -231,7 +203,7 @@ export class SystemStatsRouter extends Router {
         // aucun poll → aucun `docker stats` / `df` / lecture /proc/stat.
 
         const auth = (req: Request, res: Response, next: NextFunction) =>
-            requireAuth(req, res, next, server.jwtSecret);
+            requireHttpAuth(req, res, next, server.jwtSecret);
 
         router.get("/stats", auth, async (_req: Request, res: Response) => {
             try {

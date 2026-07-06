@@ -110,6 +110,7 @@
     "Please use this option carefully!": "Please use this option carefully!",
     "Enable Auth": "Enable Auth",
     "Disable Auth": "Disable Auth",
+    "authModeManaged": "Authentication mode “{mode}” is managed by environment variables. Incompatible local controls are disabled.",
     "I understand, please disable": "I understand, please disable",
     "Leave": "Leave",
     "Frontend Version": "Frontend Version",
