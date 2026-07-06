@@ -13,45 +13,13 @@
 import { DockgeServer } from "../dockge-server";
 import { Router } from "../router";
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";
-import { Settings } from "../settings";
-import jwt from "jsonwebtoken";
-import { JWTDecoded } from "../util-server";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { AutoPruneManager } from "../watchers/auto-prune-manager";
 import { AuditLogger, setAuditUser } from "../audit-log";
+import { requireHttpAuth } from "../auth";
 
 const execAsync = promisify(exec);
-
-// ─── Auth middleware (identique à WatcherRouter) ──────────────────
-
-async function requireAuth(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    jwtSecret: string
-): Promise<void> {
-    if (await Settings.get("disableAuth")) {
-        setAuditUser(req, { username: "auth-disabled" });
-        next();
-        return;
-    }
-    const authHeader = req.headers["authorization"];
-    const token =
-        (authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined) ??
-        (typeof req.query.token === "string" ? req.query.token : undefined);
-    if (!token) {
-        res.status(401).json({ ok: false, message: "Authentification requise" });
-        return;
-    }
-    try {
-        const decoded = jwt.verify(token, jwtSecret) as JWTDecoded;
-        setAuditUser(req, { username: decoded.username });
-        next();
-    } catch {
-        res.status(401).json({ ok: false, message: "Token invalide ou expiré" });
-    }
-}
 
 // ─── Types internes ───────────────────────────────────────────────
 
@@ -172,7 +140,9 @@ export class DockerResourcesRouter extends Router {
         const router = express.Router();
         router.use(express.json());
         const auth = (req: Request, res: Response, next: NextFunction) =>
-            requireAuth(req, res, next, server.jwtSecret);
+            requireHttpAuth(req, res, next, server.jwtSecret, (identity) => {
+                setAuditUser(req, { username: identity.username });
+            }).catch(next);
 
         // ── Images ────────────────────────────────────────────────
 

@@ -222,12 +222,20 @@ export default defineComponent({
                 this.info = info;
             });
 
-            socket.on("autoLogin", () => {
+            socket.on("autoLogin", (username?: string) => {
                 this.loggedIn = true;
                 this.storage().token = "autoLogin";
                 this.socketIO.token = "autoLogin";
+                if (username) this.username = username;
                 this.allowLoginDialog = false;
                 this.afterLogin();
+            });
+
+            socket.on("authProxyError", (message: string) => {
+                this.loggedIn = false;
+                this.allowLoginDialog = false;
+                this.socketIO.connectionErrorMsg = message;
+                this.toastError(message);
             });
 
             socket.on("setup", () => {

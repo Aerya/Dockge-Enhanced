@@ -11,39 +11,7 @@ import { BackupManager } from "../watchers/backup-manager";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { imageStatusStore } from "../watchers/image-watcher";
 import { Settings } from "../settings";
-import jwt from "jsonwebtoken";
-import { JWTDecoded } from "../util-server";
-
-// ─── Auth middleware (même pattern exact que watcher-router) ──────
-
-async function requireAuth(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    jwtSecret: string
-): Promise<void> {
-    if (await Settings.get("disableAuth")) {
-        next();
-        return;
-    }
-
-    const authHeader = req.headers["authorization"];
-    const token =
-        (authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined) ??
-        (typeof req.query.token === "string" ? req.query.token : undefined);
-
-    if (!token) {
-        res.status(401).json({ ok: false, message: "Authentification requise" });
-        return;
-    }
-
-    try {
-        jwt.verify(token, jwtSecret) as JWTDecoded;
-        next();
-    } catch {
-        res.status(401).json({ ok: false, message: "Token invalide ou expiré" });
-    }
-}
+import { requireHttpAuth } from "../auth";
 
 // ─── Router ───────────────────────────────────────────────────────
 
@@ -55,7 +23,7 @@ export class MonitoringRouter extends Router {
 
         // Auth middleware on all routes — uses server.jwtSecret like WatcherRouter
         router.use((req: Request, res: Response, next: NextFunction) => {
-            requireAuth(req, res, next, server.jwtSecret).catch(next);
+            requireHttpAuth(req, res, next, server.jwtSecret).catch(next);
         });
 
         // ── Settings ──────────────────────────────────────────────

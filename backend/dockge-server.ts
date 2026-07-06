@@ -51,6 +51,12 @@ import { AgentSocketHandler } from "./agent-socket-handler";
 import { AgentSocket } from "../common/agent-socket";
 import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-handler";
 import { Terminal } from "./terminal";
+import {
+    ensureTrustedProxyUser,
+    getAuthMode,
+    getTrustedProxyIdentity,
+    initializeAuthentication,
+} from "./auth";
 
 export class DockgeServer {
     app : Express;
@@ -293,11 +299,6 @@ export class DockgeServer {
 
             this.sendInfo(dockgeSocket, true);
 
-            if (this.needSetup) {
-                log.info("server", "Redirect to setup page");
-                dockgeSocket.emit("setup");
-            }
-
             // Create socket handlers (original, no agent support)
             for (const socketHandler of this.socketHandlerList) {
                 socketHandler.create(dockgeSocket, this);
@@ -318,10 +319,26 @@ export class DockgeServer {
             // Better do anything after added all socket handlers here
             // ***************************
 
-            log.debug("auth", "check auto login");
-            if (await Settings.get("disableAuth")) {
+            log.debug("auth", "check authentication mode");
+            const authMode = await getAuthMode();
+            if (authMode === "trusted-proxy") {
+                try {
+                    const username = getTrustedProxyIdentity(socket.request);
+                    const user = await ensureTrustedProxyUser(username);
+                    this.needSetup = false;
+                    await this.afterLogin(dockgeSocket, user);
+                    dockgeSocket.emit("autoLogin", username);
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : String(error);
+                    log.warn("auth", `Trusted proxy authentication failed: ${message}`);
+                    dockgeSocket.emit("authProxyError", message);
+                }
+            } else if (this.needSetup) {
+                log.info("server", "Redirect to setup page");
+                dockgeSocket.emit("setup");
+            } else if (authMode === "disabled") {
                 log.info("auth", "Disabled Auth: auto login to admin");
-                this.afterLogin(dockgeSocket, await R.findOne("user") as User);
+                await this.afterLogin(dockgeSocket, await R.findOne("user") as User);
                 dockgeSocket.emit("autoLogin");
             } else {
                 log.debug("auth", "need auth");
@@ -396,14 +413,12 @@ export class DockgeServer {
 
         this.jwtSecret = jwtSecretBean.value;
 
-        const userCount = (await R.knex("user").count("id as count").first()).count;
-
-        log.debug("server", "User count: " + userCount);
-
-        // If there is no record in user table, it is a new Dockge instance, need to setup
-        if (userCount == 0) {
-            log.info("server", "No user, need setup");
-            this.needSetup = true;
+        try {
+            this.needSetup = await initializeAuthentication();
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            log.error("auth", `Invalid authentication configuration: ${message}`);
+            process.exit(1);
         }
 
         // Listen
@@ -475,6 +490,8 @@ export class DockgeServer {
             latestVersion: latestVersionProperty,
             isContainer,
             primaryHostname: await Settings.get("primaryHostname"),
+            authMode: await getAuthMode(),
+            authModeManaged: Boolean(process.env.DOCKGE_AUTH_MODE),
             turnstileEnabled: !!generalSettings.turnstileEnabled && !!generalSettings.turnstileSiteKey,
             turnstileSiteKey: generalSettings.turnstileEnabled ? (generalSettings.turnstileSiteKey ?? "") : "",
             //serverTimezone: await this.getTimezone(),

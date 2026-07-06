@@ -25,5 +25,8 @@ jobs:
       - name: Vérification TypeScript (tsc --noEmit)
         run: npm run check-ts
 
+      - name: Tests d’authentification
+        run: npx tsx --test backend/auth.test.ts
+
       - name: Build frontend (Vite)
         run: npm run build:frontend

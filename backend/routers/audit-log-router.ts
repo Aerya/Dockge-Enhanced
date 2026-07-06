@@ -1,41 +1,8 @@
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { DockgeServer } from "../dockge-server";
 import { Router } from "../router";
-import { Settings } from "../settings";
-import { JWTDecoded } from "../util-server";
 import { AuditLogger, setAuditUser } from "../audit-log";
-
-async function requireAuth(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    jwtSecret: string
-): Promise<void> {
-    if (await Settings.get("disableAuth")) {
-        setAuditUser(req, { username: "auth-disabled" });
-        next();
-        return;
-    }
-
-    const authHeader = req.headers["authorization"];
-    const token =
-        (authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined) ??
-        (typeof req.query.token === "string" ? req.query.token : undefined);
-
-    if (!token) {
-        res.status(401).json({ ok: false, message: "Authentification requise" });
-        return;
-    }
-
-    try {
-        const decoded = jwt.verify(token, jwtSecret) as JWTDecoded;
-        setAuditUser(req, { username: decoded.username });
-        next();
-    } catch {
-        res.status(401).json({ ok: false, message: "Token invalide ou expiré" });
-    }
-}
+import { requireHttpAuth } from "../auth";
 
 export class AuditLogRouter extends Router {
     create(app: Express, server: DockgeServer): ExpressRouter {
@@ -44,7 +11,9 @@ export class AuditLogRouter extends Router {
 
         router.use(express.json());
         router.use((req: Request, res: Response, next: NextFunction) => {
-            requireAuth(req, res, next, server.jwtSecret).catch(next);
+            requireHttpAuth(req, res, next, server.jwtSecret, (identity) => {
+                setAuditUser(req, { username: identity.username });
+            }).catch(next);
         });
 
         router.get("/entries", async (req: Request, res: Response) => {
