@@ -308,11 +308,17 @@ export default {
             const addonFound = previous
                 ? this.terminalSearchAddOn.findPrevious(term, options)
                 : this.terminalSearchAddOn.findNext(term, options);
-            const foundLine = this.findInBuffer(term, previous);
-            if (foundLine >= 0) {
-                this.terminal.scrollToLine(foundLine);
+            if (addonFound) {
+                return true;
             }
-            return addonFound || foundLine >= 0;
+            const match = this.findInBuffer(term, previous);
+            if (match) {
+                this.terminal.scrollToLine(match.line);
+                this.terminal.select(match.column, match.line, term.length);
+                this.terminal.focus();
+                return true;
+            }
+            return false;
         },
 
         findInBuffer(term, previous = false) {
@@ -320,7 +326,7 @@ export default {
             const buffer = this.terminal.buffer.active;
             const total = buffer.length;
             if (!needle || total <= 0) {
-                return -1;
+                return null;
             }
 
             let start;
@@ -337,10 +343,13 @@ export default {
                 if (line.includes(needle)) {
                     this.lastSearchTerm = needle;
                     this.lastSearchLine = lineIndex;
-                    return lineIndex;
+                    return {
+                        line: lineIndex,
+                        column: line.indexOf(needle),
+                    };
                 }
             }
-            return -1;
+            return null;
         },
         /**
          * Handles the resize event of the terminal component.
