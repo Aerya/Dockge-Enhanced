@@ -42,10 +42,7 @@
 
             <!-- System Stats (desktop uniquement) -->
             <div v-if="$root.loggedIn && systemStats" class="system-stats d-none d-lg-flex align-items-center gap-3 me-auto ms-4">
-                <span v-if="systemStats.hostNavbarDisplay?.cpuModel" class="stat-pill stat-neutral" :title="systemStats.host?.cpuModel">
-                    <font-awesome-icon icon="microchip" class="me-1" />{{ shortCpuModel(systemStats.host?.cpuModel) }}
-                </span>
-                <span class="stat-pill" :class="statClass(systemStats.cpu)">
+                <span class="stat-pill" :class="statClass(systemStats.cpu)" :title="cpuStatTooltip()">
                     <font-awesome-icon icon="microchip" class="me-1" />CPU
                     <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(systemStats.cpu)">
                         <span class="disk-bar-bracket">[</span>
@@ -61,10 +58,7 @@
                     </span>
                     <span class="ms-1">{{ systemStats.cpu }}%</span>
                 </span>
-                <span v-if="systemStats.hostNavbarDisplay?.perCoreCpu && systemStats.host?.perCoreCpu?.length" class="stat-pill stat-neutral">
-                    <font-awesome-icon icon="chart-simple" class="me-1" />{{ coreSummary(systemStats.host.perCoreCpu) }}
-                </span>
-                <span class="stat-pill" :class="statClass(systemStats.ram.percent)">
+                <span class="stat-pill" :class="statClass(systemStats.ram.percent)" :title="ramStatTooltip()">
                     <font-awesome-icon icon="memory" class="me-1" />RAM
                     <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(systemStats.ram.percent)">
                         <span class="disk-bar-bracket">[</span>
@@ -108,7 +102,7 @@
                     <font-awesome-icon icon="chart-bar" class="me-1" />Kula
                 </a>
                 <span v-if="systemStats.hostNavbarDisplay?.uptime" class="stat-pill stat-neutral">
-                    <font-awesome-icon icon="clock" class="me-1" />{{ formatUptime(systemStats.host?.uptimeSeconds) }}
+                    <font-awesome-icon icon="clock" class="me-1" />{{ $t("watcher.monitoring.navbarUptimeShort") }} : {{ formatUptime(systemStats.host?.uptimeSeconds) }}
                 </span>
                 <span v-if="systemStats.hostNavbarDisplay?.cpuTemperatures && systemStats.host?.temperatures?.cpu?.length" class="stat-pill stat-neutral">
                     <font-awesome-icon icon="temperature-half" class="me-1" />CPU {{ tempSummary(systemStats.host.temperatures.cpu) }}
@@ -375,16 +369,27 @@ export default {
             return `${value.toFixed(precision)}${units[unitIndex]}`;
         },
 
-        shortCpuModel(model) {
-            return (model || "CPU")
-                .replace(/\(R\)|\(TM\)|CPU|Processor/gi, "")
-                .replace(/\s*@\s*.*/, "")
-                .replace(/\s+/g, " ")
-                .trim() || "CPU";
-        },
-
         coreSummary(values) {
             return values.map((value, index) => `C${index + 1} ${value}%`).join(" ");
+        },
+
+        cpuStatTooltip() {
+            const details = [];
+            if (this.systemStats?.hostNavbarDisplay?.cpuModel && this.systemStats?.host?.cpuModel) {
+                details.push(this.systemStats.host.cpuModel);
+            }
+            if (this.systemStats?.hostNavbarDisplay?.perCoreCpu && this.systemStats?.host?.perCoreCpu?.length) {
+                details.push(this.coreSummary(this.systemStats.host.perCoreCpu));
+            }
+            return details.join("\n");
+        },
+
+        ramStatTooltip() {
+            const ram = this.systemStats?.ram;
+            if (!ram) {
+                return "";
+            }
+            return `${this.formatBytes(ram.used)} / ${this.formatBytes(ram.total)}`;
         },
 
         formatUptime(seconds) {

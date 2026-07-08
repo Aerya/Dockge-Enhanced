@@ -278,6 +278,7 @@
     "watcher.monitoring.navbarCpuModel": "CPU name",
     "watcher.monitoring.navbarPerCoreCpu": "Per-core usage",
     "watcher.monitoring.navbarUptime": "System uptime",
+    "watcher.monitoring.navbarUptimeShort": "Uptime",
     "watcher.monitoring.navbarCpuTemps": "CPU temperatures",
     "watcher.monitoring.navbarDiskTemps": "Disk temperatures",
     "watcher.monitoring.navbarHostDisplayHint": "Adds these details to the compact system stats in the navigation bar.",
