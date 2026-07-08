@@ -194,25 +194,28 @@ export default {
         },
     },
     methods: {
-        open() {
+        open(preferredRootPath = "") {
             this.visible = true;
             this.error = "";
             this.editing = null;
             this.rootPath = "";
             this.currentPath = "";
             this.entries = [];
-            this.loadMounts();
+            this.loadMounts(preferredRootPath);
         },
         onHidden() {
             this.editing = null;
         },
-        loadMounts() {
+        loadMounts(preferredRootPath = "") {
             this.loading = true;
             this.$root.emitAgent(this.endpoint, "volumeMounts", this.stackName, this.serviceName, (res) => {
                 this.loading = false;
                 if (res.ok) {
                     this.mounts = res.mounts ?? [];
-                    if (this.mounts.length === 1) {
+                    const preferred = this.mounts.find(m => m.destination === preferredRootPath);
+                    if (preferred) {
+                        this.openMount(preferred);
+                    } else if (this.mounts.length === 1) {
                         this.openMount(this.mounts[0]);
                     }
                 } else {

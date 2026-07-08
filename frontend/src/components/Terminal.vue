@@ -88,7 +88,10 @@ export default {
             cursorBlink,
             cols: this.cols,
             rows: this.rows,
+            scrollback: 100000,
         });
+        this.terminalSearchAddOn = new SearchAddon();
+        this.terminal.loadAddon(this.terminalSearchAddOn);
 
         if (this.mode === "mainTerminal") {
             this.mainTerminalConfig();
@@ -283,15 +286,14 @@ export default {
         },
 
         search(term, previous = false) {
-            if (!this.terminalSearchAddOn) {
-                this.terminalSearchAddOn = new SearchAddon();
-                this.terminal.loadAddon(this.terminalSearchAddOn);
-            }
             if (!term) {
                 this.terminalSearchAddOn.clearDecorations();
                 return false;
             }
             const options = {
+                caseSensitive: false,
+                wholeWord: false,
+                regex: false,
                 decorations: {
                     matchBackground: "#664d03",
                     matchOverviewRuler: "#f59e0b",

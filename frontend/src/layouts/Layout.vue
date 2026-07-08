@@ -42,11 +42,43 @@
 
             <!-- System Stats (desktop uniquement) -->
             <div v-if="$root.loggedIn && systemStats" class="system-stats d-none d-lg-flex align-items-center gap-3 me-auto ms-4">
+                <span v-if="systemStats.hostNavbarDisplay?.cpuModel" class="stat-pill stat-neutral" :title="systemStats.host?.cpuModel">
+                    <font-awesome-icon icon="microchip" class="me-1" />{{ shortCpuModel(systemStats.host?.cpuModel) }}
+                </span>
                 <span class="stat-pill" :class="statClass(systemStats.cpu)">
-                    <font-awesome-icon icon="microchip" class="me-1" />{{ systemStats.cpu }}%
+                    <font-awesome-icon icon="microchip" class="me-1" />CPU
+                    <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(systemStats.cpu)">
+                        <span class="disk-bar-bracket">[</span>
+                        <span class="disk-bar-cells" aria-hidden="true">
+                            <span
+                                v-for="(filled, index) in diskUsageCells(systemStats.cpu)"
+                                :key="index"
+                                class="disk-bar-cell"
+                                :class="{ filled }"
+                            ></span>
+                        </span>
+                        <span class="disk-bar-bracket">]</span>
+                    </span>
+                    <span class="ms-1">{{ systemStats.cpu }}%</span>
+                </span>
+                <span v-if="systemStats.hostNavbarDisplay?.perCoreCpu && systemStats.host?.perCoreCpu?.length" class="stat-pill stat-neutral">
+                    <font-awesome-icon icon="chart-simple" class="me-1" />{{ coreSummary(systemStats.host.perCoreCpu) }}
                 </span>
                 <span class="stat-pill" :class="statClass(systemStats.ram.percent)">
-                    <font-awesome-icon icon="memory" class="me-1" />{{ formatBytes(systemStats.ram.used) }}/{{ formatBytes(systemStats.ram.total) }}
+                    <font-awesome-icon icon="memory" class="me-1" />RAM
+                    <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(systemStats.ram.percent)">
+                        <span class="disk-bar-bracket">[</span>
+                        <span class="disk-bar-cells" aria-hidden="true">
+                            <span
+                                v-for="(filled, index) in diskUsageCells(systemStats.ram.percent)"
+                                :key="index"
+                                class="disk-bar-cell"
+                                :class="{ filled }"
+                            ></span>
+                        </span>
+                        <span class="disk-bar-bracket">]</span>
+                    </span>
+                    <span class="ms-1">{{ systemStats.ram.percent }}%</span>
                 </span>
                 <span v-for="d in (systemStats.disks ?? [systemStats.disk])" :key="d.mount"
                     class="stat-pill" :class="statClass(d.percent)">
@@ -75,6 +107,15 @@
                 <a v-if="kulaUrl" :href="kulaUrl" target="_blank" class="stat-pill stat-kula">
                     <font-awesome-icon icon="chart-bar" class="me-1" />Kula
                 </a>
+                <span v-if="systemStats.hostNavbarDisplay?.uptime" class="stat-pill stat-neutral">
+                    <font-awesome-icon icon="clock" class="me-1" />{{ formatUptime(systemStats.host?.uptimeSeconds) }}
+                </span>
+                <span v-if="systemStats.hostNavbarDisplay?.cpuTemperatures && systemStats.host?.temperatures?.cpu?.length" class="stat-pill stat-neutral">
+                    <font-awesome-icon icon="temperature-half" class="me-1" />CPU {{ tempSummary(systemStats.host.temperatures.cpu) }}
+                </span>
+                <span v-if="systemStats.hostNavbarDisplay?.diskTemperatures && systemStats.host?.temperatures?.disks?.length" class="stat-pill stat-neutral">
+                    <font-awesome-icon icon="hard-drive" class="me-1" />{{ tempSummary(systemStats.host.temperatures.disks) }}
+                </span>
             </div>
 
             <ul class="nav nav-pills">
@@ -334,6 +375,40 @@ export default {
             return `${value.toFixed(precision)}${units[unitIndex]}`;
         },
 
+        shortCpuModel(model) {
+            return (model || "CPU")
+                .replace(/\(R\)|\(TM\)|CPU|Processor/gi, "")
+                .replace(/\s*@\s*.*/, "")
+                .replace(/\s+/g, " ")
+                .trim() || "CPU";
+        },
+
+        coreSummary(values) {
+            return values.map((value, index) => `C${index + 1} ${value}%`).join(" ");
+        },
+
+        formatUptime(seconds) {
+            const total = Math.max(0, Number(seconds) || 0);
+            const days = Math.floor(total / 86400);
+            const hours = Math.floor((total % 86400) / 3600);
+            if (days > 0) return `${days}j ${hours}h`;
+            return `${hours}h`;
+        },
+
+        tempSummary(values) {
+            if (!Array.isArray(values) || values.length === 0) {
+                return "";
+            }
+            if (values.length === 1) {
+                return `${values[0].celsius}°C`;
+            }
+            const numbers = values.map(v => Number(v.celsius)).filter(Number.isFinite);
+            if (numbers.length === 0) {
+                return "";
+            }
+            return `${Math.min(...numbers)}-${Math.max(...numbers)}°C`;
+        },
+
         async fetchKulaStatus() {
             try {
                 const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
@@ -496,6 +571,7 @@ main {
     &.stat-ok      { color: #a8d8b0; } // vert menthe pastel
     &.stat-warning  { color: #f0d898; } // jaune blé pastel
     &.stat-danger   { color: #f0a8a8; } // rose saumon pastel
+    &.stat-neutral  { color: #d1d5db; }
     &.stat-kula {
         color: #93c5fd;
         text-decoration: none;

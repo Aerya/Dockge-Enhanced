@@ -290,17 +290,44 @@
                             <div v-if="volumeUsage.length === 0 && !volumeUsageLoading" class="text-muted small">
                                 {{ $t("stackVolumeUsageEmpty") }}
                             </div>
-                            <div v-for="volume in volumeUsage" :key="volume.source + volume.destination" class="stack-volume-row">
-                                <div class="stack-volume-main">
-                                    <code>{{ volume.destination }}</code>
-                                    <span class="text-muted small">{{ volume.service }}</span>
+                            <div v-for="container in volumeUsage" :key="container.id || container.name" class="stack-volume-container">
+                                <div class="stack-volume-container-header">
+                                    <div>
+                                        <strong>{{ container.service || container.name }}</strong>
+                                        <span class="text-muted small ms-2">{{ container.name }}</span>
+                                    </div>
+                                    <span class="badge bg-secondary">{{ container.state }}</span>
                                 </div>
-                                <div class="stack-volume-size" :title="volume.source">
-                                    <span v-if="volume.size !== null">{{ formatBytes(volume.size) }}</span>
-                                    <span v-else class="text-muted">{{ $t("notAvailableShort") }}</span>
+                                <div
+                                    v-for="volume in container.mounts"
+                                    :key="container.name + volume.source + volume.destination"
+                                    class="stack-volume-row"
+                                >
+                                    <div class="stack-volume-main">
+                                        <code>{{ volume.destination }}</code>
+                                        <span class="text-muted small text-truncate" :title="volume.source">
+                                            {{ volume.type === "volume" ? (volume.name || volume.source) : volume.source }}
+                                        </span>
+                                    </div>
+                                    <div class="stack-volume-actions">
+                                        <span class="stack-volume-size" :title="volume.error || volume.source">
+                                            <span v-if="volume.size !== null">{{ formatBytes(volume.size) }}</span>
+                                            <span v-else class="text-muted">{{ $t("notAvailableShort") }}</span>
+                                        </span>
+                                        <button class="btn btn-sm btn-normal" :title="$t('volumeBrowserTitle')" @click="openVolumeBrowser(container.service, volume.destination)">
+                                            <font-awesome-icon icon="folder-open" class="me-1" />{{ $t("files") }}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        <VolumeBrowser
+                            v-if="volumeBrowserService"
+                            ref="volumeBrowser"
+                            :stack-name="stack.name"
+                            :service-name="volumeBrowserService"
+                            :endpoint="endpoint"
+                        />
                     </div>
                 </div>
                 <div class="col-lg-6">
@@ -469,6 +496,7 @@ import { ref } from "vue";
 import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
 import { useImageStatus } from "../composables/useImageStatus";
 import StackScheduleEditor from "../components/StackScheduleEditor.vue";
+import VolumeBrowser from "../components/VolumeBrowser.vue";
 
 const template = `
 services:
@@ -491,6 +519,7 @@ export default {
         CodeMirror,
         BModal,
         StackScheduleEditor,
+        VolumeBrowser,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
@@ -579,6 +608,7 @@ export default {
             logSearch: "",
             volumeUsage: [],
             volumeUsageLoading: false,
+            volumeBrowserService: "",
             containersExpanded: true,
             autoUpdateSaving: {},
         };
@@ -950,6 +980,13 @@ export default {
                 } else {
                     this.$root.toastRes(res);
                 }
+            });
+        },
+
+        openVolumeBrowser(serviceName, destination) {
+            this.volumeBrowserService = serviceName;
+            this.$nextTick(() => {
+                this.$refs.volumeBrowser?.open(destination);
             });
         },
 
@@ -1471,13 +1508,29 @@ export default {
     padding: 10px 12px;
 }
 
+.stack-volume-container {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(127, 127, 127, 0.16);
+
+    &:last-child {
+        border-bottom: 0;
+    }
+}
+
+.stack-volume-container-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
 .stack-volume-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 7px 0;
-    border-bottom: 1px solid rgba(127, 127, 127, 0.12);
+    padding: 6px 0 6px 12px;
 
     &:last-child {
         border-bottom: 0;
@@ -1500,6 +1553,14 @@ export default {
 .stack-volume-size {
     flex: 0 0 auto;
     font-weight: 600;
+}
+
+.stack-volume-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex: 0 0 auto;
 }
 
 .stack-meta-bar {

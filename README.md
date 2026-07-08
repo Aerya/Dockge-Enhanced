@@ -23,11 +23,11 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 ## Features
 
-🆕 **Mounted volume sizes per stack** — Each stack page now lists the volumes actually mounted by running containers, with the linked service, mount point and size calculated through `du -sb` on the Docker host. A **Refresh** button recalculates sizes on demand, without a permanent scanner.
+🆕 **Mounted volume sizes per container** — Each stack page now groups mounted volumes by container, with the linked service, mount point, on-demand size calculation and direct access to the existing **Files** browser for each mount.
 
 🆕 **Stack logs with range and search** — The compose-page log terminal can load the latest lines or a `24 h`, `3 days`, `7 days` or `14 days` window through `docker compose logs --since`, while keeping the service filter and timestamp toggle. Built-in search lets you jump between matches in the displayed scrollback.
 
-🆕 **Host system details in Monitoring** — The **Monitoring** tab now shows CPU model, core count, per-core usage, 1/5/15 min load averages, process count, system uptime, available CPU/disk temperatures, and detected OS update counts when the environment exposes the needed tools (`/proc`, `/sys`, `sensors`, `smartctl`, `apt`/`apk`/`dnf`).
+🆕 **Host system details in Monitoring** — The **Monitoring** tab now shows CPU model, core count, per-core usage, 1/5/15 min load averages, process count, system uptime, and friendly CPU/disk temperatures when the environment exposes the needed tools (`/proc`, `/sys`, `sensors`, `smartctl` or Synology disk helpers).
 
 **Local authentication, bootstrap, and trusted proxy mode** — The historical behavior remains unchanged by default, with no new variable or Compose update required. Automated deployments can create the first administrator from a secret, while the optional `trusted-proxy` mode accepts an identity supplied by OAuth2 Proxy, Traefik ForwardAuth, or another proxy only when the connection originates from an explicitly trusted network. REST APIs and Socket.IO share the same policy, `/setup` is permanently locked after initialization, and no technical path needs to be exposed publicly.
 

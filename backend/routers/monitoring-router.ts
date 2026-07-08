@@ -46,15 +46,25 @@ export class MonitoringRouter extends Router {
 
         router.post("/monitoring/display-settings", async (req: Request, res: Response) => {
             try {
-                const { diskPartitions, diskDisplayMode } = req.body as {
+                const { diskPartitions, diskDisplayMode, hostNavbarDisplay } = req.body as {
                     diskPartitions?: string[];
                     diskDisplayMode?: string;
+                    hostNavbarDisplay?: Record<string, unknown>;
                 };
                 if (Array.isArray(diskPartitions)) {
                     await Settings.set("diskPartitions", JSON.stringify(diskPartitions));
                 }
                 if (diskDisplayMode === "compact" || diskDisplayMode === "bar") {
                     await Settings.set("diskDisplayMode", diskDisplayMode);
+                }
+                if (hostNavbarDisplay && typeof hostNavbarDisplay === "object") {
+                    await Settings.set("hostNavbarDisplay", JSON.stringify({
+                        cpuModel: Boolean(hostNavbarDisplay.cpuModel),
+                        perCoreCpu: Boolean(hostNavbarDisplay.perCoreCpu),
+                        uptime: Boolean(hostNavbarDisplay.uptime),
+                        cpuTemperatures: Boolean(hostNavbarDisplay.cpuTemperatures),
+                        diskTemperatures: Boolean(hostNavbarDisplay.diskTemperatures),
+                    }));
                 }
                 res.json({ ok: true });
             } catch (e) {
@@ -75,7 +85,20 @@ export class MonitoringRouter extends Router {
             }
             const rawDisplayMode = await Settings.get("diskDisplayMode");
             const diskDisplayMode = rawDisplayMode === "bar" ? "bar" : "compact";
-            res.json({ ok: true, data: { diskPartitions, diskDisplayMode } });
+            const hostNavbarDisplay = {
+                cpuModel: false,
+                perCoreCpu: false,
+                uptime: false,
+                cpuTemperatures: false,
+                diskTemperatures: false,
+            };
+            const rawHostNavbar = await Settings.get("hostNavbarDisplay");
+            if (rawHostNavbar) {
+                try {
+                    Object.assign(hostNavbarDisplay, JSON.parse(rawHostNavbar));
+                } catch { /* ignore */ }
+            }
+            res.json({ ok: true, data: { diskPartitions, diskDisplayMode, hostNavbarDisplay } });
         });
 
         // ── Overview (dashboard cards) ────────────────────────────

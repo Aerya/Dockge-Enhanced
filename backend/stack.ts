@@ -37,14 +37,21 @@ interface ServiceStatusResult {
 }
 const serviceStatusCache = new Map<string, { at: number; result: ServiceStatusResult }>();
 
-interface StackVolumeUsage {
-    service: string;
+interface StackVolumeMountUsage {
     type: string;
     name: string;
     source: string;
     destination: string;
     size: number | null;
     error?: string;
+}
+
+interface StackContainerVolumeUsage {
+    id: string;
+    name: string;
+    service: string;
+    state: string;
+    mounts: StackVolumeMountUsage[];
 }
 
 // Nom du fichier d'override compose. Docker Compose le fusionne automatiquement
@@ -717,7 +724,7 @@ export class Stack {
         return allowed.has(since) ? since : "";
     }
 
-    async getVolumeUsage(): Promise<StackVolumeUsage[]> {
+    async getVolumeUsage(): Promise<StackContainerVolumeUsage[]> {
         const ps = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "-aq"), {
             cwd: this.path,
             encoding: "utf-8",
@@ -732,60 +739,77 @@ export class Stack {
             encoding: "utf-8",
         });
         const containers = JSON.parse(inspect.stdout?.toString() || "[]");
-        const volumes = new Map<string, StackVolumeUsage>();
 
-        for (const container of containers) {
-            const service = container?.Config?.Labels?.["com.docker.compose.service"] ?? container?.Name?.replace(/^\//, "") ?? "";
+        const result: StackContainerVolumeUsage[] = containers.map((container: any) => {
+            const service = container?.Config?.Labels?.["com.docker.compose.service"] ?? "";
+            const name = String(container?.Name ?? "").replace(/^\//, "");
+            const mounts: StackVolumeMountUsage[] = [];
+
             for (const mount of container?.Mounts ?? []) {
                 const source = String(mount.Source ?? "");
                 const destination = String(mount.Destination ?? "");
                 if (!source || !destination) {
                     continue;
                 }
-                const key = `${source}|${destination}`;
-                if (!volumes.has(key)) {
-                    volumes.set(key, {
-                        service,
-                        type: String(mount.Type ?? ""),
-                        name: String(mount.Name ?? ""),
-                        source,
-                        destination,
-                        size: null,
-                    });
-                } else if (service) {
-                    const current = volumes.get(key)!;
-                    const services = new Set(current.service.split(", ").filter(Boolean));
-                    services.add(service);
-                    current.service = Array.from(services).sort().join(", ");
-                }
+                mounts.push({
+                    type: String(mount.Type ?? ""),
+                    name: String(mount.Name ?? ""),
+                    source,
+                    destination,
+                    size: null,
+                });
             }
-        }
 
-        const result = Array.from(volumes.values()).sort((a, b) =>
-            a.destination.localeCompare(b.destination)
-        );
-        await Promise.all(result.map(async (volume) => {
+            return {
+                id: String(container?.Id ?? ""),
+                name,
+                service: service || name,
+                state: String(container?.State?.Status ?? ""),
+                mounts: mounts.sort((a, b) => a.destination.localeCompare(b.destination)),
+            };
+        }).filter((container: StackContainerVolumeUsage) => container.mounts.length > 0)
+            .sort((a: StackContainerVolumeUsage, b: StackContainerVolumeUsage) => a.service.localeCompare(b.service));
+
+        const sizeCache = new Map<string, Promise<{ size: number | null; error?: string }>>();
+        const measure = (volume: StackVolumeMountUsage) => {
+            const src = volume.type === "volume" && volume.name ? volume.name : volume.source;
+            if (!sizeCache.has(src)) {
+                sizeCache.set(src, (async () => {
+                    try {
+                        const { stdout } = await execFileAsync("docker", [
+                            "run",
+                            "--rm",
+                            "--network",
+                            "none",
+                            "-v",
+                            `${src}:/mnt:ro`,
+                            process.env.DOCKGE_VOLUME_HELPER_IMAGE || "busybox:stable",
+                            "du",
+                            "-sb",
+                            "/mnt",
+                        ], { timeout: 120_000 });
+                        const first = String(stdout).trim().split(/\s+/)[0];
+                        const size = Number.parseInt(first, 10);
+                        return { size: Number.isFinite(size) ? size : null };
+                    } catch (e) {
+                        return { size: null, error: e instanceof Error ? e.message : String(e) };
+                    }
+                })());
+            }
+            return sizeCache.get(src)!;
+        };
+
+        await Promise.all(result.flatMap(container => container.mounts.map(async (volume) => {
             try {
-                const src = volume.type === "volume" && volume.name ? volume.name : volume.source;
-                const { stdout } = await execFileAsync("docker", [
-                    "run",
-                    "--rm",
-                    "--network",
-                    "none",
-                    "-v",
-                    `${src}:/mnt:ro`,
-                    process.env.DOCKGE_VOLUME_HELPER_IMAGE || "busybox:stable",
-                    "du",
-                    "-sb",
-                    "/mnt",
-                ], { timeout: 120_000 });
-                const first = String(stdout).trim().split(/\s+/)[0];
-                const size = Number.parseInt(first, 10);
-                volume.size = Number.isFinite(size) ? size : null;
+                const measured = await measure(volume);
+                volume.size = measured.size;
+                if (measured.error) {
+                    volume.error = measured.error;
+                }
             } catch (e) {
                 volume.error = e instanceof Error ? e.message : String(e);
             }
-        }));
+        })));
         return result;
     }
 
