@@ -62,6 +62,38 @@
                         {{ relativeTime(startedAt) }}
                     </span>
                 </div>
+                <div v-if="!isEditMode && (volumeLoading || volumeUsage.length > 0)" class="container-volumes mt-2">
+                    <div class="container-volumes-title">
+                        <span>
+                            <font-awesome-icon icon="hard-drive" class="me-1" />{{ $t("stackVolumeUsage") }}
+                            <span v-if="volumeLoading" class="spinner-border spinner-border-sm ms-1" />
+                        </span>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-link container-volume-refresh"
+                            :title="$t('refresh')"
+                            :disabled="volumeLoading"
+                            @click="$emit('refresh-volume-usage')"
+                        >
+                            <font-awesome-icon icon="sync" />
+                        </button>
+                    </div>
+                    <button
+                        v-for="volume in volumeUsage"
+                        :key="volume.source + volume.destination"
+                        type="button"
+                        class="container-volume-row"
+                        :title="volume.source"
+                        @click="openVolumeBrowser(volume.destination)"
+                    >
+                        <code>{{ volume.destination }}</code>
+                        <span class="container-volume-name">{{ volume.type === "volume" ? (volume.name || volume.source) : volume.source }}</span>
+                        <strong>
+                            <template v-if="volume.size !== null">{{ formatBytes(volume.size) }}</template>
+                            <template v-else>{{ $t("notAvailableShort") }}</template>
+                        </strong>
+                    </button>
+                </div>
             </div>
             <div class="col-5">
                 <div class="function">
@@ -242,10 +274,19 @@ export default defineComponent({
         autoUpdateSaving: {
             type: Boolean,
             default: false
+        },
+        volumeUsage: {
+            type: Array,
+            default: () => []
+        },
+        volumeLoading: {
+            type: Boolean,
+            default: false
         }
     },
     emits: [
         "auto-update-change",
+        "refresh-volume-usage",
     ],
     data() {
         return {
@@ -385,18 +426,20 @@ export default defineComponent({
             });
         },
         parsePort(port) {
-            if (this.stack.endpoint) {
-                return parseDockerPort(port, this.stack.primaryHostname);
-            } else {
-                let hostname = this.$root.info.primaryHostname || location.hostname;
-                return parseDockerPort(port, hostname);
-            }
+            return parseDockerPort(port, location.hostname);
         },
         remove() {
             delete this.jsonObject.services[this.name];
         },
-        openVolumeBrowser() {
-            this.$refs.volumeBrowser?.open();
+        openVolumeBrowser(destination = "") {
+            this.$refs.volumeBrowser?.open(destination);
+        },
+        formatBytes(bytes) {
+            if (bytes >= 1024 ** 4) return (bytes / 1024 ** 4).toFixed(1) + " TB";
+            if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(1) + " GB";
+            if (bytes >= 1024 ** 2) return Math.round(bytes / 1024 ** 2) + " MB";
+            if (bytes >= 1024) return Math.round(bytes / 1024) + " KB";
+            return bytes + " B";
         },
         relativeTime(iso) {
             if (!iso) return null;
@@ -497,6 +540,61 @@ export default defineComponent({
         width: 100%;
         align-items: center;
         justify-content: end;
+    }
+
+    .container-volumes {
+        display: grid;
+        gap: 4px;
+        max-width: 100%;
+    }
+
+    .container-volumes-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        color: #6b7280;
+        font-size: 0.72rem;
+        font-weight: 600;
+
+        .dark & {
+            color: $dark-font-color;
+        }
+    }
+
+    .container-volume-refresh {
+        padding: 0;
+        line-height: 1;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .container-volume-row {
+        display: grid;
+        grid-template-columns: minmax(72px, auto) minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        padding: 4px 8px;
+        border: 1px solid rgba(127, 127, 127, 0.14);
+        border-radius: 6px;
+        background: rgba(127, 127, 127, 0.05);
+        color: inherit;
+        text-align: left;
+        font-size: 0.75rem;
+
+        &:hover {
+            border-color: rgba(13, 110, 253, 0.35);
+            background: rgba(13, 110, 253, 0.08);
+        }
+
+        code,
+        .container-volume-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     }
 }
 

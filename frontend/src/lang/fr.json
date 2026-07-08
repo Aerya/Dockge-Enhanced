@@ -179,6 +179,7 @@
     "logSince7d": "7 jours",
     "logSince14d": "14 jours",
     "logSearchPlaceholder": "Rechercher dans les logs",
+    "logSearchNoMatch": "Aucune occurrence dans les logs chargés.",
     "logSearchPrevious": "Occurrence précédente",
     "logSearchNext": "Occurrence suivante",
     "stackVolumeUsage": "Volumes montés",

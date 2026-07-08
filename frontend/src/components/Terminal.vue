@@ -70,6 +70,8 @@ export default {
             first: true,
             terminalInputBuffer: "",
             cursorPosition: 0,
+            lastSearchTerm: "",
+            lastSearchLine: -1,
         };
     },
     created() {
@@ -288,6 +290,8 @@ export default {
         search(term, previous = false) {
             if (!term) {
                 this.terminalSearchAddOn.clearDecorations();
+                this.lastSearchTerm = "";
+                this.lastSearchLine = -1;
                 return false;
             }
             const options = {
@@ -301,9 +305,42 @@ export default {
                     activeMatchColorOverviewRuler: "#0d6efd",
                 },
             };
-            return previous
+            const addonFound = previous
                 ? this.terminalSearchAddOn.findPrevious(term, options)
                 : this.terminalSearchAddOn.findNext(term, options);
+            const foundLine = this.findInBuffer(term, previous);
+            if (foundLine >= 0) {
+                this.terminal.scrollToLine(foundLine);
+            }
+            return addonFound || foundLine >= 0;
+        },
+
+        findInBuffer(term, previous = false) {
+            const needle = term.toLowerCase();
+            const buffer = this.terminal.buffer.active;
+            const total = buffer.length;
+            if (!needle || total <= 0) {
+                return -1;
+            }
+
+            let start;
+            if (this.lastSearchTerm === needle && this.lastSearchLine >= 0) {
+                start = this.lastSearchLine + (previous ? -1 : 1);
+            } else {
+                start = previous ? total - 1 : 0;
+            }
+
+            const step = previous ? -1 : 1;
+            for (let offset = 0; offset < total; offset++) {
+                const lineIndex = (start + offset * step + total) % total;
+                const line = buffer.getLine(lineIndex)?.translateToString(true).toLowerCase() ?? "";
+                if (line.includes(needle)) {
+                    this.lastSearchTerm = needle;
+                    this.lastSearchLine = lineIndex;
+                    return lineIndex;
+                }
+            }
+            return -1;
         },
         /**
          * Handles the resize event of the terminal component.
