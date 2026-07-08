@@ -21,6 +21,10 @@ import { InteractiveTerminal, Terminal } from "./terminal";
 import childProcessAsync from "promisify-child-process";
 import { Settings } from "./settings";
 import { intervals } from "./low-power";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
 
 // ─── Cache court de getServiceStatusList (point #9 : éviter `docker inspect`
 // de TOUS les containers à chaque refresh / chaque onglet ouvert). TTL piloté
@@ -32,6 +36,16 @@ interface ServiceStatusResult {
     lastStartedAt: string | null;
 }
 const serviceStatusCache = new Map<string, { at: number; result: ServiceStatusResult }>();
+
+interface StackVolumeUsage {
+    service: string;
+    type: string;
+    name: string;
+    source: string;
+    destination: string;
+    size: number | null;
+    error?: string;
+}
 
 // Nom du fichier d'override compose. Docker Compose le fusionne automatiquement
 // avec le fichier principal lorsqu'il est présent dans le dossier de la stack
@@ -651,10 +665,16 @@ export class Stack {
         await this.joinLogsTerminal(socket);
     }
 
-    async joinLogsTerminal(socket: DockgeSocket, serviceName = "", timestamps = false) {
+    async joinLogsTerminal(socket: DockgeSocket, serviceName = "", timestamps = false, since = "") {
         const suffix = timestamps ? "_ts" : "";
-        const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName) + suffix;
-        const logOptions = [ "-f", "--tail", "100" ];
+        const cleanSince = this.normalizeLogSince(since);
+        const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName, cleanSince.replace(/[^a-zA-Z0-9_-]/g, "")) + suffix;
+        const logOptions = [ "-f" ];
+        if (cleanSince) {
+            logOptions.push("--since", cleanSince);
+        } else {
+            logOptions.push("--tail", "100");
+        }
         if (timestamps) {
             logOptions.push("--timestamps");
         }
@@ -682,13 +702,91 @@ export class Stack {
         await this.leaveLogsTerminal(socket);
     }
 
-    async leaveLogsTerminal(socket: DockgeSocket, serviceName = "", timestamps = false) {
+    async leaveLogsTerminal(socket: DockgeSocket, serviceName = "", timestamps = false, since = "") {
         const suffix = timestamps ? "_ts" : "";
-        const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName) + suffix;
+        const cleanSince = this.normalizeLogSince(since);
+        const terminalName = getStackLogsTerminalName(socket.endpoint, this.name, serviceName, cleanSince.replace(/[^a-zA-Z0-9_-]/g, "")) + suffix;
         const terminal = Terminal.getTerminal(terminalName);
         if (terminal) {
             terminal.leave(socket);
         }
+    }
+
+    normalizeLogSince(since: string): string {
+        const allowed = new Set([ "24h", "72h", "168h", "336h" ]);
+        return allowed.has(since) ? since : "";
+    }
+
+    async getVolumeUsage(): Promise<StackVolumeUsage[]> {
+        const ps = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "-aq"), {
+            cwd: this.path,
+            encoding: "utf-8",
+        });
+        const ids = (ps.stdout?.toString() ?? "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+        if (ids.length === 0) {
+            return [];
+        }
+
+        const inspect = await childProcessAsync.spawn("docker", [ "inspect", ...ids ], {
+            cwd: this.path,
+            encoding: "utf-8",
+        });
+        const containers = JSON.parse(inspect.stdout?.toString() || "[]");
+        const volumes = new Map<string, StackVolumeUsage>();
+
+        for (const container of containers) {
+            const service = container?.Config?.Labels?.["com.docker.compose.service"] ?? container?.Name?.replace(/^\//, "") ?? "";
+            for (const mount of container?.Mounts ?? []) {
+                const source = String(mount.Source ?? "");
+                const destination = String(mount.Destination ?? "");
+                if (!source || !destination) {
+                    continue;
+                }
+                const key = `${source}|${destination}`;
+                if (!volumes.has(key)) {
+                    volumes.set(key, {
+                        service,
+                        type: String(mount.Type ?? ""),
+                        name: String(mount.Name ?? ""),
+                        source,
+                        destination,
+                        size: null,
+                    });
+                } else if (service) {
+                    const current = volumes.get(key)!;
+                    const services = new Set(current.service.split(", ").filter(Boolean));
+                    services.add(service);
+                    current.service = Array.from(services).sort().join(", ");
+                }
+            }
+        }
+
+        const result = Array.from(volumes.values()).sort((a, b) =>
+            a.destination.localeCompare(b.destination)
+        );
+        await Promise.all(result.map(async (volume) => {
+            try {
+                const src = volume.type === "volume" && volume.name ? volume.name : volume.source;
+                const { stdout } = await execFileAsync("docker", [
+                    "run",
+                    "--rm",
+                    "--network",
+                    "none",
+                    "-v",
+                    `${src}:/mnt:ro`,
+                    process.env.DOCKGE_VOLUME_HELPER_IMAGE || "busybox:stable",
+                    "du",
+                    "-sb",
+                    "/mnt",
+                ], { timeout: 120_000 });
+                const first = String(stdout).trim().split(/\s+/)[0];
+                const size = Number.parseInt(first, 10);
+                volume.size = Number.isFinite(size) ? size : null;
+            } catch (e) {
+                volume.error = e instanceof Error ? e.message : String(e);
+            }
+        }));
+        return result;
     }
 
     async joinContainerTerminal(socket: DockgeSocket, serviceName: string, shell : string = "sh", index: number = 0) {

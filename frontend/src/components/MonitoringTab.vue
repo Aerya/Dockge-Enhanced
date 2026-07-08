@@ -73,6 +73,59 @@
 
         <!-- ═══ SECTION 2 : PARAMÈTRES D'AFFICHAGE ═══ -->
         <div class="shadow-box big-padding mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="microchip" class="me-2" />{{ $t('watcher.monitoring.hostHeading') }}
+                </h5>
+                <button class="btn btn-sm btn-normal" @click="loadHostStats">
+                    <font-awesome-icon icon="sync" class="me-1" />{{ $t('refresh') }}
+                </button>
+            </div>
+            <div v-if="hostStats" class="host-grid">
+                <div class="host-item">
+                    <span>{{ $t('watcher.monitoring.hostCpu') }}</span>
+                    <strong>{{ hostStats.cpuModel || 'CPU' }} · {{ hostStats.cpuCores }} {{ $t('watcher.monitoring.hostCores') }}</strong>
+                </div>
+                <div class="host-item">
+                    <span>{{ $t('watcher.monitoring.hostUptime') }}</span>
+                    <strong>{{ formatUptime(hostStats.uptimeSeconds) }}</strong>
+                </div>
+                <div class="host-item">
+                    <span>{{ $t('watcher.monitoring.hostLoad') }}</span>
+                    <strong>{{ hostStats.loadAverage.map(n => n.toFixed(2)).join(' / ') }}</strong>
+                    <small v-if="hostStats.processCount !== null">{{ hostStats.processCount }} {{ $t('watcher.monitoring.hostProcesses') }}</small>
+                </div>
+                <div class="host-item">
+                    <span>{{ $t('watcher.monitoring.hostUpdates') }}</span>
+                    <strong>
+                        <template v-if="hostStats.updates.available !== null">{{ hostStats.updates.available }}</template>
+                        <template v-else>{{ $t('notAvailableShort') }}</template>
+                    </strong>
+                    <small v-if="hostStats.updates.manager">{{ hostStats.updates.manager }}</small>
+                </div>
+            </div>
+            <div v-if="hostStats?.perCoreCpu?.length" class="core-grid mt-3">
+                <div v-for="(core, index) in hostStats.perCoreCpu" :key="index" class="core-meter">
+                    <span>CPU{{ index + 1 }}</span>
+                    <div class="core-bar"><span :style="{ width: `${core}%` }"></span></div>
+                    <strong>{{ core }}%</strong>
+                </div>
+            </div>
+            <div v-if="hostStats" class="temperature-grid mt-3">
+                <div>
+                    <h6>{{ $t('watcher.monitoring.hostCpuTemps') }}</h6>
+                    <span v-if="!hostStats.temperatures.cpu.length" class="text-muted small">{{ $t('notAvailableShort') }}</span>
+                    <span v-for="temp in hostStats.temperatures.cpu" :key="temp.label" class="temp-chip">{{ temp.label }}: {{ temp.celsius }} °C</span>
+                </div>
+                <div>
+                    <h6>{{ $t('watcher.monitoring.hostDiskTemps') }}</h6>
+                    <span v-if="!hostStats.temperatures.disks.length" class="text-muted small">{{ $t('notAvailableShort') }}</span>
+                    <span v-for="temp in hostStats.temperatures.disks" :key="temp.label" class="temp-chip">{{ temp.label }}: {{ temp.celsius }} °C</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="shadow-box big-padding mb-4">
             <h5 class="settings-subheading mb-3">
                 <font-awesome-icon icon="display" class="me-2" />{{ $t('watcher.monitoring.displayHeading') }}
             </h5>
@@ -640,6 +693,25 @@ interface Overview {
     }[];
 }
 
+interface HostStats {
+    cpuModel: string;
+    cpuCores: number;
+    perCoreCpu: number[];
+    loadAverage: number[];
+    processCount: number | null;
+    uptimeSeconds: number;
+    temperatures: {
+        cpu: { label: string; celsius: number }[];
+        disks: { label: string; celsius: number }[];
+    };
+    updates: {
+        available: number | null;
+        security: number | null;
+        manager: string | null;
+        error?: string;
+    };
+}
+
 // ─── API helper ───────────────────────────────────────────────────
 
 const API = "/api";
@@ -666,6 +738,7 @@ const overview = ref<Overview>({
     crashes: [],
     health: [],
 });
+const hostStats = ref<HostStats | null>(null);
 
 const monSettings = ref<MonitoringSettings>({
     crashLoopEnabled: false,
@@ -746,6 +819,17 @@ function formatAge(minutes: number | null): string {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
     return m > 0 ? `${h}h ${m}min` : `${h}h`;
+}
+
+function formatUptime(seconds: number): string {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const parts = [];
+    if (days > 0) parts.push(`${days} j`);
+    if (hours > 0) parts.push(`${hours} h`);
+    parts.push(`${minutes} min`);
+    return parts.join(" ");
 }
 
 function maskWebhook(url: string): string {
@@ -889,6 +973,14 @@ async function loadOverview() {
     }
 }
 
+async function loadHostStats() {
+    const res = await api("GET", "/system/stats");
+    if (res.ok) {
+        const data = res.data as { host?: HostStats };
+        hostStats.value = data.host ?? null;
+    }
+}
+
 async function loadSettings() {
     const [settingsRes, displayRes] = await Promise.all([
         api("GET", "/monitoring/settings"),
@@ -1000,7 +1092,7 @@ async function stopKula() {
 let overviewPoller: Poller | null = null;
 
 onMounted(async () => {
-    await Promise.all([loadOverview(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadExclusions()]);
+    await Promise.all([loadOverview(), loadHostStats(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadExclusions()]);
     // Overview : cadence selon le mode + pause si onglet caché
     overviewPoller = makePoller({ fetch: loadOverview, interval: POLL.overview });
     overviewPoller.start();
@@ -1070,6 +1162,92 @@ onUnmounted(() => {
 }
 
 /* ── Toast (clone du BackupTab) ── */
+.host-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.host-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 8px;
+    background: rgba(255,255,255,.035);
+}
+
+.host-item span,
+.host-item small {
+    color: #9ca3af;
+    font-size: .75rem;
+}
+
+.host-item strong {
+    color: #e5e7eb;
+    font-size: .95rem;
+    overflow-wrap: anywhere;
+}
+
+.core-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 14px;
+}
+
+.core-meter {
+    display: grid;
+    grid-template-columns: 48px 1fr 44px;
+    align-items: center;
+    gap: 8px;
+    font-size: .75rem;
+}
+
+.core-bar {
+    height: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255,255,255,.1);
+}
+
+.core-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #60a5fa;
+}
+
+.temperature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.temperature-grid h6 {
+    margin-bottom: 8px;
+    color: #d1d5db;
+}
+
+.temp-chip {
+    display: inline-flex;
+    margin: 0 6px 6px 0;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.08);
+    color: #e5e7eb;
+    font-size: .75rem;
+}
+
+@media (max-width: 700px) {
+    .host-grid,
+    .core-grid,
+    .temperature-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .toast-float {
     position: fixed;
     bottom: 24px;

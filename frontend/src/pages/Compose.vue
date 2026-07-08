@@ -210,6 +210,37 @@
                         <div class="terminal-toolbar mb-3">
                             <h4 class="mb-0">{{ $t("terminal") }}</h4>
                             <div class="terminal-toolbar-right">
+                                <div class="terminal-log-since">
+                                    <label class="form-label mb-0 small text-muted" for="log-since-select">{{ $t("logSince") }}</label>
+                                    <select
+                                        id="log-since-select"
+                                        v-model="selectedLogSince"
+                                        class="form-select form-select-sm"
+                                        @change="joinSelectedLogTerminal"
+                                    >
+                                        <option value="">{{ $t("logSinceTail") }}</option>
+                                        <option value="24h">{{ $t("logSince24h") }}</option>
+                                        <option value="72h">{{ $t("logSince3d") }}</option>
+                                        <option value="168h">{{ $t("logSince7d") }}</option>
+                                        <option value="336h">{{ $t("logSince14d") }}</option>
+                                    </select>
+                                </div>
+                                <div class="terminal-log-search input-group input-group-sm">
+                                    <span class="input-group-text"><font-awesome-icon icon="search" /></span>
+                                    <input
+                                        v-model="logSearch"
+                                        type="search"
+                                        class="form-control"
+                                        :placeholder="$t('logSearchPlaceholder')"
+                                        @keyup.enter="searchLogs(false)"
+                                    />
+                                    <button class="btn btn-normal" :title="$t('logSearchPrevious')" @click="searchLogs(true)">
+                                        <font-awesome-icon icon="chevron-up" />
+                                    </button>
+                                    <button class="btn btn-normal" :title="$t('logSearchNext')" @click="searchLogs(false)">
+                                        <font-awesome-icon icon="chevron-down" />
+                                    </button>
+                                </div>
                                 <button
                                     class="btn btn-sm"
                                     :class="logTimestamps ? 'btn-primary' : 'btn-normal'"
@@ -245,6 +276,31 @@
                             :rows="combinedTerminalRows"
                             :cols="combinedTerminalCols"
                         ></Terminal>
+                    </div>
+
+                    <div v-show="!isEditMode" class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h4 class="mb-0">{{ $t("stackVolumeUsage") }}</h4>
+                            <button class="btn btn-sm btn-normal" :disabled="volumeUsageLoading" @click="loadVolumeUsage">
+                                <span v-if="volumeUsageLoading" class="spinner-border spinner-border-sm me-1" />
+                                <font-awesome-icon v-else icon="sync" class="me-1" />{{ $t("refresh") }}
+                            </button>
+                        </div>
+                        <div class="shadow-box stack-volume-box">
+                            <div v-if="volumeUsage.length === 0 && !volumeUsageLoading" class="text-muted small">
+                                {{ $t("stackVolumeUsageEmpty") }}
+                            </div>
+                            <div v-for="volume in volumeUsage" :key="volume.source + volume.destination" class="stack-volume-row">
+                                <div class="stack-volume-main">
+                                    <code>{{ volume.destination }}</code>
+                                    <span class="text-muted small">{{ volume.service }}</span>
+                                </div>
+                                <div class="stack-volume-size" :title="volume.source">
+                                    <span v-if="volume.size !== null">{{ formatBytes(volume.size) }}</span>
+                                    <span v-else class="text-muted">{{ $t("notAvailableShort") }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-lg-6">
@@ -518,6 +574,11 @@ export default {
             stopServiceStatusTimeout: false,
             selectedLogService: "",
             joinedLogService: "",
+            selectedLogSince: "",
+            joinedLogSince: "",
+            logSearch: "",
+            volumeUsage: [],
+            volumeUsageLoading: false,
             containersExpanded: true,
             autoUpdateSaving: {},
         };
@@ -593,7 +654,8 @@ export default {
                 return "";
             }
             const base = getStackLogsTerminalName(this.endpoint, this.stack.name, this.selectedLogService);
-            return this.logTimestamps ? base + "_ts" : base;
+            const since = this.selectedLogSince ? "-since-" + this.selectedLogSince.replace(/[^a-zA-Z0-9_-]/g, "") : "";
+            return this.logTimestamps ? base + since + "_ts" : base + since;
         },
 
         logServiceOptions() {
@@ -825,7 +887,7 @@ export default {
             console.debug("leaveCombinedTerminal", this.endpoint, this.stack.name);
             this.$root.emitAgent(this.endpoint, "leaveCombinedTerminal", this.stack.name, () => {});
             if (this.joinedLogService !== undefined) {
-                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, this.logTimestamps, () => {});
+                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, this.logTimestamps, this.joinedLogSince, () => {});
             }
         },
 
@@ -841,15 +903,18 @@ export default {
             }
 
             const previousService = this.joinedLogService;
+            const previousSince = this.joinedLogSince;
             const nextService = this.selectedLogService;
+            const nextSince = this.selectedLogSince;
 
             if (previousService !== undefined) {
-                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, previousService, this.logTimestamps, () => {});
+                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, previousService, this.logTimestamps, previousSince, () => {});
             }
 
-            this.$root.emitAgent(this.endpoint, "joinStackLogsTerminal", this.stack.name, nextService, this.logTimestamps, (res) => {
+            this.$root.emitAgent(this.endpoint, "joinStackLogsTerminal", this.stack.name, nextService, this.logTimestamps, nextSince, (res) => {
                 if (res.ok) {
                     this.joinedLogService = nextService;
+                    this.joinedLogSince = nextSince;
                     this.$nextTick(() => {
                         this.$refs.combinedTerminal?.bind(this.endpoint, this.selectedLogTerminalName);
                     });
@@ -863,10 +928,37 @@ export default {
             // Quitte l'ancien terminal (état ACTUEL avant bascule) et rejoint le nouveau
             const currentTs = this.logTimestamps;
             if (this.joinedLogService !== undefined) {
-                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, currentTs, () => {});
+                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, currentTs, this.joinedLogSince, () => {});
             }
             this.logTimestamps = !currentTs;
             this.joinSelectedLogTerminal();
+        },
+
+        searchLogs(previous) {
+            this.$refs.combinedTerminal?.search(this.logSearch, previous);
+        },
+
+        loadVolumeUsage() {
+            if (!this.stack.name) {
+                return;
+            }
+            this.volumeUsageLoading = true;
+            this.$root.emitAgent(this.endpoint, "getStackVolumeUsage", this.stack.name, (res) => {
+                this.volumeUsageLoading = false;
+                if (res.ok) {
+                    this.volumeUsage = res.data ?? [];
+                } else {
+                    this.$root.toastRes(res);
+                }
+            });
+        },
+
+        formatBytes(bytes) {
+            if (bytes >= 1024 ** 4) return (bytes / 1024 ** 4).toFixed(1) + " TB";
+            if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(1) + " GB";
+            if (bytes >= 1024 ** 2) return Math.round(bytes / 1024 ** 2) + " MB";
+            if (bytes >= 1024) return Math.round(bytes / 1024) + " KB";
+            return bytes + " B";
         },
 
         toggleContainers() {
@@ -941,6 +1033,7 @@ export default {
                     this.yamlCodeChange();
                     this.processing = false;
                     this.bindTerminal();
+                    this.loadVolumeUsage();
                 } else {
                     this.$root.toastRes(res);
                 }
@@ -1355,9 +1448,12 @@ export default {
     align-items: center;
     gap: 8px;
     margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
-.terminal-service-filter {
+.terminal-service-filter,
+.terminal-log-since {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1365,6 +1461,45 @@ export default {
     .form-select {
         width: min(220px, 42vw);
     }
+}
+
+.terminal-log-search {
+    width: min(300px, 72vw);
+}
+
+.stack-volume-box {
+    padding: 10px 12px;
+}
+
+.stack-volume-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(127, 127, 127, 0.12);
+
+    &:last-child {
+        border-bottom: 0;
+    }
+}
+
+.stack-volume-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    code {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.stack-volume-size {
+    flex: 0 0 auto;
+    font-weight: 600;
 }
 
 .stack-meta-bar {

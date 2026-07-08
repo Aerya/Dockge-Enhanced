@@ -166,7 +166,11 @@ export class TerminalSocketHandler extends AgentSocketHandler {
         });
 
         // Join filtered stack logs terminal
-        agentSocket.on("joinStackLogsTerminal", async (stackName : unknown, serviceName : unknown, timestamps : unknown, callback) => {
+        agentSocket.on("joinStackLogsTerminal", async (stackName : unknown, serviceName : unknown, timestamps : unknown, since : unknown, callback) => {
+            if (typeof since === "function") {
+                callback = since;
+                since = "";
+            }
             try {
                 checkLogin(socket);
 
@@ -177,10 +181,13 @@ export class TerminalSocketHandler extends AgentSocketHandler {
                 if (serviceName !== undefined && typeof(serviceName) !== "string") {
                     throw new ValidationError("Service name must be a string.");
                 }
+                if (since !== undefined && typeof(since) !== "string") {
+                    throw new ValidationError("Since must be a string.");
+                }
 
                 const ts = timestamps === true;
                 const stack = await Stack.getStack(server, stackName);
-                await stack.joinLogsTerminal(socket, serviceName || "", ts);
+                await stack.joinLogsTerminal(socket, serviceName || "", ts, since || "");
 
                 callbackResult({
                     ok: true,
@@ -191,7 +198,11 @@ export class TerminalSocketHandler extends AgentSocketHandler {
         });
 
         // Leave filtered stack logs terminal
-        agentSocket.on("leaveStackLogsTerminal", async (stackName : unknown, serviceName : unknown, timestamps : unknown, callback) => {
+        agentSocket.on("leaveStackLogsTerminal", async (stackName : unknown, serviceName : unknown, timestamps : unknown, since : unknown, callback) => {
+            if (typeof since === "function") {
+                callback = since;
+                since = "";
+            }
             try {
                 checkLogin(socket);
 
@@ -202,10 +213,13 @@ export class TerminalSocketHandler extends AgentSocketHandler {
                 if (serviceName !== undefined && typeof(serviceName) !== "string") {
                     throw new ValidationError("Service name must be a string.");
                 }
+                if (since !== undefined && typeof(since) !== "string") {
+                    throw new ValidationError("Since must be a string.");
+                }
 
                 const ts = timestamps === true;
                 const stack = await Stack.getStack(server, stackName);
-                await stack.leaveLogsTerminal(socket, serviceName || "", ts);
+                await stack.leaveLogsTerminal(socket, serviceName || "", ts, since || "");
 
                 callbackResult({
                     ok: true,

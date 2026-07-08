@@ -279,11 +279,11 @@ export function getCombinedTerminalName(endpoint : string, stack : string) {
     return "combined-" + endpoint + "-" + stack;
 }
 
-export function getStackLogsTerminalName(endpoint : string, stack : string, service = "") {
+export function getStackLogsTerminalName(endpoint : string, stack : string, service = "", since = "") {
     if (!service) {
-        return getCombinedTerminalName(endpoint, stack);
+        return getCombinedTerminalName(endpoint, stack) + (since ? "-since-" + since : "");
     }
-    return "combined-" + endpoint + "-" + stack + "-service-" + service;
+    return "combined-" + endpoint + "-" + stack + "-service-" + service + (since ? "-since-" + since : "");
 }
 
 export function getContainerTerminalName(endpoint : string, container : string) {

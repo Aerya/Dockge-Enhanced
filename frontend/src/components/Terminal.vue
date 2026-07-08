@@ -7,6 +7,7 @@
 <script>
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { SearchAddon } from "@xterm/addon-search";
 import { TERMINAL_COLS, TERMINAL_ROWS } from "../../../common/util-common";
 
 export default {
@@ -279,6 +280,28 @@ export default {
                 window.addEventListener("resize", this.onResizeEvent);
             }
             this.terminalFitAddOn.fit();
+        },
+
+        search(term, previous = false) {
+            if (!this.terminalSearchAddOn) {
+                this.terminalSearchAddOn = new SearchAddon();
+                this.terminal.loadAddon(this.terminalSearchAddOn);
+            }
+            if (!term) {
+                this.terminalSearchAddOn.clearDecorations();
+                return false;
+            }
+            const options = {
+                decorations: {
+                    matchBackground: "#664d03",
+                    matchOverviewRuler: "#f59e0b",
+                    activeMatchBackground: "#0d6efd",
+                    activeMatchColorOverviewRuler: "#0d6efd",
+                },
+            };
+            return previous
+                ? this.terminalSearchAddOn.findPrevious(term, options)
+                : this.terminalSearchAddOn.findNext(term, options);
         },
         /**
          * Handles the resize event of the terminal component.

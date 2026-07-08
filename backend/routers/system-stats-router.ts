@@ -28,6 +28,25 @@ interface CpuTimes {
     idle: number;
 }
 
+interface HostDetails {
+    cpuModel: string;
+    cpuCores: number;
+    perCoreCpu: number[];
+    loadAverage: number[];
+    processCount: number | null;
+    uptimeSeconds: number;
+    temperatures: {
+        cpu: { label: string; celsius: number }[];
+        disks: { label: string; celsius: number }[];
+    };
+    updates: {
+        available: number | null;
+        security: number | null;
+        manager: string | null;
+        error?: string;
+    };
+}
+
 async function readCpuTimes(): Promise<CpuTimes> {
     try {
         const content = await fs.readFile("/proc/stat", "utf8");
@@ -41,11 +60,29 @@ async function readCpuTimes(): Promise<CpuTimes> {
     }
 }
 
+async function readAllCpuTimes(): Promise<CpuTimes[]> {
+    try {
+        const content = await fs.readFile("/proc/stat", "utf8");
+        return content.split("\n")
+            .filter(line => /^cpu\d+\s/.test(line))
+            .map((line) => {
+                const parts = line.trim().split(/\s+/).slice(1).map(Number);
+                const idle = (parts[3] ?? 0) + (parts[4] ?? 0);
+                const total = parts.reduce((a, b) => a + b, 0);
+                return { total, idle };
+            });
+    } catch {
+        return [];
+    }
+}
+
 // ─── CPU : échantillonnage LAZY (piloté par les requêtes /stats) ──
 // Pas de setInterval permanent : on échantillonne seulement quand un client
 // poll réellement, au maximum 1×/intervalle. Aucun client → aucun calcul.
 let cpuPercent = 0;
 let lastCpuTimes: CpuTimes | null = null;
+let perCoreCpuPercent: number[] = [];
+let lastPerCoreCpuTimes: CpuTimes[] = [];
 let lastCpuSampleAt = 0;
 
 async function sampleCpuIfDue(): Promise<void> {
@@ -62,7 +99,115 @@ async function sampleCpuIfDue(): Promise<void> {
         }
     }
     lastCpuTimes   = current;
+
+    const cores = await readAllCpuTimes();
+    if (lastPerCoreCpuTimes.length === cores.length) {
+        perCoreCpuPercent = cores.map((core, index) => {
+            const previous = lastPerCoreCpuTimes[index];
+            const totalDiff = core.total - previous.total;
+            const idleDiff = core.idle - previous.idle;
+            if (totalDiff <= 0) return 0;
+            return Math.max(0, Math.min(100, Math.round((totalDiff - idleDiff) / totalDiff * 100)));
+        });
+    }
+    lastPerCoreCpuTimes = cores;
     lastCpuSampleAt = Date.now();
+}
+
+let hostDetailsCache: { at: number; data: HostDetails } | null = null;
+
+async function readHostDetails(): Promise<HostDetails> {
+    if (hostDetailsCache && Date.now() - hostDetailsCache.at < 60_000) {
+        return hostDetailsCache.data;
+    }
+
+    const cpus = os.cpus();
+    const data: HostDetails = {
+        cpuModel: cpus[0]?.model ?? "",
+        cpuCores: cpus.length,
+        perCoreCpu: perCoreCpuPercent,
+        loadAverage: os.loadavg(),
+        processCount: await readProcessCount(),
+        uptimeSeconds: os.uptime(),
+        temperatures: await readTemperatures(),
+        updates: await readOsUpdates(),
+    };
+    hostDetailsCache = { at: Date.now(), data };
+    return data;
+}
+
+async function readProcessCount(): Promise<number | null> {
+    try {
+        const entries = await fs.readdir("/proc");
+        return entries.filter(name => /^\d+$/.test(name)).length;
+    } catch {
+        return null;
+    }
+}
+
+async function readTemperatures(): Promise<HostDetails["temperatures"]> {
+    const cpu: { label: string; celsius: number }[] = [];
+    const disks: { label: string; celsius: number }[] = [];
+
+    try {
+        const zones = await fs.readdir("/sys/class/thermal");
+        for (const zone of zones.filter(z => z.startsWith("thermal_zone"))) {
+            const base = `/sys/class/thermal/${zone}`;
+            const [type, tempRaw] = await Promise.all([
+                fs.readFile(`${base}/type`, "utf8").catch(() => zone),
+                fs.readFile(`${base}/temp`, "utf8").catch(() => ""),
+            ]);
+            const milli = Number.parseInt(tempRaw.trim(), 10);
+            if (Number.isFinite(milli) && milli > 0) {
+                cpu.push({ label: type.trim(), celsius: Math.round(milli / 100) / 10 });
+            }
+        }
+    } catch { /* not available */ }
+
+    try {
+        const { stdout } = await execAsync("command -v sensors >/dev/null 2>&1 && sensors -j", { timeout: 5000 });
+        const parsed = JSON.parse(stdout);
+        let index = 1;
+        for (const chip of Object.values(parsed) as any[]) {
+            for (const [label, values] of Object.entries(chip) as any[]) {
+                const input = values?.temp1_input ?? values?.temp2_input ?? values?.Package_id_0_input;
+                if (typeof input === "number" && !cpu.some(t => t.label === label)) {
+                    cpu.push({ label: label || `Core ${index++}`, celsius: Math.round(input * 10) / 10 });
+                }
+            }
+        }
+    } catch { /* optional */ }
+
+    try {
+        const block = await fs.readdir("/sys/block");
+        await Promise.all(block.filter(name => /^(sd|nvme|vd|xvd)/.test(name)).map(async (dev) => {
+            try {
+                const { stdout } = await execAsync(`smartctl -A /dev/${dev} 2>/dev/null | awk '/Temperature|Temperature_Celsius/ {print $10; exit}'`, { timeout: 5000 });
+                const value = Number.parseInt(stdout.trim(), 10);
+                if (Number.isFinite(value) && value > 0) {
+                    disks.push({ label: dev, celsius: value });
+                }
+            } catch { /* optional */ }
+        }));
+    } catch { /* optional */ }
+
+    return { cpu, disks };
+}
+
+async function readOsUpdates(): Promise<HostDetails["updates"]> {
+    const checks = [
+        { manager: "apt", command: "command -v apt >/dev/null 2>&1 && apt list --upgradable 2>/dev/null | tail -n +2" },
+        { manager: "apk", command: "command -v apk >/dev/null 2>&1 && apk version -l '<'" },
+        { manager: "dnf", command: "command -v dnf >/dev/null 2>&1 && dnf check-update -q || true" },
+    ];
+    for (const check of checks) {
+        try {
+            const { stdout } = await execAsync(check.command, { timeout: 15_000, maxBuffer: 1024 * 1024 });
+            const lines = stdout.split(/\r?\n/).filter(line => line.trim() && !line.startsWith("Listing"));
+            return { available: lines.length, security: null, manager: check.manager };
+        } catch { /* try next */ }
+    }
+    return { available: null, security: null, manager: null };
 }
 
 // ─── Stack stats collector ───────────────────────────────────────
@@ -257,6 +402,7 @@ export class SystemStatsRouter extends Router {
                         disk:  disks[0] ?? { mount: "/", used: 0, total: 0, percent: 0 },
                         disks,
                         diskDisplayMode,
+                        host: await readHostDetails(),
                     },
                     lowPowerMode: isLowPower(),
                 });

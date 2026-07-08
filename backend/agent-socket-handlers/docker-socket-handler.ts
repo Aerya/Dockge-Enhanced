@@ -117,6 +117,24 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("getStackVolumeUsage", async (stackName : unknown, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof(stackName) !== "string") {
+                    throw new ValidationError("Stack name must be a string");
+                }
+
+                const stack = await Stack.getStack(server, stackName);
+                callbackResult({
+                    ok: true,
+                    data: await stack.getVolumeUsage(),
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // requestStackList
         agentSocket.on("requestStackList", async (callback) => {
             try {
