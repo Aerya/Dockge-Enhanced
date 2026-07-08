@@ -95,18 +95,10 @@
                     <strong>{{ hostStats.loadAverage.map(n => n.toFixed(2)).join(' / ') }}</strong>
                     <small v-if="hostStats.processCount !== null">{{ hostStats.processCount }} {{ $t('watcher.monitoring.hostProcesses') }}</small>
                 </div>
-                <div class="host-item">
-                    <span>{{ $t('watcher.monitoring.hostUpdates') }}</span>
-                    <strong>
-                        <template v-if="hostStats.updates.available !== null">{{ hostStats.updates.available }}</template>
-                        <template v-else>{{ $t('notAvailableShort') }}</template>
-                    </strong>
-                    <small v-if="hostStats.updates.manager">{{ hostStats.updates.manager }}</small>
-                </div>
             </div>
             <div v-if="hostStats?.perCoreCpu?.length" class="core-grid mt-3">
                 <div v-for="(core, index) in hostStats.perCoreCpu" :key="index" class="core-meter">
-                    <span>CPU{{ index + 1 }}</span>
+                    <span>{{ $t('watcher.monitoring.hostCore') }} {{ index + 1 }}</span>
                     <div class="core-bar"><span :style="{ width: `${core}%` }"></span></div>
                     <strong>{{ core }}%</strong>
                 </div>
@@ -115,7 +107,7 @@
                 <div>
                     <h6>{{ $t('watcher.monitoring.hostCpuTemps') }}</h6>
                     <span v-if="!hostStats.temperatures.cpu.length" class="text-muted small">{{ $t('notAvailableShort') }}</span>
-                    <span v-for="temp in hostStats.temperatures.cpu" :key="temp.label" class="temp-chip">{{ temp.label }}: {{ temp.celsius }} °C</span>
+                    <span v-for="temp in hostStats.temperatures.cpu" :key="temp.label" class="temp-chip">{{ friendlyTempLabel(temp.label) }}: {{ temp.celsius }} °C</span>
                 </div>
                 <div>
                     <h6>{{ $t('watcher.monitoring.hostDiskTemps') }}</h6>
@@ -154,6 +146,36 @@
                         </label>
                     </div>
                     <small class="form-text">{{ $t('watcher.monitoring.lowPowerHint') }}</small>
+                </div>
+
+                <!-- Affichage barre haute -->
+                <div class="col-12">
+                    <label class="form-label small">
+                        <font-awesome-icon icon="display" class="me-1" />{{ $t('watcher.monitoring.navbarHostDisplay') }}
+                    </label>
+                    <div class="navbar-host-options">
+                        <div class="form-check form-switch">
+                            <input id="navbarCpuModel" v-model="hostNavbarDisplay.cpuModel" class="form-check-input" type="checkbox" role="switch" />
+                            <label class="form-check-label" for="navbarCpuModel">{{ $t('watcher.monitoring.navbarCpuModel') }}</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input id="navbarPerCoreCpu" v-model="hostNavbarDisplay.perCoreCpu" class="form-check-input" type="checkbox" role="switch" />
+                            <label class="form-check-label" for="navbarPerCoreCpu">{{ $t('watcher.monitoring.navbarPerCoreCpu') }}</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input id="navbarUptime" v-model="hostNavbarDisplay.uptime" class="form-check-input" type="checkbox" role="switch" />
+                            <label class="form-check-label" for="navbarUptime">{{ $t('watcher.monitoring.navbarUptime') }}</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input id="navbarCpuTemps" v-model="hostNavbarDisplay.cpuTemperatures" class="form-check-input" type="checkbox" role="switch" />
+                            <label class="form-check-label" for="navbarCpuTemps">{{ $t('watcher.monitoring.navbarCpuTemps') }}</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input id="navbarDiskTemps" v-model="hostNavbarDisplay.diskTemperatures" class="form-check-input" type="checkbox" role="switch" />
+                            <label class="form-check-label" for="navbarDiskTemps">{{ $t('watcher.monitoring.navbarDiskTemps') }}</label>
+                        </div>
+                    </div>
+                    <small class="form-text">{{ $t('watcher.monitoring.navbarHostDisplayHint') }}</small>
                 </div>
 
                 <!-- Partitions disque -->
@@ -704,12 +726,14 @@ interface HostStats {
         cpu: { label: string; celsius: number }[];
         disks: { label: string; celsius: number }[];
     };
-    updates: {
-        available: number | null;
-        security: number | null;
-        manager: string | null;
-        error?: string;
-    };
+}
+
+interface HostNavbarDisplay {
+    cpuModel: boolean;
+    perCoreCpu: boolean;
+    uptime: boolean;
+    cpuTemperatures: boolean;
+    diskTemperatures: boolean;
 }
 
 // ─── API helper ───────────────────────────────────────────────────
@@ -756,6 +780,13 @@ const monSettings = ref<MonitoringSettings>({
 
 const diskPartitions = ref<string[]>(["/"]);
 const diskDisplayMode = ref<"compact" | "bar">("compact");
+const hostNavbarDisplay = ref<HostNavbarDisplay>({
+    cpuModel: false,
+    perCoreCpu: false,
+    uptime: false,
+    cpuTemperatures: false,
+    diskTemperatures: false,
+});
 const diskDisplayExampleCells = [true, true, false, false, false, false, false, false, false, false];
 const newPartition   = ref("");
 const savingMon      = ref(false);
@@ -830,6 +861,17 @@ function formatUptime(seconds: number): string {
     if (hours > 0) parts.push(`${hours} h`);
     parts.push(`${minutes} min`);
     return parts.join(" ");
+}
+
+function friendlyTempLabel(label: string): string {
+    const match = label.match(/^Core\s+(\d+)$/i);
+    if (match) {
+        return `${t("watcher.monitoring.hostCore")} ${match[1]}`;
+    }
+    if (/processor|package|cpu/i.test(label)) {
+        return t("watcher.monitoring.hostProcessor");
+    }
+    return label;
 }
 
 function maskWebhook(url: string): string {
@@ -993,9 +1035,13 @@ async function loadSettings() {
         setLowPower(monSettings.value.lowPowerMode);
     }
     if (displayRes.ok) {
-        const d = displayRes.data as { diskPartitions?: string[]; diskDisplayMode?: "compact" | "bar" };
+        const d = displayRes.data as { diskPartitions?: string[]; diskDisplayMode?: "compact" | "bar"; hostNavbarDisplay?: Partial<HostNavbarDisplay> };
         diskPartitions.value = d.diskPartitions?.length ? d.diskPartitions : ["/"];
         diskDisplayMode.value = d.diskDisplayMode === "bar" ? "bar" : "compact";
+        hostNavbarDisplay.value = {
+            ...hostNavbarDisplay.value,
+            ...(d.hostNavbarDisplay ?? {}),
+        };
     }
 }
 
@@ -1031,6 +1077,7 @@ async function saveDisplaySettings() {
         const res = await api("POST", "/monitoring/display-settings", {
             diskPartitions: diskPartitions.value,
             diskDisplayMode: diskDisplayMode.value,
+            hostNavbarDisplay: hostNavbarDisplay.value,
         });
         showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
     } finally { savingDisplay.value = false; }
@@ -1240,10 +1287,18 @@ onUnmounted(() => {
     font-size: .75rem;
 }
 
+.navbar-host-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 18px;
+    max-width: 720px;
+}
+
 @media (max-width: 700px) {
     .host-grid,
     .core-grid,
-    .temperature-grid {
+    .temperature-grid,
+    .navbar-host-options {
         grid-template-columns: 1fr;
     }
 }

@@ -23,11 +23,11 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 ## Fonctionnalités
 
-🆕 **Tailles des volumes montés par stack** — Chaque page de stack affiche les volumes réellement montés par les conteneurs actifs, avec le service associé, le point de montage et la taille calculée via `du -sb` côté hôte Docker. Le bouton **Rafraîchir** relance le calcul à la demande, sans scan permanent.
+🆕 **Tailles des volumes montés par conteneur** — Chaque page de stack regroupe les volumes montés par conteneur, avec le service associé, le point de montage, le calcul de taille à la demande et un accès direct au navigateur **Fichiers** existant pour chaque mount.
 
 🆕 **Logs de stack avec période et recherche** — Le terminal de logs des pages compose peut charger les dernières lignes ou une fenêtre `24 h`, `3 jours`, `7 jours` ou `14 jours` via `docker compose logs --since`, tout en conservant le filtre par service et l'option d'horodatage. Une recherche intégrée permet de naviguer entre les occurrences dans le scrollback affiché.
 
-🆕 **Détails système hôte dans le Monitoring** — L'onglet **Monitoring** affiche désormais le modèle CPU, le nombre de cœurs, l'utilisation par cœur, les moyennes de charge 1/5/15 min, le nombre de processus, l'uptime, les températures CPU/disques disponibles et le nombre de mises à jour OS détectées quand l'environnement expose les outils nécessaires (`/proc`, `/sys`, `sensors`, `smartctl`, `apt`/`apk`/`dnf`).
+🆕 **Détails système hôte dans le Monitoring** — L'onglet **Monitoring** affiche désormais le modèle CPU, le nombre de cœurs, l'utilisation par cœur, les moyennes de charge 1/5/15 min, le nombre de processus, l'uptime et des températures CPU/disques lisibles quand l'environnement expose les outils nécessaires (`/proc`, `/sys`, `sensors`, `smartctl` ou les helpers disque Synology).
 
 **Authentification locale, bootstrap et proxy de confiance** — Le mode historique reste inchangé par défaut, sans nouvelle variable ni modification du Compose. Les déploiements automatisés peuvent créer le premier administrateur depuis un secret, tandis que le mode optionnel `trusted-proxy` accepte une identité transmise par OAuth2 Proxy, Traefik ForwardAuth ou un autre proxy uniquement lorsque la connexion provient d’un réseau explicitement autorisé. Les API REST et Socket.IO appliquent la même politique, `/setup` est verrouillé durablement après initialisation et aucun chemin technique ne doit être rendu public.
 

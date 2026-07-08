@@ -39,13 +39,23 @@ interface HostDetails {
         cpu: { label: string; celsius: number }[];
         disks: { label: string; celsius: number }[];
     };
-    updates: {
-        available: number | null;
-        security: number | null;
-        manager: string | null;
-        error?: string;
-    };
 }
+
+interface HostNavbarDisplay {
+    cpuModel: boolean;
+    perCoreCpu: boolean;
+    uptime: boolean;
+    cpuTemperatures: boolean;
+    diskTemperatures: boolean;
+}
+
+const DEFAULT_HOST_NAVBAR_DISPLAY: HostNavbarDisplay = {
+    cpuModel: false,
+    perCoreCpu: false,
+    uptime: false,
+    cpuTemperatures: false,
+    diskTemperatures: false,
+};
 
 async function readCpuTimes(): Promise<CpuTimes> {
     try {
@@ -117,23 +127,46 @@ async function sampleCpuIfDue(): Promise<void> {
 let hostDetailsCache: { at: number; data: HostDetails } | null = null;
 
 async function readHostDetails(): Promise<HostDetails> {
-    if (hostDetailsCache && Date.now() - hostDetailsCache.at < 60_000) {
+    if (hostDetailsCache && Date.now() - hostDetailsCache.at < 5_000) {
         return hostDetailsCache.data;
     }
 
     const cpus = os.cpus();
+    let perCore = perCoreCpuPercent;
+    if (perCore.length === 0 && cpus.length > 0) {
+        perCore = Array.from({ length: cpus.length }, () => 0);
+    }
     const data: HostDetails = {
         cpuModel: cpus[0]?.model ?? "",
         cpuCores: cpus.length,
-        perCoreCpu: perCoreCpuPercent,
+        perCoreCpu: perCore,
         loadAverage: os.loadavg(),
         processCount: await readProcessCount(),
         uptimeSeconds: os.uptime(),
         temperatures: await readTemperatures(),
-        updates: await readOsUpdates(),
     };
     hostDetailsCache = { at: Date.now(), data };
     return data;
+}
+
+async function readHostNavbarDisplay(): Promise<HostNavbarDisplay> {
+    const raw = await Settings.get("hostNavbarDisplay");
+    if (!raw) {
+        return { ...DEFAULT_HOST_NAVBAR_DISPLAY };
+    }
+    try {
+        const parsed = JSON.parse(raw) as Partial<HostNavbarDisplay>;
+        return {
+            ...DEFAULT_HOST_NAVBAR_DISPLAY,
+            cpuModel: Boolean(parsed.cpuModel),
+            perCoreCpu: Boolean(parsed.perCoreCpu),
+            uptime: Boolean(parsed.uptime),
+            cpuTemperatures: Boolean(parsed.cpuTemperatures),
+            diskTemperatures: Boolean(parsed.diskTemperatures),
+        };
+    } catch {
+        return { ...DEFAULT_HOST_NAVBAR_DISPLAY };
+    }
 }
 
 async function readProcessCount(): Promise<number | null> {
@@ -146,8 +179,55 @@ async function readProcessCount(): Promise<number | null> {
 }
 
 async function readTemperatures(): Promise<HostDetails["temperatures"]> {
-    const cpu: { label: string; celsius: number }[] = [];
+    const cpuByLabel = new Map<string, number>();
     const disks: { label: string; celsius: number }[] = [];
+    let coreIndex = 1;
+
+    const addCpuTemp = (rawLabel: string, rawChip: string, value: number) => {
+        if (!Number.isFinite(value) || value <= 0) {
+            return;
+        }
+        const chip = rawChip.toLowerCase();
+        const label = rawLabel.trim();
+        const low = label.toLowerCase();
+        const isCpu = /coretemp|k10temp|cpu|x86_pkg_temp|zenpower|soc_thermal/.test(chip)
+            || /core|package|cpu|tctl|tdie|x86_pkg_temp/.test(low);
+        if (!isCpu) {
+            return;
+        }
+
+        let friendly = label;
+        const coreMatch = low.match(/core\s*(\d+)/);
+        if (coreMatch) {
+            friendly = `Core ${Number(coreMatch[1]) + 1}`;
+        } else if (/package|x86_pkg_temp|tctl|tdie|cpu/.test(low)) {
+            friendly = "Processor";
+        } else if (!friendly || /^temp\d+$/i.test(friendly)) {
+            friendly = `Core ${coreIndex++}`;
+        }
+
+        cpuByLabel.set(friendly, Math.round(value * 10) / 10);
+    };
+
+    try {
+        const hwmons = await fs.readdir("/sys/class/hwmon");
+        await Promise.all(hwmons.map(async (hwmon) => {
+            const base = `/sys/class/hwmon/${hwmon}`;
+            const chip = (await fs.readFile(`${base}/name`, "utf8").catch(() => hwmon)).trim();
+            const files = await fs.readdir(base).catch(() => []);
+            await Promise.all(files
+                .filter(file => /^temp\d+_input$/.test(file))
+                .map(async (inputFile) => {
+                    const idx = inputFile.match(/^temp(\d+)_input$/)?.[1] ?? "";
+                    const [labelRaw, tempRaw] = await Promise.all([
+                        fs.readFile(`${base}/temp${idx}_label`, "utf8").catch(() => `temp${idx}`),
+                        fs.readFile(`${base}/${inputFile}`, "utf8").catch(() => ""),
+                    ]);
+                    const milli = Number.parseInt(tempRaw.trim(), 10);
+                    addCpuTemp(labelRaw, chip, milli / 1000);
+                }));
+        }));
+    } catch { /* optional */ }
 
     try {
         const zones = await fs.readdir("/sys/class/thermal");
@@ -159,7 +239,7 @@ async function readTemperatures(): Promise<HostDetails["temperatures"]> {
             ]);
             const milli = Number.parseInt(tempRaw.trim(), 10);
             if (Number.isFinite(milli) && milli > 0) {
-                cpu.push({ label: type.trim(), celsius: Math.round(milli / 100) / 10 });
+                addCpuTemp(type.trim(), type.trim(), milli / 1000);
             }
         }
     } catch { /* not available */ }
@@ -167,12 +247,15 @@ async function readTemperatures(): Promise<HostDetails["temperatures"]> {
     try {
         const { stdout } = await execAsync("command -v sensors >/dev/null 2>&1 && sensors -j", { timeout: 5000 });
         const parsed = JSON.parse(stdout);
-        let index = 1;
-        for (const chip of Object.values(parsed) as any[]) {
+        for (const [chipName, chip] of Object.entries(parsed) as any[]) {
             for (const [label, values] of Object.entries(chip) as any[]) {
-                const input = values?.temp1_input ?? values?.temp2_input ?? values?.Package_id_0_input;
-                if (typeof input === "number" && !cpu.some(t => t.label === label)) {
-                    cpu.push({ label: label || `Core ${index++}`, celsius: Math.round(input * 10) / 10 });
+                if (!values || typeof values !== "object") {
+                    continue;
+                }
+                for (const [key, input] of Object.entries(values)) {
+                    if (key.endsWith("_input") && typeof input === "number") {
+                        addCpuTemp(label, chipName, input);
+                    }
                 }
             }
         }
@@ -191,23 +274,22 @@ async function readTemperatures(): Promise<HostDetails["temperatures"]> {
         }));
     } catch { /* optional */ }
 
-    return { cpu, disks };
-}
+    try {
+        const { stdout } = await execAsync("command -v synodisk >/dev/null 2>&1 && synodisk --enum -temperature", { timeout: 5000 });
+        for (const line of stdout.split(/\r?\n/)) {
+            const match = line.match(/\b((?:sd|hd|nvme)\w+)\b.*?(\d{2,3})\s*(?:C|celsius|degree|$)/i);
+            if (match && !disks.some(d => d.label === match[1])) {
+                disks.push({ label: match[1], celsius: Number(match[2]) });
+            }
+        }
+    } catch { /* Synology optional */ }
 
-async function readOsUpdates(): Promise<HostDetails["updates"]> {
-    const checks = [
-        { manager: "apt", command: "command -v apt >/dev/null 2>&1 && apt list --upgradable 2>/dev/null | tail -n +2" },
-        { manager: "apk", command: "command -v apk >/dev/null 2>&1 && apk version -l '<'" },
-        { manager: "dnf", command: "command -v dnf >/dev/null 2>&1 && dnf check-update -q || true" },
-    ];
-    for (const check of checks) {
-        try {
-            const { stdout } = await execAsync(check.command, { timeout: 15_000, maxBuffer: 1024 * 1024 });
-            const lines = stdout.split(/\r?\n/).filter(line => line.trim() && !line.startsWith("Listing"));
-            return { available: lines.length, security: null, manager: check.manager };
-        } catch { /* try next */ }
-    }
-    return { available: null, security: null, manager: null };
+    return {
+        cpu: Array.from(cpuByLabel.entries())
+            .map(([label, celsius]) => ({ label, celsius }))
+            .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })),
+        disks: disks.sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })),
+    };
 }
 
 // ─── Stack stats collector ───────────────────────────────────────
@@ -403,6 +485,7 @@ export class SystemStatsRouter extends Router {
                         disks,
                         diskDisplayMode,
                         host: await readHostDetails(),
+                        hostNavbarDisplay: await readHostNavbarDisplay(),
                     },
                     lowPowerMode: isLowPower(),
                 });
