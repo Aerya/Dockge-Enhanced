@@ -183,6 +183,7 @@
     "logSince7d": "7 days",
     "logSince14d": "14 days",
     "logSearchPlaceholder": "Search logs",
+    "logSearchNoMatch": "No match in loaded logs.",
     "logSearchPrevious": "Previous match",
     "logSearchNext": "Next match",
     "stackVolumeUsage": "Mounted volumes",

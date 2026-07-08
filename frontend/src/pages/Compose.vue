@@ -184,7 +184,10 @@
                                 :image-update="imageUpdateForService(name)"
                                 :auto-update="autoUpdateForService(name)"
                                 :auto-update-saving="autoUpdateSaving[name] === true"
+                                :volume-usage="volumeUsageForService(name)"
+                                :volume-loading="volumeUsageLoading"
                                 @auto-update-change="setServiceAutoUpdate(name, $event)"
+                                @refresh-volume-usage="loadVolumeUsage"
                             />
                         </div>
                     </div>
@@ -278,57 +281,6 @@
                         ></Terminal>
                     </div>
 
-                    <div v-show="!isEditMode" class="mb-3">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h4 class="mb-0">{{ $t("stackVolumeUsage") }}</h4>
-                            <button class="btn btn-sm btn-normal" :disabled="volumeUsageLoading" @click="loadVolumeUsage">
-                                <span v-if="volumeUsageLoading" class="spinner-border spinner-border-sm me-1" />
-                                <font-awesome-icon v-else icon="sync" class="me-1" />{{ $t("refresh") }}
-                            </button>
-                        </div>
-                        <div class="shadow-box stack-volume-box">
-                            <div v-if="volumeUsage.length === 0 && !volumeUsageLoading" class="text-muted small">
-                                {{ $t("stackVolumeUsageEmpty") }}
-                            </div>
-                            <div v-for="container in volumeUsage" :key="container.id || container.name" class="stack-volume-container">
-                                <div class="stack-volume-container-header">
-                                    <div>
-                                        <strong>{{ container.service || container.name }}</strong>
-                                        <span class="text-muted small ms-2">{{ container.name }}</span>
-                                    </div>
-                                    <span class="badge bg-secondary">{{ container.state }}</span>
-                                </div>
-                                <div
-                                    v-for="volume in container.mounts"
-                                    :key="container.name + volume.source + volume.destination"
-                                    class="stack-volume-row"
-                                >
-                                    <div class="stack-volume-main">
-                                        <code>{{ volume.destination }}</code>
-                                        <span class="text-muted small text-truncate" :title="volume.source">
-                                            {{ volume.type === "volume" ? (volume.name || volume.source) : volume.source }}
-                                        </span>
-                                    </div>
-                                    <div class="stack-volume-actions">
-                                        <span class="stack-volume-size" :title="volume.error || volume.source">
-                                            <span v-if="volume.size !== null">{{ formatBytes(volume.size) }}</span>
-                                            <span v-else class="text-muted">{{ $t("notAvailableShort") }}</span>
-                                        </span>
-                                        <button class="btn btn-sm btn-normal" :title="$t('volumeBrowserTitle')" @click="openVolumeBrowser(container.service, volume.destination)">
-                                            <font-awesome-icon icon="folder-open" class="me-1" />{{ $t("files") }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <VolumeBrowser
-                            v-if="volumeBrowserService"
-                            ref="volumeBrowser"
-                            :stack-name="stack.name"
-                            :service-name="volumeBrowserService"
-                            :endpoint="endpoint"
-                        />
-                    </div>
                 </div>
                 <div class="col-lg-6">
                     <div class="editor-header mb-3">
@@ -496,7 +448,6 @@ import { ref } from "vue";
 import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
 import { useImageStatus } from "../composables/useImageStatus";
 import StackScheduleEditor from "../components/StackScheduleEditor.vue";
-import VolumeBrowser from "../components/VolumeBrowser.vue";
 
 const template = `
 services:
@@ -519,7 +470,6 @@ export default {
         CodeMirror,
         BModal,
         StackScheduleEditor,
-        VolumeBrowser,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
@@ -608,7 +558,6 @@ export default {
             logSearch: "",
             volumeUsage: [],
             volumeUsageLoading: false,
-            volumeBrowserService: "",
             containersExpanded: true,
             autoUpdateSaving: {},
         };
@@ -965,7 +914,10 @@ export default {
         },
 
         searchLogs(previous) {
-            this.$refs.combinedTerminal?.search(this.logSearch, previous);
+            const found = this.$refs.combinedTerminal?.search(this.logSearch, previous);
+            if (this.logSearch && found === false) {
+                this.$root.toastError(this.$t("logSearchNoMatch"));
+            }
         },
 
         loadVolumeUsage() {
@@ -983,19 +935,10 @@ export default {
             });
         },
 
-        openVolumeBrowser(serviceName, destination) {
-            this.volumeBrowserService = serviceName;
-            this.$nextTick(() => {
-                this.$refs.volumeBrowser?.open(destination);
-            });
-        },
-
-        formatBytes(bytes) {
-            if (bytes >= 1024 ** 4) return (bytes / 1024 ** 4).toFixed(1) + " TB";
-            if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(1) + " GB";
-            if (bytes >= 1024 ** 2) return Math.round(bytes / 1024 ** 2) + " MB";
-            if (bytes >= 1024) return Math.round(bytes / 1024) + " KB";
-            return bytes + " B";
+        volumeUsageForService(serviceName) {
+            return this.volumeUsage
+                .filter((item) => item.service === serviceName)
+                .flatMap((item) => item.mounts ?? []);
         },
 
         toggleContainers() {
@@ -1502,65 +1445,6 @@ export default {
 
 .terminal-log-search {
     width: min(300px, 72vw);
-}
-
-.stack-volume-box {
-    padding: 10px 12px;
-}
-
-.stack-volume-container {
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(127, 127, 127, 0.16);
-
-    &:last-child {
-        border-bottom: 0;
-    }
-}
-
-.stack-volume-container-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 4px;
-}
-
-.stack-volume-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 6px 0 6px 12px;
-
-    &:last-child {
-        border-bottom: 0;
-    }
-}
-
-.stack-volume-main {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-
-    code {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-}
-
-.stack-volume-size {
-    flex: 0 0 auto;
-    font-weight: 600;
-}
-
-.stack-volume-actions {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    flex: 0 0 auto;
 }
 
 .stack-meta-bar {
