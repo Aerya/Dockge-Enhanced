@@ -72,6 +72,9 @@ export default {
             cursorPosition: 0,
             lastSearchTerm: "",
             lastSearchLine: -1,
+            searchLines: [],
+            partialSearchLine: "",
+            suppressSelectionCopy: false,
         };
     },
     created() {
@@ -157,11 +160,13 @@ export default {
             // Workaround: normally this.name should be set, but it is not sometimes, so we use the parameter, but eventually this.name and name must be the same name
             if (name) {
                 this.$root.unbindTerminal(name);
-                this.$root.bindTerminal(endpoint, name, this.terminal);
+                this.resetSearchBuffer();
+                this.$root.bindTerminal(endpoint, name, this.terminalWriteProxy());
                 console.debug("Terminal bound via parameter: " + name);
             } else if (this.name) {
                 this.$root.unbindTerminal(this.name);
-                this.$root.bindTerminal(this.endpoint, this.name, this.terminal);
+                this.resetSearchBuffer();
+                this.$root.bindTerminal(this.endpoint, this.name, this.terminalWriteProxy());
                 console.debug("Terminal bound: " + this.name);
             } else {
                 console.debug("Terminal name not set");
@@ -287,9 +292,53 @@ export default {
             this.terminalFitAddOn.fit();
         },
 
+        terminalWriteProxy() {
+            return {
+                write: (data) => this.writeTerminalData(data),
+            };
+        },
+
+        writeTerminalData(data) {
+            this.appendSearchData(data);
+            this.terminal.write(data);
+        },
+
+        resetSearchBuffer() {
+            this.searchLines = [];
+            this.partialSearchLine = "";
+            this.lastSearchTerm = "";
+            this.lastSearchLine = -1;
+        },
+
+        appendSearchData(data) {
+            const plain = this.stripAnsi(String(data ?? ""))
+                .replace(/\r\n/g, "\n")
+                .replace(/\r/g, "\n");
+            const chunks = plain.split("\n");
+            if (chunks.length === 0) {
+                return;
+            }
+            this.partialSearchLine += chunks[0];
+            for (let index = 1; index < chunks.length; index++) {
+                this.searchLines.push(this.partialSearchLine);
+                this.partialSearchLine = chunks[index];
+            }
+            if (this.searchLines.length > 100000) {
+                this.searchLines.splice(0, this.searchLines.length - 100000);
+            }
+        },
+
+        stripAnsi(value) {
+            return value
+                .replace(/\x1B\][^\x07]*(?:\x07|\x1B\\)/g, "")
+                .replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, "")
+                .replace(/\x1B[@-Z\\-_]/g, "");
+        },
+
         search(term, previous = false) {
             if (!term) {
                 this.terminalSearchAddOn.clearDecorations();
+                this.terminal.clearSelection();
                 this.lastSearchTerm = "";
                 this.lastSearchLine = -1;
                 return false;
@@ -305,19 +354,37 @@ export default {
                     activeMatchColorOverviewRuler: "#0d6efd",
                 },
             };
+            this.suppressSelectionCopy = true;
             const addonFound = previous
                 ? this.terminalSearchAddOn.findPrevious(term, options)
                 : this.terminalSearchAddOn.findNext(term, options);
-            if (addonFound) {
-                return true;
-            }
             const match = this.findInBuffer(term, previous);
             if (match) {
-                this.terminal.scrollToLine(match.line);
-                this.terminal.select(match.column, match.line, term.length);
-                this.terminal.focus();
+                this.revealSearchMatch(match);
                 return true;
             }
+            const capturedMatch = this.findInCapturedLogs(term, previous);
+            if (capturedMatch) {
+                const bufferMatch = this.findBufferLineForText(capturedMatch.text, term, previous);
+                if (bufferMatch) {
+                    this.revealSearchMatch(bufferMatch);
+                    return true;
+                }
+            }
+            if (addonFound) {
+                const selection = this.terminal.getSelectionPosition();
+                if (selection?.start) {
+                    this.revealSearchMatch({
+                        line: selection.start.y,
+                        column: selection.start.x,
+                        text: "",
+                    });
+                }
+                return true;
+            }
+            window.setTimeout(() => {
+                this.suppressSelectionCopy = false;
+            }, 100);
             return false;
         },
 
@@ -346,10 +413,75 @@ export default {
                     return {
                         line: lineIndex,
                         column: line.indexOf(needle),
+                        text: line,
                     };
                 }
             }
             return null;
+        },
+
+        findInCapturedLogs(term, previous = false) {
+            const needle = term.toLowerCase();
+            const lines = this.partialSearchLine
+                ? [ ...this.searchLines, this.partialSearchLine ]
+                : this.searchLines;
+            const total = lines.length;
+            if (!needle || total <= 0) {
+                return null;
+            }
+
+            const start = previous ? total - 1 : 0;
+            const step = previous ? -1 : 1;
+            for (let offset = 0; offset < total; offset++) {
+                const index = (start + offset * step + total) % total;
+                const text = lines[index] ?? "";
+                if (text.toLowerCase().includes(needle)) {
+                    return { text, column: text.toLowerCase().indexOf(needle) };
+                }
+            }
+            return null;
+        },
+
+        findBufferLineForText(text, term, previous = false) {
+            const buffer = this.terminal.buffer.active;
+            const total = buffer.length;
+            const plainText = this.normalizeSearchText(text);
+            const needle = term.toLowerCase();
+            const start = previous ? total - 1 : 0;
+            const step = previous ? -1 : 1;
+            for (let offset = 0; offset < total; offset++) {
+                const lineIndex = (start + offset * step + total) % total;
+                const line = buffer.getLine(lineIndex)?.translateToString(true) ?? "";
+                const normalized = this.normalizeSearchText(line);
+                if (normalized.includes(plainText) || normalized.includes(needle)) {
+                    return {
+                        line: lineIndex,
+                        column: Math.max(0, normalized.indexOf(needle)),
+                        text: normalized,
+                    };
+                }
+            }
+            return null;
+        },
+
+        normalizeSearchText(value) {
+            return this.stripAnsi(String(value ?? ""))
+                .replace(/\s+/g, " ")
+                .trim()
+                .toLowerCase();
+        },
+
+        revealSearchMatch(match) {
+            const targetLine = Math.max(0, match.line - Math.floor(this.terminal.rows / 2));
+            this.terminal.scrollToLine(targetLine);
+            window.requestAnimationFrame(() => {
+                this.suppressSelectionCopy = true;
+                this.terminal.selectLines(match.line, match.line);
+                this.terminal.focus();
+                window.setTimeout(() => {
+                    this.suppressSelectionCopy = false;
+                }, 100);
+            });
         },
         /**
          * Handles the resize event of the terminal component.
@@ -423,6 +555,9 @@ export default {
          * Handle text selection in terminal - copy to clipboard
          */
         handleSelection() {
+            if (this.suppressSelectionCopy) {
+                return;
+            }
             const selectedText = this.terminal.getSelection();
             if (selectedText && selectedText.length > 0) {
                 this.copyToClipboard(selectedText);
