@@ -23,6 +23,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 ## Features
 
+🆕 **Clickable stack status summary** — The stack list header now shows total, active, stopped and inactive stack counts. Each counter filters the list directly, while the stopped and inactive counters include short tooltips explaining the difference.
+
 🆕 **Mounted volume sizes inside container cards** — Each stack page now shows mounted volumes directly inside each container card, with mount point, on-demand size calculation and direct access to the existing **Files** browser for each mount.
 
 🆕 **Stack logs with range and search** — The compose-page log terminal can load the latest lines or a `24 h`, `3 days`, `7 days` or `14 days` window through `docker compose logs --since`, while keeping the service filter and timestamp toggle. Built-in search lets you jump between matches in the displayed scrollback.
