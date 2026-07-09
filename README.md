@@ -17,7 +17,7 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
 
-> **Using it? Liking it? [⭐ Drop a star!](https://github.com/Aerya/Dockge-Enhanced/stargazers)** — takes two seconds.
+> **Using it? Liking it? [⭐ Drop a star!](https://github.com/Aerya/Dockge-Enhanced)** — takes two seconds.
 
 ---
 

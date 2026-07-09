@@ -17,7 +17,7 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
 
-> **Tu l'utilises ? Tu l'aimes ? [⭐ Mets une étoile !](https://github.com/Aerya/Dockge-Enhanced/stargazers)** — ça prend deux secondes.
+> **Tu l'utilises ? Tu l'aimes ? [⭐ Mets une étoile !](https://github.com/Aerya/Dockge-Enhanced)** — ça prend deux secondes.
 
 ---
 
