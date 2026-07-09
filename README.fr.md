@@ -23,6 +23,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 ## Fonctionnalités
 
+🆕 **Résumé cliquable des statuts de stacks** — L'en-tête de la liste affiche désormais le total des stacks, les actives, les arrêtées et les inactives. Chaque compteur filtre directement la liste, avec un tooltip court sur les compteurs Arrêtées et Inactives pour expliquer la différence.
+
 🆕 **Tailles des volumes montés dans les cartes conteneurs** — Chaque page de stack affiche les volumes montés directement dans l'encart de chaque conteneur, avec point de montage, calcul de taille à la demande et accès direct au navigateur **Fichiers** existant pour chaque mount.
 
 🆕 **Logs de stack avec période et recherche** — Le terminal de logs des pages compose peut charger les dernières lignes ou une fenêtre `24 h`, `3 jours`, `7 jours` ou `14 jours` via `docker compose logs --since`, tout en conservant le filtre par service et l'option d'horodatage. Une recherche intégrée permet de naviguer entre les occurrences dans le scrollback affiché.

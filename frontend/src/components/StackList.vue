@@ -7,7 +7,46 @@
                     {{ $t("Select") }}
                 </button>
 
-                <div class="placeholder"></div>
+                <div class="stack-summary" :aria-label="$t('stackSummaryAria')" role="group">
+                    <button
+                        class="stack-summary-pill stack-summary-pill--total"
+                        :class="{ selected: stackStatusFilter === 'all' }"
+                        type="button"
+                        @click="setStackStatusFilter('all')"
+                    >
+                        <span>{{ $t("stackSummaryStacks") }}</span>
+                        <strong>{{ stackSummary.total }}</strong>
+                    </button>
+                    <button
+                        class="stack-summary-pill stack-summary-pill--active"
+                        :class="{ selected: stackStatusFilter === 'active' }"
+                        type="button"
+                        @click="setStackStatusFilter('active')"
+                    >
+                        <span>{{ $t("stackSummaryActive") }}</span>
+                        <strong>{{ stackSummary.active }}</strong>
+                    </button>
+                    <button
+                        class="stack-summary-pill stack-summary-pill--stopped"
+                        :class="{ selected: stackStatusFilter === 'stopped' }"
+                        :title="$t('stackSummaryStoppedTooltip')"
+                        type="button"
+                        @click="setStackStatusFilter('stopped')"
+                    >
+                        <span>{{ $t("stackSummaryStopped") }}</span>
+                        <strong>{{ stackSummary.stopped }}</strong>
+                    </button>
+                    <button
+                        class="stack-summary-pill stack-summary-pill--inactive"
+                        :class="{ selected: stackStatusFilter === 'inactive' }"
+                        :title="$t('stackSummaryInactiveTooltip')"
+                        type="button"
+                        @click="setStackStatusFilter('inactive')"
+                    >
+                        <span>{{ $t("stackSummaryInactive") }}</span>
+                        <strong>{{ stackSummary.inactive }}</strong>
+                    </button>
+                </div>
                 <div class="search-wrapper">
                     <a v-if="searchText == ''" class="search-icon">
                         <font-awesome-icon icon="search" />
@@ -88,6 +127,7 @@ export default {
             disableSelectAllWatcher: false,
             selectedStacks: {},
             windowTop: 0,
+            stackStatusFilter: "all",
             filterState: {
                 status: null,
                 active: null,
@@ -120,7 +160,7 @@ export default {
          * @returns {Array} The sorted list of stacks.
          */
         sortedStackList() {
-            let result = Object.values(this.$root.completeStackList);
+            let result = this.allStacks;
 
             result = result.filter(stack => {
                 // filter by search text
@@ -140,6 +180,11 @@ export default {
                     activeMatch = this.filterState.active.includes(stack.active);
                 }
 
+                let statusSummaryMatch = true;
+                if (this.stackStatusFilter !== "all") {
+                    statusSummaryMatch = this.getStackStatusSummary(stack) === this.stackStatusFilter;
+                }
+
                 // filter by tags
                 let tagsMatch = true;
                 if (this.filterState.tags != null && this.filterState.tags.length > 0) {
@@ -148,7 +193,7 @@ export default {
                         .length > 0;
                 }
 
-                return searchTextMatch && activeMatch && tagsMatch;
+                return searchTextMatch && activeMatch && statusSummaryMatch && tagsMatch;
             });
 
             result.sort((m1, m2) => {
@@ -190,13 +235,41 @@ export default {
             return result;
         },
 
+        allStacks() {
+            return Object.values(this.$root.completeStackList);
+        },
+
+        stackSummary() {
+            const summary = {
+                total: 0,
+                active: 0,
+                stopped: 0,
+                inactive: 0,
+            };
+
+            for (const stack of this.allStacks) {
+                const status = this.getStackStatusSummary(stack);
+                summary.total += 1;
+
+                if (status === "active") {
+                    summary.active += 1;
+                } else if (status === "stopped") {
+                    summary.stopped += 1;
+                } else {
+                    summary.inactive += 1;
+                }
+            }
+
+            return summary;
+        },
+
         isDarkTheme() {
             return document.body.classList.contains("dark");
         },
 
         stackListStyle() {
             //let listHeaderHeight = 107;
-            let listHeaderHeight = 60;
+            let listHeaderHeight = window.innerWidth > 770 ? 64 : 112;
 
             if (this.selectMode) {
                 listHeaderHeight += 42;
@@ -216,7 +289,7 @@ export default {
          * @returns {boolean} True if any filter is active, false otherwise.
          */
         filtersActive() {
-            return this.filterState.status != null || this.filterState.active != null || this.filterState.tags != null || this.searchText !== "";
+            return this.filterState.status != null || this.filterState.active != null || this.filterState.tags != null || this.stackStatusFilter !== "all" || this.searchText !== "";
         }
     },
     watch: {
@@ -276,6 +349,30 @@ export default {
          */
         clearSearchText() {
             this.searchText = "";
+        },
+        /**
+         * Set the stack summary status filter.
+         * @param {string} statusFilter Status filter to apply
+         * @returns {void}
+         */
+        setStackStatusFilter(statusFilter) {
+            this.stackStatusFilter = statusFilter;
+        },
+        /**
+         * Return the compact summary bucket for a stack status.
+         * @param {object} stack Stack to classify
+         * @returns {string} Summary status bucket
+         */
+        getStackStatusSummary(stack) {
+            if (stack.status === RUNNING) {
+                return "active";
+            }
+
+            if (stack.status === EXITED) {
+                return "stopped";
+            }
+
+            return "inactive";
         },
         /**
          * Update the StackList Filter
@@ -381,6 +478,7 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
 }
 
 .header-filter {
@@ -399,6 +497,7 @@ export default {
 .search-wrapper {
     display: flex;
     align-items: center;
+    flex: 0 0 auto;
 }
 
 .search-icon {
@@ -418,6 +517,97 @@ export default {
 
 .search-input {
     max-width: 15em;
+}
+
+.stack-summary {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.stack-summary-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 4px 9px;
+    border: 1px solid rgba(120, 138, 156, 0.35);
+    border-radius: 8px;
+    background: rgba(120, 138, 156, 0.08);
+    color: #334155;
+    font-size: 0.78rem;
+    line-height: 1;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+
+    .dark & {
+        color: $dark-font-color;
+    }
+
+    &:hover,
+    &.selected {
+        border-color: rgba(82, 186, 255, 0.7);
+        background: rgba(82, 186, 255, 0.14);
+    }
+
+    strong {
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+}
+
+.stack-summary-pill--active {
+    border-color: rgba(84, 207, 150, 0.45);
+    background: rgba(84, 207, 150, 0.13);
+
+    &.selected,
+    &:hover {
+        border-color: rgba(84, 207, 150, 0.8);
+        background: rgba(84, 207, 150, 0.2);
+    }
+}
+
+.stack-summary-pill--stopped {
+    border-color: rgba(224, 183, 86, 0.45);
+    background: rgba(224, 183, 86, 0.13);
+
+    &.selected,
+    &:hover {
+        border-color: rgba(224, 183, 86, 0.85);
+        background: rgba(224, 183, 86, 0.22);
+    }
+}
+
+.stack-summary-pill--inactive {
+    border-color: rgba(148, 163, 184, 0.38);
+    background: rgba(148, 163, 184, 0.1);
+
+    &.selected,
+    &:hover {
+        border-color: rgba(148, 163, 184, 0.72);
+        background: rgba(148, 163, 184, 0.18);
+    }
+}
+
+@media (max-width: 770px) {
+    .header-top {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .search-wrapper {
+        width: 100%;
+    }
+
+    .search-wrapper form,
+    .search-input {
+        width: 100%;
+        max-width: none;
+    }
 }
 
 .stack-item {
