@@ -337,7 +337,11 @@ export default {
 
         search(term, previous = false) {
             if (!term) {
-                this.terminalSearchAddOn.clearDecorations();
+                try {
+                    this.terminalSearchAddOn.clearDecorations();
+                } catch (error) {
+                    console.debug("xterm search addon cleanup failed", error);
+                }
                 this.terminal.clearSelection();
                 this.lastSearchTerm = "";
                 this.lastSearchLine = -1;
@@ -347,17 +351,16 @@ export default {
                 caseSensitive: false,
                 wholeWord: false,
                 regex: false,
-                decorations: {
-                    matchBackground: "#664d03",
-                    matchOverviewRuler: "#f59e0b",
-                    activeMatchBackground: "#0d6efd",
-                    activeMatchColorOverviewRuler: "#0d6efd",
-                },
             };
             this.suppressSelectionCopy = true;
-            const addonFound = previous
-                ? this.terminalSearchAddOn.findPrevious(term, options)
-                : this.terminalSearchAddOn.findNext(term, options);
+            let addonFound = false;
+            try {
+                addonFound = previous
+                    ? this.terminalSearchAddOn.findPrevious(term, options)
+                    : this.terminalSearchAddOn.findNext(term, options);
+            } catch (error) {
+                console.debug("xterm search addon failed, using log search fallback", error);
+            }
             const match = this.findInBuffer(term, previous);
             if (match) {
                 this.revealSearchMatch(match);

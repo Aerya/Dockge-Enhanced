@@ -235,6 +235,7 @@
                                         type="search"
                                         class="form-control"
                                         :placeholder="$t('logSearchPlaceholder')"
+                                        @input="scheduleLogSearch"
                                         @keyup.enter="searchLogs(false)"
                                     />
                                     <button class="btn btn-normal" :title="$t('logSearchPrevious')" @click="searchLogs(true)">
@@ -556,6 +557,7 @@ export default {
             selectedLogSince: "",
             joinedLogSince: "",
             logSearch: "",
+            logSearchTimer: null,
             volumeUsage: [],
             volumeUsageLoading: false,
             containersExpanded: true,
@@ -789,6 +791,9 @@ export default {
     unmounted() {
         document.removeEventListener("visibilitychange", this.onVisibilityServiceStatus);
         clearTimeout(serviceStatusTimeout);
+        if (this.logSearchTimer) {
+            clearTimeout(this.logSearchTimer);
+        }
     },
     methods: {
         relativeTime(iso) {
@@ -918,6 +923,16 @@ export default {
             if (this.logSearch && found === false) {
                 this.$root.toastError(this.$t("logSearchNoMatch"));
             }
+        },
+
+        scheduleLogSearch() {
+            if (this.logSearchTimer) {
+                clearTimeout(this.logSearchTimer);
+            }
+            this.logSearchTimer = setTimeout(() => {
+                this.logSearchTimer = null;
+                this.$refs.combinedTerminal?.search(this.logSearch, false);
+            }, 250);
         },
 
         loadVolumeUsage() {
@@ -1437,6 +1452,10 @@ export default {
     display: flex;
     align-items: center;
     gap: 8px;
+
+    .form-label {
+        color: #9ca3af !important;
+    }
 
     .form-select {
         width: min(220px, 42vw);
