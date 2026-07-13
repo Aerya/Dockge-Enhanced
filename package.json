@@ -20,7 +20,7 @@
         "@homebridge/node-pty-prebuilt-multiarch": "0.13.1",
         "@inventage/envsubst": "^0.17.0",
         "@louislam/sqlite3": "~15.1.6",
-        "@xterm/addon-search": "^0.16.0-beta.99",
+        "@xterm/addon-search": "^0.17.0-beta.288",
         "axios": "^1.18.1",
         "bcryptjs": "~2.4.3",
         "check-password-strength": "~2.0.10",
