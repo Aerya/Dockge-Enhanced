@@ -33,6 +33,7 @@ updates:
       # Une mise à jour automatique pourrait casser le terminal ou les toasts.
       - dependency-name: "@xterm/xterm"
       - dependency-name: "@xterm/addon-fit"
+      - dependency-name: "@xterm/addon-search"
       - dependency-name: "xterm-addon-web-links"
       - dependency-name: "vue-toastification"
 
