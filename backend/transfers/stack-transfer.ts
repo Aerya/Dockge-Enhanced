@@ -424,6 +424,48 @@ async function writeTransferFiles(dir: string, request: Pick<StackTransferReques
     return mappedOverride;
 }
 
+export async function refreshImportedStackConfiguration(server: DockgeServer, targetName: string, request: Pick<StackTransferRequest, "composeYAML" | "composeENV" | "composeOverrideYAML" | "mappings">): Promise<string> {
+    const targetDir = path.join(server.stacksDir, targetName);
+    if (!(await fileExists(targetDir))) {
+        throw new ValidationError("Target replica stack does not exist");
+    }
+    const tempDir = path.join(server.stacksDir, `.dockge-replication-config-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    const names = [ "compose.yaml", ".env", "compose.override.yaml" ];
+    const previous = new Map<string, Buffer | null>();
+    try {
+        const mappedOverride = await writeTransferFiles(tempDir, request);
+        await runDocker(composeArgs(server, tempDir, targetName, [ "config", "--format", "json" ]), tempDir);
+        for (const name of names) {
+            previous.set(name, await fsAsync.readFile(path.join(targetDir, name)).catch(() => null));
+        }
+        for (const name of names) {
+            const source = path.join(tempDir, name);
+            const destination = path.join(targetDir, name);
+            if (await fileExists(source)) {
+                await fsAsync.rename(source, `${destination}.replication-new`);
+                await fsAsync.rename(`${destination}.replication-new`, destination);
+            } else {
+                await fsAsync.rm(destination, { force: true });
+            }
+        }
+        return mappedOverride;
+    } catch (error) {
+        for (const [ name, contents ] of previous) {
+            const destination = path.join(targetDir, name);
+            if (contents === null) {
+                await fsAsync.rm(destination, { force: true }).catch(() => {});
+            } else {
+                await fsAsync.writeFile(destination, contents).catch(() => {});
+            }
+            await fsAsync.rm(`${destination}.replication-new`, { force: true }).catch(() => {});
+        }
+        throw error;
+    } finally {
+        await fsAsync.rm(tempDir, { recursive: true,
+            force: true });
+    }
+}
+
 async function inspectOccupiedPorts(): Promise<Set<string>> {
     const ids = (await runDocker([ "ps", "-q" ])).split(/\s+/).filter(Boolean);
     const occupied = new Set<string>();

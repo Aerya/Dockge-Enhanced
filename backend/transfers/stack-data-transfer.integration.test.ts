@@ -19,6 +19,7 @@ import {
     stageStackTransferDataTarget,
 } from "./stack-data-transfer";
 import { getStackTransferRepositories } from "./stack-transfer-restic";
+import { activateStackReplicaTarget, syncStackReplicaTarget } from "./stack-replication-target";
 
 const execFileAsync = promisify(execFile);
 const integrationAvailable = (() => {
@@ -259,6 +260,77 @@ test("rolls the target back and restarts the source when migrated deployment fai
         const sourceRunning = await execFileAsync("docker", [ "compose", "-p", sourceName, "ps", "--status", "running", "--services" ], { cwd: path.join(root, sourceName) });
         assert.match(sourceRunning.stdout, /worker/);
         await assert.rejects(fs.access(path.join(root, targetName)));
+    } finally {
+        await down(root, sourceName);
+        await down(root, targetName);
+        await fs.rm(root, { recursive: true,
+            force: true });
+        mock.restoreAll();
+    }
+});
+
+test("refreshes a cold replica, rolls back a failed refresh and activates the standby", { skip: !integrationAvailable,
+    timeout: 300_000 }, async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-data-replica-"));
+    const sourceName = `data-source-${Date.now()}`;
+    const targetName = `data-replica-${Date.now()}`;
+    const replicaId = `replica-${Date.now()}`;
+    try {
+        const context = await createContext(root, path.join(root, ".repository"));
+        await writeSource(root, sourceName);
+        let previous: { snapshotId: string; archivePath: string } | undefined;
+        for (const [ index, expected ] of [ "v1", "v2" ].entries()) {
+            if (index === 1) {
+                await execFileAsync("docker", [ "compose", "-p", sourceName, "exec", "-T", "worker", "sh", "-c", "printf bind-v2 >/bind/value; printf named-v2 >/named/value" ], { cwd: path.join(root, sourceName) });
+            }
+            const transferId = `replication-${index}-${Date.now()}`;
+            const snapshot = await createStackTransferDataSnapshot(context.server, {
+                transferId,
+                stackName: sourceName,
+                repositoryId: context.repositoryId,
+                mappings: mappings(),
+                policy: { mode: "hot" },
+                phase: "copy",
+            });
+            const request = {
+                replicaId,
+                transferId,
+                repositoryId: context.repositoryId,
+                snapshotId: snapshot.snapshotId,
+                archivePath: snapshot.archivePath,
+                transfer: transfer(sourceName, targetName, "copy"),
+            };
+            request.transfer.deploy = false;
+            await syncStackReplicaTarget(context.server, context.socket, request);
+            await completeStackTransferDataSource(context.server, transferId, true, true);
+            const targetDir = path.join(root, targetName);
+            const running = await execFileAsync("docker", [ "compose", "-p", targetName, "ps", "--status", "running", "--services" ], { cwd: targetDir });
+            assert.equal(running.stdout.trim(), "");
+            const output = await execFileAsync("docker", [ "compose", "-p", targetName, "run", "--rm", "--no-deps", "worker", "sh", "-c", "cat /bind/value; cat /named/value" ], { cwd: targetDir,
+                timeout: 120_000 });
+            assert.equal(output.stdout, `bind-${expected}named-${expected}`);
+            previous = snapshot;
+        }
+
+        const badRequest = {
+            replicaId,
+            transferId: `replication-bad-${Date.now()}`,
+            repositoryId: context.repositoryId,
+            snapshotId: "deadbeef",
+            archivePath: "/dockge-stack-transfer/missing/copy.tar",
+            transfer: transfer(sourceName, targetName, "copy"),
+        };
+        badRequest.transfer.deploy = false;
+        await assert.rejects(syncStackReplicaTarget(context.server, context.socket, badRequest));
+        const restored = await execFileAsync("docker", [ "compose", "-p", targetName, "run", "--rm", "--no-deps", "worker", "sh", "-c", "cat /bind/value; cat /named/value" ], { cwd: path.join(root, targetName),
+            timeout: 120_000 });
+        assert.equal(restored.stdout, "bind-v2named-v2");
+
+        const activated = await activateStackReplicaTarget(context.server, context.socket, targetName, replicaId);
+        assert.ok(activated.activatedAt);
+        const running = await execFileAsync("docker", [ "compose", "-p", targetName, "ps", "--status", "running", "--services" ], { cwd: path.join(root, targetName) });
+        assert.match(running.stdout, /worker/);
+        assert.ok(previous?.snapshotId);
     } finally {
         await down(root, sourceName);
         await down(root, targetName);

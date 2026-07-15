@@ -13,7 +13,7 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-5">
                         <label class="form-label">{{ $t("stackTransfer.targetInstance") }}</label>
-                        <select v-model="targetEndpoint" class="form-select" @change="targetChanged">
+                        <select v-model="targetEndpoint" class="form-select" :disabled="operation === 'replicate' && Boolean(replicationId)" @change="targetChanged">
                             <option v-for="item in targetAgents" :key="item.endpoint" :value="item.endpoint">
                                 {{ item.name }}
                             </option>
@@ -21,11 +21,11 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">{{ $t("stackTransfer.targetName") }}</label>
-                        <input v-model="targetName" class="form-control" maxlength="100" @input="invalidatePreflight" />
+                        <input v-model="targetName" class="form-control" maxlength="100" :disabled="operation === 'replicate' && Boolean(replicationId)" @input="invalidatePreflight" />
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
                         <div class="form-check mb-2">
-                            <input id="stack-transfer-deploy" v-model="deploy" type="checkbox" class="form-check-input" :disabled="operation === 'move'" @change="invalidatePreflight" />
+                            <input id="stack-transfer-deploy" v-model="deploy" type="checkbox" class="form-check-input" :disabled="operation === 'move' || operation === 'replicate'" @change="invalidatePreflight" />
                             <label for="stack-transfer-deploy" class="form-check-label">{{ $t("stackTransfer.deployTarget") }}</label>
                         </div>
                     </div>
@@ -38,7 +38,7 @@
 
                 <div class="shadow-box big-padding mb-4">
                     <div class="form-check mb-3">
-                        <input id="stack-transfer-data" v-model="includeData" type="checkbox" class="form-check-input" :disabled="sharedRepositories.length === 0" @change="dataModeChanged" />
+                        <input id="stack-transfer-data" v-model="includeData" type="checkbox" class="form-check-input" :disabled="sharedRepositories.length === 0 || operation === 'replicate'" @change="dataModeChanged" />
                         <label for="stack-transfer-data" class="form-check-label fw-semibold">{{ $t("stackTransfer.includeData") }}</label>
                         <div class="form-text">{{ $t("stackTransfer.includeDataHint") }}</div>
                     </div>
@@ -52,6 +52,15 @@
                                 <option v-for="repository in sharedRepositories" :key="repository.id" :value="repository.id">
                                     {{ repository.label }} ({{ repository.type.toUpperCase() }})
                                 </option>
+                            </select>
+                        </div>
+                        <div v-if="operation === 'replicate'" class="col-md-6">
+                            <label class="form-label">{{ $t("stackReplication.frequency") }}</label>
+                            <select v-model.number="replicationInterval" class="form-select" @change="invalidatePreflight">
+                                <option :value="15">{{ $t("stackReplication.interval.15") }}</option>
+                                <option :value="60">{{ $t("stackReplication.interval.60") }}</option>
+                                <option :value="360">{{ $t("stackReplication.interval.360") }}</option>
+                                <option :value="1440">{{ $t("stackReplication.interval.1440") }}</option>
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -159,7 +168,7 @@
                 </details>
 
                 <div v-if="result" class="alert alert-success">
-                    <strong>{{ operation === "copy" ? $t("stackTransfer.copyComplete") : $t("stackTransfer.moveComplete") }}</strong>
+                    <strong>{{ operation === "replicate" ? $t("stackReplication.configured") : operation === "copy" ? $t("stackTransfer.copyComplete") : $t("stackTransfer.moveComplete") }}</strong>
                     <div>{{ $t("stackTransfer.jobId") }}: <code>{{ result.job.id }}</code></div>
                     <div v-if="operation === 'move'">{{ $t("stackTransfer.sourceKept") }}</div>
                 </div>
@@ -173,8 +182,8 @@
                     <button class="btn btn-normal" @click="visible = false">{{ $t("cancel") }}</button>
                     <button class="btn" :class="operation === 'move' ? 'btn-warning' : 'btn-primary'" :disabled="!canTransfer || transferring" @click="executeTransfer">
                         <span v-if="transferring" class="spinner-border spinner-border-sm me-1" />
-                        <font-awesome-icon v-else :icon="operation === 'move' ? 'clone' : 'copy'" class="me-1" />
-                        {{ operation === "move" ? $t("stackTransfer.moveAction") : $t("stackTransfer.copyAction") }}
+                        <font-awesome-icon v-else :icon="operation === 'move' ? 'clone' : operation === 'replicate' ? 'database' : 'copy'" class="me-1" />
+                        {{ operation === "move" ? $t("stackTransfer.moveAction") : operation === "replicate" ? $t("stackReplication.configure") : $t("stackTransfer.copyAction") }}
                     </button>
                 </div>
             </template>
@@ -196,6 +205,8 @@ export default {
             visible: false,
             loading: false,
             operation: "copy",
+            replicationId: "",
+            replicationInterval: 60,
             targetEndpoint: "",
             targetName: "",
             deploy: true,
@@ -228,6 +239,9 @@ export default {
     },
     computed: {
         modalTitle() {
+            if (this.operation === "replicate") {
+                return this.$t("stackReplication.title", [ this.stack.name ]);
+            }
             return this.operation === "move" ? this.$t("stackTransfer.moveTitle", [ this.stack.name ]) : this.$t("stackTransfer.copyTitle", [ this.stack.name ]);
         },
         targetAgents() {
@@ -242,6 +256,7 @@ export default {
                 deploy: this.deploy,
                 includeData: this.includeData,
                 repositoryId: this.repositoryId,
+                replicationInterval: this.replicationInterval,
                 consistencyMode: this.consistencyMode,
                 hooks: [ this.hookService, this.preHook, this.postHook ],
                 mappings: this.mappings.map(item => [ item.id, item.targetSource, item.transferData ]) });
@@ -265,7 +280,7 @@ export default {
                     return false;
                 }
             }
-            return !this.issues.some(issue => issue.severity === "error" && (issue.scope === "save" || this.deploy || this.includeData));
+            return !this.issues.some(issue => issue.severity === "error" && !(this.operation === "replicate" && this.replicationId && issue.code === "stack-exists") && (issue.scope === "save" || this.deploy || this.includeData));
         },
         copiedFiles() {
             const files = [ "compose.yaml" ];
@@ -297,14 +312,14 @@ export default {
                 });
             });
         },
-        async open(operation) {
+        async open(operation, existingPolicy = null) {
             this.reset();
             this.operation = operation;
             this.visible = true;
             this.loading = true;
-            this.targetName = this.stack.name;
+            this.targetName = existingPolicy?.targetName || this.stack.name;
             await this.$nextTick();
-            this.targetEndpoint = this.targetAgents[0]?.endpoint ?? "";
+            this.targetEndpoint = existingPolicy?.targetEndpoint ?? this.targetAgents[0]?.endpoint ?? "";
             if (this.targetAgents.length === 0) {
                 this.loading = false;
                 return;
@@ -321,6 +336,22 @@ export default {
                 await this.loadDataCapabilities();
                 await this.loadRules();
                 this.applyRules();
+                if (operation === "replicate") {
+                    this.deploy = false;
+                    this.includeData = true;
+                    this.replicationId = existingPolicy?.id || "";
+                    this.replicationInterval = existingPolicy?.intervalMinutes || 60;
+                    if (existingPolicy) {
+                        this.repositoryId = existingPolicy.repositoryId;
+                        this.consistencyMode = existingPolicy.consistency?.mode || "hot";
+                        this.hookService = existingPolicy.consistency?.hookService || "";
+                        this.preHook = existingPolicy.consistency?.preHook || "";
+                        this.postHook = existingPolicy.consistency?.postHook || "";
+                        const saved = new Map(existingPolicy.mappings.map(mapping => [ mapping.id, mapping ]));
+                        this.mappings = this.mappings.map(mapping => ({ ...mapping,
+                            ...(saved.get(mapping.id) || {}) }));
+                    }
+                }
                 await this.runPreflight();
             } catch (error) {
                 this.operationError = error instanceof Error ? error.message : String(error);
@@ -332,6 +363,8 @@ export default {
             this.loading = false;
             this.targetEndpoint = "";
             this.targetName = "";
+            this.replicationId = "";
+            this.replicationInterval = 60;
             this.deploy = true;
             this.includeData = false;
             this.sourceDataCapabilities = { repositories: [],
@@ -451,7 +484,7 @@ export default {
         },
         request() {
             return {
-                operation: this.operation,
+                operation: this.operation === "replicate" ? "copy" : this.operation,
                 sourceEndpoint: this.endpoint,
                 sourceStackName: this.stack.name,
                 targetName: this.targetName.trim().toLowerCase(),
@@ -513,6 +546,10 @@ export default {
             this.transferring = true;
             this.operationError = "";
             try {
+                if (this.operation === "replicate") {
+                    await this.executeReplication();
+                    return;
+                }
                 if (this.includeData) {
                     await this.executeDataTransfer();
                     return;
@@ -575,6 +612,34 @@ export default {
             } finally {
                 this.transferring = false;
             }
+        },
+        async executeReplication() {
+            this.transferPhase = "replication";
+            const saved = await new Promise(resolve => this.$root.getSocket().emit("saveStackReplication", {
+                id: this.replicationId || undefined,
+                sourceEndpoint: this.endpoint,
+                sourceStackName: this.stack.name,
+                targetEndpoint: this.targetEndpoint,
+                targetName: this.targetName.trim().toLowerCase(),
+                repositoryId: this.repositoryId,
+                intervalMinutes: this.replicationInterval,
+                mappings: this.mappings,
+                consistency: this.dataPolicy(),
+                enabled: true,
+            }, resolve));
+            if (!saved.ok) {
+                throw new Error(this.$t(saved.msg));
+            }
+            this.replicationId = saved.data.id;
+            const synchronized = await new Promise(resolve => this.$root.getSocket().emit("runStackReplication", saved.data.id, resolve));
+            if (!synchronized.ok) {
+                throw new Error(this.$t(synchronized.msg));
+            }
+            this.result = { job: { id: saved.data.id } };
+            this.preflightSignature = "";
+            this.$emit("completed", { endpoint: this.targetEndpoint,
+                name: this.targetName,
+                operation: "replicate" });
         },
         async executeDataTransfer() {
             const transferId = `transfer-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
