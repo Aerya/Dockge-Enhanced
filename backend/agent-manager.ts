@@ -77,13 +77,23 @@ export class AgentManager {
      * @param username
      * @param password
      */
-    async add(url : string, username : string, password : string) : Promise<Agent> {
+    async add(url : string, username : string, password : string, displayName = "") : Promise<Agent> {
         let bean = R.dispense("agent") as Agent;
         bean.url = url;
         bean.username = username;
         bean.password = password;
+        bean.display_name = displayName;
         await R.store(bean);
         return bean;
+    }
+
+    async rename(url: string, displayName: string): Promise<void> {
+        const bean = await R.findOne("agent", " url = ? ", [ url ]) as Agent | null;
+        if (!bean) {
+            throw new Error("Agent not found");
+        }
+        bean.display_name = displayName;
+        await R.store(bean);
     }
 
     /**
@@ -278,6 +288,7 @@ export class AgentManager {
             url: "",
             username: "",
             endpoint: "",
+            displayName: "",
         };
 
         for (let endpoint in list) {
