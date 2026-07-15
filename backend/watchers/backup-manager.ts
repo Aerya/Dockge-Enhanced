@@ -78,6 +78,22 @@ export interface VolumeBackupConfig {
     selectedVolumes: string[];  // chemins à sauvegarder : volume entier ou sous-dossiers spécifiques
 }
 
+export type StackBackupMode = "hot" | "stop" | "hooks";
+
+export interface StackBackupPolicy {
+    mode: StackBackupMode;
+    hookService?: string;
+    preHook?: string;
+    postHook?: string;
+}
+
+interface PreparedStack {
+    stack: string;
+    policy: StackBackupPolicy;
+    composeFile: string;
+    runningServices: string[];
+}
+
 export interface MountedVolume {
     source: string;       // chemin sur l'hôte (ex: /home/aerya/docker)
     destination: string;  // chemin dans le conteneur (ex: /dockers-data)
@@ -108,6 +124,7 @@ export interface BackupSettings {
     notificationLang: "fr" | "en";
     backupOnSave: boolean;               // déclenche un backup immédiat quand un compose est sauvegardé
     excludedStacks: string[];            // stacks exclues de la sauvegarde
+    stackPolicies: Record<string, StackBackupPolicy>; // cohérence applicative par stack
     excludePatterns: string[];           // patterns restic --exclude supplémentaires (ex: *.wal, *.tmp)
     restoreTest: boolean;                // lit un fichier depuis chaque snapshot pour vérifier la lisibilité
 }
@@ -268,6 +285,24 @@ function parseResticStats(stdout: string): { size?: number; fileCount?: number }
         } catch { /* try previous line */ }
     }
     return {};
+}
+
+export function normalizeStackBackupPolicy(value: unknown): StackBackupPolicy {
+    if (!value || typeof value !== "object") return { mode: "hot" };
+    const raw = value as Record<string, unknown>;
+    const mode: StackBackupMode = raw.mode === "stop" || raw.mode === "hooks" ? raw.mode : "hot";
+    const clean = (field: unknown): string | undefined => {
+        if (typeof field !== "string") return undefined;
+        const trimmed = field.trim();
+        return trimmed || undefined;
+    };
+    const policy: StackBackupPolicy = { mode };
+    if (mode === "hooks") {
+        policy.hookService = clean(raw.hookService);
+        policy.preHook = clean(raw.preHook);
+        policy.postHook = clean(raw.postHook);
+    }
+    return policy;
 }
 
 async function mapLimit<T, R>(
@@ -466,6 +501,7 @@ export class BackupManager {
         volumeBackup: { selectedVolumes: [] },
         backupOnSave: true,
         excludedStacks: [],
+        stackPolicies: {},
         excludePatterns: [],
         restoreTest: true,
     };
@@ -819,9 +855,24 @@ export class BackupManager {
 
         let totalDataAdded = 0;
         let allSuccess = true;
+        let preparedStacks: PreparedStack[] = [];
 
         console.log(`[BackupManager] ▶ Backup démarré (${activeDests.length} destination(s))`);
 
+        try {
+            preparedStacks = await this.prepareStacksForBackup();
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e);
+            result.error = `Préparation des stacks échouée : ${message}`;
+            result.duration = Date.now() - start;
+            backupHistory.unshift(result);
+            if (backupHistory.length > 20) backupHistory.splice(20);
+            await saveHistory();
+            await this.sendNotification(result);
+            return result;
+        }
+
+        try {
         for (const dest of activeDests) {
             const destResult: DestinationResult = {
                 label: dest.label,
@@ -881,26 +932,6 @@ export class BackupManager {
                 if (!result.filesNew)     result.filesNew     = summary?.files_new     as number ?? 0;
                 if (!result.filesChanged) result.filesChanged = summary?.files_changed as number ?? 0;
 
-                if (!opts.skipForget) {
-                    await this.runForgetFor(dest);
-
-                    // Restore test : lit un fichier depuis le snapshot pour prouver la lisibilité
-                    if (this.settings.restoreTest && destResult.snapshotId) {
-                        destResult.restoreTest = await this.runRestoreTest(dest, destResult.snapshotId);
-                        if (!destResult.restoreTest.ok) {
-                            const msg = destResult.restoreTest.error ?? "Lecture du snapshot impossible";
-                            if (!result.warnings) result.warnings = [];
-                            result.warnings.push(`[${dest.label}] Restore test échoué : ${msg}`);
-                            console.warn(`[BackupManager] ⚠️ Restore test "${dest.label}" échoué:`, msg);
-                        } else {
-                            console.log(
-                                `[BackupManager] 🔍 Restore test "${dest.label}" OK` +
-                                (destResult.restoreTest.testedFile ? ` — ${destResult.restoreTest.testedFile}` : "")
-                            );
-                        }
-                    }
-                }
-
                 console.log(
                     `[BackupManager] ✓ "${dest.label}" terminé en ${formatDuration(Date.now() - destStart)}` +
                     ` — Snapshot ${destResult.snapshotId} +${formatBytes(destResult.dataAdded)}` +
@@ -917,6 +948,39 @@ export class BackupManager {
 
             result.destinations!.push(destResult);
         }
+        } finally {
+            const cleanupErrors = await this.restorePreparedStacks(preparedStacks);
+            if (cleanupErrors.length > 0) {
+                allSuccess = false;
+                result.warnings = [...(result.warnings ?? []), ...cleanupErrors];
+                if (!result.error) result.error = cleanupErrors[0];
+            }
+        }
+
+        // La rétention et le test de lecture n'exigent pas que les applications restent arrêtées.
+        if (!opts.skipForget) {
+            for (let i = 0; i < activeDests.length; i++) {
+                const dest = activeDests[i];
+                const destResult = result.destinations![i];
+                if (!destResult?.success) continue;
+                try {
+                    await this.runForgetFor(dest);
+                    if (this.settings.restoreTest && destResult.snapshotId) {
+                        destResult.restoreTest = await this.runRestoreTest(dest, destResult.snapshotId);
+                        if (!destResult.restoreTest.ok) {
+                            const msg = destResult.restoreTest.error ?? "Lecture du snapshot impossible";
+                            result.warnings = [...(result.warnings ?? []), `[${dest.label}] Restore test échoué : ${msg}`];
+                        }
+                    }
+                } catch (e: unknown) {
+                    const msg = e instanceof Error ? e.message : String(e);
+                    allSuccess = false;
+                    destResult.success = false;
+                    destResult.error = msg;
+                    if (!result.error) result.error = msg;
+                }
+            }
+        }
 
         console.log(`[BackupManager] ✓ Backup terminé en ${formatDuration(Date.now() - start)} — ${allSuccess ? "succès" : "échec(s)"}`);
 
@@ -932,6 +996,93 @@ export class BackupManager {
         await this.sendNotification(result);
 
         return result;
+    }
+
+    private async findComposeFile(stack: string): Promise<string> {
+        const stacksRoot = path.resolve(STACKS_DIR);
+        const stackDir = path.resolve(stacksRoot, stack);
+        if (stackDir === stacksRoot || !stackDir.startsWith(stacksRoot + path.sep)) {
+            throw new Error(`Nom de stack invalide : "${stack}"`);
+        }
+        for (const name of ["compose.yaml", "docker-compose.yml", "docker-compose.yaml"]) {
+            const candidate = path.join(stackDir, name);
+            try {
+                await fs.access(candidate);
+                return candidate;
+            } catch { /* next */ }
+        }
+        throw new Error(`Compose introuvable pour la stack "${stack}"`);
+    }
+
+    private composeCommand(composeFile: string, args: string): string {
+        return `docker compose -f ${shellQuote(path.basename(composeFile))} ${args}`;
+    }
+
+    private async prepareStacksForBackup(): Promise<PreparedStack[]> {
+        const prepared: PreparedStack[] = [];
+        const excluded = new Set(this.settings.excludedStacks ?? []);
+        try {
+            for (const stack of Object.keys(this.settings.stackPolicies ?? {}).sort()) {
+                if (excluded.has(stack)) continue;
+                const policy = normalizeStackBackupPolicy(this.settings.stackPolicies[stack]);
+                if (policy.mode === "hot") continue;
+                const composeFile = await this.findComposeFile(stack);
+                const cwd = path.dirname(composeFile);
+                const entry: PreparedStack = { stack, policy, composeFile, runningServices: [] };
+
+                if (policy.mode === "stop") {
+                    const { stdout } = await execAsync(this.composeCommand(composeFile, "ps --status running --services"), {
+                        cwd, timeout: 30_000,
+                    });
+                    entry.runningServices = stdout.split("\n").map(s => s.trim()).filter(Boolean);
+                    prepared.push(entry);
+                    if (entry.runningServices.length > 0) {
+                        const services = entry.runningServices.map(shellQuote).join(" ");
+                        await execAsync(this.composeCommand(composeFile, `stop ${services}`), { cwd, timeout: 5 * 60_000 });
+                    }
+                } else {
+                    // Enregistrer avant le pre-hook : le post-hook doit pouvoir réparer
+                    // un état partiellement modifié même si la commande retourne une erreur.
+                    prepared.push(entry);
+                    await this.runStackHook(composeFile, policy, "pre");
+                }
+            }
+            return prepared;
+        } catch (e) {
+            const cleanupErrors = await this.restorePreparedStacks(prepared);
+            if (cleanupErrors.length > 0) {
+                throw new Error(`${e instanceof Error ? e.message : String(e)} ; ${cleanupErrors.join(" ; ")}`);
+            }
+            throw e;
+        }
+    }
+
+    private async restorePreparedStacks(prepared: PreparedStack[]): Promise<string[]> {
+        const errors: string[] = [];
+        for (const entry of [...prepared].reverse()) {
+            try {
+                const cwd = path.dirname(entry.composeFile);
+                if (entry.policy.mode === "stop" && entry.runningServices.length > 0) {
+                    const services = entry.runningServices.map(shellQuote).join(" ");
+                    await execAsync(this.composeCommand(entry.composeFile, `start ${services}`), { cwd, timeout: 5 * 60_000 });
+                } else if (entry.policy.mode === "hooks") {
+                    await this.runStackHook(entry.composeFile, entry.policy, "post");
+                }
+            } catch (e: unknown) {
+                errors.push(`Stack "${entry.stack}" non restaurée correctement : ${e instanceof Error ? e.message : String(e)}`);
+            }
+        }
+        return errors;
+    }
+
+    private async runStackHook(composeFile: string, policy: StackBackupPolicy, phase: "pre" | "post"): Promise<void> {
+        const command = phase === "pre" ? policy.preHook : policy.postHook;
+        if (!command?.trim()) return;
+        if (!policy.hookService?.trim()) throw new Error("Service requis pour les hooks applicatifs");
+        const args = `exec -T ${shellQuote(policy.hookService.trim())} sh -c ${shellQuote(command)}`;
+        await execAsync(this.composeCommand(composeFile, args), {
+            cwd: path.dirname(composeFile), timeout: 5 * 60_000, maxBuffer: 2 * 1024 * 1024,
+        });
     }
 
     private async buildBackupPaths(): Promise<BackupPathsResult> {

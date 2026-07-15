@@ -356,7 +356,7 @@
             <p v-else class="form-text fst-italic mb-0">{{ $t('watcher.backup.excludePatterns.empty') }}</p>
         </div>
 
-        <!-- ═══ STACKS EXCLUES ═══ -->
+        <!-- ═══ COHÉRENCE PAR STACK ═══ -->
         <div v-if="stacksList.length > 0" class="shadow-box big-padding mb-4 stacks-exclude-section">
             <!-- Header cliquable -->
             <div class="vol-section-header" @click="toggleStacksSection">
@@ -371,26 +371,54 @@
             <!-- Body -->
             <div v-if="!stacksCollapsed" class="vol-section-body">
                 <p class="form-text mb-3">{{ $t('watcher.backup.excludeStacks.hint') }}</p>
-                <div class="stacks-grid">
+                <div class="stacks-policy-list">
                     <div v-for="stack in stacksList" :key="stack"
-                        class="stack-toggle-item"
+                        class="stack-policy-item"
                         :class="{ 'stack-excluded': isStackExcluded(stack) }">
-                        <div class="form-check form-switch mb-0">
-                            <input
-                                :id="`stackInclude_${stack}`"
-                                class="form-check-input"
-                                type="checkbox"
-                                role="switch"
-                                :checked="!isStackExcluded(stack)"
-                                @change="toggleStackExclusion(stack)" />
-                            <label :for="`stackInclude_${stack}`" class="form-check-label stack-toggle-label">
-                                <font-awesome-icon icon="layer-group" class="me-1 opacity-50" style="font-size:.75rem" />
-                                {{ stack }}
-                            </label>
+                        <div class="stack-policy-main">
+                            <div class="form-check form-switch mb-0">
+                                <input
+                                    :id="`stackInclude_${stack}`"
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    :checked="!isStackExcluded(stack)"
+                                    @change="toggleStackExclusion(stack)" />
+                                <label :for="`stackInclude_${stack}`" class="form-check-label stack-toggle-label">
+                                    <font-awesome-icon icon="layer-group" class="me-1 opacity-50" style="font-size:.75rem" />
+                                    {{ stack }}
+                                </label>
+                            </div>
+                            <select v-if="!isStackExcluded(stack)" v-model="stackPolicy(stack).mode"
+                                class="form-select form-select-sm stack-policy-select">
+                                <option value="hot">{{ $t('watcher.backup.stackPolicy.hot') }}</option>
+                                <option value="stop">{{ $t('watcher.backup.stackPolicy.stop') }}</option>
+                                <option value="hooks">{{ $t('watcher.backup.stackPolicy.hooks') }}</option>
+                            </select>
+                            <span v-else class="badge bg-secondary stack-excluded-badge">
+                                {{ $t('watcher.backup.excludeStacks.excluded') }}
+                            </span>
                         </div>
-                        <span v-if="isStackExcluded(stack)" class="badge bg-secondary stack-excluded-badge">
-                            {{ $t('watcher.backup.excludeStacks.excluded') }}
-                        </span>
+                        <p v-if="!isStackExcluded(stack)" class="form-text mb-0 mt-2">
+                            {{ $t(`watcher.backup.stackPolicy.${stackPolicy(stack).mode}Hint`) }}
+                        </p>
+                        <div v-if="!isStackExcluded(stack) && stackPolicy(stack).mode === 'hooks'" class="row g-2 mt-1">
+                            <div class="col-md-4">
+                                <label class="form-label small">{{ $t('watcher.backup.stackPolicy.service') }}</label>
+                                <input v-model="stackPolicy(stack).hookService" class="form-control form-control-sm"
+                                    :placeholder="$t('watcher.backup.stackPolicy.servicePlaceholder')" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">{{ $t('watcher.backup.stackPolicy.preHook') }}</label>
+                                <input v-model="stackPolicy(stack).preHook" class="form-control form-control-sm"
+                                    :placeholder="$t('watcher.backup.stackPolicy.preHookPlaceholder')" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">{{ $t('watcher.backup.stackPolicy.postHook') }}</label>
+                                <input v-model="stackPolicy(stack).postHook" class="form-control form-control-sm"
+                                    :placeholder="$t('watcher.backup.stackPolicy.postHookPlaceholder')" />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1024,7 +1052,9 @@ interface Destination {
 interface Retention { keepLast: number; keepDaily: number; keepWeekly: number; keepMonthly: number }
 interface VolumeBackupConfig { selectedVolumes: string[] }
 interface MountedVolume { source: string; destination: string }
-interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; excludedStacks: string[]; excludePatterns: string[]; restoreTest: boolean }
+type StackBackupMode = "hot" | "stop" | "hooks";
+interface StackBackupPolicy { mode: StackBackupMode; hookService?: string; preHook?: string; postHook?: string }
+interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; excludedStacks: string[]; stackPolicies: Record<string, StackBackupPolicy>; excludePatterns: string[]; restoreTest: boolean }
 type BackupTrigger = "scheduled" | "manual" | "on-save";
 type BackupViewFilter = "scheduled" | "on-save" | "manual" | "all" | "errors";
 type SnapshotFilter = Exclude<BackupViewFilter, "errors">;
@@ -1086,6 +1116,7 @@ const settings = ref<Settings>({
     extraPaths: [],
     backupOnSave: true,
     excludedStacks: [],
+    stackPolicies: {},
     excludePatterns: [],
     restoreTest: true,
 });
@@ -1118,6 +1149,11 @@ function toggleStackExclusion(stack: string) {
     } else {
         settings.value.excludedStacks = [...excluded, stack];
     }
+}
+function stackPolicy(stack: string): StackBackupPolicy {
+    settings.value.stackPolicies ??= {};
+    settings.value.stackPolicies[stack] ??= { mode: "hot" };
+    return settings.value.stackPolicies[stack];
 }
 
 const mountedVols = ref<MountedVolume[]>([]);
@@ -2652,24 +2688,20 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     }
 }
 
-// ─── Stacks exclues ──────────────────────────────────────────────
+// ─── Politiques de cohérence par stack ──────────────────────────
 .stacks-exclude-section {
     padding: 0 !important;
     overflow: hidden;
 }
 
-.stacks-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+.stacks-policy-list {
+    display: flex;
+    flex-direction: column;
     gap: .5rem;
 }
 
-.stack-toggle-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .5rem;
-    padding: .4rem .6rem;
+.stack-policy-item {
+    padding: .65rem .75rem;
     border-radius: 6px;
     border: 1px solid rgba(255,255,255,.08);
     background: rgba(255,255,255,.03);
@@ -2681,6 +2713,17 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     }
 }
 
+.stack-policy-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.stack-policy-select {
+    width: min(260px, 50%);
+}
+
 .stack-toggle-label {
     font-size: .85rem;
     color: #d1d5db;
@@ -2688,7 +2731,7 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 140px;
+    max-width: 280px;
 }
 
 .stack-excluded-badge {
