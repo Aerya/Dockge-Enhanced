@@ -49,8 +49,7 @@
                             </template>
 
                             <!-- Agent Display Name -->
-                            <span v-if="endpoint === ''">{{ $t("currentEndpoint") }}</span>
-                            <template v-else-if="editingAgentEndpoint === endpoint">
+                            <template v-if="editingAgentEndpoint === endpoint">
                                 <input v-model="agentNameDraft" class="form-control form-control-sm agent-name-input"
                                     maxlength="100" :placeholder="$t('agentNamePlaceholder')"
                                     @keyup.enter="renameAgent(agent)" @keyup.esc="cancelRenameAgent" />
@@ -65,8 +64,14 @@
                             </template>
                             <template v-else>
                                 <span class="agent-identity">
-                                    <a :href="agent.url" target="_blank">{{ agent.displayName || endpoint }}</a>
-                                    <small v-if="agent.displayName" class="text-muted d-block">{{ endpoint }}</small>
+                                    <template v-if="endpoint === ''">
+                                        <span>{{ agent.displayName || $t("currentEndpoint") }}</span>
+                                        <span class="badge bg-info text-dark ms-2" :title="$t('localInstanceHint')">{{ $t("localInstance") }}</span>
+                                    </template>
+                                    <template v-else>
+                                        <a :href="agent.url" target="_blank">{{ agent.displayName || endpoint }}</a>
+                                        <small v-if="agent.displayName" class="text-muted d-block">{{ endpoint }}</small>
+                                    </template>
                                 </span>
                                 <button class="btn btn-sm btn-link p-1 rename-agent" :title="$t('renameAgent')"
                                     @click="startRenameAgent(endpoint, agent)">
