@@ -72,6 +72,15 @@
                     </button>
 
                     <BDropdown right text="" variant="normal">
+                        <BDropdownItem v-if="$root.agentCount > 1 && !isEditMode" @click="openStackTransfer('copy')">
+                            <font-awesome-icon icon="copy" class="me-1" />
+                            {{ $t("stackTransfer.copyAction") }}
+                        </BDropdownItem>
+                        <BDropdownItem v-if="$root.agentCount > 1 && !isEditMode" @click="openStackTransfer('move')">
+                            <font-awesome-icon icon="clone" class="me-1" />
+                            {{ $t("stackTransfer.moveAction") }}
+                        </BDropdownItem>
+                        <BDropdownDivider v-if="$root.agentCount > 1 && !isEditMode" />
                         <BDropdownItem @click="downStack">
                             <font-awesome-icon icon="stop" class="me-1" />
                             {{ $t("downStack") }}
@@ -397,6 +406,14 @@
                 {{ $t("stackNotManagedByDockgeMsg") }}
             </div>
 
+            <!-- Stack transfer -->
+            <StackTransferModal
+                v-if="!isAdd && stack.name"
+                ref="stackTransferModal"
+                :stack="stack"
+                :endpoint="endpoint"
+            />
+
             <!-- Delete Dialog -->
             <BModal v-model="showDeleteDialog" :cancelTitle="$t('cancel')" :okTitle="$t('deleteStack')" okVariant="danger" @ok="deleteDialog">
                 <p>{{ $t("deleteStackMsg") }}</p>
@@ -449,6 +466,7 @@ import { ref } from "vue";
 import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
 import { useImageStatus } from "../composables/useImageStatus";
 import StackScheduleEditor from "../components/StackScheduleEditor.vue";
+import StackTransferModal from "../components/StackTransferModal.vue";
 
 const template = `
 services:
@@ -471,6 +489,7 @@ export default {
         CodeMirror,
         BModal,
         StackScheduleEditor,
+        StackTransferModal,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
@@ -1159,6 +1178,10 @@ export default {
                 this.processing = false;
                 this.$root.toastRes(res);
             });
+        },
+
+        openStackTransfer(operation) {
+            this.$refs.stackTransferModal?.open(operation);
         },
 
         deleteDialog() {
