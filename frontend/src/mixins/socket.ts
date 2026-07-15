@@ -132,7 +132,7 @@ export default defineComponent({
 
         endpointDisplayFunction(endpoint : string) {
             if (endpoint) {
-                return endpoint;
+                return this.agentList?.[endpoint]?.displayName || endpoint;
             } else {
                 return this.$t("currentEndpoint");
             }

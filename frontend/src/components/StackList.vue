@@ -48,6 +48,11 @@
                     </button>
                 </div>
                 <div class="search-wrapper">
+                    <label class="visually-hidden" for="stackSort">{{ $t("stackSortLabel") }}</label>
+                    <select id="stackSort" v-model="stackSort" class="form-select form-select-sm stack-sort-select">
+                        <option value="status">{{ $t("stackSortStatus") }}</option>
+                        <option value="agent">{{ $t("stackSortAgent") }}</option>
+                    </select>
                     <a v-if="searchText == ''" class="search-icon">
                         <font-awesome-icon icon="search" />
                     </a>
@@ -128,6 +133,7 @@ export default {
             selectedStacks: {},
             windowTop: 0,
             stackStatusFilter: "all",
+            stackSort: localStorage.getItem("stackSort") || "status",
             filterState: {
                 status: null,
                 active: null,
@@ -197,6 +203,17 @@ export default {
             });
 
             result.sort((m1, m2) => {
+
+                if (this.stackSort === "agent") {
+                    const agent1 = this.$root.endpointDisplayFunction(m1.endpoint || "");
+                    const agent2 = this.$root.endpointDisplayFunction(m2.endpoint || "");
+                    const agentOrder = agent1.localeCompare(agent2, undefined, { sensitivity: "base" });
+                    if (agentOrder !== 0) return agentOrder;
+
+                    const endpointOrder = (m1.endpoint || "").localeCompare(m2.endpoint || "");
+                    if (endpointOrder !== 0) return endpointOrder;
+                    return m1.name.localeCompare(m2.name);
+                }
 
                 // sort by managed by dockge
                 if (m1.isManagedByDockge && !m2.isManagedByDockge) {
@@ -293,6 +310,9 @@ export default {
         }
     },
     watch: {
+        stackSort(value) {
+            localStorage.setItem("stackSort", value);
+        },
         searchText() {
             for (let stack of this.sortedStackList) {
                 if (!this.selectedStacks[stack.id]) {
@@ -498,6 +518,30 @@ export default {
     display: flex;
     align-items: center;
     flex: 0 0 auto;
+}
+
+.stack-sort-select {
+    width: auto;
+    max-width: 10em;
+}
+
+@media (max-width: 770px) {
+    .search-wrapper {
+        width: 100%;
+    }
+
+    .stack-sort-select {
+        flex: 0 0 9.5em;
+    }
+
+    .search-wrapper form {
+        flex: 1 1 auto;
+    }
+
+    .search-input {
+        width: 100%;
+        max-width: none;
+    }
 }
 
 .search-icon {

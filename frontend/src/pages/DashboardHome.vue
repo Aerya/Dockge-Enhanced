@@ -50,7 +50,29 @@
 
                             <!-- Agent Display Name -->
                             <span v-if="endpoint === ''">{{ $t("currentEndpoint") }}</span>
-                            <a v-else :href="agent.url" target="_blank">{{ endpoint }}</a>
+                            <template v-else-if="editingAgentEndpoint === endpoint">
+                                <input v-model="agentNameDraft" class="form-control form-control-sm agent-name-input"
+                                    maxlength="100" :placeholder="$t('agentNamePlaceholder')"
+                                    @keyup.enter="renameAgent(agent)" @keyup.esc="cancelRenameAgent" />
+                                <button class="btn btn-sm btn-link text-success p-1" :title="$t('saveAgentName')"
+                                    @click="renameAgent(agent)">
+                                    <font-awesome-icon icon="check" />
+                                </button>
+                                <button class="btn btn-sm btn-link text-secondary p-1" :title="$t('cancel')"
+                                    @click="cancelRenameAgent">
+                                    <font-awesome-icon icon="times" />
+                                </button>
+                            </template>
+                            <template v-else>
+                                <span class="agent-identity">
+                                    <a :href="agent.url" target="_blank">{{ agent.displayName || endpoint }}</a>
+                                    <small v-if="agent.displayName" class="text-muted d-block">{{ endpoint }}</small>
+                                </span>
+                                <button class="btn btn-sm btn-link p-1 rename-agent" :title="$t('renameAgent')"
+                                    @click="startRenameAgent(endpoint, agent)">
+                                    <font-awesome-icon icon="pen" />
+                                </button>
+                            </template>
 
                             <!-- Remove Button -->
                             <font-awesome-icon v-if="endpoint !== ''" class="ms-2 remove-agent" icon="trash" @click="showRemoveAgentDialog[agent.url] = !showRemoveAgentDialog[agent.url]" />
@@ -66,6 +88,11 @@
 
                         <!-- Add Agent Form -->
                         <form v-if="showAgentForm" @submit.prevent="addAgent">
+                            <div class="mb-3">
+                                <label for="agentDisplayName" class="form-label">{{ $t("agentName") }}</label>
+                                <input id="agentDisplayName" v-model="agent.displayName" type="text" maxlength="100"
+                                    class="form-control" :placeholder="$t('agentNamePlaceholder')">
+                            </div>
                             <div class="mb-3">
                                 <label for="url" class="form-label">{{ $t("dockgeURL") }}</label>
                                 <input id="url" v-model="agent.url" type="url" class="form-control" required placeholder="http://">
@@ -121,11 +148,14 @@ export default {
             dockerRunCommand: "",
             showAgentForm: false,
             showRemoveAgentDialog: {},
+            editingAgentEndpoint: null,
+            agentNameDraft: "",
             connectingAgent: false,
             agent: {
                 url: "http://",
                 username: "",
                 password: "",
+                displayName: "",
             }
         };
     },
@@ -178,10 +208,32 @@ export default {
                         url: "http://",
                         username: "",
                         password: "",
+                        displayName: "",
                     };
                 }
 
                 this.connectingAgent = false;
+            });
+        },
+
+        startRenameAgent(endpoint, agent) {
+            this.editingAgentEndpoint = endpoint;
+            this.agentNameDraft = agent.displayName || "";
+            this.$nextTick(() => document.querySelector(".agent-name-input")?.focus());
+        },
+
+        cancelRenameAgent() {
+            this.editingAgentEndpoint = null;
+            this.agentNameDraft = "";
+        },
+
+        renameAgent(agent) {
+            this.$root.getSocket().emit("renameAgent", {
+                url: agent.url,
+                displayName: this.agentNameDraft,
+            }, (res) => {
+                this.$root.toastRes(res);
+                if (res.ok) this.cancelRenameAgent();
             });
         },
 
@@ -341,9 +393,26 @@ table {
 }
 
 .agent {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+
     a {
         text-decoration: none;
     }
+}
+
+.agent-identity {
+    min-width: 0;
+    flex: 1;
+}
+
+.agent-name-input {
+    width: min(220px, 100%);
+}
+
+.rename-agent {
+    color: rgba(255, 255, 255, 0.45);
 }
 
 </style>
