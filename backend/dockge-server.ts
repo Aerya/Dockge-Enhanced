@@ -14,6 +14,7 @@ import { KulaManager } from "./watchers/kula-manager";
 import { AutoPruneManager } from "./watchers/auto-prune-manager";
 import { SelfUpdateChecker } from "./watchers/self-update-checker";
 import { StackScheduler } from "./watchers/stack-scheduler";
+import { StackReplicationManager } from "./watchers/stack-replication-manager";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
@@ -51,6 +52,7 @@ import { AgentProxySocketHandler } from "./socket-handlers/agent-proxy-socket-ha
 import { AgentSocketHandler } from "./agent-socket-handler";
 import { AgentSocket } from "../common/agent-socket";
 import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-handler";
+import { StackReplicationSocketHandler } from "./socket-handlers/stack-replication-socket-handler";
 import { Terminal } from "./terminal";
 import {
     ensureTrustedProxyUser,
@@ -85,6 +87,7 @@ export class DockgeServer {
     socketHandlerList : SocketHandler[] = [
         new MainSocketHandler(),
         new ManageAgentSocketHandler(),
+        new StackReplicationSocketHandler(),
     ];
 
     agentProxySocketHandler = new AgentProxySocketHandler();
@@ -453,6 +456,7 @@ export class DockgeServer {
             KulaManager.getInstance().startIfEnabled().catch(e => log.error("server", "KulaManager start error: " + e));
             AutoPruneManager.getInstance().startIfEnabled().catch(e => log.error("server", "AutoPruneManager start error: " + e));
             StackScheduler.getInstance().start(this).catch(e => log.error("server", "StackScheduler start error: " + e));
+            StackReplicationManager.getInstance().start(this).catch(e => log.error("server", "StackReplication start error: " + e));
             SelfUpdateChecker.getInstance().start();
         });
 
@@ -709,6 +713,7 @@ export class DockgeServer {
 
         // TODO: Close all terminals?
 
+        StackReplicationManager.getInstance().stop();
         await Database.close();
         Settings.stopCacheCleaner();
     }

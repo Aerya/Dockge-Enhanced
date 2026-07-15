@@ -24,6 +24,14 @@
                 <StackScheduleEditor :stack-name="stack.name" compact :show-heading="false" />
             </div>
 
+            <StackReplicationStatus
+                v-if="!isAdd && stack.isManagedByDockge && $root.agentCount > 1"
+                ref="stackReplicationStatus"
+                :source-endpoint="endpoint"
+                :source-stack-name="stack.name"
+                @edit="openStackReplication"
+            />
+
             <div v-if="stack.isManagedByDockge" class="mb-3">
                 <div class="stack-action-bar" role="toolbar" :aria-label="$t('stackActions')">
                     <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('deployStack')" :aria-label="$t('deployStack')" :disabled="processing" @click="deployStack">
@@ -72,6 +80,10 @@
 
                     <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackTransfer.moveAction')" :aria-label="$t('stackTransfer.moveAction')" :disabled="processing" @click="openStackTransfer('move')">
                         <font-awesome-icon icon="clone" />
+                    </button>
+
+                    <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackReplication.configure')" :aria-label="$t('stackReplication.configure')" :disabled="processing" @click="openStackReplication()">
+                        <font-awesome-icon icon="database" />
                     </button>
 
                     <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('downStack')" :aria-label="$t('downStack')" :disabled="processing" @click="downStack">
@@ -401,6 +413,7 @@
                 ref="stackTransferModal"
                 :stack="stack"
                 :endpoint="endpoint"
+                @completed="stackTransferCompleted"
             />
 
             <!-- Delete Dialog -->
@@ -456,6 +469,7 @@ import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
 import { useImageStatus } from "../composables/useImageStatus";
 import StackScheduleEditor from "../components/StackScheduleEditor.vue";
 import StackTransferModal from "../components/StackTransferModal.vue";
+import StackReplicationStatus from "../components/StackReplicationStatus.vue";
 
 const template = `
 services:
@@ -479,6 +493,7 @@ export default {
         BModal,
         StackScheduleEditor,
         StackTransferModal,
+        StackReplicationStatus,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
@@ -1171,6 +1186,20 @@ export default {
 
         openStackTransfer(operation) {
             this.$refs.stackTransferModal?.open(operation);
+        },
+
+        openStackReplication(policy = null) {
+            if (policy) {
+                this.$refs.stackTransferModal?.open("replicate", policy);
+                return;
+            }
+            this.$root.getSocket().emit("listStackReplications", this.endpoint, this.stack.name, response => {
+                this.$refs.stackTransferModal?.open("replicate", response?.ok ? response.data[0] || null : null);
+            });
+        },
+
+        stackTransferCompleted() {
+            this.$refs.stackReplicationStatus?.load();
         },
 
         deleteDialog() {

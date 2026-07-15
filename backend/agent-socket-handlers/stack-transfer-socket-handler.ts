@@ -25,6 +25,12 @@ import {
     StackTransferDataTargetRequest,
     stageStackTransferDataTarget,
 } from "../transfers/stack-data-transfer";
+import { forgetStackTransferSnapshots } from "../transfers/stack-transfer-restic";
+import {
+    activateStackReplicaTarget,
+    StackReplicaSyncRequest,
+    syncStackReplicaTarget,
+} from "../transfers/stack-replication-target";
 
 function requireObject(value: unknown): Record<string, unknown> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -115,6 +121,18 @@ function requireDataTargetRequest(value: unknown): StackTransferDataTargetReques
         transfer: requireTransferRequest(raw.transfer) } as unknown as StackTransferDataTargetRequest;
 }
 
+function requireReplicaSyncRequest(value: unknown): StackReplicaSyncRequest {
+    const raw = requireObject(value);
+    for (const field of [ "replicaId", "archivePath" ]) {
+        if (typeof raw[field] !== "string") {
+            throw new ValidationError(`${field} must be a string`);
+        }
+    }
+    return { ...requireDataTargetRequest(raw),
+        replicaId: raw.replicaId,
+        archivePath: raw.archivePath } as StackReplicaSyncRequest;
+}
+
 export class StackTransferSocketHandler extends AgentSocketHandler {
     create(socket: DockgeSocket, server: DockgeServer, agentSocket: AgentSocket): void {
         agentSocket.on("analyzeStackTransfer", async (stackName: unknown, sourceEndpoint: unknown, callback: unknown) => {
@@ -180,14 +198,58 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("completeStackTransferDataSource", async (transferId: unknown, success: unknown, callback: unknown) => {
+        agentSocket.on("completeStackTransferDataSource", async (transferId: unknown, success: unknown, retainSnapshots: unknown, callback: unknown) => {
             try {
                 checkLogin(socket);
-                if (typeof transferId !== "string" || typeof success !== "boolean") {
+                if (typeof retainSnapshots === "function") {
+                    callback = retainSnapshots;
+                    retainSnapshots = false;
+                }
+                if (typeof transferId !== "string" || typeof success !== "boolean" || typeof retainSnapshots !== "boolean") {
                     throw new ValidationError("Invalid source completion request");
                 }
                 callbackResult({ ok: true,
-                    data: await completeStackTransferDataSource(server, transferId, success) }, callback);
+                    data: await completeStackTransferDataSource(server, transferId, success, retainSnapshots) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("forgetStackTransferSnapshots", async (repositoryId: unknown, snapshotIds: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof repositoryId !== "string" || !Array.isArray(snapshotIds) || snapshotIds.some(id => typeof id !== "string")) {
+                    throw new ValidationError("Invalid snapshot cleanup request");
+                }
+                await forgetStackTransferSnapshots(repositoryId, snapshotIds as string[]);
+                callbackResult({ ok: true }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("syncStackReplicaTarget", async (rawRequest: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                const result = await syncStackReplicaTarget(server, socket, requireReplicaSyncRequest(rawRequest));
+                callbackResult({ ok: true,
+                    data: result }, callback);
+                server.sendStackList();
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("activateStackReplicaTarget", async (targetName: unknown, replicaId: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof targetName !== "string" || typeof replicaId !== "string") {
+                    throw new ValidationError("Invalid replica activation request");
+                }
+                const result = await activateStackReplicaTarget(server, socket, targetName, replicaId);
+                callbackResult({ ok: true,
+                    data: result }, callback);
+                server.sendStackList();
             } catch (error) {
                 callbackError(error, callback);
             }

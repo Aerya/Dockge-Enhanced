@@ -256,15 +256,16 @@ async function restoreSource(job: SourceDataJob, server: DockgeServer): Promise<
     job.runningServices = [];
 }
 
-async function restoreSnapshotToTarget(server: DockgeServer, targetName: string, mappings: StackTransferMount[], repositoryId: string, snapshotId: string, pathInSnapshot: string): Promise<void> {
+export async function restoreSnapshotToTarget(server: DockgeServer, targetName: string, mappings: StackTransferMount[], repositoryId: string, snapshotId: string, pathInSnapshot: string): Promise<void> {
     const stack = await Stack.getStack(server, targetName);
     const mounts = await resolveStorage(stack, mappings);
     if (mounts.some(mount => mount.type === "bind" && mount.source === "/")) {
         throw new ValidationError("Refusing to restore data into the host root filesystem");
     }
     await ensureTargetBindPaths(mounts);
+    const helperName = `dockge-replica-restore-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     const extract = spawn("docker", [
-        "run", "--rm", "-i", "--network", "none",
+        "run", "--rm", "-i", "--name", helperName, "--network", "none",
         ...dockerStorageArgs(mounts, "targets", false),
         HELPER_IMAGE, "sh", "-c",
         "for d in /targets/*; do rm -rf \"$d\"/* \"$d\"/.[!.]* \"$d\"/..?* 2>/dev/null || true; done; tar -C /targets -xf -",
@@ -279,6 +280,7 @@ async function restoreSnapshotToTarget(server: DockgeServer, targetName: string,
         }
     } catch (error) {
         extract.kill("SIGTERM");
+        await runDocker([ "rm", "-f", helperName ], undefined, 30_000).catch(() => {});
         await extractDone;
         throw error;
     }
@@ -380,7 +382,7 @@ export async function finalizeStackTransferDataSource(server: DockgeServer, tran
     }
 }
 
-export async function completeStackTransferDataSource(server: DockgeServer, transferId: string, success: boolean): Promise<{ cleanupWarning?: string }> {
+export async function completeStackTransferDataSource(server: DockgeServer, transferId: string, success: boolean, retainSnapshots = false): Promise<{ cleanupWarning?: string }> {
     const job = await getSourceJob(transferId);
     if (!success && job.status === "source-stopped") {
         await restoreSource(job, server);
@@ -390,6 +392,9 @@ export async function completeStackTransferDataSource(server: DockgeServer, tran
     }
     job.updatedAt = new Date().toISOString();
     await saveSourceJob(job);
+    if (retainSnapshots) {
+        return {};
+    }
     try {
         await forgetStackTransferSnapshots(job.repositoryId, job.snapshotIds);
         return {};
