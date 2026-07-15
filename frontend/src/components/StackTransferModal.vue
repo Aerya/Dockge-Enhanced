@@ -31,9 +31,52 @@
                     </div>
                 </div>
 
-                <div class="alert alert-info">
+                <div class="alert" :class="includeData ? 'alert-warning' : 'alert-info'">
                     <font-awesome-icon icon="circle-info" class="me-1" />
-                    {{ $t("stackTransfer.configOnlyWarning") }}
+                    {{ $t(includeData ? "stackTransfer.dataWarning" : "stackTransfer.configOnlyWarning") }}
+                </div>
+
+                <div class="shadow-box big-padding mb-4">
+                    <div class="form-check mb-3">
+                        <input id="stack-transfer-data" v-model="includeData" type="checkbox" class="form-check-input" :disabled="sharedRepositories.length === 0" @change="dataModeChanged" />
+                        <label for="stack-transfer-data" class="form-check-label fw-semibold">{{ $t("stackTransfer.includeData") }}</label>
+                        <div class="form-text">{{ $t("stackTransfer.includeDataHint") }}</div>
+                    </div>
+                    <div v-if="sharedRepositories.length === 0" class="alert alert-secondary mb-0 py-2">
+                        {{ $t("stackTransfer.noSharedRepository") }}
+                    </div>
+                    <div v-if="includeData" class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ $t("stackTransfer.sharedRepository") }}</label>
+                            <select v-model="repositoryId" class="form-select" @change="invalidatePreflight">
+                                <option v-for="repository in sharedRepositories" :key="repository.id" :value="repository.id">
+                                    {{ repository.label }} ({{ repository.type.toUpperCase() }})
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ $t("stackTransfer.consistencyMode") }}</label>
+                            <select v-model="consistencyMode" class="form-select" @change="invalidatePreflight">
+                                <option value="hot">{{ $t("stackTransfer.consistency.hot") }}</option>
+                                <option value="stop">{{ $t("stackTransfer.consistency.stop") }}</option>
+                                <option value="hooks">{{ $t("stackTransfer.consistency.hooks") }}</option>
+                            </select>
+                        </div>
+                        <template v-if="consistencyMode === 'hooks'">
+                            <div class="col-md-4">
+                                <label class="form-label">{{ $t("stackTransfer.hookService") }}</label>
+                                <input v-model="hookService" class="form-control" @input="invalidatePreflight" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ $t("stackTransfer.preHook") }}</label>
+                                <input v-model="preHook" class="form-control" @input="invalidatePreflight" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ $t("stackTransfer.postHook") }}</label>
+                                <input v-model="postHook" class="form-control" @input="invalidatePreflight" />
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
                 <div class="mb-4">
@@ -47,6 +90,7 @@
                     <table class="table align-middle transfer-mapping-table">
                         <thead>
                             <tr>
+                                <th v-if="includeData">{{ $t("stackTransfer.data") }}</th>
                                 <th>{{ $t("stackTransfer.service") }}</th>
                                 <th>{{ $t("stackTransfer.type") }}</th>
                                 <th>{{ $t("stackTransfer.source") }}</th>
@@ -57,6 +101,9 @@
                         </thead>
                         <tbody>
                             <tr v-for="mount in mappings" :key="mount.id">
+                                <td v-if="includeData">
+                                    <input v-if="mount.type === 'bind' || mount.type === 'volume'" v-model="mount.transferData" type="checkbox" class="form-check-input" :title="mount.external ? $t('stackTransfer.externalDataWarning') : ''" @change="invalidatePreflight" />
+                                </td>
                                 <td><strong>{{ mount.service }}</strong><small class="d-block text-muted">{{ mount.target }}</small></td>
                                 <td><span class="badge bg-secondary">{{ mount.type }}</span></td>
                                 <td class="text-break"><code>{{ mount.source || "—" }}</code><small v-if="mount.resolvedSource && mount.resolvedSource !== mount.source" class="d-block text-muted">{{ mount.resolvedSource }}</small></td>
@@ -70,7 +117,7 @@
                                 </td>
                             </tr>
                             <tr v-if="mappings.length === 0">
-                                <td colspan="6" class="text-center text-muted">{{ $t("stackTransfer.noMounts") }}</td>
+                                <td :colspan="includeData ? 7 : 6" class="text-center text-muted">{{ $t("stackTransfer.noMounts") }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -118,6 +165,9 @@
                 </div>
 
                 <div v-if="operationError" class="alert alert-danger">{{ operationError }}</div>
+                <div v-if="transferring && transferPhase" class="alert alert-primary">
+                    <span class="spinner-border spinner-border-sm me-2" />{{ $t(`stackTransfer.phase.${transferPhase}`) }}
+                </div>
 
                 <div class="d-flex justify-content-end gap-2">
                     <button class="btn btn-normal" @click="visible = false">{{ $t("cancel") }}</button>
@@ -149,6 +199,18 @@ export default {
             targetEndpoint: "",
             targetName: "",
             deploy: true,
+            includeData: false,
+            sourceDataCapabilities: { repositories: [],
+                policy: { mode: "hot" },
+                resticAvailable: false },
+            targetDataCapabilities: { repositories: [],
+                resticAvailable: false },
+            repositoryId: "",
+            consistencyMode: "hot",
+            hookService: "",
+            preHook: "",
+            postHook: "",
+            transferPhase: "",
             mappings: [],
             originalMounts: [],
             sourceRunningServices: [],
@@ -178,7 +240,15 @@ export default {
             return JSON.stringify({ targetEndpoint: this.targetEndpoint,
                 targetName: this.targetName,
                 deploy: this.deploy,
-                mappings: this.mappings.map(item => [ item.id, item.targetSource ]) });
+                includeData: this.includeData,
+                repositoryId: this.repositoryId,
+                consistencyMode: this.consistencyMode,
+                hooks: [ this.hookService, this.preHook, this.postHook ],
+                mappings: this.mappings.map(item => [ item.id, item.targetSource, item.transferData ]) });
+        },
+        sharedRepositories() {
+            const targets = new Set(this.targetDataCapabilities.repositories.map(item => item.id));
+            return this.sourceDataCapabilities.repositories.filter(item => targets.has(item.id));
         },
         canTransfer() {
             if (!this.targetEndpoint && !this.targetAgents.some(item => item.endpoint === "")) {
@@ -187,7 +257,15 @@ export default {
             if (!this.targetName || this.preflightSignature !== this.currentSignature) {
                 return false;
             }
-            return !this.issues.some(issue => issue.severity === "error" && (issue.scope === "save" || this.deploy));
+            if (this.includeData) {
+                if (!this.repositoryId || !this.mappings.some(mapping => mapping.transferData && (mapping.type === "bind" || mapping.type === "volume"))) {
+                    return false;
+                }
+                if (this.consistencyMode === "hooks" && !this.hookService) {
+                    return false;
+                }
+            }
+            return !this.issues.some(issue => issue.severity === "error" && (issue.scope === "save" || this.deploy || this.includeData));
         },
         copiedFiles() {
             const files = [ "compose.yaml" ];
@@ -204,6 +282,15 @@ export default {
         emitAgent(endpoint, event, ...args) {
             return new Promise((resolve, reject) => {
                 const timeout = window.setTimeout(() => reject(new Error(this.$t("stackTransfer.agentTimeout"))), 180_000);
+                this.$root.emitAgent(endpoint, event, ...args, response => {
+                    window.clearTimeout(timeout);
+                    resolve(response);
+                });
+            });
+        },
+        emitAgentLong(endpoint, event, ...args) {
+            return new Promise((resolve, reject) => {
+                const timeout = window.setTimeout(() => reject(new Error(this.$t("stackTransfer.dataTimeout"))), 2 * 60 * 60_000);
                 this.$root.emitAgent(endpoint, event, ...args, response => {
                     window.clearTimeout(timeout);
                     resolve(response);
@@ -227,9 +314,11 @@ export default {
                 if (!analysis.ok) {
                     throw new Error(this.$t(analysis.msg));
                 }
-                this.originalMounts = analysis.data.mounts;
+                this.originalMounts = analysis.data.mounts.map(mount => ({ ...mount,
+                    transferData: !mount.external && (mount.type === "bind" || mount.type === "volume") }));
                 this.sourceRunningServices = analysis.data.runningServices || [];
                 this.analysisWarnings = analysis.data.warnings || [];
+                await this.loadDataCapabilities();
                 await this.loadRules();
                 this.applyRules();
                 await this.runPreflight();
@@ -244,6 +333,18 @@ export default {
             this.targetEndpoint = "";
             this.targetName = "";
             this.deploy = true;
+            this.includeData = false;
+            this.sourceDataCapabilities = { repositories: [],
+                policy: { mode: "hot" },
+                resticAvailable: false };
+            this.targetDataCapabilities = { repositories: [],
+                resticAvailable: false };
+            this.repositoryId = "";
+            this.consistencyMode = "hot";
+            this.hookService = "";
+            this.preHook = "";
+            this.postHook = "";
+            this.transferPhase = "";
             this.mappings = [];
             this.originalMounts = [];
             this.sourceRunningServices = [];
@@ -260,12 +361,52 @@ export default {
             this.invalidatePreflight();
             this.operationError = "";
             try {
+                await this.loadTargetDataCapabilities();
                 await this.loadRules();
                 this.applyRules();
                 await this.runPreflight();
             } catch (error) {
                 this.operationError = error instanceof Error ? error.message : String(error);
             }
+        },
+        async loadDataCapabilities() {
+            const [ source, target ] = await Promise.all([
+                this.emitAgent(this.endpoint, "getStackTransferDataCapabilities", this.stack.name),
+                this.emitAgent(this.targetEndpoint, "getStackTransferDataCapabilities", this.stack.name),
+            ]);
+            if (!source.ok) {
+                throw new Error(this.$t(source.msg));
+            }
+            if (!target.ok) {
+                throw new Error(this.$t(target.msg));
+            }
+            this.sourceDataCapabilities = source.data;
+            this.targetDataCapabilities = target.data;
+            const policy = source.data.policy || { mode: "hot" };
+            this.consistencyMode = policy.mode || "hot";
+            this.hookService = policy.hookService || "";
+            this.preHook = policy.preHook || "";
+            this.postHook = policy.postHook || "";
+            this.repositoryId = this.sharedRepositories[0]?.id || "";
+        },
+        async loadTargetDataCapabilities() {
+            const response = await this.emitAgent(this.targetEndpoint, "getStackTransferDataCapabilities", this.stack.name);
+            if (!response.ok) {
+                throw new Error(this.$t(response.msg));
+            }
+            this.targetDataCapabilities = response.data;
+            if (!this.sharedRepositories.some(item => item.id === this.repositoryId)) {
+                this.repositoryId = this.sharedRepositories[0]?.id || "";
+                if (!this.repositoryId) {
+                    this.includeData = false;
+                }
+            }
+        },
+        dataModeChanged() {
+            if (this.includeData && !this.repositoryId) {
+                this.repositoryId = this.sharedRepositories[0]?.id || "";
+            }
+            this.invalidatePreflight();
         },
         async loadRules() {
             const response = await this.emitAgent(this.targetEndpoint, "getStackTransferPathRules", this.endpoint);
@@ -319,6 +460,15 @@ export default {
                 composeOverrideYAML: this.stack.composeOverrideYAML || "",
                 mappings: this.mappings,
                 deploy: this.deploy,
+                dataTransfer: this.includeData,
+            };
+        },
+        dataPolicy() {
+            return {
+                mode: this.consistencyMode,
+                hookService: this.hookService.trim() || undefined,
+                preHook: this.preHook.trim() || undefined,
+                postHook: this.postHook.trim() || undefined,
             };
         },
         async runPreflight() {
@@ -363,6 +513,10 @@ export default {
             this.transferring = true;
             this.operationError = "";
             try {
+                if (this.includeData) {
+                    await this.executeDataTransfer();
+                    return;
+                }
                 if (this.operation === "move") {
                     const sourceState = await this.emitAgent(this.endpoint, "analyzeStackTransfer", this.stack.name, this.endpoint);
                     if (!sourceState.ok) {
@@ -420,6 +574,78 @@ export default {
                 this.operationError = error instanceof Error ? error.message : String(error);
             } finally {
                 this.transferring = false;
+            }
+        },
+        async executeDataTransfer() {
+            const transferId = `transfer-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+            let targetJobId = "";
+            let sourceSnapshotCreated = false;
+            try {
+                this.transferPhase = this.operation === "move" ? "initialSnapshot" : "snapshot";
+                const snapshot = await this.emitAgentLong(this.endpoint, "createStackTransferDataSnapshot", {
+                    transferId,
+                    stackName: this.stack.name,
+                    repositoryId: this.repositoryId,
+                    mappings: this.mappings,
+                    policy: this.dataPolicy(),
+                    phase: this.operation === "move" ? "initial" : "copy",
+                });
+                if (!snapshot.ok) {
+                    throw new Error(this.$t(snapshot.msg));
+                }
+                sourceSnapshotCreated = true;
+
+                this.transferPhase = "initialRestore";
+                const staged = await this.emitAgentLong(this.targetEndpoint, "stageStackTransferDataTarget", {
+                    transferId,
+                    repositoryId: this.repositoryId,
+                    snapshotId: snapshot.data.snapshotId,
+                    transfer: this.request(),
+                });
+                if (!staged.ok) {
+                    throw new Error(this.$t(staged.msg));
+                }
+                targetJobId = staged.data.jobId;
+
+                if (this.operation === "move") {
+                    this.transferPhase = "finalSnapshot";
+                    const finalSnapshot = await this.emitAgentLong(this.endpoint, "finalizeStackTransferDataSource", transferId);
+                    if (!finalSnapshot.ok) {
+                        throw new Error(this.$t(finalSnapshot.msg));
+                    }
+                    this.transferPhase = "finalRestore";
+                    const finalized = await this.emitAgentLong(this.targetEndpoint, "finalizeStackTransferDataTarget", {
+                        transferId,
+                        repositoryId: this.repositoryId,
+                        snapshotId: finalSnapshot.data.snapshotId,
+                        transfer: this.request(),
+                    }, targetJobId);
+                    if (!finalized.ok) {
+                        throw new Error(this.$t(finalized.msg));
+                    }
+                }
+
+                this.transferPhase = "cleanup";
+                const completed = await this.emitAgentLong(this.endpoint, "completeStackTransferDataSource", transferId, true);
+                if (!completed.ok) {
+                    throw new Error(this.$t(completed.msg));
+                }
+                this.result = { job: { id: targetJobId } };
+                this.preflightSignature = "";
+                this.$root.emitAgent(this.targetEndpoint, "requestStackList", () => {});
+                this.$emit("completed", { endpoint: this.targetEndpoint,
+                    name: this.targetName,
+                    operation: this.operation });
+            } catch (error) {
+                if (targetJobId && this.operation === "move") {
+                    await this.emitAgentLong(this.targetEndpoint, "rollbackStackTransferDataTarget", this.targetName, targetJobId).catch(() => {});
+                }
+                if (sourceSnapshotCreated) {
+                    await this.emitAgentLong(this.endpoint, "completeStackTransferDataSource", transferId, false).catch(() => {});
+                }
+                throw error;
+            } finally {
+                this.transferPhase = "";
             }
         },
         formatBytes(value) {

@@ -14,6 +14,17 @@ import {
     StackTransferRequest,
     updateTransferJob,
 } from "../transfers/stack-transfer";
+import {
+    completeStackTransferDataSource,
+    createStackTransferDataSnapshot,
+    finalizeStackTransferDataSource,
+    finalizeStackTransferDataTarget,
+    getStackTransferDataCapabilities,
+    rollbackStackTransferDataTarget,
+    StackTransferDataSnapshotRequest,
+    StackTransferDataTargetRequest,
+    stageStackTransferDataTarget,
+} from "../transfers/stack-data-transfer";
 
 function requireObject(value: unknown): Record<string, unknown> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -51,11 +62,57 @@ function requireTransferRequest(value: unknown): StackTransferRequest {
         if (mapping.size !== null && typeof mapping.size !== "number") {
             throw new ValidationError("Invalid mapping size");
         }
+        if (mapping.transferData !== undefined && typeof mapping.transferData !== "boolean") {
+            throw new ValidationError("Invalid data transfer selection");
+        }
     }
     if (typeof request.deploy !== "boolean") {
         throw new ValidationError("deploy must be a boolean");
     }
+    if (request.dataTransfer !== undefined && typeof request.dataTransfer !== "boolean") {
+        throw new ValidationError("dataTransfer must be a boolean");
+    }
     return request as unknown as StackTransferRequest;
+}
+
+function requireDataSnapshotRequest(value: unknown): StackTransferDataSnapshotRequest {
+    const raw = requireObject(value);
+    for (const field of [ "transferId", "stackName", "repositoryId", "phase" ]) {
+        if (typeof raw[field] !== "string") {
+            throw new ValidationError(`${field} must be a string`);
+        }
+    }
+    if (raw.phase !== "copy" && raw.phase !== "initial") {
+        throw new ValidationError("Invalid data snapshot phase");
+    }
+    const policy = requireObject(raw.policy);
+    if (![ "hot", "stop", "hooks" ].includes(String(policy.mode))) {
+        throw new ValidationError("Invalid consistency mode");
+    }
+    const transfer = requireTransferRequest({
+        operation: "copy",
+        sourceEndpoint: "validation",
+        sourceStackName: raw.stackName,
+        targetName: "validation",
+        composeYAML: "",
+        composeENV: "",
+        composeOverrideYAML: "",
+        mappings: raw.mappings,
+        deploy: false,
+    });
+    return { ...raw,
+        mappings: transfer.mappings } as unknown as StackTransferDataSnapshotRequest;
+}
+
+function requireDataTargetRequest(value: unknown): StackTransferDataTargetRequest {
+    const raw = requireObject(value);
+    for (const field of [ "transferId", "repositoryId", "snapshotId" ]) {
+        if (typeof raw[field] !== "string") {
+            throw new ValidationError(`${field} must be a string`);
+        }
+    }
+    return { ...raw,
+        transfer: requireTransferRequest(raw.transfer) } as unknown as StackTransferDataTargetRequest;
 }
 
 export class StackTransferSocketHandler extends AgentSocketHandler {
@@ -82,6 +139,119 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
                 }
                 callbackResult({ ok: true,
                     data: await getPathRules(sourceEndpoint) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("getStackTransferDataCapabilities", async (stackName: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string") {
+                    throw new ValidationError("Stack name must be a string");
+                }
+                callbackResult({ ok: true,
+                    data: await getStackTransferDataCapabilities(stackName) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("createStackTransferDataSnapshot", async (rawRequest: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true,
+                    data: await createStackTransferDataSnapshot(server, requireDataSnapshotRequest(rawRequest)) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("finalizeStackTransferDataSource", async (transferId: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof transferId !== "string") {
+                    throw new ValidationError("Invalid transfer id");
+                }
+                callbackResult({ ok: true,
+                    data: await finalizeStackTransferDataSource(server, transferId) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("completeStackTransferDataSource", async (transferId: unknown, success: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof transferId !== "string" || typeof success !== "boolean") {
+                    throw new ValidationError("Invalid source completion request");
+                }
+                callbackResult({ ok: true,
+                    data: await completeStackTransferDataSource(server, transferId, success) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("stageStackTransferDataTarget", async (rawRequest: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                const request = requireDataTargetRequest(rawRequest);
+                const result = await stageStackTransferDataTarget(server, socket, request);
+                if (request.transfer.operation === "copy") {
+                    await AuditLogger.getInstance().logFromSocket(socket, {
+                        action: "stack.transfer.copy-data",
+                        category: "stack",
+                        targetType: "stack",
+                        target: request.transfer.targetName,
+                        status: "success",
+                        metadata: { sourceEndpoint: request.transfer.sourceEndpoint,
+                            sourceStackName: request.transfer.sourceStackName,
+                            jobId: result.jobId },
+                    }).catch(() => {});
+                }
+                callbackResult({ ok: true,
+                    data: result }, callback);
+                server.sendStackList();
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("finalizeStackTransferDataTarget", async (rawRequest: unknown, jobId: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof jobId !== "string") {
+                    throw new ValidationError("Invalid target job id");
+                }
+                const request = requireDataTargetRequest(rawRequest);
+                await finalizeStackTransferDataTarget(server, socket, request, jobId);
+                await AuditLogger.getInstance().logFromSocket(socket, {
+                    action: "stack.transfer.move-data",
+                    category: "stack",
+                    targetType: "stack",
+                    target: request.transfer.targetName,
+                    status: "success",
+                    metadata: { sourceEndpoint: request.transfer.sourceEndpoint,
+                        sourceStackName: request.transfer.sourceStackName,
+                        jobId },
+                }).catch(() => {});
+                callbackResult({ ok: true }, callback);
+                server.sendStackList();
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("rollbackStackTransferDataTarget", async (targetName: unknown, jobId: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof targetName !== "string" || typeof jobId !== "string") {
+                    throw new ValidationError("Invalid target rollback request");
+                }
+                await rollbackStackTransferDataTarget(server, targetName, jobId);
+                callbackResult({ ok: true }, callback);
+                server.sendStackList();
             } catch (error) {
                 callbackError(error, callback);
             }
