@@ -86,7 +86,7 @@
                 </span>
             </div>
         </div>
-        <div ref="stackList" class="stack-list" :class="{ scrollbar: scrollbar }" :style="stackListStyle">
+        <div ref="stackList" class="stack-list" :class="{ scrollbar: scrollbar }">
             <div v-if="Object.keys(sortedStackList).length === 0" class="text-center mt-3">
                 <router-link to="/compose">{{ $t("addFirstStackMsg") }}</router-link>
             </div>
@@ -208,10 +208,14 @@ export default {
                     const agent1 = this.$root.endpointDisplayFunction(m1.endpoint || "");
                     const agent2 = this.$root.endpointDisplayFunction(m2.endpoint || "");
                     const agentOrder = agent1.localeCompare(agent2, undefined, { sensitivity: "base" });
-                    if (agentOrder !== 0) return agentOrder;
+                    if (agentOrder !== 0) {
+                        return agentOrder;
+                    }
 
                     const endpointOrder = (m1.endpoint || "").localeCompare(m2.endpoint || "");
-                    if (endpointOrder !== 0) return endpointOrder;
+                    if (endpointOrder !== 0) {
+                        return endpointOrder;
+                    }
                     return m1.name.localeCompare(m2.name);
                 }
 
@@ -282,19 +286,6 @@ export default {
 
         isDarkTheme() {
             return document.body.classList.contains("dark");
-        },
-
-        stackListStyle() {
-            //let listHeaderHeight = 107;
-            let listHeaderHeight = window.innerWidth > 770 ? 64 : 112;
-
-            if (this.selectMode) {
-                listHeaderHeight += 42;
-            }
-
-            return {
-                "height": `calc(100% - ${listHeaderHeight}px)`
-            };
         },
 
         selectedStackCount() {
@@ -474,6 +465,9 @@ export default {
     height: calc(100vh - 150px);
     position: sticky;
     top: 10px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .small-padding {
@@ -499,6 +493,7 @@ export default {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .header-filter {
@@ -517,30 +512,34 @@ export default {
 .search-wrapper {
     display: flex;
     align-items: center;
-    flex: 0 0 auto;
+    flex: 1 1 22rem;
+    min-width: 0;
 }
 
 .stack-sort-select {
-    width: auto;
-    max-width: 10em;
+    flex: 0 1 10em;
+    min-width: 0;
 }
 
-@media (max-width: 770px) {
-    .search-wrapper {
-        width: 100%;
-    }
+.search-wrapper form {
+    flex: 1 1 auto;
+    min-width: 0;
+}
 
+.search-input {
+    width: 100%;
+    max-width: none;
+}
+
+.stack-list {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+}
+
+@media (max-width: 400px) {
     .stack-sort-select {
-        flex: 0 0 9.5em;
-    }
-
-    .search-wrapper form {
-        flex: 1 1 auto;
-    }
-
-    .search-input {
-        width: 100%;
-        max-width: none;
+        flex-basis: 8.5em;
     }
 }
 
@@ -559,13 +558,9 @@ export default {
     }
 }
 
-.search-input {
-    max-width: 15em;
-}
-
 .stack-summary {
     display: flex;
-    flex: 1 1 auto;
+    flex: 1 1 18rem;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
@@ -634,23 +629,6 @@ export default {
     &:hover {
         border-color: rgba(148, 163, 184, 0.72);
         background: rgba(148, 163, 184, 0.18);
-    }
-}
-
-@media (max-width: 770px) {
-    .header-top {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .search-wrapper {
-        width: 100%;
-    }
-
-    .search-wrapper form,
-    .search-input {
-        width: 100%;
-        max-width: none;
     }
 }
 
