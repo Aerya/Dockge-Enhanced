@@ -14,6 +14,7 @@ declare module 'vue' {
     AuditLogTab: typeof import('./src/components/AuditLogTab.vue')['default']
     BackupTab: typeof import('./src/components/BackupTab.vue')['default']
     BDropdown: typeof import('bootstrap-vue-next')['BDropdown']
+    BDropdownDivider: typeof import('bootstrap-vue-next')['BDropdownDivider']
     BDropdownItem: typeof import('bootstrap-vue-next')['BDropdownItem']
     BModal: typeof import('bootstrap-vue-next')['BModal']
     Confirm: typeof import('./src/components/Confirm.vue')['default']
