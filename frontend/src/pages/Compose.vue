@@ -25,74 +25,63 @@
             </div>
 
             <div v-if="stack.isManagedByDockge" class="mb-3">
-                <div class="btn-group me-2" role="group">
-                    <button v-if="isEditMode" class="btn btn-primary" :disabled="processing" @click="deployStack">
-                        <font-awesome-icon icon="rocket" class="me-1" />
-                        {{ $t("deployStack") }}
+                <div class="stack-action-bar" role="toolbar" :aria-label="$t('stackActions')">
+                    <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('deployStack')" :aria-label="$t('deployStack')" :disabled="processing" @click="deployStack">
+                        <font-awesome-icon icon="rocket" />
                     </button>
 
-                    <button v-if="isEditMode" class="btn btn-normal" :disabled="processing" @click="saveStack">
-                        <font-awesome-icon icon="save" class="me-1" />
-                        {{ $t("saveStackDraft") }}
+                    <button v-if="isEditMode" class="btn btn-normal stack-action" :title="$t('saveStackDraft')" :aria-label="$t('saveStackDraft')" :disabled="processing" @click="saveStack">
+                        <font-awesome-icon icon="save" />
                     </button>
 
-                    <button v-if="!isEditMode" class="btn btn-secondary" :disabled="processing" @click="enableEditMode">
-                        <font-awesome-icon icon="pen" class="me-1" />
-                        {{ $t("editStack") }}
+                    <button v-if="isEditMode && !isAdd" class="btn btn-normal stack-action" :title="$t('discardStack')" :aria-label="$t('discardStack')" :disabled="processing" @click="discardStack">
+                        <font-awesome-icon icon="undo" />
                     </button>
 
-                    <button v-if="!isEditMode && !active" class="btn btn-primary" :disabled="processing" @click="startStack">
-                        <font-awesome-icon icon="play" class="me-1" />
-                        {{ $t("startStack") }}
+                    <button v-if="!isEditMode" class="btn btn-secondary stack-action" :title="$t('editStack')" :aria-label="$t('editStack')" :disabled="processing" @click="enableEditMode">
+                        <font-awesome-icon icon="pen" />
                     </button>
 
-                    <button v-if="!isEditMode && active" class="btn btn-normal " :disabled="processing" @click="restartStack">
-                        <font-awesome-icon icon="rotate" class="me-1" />
-                        {{ $t("restartStack") }}
+                    <button v-if="!isEditMode && !active" class="btn btn-primary stack-action" :title="$t('startStack')" :aria-label="$t('startStack')" :disabled="processing" @click="startStack">
+                        <font-awesome-icon icon="play" />
                     </button>
 
-                    <button v-if="!isEditMode" class="btn btn-normal" :disabled="processing" @click="updateStack">
-                        <font-awesome-icon icon="cloud-arrow-down" class="me-1" />
-                        {{ $t("updateStack") }}
+                    <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('restartStack')" :aria-label="$t('restartStack')" :disabled="processing" @click="restartStack">
+                        <font-awesome-icon icon="sync-alt" />
                     </button>
 
-                    <button v-if="!isEditMode" class="btn btn-normal" :disabled="processing" @click="recreateStack">
-                        <font-awesome-icon icon="rotate" class="me-1" />
-                        {{ $t("recreateStack") }}
+                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('updateStack')" :aria-label="$t('updateStack')" :disabled="processing" @click="updateStack">
+                        <font-awesome-icon icon="cloud-arrow-down" />
                     </button>
 
-                    <button v-if="!isEditMode" class="btn btn-normal" :disabled="processing" @click="pullAndRecreateStack">
-                        <font-awesome-icon icon="cloud-arrow-down" class="me-1" />
-                        {{ $t("pullAndRecreateStack") }}
+                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('recreateStack')" :aria-label="$t('recreateStack')" :disabled="processing" @click="recreateStack">
+                        <font-awesome-icon icon="rotate" />
                     </button>
 
-                    <button v-if="!isEditMode && active" class="btn btn-normal" :disabled="processing" @click="stopStack">
-                        <font-awesome-icon icon="stop" class="me-1" />
-                        {{ $t("stopStack") }}
+                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('pullAndRecreateStack')" :aria-label="$t('pullAndRecreateStack')" :disabled="processing" @click="pullAndRecreateStack">
+                        <font-awesome-icon icon="cloud-upload-alt" />
                     </button>
 
-                    <BDropdown right text="" variant="normal">
-                        <BDropdownItem v-if="$root.agentCount > 1 && !isEditMode" @click="openStackTransfer('copy')">
-                            <font-awesome-icon icon="copy" class="me-1" />
-                            {{ $t("stackTransfer.copyAction") }}
-                        </BDropdownItem>
-                        <BDropdownItem v-if="$root.agentCount > 1 && !isEditMode" @click="openStackTransfer('move')">
-                            <font-awesome-icon icon="clone" class="me-1" />
-                            {{ $t("stackTransfer.moveAction") }}
-                        </BDropdownItem>
-                        <BDropdownDivider v-if="$root.agentCount > 1 && !isEditMode" />
-                        <BDropdownItem @click="downStack">
-                            <font-awesome-icon icon="stop" class="me-1" />
-                            {{ $t("downStack") }}
-                        </BDropdownItem>
-                    </BDropdown>
+                    <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('stopStack')" :aria-label="$t('stopStack')" :disabled="processing" @click="stopStack">
+                        <font-awesome-icon icon="stop" />
+                    </button>
+
+                    <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackTransfer.copyAction')" :aria-label="$t('stackTransfer.copyAction')" :disabled="processing" @click="openStackTransfer('copy')">
+                        <font-awesome-icon icon="copy" />
+                    </button>
+
+                    <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackTransfer.moveAction')" :aria-label="$t('stackTransfer.moveAction')" :disabled="processing" @click="openStackTransfer('move')">
+                        <font-awesome-icon icon="clone" />
+                    </button>
+
+                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('downStack')" :aria-label="$t('downStack')" :disabled="processing" @click="downStack">
+                        <font-awesome-icon icon="ban" />
+                    </button>
+
+                    <button v-if="!isEditMode" class="btn btn-danger stack-action" :title="$t('deleteStack')" :aria-label="$t('deleteStack')" :disabled="processing" @click="showDeleteDialog = !showDeleteDialog">
+                        <font-awesome-icon icon="trash" />
+                    </button>
                 </div>
-
-                <button v-if="isEditMode && !isAdd" class="btn btn-normal" :disabled="processing" @click="discardStack">{{ $t("discardStack") }}</button>
-                <button v-if="!isEditMode" class="btn btn-danger" :disabled="processing" @click="showDeleteDialog = !showDeleteDialog">
-                    <font-awesome-icon icon="trash" class="me-1" />
-                    {{ $t("deleteStack") }}
-                </button>
             </div>
 
             <!-- URLs -->
@@ -1340,6 +1329,23 @@ export default {
 
 .terminal {
     height: 200px;
+}
+
+.stack-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+}
+
+.stack-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.65rem;
+    height: 2.45rem;
+    padding: 0;
+    border-radius: .55rem;
+    font-size: 1rem;
 }
 
 .stack-scheduler-inline {

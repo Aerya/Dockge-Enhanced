@@ -29,6 +29,7 @@ export interface StackTransferMount {
     targetSource: string;
     confidence: MappingConfidence;
     reason: string;
+    transferData?: boolean;
 }
 
 export interface StackTransferInventory {
@@ -64,6 +65,7 @@ export interface StackTransferRequest {
     composeOverrideYAML: string;
     mappings: StackTransferMount[];
     deploy: boolean;
+    dataTransfer?: boolean;
 }
 
 export interface StackTransferJob {
@@ -226,7 +228,7 @@ export function suggestTargetSource(mount: Pick<StackTransferMount, "type" | "so
         reason: "absolute-bind" };
 }
 
-async function runDocker(args: string[], cwd?: string, timeout = 30_000): Promise<string> {
+export async function runDocker(args: string[], cwd?: string, timeout = 30_000): Promise<string> {
     const { stdout } = await execFileAsync("docker", args, { cwd,
         timeout,
         maxBuffer: 8 * 1024 * 1024 });
@@ -688,7 +690,7 @@ export async function listTransferJobs(): Promise<StackTransferJob[]> {
     return readJobs();
 }
 
-async function verifyDeployment(server: DockgeServer, targetName: string, expectedServices: string[], timeoutMs = 45_000): Promise<void> {
+export async function verifyDeployment(server: DockgeServer, targetName: string, expectedServices: string[], timeoutMs = 45_000): Promise<void> {
     const stack = await Stack.getStack(server, targetName);
     const deadline = Date.now() + timeoutMs;
     let stableSince: number | null = null;
@@ -742,7 +744,7 @@ async function verifyDeployment(server: DockgeServer, targetName: string, expect
     throw new Error("Target health verification timed out");
 }
 
-async function rollbackImportedStack(server: DockgeServer, targetName: string): Promise<void> {
+export async function rollbackImportedStack(server: DockgeServer, targetName: string): Promise<void> {
     const dir = path.join(server.stacksDir, targetName);
     if (!(await fileExists(dir))) {
         return;
@@ -755,7 +757,7 @@ async function rollbackImportedStack(server: DockgeServer, targetName: string): 
 }
 
 export async function importStackTransfer(server: DockgeServer, socket: DockgeSocket, request: StackTransferRequest): Promise<{ job: StackTransferJob; mappedOverrideYAML: string }> {
-    if (request.operation === "move" && !request.deploy) {
+    if (request.operation === "move" && !request.deploy && !request.dataTransfer) {
         throw new ValidationError("A move must deploy and verify the target before stopping the source");
     }
     const now = new Date().toISOString();
@@ -775,7 +777,7 @@ export async function importStackTransfer(server: DockgeServer, socket: DockgeSo
     let tempDir = "";
     try {
         const preflight = await preflightStackTransfer(server, request);
-        const blocking = preflight.issues.filter(issue => issue.severity === "error" && (issue.scope === "save" || request.deploy));
+        const blocking = preflight.issues.filter(issue => issue.severity === "error" && (issue.scope === "save" || request.deploy || request.dataTransfer));
         if (blocking.length > 0) {
             throw new ValidationError(blocking.map(issue => issue.message).join(" ; "));
         }
@@ -822,6 +824,18 @@ export async function importStackTransfer(server: DockgeServer, socket: DockgeSo
         await saveJob(job);
         throw error;
     }
+}
+
+export async function createImportedStackStorage(server: DockgeServer, targetName: string): Promise<void> {
+    const stack = await Stack.getStack(server, targetName);
+    await runDocker(stack.getComposeOptions("create"), stack.fullPath, 30 * 60_000);
+}
+
+export async function deployAndVerifyImportedStack(server: DockgeServer, socket: DockgeSocket, targetName: string): Promise<void> {
+    const stack = await Stack.getStack(server, targetName);
+    const config = await resolvedComposeForStack(server, stack);
+    await stack.deploy(socket);
+    await verifyDeployment(server, targetName, Object.keys(asRecord(config.services)));
 }
 
 export async function getPathRules(sourceEndpoint: string): Promise<StackTransferPathRule[]> {
