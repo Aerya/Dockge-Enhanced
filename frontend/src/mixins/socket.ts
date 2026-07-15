@@ -131,11 +131,7 @@ export default defineComponent({
     methods: {
 
         endpointDisplayFunction(endpoint : string) {
-            if (endpoint) {
-                return this.agentList?.[endpoint]?.displayName || endpoint;
-            } else {
-                return this.$t("currentEndpoint");
-            }
+            return this.agentList?.[endpoint]?.displayName || endpoint || this.$t("currentEndpoint");
         },
 
         /**

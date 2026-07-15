@@ -6,6 +6,9 @@ import { isDev, LooseObject, sleep } from "../common/util-common";
 import semver from "semver";
 import { R } from "redbean-node";
 import dayjs, { Dayjs } from "dayjs";
+import { Settings } from "./settings";
+
+const LOCAL_AGENT_DISPLAY_NAME_SETTING = "localAgentDisplayName";
 
 /**
  * Dockge Instance Manager
@@ -88,6 +91,11 @@ export class AgentManager {
     }
 
     async rename(url: string, displayName: string): Promise<void> {
+        if (url === "") {
+            await Settings.set(LOCAL_AGENT_DISPLAY_NAME_SETTING, displayName, "general");
+            return;
+        }
+
         const bean = await R.findOne("agent", " url = ? ", [ url ]) as Agent | null;
         if (!bean) {
             throw new Error("Agent not found");
@@ -282,13 +290,14 @@ export class AgentManager {
     async sendAgentList() {
         let list = await Agent.getAgentList();
         let result : Record<string, LooseObject> = {};
+        const localDisplayName = await Settings.get(LOCAL_AGENT_DISPLAY_NAME_SETTING);
 
         // Myself
         result[""] = {
             url: "",
             username: "",
             endpoint: "",
-            displayName: "",
+            displayName: typeof localDisplayName === "string" ? localDisplayName : "",
         };
 
         for (let endpoint in list) {
