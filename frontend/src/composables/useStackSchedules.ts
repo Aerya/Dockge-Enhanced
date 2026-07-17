@@ -31,6 +31,7 @@ export interface StackSchedule {
 
 const schedules = ref<StackSchedule[]>([]);
 const timezone = ref("UTC");
+const enabled = ref(false);
 const loading = ref(false);
 const error = ref("");
 let poller: Poller | null = null;
@@ -53,6 +54,7 @@ async function loadSchedules() {
         if (response.ok && json.ok) {
             schedules.value = json.data?.schedules ?? [];
             timezone.value = json.data?.timezone ?? "UTC";
+            enabled.value = json.data?.enabled === true;
         } else {
             error.value = json.message ?? response.statusText;
         }
@@ -105,13 +107,28 @@ export function useStackSchedules() {
         return json.data as StackSchedule;
     }
 
+    async function setEnabled(value: boolean) {
+        const response = await fetch("/api/watcher/stack-schedules/enabled", {
+            method: "PUT",
+            headers: headers(true),
+            body: JSON.stringify({ enabled: value }),
+        });
+        const json = await response.json();
+        if (!response.ok || !json.ok) {
+            throw new Error(json.message ?? response.statusText);
+        }
+        enabled.value = json.data?.enabled === true;
+    }
+
     return {
         schedules,
         timezone,
+        enabled,
         loading,
         error,
         loadSchedules,
         scheduleFor,
         saveSchedule,
+        setEnabled,
     };
 }

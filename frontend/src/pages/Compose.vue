@@ -17,7 +17,7 @@
                 </div>
             </h1>
 
-            <div v-if="!isAdd && stack.isManagedByDockge && !endpoint" class="stack-scheduler-inline mb-3">
+            <div v-if="schedulerEnabled && !isAdd && stack.isManagedByDockge && !endpoint" class="stack-scheduler-inline mb-3">
                 <div class="stack-scheduler-inline-title">
                     <font-awesome-icon icon="calendar-days" class="me-1" />{{ $t("stackScheduler.heading") }}
                 </div>
@@ -489,6 +489,7 @@ import { useImageStatus } from "../composables/useImageStatus";
 import StackScheduleEditor from "../components/StackScheduleEditor.vue";
 import StackTransferModal from "../components/StackTransferModal.vue";
 import StackReplicationStatus from "../components/StackReplicationStatus.vue";
+import { useStackSchedules } from "../composables/useStackSchedules";
 
 const template = `
 services:
@@ -522,6 +523,7 @@ export default {
         this.exitConfirm(next);
     },
     setup() {
+        const { enabled: schedulerEnabled } = useStackSchedules();
         const editorFocus = ref(false);
         const {
             statusCache: imageStatuses,
@@ -566,7 +568,8 @@ export default {
             editorFocus,
             imageStatuses,
             autoUpdateFor,
-            saveAutoUpdateMode };
+            saveAutoUpdateMode,
+            schedulerEnabled };
     },
     yamlDoc: null,  // For keeping the yaml comments
     data() {

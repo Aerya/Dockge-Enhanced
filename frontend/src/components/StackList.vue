@@ -46,6 +46,16 @@
                         <span>{{ $t("stackSummaryInactive") }}</span>
                         <strong>{{ stackSummary.inactive }}</strong>
                     </button>
+                    <button
+                        class="stack-summary-pill stack-summary-pill--scheduled"
+                        :class="{ selected: stackStatusFilter === 'scheduled' }"
+                        :title="$t('stackScheduler.scheduledTooltip')"
+                        type="button"
+                        @click="setStackStatusFilter('scheduled')"
+                    >
+                        <span>{{ $t("stackScheduler.scheduled") }}</span>
+                        <strong>{{ stackSummary.scheduled }}</strong>
+                    </button>
                 </div>
                 <div class="search-wrapper">
                     <label class="visually-hidden" for="stackAgentFilter">{{ $t("stackFilterInstanceLabel") }}</label>
@@ -109,6 +119,7 @@
                 :stack="item"
                 :isSelectMode="selectMode"
                 :isSelected="isSelected"
+                :scheduled="isStackScheduled(item.name, item.endpoint)"
                 :select="select"
                 :deselect="deselect"
             />
@@ -124,11 +135,16 @@
 import Confirm from "../components/Confirm.vue";
 import StackListItem from "../components/StackListItem.vue";
 import { CREATED_FILE, CREATED_STACK, EXITED, RUNNING, UNKNOWN } from "../../../common/util-common";
+import { useStackSchedules } from "../composables/useStackSchedules";
 
 export default {
     components: {
         Confirm,
         StackListItem,
+    },
+    setup() {
+        const { schedules } = useStackSchedules();
+        return { schedules };
     },
     props: {
         /** Should the scrollbar be shown */
@@ -200,7 +216,9 @@ export default {
                 }
 
                 let statusSummaryMatch = true;
-                if (this.stackStatusFilter !== "all") {
+                if (this.stackStatusFilter === "scheduled") {
+                    statusSummaryMatch = this.isStackScheduled(stack.name, stack.endpoint);
+                } else if (this.stackStatusFilter !== "all") {
                     statusSummaryMatch = this.getStackStatusSummary(stack) === this.stackStatusFilter;
                 }
 
@@ -299,6 +317,7 @@ export default {
                 active: 0,
                 stopped: 0,
                 inactive: 0,
+                scheduled: 0,
             };
 
             for (const stack of this.agentFilteredStacks) {
@@ -311,6 +330,9 @@ export default {
                     summary.stopped += 1;
                 } else {
                     summary.inactive += 1;
+                }
+                if (this.isStackScheduled(stack.name, stack.endpoint)) {
+                    summary.scheduled += 1;
                 }
             }
 
@@ -425,6 +447,13 @@ export default {
             }
 
             return "inactive";
+        },
+        isStackScheduled(stackName, endpoint = "") {
+            if (endpoint) {
+                return false;
+            }
+            const schedule = this.schedules.find(item => item.stack === stackName);
+            return Boolean(schedule && (schedule.start?.mode !== "off" || schedule.stop?.mode !== "off"));
         },
         /**
          * Update the StackList Filter
