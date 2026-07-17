@@ -99,10 +99,10 @@
                     <div class="container-actions">
                         <button v-if="status !== 'running' && status !== 'healthy'" class="btn btn-sm btn-primary" :title="$t('startStack')" :disabled="actionProcessing" @click="runAction('start')"><font-awesome-icon icon="play" /></button>
                         <button v-if="status === 'running' || status === 'healthy'" class="btn btn-sm btn-normal" :title="$t('stopStack')" :disabled="actionProcessing" @click="runAction('stop')"><font-awesome-icon icon="stop" /></button>
-                        <button class="btn btn-sm btn-normal" :title="$t('restartStack')" :disabled="actionProcessing" @click="runAction('restart')"><font-awesome-icon icon="sync-alt" /></button>
+                        <button class="btn btn-sm btn-normal" :title="$t('restartStack')" :disabled="actionProcessing" @click="runAction('restart')"><font-awesome-icon icon="arrows-rotate" /></button>
                         <button class="btn btn-sm btn-normal" :title="$t('updateStack')" :disabled="actionProcessing" @click="runAction('update')"><font-awesome-icon icon="cloud-arrow-down" /></button>
-                        <button class="btn btn-sm btn-normal" :title="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="rotate" /></button>
-                        <button class="btn btn-sm btn-normal" :title="$t('pullAndRecreateStack')" :disabled="actionProcessing" @click="runAction('pull-recreate')"><font-awesome-icon icon="cloud-upload-alt" /></button>
+                        <button class="btn btn-sm btn-normal" :title="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="recycle" /></button>
+                        <button class="btn btn-sm btn-normal" :title="$t('pullAndRecreateStack')" :disabled="actionProcessing" @click="runAction('pull-recreate')"><font-awesome-icon icon="boxes-stacked" /></button>
                     </div>
                     <div class="container-utility-actions">
                         <button class="btn btn-normal" :title="$t('volumeBrowserTitle')" @click="openVolumeBrowser">

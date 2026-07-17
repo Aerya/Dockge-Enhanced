@@ -467,14 +467,15 @@ export class Stack {
      * @param status
      */
     static statusConvert(status : string) : number {
-        if (status.startsWith("created")) {
-            return CREATED_STACK;
-        } else if (status.includes("exited")) {
-            // If one of the service is exited, we consider the stack is exited
-            return EXITED;
-        } else if (status.startsWith("running")) {
-            // If there is no exited services, there should be only running services
+        const normalizedStatus = status.toLowerCase();
+        if (normalizedStatus.includes("running")) {
+            // Une stack reste active tant qu'au moins un service tourne.
+            // Exemple : "exited(1), running(2)" après l'arrêt ciblé d'un service.
             return RUNNING;
+        } else if (normalizedStatus.includes("exited")) {
+            return EXITED;
+        } else if (normalizedStatus.includes("created")) {
+            return CREATED_STACK;
         } else {
             return UNKNOWN;
         }
