@@ -1,7 +1,7 @@
 <template>
     <div class="shadow-box big-padding mb-3 container">
         <div class="row">
-            <div class="col-7">
+            <div class="col-12">
                 <h4>{{ name }}</h4>
                 <div class="image mb-2">
                     <span class="me-1">{{ imageName }}:</span><span class="tag">{{ imageTag }}</span>
@@ -94,10 +94,8 @@
                         </strong>
                     </button>
                 </div>
-            </div>
-            <div class="col-5">
-                <div class="function">
-                    <div v-if="!isEditMode" class="container-actions mb-2">
+                <div v-if="!isEditMode" class="container-action-bar mt-3">
+                    <div class="container-actions">
                         <button v-if="status !== 'running' && status !== 'healthy'" class="btn btn-sm btn-primary" :title="$t('startStack')" :disabled="actionProcessing" @click="runAction('start')"><font-awesome-icon icon="play" /></button>
                         <button v-if="status === 'running' || status === 'healthy'" class="btn btn-sm btn-normal" :title="$t('stopStack')" :disabled="actionProcessing" @click="runAction('stop')"><font-awesome-icon icon="stop" /></button>
                         <button class="btn btn-sm btn-normal" :title="$t('restartStack')" :disabled="actionProcessing" @click="runAction('restart')"><font-awesome-icon icon="sync-alt" /></button>
@@ -105,14 +103,16 @@
                         <button class="btn btn-sm btn-normal" :title="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="rotate" /></button>
                         <button class="btn btn-sm btn-normal" :title="$t('pullAndRecreateStack')" :disabled="actionProcessing" @click="runAction('pull-recreate')"><font-awesome-icon icon="cloud-upload-alt" /></button>
                     </div>
-                    <button v-if="!isEditMode" class="btn btn-normal me-2" :title="$t('volumeBrowserTitle')" @click="openVolumeBrowser">
-                        <font-awesome-icon icon="folder-open" />
-                        {{ $t("files") }}
-                    </button>
-                    <router-link v-if="!isEditMode" class="btn btn-normal" :to="terminalRouteLink" disabled="">
-                        <font-awesome-icon icon="terminal" />
-                        Bash
-                    </router-link>
+                    <div class="container-utility-actions">
+                        <button class="btn btn-normal" :title="$t('volumeBrowserTitle')" @click="openVolumeBrowser">
+                            <font-awesome-icon icon="folder-open" />
+                            {{ $t("files") }}
+                        </button>
+                        <router-link class="btn btn-normal" :to="terminalRouteLink" disabled="">
+                            <font-awesome-icon icon="terminal" />
+                            Bash
+                        </router-link>
+                    </div>
                 </div>
             </div>
         </div>
@@ -473,10 +473,21 @@ export default defineComponent({
 @import "../styles/vars";
 
 .container {
-    .container-actions {
+    .container-action-bar,
+    .container-actions,
+    .container-utility-actions {
         display: flex;
+        align-items: center;
         flex-wrap: wrap;
         gap: .3rem;
+    }
+
+    .container-action-bar {
+        justify-content: space-between;
+    }
+
+    .container-utility-actions {
+        margin-left: auto;
     }
     .image {
         font-size: 0.8rem;
@@ -554,15 +565,6 @@ export default defineComponent({
         color: $primary;
     }
 
-    .function {
-        align-content: center;
-        display: flex;
-        height: 100%;
-        width: 100%;
-        align-items: center;
-        justify-content: end;
-    }
-
     .container-volumes {
         display: grid;
         gap: 4px;
@@ -615,6 +617,17 @@ export default defineComponent({
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .container-action-bar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .container-utility-actions {
+            margin-left: 0;
         }
     }
 }

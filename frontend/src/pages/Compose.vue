@@ -17,11 +17,15 @@
                 </div>
             </h1>
 
-            <div v-if="schedulerEnabled && !isAdd && stack.isManagedByDockge && !endpoint" class="stack-scheduler-inline mb-3">
+            <div v-if="!isAdd && stack.isManagedByDockge && !endpoint" class="stack-scheduler-inline mb-3">
                 <div class="stack-scheduler-inline-title">
                     <font-awesome-icon icon="calendar-days" class="me-1" />{{ $t("stackScheduler.heading") }}
+                    <div class="form-check form-switch stack-scheduler-toggle">
+                        <input id="stackSchedulerEnabledOnCompose" v-model="schedulerEnabled" class="form-check-input" type="checkbox" role="switch" :disabled="schedulerToggleSaving" @change="toggleStackScheduler">
+                        <label class="form-check-label" for="stackSchedulerEnabledOnCompose">{{ $t("stackScheduler.enable") }}</label>
+                    </div>
                 </div>
-                <StackScheduleEditor :stack-name="stack.name" compact :show-heading="false" />
+                <StackScheduleEditor v-if="schedulerEnabled" :stack-name="stack.name" compact :show-heading="false" />
             </div>
 
             <StackReplicationStatus
@@ -525,7 +529,7 @@ export default {
         this.exitConfirm(next);
     },
     setup() {
-        const { enabled: schedulerEnabled } = useStackSchedules();
+        const { enabled: schedulerEnabled, setEnabled: setSchedulerEnabled } = useStackSchedules();
         const editorFocus = ref(false);
         const {
             statusCache: imageStatuses,
@@ -571,7 +575,8 @@ export default {
             imageStatuses,
             autoUpdateFor,
             saveAutoUpdateMode,
-            schedulerEnabled };
+            schedulerEnabled,
+            setSchedulerEnabled };
     },
     yamlDoc: null,  // For keeping the yaml comments
     data() {
@@ -610,6 +615,7 @@ export default {
             containersExpanded: true,
             autoUpdateSaving: {},
             serviceActionProcessing: {},
+            schedulerToggleSaving: false,
             stackActionLabels: localStorage.getItem("stackActionLabels") === "1",
         };
     },
@@ -1086,6 +1092,19 @@ export default {
             });
         },
 
+        async toggleStackScheduler() {
+            const requested = this.schedulerEnabled;
+            this.schedulerToggleSaving = true;
+            try {
+                await this.setSchedulerEnabled(requested);
+            } catch (error) {
+                this.schedulerEnabled = !requested;
+                this.$root.toastError(error instanceof Error ? error.message : String(error));
+            } finally {
+                this.schedulerToggleSaving = false;
+            }
+        },
+
         loadStack() {
             this.processing = true;
             this.$root.emitAgent(this.endpoint, "getStack", this.stack.name, (res) => {
@@ -1459,9 +1478,19 @@ export default {
 }
 
 .stack-scheduler-inline-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
     color: $dark-font-color3;
     font-size: 0.78rem;
     font-weight: 600;
+}
+
+.stack-scheduler-toggle {
+    margin-bottom: 0;
+    font-size: .75rem;
+    font-weight: 400;
 }
 
 /* Terminal de progression (deploy/restart/update) : plus haut pour afficher
