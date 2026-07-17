@@ -57,7 +57,7 @@
                     </button>
 
                     <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('restartStack')" :aria-label="$t('restartStack')" :disabled="processing" @click="restartStack">
-                        <font-awesome-icon icon="sync-alt" />
+                        <font-awesome-icon icon="arrows-rotate" />
                         <span class="stack-action-label">{{ $t("restartStack") }}</span>
                     </button>
 
@@ -67,12 +67,12 @@
                     </button>
 
                     <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('recreateStack')" :aria-label="$t('recreateStack')" :disabled="processing" @click="recreateStack">
-                        <font-awesome-icon icon="rotate" />
+                        <font-awesome-icon icon="recycle" />
                         <span class="stack-action-label">{{ $t("recreateStack") }}</span>
                     </button>
 
                     <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('pullAndRecreateStack')" :aria-label="$t('pullAndRecreateStack')" :disabled="processing" @click="pullAndRecreateStack">
-                        <font-awesome-icon icon="cloud-upload-alt" />
+                        <font-awesome-icon icon="boxes-stacked" />
                         <span class="stack-action-label">{{ $t("pullAndRecreateStack") }}</span>
                     </button>
 

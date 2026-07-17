@@ -89,6 +89,8 @@ import {
     faFolder,
     faFolderOpen,
     faCalendarDays,
+    faRecycle,
+    faBoxesStacked,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -179,7 +181,8 @@ library.add(
     faFolder,
     faFolderOpen,
     faCalendarDays,
+    faRecycle,
+    faBoxesStacked,
 );
 
 export { FontAwesomeIcon };
-
