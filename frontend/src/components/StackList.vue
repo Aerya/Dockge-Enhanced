@@ -48,6 +48,18 @@
                     </button>
                 </div>
                 <div class="search-wrapper">
+                    <label class="visually-hidden" for="stackAgentFilter">{{ $t("stackFilterInstanceLabel") }}</label>
+                    <select
+                        v-if="agentOptions.length > 1"
+                        id="stackAgentFilter"
+                        v-model="stackAgentFilter"
+                        class="form-select form-select-sm stack-agent-select"
+                    >
+                        <option value="__all__">{{ $t("stackFilterAllInstances") }}</option>
+                        <option v-for="agent in agentOptions" :key="agent.endpoint" :value="agent.endpoint">
+                            {{ agent.label }}
+                        </option>
+                    </select>
                     <label class="visually-hidden" for="stackSort">{{ $t("stackSortLabel") }}</label>
                     <select id="stackSort" v-model="stackSort" class="form-select form-select-sm stack-sort-select">
                         <option value="status">{{ $t("stackSortStatus") }}</option>
@@ -133,6 +145,7 @@ export default {
             selectedStacks: {},
             windowTop: 0,
             stackStatusFilter: "all",
+            stackAgentFilter: localStorage.getItem("stackAgentFilter") || "__all__",
             stackSort: localStorage.getItem("stackSort") || "status",
             filterState: {
                 status: null,
@@ -166,7 +179,7 @@ export default {
          * @returns {Array} The sorted list of stacks.
          */
         sortedStackList() {
-            let result = this.allStacks;
+            let result = this.agentFilteredStacks;
 
             result = result.filter(stack => {
                 // filter by search text
@@ -260,6 +273,26 @@ export default {
             return Object.values(this.$root.completeStackList);
         },
 
+        agentOptions() {
+            return Object.keys(this.$root.agentList)
+                .map(endpoint => ({
+                    endpoint,
+                    label: this.$root.endpointDisplayFunction(endpoint),
+                }))
+                .sort((agent1, agent2) => {
+                    const labelOrder = agent1.label.localeCompare(agent2.label, undefined, { sensitivity: "base" });
+                    return labelOrder || agent1.endpoint.localeCompare(agent2.endpoint);
+                });
+        },
+
+        agentFilteredStacks() {
+            if (this.stackAgentFilter === "__all__") {
+                return this.allStacks;
+            }
+
+            return this.allStacks.filter(stack => (stack.endpoint || "") === this.stackAgentFilter);
+        },
+
         stackSummary() {
             const summary = {
                 total: 0,
@@ -268,7 +301,7 @@ export default {
                 inactive: 0,
             };
 
-            for (const stack of this.allStacks) {
+            for (const stack of this.agentFilteredStacks) {
                 const status = this.getStackStatusSummary(stack);
                 summary.total += 1;
 
@@ -301,6 +334,14 @@ export default {
         }
     },
     watch: {
+        agentOptions(options) {
+            if (this.stackAgentFilter !== "__all__" && !options.some(agent => agent.endpoint === this.stackAgentFilter)) {
+                this.stackAgentFilter = "__all__";
+            }
+        },
+        stackAgentFilter(value) {
+            localStorage.setItem("stackAgentFilter", value);
+        },
         stackSort(value) {
             localStorage.setItem("stackSort", value);
         },
@@ -521,6 +562,12 @@ export default {
     min-width: 0;
 }
 
+.stack-agent-select {
+    flex: 0 1 12em;
+    min-width: 0;
+    margin-right: 6px;
+}
+
 .search-wrapper form {
     flex: 1 1 auto;
     min-width: 0;
@@ -540,6 +587,10 @@ export default {
 @media (max-width: 400px) {
     .stack-sort-select {
         flex-basis: 8.5em;
+    }
+
+    .stack-agent-select {
+        flex-basis: 9.5em;
     }
 }
 
