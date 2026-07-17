@@ -30,8 +30,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | **Multi-instance** | Instance names, per-instance stack filtering and sorting, copy, migration, and cold replication with failover |
 | **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
 | **Images & security** | Update monitoring, auto-update with rollback, Trivy scans, and CVE exceptions |
-| **Monitoring** | System and stack stats, crash loops, healthcheck auto-heal, enhanced logs, and optional Kula integration |
-| **Docker management** | Images, volumes, unmanaged containers, bulk actions, and safeguards for risky deletions |
+| **Monitoring** | System, stack, and container stats, crash loops, healthcheck auto-heal, enhanced logs, and optional Kula integration |
+| **Docker management** | Images, volumes, unmanaged containers, per-container Compose actions, bulk actions, and safeguards for risky deletions |
 | **Notifications & access** | Discord, Apprise, 2FA, trusted proxy, Turnstile, and mobile clients |
 
 The main differences remain visible above; the detailed catalogue is preserved below to document the exact differences from Dockge and other forks without overwhelming the initial read.
@@ -42,6 +42,12 @@ The main differences remain visible above; the detailed catalogue is preserved b
 **2026-07-17 — Filter stacks by instance** — The stack list can show every instance or one selected Dockge instance. The total, active, stopped and inactive counters update for the selected instance; the browser remembers this filter independently from sorting.
 
 **2026-07-17 — Optional action labels** — A switch on the Compose page selects compact icons or icons with their function displayed underneath in small text. The browser remembers the choice, and tooltips remain available in both modes.
+
+**2026-07-17 — Per-container Compose actions with VPN safeguards** — Every container in a stack exposes **Start**, **Stop**, **Restart**, **Update**, **Recreate**, and **Pull + recreate** without applying the operation to the whole stack. The last four actions have distinct behavior and icons: restart keeps the container, update pulls then performs a normal `up`, recreate forces replacement, and pull + recreate combines both operations. When a service provides its network namespace to other containers through `network_mode: service:<service>` — the typical VPN/Gluetun setup — Dockge Enhanced automatically includes the affected services in operations that require it. During a normal update, they are recreated only when the VPN container was actually replaced.
+
+**2026-07-17 — Per-container resource statistics** — When stack statistics are enabled under **Monitoring**, every container card also displays its own CPU and memory consumption. These figures use the same shared Docker collector as stack statistics and respect low-power mode.
+
+**2026-07-17 — Scheduling activation and indicators** — Scheduling remains hidden and disabled by default for each stack. A **Scheduling** action alongside **Edit**, **Restart**, **Update**, and the other stack actions shows or hides its panel. Stacks with an active rule are marked in the list, and a **Scheduled** counter joins the Stacks, Active, Stopped, and Inactive counters for quick filtering.
 
 **2026-07-15 — Scheduled cold replicas and manual failover** — Any managed stack can maintain a one-way standby replica on another Dockge instance every 15 minutes, 1 hour, 6 hours or 24 hours. Dockge-Enhanced automatically refreshes the Compose files, selected bind mounts and named volumes through the shared Restic repository while keeping the target containers stopped. The stack page reports the target, current state, last successful synchronization, duration, retained snapshot, next run and any error. A manual **Fail over** action deploys the standby and validates its services and healthchecks before marking it active. The last successful snapshot is retained until its replacement is fully restored; a failed refresh restores the previous configuration and data. Replication has its own scheduler and metadata and does not alter the existing Restic backup scheduler, retention or `prune` behavior.
 
