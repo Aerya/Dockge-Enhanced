@@ -215,8 +215,10 @@
                                 :auto-update-saving="autoUpdateSaving[name] === true"
                                 :volume-usage="volumeUsageForService(name)"
                                 :volume-loading="volumeUsageLoading"
+                                :action-processing="serviceActionProcessing[name] === true"
                                 @auto-update-change="setServiceAutoUpdate(name, $event)"
                                 @refresh-volume-usage="loadVolumeUsage"
+                                @service-action="runServiceAction(name, $event)"
                             />
                         </div>
                     </div>
@@ -607,6 +609,7 @@ export default {
             volumeUsageLoading: false,
             containersExpanded: true,
             autoUpdateSaving: {},
+            serviceActionProcessing: {},
             stackActionLabels: localStorage.getItem("stackActionLabels") === "1",
         };
     },
@@ -1066,6 +1069,20 @@ export default {
             this.$root.toastRes({
                 ok: result.ok,
                 msg: result.ok ? this.$t("watcher.status.autoUpdateSaved") : result.message,
+            });
+        },
+
+        runServiceAction(serviceName, action) {
+            if ([ "recreate", "pull-recreate" ].includes(action) && !confirm(this.$t(action === "recreate" ? "recreateStackMsg" : "pullAndRecreateStackMsg"))) {
+                return;
+            }
+            this.serviceActionProcessing[serviceName] = true;
+            this.$root.emitAgent(this.endpoint, "serviceAction", this.stack.name, serviceName, action, (res) => {
+                this.serviceActionProcessing[serviceName] = false;
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.loadStack();
+                }
             });
         },
 

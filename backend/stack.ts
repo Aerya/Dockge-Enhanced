@@ -592,6 +592,70 @@ export class Stack {
         return exitCode;
     }
 
+    /**
+     * Returns the service being acted on and every service that shares its
+     * network namespace (`network_mode: service:<name>`). Recreating a VPN
+     * container without its dependants would leave those containers attached
+     * to the old namespace, so they must be recreated as one Compose action.
+     */
+    private async getServiceActionTargets(serviceName: string): Promise<string[]> {
+        if (!/^[a-zA-Z0-9_.-]+$/.test(serviceName)) {
+            throw new ValidationError("Invalid service name");
+        }
+        const result = await childProcessAsync.spawn("docker", this.getComposeOptions("config", "--format", "json"), {
+            cwd: this.path,
+            encoding: "utf-8",
+        });
+        const config = JSON.parse(result.stdout?.toString() || "{}");
+        const services = config.services ?? {};
+        if (!services[serviceName]) {
+            throw new ValidationError("Service not found in this stack");
+        }
+
+        const targets = new Set<string>([ serviceName ]);
+        let changed = true;
+        while (changed) {
+            changed = false;
+            for (const [ name, service ] of Object.entries(services) as Array<[string, { network_mode?: string }]>) {
+                const owner = typeof service.network_mode === "string" && service.network_mode.startsWith("service:")
+                    ? service.network_mode.slice("service:".length)
+                    : "";
+                if (owner && targets.has(owner) && !targets.has(name)) {
+                    targets.add(name);
+                    changed = true;
+                }
+            }
+        }
+        return [ serviceName, ...[ ...targets ].filter(name => name !== serviceName).sort() ];
+    }
+
+    async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate"): Promise<string[]> {
+        const targets = await this.getServiceActionTargets(serviceName);
+        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
+        const exec = async (command: string, ...args: string[]) => {
+            const exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions(command, ...args), this.path);
+            if (exitCode !== 0) {
+                throw new Error(`Failed to ${action} service ${serviceName}; check the terminal for details.`);
+            }
+        };
+
+        if (action === "start") {
+            await exec("up", "-d", serviceName);
+        } else if (action === "stop") {
+            await exec("stop", ...[ ...targets ].reverse());
+        } else if (action === "restart") {
+            await exec("restart", ...targets);
+        } else {
+            if (action === "update" || action === "pull-recreate") {
+                await exec("pull", serviceName);
+            }
+            await exec("up", "-d", "--force-recreate", "--no-deps", ...targets);
+            await this.writeMeta({ lastUpdated: new Date().toISOString(), lastStartedAt: new Date().toISOString() });
+        }
+        serviceStatusCache.delete(this.name);
+        return targets;
+    }
+
     async recreate(socket: DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), this.path);
