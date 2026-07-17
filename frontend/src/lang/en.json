@@ -336,6 +336,8 @@
     "watcher.tab.audit": "Audit",
     "stackScheduler.heading": "Stack scheduling",
     "stackScheduler.enable": "Enable scheduling",
+    "stackScheduler.disable": "Disable scheduling",
+    "stackScheduler.action": "Scheduling",
     "stackScheduler.scheduled": "Scheduled",
     "stackScheduler.scheduledTooltip": "This stack has at least one scheduled action.",
     "stackScheduler.hint": "Automatically starts and stops local stacks. Timezone: {timezone}.",

@@ -17,17 +17,6 @@
                 </div>
             </h1>
 
-            <div v-if="!isAdd && stack.isManagedByDockge && !endpoint" class="stack-scheduler-inline mb-3">
-                <div class="stack-scheduler-inline-title">
-                    <font-awesome-icon icon="calendar-days" class="me-1" />{{ $t("stackScheduler.heading") }}
-                    <div class="form-check form-switch stack-scheduler-toggle">
-                        <input id="stackSchedulerEnabledOnCompose" v-model="schedulerEnabled" class="form-check-input" type="checkbox" role="switch" :disabled="schedulerToggleSaving" @change="toggleStackScheduler">
-                        <label class="form-check-label" for="stackSchedulerEnabledOnCompose">{{ $t("stackScheduler.enable") }}</label>
-                    </div>
-                </div>
-                <StackScheduleEditor v-if="schedulerEnabled" :stack-name="stack.name" compact :show-heading="false" />
-            </div>
-
             <StackReplicationStatus
                 v-if="!isAdd && stack.isManagedByDockge && $root.agentCount > 1"
                 ref="stackReplicationStatus"
@@ -92,6 +81,11 @@
                         <span class="stack-action-label">{{ $t("stopStack") }}</span>
                     </button>
 
+                    <button v-if="!isEditMode && !isAdd && !endpoint" class="btn stack-action" :class="schedulerEnabled ? 'btn-primary' : 'btn-normal'" :title="schedulerEnabled ? $t('stackScheduler.disable') : $t('stackScheduler.enable')" :aria-label="$t('stackScheduler.action')" :disabled="processing || schedulerToggleSaving" @click="toggleStackScheduler">
+                        <font-awesome-icon icon="calendar-days" />
+                        <span class="stack-action-label">{{ $t("stackScheduler.action") }}</span>
+                    </button>
+
                     <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackTransfer.copyAction')" :aria-label="$t('stackTransfer.copyAction')" :disabled="processing" @click="openStackTransfer('copy')">
                         <font-awesome-icon icon="copy" />
                         <span class="stack-action-label">{{ $t("stackTransfer.copyAction") }}</span>
@@ -116,6 +110,12 @@
                         <font-awesome-icon icon="trash" />
                         <span class="stack-action-label">{{ $t("deleteStack") }}</span>
                     </button>
+                </div>
+                <div v-if="schedulerEnabled && !isEditMode && !isAdd && !endpoint" class="stack-scheduler-inline mt-3">
+                    <div class="stack-scheduler-inline-title">
+                        <font-awesome-icon icon="calendar-days" class="me-1" />{{ $t("stackScheduler.heading") }}
+                    </div>
+                    <StackScheduleEditor :stack-name="stack.name" compact :show-heading="false" />
                 </div>
             </div>
 
@@ -1093,12 +1093,11 @@ export default {
         },
 
         async toggleStackScheduler() {
-            const requested = this.schedulerEnabled;
+            const requested = !this.schedulerEnabled;
             this.schedulerToggleSaving = true;
             try {
                 await this.setSchedulerEnabled(requested);
             } catch (error) {
-                this.schedulerEnabled = !requested;
                 this.$root.toastError(error instanceof Error ? error.message : String(error));
             } finally {
                 this.schedulerToggleSaving = false;
@@ -1478,19 +1477,9 @@ export default {
 }
 
 .stack-scheduler-inline-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .75rem;
     color: $dark-font-color3;
     font-size: 0.78rem;
     font-weight: 600;
-}
-
-.stack-scheduler-toggle {
-    margin-bottom: 0;
-    font-size: .75rem;
-    font-weight: 400;
 }
 
 /* Terminal de progression (deploy/restart/update) : plus haut pour afficher
