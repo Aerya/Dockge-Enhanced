@@ -16,6 +16,7 @@ export interface StackStat {
 // ─── État global partagé ─────────────────────────────────────────
 
 const statsCache   = ref<Record<string, StackStat>>({});
+const containerStatsCache = ref<Record<string, StackStat>>({});
 let poller: Poller | null = null;
 let subscribers = 0;
 
@@ -42,7 +43,10 @@ async function fetchStackStats(): Promise<void> {
         });
         if (res.status === 401) return;
         const json = await res.json();
-        if (json.ok) statsCache.value = json.data;
+        if (json.ok) {
+            statsCache.value = json.data;
+            containerStatsCache.value = json.containerData ?? {};
+        }
         setLowPower(json.lowPowerMode);
     } catch {
         // Silencieux — docker ou réseau indisponible
@@ -68,7 +72,7 @@ export function useStackStats() {
         }
     });
 
-    return { statsCache };
+    return { statsCache, containerStatsCache };
 }
 
 // ─── Helper format mémoire ───────────────────────────────────────

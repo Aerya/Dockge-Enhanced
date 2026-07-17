@@ -409,7 +409,7 @@
     "watcher.monitoring.navbarDiskTemps": "Températures disques",
     "watcher.monitoring.navbarHostDisplayHint": "Ajoute ces infos aux stats système compactes de la barre de navigation.",
     "watcher.monitoring.stackStats": "Afficher les stats CPU / RAM par stack",
-    "watcher.monitoring.stackStatsHint": "Affiche la consommation de chaque compose dans la liste (mis à jour toutes les 10 s).",
+    "watcher.monitoring.stackStatsHint": "Affiche la consommation de chaque compose dans la liste et de chaque conteneur dans ses stacks (mis à jour toutes les 10 s).",
     "watcher.monitoring.lowPower": "Mode Synology / faible consommation",
     "watcher.monitoring.lowPowerHint": "Ralentit les rafraîchissements (stats système 30 s, stats conteneurs 60 s) et met en pause la collecte quand aucun onglet n'est ouvert ou visible. Idéal pour NAS / petites configs.",
     "watcher.monitoring.diskPartition": "Partitions disque surveillées",
