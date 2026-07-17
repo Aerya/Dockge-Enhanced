@@ -61,6 +61,7 @@
                         <font-awesome-icon icon="rotate" />
                         {{ relativeTime(startedAt) }}
                     </span>
+                    <ContainerStatsBadge v-if="showResourceStats" :stack-name="stackName" :service-name="name" />
                 </div>
                 <div v-if="!isEditMode && (volumeLoading || volumeUsage.length > 0)" class="container-volumes mt-2">
                     <div class="container-volumes-title">
@@ -240,11 +241,13 @@ import { defineComponent } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { parseDockerPort, imageRegistryUrl } from "../../../common/util-common";
 import VolumeBrowser from "./VolumeBrowser.vue";
+import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 
 export default defineComponent({
     components: {
         FontAwesomeIcon,
         VolumeBrowser,
+        ContainerStatsBadge,
     },
     props: {
         name: {
@@ -292,6 +295,14 @@ export default defineComponent({
             default: false
         },
         actionProcessing: {
+            type: Boolean,
+            default: false,
+        },
+        stackName: {
+            type: String,
+            default: "",
+        },
+        showResourceStats: {
             type: Boolean,
             default: false,
         }

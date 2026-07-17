@@ -315,6 +315,7 @@ function parseDockerBytes(str: string): number {
 }
 
 const stackStatsCache = new Map<string, StackStat>();
+const containerStatsCache = new Map<string, StackStat>();
 let lastStackCollectAt = 0;
 let stackCollectInFlight: Promise<void> | null = null;
 
@@ -325,32 +326,39 @@ async function updateStackStats(): Promise<void> {
             execAsync("docker ps --format '{{json .}}'"),
         ]);
 
-        // Index : short ID ET noms de container → stackName
+        // Index : short ID ET noms de container → projet/service Compose.
         // Robuste face aux socket-proxies qui peuvent changer le format de l'ID
-        const containerToStack = new Map<string, string>();
+        const containerToCompose = new Map<string, { stackName: string; serviceName: string }>();
         for (const line of psOut.trim().split("\n")) {
             if (!line.trim()) continue;
             try {
                 const c = JSON.parse(line);
                 const labels: string = c["Labels"] ?? "";
-                const m = labels.match(/com\.docker\.compose\.project=([^,]+)/);
-                if (!m) continue;
-                const stackName = m[1].trim();
+                const project = labels.match(/com\.docker\.compose\.project=([^,]+)/);
+                const service = labels.match(/com\.docker\.compose\.service=([^,]+)/);
+                if (!project || !service) {
+                    continue;
+                }
+                const compose = {
+                    stackName: project[1].trim(),
+                    serviceName: service[1].trim(),
+                };
 
                 // Par ID court (12 chars)
-                if (c["ID"]) containerToStack.set((c["ID"] as string).trim(), stackName);
+                if (c["ID"]) containerToCompose.set((c["ID"] as string).trim(), compose);
 
                 // Par nom(s) — docker ps retourne parfois "/nom1,/nom2"
                 const names: string = c["Names"] ?? "";
                 for (const n of names.split(",")) {
                     const clean = n.trim().replace(/^\//, "");
-                    if (clean) containerToStack.set(clean, stackName);
+                    if (clean) containerToCompose.set(clean, compose);
                 }
             } catch { /* ligne invalide */ }
         }
 
         // Agrégation par stack — cherche le stackName par ID, Container ou Name
         const aggr = new Map<string, StackStat>();
+        containerStatsCache.clear();
         for (const line of statsOut.trim().split("\n")) {
             if (!line.trim()) continue;
             try {
@@ -363,19 +371,28 @@ async function updateStackStats(): Promise<void> {
                 ].map((v: unknown) => (typeof v === "string" ? v.replace(/^\//, "").trim() : ""))
                     .filter(Boolean);
 
-                let stackName: string | undefined;
+                let compose: { stackName: string; serviceName: string } | undefined;
                 for (const key of candidates) {
-                    stackName = containerToStack.get(key);
-                    if (stackName) break;
+                    compose = containerToCompose.get(key);
+                    if (compose) break;
                 }
-                if (!stackName) continue;
+                if (!compose) continue;
 
                 const cpu     = parseFloat((s["CPUPerc"] ?? "0").replace("%", "")) || 0;
                 const memUsed = parseDockerBytes((s["MemUsage"] ?? "0B / 0B").split("/")[0]);
 
-                const cur = aggr.get(stackName);
+                const cur = aggr.get(compose.stackName);
                 if (cur) { cur.cpu += cpu; cur.memUsed += memUsed; }
-                else aggr.set(stackName, { cpu, memUsed });
+                else aggr.set(compose.stackName, { cpu, memUsed });
+
+                const containerKey = `${compose.stackName}:${compose.serviceName}`;
+                const container = containerStatsCache.get(containerKey);
+                if (container) {
+                    container.cpu += cpu;
+                    container.memUsed += memUsed;
+                } else {
+                    containerStatsCache.set(containerKey, { cpu, memUsed });
+                }
             } catch { /* ligne invalide */ }
         }
 
@@ -383,6 +400,12 @@ async function updateStackStats(): Promise<void> {
         for (const [name, stat] of aggr) {
             stackStatsCache.set(name, {
                 cpu:     Math.round(stat.cpu * 10) / 10,
+                memUsed: stat.memUsed,
+            });
+        }
+        for (const [key, stat] of containerStatsCache) {
+            containerStatsCache.set(key, {
+                cpu: Math.round(stat.cpu * 10) / 10,
                 memUsed: stat.memUsed,
             });
         }
@@ -501,7 +524,16 @@ export class SystemStatsRouter extends Router {
             await collectStackStatsIfDue();
             const data: Record<string, StackStat> = {};
             for (const [k, v] of stackStatsCache) data[k] = v;
-            res.json({ ok: true, data, lowPowerMode: isLowPower() });
+            const containerData: Record<string, StackStat> = {};
+            for (const [k, v] of containerStatsCache) {
+                containerData[k] = v;
+            }
+            res.json({
+                ok: true,
+                data,
+                containerData,
+                lowPowerMode: isLowPower(),
+            });
         });
 
         const mountRouter = express.Router();

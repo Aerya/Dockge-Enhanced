@@ -220,6 +220,8 @@
                                 :volume-usage="volumeUsageForService(name)"
                                 :volume-loading="volumeUsageLoading"
                                 :action-processing="serviceActionProcessing[name] === true"
+                                :stack-name="stack.name"
+                                :show-resource-stats="!endpoint"
                                 @auto-update-change="setServiceAutoUpdate(name, $event)"
                                 @refresh-volume-usage="loadVolumeUsage"
                                 @service-action="runServiceAction(name, $event)"
