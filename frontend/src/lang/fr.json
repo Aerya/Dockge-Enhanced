@@ -330,6 +330,8 @@
     "watcher.tab.audit": "Audit",
     "stackScheduler.heading": "Planification des stacks",
     "stackScheduler.enable": "Activer la planification",
+    "stackScheduler.disable": "Désactiver la planification",
+    "stackScheduler.action": "Planification",
     "stackScheduler.scheduled": "Planifiée",
     "stackScheduler.scheduledTooltip": "Cette stack possède au moins une action planifiée.",
     "stackScheduler.hint": "Démarre et arrête automatiquement les stacks locales. Fuseau horaire : {timezone}.",
