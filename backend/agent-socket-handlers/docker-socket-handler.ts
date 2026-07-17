@@ -326,6 +326,25 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("serviceAction", async (stackName: unknown, serviceName: unknown, action: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof serviceName !== "string") {
+                    throw new ValidationError("Stack and service names must be strings");
+                }
+                if (![ "start", "stop", "restart", "update", "recreate", "pull-recreate" ].includes(String(action))) {
+                    throw new ValidationError("Unsupported service action");
+                }
+                const stack = await Stack.getStack(server, stackName);
+                const affectedServices = await stack.serviceAction(socket, serviceName, action as "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate");
+                await this.auditStack(socket, `service.${action}`, `${stackName}/${serviceName}`, "success", null, { affectedServices });
+                server.sendStackList();
+                callbackResult({ ok: true, msg: "Service action completed", affectedServices }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // Services status
         agentSocket.on("serviceStatusList", async (stackName : unknown, callback) => {
             try {
@@ -549,4 +568,3 @@ export class DockerSocketHandler extends AgentSocketHandler {
     }
 
 }
-

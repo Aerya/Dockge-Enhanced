@@ -97,6 +97,14 @@
             </div>
             <div class="col-5">
                 <div class="function">
+                    <div v-if="!isEditMode" class="container-actions mb-2">
+                        <button v-if="status !== 'running' && status !== 'healthy'" class="btn btn-sm btn-primary" :title="$t('startStack')" :disabled="actionProcessing" @click="runAction('start')"><font-awesome-icon icon="play" /></button>
+                        <button v-if="status === 'running' || status === 'healthy'" class="btn btn-sm btn-normal" :title="$t('stopStack')" :disabled="actionProcessing" @click="runAction('stop')"><font-awesome-icon icon="stop" /></button>
+                        <button class="btn btn-sm btn-normal" :title="$t('restartStack')" :disabled="actionProcessing" @click="runAction('restart')"><font-awesome-icon icon="sync-alt" /></button>
+                        <button class="btn btn-sm btn-normal" :title="$t('updateStack')" :disabled="actionProcessing" @click="runAction('update')"><font-awesome-icon icon="cloud-arrow-down" /></button>
+                        <button class="btn btn-sm btn-normal" :title="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="rotate" /></button>
+                        <button class="btn btn-sm btn-normal" :title="$t('pullAndRecreateStack')" :disabled="actionProcessing" @click="runAction('pull-recreate')"><font-awesome-icon icon="cloud-upload-alt" /></button>
+                    </div>
                     <button v-if="!isEditMode" class="btn btn-normal me-2" :title="$t('volumeBrowserTitle')" @click="openVolumeBrowser">
                         <font-awesome-icon icon="folder-open" />
                         {{ $t("files") }}
@@ -282,11 +290,16 @@ export default defineComponent({
         volumeLoading: {
             type: Boolean,
             default: false
+        },
+        actionProcessing: {
+            type: Boolean,
+            default: false,
         }
     },
     emits: [
         "auto-update-change",
         "refresh-volume-usage",
+        "service-action",
     ],
     data() {
         return {
@@ -419,6 +432,9 @@ export default defineComponent({
                 time: mode === "scheduled" ? this.autoUpdate.time : undefined,
             });
         },
+        runAction(action) {
+            this.$emit("service-action", action);
+        },
         changeAutoUpdateTime(event) {
             this.$emit("auto-update-change", {
                 mode: "scheduled",
@@ -457,6 +473,11 @@ export default defineComponent({
 @import "../styles/vars";
 
 .container {
+    .container-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .3rem;
+    }
     .image {
         font-size: 0.8rem;
         color: #6c757d;
