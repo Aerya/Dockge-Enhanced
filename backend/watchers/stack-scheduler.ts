@@ -5,6 +5,7 @@ import { AuditLogger } from "../audit-log";
 import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
 import { Stack } from "../stack";
+import { Settings } from "../settings";
 
 const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH = path.join(DATA_DIR, "stack-schedules.json");
@@ -76,6 +77,7 @@ export class StackScheduler {
     private schedules: Record<string, StackSchedule> = {};
     private jobs = new Map<string, Cron>();
     private runningStacks = new Set<string>();
+    private enabled = false;
     private timezone = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
     static getInstance(): StackScheduler {
@@ -87,21 +89,31 @@ export class StackScheduler {
 
     async start(server: DockgeServer): Promise<void> {
         this.server = server;
+        this.enabled = (await Settings.get("stackSchedulerEnabled")) === true;
         this.load();
         this.reschedule();
     }
 
-    async list(): Promise<{ timezone: string; schedules: StackScheduleView[] }> {
+    async list(): Promise<{ timezone: string; enabled: boolean; schedules: StackScheduleView[] }> {
         if (!this.server) {
             return { timezone: this.timezone,
+                enabled: this.enabled,
                 schedules: [] };
         }
         const stackList = await Stack.getStackList(this.server, true);
         const names = [ ...stackList.keys() ].sort((a, b) => a.localeCompare(b));
         return {
             timezone: this.timezone,
+            enabled: this.enabled,
             schedules: names.map(stack => this.viewFor(stack)),
         };
+    }
+
+    async setEnabled(enabled: boolean): Promise<boolean> {
+        this.enabled = enabled;
+        await Settings.set("stackSchedulerEnabled", enabled);
+        this.reschedule();
+        return this.enabled;
     }
 
     get(stack: string): StackScheduleView {
@@ -231,6 +243,10 @@ export class StackScheduler {
             job.stop();
         }
         this.jobs.clear();
+
+        if (!this.enabled) {
+            return;
+        }
 
         for (const [ stack, schedule ] of Object.entries(this.schedules)) {
             for (const action of [ "start", "stop" ] as ScheduleAction[]) {

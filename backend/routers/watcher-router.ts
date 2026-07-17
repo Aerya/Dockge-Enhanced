@@ -599,6 +599,19 @@ export class WatcherRouter extends Router {
             }
         });
 
+        router.put("/stack-schedules/enabled", async (req: Request, res: Response) => {
+            if (typeof req.body?.enabled !== "boolean") {
+                return res.status(400).json({ ok: false, message: "enabled doit être un booléen" });
+            }
+            try {
+                const enabled = await StackScheduler.getInstance().setEnabled(req.body.enabled);
+                await auditWatcherAction(req, "stack.schedule.toggle", "stack", "scheduler", "success", null, { enabled });
+                return res.json({ ok: true, data: { enabled } });
+            } catch (e) {
+                return res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
         router.put("/stack-schedules/:stack", async (req: Request, res: Response) => {
             const stack = decodeURIComponent(req.params.stack);
             try {

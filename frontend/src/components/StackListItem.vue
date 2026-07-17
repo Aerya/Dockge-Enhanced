@@ -3,6 +3,7 @@
         <Uptime :stack="stack" :fixed-width="true" class="me-2" />
         <div class="title">
             <span>{{ stackName }}</span>
+            <font-awesome-icon v-if="scheduled" icon="calendar-days" class="scheduled-indicator ms-1" :title="$t('stackScheduler.scheduledTooltip')" />
             <StackUpdateBadge :stack-name="stackName" />
             <StackStatsBadge :stack-name="stackName" />
             <div v-if="$root.agentCount > 1" class="endpoint">{{ endpointDisplay }}</div>
@@ -29,6 +30,10 @@ export default {
         },
         /** If the user is in select mode */
         isSelectMode: {
+            type: Boolean,
+            default: false,
+        },
+        scheduled: {
             type: Boolean,
             default: false,
         },
@@ -159,6 +164,11 @@ export default {
     .endpoint {
         font-size: 12px;
         color: $dark-font-color3;
+    }
+
+    .scheduled-indicator {
+        color: #3b82f6;
+        font-size: .78rem;
     }
 }
 
