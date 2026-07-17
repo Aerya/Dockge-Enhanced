@@ -23,11 +23,31 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 ## Fonctionnalités
 
+### Ce qui distingue Dockge Enhanced
+
+| Domaine | Dockge Enhanced ajoute |
+| --- | --- |
+| **Multi-instance** | Noms d'instances, filtre et tri des stacks par instance, copie, migration et réplication froide avec bascule |
+| **Sauvegarde & reprise** | Restic multi-destination, volumes, cohérence par stack, restauration sélective, tests et diffs de snapshots |
+| **Images & sécurité** | Surveillance des mises à jour, auto-update avec rollback, scan Trivy et exceptions CVE |
+| **Supervision** | Stats système et stacks, crash loops, healthchecks avec auto-heal, logs enrichis et Kula optionnel |
+| **Gestion Docker** | Images, volumes et conteneurs hors Dockge, actions groupées et protections contre les suppressions risquées |
+| **Notifications & accès** | Discord, Apprise, 2FA, trusted proxy, Turnstile et clients mobiles |
+
+Les différences principales restent visibles ci-dessus ; le catalogue détaillé est conservé ci-dessous pour documenter précisément les écarts avec Dockge et les autres forks sans allonger la lecture initiale.
+
+<details>
+<summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
+
+**Filtre de stacks par instance** — La liste des stacks peut afficher toutes les instances ou une seule instance Dockge. Les compteurs Stacks, Actives, Arrêtées et Inactives se recalculent selon l'instance choisie ; le filtre est mémorisé dans le navigateur et reste indépendant du tri.
+
+**Actions avec libellés optionnels** — Un interrupteur sur la page Compose permet de choisir entre les icônes compactes et les icônes accompagnées de leur fonction en petite écriture. Le choix est mémorisé dans le navigateur et les tooltips restent disponibles dans les deux modes.
+
 🆕 **NEW — Répliques froides planifiées et bascule manuelle** — Toute stack administrée peut maintenir une réplique unidirectionnelle en veille sur une autre instance Dockge toutes les 15 minutes, 1 heure, 6 heures ou 24 heures. Dockge-Enhanced actualise automatiquement les fichiers Compose, bind mounts et volumes nommés sélectionnés via le dépôt Restic partagé, tout en laissant les conteneurs cibles arrêtés. La page de la stack affiche la cible, l'état, la dernière synchronisation réussie, sa durée, le snapshot conservé, la prochaine exécution et les erreurs éventuelles. Le bouton **Basculer** déploie la réplique et valide ses services et healthchecks avant de la déclarer active. Le dernier snapshot valide reste conservé jusqu'à la restauration complète de son remplaçant ; si l'actualisation échoue, la configuration et les données précédentes sont restaurées. La réplication possède son propre scheduler et ses propres métadonnées sans modifier la planification, la rétention ni le `prune` du backup Restic existant.
 
-🆕 **NEW — Copie et migration complète de stacks entre instances** — Depuis une stack, un assistant copie ou déplace la configuration et, au choix, les données de bind mounts et volumes nommés vers une autre instance. Le mapping source → cible est découvert automatiquement puis reste modifiable. Les données passent hors Socket.IO par un dépôt Restic partagé local, SFTP, S3 ou REST configuré à l'identique sur les deux instances. Une copie respecte le mode de cohérence choisi — à chaud, stop/start ou hooks applicatifs. Une migration crée d'abord un snapshot incrémental pendant que la source tourne, prépare la cible, arrête ensuite uniquement les services actifs pour envoyer un delta final, restaure la cible, la déploie et vérifie ses états et healthchecks. En cas d'échec, la cible est supprimée et la source retrouve exactement ses services actifs ; après succès, la source reste arrêtée mais ses fichiers sont conservés. Le moteur de backup Restic planifié existant reste indépendant : les snapshots temporaires de transfert sont identifiés et oubliés séparément, sans `prune`. La page Compose affiche également toutes les actions sous forme d'icônes visibles, repliables et accompagnées de tooltips, sans menu d'actions caché.
+🆕 **NEW — Copie et migration complète de stacks entre instances** — Depuis une stack, un assistant copie ou déplace la configuration et, au choix, les données de bind mounts et volumes nommés vers une autre instance. Le mapping source → cible est découvert automatiquement puis reste modifiable. Les données passent hors Socket.IO par un dépôt Restic partagé local, SFTP, S3 ou REST configuré à l'identique sur les deux instances. Une copie respecte le mode de cohérence choisi — à chaud, stop/start ou hooks applicatifs. Une migration crée d'abord un snapshot incrémental pendant que la source tourne, prépare la cible, arrête ensuite uniquement les services actifs pour envoyer un delta final, restaure la cible, la déploie et vérifie ses états et healthchecks. En cas d'échec, la cible est supprimée et la source retrouve exactement ses services actifs ; après succès, la source reste arrêtée mais ses fichiers sont conservés. Le moteur de backup Restic planifié existant reste indépendant : les snapshots temporaires de transfert sont identifiés et oubliés séparément, sans `prune`. La page Compose affiche également toutes les actions sous forme d'icônes visibles avec tooltips, avec un mode optionnel ajoutant leur libellé sous chaque icône.
 
-🆕 **NEW — Noms d'instances et tri par agent** — L'instance locale et les agents Dockge distants peuvent recevoir un nom d'affichage libre, modifiable à tout moment depuis la page d'accueil (par exemple `NAS principal` ou `Serveur de secours`). Un badge **Local** identifie clairement l'instance sur laquelle l'interface est ouverte ; pour les agents distants, l'endpoint technique reste visible en dessous et continue d'assurer le routage sans être modifié. Le nom personnalisé apparaît aussi sur les pages et dans la liste des stacks. Un nouveau sélecteur permet de trier les stacks par statut ou de les regrouper par instance ; le choix est mémorisé dans le navigateur.
+🆕 **NEW — Noms d'instances, filtre et tri par agent** — L'instance locale et les agents Dockge distants peuvent recevoir un nom d'affichage libre, modifiable à tout moment depuis la page d'accueil (par exemple `NAS principal` ou `Serveur de secours`). Un badge **Local** identifie clairement l'instance sur laquelle l'interface est ouverte ; pour les agents distants, l'endpoint technique reste visible en dessous et continue d'assurer le routage sans être modifié. Le nom personnalisé apparaît aussi sur les pages et dans la liste des stacks. Deux sélecteurs permettent de limiter la liste à une instance puis de trier les stacks par statut ou par instance ; les choix sont mémorisés dans le navigateur.
 
 🆕 **NEW — Cohérence du backup par stack** — Chaque stack incluse dans le backup Restic dispose de son propre mode : **À chaud** (aucune interruption), **Arrêter puis redémarrer** (Dockge mémorise uniquement les services actifs, les arrête avant le snapshot et redémarre les mêmes services même en cas d'échec), ou **Hooks applicatifs**. Les hooks avant/après sont exécutés avec `docker compose exec` dans le service choisi pour produire un dump, vider un cache ou verrouiller proprement une application sans donner accès au shell de l'hôte. Les stacks sont remises en état avant la rétention Restic et le restore test afin de réduire l'interruption. Cette fonctionnalité s'inspire de l'approche de cohérence des sauvegardes de [Repliqate](https://github.com/lminlone/repliqate), tout en restant intégrée au moteur Restic, aux destinations et aux restaurations de Dockge Enhanced.
 
@@ -160,6 +180,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 **Interface FR/EN** — Les pages `/watcher` et `/resources` disposent d'un bouton 🇫🇷/🇬🇧 pour changer la langue indépendamment du paramètre global de l'application.
 
 **Navigation mobile** — Barre de navigation bas complète sur mobile avec toutes les sections : Accueil, Console, Surveillance, Ressources, Paramètres.
+
+</details>
 
 ---
 

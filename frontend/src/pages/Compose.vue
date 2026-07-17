@@ -33,65 +33,84 @@
             />
 
             <div v-if="stack.isManagedByDockge" class="mb-3">
-                <div class="stack-action-bar" role="toolbar" :aria-label="$t('stackActions')">
+                <div class="stack-action-display form-check form-switch">
+                    <input id="stackActionLabels" v-model="stackActionLabels" class="form-check-input" type="checkbox" role="switch">
+                    <label class="form-check-label" for="stackActionLabels">{{ $t("stackActionLabels") }}</label>
+                </div>
+                <div class="stack-action-bar" :class="{ 'stack-action-bar--labeled': stackActionLabels }" role="toolbar" :aria-label="$t('stackActions')">
                     <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('deployStack')" :aria-label="$t('deployStack')" :disabled="processing" @click="deployStack">
                         <font-awesome-icon icon="rocket" />
+                        <span class="stack-action-label">{{ $t("deployStack") }}</span>
                     </button>
 
                     <button v-if="isEditMode" class="btn btn-normal stack-action" :title="$t('saveStackDraft')" :aria-label="$t('saveStackDraft')" :disabled="processing" @click="saveStack">
                         <font-awesome-icon icon="save" />
+                        <span class="stack-action-label">{{ $t("saveStackDraft") }}</span>
                     </button>
 
                     <button v-if="isEditMode && !isAdd" class="btn btn-normal stack-action" :title="$t('discardStack')" :aria-label="$t('discardStack')" :disabled="processing" @click="discardStack">
                         <font-awesome-icon icon="undo" />
+                        <span class="stack-action-label">{{ $t("discardStack") }}</span>
                     </button>
 
                     <button v-if="!isEditMode" class="btn btn-secondary stack-action" :title="$t('editStack')" :aria-label="$t('editStack')" :disabled="processing" @click="enableEditMode">
                         <font-awesome-icon icon="pen" />
+                        <span class="stack-action-label">{{ $t("editStack") }}</span>
                     </button>
 
                     <button v-if="!isEditMode && !active" class="btn btn-primary stack-action" :title="$t('startStack')" :aria-label="$t('startStack')" :disabled="processing" @click="startStack">
                         <font-awesome-icon icon="play" />
+                        <span class="stack-action-label">{{ $t("startStack") }}</span>
                     </button>
 
                     <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('restartStack')" :aria-label="$t('restartStack')" :disabled="processing" @click="restartStack">
                         <font-awesome-icon icon="sync-alt" />
+                        <span class="stack-action-label">{{ $t("restartStack") }}</span>
                     </button>
 
                     <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('updateStack')" :aria-label="$t('updateStack')" :disabled="processing" @click="updateStack">
                         <font-awesome-icon icon="cloud-arrow-down" />
+                        <span class="stack-action-label">{{ $t("updateStack") }}</span>
                     </button>
 
                     <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('recreateStack')" :aria-label="$t('recreateStack')" :disabled="processing" @click="recreateStack">
                         <font-awesome-icon icon="rotate" />
+                        <span class="stack-action-label">{{ $t("recreateStack") }}</span>
                     </button>
 
                     <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('pullAndRecreateStack')" :aria-label="$t('pullAndRecreateStack')" :disabled="processing" @click="pullAndRecreateStack">
                         <font-awesome-icon icon="cloud-upload-alt" />
+                        <span class="stack-action-label">{{ $t("pullAndRecreateStack") }}</span>
                     </button>
 
                     <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('stopStack')" :aria-label="$t('stopStack')" :disabled="processing" @click="stopStack">
                         <font-awesome-icon icon="stop" />
+                        <span class="stack-action-label">{{ $t("stopStack") }}</span>
                     </button>
 
                     <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackTransfer.copyAction')" :aria-label="$t('stackTransfer.copyAction')" :disabled="processing" @click="openStackTransfer('copy')">
                         <font-awesome-icon icon="copy" />
+                        <span class="stack-action-label">{{ $t("stackTransfer.copyAction") }}</span>
                     </button>
 
                     <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackTransfer.moveAction')" :aria-label="$t('stackTransfer.moveAction')" :disabled="processing" @click="openStackTransfer('move')">
                         <font-awesome-icon icon="clone" />
+                        <span class="stack-action-label">{{ $t("stackTransfer.moveAction") }}</span>
                     </button>
 
                     <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackReplication.configure')" :aria-label="$t('stackReplication.configure')" :disabled="processing" @click="openStackReplication()">
                         <font-awesome-icon icon="database" />
+                        <span class="stack-action-label">{{ $t("stackReplication.configure") }}</span>
                     </button>
 
                     <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('downStack')" :aria-label="$t('downStack')" :disabled="processing" @click="downStack">
                         <font-awesome-icon icon="ban" />
+                        <span class="stack-action-label">{{ $t("downStack") }}</span>
                     </button>
 
                     <button v-if="!isEditMode" class="btn btn-danger stack-action" :title="$t('deleteStack')" :aria-label="$t('deleteStack')" :disabled="processing" @click="showDeleteDialog = !showDeleteDialog">
                         <font-awesome-icon icon="trash" />
+                        <span class="stack-action-label">{{ $t("deleteStack") }}</span>
                     </button>
                 </div>
             </div>
@@ -585,6 +604,7 @@ export default {
             volumeUsageLoading: false,
             containersExpanded: true,
             autoUpdateSaving: {},
+            stackActionLabels: localStorage.getItem("stackActionLabels") === "1",
         };
     },
     computed: {
@@ -727,6 +747,9 @@ export default {
         },
     },
     watch: {
+        stackActionLabels(value) {
+            localStorage.setItem("stackActionLabels", value ? "1" : "0");
+        },
         "stack.composeYAML": {
             handler() {
                 if (this.editorFocus) {
@@ -1366,6 +1389,14 @@ export default {
     gap: .45rem;
 }
 
+.stack-action-display {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: .45rem;
+    color: $dark-font-color3;
+    font-size: .78rem;
+}
+
 .stack-action {
     display: inline-flex;
     align-items: center;
@@ -1375,6 +1406,30 @@ export default {
     padding: 0;
     border-radius: .55rem;
     font-size: 1rem;
+}
+
+.stack-action-label {
+    display: none;
+}
+
+.stack-action-bar--labeled .stack-action {
+    flex-direction: column;
+    gap: .18rem;
+    width: auto;
+    min-width: 5.5rem;
+    min-height: 3.75rem;
+    height: auto;
+    padding: .35rem .5rem;
+}
+
+.stack-action-bar--labeled .stack-action-label {
+    display: block;
+    max-width: 7.5rem;
+    font-size: .66rem;
+    font-weight: 500;
+    line-height: 1.05;
+    text-align: center;
+    white-space: normal;
 }
 
 .stack-scheduler-inline {
