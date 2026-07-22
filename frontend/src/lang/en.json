@@ -829,5 +829,8 @@
     "stackMove.finalizeConfirm": "Delete the source stack files now? Target validation has already succeeded. Persistent data outside the stack folder is not deleted automatically.",
     "stackTransfer.transportSecurity": "Encrypted Restic transport",
     "stackTransfer.checksumVerified": "checksums verified",
-    "stackTransfer.resumableRepository": "incremental repository with safe retry"
+    "stackTransfer.resumableRepository": "incremental repository with safe retry",
+    "stackTransfer.directHttp": "Direct transfer with a short-lived token",
+    "stackTransfer.bandwidthLimit": "Bandwidth limit (KiB/s)",
+    "stackTransfer.bandwidthLimitHint": "0 means unlimited. Interrupted downloads resume with HTTP Range requests."
 }

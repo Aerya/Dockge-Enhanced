@@ -26,7 +26,8 @@ const HELPER_IMAGE = process.env.DOCKGE_VOLUME_HELPER_IMAGE || "busybox:stable";
 
 export interface StackTransferDataCapabilities {
     resticAvailable: boolean;
-    repositories: Array<StackTransferRepository & { transport: "restic"; encrypted: boolean; checksumVerified: boolean; retryable: boolean; resumableRepository: boolean }>;
+    directHttpAvailable: boolean;
+    repositories: Array<StackTransferRepository & { transport: "restic" | "rsync"; encrypted: boolean; checksumVerified: boolean; retryable: boolean; resumableRepository: boolean }>;
     policy: StackBackupPolicy;
 }
 
@@ -259,6 +260,7 @@ async function restoreSource(job: SourceDataJob, server: DockgeServer): Promise<
 }
 
 export async function restoreSnapshotToTarget(server: DockgeServer, targetName: string, mappings: StackTransferMount[], repositoryId: string, snapshotId: string, pathInSnapshot: string): Promise<void> {
+    await stackTransferTransport.verify(repositoryId, snapshotId, pathInSnapshot);
     const stack = await Stack.getStack(server, targetName);
     const mounts = await resolveStorage(stack, mappings);
     if (mounts.some(mount => mount.type === "bind" && mount.source === "/")) {
@@ -322,9 +324,10 @@ export async function getStackTransferDataCapabilities(stackName: string): Promi
     const manager = BackupManager.getInstance();
     return {
         resticAvailable,
-        repositories: resticAvailable ? stackTransferTransport.list().map(repository => ({ ...repository,
-            transport: stackTransferTransport.kind,
-            ...stackTransferTransport.capabilities(repository.id) })) : [],
+        directHttpAvailable: true,
+        repositories: stackTransferTransport.list().filter(repository => resticAvailable || repository.type === "rsync").map(repository => ({ ...repository,
+            transport: repository.type === "rsync" ? "rsync" as const : "restic" as const,
+            ...stackTransferTransport.capabilities(repository.id) })),
         policy: normalizeStackBackupPolicy(manager.settings.stackPolicies?.[stackName]),
     };
 }

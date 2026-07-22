@@ -823,5 +823,8 @@
     "stackMove.finalizeConfirm": "Supprimer maintenant les fichiers de la stack source ? La cible a déjà été validée. Les données persistantes situées hors du dossier de stack ne sont jamais supprimées automatiquement.",
     "stackTransfer.transportSecurity": "Transport Restic chiffré",
     "stackTransfer.checksumVerified": "checksums vérifiés",
-    "stackTransfer.resumableRepository": "dépôt incrémental avec reprise sûre"
+    "stackTransfer.resumableRepository": "dépôt incrémental avec reprise sûre",
+    "stackTransfer.directHttp": "Transfert direct avec jeton à durée courte",
+    "stackTransfer.bandwidthLimit": "Limite de débit (Kio/s)",
+    "stackTransfer.bandwidthLimitHint": "0 signifie illimité. Un téléchargement interrompu reprend avec les requêtes HTTP Range."
 }
