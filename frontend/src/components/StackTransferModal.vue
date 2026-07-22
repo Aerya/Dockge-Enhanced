@@ -49,6 +49,9 @@
                     <div v-if="availableRepositories.length === 0" class="alert alert-secondary mb-0 py-2">
                         {{ $t("stackTransfer.noSharedRepository") }}
                     </div>
+                    <div v-if="directTransportWarning" class="alert alert-warning mt-2 mb-0 py-2">
+                        {{ $t("stackTransfer.directHttpUnavailable") }}
+                    </div>
                     <div v-if="includeData" class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">{{ $t("stackTransfer.sharedRepository") }}</label>
@@ -277,12 +280,18 @@
                     <small v-if="currentJob?.logs?.length" class="d-block mt-2">{{ currentJob.logs[currentJob.logs.length - 1].message }}</small>
                 </div>
 
-                <div class="d-flex justify-content-end gap-2">
+                <div class="d-flex align-items-center justify-content-end gap-2">
+                    <div v-if="actionDisabledReason" class="text-warning small me-auto">
+                        <font-awesome-icon icon="circle-info" class="me-1" />{{ $t(actionDisabledReason) }}
+                    </div>
+                    <div v-else-if="operation === 'replicate'" class="form-text me-auto">
+                        {{ $t("stackReplication.configureHint") }}
+                    </div>
                     <button class="btn btn-normal" @click="visible = false">{{ $t("cancel") }}</button>
                     <button class="btn" :class="operation === 'move' ? 'btn-warning' : 'btn-primary'" :disabled="!canTransfer || transferring" @click="executeTransfer">
                         <span v-if="transferring" class="spinner-border spinner-border-sm me-1" />
                         <font-awesome-icon v-else :icon="operation === 'move' ? 'clone' : operation === 'replicate' ? 'database' : 'copy'" class="me-1" />
-                        {{ operation === "move" ? $t("stackTransfer.moveAction") : operation === "replicate" ? $t("stackReplication.configure") : $t("stackTransfer.copyAction") }}
+                        {{ operation === "move" ? $t("stackTransfer.moveAction") : operation === "replicate" ? $t("stackReplication.configureAction") : $t("stackTransfer.copyAction") }}
                     </button>
                 </div>
             </template>
@@ -322,6 +331,7 @@ export default {
             targetDataCapabilities: { repositories: [],
                 resticAvailable: false },
             directRepository: null,
+            directTransportWarning: "",
             directBandwidthKbps: 0,
             repositoryId: "",
             sourceComposeYAML: "",
@@ -390,6 +400,27 @@ export default {
         },
         selectedRepository() {
             return this.availableRepositories.find(item => item.id === this.repositoryId) || null;
+        },
+        actionDisabledReason() {
+            if (this.canTransfer) {
+                return "";
+            }
+            if (!this.targetName) {
+                return "stackTransfer.targetNameRequired";
+            }
+            if (this.operation === "replicate" && !this.repositoryId) {
+                return "stackReplication.repositoryRequired";
+            }
+            if ((this.operation === "replicate" || this.includeData) && !this.mappings.some(mapping => mapping.transferData && (mapping.type === "bind" || mapping.type === "volume"))) {
+                return "stackTransfer.storageSelectionRequired";
+            }
+            if (this.preflightSignature !== this.currentSignature) {
+                return "stackTransfer.validationRequired";
+            }
+            if (this.issues.some(issue => issue.severity === "error" && !(this.operation === "replicate" && this.replicationId && issue.code === "stack-exists") && (issue.scope === "save" || this.deploy || this.includeData))) {
+                return "stackTransfer.resolveBlockingIssues";
+            }
+            return "stackTransfer.actionUnavailable";
         },
         canTransfer() {
             if (!this.targetEndpoint && !this.targetAgents.some(item => item.endpoint === "")) {
@@ -521,6 +552,7 @@ export default {
             this.restoreTestIntervalHours = 168;
             this.restoreTestStartContainers = false;
             this.directRepository = null;
+            this.directTransportWarning = "";
             this.directBandwidthKbps = 0;
             this.deploy = true;
             this.includeData = false;
@@ -622,6 +654,7 @@ export default {
         async refreshDirectRepository() {
             if (this.operation === "replicate") {
                 this.directRepository = null;
+                this.directTransportWarning = "";
                 return;
             }
             const baseUrl = this.endpoint ? this.$root.agentList[this.endpoint]?.url : window.location.origin;
@@ -630,10 +663,14 @@ export default {
                 return;
             }
             const previousDirect = this.selectedRepository?.type === "http";
-            const response = await this.emitAgent(this.endpoint, "getDirectHttpTransferRepository", baseUrl, Math.max(0, Number(this.directBandwidthKbps) || 0) || undefined);
+            const response = await this.emitAgent(this.endpoint, "getDirectHttpTransferRepository", baseUrl, Math.max(0, Number(this.directBandwidthKbps) || 0));
             if (!response.ok) {
-                throw new Error(this.$t(response.msg));
+                this.directRepository = null;
+                this.directTransportWarning = response.msg || "Error";
+                this.invalidatePreflight();
+                return;
             }
+            this.directTransportWarning = "";
             this.directRepository = response.data;
             if (previousDirect) {
                 this.repositoryId = response.data.id;

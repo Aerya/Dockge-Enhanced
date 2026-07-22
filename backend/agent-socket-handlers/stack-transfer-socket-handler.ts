@@ -193,12 +193,13 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
         agentSocket.on("getDirectHttpTransferRepository", (baseUrl: unknown, bandwidthKbps: unknown, callback: unknown) => {
             try {
                 checkLogin(socket);
-                if (typeof baseUrl !== "string" || (bandwidthKbps !== undefined && typeof bandwidthKbps !== "number")) {
+                const normalizedBandwidth = bandwidthKbps === null || bandwidthKbps === undefined ? undefined : bandwidthKbps;
+                if (typeof baseUrl !== "string" || (normalizedBandwidth !== undefined && (typeof normalizedBandwidth !== "number" || !Number.isFinite(normalizedBandwidth) || normalizedBandwidth < 0))) {
                     throw new ValidationError("Invalid direct HTTP transport configuration");
                 }
                 const advertisedUrl = process.env.DOCKGE_PUBLIC_URL || baseUrl;
                 callbackResult({ ok: true,
-                    data: { id: directHttpRepositoryId(advertisedUrl, bandwidthKbps),
+                    data: { id: directHttpRepositoryId(advertisedUrl, normalizedBandwidth),
                         label: "Direct HTTP",
                         type: "http",
                         transport: "http",
