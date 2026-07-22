@@ -24,6 +24,12 @@
                 :source-stack-name="stack.name"
                 @edit="openStackReplication"
             />
+            <PendingStackMoveStatus
+                v-if="!isAdd && stack.isManagedByDockge"
+                ref="pendingStackMoveStatus"
+                :source-endpoint="endpoint"
+                :source-stack-name="stack.name"
+            />
 
             <div v-if="stack.isManagedByDockge" class="mb-3">
                 <div class="stack-action-display form-check form-switch">
@@ -497,6 +503,7 @@ import { useImageStatus } from "../composables/useImageStatus";
 import StackScheduleEditor from "../components/StackScheduleEditor.vue";
 import StackTransferModal from "../components/StackTransferModal.vue";
 import StackReplicationStatus from "../components/StackReplicationStatus.vue";
+import PendingStackMoveStatus from "../components/PendingStackMoveStatus.vue";
 import { useStackSchedules } from "../composables/useStackSchedules";
 
 const template = `
@@ -522,6 +529,7 @@ export default {
         StackScheduleEditor,
         StackTransferModal,
         StackReplicationStatus,
+        PendingStackMoveStatus,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
@@ -1263,6 +1271,7 @@ export default {
 
         stackTransferCompleted() {
             this.$refs.stackReplicationStatus?.load();
+            this.$refs.pendingStackMoveStatus?.load();
         },
 
         deleteDialog() {

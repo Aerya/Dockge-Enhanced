@@ -597,16 +597,16 @@ export default {
                     await this.executeReplication();
                     return;
                 }
-                if (this.includeData) {
-                    await this.executeDataTransfer();
-                    return;
-                }
                 if (this.operation === "move") {
                     const sourceState = await this.emitAgent(this.endpoint, "analyzeStackTransfer", this.stack.name, this.endpoint);
                     if (!sourceState.ok) {
                         throw new Error(this.$t(sourceState.msg));
                     }
                     this.sourceRunningServices = sourceState.data.runningServices || [];
+                }
+                if (this.includeData) {
+                    await this.executeDataTransfer();
+                    return;
                 }
                 const response = await this.emitAgent(this.targetEndpoint, "importStackTransfer", this.request());
                 if (!response.ok) {
@@ -647,6 +647,7 @@ export default {
                 }
                 if (this.operation === "move") {
                     await this.emitAgent(this.targetEndpoint, "completeStackTransferJob", result.job.id, true, "");
+                    await this.registerPendingMove();
                 }
                 this.result = result;
                 this.preflightSignature = "";
@@ -744,6 +745,9 @@ export default {
                 if (!completed.ok) {
                     throw new Error(this.$t(completed.msg));
                 }
+                if (this.operation === "move") {
+                    await this.registerPendingMove();
+                }
                 this.result = { job: { id: targetJobId } };
                 this.preflightSignature = "";
                 this.$root.emitAgent(this.targetEndpoint, "requestStackList", () => {});
@@ -761,6 +765,16 @@ export default {
             } finally {
                 this.transferPhase = "";
             }
+        },
+        registerPendingMove() {
+            return new Promise((resolve, reject) => this.$root.getSocket().emit("savePendingStackMove", {
+                sourceEndpoint: this.endpoint,
+                sourceStackName: this.stack.name,
+                targetEndpoint: this.targetEndpoint,
+                targetName: this.targetName,
+                runningServices: this.sourceRunningServices,
+                dataTransfer: this.includeData,
+            }, response => response?.ok ? resolve(response.data) : reject(new Error(this.$t(response?.msg || "Error")))));
         },
         formatBytes(value) {
             if (value === null || value === undefined) {

@@ -53,6 +53,7 @@ import { AgentSocketHandler } from "./agent-socket-handler";
 import { AgentSocket } from "../common/agent-socket";
 import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-handler";
 import { StackReplicationSocketHandler } from "./socket-handlers/stack-replication-socket-handler";
+import { StackMoveSocketHandler } from "./socket-handlers/stack-move-socket-handler";
 import { Terminal } from "./terminal";
 import {
     ensureTrustedProxyUser,
@@ -88,6 +89,7 @@ export class DockgeServer {
         new MainSocketHandler(),
         new ManageAgentSocketHandler(),
         new StackReplicationSocketHandler(),
+        new StackMoveSocketHandler(),
     ];
 
     agentProxySocketHandler = new AgentProxySocketHandler();
