@@ -6,7 +6,7 @@ import fs from "node:fs";
 import { promises as fsAsync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { importStackTransfer, StackTransferRequest } from "./stack-transfer";
+import { importStackTransfer, preflightStackTransfer, StackTransferRequest } from "./stack-transfer";
 import { Settings } from "../settings";
 import { Terminal } from "../terminal";
 import { DockgeServer } from "../dockge-server";
@@ -82,7 +82,10 @@ test("copies, atomically deploys and verifies a stack in an isolated target inst
         emitAgent() {} } as unknown as DockgeSocket;
     try {
         const transferRequest = request(targetName);
-        transferRequest.mappings[0].targetSource = "./mapped-data";
+        const targetBind = path.join(root, "new-target-bind");
+        transferRequest.mappings[0].targetSource = targetBind;
+        const preflight = await preflightStackTransfer(server, transferRequest);
+        assert.equal(preflight.issues.some(issue => issue.code === "bind-create" && issue.severity === "success"), true);
         const result = await importStackTransfer(server, socket, transferRequest);
         const targetDir = path.join(root, targetName);
         assert.equal(result.job.status, "succeeded");
@@ -90,7 +93,8 @@ test("copies, atomically deploys and verifies a stack in an isolated target inst
         assert.equal(fs.existsSync(path.join(targetDir, ".env")), true);
         assert.equal(fs.existsSync(path.join(targetDir, "compose.override.yaml")), true);
         const rendered = JSON.parse(String((await execFileAsync("docker", [ "compose", "-p", targetName, "config", "--format", "json" ], { cwd: targetDir })).stdout));
-        assert.match(String(rendered.services.worker.volumes[0].source), /mapped-data$/);
+        assert.equal(String(rendered.services.worker.volumes[0].source), targetBind);
+        assert.equal(fs.existsSync(targetBind), true);
         const ps = await execFileAsync("docker", [ "compose", "-p", targetName, "ps", "--status", "running", "--services" ], { cwd: targetDir });
         assert.match(String(ps.stdout), /worker/);
     } finally {
