@@ -82,6 +82,7 @@ export type StackBackupMode = "hot" | "stop" | "hooks";
 
 export interface StackBackupPolicy {
     mode: StackBackupMode;
+    applicationProfile?: "custom" | "postgresql" | "mysql" | "redis" | "sqlite";
     hookService?: string;
     preHook?: string;
     postHook?: string;
@@ -298,6 +299,9 @@ export function normalizeStackBackupPolicy(value: unknown): StackBackupPolicy {
     };
     const policy: StackBackupPolicy = { mode };
     if (mode === "hooks") {
+        if ([ "custom", "postgresql", "mysql", "redis", "sqlite" ].includes(String(raw.applicationProfile))) {
+            policy.applicationProfile = raw.applicationProfile as StackBackupPolicy["applicationProfile"];
+        }
         policy.hookService = clean(raw.hookService);
         policy.preHook = clean(raw.preHook);
         policy.postHook = clean(raw.postHook);

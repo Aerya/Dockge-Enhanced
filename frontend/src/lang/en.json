@@ -806,5 +806,12 @@
     "watcher.backup.trigger.scheduled": "Scheduled",
     "watcher.backup.trigger.on-save": "On-save",
     "watcher.backup.trigger.manual": "Manual",
-    "watcher.backup.snapshots.noneFiltered": "No snapshot for this filter."
+    "watcher.backup.snapshots.noneFiltered": "No snapshot for this filter.",
+    "stackTransfer.applicationProfile": "Application profile",
+    "stackTransfer.profile.custom": "Custom commands",
+    "stackTransfer.profileHint": "The proposed commands remain editable and run inside the selected service. Check credentials, paths and tools before enabling them.",
+    "stackReplication.restoreTestEnabled": "Periodically verify that the replica snapshot can be restored",
+    "stackReplication.restoreTestFrequency": "Recovery test frequency",
+    "stackReplication.testRecovery": "Test recovery",
+    "stackReplication.lastRestoreTest": "Last recovery test"
 }
