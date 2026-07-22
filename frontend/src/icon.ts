@@ -91,6 +91,7 @@ import {
     faCalendarDays,
     faRecycle,
     faBoxesStacked,
+    faVial,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -183,6 +184,7 @@ library.add(
     faCalendarDays,
     faRecycle,
     faBoxesStacked,
+    faVial,
 );
 
 export { FontAwesomeIcon };

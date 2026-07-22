@@ -63,6 +63,16 @@ export class StackReplicationSocketHandler extends SocketHandler {
             }
         });
 
+        socket.on("testStackReplicationRecovery", async (id: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true,
+                    data: await manager.testRecovery(requireId(id)) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
         socket.on("deleteStackReplication", async (id: unknown, callback: unknown) => {
             try {
                 checkLogin(socket);

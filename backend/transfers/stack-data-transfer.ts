@@ -6,6 +6,7 @@ import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
 import { DockgeSocket, ValidationError } from "../util-server";
 import { Settings } from "../settings";
+import { getApplicationProfile } from "./application-profiles";
 import {
     createImportedStackStorage,
     deployAndVerifyImportedStack,
@@ -224,7 +225,8 @@ async function runningServices(stack: Stack): Promise<string[]> {
 }
 
 async function runHook(stack: Stack, policy: StackBackupPolicy, phase: "pre" | "post"): Promise<void> {
-    const command = phase === "pre" ? policy.preHook : policy.postHook;
+    const profile = getApplicationProfile(policy.applicationProfile);
+    const command = phase === "pre" ? (policy.preHook || profile?.preHook) : (policy.postHook || profile?.postHook);
     if (!command) {
         return;
     }

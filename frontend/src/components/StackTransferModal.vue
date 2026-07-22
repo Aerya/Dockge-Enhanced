@@ -73,6 +73,16 @@
                         </div>
                         <template v-if="consistencyMode === 'hooks'">
                             <div class="col-md-4">
+                                <label class="form-label">{{ $t("stackTransfer.applicationProfile") }}</label>
+                                <select v-model="applicationProfile" class="form-select" @change="applyApplicationProfile">
+                                    <option value="custom">{{ $t("stackTransfer.profile.custom") }}</option>
+                                    <option value="postgresql">PostgreSQL</option>
+                                    <option value="mysql">MariaDB / MySQL</option>
+                                    <option value="redis">Redis</option>
+                                    <option value="sqlite">SQLite</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
                                 <label class="form-label">{{ $t("stackTransfer.hookService") }}</label>
                                 <input v-model="hookService" class="form-control" @input="invalidatePreflight" />
                             </div>
@@ -83,6 +93,21 @@
                             <div class="col-md-4">
                                 <label class="form-label">{{ $t("stackTransfer.postHook") }}</label>
                                 <input v-model="postHook" class="form-control" @input="invalidatePreflight" />
+                            </div>
+                            <div class="col-12 form-text">{{ $t("stackTransfer.profileHint") }}</div>
+                        </template>
+                        <template v-if="operation === 'replicate'">
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+                                    <input id="replica-restore-test" v-model="restoreTestEnabled" class="form-check-input" type="checkbox" />
+                                    <label class="form-check-label" for="replica-restore-test">{{ $t("stackReplication.restoreTestEnabled") }}</label>
+                                </div>
+                            </div>
+                            <div v-if="restoreTestEnabled" class="col-md-6">
+                                <label class="form-label">{{ $t("stackReplication.restoreTestFrequency") }}</label>
+                                <select v-model.number="restoreTestIntervalHours" class="form-select">
+                                    <option :value="24">24 h</option><option :value="168">7 j</option><option :value="720">30 j</option>
+                                </select>
                             </div>
                         </template>
                     </div>
@@ -207,6 +232,8 @@ export default {
             operation: "copy",
             replicationId: "",
             replicationInterval: 60,
+            restoreTestEnabled: true,
+            restoreTestIntervalHours: 168,
             targetEndpoint: "",
             targetName: "",
             deploy: true,
@@ -218,6 +245,7 @@ export default {
                 resticAvailable: false },
             repositoryId: "",
             consistencyMode: "hot",
+            applicationProfile: "custom",
             hookService: "",
             preHook: "",
             postHook: "",
@@ -344,6 +372,9 @@ export default {
                     if (existingPolicy) {
                         this.repositoryId = existingPolicy.repositoryId;
                         this.consistencyMode = existingPolicy.consistency?.mode || "hot";
+                        this.applicationProfile = existingPolicy.consistency?.applicationProfile || "custom";
+                        this.restoreTestEnabled = existingPolicy.restoreTestEnabled !== false;
+                        this.restoreTestIntervalHours = existingPolicy.restoreTestIntervalHours || 168;
                         this.hookService = existingPolicy.consistency?.hookService || "";
                         this.preHook = existingPolicy.consistency?.preHook || "";
                         this.postHook = existingPolicy.consistency?.postHook || "";
@@ -365,6 +396,8 @@ export default {
             this.targetName = "";
             this.replicationId = "";
             this.replicationInterval = 60;
+            this.restoreTestEnabled = true;
+            this.restoreTestIntervalHours = 168;
             this.deploy = true;
             this.includeData = false;
             this.sourceDataCapabilities = { repositories: [],
@@ -374,6 +407,7 @@ export default {
                 resticAvailable: false };
             this.repositoryId = "";
             this.consistencyMode = "hot";
+            this.applicationProfile = "custom";
             this.hookService = "";
             this.preHook = "";
             this.postHook = "";
@@ -499,10 +533,23 @@ export default {
         dataPolicy() {
             return {
                 mode: this.consistencyMode,
+                applicationProfile: this.applicationProfile,
                 hookService: this.hookService.trim() || undefined,
                 preHook: this.preHook.trim() || undefined,
                 postHook: this.postHook.trim() || undefined,
             };
+        },
+        applyApplicationProfile() {
+            const profiles = {
+                postgresql: [ "pg_dumpall --clean --if-exists > /tmp/dockge-transfer-postgresql.sql && test -s /tmp/dockge-transfer-postgresql.sql", "rm -f /tmp/dockge-transfer-postgresql.sql" ],
+                mysql: [ "(mariadb-dump --all-databases --single-transaction || mysqldump --all-databases --single-transaction) > /tmp/dockge-transfer-mysql.sql && test -s /tmp/dockge-transfer-mysql.sql", "rm -f /tmp/dockge-transfer-mysql.sql" ],
+                redis: [ "redis-cli BGSAVE && while redis-cli INFO persistence | grep -q 'rdb_bgsave_in_progress:1'; do sleep 1; done", "true" ],
+                sqlite: [ "db=${DOCKGE_SQLITE_PATH:?Set DOCKGE_SQLITE_PATH}; sqlite3 \"$db\" 'PRAGMA wal_checkpoint(TRUNCATE);' && sqlite3 \"$db\" \".backup '/tmp/dockge-transfer.sqlite'\" && test -s /tmp/dockge-transfer.sqlite", "rm -f /tmp/dockge-transfer.sqlite" ],
+            };
+            if (profiles[this.applicationProfile]) {
+                [ this.preHook, this.postHook ] = profiles[this.applicationProfile];
+            }
+            this.invalidatePreflight();
         },
         async runPreflight() {
             this.preflightLoading = true;
@@ -625,6 +672,8 @@ export default {
                 intervalMinutes: this.replicationInterval,
                 mappings: this.mappings,
                 consistency: this.dataPolicy(),
+                restoreTestEnabled: this.restoreTestEnabled,
+                restoreTestIntervalHours: this.restoreTestIntervalHours,
                 enabled: true,
             }, resolve));
             if (!saved.ok) {

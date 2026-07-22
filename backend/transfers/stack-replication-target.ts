@@ -1,5 +1,6 @@
 import path from "node:path";
 import { promises as fs } from "node:fs";
+import { Writable } from "node:stream";
 import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
 import { DockgeSocket, fileExists, ValidationError } from "../util-server";
@@ -16,6 +17,7 @@ import {
     stageStackTransferDataTarget,
     StackTransferDataTargetRequest,
 } from "./stack-data-transfer";
+import { restoreStackTransferArchive } from "./stack-transfer-restic";
 
 const MARKER_NAME = ".dockge-replica.json";
 
@@ -152,4 +154,25 @@ export async function activateStackReplicaTarget(server: DockgeServer, socket: D
     marker.activatedAt = new Date().toISOString();
     await writeMarker(server, targetName, marker);
     return { activatedAt: marker.activatedAt };
+}
+
+export async function testStackReplicaSnapshot(server: DockgeServer, targetName: string, replicaId: string): Promise<{ bytesRead: number; testedAt: string }> {
+    const marker = await readMarker(server, targetName);
+    if (!marker || marker.replicaId !== replicaId || marker.activatedAt) {
+        throw new ValidationError("A synchronized, inactive replica is required for a recovery test");
+    }
+    await assertStopped(server, targetName);
+    let bytesRead = 0;
+    const sink = new Writable({
+        write(chunk, _encoding, callback) {
+            bytesRead += Buffer.byteLength(chunk);
+            callback();
+        },
+    });
+    await restoreStackTransferArchive(marker.repositoryId, marker.snapshotId, marker.archivePath, sink);
+    if (bytesRead === 0) {
+        throw new Error("Replica recovery test restored an empty archive");
+    }
+    return { bytesRead,
+        testedAt: new Date().toISOString() };
 }

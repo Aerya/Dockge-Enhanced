@@ -27,6 +27,8 @@ export interface StackReplicationPolicy {
     intervalMinutes: number;
     mappings: StackTransferMount[];
     consistency: StackBackupPolicy;
+    restoreTestEnabled: boolean;
+    restoreTestIntervalHours: number;
     status: StackReplicationStatus;
     createdAt: string;
     updatedAt: string;
@@ -40,6 +42,10 @@ export interface StackReplicationPolicy {
     activatedAt?: string;
     error?: string;
     cleanupWarning?: string;
+    lastRestoreTestAt?: string;
+    lastRestoreTestDurationMs?: number;
+    lastRestoreTestBytes?: number;
+    lastRestoreTestError?: string;
 }
 
 export interface StackReplicationInput {
@@ -52,6 +58,8 @@ export interface StackReplicationInput {
     intervalMinutes: number;
     mappings: StackTransferMount[];
     consistency: StackBackupPolicy;
+    restoreTestEnabled?: boolean;
+    restoreTestIntervalHours?: number;
     enabled?: boolean;
 }
 
@@ -112,6 +120,8 @@ function normalizeInput(raw: StackReplicationInput): StackReplicationInput {
         intervalMinutes,
         mappings: normalizeMappings(raw.mappings),
         consistency: normalizeStackBackupPolicy(raw.consistency),
+        restoreTestEnabled: raw.restoreTestEnabled !== false,
+        restoreTestIntervalHours: Math.max(1, Math.min(8760, Number(raw.restoreTestIntervalHours) || 168)),
         enabled: raw.enabled !== false,
     };
     if (!/^[a-z0-9_-]+$/.test(input.sourceStackName) || !/^[a-z0-9_-]+$/.test(input.targetName)) {
@@ -192,6 +202,8 @@ export class StackReplicationManager {
             ...input,
             id: existing?.id || `replica-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
             status: existing?.status || "idle",
+            restoreTestEnabled: input.restoreTestEnabled !== false,
+            restoreTestIntervalHours: input.restoreTestIntervalHours || 168,
             createdAt: existing?.createdAt || now,
             updatedAt: now,
         };
@@ -298,6 +310,16 @@ export class StackReplicationManager {
                 transfer,
             });
             targetSynchronized = true;
+            const restoreTestDue = policy.restoreTestEnabled !== false && (!policy.lastRestoreTestAt || Date.now() - new Date(policy.lastRestoreTestAt).getTime() >= (policy.restoreTestIntervalHours || 168) * 3_600_000);
+            let restoreTest: { bytesRead: number; testedAt: string } | undefined;
+            let restoreTestError: string | undefined;
+            if (restoreTestDue) {
+                try {
+                    restoreTest = await this.call(policy.targetEndpoint, "testStackReplicaSnapshot", policy.targetName, policy.id);
+                } catch (error) {
+                    restoreTestError = error instanceof Error ? error.message : String(error);
+                }
+            }
             await this.call(policy.sourceEndpoint, "completeStackTransferDataSource", transferId, true, true);
             let cleanupWarning: string | undefined;
             if (policy.lastSnapshotId && policy.lastSnapshotId !== snapshot.snapshotId) {
@@ -316,6 +338,12 @@ export class StackReplicationManager {
                 lastArchivePath: snapshot.archivePath,
                 synchronizedAt: synchronized.synchronizedAt,
                 cleanupWarning,
+                ...(restoreTest ? { lastRestoreTestAt: restoreTest.testedAt,
+                    lastRestoreTestBytes: restoreTest.bytesRead,
+                    lastRestoreTestDurationMs: Date.now() - started,
+                    lastRestoreTestError: undefined } : {}),
+                ...(restoreTestError ? { lastRestoreTestAt: new Date().toISOString(),
+                    lastRestoreTestError: restoreTestError } : {}),
                 error: undefined,
             });
         } catch (error) {
@@ -345,6 +373,32 @@ export class StackReplicationManager {
             enabled: false,
             activatedAt: result.activatedAt,
             error: undefined });
+    }
+
+    async testRecovery(id: string): Promise<StackReplicationPolicy> {
+        if (this.running.has(id)) {
+            throw new ValidationError("Replication is currently running");
+        }
+        const policy = (await this.read()).find(item => item.id === id);
+        if (!policy?.lastSuccessAt || policy.status === "active") {
+            throw new ValidationError("A synchronized, inactive replica is required for a recovery test");
+        }
+        this.running.add(id);
+        const started = Date.now();
+        try {
+            const result = await this.call<{ bytesRead: number; testedAt: string }>(policy.targetEndpoint, "testStackReplicaSnapshot", policy.targetName, policy.id);
+            return await this.update(id, { lastRestoreTestAt: result.testedAt,
+                lastRestoreTestDurationMs: Date.now() - started,
+                lastRestoreTestBytes: result.bytesRead,
+                lastRestoreTestError: undefined });
+        } catch (error) {
+            await this.update(id, { lastRestoreTestAt: new Date().toISOString(),
+                lastRestoreTestDurationMs: Date.now() - started,
+                lastRestoreTestError: error instanceof Error ? error.message : String(error) });
+            throw error;
+        } finally {
+            this.running.delete(id);
+        }
     }
 
     private async call<T = unknown>(endpoint: string, event: string, ...args: unknown[]): Promise<T> {

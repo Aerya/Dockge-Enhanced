@@ -18,6 +18,10 @@
                     <span v-if="busyAction === 'activate'" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="rocket" class="me-1" />{{ $t("stackReplication.activate") }}
                 </button>
+                <button class="btn btn-sm btn-normal" :disabled="busy || !policy.lastSuccessAt || policy.status === 'active'" @click="testRecovery">
+                    <span v-if="busyAction === 'test'" class="spinner-border spinner-border-sm me-1" />
+                    <font-awesome-icon v-else icon="vial" class="me-1" />{{ $t("stackReplication.testRecovery") }}
+                </button>
                 <button class="btn btn-sm btn-outline-danger" :disabled="busy" :title="$t('stackReplication.remove')" @click="remove">
                     <font-awesome-icon icon="trash" />
                 </button>
@@ -30,8 +34,10 @@
             <div><span>{{ $t("stackReplication.nextRun") }}</span><strong>{{ nextRun }}</strong></div>
             <div><span>{{ $t("stackReplication.duration") }}</span><strong>{{ duration }}</strong></div>
             <div><span>{{ $t("stackReplication.snapshot") }}</span><strong><code>{{ policy.lastSnapshotId?.slice(0, 12) || "—" }}</code></strong></div>
+            <div><span>{{ $t("stackReplication.lastRestoreTest") }}</span><strong>{{ policy.lastRestoreTestAt ? relative(policy.lastRestoreTestAt) : "—" }}</strong></div>
         </div>
         <div v-if="policy.error" class="alert alert-danger py-2 mt-3 mb-0">{{ policy.error }}</div>
+        <div v-if="policy.lastRestoreTestError" class="alert alert-danger py-2 mt-3 mb-0">{{ policy.lastRestoreTestError }}</div>
         <div v-else-if="policy.cleanupWarning" class="alert alert-warning py-2 mt-3 mb-0">{{ policy.cleanupWarning }}</div>
         <div v-if="operationError" class="alert alert-danger py-2 mt-3 mb-0">{{ operationError }}</div>
     </div>
@@ -130,6 +136,9 @@ export default {
                 return;
             }
             this.perform("activateStackReplication", "activate", this.policy.id, true);
+        },
+        testRecovery() {
+            this.perform("testStackReplicationRecovery", "test", this.policy.id);
         },
         remove() {
             if (!confirm(this.$t("stackReplication.removeConfirm"))) {

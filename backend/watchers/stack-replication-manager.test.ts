@@ -55,6 +55,10 @@ test("schedules repeat synchronizations, rotates the retained snapshot and activ
         if (event === "syncStackReplicaTarget") {
             return { synchronizedAt: `2026-07-15T10:0${snapshotIndex}:00.000Z` };
         }
+        if (event === "testStackReplicaSnapshot") {
+            return { testedAt: `2026-07-15T10:1${snapshotIndex}:00.000Z`,
+                bytesRead: 4096 };
+        }
         if (event === "activateStackReplicaTarget") {
             return { activatedAt: "2026-07-15T11:00:00.000Z" };
         }
@@ -74,12 +78,17 @@ test("schedules repeat synchronizations, rotates the retained snapshot and activ
         const first = await manager.run(policy.id);
         assert.equal(first.status, "ready");
         assert.equal(first.lastSnapshotId, "snapshot-1");
+        assert.equal(first.lastRestoreTestBytes, 4096);
         const second = await manager.run(policy.id);
         assert.equal(second.lastSnapshotId, "snapshot-2");
         const cleanup = calls.find(call => call.event === "forgetStackTransferSnapshots");
         assert.deepEqual(cleanup?.args, [ "repository-id", [ "snapshot-1" ]]);
         const completion = calls.filter(call => call.event === "completeStackTransferDataSource").at(-1);
         assert.equal(completion?.args.at(-1), true);
+
+        const tested = await manager.testRecovery(policy.id);
+        assert.equal(tested.lastRestoreTestBytes, 4096);
+        assert.equal(calls.filter(call => call.event === "testStackReplicaSnapshot").length, 3);
 
         const active = await manager.activate(policy.id);
         assert.equal(active.status, "active");

@@ -800,5 +800,12 @@
     "watcher.backup.trigger.scheduled": "Planifie",
     "watcher.backup.trigger.on-save": "On-save",
     "watcher.backup.trigger.manual": "Manuel",
-    "watcher.backup.snapshots.noneFiltered": "Aucun snapshot pour ce filtre."
+    "watcher.backup.snapshots.noneFiltered": "Aucun snapshot pour ce filtre.",
+    "stackTransfer.applicationProfile": "Profil applicatif",
+    "stackTransfer.profile.custom": "Commandes personnalisées",
+    "stackTransfer.profileHint": "Les commandes proposées restent modifiables et s’exécutent dans le service sélectionné. Vérifie les identifiants, chemins et outils avant leur activation.",
+    "stackReplication.restoreTestEnabled": "Vérifier périodiquement que le snapshot de la réplique est restaurable",
+    "stackReplication.restoreTestFrequency": "Fréquence du test de reprise",
+    "stackReplication.testRecovery": "Tester la reprise",
+    "stackReplication.lastRestoreTest": "Dernier test de reprise"
 }

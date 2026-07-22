@@ -30,6 +30,7 @@ import {
     activateStackReplicaTarget,
     StackReplicaSyncRequest,
     syncStackReplicaTarget,
+    testStackReplicaSnapshot,
 } from "../transfers/stack-replication-target";
 
 function requireObject(value: unknown): Record<string, unknown> {
@@ -250,6 +251,19 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
                 callbackResult({ ok: true,
                     data: result }, callback);
                 server.sendStackList();
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("testStackReplicaSnapshot", async (targetName: unknown, replicaId: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof targetName !== "string" || typeof replicaId !== "string") {
+                    throw new ValidationError("Invalid replica recovery test request");
+                }
+                callbackResult({ ok: true,
+                    data: await testStackReplicaSnapshot(server, targetName, replicaId) }, callback);
             } catch (error) {
                 callbackError(error, callback);
             }
