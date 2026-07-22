@@ -865,5 +865,7 @@
     "stackReplication.health.failed": "échoué",
     "stackReplication.driftSuspended": "Réplication suspendue automatiquement après détection d’une écriture ou d’une dérive sur la cible",
     "stackReplication.dataRequired": "Données de la réplique",
-    "stackReplication.repositoryRequired": "La réplication nécessite un dépôt Restic partagé configuré à l’identique sur les deux instances."
+    "stackReplication.repositoryRequired": "Le transport automatique de réplication n’a pas pu être initialisé.",
+    "stackReplication.managedTransportHint": "Dockge-Enhanced transfère, vérifie et conserve automatiquement les snapshots nécessaires sur l’instance cible. Aucun dépôt Restic ni réglage Backup n’est requis.",
+    "stackReplication.managedDataWarning": "Les données de stockage sélectionnées seront synchronisées automatiquement vers la réplique. Les données existantes des montages cibles sélectionnés sont remplacées avant la restauration."
 }

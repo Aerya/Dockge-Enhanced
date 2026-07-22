@@ -20,6 +20,9 @@ import {
     stageStackTransferDataTarget,
     StackTransferDataTargetRequest,
 } from "./stack-data-transfer";
+import { isDirectHttpRepository } from "./http-direct-transport";
+import { cacheManagedReplicationSnapshot, cleanupManagedReplicationSnapshots } from "./managed-replication-transport";
+import { stackTransferTransport } from "./stack-transfer-transport";
 
 const MARKER_NAME = ".dockge-replica.json";
 
@@ -132,7 +135,7 @@ export async function inspectStackReplicaDrift(server: DockgeServer, targetName:
     return { drifted: false };
 }
 
-export async function syncStackReplicaTarget(server: DockgeServer, socket: DockgeSocket, request: StackReplicaSyncRequest): Promise<{ jobId: string; synchronizedAt: string }> {
+export async function syncStackReplicaTarget(server: DockgeServer, socket: DockgeSocket, request: StackReplicaSyncRequest): Promise<{ jobId: string; synchronizedAt: string; repositoryId: string; snapshotId: string; archivePath: string }> {
     if (!/^[a-zA-Z0-9_-]{8,128}$/.test(request.replicaId)) {
         throw new ValidationError("Invalid replica id");
     }
@@ -152,38 +155,48 @@ export async function syncStackReplicaTarget(server: DockgeServer, socket: Dockg
         }
     }
 
-    const repositoryOnly = request.storageMode === "repository";
-
-    if (!exists) {
-        const staged = repositoryOnly
-            ? await importStackTransfer(server, socket, { ...request.transfer,
-                deploy: false,
-                dataTransfer: false,
-                transferId: request.transferId })
-            : await stageStackTransferDataTarget(server, socket, request);
-        const marker = await newMarker(server, request, !repositoryOnly);
-        try {
-            await writeMarker(server, request.transfer.targetName, marker);
-            return { jobId: "jobId" in staged ? staged.jobId : staged.job.id,
-                synchronizedAt: marker.synchronizedAt };
-        } catch (error) {
-            await rollbackImportedStack(server, request.transfer.targetName);
-            throw error;
-        }
+    let synchronizedRequest = request;
+    let cached: { repositoryId: string; snapshotId: string } | undefined;
+    if (isDirectHttpRepository(request.repositoryId)) {
+        cached = await cacheManagedReplicationSnapshot(request.replicaId, output => stackTransferTransport.restore(request.repositoryId, request.snapshotId, request.archivePath, output));
+        synchronizedRequest = { ...request,
+            ...cached };
     }
 
-    await assertStopped(server, request.transfer.targetName);
+    const repositoryOnly = synchronizedRequest.storageMode === "repository";
+
     try {
-        await refreshImportedStackConfiguration(server, request.transfer.targetName, request.transfer);
-        if (!repositoryOnly) {
-            await createImportedStackStorage(server, request.transfer.targetName);
-            await restoreSnapshotToTarget(server, request.transfer.targetName, request.transfer.mappings, request.repositoryId, request.snapshotId, request.archivePath);
+        if (!exists) {
+            const staged = repositoryOnly
+                ? await importStackTransfer(server, socket, { ...synchronizedRequest.transfer,
+                    deploy: false,
+                    dataTransfer: false,
+                    transferId: synchronizedRequest.transferId })
+                : await stageStackTransferDataTarget(server, socket, synchronizedRequest);
+            const marker = await newMarker(server, synchronizedRequest, !repositoryOnly);
+            await writeMarker(server, request.transfer.targetName, marker);
+            return { jobId: "jobId" in staged ? staged.jobId : staged.job.id,
+                synchronizedAt: marker.synchronizedAt,
+                repositoryId: marker.repositoryId,
+                snapshotId: marker.snapshotId,
+                archivePath: marker.archivePath };
         }
-        const marker = await newMarker(server, request, !repositoryOnly);
-        await writeMarker(server, request.transfer.targetName, marker);
-        return { jobId: request.replicaId,
-            synchronizedAt: marker.synchronizedAt };
+
+        await assertStopped(server, synchronizedRequest.transfer.targetName);
+        await refreshImportedStackConfiguration(server, synchronizedRequest.transfer.targetName, synchronizedRequest.transfer);
+        if (!repositoryOnly) {
+            await createImportedStackStorage(server, synchronizedRequest.transfer.targetName);
+            await restoreSnapshotToTarget(server, synchronizedRequest.transfer.targetName, synchronizedRequest.transfer.mappings, synchronizedRequest.repositoryId, synchronizedRequest.snapshotId, synchronizedRequest.archivePath);
+        }
+        const marker = await newMarker(server, synchronizedRequest, !repositoryOnly);
+        await writeMarker(server, synchronizedRequest.transfer.targetName, marker);
+        return { jobId: synchronizedRequest.replicaId,
+            synchronizedAt: marker.synchronizedAt,
+            repositoryId: marker.repositoryId,
+            snapshotId: marker.snapshotId,
+            archivePath: marker.archivePath };
     } catch (error) {
+        let failure = error;
         if (previous) {
             try {
                 await refreshImportedStackConfiguration(server, request.transfer.targetName, previous.transfer);
@@ -193,10 +206,15 @@ export async function syncStackReplicaTarget(server: DockgeServer, socket: Dockg
                 }
                 await writeMarker(server, request.transfer.targetName, previous);
             } catch (rollbackError) {
-                throw new Error(`${error instanceof Error ? error.message : String(error)}; replica rollback failed: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`);
+                failure = new Error(`${error instanceof Error ? error.message : String(error)}; replica rollback failed: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`);
             }
+        } else {
+            await rollbackImportedStack(server, request.transfer.targetName).catch(() => {});
         }
-        throw error;
+        if (cached) {
+            await cleanupManagedReplicationSnapshots(cached.repositoryId, [ cached.snapshotId ]).catch(() => {});
+        }
+        throw failure;
     }
 }
 

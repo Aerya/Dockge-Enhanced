@@ -871,5 +871,7 @@
     "stackReplication.health.failed": "failed",
     "stackReplication.driftSuspended": "Replication was automatically suspended after detecting a target write or drift",
     "stackReplication.dataRequired": "Replica data",
-    "stackReplication.repositoryRequired": "Replication requires a shared Restic repository configured identically on both instances."
+    "stackReplication.repositoryRequired": "The automatic replication transport could not be initialized.",
+    "stackReplication.managedTransportHint": "Dockge-Enhanced automatically transfers, verifies, and retains the required snapshots on the target instance. No Restic repository or Backup setting is required.",
+    "stackReplication.managedDataWarning": "Selected storage data will be synchronized to the replica automatically. Existing data in selected target mounts is replaced before restore."
 }
