@@ -24,6 +24,9 @@ export interface StackReplicationPolicy {
     targetEndpoint: string;
     targetName: string;
     repositoryId: string;
+    targetComposeYAML?: string;
+    targetComposeENV?: string;
+    targetComposeOverrideYAML?: string;
     intervalMinutes: number;
     mappings: StackTransferMount[];
     consistency: StackBackupPolicy;
@@ -69,6 +72,9 @@ export interface StackReplicationInput {
     targetEndpoint: string;
     targetName: string;
     repositoryId: string;
+    targetComposeYAML?: string;
+    targetComposeENV?: string;
+    targetComposeOverrideYAML?: string;
     intervalMinutes: number;
     mappings: StackTransferMount[];
     consistency: StackBackupPolicy;
@@ -98,6 +104,16 @@ function stringField(value: unknown, name: string, allowEmpty = false): string {
         throw new ValidationError(`${name} must be a string`);
     }
     return value.trim();
+}
+
+function optionalFileField(value: unknown, name: string, allowEmpty = false): string | undefined {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (typeof value !== "string" || (!allowEmpty && !value.trim())) {
+        throw new ValidationError(`${name} must be a string`);
+    }
+    return value;
 }
 
 function normalizeMappings(value: unknown): StackTransferMount[] {
@@ -137,6 +153,9 @@ function normalizeInput(raw: StackReplicationInput): StackReplicationInput {
         targetEndpoint: stringField(raw.targetEndpoint, "targetEndpoint", true),
         targetName: stringField(raw.targetName, "targetName"),
         repositoryId: raw.repositoryId.trim(),
+        targetComposeYAML: optionalFileField(raw.targetComposeYAML, "targetComposeYAML"),
+        targetComposeENV: optionalFileField(raw.targetComposeENV, "targetComposeENV", true),
+        targetComposeOverrideYAML: optionalFileField(raw.targetComposeOverrideYAML, "targetComposeOverrideYAML", true),
         intervalMinutes,
         mappings: normalizeMappings(raw.mappings),
         consistency: normalizeStackBackupPolicy(raw.consistency),
@@ -323,9 +342,9 @@ export class StackReplicationManager {
                 sourceEndpoint: policy.sourceEndpoint,
                 sourceStackName: policy.sourceStackName,
                 targetName: policy.targetName,
-                composeYAML: analysis.composeYAML,
-                composeENV: analysis.composeENV,
-                composeOverrideYAML: analysis.composeOverrideYAML,
+                composeYAML: policy.targetComposeYAML ?? analysis.composeYAML,
+                composeENV: policy.targetComposeENV ?? analysis.composeENV,
+                composeOverrideYAML: policy.targetComposeOverrideYAML ?? analysis.composeOverrideYAML,
                 mappings,
                 deploy: false,
                 dataTransfer: true,
