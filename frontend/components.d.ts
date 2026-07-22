@@ -22,6 +22,7 @@ declare module 'vue' {
     Login: typeof import('./src/components/Login.vue')['default']
     MonitoringTab: typeof import('./src/components/MonitoringTab.vue')['default']
     NetworkInput: typeof import('./src/components/NetworkInput.vue')['default']
+    PendingStackMoveStatus: typeof import('./src/components/PendingStackMoveStatus.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Security: typeof import('./src/components/settings/Security.vue')['default']
