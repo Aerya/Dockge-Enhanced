@@ -460,6 +460,21 @@ export function parseDockerPort(input : string, hostname : string) {
     };
 }
 
+export function resolveEndpointHostname(endpoint: string, agentUrl: string | undefined, localHostname: string, protocol = "http:"): string {
+    if (!endpoint) {
+        return localHostname;
+    }
+    try {
+        return new URL(agentUrl || `${protocol}//${endpoint}`).hostname;
+    } catch {
+        const ipv6 = /^\[([^\]]+)\](?::\d+)?$/.exec(endpoint);
+        if (ipv6) {
+            return `[${ipv6[1]}]`;
+        }
+        return endpoint.replace(/:\d+$/, "");
+    }
+}
+
 export function envsubst(string : string, variables : LooseObject) : string {
     return replaceVariablesSync(string, variables)[0];
 }

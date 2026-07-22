@@ -239,7 +239,7 @@
 <script>
 import { defineComponent } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { parseDockerPort, imageRegistryUrl } from "../../../common/util-common";
+import { parseDockerPort, imageRegistryUrl, resolveEndpointHostname } from "../../../common/util-common";
 import VolumeBrowser from "./VolumeBrowser.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 
@@ -302,6 +302,10 @@ export default defineComponent({
             type: String,
             default: "",
         },
+        endpoint: {
+            type: String,
+            default: "",
+        },
         showResourceStats: {
             type: Boolean,
             default: false,
@@ -360,16 +364,8 @@ export default defineComponent({
             }
         },
 
-        endpoint() {
-            return this.$parent.$parent.endpoint;
-        },
-
         stack() {
             return this.$parent.$parent.stack;
-        },
-
-        stackName() {
-            return this.$parent.$parent.stack.name;
         },
 
         service() {
@@ -453,7 +449,8 @@ export default defineComponent({
             });
         },
         parsePort(port) {
-            return parseDockerPort(port, location.hostname);
+            const hostname = resolveEndpointHostname(this.endpoint, this.$root.agentList[this.endpoint]?.url, location.hostname, location.protocol);
+            return parseDockerPort(port, hostname);
         },
         remove() {
             delete this.jsonObject.services[this.name];
@@ -462,18 +459,34 @@ export default defineComponent({
             this.$refs.volumeBrowser?.open(destination);
         },
         formatBytes(bytes) {
-            if (bytes >= 1024 ** 4) return (bytes / 1024 ** 4).toFixed(1) + " TB";
-            if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(1) + " GB";
-            if (bytes >= 1024 ** 2) return Math.round(bytes / 1024 ** 2) + " MB";
-            if (bytes >= 1024) return Math.round(bytes / 1024) + " KB";
+            if (bytes >= 1024 ** 4) {
+                return (bytes / 1024 ** 4).toFixed(1) + " TB";
+            }
+            if (bytes >= 1024 ** 3) {
+                return (bytes / 1024 ** 3).toFixed(1) + " GB";
+            }
+            if (bytes >= 1024 ** 2) {
+                return Math.round(bytes / 1024 ** 2) + " MB";
+            }
+            if (bytes >= 1024) {
+                return Math.round(bytes / 1024) + " KB";
+            }
             return bytes + " B";
         },
         relativeTime(iso) {
-            if (!iso) return null;
+            if (!iso) {
+                return null;
+            }
             const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-            if (diff < 60)    return diff + "s";
-            if (diff < 3600)  return Math.floor(diff / 60) + " min";
-            if (diff < 86400) return Math.floor(diff / 3600) + " h";
+            if (diff < 60) {
+                return diff + "s";
+            }
+            if (diff < 3600) {
+                return Math.floor(diff / 60) + " min";
+            }
+            if (diff < 86400) {
+                return Math.floor(diff / 3600) + " h";
+            }
             return Math.floor(diff / 86400) + " j";
         },
     }
