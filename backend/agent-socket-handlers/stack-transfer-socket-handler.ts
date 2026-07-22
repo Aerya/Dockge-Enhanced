@@ -25,7 +25,7 @@ import {
     StackTransferDataTargetRequest,
     stageStackTransferDataTarget,
 } from "../transfers/stack-data-transfer";
-import { forgetStackTransferSnapshots } from "../transfers/stack-transfer-restic";
+import { stackTransferTransport } from "../transfers/stack-transfer-transport";
 import {
     activateStackReplicaTarget,
     StackReplicaSyncRequest,
@@ -222,7 +222,7 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
                 if (typeof repositoryId !== "string" || !Array.isArray(snapshotIds) || snapshotIds.some(id => typeof id !== "string")) {
                     throw new ValidationError("Invalid snapshot cleanup request");
                 }
-                await forgetStackTransferSnapshots(repositoryId, snapshotIds as string[]);
+                await stackTransferTransport.cleanup(repositoryId, snapshotIds as string[]);
                 callbackResult({ ok: true }, callback);
             } catch (error) {
                 callbackError(error, callback);

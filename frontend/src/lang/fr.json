@@ -813,5 +813,8 @@
     "stackMove.returnSource": "Revenir à la source",
     "stackMove.finalize": "Finaliser le déplacement",
     "stackMove.returnConfirm": "Arrêter la cible et redémarrer les services qui fonctionnaient sur la source ? Les fichiers et données de la cible seront conservés.",
-    "stackMove.finalizeConfirm": "Supprimer maintenant les fichiers de la stack source ? La cible a déjà été validée. Les données persistantes situées hors du dossier de stack ne sont jamais supprimées automatiquement."
+    "stackMove.finalizeConfirm": "Supprimer maintenant les fichiers de la stack source ? La cible a déjà été validée. Les données persistantes situées hors du dossier de stack ne sont jamais supprimées automatiquement.",
+    "stackTransfer.transportSecurity": "Transport Restic chiffré",
+    "stackTransfer.checksumVerified": "checksums vérifiés",
+    "stackTransfer.resumableRepository": "dépôt incrémental avec reprise sûre"
 }
