@@ -139,3 +139,42 @@ test("rolls configuration and containers back when target verification fails", {
         mock.restoreAll();
     }
 });
+
+test("restores an existing stopped target when a transactional overwrite fails", { skip: !dockerAvailable,
+    timeout: 90_000 }, async () => {
+    const root = await fsAsync.mkdtemp(path.join(os.tmpdir(), "dockge-transfer-overwrite-"));
+    const targetName = `transfer-overwrite-${Date.now()}`;
+    const targetDir = path.join(root, targetName);
+    const memory = new Map<string, unknown>();
+    mock.method(Settings, "get", async (key: string) => memory.get(key));
+    mock.method(Settings, "set", async (key: string, value: unknown) => {
+        memory.set(key, value);
+    });
+    mock.method(Terminal, "exec", async (_server: DockgeServer, _socket: DockgeSocket | undefined, _name: string, file: string, args: string | string[], cwd: string) => {
+        try {
+            await execFileAsync(file, args as string[], { cwd,
+                timeout: 60_000 });
+            return 0;
+        } catch {
+            return 1;
+        }
+    });
+    const original = "services:\n  original:\n    image: busybox:stable\n    command: [\"true\"]\n";
+    await fsAsync.mkdir(targetDir);
+    await fsAsync.writeFile(path.join(targetDir, "compose.yaml"), original);
+    const server = { stacksDir: root } as DockgeServer;
+    const socket = { endpoint: "",
+        id: "integration",
+        connected: true,
+        emitAgent() {} } as unknown as DockgeSocket;
+    try {
+        await assert.rejects(importStackTransfer(server, socket, { ...request(targetName, "exit 23"),
+            overwriteExisting: true }), /worker: exited with code 23/);
+        assert.equal(await fsAsync.readFile(path.join(targetDir, "compose.yaml"), "utf8"), original);
+        assert.equal((await fsAsync.readdir(root)).some(name => name.startsWith(".dockge-overwrite-")), false);
+    } finally {
+        await fsAsync.rm(root, { recursive: true,
+            force: true });
+        mock.restoreAll();
+    }
+});

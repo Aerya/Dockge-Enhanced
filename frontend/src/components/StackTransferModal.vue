@@ -73,13 +73,28 @@
                                 <option :value="1440">{{ $t("stackReplication.interval.1440") }}</option>
                             </select>
                         </div>
+                        <div v-if="operation === 'replicate'" class="col-md-6">
+                            <label class="form-label">{{ $t("stackReplication.storageMode") }}</label>
+                            <select v-model="replicationStorageMode" class="form-select" @change="invalidatePreflight">
+                                <option value="restored">{{ $t("stackReplication.storageMode.restored") }}</option>
+                                <option value="repository">{{ $t("stackReplication.storageMode.repository") }}</option>
+                            </select>
+                            <div class="form-text">{{ $t(`stackReplication.storageMode.${replicationStorageMode}Hint`) }}</div>
+                        </div>
+                        <div v-if="operation === 'replicate'" class="col-md-6">
+                            <label class="form-label">{{ $t("stackReplication.retention") }}</label>
+                            <input v-model.number="replicationRetention" type="number" min="1" max="30" class="form-control" @change="invalidatePreflight" />
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label">{{ $t("stackTransfer.consistencyMode") }}</label>
-                            <select v-model="consistencyMode" class="form-select" @change="invalidatePreflight">
+                            <select v-model="consistencyMode" class="form-select" @change="consistencyChanged">
                                 <option value="hot">{{ $t("stackTransfer.consistency.hot") }}</option>
                                 <option value="stop">{{ $t("stackTransfer.consistency.stop") }}</option>
                                 <option value="hooks">{{ $t("stackTransfer.consistency.hooks") }}</option>
                             </select>
+                        </div>
+                        <div v-if="applicationProfile === 'sqlite'" class="col-12 alert alert-warning mb-0">
+                            {{ $t("stackTransfer.sqliteGuard") }}
                         </div>
                         <template v-if="consistencyMode === 'hooks'">
                             <div class="col-md-4">
@@ -203,6 +218,14 @@
                     </div>
                 </div>
 
+                <div v-if="operation !== 'replicate' && (overwriteExisting || issues.some(issue => issue.code === 'stack-exists'))" class="alert alert-warning">
+                    <div class="form-check">
+                        <input id="stack-transfer-overwrite" v-model="overwriteExisting" class="form-check-input" type="checkbox" @change="invalidatePreflight" />
+                        <label class="form-check-label fw-semibold" for="stack-transfer-overwrite">{{ $t("stackTransfer.overwriteExisting") }}</label>
+                    </div>
+                    <div class="form-text">{{ $t("stackTransfer.overwriteExistingHint") }}</div>
+                </div>
+
                 <details v-if="mappedOverridePreview && mappedOverridePreview !== (stack.composeOverrideYAML || '')" class="mb-4">
                     <summary class="transfer-rules-summary">{{ $t("stackTransfer.generatedOverride") }}</summary>
                     <p class="form-text mt-2">{{ $t("stackTransfer.generatedOverrideHint") }}</p>
@@ -218,6 +241,10 @@
                 <div v-if="operationError" class="alert alert-danger">{{ operationError }}</div>
                 <div v-if="transferring && transferPhase" class="alert alert-primary">
                     <span class="spinner-border spinner-border-sm me-2" />{{ $t(`stackTransfer.phase.${transferPhase}`) }}
+                    <div v-if="currentJob" class="progress mt-2" role="progressbar" :aria-valuenow="currentJob.progress" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar" :style="{ width: `${currentJob.progress || 0}%` }">{{ currentJob.progress || 0 }}%</div>
+                    </div>
+                    <small v-if="currentJob?.logs?.length" class="d-block mt-2">{{ currentJob.logs[currentJob.logs.length - 1].message }}</small>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2">
@@ -249,6 +276,8 @@ export default {
             operation: "copy",
             replicationId: "",
             replicationInterval: 60,
+            replicationStorageMode: "restored",
+            replicationRetention: 3,
             restoreTestEnabled: true,
             restoreTestIntervalHours: 168,
             restoreTestStartContainers: false,
@@ -256,6 +285,7 @@ export default {
             targetName: "",
             deploy: true,
             includeData: false,
+            overwriteExisting: false,
             sourceDataCapabilities: { repositories: [],
                 policy: { mode: "hot" },
                 resticAvailable: false },
@@ -283,6 +313,8 @@ export default {
             transferring: false,
             operationError: "",
             result: null,
+            currentJob: null,
+            jobTimer: null,
         };
     },
     computed: {
@@ -303,8 +335,11 @@ export default {
                 targetName: this.targetName,
                 deploy: this.deploy,
                 includeData: this.includeData,
+                overwriteExisting: this.overwriteExisting,
                 repositoryId: this.repositoryId,
                 replicationInterval: this.replicationInterval,
+                replicationStorageMode: this.replicationStorageMode,
+                replicationRetention: this.replicationRetention,
                 consistencyMode: this.consistencyMode,
                 hooks: [ this.hookService, this.preHook, this.postHook ],
                 mappings: this.mappings.map(item => [ item.id, item.targetSource, item.transferData ]) });
@@ -357,14 +392,23 @@ export default {
                 });
             });
         },
-        emitAgentLong(endpoint, event, ...args) {
-            return new Promise((resolve, reject) => {
-                const timeout = window.setTimeout(() => reject(new Error(this.$t("stackTransfer.dataTimeout"))), 2 * 60 * 60_000);
-                this.$root.emitAgent(endpoint, event, ...args, response => {
-                    window.clearTimeout(timeout);
-                    resolve(response);
-                });
-            });
+        async emitAgentLong(endpoint, event, ...args) {
+            let lastError;
+            for (let attempt = 0; attempt < 8; attempt++) {
+                try {
+                    return await new Promise((resolve, reject) => {
+                        const timeout = window.setTimeout(() => reject(new Error(this.$t("stackTransfer.dataTimeout"))), 15 * 60_000);
+                        this.$root.emitAgent(endpoint, event, ...args, response => {
+                            window.clearTimeout(timeout);
+                            resolve(response);
+                        });
+                    });
+                } catch (error) {
+                    lastError = error;
+                    await new Promise(resolve => window.setTimeout(resolve, Math.min(30000, 2000 * (attempt + 1))));
+                }
+            }
+            throw lastError;
         },
         async open(operation, existingPolicy = null) {
             this.reset();
@@ -395,6 +439,8 @@ export default {
                     this.includeData = true;
                     this.replicationId = existingPolicy?.id || "";
                     this.replicationInterval = existingPolicy?.intervalMinutes || 60;
+                    this.replicationStorageMode = existingPolicy?.storageMode || "restored";
+                    this.replicationRetention = existingPolicy?.retentionCount || 3;
                     if (existingPolicy) {
                         this.repositoryId = existingPolicy.repositoryId;
                         this.consistencyMode = existingPolicy.consistency?.mode || "hot";
@@ -423,6 +469,8 @@ export default {
             this.targetName = "";
             this.replicationId = "";
             this.replicationInterval = 60;
+            this.replicationStorageMode = "restored";
+            this.replicationRetention = 3;
             this.restoreTestEnabled = true;
             this.restoreTestIntervalHours = 168;
             this.restoreTestStartContainers = false;
@@ -430,6 +478,7 @@ export default {
             this.directBandwidthKbps = 0;
             this.deploy = true;
             this.includeData = false;
+            this.overwriteExisting = false;
             this.sourceDataCapabilities = { repositories: [],
                 policy: { mode: "hot" },
                 resticAvailable: false };
@@ -452,6 +501,9 @@ export default {
             this.mappedOverridePreview = "";
             this.operationError = "";
             this.result = null;
+            this.currentJob = null;
+            window.clearInterval(this.jobTimer);
+            this.jobTimer = null;
             this.transferring = false;
         },
         async targetChanged() {
@@ -503,6 +555,14 @@ export default {
         dataModeChanged() {
             if (this.includeData && !this.repositoryId) {
                 this.repositoryId = this.availableRepositories[0]?.id || "";
+            }
+            this.invalidatePreflight();
+        },
+        consistencyChanged() {
+            if (this.applicationProfile === "sqlite" && this.consistencyMode !== "hooks") {
+                this.applicationProfile = "custom";
+                this.preHook = "";
+                this.postHook = "";
             }
             this.invalidatePreflight();
         },
@@ -580,6 +640,7 @@ export default {
                 mappings: this.mappings,
                 deploy: this.deploy,
                 dataTransfer: this.includeData,
+                overwriteExisting: this.overwriteExisting,
             };
         },
         dataPolicy() {
@@ -599,6 +660,9 @@ export default {
                 sqlite: [ "db=${DOCKGE_SQLITE_PATH:?Set DOCKGE_SQLITE_PATH}; sqlite3 \"$db\" 'PRAGMA wal_checkpoint(TRUNCATE);' && sqlite3 \"$db\" \".backup '/tmp/dockge-transfer.sqlite'\" && test -s /tmp/dockge-transfer.sqlite", "rm -f /tmp/dockge-transfer.sqlite" ],
             };
             if (profiles[this.applicationProfile]) {
+                if (this.applicationProfile === "sqlite") {
+                    this.consistencyMode = "hooks";
+                }
                 [ this.preHook, this.postHook ] = profiles[this.applicationProfile];
             }
             this.invalidatePreflight();
@@ -655,6 +719,9 @@ export default {
                         throw new Error(this.$t(sourceState.msg));
                     }
                     this.sourceRunningServices = sourceState.data.runningServices || [];
+                }
+                if (this.overwriteExisting && !confirm(this.$t("stackTransfer.overwriteConfirm"))) {
+                    return;
                 }
                 if (this.includeData) {
                     await this.executeDataTransfer();
@@ -723,6 +790,8 @@ export default {
                 targetName: this.targetName.trim().toLowerCase(),
                 repositoryId: this.repositoryId,
                 intervalMinutes: this.replicationInterval,
+                storageMode: this.replicationStorageMode,
+                retentionCount: this.replicationRetention,
                 mappings: this.mappings,
                 consistency: this.dataPolicy(),
                 restoreTestEnabled: this.restoreTestEnabled,
@@ -745,12 +814,23 @@ export default {
                 operation: "replicate" });
         },
         async executeDataTransfer() {
-            const transferId = `transfer-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-            let targetJobId = "";
-            let sourceSnapshotCreated = false;
+            const storageKey = "dockge-active-stack-transfer";
+            const savedState = JSON.parse(localStorage.getItem(storageKey) || "null");
+            const matches = savedState?.sourceEndpoint === this.endpoint && savedState?.sourceStackName === this.stack.name && savedState?.targetEndpoint === this.targetEndpoint && savedState?.targetName === this.targetName && savedState?.operation === this.operation;
+            const state = matches ? savedState : { transferId: `transfer-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+                sourceEndpoint: this.endpoint,
+                sourceStackName: this.stack.name,
+                targetEndpoint: this.targetEndpoint,
+                targetName: this.targetName,
+                operation: this.operation };
+            const transferId = state.transferId;
+            let targetJobId = state.targetJobId || "";
+            let sourceSnapshotCreated = Boolean(state.snapshot);
+            const persist = () => localStorage.setItem(storageKey, JSON.stringify(state));
+            persist();
             try {
                 this.transferPhase = this.operation === "move" ? "initialSnapshot" : "snapshot";
-                const snapshot = await this.emitAgentLong(this.endpoint, "createStackTransferDataSnapshot", {
+                const snapshot = state.snapshot || await this.emitAgentLong(this.endpoint, "createStackTransferDataSnapshot", {
                     transferId,
                     stackName: this.stack.name,
                     repositoryId: this.repositoryId,
@@ -762,9 +842,12 @@ export default {
                     throw new Error(this.$t(snapshot.msg));
                 }
                 sourceSnapshotCreated = true;
+                state.snapshot = snapshot;
+                persist();
 
                 this.transferPhase = "initialRestore";
-                const staged = await this.emitAgentLong(this.targetEndpoint, "stageStackTransferDataTarget", {
+                const staged = targetJobId ? { ok: true,
+                    data: { jobId: targetJobId } } : await this.emitAgentLong(this.targetEndpoint, "stageStackTransferDataTarget", {
                     transferId,
                     repositoryId: this.repositoryId,
                     snapshotId: snapshot.data.snapshotId,
@@ -774,13 +857,18 @@ export default {
                     throw new Error(this.$t(staged.msg));
                 }
                 targetJobId = staged.data.jobId;
+                state.targetJobId = targetJobId;
+                persist();
+                this.watchJob(targetJobId);
 
                 if (this.operation === "move") {
                     this.transferPhase = "finalSnapshot";
-                    const finalSnapshot = await this.emitAgentLong(this.endpoint, "finalizeStackTransferDataSource", transferId);
+                    const finalSnapshot = state.finalSnapshot || await this.emitAgentLong(this.endpoint, "finalizeStackTransferDataSource", transferId);
                     if (!finalSnapshot.ok) {
                         throw new Error(this.$t(finalSnapshot.msg));
                     }
+                    state.finalSnapshot = finalSnapshot;
+                    persist();
                     this.transferPhase = "finalRestore";
                     const finalized = await this.emitAgentLong(this.targetEndpoint, "finalizeStackTransferDataTarget", {
                         transferId,
@@ -802,6 +890,7 @@ export default {
                     await this.registerPendingMove();
                 }
                 this.result = { job: { id: targetJobId } };
+                localStorage.removeItem(storageKey);
                 this.preflightSignature = "";
                 this.$root.emitAgent(this.targetEndpoint, "requestStackList", () => {});
                 this.$emit("completed", { endpoint: this.targetEndpoint,
@@ -817,7 +906,19 @@ export default {
                 throw error;
             } finally {
                 this.transferPhase = "";
+                window.clearInterval(this.jobTimer);
+                this.jobTimer = null;
             }
+        },
+        watchJob(jobId) {
+            const load = () => this.$root.emitAgent(this.targetEndpoint, "listStackTransferJobs", response => {
+                if (response?.ok) {
+                    this.currentJob = response.data.find(job => job.id === jobId) || null;
+                }
+            });
+            load();
+            window.clearInterval(this.jobTimer);
+            this.jobTimer = window.setInterval(load, 2000);
         },
         registerPendingMove() {
             return new Promise((resolve, reject) => this.$root.getSocket().emit("savePendingStackMove", {

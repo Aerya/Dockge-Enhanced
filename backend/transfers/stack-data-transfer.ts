@@ -1,17 +1,23 @@
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
-import { Readable } from "node:stream";
+import { Readable, Transform } from "node:stream";
+import { createHash } from "node:crypto";
 import { BackupManager, StackBackupPolicy, normalizeStackBackupPolicy } from "../watchers/backup-manager";
 import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
-import { DockgeSocket, ValidationError } from "../util-server";
+import { DockgeSocket, fileExists, ValidationError } from "../util-server";
 import { Settings } from "../settings";
 import { getApplicationProfile } from "./application-profiles";
 import {
     createImportedStackStorage,
+    analyzeStackTransfer,
+    appendTransferJobProgress,
+    completeStackTransferTarget,
     deployAndVerifyImportedStack,
     importStackTransfer,
+    listTransferJobs,
     rollbackImportedStack,
+    reserveStackTransferJob,
     runDocker,
     StackTransferMount,
     StackTransferRequest,
@@ -54,6 +60,10 @@ interface SourceDataJob {
     mappings: StackTransferMount[];
     policy: StackBackupPolicy;
     snapshotIds: string[];
+    snapshotBytes?: Record<string, number>;
+    phase?: "copy" | "initial" | "final";
+    progress?: number;
+    logs?: Array<{ at: string; phase: string; message: string }>;
     runningServices: string[];
     hookPrepared: boolean;
     status: "snapshotted" | "source-stopped" | "completed" | "rolled-back" | "failed";
@@ -68,9 +78,10 @@ interface RuntimeMount {
 }
 
 export interface RestoredStorageReport {
-    mounts: Array<{ type: "bind" | "volume"; fileCount: number; bytes: number }>;
+    mounts: Array<{ type: "bind" | "volume"; fileCount: number; bytes: number; digest: string }>;
     fileCount: number;
     bytes: number;
+    digest: string;
 }
 
 function assertTransferId(value: string): string {
@@ -170,7 +181,7 @@ function archivePath(transferId: string, phase: "copy" | "initial" | "final"): s
     return `/dockge-stack-transfer/${assertTransferId(transferId)}/${phase}.tar`;
 }
 
-async function createSnapshot(server: DockgeServer, job: SourceDataJob, phase: "copy" | "initial" | "final"): Promise<string> {
+async function createSnapshot(server: DockgeServer, job: SourceDataJob, phase: "copy" | "initial" | "final"): Promise<{ snapshotId: string; bytesTransferred: number }> {
     const stack = await Stack.getStack(server, job.stackName);
     const mounts = await resolveStorage(stack, job.mappings);
     await runDocker([ "image", "inspect", HELPER_IMAGE ]);
@@ -181,19 +192,26 @@ async function createSnapshot(server: DockgeServer, job: SourceDataJob, phase: "
         HELPER_IMAGE, "tar", "-C", "/sources", "-cf", "-", ".",
     ], { stdio: [ "ignore", "pipe", "pipe" ] });
     const tarDone = waitProcess(tar, "volume archive").then(() => null, error => error as Error);
+    let bytesTransferred = 0;
+    const counter = new Transform({ transform(chunk, _encoding, callback) {
+        bytesTransferred += chunk.length;
+        callback(null, chunk);
+    } });
+    (tar.stdout as Readable).pipe(counter);
     try {
         const snapshotId = await stackTransferTransport.upload(
             job.repositoryId,
             archivePath(job.id, phase),
             [ "dockge-stack-transfer", `transfer:${job.id}`, `phase:${phase}` ],
-            tar.stdout as Readable,
+            counter,
             true,
         );
         const tarError = await tarDone;
         if (tarError) {
             throw tarError;
         }
-        return snapshotId;
+        return { snapshotId,
+            bytesTransferred };
     } catch (error) {
         const archiveError = await tarDone;
         tar.kill("SIGTERM");
@@ -295,22 +313,27 @@ export async function inspectRestoredTargetStorage(server: DockgeServer, targetN
     const mounts = await resolveStorage(stack, mappings);
     const report: RestoredStorageReport = { mounts: [],
         fileCount: 0,
-        bytes: 0 };
+        bytes: 0,
+        digest: "" };
+    const combined = createHash("sha256");
     for (const mount of mounts) {
         const output = await runDocker([
             "run", "--rm", "--network", "none",
             ...dockerStorageArgs([ mount ], "targets", true),
             HELPER_IMAGE, "sh", "-c",
-            "files=$(find /targets/0 -type f 2>/dev/null | wc -l); kb=$(du -sk /targets/0 2>/dev/null | awk '{print $1}'); printf '%s %s\\n' \"$files\" \"$kb\"",
+            "files=$(find /targets/0 -type f 2>/dev/null | wc -l); kb=$(du -sk /targets/0 2>/dev/null | awk '{print $1}'); digest=$(find /targets/0 -type f -exec sha256sum {} \\; 2>/dev/null | sort | sha256sum | awk '{print $1}'); printf '%s %s %s\\n' \"$files\" \"$kb\" \"$digest\"",
         ], undefined, 120_000);
-        const [ filesRaw, kbRaw ] = output.trim().split(/\s+/);
+        const [ filesRaw, kbRaw, digest = "" ] = output.trim().split(/\s+/);
         const item = { type: mount.type,
             fileCount: Number(filesRaw) || 0,
-            bytes: (Number(kbRaw) || 0) * 1024 };
+            bytes: (Number(kbRaw) || 0) * 1024,
+            digest };
         report.mounts.push(item);
         report.fileCount += item.fileCount;
         report.bytes += item.bytes;
+        combined.update(`${mount.type}:${digest}\n`);
     }
+    report.digest = combined.digest("hex");
     return report;
 }
 
@@ -332,8 +355,15 @@ export async function getStackTransferDataCapabilities(stackName: string): Promi
     };
 }
 
-export async function createStackTransferDataSnapshot(server: DockgeServer, request: StackTransferDataSnapshotRequest): Promise<{ snapshotId: string; archivePath: string }> {
+export async function createStackTransferDataSnapshot(server: DockgeServer, request: StackTransferDataSnapshotRequest): Promise<{ snapshotId: string; archivePath: string; bytesTransferred: number }> {
     const policy = normalizeStackBackupPolicy(request.policy);
+    const existing = (await readSourceJobs()).find(item => item.id === assertTransferId(request.transferId));
+    if (existing?.status === "snapshotted" && existing.phase === request.phase && existing.snapshotIds.length) {
+        const snapshotId = existing.snapshotIds.at(-1)!;
+        return { snapshotId,
+            archivePath: archivePath(existing.id, request.phase),
+            bytesTransferred: existing.snapshotBytes?.[snapshotId] || 0 };
+    }
     const now = new Date().toISOString();
     const job: SourceDataJob = {
         id: assertTransferId(request.transferId),
@@ -342,6 +372,12 @@ export async function createStackTransferDataSnapshot(server: DockgeServer, requ
         mappings: selectedMappings(request.mappings),
         policy,
         snapshotIds: [],
+        snapshotBytes: {},
+        phase: request.phase,
+        progress: 5,
+        logs: [{ at: now,
+            phase: "preparing",
+            message: "Persistent source job created" }],
         runningServices: [],
         hookPrepared: false,
         status: "snapshotted",
@@ -362,15 +398,26 @@ export async function createStackTransferDataSnapshot(server: DockgeServer, requ
                 prepared = true;
             }
         }
-        const snapshotId = await createSnapshot(server, job, request.phase);
+        job.progress = 30;
+        job.logs?.push({ at: new Date().toISOString(),
+            phase: "snapshotting",
+            message: "Streaming storage archive outside Socket.IO" });
+        await saveSourceJob(job);
+        const { snapshotId, bytesTransferred } = await createSnapshot(server, job, request.phase);
         job.snapshotIds.push(snapshotId);
+        job.snapshotBytes![snapshotId] = bytesTransferred;
         if (request.phase === "copy" && prepared) {
             await restoreSource(job, server);
         }
         job.updatedAt = new Date().toISOString();
+        job.progress = 100;
+        job.logs?.push({ at: job.updatedAt,
+            phase: "snapshotted",
+            message: `${bytesTransferred} bytes transferred and verified` });
         await saveSourceJob(job);
         return { snapshotId,
-            archivePath: archivePath(job.id, request.phase) };
+            archivePath: archivePath(job.id, request.phase),
+            bytesTransferred };
     } catch (error) {
         if (request.phase === "copy" && prepared) {
             await restoreSource(job, server).catch(() => {});
@@ -383,7 +430,7 @@ export async function createStackTransferDataSnapshot(server: DockgeServer, requ
     }
 }
 
-export async function finalizeStackTransferDataSource(server: DockgeServer, transferId: string): Promise<{ snapshotId: string; archivePath: string }> {
+export async function finalizeStackTransferDataSource(server: DockgeServer, transferId: string): Promise<{ snapshotId: string; archivePath: string; bytesTransferred: number }> {
     const job = await getSourceJob(transferId);
     if (job.status !== "snapshotted") {
         throw new ValidationError("Source data transfer is not ready for finalization");
@@ -396,13 +443,17 @@ export async function finalizeStackTransferDataSource(server: DockgeServer, tran
             job.hookPrepared = true;
         }
         await stopSource(stack, job.runningServices);
-        const snapshotId = await createSnapshot(server, job, "final");
+        const { snapshotId, bytesTransferred } = await createSnapshot(server, job, "final");
         job.snapshotIds.push(snapshotId);
+        job.snapshotBytes ||= {};
+        job.snapshotBytes[snapshotId] = bytesTransferred;
+        job.phase = "final";
         job.status = "source-stopped";
         job.updatedAt = new Date().toISOString();
         await saveSourceJob(job);
         return { snapshotId,
-            archivePath: archivePath(job.id, "final") };
+            archivePath: archivePath(job.id, "final"),
+            bytesTransferred };
     } catch (error) {
         await restoreSource(job, server).catch(() => {});
         job.status = "failed";
@@ -438,27 +489,68 @@ export async function stageStackTransferDataTarget(server: DockgeServer, socket:
     const desiredDeploy = request.transfer.deploy;
     const transfer = { ...request.transfer,
         deploy: false,
-        dataTransfer: true };
+        dataTransfer: true,
+        transferId: request.transferId };
     let jobId = "";
+    let rollbackData: NonNullable<import("./stack-transfer").StackTransferJob["rollbackData"]> | undefined;
+    let targetHadOriginal = false;
     try {
+        const existingJob = (await listTransferJobs()).find(item => item.id === request.transferId);
+        rollbackData = existingJob?.rollbackData;
+        const targetExists = await fileExists(`${server.stacksDir}/${transfer.targetName}`);
+        targetHadOriginal = targetExists && (!existingJob || existingJob.phase === "overwrite-snapshotted");
+        if (transfer.overwriteExisting && targetExists && !existingJob) {
+            const inventory = await analyzeStackTransfer(server, transfer.targetName);
+            const rollbackMappings = inventory.mounts.map(mapping => ({ ...mapping,
+                transferData: !mapping.external && (mapping.type === "bind" || mapping.type === "volume") }));
+            if (rollbackMappings.some(mapping => mapping.transferData)) {
+                const rollbackTransferId = `rollback-${request.transferId}`;
+                const snapshot = await createStackTransferDataSnapshot(server, {
+                    transferId: rollbackTransferId,
+                    stackName: transfer.targetName,
+                    repositoryId: request.repositoryId,
+                    mappings: rollbackMappings,
+                    policy: { mode: "stop" },
+                    phase: "copy",
+                });
+                rollbackData = { transferId: rollbackTransferId,
+                    repositoryId: request.repositoryId,
+                    snapshotId: snapshot.snapshotId,
+                    archivePath: snapshot.archivePath,
+                    mappings: rollbackMappings };
+                await reserveStackTransferJob(transfer, rollbackData);
+            }
+        }
         const imported = await importStackTransfer(server, socket, transfer);
         jobId = imported.job.id;
-        await updateTransferJob(jobId, { status: "running",
-            phase: "creating-target-storage" });
+        await appendTransferJobProgress(jobId, "creating-target-storage", 50, "Creating target storage", { status: "running",
+            rollbackData });
         await createImportedStackStorage(server, transfer.targetName);
-        await updateTransferJob(jobId, { phase: "restoring-initial-data" });
+        await appendTransferJobProgress(jobId, "restoring-initial-data", 65, "Restoring the verified initial snapshot");
         await restoreSnapshotToTarget(server, transfer.targetName, transfer.mappings, request.repositoryId, request.snapshotId, archivePath(request.transferId, request.transfer.operation === "copy" ? "copy" : "initial"));
         if (transfer.operation === "copy" && desiredDeploy) {
-            await updateTransferJob(jobId, { phase: "deploying-restored-target" });
+            await appendTransferJobProgress(jobId, "deploying-restored-target", 85);
             await deployAndVerifyImportedStack(server, socket, transfer.targetName);
         }
-        await updateTransferJob(jobId, {
+        await appendTransferJobProgress(jobId, transfer.operation === "copy" ? "completed" : "waiting-final-delta", 100, "Target data restored and verified", {
             status: transfer.operation === "copy" ? "succeeded" : "target-ready",
-            phase: transfer.operation === "copy" ? "completed" : "waiting-final-delta",
+            resumable: transfer.operation !== "copy",
         });
+        if (transfer.operation === "copy") {
+            await cleanupTargetRollback(server, jobId, true);
+        }
         return { jobId };
     } catch (error) {
-        await rollbackImportedStack(server, request.transfer.targetName);
+        if (jobId) {
+            await cleanupTargetRollback(server, jobId, false).catch(() => {});
+        } else {
+            if (!targetHadOriginal) {
+                await rollbackImportedStack(server, request.transfer.targetName);
+            }
+            if (rollbackData) {
+                await completeStackTransferDataSource(server, rollbackData.transferId, true, false).catch(() => {});
+            }
+        }
         if (jobId) {
             await updateTransferJob(jobId, { status: "rolled-back",
                 phase: "failed",
@@ -477,8 +569,9 @@ export async function finalizeStackTransferDataTarget(server: DockgeServer, sock
         await deployAndVerifyImportedStack(server, socket, request.transfer.targetName);
         await updateTransferJob(jobId, { status: "succeeded",
             phase: "completed" });
+        await cleanupTargetRollback(server, jobId, true);
     } catch (error) {
-        await rollbackImportedStack(server, request.transfer.targetName);
+        await cleanupTargetRollback(server, jobId, false).catch(() => rollbackImportedStack(server, request.transfer.targetName));
         await updateTransferJob(jobId, { status: "rolled-back",
             phase: "failed",
             error: error instanceof Error ? error.message : String(error) });
@@ -487,7 +580,24 @@ export async function finalizeStackTransferDataTarget(server: DockgeServer, sock
 }
 
 export async function rollbackStackTransferDataTarget(server: DockgeServer, targetName: string, jobId: string): Promise<void> {
-    await rollbackImportedStack(server, targetName);
+    await cleanupTargetRollback(server, jobId, false);
     await updateTransferJob(jobId, { status: "rolled-back",
         phase: "rolled-back" });
+}
+
+async function cleanupTargetRollback(server: DockgeServer, jobId: string, success: boolean): Promise<void> {
+    const job = (await listTransferJobs()).find(item => item.id === jobId);
+    if (!job) {
+        throw new ValidationError("Target transfer job not found");
+    }
+    const rollbackData = job.rollbackData;
+    await completeStackTransferTarget(server, jobId, success);
+    if (!success && rollbackData) {
+        await createImportedStackStorage(server, job.targetName);
+        await restoreSnapshotToTarget(server, job.targetName, rollbackData.mappings, rollbackData.repositoryId, rollbackData.snapshotId, rollbackData.archivePath);
+    }
+    if (rollbackData) {
+        await completeStackTransferDataSource(server, rollbackData.transferId, true, false);
+        await updateTransferJob(jobId, { rollbackData: undefined });
+    }
 }
