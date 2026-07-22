@@ -43,7 +43,7 @@ The main differences remain visible above; the detailed catalogue is preserved b
 
 **2026-07-22 — Safe move finalization** — After a validated migration, Dockge-Enhanced now keeps a persistent “awaiting finalization” state on the source. **Return to source** stops the target containers, preserves their files and data, then restarts only the services that were previously running on the source. **Finalize move** explicitly removes the source stack files without ever deleting persistent data outside its stack folder automatically.
 
-**2026-07-22 — Unified migration transports** — The transfer engine now uses a single `prepare/upload/restore/cleanup` interface. Restic REST repositories provide HTTP transport, SFTP repositories provide SSH transport, and S3 or local repositories use the exact same workflow. Every mode is encrypted, checksum-verified, incremental and safely retryable without carrying bulk data through Socket.IO. The WebUI never exposes an arbitrary SSH shell.
+**2026-07-22 — Direct, resumable migration transports** — The transfer engine now uses a single `prepare/upload/resume/verify/restore/cleanup` interface. In addition to shared Restic repositories, the wizard offers direct agent-to-agent HTTP transfers protected by a 256-bit short-lived token, SHA-256 verification, HTTP Range resume, automatic expiration and an optional bandwidth limit. Explicit local SSH/rsync profiles add dry-run, native partial-file resume, checksum verification and bandwidth control without exposing a shell or private-key path in the WebUI. Bulk data never passes through Socket.IO.
 
 **2026-07-17 — Filter stacks by instance** — The stack list can show every instance or one selected Dockge instance. The total, active, stopped and inactive counters update for the selected instance; the browser remembers this filter independently from sorting.
 
@@ -318,10 +318,13 @@ Open **http://localhost:5001**, create your admin account, then click **Monitori
 | `DOCKGE_BOOTSTRAP_USERNAME` | *(none)* | First administrator name, created only when the database contains no users |
 | `DOCKGE_BOOTSTRAP_PASSWORD_FILE` | *(none)* | Secret file containing the password; recommended for automated bootstrap |
 | `DOCKGE_BOOTSTRAP_PASSWORD` | *(none)* | Direct password alternative, less secure because it is visible in the container environment |
+| `DOCKGE_TRANSFER_RSYNC_PROFILES` | `[]` | JSON array of local SSH/rsync profiles (`label`, `host`, `port`, `user`, `path`, `keyPath`, optional `bandwidthKbps`). Configure the same destination identity on both instances; key paths never leave their instance |
 
 > ⚠️ Always set `DOCKGE_DATA_DIR=/app/data` to match the volume mount, otherwise settings won't persist after a restart.
 
 > ℹ️ `DOCKGE_PUBLIC_URL` is optional. If not set, Discord notifications are sent without a link. Works with reverse proxies and HTTPS domains.
+
+> SSH/rsync profiles require the private key and a populated `known_hosts` file to be mounted read-only in every participating Dockge instance. `StrictHostKeyChecking=yes` is always enforced; passwords and arbitrary remote commands are not accepted from the WebUI.
 
 ### Authentication and initial setup
 

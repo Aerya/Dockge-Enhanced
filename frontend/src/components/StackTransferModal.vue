@@ -38,26 +38,31 @@
 
                 <div class="shadow-box big-padding mb-4">
                     <div class="form-check mb-3">
-                        <input id="stack-transfer-data" v-model="includeData" type="checkbox" class="form-check-input" :disabled="sharedRepositories.length === 0 || operation === 'replicate'" @change="dataModeChanged" />
+                        <input id="stack-transfer-data" v-model="includeData" type="checkbox" class="form-check-input" :disabled="availableRepositories.length === 0 || operation === 'replicate'" @change="dataModeChanged" />
                         <label for="stack-transfer-data" class="form-check-label fw-semibold">{{ $t("stackTransfer.includeData") }}</label>
                         <div class="form-text">{{ $t("stackTransfer.includeDataHint") }}</div>
                     </div>
-                    <div v-if="sharedRepositories.length === 0" class="alert alert-secondary mb-0 py-2">
+                    <div v-if="availableRepositories.length === 0" class="alert alert-secondary mb-0 py-2">
                         {{ $t("stackTransfer.noSharedRepository") }}
                     </div>
                     <div v-if="includeData" class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">{{ $t("stackTransfer.sharedRepository") }}</label>
                             <select v-model="repositoryId" class="form-select" @change="invalidatePreflight">
-                                <option v-for="repository in sharedRepositories" :key="repository.id" :value="repository.id">
+                                <option v-for="repository in availableRepositories" :key="repository.id" :value="repository.id">
                                     {{ repository.label }} ({{ repository.type.toUpperCase() }})
                                 </option>
                             </select>
                             <div v-if="selectedRepository" class="form-text">
-                                {{ $t("stackTransfer.transportSecurity") }} · {{ selectedRepository.type === "rest" ? "HTTP REST" : selectedRepository.type === "sftp" ? "SSH/SFTP" : selectedRepository.type.toUpperCase() }}
+                                {{ selectedRepository.type === "http" ? $t("stackTransfer.directHttp") : $t("stackTransfer.transportSecurity") }} · {{ selectedRepository.type === "rest" ? "HTTP REST" : selectedRepository.type === "sftp" ? "SSH/SFTP" : selectedRepository.type.toUpperCase() }}
                                 · {{ $t("stackTransfer.checksumVerified") }}
                                 <template v-if="selectedRepository.resumableRepository"> · {{ $t("stackTransfer.resumableRepository") }}</template>
                             </div>
+                        </div>
+                        <div v-if="selectedRepository?.type === 'http'" class="col-md-6">
+                            <label class="form-label">{{ $t("stackTransfer.bandwidthLimit") }}</label>
+                            <input v-model.number="directBandwidthKbps" type="number" min="0" step="128" class="form-control" @change="refreshDirectRepository" />
+                            <div class="form-text">{{ $t("stackTransfer.bandwidthLimitHint") }}</div>
                         </div>
                         <div v-if="operation === 'replicate'" class="col-md-6">
                             <label class="form-label">{{ $t("stackReplication.frequency") }}</label>
@@ -256,6 +261,8 @@ export default {
                 resticAvailable: false },
             targetDataCapabilities: { repositories: [],
                 resticAvailable: false },
+            directRepository: null,
+            directBandwidthKbps: 0,
             repositoryId: "",
             consistencyMode: "hot",
             applicationProfile: "custom",
@@ -306,8 +313,11 @@ export default {
             const targets = new Set(this.targetDataCapabilities.repositories.map(item => item.id));
             return this.sourceDataCapabilities.repositories.filter(item => targets.has(item.id));
         },
+        availableRepositories() {
+            return [ ...this.sharedRepositories, ...(this.operation === "replicate" || !this.directRepository || !this.targetDataCapabilities.directHttpAvailable ? [] : [ this.directRepository ]) ];
+        },
         selectedRepository() {
-            return this.sharedRepositories.find(item => item.id === this.repositoryId) || null;
+            return this.availableRepositories.find(item => item.id === this.repositoryId) || null;
         },
         canTransfer() {
             if (!this.targetEndpoint && !this.targetAgents.some(item => item.endpoint === "")) {
@@ -416,6 +426,8 @@ export default {
             this.restoreTestEnabled = true;
             this.restoreTestIntervalHours = 168;
             this.restoreTestStartContainers = false;
+            this.directRepository = null;
+            this.directBandwidthKbps = 0;
             this.deploy = true;
             this.includeData = false;
             this.sourceDataCapabilities = { repositories: [],
@@ -467,12 +479,13 @@ export default {
             }
             this.sourceDataCapabilities = source.data;
             this.targetDataCapabilities = target.data;
+            await this.refreshDirectRepository();
             const policy = source.data.policy || { mode: "hot" };
             this.consistencyMode = policy.mode || "hot";
             this.hookService = policy.hookService || "";
             this.preHook = policy.preHook || "";
             this.postHook = policy.postHook || "";
-            this.repositoryId = this.sharedRepositories[0]?.id || "";
+            this.repositoryId = this.availableRepositories[0]?.id || "";
         },
         async loadTargetDataCapabilities() {
             const response = await this.emitAgent(this.targetEndpoint, "getStackTransferDataCapabilities", this.stack.name);
@@ -480,8 +493,8 @@ export default {
                 throw new Error(this.$t(response.msg));
             }
             this.targetDataCapabilities = response.data;
-            if (!this.sharedRepositories.some(item => item.id === this.repositoryId)) {
-                this.repositoryId = this.sharedRepositories[0]?.id || "";
+            if (!this.availableRepositories.some(item => item.id === this.repositoryId)) {
+                this.repositoryId = this.availableRepositories[0]?.id || "";
                 if (!this.repositoryId) {
                     this.includeData = false;
                 }
@@ -489,7 +502,28 @@ export default {
         },
         dataModeChanged() {
             if (this.includeData && !this.repositoryId) {
-                this.repositoryId = this.sharedRepositories[0]?.id || "";
+                this.repositoryId = this.availableRepositories[0]?.id || "";
+            }
+            this.invalidatePreflight();
+        },
+        async refreshDirectRepository() {
+            if (this.operation === "replicate") {
+                this.directRepository = null;
+                return;
+            }
+            const baseUrl = this.endpoint ? this.$root.agentList[this.endpoint]?.url : window.location.origin;
+            if (!baseUrl) {
+                this.directRepository = null;
+                return;
+            }
+            const previousDirect = this.selectedRepository?.type === "http";
+            const response = await this.emitAgent(this.endpoint, "getDirectHttpTransferRepository", baseUrl, Math.max(0, Number(this.directBandwidthKbps) || 0) || undefined);
+            if (!response.ok) {
+                throw new Error(this.$t(response.msg));
+            }
+            this.directRepository = response.data;
+            if (previousDirect) {
+                this.repositoryId = response.data.id;
             }
             this.invalidatePreflight();
         },

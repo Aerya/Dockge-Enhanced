@@ -26,6 +26,7 @@ import {
     stageStackTransferDataTarget,
 } from "../transfers/stack-data-transfer";
 import { stackTransferTransport } from "../transfers/stack-transfer-transport";
+import { directHttpRepositoryId } from "../transfers/http-direct-transport";
 import {
     activateStackReplicaTarget,
     StackReplicaSyncRequest,
@@ -171,6 +172,27 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
                 }
                 callbackResult({ ok: true,
                     data: await getStackTransferDataCapabilities(stackName) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("getDirectHttpTransferRepository", (baseUrl: unknown, bandwidthKbps: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof baseUrl !== "string" || (bandwidthKbps !== undefined && typeof bandwidthKbps !== "number")) {
+                    throw new ValidationError("Invalid direct HTTP transport configuration");
+                }
+                const advertisedUrl = process.env.DOCKGE_PUBLIC_URL || baseUrl;
+                callbackResult({ ok: true,
+                    data: { id: directHttpRepositoryId(advertisedUrl, bandwidthKbps),
+                        label: "Direct HTTP",
+                        type: "http",
+                        transport: "http",
+                        encrypted: advertisedUrl.startsWith("https://"),
+                        checksumVerified: true,
+                        retryable: true,
+                        resumableRepository: true } }, callback);
             } catch (error) {
                 callbackError(error, callback);
             }

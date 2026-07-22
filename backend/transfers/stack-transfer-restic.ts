@@ -7,7 +7,7 @@ import { BackupDestination, BackupManager, DestinationType } from "../watchers/b
 export interface StackTransferRepository {
     id: string;
     label: string;
-    type: DestinationType;
+    type: DestinationType | "rsync";
 }
 
 function sanitizePort(value: unknown, fallback = 22): number {
@@ -231,6 +231,13 @@ export async function restoreStackTransferArchive(id: string, snapshotId: string
     }
     await runRestic(destinationFor(id), [ "dump", safeSnapshotId(snapshotId), archivePath ], { output,
         json: false });
+}
+
+export async function verifyStackTransferArchive(id: string, snapshotId: string, archivePath: string): Promise<void> {
+    if (!archivePath.startsWith("/dockge-stack-transfer/")) {
+        throw new Error("Invalid transfer archive path");
+    }
+    await runRestic(destinationFor(id), [ "ls", safeSnapshotId(snapshotId), archivePath ]);
 }
 
 export async function forgetStackTransferSnapshots(id: string, snapshotIds: string[]): Promise<void> {

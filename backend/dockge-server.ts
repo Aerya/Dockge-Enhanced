@@ -6,6 +6,7 @@ import { DockerResourcesRouter } from "./routers/docker-resources-router";
 import { SystemStatsRouter } from "./routers/system-stats-router";
 import { MonitoringRouter } from "./routers/monitoring-router";
 import { AuditLogRouter } from "./routers/audit-log-router";
+import { StackTransferRouter } from "./routers/stack-transfer-router";
 import { ImageWatcher } from "./watchers/image-watcher";
 import { TrivyScanner } from "./watchers/trivy-scanner";
 import { BackupManager } from "./watchers/backup-manager";
@@ -74,6 +75,7 @@ export class DockgeServer {
      * List of express routers
      */
     routerList : Router[] = [
+        new StackTransferRouter(),
         new MainRouter(),
         new WatcherRouter(),
         new DockerResourcesRouter(),

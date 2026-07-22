@@ -1,6 +1,8 @@
 import test, { mock } from "node:test";
 import assert from "node:assert/strict";
 import { execFile, execFileSync } from "node:child_process";
+import express from "express";
+import { createServer } from "node:http";
 import { promisify } from "node:util";
 import { promises as fs } from "node:fs";
 import os from "node:os";
@@ -20,12 +22,23 @@ import {
 } from "./stack-data-transfer";
 import { getStackTransferRepositories } from "./stack-transfer-restic";
 import { activateStackReplicaTarget, syncStackReplicaTarget, testStackReplicaSnapshot } from "./stack-replication-target";
+import { configureHttpDirectTransport, directHttpRepositoryId, serveDirectHttpArchive } from "./http-direct-transport";
 
 const execFileAsync = promisify(execFile);
-const integrationAvailable = (() => {
+const dockerAvailable = (() => {
     try {
         execFileSync("docker", [ "info" ], { stdio: "ignore" });
         execFileSync("docker", [ "image", "inspect", "busybox:stable" ], { stdio: "ignore" });
+        return true;
+    } catch {
+        return false;
+    }
+})();
+const integrationAvailable = (() => {
+    try {
+        if (!dockerAvailable) {
+            return false;
+        }
         execFileSync("restic", [ "version" ], { stdio: "ignore" });
         return true;
     } catch {
@@ -173,6 +186,47 @@ test("copies bind and named-volume data through a shared Restic repository", { s
     } finally {
         await down(root, sourceName);
         await down(root, targetName);
+        await fs.rm(root, { recursive: true,
+            force: true });
+        mock.restoreAll();
+    }
+});
+
+test("copies bind and named-volume data through resumable direct HTTP", { skip: !dockerAvailable,
+    timeout: 180_000 }, async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-data-http-"));
+    const sourceName = `http-source-${Date.now()}`;
+    const targetName = `http-copy-${Date.now()}`;
+    const transferId = `transfer-http-${Date.now()}`;
+    configureHttpDirectTransport(path.join(root, ".data"));
+    const app = express();
+    app.get("/api/transfer/http/:id", (request, response) => void serveDirectHttpArchive(request, response));
+    app.head("/api/transfer/http/:id", (request, response) => void serveDirectHttpArchive(request, response));
+    const httpServer = createServer(app);
+    await new Promise<void>(resolve => httpServer.listen(0, "127.0.0.1", resolve));
+    try {
+        const context = await createContext(root, path.join(root, ".repository"));
+        const address = httpServer.address();
+        assert.ok(address && typeof address === "object");
+        const repositoryId = directHttpRepositoryId(`http://127.0.0.1:${address.port}`);
+        await writeSource(root, sourceName);
+        const snapshot = await createStackTransferDataSnapshot(context.server, { transferId,
+            stackName: sourceName,
+            repositoryId,
+            mappings: mappings(),
+            policy: { mode: "hot" },
+            phase: "copy" });
+        await stageStackTransferDataTarget(context.server, context.socket, { transferId,
+            repositoryId,
+            snapshotId: snapshot.snapshotId,
+            transfer: transfer(sourceName, targetName, "copy") });
+        const output = await execFileAsync("docker", [ "compose", "-p", targetName, "exec", "-T", "worker", "sh", "-c", "cat /bind/value; cat /named/value" ], { cwd: path.join(root, targetName) });
+        assert.equal(output.stdout, "bind-v1named-v1");
+        await completeStackTransferDataSource(context.server, transferId, true);
+    } finally {
+        await down(root, sourceName);
+        await down(root, targetName);
+        await new Promise<void>((resolve, reject) => httpServer.close(error => error ? reject(error) : resolve()));
         await fs.rm(root, { recursive: true,
             force: true });
         mock.restoreAll();
