@@ -53,6 +53,11 @@
                                     {{ repository.label }} ({{ repository.type.toUpperCase() }})
                                 </option>
                             </select>
+                            <div v-if="selectedRepository" class="form-text">
+                                {{ $t("stackTransfer.transportSecurity") }} · {{ selectedRepository.type === "rest" ? "HTTP REST" : selectedRepository.type === "sftp" ? "SSH/SFTP" : selectedRepository.type.toUpperCase() }}
+                                · {{ $t("stackTransfer.checksumVerified") }}
+                                <template v-if="selectedRepository.resumableRepository"> · {{ $t("stackTransfer.resumableRepository") }}</template>
+                            </div>
                         </div>
                         <div v-if="operation === 'replicate'" class="col-md-6">
                             <label class="form-label">{{ $t("stackReplication.frequency") }}</label>
@@ -292,6 +297,9 @@ export default {
         sharedRepositories() {
             const targets = new Set(this.targetDataCapabilities.repositories.map(item => item.id));
             return this.sourceDataCapabilities.repositories.filter(item => targets.has(item.id));
+        },
+        selectedRepository() {
+            return this.sharedRepositories.find(item => item.id === this.repositoryId) || null;
         },
         canTransfer() {
             if (!this.targetEndpoint && !this.targetAgents.some(item => item.endpoint === "")) {

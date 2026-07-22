@@ -17,7 +17,7 @@ import {
     stageStackTransferDataTarget,
     StackTransferDataTargetRequest,
 } from "./stack-data-transfer";
-import { restoreStackTransferArchive } from "./stack-transfer-restic";
+import { stackTransferTransport } from "./stack-transfer-transport";
 
 const MARKER_NAME = ".dockge-replica.json";
 
@@ -169,7 +169,7 @@ export async function testStackReplicaSnapshot(server: DockgeServer, targetName:
             callback();
         },
     });
-    await restoreStackTransferArchive(marker.repositoryId, marker.snapshotId, marker.archivePath, sink);
+    await stackTransferTransport.restore(marker.repositoryId, marker.snapshotId, marker.archivePath, sink);
     if (bytesRead === 0) {
         throw new Error("Replica recovery test restored an empty archive");
     }

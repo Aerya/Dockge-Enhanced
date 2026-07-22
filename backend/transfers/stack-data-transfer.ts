@@ -17,14 +17,8 @@ import {
     StackTransferRequest,
     updateTransferJob,
 } from "./stack-transfer";
-import {
-    backupStackTransferArchive,
-    forgetStackTransferSnapshots,
-    getStackTransferRepositories,
-    ensureStackTransferRepository,
-    restoreStackTransferArchive,
-    StackTransferRepository,
-} from "./stack-transfer-restic";
+import { StackTransferRepository } from "./stack-transfer-restic";
+import { stackTransferTransport } from "./stack-transfer-transport";
 
 const execFileAsync = promisify(execFile);
 const SOURCE_JOBS_SETTING = "stackTransferDataSourceJobs";
@@ -32,7 +26,7 @@ const HELPER_IMAGE = process.env.DOCKGE_VOLUME_HELPER_IMAGE || "busybox:stable";
 
 export interface StackTransferDataCapabilities {
     resticAvailable: boolean;
-    repositories: StackTransferRepository[];
+    repositories: Array<StackTransferRepository & { transport: "restic"; encrypted: boolean; checksumVerified: boolean; retryable: boolean; resumableRepository: boolean }>;
     policy: StackBackupPolicy;
 }
 
@@ -173,7 +167,7 @@ async function createSnapshot(server: DockgeServer, job: SourceDataJob, phase: "
     const stack = await Stack.getStack(server, job.stackName);
     const mounts = await resolveStorage(stack, job.mappings);
     await runDocker([ "image", "inspect", HELPER_IMAGE ]);
-    await ensureStackTransferRepository(job.repositoryId);
+    await stackTransferTransport.prepare(job.repositoryId);
     const tar = spawn("docker", [
         "run", "--rm", "--network", "none",
         ...dockerStorageArgs(mounts, "sources", true),
@@ -181,7 +175,7 @@ async function createSnapshot(server: DockgeServer, job: SourceDataJob, phase: "
     ], { stdio: [ "ignore", "pipe", "pipe" ] });
     const tarDone = waitProcess(tar, "volume archive").then(() => null, error => error as Error);
     try {
-        const snapshotId = await backupStackTransferArchive(
+        const snapshotId = await stackTransferTransport.upload(
             job.repositoryId,
             archivePath(job.id, phase),
             [ "dockge-stack-transfer", `transfer:${job.id}`, `phase:${phase}` ],
@@ -274,7 +268,7 @@ export async function restoreSnapshotToTarget(server: DockgeServer, targetName: 
     ], { stdio: [ "pipe", "ignore", "pipe" ] });
     const extractDone = waitProcess(extract, "volume restore").then(() => null, error => error as Error);
     try {
-        await restoreStackTransferArchive(repositoryId, snapshotId, pathInSnapshot, extract.stdin!);
+        await stackTransferTransport.restore(repositoryId, snapshotId, pathInSnapshot, extract.stdin!);
         extract.stdin?.end();
         const extractError = await extractDone;
         if (extractError) {
@@ -298,7 +292,9 @@ export async function getStackTransferDataCapabilities(stackName: string): Promi
     const manager = BackupManager.getInstance();
     return {
         resticAvailable,
-        repositories: resticAvailable ? getStackTransferRepositories() : [],
+        repositories: resticAvailable ? stackTransferTransport.list().map(repository => ({ ...repository,
+            transport: stackTransferTransport.kind,
+            ...stackTransferTransport.capabilities(repository.id) })) : [],
         policy: normalizeStackBackupPolicy(manager.settings.stackPolicies?.[stackName]),
     };
 }
@@ -398,7 +394,7 @@ export async function completeStackTransferDataSource(server: DockgeServer, tran
         return {};
     }
     try {
-        await forgetStackTransferSnapshots(job.repositoryId, job.snapshotIds);
+        await stackTransferTransport.cleanup(job.repositoryId, job.snapshotIds);
         return {};
     } catch (error) {
         return { cleanupWarning: error instanceof Error ? error.message : String(error) };

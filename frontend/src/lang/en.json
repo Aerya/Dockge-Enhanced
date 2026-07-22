@@ -819,5 +819,8 @@
     "stackMove.returnSource": "Return to source",
     "stackMove.finalize": "Finalize move",
     "stackMove.returnConfirm": "Stop the target and restart the services that were running on the source? Target files and data will be kept.",
-    "stackMove.finalizeConfirm": "Delete the source stack files now? Target validation has already succeeded. Persistent data outside the stack folder is not deleted automatically."
+    "stackMove.finalizeConfirm": "Delete the source stack files now? Target validation has already succeeded. Persistent data outside the stack folder is not deleted automatically.",
+    "stackTransfer.transportSecurity": "Encrypted Restic transport",
+    "stackTransfer.checksumVerified": "checksums verified",
+    "stackTransfer.resumableRepository": "incremental repository with safe retry"
 }
