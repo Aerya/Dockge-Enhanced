@@ -1,7 +1,8 @@
-import test from "node:test";
+import test, { mock } from "node:test";
 import assert from "node:assert/strict";
 import yaml from "yaml";
-import { applyStackTransferMappings, StackTransferMount, suggestTargetSource } from "./stack-transfer";
+import { applyStackTransferMappings, listTransferJobs, markRunningTransferJobsInterrupted, StackTransferMount, suggestTargetSource } from "./stack-transfer";
+import { Settings } from "../settings";
 
 function mount(overrides: Partial<StackTransferMount> = {}): StackTransferMount {
     return {
@@ -79,4 +80,36 @@ test("preserves external volume semantics when its Docker name is remapped", () 
 test("keeps the original override byte-for-byte when no mapping changes", () => {
     const original = "# keep this comment\nservices: {}\n";
     assert.equal(applyStackTransferMappings(original, [ mount({ targetSource: "/srv/apps/demo/data" }) ]), original);
+});
+
+test("persists interrupted jobs as automatically resumable after restart", async () => {
+    const now = new Date().toISOString();
+    const memory = new Map<string, unknown>([[ "stackTransferJobs", [{
+        id: "transfer-resume-1",
+        operation: "copy",
+        sourceEndpoint: "",
+        sourceStackName: "source",
+        targetName: "target",
+        status: "running",
+        phase: "restoring-initial-data",
+        progress: 65,
+        logs: [],
+        resumable: true,
+        createdAt: now,
+        updatedAt: now,
+    }]]]);
+    mock.method(Settings, "get", async (key: string) => memory.get(key));
+    mock.method(Settings, "set", async (key: string, value: unknown) => {
+        memory.set(key, value);
+    });
+    try {
+        assert.equal(await markRunningTransferJobsInterrupted(), 1);
+        const [ job ] = await listTransferJobs();
+        assert.equal(job.status, "interrupted");
+        assert.equal(job.resumable, true);
+        assert.equal(job.progress, 65);
+        assert.match(job.error || "", /retry with the same transfer id/);
+    } finally {
+        mock.restoreAll();
+    }
 });

@@ -5,6 +5,7 @@ import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationErro
 import { AuditLogger } from "../audit-log";
 import {
     analyzeStackTransfer,
+    completeStackTransferTarget,
     getPathRules,
     importStackTransfer,
     listTransferJobs,
@@ -12,7 +13,6 @@ import {
     restoreStackTransferSource,
     setPathRules,
     StackTransferRequest,
-    updateTransferJob,
 } from "../transfers/stack-transfer";
 import {
     completeStackTransferDataSource,
@@ -29,6 +29,7 @@ import { stackTransferTransport } from "../transfers/stack-transfer-transport";
 import { directHttpRepositoryId } from "../transfers/http-direct-transport";
 import {
     activateStackReplicaTarget,
+    inspectStackReplicaDrift,
     StackReplicaSyncRequest,
     syncStackReplicaTarget,
     testStackReplicaSnapshot,
@@ -80,6 +81,12 @@ function requireTransferRequest(value: unknown): StackTransferRequest {
     if (request.dataTransfer !== undefined && typeof request.dataTransfer !== "boolean") {
         throw new ValidationError("dataTransfer must be a boolean");
     }
+    if (request.overwriteExisting !== undefined && typeof request.overwriteExisting !== "boolean") {
+        throw new ValidationError("overwriteExisting must be a boolean");
+    }
+    if (request.transferId !== undefined && typeof request.transferId !== "string") {
+        throw new ValidationError("transferId must be a string");
+    }
     return request as unknown as StackTransferRequest;
 }
 
@@ -96,6 +103,9 @@ function requireDataSnapshotRequest(value: unknown): StackTransferDataSnapshotRe
     const policy = requireObject(raw.policy);
     if (![ "hot", "stop", "hooks" ].includes(String(policy.mode))) {
         throw new ValidationError("Invalid consistency mode");
+    }
+    if (policy.applicationProfile === "sqlite" && policy.mode !== "hooks") {
+        throw new ValidationError("SQLite transfers require hooks mode with a WAL checkpoint and a coherent .backup command");
     }
     const transfer = requireTransferRequest({
         operation: "copy",
@@ -129,6 +139,9 @@ function requireReplicaSyncRequest(value: unknown): StackReplicaSyncRequest {
         if (typeof raw[field] !== "string") {
             throw new ValidationError(`${field} must be a string`);
         }
+    }
+    if (raw.storageMode !== undefined && raw.storageMode !== "restored" && raw.storageMode !== "repository") {
+        throw new ValidationError("Invalid replica storage mode");
     }
     return { ...requireDataTargetRequest(raw),
         replicaId: raw.replicaId,
@@ -273,6 +286,19 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
                 callbackResult({ ok: true,
                     data: result }, callback);
                 server.sendStackList();
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("inspectStackReplicaDrift", async (targetName: unknown, replicaId: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof targetName !== "string" || typeof replicaId !== "string") {
+                    throw new ValidationError("Invalid replica drift request");
+                }
+                callbackResult({ ok: true,
+                    data: await inspectStackReplicaDrift(server, targetName, replicaId) }, callback);
             } catch (error) {
                 callbackError(error, callback);
             }
@@ -432,14 +458,7 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
                 if (typeof jobId !== "string" || typeof success !== "boolean") {
                     throw new ValidationError("Invalid job completion request");
                 }
-                const job = await updateTransferJob(jobId, {
-                    status: success ? "succeeded" : "rolled-back",
-                    phase: success ? "completed" : "source-stop-failed",
-                    error: typeof errorMessage === "string" && errorMessage ? errorMessage : undefined,
-                });
-                if (!job) {
-                    throw new ValidationError("Transfer job not found");
-                }
+                const job = await completeStackTransferTarget(server, jobId, success, typeof errorMessage === "string" && errorMessage ? errorMessage : undefined);
                 callbackResult({ ok: true,
                     data: job }, callback);
             } catch (error) {

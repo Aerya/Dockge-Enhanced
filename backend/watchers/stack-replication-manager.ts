@@ -8,7 +8,7 @@ import { Settings } from "../settings";
 import { DockgeSocket, ValidationError } from "../util-server";
 import { StackTransferSocketHandler } from "../agent-socket-handlers/stack-transfer-socket-handler";
 import { StackBackupPolicy, normalizeStackBackupPolicy } from "./backup-manager";
-import { StackTransferMount, StackTransferRequest } from "../transfers/stack-transfer";
+import { markRunningTransferJobsInterrupted, StackTransferMount, StackTransferRequest } from "../transfers/stack-transfer";
 
 const SETTINGS_KEY = "stackReplicationPolicies";
 const ALLOWED_INTERVALS = new Set([ 15, 60, 360, 1440 ]);
@@ -30,6 +30,8 @@ export interface StackReplicationPolicy {
     restoreTestEnabled: boolean;
     restoreTestIntervalHours: number;
     restoreTestStartContainers: boolean;
+    storageMode: "restored" | "repository";
+    retentionCount: number;
     status: StackReplicationStatus;
     createdAt: string;
     updatedAt: string;
@@ -37,6 +39,13 @@ export interface StackReplicationPolicy {
     lastSuccessAt?: string;
     lastDurationMs?: number;
     lastSnapshotId?: string;
+    snapshotHistory?: Array<{ snapshotId: string; repositoryId: string; archivePath: string; createdAt: string; bytesTransferred: number }>;
+    lastTransferredBytes?: number;
+    totalTransferredBytes?: number;
+    lastHealthcheckAt?: string;
+    lastHealthcheckStatus?: "passed" | "failed";
+    driftDetectedAt?: string;
+    driftReason?: string;
     lastRepositoryId?: string;
     lastArchivePath?: string;
     synchronizedAt?: string;
@@ -67,6 +76,8 @@ export interface StackReplicationInput {
     restoreTestIntervalHours?: number;
     restoreTestStartContainers?: boolean;
     enabled?: boolean;
+    storageMode?: "restored" | "repository";
+    retentionCount?: number;
 }
 
 interface RpcResponse<T = unknown> {
@@ -129,6 +140,8 @@ function normalizeInput(raw: StackReplicationInput): StackReplicationInput {
         restoreTestEnabled: raw.restoreTestEnabled !== false,
         restoreTestIntervalHours: Math.max(1, Math.min(8760, Number(raw.restoreTestIntervalHours) || 168)),
         restoreTestStartContainers: raw.restoreTestStartContainers === true,
+        storageMode: raw.storageMode === "repository" ? "repository" as const : "restored" as const,
+        retentionCount: Math.max(1, Math.min(30, Math.floor(Number(raw.retentionCount) || 3))),
         enabled: raw.enabled !== false,
     };
     if (!/^[a-z0-9_-]+$/.test(input.sourceStackName) || !/^[a-z0-9_-]+$/.test(input.targetName)) {
@@ -162,6 +175,7 @@ export class StackReplicationManager {
             return;
         }
         this.server = server;
+        await markRunningTransferJobsInterrupted();
         const socket = {
             userID: 1,
             endpoint: "",
@@ -212,6 +226,8 @@ export class StackReplicationManager {
             restoreTestEnabled: input.restoreTestEnabled !== false,
             restoreTestIntervalHours: input.restoreTestIntervalHours || 168,
             restoreTestStartContainers: input.restoreTestStartContainers === true,
+            storageMode: input.storageMode || "restored",
+            retentionCount: input.retentionCount || 3,
             createdAt: existing?.createdAt || now,
             updatedAt: now,
         };
@@ -272,6 +288,17 @@ export class StackReplicationManager {
             error: undefined,
             cleanupWarning: undefined });
         try {
+            if (policy.lastSuccessAt) {
+                const drift = await this.call<{ drifted: boolean; reason?: string }>(policy.targetEndpoint, "inspectStackReplicaDrift", policy.targetName, policy.id);
+                if (drift.drifted) {
+                    await this.update(id, { enabled: false,
+                        status: "error",
+                        driftDetectedAt: new Date().toISOString(),
+                        driftReason: drift.reason || "Target replica drift detected",
+                        error: `Replication automatically suspended: ${drift.reason || "target drift detected"}` });
+                    throw new ValidationError(`Replication automatically suspended: ${drift.reason || "target drift detected"}`);
+                }
+            }
             const analysis = await this.call<TransferAnalysis>(policy.sourceEndpoint, "analyzeStackTransfer", policy.sourceStackName, policy.sourceEndpoint);
             const [ sourceCapabilities, targetCapabilities ] = await Promise.all([
                 this.call<{ repositories: Array<{ id: string }> }>(policy.sourceEndpoint, "getStackTransferDataCapabilities", policy.sourceStackName),
@@ -300,7 +327,7 @@ export class StackReplicationManager {
                 deploy: false,
                 dataTransfer: true,
             };
-            const snapshot = await this.call<{ snapshotId: string; archivePath: string }>(policy.sourceEndpoint, "createStackTransferDataSnapshot", {
+            const snapshot = await this.call<{ snapshotId: string; archivePath: string; bytesTransferred: number }>(policy.sourceEndpoint, "createStackTransferDataSnapshot", {
                 transferId,
                 stackName: policy.sourceStackName,
                 repositoryId: policy.repositoryId,
@@ -316,6 +343,7 @@ export class StackReplicationManager {
                 snapshotId: snapshot.snapshotId,
                 archivePath: snapshot.archivePath,
                 transfer,
+                storageMode: policy.storageMode || "restored",
             });
             targetSynchronized = true;
             const restoreTestDue = policy.restoreTestEnabled !== false && (!policy.lastRestoreTestAt || Date.now() - new Date(policy.lastRestoreTestAt).getTime() >= (policy.restoreTestIntervalHours || 168) * 3_600_000);
@@ -330,9 +358,19 @@ export class StackReplicationManager {
             }
             await this.call(policy.sourceEndpoint, "completeStackTransferDataSource", transferId, true, true);
             let cleanupWarning: string | undefined;
-            if (policy.lastSnapshotId && policy.lastSnapshotId !== snapshot.snapshotId) {
+            const history = [{ snapshotId: snapshot.snapshotId,
+                repositoryId: policy.repositoryId,
+                archivePath: snapshot.archivePath,
+                createdAt: new Date().toISOString(),
+                bytesTransferred: snapshot.bytesTransferred || 0 }, ...(policy.snapshotHistory || []) ]
+                .filter((item, index, items) => items.findIndex(candidate => candidate.snapshotId === item.snapshotId) === index);
+            const retained = history.slice(0, policy.retentionCount || 3);
+            const expired = history.slice(policy.retentionCount || 3);
+            if (expired.length) {
                 try {
-                    await this.call(policy.sourceEndpoint, "forgetStackTransferSnapshots", policy.lastRepositoryId || policy.repositoryId, [ policy.lastSnapshotId ]);
+                    for (const [ repositoryId, snapshots ] of Object.entries(Object.groupBy(expired, item => item.repositoryId))) {
+                        await this.call(policy.sourceEndpoint, "forgetStackTransferSnapshots", repositoryId, snapshots!.map(item => item.snapshotId));
+                    }
                 } catch (error) {
                     cleanupWarning = error instanceof Error ? error.message : String(error);
                 }
@@ -342,6 +380,9 @@ export class StackReplicationManager {
                 lastSuccessAt: new Date().toISOString(),
                 lastDurationMs: Date.now() - started,
                 lastSnapshotId: snapshot.snapshotId,
+                snapshotHistory: retained,
+                lastTransferredBytes: snapshot.bytesTransferred || 0,
+                totalTransferredBytes: (policy.totalTransferredBytes || 0) + (snapshot.bytesTransferred || 0),
                 lastRepositoryId: policy.repositoryId,
                 lastArchivePath: snapshot.archivePath,
                 synchronizedAt: synchronized.synchronizedAt,
@@ -354,8 +395,14 @@ export class StackReplicationManager {
                     lastRestoreTestContainersStarted: restoreTest.containersStarted,
                     lastRestoreTestWarnings: restoreTest.warnings,
                     lastRestoreTestError: undefined } : {}),
+                ...(restoreTest?.containersStarted ? { lastHealthcheckAt: restoreTest.testedAt,
+                    lastHealthcheckStatus: "passed" as const } : {}),
                 ...(restoreTestError ? { lastRestoreTestAt: new Date().toISOString(),
-                    lastRestoreTestError: restoreTestError } : {}),
+                    lastRestoreTestError: restoreTestError,
+                    ...(policy.restoreTestStartContainers ? { lastHealthcheckAt: new Date().toISOString(),
+                        lastHealthcheckStatus: "failed" as const } : {}) } : {}),
+                driftDetectedAt: undefined,
+                driftReason: undefined,
                 error: undefined,
             });
         } catch (error) {
@@ -379,6 +426,15 @@ export class StackReplicationManager {
         const policy = (await this.read()).find(item => item.id === id);
         if (!policy || !policy.lastSuccessAt) {
             throw new ValidationError("No synchronized replica is available");
+        }
+        const drift = await this.call<{ drifted: boolean; reason?: string }>(policy.targetEndpoint, "inspectStackReplicaDrift", policy.targetName, policy.id);
+        if (drift.drifted) {
+            await this.update(id, { enabled: false,
+                status: "error",
+                driftDetectedAt: new Date().toISOString(),
+                driftReason: drift.reason || "Target replica drift detected",
+                error: `Activation blocked and replication suspended: ${drift.reason || "target drift detected"}` });
+            throw new ValidationError(`Activation blocked: ${drift.reason || "target replica drift detected"}`);
         }
         const result = await this.call<{ activatedAt: string }>(policy.targetEndpoint, "activateStackReplicaTarget", policy.targetName, policy.id);
         return this.update(id, { status: "active",
@@ -406,11 +462,15 @@ export class StackReplicationManager {
                 lastRestoreTestMounts: result.mountsChecked,
                 lastRestoreTestContainersStarted: result.containersStarted,
                 lastRestoreTestWarnings: result.warnings,
-                lastRestoreTestError: undefined });
+                lastRestoreTestError: undefined,
+                ...(result.containersStarted ? { lastHealthcheckAt: result.testedAt,
+                    lastHealthcheckStatus: "passed" as const } : {}) });
         } catch (error) {
             await this.update(id, { lastRestoreTestAt: new Date().toISOString(),
                 lastRestoreTestDurationMs: Date.now() - started,
-                lastRestoreTestError: error instanceof Error ? error.message : String(error) });
+                lastRestoreTestError: error instanceof Error ? error.message : String(error),
+                ...(policy.restoreTestStartContainers ? { lastHealthcheckAt: new Date().toISOString(),
+                    lastHealthcheckStatus: "failed" as const } : {}) });
             throw error;
         } finally {
             this.running.delete(id);

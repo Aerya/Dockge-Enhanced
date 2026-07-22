@@ -50,7 +50,8 @@ test("schedules repeat synchronizations, rotates the retained snapshot and activ
         if (event === "createStackTransferDataSnapshot") {
             snapshotIndex++;
             return { snapshotId: `snapshot-${snapshotIndex}`,
-                archivePath: `/dockge-stack-transfer/run-${snapshotIndex}/copy.tar` };
+                archivePath: `/dockge-stack-transfer/run-${snapshotIndex}/copy.tar`,
+                bytesTransferred: snapshotIndex * 2048 };
         }
         if (event === "syncStackReplicaTarget") {
             return { synchronizedAt: `2026-07-15T10:0${snapshotIndex}:00.000Z` };
@@ -74,13 +75,20 @@ test("schedules repeat synchronizations, rotates the retained snapshot and activ
             intervalMinutes: 60,
             mappings: [ mapping() ],
             consistency: { mode: "hot" },
+            storageMode: "repository",
+            retentionCount: 1,
         });
         const first = await manager.run(policy.id);
         assert.equal(first.status, "ready");
         assert.equal(first.lastSnapshotId, "snapshot-1");
         assert.equal(first.lastRestoreTestBytes, 4096);
+        assert.equal(first.lastTransferredBytes, 2048);
+        assert.equal(first.storageMode, "repository");
+        assert.equal((calls.find(call => call.event === "syncStackReplicaTarget")?.args[0] as { storageMode: string }).storageMode, "repository");
         const second = await manager.run(policy.id);
         assert.equal(second.lastSnapshotId, "snapshot-2");
+        assert.equal(second.snapshotHistory?.length, 1);
+        assert.equal(second.totalTransferredBytes, 6144);
         const cleanup = calls.find(call => call.event === "forgetStackTransferSnapshots");
         assert.deepEqual(cleanup?.args, [ "repository-id", [ "snapshot-1" ]]);
         const completion = calls.filter(call => call.event === "completeStackTransferDataSource").at(-1);

@@ -66,6 +66,14 @@ export interface StackTransferRequest {
     mappings: StackTransferMount[];
     deploy: boolean;
     dataTransfer?: boolean;
+    overwriteExisting?: boolean;
+    transferId?: string;
+}
+
+export interface StackTransferJobLog {
+    at: string;
+    phase: string;
+    message: string;
 }
 
 export interface StackTransferJob {
@@ -74,8 +82,20 @@ export interface StackTransferJob {
     sourceEndpoint: string;
     sourceStackName: string;
     targetName: string;
-    status: "running" | "target-ready" | "succeeded" | "failed" | "rolled-back";
+    status: "queued" | "running" | "interrupted" | "target-ready" | "succeeded" | "failed" | "rolled-back";
     phase: string;
+    progress: number;
+    logs: StackTransferJobLog[];
+    request?: StackTransferRequest;
+    rollbackDir?: string;
+    rollbackData?: {
+        transferId: string;
+        repositoryId: string;
+        snapshotId: string;
+        archivePath: string;
+        mappings: StackTransferMount[];
+    };
+    resumable?: boolean;
     error?: string;
     createdAt: string;
     updatedAt: string;
@@ -546,11 +566,31 @@ export async function preflightStackTransfer(server: DockgeServer, request: Stac
         return { issues,
             mappedOverrideYAML: request.composeOverrideYAML };
     }
-    if (await fileExists(path.join(server.stacksDir, request.targetName))) {
-        issues.push({ severity: "error",
+    const targetExists = await fileExists(path.join(server.stacksDir, request.targetName));
+    if (targetExists) {
+        issues.push({ severity: request.overwriteExisting ? "warning" : "error",
             scope: "save",
             code: "stack-exists",
-            message: "Target stack already exists" });
+            message: request.overwriteExisting ? "Target stack will be replaced transactionally" : "Target stack already exists" });
+        if (request.overwriteExisting) {
+            try {
+                const target = await Stack.getStack(server, request.targetName);
+                const running = (await runDocker(target.getComposeOptions("ps", "--status", "running", "--services"), target.fullPath))
+                    .split("\n").map(value => value.trim()).filter(Boolean);
+                if (running.length) {
+                    issues.push({ severity: "error",
+                        scope: "save",
+                        code: "target-running",
+                        message: `Target stack must be stopped before overwrite (${running.join(", ")})`,
+                        params: { services: running.join(", ") } });
+                }
+            } catch (error) {
+                issues.push({ severity: "error",
+                    scope: "save",
+                    code: "target-state-unchecked",
+                    message: `Target state could not be verified: ${error instanceof Error ? error.message : String(error)}` });
+            }
+        }
     }
 
     const tempDir = path.join(server.stacksDir, `.dockge-transfer-check-${Date.now()}-${Math.random().toString(16).slice(2)}`);
@@ -642,6 +682,39 @@ export async function preflightStackTransfer(server: DockgeServer, request: Stac
         }
     }
 
+    const selectedBytes = request.dataTransfer ? request.mappings
+        .filter(mount => mount.transferData)
+        .reduce((total, mount) => total + (Number.isFinite(mount.size) ? Number(mount.size) : 0), 0) : 0;
+    const requiredBytes = Math.max(1024 * 1024, Math.ceil(selectedBytes * (request.overwriteExisting ? 2.1 : 1.1)));
+    try {
+        const filesystems = new Set<string>([ server.stacksDir ]);
+        for (const mount of request.mappings) {
+            if (request.dataTransfer && mount.transferData && mount.type === "bind" && path.isAbsolute(mount.targetSource)) {
+                let probe = mount.targetSource;
+                while (!(await fileExists(probe)) && path.dirname(probe) !== probe) {
+                    probe = path.dirname(probe);
+                }
+                filesystems.add(probe);
+            }
+        }
+        let minimumFree = Number.POSITIVE_INFINITY;
+        for (const filesystem of filesystems) {
+            const stats = await fsAsync.statfs(filesystem);
+            minimumFree = Math.min(minimumFree, Number(stats.bavail) * Number(stats.bsize));
+        }
+        issues.push({ severity: minimumFree < requiredBytes ? "error" : "success",
+            scope: "save",
+            code: minimumFree < requiredBytes ? "space-insufficient" : "space-available",
+            message: minimumFree < requiredBytes ? `Insufficient free space: ${minimumFree} bytes available, ${requiredBytes} required` : `Free-space check passed: ${minimumFree} bytes available`,
+            params: { available: String(minimumFree),
+                required: String(requiredBytes) } });
+    } catch (error) {
+        issues.push({ severity: "error",
+            scope: "save",
+            code: "space-unchecked",
+            message: `Free space could not be verified: ${error instanceof Error ? error.message : String(error)}` });
+    }
+
     for (const [ key, rawNetwork ] of Object.entries(asRecord(config.networks))) {
         const network = asRecord(rawNetwork);
         if (network.external === true) {
@@ -718,6 +791,17 @@ async function saveJob(job: StackTransferJob): Promise<void> {
     await Settings.set(JOBS_SETTING, jobs.slice(0, 50), "stack-transfer");
 }
 
+async function advanceJob(job: StackTransferJob, phase: string, progress: number, message = phase, changes: Partial<StackTransferJob> = {}): Promise<void> {
+    const at = new Date().toISOString();
+    Object.assign(job, changes, { phase,
+        progress: Math.max(0, Math.min(100, progress)),
+        updatedAt: at,
+        logs: [ ...(job.logs || []), { at,
+            phase,
+            message }].slice(-200) });
+    await saveJob(job);
+}
+
 export async function updateTransferJob(id: string, updates: Partial<StackTransferJob>): Promise<StackTransferJob | null> {
     const job = (await readJobs()).find(item => item.id === id);
     if (!job) {
@@ -728,8 +812,102 @@ export async function updateTransferJob(id: string, updates: Partial<StackTransf
     return job;
 }
 
+export async function appendTransferJobProgress(id: string, phase: string, progress: number, message = phase, updates: Partial<StackTransferJob> = {}): Promise<StackTransferJob | null> {
+    const job = (await readJobs()).find(item => item.id === id);
+    if (!job) {
+        return null;
+    }
+    await advanceJob(job, phase, progress, message, updates);
+    return job;
+}
+
+export async function reserveStackTransferJob(request: StackTransferRequest, rollbackData?: StackTransferJob["rollbackData"]): Promise<StackTransferJob> {
+    const existing = (await readJobs()).find(item => item.id === request.transferId);
+    if (existing) {
+        return existing;
+    }
+    const now = new Date().toISOString();
+    const job: StackTransferJob = { id: request.transferId!,
+        operation: request.operation,
+        sourceEndpoint: request.sourceEndpoint,
+        sourceStackName: request.sourceStackName,
+        targetName: request.targetName,
+        status: "queued",
+        phase: "overwrite-snapshotted",
+        progress: 15,
+        logs: [{ at: now,
+            phase: "overwrite-snapshotted",
+            message: "Existing target data rollback snapshot persisted before replacement" }],
+        request,
+        rollbackData,
+        resumable: true,
+        createdAt: now,
+        updatedAt: now };
+    await saveJob(job);
+    return job;
+}
+
 export async function listTransferJobs(): Promise<StackTransferJob[]> {
     return readJobs();
+}
+
+export async function markRunningTransferJobsInterrupted(): Promise<number> {
+    const jobs = await readJobs();
+    let count = 0;
+    for (const job of jobs) {
+        if (job.status === "running" || job.status === "queued") {
+            job.status = "interrupted";
+            job.resumable = true;
+            job.error = "The process or connection was interrupted; retry with the same transfer id to resume";
+            job.updatedAt = new Date().toISOString();
+            count++;
+        }
+    }
+    if (count) {
+        await Settings.set(JOBS_SETTING, jobs.slice(0, 50), "stack-transfer");
+    }
+    return count;
+}
+
+async function prepareOverwrite(server: DockgeServer, job: StackTransferJob): Promise<void> {
+    const targetDir = path.join(server.stacksDir, job.targetName);
+    if (!(await fileExists(targetDir))) {
+        return;
+    }
+    const stack = await Stack.getStack(server, job.targetName);
+    const running = (await runDocker(stack.getComposeOptions("ps", "--status", "running", "--services"), stack.fullPath))
+        .split("\n").map(value => value.trim()).filter(Boolean);
+    if (running.length) {
+        throw new ValidationError(`Target stack must be stopped before overwrite (${running.join(", ")})`);
+    }
+    const rollbackDir = path.join(server.stacksDir, `.dockge-overwrite-${job.id}`);
+    await fsAsync.rename(targetDir, rollbackDir);
+    job.rollbackDir = rollbackDir;
+    await advanceJob(job, "target-snapshotted", 20, "Existing target configuration moved to a rollback snapshot");
+}
+
+export async function completeStackTransferTarget(server: DockgeServer, jobId: string, success: boolean, errorMessage?: string): Promise<StackTransferJob> {
+    const job = (await readJobs()).find(item => item.id === jobId);
+    if (!job) {
+        throw new ValidationError("Transfer job not found");
+    }
+    const targetDir = path.join(server.stacksDir, job.targetName);
+    if (!success) {
+        await rollbackImportedStack(server, job.targetName);
+        if (job.rollbackDir && await fileExists(job.rollbackDir)) {
+            await fsAsync.rename(job.rollbackDir, targetDir);
+        }
+    } else if (success && job.rollbackDir) {
+        await fsAsync.rm(job.rollbackDir, { recursive: true,
+            force: true });
+    }
+    job.rollbackDir = undefined;
+    await advanceJob(job, success ? "completed" : "rolled-back", 100, success ? "Transfer completed" : "Original target restored", {
+        status: success ? "succeeded" : "rolled-back",
+        error: errorMessage,
+        resumable: false,
+    });
+    return job;
 }
 
 export async function verifyDeployment(server: DockgeServer, targetName: string, expectedServices: string[], timeoutMs = 45_000): Promise<void> {
@@ -803,14 +981,58 @@ export async function importStackTransfer(server: DockgeServer, socket: DockgeSo
         throw new ValidationError("A move must deploy and verify the target before stopping the source");
     }
     const now = new Date().toISOString();
+    const requestedId = request.transferId && /^[a-zA-Z0-9_-]{8,128}$/.test(request.transferId) ? request.transferId : undefined;
+    const previous = requestedId ? (await readJobs()).find(item => item.id === requestedId) : undefined;
+    const targetStageExists = previous && !(previous.phase === "overwrite-snapshotted" && !previous.rollbackDir) && await fileExists(path.join(server.stacksDir, request.targetName));
+    if (previous && targetStageExists && [ "running", "interrupted", "succeeded", "target-ready" ].includes(previous.status)) {
+        if (previous.status === "interrupted") {
+            previous.status = "running";
+            await advanceJob(previous, "resuming-target", Math.max(35, previous.progress || 0), "Existing target stage found; resuming with the same idempotent transfer id");
+        }
+        if (!request.dataTransfer && previous.status === "running") {
+            try {
+                if (request.deploy) {
+                    await advanceJob(previous, "deploying", 65);
+                    const stack = await Stack.getStack(server, request.targetName);
+                    const config = await resolvedComposeForStack(server, stack);
+                    await stack.deploy(socket);
+                    await advanceJob(previous, "verifying", 85);
+                    await verifyDeployment(server, request.targetName, Object.keys(asRecord(config.services)));
+                }
+                await advanceJob(previous, request.operation === "move" ? "waiting-source-stop" : "completed", 100, "Interrupted transfer resumed and verified", { status: request.operation === "move" ? "target-ready" : "succeeded",
+                    resumable: request.operation === "move" });
+            } catch (error) {
+                if (previous.rollbackDir) {
+                    await completeStackTransferTarget(server, previous.id, false, error instanceof Error ? error.message : String(error));
+                } else {
+                    await rollbackImportedStack(server, request.targetName);
+                    await advanceJob(previous, "failed", previous.progress, "Resumed transfer failed", { status: "rolled-back",
+                        error: error instanceof Error ? error.message : String(error),
+                        resumable: false });
+                }
+                throw error;
+            }
+        }
+        return { job: previous,
+            mappedOverrideYAML: applyStackTransferMappings(request.composeOverrideYAML, request.mappings) };
+    }
     const job: StackTransferJob = {
-        id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+        id: requestedId || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
         operation: request.operation,
         sourceEndpoint: request.sourceEndpoint,
         sourceStackName: request.sourceStackName,
         targetName: request.targetName,
         status: "running",
         phase: "preflight",
+        progress: 5,
+        logs: [{ at: now,
+            phase: "preflight",
+            message: previous ? "Resuming transfer after interruption" : "Transfer accepted" }],
+        request: { ...request,
+            transferId: requestedId },
+        resumable: true,
+        rollbackDir: previous?.rollbackDir,
+        rollbackData: previous?.rollbackData,
         createdAt: now,
         updatedAt: now,
     };
@@ -824,31 +1046,31 @@ export async function importStackTransfer(server: DockgeServer, socket: DockgeSo
             throw new ValidationError(blocking.map(issue => issue.message).join(" ; "));
         }
 
-        job.phase = "copying-configuration";
-        job.updatedAt = new Date().toISOString();
-        await saveJob(job);
+        if (request.overwriteExisting && !job.rollbackDir) {
+            await prepareOverwrite(server, job);
+        }
+        await advanceJob(job, "copying-configuration", 35);
         tempDir = path.join(server.stacksDir, `.dockge-transfer-${job.id}`);
         const mappedOverrideYAML = await writeTransferFiles(tempDir, request);
         await fsAsync.rename(tempDir, path.join(server.stacksDir, request.targetName));
         imported = true;
 
         if (request.deploy) {
-            job.phase = "deploying";
-            job.updatedAt = new Date().toISOString();
-            await saveJob(job);
+            await advanceJob(job, "deploying", 65);
             const stack = await Stack.getStack(server, request.targetName);
             await stack.deploy(socket);
-            job.phase = "verifying";
-            job.updatedAt = new Date().toISOString();
-            await saveJob(job);
+            await advanceJob(job, "verifying", 85);
             const config = preflight.config || {};
             await verifyDeployment(server, request.targetName, Object.keys(asRecord(config.services)));
         }
 
-        job.status = request.operation === "move" ? "target-ready" : "succeeded";
-        job.phase = request.operation === "move" ? "waiting-source-stop" : "completed";
-        job.updatedAt = new Date().toISOString();
-        await saveJob(job);
+        await advanceJob(job, request.operation === "move" ? "waiting-source-stop" : "completed", 100, "Target configuration imported and verified", {
+            status: request.operation === "move" ? "target-ready" : "succeeded",
+            resumable: request.operation === "move",
+        });
+        if (request.operation === "copy" && job.rollbackDir && !request.dataTransfer) {
+            await completeStackTransferTarget(server, job.id, true);
+        }
         return { job,
             mappedOverrideYAML };
     } catch (error) {
@@ -859,11 +1081,13 @@ export async function importStackTransfer(server: DockgeServer, socket: DockgeSo
             await fsAsync.rm(tempDir, { recursive: true,
                 force: true });
         }
-        job.status = imported ? "rolled-back" : "failed";
-        job.phase = "failed";
-        job.error = error instanceof Error ? error.message : String(error);
-        job.updatedAt = new Date().toISOString();
-        await saveJob(job);
+        if (job.rollbackDir) {
+            await completeStackTransferTarget(server, job.id, false, error instanceof Error ? error.message : String(error));
+        } else {
+            await advanceJob(job, "failed", job.progress || 0, "Transfer failed", { status: imported ? "rolled-back" : "failed",
+                error: error instanceof Error ? error.message : String(error),
+                resumable: !imported });
+        }
         throw error;
     }
 }

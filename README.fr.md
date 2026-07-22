@@ -27,7 +27,7 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
-| **Multi-instance** | Noms d'instances, filtre et tri des stacks par instance, copie, migration et réplication froide avec bascule |
+| **Multi-instance** | Noms d'instances, filtre par instance, copie/migration transactionnelle, jobs reprenables et réplication froide protégée contre la dérive |
 | **Sauvegarde & reprise** | Restic multi-destination, volumes, cohérence par stack, restauration sélective, tests et diffs de snapshots |
 | **Images & sécurité** | Surveillance des mises à jour, auto-update avec rollback, scan Trivy et exceptions CVE |
 | **Supervision** | Stats système, stacks et conteneurs, crash loops, healthchecks avec auto-heal, logs enrichis et Kula optionnel |
@@ -38,6 +38,8 @@ Les différences principales restent visibles ci-dessus ; le catalogue détaill�
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
+
+**2026-07-22 — Parcours complet de transfert et réplication transactionnels** — La page Compose possède maintenant un inventaire **Stockage** autonome qui recroise les bind mounts et volumes nommés déclarés avec l’état réel de Docker, tailles connues comprises, sans ouvrir l’assistant de transfert. Une cible existante arrêtée ne peut être écrasée qu’après confirmation explicite et contrôle bloquant de l’espace libre ; Dockge conserve sa configuration et ses données sélectionnées dans des snapshots de rollback, puis restaure automatiquement la cible d’origine si l’import, la restauration, le déploiement ou la vérification de santé échoue. Les jobs conservent leur requête, leur phase, leur pourcentage et un journal borné ; ils sont marqués reprenables après redémarrage du processus et la WebUI réessaie automatiquement une commande interrompue avec le même identifiant de transfert idempotent. La réplication froide propose une cible entièrement restaurée ou un mode dépôt seul restauré à l’activation, une rétention configurable de 1 à 30 snapshots, le volume transféré et le dernier healthcheck, ainsi que des empreintes du Compose et du stockage qui suspendent automatiquement la réplication après une écriture ou une dérive sur la cible. SQLite est explicitement refusé à chaud : des hooks cohérents avec checkpoint WAL et commande `.backup` sont obligatoires dans l’UI comme dans le backend.
 
 **2026-07-22 — Tests de reprise isolés et profils applicatifs** — Les répliques froides peuvent restaurer périodiquement l'intégralité de leur archive Restic chiffrée dans un projet Compose et des bind mounts ou volumes nommés temporaires. Le test contrôle le nombre et la taille des fichiers restaurés, peut démarrer et valider la santé de la stack isolée, désactive les ports publiés ainsi que les configs ou secrets externes indisponibles, puis supprime ses conteneurs, fichiers et volumes. Son rapport est conservé et la page de la stack alerte lorsque le dernier test est absent ou trop ancien. L'assistant propose aussi des profils PostgreSQL, MariaDB/MySQL, Redis et SQLite : leurs commandes de préparation et de nettoyage restent visibles et modifiables avant activation, et s'exécutent uniquement dans le service Compose choisi.
 

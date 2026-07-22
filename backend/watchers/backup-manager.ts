@@ -14,6 +14,7 @@ import * as yaml from "js-yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
+import { ValidationError } from "../util-server";
 
 const execAsync = promisify(exec);
 
@@ -291,6 +292,9 @@ function parseResticStats(stdout: string): { size?: number; fileCount?: number }
 export function normalizeStackBackupPolicy(value: unknown): StackBackupPolicy {
     if (!value || typeof value !== "object") return { mode: "hot" };
     const raw = value as Record<string, unknown>;
+    if (raw.applicationProfile === "sqlite" && raw.mode !== "hooks") {
+        throw new ValidationError("SQLite requires hooks mode with a WAL checkpoint and a coherent .backup command");
+    }
     const mode: StackBackupMode = raw.mode === "stop" || raw.mode === "hooks" ? raw.mode : "hot";
     const clean = (field: unknown): string | undefined => {
         if (typeof field !== "string") return undefined;

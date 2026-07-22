@@ -30,14 +30,19 @@
         <div class="replication-grid mt-2">
             <div><span>{{ $t("stackReplication.target") }}</span><strong>{{ endpointName(policy.targetEndpoint) }} / {{ policy.targetName }}</strong></div>
             <div><span>{{ $t("stackReplication.frequency") }}</span><strong>{{ intervalLabel(policy.intervalMinutes) }}</strong></div>
+            <div><span>{{ $t("stackReplication.storageMode") }}</span><strong>{{ $t(`stackReplication.storageMode.${policy.storageMode || 'restored'}`) }}</strong></div>
+            <div><span>{{ $t("stackReplication.retention") }}</span><strong>{{ policy.snapshotHistory?.length || 0 }} / {{ policy.retentionCount || 3 }}</strong></div>
             <div><span>{{ $t("stackReplication.lastSuccess") }}</span><strong>{{ policy.lastSuccessAt ? relative(policy.lastSuccessAt) : "—" }}</strong></div>
             <div><span>{{ $t("stackReplication.nextRun") }}</span><strong>{{ nextRun }}</strong></div>
             <div><span>{{ $t("stackReplication.duration") }}</span><strong>{{ duration }}</strong></div>
             <div><span>{{ $t("stackReplication.snapshot") }}</span><strong><code>{{ policy.lastSnapshotId?.slice(0, 12) || "—" }}</code></strong></div>
+            <div><span>{{ $t("stackReplication.transferredData") }}</span><strong>{{ formatBytes(policy.lastTransferredBytes) }}</strong></div>
+            <div><span>{{ $t("stackReplication.lastHealthcheck") }}</span><strong>{{ policy.lastHealthcheckAt ? `${relative(policy.lastHealthcheckAt)} · ${$t(`stackReplication.health.${policy.lastHealthcheckStatus || 'passed'}`)}` : "—" }}</strong></div>
             <div><span>{{ $t("stackReplication.lastRestoreTest") }}</span><strong>{{ policy.lastRestoreTestAt ? relative(policy.lastRestoreTestAt) : "—" }}</strong></div>
             <div><span>{{ $t("stackReplication.restoreTestReport") }}</span><strong>{{ restoreReport }}</strong></div>
         </div>
         <div v-if="restoreTestStale" class="alert alert-warning py-2 mt-3 mb-0">{{ $t("stackReplication.restoreTestStale") }}</div>
+        <div v-if="policy.driftReason" class="alert alert-danger py-2 mt-3 mb-0">{{ $t("stackReplication.driftSuspended") }}: {{ policy.driftReason }}</div>
         <div v-if="policy.error" class="alert alert-danger py-2 mt-3 mb-0">{{ policy.error }}</div>
         <div v-if="policy.lastRestoreTestError" class="alert alert-danger py-2 mt-3 mb-0">{{ policy.lastRestoreTestError }}</div>
         <div v-else-if="policy.lastRestoreTestWarnings?.length" class="alert alert-warning py-2 mt-3 mb-0">{{ policy.lastRestoreTestWarnings.join(" · ") }}</div>
@@ -130,6 +135,19 @@ export default {
         },
         intervalLabel(minutes) {
             return this.$t(`stackReplication.interval.${minutes}`);
+        },
+        formatBytes(value) {
+            if (!Number.isFinite(value)) {
+                return "—";
+            }
+            const units = [ "B", "KB", "MB", "GB", "TB" ];
+            let size = Number(value);
+            let unit = 0;
+            while (size >= 1024 && unit < units.length - 1) {
+                size /= 1024;
+                unit++;
+            }
+            return `${size.toFixed(unit ? 1 : 0)} ${units[unit]}`;
         },
         relative(value) {
             const timestamp = typeof value === "number" ? value : new Date(value).getTime();

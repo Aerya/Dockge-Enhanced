@@ -21,7 +21,7 @@ import {
     stageStackTransferDataTarget,
 } from "./stack-data-transfer";
 import { getStackTransferRepositories } from "./stack-transfer-restic";
-import { activateStackReplicaTarget, syncStackReplicaTarget, testStackReplicaSnapshot } from "./stack-replication-target";
+import { activateStackReplicaTarget, inspectStackReplicaDrift, syncStackReplicaTarget, testStackReplicaSnapshot } from "./stack-replication-target";
 import { configureHttpDirectTransport, directHttpRepositoryId, serveDirectHttpArchive } from "./http-direct-transport";
 
 const execFileAsync = promisify(execFile);
@@ -323,6 +323,47 @@ test("rolls the target back and restarts the source when migrated deployment fai
     }
 });
 
+test("restores existing target configuration and data after an overwrite deployment failure", { skip: !integrationAvailable,
+    timeout: 300_000 }, async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-data-overwrite-"));
+    const sourceName = `overwrite-source-${Date.now()}`;
+    const targetName = `overwrite-target-${Date.now()}`;
+    const transferId = `transfer-overwrite-${Date.now()}`;
+    try {
+        const context = await createContext(root, path.join(root, ".repository"));
+        await writeSource(root, sourceName);
+        await writeSource(root, targetName);
+        await execFileAsync("docker", [ "compose", "-p", targetName, "exec", "-T", "worker", "sh", "-c", "printf target-old >/bind/value; printf named-old >/named/value" ], { cwd: path.join(root, targetName) });
+        await execFileAsync("docker", [ "compose", "-p", targetName, "stop" ], { cwd: path.join(root, targetName),
+            timeout: 120_000 });
+        const snapshot = await createStackTransferDataSnapshot(context.server, { transferId,
+            stackName: sourceName,
+            repositoryId: context.repositoryId,
+            mappings: mappings(),
+            policy: { mode: "hot" },
+            phase: "copy" });
+        await assert.rejects(stageStackTransferDataTarget(context.server, context.socket, { transferId,
+            repositoryId: context.repositoryId,
+            snapshotId: snapshot.snapshotId,
+            transfer: { ...transfer(sourceName, targetName, "copy", "exit 23"),
+                overwriteExisting: true } }), /exited with code 23/);
+        const restoredCompose = await fs.readFile(path.join(root, targetName, "compose.yaml"), "utf8");
+        assert.match(restoredCompose, /sleep 300/);
+        assert.doesNotMatch(restoredCompose, /exit 23/);
+        const output = await execFileAsync("docker", [ "compose", "-p", targetName, "run", "--rm", "--no-deps", "worker", "sh", "-c", "cat /bind/value; cat /named/value" ], { cwd: path.join(root, targetName),
+            timeout: 120_000 });
+        assert.equal(output.stdout, "target-oldnamed-old");
+        assert.equal((await fs.readdir(root)).some(name => name.startsWith(".dockge-overwrite-")), false);
+        await completeStackTransferDataSource(context.server, transferId, true);
+    } finally {
+        await down(root, sourceName);
+        await down(root, targetName);
+        await fs.rm(root, { recursive: true,
+            force: true });
+        mock.restoreAll();
+    }
+});
+
 test("refreshes a cold replica, rolls back a failed refresh and activates the standby", { skip: !integrationAvailable,
     timeout: 300_000 }, async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-data-replica-"));
@@ -394,6 +435,50 @@ test("refreshes a cold replica, rolls back a failed refresh and activates the st
         const running = await execFileAsync("docker", [ "compose", "-p", targetName, "ps", "--status", "running", "--services" ], { cwd: path.join(root, targetName) });
         assert.match(running.stdout, /worker/);
         assert.ok(previous?.snapshotId);
+    } finally {
+        await down(root, sourceName);
+        await down(root, targetName);
+        await fs.rm(root, { recursive: true,
+            force: true });
+        mock.restoreAll();
+    }
+});
+
+test("keeps a repository-only replica empty until activation and detects target drift", { skip: !integrationAvailable,
+    timeout: 240_000 }, async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-data-repository-replica-"));
+    const sourceName = `repository-source-${Date.now()}`;
+    const targetName = `repository-target-${Date.now()}`;
+    const replicaId = `replica-${Date.now()}`;
+    const transferId = `replication-repository-${Date.now()}`;
+    try {
+        const context = await createContext(root, path.join(root, ".repository"));
+        await writeSource(root, sourceName);
+        const snapshot = await createStackTransferDataSnapshot(context.server, { transferId,
+            stackName: sourceName,
+            repositoryId: context.repositoryId,
+            mappings: mappings(),
+            policy: { mode: "hot" },
+            phase: "copy" });
+        const request = { replicaId,
+            transferId,
+            repositoryId: context.repositoryId,
+            snapshotId: snapshot.snapshotId,
+            archivePath: snapshot.archivePath,
+            storageMode: "repository" as const,
+            transfer: { ...transfer(sourceName, targetName, "copy"),
+                deploy: false } };
+        await syncStackReplicaTarget(context.server, context.socket, request);
+        await assert.rejects(fs.access(path.join(root, targetName, "restored-bind", "value")));
+        assert.deepEqual(await inspectStackReplicaDrift(context.server, targetName, replicaId), { drifted: false });
+        await fs.appendFile(path.join(root, targetName, "compose.yaml"), "\n# drift\n");
+        const drift = await inspectStackReplicaDrift(context.server, targetName, replicaId);
+        assert.equal(drift.drifted, true);
+        assert.match(drift.reason || "", /configuration was modified/);
+        await fs.writeFile(path.join(root, targetName, "compose.yaml"), request.transfer.composeYAML);
+        await activateStackReplicaTarget(context.server, context.socket, targetName, replicaId);
+        const output = await execFileAsync("docker", [ "compose", "-p", targetName, "exec", "-T", "worker", "sh", "-c", "cat /bind/value; cat /named/value" ], { cwd: path.join(root, targetName) });
+        assert.equal(output.stdout, "bind-v1named-v1");
     } finally {
         await down(root, sourceName);
         await down(root, targetName);

@@ -31,6 +31,11 @@
                 :source-stack-name="stack.name"
             />
 
+            <details v-if="!isAdd && stack.isManagedByDockge" class="mb-3" open>
+                <summary class="storage-summary">{{ $t("stackStorage.heading") }}</summary>
+                <StackStorageInventory :stack-name="stack.name" :endpoint="endpoint" class="mt-2" @transfer="openStackTransfer('copy')" />
+            </details>
+
             <div v-if="stack.isManagedByDockge" class="mb-3">
                 <div class="stack-action-display form-check form-switch">
                     <input id="stackActionLabels" v-model="stackActionLabels" class="form-check-input" type="checkbox" role="switch">
@@ -504,6 +509,7 @@ import StackScheduleEditor from "../components/StackScheduleEditor.vue";
 import StackTransferModal from "../components/StackTransferModal.vue";
 import StackReplicationStatus from "../components/StackReplicationStatus.vue";
 import PendingStackMoveStatus from "../components/PendingStackMoveStatus.vue";
+import StackStorageInventory from "../components/StackStorageInventory.vue";
 import { useStackSchedules } from "../composables/useStackSchedules";
 
 const template = `
@@ -530,6 +536,7 @@ export default {
         StackTransferModal,
         StackReplicationStatus,
         PendingStackMoveStatus,
+        StackStorageInventory,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
@@ -865,11 +872,19 @@ export default {
     },
     methods: {
         relativeTime(iso) {
-            if (!iso) return null;
+            if (!iso) {
+                return null;
+            }
             const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-            if (diff < 60)   return `${diff}s`;
-            if (diff < 3600) return `${Math.floor(diff / 60)} min`;
-            if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
+            if (diff < 60) {
+                return `${diff}s`;
+            }
+            if (diff < 3600) {
+                return `${Math.floor(diff / 60)} min`;
+            }
+            if (diff < 86400) {
+                return `${Math.floor(diff / 3600)} h`;
+            }
             return `${Math.floor(diff / 86400)} j`;
         },
 
@@ -899,8 +914,8 @@ export default {
             this.$root.emitAgent(this.endpoint, "serviceStatusList", this.stack.name, (res) => {
                 if (res.ok) {
                     this.serviceStatusList = res.serviceStatusList;
-                    this.lastUpdated    = res.lastUpdated    ?? null;
-                    this.lastStartedAt  = res.lastStartedAt  ?? null;
+                    this.lastUpdated = res.lastUpdated ?? null;
+                    this.lastStartedAt = res.lastStartedAt ?? null;
                     setLowPower(res.lowPowerMode);
                 }
                 if (!this.stopServiceStatusTimeout) {

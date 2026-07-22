@@ -1,6 +1,7 @@
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import yaml from "yaml";
+import { createHash } from "node:crypto";
 import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
 import { DockgeSocket, fileExists, ValidationError } from "../util-server";
@@ -23,7 +24,7 @@ import {
 const MARKER_NAME = ".dockge-replica.json";
 
 interface ReplicaMarker {
-    version: 1;
+    version: 1 | 2;
     replicaId: string;
     sourceEndpoint: string;
     sourceStackName: string;
@@ -32,12 +33,17 @@ interface ReplicaMarker {
     archivePath: string;
     transfer: StackTransferRequest;
     synchronizedAt: string;
+    storageMode?: "restored" | "repository";
+    restored?: boolean;
+    configFingerprint?: string;
+    storageFingerprint?: { bytes: number; fileCount: number; digest?: string };
     activatedAt?: string;
 }
 
 export interface StackReplicaSyncRequest extends StackTransferDataTargetRequest {
     replicaId: string;
     archivePath: string;
+    storageMode?: "restored" | "repository";
 }
 
 function markerPath(server: DockgeServer, targetName: string): string {
@@ -47,7 +53,7 @@ function markerPath(server: DockgeServer, targetName: string): string {
 async function readMarker(server: DockgeServer, targetName: string): Promise<ReplicaMarker | null> {
     try {
         const marker = JSON.parse(await fs.readFile(markerPath(server, targetName), "utf8")) as ReplicaMarker;
-        return marker?.version === 1 && typeof marker.replicaId === "string" ? marker : null;
+        return (marker?.version === 1 || marker?.version === 2) && typeof marker.replicaId === "string" ? marker : null;
     } catch {
         return null;
     }
@@ -70,9 +76,19 @@ async function assertStopped(server: DockgeServer, targetName: string): Promise<
     }
 }
 
-function newMarker(request: StackReplicaSyncRequest): ReplicaMarker {
+async function configFingerprint(server: DockgeServer, targetName: string): Promise<string> {
+    const hash = createHash("sha256");
+    for (const name of [ "compose.yaml", ".env", "compose.override.yaml" ]) {
+        hash.update(name);
+        hash.update(await fs.readFile(path.join(server.stacksDir, targetName, name)).catch(() => Buffer.alloc(0)));
+    }
+    return hash.digest("hex");
+}
+
+async function newMarker(server: DockgeServer, request: StackReplicaSyncRequest, restored: boolean): Promise<ReplicaMarker> {
+    const storage = restored ? await inspectRestoredTargetStorage(server, request.transfer.targetName, request.transfer.mappings) : undefined;
     return {
-        version: 1,
+        version: 2,
         replicaId: request.replicaId,
         sourceEndpoint: request.transfer.sourceEndpoint,
         sourceStackName: request.transfer.sourceStackName,
@@ -81,7 +97,39 @@ function newMarker(request: StackReplicaSyncRequest): ReplicaMarker {
         archivePath: request.archivePath,
         transfer: request.transfer,
         synchronizedAt: new Date().toISOString(),
+        storageMode: request.storageMode === "repository" ? "repository" : "restored",
+        restored,
+        configFingerprint: await configFingerprint(server, request.transfer.targetName),
+        storageFingerprint: storage ? { bytes: storage.bytes,
+            fileCount: storage.fileCount,
+            digest: storage.digest } : undefined,
     };
+}
+
+export async function inspectStackReplicaDrift(server: DockgeServer, targetName: string, replicaId: string): Promise<{ drifted: boolean; reason?: string }> {
+    const marker = await readMarker(server, targetName);
+    if (!marker || marker.replicaId !== replicaId) {
+        return { drifted: true,
+            reason: "Replica metadata is missing or does not match" };
+    }
+    try {
+        await assertStopped(server, targetName);
+    } catch (error) {
+        return { drifted: true,
+            reason: error instanceof Error ? error.message : String(error) };
+    }
+    if (marker.configFingerprint && await configFingerprint(server, targetName) !== marker.configFingerprint) {
+        return { drifted: true,
+            reason: "Replica Compose configuration was modified on the target" };
+    }
+    if (marker.restored !== false && marker.storageFingerprint) {
+        const storage = await inspectRestoredTargetStorage(server, targetName, marker.transfer.mappings);
+        if (storage.bytes !== marker.storageFingerprint.bytes || storage.fileCount !== marker.storageFingerprint.fileCount || (marker.storageFingerprint.digest && storage.digest !== marker.storageFingerprint.digest)) {
+            return { drifted: true,
+                reason: "Replica storage was modified on the target" };
+        }
+    }
+    return { drifted: false };
 }
 
 export async function syncStackReplicaTarget(server: DockgeServer, socket: DockgeSocket, request: StackReplicaSyncRequest): Promise<{ jobId: string; synchronizedAt: string }> {
@@ -97,13 +145,26 @@ export async function syncStackReplicaTarget(server: DockgeServer, socket: Dockg
     if (previous?.activatedAt) {
         throw new ValidationError("Activated replica cannot be overwritten");
     }
+    if (previous) {
+        const drift = await inspectStackReplicaDrift(server, request.transfer.targetName, request.replicaId);
+        if (drift.drifted) {
+            throw new ValidationError(`REPLICA_DRIFT: ${drift.reason}`);
+        }
+    }
+
+    const repositoryOnly = request.storageMode === "repository";
 
     if (!exists) {
-        const staged = await stageStackTransferDataTarget(server, socket, request);
-        const marker = newMarker(request);
+        const staged = repositoryOnly
+            ? await importStackTransfer(server, socket, { ...request.transfer,
+                deploy: false,
+                dataTransfer: false,
+                transferId: request.transferId })
+            : await stageStackTransferDataTarget(server, socket, request);
+        const marker = await newMarker(server, request, !repositoryOnly);
         try {
             await writeMarker(server, request.transfer.targetName, marker);
-            return { jobId: staged.jobId,
+            return { jobId: "jobId" in staged ? staged.jobId : staged.job.id,
                 synchronizedAt: marker.synchronizedAt };
         } catch (error) {
             await rollbackImportedStack(server, request.transfer.targetName);
@@ -114,9 +175,11 @@ export async function syncStackReplicaTarget(server: DockgeServer, socket: Dockg
     await assertStopped(server, request.transfer.targetName);
     try {
         await refreshImportedStackConfiguration(server, request.transfer.targetName, request.transfer);
-        await createImportedStackStorage(server, request.transfer.targetName);
-        await restoreSnapshotToTarget(server, request.transfer.targetName, request.transfer.mappings, request.repositoryId, request.snapshotId, request.archivePath);
-        const marker = newMarker(request);
+        if (!repositoryOnly) {
+            await createImportedStackStorage(server, request.transfer.targetName);
+            await restoreSnapshotToTarget(server, request.transfer.targetName, request.transfer.mappings, request.repositoryId, request.snapshotId, request.archivePath);
+        }
+        const marker = await newMarker(server, request, !repositoryOnly);
         await writeMarker(server, request.transfer.targetName, marker);
         return { jobId: request.replicaId,
             synchronizedAt: marker.synchronizedAt };
@@ -124,8 +187,10 @@ export async function syncStackReplicaTarget(server: DockgeServer, socket: Dockg
         if (previous) {
             try {
                 await refreshImportedStackConfiguration(server, request.transfer.targetName, previous.transfer);
-                await createImportedStackStorage(server, request.transfer.targetName);
-                await restoreSnapshotToTarget(server, request.transfer.targetName, previous.transfer.mappings, previous.repositoryId, previous.snapshotId, previous.archivePath);
+                if (previous.restored !== false) {
+                    await createImportedStackStorage(server, request.transfer.targetName);
+                    await restoreSnapshotToTarget(server, request.transfer.targetName, previous.transfer.mappings, previous.repositoryId, previous.snapshotId, previous.archivePath);
+                }
                 await writeMarker(server, request.transfer.targetName, previous);
             } catch (rollbackError) {
                 throw new Error(`${error instanceof Error ? error.message : String(error)}; replica rollback failed: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`);
@@ -145,6 +210,15 @@ export async function activateStackReplicaTarget(server: DockgeServer, socket: D
     }
     await assertStopped(server, targetName);
     try {
+        if (marker.restored === false) {
+            await createImportedStackStorage(server, targetName);
+            await restoreSnapshotToTarget(server, targetName, marker.transfer.mappings, marker.repositoryId, marker.snapshotId, marker.archivePath);
+            marker.restored = true;
+            const storage = await inspectRestoredTargetStorage(server, targetName, marker.transfer.mappings);
+            marker.storageFingerprint = { bytes: storage.bytes,
+                fileCount: storage.fileCount,
+                digest: storage.digest };
+        }
         await deployAndVerifyImportedStack(server, socket, targetName);
     } catch (error) {
         const stack = await Stack.getStack(server, targetName);
@@ -153,6 +227,7 @@ export async function activateStackReplicaTarget(server: DockgeServer, socket: D
         throw error;
     }
     marker.activatedAt = new Date().toISOString();
+    marker.configFingerprint = await configFingerprint(server, targetName);
     await writeMarker(server, targetName, marker);
     return { activatedAt: marker.activatedAt };
 }
