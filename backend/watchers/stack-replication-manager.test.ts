@@ -1,7 +1,7 @@
 import test, { mock } from "node:test";
 import assert from "node:assert/strict";
 import { Settings } from "../settings";
-import { StackReplicationManager } from "./stack-replication-manager";
+import { MANAGED_REPLICATION_REPOSITORY, StackReplicationManager } from "./stack-replication-manager";
 import { StackTransferMount } from "../transfers/stack-transfer";
 
 function mapping(): StackTransferMount {
@@ -54,7 +54,10 @@ test("schedules repeat synchronizations, rotates the retained snapshot and activ
                 bytesTransferred: snapshotIndex * 2048 };
         }
         if (event === "syncStackReplicaTarget") {
-            return { synchronizedAt: `2026-07-15T10:0${snapshotIndex}:00.000Z` };
+            return { synchronizedAt: `2026-07-15T10:0${snapshotIndex}:00.000Z`,
+                repositoryId: "repository-id",
+                snapshotId: `snapshot-${snapshotIndex}`,
+                archivePath: `/dockge-stack-transfer/run-${snapshotIndex}/copy.tar` };
         }
         if (event === "testStackReplicaSnapshot") {
             return { testedAt: `2026-07-15T10:1${snapshotIndex}:00.000Z`,
@@ -136,7 +139,7 @@ test("rejects unsupported replication intervals", async () => {
     }
 });
 
-test("rejects replication without a shared repository using a translatable error", async () => {
+test("rejects replication without a transport identifier using a translatable error", async () => {
     await assert.rejects(StackReplicationManager.getInstance().save({
         sourceEndpoint: "",
         sourceStackName: "source",
@@ -147,4 +150,68 @@ test("rejects replication without a shared repository using a translatable error
         mappings: [ mapping() ],
         consistency: { mode: "hot" },
     }), /stackReplication\.repositoryRequired/);
+});
+
+test("provisions the managed replication transport without Backup repositories", async () => {
+    const memory = new Map<string, unknown>();
+    mock.method(Settings, "get", async (key: string) => memory.get(key));
+    mock.method(Settings, "set", async (key: string, value: unknown) => {
+        memory.set(key, value);
+    });
+    const manager = StackReplicationManager.getInstance();
+    manager.stop();
+    const calls: Array<{ endpoint: string; event: string; args: unknown[] }> = [];
+    const internal = manager as unknown as {
+        call<T>(endpoint: string, event: string, ...args: unknown[]): Promise<T>;
+    };
+    mock.method(internal, "call", async (endpoint: string, event: string, ...args: unknown[]) => {
+        calls.push({ endpoint,
+            event,
+            args });
+        if (event === "analyzeStackTransfer") {
+            return { composeYAML: "services:\n  app:\n    image: busybox\n    volumes: [data:/data]\nvolumes:\n  data:\n",
+                composeENV: "",
+                composeOverrideYAML: "",
+                mounts: [ mapping() ] };
+        }
+        if (event === "getDirectHttpTransferRepository") {
+            return { id: "direct-http:automatic" };
+        }
+        if (event === "createStackTransferDataSnapshot") {
+            return { snapshotId: "http-snapshot",
+                archivePath: "/dockge-stack-transfer/managed/copy.tar",
+                bytesTransferred: 1024 };
+        }
+        if (event === "syncStackReplicaTarget") {
+            return { synchronizedAt: "2026-07-22T10:00:00.000Z",
+                repositoryId: "managed-replica:replica-test",
+                snapshotId: "managed-snapshot",
+                archivePath: "/dockge-stack-transfer/managed/copy.tar" };
+        }
+        if (event === "testStackReplicaSnapshot") {
+            return { testedAt: "2026-07-22T10:01:00.000Z",
+                bytesRead: 1024 };
+        }
+        return {};
+    });
+    try {
+        const policy = await manager.save({
+            sourceEndpoint: "",
+            sourceStackName: "source",
+            targetEndpoint: "remote:5001",
+            targetName: "source-replica",
+            repositoryId: MANAGED_REPLICATION_REPOSITORY,
+            sourceBaseUrl: "http://source.example.test",
+            intervalMinutes: 60,
+            mappings: [ mapping() ],
+            consistency: { mode: "hot" },
+        });
+        const synchronized = await manager.run(policy.id);
+        assert.equal(synchronized.lastRepositoryId, "managed-replica:replica-test");
+        assert.equal(calls.filter(call => call.event === "getStackTransferDataCapabilities").length, 0);
+        assert.deepEqual(calls.find(call => call.event === "getDirectHttpTransferRepository")?.args, [ "http://source.example.test", 0 ]);
+        assert.deepEqual(calls.find(call => call.event === "completeStackTransferDataSource")?.args, [ calls.find(call => call.event === "completeStackTransferDataSource")?.args[0], true, false ]);
+    } finally {
+        mock.restoreAll();
+    }
 });

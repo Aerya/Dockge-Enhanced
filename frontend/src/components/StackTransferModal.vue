@@ -33,7 +33,7 @@
 
                 <div class="alert" :class="includeData ? 'alert-warning' : 'alert-info'">
                     <font-awesome-icon icon="circle-info" class="me-1" />
-                    {{ $t(includeData ? "stackTransfer.dataWarning" : "stackTransfer.configOnlyWarning") }}
+                    {{ $t(operation === "replicate" ? "stackReplication.managedDataWarning" : includeData ? "stackTransfer.dataWarning" : "stackTransfer.configOnlyWarning") }}
                 </div>
 
                 <div class="shadow-box big-padding mb-4">
@@ -44,16 +44,16 @@
                     </div>
                     <div v-else class="mb-3">
                         <div class="fw-semibold">{{ $t("stackReplication.dataRequired") }}</div>
-                        <div class="form-text">{{ $t("stackTransfer.includeDataHint") }}</div>
+                        <div class="form-text">{{ $t("stackReplication.managedTransportHint") }}</div>
                     </div>
-                    <div v-if="availableRepositories.length === 0" class="alert alert-secondary mb-0 py-2">
+                    <div v-if="operation !== 'replicate' && availableRepositories.length === 0" class="alert alert-secondary mb-0 py-2">
                         {{ $t("stackTransfer.noSharedRepository") }}
                     </div>
                     <div v-if="directTransportWarning" class="alert alert-warning mt-2 mb-0 py-2">
                         {{ $t("stackTransfer.directHttpUnavailable") }}
                     </div>
                     <div v-if="includeData" class="row g-3">
-                        <div class="col-md-6">
+                        <div v-if="operation !== 'replicate'" class="col-md-6">
                             <label class="form-label">{{ $t("stackTransfer.sharedRepository") }}</label>
                             <select v-model="repositoryId" class="form-select" @change="invalidatePreflight">
                                 <option v-for="repository in availableRepositories" :key="repository.id" :value="repository.id">
@@ -66,7 +66,7 @@
                                 <template v-if="selectedRepository.resumableRepository"> · {{ $t("stackTransfer.resumableRepository") }}</template>
                             </div>
                         </div>
-                        <div v-if="selectedRepository?.type === 'http'" class="col-md-6">
+                        <div v-if="operation !== 'replicate' && selectedRepository?.type === 'http'" class="col-md-6">
                             <label class="form-label">{{ $t("stackTransfer.bandwidthLimit") }}</label>
                             <input v-model.number="directBandwidthKbps" type="number" min="0" step="128" class="form-control" @change="refreshDirectRepository" />
                             <div class="form-text">{{ $t("stackTransfer.bandwidthLimitHint") }}</div>
@@ -514,6 +514,7 @@ export default {
                 if (operation === "replicate") {
                     this.deploy = false;
                     this.includeData = true;
+                    this.repositoryId = "dockge-managed";
                     this.replicationId = existingPolicy?.id || "";
                     this.replicationInterval = existingPolicy?.intervalMinutes || 60;
                     this.replicationStorageMode = existingPolicy?.storageMode || "restored";
@@ -630,6 +631,10 @@ export default {
                 throw new Error(this.$t(response.msg));
             }
             this.targetDataCapabilities = response.data;
+            if (this.operation === "replicate") {
+                this.repositoryId = "dockge-managed";
+                return;
+            }
             if (!this.availableRepositories.some(item => item.id === this.repositoryId)) {
                 this.repositoryId = this.availableRepositories[0]?.id || "";
                 if (!this.repositoryId && this.operation !== "replicate") {
@@ -891,6 +896,7 @@ export default {
                 targetEndpoint: this.targetEndpoint,
                 targetName: this.targetName.trim().toLowerCase(),
                 repositoryId: this.repositoryId,
+                sourceBaseUrl: this.endpoint ? this.$root.agentList[this.endpoint]?.url : window.location.origin,
                 intervalMinutes: this.replicationInterval,
                 storageMode: this.replicationStorageMode,
                 retentionCount: this.replicationRetention,

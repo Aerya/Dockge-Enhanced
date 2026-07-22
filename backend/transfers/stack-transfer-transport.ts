@@ -27,6 +27,13 @@ import {
     uploadRsyncArchive,
     verifyRsyncArchive,
 } from "./rsync-transfer-transport";
+import {
+    cleanupManagedReplicationSnapshots,
+    isManagedReplicationRepository,
+    managedReplicationSnapshotSize,
+    restoreManagedReplicationSnapshot,
+    verifyManagedReplicationSnapshot,
+} from "./managed-replication-transport";
 
 export interface TransferTransportCapabilities {
     encrypted: boolean;
@@ -67,6 +74,12 @@ class ResticTransferTransport implements TransferTransport {
                 retryable: true,
                 resumableRepository: true };
         }
+        if (isManagedReplicationRepository(repositoryId)) {
+            return { encrypted: true,
+                checksumVerified: true,
+                retryable: true,
+                resumableRepository: true };
+        }
         const repository = this.list().find(item => item.id === repositoryId);
         if (!repository) {
             throw new Error("Shared transfer repository is not configured on this instance");
@@ -84,6 +97,9 @@ class ResticTransferTransport implements TransferTransport {
         if (isRsyncRepository(repositoryId)) {
             return prepareRsyncRepository(repositoryId);
         }
+        if (isManagedReplicationRepository(repositoryId)) {
+            return Promise.resolve();
+        }
         return ensureStackTransferRepository(repositoryId);
     }
 
@@ -93,6 +109,9 @@ class ResticTransferTransport implements TransferTransport {
         }
         if (isRsyncRepository(repositoryId)) {
             return uploadRsyncArchive(repositoryId, input);
+        }
+        if (isManagedReplicationRepository(repositoryId)) {
+            return Promise.reject(new Error("Managed replication repositories are target-only"));
         }
         return backupStackTransferArchive(repositoryId, archivePath, tags, input, prepared);
     }
@@ -104,6 +123,9 @@ class ResticTransferTransport implements TransferTransport {
         if (isRsyncRepository(repositoryId)) {
             return restoreRsyncArchive(repositoryId, snapshotId, output);
         }
+        if (isManagedReplicationRepository(repositoryId)) {
+            return restoreManagedReplicationSnapshot(repositoryId, snapshotId, output);
+        }
         return restoreStackTransferArchive(repositoryId, snapshotId, archivePath, output);
     }
 
@@ -113,6 +135,10 @@ class ResticTransferTransport implements TransferTransport {
         }
         if (isRsyncRepository(repositoryId)) {
             return resumeRsyncArchive(repositoryId, snapshotId);
+        }
+        if (isManagedReplicationRepository(repositoryId)) {
+            return managedReplicationSnapshotSize(repositoryId, snapshotId).then(size => ({ offset: 0,
+                size }));
         }
         return Promise.resolve({ offset: 0,
             size: 0 });
@@ -125,6 +151,9 @@ class ResticTransferTransport implements TransferTransport {
         if (isRsyncRepository(repositoryId)) {
             return verifyRsyncArchive(repositoryId, snapshotId);
         }
+        if (isManagedReplicationRepository(repositoryId)) {
+            return verifyManagedReplicationSnapshot(repositoryId, snapshotId);
+        }
         return verifyStackTransferArchive(repositoryId, snapshotId, archivePath);
     }
 
@@ -134,6 +163,9 @@ class ResticTransferTransport implements TransferTransport {
         }
         if (isRsyncRepository(repositoryId)) {
             return cleanupRsyncArchives(repositoryId, snapshotIds);
+        }
+        if (isManagedReplicationRepository(repositoryId)) {
+            return cleanupManagedReplicationSnapshots(repositoryId, snapshotIds);
         }
         return forgetStackTransferSnapshots(repositoryId, snapshotIds);
     }

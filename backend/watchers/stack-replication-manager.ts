@@ -13,6 +13,7 @@ import { markRunningTransferJobsInterrupted, StackTransferMount, StackTransferRe
 const SETTINGS_KEY = "stackReplicationPolicies";
 const ALLOWED_INTERVALS = new Set([ 15, 60, 360, 1440 ]);
 const RPC_TIMEOUT = 2 * 60 * 60_000;
+export const MANAGED_REPLICATION_REPOSITORY = "dockge-managed";
 
 export type StackReplicationStatus = "idle" | "running" | "ready" | "error" | "active";
 
@@ -24,6 +25,7 @@ export interface StackReplicationPolicy {
     targetEndpoint: string;
     targetName: string;
     repositoryId: string;
+    sourceBaseUrl?: string;
     targetComposeYAML?: string;
     targetComposeENV?: string;
     targetComposeOverrideYAML?: string;
@@ -72,6 +74,7 @@ export interface StackReplicationInput {
     targetEndpoint: string;
     targetName: string;
     repositoryId: string;
+    sourceBaseUrl?: string;
     targetComposeYAML?: string;
     targetComposeENV?: string;
     targetComposeOverrideYAML?: string;
@@ -146,13 +149,24 @@ function normalizeInput(raw: StackReplicationInput): StackReplicationInput {
     if (typeof raw.repositoryId !== "string" || !raw.repositoryId.trim()) {
         throw new ValidationError("stackReplication.repositoryRequired");
     }
+    const repositoryId = raw.repositoryId.trim();
+    let sourceBaseUrl: string | undefined;
+    if (repositoryId === MANAGED_REPLICATION_REPOSITORY) {
+        sourceBaseUrl = stringField(raw.sourceBaseUrl, "sourceBaseUrl");
+        const url = new URL(sourceBaseUrl);
+        if (![ "http:", "https:" ].includes(url.protocol) || url.username || url.password) {
+            throw new ValidationError("Invalid managed replication URL");
+        }
+        sourceBaseUrl = url.toString().replace(/\/$/, "");
+    }
     const input = {
         id: raw.id ? stringField(raw.id, "id") : undefined,
         sourceEndpoint: stringField(raw.sourceEndpoint, "sourceEndpoint", true),
         sourceStackName: stringField(raw.sourceStackName, "sourceStackName"),
         targetEndpoint: stringField(raw.targetEndpoint, "targetEndpoint", true),
         targetName: stringField(raw.targetName, "targetName"),
-        repositoryId: raw.repositoryId.trim(),
+        repositoryId,
+        sourceBaseUrl,
         targetComposeYAML: optionalFileField(raw.targetComposeYAML, "targetComposeYAML"),
         targetComposeENV: optionalFileField(raw.targetComposeENV, "targetComposeENV", true),
         targetComposeOverrideYAML: optionalFileField(raw.targetComposeOverrideYAML, "targetComposeOverrideYAML", true),
@@ -322,12 +336,18 @@ export class StackReplicationManager {
                 }
             }
             const analysis = await this.call<TransferAnalysis>(policy.sourceEndpoint, "analyzeStackTransfer", policy.sourceStackName, policy.sourceEndpoint);
-            const [ sourceCapabilities, targetCapabilities ] = await Promise.all([
-                this.call<{ repositories: Array<{ id: string }> }>(policy.sourceEndpoint, "getStackTransferDataCapabilities", policy.sourceStackName),
-                this.call<{ repositories: Array<{ id: string }> }>(policy.targetEndpoint, "getStackTransferDataCapabilities", policy.sourceStackName),
-            ]);
-            if (!sourceCapabilities.repositories.some(repository => repository.id === policy.repositoryId) || !targetCapabilities.repositories.some(repository => repository.id === policy.repositoryId)) {
-                throw new ValidationError("Shared Restic repository is no longer available on both instances");
+            let transferRepositoryId = policy.repositoryId;
+            if (policy.repositoryId === MANAGED_REPLICATION_REPOSITORY) {
+                const direct = await this.call<{ id: string }>(policy.sourceEndpoint, "getDirectHttpTransferRepository", policy.sourceBaseUrl, 0);
+                transferRepositoryId = direct.id;
+            } else {
+                const [ sourceCapabilities, targetCapabilities ] = await Promise.all([
+                    this.call<{ repositories: Array<{ id: string }> }>(policy.sourceEndpoint, "getStackTransferDataCapabilities", policy.sourceStackName),
+                    this.call<{ repositories: Array<{ id: string }> }>(policy.targetEndpoint, "getStackTransferDataCapabilities", policy.sourceStackName),
+                ]);
+                if (!sourceCapabilities.repositories.some(repository => repository.id === policy.repositoryId) || !targetCapabilities.repositories.some(repository => repository.id === policy.repositoryId)) {
+                    throw new ValidationError("Shared transfer repository is no longer available on both instances");
+                }
             }
             const savedMappings = new Map(policy.mappings.map(mapping => [ mapping.id, mapping ]));
             const mappings = analysis.mounts.map(mount => ({ ...mount,
@@ -352,16 +372,16 @@ export class StackReplicationManager {
             const snapshot = await this.call<{ snapshotId: string; archivePath: string; bytesTransferred: number }>(policy.sourceEndpoint, "createStackTransferDataSnapshot", {
                 transferId,
                 stackName: policy.sourceStackName,
-                repositoryId: policy.repositoryId,
+                repositoryId: transferRepositoryId,
                 mappings,
                 policy: policy.consistency,
                 phase: "copy",
             });
             snapshotCreated = true;
-            const synchronized = await this.call<{ synchronizedAt: string }>(policy.targetEndpoint, "syncStackReplicaTarget", {
+            const synchronized = await this.call<{ synchronizedAt: string; repositoryId: string; snapshotId: string; archivePath: string }>(policy.targetEndpoint, "syncStackReplicaTarget", {
                 replicaId: policy.id,
                 transferId,
-                repositoryId: policy.repositoryId,
+                repositoryId: transferRepositoryId,
                 snapshotId: snapshot.snapshotId,
                 archivePath: snapshot.archivePath,
                 transfer,
@@ -378,11 +398,11 @@ export class StackReplicationManager {
                     restoreTestError = error instanceof Error ? error.message : String(error);
                 }
             }
-            await this.call(policy.sourceEndpoint, "completeStackTransferDataSource", transferId, true, true);
+            await this.call(policy.sourceEndpoint, "completeStackTransferDataSource", transferId, true, policy.repositoryId !== MANAGED_REPLICATION_REPOSITORY);
             let cleanupWarning: string | undefined;
-            const history = [{ snapshotId: snapshot.snapshotId,
-                repositoryId: policy.repositoryId,
-                archivePath: snapshot.archivePath,
+            const history = [{ snapshotId: synchronized.snapshotId,
+                repositoryId: synchronized.repositoryId,
+                archivePath: synchronized.archivePath,
                 createdAt: new Date().toISOString(),
                 bytesTransferred: snapshot.bytesTransferred || 0 }, ...(policy.snapshotHistory || []) ]
                 .filter((item, index, items) => items.findIndex(candidate => candidate.snapshotId === item.snapshotId) === index);
@@ -391,7 +411,7 @@ export class StackReplicationManager {
             if (expired.length) {
                 try {
                     for (const [ repositoryId, snapshots ] of Object.entries(Object.groupBy(expired, item => item.repositoryId))) {
-                        await this.call(policy.sourceEndpoint, "forgetStackTransferSnapshots", repositoryId, snapshots!.map(item => item.snapshotId));
+                        await this.call(policy.repositoryId === MANAGED_REPLICATION_REPOSITORY ? policy.targetEndpoint : policy.sourceEndpoint, "forgetStackTransferSnapshots", repositoryId, snapshots!.map(item => item.snapshotId));
                     }
                 } catch (error) {
                     cleanupWarning = error instanceof Error ? error.message : String(error);
@@ -401,12 +421,12 @@ export class StackReplicationManager {
                 status: "ready",
                 lastSuccessAt: new Date().toISOString(),
                 lastDurationMs: Date.now() - started,
-                lastSnapshotId: snapshot.snapshotId,
+                lastSnapshotId: synchronized.snapshotId,
                 snapshotHistory: retained,
                 lastTransferredBytes: snapshot.bytesTransferred || 0,
                 totalTransferredBytes: (policy.totalTransferredBytes || 0) + (snapshot.bytesTransferred || 0),
-                lastRepositoryId: policy.repositoryId,
-                lastArchivePath: snapshot.archivePath,
+                lastRepositoryId: synchronized.repositoryId,
+                lastArchivePath: synchronized.archivePath,
                 synchronizedAt: synchronized.synchronizedAt,
                 cleanupWarning,
                 ...(restoreTest ? { lastRestoreTestAt: restoreTest.testedAt,
