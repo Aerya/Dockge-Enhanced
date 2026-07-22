@@ -31,11 +31,6 @@
                 :source-stack-name="stack.name"
             />
 
-            <details v-if="!isAdd && stack.isManagedByDockge" class="mb-3" open>
-                <summary class="storage-summary">{{ $t("stackStorage.heading") }}</summary>
-                <StackStorageInventory :stack-name="stack.name" :endpoint="endpoint" class="mt-2" @transfer="openStackTransfer('copy')" />
-            </details>
-
             <div v-if="stack.isManagedByDockge" class="mb-3">
                 <div class="stack-action-display form-check form-switch">
                     <input id="stackActionLabels" v-model="stackActionLabels" class="form-check-input" type="checkbox" role="switch">
@@ -509,7 +504,6 @@ import StackScheduleEditor from "../components/StackScheduleEditor.vue";
 import StackTransferModal from "../components/StackTransferModal.vue";
 import StackReplicationStatus from "../components/StackReplicationStatus.vue";
 import PendingStackMoveStatus from "../components/PendingStackMoveStatus.vue";
-import StackStorageInventory from "../components/StackStorageInventory.vue";
 import { useStackSchedules } from "../composables/useStackSchedules";
 
 const template = `
@@ -536,7 +530,6 @@ export default {
         StackTransferModal,
         StackReplicationStatus,
         PendingStackMoveStatus,
-        StackStorageInventory,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
