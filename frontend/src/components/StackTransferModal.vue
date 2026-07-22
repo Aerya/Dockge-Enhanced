@@ -114,6 +114,13 @@
                                     <option :value="24">24 h</option><option :value="168">7 j</option><option :value="720">30 j</option>
                                 </select>
                             </div>
+                            <div v-if="restoreTestEnabled" class="col-12">
+                                <div class="form-check">
+                                    <input id="replica-restore-start" v-model="restoreTestStartContainers" class="form-check-input" type="checkbox" />
+                                    <label class="form-check-label" for="replica-restore-start">{{ $t("stackReplication.restoreTestStartContainers") }}</label>
+                                </div>
+                                <div class="form-text">{{ $t("stackReplication.restoreTestStartContainersHint") }}</div>
+                            </div>
                         </template>
                     </div>
                 </div>
@@ -239,6 +246,7 @@ export default {
             replicationInterval: 60,
             restoreTestEnabled: true,
             restoreTestIntervalHours: 168,
+            restoreTestStartContainers: false,
             targetEndpoint: "",
             targetName: "",
             deploy: true,
@@ -383,6 +391,7 @@ export default {
                         this.applicationProfile = existingPolicy.consistency?.applicationProfile || "custom";
                         this.restoreTestEnabled = existingPolicy.restoreTestEnabled !== false;
                         this.restoreTestIntervalHours = existingPolicy.restoreTestIntervalHours || 168;
+                        this.restoreTestStartContainers = existingPolicy.restoreTestStartContainers === true;
                         this.hookService = existingPolicy.consistency?.hookService || "";
                         this.preHook = existingPolicy.consistency?.preHook || "";
                         this.postHook = existingPolicy.consistency?.postHook || "";
@@ -406,6 +415,7 @@ export default {
             this.replicationInterval = 60;
             this.restoreTestEnabled = true;
             this.restoreTestIntervalHours = 168;
+            this.restoreTestStartContainers = false;
             this.deploy = true;
             this.includeData = false;
             this.sourceDataCapabilities = { repositories: [],
@@ -683,6 +693,7 @@ export default {
                 consistency: this.dataPolicy(),
                 restoreTestEnabled: this.restoreTestEnabled,
                 restoreTestIntervalHours: this.restoreTestIntervalHours,
+                restoreTestStartContainers: this.restoreTestStartContainers,
                 enabled: true,
             }, resolve));
             if (!saved.ok) {

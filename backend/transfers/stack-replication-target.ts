@@ -1,12 +1,13 @@
 import path from "node:path";
 import { promises as fs } from "node:fs";
-import { Writable } from "node:stream";
+import yaml from "yaml";
 import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
 import { DockgeSocket, fileExists, ValidationError } from "../util-server";
 import {
     createImportedStackStorage,
     deployAndVerifyImportedStack,
+    importStackTransfer,
     refreshImportedStackConfiguration,
     rollbackImportedStack,
     runDocker,
@@ -14,10 +15,10 @@ import {
 } from "./stack-transfer";
 import {
     restoreSnapshotToTarget,
+    inspectRestoredTargetStorage,
     stageStackTransferDataTarget,
     StackTransferDataTargetRequest,
 } from "./stack-data-transfer";
-import { stackTransferTransport } from "./stack-transfer-transport";
 
 const MARKER_NAME = ".dockge-replica.json";
 
@@ -156,23 +157,113 @@ export async function activateStackReplicaTarget(server: DockgeServer, socket: D
     return { activatedAt: marker.activatedAt };
 }
 
-export async function testStackReplicaSnapshot(server: DockgeServer, targetName: string, replicaId: string): Promise<{ bytesRead: number; testedAt: string }> {
+export interface StackReplicaRecoveryReport {
+    testedAt: string;
+    durationMs: number;
+    bytesRead: number;
+    fileCount: number;
+    mountsChecked: number;
+    containersStarted: boolean;
+    warnings: string[];
+}
+
+function sanitizeRecoveryCompose(content: string, warnings: string[]): string {
+    if (!content.trim()) {
+        return "";
+    }
+    const config = yaml.parse(content) as Record<string, unknown>;
+    const services = config.services && typeof config.services === "object" ? config.services as Record<string, unknown> : {};
+    for (const service of Object.values(services) as Array<Record<string, unknown>>) {
+        if (service.ports) {
+            delete service.ports;
+            if (!warnings.includes("Published ports were disabled")) {
+                warnings.push("Published ports were disabled");
+            }
+        }
+        delete service.container_name;
+        for (const dependency of [ "configs", "secrets" ]) {
+            if (service[dependency]) {
+                delete service[dependency];
+                if (!warnings.includes(`External ${dependency} were disabled`)) {
+                    warnings.push(`External ${dependency} were disabled`);
+                }
+            }
+        }
+    }
+    for (const name of [ "networks", "volumes" ]) {
+        const definitions = config[name] && typeof config[name] === "object" ? config[name] as Record<string, unknown> : {};
+        for (const definition of Object.values(definitions) as Array<Record<string, unknown>>) {
+            if (definition && typeof definition === "object") {
+                delete definition.external;
+                delete definition.name;
+            }
+        }
+    }
+    delete config.configs;
+    delete config.secrets;
+    return yaml.stringify(config);
+}
+
+async function recoveryProjectVolumes(project: string): Promise<string[]> {
+    return (await runDocker([ "volume", "ls", "-q", "--filter", `label=com.docker.compose.project=${project}` ]))
+        .split(/\s+/).filter(Boolean);
+}
+
+export async function testStackReplicaSnapshot(server: DockgeServer, socket: DockgeSocket, targetName: string, replicaId: string, startContainers = false): Promise<StackReplicaRecoveryReport> {
     const marker = await readMarker(server, targetName);
     if (!marker || marker.replicaId !== replicaId || marker.activatedAt) {
         throw new ValidationError("A synchronized, inactive replica is required for a recovery test");
     }
     await assertStopped(server, targetName);
-    let bytesRead = 0;
-    const sink = new Writable({
-        write(chunk, _encoding, callback) {
-            bytesRead += Buffer.byteLength(chunk);
-            callback();
-        },
-    });
-    await stackTransferTransport.restore(marker.repositoryId, marker.snapshotId, marker.archivePath, sink);
-    if (bytesRead === 0) {
-        throw new Error("Replica recovery test restored an empty archive");
+    const started = Date.now();
+    const suffix = `${replicaId.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 32)}-${started.toString(36)}`;
+    const recoveryName = `dockge-recovery-${suffix}`.toLowerCase();
+    const warnings: string[] = [];
+    const mappings = marker.transfer.mappings.map((mapping, index) => mapping.type === "bind" || mapping.type === "volume"
+        ? { ...mapping,
+            targetSource: mapping.type === "bind" ? `./.dockge-recovery-data/${index}` : `recovery_${index}`,
+            external: false }
+        : mapping);
+    const transfer: StackTransferRequest = { ...marker.transfer,
+        operation: "copy",
+        targetName: recoveryName,
+        composeYAML: sanitizeRecoveryCompose(marker.transfer.composeYAML, warnings),
+        composeOverrideYAML: sanitizeRecoveryCompose(marker.transfer.composeOverrideYAML, warnings),
+        mappings,
+        deploy: false };
+    let volumes: string[] = [];
+    try {
+        await importStackTransfer(server, socket, transfer);
+        await createImportedStackStorage(server, recoveryName);
+        volumes = await recoveryProjectVolumes(recoveryName);
+        await restoreSnapshotToTarget(server, recoveryName, mappings, marker.repositoryId, marker.snapshotId, marker.archivePath);
+        const storage = await inspectRestoredTargetStorage(server, recoveryName, mappings);
+        if (storage.bytes === 0) {
+            throw new Error("Replica recovery test restored empty storage");
+        }
+        if (startContainers) {
+            await deployAndVerifyImportedStack(server, socket, recoveryName);
+        }
+        return { testedAt: new Date().toISOString(),
+            durationMs: Date.now() - started,
+            bytesRead: storage.bytes,
+            fileCount: storage.fileCount,
+            mountsChecked: storage.mounts.length,
+            containersStarted: startContainers,
+            warnings };
+    } finally {
+        const recoveryDir = path.join(server.stacksDir, recoveryName);
+        if (await fileExists(recoveryDir)) {
+            await runDocker([
+                "run", "--rm", "--network", "none",
+                "--mount", `type=bind,src=${recoveryDir},dst=/recovery`,
+                process.env.DOCKGE_VOLUME_HELPER_IMAGE || "busybox:stable",
+                "rm", "-rf", "/recovery/.dockge-recovery-data",
+            ]).catch(() => {});
+        }
+        await rollbackImportedStack(server, recoveryName).catch(() => {});
+        if (volumes.length > 0) {
+            await runDocker([ "volume", "rm", ...volumes ]).catch(() => {});
+        }
     }
-    return { bytesRead,
-        testedAt: new Date().toISOString() };
 }

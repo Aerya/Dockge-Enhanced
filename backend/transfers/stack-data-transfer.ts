@@ -66,6 +66,12 @@ interface RuntimeMount {
     source: string;
 }
 
+export interface RestoredStorageReport {
+    mounts: Array<{ type: "bind" | "volume"; fileCount: number; bytes: number }>;
+    fileCount: number;
+    bytes: number;
+}
+
 function assertTransferId(value: string): string {
     if (!/^[a-zA-Z0-9_-]{8,128}$/.test(value)) {
         throw new ValidationError("Invalid data transfer id");
@@ -280,6 +286,30 @@ export async function restoreSnapshotToTarget(server: DockgeServer, targetName: 
         await extractDone;
         throw error;
     }
+}
+
+export async function inspectRestoredTargetStorage(server: DockgeServer, targetName: string, mappings: StackTransferMount[]): Promise<RestoredStorageReport> {
+    const stack = await Stack.getStack(server, targetName);
+    const mounts = await resolveStorage(stack, mappings);
+    const report: RestoredStorageReport = { mounts: [],
+        fileCount: 0,
+        bytes: 0 };
+    for (const mount of mounts) {
+        const output = await runDocker([
+            "run", "--rm", "--network", "none",
+            ...dockerStorageArgs([ mount ], "targets", true),
+            HELPER_IMAGE, "sh", "-c",
+            "files=$(find /targets/0 -type f 2>/dev/null | wc -l); kb=$(du -sk /targets/0 2>/dev/null | awk '{print $1}'); printf '%s %s\\n' \"$files\" \"$kb\"",
+        ], undefined, 120_000);
+        const [ filesRaw, kbRaw ] = output.trim().split(/\s+/);
+        const item = { type: mount.type,
+            fileCount: Number(filesRaw) || 0,
+            bytes: (Number(kbRaw) || 0) * 1024 };
+        report.mounts.push(item);
+        report.fileCount += item.fileCount;
+        report.bytes += item.bytes;
+    }
+    return report;
 }
 
 export async function getStackTransferDataCapabilities(stackName: string): Promise<StackTransferDataCapabilities> {

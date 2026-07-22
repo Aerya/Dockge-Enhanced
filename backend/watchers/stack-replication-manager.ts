@@ -29,6 +29,7 @@ export interface StackReplicationPolicy {
     consistency: StackBackupPolicy;
     restoreTestEnabled: boolean;
     restoreTestIntervalHours: number;
+    restoreTestStartContainers: boolean;
     status: StackReplicationStatus;
     createdAt: string;
     updatedAt: string;
@@ -45,6 +46,10 @@ export interface StackReplicationPolicy {
     lastRestoreTestAt?: string;
     lastRestoreTestDurationMs?: number;
     lastRestoreTestBytes?: number;
+    lastRestoreTestFiles?: number;
+    lastRestoreTestMounts?: number;
+    lastRestoreTestContainersStarted?: boolean;
+    lastRestoreTestWarnings?: string[];
     lastRestoreTestError?: string;
 }
 
@@ -60,6 +65,7 @@ export interface StackReplicationInput {
     consistency: StackBackupPolicy;
     restoreTestEnabled?: boolean;
     restoreTestIntervalHours?: number;
+    restoreTestStartContainers?: boolean;
     enabled?: boolean;
 }
 
@@ -122,6 +128,7 @@ function normalizeInput(raw: StackReplicationInput): StackReplicationInput {
         consistency: normalizeStackBackupPolicy(raw.consistency),
         restoreTestEnabled: raw.restoreTestEnabled !== false,
         restoreTestIntervalHours: Math.max(1, Math.min(8760, Number(raw.restoreTestIntervalHours) || 168)),
+        restoreTestStartContainers: raw.restoreTestStartContainers === true,
         enabled: raw.enabled !== false,
     };
     if (!/^[a-z0-9_-]+$/.test(input.sourceStackName) || !/^[a-z0-9_-]+$/.test(input.targetName)) {
@@ -204,6 +211,7 @@ export class StackReplicationManager {
             status: existing?.status || "idle",
             restoreTestEnabled: input.restoreTestEnabled !== false,
             restoreTestIntervalHours: input.restoreTestIntervalHours || 168,
+            restoreTestStartContainers: input.restoreTestStartContainers === true,
             createdAt: existing?.createdAt || now,
             updatedAt: now,
         };
@@ -311,11 +319,11 @@ export class StackReplicationManager {
             });
             targetSynchronized = true;
             const restoreTestDue = policy.restoreTestEnabled !== false && (!policy.lastRestoreTestAt || Date.now() - new Date(policy.lastRestoreTestAt).getTime() >= (policy.restoreTestIntervalHours || 168) * 3_600_000);
-            let restoreTest: { bytesRead: number; testedAt: string } | undefined;
+            let restoreTest: { bytesRead: number; testedAt: string; durationMs: number; fileCount: number; mountsChecked: number; containersStarted: boolean; warnings: string[] } | undefined;
             let restoreTestError: string | undefined;
             if (restoreTestDue) {
                 try {
-                    restoreTest = await this.call(policy.targetEndpoint, "testStackReplicaSnapshot", policy.targetName, policy.id);
+                    restoreTest = await this.call(policy.targetEndpoint, "testStackReplicaSnapshot", policy.targetName, policy.id, policy.restoreTestStartContainers === true);
                 } catch (error) {
                     restoreTestError = error instanceof Error ? error.message : String(error);
                 }
@@ -340,7 +348,11 @@ export class StackReplicationManager {
                 cleanupWarning,
                 ...(restoreTest ? { lastRestoreTestAt: restoreTest.testedAt,
                     lastRestoreTestBytes: restoreTest.bytesRead,
-                    lastRestoreTestDurationMs: Date.now() - started,
+                    lastRestoreTestDurationMs: restoreTest.durationMs,
+                    lastRestoreTestFiles: restoreTest.fileCount,
+                    lastRestoreTestMounts: restoreTest.mountsChecked,
+                    lastRestoreTestContainersStarted: restoreTest.containersStarted,
+                    lastRestoreTestWarnings: restoreTest.warnings,
                     lastRestoreTestError: undefined } : {}),
                 ...(restoreTestError ? { lastRestoreTestAt: new Date().toISOString(),
                     lastRestoreTestError: restoreTestError } : {}),
@@ -386,10 +398,14 @@ export class StackReplicationManager {
         this.running.add(id);
         const started = Date.now();
         try {
-            const result = await this.call<{ bytesRead: number; testedAt: string }>(policy.targetEndpoint, "testStackReplicaSnapshot", policy.targetName, policy.id);
+            const result = await this.call<{ bytesRead: number; testedAt: string; durationMs: number; fileCount: number; mountsChecked: number; containersStarted: boolean; warnings: string[] }>(policy.targetEndpoint, "testStackReplicaSnapshot", policy.targetName, policy.id, policy.restoreTestStartContainers === true);
             return await this.update(id, { lastRestoreTestAt: result.testedAt,
-                lastRestoreTestDurationMs: Date.now() - started,
+                lastRestoreTestDurationMs: result.durationMs,
                 lastRestoreTestBytes: result.bytesRead,
+                lastRestoreTestFiles: result.fileCount,
+                lastRestoreTestMounts: result.mountsChecked,
+                lastRestoreTestContainersStarted: result.containersStarted,
+                lastRestoreTestWarnings: result.warnings,
                 lastRestoreTestError: undefined });
         } catch (error) {
             await this.update(id, { lastRestoreTestAt: new Date().toISOString(),
