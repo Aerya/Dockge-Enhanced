@@ -12,6 +12,7 @@ const execFileAsync = promisify(execFile);
 const PATH_RULES_SETTING = "stackTransferPathRules";
 const JOBS_SETTING = "stackTransferJobs";
 const HELPER_IMAGE = process.env.DOCKGE_VOLUME_HELPER_IMAGE || "busybox:stable";
+let helperImageState: { available: boolean; checkedAt: number } | undefined;
 
 export type TransferMountType = "bind" | "volume" | "tmpfs" | "unknown";
 export type MappingConfidence = "high" | "medium" | "manual";
@@ -511,13 +512,34 @@ async function inspectOccupiedPorts(): Promise<Set<string>> {
     return occupied;
 }
 
+async function ensureHelperImage(): Promise<boolean> {
+    if (helperImageState && (helperImageState.available || Date.now() - helperImageState.checkedAt < 60_000)) {
+        return helperImageState.available;
+    }
+    try {
+        await runDocker([ "image", "inspect", HELPER_IMAGE ]);
+        helperImageState = { available: true,
+            checkedAt: Date.now() };
+        return true;
+    } catch {
+        try {
+            await runDocker([ "pull", HELPER_IMAGE ], undefined, 120_000);
+            helperImageState = { available: true,
+                checkedAt: Date.now() };
+            return true;
+        } catch {
+            helperImageState = { available: false,
+                checkedAt: Date.now() };
+            return false;
+        }
+    }
+}
+
 async function probeBindPath(hostPath: string): Promise<boolean | null> {
     if (!path.isAbsolute(hostPath)) {
         return true;
     }
-    try {
-        await runDocker([ "image", "inspect", HELPER_IMAGE ]);
-    } catch {
+    if (!(await ensureHelperImage())) {
         return null;
     }
     try {
@@ -828,10 +850,11 @@ export async function preflightStackTransfer(server: DockgeServer, request: Stac
         }
     }
     if (!issues.some(issue => issue.severity === "error")) {
-        issues.push({ severity: "success",
+        const warnings = issues.some(issue => issue.severity === "warning");
+        issues.push({ severity: warnings ? "warning" : "success",
             scope: "deploy",
-            code: "target-ready",
-            message: "Target is ready" });
+            code: warnings ? "target-ready-warnings" : "target-ready",
+            message: warnings ? "Target validation completed with warnings" : "Target is ready" });
     }
     return { issues,
         mappedOverrideYAML,
