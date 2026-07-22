@@ -256,6 +256,9 @@
     "stackTransfer.issue.secret-found": "External secret {name} is available.",
     "stackTransfer.issue.secret-missing": "External secret {name} is missing.",
     "stackTransfer.issue.devices-manual": "{service}: Docker devices require manual verification on the target.",
+    "stackTransfer.issue.devices-found": "{service}: all {count} Docker devices are available on the target.",
+    "stackTransfer.issue.device-missing": "{service}: device {path} does not exist on the target. Remove or replace it in the Compose file before deployment.",
+    "stackTransfer.issue.device-unchecked": "{service}: device {path} could not be checked on the target.",
     "stackTransfer.issue.target-ready": "The target is ready.",
     "stackReplication.heading": "Cold replica",
     "stackReplication.title": "Replicate stack {0}",
@@ -862,5 +865,6 @@
     "stackReplication.health.passed": "passed",
     "stackReplication.health.failed": "failed",
     "stackReplication.driftSuspended": "Replication was automatically suspended after detecting a target write or drift",
-    "stackReplication.dataRequired": "Replica data"
+    "stackReplication.dataRequired": "Replica data",
+    "stackReplication.repositoryRequired": "Replication requires a shared Restic repository configured identically on both instances."
 }

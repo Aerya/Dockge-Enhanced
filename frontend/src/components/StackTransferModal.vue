@@ -365,6 +365,9 @@ export default {
             if (!this.targetName || this.preflightSignature !== this.currentSignature) {
                 return false;
             }
+            if (this.operation === "replicate" && (!this.repositoryId || !this.mappings.some(mapping => mapping.transferData && (mapping.type === "bind" || mapping.type === "volume")))) {
+                return false;
+            }
             if (this.includeData) {
                 if (!this.repositoryId || !this.mappings.some(mapping => mapping.transferData && (mapping.type === "bind" || mapping.type === "volume"))) {
                     return false;
@@ -551,7 +554,7 @@ export default {
             this.targetDataCapabilities = response.data;
             if (!this.availableRepositories.some(item => item.id === this.repositoryId)) {
                 this.repositoryId = this.availableRepositories[0]?.id || "";
-                if (!this.repositoryId) {
+                if (!this.repositoryId && this.operation !== "replicate") {
                     this.includeData = false;
                 }
             }
@@ -785,6 +788,9 @@ export default {
             }
         },
         async executeReplication() {
+            if (!this.repositoryId) {
+                throw new Error(this.$t("stackReplication.repositoryRequired"));
+            }
             this.transferPhase = "replication";
             const saved = await new Promise(resolve => this.$root.getSocket().emit("saveStackReplication", {
                 id: this.replicationId || undefined,
