@@ -128,3 +128,16 @@ test("rejects unsupported replication intervals", async () => {
         mock.restoreAll();
     }
 });
+
+test("rejects replication without a shared repository using a translatable error", async () => {
+    await assert.rejects(StackReplicationManager.getInstance().save({
+        sourceEndpoint: "",
+        sourceStackName: "source",
+        targetEndpoint: "remote:5001",
+        targetName: "source-replica",
+        repositoryId: "",
+        intervalMinutes: 60,
+        mappings: [ mapping() ],
+        consistency: { mode: "hot" },
+    }), /stackReplication\.repositoryRequired/);
+});

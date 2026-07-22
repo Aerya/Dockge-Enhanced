@@ -108,6 +108,24 @@ test("copies, atomically deploys and verifies a stack in an isolated target inst
     }
 });
 
+test("blocks deployment when a Compose device is missing on the target", { skip: !dockerAvailable,
+    timeout: 30_000 }, async () => {
+    const root = await fsAsync.mkdtemp(path.join(os.tmpdir(), "dockge-transfer-device-check-"));
+    const targetName = `transfer-device-${Date.now()}`;
+    const server = { stacksDir: root } as DockgeServer;
+    try {
+        const transferRequest = request(targetName);
+        transferRequest.composeYAML += "    devices:\n      - /dev/dockge-definitely-missing-device:/dev/test-device\n";
+        const preflight = await preflightStackTransfer(server, transferRequest);
+        const issue = preflight.issues.find(item => item.code === "device-missing");
+        assert.equal(issue?.severity, "error");
+        assert.equal(issue?.params?.path, "/dev/dockge-definitely-missing-device");
+    } finally {
+        await fsAsync.rm(root, { recursive: true,
+            force: true });
+    }
+});
+
 test("rolls configuration and containers back when target verification fails", { skip: !dockerAvailable,
     timeout: 90_000 }, async () => {
     const root = await fsAsync.mkdtemp(path.join(os.tmpdir(), "dockge-transfer-rollback-"));

@@ -250,6 +250,9 @@
     "stackTransfer.issue.secret-found": "Le secret externe {name} est disponible.",
     "stackTransfer.issue.secret-missing": "Le secret externe {name} est absent.",
     "stackTransfer.issue.devices-manual": "{service} : les périphériques Docker doivent être vérifiés manuellement sur la cible.",
+    "stackTransfer.issue.devices-found": "{service} : les {count} périphériques Docker sont disponibles sur la cible.",
+    "stackTransfer.issue.device-missing": "{service} : le périphérique {path} n’existe pas sur la cible. Retirez-le ou remplacez-le dans le Compose avant le déploiement.",
+    "stackTransfer.issue.device-unchecked": "{service} : le périphérique {path} n’a pas pu être vérifié sur la cible.",
     "stackTransfer.issue.target-ready": "La cible est prête.",
     "stackReplication.heading": "Réplique froide",
     "stackReplication.title": "Répliquer la stack {0}",
@@ -856,5 +859,6 @@
     "stackReplication.health.passed": "réussi",
     "stackReplication.health.failed": "échoué",
     "stackReplication.driftSuspended": "Réplication suspendue automatiquement après détection d’une écriture ou d’une dérive sur la cible",
-    "stackReplication.dataRequired": "Données de la réplique"
+    "stackReplication.dataRequired": "Données de la réplique",
+    "stackReplication.repositoryRequired": "La réplication nécessite un dépôt Restic partagé configuré à l’identique sur les deux instances."
 }

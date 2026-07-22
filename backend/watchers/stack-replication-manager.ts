@@ -127,13 +127,16 @@ function normalizeInput(raw: StackReplicationInput): StackReplicationInput {
     if (!ALLOWED_INTERVALS.has(intervalMinutes)) {
         throw new ValidationError("Replication interval must be 15 minutes, 1 hour, 6 hours or 24 hours");
     }
+    if (typeof raw.repositoryId !== "string" || !raw.repositoryId.trim()) {
+        throw new ValidationError("stackReplication.repositoryRequired");
+    }
     const input = {
         id: raw.id ? stringField(raw.id, "id") : undefined,
         sourceEndpoint: stringField(raw.sourceEndpoint, "sourceEndpoint", true),
         sourceStackName: stringField(raw.sourceStackName, "sourceStackName"),
         targetEndpoint: stringField(raw.targetEndpoint, "targetEndpoint", true),
         targetName: stringField(raw.targetName, "targetName"),
-        repositoryId: stringField(raw.repositoryId, "repositoryId"),
+        repositoryId: raw.repositoryId.trim(),
         intervalMinutes,
         mappings: normalizeMappings(raw.mappings),
         consistency: normalizeStackBackupPolicy(raw.consistency),

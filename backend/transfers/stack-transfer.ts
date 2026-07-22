@@ -786,12 +786,45 @@ export async function preflightStackTransfer(server: DockgeServer, request: Stac
     }
     for (const [ service, rawService ] of Object.entries(asRecord(config.services))) {
         const devices = asRecord(rawService).devices;
-        if (Array.isArray(devices) && devices.length > 0) {
-            issues.push({ severity: "warning",
+        if (!Array.isArray(devices)) {
+            continue;
+        }
+        let checkedDevices = 0;
+        let deviceProblems = 0;
+        for (const rawDevice of devices) {
+            const device = asRecord(rawDevice);
+            const source = typeof rawDevice === "string" ? rawDevice.split(":")[0] : typeof device.source === "string" ? device.source : "";
+            if (!source || !path.isAbsolute(source)) {
+                issues.push({ severity: "warning",
+                    scope: "deploy",
+                    code: "devices-manual",
+                    message: `${service}: Docker device mapping requires manual verification on the target`,
+                    params: { service } });
+                deviceProblems++;
+                continue;
+            }
+            const exists = await probeBindPath(source);
+            if (exists === true) {
+                checkedDevices++;
+                continue;
+            }
+            deviceProblems++;
+            issues.push({
+                severity: exists === null ? "warning" : "error",
                 scope: "deploy",
-                code: "devices-manual",
-                message: `${service}: Docker devices require manual verification on the target`,
-                params: { service } });
+                code: exists === null ? "device-unchecked" : "device-missing",
+                message: exists === null ? `${service}: ${source} could not be checked on the target` : `${service}: ${source} does not exist on the target`,
+                params: { service,
+                    path: source },
+            });
+        }
+        if (checkedDevices > 0 && deviceProblems === 0) {
+            issues.push({ severity: "success",
+                scope: "deploy",
+                code: "devices-found",
+                message: `${service}: all ${checkedDevices} Docker devices are available on the target`,
+                params: { service,
+                    count: String(checkedDevices) } });
         }
     }
     if (!issues.some(issue => issue.severity === "error")) {
