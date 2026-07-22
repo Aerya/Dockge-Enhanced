@@ -72,6 +72,9 @@ test("schedules repeat synchronizations, rotates the retained snapshot and activ
             targetEndpoint: "remote:5001",
             targetName: "source-replica",
             repositoryId: "repository-id",
+            targetComposeYAML: "services:\n  app:\n    image: busybox\n    command: [target-only]\n",
+            targetComposeENV: "TARGET_ONLY=1\n",
+            targetComposeOverrideYAML: "services:\n  app:\n    environment:\n      TARGET_ONLY: ${TARGET_ONLY}\n",
             intervalMinutes: 60,
             mappings: [ mapping() ],
             consistency: { mode: "hot" },
@@ -84,7 +87,11 @@ test("schedules repeat synchronizations, rotates the retained snapshot and activ
         assert.equal(first.lastRestoreTestBytes, 4096);
         assert.equal(first.lastTransferredBytes, 2048);
         assert.equal(first.storageMode, "repository");
-        assert.equal((calls.find(call => call.event === "syncStackReplicaTarget")?.args[0] as { storageMode: string }).storageMode, "repository");
+        const firstSync = calls.find(call => call.event === "syncStackReplicaTarget")?.args[0] as { storageMode: string; transfer: { composeYAML: string; composeENV: string; composeOverrideYAML: string } };
+        assert.equal(firstSync.storageMode, "repository");
+        assert.match(firstSync.transfer.composeYAML, /target-only/);
+        assert.equal(firstSync.transfer.composeENV, "TARGET_ONLY=1\n");
+        assert.match(firstSync.transfer.composeOverrideYAML, /TARGET_ONLY/);
         const second = await manager.run(policy.id);
         assert.equal(second.lastSnapshotId, "snapshot-2");
         assert.equal(second.snapshotHistory?.length, 1);

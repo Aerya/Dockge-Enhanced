@@ -154,6 +154,32 @@
                     <span v-for="file in copiedFiles" :key="file" class="badge bg-secondary"><code>{{ file }}</code></span>
                 </div>
 
+                <details ref="targetComposeEditor" class="mb-4">
+                    <summary class="transfer-rules-summary">{{ $t("stackTransfer.targetCompose") }}</summary>
+                    <div class="alert alert-info mt-3 mb-3">
+                        <font-awesome-icon icon="circle-info" class="me-1" />
+                        {{ $t("stackTransfer.targetComposeHint") }}
+                    </div>
+                    <div class="d-flex justify-content-end mb-2">
+                        <button class="btn btn-sm btn-normal" type="button" @click="resetTargetCompose">
+                            <font-awesome-icon icon="undo" class="me-1" />{{ $t("stackTransfer.targetComposeReset") }}
+                        </button>
+                    </div>
+                    <label for="stack-transfer-target-compose" class="form-label"><code>compose.yaml</code></label>
+                    <textarea id="stack-transfer-target-compose" v-model="targetComposeYAML" class="form-control target-compose-editor" rows="16" spellcheck="false" @input="invalidatePreflight"></textarea>
+                    <details class="mt-3">
+                        <summary class="transfer-rules-summary">{{ $t("stackTransfer.targetComposeAdditionalFiles") }}</summary>
+                        <div class="mt-3">
+                            <label for="stack-transfer-target-override" class="form-label"><code>compose.override.yaml</code></label>
+                            <textarea id="stack-transfer-target-override" v-model="targetComposeOverrideYAML" class="form-control target-compose-editor" rows="8" spellcheck="false" @input="invalidatePreflight"></textarea>
+                        </div>
+                        <div class="mt-3">
+                            <label for="stack-transfer-target-env" class="form-label"><code>.env</code></label>
+                            <textarea id="stack-transfer-target-env" v-model="targetComposeENV" class="form-control target-compose-editor" rows="6" spellcheck="false" @input="invalidatePreflight"></textarea>
+                        </div>
+                    </details>
+                </details>
+
                 <h5>{{ $t("stackTransfer.storageMapping") }}</h5>
                 <p class="form-text">{{ $t("stackTransfer.storageMappingHint") }}</p>
                 <div class="table-responsive mb-3">
@@ -230,7 +256,7 @@
                     <div class="form-text">{{ $t("stackTransfer.overwriteExistingHint") }}</div>
                 </div>
 
-                <details v-if="mappedOverridePreview && mappedOverridePreview !== (stack.composeOverrideYAML || '')" class="mb-4">
+                <details v-if="mappedOverridePreview && mappedOverridePreview !== targetComposeOverrideYAML" class="mb-4">
                     <summary class="transfer-rules-summary">{{ $t("stackTransfer.generatedOverride") }}</summary>
                     <p class="form-text mt-2">{{ $t("stackTransfer.generatedOverrideHint") }}</p>
                     <pre class="transfer-override-preview">{{ mappedOverridePreview }}</pre>
@@ -298,6 +324,12 @@ export default {
             directRepository: null,
             directBandwidthKbps: 0,
             repositoryId: "",
+            sourceComposeYAML: "",
+            sourceComposeENV: "",
+            sourceComposeOverrideYAML: "",
+            targetComposeYAML: "",
+            targetComposeENV: "",
+            targetComposeOverrideYAML: "",
             consistencyMode: "hot",
             applicationProfile: "custom",
             hookService: "",
@@ -346,6 +378,7 @@ export default {
                 replicationRetention: this.replicationRetention,
                 consistencyMode: this.consistencyMode,
                 hooks: [ this.hookService, this.preHook, this.postHook ],
+                compose: [ this.targetComposeYAML, this.targetComposeENV, this.targetComposeOverrideYAML ],
                 mappings: this.mappings.map(item => [ item.id, item.targetSource, item.transferData ]) });
         },
         sharedRepositories() {
@@ -380,10 +413,10 @@ export default {
         },
         copiedFiles() {
             const files = [ "compose.yaml" ];
-            if ((this.stack.composeENV || "").trim()) {
+            if (this.targetComposeENV.trim()) {
                 files.push(".env");
             }
-            if ((this.stack.composeOverrideYAML || "").trim() || this.mappings.some(mount => mount.targetSource !== mount.source)) {
+            if (this.targetComposeOverrideYAML.trim() || this.mappings.some(mount => mount.targetSource !== mount.source)) {
                 files.push("compose.override.yaml");
             }
             return files;
@@ -434,6 +467,12 @@ export default {
                 if (!analysis.ok) {
                     throw new Error(this.$t(analysis.msg));
                 }
+                this.sourceComposeYAML = analysis.data.composeYAML;
+                this.sourceComposeENV = analysis.data.composeENV || "";
+                this.sourceComposeOverrideYAML = analysis.data.composeOverrideYAML || "";
+                this.targetComposeYAML = existingPolicy?.targetComposeYAML ?? this.sourceComposeYAML;
+                this.targetComposeENV = existingPolicy?.targetComposeENV ?? this.sourceComposeENV;
+                this.targetComposeOverrideYAML = existingPolicy?.targetComposeOverrideYAML ?? this.sourceComposeOverrideYAML;
                 this.originalMounts = analysis.data.mounts.map(mount => ({ ...mount,
                     transferData: !mount.external && (mount.type === "bind" || mount.type === "volume") }));
                 this.sourceRunningServices = analysis.data.runningServices || [];
@@ -492,6 +531,12 @@ export default {
             this.targetDataCapabilities = { repositories: [],
                 resticAvailable: false };
             this.repositoryId = "";
+            this.sourceComposeYAML = "";
+            this.sourceComposeENV = "";
+            this.sourceComposeOverrideYAML = "";
+            this.targetComposeYAML = "";
+            this.targetComposeENV = "";
+            this.targetComposeOverrideYAML = "";
             this.consistencyMode = "hot";
             this.applicationProfile = "custom";
             this.hookService = "";
@@ -514,6 +559,7 @@ export default {
             this.transferring = false;
         },
         async targetChanged() {
+            this.resetTargetCompose();
             this.invalidatePreflight();
             this.operationError = "";
             try {
@@ -629,6 +675,12 @@ export default {
             mount.confidence = mount.targetSource === mount.source ? mount.confidence : "medium";
             this.invalidatePreflight();
         },
+        resetTargetCompose() {
+            this.targetComposeYAML = this.sourceComposeYAML;
+            this.targetComposeENV = this.sourceComposeENV;
+            this.targetComposeOverrideYAML = this.sourceComposeOverrideYAML;
+            this.invalidatePreflight();
+        },
         invalidatePreflight() {
             this.preflightSignature = "";
             this.mappedOverridePreview = "";
@@ -641,9 +693,9 @@ export default {
                 sourceEndpoint: this.endpoint,
                 sourceStackName: this.stack.name,
                 targetName: this.targetName.trim().toLowerCase(),
-                composeYAML: this.stack.composeYAML,
-                composeENV: this.stack.composeENV || "",
-                composeOverrideYAML: this.stack.composeOverrideYAML || "",
+                composeYAML: this.targetComposeYAML,
+                composeENV: this.targetComposeENV,
+                composeOverrideYAML: this.targetComposeOverrideYAML,
                 mappings: this.mappings,
                 deploy: this.deploy,
                 dataTransfer: this.includeData,
@@ -686,6 +738,9 @@ export default {
                 this.issues = response.data.issues;
                 this.mappedOverridePreview = response.data.mappedOverrideYAML || "";
                 this.preflightSignature = this.currentSignature;
+                if (this.issues.some(issue => issue.code === "device-missing") && this.$refs.targetComposeEditor) {
+                    this.$refs.targetComposeEditor.open = true;
+                }
             } catch (error) {
                 this.operationError = error instanceof Error ? error.message : String(error);
             } finally {
@@ -807,6 +862,9 @@ export default {
                 restoreTestEnabled: this.restoreTestEnabled,
                 restoreTestIntervalHours: this.restoreTestIntervalHours,
                 restoreTestStartContainers: this.restoreTestStartContainers,
+                targetComposeYAML: this.targetComposeYAML === this.sourceComposeYAML ? undefined : this.targetComposeYAML,
+                targetComposeENV: this.targetComposeENV === this.sourceComposeENV ? undefined : this.targetComposeENV,
+                targetComposeOverrideYAML: this.targetComposeOverrideYAML === this.sourceComposeOverrideYAML ? undefined : this.targetComposeOverrideYAML,
                 enabled: true,
             }, resolve));
             if (!saved.ok) {
@@ -988,6 +1046,7 @@ export default {
 .transfer-issue-warning { background: rgba(255, 193, 7, .14); color: #ffd76a; }
 .transfer-issue-error { background: rgba(220, 53, 69, .14); color: #ff8793; }
 .transfer-override-preview { max-height: 260px; overflow: auto; border-radius: .4rem; padding: .75rem; background: rgba(0, 0, 0, .25); font-size: .8rem; }
+.target-compose-editor { min-height: 8rem; resize: vertical; font-family: var(--bs-font-monospace); font-size: .82rem; line-height: 1.45; }
 </style>
 
 <style lang="scss">

@@ -120,6 +120,11 @@ test("blocks deployment when a Compose device is missing on the target", { skip:
         const issue = preflight.issues.find(item => item.code === "device-missing");
         assert.equal(issue?.severity, "error");
         assert.equal(issue?.params?.path, "/dev/dockge-definitely-missing-device");
+
+        transferRequest.composeYAML = transferRequest.composeYAML.replace("    devices:\n      - /dev/dockge-definitely-missing-device:/dev/test-device\n", "");
+        const adaptedPreflight = await preflightStackTransfer(server, transferRequest);
+        assert.equal(adaptedPreflight.issues.some(item => item.code === "device-missing"), false);
+        assert.equal(adaptedPreflight.issues.some(item => item.code === "compose-valid" && item.severity === "success"), true);
     } finally {
         await fsAsync.rm(root, { recursive: true,
             force: true });
