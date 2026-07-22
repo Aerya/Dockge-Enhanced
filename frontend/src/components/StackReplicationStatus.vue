@@ -35,9 +35,12 @@
             <div><span>{{ $t("stackReplication.duration") }}</span><strong>{{ duration }}</strong></div>
             <div><span>{{ $t("stackReplication.snapshot") }}</span><strong><code>{{ policy.lastSnapshotId?.slice(0, 12) || "—" }}</code></strong></div>
             <div><span>{{ $t("stackReplication.lastRestoreTest") }}</span><strong>{{ policy.lastRestoreTestAt ? relative(policy.lastRestoreTestAt) : "—" }}</strong></div>
+            <div><span>{{ $t("stackReplication.restoreTestReport") }}</span><strong>{{ restoreReport }}</strong></div>
         </div>
+        <div v-if="restoreTestStale" class="alert alert-warning py-2 mt-3 mb-0">{{ $t("stackReplication.restoreTestStale") }}</div>
         <div v-if="policy.error" class="alert alert-danger py-2 mt-3 mb-0">{{ policy.error }}</div>
         <div v-if="policy.lastRestoreTestError" class="alert alert-danger py-2 mt-3 mb-0">{{ policy.lastRestoreTestError }}</div>
+        <div v-else-if="policy.lastRestoreTestWarnings?.length" class="alert alert-warning py-2 mt-3 mb-0">{{ policy.lastRestoreTestWarnings.join(" · ") }}</div>
         <div v-else-if="policy.cleanupWarning" class="alert alert-warning py-2 mt-3 mb-0">{{ policy.cleanupWarning }}</div>
         <div v-if="operationError" class="alert alert-danger py-2 mt-3 mb-0">{{ operationError }}</div>
     </div>
@@ -83,6 +86,25 @@ export default {
             }
             const seconds = Math.round(ms / 1000);
             return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+        },
+        restoreTestStale() {
+            if (!this.policy?.restoreTestEnabled || this.policy.status === "active") {
+                return false;
+            }
+            if (!this.policy.lastRestoreTestAt) {
+                return Boolean(this.policy.lastSuccessAt);
+            }
+            return this.now - new Date(this.policy.lastRestoreTestAt).getTime() > (this.policy.restoreTestIntervalHours || 168) * 2 * 3_600_000;
+        },
+        restoreReport() {
+            if (!Number.isFinite(this.policy?.lastRestoreTestBytes)) {
+                return "—";
+            }
+            const size = new Intl.NumberFormat(undefined, { style: "unit",
+                unit: "megabyte",
+                maximumFractionDigits: 1 }).format(this.policy.lastRestoreTestBytes / 1_000_000);
+            const started = this.policy.lastRestoreTestContainersStarted ? `, ${this.$t("stackReplication.servicesValidated")}` : "";
+            return `${this.policy.lastRestoreTestFiles || 0} ${this.$t("stackReplication.files")}, ${this.policy.lastRestoreTestMounts || 0} ${this.$t("stackReplication.mounts")}, ${size}${started}`;
         },
     },
     mounted() {

@@ -256,14 +256,18 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("testStackReplicaSnapshot", async (targetName: unknown, replicaId: unknown, callback: unknown) => {
+        agentSocket.on("testStackReplicaSnapshot", async (targetName: unknown, replicaId: unknown, startContainers: unknown, callback?: unknown) => {
             try {
+                if (typeof startContainers === "function") {
+                    callback = startContainers;
+                    startContainers = false;
+                }
                 checkLogin(socket);
-                if (typeof targetName !== "string" || typeof replicaId !== "string") {
+                if (typeof targetName !== "string" || typeof replicaId !== "string" || typeof startContainers !== "boolean") {
                     throw new ValidationError("Invalid replica recovery test request");
                 }
                 callbackResult({ ok: true,
-                    data: await testStackReplicaSnapshot(server, targetName, replicaId) }, callback);
+                    data: await testStackReplicaSnapshot(server, socket, targetName, replicaId, startContainers) }, callback);
             } catch (error) {
                 callbackError(error, callback);
             }

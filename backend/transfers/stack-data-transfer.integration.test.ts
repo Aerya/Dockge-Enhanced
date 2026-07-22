@@ -19,7 +19,7 @@ import {
     stageStackTransferDataTarget,
 } from "./stack-data-transfer";
 import { getStackTransferRepositories } from "./stack-transfer-restic";
-import { activateStackReplicaTarget, syncStackReplicaTarget } from "./stack-replication-target";
+import { activateStackReplicaTarget, syncStackReplicaTarget, testStackReplicaSnapshot } from "./stack-replication-target";
 
 const execFileAsync = promisify(execFile);
 const integrationAvailable = (() => {
@@ -325,6 +325,15 @@ test("refreshes a cold replica, rolls back a failed refresh and activates the st
         const restored = await execFileAsync("docker", [ "compose", "-p", targetName, "run", "--rm", "--no-deps", "worker", "sh", "-c", "cat /bind/value; cat /named/value" ], { cwd: path.join(root, targetName),
             timeout: 120_000 });
         assert.equal(restored.stdout, "bind-v2named-v2");
+
+        const recovery = await testStackReplicaSnapshot(context.server, context.socket, targetName, replicaId, true);
+        assert.equal(recovery.containersStarted, true);
+        assert.equal(recovery.mountsChecked, 2);
+        assert.equal(recovery.fileCount, 2);
+        assert.ok(recovery.bytesRead > 0);
+        assert.equal((await fs.readdir(root)).some(name => name.startsWith("dockge-recovery-")), false);
+        const recoveryVolumes = await execFileAsync("docker", [ "volume", "ls", "--format", "{{.Name}} {{.Labels}}" ]);
+        assert.doesNotMatch(recoveryVolumes.stdout, new RegExp(`com.docker.compose.project=dockge-recovery-${replicaId}`));
 
         const activated = await activateStackReplicaTarget(context.server, context.socket, targetName, replicaId);
         assert.ok(activated.activatedAt);
