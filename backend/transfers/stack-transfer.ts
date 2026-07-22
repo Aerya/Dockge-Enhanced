@@ -528,6 +528,31 @@ async function probeBindPath(hostPath: string): Promise<boolean | null> {
     }
 }
 
+async function ensureTargetBindPaths(paths: Iterable<string>): Promise<void> {
+    const uniquePaths = new Set(Array.from(paths)
+        .filter(hostPath => path.isAbsolute(hostPath))
+        .map(hostPath => path.normalize(hostPath)));
+    for (const hostPath of uniquePaths) {
+        if (hostPath === path.parse(hostPath).root) {
+            throw new ValidationError("Refusing to create the host root as a bind path");
+        }
+        if (await probeBindPath(hostPath) === true) {
+            continue;
+        }
+        await runDocker([
+            "run", "--rm", "--network", "none",
+            "--mount", "type=bind,src=/,dst=/host",
+            HELPER_IMAGE, "sh", "-c", "mkdir -p -- \"/host$1\"", "dockge-transfer", hostPath,
+        ], undefined, 120_000);
+    }
+}
+
+async function ensureComposeBindPaths(config: Record<string, unknown>): Promise<void> {
+    await ensureTargetBindPaths(Array.from(resolvedMounts(config).values())
+        .filter(mount => mount.type === "bind")
+        .map(mount => mount.source));
+}
+
 function publishedPorts(config: Record<string, unknown>): Array<{ service: string; published: string; protocol: string }> {
     const result: Array<{ service: string; published: string; protocol: string }> = [];
     for (const [ service, rawService ] of Object.entries(asRecord(config.services))) {
@@ -656,10 +681,10 @@ export async function preflightStackTransfer(server: DockgeServer, request: Stac
         if (mount.type === "bind" && path.isAbsolute(mount.targetSource)) {
             const exists = await probeBindPath(mount.targetSource);
             issues.push({
-                severity: exists === null ? "warning" : exists ? "success" : "error",
+                severity: exists === null ? "warning" : "success",
                 scope: "deploy",
-                code: exists === null ? "bind-unchecked" : exists ? "bind-found" : "bind-missing",
-                message: exists === null ? `${mount.targetSource}: target path could not be checked because the helper image is unavailable` : exists ? `${mount.targetSource}: target path is available` : `${mount.targetSource}: target path is missing or inaccessible`,
+                code: exists === null ? "bind-unchecked" : exists ? "bind-found" : "bind-create",
+                message: exists === null ? `${mount.targetSource}: target path could not be checked because the helper image is unavailable` : exists ? `${mount.targetSource}: target path is available` : `${mount.targetSource}: target path will be created automatically during deployment`,
                 params: { path: mount.targetSource },
             });
         }
@@ -995,6 +1020,7 @@ export async function importStackTransfer(server: DockgeServer, socket: DockgeSo
                     await advanceJob(previous, "deploying", 65);
                     const stack = await Stack.getStack(server, request.targetName);
                     const config = await resolvedComposeForStack(server, stack);
+                    await ensureComposeBindPaths(config);
                     await stack.deploy(socket);
                     await advanceJob(previous, "verifying", 85);
                     await verifyDeployment(server, request.targetName, Object.keys(asRecord(config.services)));
@@ -1058,9 +1084,10 @@ export async function importStackTransfer(server: DockgeServer, socket: DockgeSo
         if (request.deploy) {
             await advanceJob(job, "deploying", 65);
             const stack = await Stack.getStack(server, request.targetName);
+            const config = await resolvedComposeForStack(server, stack);
+            await ensureComposeBindPaths(config);
             await stack.deploy(socket);
             await advanceJob(job, "verifying", 85);
-            const config = preflight.config || {};
             await verifyDeployment(server, request.targetName, Object.keys(asRecord(config.services)));
         }
 
@@ -1094,12 +1121,14 @@ export async function importStackTransfer(server: DockgeServer, socket: DockgeSo
 
 export async function createImportedStackStorage(server: DockgeServer, targetName: string): Promise<void> {
     const stack = await Stack.getStack(server, targetName);
+    await ensureComposeBindPaths(await resolvedComposeForStack(server, stack));
     await runDocker(stack.getComposeOptions("create"), stack.fullPath, 30 * 60_000);
 }
 
 export async function deployAndVerifyImportedStack(server: DockgeServer, socket: DockgeSocket, targetName: string): Promise<void> {
     const stack = await Stack.getStack(server, targetName);
     const config = await resolvedComposeForStack(server, stack);
+    await ensureComposeBindPaths(config);
     await stack.deploy(socket);
     await verifyDeployment(server, targetName, Object.keys(asRecord(config.services)));
 }

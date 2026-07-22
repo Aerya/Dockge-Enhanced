@@ -242,7 +242,8 @@
     "stackTransfer.issue.compose-invalid": "Invalid Compose configuration: {error}",
     "stackTransfer.issue.port-conflict": "{service}: port {published}/{protocol} is already in use on the target.",
     "stackTransfer.issue.bind-found": "Target path {path} is available.",
-    "stackTransfer.issue.bind-missing": "Target path {path} is missing or inaccessible.",
+    "stackTransfer.issue.bind-create": "Target path {path} does not exist yet; it will be created automatically during deployment.",
+    "stackTransfer.issue.bind-missing": "Target path {path} does not exist yet; it will be created automatically during deployment.",
     "stackTransfer.issue.bind-unchecked": "Target path {path} could not be checked because the Docker helper image is unavailable.",
     "stackTransfer.issue.bind-relative-escape": "Relative path {path} escapes the target stack directory.",
     "stackTransfer.issue.mapping-empty": "{service}:{target}: a target source is required.",
@@ -844,8 +845,8 @@
     "stackTransfer.overwriteExisting": "Transactionally overwrite the existing target stack",
     "stackTransfer.overwriteExistingHint": "Dockge checks free space, requires the target to be stopped, keeps a rollback snapshot of its configuration and selected data, then restores the previous target automatically if any step fails.",
     "stackTransfer.overwriteConfirm": "Confirm the transactional replacement of the target stack? It must be stopped and will be restored automatically on failure.",
-    "stackTransfer.issue.space-insufficient": "Insufficient free space: {available} bytes available, {required} required.",
-    "stackTransfer.issue.space-available": "Free-space check passed: {available} bytes available.",
+    "stackTransfer.issue.space-insufficient": "Insufficient free space: {available} available, {required} required.",
+    "stackTransfer.issue.space-available": "Free-space check passed: {available} available.",
     "stackTransfer.issue.space-unchecked": "Free space could not be verified.",
     "stackTransfer.issue.target-running": "The target stack must be stopped before overwrite. Running services: {services}.",
     "stackTransfer.issue.target-state-unchecked": "The target stack state could not be verified.",
@@ -860,5 +861,6 @@
     "stackReplication.lastHealthcheck": "Last healthcheck",
     "stackReplication.health.passed": "passed",
     "stackReplication.health.failed": "failed",
-    "stackReplication.driftSuspended": "Replication was automatically suspended after detecting a target write or drift"
+    "stackReplication.driftSuspended": "Replication was automatically suspended after detecting a target write or drift",
+    "stackReplication.dataRequired": "Replica data"
 }

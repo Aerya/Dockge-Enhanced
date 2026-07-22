@@ -1,5 +1,5 @@
 <template>
-    <BModal v-model="visible" size="xl" :title="modalTitle" hide-footer @hidden="reset">
+    <BModal v-model="visible" size="xl" :title="modalTitle" content-class="stack-transfer-modal" hide-footer @hidden="reset">
         <div v-if="loading" class="text-center py-5">
             <span class="spinner-border me-2" />{{ $t("stackTransfer.loading") }}
         </div>
@@ -23,7 +23,7 @@
                         <label class="form-label">{{ $t("stackTransfer.targetName") }}</label>
                         <input v-model="targetName" class="form-control" maxlength="100" :disabled="operation === 'replicate' && Boolean(replicationId)" @input="invalidatePreflight" />
                     </div>
-                    <div class="col-md-3 d-flex align-items-end">
+                    <div v-if="operation !== 'replicate'" class="col-md-3 d-flex align-items-end">
                         <div class="form-check mb-2">
                             <input id="stack-transfer-deploy" v-model="deploy" type="checkbox" class="form-check-input" :disabled="operation === 'move' || operation === 'replicate'" @change="invalidatePreflight" />
                             <label for="stack-transfer-deploy" class="form-check-label">{{ $t("stackTransfer.deployTarget") }}</label>
@@ -37,9 +37,13 @@
                 </div>
 
                 <div class="shadow-box big-padding mb-4">
-                    <div class="form-check mb-3">
+                    <div v-if="operation !== 'replicate'" class="form-check mb-3">
                         <input id="stack-transfer-data" v-model="includeData" type="checkbox" class="form-check-input" :disabled="availableRepositories.length === 0 || operation === 'replicate'" @change="dataModeChanged" />
                         <label for="stack-transfer-data" class="form-check-label fw-semibold">{{ $t("stackTransfer.includeData") }}</label>
+                        <div class="form-text">{{ $t("stackTransfer.includeDataHint") }}</div>
+                    </div>
+                    <div v-else class="mb-3">
+                        <div class="fw-semibold">{{ $t("stackReplication.dataRequired") }}</div>
                         <div class="form-text">{{ $t("stackTransfer.includeDataHint") }}</div>
                     </div>
                     <div v-if="availableRepositories.length === 0" class="alert alert-secondary mb-0 py-2">
@@ -145,9 +149,9 @@
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <strong class="me-2">{{ $t("stackTransfer.filesCopied") }}</strong>
-                    <span v-for="file in copiedFiles" :key="file" class="badge bg-secondary me-1"><code>{{ file }}</code></span>
+                <div class="transfer-files mb-4">
+                    <strong>{{ $t("stackTransfer.filesCopied") }}</strong>
+                    <span v-for="file in copiedFiles" :key="file" class="badge bg-secondary"><code>{{ file }}</code></span>
                 </div>
 
                 <h5>{{ $t("stackTransfer.storageMapping") }}</h5>
@@ -941,7 +945,7 @@ export default {
                 size /= 1024;
                 unit++;
             }
-            return `${size.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
+            return `${new Intl.NumberFormat(this.$i18n.locale, { maximumFractionDigits: unit === 0 ? 0 : 1 }).format(size)} ${units[unit]}`;
         },
         confidenceClass(confidence) {
             return { high: "bg-success",
@@ -953,7 +957,13 @@ export default {
         },
         issueText(issue) {
             const key = `stackTransfer.issue.${issue.code}`;
-            return this.$te(key) ? this.$t(key, issue.params || {}) : issue.message;
+            const params = { ...(issue.params || {}) };
+            if ([ "space-available", "space-insufficient" ].includes(issue.code)) {
+                params.available = this.formatBytes(Number(params.available));
+                params.required = this.formatBytes(Number(params.required));
+            }
+            const translated = this.$t(key, params);
+            return translated === key ? issue.message : translated;
         },
     },
 };
@@ -964,6 +974,7 @@ export default {
     min-width: 900px;
     code { white-space: normal; }
 }
+.transfer-files { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; }
 .transfer-rules-summary { cursor: pointer; font-weight: 600; }
 .transfer-issues { display: grid; gap: .4rem; }
 .transfer-issue { display: flex; align-items: center; border-radius: .4rem; padding: .55rem .75rem; }
@@ -971,4 +982,32 @@ export default {
 .transfer-issue-warning { background: rgba(255, 193, 7, .14); color: #ffd76a; }
 .transfer-issue-error { background: rgba(220, 53, 69, .14); color: #ff8793; }
 .transfer-override-preview { max-height: 260px; overflow: auto; border-radius: .4rem; padding: .75rem; background: rgba(0, 0, 0, .25); font-size: .8rem; }
+</style>
+
+<style lang="scss">
+.dark .stack-transfer-modal {
+    .modal-title,
+    .form-label,
+    .form-check-label,
+    h5,
+    .transfer-files strong,
+    .transfer-rules-summary,
+    .fw-semibold {
+        color: #e5e7eb;
+    }
+
+    .form-text,
+    .text-muted {
+        color: #aab4c0 !important;
+    }
+
+    .form-check-input:disabled ~ .form-check-label {
+        color: #aab4c0;
+        opacity: 1;
+    }
+
+    .transfer-mapping-table code {
+        color: #536273;
+    }
+}
 </style>

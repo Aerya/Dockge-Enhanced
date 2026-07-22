@@ -236,7 +236,8 @@
     "stackTransfer.issue.compose-invalid": "Configuration Compose invalide : {error}",
     "stackTransfer.issue.port-conflict": "{service} : le port {published}/{protocol} est déjà utilisé sur la cible.",
     "stackTransfer.issue.bind-found": "Le chemin cible {path} est disponible.",
-    "stackTransfer.issue.bind-missing": "Le chemin cible {path} est absent ou inaccessible.",
+    "stackTransfer.issue.bind-create": "Le chemin cible {path} n’existe pas encore ; il sera créé automatiquement lors du déploiement.",
+    "stackTransfer.issue.bind-missing": "Le chemin cible {path} n’existe pas encore ; il sera créé automatiquement lors du déploiement.",
     "stackTransfer.issue.bind-unchecked": "Le chemin cible {path} n'a pas pu être vérifié car l'image auxiliaire Docker n'est pas disponible.",
     "stackTransfer.issue.bind-relative-escape": "Le chemin relatif {path} sort du dossier de la stack cible.",
     "stackTransfer.issue.mapping-empty": "{service}:{target} : une source cible est obligatoire.",
@@ -838,8 +839,8 @@
     "stackTransfer.overwriteExisting": "Écraser la stack cible existante de façon transactionnelle",
     "stackTransfer.overwriteExistingHint": "Dockge vérifie l’espace libre, arrête obligatoirement la cible, conserve un snapshot de rollback de sa configuration et de ses données sélectionnées, puis restaure automatiquement l’ancienne cible si une étape échoue.",
     "stackTransfer.overwriteConfirm": "Confirmer le remplacement transactionnel de la stack cible ? Elle doit être arrêtée et sera restaurée automatiquement en cas d’échec.",
-    "stackTransfer.issue.space-insufficient": "Espace libre insuffisant : {available} octets disponibles, {required} requis.",
-    "stackTransfer.issue.space-available": "Contrôle d’espace validé : {available} octets disponibles.",
+    "stackTransfer.issue.space-insufficient": "Espace libre insuffisant : {available} disponibles, {required} requis.",
+    "stackTransfer.issue.space-available": "Contrôle d’espace validé : {available} disponibles.",
     "stackTransfer.issue.space-unchecked": "L’espace libre n’a pas pu être vérifié.",
     "stackTransfer.issue.target-running": "La stack cible doit être arrêtée avant l’écrasement. Services actifs : {services}.",
     "stackTransfer.issue.target-state-unchecked": "L’état de la stack cible n’a pas pu être vérifié.",
@@ -854,5 +855,6 @@
     "stackReplication.lastHealthcheck": "Dernier healthcheck",
     "stackReplication.health.passed": "réussi",
     "stackReplication.health.failed": "échoué",
-    "stackReplication.driftSuspended": "Réplication suspendue automatiquement après détection d’une écriture ou d’une dérive sur la cible"
+    "stackReplication.driftSuspended": "Réplication suspendue automatiquement après détection d’une écriture ou d’une dérive sur la cible",
+    "stackReplication.dataRequired": "Données de la réplique"
 }
