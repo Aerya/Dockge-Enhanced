@@ -60,6 +60,13 @@ function sanitizeTimeoutMinutes(value: unknown, fallback = 10): number {
     return Math.min(120, Math.max(1, Math.floor(timeout)));
 }
 
+export function selectTrivyScanTarget(reportedImage: string, originalImage?: string): string {
+    if (/^[a-f0-9]{6,64}$/.test(reportedImage)) {
+        return reportedImage;
+    }
+    return originalImage || reportedImage;
+}
+
 interface ScannerSettings {
     enabled: boolean;
     intervalHours: number;
@@ -260,7 +267,7 @@ export class TrivyScanner {
             console.log("[TrivyScanner] Pull de ghcr.io/aquasecurity/trivy:latest...");
             await execAsync("docker pull ghcr.io/aquasecurity/trivy:latest");
 
-            let images: Array<{ image: string; stack: string }>;
+            let images: Array<{ image: string; stack: string; scanTarget?: string }>;
 
             if (targetImage) {
                 images = [{ image: targetImage, stack: "manuel" }];
@@ -268,8 +275,8 @@ export class TrivyScanner {
                 images = await this.getAllRunningImages();
             }
 
-            for (const { image, stack } of images) {
-                const result = await this.scanImage(image, stack);
+            for (const { image, stack, scanTarget } of images) {
+                const result = await this.scanImage(image, stack, scanTarget);
                 scanResults.push(result);
             }
 
@@ -337,7 +344,7 @@ export class TrivyScanner {
         return args.join(" ");
     }
 
-    private async scanImage(image: string, stack: string): Promise<ScanResult> {
+    private async scanImage(image: string, stack: string, scanTarget = image): Promise<ScanResult> {
         const result: ScanResult = {
             image,
             stack,
@@ -348,7 +355,7 @@ export class TrivyScanner {
 
         try {
             console.log(`[TrivyScanner] Scan de ${image}...`);
-            const command = this.buildTrivyCommand(image);
+            const command = this.buildTrivyCommand(scanTarget);
             const { stdout } = await execAsync(command, {
                 maxBuffer: 50 * 1024 * 1024,
                 timeout: sanitizeTimeoutMinutes(this.settings.scanTimeoutMinutes) * 60 * 1000,
@@ -378,7 +385,7 @@ export class TrivyScanner {
         return result;
     }
 
-    private async getAllRunningImages(): Promise<Array<{ image: string; stack: string }>> {
+    private async getAllRunningImages(): Promise<Array<{ image: string; stack: string; scanTarget?: string }>> {
         try {
             // Inclut l'ID du conteneur pour résoudre les images sans tag
             const { stdout } = await execAsync(
@@ -393,9 +400,10 @@ export class TrivyScanner {
                     return { id: id.trim(), image: image.trim(), stack: (stack || "unknown").trim() };
                 });
 
-            // Résout les hashes vers le nom d'origine via le config du conteneur.
+            // Garde le hash comme cible de scan locale et résout uniquement le nom d'affichage.
             // Cas typique : docker compose pull a mis à jour 'latest', l'ancien conteneur
-            // tourne encore sur l'image dé-taguée → {{.Image}} retourne un hash court.
+            // tourne encore sur l'image dé-taguée → le tag d'origine peut être privé et
+            // déclencherait sinon un pull distant sans credentials dans Trivy.
             const resolved = await Promise.all(entries.map(async e => {
                 if (/^[a-f0-9]{6,64}$/.test(e.image)) {
                     try {
@@ -403,7 +411,13 @@ export class TrivyScanner {
                             `docker inspect ${shellQuote(e.id)} --format '{{.Config.Image}}'`
                         );
                         const resolved = name.trim();
-                        if (resolved) return { image: resolved, stack: e.stack };
+                        if (resolved) {
+                            return {
+                                image: resolved,
+                                stack: e.stack,
+                                scanTarget: selectTrivyScanTarget(e.image, resolved),
+                            };
+                        }
                     } catch { /* garde le hash */ }
                 }
                 return { image: e.image, stack: e.stack };
