@@ -163,7 +163,7 @@
                                 <label for="name" class="form-label">{{ $t("dockgeAgent") }}</label>
                                 <select v-model="stack.endpoint" class="form-select">
                                     <option v-for="(agent, endpoint) in $root.agentList" :key="endpoint" :value="endpoint" :disabled="$root.agentStatusList[endpoint] != 'online'">
-                                        ({{ $root.agentStatusList[endpoint] }}) {{ (endpoint) ? endpoint : $t("currentEndpoint") }}
+                                        {{ agentOptionLabel(endpoint) }}
                                     </option>
                                 </select>
                             </div>
@@ -865,6 +865,20 @@ export default {
         }
     },
     methods: {
+        agentOptionLabel(endpoint) {
+            const name = this.$root.endpointDisplayFunction(endpoint);
+            const status = this.$root.agentStatusList[endpoint];
+            const statusLabel = status === "online"
+                ? this.$t("agentOnline")
+                : status === "offline"
+                    ? this.$t("agentOffline")
+                    : status ? this.$t(status) : "";
+            const technical = endpoint
+                ? name !== endpoint ? endpoint : ""
+                : this.$t("localInstance");
+            return [ name, technical, statusLabel ].filter(Boolean).join(" — ");
+        },
+
         relativeTime(iso) {
             if (!iso) {
                 return null;
