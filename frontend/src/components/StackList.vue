@@ -57,7 +57,7 @@
                         <strong>{{ stackSummary.scheduled }}</strong>
                     </button>
                 </div>
-                <div class="search-wrapper">
+                <div class="search-wrapper" :class="{ 'search-wrapper--single-agent': agentOptions.length <= 1 }">
                     <details v-if="agentOptions.length > 1" class="stack-agent-filter">
                         <summary class="stack-agent-select">
                             <span>{{ agentFilterLabel }}</span>
@@ -106,15 +106,17 @@
                         <option value="status">{{ $t("stackSortStatus") }}</option>
                         <option value="agent">{{ $t("stackSortAgent") }}</option>
                     </select>
-                    <a v-if="searchText == ''" class="search-icon">
-                        <font-awesome-icon icon="search" />
-                    </a>
-                    <a v-if="searchText != ''" class="search-icon" style="cursor: pointer" @click="clearSearchText">
-                        <font-awesome-icon icon="times" />
-                    </a>
-                    <form>
-                        <input v-model="searchText" class="form-control search-input" autocomplete="off" />
-                    </form>
+                    <div class="stack-search-field">
+                        <a v-if="searchText == ''" class="search-icon">
+                            <font-awesome-icon icon="search" />
+                        </a>
+                        <a v-if="searchText != ''" class="search-icon" style="cursor: pointer" @click="clearSearchText">
+                            <font-awesome-icon icon="times" />
+                        </a>
+                        <form>
+                            <input v-model="searchText" class="form-control search-input" autocomplete="off" />
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -767,11 +769,9 @@ export default {
 }
 
 .header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
 }
 
 .header-filter {
@@ -788,14 +788,16 @@ export default {
 }
 
 .search-wrapper {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(10.5rem, 1.35fr) 32px minmax(8.5rem, 1fr) minmax(9rem, 1.35fr);
     align-items: center;
-    flex: 1 1 22rem;
+    gap: 6px;
+    width: 100%;
     min-width: 0;
 }
 
 .stack-sort-select {
-    flex: 0 1 10em;
+    width: 100%;
     min-width: 0;
 }
 
@@ -805,7 +807,9 @@ export default {
     justify-content: space-between;
     gap: 8px;
     height: 31px;
-    min-width: 11em;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     padding: 5px 10px;
     border: 1px solid #ced4da;
     border-radius: .25rem;
@@ -824,6 +828,13 @@ export default {
         display: none;
     }
 
+    span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     svg {
         flex: 0 0 auto;
         font-size: .72rem;
@@ -837,9 +848,12 @@ export default {
 
 .stack-agent-filter {
     position: relative;
-    flex: 0 1 12em;
+    width: 100%;
     min-width: 0;
-    margin-right: 6px;
+}
+
+.search-wrapper--single-agent {
+    grid-template-columns: minmax(8.5rem, 1fr) minmax(9rem, 1.35fr);
 }
 
 .stack-agent-menu {
@@ -891,7 +905,6 @@ export default {
     min-width: 32px;
     height: 31px;
     padding: 0;
-    margin-right: 6px;
     border: 1px solid rgba(100, 116, 139, .28);
     color: #64748b;
 
@@ -911,7 +924,13 @@ export default {
     }
 }
 
-.search-wrapper form {
+.stack-search-field {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.stack-search-field form {
     flex: 1 1 auto;
     min-width: 0;
 }
@@ -972,13 +991,21 @@ export default {
     }
 }
 
-@media (max-width: 400px) {
-    .stack-sort-select {
-        flex-basis: 8.5em;
+@media (max-width: 600px) {
+    .search-wrapper {
+        grid-template-columns: minmax(0, 1fr) 32px;
     }
 
-    .stack-agent-select {
-        flex-basis: 9.5em;
+    .stack-sort-select {
+        grid-column: 1 / -1;
+    }
+
+    .stack-search-field {
+        grid-column: 1 / -1;
+    }
+
+    .search-wrapper--single-agent {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -999,7 +1026,7 @@ export default {
 
 .stack-summary {
     display: flex;
-    flex: 1 1 18rem;
+    width: 100%;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
