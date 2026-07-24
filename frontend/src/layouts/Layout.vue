@@ -10,8 +10,8 @@
         </div>
 
         <!-- Desktop header -->
-        <header v-if="! $root.isMobile" class="d-flex flex-wrap justify-content-center py-3 mb-3 border-bottom">
-            <div class="d-flex align-items-center mb-3 mb-md-0 me-md-auto">
+        <header v-if="! $root.isMobile" class="desktop-header py-3 mb-3 border-bottom">
+            <div class="desktop-brand d-flex align-items-center">
                 <router-link to="/" class="d-flex align-items-center text-dark text-decoration-none">
                     <object class="bi me-2 ms-4" width="40" height="40" data="/icon.svg" />
                     <span class="fs-4 title">Dockge-Enhanced</span>
@@ -25,23 +25,25 @@
                 </span>
             </div>
 
-            <a v-if="hasNewVersion" target="_blank" href="https://github.com/louislam/dockge/releases" class="btn btn-warning me-3">
-                <font-awesome-icon icon="arrow-alt-circle-up" /> {{ $t("newUpdate") }}
-            </a>
+            <div class="desktop-update-area">
+                <a v-if="hasNewVersion" target="_blank" href="https://github.com/louislam/dockge/releases" class="btn btn-warning">
+                    <font-awesome-icon icon="arrow-alt-circle-up" /> {{ $t("newUpdate") }}
+                </a>
 
-            <!-- Bannière mise à jour Dockge-Enhanced -->
-            <div v-if="selfUpdate.available && !selfUpdate.dismissed" class="self-update-banner me-3">
-                <font-awesome-icon icon="arrow-circle-up" class="me-1" />
-                Dockge-Enhanced : nouvelle version disponible —
-                <code class="mx-2">docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d</code>
-                <button class="btn-copy ms-1" @click="copyUpdateCmd" :title="selfUpdate.copied ? 'Copié !' : 'Copier'">
-                    {{ selfUpdate.copied ? '✓' : '⧉' }}
-                </button>
-                <button class="btn-dismiss ms-2" @click="selfUpdate.dismissed = true" title="Fermer">✕</button>
+                <!-- Bannière mise à jour Dockge-Enhanced -->
+                <div v-if="selfUpdate.available && !selfUpdate.dismissed" class="self-update-banner">
+                    <font-awesome-icon icon="arrow-circle-up" class="me-1" />
+                    Dockge-Enhanced : nouvelle version disponible —
+                    <code class="mx-2">docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d</code>
+                    <button class="btn-copy ms-1" @click="copyUpdateCmd" :title="selfUpdate.copied ? 'Copié !' : 'Copier'">
+                        {{ selfUpdate.copied ? '✓' : '⧉' }}
+                    </button>
+                    <button class="btn-dismiss ms-2" @click="selfUpdate.dismissed = true" title="Fermer">✕</button>
+                </div>
             </div>
 
             <!-- System Stats (desktop uniquement) -->
-            <div v-if="$root.loggedIn && systemStats" class="system-stats d-none d-lg-flex align-items-center gap-3 me-auto ms-4">
+            <div v-if="$root.loggedIn && systemStats" class="system-stats d-none d-lg-flex align-items-center">
                 <span class="stat-pill" :class="statClass(systemStats.cpu)" :title="cpuStatTooltip()">
                     <font-awesome-icon icon="microchip" class="me-1" />CPU
                     <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(systemStats.cpu)">
@@ -112,7 +114,7 @@
                 </span>
             </div>
 
-            <ul class="nav nav-pills">
+            <ul class="desktop-nav nav nav-pills">
                 <li v-if="$root.loggedIn" class="nav-item me-2">
                     <router-link to="/" class="nav-link">
                         <font-awesome-icon icon="home" /> {{ $t("home") }}
@@ -457,6 +459,34 @@ export default {
     }
 }
 
+.desktop-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "brand updates navigation"
+        "stats stats stats";
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    padding-inline: 1.5rem;
+}
+
+.desktop-brand {
+    grid-area: brand;
+    min-width: 0;
+}
+
+.desktop-update-area {
+    grid-area: updates;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+}
+
+.desktop-nav {
+    grid-area: navigation;
+    justify-self: end;
+}
+
 .self-update-banner {
     display: flex;
     align-items: center;
@@ -561,10 +591,15 @@ main {
 }
 
 .system-stats {
+    grid-area: stats;
+    justify-content: center;
+    justify-self: center;
+    width: min(100%, 80rem);
     font-size: 0.78rem;
     font-weight: 500;
     letter-spacing: 0.01em;
     flex-wrap: wrap;
+    gap: 0.35rem 1rem;
     row-gap: 0.35rem;
 }
 
@@ -621,7 +656,7 @@ main {
 }
 
 .nav {
-    margin-right: 25px;
+    margin-right: 0;
 }
 
 .lost-connection {
