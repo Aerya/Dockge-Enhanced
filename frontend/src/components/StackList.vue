@@ -991,7 +991,7 @@ export default {
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 900px) {
     .search-wrapper {
         grid-template-columns: minmax(0, 1fr) 32px;
     }
