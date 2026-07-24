@@ -21,10 +21,7 @@ import { InteractiveTerminal, Terminal } from "./terminal";
 import childProcessAsync from "promisify-child-process";
 import { Settings } from "./settings";
 import { intervals } from "./low-power";
-import { execFile } from "child_process";
-import { promisify } from "util";
-
-const execFileAsync = promisify(execFile);
+import { getVolumeSourceSize } from "./volume-usage";
 
 // ─── Cache court de getServiceStatusList (point #9 : éviter `docker inspect`
 // de TOUS les containers à chaque refresh / chaque onglet ouvert). TTL piloté
@@ -855,31 +852,11 @@ export class Stack {
         }).filter((container: StackContainerVolumeUsage) => container.mounts.length > 0)
             .sort((a: StackContainerVolumeUsage, b: StackContainerVolumeUsage) => a.service.localeCompare(b.service));
 
-        const sizeCache = new Map<string, Promise<{ size: number | null; error?: string }>>();
+        const sizeCache = new Map<string, ReturnType<typeof getVolumeSourceSize>>();
         const measure = (volume: StackVolumeMountUsage) => {
             const src = volume.type === "volume" && volume.name ? volume.name : volume.source;
             if (!sizeCache.has(src)) {
-                sizeCache.set(src, (async () => {
-                    try {
-                        const { stdout } = await execFileAsync("docker", [
-                            "run",
-                            "--rm",
-                            "--network",
-                            "none",
-                            "-v",
-                            `${src}:/mnt:ro`,
-                            process.env.DOCKGE_VOLUME_HELPER_IMAGE || "busybox:stable",
-                            "du",
-                            "-sb",
-                            "/mnt",
-                        ], { timeout: 120_000 });
-                        const first = String(stdout).trim().split(/\s+/)[0];
-                        const size = Number.parseInt(first, 10);
-                        return { size: Number.isFinite(size) ? size : null };
-                    } catch (e) {
-                        return { size: null, error: e instanceof Error ? e.message : String(e) };
-                    }
-                })());
+                sizeCache.set(src, getVolumeSourceSize(src));
             }
             return sizeCache.get(src)!;
         };
