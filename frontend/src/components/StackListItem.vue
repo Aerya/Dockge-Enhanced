@@ -1,5 +1,5 @@
 <template>
-    <router-link :to="url" :class="{ 'dim' : !stack.isManagedByDockge }" class="item">
+    <router-link :to="url" :class="{ 'dim' : !stack.isManagedByDockge }" :style="agentStyle" class="item">
         <Uptime :stack="stack" :fixed-width="true" class="me-2" />
         <div class="title">
             <span>{{ stackName }}</span>
@@ -36,6 +36,10 @@ export default {
         scheduled: {
             type: Boolean,
             default: false,
+        },
+        agentColors: {
+            type: Object,
+            default: null,
         },
         /** How many ancestors are above this stack */
         depth: {
@@ -81,6 +85,17 @@ export default {
         },
         stackName() {
             return this.stack.name;
+        },
+        agentStyle() {
+            if (!this.agentColors) {
+                return {};
+            }
+            return {
+                "--agent-color": this.agentColors.light,
+                "--agent-color-dark": this.agentColors.dark,
+                "--agent-tint": this.agentColors.tint,
+                "--agent-tint-dark": this.agentColors.darkTint,
+            };
         }
     },
     watch: {
@@ -149,6 +164,14 @@ export default {
     transition: all ease-in-out 0.15s;
     width: 100%;
     padding: 5px 8px;
+    border-inline-start: 4px solid var(--agent-color, transparent);
+    background: linear-gradient(90deg, var(--agent-tint, transparent), transparent 42%);
+
+    .dark & {
+        border-inline-start-color: var(--agent-color-dark, transparent);
+        background: linear-gradient(90deg, var(--agent-tint-dark, transparent), transparent 42%);
+    }
+
     &.disabled {
         opacity: 0.3;
     }
@@ -160,6 +183,15 @@ export default {
     }
     .title {
         margin-top: -4px;
+
+        > span:first-child {
+            color: var(--agent-color, inherit);
+            font-weight: 650;
+
+            .dark & {
+                color: var(--agent-color-dark, inherit);
+            }
+        }
     }
     .endpoint {
         font-size: 12px;

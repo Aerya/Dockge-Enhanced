@@ -58,18 +58,47 @@
                     </button>
                 </div>
                 <div class="search-wrapper">
-                    <label class="visually-hidden" for="stackAgentFilter">{{ $t("stackFilterInstanceLabel") }}</label>
-                    <select
+                    <details v-if="agentOptions.length > 1" class="stack-agent-filter">
+                        <summary class="form-select form-select-sm stack-agent-select">
+                            {{ agentFilterLabel }}
+                        </summary>
+                        <div class="stack-agent-menu shadow">
+                            <label class="stack-agent-option stack-agent-option--all">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    :checked="allAgentsSelected"
+                                    @change="selectAllAgents"
+                                />
+                                <span>{{ $t("stackFilterAllInstances") }}</span>
+                            </label>
+                            <label
+                                v-for="agent in agentOptions"
+                                :key="agent.endpoint"
+                                class="stack-agent-option"
+                            >
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    :checked="isAgentSelected(agent.endpoint)"
+                                    @change="toggleAgent(agent.endpoint)"
+                                />
+                                <span class="agent-color-dot" :style="agentColorStyle(agent.endpoint)"></span>
+                                <span>{{ agent.label }}</span>
+                            </label>
+                        </div>
+                    </details>
+                    <button
                         v-if="agentOptions.length > 1"
-                        id="stackAgentFilter"
-                        v-model="stackAgentFilter"
-                        class="form-select form-select-sm stack-agent-select"
+                        class="btn btn-sm stack-group-toggle"
+                        :class="{ active: stackGroupByAgent }"
+                        type="button"
+                        :title="$t('stackGroupByInstance')"
+                        :aria-pressed="stackGroupByAgent"
+                        @click="stackGroupByAgent = !stackGroupByAgent"
                     >
-                        <option value="__all__">{{ $t("stackFilterAllInstances") }}</option>
-                        <option v-for="agent in agentOptions" :key="agent.endpoint" :value="agent.endpoint">
-                            {{ agent.label }}
-                        </option>
-                    </select>
+                        <font-awesome-icon icon="layer-group" />
+                    </button>
                     <label class="visually-hidden" for="stackSort">{{ $t("stackSortLabel") }}</label>
                     <select id="stackSort" v-model="stackSort" class="form-select form-select-sm stack-sort-select">
                         <option value="status">{{ $t("stackSortStatus") }}</option>
@@ -113,16 +142,28 @@
                 <router-link to="/compose">{{ $t("addFirstStackMsg") }}</router-link>
             </div>
 
-            <StackListItem
-                v-for="(item, index) in sortedStackList"
-                :key="index"
-                :stack="item"
-                :isSelectMode="selectMode"
-                :isSelected="isSelected"
-                :scheduled="isStackScheduled(item.name, item.endpoint)"
-                :select="select"
-                :deselect="deselect"
-            />
+            <template v-for="group in stackListGroups" :key="group.endpoint || '__local__'">
+                <div
+                    v-if="stackGroupByAgent && agentOptions.length > 1"
+                    class="stack-agent-group"
+                    :style="agentColorStyle(group.endpoint)"
+                >
+                    <span class="agent-color-dot"></span>
+                    <strong>{{ group.label }}</strong>
+                    <span class="stack-agent-count">{{ group.stacks.length }}</span>
+                </div>
+                <StackListItem
+                    v-for="item in group.stacks"
+                    :key="`${item.endpoint || '__local__'}:${item.name}`"
+                    :stack="item"
+                    :agent-colors="agentColors(item.endpoint)"
+                    :isSelectMode="selectMode"
+                    :isSelected="isSelected"
+                    :scheduled="isStackScheduled(item.name, item.endpoint)"
+                    :select="select"
+                    :deselect="deselect"
+                />
+            </template>
         </div>
     </div>
 
@@ -161,7 +202,8 @@ export default {
             selectedStacks: {},
             windowTop: 0,
             stackStatusFilter: "all",
-            stackAgentFilter: localStorage.getItem("stackAgentFilter") || "__all__",
+            stackAgentFilters: this.loadAgentFilters(),
+            stackGroupByAgent: localStorage.getItem("stackGroupByAgent") !== "false",
             stackSort: localStorage.getItem("stackSort") || "status",
             filterState: {
                 status: null,
@@ -303,12 +345,44 @@ export default {
                 });
         },
 
+        allAgentsSelected() {
+            return this.stackAgentFilters.length === 0;
+        },
+
+        agentFilterLabel() {
+            if (this.allAgentsSelected) {
+                return this.$t("stackFilterAllInstances");
+            }
+            if (this.stackAgentFilters.length === 1) {
+                return this.$root.endpointDisplayFunction(this.stackAgentFilters[0]);
+            }
+            return this.$t("stackFilterSelectedInstances", [ this.stackAgentFilters.length ]);
+        },
+
         agentFilteredStacks() {
-            if (this.stackAgentFilter === "__all__") {
+            if (this.allAgentsSelected) {
                 return this.allStacks;
             }
 
-            return this.allStacks.filter(stack => (stack.endpoint || "") === this.stackAgentFilter);
+            return this.allStacks.filter(stack => this.stackAgentFilters.includes(stack.endpoint || ""));
+        },
+
+        stackListGroups() {
+            if (!this.stackGroupByAgent || this.agentOptions.length <= 1) {
+                return [{
+                    endpoint: "__all__",
+                    label: "",
+                    stacks: this.sortedStackList,
+                }];
+            }
+
+            return this.agentOptions
+                .map(agent => ({
+                    endpoint: agent.endpoint,
+                    label: agent.label,
+                    stacks: this.sortedStackList.filter(stack => (stack.endpoint || "") === agent.endpoint),
+                }))
+                .filter(group => group.stacks.length > 0);
         },
 
         stackSummary() {
@@ -357,12 +431,20 @@ export default {
     },
     watch: {
         agentOptions(options) {
-            if (this.stackAgentFilter !== "__all__" && !options.some(agent => agent.endpoint === this.stackAgentFilter)) {
-                this.stackAgentFilter = "__all__";
+            const available = new Set(options.map(agent => agent.endpoint));
+            const filtered = this.stackAgentFilters.filter(endpoint => available.has(endpoint));
+            if (filtered.length !== this.stackAgentFilters.length) {
+                this.stackAgentFilters = filtered;
             }
         },
-        stackAgentFilter(value) {
-            localStorage.setItem("stackAgentFilter", value);
+        stackAgentFilters: {
+            deep: true,
+            handler(value) {
+                localStorage.setItem("stackAgentFilters", JSON.stringify(value));
+            },
+        },
+        stackGroupByAgent(value) {
+            localStorage.setItem("stackGroupByAgent", String(value));
         },
         stackSort(value) {
             localStorage.setItem("stackSort", value);
@@ -405,6 +487,107 @@ export default {
         window.removeEventListener("scroll", this.onScroll);
     },
     methods: {
+        loadAgentFilters() {
+            try {
+                const stored = JSON.parse(localStorage.getItem("stackAgentFilters") || "[]");
+                if (Array.isArray(stored)) {
+                    return stored.filter(endpoint => typeof endpoint === "string");
+                }
+            } catch {
+                // Repli sur l'ancien filtre mono-instance.
+            }
+
+            const legacy = localStorage.getItem("stackAgentFilter");
+            return legacy && legacy !== "__all__" ? [ legacy ] : [];
+        },
+        selectAllAgents() {
+            this.stackAgentFilters = [];
+        },
+        isAgentSelected(endpoint) {
+            return this.allAgentsSelected || this.stackAgentFilters.includes(endpoint);
+        },
+        toggleAgent(endpoint) {
+            if (this.allAgentsSelected) {
+                this.stackAgentFilters = this.agentOptions
+                    .map(agent => agent.endpoint)
+                    .filter(candidate => candidate !== endpoint);
+                return;
+            }
+
+            if (this.stackAgentFilters.includes(endpoint)) {
+                const selected = this.stackAgentFilters.filter(candidate => candidate !== endpoint);
+                this.stackAgentFilters = selected.length === 0 ? [] : selected;
+            } else {
+                const selected = [ ...this.stackAgentFilters, endpoint ];
+                this.stackAgentFilters = selected.length === this.agentOptions.length ? [] : selected;
+            }
+        },
+        agentColorIndex(endpoint) {
+            const index = this.agentOptions.findIndex(agent => agent.endpoint === (endpoint || ""));
+            return Math.max(0, index) % 8;
+        },
+        agentColors(endpoint) {
+            const palettes = [
+                {
+                    light: "#1d4ed8",
+                    dark: "#60a5fa",
+                    tint: "rgba(37, 99, 235, .09)",
+                    darkTint: "rgba(96, 165, 250, .11)"
+                },
+                {
+                    light: "#047857",
+                    dark: "#34d399",
+                    tint: "rgba(5, 150, 105, .09)",
+                    darkTint: "rgba(52, 211, 153, .11)"
+                },
+                {
+                    light: "#b45309",
+                    dark: "#fbbf24",
+                    tint: "rgba(217, 119, 6, .10)",
+                    darkTint: "rgba(251, 191, 36, .11)"
+                },
+                {
+                    light: "#7e22ce",
+                    dark: "#c084fc",
+                    tint: "rgba(147, 51, 234, .09)",
+                    darkTint: "rgba(192, 132, 252, .11)"
+                },
+                {
+                    light: "#be123c",
+                    dark: "#fb7185",
+                    tint: "rgba(225, 29, 72, .09)",
+                    darkTint: "rgba(251, 113, 133, .11)"
+                },
+                {
+                    light: "#0e7490",
+                    dark: "#22d3ee",
+                    tint: "rgba(8, 145, 178, .09)",
+                    darkTint: "rgba(34, 211, 238, .11)"
+                },
+                {
+                    light: "#4d7c0f",
+                    dark: "#a3e635",
+                    tint: "rgba(101, 163, 13, .09)",
+                    darkTint: "rgba(163, 230, 53, .11)"
+                },
+                {
+                    light: "#c2410c",
+                    dark: "#fb923c",
+                    tint: "rgba(234, 88, 12, .09)",
+                    darkTint: "rgba(251, 146, 60, .11)"
+                },
+            ];
+            return palettes[this.agentColorIndex(endpoint)];
+        },
+        agentColorStyle(endpoint) {
+            const colors = this.agentColors(endpoint);
+            return {
+                "--agent-color": colors.light,
+                "--agent-color-dark": colors.dark,
+                "--agent-tint": colors.tint,
+                "--agent-tint-dark": colors.darkTint,
+            };
+        },
         /**
          * Handle user scroll
          * @returns {void}
@@ -592,9 +775,83 @@ export default {
 }
 
 .stack-agent-select {
+    min-width: 11em;
+    padding-right: 2rem;
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker {
+        display: none;
+    }
+}
+
+.stack-agent-filter {
+    position: relative;
     flex: 0 1 12em;
     min-width: 0;
     margin-right: 6px;
+}
+
+.stack-agent-menu {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 4px);
+    left: 0;
+    width: max-content;
+    min-width: 100%;
+    max-width: min(22rem, 85vw);
+    padding: 6px;
+    border: 1px solid rgba(100, 116, 139, .25);
+    border-radius: 8px;
+    background: #fff;
+
+    .dark & {
+        border-color: rgba(148, 163, 184, .22);
+        background: $dark-header-bg;
+    }
+}
+
+.stack-agent-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+        background: rgba(100, 116, 139, .10);
+    }
+}
+
+.stack-agent-option--all {
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(100, 116, 139, .18);
+    border-radius: 6px 6px 0 0;
+}
+
+.stack-group-toggle {
+    flex: 0 0 auto;
+    margin-right: 6px;
+    border: 1px solid rgba(100, 116, 139, .28);
+    color: #64748b;
+
+    &.active {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, .12);
+        color: #2563eb;
+    }
+
+    .dark & {
+        color: #94a3b8;
+
+        &.active {
+            border-color: #60a5fa;
+            color: #60a5fa;
+        }
+    }
 }
 
 .search-wrapper form {
@@ -611,6 +868,51 @@ export default {
     flex: 1 1 0;
     min-height: 0;
     height: auto;
+}
+
+.stack-agent-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    margin: 6px 2px 4px;
+    padding: 6px 10px;
+    border-inline-start: 4px solid var(--agent-color);
+    border-radius: 7px;
+    background: var(--agent-tint);
+    color: var(--agent-color);
+    font-size: .82rem;
+
+    .dark & {
+        border-inline-start-color: var(--agent-color-dark);
+        background: var(--agent-tint-dark);
+        color: var(--agent-color-dark);
+    }
+}
+
+.agent-color-dot {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 9px;
+    border-radius: 50%;
+    background: var(--agent-color);
+
+    .dark & {
+        background: var(--agent-color-dark);
+    }
+}
+
+.stack-agent-count {
+    margin-left: auto;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, .08);
+    color: inherit;
+    font-weight: 700;
+
+    .dark & {
+        background: rgba(255, 255, 255, .10);
+    }
 }
 
 @media (max-width: 400px) {
