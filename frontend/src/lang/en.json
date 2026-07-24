@@ -177,6 +177,7 @@
     "renameAgent": "Rename instance",
     "saveAgentName": "Save name",
     "stackSortLabel": "Sort stacks",
+    "stackSortName": "Sort: name",
     "stackSortStatus": "Sort: status",
     "stackSortAgent": "Sort: instance",
     "stackTransfer.copyAction": "Copy to…",

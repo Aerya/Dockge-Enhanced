@@ -171,6 +171,7 @@
     "saveAgentName": "Enregistrer le nom",
     "cancel": "Annuler",
     "stackSortLabel": "Trier les stacks",
+    "stackSortName": "Tri : nom",
     "stackSortStatus": "Tri : statut",
     "stackSortAgent": "Tri : instance",
     "stackTransfer.copyAction": "Copier vers…",

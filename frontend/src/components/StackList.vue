@@ -59,8 +59,9 @@
                 </div>
                 <div class="search-wrapper">
                     <details v-if="agentOptions.length > 1" class="stack-agent-filter">
-                        <summary class="form-select form-select-sm stack-agent-select">
-                            {{ agentFilterLabel }}
+                        <summary class="stack-agent-select">
+                            <span>{{ agentFilterLabel }}</span>
+                            <font-awesome-icon icon="chevron-down" />
                         </summary>
                         <div class="stack-agent-menu shadow">
                             <label class="stack-agent-option stack-agent-option--all">
@@ -101,6 +102,7 @@
                     </button>
                     <label class="visually-hidden" for="stackSort">{{ $t("stackSortLabel") }}</label>
                     <select id="stackSort" v-model="stackSort" class="form-select form-select-sm stack-sort-select">
+                        <option value="name">{{ $t("stackSortName") }}</option>
                         <option value="status">{{ $t("stackSortStatus") }}</option>
                         <option value="agent">{{ $t("stackSortAgent") }}</option>
                     </select>
@@ -203,8 +205,8 @@ export default {
             windowTop: 0,
             stackStatusFilter: "all",
             stackAgentFilters: this.loadAgentFilters(),
-            stackGroupByAgent: localStorage.getItem("stackGroupByAgent") !== "false",
-            stackSort: localStorage.getItem("stackSort") || "status",
+            stackGroupByAgent: this.loadStackGrouping(),
+            stackSort: this.loadStackSort(),
             filterState: {
                 status: null,
                 active: null,
@@ -276,6 +278,10 @@ export default {
             });
 
             result.sort((m1, m2) => {
+
+                if (this.stackSort === "name") {
+                    return m1.name.localeCompare(m2.name, undefined, { sensitivity: "base" });
+                }
 
                 if (this.stackSort === "agent") {
                     const agent1 = this.$root.endpointDisplayFunction(m1.endpoint || "");
@@ -487,6 +493,25 @@ export default {
         window.removeEventListener("scroll", this.onScroll);
     },
     methods: {
+        loadStackSort() {
+            const stored = localStorage.getItem("stackSort");
+            const migrationKey = "stackSortNameDefaultV1";
+            if (!localStorage.getItem(migrationKey)) {
+                localStorage.setItem(migrationKey, "true");
+                localStorage.setItem("stackSort", "name");
+                return "name";
+            }
+            return [ "name", "status", "agent" ].includes(stored) ? stored : "name";
+        },
+        loadStackGrouping() {
+            const migrationKey = "stackGroupOptionalV1";
+            if (!localStorage.getItem(migrationKey)) {
+                localStorage.setItem(migrationKey, "true");
+                localStorage.setItem("stackGroupByAgent", "false");
+                return false;
+            }
+            return localStorage.getItem("stackGroupByAgent") === "true";
+        },
         loadAgentFilters() {
             try {
                 const stored = JSON.parse(localStorage.getItem("stackAgentFilters") || "[]");
@@ -775,14 +800,39 @@ export default {
 }
 
 .stack-agent-select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    height: 31px;
     min-width: 11em;
-    padding-right: 2rem;
+    padding: 5px 10px;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    background: #fff;
+    color: #212529;
     cursor: pointer;
     list-style: none;
+
+    .dark & {
+        border-color: #495057;
+        background: #111827;
+        color: #e5e7eb;
+    }
 
     &::-webkit-details-marker {
         display: none;
     }
+
+    svg {
+        flex: 0 0 auto;
+        font-size: .72rem;
+        transition: transform .15s ease;
+    }
+}
+
+.stack-agent-filter[open] .stack-agent-select svg {
+    transform: rotate(180deg);
 }
 
 .stack-agent-filter {
@@ -834,6 +884,13 @@ export default {
 
 .stack-group-toggle {
     flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 31px;
+    padding: 0;
     margin-right: 6px;
     border: 1px solid rgba(100, 116, 139, .28);
     color: #64748b;
