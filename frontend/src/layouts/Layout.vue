@@ -268,7 +268,7 @@ export default {
         this.fetchKulaStatus();
         // Poll system stats : cadence selon le mode + pause si onglet caché
         this.statsPoller = makePoller({
-            fetch:    () => this.fetchSystemStats(),
+            fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus() ]),
             interval: POLL.system,
         });
         this.statsPoller.start();
@@ -327,7 +327,11 @@ export default {
                 const data = await res.json();
                 if (data.ok) this.systemStats = data.data;
                 setLowPower(data.lowPowerMode);
-            } catch { /* silencieux */ }
+            } catch {
+                // Ne jamais conserver un lien Kula périmé si le service est
+                // désactivé, supprimé ou temporairement injoignable.
+                this.kulaUrl = null;
+            }
         },
 
         statClass(percent) {
