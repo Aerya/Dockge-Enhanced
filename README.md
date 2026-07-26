@@ -28,11 +28,13 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | Area | Dockge Enhanced adds |
 | --- | --- |
 | **Multi-instance** | Instance names, multi-server selection and color-coded grouping, transactional copy/migration, resumable jobs, and automatic cold replication with no repository setup |
+| **Stack management** | Per-stack and per-container actions, Build + Recreate, scheduling, notes, manual Git, and safeguards for services sharing a VPN network |
 | **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
+| **Automation & audit** | REST API scoped by permissions and stacks, per-stack webhooks, Home Assistant examples, and centralized history with origin and duration |
+| **Docker resources** | Images, volumes, unmanaged containers and networks, bulk actions, auto-prune, and safeguards for risky deletions |
 | **Images & security** | Update monitoring, auto-update with rollback, Trivy scans, and CVE exceptions |
 | **Monitoring** | System, stack, and container stats, crash loops, healthcheck auto-heal, enhanced logs, and optional Kula integration |
-| **Docker management** | Images, volumes, unmanaged containers and networks, per-container Compose actions, bulk actions, and safeguards for risky deletions |
-| **Automation & integrations** | Scoped REST API and webhooks, Home Assistant, manual Git, optional PlugNPiN and label assistant |
+| **Integrations** | Optional PlugNPiN and per-service label assistant for Nginx Proxy Manager, Pi-hole, and AdGuard Home |
 | **Notifications & access** | Discord, Apprise, 2FA, trusted proxy, Turnstile, and mobile clients |
 
 

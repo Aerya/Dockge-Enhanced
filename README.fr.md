@@ -28,11 +28,13 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
 | **Multi-instance** | Noms d'instances, sélection multiple et regroupement coloré par serveur, copie/migration transactionnelle, jobs reprenables et réplication froide automatique sans dépôt à configurer |
+| **Gestion des stacks** | Actions par stack et conteneur, Build + Recreate, planification, notes, Git manuel et protections pour les services partageant le réseau d'un VPN |
 | **Sauvegarde & reprise** | Restic multi-destination, volumes, cohérence par stack, restauration sélective, tests et diffs de snapshots |
+| **Automatisation & audit** | API REST limitée par droits et stacks, webhooks par stack, exemples Home Assistant et historique central avec origine et durée |
+| **Ressources Docker** | Images, volumes, conteneurs hors Dockge et réseaux, actions groupées, auto-prune et protections contre les suppressions risquées |
 | **Images & sécurité** | Surveillance des mises à jour, auto-update avec rollback, scan Trivy et exceptions CVE |
 | **Supervision** | Stats système, stacks et conteneurs, crash loops, healthchecks avec auto-heal, logs enrichis et Kula optionnel |
-| **Gestion Docker** | Images, volumes, conteneurs et réseaux hors Dockge, actions Compose par conteneur, actions groupées et protections contre les suppressions risquées |
-| **Automatisation & intégrations** | API REST et webhooks à droits limités, Home Assistant, Git manuel, PlugNPiN optionnel et assistant de labels |
+| **Intégrations** | PlugNPiN optionnel et assistant de labels par service pour Nginx Proxy Manager, Pi-hole et AdGuard Home |
 | **Notifications & accès** | Discord, Apprise, 2FA, trusted proxy, Turnstile et clients mobiles |
 
 
