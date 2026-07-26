@@ -32,12 +32,15 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 | **Images & sécurité** | Surveillance des mises à jour, auto-update avec rollback, scan Trivy et exceptions CVE |
 | **Supervision** | Stats système, stacks et conteneurs, crash loops, healthchecks avec auto-heal, logs enrichis et Kula optionnel |
 | **Gestion Docker** | Images, volumes et conteneurs hors Dockge, actions Compose par conteneur, actions groupées et protections contre les suppressions risquées |
+| **Intégrations** | Gestion optionnelle de PlugNPiN et assistant de labels par service pour NPM, Pi-hole et AdGuard Home |
 | **Notifications & accès** | Discord, Apprise, 2FA, trusted proxy, Turnstile et clients mobiles |
 
 Les différences principales restent visibles ci-dessus ; le catalogue détaillé est conservé ci-dessous pour documenter précisément les écarts avec Dockge et les autres forks sans allonger la lecture initiale.
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
+
+**2026-07-26 — Intégration PlugNPiN facultative** — **Paramètres → Intégrations** permet d’activer explicitement un contrôleur [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN) épinglé, qui publie les conteneurs étiquetés dans Nginx Proxy Manager et, au choix, Pi-hole ou AdGuard Home. L’intégration est désactivée par défaut et ne crée aucune stack ni aucun conteneur avant sa sauvegarde comme active. Dockge génère une stack Compose dédiée avec un Docker Socket Proxy en lecture seule, conserve les mots de passe hors des réglages et du Compose dans un volume Docker aux permissions restreintes monté sur `/run/secrets`, affiche l’état, les commandes démarrer/arrêter/redémarrer et des logs bornés, puis journalise les changements dans l’audit. L’éditeur Compose reçoit aussi un assistant facultatif de labels par service avec aperçu YAML ; il préserve les labels sous forme de mapping et refuse de réécrire automatiquement ceux sous forme de liste.
 
 **2026-07-24 — Liste de stacks multi-serveurs** — La liste peut afficher n’importe quelle combinaison de serveurs Dockge locaux et distants grâce à un sélecteur à cases à cocher. Un bouton indépendant regroupe les stacks sous des en-têtes par serveur avec compteurs actualisés, tandis qu’une couleur stable identifie chaque serveur sur son en-tête, ses lignes et les noms de ses stacks. Le tri alphabétique global par nom reste l’affichage par défaut, à côté des tris par statut et par instance. Des palettes dédiées préservent le contraste dans les thèmes clair et sombre ; le navigateur mémorise la sélection et le regroupement tout en migrant automatiquement l’ancienne préférence mono-instance.
 
@@ -307,6 +310,18 @@ Ouvre **http://localhost:5001**, crée ton compte admin, puis clique sur **Surve
 >       - /mnt/data:/mnt/data:ro
 > ```
 
+### Intégration PlugNPiN facultative
+
+Ouvre **Paramètres → Intégrations** pour configurer [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN). L’intégration reste totalement inactive tant que **Activer PlugNPiN** n’est pas sélectionné et sauvegardé. Son activation crée la stack gérée `plugnpin-dockge-enhanced` ; sa désactivation exécute Compose down puis retire le dossier généré.
+
+Les identifiants Nginx Proxy Manager sont obligatoires pour PlugNPiN. Pi-hole, AdGuard Home, les métriques et les logs debug restent facultatifs et indépendants. Les mots de passe sont écrits via l’entrée standard dans le volume Docker dédié `dockge_enhanced_plugnpin_secrets` ; ils ne sont jamais renvoyés au navigateur ni inclus dans le Compose généré.
+
+Pour publier un service, édite sa stack puis utilise **Publication PlugNPiN (facultative)** sous l’éditeur Compose. L’assistant génère et peut appliquer les labels obligatoires `plugNPiN.ip` et `plugNPiN.url`, ainsi que les options NPM sélectionnées. Les commentaires et labels existants sous forme de mapping sont préservés. Pour les labels sous forme de liste, Dockge fournit volontairement uniquement le YAML à copier au lieu de réécrire la structure existante.
+
+> La désactivation du contrôleur arrête ses conteneurs, mais ne peut pas garantir la suppression immédiate des entrées qu’il a créées lorsque les conteneurs applicatifs étiquetés fonctionnent encore. Retire les labels ou arrête les applications concernées pendant que PlugNPiN fonctionne si ces entrées doivent d’abord être supprimées.
+
+> PlugNPiN `1.0.0` est actuellement publié en amont uniquement pour `amd64`. Dockge maintient l’intégration désactivée avec un message explicite sur les architectures non prises en charge ; le reste de Dockge Enhanced demeure multi-architecture.
+
 ---
 
 ## Variables d'environnement
@@ -404,6 +419,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 - [**Restic**](https://restic.net/) — outil de backup chiffré
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
 - [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
+- [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) par DeepSpace2 — automatisation optionnelle du DNS et de Nginx Proxy Manager (GPLv3)
 
 ---
 

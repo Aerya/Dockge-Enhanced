@@ -412,6 +412,12 @@
                     </div>
 
                     <div v-if="isEditMode">
+                        <PlugNPiNLabelAssistant
+                            v-if="plugNPiNEnabled && !endpoint && logServiceOptions.length > 0"
+                            :services="logServiceOptions"
+                            @apply="applyPlugNPiNLabels"
+                        />
+
                         <!-- Volumes -->
                         <div v-if="false">
                             <h4 class="mb-3">{{ $tc("volume", 2) }}</h4>
@@ -505,6 +511,8 @@ import StackScheduleEditor from "../components/StackScheduleEditor.vue";
 import StackTransferModal from "../components/StackTransferModal.vue";
 import StackReplicationStatus from "../components/StackReplicationStatus.vue";
 import PendingStackMoveStatus from "../components/PendingStackMoveStatus.vue";
+import PlugNPiNLabelAssistant from "../components/PlugNPiNLabelAssistant.vue";
+import { applyPlugNPiNLabelsToCompose, PlugNPiNSequenceLabelsError } from "../plugnpin-labels";
 import { useStackSchedules } from "../composables/useStackSchedules";
 
 const template = `
@@ -531,6 +539,7 @@ export default {
         StackTransferModal,
         StackReplicationStatus,
         PendingStackMoveStatus,
+        PlugNPiNLabelAssistant,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
@@ -628,6 +637,7 @@ export default {
             serviceActionProcessing: {},
             schedulerToggleSaving: false,
             stackActionLabels: localStorage.getItem("stackActionLabels") === "1",
+            plugNPiNEnabled: false,
         };
     },
     computed: {
@@ -817,6 +827,7 @@ export default {
         }
     },
     mounted() {
+        this.loadPlugNPiNIntegrationStatus();
         if (this.isAdd) {
             this.processing = false;
             this.isEditMode = true;
@@ -865,6 +876,37 @@ export default {
         }
     },
     methods: {
+        async loadPlugNPiNIntegrationStatus() {
+            try {
+                const token = this.$root.getSocket().token;
+                const response = await fetch("/api/integrations/plugnpin/settings", {
+                    headers: { "Authorization": `Bearer ${token}` },
+                });
+                if (!response.ok) {
+                    return;
+                }
+                const payload = await response.json();
+                this.plugNPiNEnabled = payload.ok === true && payload.data?.enabled === true;
+            } catch {
+                // The optional integration must never affect the Compose page.
+                this.plugNPiNEnabled = false;
+            }
+        },
+
+        applyPlugNPiNLabels({ service, labels }) {
+            try {
+                this.stack.composeYAML = applyPlugNPiNLabelsToCompose(this.stack.composeYAML, service, labels);
+                this.yamlCodeChange();
+                this.$root.toastSuccess(this.$t("plugnpin.labels.applied"));
+            } catch (error) {
+                if (error instanceof PlugNPiNSequenceLabelsError) {
+                    this.$root.toastError(this.$t("plugnpin.labels.sequenceUnsupported"));
+                    return;
+                }
+                this.$root.toastError(error instanceof Error ? error.message : String(error));
+            }
+        },
+
         agentOptionLabel(endpoint) {
             const name = this.$root.endpointDisplayFunction(endpoint);
             const status = this.$root.agentStatusList[endpoint];

@@ -16,6 +16,7 @@ import Appearance from "./components/settings/Appearance.vue";
 import General from "./components/settings/General.vue";
 const Security = () => import("./components/settings/Security.vue");
 const GlobalEnv = () => import("./components/settings/GlobalEnv.vue");
+const Integrations = () => import("./components/settings/Integrations.vue");
 import About from "./components/settings/About.vue";
 
 const routes = [
@@ -91,6 +92,10 @@ const routes = [
                             {
                                 path: "globalEnv",
                                 component: GlobalEnv,
+                            },
+                            {
+                                path: "integrations",
+                                component: Integrations,
                             },
                             {
                                 path: "about",
