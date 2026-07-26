@@ -104,6 +104,7 @@
             <tr>
               <th>{{ $t("watcher.audit.date") }}</th>
               <th>{{ $t("watcher.audit.user") }}</th>
+              <th>{{ $t("watcher.audit.origin") }}</th>
               <th>{{ $t("watcher.audit.action") }}</th>
               <th>{{ $t("watcher.audit.target") }}</th>
               <th>{{ $t("watcher.audit.status") }}</th>
@@ -114,6 +115,10 @@
             <tr v-for="entry in entries" :key="entry.id">
               <td class="audit-date">{{ fmtDate(entry.timestamp) }}</td>
               <td>{{ entry.username || "system" }}</td>
+              <td>
+                <span>{{ operationOrigin(entry) }}</span>
+                <small v-if="operationDuration(entry)" class="d-block audit-muted">{{ operationDuration(entry) }}</small>
+              </td>
               <td><code>{{ entry.action }}</code></td>
               <td>
                 <span class="audit-target">
@@ -311,6 +316,32 @@ function nextPage() {
 
 function formatMetadata(metadata: unknown) {
   return JSON.stringify(metadata, null, 2);
+}
+
+function operationOrigin(entry: AuditEntry) {
+  const metadata = entry.metadata as { origin?: unknown } | null;
+  if (typeof metadata?.origin === "string") {
+    return metadata.origin;
+  }
+  if (entry.username?.startsWith("api:")) {
+    return "api";
+  }
+  if (entry.username?.startsWith("webhook:")) {
+    return "webhook";
+  }
+  return entry.username === "system" ? "system" : "manual";
+}
+
+function operationDuration(entry: AuditEntry) {
+  const metadata = entry.metadata as { durationMs?: unknown } | null;
+  const durationMs = Number(metadata?.durationMs);
+  if (!Number.isFinite(durationMs) || durationMs < 0) {
+    return "";
+  }
+  if (durationMs < 1000) {
+    return `${Math.round(durationMs)} ms`;
+  }
+  return `${(durationMs / 1000).toFixed(durationMs < 10000 ? 1 : 0)} s`;
 }
 
 onMounted(async () => {

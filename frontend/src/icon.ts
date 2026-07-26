@@ -92,6 +92,11 @@ import {
     faRecycle,
     faBoxesStacked,
     faVial,
+    faHammer,
+    faNoteSticky,
+    faDiagramProject,
+    faCodeBranch,
+    faCloudArrowUp,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -185,6 +190,11 @@ library.add(
     faRecycle,
     faBoxesStacked,
     faVial,
+    faHammer,
+    faNoteSticky,
+    faDiagramProject,
+    faCodeBranch,
+    faCloudArrowUp,
 );
 
 export { FontAwesomeIcon };

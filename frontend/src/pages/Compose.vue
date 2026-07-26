@@ -82,6 +82,11 @@
                         <span class="stack-action-label">{{ $t("pullAndRecreateStack") }}</span>
                     </button>
 
+                    <button v-if="!isEditMode && buildServices.length > 0" class="btn btn-normal stack-action" :title="$t('buildAndRecreateStack')" :aria-label="$t('buildAndRecreateStack')" :disabled="processing" @click="buildAndRecreateStack">
+                        <font-awesome-icon icon="hammer" />
+                        <span class="stack-action-label">{{ $t("buildAndRecreateStack") }}</span>
+                    </button>
+
                     <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('stopStack')" :aria-label="$t('stopStack')" :disabled="processing" @click="stopStack">
                         <font-awesome-icon icon="stop" />
                         <span class="stack-action-label">{{ $t("stopStack") }}</span>
@@ -131,6 +136,31 @@
                     <span class="badge bg-secondary me-2">{{ url.display }}</span>
                 </a>
             </div>
+
+            <div v-if="!isAdd && stack.isManagedByDockge" class="shadow-box big-padding mb-3">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                    <h5 class="settings-subheading mb-0">
+                        <font-awesome-icon icon="note-sticky" class="me-2" />{{ $t("stackNote.heading") }}
+                    </h5>
+                    <button v-if="isEditMode" class="btn btn-sm btn-primary" type="button" :disabled="noteSaving" @click="saveStackNote">
+                        <font-awesome-icon :icon="noteSaving ? 'spinner' : 'save'" :spin="noteSaving" class="me-1" />{{ $t("Save") }}
+                    </button>
+                </div>
+                <textarea
+                    v-model="stack.note"
+                    class="form-control"
+                    rows="4"
+                    maxlength="10000"
+                    :readonly="!isEditMode"
+                    :placeholder="$t('stackNote.placeholder')"
+                />
+                <div class="form-text text-warning">{{ $t("stackNote.secretWarning") }}</div>
+            </div>
+
+            <StackGitPanel
+                v-if="!isAdd && stack.isManagedByDockge && !endpoint"
+                :stack-name="stack.name"
+            />
 
             <!-- Progress Terminal -->
             <transition name="slide-fade" appear>
@@ -512,6 +542,7 @@ import StackTransferModal from "../components/StackTransferModal.vue";
 import StackReplicationStatus from "../components/StackReplicationStatus.vue";
 import PendingStackMoveStatus from "../components/PendingStackMoveStatus.vue";
 import PlugNPiNLabelAssistant from "../components/PlugNPiNLabelAssistant.vue";
+import StackGitPanel from "../components/StackGitPanel.vue";
 import { applyPlugNPiNLabelsToCompose, PlugNPiNSequenceLabelsError } from "../plugnpin-labels";
 import { useStackSchedules } from "../composables/useStackSchedules";
 
@@ -540,6 +571,7 @@ export default {
         StackReplicationStatus,
         PendingStackMoveStatus,
         PlugNPiNLabelAssistant,
+        StackGitPanel,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
@@ -638,6 +670,7 @@ export default {
             schedulerToggleSaving: false,
             stackActionLabels: localStorage.getItem("stackActionLabels") === "1",
             plugNPiNEnabled: false,
+            noteSaving: false,
         };
     },
     computed: {
@@ -690,6 +723,17 @@ export default {
 
         active() {
             return this.status === RUNNING;
+        },
+
+        buildServices() {
+            const services = this.jsonConfig?.services;
+            if (!services || Array.isArray(services) || typeof services !== "object") {
+                return this.stack.buildServices ?? [];
+            }
+            return Object.entries(services)
+                .filter(([, service]) => service && typeof service === "object" && Object.prototype.hasOwnProperty.call(service, "build") && service.build !== null)
+                .map(([ name ]) => name)
+                .sort();
         },
 
         terminalName() {
@@ -854,6 +898,7 @@ export default {
                 composeYAML,
                 composeENV,
                 composeOverrideYAML: "",
+                note: "",
                 isManagedByDockge: true,
                 endpoint: "",
             };
@@ -1317,6 +1362,28 @@ export default {
             this.$root.emitAgent(this.endpoint, "pullAndRecreateStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
+            });
+        },
+
+        buildAndRecreateStack() {
+            if (!confirm(this.$t("buildAndRecreateStackMsg", { services: this.buildServices.join(", ") }))) {
+                return;
+            }
+            this.processing = true;
+            this.$root.emitAgent(this.endpoint, "buildAndRecreateStack", this.stack.name, (res) => {
+                this.processing = false;
+                this.$root.toastRes(res);
+            });
+        },
+
+        saveStackNote() {
+            this.noteSaving = true;
+            this.$root.emitAgent(this.endpoint, "saveStackNote", this.stack.name, this.stack.note ?? "", (res) => {
+                this.noteSaving = false;
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.stack.note = res.note;
+                }
             });
         },
 
