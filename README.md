@@ -31,13 +31,15 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
 | **Images & security** | Update monitoring, auto-update with rollback, Trivy scans, and CVE exceptions |
 | **Monitoring** | System, stack, and container stats, crash loops, healthcheck auto-heal, enhanced logs, and optional Kula integration |
-| **Docker management** | Images, volumes, unmanaged containers, per-container Compose actions, bulk actions, and safeguards for risky deletions |
-| **Integrations** | Optional PlugNPiN lifecycle management and per-service label assistant for NPM, Pi-hole, and AdGuard Home |
+| **Docker management** | Images, volumes, unmanaged containers and networks, per-container Compose actions, bulk actions, and safeguards for risky deletions |
+| **Automation & integrations** | Scoped REST API and webhooks, Home Assistant, manual Git, optional PlugNPiN and label assistant |
 | **Notifications & access** | Discord, Apprise, 2FA, trusted proxy, Turnstile, and mobile clients |
 
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
+
+**2026-07-26 — Optional operations toolkit** — Locally built stacks get a targeted **Build + Recreate** action; each stack can have a local note saved with its metadata; and a collapsed manual Git panel supports initialize, diff, commit, `pull --ff-only`, push and revision restore with Compose validation. Docker Resources can now manage `bridge`, `macvlan` and `ipvlan` networks, with confirmations and system-network safeguards. **Settings → Automation** creates API tokens scoped by permissions and stacks, plus revocable/rotatable per-stack webhooks. Secrets are displayed once and only their hashes are stored. Every operation joins the central audit log with its origin and duration. See the [API, webhooks and Home Assistant guide](docs/AUTOMATION.md). Docker Swarm and `overlay` networks are not supported.
 
 **2026-07-26 — Optional PlugNPiN integration** — **Settings → Integrations** can explicitly enable a pinned [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN) controller that publishes labeled containers to Nginx Proxy Manager and, optionally, Pi-hole or AdGuard Home. It is disabled by default and creates no stack or container until saved as enabled. Dockge generates a dedicated Compose stack with a read-only Docker Socket Proxy, keeps passwords out of settings and Compose in a permission-restricted Docker volume mounted at `/run/secrets`, exposes status, start/stop/restart controls and bounded logs, and records changes in the audit log. The Compose editor also includes an optional per-service label assistant with a YAML preview; it preserves mapping-form labels and refuses to rewrite list-form labels automatically.
 

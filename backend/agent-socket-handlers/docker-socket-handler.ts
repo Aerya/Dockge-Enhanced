@@ -303,6 +303,62 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("buildAndRecreateStack", async (stackName : unknown, callback) => {
+            const startedAt = Date.now();
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string") {
+                    throw new ValidationError("Stack name must be a string");
+                }
+                const stack = await Stack.getStack(server, stackName);
+                const buildServices = stack.getBuildServices();
+                await stack.buildAndRecreate(socket);
+                await this.auditStack(socket, "stack.build_and_recreate", stackName, "success", null, {
+                    buildServices,
+                    durationMs: Date.now() - startedAt,
+                    origin: "manual",
+                });
+                callbackResult({
+                    ok: true,
+                    msg: "BuiltAndRecreated",
+                    msgi18n: true,
+                }, callback);
+                server.sendStackList();
+            } catch (e) {
+                await this.auditStack(socket, "stack.build_and_recreate", String(stackName), "failure", String(e), {
+                    durationMs: Date.now() - startedAt,
+                    origin: "manual",
+                });
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("saveStackNote", async (stackName : unknown, note : unknown, callback) => {
+            const startedAt = Date.now();
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof note !== "string") {
+                    throw new ValidationError("Stack name and note must be strings");
+                }
+                const stack = await Stack.getStack(server, stackName);
+                const savedNote = await stack.saveNote(note);
+                await this.auditStack(socket, "stack.note.save", stackName, "success", null, {
+                    durationMs: Date.now() - startedAt,
+                    length: savedNote.length,
+                    origin: "manual",
+                });
+                callbackResult({ ok: true,
+                    note: savedNote }, callback);
+                server.sendStackList();
+            } catch (e) {
+                await this.auditStack(socket, "stack.note.save", String(stackName), "failure", String(e), {
+                    durationMs: Date.now() - startedAt,
+                    origin: "manual",
+                });
+                callbackError(e, callback);
+            }
+        });
+
         // down stack
         agentSocket.on("downStack", async (stackName : unknown, callback) => {
             try {

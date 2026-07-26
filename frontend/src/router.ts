@@ -17,6 +17,7 @@ import General from "./components/settings/General.vue";
 const Security = () => import("./components/settings/Security.vue");
 const GlobalEnv = () => import("./components/settings/GlobalEnv.vue");
 const Integrations = () => import("./components/settings/Integrations.vue");
+const Automation = () => import("./components/settings/Automation.vue");
 import About from "./components/settings/About.vue";
 
 const routes = [
@@ -96,6 +97,10 @@ const routes = [
                             {
                                 path: "integrations",
                                 component: Integrations,
+                            },
+                            {
+                                path: "automation",
+                                component: Automation,
                             },
                             {
                                 path: "about",

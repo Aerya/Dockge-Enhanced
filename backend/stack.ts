@@ -51,6 +51,12 @@ interface StackContainerVolumeUsage {
     mounts: StackVolumeMountUsage[];
 }
 
+interface StackMetadata {
+    lastUpdated: string | null;
+    lastStartedAt: string | null;
+    note: string;
+}
+
 // Nom du fichier d'override compose. Docker Compose le fusionne automatiquement
 // avec le fichier principal lorsqu'il est présent dans le dossier de la stack
 // (découverte automatique, sans `-f` explicite).
@@ -107,12 +113,14 @@ export class Stack {
             }
         }
 
-        let obj = this.toSimpleJSON(endpoint);
+        const obj = this.toSimpleJSON(endpoint);
+        const metadata = await this.readMeta();
         return {
             ...obj,
             composeYAML: this.composeYAML,
             composeENV: this.composeENV,
             composeOverrideYAML: this.composeOverrideYAML,
+            note: metadata.note,
             primaryHostname,
         };
     }
@@ -124,8 +132,21 @@ export class Stack {
             tags: [],
             isManagedByDockge: this.isManagedByDockge,
             composeFileName: this._composeFileName,
+            buildServices: this.getBuildServices(),
             endpoint,
         };
+    }
+
+    getBuildServices(): string[] {
+        try {
+            const parsed = yaml.parse(this.composeYAML) as { services?: Record<string, { build?: unknown }> };
+            return Object.entries(parsed?.services ?? {})
+                .filter(([, service]) => service && Object.prototype.hasOwnProperty.call(service, "build") && service.build !== null)
+                .map(([ name ]) => name)
+                .sort();
+        } catch {
+            return [];
+        }
     }
 
     /**
@@ -273,17 +294,24 @@ export class Stack {
     }
 
     /** Lit le fichier .dockge-meta.json du stack */
-    private async readMeta(): Promise<{ lastUpdated: string | null; lastStartedAt: string | null }> {
+    private async readMeta(): Promise<StackMetadata> {
         try {
             const raw = await fsAsync.readFile(path.join(this.path, ".dockge-meta.json"), "utf8");
-            return JSON.parse(raw) as { lastUpdated: string | null; lastStartedAt: string | null };
+            const parsed = JSON.parse(raw) as Partial<StackMetadata>;
+            return {
+                lastUpdated: parsed.lastUpdated ?? null,
+                lastStartedAt: parsed.lastStartedAt ?? null,
+                note: typeof parsed.note === "string" ? parsed.note : "",
+            };
         } catch {
-            return { lastUpdated: null, lastStartedAt: null };
+            return { lastUpdated: null,
+                lastStartedAt: null,
+                note: "" };
         }
     }
 
     /** Met à jour un ou les deux champs dans .dockge-meta.json */
-    private async writeMeta(fields: { lastUpdated?: string; lastStartedAt?: string }): Promise<void> {
+    private async writeMeta(fields: Partial<StackMetadata>): Promise<void> {
         // L'état de la stack vient de changer : on invalide le cache de statut
         serviceStatusCache.delete(this.name);
         try {
@@ -291,6 +319,15 @@ export class Stack {
             const updated = { ...existing, ...fields };
             await fsAsync.writeFile(path.join(this.path, ".dockge-meta.json"), JSON.stringify(updated), "utf8");
         } catch { /* non bloquant */ }
+    }
+
+    async saveNote(note: string): Promise<string> {
+        const normalized = String(note ?? "").replace(/\r\n/g, "\n").trim();
+        if (normalized.length > 10000) {
+            throw new ValidationError("Stack note must not exceed 10000 characters");
+        }
+        await this.writeMeta({ note: normalized });
+        return normalized;
     }
 
     async deploy(socket : DockgeSocket) : Promise<number> {
@@ -747,6 +784,42 @@ export class Stack {
             throw new Error("Failed to recreate, please check the terminal output for more information.");
         }
         await this.writeMeta({ lastStartedAt: new Date().toISOString() });
+        return exitCode;
+    }
+
+    async buildAndRecreate(socket: DockgeSocket) : Promise<number> {
+        const buildServices = this.getBuildServices();
+        if (buildServices.length === 0) {
+            throw new ValidationError("This stack has no service with a build configuration");
+        }
+
+        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
+        let exitCode = await Terminal.exec(
+            this.server,
+            socket,
+            terminalName,
+            "docker",
+            this.getComposeOptions("build", "--pull", ...buildServices),
+            this.path,
+        );
+        if (exitCode !== 0) {
+            throw new Error("Failed to build, please check the terminal output for more information.");
+        }
+
+        exitCode = await Terminal.exec(
+            this.server,
+            socket,
+            terminalName,
+            "docker",
+            this.getComposeOptions("up", "-d", "--remove-orphans"),
+            this.path,
+        );
+        if (exitCode !== 0) {
+            throw new Error("Build succeeded but recreate failed, please check the terminal output for more information.");
+        }
+        const now = new Date().toISOString();
+        await this.writeMeta({ lastUpdated: now,
+            lastStartedAt: now });
         return exitCode;
     }
 

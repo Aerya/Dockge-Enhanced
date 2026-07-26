@@ -8,6 +8,8 @@ import { MonitoringRouter } from "./routers/monitoring-router";
 import { AuditLogRouter } from "./routers/audit-log-router";
 import { StackTransferRouter } from "./routers/stack-transfer-router";
 import { IntegrationsRouter } from "./routers/integrations-router";
+import { AutomationRouter } from "./routers/automation-router";
+import { StackToolsRouter } from "./routers/stack-tools-router";
 import { ImageWatcher } from "./watchers/image-watcher";
 import { TrivyScanner } from "./watchers/trivy-scanner";
 import { BackupManager } from "./watchers/backup-manager";
@@ -85,6 +87,8 @@ export class DockgeServer {
         new MonitoringRouter(),
         new AuditLogRouter(),
         new IntegrationsRouter(),
+        new AutomationRouter(),
+        new StackToolsRouter(),
     ];
 
     /**

@@ -89,6 +89,9 @@ export default {
                 integrations: {
                     title: this.$t("Integrations"),
                 },
+                automation: {
+                    title: this.$t("automation.heading"),
+                },
                 about: {
                     title: this.$t("About"),
                 },

@@ -32,6 +32,12 @@
                             :class="ctrBadgeClass">{{ containers.length }}</span>
                     </button>
                 </li>
+                <li class="nav-item">
+                    <button class="nav-link" :class="{ active: tab === 'networks' }" @click="tab = 'networks'">
+                        <font-awesome-icon icon="diagram-project" class="me-1" />{{ t.tab.networks }}
+                        <span v-if="!loadingNetworks" class="ms-1 badge rounded-pill bg-success">{{ networks.length }}</span>
+                    </button>
+                </li>
             </ul>
 
             <div class="input-group input-group-sm mb-4 resource-search">
@@ -491,6 +497,115 @@
                 </div>
             </div>
 
+            <!-- ═══ TAB: NETWORKS ═══ -->
+            <div v-show="tab === 'networks'">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <button class="btn btn-normal btn-sm" :disabled="loadingNetworks" @click="loadNetworks">
+                        <span v-if="loadingNetworks" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="arrows-rotate" class="me-1" />{{ t.networks.refresh }}
+                    </button>
+                    <button class="btn btn-primary btn-sm" @click="networkCreateOpen = !networkCreateOpen">
+                        <font-awesome-icon icon="plus" class="me-1" />{{ t.networks.create }}
+                    </button>
+                </div>
+
+                <form v-if="networkCreateOpen" class="row g-2 p-3 mb-3 network-create" @submit.prevent="createNetwork">
+                    <div class="col-md-4">
+                        <label class="form-label">{{ t.networks.name }}</label>
+                        <input v-model.trim="networkForm.name" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">{{ t.networks.driver }}</label>
+                        <select v-model="networkForm.driver" class="form-select form-select-sm">
+                            <option value="bridge">bridge</option>
+                            <option value="macvlan">macvlan</option>
+                            <option value="ipvlan">ipvlan</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ t.networks.subnet }}</label>
+                        <input v-model.trim="networkForm.subnet" class="form-control form-control-sm" placeholder="172.28.0.0/16">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ t.networks.gateway }}</label>
+                        <input v-model.trim="networkForm.gateway" class="form-control form-control-sm" placeholder="172.28.0.1">
+                    </div>
+                    <div v-if="networkForm.driver !== 'bridge'" class="col-md-4">
+                        <label class="form-label">{{ t.networks.parent }}</label>
+                        <input v-model.trim="networkForm.parent" class="form-control form-control-sm" placeholder="eth0">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <label class="form-check mb-1">
+                            <input v-model="networkForm.internal" class="form-check-input" type="checkbox">
+                            <span class="form-check-label">{{ t.networks.internal }}</span>
+                        </label>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-sm btn-primary" :disabled="networkBusy">
+                            {{ t.networks.create }}
+                        </button>
+                    </div>
+                </form>
+
+                <div v-if="networkError" class="alert alert-danger py-2">{{ networkError }}</div>
+                <div v-else-if="loadingNetworks" class="text-center py-4 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2" />{{ t.loading }}
+                </div>
+                <div v-else-if="filteredNetworks.length > 0" class="table-responsive">
+                    <table class="table resources-table">
+                        <thead>
+                            <tr>
+                                <th>{{ t.networks.name }}</th>
+                                <th>{{ t.networks.driver }}</th>
+                                <th>{{ t.networks.scope }}</th>
+                                <th>{{ t.networks.containers }}</th>
+                                <th class="text-end" />
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="network in filteredNetworks" :key="network.id">
+                                <td>
+                                    <strong class="font-monospace">{{ network.name }}</strong>
+                                    <div class="mt-1">
+                                        <span v-if="network.dockerManaged" class="badge bg-secondary me-1">Docker</span>
+                                        <span v-if="network.composeProject" class="badge badge-stack me-1">Compose: {{ network.composeProject }}</span>
+                                        <span v-if="network.dockgeManaged" class="badge bg-primary">Dockge Enhanced</span>
+                                        <span v-if="network.internal" class="badge bg-warning text-dark ms-1">{{ t.networks.internal }}</span>
+                                    </div>
+                                    <small v-if="network.ipam.length" class="text-muted">{{ network.ipam.map(item => item.Subnet).filter(Boolean).join(", ") }}</small>
+                                </td>
+                                <td>{{ network.driver }}</td>
+                                <td>{{ network.scope }}</td>
+                                <td>
+                                    <div v-if="network.containers.length === 0" class="text-muted">—</div>
+                                    <div v-for="container in network.containers" :key="container.id" class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-secondary">{{ container.name }}</span>
+                                        <small class="text-muted">{{ container.ipv4 }}</small>
+                                        <button class="btn btn-sm btn-outline-warning py-0" @click="disconnectNetwork(network, container)">
+                                            {{ t.networks.disconnect }}
+                                        </button>
+                                    </div>
+                                    <div class="input-group input-group-sm mt-2">
+                                        <input v-model.trim="networkConnectInputs[network.name]" class="form-control" :placeholder="t.networks.containerName">
+                                        <button class="btn btn-outline-success" @click="connectNetwork(network)">
+                                            {{ t.networks.connect }}
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <button v-if="!network.dockerManaged && network.containers.length === 0" class="btn btn-sm btn-outline-danger" @click="deleteNetwork(network)">
+                                        <font-awesome-icon icon="trash" />
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-else class="text-center text-muted py-4">
+                    {{ resourceFilter ? t.noSearchMatch : t.networks.empty }}
+                </div>
+            </div>
+
         </div><!-- /shadow-box -->
 
         <!-- ═══ MODALE CONFIRM 1 ═══ -->
@@ -592,6 +707,19 @@ interface DockerContainer {
     service?: string;
 }
 
+interface DockerNetwork {
+    id: string;
+    name: string;
+    driver: string;
+    scope: string;
+    internal: boolean;
+    dockerManaged: boolean;
+    composeProject?: string | null;
+    dockgeManaged: boolean;
+    containers: Array<{ id: string; name: string; ipv4: string; ipv6: string }>;
+    ipam: Array<{ Subnet?: string; Gateway?: string }>;
+}
+
 interface PendingItem {
     type: "image" | "volume" | "container";
     label: string;
@@ -609,7 +737,7 @@ const i18n = {
         searchPlaceholder: "Rechercher par nom, image, stack ou conteneur…",
         clearSearch: "Effacer la recherche",
         noSearchMatch: "Aucune ressource ne correspond à cette recherche.",
-        tab: { images: "Images", volumes: "Volumes", containers: "Hors Dockge" },
+        tab: { images: "Images", volumes: "Volumes", containers: "Hors Dockge", networks: "Réseaux" },
         images: {
             heading: "Images Docker",
             refresh: "Rafraîchir",
@@ -653,6 +781,25 @@ const i18n = {
             confirm1Warning: "Ce conteneur sera définitivement supprimé.",
             confirm2Body: "⚠️ Suppression irréversible du conteneur.",
         },
+        networks: {
+            refresh: "Rafraîchir",
+            create: "Créer un réseau",
+            name: "Nom",
+            driver: "Driver",
+            scope: "Scope",
+            subnet: "Sous-réseau",
+            gateway: "Passerelle",
+            parent: "Interface parente",
+            internal: "Interne",
+            containers: "Conteneurs connectés",
+            containerName: "Nom du conteneur",
+            connect: "Connecter",
+            disconnect: "Déconnecter",
+            empty: "Aucun réseau trouvé.",
+            deleteConfirm: "Supprimer le réseau inutilisé « {name} » ?",
+            connectConfirm: "Connecter « {container} » au réseau « {network} » ?",
+            disconnectConfirm: "Déconnecter « {container} » du réseau « {network} » ? Cette action peut interrompre le service.",
+        },
         autoPrune: {
             heading: "Purge automatique",
             danglingHeading: "Orphelines (sans tag)",
@@ -686,7 +833,7 @@ const i18n = {
         searchPlaceholder: "Search by name, image, stack, or container…",
         clearSearch: "Clear search",
         noSearchMatch: "No resource matches this search.",
-        tab: { images: "Images", volumes: "Volumes", containers: "Unmanaged" },
+        tab: { images: "Images", volumes: "Volumes", containers: "Unmanaged", networks: "Networks" },
         images: {
             heading: "Docker Images",
             refresh: "Refresh",
@@ -730,6 +877,25 @@ const i18n = {
             confirm1Warning: "This container will be permanently deleted.",
             confirm2Body: "⚠️ This action is irreversible.",
         },
+        networks: {
+            refresh: "Refresh",
+            create: "Create network",
+            name: "Name",
+            driver: "Driver",
+            scope: "Scope",
+            subnet: "Subnet",
+            gateway: "Gateway",
+            parent: "Parent interface",
+            internal: "Internal",
+            containers: "Connected containers",
+            containerName: "Container name",
+            connect: "Connect",
+            disconnect: "Disconnect",
+            empty: "No network found.",
+            deleteConfirm: "Delete unused network “{name}”?",
+            connectConfirm: "Connect “{container}” to network “{network}”?",
+            disconnectConfirm: "Disconnect “{container}” from network “{network}”? This may interrupt the service.",
+        },
         autoPrune: {
             heading: "Automatic prune",
             danglingHeading: "Dangling (untagged)",
@@ -763,22 +929,36 @@ const i18n = {
 // ─── State ────────────────────────────────────────────────────────
 
 const lang = ref<"fr" | "en">("fr");
-const tab = ref<"images" | "volumes" | "containers">("images");
+const tab = ref<"images" | "volumes" | "containers" | "networks">("images");
 
 const images = ref<DockerImage[]>([]);
 const volumes = ref<DockerVolume[]>([]);
 const containers = ref<DockerContainer[]>([]);
+const networks = ref<DockerNetwork[]>([]);
 const resourceFilter = ref("");
 const loadingImages = ref(false);
 const loadingVolumes = ref(false);
 const loadingContainers = ref(false);
+const loadingNetworks = ref(false);
 const pruningImages = ref(false);
 const pruningUnusedImages = ref(false);
 const pruningVolumes = ref(false);
 const imageError = ref("");
 const volumeError = ref("");
 const containerError = ref("");
+const networkError = ref("");
 const stoppingContainer = ref<string | null>(null);
+const networkBusy = ref(false);
+const networkCreateOpen = ref(false);
+const networkConnectInputs = ref<Record<string, string>>({});
+const networkForm = ref({
+    name: "",
+    driver: "bridge",
+    subnet: "",
+    gateway: "",
+    parent: "",
+    internal: false,
+});
 
 const confirmStep = ref(0); // 0 = rien, 1 = première modale, 2 = deuxième modale
 const pendingItem = ref<PendingItem | null>(null);
@@ -868,6 +1048,18 @@ const filteredContainers = computed(() => {
     ].some((value) => value.toLowerCase().includes(q)));
 });
 
+const filteredNetworks = computed(() => {
+    const q = normalizedResourceFilter.value;
+    if (!q) return networks.value;
+    return networks.value.filter(network => [
+        network.name,
+        network.driver,
+        network.scope,
+        network.composeProject ?? "",
+        ...network.containers.map(container => container.name),
+    ].some(value => value.toLowerCase().includes(q)));
+});
+
 const unusedImagesCount = computed(() =>
     images.value.filter(i => i.status === "unused" || i.status === "dangling").length);
 
@@ -940,6 +1132,11 @@ const ctrBadgeClass = computed(() => {
 // ─── Lang ─────────────────────────────────────────────────────────
 
 watch(() => props.externalLang, (v) => { if (v) lang.value = v; });
+watch(tab, (selected) => {
+    if (selected === "networks" && networks.value.length === 0 && !loadingNetworks.value) {
+        loadNetworks();
+    }
+});
 
 function setLang(l: "fr" | "en") {
     lang.value = l;
@@ -1093,6 +1290,66 @@ async function loadContainers() {
     } finally {
         loadingContainers.value = false;
     }
+}
+
+async function loadNetworks() {
+    loadingNetworks.value = true;
+    networkError.value = "";
+    try {
+        const data = await api("GET", "networks");
+        if (data.ok) {
+            networks.value = data.networks;
+        } else {
+            networkError.value = data.message ?? t.value.errorLoad;
+        }
+    } catch {
+        networkError.value = t.value.errorLoad;
+    } finally {
+        loadingNetworks.value = false;
+    }
+}
+
+async function createNetwork() {
+    networkBusy.value = true;
+    try {
+        const data = await api("POST", "networks", networkForm.value);
+        showToast(data.ok, data.message ?? "");
+        if (data.ok) {
+            networkForm.value = { name: "", driver: "bridge", subnet: "", gateway: "", parent: "", internal: false };
+            networkCreateOpen.value = false;
+            await loadNetworks();
+        }
+    } finally {
+        networkBusy.value = false;
+    }
+}
+
+async function deleteNetwork(network: DockerNetwork) {
+    if (!confirm(t.value.networks.deleteConfirm.replace("{name}", network.name))) return;
+    const data = await api("DELETE", `networks/${encodeURIComponent(network.name)}`, { confirmed: true });
+    showToast(data.ok, data.message ?? "");
+    if (data.ok) await loadNetworks();
+}
+
+async function connectNetwork(network: DockerNetwork) {
+    const container = networkConnectInputs.value[network.name]?.trim();
+    if (!container || !confirm(t.value.networks.connectConfirm.replace("{container}", container).replace("{network}", network.name))) return;
+    const data = await api("POST", `networks/${encodeURIComponent(network.name)}/connect`, { container, confirmed: true });
+    showToast(data.ok, data.message ?? "");
+    if (data.ok) {
+        networkConnectInputs.value[network.name] = "";
+        await loadNetworks();
+    }
+}
+
+async function disconnectNetwork(network: DockerNetwork, container: { id: string; name: string }) {
+    if (!confirm(t.value.networks.disconnectConfirm.replace("{container}", container.name).replace("{network}", network.name))) return;
+    const data = await api("POST", `networks/${encodeURIComponent(network.name)}/disconnect`, {
+        container: container.id,
+        confirmed: true,
+    });
+    showToast(data.ok, data.message ?? "");
+    if (data.ok) await loadNetworks();
 }
 
 async function stopContainer(ctr: DockerContainer) {

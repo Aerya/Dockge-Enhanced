@@ -30,6 +30,7 @@ export interface AuditLogQuery {
     action?: string;
     category?: string;
     status?: string;
+    target?: string;
     from?: string;
     to?: string;
     limit?: number;
@@ -221,6 +222,9 @@ export class AuditLogger {
         }
         if (query.status) {
             queryBuilder.where("status", query.status);
+        }
+        if (query.target) {
+            queryBuilder.where("target", query.target);
         }
         if (query.from) {
             queryBuilder.where("timestamp", ">=", `${query.from}T00:00:00.000Z`);

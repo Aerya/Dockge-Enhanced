@@ -820,7 +820,12 @@ export class BackupManager {
             .catch(e => console.error("[BackupManager] Backup on-save échoué:", e));
     }
 
-    async runBackup(opts: { skipForget?: boolean; tag?: string; trigger?: "scheduled" | "manual" | "on-save" } = {}): Promise<BackupResult> {
+    async runBackup(opts: {
+        skipForget?: boolean;
+        tag?: string;
+        trigger?: "scheduled" | "manual" | "on-save";
+        stackName?: string;
+    } = {}): Promise<BackupResult> {
         const start = Date.now();
         const trigger = opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual");
         const result: BackupResult = {
@@ -840,7 +845,7 @@ export class BackupManager {
             return result;
         }
 
-        const { paths, warnings } = await this.buildBackupPaths();
+        const { paths, warnings } = await this.buildBackupPaths(opts.stackName);
         result.warnings = warnings;
         if (paths.length === 0) {
             result.error = warnings.length > 0
@@ -868,7 +873,7 @@ export class BackupManager {
         console.log(`[BackupManager] ▶ Backup démarré (${activeDests.length} destination(s))`);
 
         try {
-            preparedStacks = await this.prepareStacksForBackup();
+            preparedStacks = await this.prepareStacksForBackup(opts.stackName);
         } catch (e: unknown) {
             const message = e instanceof Error ? e.message : String(e);
             result.error = `Préparation des stacks échouée : ${message}`;
@@ -1026,11 +1031,13 @@ export class BackupManager {
         return `docker compose -f ${shellQuote(path.basename(composeFile))} ${args}`;
     }
 
-    private async prepareStacksForBackup(): Promise<PreparedStack[]> {
+    private async prepareStacksForBackup(stackName?: string): Promise<PreparedStack[]> {
         const prepared: PreparedStack[] = [];
         const excluded = new Set(this.settings.excludedStacks ?? []);
         try {
-            for (const stack of Object.keys(this.settings.stackPolicies ?? {}).sort()) {
+            const configuredStacks = Object.keys(this.settings.stackPolicies ?? {}).sort();
+            const stacks = stackName ? configuredStacks.filter(stack => stack === stackName) : configuredStacks;
+            for (const stack of stacks) {
                 if (excluded.has(stack)) continue;
                 const policy = normalizeStackBackupPolicy(this.settings.stackPolicies[stack]);
                 if (policy.mode === "hot") continue;
@@ -1093,7 +1100,7 @@ export class BackupManager {
         });
     }
 
-    private async buildBackupPaths(): Promise<BackupPathsResult> {
+    private async buildBackupPaths(stackName?: string): Promise<BackupPathsResult> {
         const paths: string[] = [];
         const warnings: string[] = [];
         const seen = new Set<string>();
@@ -1115,7 +1122,7 @@ export class BackupManager {
         // Parcourt les stacks
         const excludedSet = new Set(this.settings.excludedStacks ?? []);
         try {
-            const stacks = await fs.readdir(STACKS_DIR);
+            const stacks = stackName ? [ stackName ] : await fs.readdir(STACKS_DIR);
             for (const stack of stacks) {
                 const stackDir = path.join(STACKS_DIR, stack);
                 try {
@@ -1143,6 +1150,15 @@ export class BackupManager {
                 }
                 if (!composeFound) warnings.push(`Compose introuvable pour la stack : ${stack}`);
 
+                const metadataPath = path.join(stackDir, ".dockge-meta.json");
+                try {
+                    await fs.access(metadataPath);
+                    if (!seen.has(metadataPath)) {
+                        seen.add(metadataPath);
+                        paths.push(metadataPath);
+                    }
+                } catch { /* métadonnées optionnelles */ }
+
                 if (this.settings.includeEnvFiles) {
                     const envPath = path.join(stackDir, ".env");
                     try {
@@ -1161,13 +1177,15 @@ export class BackupManager {
         }
 
         // Volumes sélectionnés (entiers ou sous-dossiers spécifiques)
-        for (const selected of this.settings.volumeBackup?.selectedVolumes ?? []) {
-            await addExistingPath(selected, "Volume sélectionné");
-        }
+        if (!stackName) {
+            for (const selected of this.settings.volumeBackup?.selectedVolumes ?? []) {
+                await addExistingPath(selected, "Volume sélectionné");
+            }
 
-        // Chemins supplémentaires configurés
-        for (const extra of this.settings.extraPaths ?? []) {
-            await addExistingPath(extra, "Chemin supplémentaire");
+            // Chemins supplémentaires configurés
+            for (const extra of this.settings.extraPaths ?? []) {
+                await addExistingPath(extra, "Chemin supplémentaire");
+            }
         }
 
         return { paths, warnings };

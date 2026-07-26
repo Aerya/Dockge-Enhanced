@@ -18,6 +18,7 @@ import { promisify } from "util";
 import { AutoPruneManager } from "../watchers/auto-prune-manager";
 import { AuditLogger, setAuditUser } from "../audit-log";
 import { requireHttpAuth } from "../auth";
+import childProcessAsync from "promisify-child-process";
 
 const execAsync = promisify(exec);
 
@@ -46,6 +47,26 @@ async function dockerJsonLines(cmd: string): Promise<Record<string, string>[]> {
     } catch {
         return [];
     }
+}
+
+async function dockerArgs(args: string[]): Promise<string> {
+    const result = await childProcessAsync.spawn("docker", args, {
+        encoding: "utf-8",
+        maxBuffer: 20 * 1024 * 1024,
+    });
+    const output = `${result.stdout?.toString() ?? ""}${result.stderr?.toString() ?? ""}`.trim();
+    if ((result.code ?? 0) !== 0) {
+        throw new Error(output || `docker ${args[0]} failed`);
+    }
+    return output;
+}
+
+function safeDockerName(value: unknown, labelName: string): string {
+    const name = String(value ?? "").trim();
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/.test(name)) {
+        throw new Error(`${labelName} invalide`);
+    }
+    return name;
 }
 
 /** Extrait une valeur d'une chaîne de labels Docker "key=val,key2=val2" */
@@ -342,6 +363,158 @@ export class DockerResourcesRouter extends Router {
                 const message = (e.stderr || e.message || "Erreur").trim();
                 await auditDockerAction(req, "docker.container.delete", "container", id, "failure", message, { force });
                 res.status(500).json({ ok: false, message });
+            }
+        });
+
+        // ── Networks ──────────────────────────────────────────────
+
+        router.get("/networks", auth, async (_req: Request, res: Response) => {
+            try {
+                const rows = await dockerJsonLines("docker network ls --format '{{json .}}'");
+                const names = rows.map(row => row["Name"]).filter(Boolean);
+                let inspected: any[] = [];
+                if (names.length > 0) {
+                    const output = await dockerArgs([ "network", "inspect", ...names ]);
+                    inspected = JSON.parse(output);
+                }
+                const byName = new Map(inspected.map(network => [ network.Name, network ]));
+                const networks = rows.map(row => {
+                    const details = byName.get(row["Name"]) ?? {};
+                    const labels = details.Labels ?? {};
+                    return {
+                        id: row["ID"] ?? details.Id ?? "",
+                        name: row["Name"] ?? details.Name ?? "",
+                        driver: row["Driver"] ?? details.Driver ?? "",
+                        scope: row["Scope"] ?? details.Scope ?? "",
+                        internal: Boolean(details.Internal),
+                        attachable: Boolean(details.Attachable),
+                        ingress: Boolean(details.Ingress),
+                        dockerManaged: [ "bridge", "host", "none" ].includes(row["Name"] ?? ""),
+                        composeProject: labels["com.docker.compose.project"] ?? null,
+                        dockgeManaged: labels["com.dockge-enhanced.managed"] === "true",
+                        containers: Object.entries(details.Containers ?? {}).map(([ id, container ]: [string, any]) => ({
+                            id: id.slice(0, 12),
+                            name: container.Name ?? id.slice(0, 12),
+                            ipv4: container.IPv4Address ?? "",
+                            ipv6: container.IPv6Address ?? "",
+                        })),
+                        ipam: details.IPAM?.Config ?? [],
+                        options: details.Options ?? {},
+                        labels,
+                    };
+                });
+                res.json({ ok: true,
+                    networks });
+            } catch (e: any) {
+                res.status(500).json({ ok: false,
+                    message: e.message });
+            }
+        });
+
+        router.post("/networks", auth, async (req: Request, res: Response) => {
+            try {
+                const name = safeDockerName(req.body?.name, "Nom de réseau");
+                const driver = String(req.body?.driver ?? "bridge");
+                if (![ "bridge", "macvlan", "ipvlan" ].includes(driver)) {
+                    throw new Error("Driver non pris en charge. Docker Swarm et overlay ne sont pas pris en charge.");
+                }
+                const args = [
+                    "network", "create",
+                    "--driver", driver,
+                    "--label", "com.dockge-enhanced.managed=true",
+                ];
+                if (req.body?.internal === true) {
+                    args.push("--internal");
+                }
+                const subnet = String(req.body?.subnet ?? "").trim();
+                const gateway = String(req.body?.gateway ?? "").trim();
+                const parent = String(req.body?.parent ?? "").trim();
+                if (subnet) {
+                    if (!/^[0-9a-fA-F:.]+\/\d{1,3}$/.test(subnet)) throw new Error("Sous-réseau invalide");
+                    args.push("--subnet", subnet);
+                }
+                if (gateway) {
+                    if (!/^[0-9a-fA-F:.]+$/.test(gateway)) throw new Error("Passerelle invalide");
+                    args.push("--gateway", gateway);
+                }
+                if (parent) {
+                    const safeParent = safeDockerName(parent, "Interface parente");
+                    args.push("--opt", `parent=${safeParent}`);
+                }
+                args.push(name);
+                const message = await dockerArgs(args);
+                await auditDockerAction(req, "docker.network.create", "network", name, "success", message, {
+                    driver,
+                    internal: req.body?.internal === true,
+                    subnet: subnet || null,
+                    gateway: gateway || null,
+                });
+                res.status(201).json({ ok: true,
+                    message });
+            } catch (e: any) {
+                await auditDockerAction(req, "docker.network.create", "network", String(req.body?.name ?? ""), "failure", e.message);
+                res.status(400).json({ ok: false,
+                    message: e.message });
+            }
+        });
+
+        router.delete("/networks/:name", auth, async (req: Request, res: Response) => {
+            let name = String(req.params.name ?? "");
+            try {
+                name = safeDockerName(name, "Nom de réseau");
+                if (req.body?.confirmed !== true) {
+                    throw new Error("Confirmation explicite requise");
+                }
+                if ([ "bridge", "host", "none" ].includes(name)) {
+                    throw new Error("Les réseaux Docker système sont protégés");
+                }
+                const inspect = JSON.parse(await dockerArgs([ "network", "inspect", name ]))[0] ?? {};
+                const connected = Object.keys(inspect.Containers ?? {});
+                if (connected.length > 0) {
+                    throw new Error(`Réseau utilisé par ${connected.length} conteneur(s)`);
+                }
+                const message = await dockerArgs([ "network", "rm", name ]);
+                await auditDockerAction(req, "docker.network.delete", "network", name, "success", message);
+                res.json({ ok: true,
+                    message });
+            } catch (e: any) {
+                await auditDockerAction(req, "docker.network.delete", "network", name, "failure", e.message);
+                res.status(400).json({ ok: false,
+                    message: e.message });
+            }
+        });
+
+        router.post("/networks/:name/connect", auth, async (req: Request, res: Response) => {
+            let name = String(req.params.name ?? "");
+            try {
+                name = safeDockerName(name, "Nom de réseau");
+                if (req.body?.confirmed !== true) throw new Error("Confirmation explicite requise");
+                const container = safeDockerName(req.body?.container, "Conteneur");
+                const message = await dockerArgs([ "network", "connect", name, container ]);
+                await auditDockerAction(req, "docker.network.connect", "network", name, "success", message, { container });
+                res.json({ ok: true,
+                    message });
+            } catch (e: any) {
+                await auditDockerAction(req, "docker.network.connect", "network", name, "failure", e.message);
+                res.status(400).json({ ok: false,
+                    message: e.message });
+            }
+        });
+
+        router.post("/networks/:name/disconnect", auth, async (req: Request, res: Response) => {
+            let name = String(req.params.name ?? "");
+            try {
+                name = safeDockerName(name, "Nom de réseau");
+                if (req.body?.confirmed !== true) throw new Error("Confirmation explicite requise");
+                const container = safeDockerName(req.body?.container, "Conteneur");
+                const message = await dockerArgs([ "network", "disconnect", name, container ]);
+                await auditDockerAction(req, "docker.network.disconnect", "network", name, "success", message, { container });
+                res.json({ ok: true,
+                    message });
+            } catch (e: any) {
+                await auditDockerAction(req, "docker.network.disconnect", "network", name, "failure", e.message);
+                res.status(400).json({ ok: false,
+                    message: e.message });
             }
         });
 

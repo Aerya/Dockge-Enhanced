@@ -31,13 +31,15 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 | **Sauvegarde & reprise** | Restic multi-destination, volumes, cohérence par stack, restauration sélective, tests et diffs de snapshots |
 | **Images & sécurité** | Surveillance des mises à jour, auto-update avec rollback, scan Trivy et exceptions CVE |
 | **Supervision** | Stats système, stacks et conteneurs, crash loops, healthchecks avec auto-heal, logs enrichis et Kula optionnel |
-| **Gestion Docker** | Images, volumes et conteneurs hors Dockge, actions Compose par conteneur, actions groupées et protections contre les suppressions risquées |
-| **Intégrations** | Gestion optionnelle de PlugNPiN et assistant de labels par service pour NPM, Pi-hole et AdGuard Home |
+| **Gestion Docker** | Images, volumes, conteneurs et réseaux hors Dockge, actions Compose par conteneur, actions groupées et protections contre les suppressions risquées |
+| **Automatisation & intégrations** | API REST et webhooks à droits limités, Home Assistant, Git manuel, PlugNPiN optionnel et assistant de labels |
 | **Notifications & accès** | Discord, Apprise, 2FA, trusted proxy, Turnstile et clients mobiles |
 
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
+
+**2026-07-26 — Outils d’exploitation facultatifs** — Les stacks construites localement disposent d’une action **Build + Recreate** ciblée ; chaque stack peut recevoir une note locale sauvegardée avec ses métadonnées ; un panneau Git manuel et replié permet d’initialiser, comparer, commit, pull `--ff-only`, push et restaurer une révision après validation Compose. La page Ressources gère désormais aussi les réseaux `bridge`, `macvlan` et `ipvlan`, avec confirmations et protections des réseaux système. **Paramètres → Automatisation** crée des jetons API à droits et stacks limités, ainsi que des webhooks révocables/rotatifs par stack. Les secrets ne sont affichés qu’une fois et seul leur hash est conservé. Toutes les opérations rejoignent le journal d’audit central avec leur origine et leur durée. Voir le [guide API, webhooks et Home Assistant](docs/AUTOMATION.fr.md). Docker Swarm et les réseaux `overlay` ne sont pas pris en charge.
 
 **2026-07-26 — Intégration PlugNPiN facultative** — **Paramètres → Intégrations** permet d’activer explicitement un contrôleur [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN) épinglé, qui publie les conteneurs étiquetés dans Nginx Proxy Manager et, au choix, Pi-hole ou AdGuard Home. L’intégration est désactivée par défaut et ne crée aucune stack ni aucun conteneur avant sa sauvegarde comme active. Dockge génère une stack Compose dédiée avec un Docker Socket Proxy en lecture seule, conserve les mots de passe hors des réglages et du Compose dans un volume Docker aux permissions restreintes monté sur `/run/secrets`, affiche l’état, les commandes démarrer/arrêter/redémarrer et des logs bornés, puis journalise les changements dans l’audit. L’éditeur Compose reçoit aussi un assistant facultatif de labels par service avec aperçu YAML ; il préserve les labels sous forme de mapping et refuse de réécrire automatiquement ceux sous forme de liste.
 
