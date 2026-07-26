@@ -35,7 +35,6 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 | **Intégrations** | Gestion optionnelle de PlugNPiN et assistant de labels par service pour NPM, Pi-hole et AdGuard Home |
 | **Notifications & accès** | Discord, Apprise, 2FA, trusted proxy, Turnstile et clients mobiles |
 
-Les différences principales restent visibles ci-dessus ; le catalogue détaillé est conservé ci-dessous pour documenter précisément les écarts avec Dockge et les autres forks sans allonger la lecture initiale.
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
