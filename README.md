@@ -35,7 +35,6 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | **Integrations** | Optional PlugNPiN lifecycle management and per-service label assistant for NPM, Pi-hole, and AdGuard Home |
 | **Notifications & access** | Discord, Apprise, 2FA, trusted proxy, Turnstile, and mobile clients |
 
-The main differences remain visible above; the detailed catalogue is preserved below to document the exact differences from Dockge and other forks without overwhelming the initial read.
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
