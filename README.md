@@ -32,12 +32,15 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | **Images & security** | Update monitoring, auto-update with rollback, Trivy scans, and CVE exceptions |
 | **Monitoring** | System, stack, and container stats, crash loops, healthcheck auto-heal, enhanced logs, and optional Kula integration |
 | **Docker management** | Images, volumes, unmanaged containers, per-container Compose actions, bulk actions, and safeguards for risky deletions |
+| **Integrations** | Optional PlugNPiN lifecycle management and per-service label assistant for NPM, Pi-hole, and AdGuard Home |
 | **Notifications & access** | Discord, Apprise, 2FA, trusted proxy, Turnstile, and mobile clients |
 
 The main differences remain visible above; the detailed catalogue is preserved below to document the exact differences from Dockge and other forks without overwhelming the initial read.
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
+
+**2026-07-26 — Optional PlugNPiN integration** — **Settings → Integrations** can explicitly enable a pinned [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN) controller that publishes labeled containers to Nginx Proxy Manager and, optionally, Pi-hole or AdGuard Home. It is disabled by default and creates no stack or container until saved as enabled. Dockge generates a dedicated Compose stack with a read-only Docker Socket Proxy, keeps passwords out of settings and Compose in a permission-restricted Docker volume mounted at `/run/secrets`, exposes status, start/stop/restart controls and bounded logs, and records changes in the audit log. The Compose editor also includes an optional per-service label assistant with a YAML preview; it preserves mapping-form labels and refuses to rewrite list-form labels automatically.
 
 **2026-07-24 — Multi-server stack list** — The stack list can display any combination of local and remote Dockge servers through a checkbox selector. An independent toggle groups stacks under per-server headings with live counts, while a stable color identifies each server across its heading, stack rows and stack names. Global alphabetical sorting by stack name remains the default alongside status and instance sorting. Dedicated light- and dark-theme palettes preserve contrast, and the browser remembers both the selected servers and grouping mode while automatically migrating the previous single-instance preference.
 
@@ -307,6 +310,18 @@ Open **http://localhost:5001**, create your admin account, then click **Monitori
 >       - /mnt/data:/mnt/data:ro
 > ```
 
+### Optional PlugNPiN integration
+
+Open **Settings → Integrations** to configure [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN). The integration remains fully inactive until **Enable PlugNPiN** is selected and the form is saved. Enabling it creates the managed `plugnpin-dockge-enhanced` stack; disabling it runs Compose down and removes the generated stack directory.
+
+Nginx Proxy Manager credentials are required by PlugNPiN. Pi-hole, AdGuard Home, metrics, and debug logging remain individually optional. Passwords are written through stdin into the dedicated `dockge_enhanced_plugnpin_secrets` Docker volume and are never returned to the browser or included in the generated Compose file.
+
+To publish a service, edit its stack and use **PlugNPiN publication (optional)** below the Compose editor. The assistant generates and can apply the required `plugNPiN.ip` and `plugNPiN.url` labels plus selected NPM options. Existing mapping-form labels and comments are preserved. For list-form labels, Dockge deliberately offers copy-only output instead of rewriting the existing structure.
+
+> Disabling the controller stops its containers but cannot guarantee immediate removal of entries it created while labeled application containers are still running. Remove the labels or stop the affected applications while PlugNPiN is running if those entries must be deleted first.
+
+> PlugNPiN `1.0.0` is currently published upstream for `amd64` only. Dockge keeps the integration disabled with a clear message on unsupported architectures; the rest of Dockge Enhanced remains multi-architecture.
+
 ---
 
 ## Environment variables
@@ -404,6 +419,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**Restic**](https://restic.net/) — encrypted backup tool
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
+- [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — optional DNS and Nginx Proxy Manager automation (GPLv3)
 
 ---
 

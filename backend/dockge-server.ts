@@ -7,11 +7,13 @@ import { SystemStatsRouter } from "./routers/system-stats-router";
 import { MonitoringRouter } from "./routers/monitoring-router";
 import { AuditLogRouter } from "./routers/audit-log-router";
 import { StackTransferRouter } from "./routers/stack-transfer-router";
+import { IntegrationsRouter } from "./routers/integrations-router";
 import { ImageWatcher } from "./watchers/image-watcher";
 import { TrivyScanner } from "./watchers/trivy-scanner";
 import { BackupManager } from "./watchers/backup-manager";
 import { MonitoringWatcher } from "./watchers/monitoring-watcher";
 import { KulaManager } from "./watchers/kula-manager";
+import { PlugNPiNManager } from "./integrations/plugnpin-manager";
 import { AutoPruneManager } from "./watchers/auto-prune-manager";
 import { SelfUpdateChecker } from "./watchers/self-update-checker";
 import { StackScheduler } from "./watchers/stack-scheduler";
@@ -82,6 +84,7 @@ export class DockgeServer {
         new SystemStatsRouter(),
         new MonitoringRouter(),
         new AuditLogRouter(),
+        new IntegrationsRouter(),
     ];
 
     /**
@@ -458,6 +461,7 @@ export class DockgeServer {
             MonitoringWatcher.getInstance().setServer(this);
             MonitoringWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "MonitoringWatcher start error: " + e));
             KulaManager.getInstance().startIfEnabled().catch(e => log.error("server", "KulaManager start error: " + e));
+            PlugNPiNManager.getInstance().startIfEnabled().catch(e => log.error("server", "PlugNPiN start error: " + e));
             AutoPruneManager.getInstance().startIfEnabled().catch(e => log.error("server", "AutoPruneManager start error: " + e));
             StackScheduler.getInstance().start(this).catch(e => log.error("server", "StackScheduler start error: " + e));
             StackReplicationManager.getInstance().start(this).catch(e => log.error("server", "StackReplication start error: " + e));

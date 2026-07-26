@@ -86,6 +86,9 @@ export default {
                 globalEnv: {
                     title: this.$t("GlobalEnv"),
                 },
+                integrations: {
+                    title: this.$t("Integrations"),
+                },
                 about: {
                     title: this.$t("About"),
                 },
