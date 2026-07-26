@@ -216,36 +216,92 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 <table>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/LandingPage.png"><img src="screens/LandingPage.png" width="100%"/></a>
-      <sub>Landing page — vue d'ensemble</sub>
+      <a href="screens/18-home-dashboard.png"><img src="screens/18-home-dashboard.png" width="100%"/></a>
+      <sub>Tableau de bord et agents Dockge</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/Images.png"><img src="screens/Images.png" width="100%"/></a>
-      <sub>Gestion des images Docker</sub>
+      <a href="screens/01-stack-overview.png"><img src="screens/01-stack-overview.png" width="100%"/></a>
+      <sub>Vue d'une stack, actions, conteneurs et logs</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/Sécurité.png"><img src="screens/Sécurité.png" width="100%"/></a>
-      <sub>Trivy Scanner — sécurité & CVE</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="33%">
-      <a href="screens/Sauvegarde.png"><img src="screens/Sauvegarde.png" width="100%"/></a>
-      <sub>Backup Restic — snapshots</sub>
-    </td>
-    <td align="center" width="33%">
-      <a href="screens/Ressources.png"><img src="screens/Ressources.png" width="100%"/></a>
-      <sub>Ressources Docker — CPU, RAM & stockage</sub>
-    </td>
-    <td align="center" width="33%">
-      <a href="screens/Notifications.png"><img src="screens/Notifications.png" width="100%"/></a>
-      <sub>Centre de notifications</sub>
+      <a href="screens/19-configuration-editor.png"><img src="screens/19-configuration-editor.png" width="100%"/></a>
+      <sub>Éditeur de configuration avec recherche et remplacement</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/Monitoring.png"><img src="screens/Monitoring.png" width="100%"/></a>
-      <sub>Monitoring temps réel des stacks</sub>
+      <a href="screens/02-image-monitoring.png"><img src="screens/02-image-monitoring.png" width="100%"/></a>
+      <sub>Surveillance des images et registres privés</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/06-docker-images.png"><img src="screens/06-docker-images.png" width="100%"/></a>
+      <sub>Inventaire et nettoyage des images Docker</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/07-docker-networks.png"><img src="screens/07-docker-networks.png" width="100%"/></a>
+      <sub>Inventaire et protections des réseaux Docker</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/14-volume-file-browser.png"><img src="screens/14-volume-file-browser.png" width="100%"/></a>
+      <sub>Explorateur de fichiers des volumes Docker</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/03-backup-configuration.png"><img src="screens/03-backup-configuration.png" width="100%"/></a>
+      <sub>Destinations Restic et sauvegarde des volumes</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/04-backup-stack-consistency.png"><img src="screens/04-backup-stack-consistency.png" width="100%"/></a>
+      <sub>Stratégie de cohérence par stack</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/05-backup-history.png"><img src="screens/05-backup-history.png" width="100%"/></a>
+      <sub>Historique, rétention et tests de restauration</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/15-stack-replication.png"><img src="screens/15-stack-replication.png" width="100%"/></a>
+      <sub>Réplication planifiée et tests de reprise</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/16-stack-copy.png"><img src="screens/16-stack-copy.png" width="100%"/></a>
+      <sub>Copie inter-instance et mapping des volumes</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/17-monitoring-full-page.png"><img src="screens/17-monitoring-full-page.png" width="100%"/></a>
+      <sub>Monitoring, crash loops et auto-heal</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/08-notifications.png"><img src="screens/08-notifications.png" width="100%"/></a>
+      <sub>Canaux de notification et langues</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/09-audit-log.png"><img src="screens/09-audit-log.png" width="100%"/></a>
+      <sub>Historique d'audit centralisé</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/10-security-settings.png"><img src="screens/10-security-settings.png" width="100%"/></a>
+      <sub>Paramètres d'authentification et de sécurité</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/11-plugnpin-integration.png"><img src="screens/11-plugnpin-integration.png" width="100%"/></a>
+      <sub>Intégration PlugNPiN facultative</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/12-api-and-webhooks.png"><img src="screens/12-api-and-webhooks.png" width="100%"/></a>
+      <sub>Jetons API limités et webhooks par stack</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/13-trivy-security-scan.png"><img src="screens/13-trivy-security-scan.png" width="100%"/></a>
+      <sub>Résultats des scans de vulnérabilités Trivy</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/EnhancedUpdate.png"><img src="screens/EnhancedUpdate.png" width="100%"/></a>
