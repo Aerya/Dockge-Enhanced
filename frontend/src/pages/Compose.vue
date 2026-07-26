@@ -923,7 +923,7 @@ export default {
     methods: {
         async loadPlugNPiNIntegrationStatus() {
             try {
-                const token = this.$root.getSocket().token;
+                const token = this.$root.getAuthToken();
                 const response = await fetch("/api/integrations/plugnpin/settings", {
                     headers: { "Authorization": `Bearer ${token}` },
                 });

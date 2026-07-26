@@ -243,7 +243,7 @@ export default {
             const response = await fetch(`/api/automation${path}`, {
                 method,
                 headers: {
-                    "Authorization": `Bearer ${this.$root.getSocket().token}`,
+                    "Authorization": `Bearer ${this.$root.getAuthToken()}`,
                     ...(body === undefined ? {} : { "Content-Type": "application/json" }),
                 },
                 body: body === undefined ? undefined : JSON.stringify(body),

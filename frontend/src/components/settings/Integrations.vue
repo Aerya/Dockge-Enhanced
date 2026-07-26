@@ -231,7 +231,7 @@ export default {
     },
     methods: {
         async api(method, path, body) {
-            const token = this.$root.getSocket().token;
+            const token = this.$root.getAuthToken();
             const response = await fetch(`/api/integrations${path}`, {
                 method,
                 headers: {
