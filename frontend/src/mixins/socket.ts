@@ -222,7 +222,9 @@ export default defineComponent({
                 this.loggedIn = true;
                 this.storage().token = "autoLogin";
                 this.socketIO.token = "autoLogin";
-                if (username) this.username = username;
+                if (username) {
+                    this.username = username;
+                }
                 this.allowLoginDialog = false;
                 this.afterLogin();
             });
@@ -299,6 +301,16 @@ export default defineComponent({
          */
         storage() : Storage {
             return (this.remember) ? localStorage : sessionStorage;
+        },
+
+        /**
+         * Return the JWT used by authenticated HTTP APIs.
+         * Socket.IO keeps its own connection object, but the Dockge JWT is
+         * persisted in the storage selected by the "remember me" setting.
+         */
+        getAuthToken() : string {
+            const token = this.storage().token;
+            return token && token !== "autoLogin" ? token : "";
         },
 
         getSocket() : Socket {
