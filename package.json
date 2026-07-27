@@ -65,7 +65,7 @@
         "@fortawesome/fontawesome-svg-core": "6.7.2",
         "@fortawesome/free-regular-svg-icons": "6.7.2",
         "@fortawesome/free-solid-svg-icons": "6.7.2",
-        "@fortawesome/vue-fontawesome": "3.3.2",
+        "@fortawesome/vue-fontawesome": "3.3.3",
         "@types/bcryptjs": "^2.4.6",
         "@types/bootstrap": "~5.2.11",
         "@types/command-exists": "~1.2.3",
