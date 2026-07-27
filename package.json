@@ -17,7 +17,7 @@
         "reset-password": "tsx ./extra/reset-password.ts"
     },
     "dependencies": {
-        "@homebridge/node-pty-prebuilt-multiarch": "0.13.1",
+        "@homebridge/node-pty-prebuilt-multiarch": "0.14.1",
         "@inventage/envsubst": "^0.17.0",
         "@louislam/sqlite3": "~15.1.6",
         "@xterm/addon-search": "^0.16.0-beta.99",
@@ -87,7 +87,7 @@
         "eslint": "~8.50.0",
         "eslint-plugin-jsdoc": "~46.10.1",
         "eslint-plugin-vue": "~9.33.0",
-        "sass": "~1.101.0",
+        "sass": "~1.102.0",
         "thememirror": "^2.0.1",
         "typescript": "~5.9.3",
         "unplugin-vue-components": "~0.28.0",
