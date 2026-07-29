@@ -542,14 +542,29 @@ export default {
         },
 
         /**
-         * Handle right-click context menu for paste operation
+         * Handle the native context menu and right-click paste.
+         *
+         * In display-only terminals (container logs), keep the browser context
+         * menu available so selected text can be copied. In interactive modes,
+         * a right-click pastes only when no text is currently selected.
          */
         handleContextMenu(event) {
-            // Prevent default context menu
-            event.preventDefault();
-            
-            // Only handle paste for modes that support input
+            const selectedText = this.terminal?.getSelection();
+
+            // Always keep the native context menu when text is selected.
+            if (selectedText) {
+                return;
+            }
+
+            // Logs are read-only: keep the browser context menu available.
+            if (this.mode === "displayOnly") {
+                return;
+            }
+
+            // In terminals accepting input, right-click without a selection
+            // keeps the existing paste behaviour.
             if (this.mode === "mainTerminal" || this.mode === "interactive") {
+                event.preventDefault();
                 this.handlePaste();
             }
         },
