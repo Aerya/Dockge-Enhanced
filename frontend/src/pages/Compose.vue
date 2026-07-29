@@ -137,24 +137,33 @@
                 </a>
             </div>
 
-            <div v-if="!isAdd && stack.isManagedByDockge" class="shadow-box big-padding mb-3">
-                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                    <h5 class="settings-subheading mb-0">
+            <div v-if="!isAdd && stack.isManagedByDockge" class="shadow-box stack-note-panel mb-3">
+                <button
+                    class="stack-note-toggle"
+                    type="button"
+                    :aria-expanded="noteExpanded"
+                    @click="noteExpanded = !noteExpanded"
+                >
+                    <span class="settings-subheading mb-0">
                         <font-awesome-icon icon="note-sticky" class="me-2" />{{ $t("stackNote.heading") }}
-                    </h5>
-                    <button v-if="isEditMode" class="btn btn-sm btn-primary" type="button" :disabled="noteSaving" @click="saveStackNote">
-                        <font-awesome-icon :icon="noteSaving ? 'spinner' : 'save'" :spin="noteSaving" class="me-1" />{{ $t("Save") }}
-                    </button>
+                    </span>
+                    <font-awesome-icon icon="chevron-down" class="stack-note-chevron" :class="{ 'is-expanded': noteExpanded }" />
+                </button>
+                <div v-show="noteExpanded" class="stack-note-content">
+                    <textarea
+                        v-model="stack.note"
+                        class="form-control stack-note-input"
+                        rows="4"
+                        maxlength="10000"
+                        :placeholder="$t('stackNote.placeholder')"
+                    />
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+                        <div class="form-text text-warning mt-0">{{ $t("stackNote.secretWarning") }}</div>
+                        <button class="btn btn-sm btn-primary" type="button" :disabled="noteSaving" @click="saveStackNote">
+                            <font-awesome-icon :icon="noteSaving ? 'spinner' : 'save'" :spin="noteSaving" class="me-1" />{{ $t("Save") }}
+                        </button>
+                    </div>
                 </div>
-                <textarea
-                    v-model="stack.note"
-                    class="form-control"
-                    rows="4"
-                    maxlength="10000"
-                    :readonly="!isEditMode"
-                    :placeholder="$t('stackNote.placeholder')"
-                />
-                <div class="form-text text-warning">{{ $t("stackNote.secretWarning") }}</div>
             </div>
 
             <StackGitPanel
@@ -671,6 +680,7 @@ export default {
             stackActionLabels: localStorage.getItem("stackActionLabels") === "1",
             plugNPiNEnabled: false,
             noteSaving: false,
+            noteExpanded: false,
         };
     },
     computed: {
@@ -1623,6 +1633,52 @@ export default {
     color: $dark-font-color3;
     font-size: 0.78rem;
     font-weight: 600;
+}
+
+.stack-note-panel {
+    padding: 0;
+}
+
+.stack-note-toggle {
+    display: flex;
+    width: 100%;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+}
+
+.stack-note-toggle:hover .settings-subheading,
+.stack-note-toggle:focus-visible .settings-subheading {
+    color: $primary;
+}
+
+.stack-note-toggle:focus-visible {
+    outline: 2px solid $primary;
+    outline-offset: -2px;
+}
+
+.stack-note-chevron {
+    color: $dark-font-color3;
+    transition: transform 0.2s ease;
+}
+
+.stack-note-chevron.is-expanded {
+    transform: rotate(180deg);
+}
+
+.stack-note-content {
+    padding: 0 16px 16px;
+}
+
+.stack-note-input::placeholder {
+    color: #9ca3af;
+    opacity: 1;
 }
 
 /* Terminal de progression (deploy/restart/update) : plus haut pour afficher
