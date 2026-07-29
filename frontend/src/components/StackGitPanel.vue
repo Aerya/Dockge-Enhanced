@@ -1,18 +1,19 @@
 <template>
-    <details class="shadow-box big-padding mb-3" @toggle="onToggle">
+    <details class="shadow-box stack-git-panel mb-3" @toggle="onToggle">
         <summary class="git-summary">
-            <div>
-                <h5 class="settings-subheading mb-1">
-                    <font-awesome-icon icon="code-branch" class="me-2" />Git
-                </h5>
-                <p class="form-text mb-0">{{ $t("stackGit.hint") }}</p>
-            </div>
-            <button class="btn btn-sm btn-normal" :disabled="loading" @click.prevent="load">
-                <font-awesome-icon :icon="loading ? 'spinner' : 'arrows-rotate'" :spin="loading" />
-            </button>
+            <span class="settings-subheading mb-0">
+                <font-awesome-icon icon="code-branch" class="me-2" />Git
+            </span>
+            <font-awesome-icon icon="chevron-down" class="git-chevron" />
         </summary>
 
-        <div v-if="opened" class="mt-3">
+        <div v-if="opened" class="git-content">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                <p class="form-text mb-0">{{ $t("stackGit.hint") }}</p>
+                <button class="btn btn-sm btn-normal" :disabled="loading" @click="load">
+                    <font-awesome-icon :icon="loading ? 'spinner' : 'arrows-rotate'" :spin="loading" />
+                </button>
+            </div>
             <div v-if="error" class="alert alert-danger py-2">{{ error }}</div>
 
             <div v-if="status && !status.initialized">
@@ -200,6 +201,10 @@ export default {
 </script>
 
 <style scoped>
+.stack-git-panel {
+    padding: 0;
+}
+
 .git-output {
     max-height: 26rem;
     overflow: auto;
@@ -212,10 +217,39 @@ export default {
 
 .git-summary {
     display: flex;
-    align-items: flex-start;
+    min-height: 48px;
+    align-items: center;
     justify-content: space-between;
-    gap: .5rem;
+    gap: 12px;
+    padding: 12px 16px;
     cursor: pointer;
-    list-style-position: outside;
+    list-style: none;
+}
+
+.git-summary::-webkit-details-marker {
+    display: none;
+}
+
+.git-summary:hover .settings-subheading,
+.git-summary:focus-visible .settings-subheading {
+    color: $primary;
+}
+
+.git-summary:focus-visible {
+    outline: 2px solid $primary;
+    outline-offset: -2px;
+}
+
+.git-chevron {
+    color: $dark-font-color3;
+    transition: transform 0.2s ease;
+}
+
+.stack-git-panel[open] .git-chevron {
+    transform: rotate(180deg);
+}
+
+.git-content {
+    padding: 0 16px 16px;
 }
 </style>
