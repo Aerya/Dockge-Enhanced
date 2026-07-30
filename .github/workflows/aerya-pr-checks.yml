@@ -1,0 +1,129 @@
+name: PR checks
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate project and Docker builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        if: ${{ hashFiles('package.json') != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: ${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}
+
+      - name: Install and validate Node.js project
+        if: ${{ hashFiles('package.json') != '' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [[ -f pnpm-lock.yaml ]]; then
+            corepack enable
+            pnpm install --frozen-lockfile
+            for script in lint typecheck test build; do
+              if node -e "const p=require('./package.json'); process.exit(p.scripts?.['$script'] ? 0 : 1)"; then
+                pnpm run "$script"
+              fi
+            done
+          elif [[ -f yarn.lock ]]; then
+            corepack enable
+            yarn install --immutable || yarn install --frozen-lockfile
+            for script in lint typecheck test build; do
+              if node -e "const p=require('./package.json'); process.exit(p.scripts?.['$script'] ? 0 : 1)"; then
+                yarn "$script"
+              fi
+            done
+          else
+            if [[ -f package-lock.json ]]; then npm ci; else npm install; fi
+            for script in lint typecheck test build; do
+              if node -e "const p=require('./package.json'); process.exit(p.scripts?.['$script'] ? 0 : 1)"; then
+                npm run "$script"
+              fi
+            done
+          fi
+
+      - name: Set up Python
+        if: ${{ hashFiles('requirements*.txt', 'pyproject.toml', 'setup.py') != '' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install and validate Python project
+        if: ${{ hashFiles('requirements*.txt', 'pyproject.toml', 'setup.py') != '' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --upgrade pip
+          [[ -f requirements.txt ]] && pip install -r requirements.txt
+          [[ -f requirements-dev.txt ]] && pip install -r requirements-dev.txt
+          [[ -f pyproject.toml || -f setup.py ]] && pip install -e .
+          if find . -maxdepth 3 -type f \( -name 'test_*.py' -o -name '*_test.py' \) -print -quit | grep -q .; then
+            python -m pip install pytest
+            pytest
+          fi
+
+      - name: Set up Go
+        if: ${{ hashFiles('go.mod') != '' }}
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Validate Go project
+        if: ${{ hashFiles('go.mod') != '' }}
+        run: |
+          go test ./...
+          go build ./...
+
+      - name: Validate Docker Compose files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(find . -maxdepth 3 -type f \
+            \( -iname 'compose.yml' -o -iname 'compose.yaml' -o -iname 'docker-compose.yml' -o -iname 'docker-compose.yaml' -o -iname 'docker-compose.*.yml' -o -iname 'docker-compose.*.yaml' \) \
+            ! -path './.git/*')
+          for file in "${files[@]}"; do
+            echo "Validation de $file"
+            docker compose -f "$file" config --quiet
+          done
+
+      - name: Build every Dockerfile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t dockerfiles < <(find . -maxdepth 3 -type f \
+            \( -iname 'Dockerfile' -o -iname 'Dockerfile.*' -o -iname '*.Dockerfile' \) \
+            ! -path './.git/*' | sort)
+          if [[ ${#dockerfiles[@]} -eq 0 ]]; then
+            echo "Aucun Dockerfile détecté."
+            exit 0
+          fi
+          i=0
+          for dockerfile in "${dockerfiles[@]}"; do
+            i=$((i + 1))
+            context="$(dirname "$dockerfile")"
+            tag="pr-check-${i}:latest"
+            echo "Construction de $dockerfile avec contexte $context"
+            if ! docker build --pull --file "$dockerfile" --tag "$tag" "$context"; then
+              echo "Nouvel essai avec la racine du dépôt comme contexte"
+              docker build --pull --file "$dockerfile" --tag "$tag" .
+            fi
+          done

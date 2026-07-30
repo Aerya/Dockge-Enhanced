@@ -1,0 +1,118 @@
+name: Trivy security scan
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: trivy-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  filesystem:
+    name: Trivy filesystem scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate filesystem SARIF
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            aquasec/trivy:0.65.0 fs \
+            --scanners vuln,secret,misconfig \
+            --format sarif \
+            --output /work/trivy-fs.sarif \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            /work
+
+      - name: Upload filesystem results
+        if: always() && hashFiles('trivy-fs.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-filesystem
+        continue-on-error: true
+
+      - name: Block PR on fixable filesystem vulnerabilities
+        if: github.event_name == 'pull_request'
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            aquasec/trivy:0.65.0 fs \
+            --scanners vuln,secret,misconfig \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            /work
+
+  images:
+    name: Trivy Docker image scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and scan every Dockerfile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p trivy-results
+          mapfile -t dockerfiles < <(find . -maxdepth 3 -type f \
+            \( -iname 'Dockerfile' -o -iname 'Dockerfile.*' -o -iname '*.Dockerfile' \) \
+            ! -path './.git/*' | sort)
+          if [[ ${#dockerfiles[@]} -eq 0 ]]; then
+            echo "Aucun Dockerfile détecté." > trivy-results/README.txt
+            exit 0
+          fi
+          i=0
+          for dockerfile in "${dockerfiles[@]}"; do
+            i=$((i + 1))
+            context="$(dirname "$dockerfile")"
+            image="trivy-local-${i}:scan"
+            report="trivy-results/image-${i}.sarif"
+            echo "Construction de $dockerfile"
+            if ! docker build --pull --no-cache --file "$dockerfile" --tag "$image" "$context"; then
+              echo "Nouvel essai avec la racine du dépôt comme contexte"
+              docker build --pull --no-cache --file "$dockerfile" --tag "$image" .
+            fi
+            docker run --rm \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v "$PWD:/work" \
+              aquasec/trivy:0.65.0 image \
+              --format sarif \
+              --output "/work/$report" \
+              --severity HIGH,CRITICAL \
+              --ignore-unfixed \
+              "$image"
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy:0.65.0 image \
+                --severity HIGH,CRITICAL \
+                --ignore-unfixed \
+                --exit-code 1 \
+                "$image"
+            fi
+          done
+
+      - name: Upload image results
+        if: always() && hashFiles('trivy-results/*.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results
+          category: trivy-images
+        continue-on-error: true
