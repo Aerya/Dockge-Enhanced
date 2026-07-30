@@ -1,0 +1,86 @@
+name: Trivy security scan
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: trivy-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  filesystem:
+    name: Trivy filesystem report
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate filesystem SARIF
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-fs.sarif
+          exit-code: '0'
+
+      - name: Upload filesystem results
+        if: always() && hashFiles('trivy-fs.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-filesystem
+        continue-on-error: true
+
+  image:
+    name: Trivy root Docker image report
+    if: ${{ hashFiles('Dockerfile') != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build root Dockerfile
+        id: build
+        continue-on-error: true
+        run: docker build --pull --tag local/trivy-scan:${{ github.sha }} .
+
+      - name: Generate image SARIF
+        if: steps.build.outcome == 'success'
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: local/trivy-scan:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-image.sarif
+          exit-code: '0'
+
+      - name: Upload image results
+        if: always() && hashFiles('trivy-image.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-root-image
+        continue-on-error: true
+
+      - name: Explain skipped image scan
+        if: steps.build.outcome != 'success'
+        run: |
+          echo "Le Dockerfile racine ne peut pas être construit sans préparation spécifique."
+          echo "Le workflow natif du dépôt reste la source de vérité pour le build."
