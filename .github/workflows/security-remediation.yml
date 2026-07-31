@@ -1,0 +1,102 @@
+name: Security remediation
+
+on:
+  schedule:
+    - cron: "20 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.72.0
+  FIX_BRANCH: automation/security-remediation
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        if: ${{ hashFiles('**/package-lock.json') != '' }}
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        if: ${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') != '' }}
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-go@v5
+        if: ${{ hashFiles('**/go.mod') != '' }}
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Baseline scan
+        run: |
+          docker run --rm -v "$PWD:/work" "$TRIVY_IMAGE" fs             --scanners vuln,secret,misconfig             --severity HIGH,CRITICAL             --ignore-unfixed             --format json             --output /work/trivy-before.json             /work || true
+
+      - name: Apply safe fixes
+        id: fix
+        run: .github/scripts/security-remediate.sh
+
+      - name: Validate fixes
+        if: steps.fix.outputs.changed == '1'
+        run: .github/scripts/security-validate.sh
+
+      - name: Confirm improvement
+        id: improvement
+        if: steps.fix.outputs.changed == '1'
+        run: |
+          docker run --rm -v "$PWD:/work" "$TRIVY_IMAGE" fs             --scanners vuln,secret,misconfig             --severity HIGH,CRITICAL             --ignore-unfixed             --format json             --output /work/trivy-after.json             /work || true
+          python3 .github/scripts/compare-trivy.py             improvement trivy-before.json trivy-after.json
+
+      - name: Create or update remediation PR
+        if: steps.fix.outputs.changed == '1' && steps.improvement.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "Aerya"
+          git config user.email "blog@upandclear.org"
+          git checkout -B "$FIX_BRANCH"
+          git add -A
+          git commit -m "fix: apply safe security updates" || exit 0
+          git push --force-with-lease origin "$FIX_BRANCH"
+          pr="$(gh pr list --head "$FIX_BRANCH" --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr" ]; then
+            gh pr create               --base "main"               --head "$FIX_BRANCH"               --title "fix: automated security remediation"               --body "Safe dependency updates generated automatically. The PR remains open until the Security gate succeeds."
+          fi
+
+      - name: Notify when findings remain without a safe fix
+        if: steps.fix.outputs.changed != '1' || steps.improvement.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCORD_WEBHOOK: ${{ secrets.SECURITY_DISCORD_WEBHOOK }}
+        run: |
+          title="Security findings require manual review"
+          body="The scheduled security remediation could not produce a safe validated fix. Review the latest Security remediation run and Trivy results."
+
+          existing="$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')"
+          if [ -z "$existing" ]; then
+            gh issue create --title "$title" --body "$body"
+          else
+            gh issue comment "$existing" --body "Still unresolved after the latest scheduled run."
+          fi
+
+          if [ -n "${DISCORD_WEBHOOK:-}" ]; then
+            payload="$(python3 - <<'PY'
+import json, os
+repo=os.environ.get("GITHUB_REPOSITORY","repository")
+url=f"https://github.com/{repo}/actions/workflows/security-remediation.yml"
+print(json.dumps({"content": f"⚠️ {repo}: correction automatique impossible ou non validée. {url}"}))
+PY
+)"
+            curl -fsS -H 'Content-Type: application/json'               -d "$payload" "$DISCORD_WEBHOOK" || true
+          fi

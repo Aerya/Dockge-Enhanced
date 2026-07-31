@@ -1,0 +1,79 @@
+name: Security auto merge
+
+on:
+  workflow_run:
+    workflows:
+      - "Security gate"
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge eligible security PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.payload.workflow_run.head_sha;
+
+            const prs = await github.paginate(
+              github.rest.pulls.list,
+              { owner, repo, state: "open", per_page: 100 }
+            );
+
+            const pr = prs.find(item => item.head.sha === sha);
+            if (!pr) {
+              core.info("No open PR found for this workflow run.");
+              return;
+            }
+
+            const dependabot = pr.user.login === "dependabot[bot]";
+            const remediation = pr.head.ref === "automation/security-remediation";
+
+            if (!dependabot && !remediation) {
+              core.info(`PR #${pr.number} is not eligible for automatic merge.`);
+              return;
+            }
+
+            if (pr.draft) {
+              core.info(`PR #${pr.number} is a draft.`);
+              return;
+            }
+
+            const checks = await github.paginate(
+              github.rest.checks.listForRef,
+              { owner, repo, ref: sha, per_page: 100 }
+            );
+
+            const blocking = checks.filter(check =>
+              check.name !== "merge" &&
+              (
+                check.status !== "completed" ||
+                !["success", "neutral", "skipped"].includes(check.conclusion)
+              )
+            );
+
+            if (blocking.length) {
+              core.setFailed(
+                `PR #${pr.number} still has blocking checks: ` +
+                blocking.map(c => `${c.name}:${c.status}/${c.conclusion}`).join(", ")
+              );
+              return;
+            }
+
+            await github.rest.pulls.merge({
+              owner,
+              repo,
+              pull_number: pr.number,
+              merge_method: "squash"
+            });
+
+            core.info(`Merged PR #${pr.number}.`);

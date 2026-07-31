@@ -1,0 +1,76 @@
+name: Security gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "main"
+  schedule:
+    - cron: "15 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: security-gate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.72.0
+
+jobs:
+  validate:
+    name: Validate project
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: ${{ hashFiles('**/package-lock.json') != '' }}
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        if: ${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') != '' }}
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-go@v5
+        if: ${{ hashFiles('**/go.mod') != '' }}
+        with:
+          go-version: stable
+          cache: false
+      - name: Validate
+        run: .github/scripts/security-validate.sh
+
+  trivy:
+    name: Trivy regression check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan current tree
+        run: |
+          docker run --rm -v "$PWD:/work" "$TRIVY_IMAGE" fs             --scanners vuln,secret,misconfig             --severity HIGH,CRITICAL             --ignore-unfixed             --format json             --output /work/trivy-current.json             /work || true
+
+      - name: Compare with pull request base
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git worktree add /tmp/base "$BASE_SHA"
+          docker run --rm -v "/tmp/base:/work" "$TRIVY_IMAGE" fs             --scanners vuln,secret,misconfig             --severity HIGH,CRITICAL             --ignore-unfixed             --format json             --output /work/trivy-base.json             /work || true
+          python3 .github/scripts/compare-trivy.py             regression /tmp/base/trivy-base.json trivy-current.json
+
+      - name: Upload SARIF
+        if: always()
+        run: |
+          docker run --rm -v "$PWD:/work" "$TRIVY_IMAGE" fs             --scanners vuln,secret,misconfig             --severity HIGH,CRITICAL             --ignore-unfixed             --format sarif             --output /work/trivy.sarif             /work || true
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy.sarif') != ''
+        with:
+          sarif_file: trivy.sarif
