@@ -28,7 +28,8 @@ jobs:
       - name: Activer la fusion squash pour les mises à jour patch et mineures
         if: >-
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+          steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+          steps.metadata.outputs.dependency-group == 'minor-and-patch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
@@ -67,7 +68,8 @@ jobs:
         if: >-
           steps.pr.outputs.eligible == 'true' &&
           (steps.fallback-metadata.outputs.update-type == 'version-update:semver-patch' ||
-           steps.fallback-metadata.outputs.update-type == 'version-update:semver-minor')
+           steps.fallback-metadata.outputs.update-type == 'version-update:semver-minor' ||
+           steps.fallback-metadata.outputs.dependency-group == 'minor-and-patch')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ steps.pr.outputs.url }}
