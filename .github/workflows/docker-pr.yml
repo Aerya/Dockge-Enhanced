@@ -1,0 +1,48 @@
+name: Validation Docker PR
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - "Dockerfile.*"
+      - "**/Dockerfile"
+      - "**/Dockerfile.*"
+      - "docker-compose.yml"
+      - "compose.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "pnpm-lock.yaml"
+      - "requirements*.txt"
+      - "**/requirements*.txt"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/docker-pr.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build linux/amd64,linux/arm64
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Construire sans publier
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: false
+          pull: true

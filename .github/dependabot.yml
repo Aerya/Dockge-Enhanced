@@ -9,9 +9,6 @@ updates:
       timezone: "Europe/Paris"
     open-pull-requests-limit: 10
     rebase-strategy: "auto"
-    labels:
-      - "dependencies"
-      - "javascript"
     groups:
       minor-and-patch:
         update-types:
@@ -30,9 +27,6 @@ updates:
       timezone: "Europe/Paris"
     open-pull-requests-limit: 10
     rebase-strategy: "auto"
-    labels:
-      - "dependencies"
-      - "docker"
     groups:
       minor-and-patch:
         update-types:
@@ -47,13 +41,10 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "07:30"
+      time: "06:10"
       timezone: "Europe/Paris"
     open-pull-requests-limit: 10
     rebase-strategy: "auto"
-    labels:
-      - "dependencies"
-      - "github-actions"
     groups:
       minor-and-patch:
         update-types:
