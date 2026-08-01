@@ -1,0 +1,71 @@
+name: Sécurité - Trivy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "15 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: trivy-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.72.0
+
+jobs:
+  filesystem:
+    name: Nouvelles régressions HIGH/CRITICAL
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Analyser la révision courante
+        run: |
+          docker run --rm -v "$PWD:/work" "$TRIVY_IMAGE" fs \
+            --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
+            --ignore-unfixed --format json --output /work/trivy-head.json /work || true
+          docker run --rm -v "$PWD:/work" "$TRIVY_IMAGE" fs \
+            --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
+            --ignore-unfixed --format sarif --output /work/trivy-head.sarif /work || true
+
+      - name: Analyser la base de la PR
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git worktree add /tmp/trivy-base "$BASE_SHA"
+          docker run --rm -v /tmp/trivy-base:/work "$TRIVY_IMAGE" fs \
+            --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
+            --ignore-unfixed --format json --output /work/trivy-base.json /work || true
+          cp /tmp/trivy-base/trivy-base.json trivy-base.json
+          git worktree remove /tmp/trivy-base --force
+
+      - name: Refuser uniquement les nouvelles régressions corrigibles
+        if: github.event_name == 'pull_request'
+        run: python3 .github/scripts/trivy_compare.py trivy-base.json trivy-head.json
+
+      - name: Publier le rapport SARIF
+        if: always() && hashFiles('trivy-head.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-head.sarif
+          category: trivy-filesystem
+
+      - name: Conserver le rapport JSON
+        if: always() && hashFiles('trivy-head.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ github.sha }}
+          path: trivy-head.json
+          retention-days: 14
