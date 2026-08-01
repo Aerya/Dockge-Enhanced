@@ -3,8 +3,6 @@ name: Fusion automatique Dependabot
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
-  check_suite:
-    types: [completed]
 
 permissions:
   contents: write
@@ -37,44 +35,3 @@ jobs:
           if ! gh pr merge --auto --squash --delete-branch "$PR_URL"; then
             echo "::notice::L'auto-merge natif est indisponible; la fusion sera réévaluée à la fin des contrôles."
           fi
-
-  fallback:
-    if: >-
-      github.event_name == 'check_suite' &&
-      github.event.check_suite.conclusion == 'success' &&
-      github.event.check_suite.pull_requests[0].number != 0
-    runs-on: ubuntu-latest
-    steps:
-      - name: Déterminer la PR
-        id: pr
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.check_suite.pull_requests[0].number }}
-        run: |
-          author="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .user.login)"
-          test "$author" = 'dependabot[bot]' || exit 0
-          echo "eligible=true" >> "$GITHUB_OUTPUT"
-          echo "url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> "$GITHUB_OUTPUT"
-
-      - name: Lire les métadonnées Dependabot
-        if: steps.pr.outputs.eligible == 'true'
-        id: fallback-metadata
-        uses: dependabot/fetch-metadata@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          pr-url: ${{ steps.pr.outputs.url }}
-
-      - name: Fusionner lorsque tous les contrôles sont terminés
-        if: >-
-          steps.pr.outputs.eligible == 'true' &&
-          (steps.fallback-metadata.outputs.update-type == 'version-update:semver-patch' ||
-           steps.fallback-metadata.outputs.update-type == 'version-update:semver-minor' ||
-           steps.fallback-metadata.outputs.dependency-group == 'minor-and-patch')
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ steps.pr.outputs.url }}
-        run: |
-          checks="$(gh pr checks "$PR_URL" --json bucket --jq '[.[].bucket]')"
-          test "$(jq length <<<"$checks")" -gt 0
-          jq -e 'all(. == "pass" or . == "skipping")' <<<"$checks"
-          gh pr merge --squash --delete-branch "$PR_URL"
