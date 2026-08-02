@@ -1,5 +1,6 @@
 {
     "languageName": "Slovenščina",
+    "stackLogs": "Logs",
     "Create your admin account": "Ustvarite svoj skrbniški račun",
     "authIncorrectCreds": "Napačno uporabniško ime ali geslo.",
     "PasswordsDoNotMatch": "Gesli se ne ujemata.",

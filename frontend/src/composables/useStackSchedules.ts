@@ -84,7 +84,13 @@ export function useStackSchedules() {
     });
 
     function scheduleFor(stack: string) {
-        return computed(() => schedules.value.find(item => item.stack === stack) ?? null);
+        return computed(() => schedules.value.find(item => item.stack === stack) ?? {
+            stack,
+            start: { mode: "off" as ScheduleMode },
+            stop: { mode: "off" as ScheduleMode },
+            nextStart: null,
+            nextStop: null,
+        });
     }
 
     async function saveSchedule(stack: string, start: ScheduleRule, stop: ScheduleRule) {

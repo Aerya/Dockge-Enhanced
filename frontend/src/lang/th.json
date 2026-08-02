@@ -1,5 +1,6 @@
 {
     "languageName": "อังกฤษ",
+    "stackLogs": "Logs",
     "Create your admin account": "สร้างบัญชีผู้ดูแลระบบของคุณ",
     "authIncorrectCreds": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
     "PasswordsDoNotMatch": "รหัสผ่านไม่ตรงกัน",

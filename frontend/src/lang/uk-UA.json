@@ -1,5 +1,6 @@
 {
     "languageName": "Українська",
+    "stackLogs": "Logs",
     "Create your admin account": "Створити акаунт адміністратора",
     "authIncorrectCreds": "Неправильне ім'я користувача або пароль.",
     "PasswordsDoNotMatch": "Паролі не збігаються.",

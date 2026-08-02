@@ -1,5 +1,6 @@
 {
     "languageName": "Italiano",
+    "stackLogs": "Logs",
     "Create your admin account": "Crea il tuo account amministratore",
     "authIncorrectCreds": "Username e/o password errati.",
     "PasswordsDoNotMatch": "Le password non corrispondono.",

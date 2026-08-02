@@ -15,6 +15,7 @@ import { TrivyScanner } from "./watchers/trivy-scanner";
 import { BackupManager } from "./watchers/backup-manager";
 import { MonitoringWatcher } from "./watchers/monitoring-watcher";
 import { KulaManager } from "./watchers/kula-manager";
+import { DozzleManager } from "./watchers/dozzle-manager";
 import { PlugNPiNManager } from "./integrations/plugnpin-manager";
 import { AutoPruneManager } from "./watchers/auto-prune-manager";
 import { SelfUpdateChecker } from "./watchers/self-update-checker";
@@ -465,6 +466,7 @@ export class DockgeServer {
             MonitoringWatcher.getInstance().setServer(this);
             MonitoringWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "MonitoringWatcher start error: " + e));
             KulaManager.getInstance().startIfEnabled().catch(e => log.error("server", "KulaManager start error: " + e));
+            DozzleManager.getInstance().startIfEnabled().catch(e => log.error("server", "DozzleManager start error: " + e));
             PlugNPiNManager.getInstance().startIfEnabled().catch(e => log.error("server", "PlugNPiN start error: " + e));
             AutoPruneManager.getInstance().startIfEnabled().catch(e => log.error("server", "AutoPruneManager start error: " + e));
             StackScheduler.getInstance().start(this).catch(e => log.error("server", "StackScheduler start error: " + e));

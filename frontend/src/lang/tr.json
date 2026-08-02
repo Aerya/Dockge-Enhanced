@@ -1,5 +1,6 @@
 {
     "languageName": "Türkçe",
+    "stackLogs": "Logs",
     "Create your admin account": "Yönetici hesabınızı oluşturun",
     "authIncorrectCreds": "Yanlış kullanıcı adı veya parola.",
     "PasswordsDoNotMatch": "Parolalar eşleşmiyor.",

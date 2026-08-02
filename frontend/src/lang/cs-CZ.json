@@ -1,5 +1,6 @@
 {
     "languageName": "Čeština",
+    "stackLogs": "Logs",
     "Create your admin account": "Vytvořit účet administrátora",
     "authIncorrectCreds": "Nesprávné uživatelské jméno nebo heslo.",
     "PasswordsDoNotMatch": "Hesla se neshodují.",

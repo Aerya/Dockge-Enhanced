@@ -95,25 +95,20 @@
                         </strong>
                     </button>
                 </div>
-                <div v-if="!isEditMode" class="container-action-bar mt-3">
-                    <div class="container-actions">
-                        <button v-if="status !== 'running' && status !== 'healthy'" class="btn btn-sm btn-primary" :title="$t('startStack')" :disabled="actionProcessing" @click="runAction('start')"><font-awesome-icon icon="play" /></button>
-                        <button v-if="status === 'running' || status === 'healthy'" class="btn btn-sm btn-normal" :title="$t('stopStack')" :disabled="actionProcessing" @click="runAction('stop')"><font-awesome-icon icon="stop" /></button>
-                        <button class="btn btn-sm btn-normal" :title="$t('restartStack')" :disabled="actionProcessing" @click="runAction('restart')"><font-awesome-icon icon="arrows-rotate" /></button>
-                        <button class="btn btn-sm btn-normal" :title="$t('updateStack')" :disabled="actionProcessing" @click="runAction('update')"><font-awesome-icon icon="cloud-arrow-down" /></button>
-                        <button class="btn btn-sm btn-normal" :title="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="recycle" /></button>
-                        <button class="btn btn-sm btn-normal" :title="$t('pullAndRecreateStack')" :disabled="actionProcessing" @click="runAction('pull-recreate')"><font-awesome-icon icon="boxes-stacked" /></button>
-                    </div>
-                    <div class="container-utility-actions">
-                        <button class="btn btn-normal" :title="$t('volumeBrowserTitle')" @click="openVolumeBrowser">
-                            <font-awesome-icon icon="folder-open" />
-                            {{ $t("files") }}
-                        </button>
-                        <router-link class="btn btn-normal" :to="terminalRouteLink" disabled="">
-                            <font-awesome-icon icon="terminal" />
-                            Bash
-                        </router-link>
-                    </div>
+                <div v-if="!isEditMode" class="container-action-bar mt-3" :class="{ 'container-action-bar--labeled': containerActionLabels }">
+                    <button v-if="status !== 'running' && status !== 'healthy'" class="btn btn-sm btn-primary container-action" :title="$t('startStack')" :disabled="actionProcessing" @click="runAction('start')"><font-awesome-icon icon="play" /><span>{{ $t("startStack") }}</span></button>
+                    <button v-if="status === 'running' || status === 'healthy'" class="btn btn-sm btn-normal container-action" :title="$t('stopStack')" :disabled="actionProcessing" @click="runAction('stop')"><font-awesome-icon icon="stop" /><span>{{ $t("stopStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('restartStack')" :disabled="actionProcessing" @click="runAction('restart')"><font-awesome-icon icon="arrows-rotate" /><span>{{ $t("restartStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('updateStack')" :disabled="actionProcessing" @click="runAction('update')"><font-awesome-icon icon="cloud-arrow-down" /><span>{{ $t("updateStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="recycle" /><span>{{ $t("recreateStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('pullAndRecreateStack')" :disabled="actionProcessing" @click="runAction('pull-recreate')"><font-awesome-icon icon="boxes-stacked" /><span>{{ $t("pullAndRecreateStack") }}</span></button>
+                    <button class="btn btn-sm container-action" :class="showSchedule ? 'btn-primary' : 'btn-normal'" :title="$t('stackScheduler.action')" @click="showSchedule = !showSchedule"><font-awesome-icon icon="calendar-days" /><span>{{ $t("stackScheduler.action") }}</span></button>
+                    <button class="btn btn-sm container-action" :class="containerActionLabels ? 'btn-primary' : 'btn-normal'" :title="$t('stackActionLabels')" @click="$emit('container-action-labels-change', !containerActionLabels)"><font-awesome-icon icon="list" /><span>{{ $t("stackActionLabels") }}</span></button>
+                    <router-link class="btn btn-sm btn-normal container-action" :to="terminalRouteLink" disabled=""><font-awesome-icon icon="terminal" /><span>{{ $t("terminal") }}</span></router-link>
+                    <a v-if="dozzleUrl" class="btn btn-sm btn-normal container-action" :href="dozzleContainerUrl" target="_blank" rel="noopener noreferrer"><font-awesome-icon icon="stream" /><span>Dozzle</span></a>
+                </div>
+                <div v-if="!isEditMode && showSchedule" class="container-schedule mt-3">
+                    <StackScheduleEditor :stack-name="`${stackName}::${name}`" compact :show-heading="false" />
                 </div>
             </div>
         </div>
@@ -242,12 +237,14 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { parseDockerPort, imageRegistryUrl, resolveEndpointHostname } from "../../../common/util-common";
 import VolumeBrowser from "./VolumeBrowser.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
+import StackScheduleEditor from "./StackScheduleEditor.vue";
 
 export default defineComponent({
     components: {
         FontAwesomeIcon,
         VolumeBrowser,
         ContainerStatsBadge,
+        StackScheduleEditor,
     },
     props: {
         name: {
@@ -309,19 +306,30 @@ export default defineComponent({
         showResourceStats: {
             type: Boolean,
             default: false,
-        }
+        },
+        dozzleUrl: { type: String, default: "" }
+        ,
+        containerActionLabels: { type: Boolean, default: false }
     },
     emits: [
         "auto-update-change",
         "refresh-volume-usage",
         "service-action",
+        "container-action-labels-change",
     ],
     data() {
         return {
             showConfig: false,
+            showSchedule: false,
         };
     },
     computed: {
+
+        dozzleContainerUrl() {
+            const base = this.dozzleUrl.replace(/\/$/, "");
+            const containerName = this.service.container_name || `${this.stackName}-${this.name}-1`;
+            return `${base}/show?name=${encodeURIComponent(containerName)}`;
+        },
 
         networkList() {
             let list = [];
@@ -497,21 +505,45 @@ export default defineComponent({
 @import "../styles/vars";
 
 .container {
-    .container-action-bar,
-    .container-actions,
-    .container-utility-actions {
+    .container-action-bar {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
         gap: .3rem;
+        justify-content: flex-start;
     }
 
-    .container-action-bar {
-        justify-content: space-between;
+    .container-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.35rem;
+        min-height: 2.15rem;
+        gap: .2rem;
+
+        span { display: none; }
     }
 
-    .container-utility-actions {
-        margin-left: auto;
+    .container-action-bar--labeled .container-action {
+        flex-direction: column;
+        min-width: 5rem;
+        min-height: 3.5rem;
+        padding: .3rem .45rem;
+
+        span {
+            display: block;
+            max-width: 7rem;
+            font-size: .64rem;
+            line-height: 1.05;
+            white-space: normal;
+            text-align: center;
+        }
+    }
+
+    .container-schedule {
+        padding: 0 10px;
+        border: 1px solid rgba(127, 127, 127, .18);
+        border-radius: 8px;
     }
     .image {
         font-size: 0.8rem;
@@ -645,14 +677,7 @@ export default defineComponent({
     }
 
     @media (max-width: 575.98px) {
-        .container-action-bar {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .container-utility-actions {
-            margin-left: 0;
-        }
+        .container-action-bar { align-items: flex-start; }
     }
 }
 

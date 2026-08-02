@@ -1,5 +1,6 @@
 {
     "languageName": "한국어",
+    "stackLogs": "Logs",
     "Create your admin account": "관리자 계정 만들기",
     "authIncorrectCreds": "사용자명 또는 비밀번호가 일치하지 않아요.",
     "PasswordsDoNotMatch": "비밀번호가 일치하지 않아요.",

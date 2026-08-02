@@ -1,5 +1,6 @@
 {
     "languageName": "Polski",
+    "stackLogs": "Logs",
     "Create your admin account": "Utwórz konto administratora",
     "authIncorrectCreds": "Nieprawidłowa nazwa użytkownika lub hasło.",
     "PasswordsDoNotMatch": "Hasła nie pasują do siebie.",

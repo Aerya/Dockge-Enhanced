@@ -15,6 +15,7 @@ import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { BackupManager } from "../watchers/backup-manager";
 import { KulaManager } from "../watchers/kula-manager";
+import { DozzleManager } from "../watchers/dozzle-manager";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { AuditLogger, setAuditUser } from "../audit-log";
@@ -576,6 +577,33 @@ export class WatcherRouter extends Router {
                 await auditWatcherAction(req, "kula.stop", "container", "kula", "failure", String(e));
                 res.status(500).json({ ok: false, message: String(e) });
             }
+        });
+
+        router.get("/dozzle/settings", (_req: Request, res: Response) => {
+            res.json({ ok: true, data: DozzleManager.getInstance().getSettingsSafe() });
+        });
+        router.post("/dozzle/settings", async (req: Request, res: Response) => {
+            try {
+                await DozzleManager.getInstance().saveSettings(req.body);
+                res.json({ ok: true });
+            } catch (e) { res.status(500).json({ ok: false, message: String(e) }); }
+        });
+        router.get("/dozzle/status", async (_req: Request, res: Response) => {
+            res.json({ ok: true, status: await DozzleManager.getInstance().getStatus() });
+        });
+        router.post("/dozzle/start", async (req: Request, res: Response) => {
+            try {
+                await DozzleManager.getInstance().start();
+                await auditWatcherAction(req, "dozzle.start", "container", "dozzle");
+                res.json({ ok: true });
+            } catch (e) { res.status(500).json({ ok: false, message: String(e) }); }
+        });
+        router.post("/dozzle/stop", async (req: Request, res: Response) => {
+            try {
+                await DozzleManager.getInstance().stop();
+                await auditWatcherAction(req, "dozzle.stop", "container", "dozzle");
+                res.json({ ok: true });
+            } catch (e) { res.status(500).json({ ok: false, message: String(e) }); }
         });
 
         // ════════════════════════════════════════════════════════════════

@@ -3,6 +3,7 @@
     "LongSyntaxNotSupported": "Доўгі сінтаксіс тут не падтрымліваецца. Выкарыстоўвайце рэдактар YAML.",
     "removeAgentMsg": "Вы ўпэўнены, што хочаце выдаліць гэтага агента?",
     "languageName": "Беларуская",
+    "stackLogs": "Logs",
     "Create your admin account": "Стварыце ўліковы запіс адміністратара",
     "authIncorrectCreds": "Няправільны лагін ці пароль.",
     "PasswordsDoNotMatch": "Паролі не супадаюць.",

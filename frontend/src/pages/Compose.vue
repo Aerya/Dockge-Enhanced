@@ -32,10 +32,6 @@
             />
 
             <div v-if="stack.isManagedByDockge" class="mb-3">
-                <div class="stack-action-display form-check form-switch">
-                    <input id="stackActionLabels" v-model="stackActionLabels" class="form-check-input" type="checkbox" role="switch">
-                    <label class="form-check-label" for="stackActionLabels">{{ $t("stackActionLabels") }}</label>
-                </div>
                 <div class="stack-action-bar" :class="{ 'stack-action-bar--labeled': stackActionLabels }" role="toolbar" :aria-label="$t('stackActions')">
                     <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('deployStack')" :aria-label="$t('deployStack')" :disabled="processing" @click="deployStack">
                         <font-awesome-icon icon="rocket" />
@@ -92,7 +88,7 @@
                         <span class="stack-action-label">{{ $t("stopStack") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode && !isAdd && !endpoint" class="btn stack-action" :class="schedulerEnabled ? 'btn-primary' : 'btn-normal'" :title="schedulerEnabled ? $t('stackScheduler.disable') : $t('stackScheduler.enable')" :aria-label="$t('stackScheduler.action')" :disabled="processing || schedulerToggleSaving" @click="toggleStackScheduler">
+                    <button v-if="!isEditMode && !isAdd && !endpoint" type="button" class="btn stack-action" :class="showStackSchedule ? 'btn-primary' : 'btn-normal'" :title="$t('stackScheduler.action')" :aria-label="$t('stackScheduler.action')" @click="showStackSchedule = !showStackSchedule">
                         <font-awesome-icon icon="calendar-days" />
                         <span class="stack-action-label">{{ $t("stackScheduler.action") }}</span>
                     </button>
@@ -121,8 +117,21 @@
                         <font-awesome-icon icon="trash" />
                         <span class="stack-action-label">{{ $t("deleteStack") }}</span>
                     </button>
+
+                    <button type="button" class="btn stack-action" :class="stackActionLabels ? 'btn-primary' : 'btn-normal'" :title="$t('stackActionLabels')" :aria-label="$t('stackActionLabels')" @click="stackActionLabels = !stackActionLabels">
+                        <font-awesome-icon icon="list" />
+                        <span class="stack-action-label">{{ $t("stackActionLabels") }}</span>
+                    </button>
+                    <button type="button" class="btn stack-action" :class="showStackNote ? 'btn-primary' : 'btn-normal'" :title="$t('showStackNote')" :aria-label="$t('showStackNote')" @click="showStackNote = !showStackNote">
+                        <font-awesome-icon icon="note-sticky" />
+                        <span class="stack-action-label">{{ $t("showStackNote") }}</span>
+                    </button>
+                    <button v-if="!endpoint" type="button" class="btn stack-action" :class="showStackGit ? 'btn-primary' : 'btn-normal'" :title="$t('showStackGit')" :aria-label="$t('showStackGit')" @click="showStackGit = !showStackGit">
+                        <font-awesome-icon icon="code-branch" />
+                        <span class="stack-action-label">{{ $t("showStackGit") }}</span>
+                    </button>
                 </div>
-                <div v-if="schedulerEnabled && !isEditMode && !isAdd && !endpoint" class="stack-scheduler-inline mt-3">
+                <div v-if="showStackSchedule && schedulerEnabled && !isEditMode && !isAdd && !endpoint" class="stack-scheduler-inline mt-3">
                     <div class="stack-scheduler-inline-title">
                         <font-awesome-icon icon="calendar-days" class="me-1" />{{ $t("stackScheduler.heading") }}
                     </div>
@@ -137,7 +146,7 @@
                 </a>
             </div>
 
-            <div v-if="!isAdd && stack.isManagedByDockge" class="shadow-box stack-note-panel mb-3">
+            <div v-if="showStackNote && !isAdd && stack.isManagedByDockge" class="shadow-box stack-note-panel mb-3">
                 <button
                     class="stack-note-toggle"
                     type="button"
@@ -167,7 +176,7 @@
             </div>
 
             <StackGitPanel
-                v-if="!isAdd && stack.isManagedByDockge && !endpoint"
+                v-if="showStackGit && !isAdd && stack.isManagedByDockge && !endpoint"
                 :stack-name="stack.name"
             />
 
@@ -268,6 +277,9 @@
                                 :stack-name="stack.name"
                                 :endpoint="endpoint"
                                 :show-resource-stats="!endpoint"
+                                :dozzle-url="dozzleUrl"
+                                :container-action-labels="containerActionLabels"
+                                @container-action-labels-change="containerActionLabels = $event"
                                 @auto-update-change="setServiceAutoUpdate(name, $event)"
                                 @refresh-volume-usage="loadVolumeUsage"
                                 @service-action="runServiceAction(name, $event)"
@@ -294,7 +306,7 @@
                     <!-- Combined Terminal Output -->
                     <div v-show="!isEditMode">
                         <div class="terminal-toolbar mb-3">
-                            <h4 class="mb-0">{{ $t("terminal") }}</h4>
+                            <h4 class="mb-0">{{ $t("stackLogs") }}</h4>
                             <div class="terminal-toolbar-right">
                                 <div class="terminal-log-since">
                                     <label class="form-label mb-0 small text-muted" for="log-since-select">{{ $t("logSince") }}</label>
@@ -309,6 +321,28 @@
                                         <option value="72h">{{ $t("logSince3d") }}</option>
                                         <option value="168h">{{ $t("logSince7d") }}</option>
                                         <option value="336h">{{ $t("logSince14d") }}</option>
+                                    </select>
+                                </div>
+                                <div class="terminal-log-since">
+                                    <label class="form-label mb-0 small text-muted" for="terminal-scale-select">{{ $t("logPanelSize") }}</label>
+                                    <select id="terminal-scale-select" v-model="terminalScale" class="form-select form-select-sm" @change="resizeCombinedTerminal">
+                                        <option value="1">x1</option>
+                                        <option value="1.5">x1,5</option>
+                                        <option value="2">x2</option>
+                                    </select>
+                                </div>
+                                <div v-if="logServiceOptions.length > 0" class="terminal-service-filter">
+                                    <label class="form-label mb-0 small text-muted" for="log-service-select">{{ $t("logService") }}</label>
+                                    <select
+                                        id="log-service-select"
+                                        v-model="selectedLogService"
+                                        class="form-select form-select-sm"
+                                        @change="joinSelectedLogTerminal"
+                                    >
+                                        <option value="">{{ $t("logServiceAll") }}</option>
+                                        <option v-for="service in logServiceOptions" :key="service" :value="service">
+                                            {{ service }}
+                                        </option>
                                     </select>
                                 </div>
                                 <div class="terminal-log-search input-group input-group-sm">
@@ -338,20 +372,6 @@
                                     <font-awesome-icon icon="clock" class="me-1" />{{ $t('logTimestamps') }}
                                 </button>
                             </div>
-                            <div v-if="logServiceOptions.length > 0" class="terminal-service-filter">
-                                <label class="form-label mb-0 small text-muted" for="log-service-select">Service</label>
-                                <select
-                                    id="log-service-select"
-                                    v-model="selectedLogService"
-                                    class="form-select form-select-sm"
-                                    @change="joinSelectedLogTerminal"
-                                >
-                                    <option value="">Tous</option>
-                                    <option v-for="service in logServiceOptions" :key="service" :value="service">
-                                        {{ service }}
-                                    </option>
-                                </select>
-                            </div>
                         </div>
                         <Terminal
                             :key="selectedLogTerminalName"
@@ -362,6 +382,7 @@
                             :endpoint="endpoint"
                             :rows="combinedTerminalRows"
                             :cols="combinedTerminalCols"
+                            :style="{ height: `${315 * Number(terminalScale)}px` }"
                         ></Terminal>
                     </div>
 
@@ -590,7 +611,7 @@ export default {
         this.exitConfirm(next);
     },
     setup() {
-        const { enabled: schedulerEnabled, setEnabled: setSchedulerEnabled } = useStackSchedules();
+        const { enabled: schedulerEnabled } = useStackSchedules();
         const editorFocus = ref(false);
         const {
             statusCache: imageStatuses,
@@ -636,8 +657,7 @@ export default {
             imageStatuses,
             autoUpdateFor,
             saveAutoUpdateMode,
-            schedulerEnabled,
-            setSchedulerEnabled };
+            schedulerEnabled };
     },
     yamlDoc: null,  // For keeping the yaml comments
     data() {
@@ -669,6 +689,8 @@ export default {
             joinedLogService: "",
             selectedLogSince: "",
             joinedLogSince: "",
+            terminalScale: localStorage.getItem("terminalScale") || "1",
+            containerActionLabels: localStorage.getItem("containerActionLabels") === "1",
             logSearch: "",
             logSearchTimer: null,
             volumeUsage: [],
@@ -676,8 +698,11 @@ export default {
             containersExpanded: true,
             autoUpdateSaving: {},
             serviceActionProcessing: {},
-            schedulerToggleSaving: false,
             stackActionLabels: localStorage.getItem("stackActionLabels") === "1",
+            showStackNote: localStorage.getItem("showStackNote") === "1",
+            showStackGit: localStorage.getItem("showStackGit") === "1",
+            showStackSchedule: false,
+            dozzleUrl: "",
             plugNPiNEnabled: false,
             noteSaving: false,
             noteExpanded: false,
@@ -837,6 +862,15 @@ export default {
         stackActionLabels(value) {
             localStorage.setItem("stackActionLabels", value ? "1" : "0");
         },
+        showStackNote(value) {
+            localStorage.setItem("showStackNote", value ? "1" : "0");
+        },
+        showStackGit(value) {
+            localStorage.setItem("showStackGit", value ? "1" : "0");
+        },
+        containerActionLabels(value) {
+            localStorage.setItem("containerActionLabels", value ? "1" : "0");
+        },
         "stack.composeYAML": {
             handler() {
                 if (this.editorFocus) {
@@ -882,6 +916,7 @@ export default {
     },
     mounted() {
         this.loadPlugNPiNIntegrationStatus();
+        this.loadDozzleStatus();
         if (this.isAdd) {
             this.processing = false;
             this.isEditMode = true;
@@ -931,6 +966,22 @@ export default {
         }
     },
     methods: {
+        async loadDozzleStatus() {
+            try {
+                const token = this.$root.getAuthToken();
+                const [settingsResponse, statusResponse] = await Promise.all([
+                    fetch("/api/watcher/dozzle/settings", { headers: { "Authorization": `Bearer ${token}` } }),
+                    fetch("/api/watcher/dozzle/status", { headers: { "Authorization": `Bearer ${token}` } }),
+                ]);
+                const settings = await settingsResponse.json();
+                const status = await statusResponse.json();
+                if (settings.data?.enabled && status.status === "running") {
+                    this.dozzleUrl = settings.data.customUrl?.trim() || `http://${window.location.hostname}:${settings.data.port}`;
+                }
+            } catch {
+                this.dozzleUrl = "";
+            }
+        },
         async loadPlugNPiNIntegrationStatus() {
             try {
                 const token = this.$root.getAuthToken();
@@ -1222,16 +1273,9 @@ export default {
             });
         },
 
-        async toggleStackScheduler() {
-            const requested = !this.schedulerEnabled;
-            this.schedulerToggleSaving = true;
-            try {
-                await this.setSchedulerEnabled(requested);
-            } catch (error) {
-                this.$root.toastError(error instanceof Error ? error.message : String(error));
-            } finally {
-                this.schedulerToggleSaving = false;
-            }
+        resizeCombinedTerminal() {
+            localStorage.setItem("terminalScale", this.terminalScale);
+            this.$nextTick(() => this.$refs.combinedTerminal?.updateTerminalSize());
         },
 
         loadStack() {
@@ -1580,14 +1624,6 @@ export default {
     gap: .45rem;
 }
 
-.stack-action-display {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: .45rem;
-    color: $dark-font-color3;
-    font-size: .78rem;
-}
-
 .stack-action {
     display: inline-flex;
     align-items: center;
@@ -1695,6 +1731,8 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 14px;
     gap: 12px;
     flex-wrap: wrap;
 }
@@ -1789,31 +1827,78 @@ export default {
 }
 
 .terminal-toolbar-right {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(180px, 1.2fr) minmax(110px, .7fr) minmax(150px, 1fr);
+    align-items: end;
     gap: 8px;
-    margin-left: auto;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    width: 100%;
 }
 
 .terminal-service-filter,
 .terminal-log-since {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
 
     .form-label {
         color: #9ca3af !important;
     }
 
     .form-select {
-        width: min(220px, 42vw);
+        width: 100%;
     }
 }
 
 .terminal-log-search {
-    width: min(300px, 72vw);
+    grid-column: 1 / span 2;
+    width: 100%;
+}
+
+.terminal-toolbar-right > .btn {
+    justify-self: start;
+}
+
+@media (max-width: 991.98px) {
+    .terminal-toolbar {
+        align-items: stretch;
+    }
+
+    .terminal-toolbar > h4 {
+        width: 100%;
+    }
+
+    .terminal-toolbar-right {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .terminal-service-filter {
+        grid-column: 1 / -1;
+    }
+
+    .terminal-log-search {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .terminal-toolbar-right > .btn {
+        justify-self: start;
+    }
+
+}
+
+@media (max-width: 575.98px) {
+    .terminal-toolbar-right {
+        grid-template-columns: 1fr;
+    }
+
+    .terminal-log-search {
+        grid-column: 1;
+    }
+
+    .terminal-service-filter {
+        grid-column: 1;
+    }
 }
 
 .stack-meta-bar {

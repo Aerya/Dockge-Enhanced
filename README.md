@@ -28,18 +28,20 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | Area | Dockge Enhanced adds |
 | --- | --- |
 | **Multi-instance** | Instance names, multi-server selection and color-coded grouping, transactional copy/migration, resumable jobs, and automatic cold replication with no repository setup |
-| **Stack management** | Per-stack and per-container actions, Build + Recreate, scheduling, notes, manual Git, and safeguards for services sharing a VPN network |
+| **Stack management** | Per-stack and per-container actions and scheduling, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
 | **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
 | **Automation & audit** | REST API scoped by permissions and stacks, per-stack webhooks, Home Assistant examples, and centralized history with origin and duration |
 | **Docker resources** | Images, volumes, unmanaged containers and networks, bulk actions, auto-prune, and safeguards for risky deletions |
 | **Images & security** | Update monitoring, auto-update with rollback, Trivy scans, and CVE exceptions |
-| **Monitoring** | System, stack, and container stats, crash loops, healthcheck auto-heal, enhanced logs, and optional Kula integration |
+| **Monitoring** | System, stack, and container stats, crash loops, healthcheck auto-heal, responsive logs, and optional Kula and managed Dozzle integrations |
 | **Integrations** | Optional PlugNPiN and per-service label assistant for Nginx Proxy Manager, Pi-hole, and AdGuard Home |
 | **Notifications & access** | Discord, Apprise, 2FA, trusted proxy, Turnstile, and mobile clients |
 
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
+
+**2026-08-02 — Dozzle, responsive logs, container scheduling, and update news** — The Monitoring tab can optionally deploy and manage [Dozzle](https://dozzle.dev/) with persistent data, a read-only socket mount, a navbar shortcut, and direct per-container links. Stack output is now labelled **Logs** and uses a responsive toolbar with service filtering, search, timestamps, and x1/x1.5/x2 panel heights. Stack and container actions share compact or labelled button modes; Note, Git, and Scheduling panels are shown only on demand, while the scheduling engine itself is always available. Every container can define independent Start and Stop schedules. After an update, a localized FR/EN **What's new** popup presents the latest changes once per browser and news revision.
 
 **2026-07-26 — Optional operations toolkit** — Locally built stacks get a targeted **Build + Recreate** action; each stack can have a local note saved with its metadata; and a collapsed manual Git panel supports initialize, diff, commit, `pull --ff-only`, push and revision restore with Compose validation. Docker Resources can now manage `bridge`, `macvlan` and `ipvlan` networks, with confirmations and system-network safeguards. **Settings → Automation** creates API tokens scoped by permissions and stacks, plus revocable/rotatable per-stack webhooks. Secrets are displayed once and only their hashes are stored. Every operation joins the central audit log with its origin and duration. See the [API, webhooks and Home Assistant guide](docs/AUTOMATION.md). Docker Swarm and `overlay` networks are not supported.
 

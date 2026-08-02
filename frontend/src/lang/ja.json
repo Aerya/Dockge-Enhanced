@@ -82,6 +82,7 @@
     "inactive": "非アクティブ",
     "active": "アクティブ",
     "languageName": "日本語",
+    "stackLogs": "Logs",
     "Create your admin account": "管理者アカウントを作成してください",
     "signedInDisp": "{0} としてログイン中",
     "addFirstStackMsg": "最初のスタックを組み立てましょう！",

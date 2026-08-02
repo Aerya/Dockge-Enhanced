@@ -601,6 +601,30 @@ export class Stack {
         return exitCode;
     }
 
+    async validateScheduledService(serviceName: string): Promise<void> {
+        await this.getServiceActionTargets(serviceName);
+    }
+
+    async serviceScheduled(serviceName: string, action: "start" | "stop"): Promise<number> {
+        const targets = await this.getServiceActionTargets(serviceName);
+        const args = action === "start"
+            ? this.getComposeOptions("up", "-d", serviceName)
+            : this.getComposeOptions("stop", ...[ ...targets ].reverse());
+        const res = await childProcessAsync.spawn("docker", args, {
+            cwd: this.path,
+            encoding: "utf-8",
+        });
+        const exitCode = res.code ?? 0;
+        if (exitCode !== 0) {
+            throw new Error(`Scheduled service ${action} failed: ${serviceName}`);
+        }
+        serviceStatusCache.delete(this.name);
+        if (action === "start") {
+            await this.writeMeta({ lastStartedAt: new Date().toISOString() });
+        }
+        return exitCode;
+    }
+
     async restart(socket: DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("restart"), this.path);
