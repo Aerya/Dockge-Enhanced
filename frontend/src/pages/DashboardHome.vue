@@ -121,14 +121,23 @@
 
                         <hr class="my-4">
                         <button v-if="!showMeshForm" class="btn btn-normal" :disabled="$root.agentCount < 2" @click="showMeshForm = true">
-                            <font-awesome-icon icon="diagram-project" class="me-1" />{{ $t("agentMesh.action") }}
+                            <font-awesome-icon icon="diagram-project" class="me-1" />{{ $t("agentMesh.action", { count: $root.agentCount }) }}
                         </button>
                         <form v-else @submit.prevent="synchronizeMesh">
-                            <p class="small text-muted">{{ $t("agentMesh.hint") }}</p>
-                            <div class="mb-3">
-                                <label for="meshDisplayName" class="form-label">{{ $t("agentName") }}</label>
-                                <input id="meshDisplayName" v-model="meshSelf.displayName" type="text" maxlength="100" class="form-control" required>
-                            </div>
+                            <h5>{{ $t("agentMesh.instancesTitle") }}</h5>
+                            <p class="small text-muted mb-2">{{ $t("agentMesh.hint") }}</p>
+                            <ul class="list-group mb-3">
+                                <li v-for="instance in meshInstances" :key="instance.endpoint || 'local'" class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <strong>{{ instance.name }}</strong>
+                                        <small v-if="instance.url" class="text-muted d-block">{{ instance.url }}</small>
+                                    </span>
+                                    <span v-if="instance.local" class="badge bg-info text-dark">{{ $t("localInstance") }}</span>
+                                    <span v-else class="badge bg-secondary">{{ $t("dockgeAgent", 1) }}</span>
+                                </li>
+                            </ul>
+                            <h5>{{ $t("agentMesh.currentAccessTitle") }}</h5>
+                            <p class="small text-muted">{{ $t("agentMesh.currentAccessHint") }}</p>
                             <div class="mb-3">
                                 <label for="meshUrl" class="form-label">{{ $t("agentMesh.currentUrl") }}</label>
                                 <input id="meshUrl" v-model="meshSelf.url" type="url" class="form-control" required>
@@ -213,6 +222,14 @@ export default {
         },
         exitedNum() {
             return this.getStatusNum("exited");
+        },
+        meshInstances() {
+            return Object.entries(this.$root.agentList || {}).map(([ endpoint, agent ]) => ({
+                endpoint,
+                local: endpoint === "",
+                name: agent.displayName || endpoint || window.location.hostname,
+                url: endpoint === "" ? this.meshSelf.url : agent.url,
+            }));
         },
     },
 
