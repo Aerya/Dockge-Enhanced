@@ -3,6 +3,7 @@ import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
 import { callbackError, callbackResult, checkLogin, DockgeSocket } from "../util-server";
 import { LooseObject } from "../../common/util-common";
+import { normalizeMeshPeer, synchronizeAgentMesh, upsertMeshPeers, validateMeshPeers } from "../agent-mesh";
 
 export function normalizeAgentDisplayName(value: unknown): string {
     if (value === undefined || value === null) return "";
@@ -19,6 +20,47 @@ export function normalizeAgentDisplayName(value: unknown): string {
 export class ManageAgentSocketHandler extends SocketHandler {
 
     create(socket : DockgeSocket, server : DockgeServer) {
+        socket.on("validateAgentMeshPeer", (_requestData : unknown, callback : unknown) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        socket.on("applyAgentMesh", async (requestData : unknown, callback : unknown) => {
+            try {
+                checkLogin(socket);
+                if (!requestData || typeof requestData !== "object") {
+                    throw new Error("Data must be an object");
+                }
+                const data = requestData as LooseObject;
+                const peers = validateMeshPeers(data.peers as unknown[]);
+                await upsertMeshPeers(peers, socket.endpoint);
+                callbackResult({ ok: true,
+                    count: peers.length }, callback);
+                setTimeout(() => server.disconnectAllSocketClients(undefined, socket.id), 100);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        socket.on("synchronizeAgentMesh", async (requestData : unknown, callback : unknown) => {
+            try {
+                checkLogin(socket);
+                const self = normalizeMeshPeer(requestData);
+                const endpoints = await synchronizeAgentMesh(self);
+                callbackResult({ ok: true,
+                    msg: "agentMeshSynchronized",
+                    msgi18n: true,
+                    endpoints }, callback);
+                setTimeout(() => server.disconnectAllSocketClients(undefined, socket.id), 100);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // addAgent
         socket.on("addAgent", async (requestData : unknown, callback : unknown) => {
             try {

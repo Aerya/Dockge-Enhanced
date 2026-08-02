@@ -118,6 +118,37 @@
                                 <template v-else>{{ $t("connect") }}</template>
                             </button>
                         </form>
+
+                        <hr class="my-4">
+                        <button v-if="!showMeshForm" class="btn btn-normal" :disabled="$root.agentCount < 2" @click="showMeshForm = true">
+                            <font-awesome-icon icon="diagram-project" class="me-1" />{{ $t("agentMesh.action") }}
+                        </button>
+                        <form v-else @submit.prevent="synchronizeMesh">
+                            <p class="small text-muted">{{ $t("agentMesh.hint") }}</p>
+                            <div class="mb-3">
+                                <label for="meshDisplayName" class="form-label">{{ $t("agentName") }}</label>
+                                <input id="meshDisplayName" v-model="meshSelf.displayName" type="text" maxlength="100" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="meshUrl" class="form-label">{{ $t("agentMesh.currentUrl") }}</label>
+                                <input id="meshUrl" v-model="meshSelf.url" type="url" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="meshUsername" class="form-label">{{ $t("Username") }}</label>
+                                <input id="meshUsername" v-model="meshSelf.username" type="text" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="meshPassword" class="form-label">{{ $t("Password") }}</label>
+                                <input id="meshPassword" v-model="meshSelf.password" type="password" class="form-control" required autocomplete="current-password">
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary" :disabled="synchronizingMesh">
+                                    <template v-if="synchronizingMesh">{{ $t("agentMesh.synchronizing") }}</template>
+                                    <template v-else>{{ $t("agentMesh.confirm") }}</template>
+                                </button>
+                                <button type="button" class="btn btn-normal" :disabled="synchronizingMesh" @click="showMeshForm = false">{{ $t("cancel") }}</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -152,16 +183,24 @@ export default {
             displayedRecords: [],
             dockerRunCommand: "",
             showAgentForm: false,
+            showMeshForm: false,
             showRemoveAgentDialog: {},
             editingAgentEndpoint: null,
             agentNameDraft: "",
             connectingAgent: false,
+            synchronizingMesh: false,
             agent: {
                 url: "http://",
                 username: "",
                 password: "",
                 displayName: "",
-            }
+            },
+            meshSelf: {
+                url: window.location.origin,
+                username: "",
+                password: "",
+                displayName: "",
+            },
         };
     },
 
@@ -190,6 +229,7 @@ export default {
     },
 
     mounted() {
+        this.meshSelf.displayName = this.$root.agentList?.[""]?.displayName || window.location.hostname;
         this.initialPerPage = this.perPage;
 
         window.addEventListener("resize", this.updatePerPage);
@@ -218,6 +258,18 @@ export default {
                 }
 
                 this.connectingAgent = false;
+            });
+        },
+
+        synchronizeMesh() {
+            this.synchronizingMesh = true;
+            this.$root.getSocket().emit("synchronizeAgentMesh", this.meshSelf, (res) => {
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.showMeshForm = false;
+                    this.meshSelf.password = "";
+                }
+                this.synchronizingMesh = false;
             });
         },
 

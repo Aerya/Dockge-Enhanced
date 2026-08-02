@@ -267,8 +267,9 @@ export default {
             kulaUrl:          null,
             dozzleUrl:        null,
             showReleaseNews:  false,
-            releaseNewsId:    "2026-08-02-dozzle-logs-scheduling",
+            releaseNewsId:    "2026-08-02-agent-mesh-dozzle-logs-scheduling",
             releaseNewsItems: [
+                "releaseNews.item.agentMesh",
                 "releaseNews.item.dozzle",
                 "releaseNews.item.logs",
                 "releaseNews.item.actions",

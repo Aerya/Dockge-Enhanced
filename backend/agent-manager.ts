@@ -247,6 +247,15 @@ export class AgentManager {
         log.debug("agent-manager", "Emitting event to endpoint: " + endpoint);
         let client = this.agentSocketList[endpoint];
 
+        // afterLogin() starts connectAll() asynchronously. A freshly reloaded UI can
+        // emit its first request before connect() has registered the socket client.
+        let diff = dayjs().diff(this.firstConnectTime, "second");
+        while (!client && diff < 10) {
+            await sleep(250);
+            client = this.agentSocketList[endpoint];
+            diff = dayjs().diff(this.firstConnectTime, "second");
+        }
+
         if (!client) {
             log.error("agent-manager", "Socket client not found for endpoint: " + endpoint);
             throw new Error("Socket client not found for endpoint: " + endpoint);
@@ -255,7 +264,7 @@ export class AgentManager {
         if (!client.connected || !this.agentLoggedInList[endpoint]) {
             // Maybe the request is too quick, the socket is not connected yet, check firstConnectTime
             // If it is within 10 seconds, we should apply retry logic here
-            let diff = dayjs().diff(this.firstConnectTime, "second");
+            diff = dayjs().diff(this.firstConnectTime, "second");
             log.debug("agent-manager", endpoint + ": diff: " + diff);
             let ok = false;
             while (diff < 10) {
