@@ -2,6 +2,7 @@ import { Cron } from "croner";
 import { io, Socket as SocketClient } from "socket.io-client";
 import { AgentSocket } from "../../common/agent-socket";
 import { Agent } from "../models/agent";
+import { loginAgentClient } from "../agent-manager";
 import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
 import { Settings } from "../settings";
@@ -563,8 +564,7 @@ export class StackReplicationManager {
                 extraHeaders: { endpoint } });
             client.once("connect_error", error => finish(error));
             client.once("connect", () => {
-                client!.emit("login", { username: agent.username,
-                    password: agent.password }, (login: RpcResponse) => {
+                loginAgentClient(client!, agent.username, agent.password, (login: RpcResponse) => {
                     if (!login?.ok) {
                         finish(new Error(login?.msg || `${endpoint}: login failed`));
                         return;

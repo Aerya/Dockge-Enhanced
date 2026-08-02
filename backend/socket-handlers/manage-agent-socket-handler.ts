@@ -3,7 +3,7 @@ import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
 import { callbackError, callbackResult, checkLogin, DockgeSocket } from "../util-server";
 import { LooseObject } from "../../common/util-common";
-import { normalizeMeshPeer, synchronizeAgentMesh, upsertMeshPeers, validateMeshPeers } from "../agent-mesh";
+import { meshEndpoint, normalizeMeshSelf, synchronizeAgentMesh, upsertMeshPeers, validateMeshCatalogue } from "../agent-mesh";
 
 export function normalizeAgentDisplayName(value: unknown): string {
     if (value === undefined || value === null) return "";
@@ -36,25 +36,10 @@ export class ManageAgentSocketHandler extends SocketHandler {
                     throw new Error("Data must be an object");
                 }
                 const data = requestData as LooseObject;
-                const peers = validateMeshPeers(data.peers as unknown[]);
+                const peers = validateMeshCatalogue(data.peers as unknown[]);
                 await upsertMeshPeers(peers, socket.endpoint);
                 callbackResult({ ok: true,
                     count: peers.length }, callback);
-                setTimeout(() => server.disconnectAllSocketClients(undefined, socket.id), 100);
-            } catch (e) {
-                callbackError(e, callback);
-            }
-        });
-
-        socket.on("synchronizeAgentMesh", async (requestData : unknown, callback : unknown) => {
-            try {
-                checkLogin(socket);
-                const self = normalizeMeshPeer(requestData);
-                const endpoints = await synchronizeAgentMesh(self);
-                callbackResult({ ok: true,
-                    msg: "agentMeshSynchronized",
-                    msgi18n: true,
-                    endpoints }, callback);
                 setTimeout(() => server.disconnectAllSocketClients(undefined, socket.id), 100);
             } catch (e) {
                 callbackError(e, callback);
@@ -73,9 +58,17 @@ export class ManageAgentSocketHandler extends SocketHandler {
 
                 let data = requestData as LooseObject;
                 const displayName = normalizeAgentDisplayName(data.displayName);
+                const self = normalizeMeshSelf(data.self);
                 let manager = socket.instanceManager;
                 await manager.test(data.url, data.username, data.password);
                 await manager.add(data.url, data.username, data.password, displayName);
+
+                try {
+                    await synchronizeAgentMesh(self);
+                } catch (error) {
+                    await manager.remove(data.url);
+                    throw error;
+                }
 
                 // connect to the agent
                 manager.connect(data.url, data.username, data.password);
@@ -87,7 +80,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
 
                 callbackResult({
                     ok: true,
-                    msg: "agentAddedSuccessfully",
+                    msg: "agentAddedAndFederated",
                     msgi18n: true,
                 }, callback);
 
@@ -123,24 +116,31 @@ export class ManageAgentSocketHandler extends SocketHandler {
         });
 
         // removeAgent
-        socket.on("removeAgent", async (url : unknown, callback : unknown) => {
+        socket.on("removeAgent", async (requestData : unknown, callback : unknown) => {
             try {
                 log.debug("manage-agent-socket-handler", "removeAgent");
                 checkLogin(socket);
 
-                if (typeof(url) !== "string") {
-                    throw new Error("URL must be a string");
+                if (!requestData || typeof requestData !== "object") {
+                    throw new Error("Data must be an object");
                 }
+                const data = requestData as LooseObject;
+                if (typeof data.url !== "string") throw new Error("URL must be a string");
+                const self = normalizeMeshSelf(data.self);
 
                 let manager = socket.instanceManager;
-                await manager.remove(url);
+                await synchronizeAgentMesh(self, meshEndpoint({ url: data.url,
+                    username: "removed",
+                    password: "removed",
+                    displayName: "" }));
+                await manager.remove(data.url);
 
                 server.disconnectAllSocketClients(undefined, socket.id);
                 manager.sendAgentList();
 
                 callbackResult({
                     ok: true,
-                    msg: "agentRemovedSuccessfully",
+                    msg: "agentRemovedFromFederation",
                     msgi18n: true,
                 }, callback);
             } catch (e) {
