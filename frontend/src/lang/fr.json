@@ -1,6 +1,12 @@
 {
     "languageName": "Français",
     "stackLogs": "Logs",
+    "agentMesh.action": "Synchroniser les instances",
+    "agentMesh.hint": "Saisissez une fois l'adresse et les identifiants de cette instance. Chaque instance configurée recevra ensuite la liste complète et se connectera directement aux autres.",
+    "agentMesh.currentUrl": "URL de cette instance",
+    "agentMesh.confirm": "Créer le maillage",
+    "agentMesh.synchronizing": "Synchronisation…",
+    "agentMeshSynchronized": "Instances synchronisées avec succès",
     "releaseNews.title": "Nouveautés",
     "releaseNews.intro": "Cette mise à jour ajoute de nouveaux outils pour les logs, les actions des conteneurs et la planification.",
     "releaseNews.item.dozzle": "Déploiement facultatif de Dozzle, raccourci dans la barre supérieure et accès direct aux logs de chaque conteneur.",
