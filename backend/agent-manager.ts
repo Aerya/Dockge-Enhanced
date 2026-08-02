@@ -9,6 +9,16 @@ import dayjs, { Dayjs } from "dayjs";
 import { Settings } from "./settings";
 
 const LOCAL_AGENT_DISPLAY_NAME_SETTING = "localAgentDisplayName";
+export const AGENT_TOKEN_USERNAME = "__dockge_federation_token__";
+
+export function loginAgentClient<T>(client: SocketClient, username: string, password: string, callback: (res: T) => void) {
+    if (username === AGENT_TOKEN_USERNAME) {
+        client.emit("loginByToken", password, callback);
+    } else {
+        client.emit("login", { username,
+            password }, callback);
+    }
+}
 
 /**
  * Dockge Instance Manager
@@ -50,10 +60,7 @@ export class AgentManager {
             });
 
             client.on("connect", () => {
-                client.emit("login", {
-                    username: username,
-                    password: password,
-                }, (res : LooseObject) => {
+                loginAgentClient(client, username, password, (res : LooseObject) => {
                     if (res.ok) {
                         resolve();
                     } else {
@@ -120,7 +127,9 @@ export class AgentManager {
             this.sendAgentList();
             delete this.agentSocketList[endpoint];
         } else {
-            throw new Error("Agent not found");
+            const endpoint = new URL(url).host;
+            this.disconnect(endpoint);
+            delete this.agentSocketList[endpoint];
         }
     }
 
@@ -153,10 +162,7 @@ export class AgentManager {
         client.on("connect", () => {
             log.info("agent-manager", "Connected to the socket server: " + endpoint);
 
-            client.emit("login", {
-                username: username,
-                password: password,
-            }, (res : LooseObject) => {
+            loginAgentClient(client, username, password, (res : LooseObject) => {
                 if (res.ok) {
                     log.info("agent-manager", "Logged in to the socket server: " + endpoint);
                     this.agentLoggedInList[endpoint] = true;

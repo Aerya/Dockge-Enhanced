@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { meshEndpoint, normalizeMeshPeer, peersForTarget, validateMeshPeers } from "./agent-mesh";
+import { meshEndpoint, normalizeMeshPeer, normalizeMeshSelf, peersForTarget, validateMeshCatalogue, validateMeshPeers } from "./agent-mesh";
+import { AGENT_TOKEN_USERNAME } from "./agent-manager";
 
 const peers = [
     { url: "http://enhanced-a:5001",
@@ -46,4 +47,21 @@ test("supports a two-instance mesh", () => {
 test("rejects non-HTTP peer URLs", () => {
     assert.throws(() => normalizeMeshPeer({ ...peers[0],
         url: "file:///tmp/enhanced" }), /HTTP or HTTPS/);
+});
+
+test("turns the current browser session into a federation credential", () => {
+    assert.deepEqual(normalizeMeshSelf({
+        url: "https://enhanced-a.example.org/",
+        token: "signed-session-token",
+        displayName: "A",
+    }), {
+        url: "https://enhanced-a.example.org",
+        username: AGENT_TOKEN_USERNAME,
+        password: "signed-session-token",
+        displayName: "A",
+    });
+});
+
+test("accepts an empty catalogue when an instance leaves the federation", () => {
+    assert.deepEqual(validateMeshCatalogue([]), []);
 });

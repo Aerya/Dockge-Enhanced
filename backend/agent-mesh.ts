@@ -1,11 +1,18 @@
 import { io, Socket as SocketClient } from "socket.io-client";
 import { Agent } from "./models/agent";
 import { R } from "redbean-node";
+import { AGENT_TOKEN_USERNAME, loginAgentClient } from "./agent-manager";
 
 export interface AgentMeshPeer {
     url: string;
     username: string;
     password: string;
+    displayName: string;
+}
+
+export interface AgentMeshSelf {
+    url: string;
+    token: string;
     displayName: string;
 }
 
@@ -59,6 +66,23 @@ export function validateMeshPeers(values: unknown[]): AgentMeshPeer[] {
         endpoints.add(endpoint);
     }
     return peers;
+}
+
+export function normalizeMeshSelf(value: unknown): AgentMeshPeer {
+    if (!value || typeof value !== "object") throw new Error("Current instance data is required");
+    const raw = value as Record<string, unknown>;
+    return normalizeMeshPeer({
+        url: raw.url,
+        username: AGENT_TOKEN_USERNAME,
+        password: raw.token,
+        displayName: raw.displayName,
+    });
+}
+
+export function validateMeshCatalogue(values: unknown[]): AgentMeshPeer[] {
+    if (!Array.isArray(values)) throw new Error("Mesh catalogue must be an array");
+    if (values.length === 0) return [];
+    return validateMeshPeers(values);
 }
 
 export function peersForTarget(peers: AgentMeshPeer[], targetEndpoint: string): AgentMeshPeer[] {
@@ -130,10 +154,7 @@ function callPeer<T>(peer: AgentMeshPeer, event: string, payload: unknown): Prom
         const timer = setTimeout(() => finish(new Error(`${endpoint}: mesh synchronization timed out`)), RPC_TIMEOUT);
         client.on("connect_error", (error) => finish(error));
         client.on("connect", () => {
-            client.emit("login", {
-                username: peer.username,
-                password: peer.password,
-            }, (login: { ok?: boolean; msg?: string }) => {
+            loginAgentClient(client, peer.username, peer.password, (login: { ok?: boolean; msg?: string }) => {
                 if (!login?.ok) {
                     finish(new Error(login?.msg || `${endpoint}: login failed`));
                     return;
@@ -150,22 +171,26 @@ function callPeer<T>(peer: AgentMeshPeer, event: string, payload: unknown): Prom
     });
 }
 
-export async function synchronizeAgentMesh(self: AgentMeshPeer): Promise<string[]> {
+export async function synchronizeAgentMesh(self: AgentMeshPeer, removedEndpoint = ""): Promise<string[]> {
     const peers = await localMeshPeers(self);
     const selfEndpoint = meshEndpoint(self);
+    const desiredPeers = removedEndpoint ? peers.filter((peer) => meshEndpoint(peer) !== removedEndpoint) : peers;
 
     // Authenticate every destination before changing any catalogue.
-    await Promise.all(peers.map((peer) => callPeer(peer, "validateAgentMeshPeer", {})));
+    await Promise.all(peers
+        .filter((peer) => meshEndpoint(peer) !== selfEndpoint)
+        .map((peer) => callPeer(peer, "validateAgentMeshPeer", {})));
 
     for (const target of peers) {
         const endpoint = meshEndpoint(target);
+        const catalogue = endpoint === removedEndpoint ? [] : peersForTarget(desiredPeers, endpoint);
         if (endpoint === selfEndpoint) {
-            await upsertMeshPeers(peersForTarget(peers, endpoint), endpoint);
+            await upsertMeshPeers(catalogue, endpoint);
         } else {
             await callPeer(target, "applyAgentMesh", {
-                peers: peersForTarget(peers, endpoint),
+                peers: catalogue,
             });
         }
     }
-    return peers.map(meshEndpoint);
+    return desiredPeers.map(meshEndpoint);
 }

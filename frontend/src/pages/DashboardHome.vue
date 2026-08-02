@@ -119,45 +119,7 @@
                             </button>
                         </form>
 
-                        <hr class="my-4">
-                        <button v-if="!showMeshForm" class="btn btn-normal" :disabled="$root.agentCount < 2" @click="showMeshForm = true">
-                            <font-awesome-icon icon="diagram-project" class="me-1" />{{ $t("agentMesh.action", { count: $root.agentCount }) }}
-                        </button>
-                        <form v-else @submit.prevent="synchronizeMesh">
-                            <h5>{{ $t("agentMesh.instancesTitle") }}</h5>
-                            <p class="small text-muted mb-2">{{ $t("agentMesh.hint") }}</p>
-                            <ul class="list-group mb-3">
-                                <li v-for="instance in meshInstances" :key="instance.endpoint || 'local'" class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>
-                                        <strong>{{ instance.name }}</strong>
-                                        <small v-if="instance.url" class="text-muted d-block">{{ instance.url }}</small>
-                                    </span>
-                                    <span v-if="instance.local" class="badge bg-info text-dark">{{ $t("localInstance") }}</span>
-                                    <span v-else class="badge bg-secondary">{{ $t("dockgeAgent", 1) }}</span>
-                                </li>
-                            </ul>
-                            <h5>{{ $t("agentMesh.currentAccessTitle") }}</h5>
-                            <p class="small text-muted">{{ $t("agentMesh.currentAccessHint") }}</p>
-                            <div class="mb-3">
-                                <label for="meshUrl" class="form-label">{{ $t("agentMesh.currentUrl") }}</label>
-                                <input id="meshUrl" v-model="meshSelf.url" type="url" class="form-control" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="meshUsername" class="form-label">{{ $t("Username") }}</label>
-                                <input id="meshUsername" v-model="meshSelf.username" type="text" class="form-control" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="meshPassword" class="form-label">{{ $t("Password") }}</label>
-                                <input id="meshPassword" v-model="meshSelf.password" type="password" class="form-control" required autocomplete="current-password">
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary" :disabled="synchronizingMesh">
-                                    <template v-if="synchronizingMesh">{{ $t("agentMesh.synchronizing") }}</template>
-                                    <template v-else>{{ $t("agentMesh.confirm") }}</template>
-                                </button>
-                                <button type="button" class="btn btn-normal" :disabled="synchronizingMesh" @click="showMeshForm = false">{{ $t("cancel") }}</button>
-                            </div>
-                        </form>
+                        <p class="small text-muted mt-3 mb-0">{{ $t("agentFederation.hint") }}</p>
                     </div>
                 </div>
             </div>
@@ -192,20 +154,12 @@ export default {
             displayedRecords: [],
             dockerRunCommand: "",
             showAgentForm: false,
-            showMeshForm: false,
             showRemoveAgentDialog: {},
             editingAgentEndpoint: null,
             agentNameDraft: "",
             connectingAgent: false,
-            synchronizingMesh: false,
             agent: {
                 url: "http://",
-                username: "",
-                password: "",
-                displayName: "",
-            },
-            meshSelf: {
-                url: window.location.origin,
                 username: "",
                 password: "",
                 displayName: "",
@@ -223,14 +177,6 @@ export default {
         exitedNum() {
             return this.getStatusNum("exited");
         },
-        meshInstances() {
-            return Object.entries(this.$root.agentList || {}).map(([ endpoint, agent ]) => ({
-                endpoint,
-                local: endpoint === "",
-                name: agent.displayName || endpoint || window.location.hostname,
-                url: endpoint === "" ? this.meshSelf.url : agent.url,
-            }));
-        },
     },
 
     watch: {
@@ -246,7 +192,6 @@ export default {
     },
 
     mounted() {
-        this.meshSelf.displayName = this.$root.agentList?.[""]?.displayName || window.location.hostname;
         this.initialPerPage = this.perPage;
 
         window.addEventListener("resize", this.updatePerPage);
@@ -261,7 +206,10 @@ export default {
 
         addAgent() {
             this.connectingAgent = true;
-            this.$root.getSocket().emit("addAgent", this.agent, (res) => {
+            this.$root.getSocket().emit("addAgent", {
+                ...this.agent,
+                self: this.federationSelf(),
+            }, (res) => {
                 this.$root.toastRes(res);
 
                 if (res.ok) {
@@ -278,16 +226,12 @@ export default {
             });
         },
 
-        synchronizeMesh() {
-            this.synchronizingMesh = true;
-            this.$root.getSocket().emit("synchronizeAgentMesh", this.meshSelf, (res) => {
-                this.$root.toastRes(res);
-                if (res.ok) {
-                    this.showMeshForm = false;
-                    this.meshSelf.password = "";
-                }
-                this.synchronizingMesh = false;
-            });
+        federationSelf() {
+            return {
+                url: window.location.origin,
+                token: localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "",
+                displayName: this.$root.agentList?.[""]?.displayName || window.location.hostname,
+            };
         },
 
         startRenameAgent(endpoint, agent) {
@@ -312,7 +256,8 @@ export default {
         },
 
         removeAgent(url) {
-            this.$root.getSocket().emit("removeAgent", url, (res) => {
+            this.$root.getSocket().emit("removeAgent", { url,
+                self: this.federationSelf() }, (res) => {
                 if (res.ok) {
                     this.$root.toastRes(res);
 
