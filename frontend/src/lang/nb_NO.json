@@ -30,5 +30,6 @@
     "scanFolder": "Skann Stacks mappe",
     "dockerImage": "Bilde",
     "languageName": "Engelsk",
+    "stackLogs": "Logs",
     "startStack": "Start"
 }

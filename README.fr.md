@@ -28,18 +28,20 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
 | **Multi-instance** | Noms d'instances, sélection multiple et regroupement coloré par serveur, copie/migration transactionnelle, jobs reprenables et réplication froide automatique sans dépôt à configurer |
-| **Gestion des stacks** | Actions par stack et conteneur, Build + Recreate, planification, notes, Git manuel et protections pour les services partageant le réseau d'un VPN |
+| **Gestion des stacks** | Actions et planification par stack et conteneur, Build + Recreate, notes et outils Git facultatifs, et protections pour les services partageant le réseau d'un VPN |
 | **Sauvegarde & reprise** | Restic multi-destination, volumes, cohérence par stack, restauration sélective, tests et diffs de snapshots |
 | **Automatisation & audit** | API REST limitée par droits et stacks, webhooks par stack, exemples Home Assistant et historique central avec origine et durée |
 | **Ressources Docker** | Images, volumes, conteneurs hors Dockge et réseaux, actions groupées, auto-prune et protections contre les suppressions risquées |
 | **Images & sécurité** | Surveillance des mises à jour, auto-update avec rollback, scan Trivy et exceptions CVE |
-| **Supervision** | Stats système, stacks et conteneurs, crash loops, healthchecks avec auto-heal, logs enrichis et Kula optionnel |
+| **Supervision** | Stats système, stacks et conteneurs, crash loops, healthchecks avec auto-heal, logs responsives, Kula optionnel et Dozzle géré facultativement |
 | **Intégrations** | PlugNPiN optionnel et assistant de labels par service pour Nginx Proxy Manager, Pi-hole et AdGuard Home |
 | **Notifications & accès** | Discord, Apprise, 2FA, trusted proxy, Turnstile et clients mobiles |
 
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
+
+**2026-08-02 — Dozzle, logs responsives, planification des conteneurs et popup de nouveautés** — L'onglet Monitoring peut déployer et gérer facultativement [Dozzle](https://dozzle.dev/) avec données persistantes, socket monté en lecture seule, raccourci dans la barre supérieure et liens directs pour chaque conteneur. La sortie des stacks s'appelle désormais **Logs** et dispose d'une barre responsive avec filtre par service, recherche, horodatage et hauteurs x1/x1,5/x2. Les actions des stacks et conteneurs partagent des modes compacts ou avec texte ; les encarts Note, Git et Planification s'affichent uniquement à la demande, tandis que le moteur de planification reste toujours disponible. Chaque conteneur peut définir ses propres horaires de démarrage et d'arrêt. Après une mise à jour, un popup **Nouveautés** localisé FR/EN présente une fois les derniers changements pour chaque navigateur et révision des nouveautés.
 
 **2026-07-26 — Outils d’exploitation facultatifs** — Les stacks construites localement disposent d’une action **Build + Recreate** ciblée ; chaque stack peut recevoir une note locale sauvegardée avec ses métadonnées ; un panneau Git manuel et replié permet d’initialiser, comparer, commit, pull `--ff-only`, push et restaurer une révision après validation Compose. La page Ressources gère désormais aussi les réseaux `bridge`, `macvlan` et `ipvlan`, avec confirmations et protections des réseaux système. **Paramètres → Automatisation** crée des jetons API à droits et stacks limités, ainsi que des webhooks révocables/rotatifs par stack. Les secrets ne sont affichés qu’une fois et seul leur hash est conservé. Toutes les opérations rejoignent le journal d’audit central avec leur origine et leur durée. Voir le [guide API, webhooks et Home Assistant](docs/AUTOMATION.fr.md). Docker Swarm et les réseaux `overlay` ne sont pas pris en charge.
 

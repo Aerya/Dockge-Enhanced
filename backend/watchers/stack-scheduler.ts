@@ -89,7 +89,8 @@ export class StackScheduler {
 
     async start(server: DockgeServer): Promise<void> {
         this.server = server;
-        this.enabled = (await Settings.get("stackSchedulerEnabled")) === true;
+        this.enabled = true;
+        await Settings.set("stackSchedulerEnabled", true);
         this.load();
         this.reschedule();
     }
@@ -101,7 +102,12 @@ export class StackScheduler {
                 schedules: [] };
         }
         const stackList = await Stack.getStackList(this.server, true);
-        const names = [ ...stackList.keys() ].sort((a, b) => a.localeCompare(b));
+        const stackNames = [ ...stackList.keys() ];
+        const serviceTargets = Object.keys(this.schedules).filter(target => {
+            const separator = target.indexOf("::");
+            return separator > 0 && stackList.has(target.slice(0, separator));
+        });
+        const names = [ ...new Set([ ...stackNames, ...serviceTargets ]) ].sort((a, b) => a.localeCompare(b));
         return {
             timezone: this.timezone,
             enabled: this.enabled,
@@ -109,9 +115,9 @@ export class StackScheduler {
         };
     }
 
-    async setEnabled(enabled: boolean): Promise<boolean> {
-        this.enabled = enabled;
-        await Settings.set("stackSchedulerEnabled", enabled);
+    async setEnabled(_enabled: boolean): Promise<boolean> {
+        this.enabled = true;
+        await Settings.set("stackSchedulerEnabled", true);
         this.reschedule();
         return this.enabled;
     }
@@ -121,7 +127,7 @@ export class StackScheduler {
     }
 
     async save(stack: string, input: { start?: ScheduleRule; stop?: ScheduleRule }): Promise<StackScheduleView> {
-        await this.assertLocalStack(stack);
+        await this.assertTarget(stack);
         const previous = this.schedules[stack];
         this.schedules[stack] = {
             start: this.normalizeRule(input.start),
@@ -135,7 +141,7 @@ export class StackScheduler {
     }
 
     async clear(stack: string): Promise<void> {
-        await this.assertLocalStack(stack);
+        await this.assertTarget(stack);
         delete this.schedules[stack];
         this.persist();
         this.reschedule();
@@ -316,20 +322,42 @@ export class StackScheduler {
         }
     }
 
-    private async execute(stackName: string, action: ScheduleAction): Promise<void> {
+    private splitTarget(target: string): { stack: string; service: string | null } {
+        const separator = target.indexOf("::");
+        if (separator === -1) {
+            return { stack: target,
+                service: null };
+        }
+        return { stack: target.slice(0, separator),
+            service: target.slice(separator + 2) || null };
+    }
+
+    private async assertTarget(target: string): Promise<void> {
+        const { stack: stackName, service } = this.splitTarget(target);
+        await this.assertLocalStack(stackName);
+        if (service && this.server) {
+            const stack = await Stack.getStack(this.server, stackName);
+            await stack.validateScheduledService(service);
+        }
+    }
+
+    private async execute(target: string, action: ScheduleAction): Promise<void> {
         if (!this.server) {
             return;
         }
-        if (this.runningStacks.has(stackName)) {
-            log.warn("StackScheduler", `${action} ${stackName}: another scheduled action is already running`);
+        const { stack: stackName, service } = this.splitTarget(target);
+        if (this.runningStacks.has(target)) {
+            log.warn("StackScheduler", `${action} ${target}: another scheduled action is already running`);
             return;
         }
-        this.runningStacks.add(stackName);
+        this.runningStacks.add(target);
         try {
             let execution: ScheduleExecution;
             try {
                 const stack = await Stack.getStack(this.server, stackName);
-                if (action === "start") {
+                if (service) {
+                    await stack.serviceScheduled(service, action);
+                } else if (action === "start") {
                     await stack.startScheduled();
                 } else {
                     await stack.stopScheduled();
@@ -337,16 +365,16 @@ export class StackScheduler {
                 execution = { timestamp: new Date().toISOString(),
                     success: true };
                 this.server.sendStackList();
-                log.info("StackScheduler", `${action} ${stackName}: OK`);
+                log.info("StackScheduler", `${action} ${target}: OK`);
             } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
                 execution = { timestamp: new Date().toISOString(),
                     success: false,
                     error: message };
-                log.error("StackScheduler", `${action} ${stackName}: ${message}`);
+                log.error("StackScheduler", `${action} ${target}: ${message}`);
             }
 
-            const schedule = this.schedules[stackName];
+            const schedule = this.schedules[target];
             if (schedule) {
                 if (action === "start") {
                     schedule.lastStart = execution;
@@ -359,15 +387,15 @@ export class StackScheduler {
             await AuditLogger.getInstance().log({
                 action: `stack.schedule.${action}`,
                 category: "stack",
-                targetType: "stack",
-                target: stackName,
+                targetType: service ? "container" : "stack",
+                target,
                 status: execution.success ? "success" : "failure",
                 message: execution.error ?? null,
                 username: "scheduler",
                 metadata: { trigger: "cron" },
             });
         } finally {
-            this.runningStacks.delete(stackName);
+            this.runningStacks.delete(target);
         }
     }
 }

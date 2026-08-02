@@ -1,5 +1,6 @@
 {
     "languageName": "Svenska",
+    "stackLogs": "Logs",
     "Create your admin account": "Skapa ditt Admin-konto",
     "authIncorrectCreds": "Fel användarnamn eller lösenord.",
     "PasswordsDoNotMatch": "Lösenorden matchar inte.",

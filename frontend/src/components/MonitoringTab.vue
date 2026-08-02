@@ -648,6 +648,47 @@
             </div>
         </div>
 
+        <div class="shadow-box big-padding mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="terminal" class="me-2" />{{ $t("watcher.dozzle.heading") }}
+                    <span v-if="dozzleStatus === 'running'" class="badge bg-success ms-2" style="font-size:.7rem">{{ $t("watcher.dozzle.running") }}</span>
+                    <span v-else-if="dozzleSettings.enabled" class="badge bg-warning text-dark ms-2" style="font-size:.7rem">{{ $t("watcher.dozzle.stopped") }}</span>
+                </h5>
+                <a v-if="dozzleStatus === 'running'" :href="dozzleEffectiveUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
+                    <font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t("watcher.dozzle.open") }}
+                </a>
+            </div>
+            <div class="form-check form-switch mb-1">
+                <input id="dozzleEnabled" v-model="dozzleSettings.enabled" class="form-check-input" type="checkbox" role="switch" />
+                <label class="form-check-label fw-semibold" for="dozzleEnabled">{{ $t("watcher.dozzle.enable") }}</label>
+            </div>
+            <small class="form-text">{{ $t("watcher.dozzle.hint") }}</small>
+            <div v-if="dozzleSettings.enabled" class="row g-3 my-1">
+                <div class="col-md-3">
+                    <label class="form-label small">{{ $t("watcher.dozzle.port") }}</label>
+                    <input v-model.number="dozzleSettings.port" type="number" min="1024" max="65535" class="form-control form-control-sm" style="max-width:120px" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label small">{{ $t("watcher.dozzle.customUrl") }}</label>
+                    <input v-model="dozzleSettings.customUrl" type="url" class="form-control form-control-sm" style="max-width:380px" :placeholder="`http://${windowHostname}:${dozzleSettings.port}`" />
+                    <small class="form-text">{{ $t("watcher.dozzle.effectiveUrl") }} <code>{{ dozzleEffectiveUrl }}</code></small>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-primary btn-sm" :disabled="savingDozzle" @click="saveDozzleSettings">
+                    <span v-if="savingDozzle" class="spinner-border spinner-border-sm me-1" />
+                    <font-awesome-icon v-else icon="save" class="me-1" />{{ $t("Save") }}
+                </button>
+                <button v-if="dozzleSettings.enabled && dozzleStatus !== 'running'" class="btn btn-success btn-sm" :disabled="dozzleActionLoading" @click="startDozzle">
+                    <font-awesome-icon icon="play" class="me-1" />{{ $t("watcher.dozzle.start") }}
+                </button>
+                <button v-if="dozzleStatus === 'running'" class="btn btn-danger btn-sm" :disabled="dozzleActionLoading" @click="stopDozzle">
+                    <font-awesome-icon icon="stop" class="me-1" />{{ $t("watcher.dozzle.stop") }}
+                </button>
+            </div>
+        </div>
+
         <!-- Toast -->
         <Transition name="slide-fade">
             <div v-if="toast.msg" class="toast-float" :class="toast.ok ? 'toast-ok' : 'toast-err'">
@@ -684,6 +725,8 @@ interface KulaSettings {
     customUrl:   string;
     networkMode: "bridge" | "host";
 }
+
+interface DozzleSettings { enabled: boolean; port: number; customUrl: string }
 
 interface MonitoringSettings {
     crashLoopEnabled: boolean;
@@ -814,6 +857,11 @@ const kulaEffectiveUrl = computed(() =>
         ? kulaSettings.value.customUrl.trim()
         : `http://${windowHostname}:${kulaSettings.value.port}`
 );
+const dozzleSettings = ref<DozzleSettings>({ enabled: false, port: 8080, customUrl: "" });
+const dozzleStatus = ref<"running" | "stopped" | "error">("stopped");
+const savingDozzle = ref(false);
+const dozzleActionLoading = ref(false);
+const dozzleEffectiveUrl = computed(() => dozzleSettings.value.customUrl?.trim() || `http://${windowHostname}:${dozzleSettings.value.port}`);
 
 // Sync with global stackStatsEnabled composable
 const localStackStatsEnabled = ref(stackStatsEnabled.value);
@@ -1134,12 +1182,45 @@ async function stopKula() {
     } finally { kulaActionLoading.value = false; }
 }
 
+async function loadDozzleSettings() {
+    const res = await api("GET", "/watcher/dozzle/settings");
+    if (res.ok) dozzleSettings.value = res.data as DozzleSettings;
+}
+async function loadDozzleStatus() {
+    const res = await api("GET", "/watcher/dozzle/status") as { ok: boolean; status?: string };
+    if (res.ok && res.status) dozzleStatus.value = res.status as "running" | "stopped" | "error";
+}
+async function saveDozzleSettings() {
+    savingDozzle.value = true;
+    try {
+        const res = await api("POST", "/watcher/dozzle/settings", dozzleSettings.value);
+        showToast(res.ok ? "✅ " + t("watcher.dozzle.saved") : `❌ ${res.message}`, res.ok);
+        await loadDozzleStatus();
+    } finally { savingDozzle.value = false; }
+}
+async function startDozzle() {
+    dozzleActionLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/dozzle/start");
+        showToast(res.ok ? "✅ " + t("watcher.dozzle.started") : `❌ ${res.message}`, res.ok);
+        await loadDozzleStatus();
+    } finally { dozzleActionLoading.value = false; }
+}
+async function stopDozzle() {
+    dozzleActionLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/dozzle/stop");
+        showToast(res.ok ? "✅ " + t("watcher.dozzle.stoppedToast") : `❌ ${res.message}`, res.ok);
+        await loadDozzleStatus();
+    } finally { dozzleActionLoading.value = false; }
+}
+
 // ─── Polling ──────────────────────────────────────────────────────
 
 let overviewPoller: Poller | null = null;
 
 onMounted(async () => {
-    await Promise.all([loadOverview(), loadHostStats(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadExclusions()]);
+    await Promise.all([loadOverview(), loadHostStats(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadDozzleSettings(), loadDozzleStatus(), loadExclusions()]);
     // Overview : cadence selon le mode + pause si onglet caché
     overviewPoller = makePoller({ fetch: loadOverview, interval: POLL.overview });
     overviewPoller.start();

@@ -5,10 +5,6 @@
         <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}
       </h1>
       <div class="d-flex align-items-center gap-3">
-        <div class="form-check form-switch mb-0">
-          <input id="stackSchedulerEnabled" v-model="schedulerEnabled" class="form-check-input" type="checkbox" role="switch" @change="toggleStackScheduler">
-          <label class="form-check-label" for="stackSchedulerEnabled">{{ $t("stackScheduler.enable") }}</label>
-        </div>
         <!-- Bouton bascule FR / EN -->
         <div class="lang-toggle">
         <button
@@ -44,7 +40,6 @@
         </button>
         <button
           class="watcher-tab"
-          v-if="schedulerEnabled"
           :class="{ active: tab === 'scheduler' }"
           @click="tab = 'scheduler'"
         >
@@ -1387,7 +1382,7 @@
       <!-- ═══ TAB: MONITORING ═══ -->
       <MonitoringTab v-show="tab === 'monitoring'" />
 
-      <StackSchedulerTab v-if="schedulerEnabled" v-show="tab === 'scheduler'" />
+      <StackSchedulerTab v-show="tab === 'scheduler'" />
 
       <!-- ═══ TAB: AUDIT ═══ -->
       <AuditLogTab v-show="tab === 'audit'" />
@@ -1416,7 +1411,6 @@ import MonitoringTab from "./MonitoringTab.vue";
 import AuditLogTab from "./AuditLogTab.vue";
 import StackSchedulerTab from "./StackSchedulerTab.vue";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
-import { useStackSchedules } from "../composables/useStackSchedules";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -1551,19 +1545,6 @@ onMounted(async () => {
 });
 
 const tab = ref("images");
-const { enabled: schedulerEnabled, setEnabled: setSchedulerEnabled } = useStackSchedules();
-
-async function toggleStackScheduler() {
-  const requested = schedulerEnabled.value;
-  try {
-    await setSchedulerEnabled(requested);
-    if (!requested && tab.value === "scheduler") tab.value = "images";
-  } catch (error) {
-    schedulerEnabled.value = !requested;
-    toast.value = { ok: false, msg: error instanceof Error ? error.message : String(error) };
-  }
-}
-
 const imgSettings = ref<ImgSettings>({
   enabled: false,
   intervalHours: 6,

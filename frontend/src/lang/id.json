@@ -89,6 +89,7 @@
     "Docker Run": "Jalankan Docker",
     "newUpdate": "Pembaruan Baru",
     "languageName": "Bahasa Indonesia (Indonesian)",
+    "stackLogs": "Logs",
     "authIncorrectCreds": "Nama pengguna atau sandi salah.",
     "deleteStack": "Hapus",
     "deleteStackMsg": "Apakah Anda yakin Anda ingin menghapus tumpukan ini ?",

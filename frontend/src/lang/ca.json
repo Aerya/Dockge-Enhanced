@@ -17,6 +17,7 @@
     "startStack": "Inicia",
     "downStack": "Atura i inactiva",
     "languageName": "Català",
+    "stackLogs": "Logs",
     "authIncorrectCreds": "Usuari o contrasenya incorrecte.",
     "PasswordsDoNotMatch": "Les contrasenyes no coincideixen.",
     "signedInDispDisabled": "Autenticació deshabilitada.",

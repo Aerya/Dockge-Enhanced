@@ -9,6 +9,30 @@
             </div>
         </div>
 
+        <div v-if="showReleaseNews" class="release-news-backdrop" role="presentation" @click.self="closeReleaseNews">
+            <section class="release-news-dialog" role="dialog" aria-modal="true" :aria-labelledby="'release-news-title'">
+                <div class="release-news-header">
+                    <div>
+                        <div class="release-news-kicker">Dockge-Enhanced</div>
+                        <h2 id="release-news-title">{{ $t("releaseNews.title") }}</h2>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-normal" :aria-label="$t('releaseNews.close')" @click="closeReleaseNews">
+                        <font-awesome-icon icon="times" />
+                    </button>
+                </div>
+                <p class="release-news-intro">{{ $t("releaseNews.intro") }}</p>
+                <ul class="release-news-list">
+                    <li v-for="item in releaseNewsItems" :key="item">
+                        <font-awesome-icon icon="check-circle" />
+                        <span>{{ $t(item) }}</span>
+                    </li>
+                </ul>
+                <div class="release-news-actions">
+                    <button type="button" class="btn btn-primary" @click="closeReleaseNews">{{ $t("releaseNews.gotIt") }}</button>
+                </div>
+            </section>
+        </div>
+
         <!-- Desktop header -->
         <header v-if="! $root.isMobile" class="desktop-header py-3 mb-3 border-bottom">
             <div class="desktop-brand d-flex align-items-center">
@@ -102,6 +126,9 @@
                 </span>
                 <a v-if="kulaUrl" :href="kulaUrl" target="_blank" class="stat-pill stat-kula">
                     <font-awesome-icon icon="chart-bar" class="me-1" />Kula
+                </a>
+                <a v-if="dozzleUrl" :href="dozzleUrl" target="_blank" class="stat-pill stat-kula">
+                    <font-awesome-icon icon="terminal" class="me-1" />Dozzle
                 </a>
                 <span v-if="systemStats.hostNavbarDisplay?.uptime" class="stat-pill stat-neutral">
                     <font-awesome-icon icon="clock" class="me-1" />{{ $t("watcher.monitoring.navbarUptimeShort") }} : {{ formatUptime(systemStats.host?.uptimeSeconds) }}
@@ -238,6 +265,15 @@ export default {
             systemStats:      null,
             statsPoller:      null,
             kulaUrl:          null,
+            dozzleUrl:        null,
+            showReleaseNews:  false,
+            releaseNewsId:    "2026-08-02-dozzle-logs-scheduling",
+            releaseNewsItems: [
+                "releaseNews.item.dozzle",
+                "releaseNews.item.logs",
+                "releaseNews.item.actions",
+                "releaseNews.item.scheduling",
+            ],
         };
     },
 
@@ -266,11 +302,13 @@ export default {
     },
 
     mounted() {
+        this.checkReleaseNews();
         this.checkSelfUpdate();
         this.fetchKulaStatus();
+        this.fetchDozzleStatus();
         // Poll system stats : cadence selon le mode + pause si onglet caché
         this.statsPoller = makePoller({
-            fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus() ]),
+            fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus(), this.fetchDozzleStatus() ]),
             interval: POLL.system,
         });
         this.statsPoller.start();
@@ -281,6 +319,14 @@ export default {
     },
 
     methods: {
+        checkReleaseNews() {
+            this.showReleaseNews = localStorage.getItem("releaseNewsSeen") !== this.releaseNewsId;
+        },
+
+        closeReleaseNews() {
+            localStorage.setItem("releaseNewsSeen", this.releaseNewsId);
+            this.showReleaseNews = false;
+        },
         async checkSelfUpdate() {
             try {
                 const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
@@ -438,6 +484,23 @@ export default {
                     this.kulaUrl = null;
                 }
             } catch { /* silencieux */ }
+        },
+
+        async fetchDozzleStatus() {
+            try {
+                const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
+                const [settingsRes, statusRes] = await Promise.all([
+                    fetch("/api/watcher/dozzle/settings", { headers: { "Authorization": `Bearer ${token}` } }),
+                    fetch("/api/watcher/dozzle/status", { headers: { "Authorization": `Bearer ${token}` } }),
+                ]);
+                const settings = await settingsRes.json();
+                const status = await statusRes.json();
+                if (settings.data?.enabled && status.status === "running") {
+                    this.dozzleUrl = settings.data.customUrl?.trim() || `http://${window.location.hostname}:${settings.data.port}`;
+                } else {
+                    this.dozzleUrl = null;
+                }
+            } catch { this.dozzleUrl = null; }
         },
 
         scanFolder() {
@@ -666,6 +729,88 @@ main {
     position: fixed;
     width: 100%;
     z-index: 99999;
+}
+
+.release-news-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99990;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(4, 10, 18, .72);
+    backdrop-filter: blur(4px);
+}
+
+.release-news-dialog {
+    width: min(560px, 100%);
+    max-height: min(720px, calc(100vh - 40px));
+    overflow-y: auto;
+    padding: 24px;
+    border: 1px solid rgba(127, 127, 127, .24);
+    border-radius: 16px;
+    color: #1f2937;
+    background: #fff;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .38);
+
+    .dark & {
+        color: $dark-font-color;
+        background: $dark-bg2;
+    }
+}
+
+.release-news-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+
+    h2 {
+        margin: 2px 0 0;
+        font-size: 1.55rem;
+    }
+}
+
+.release-news-kicker {
+    color: $primary;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.release-news-intro {
+    margin: 16px 0;
+    color: #6b7280;
+
+    .dark & { color: $dark-font-color3; }
+}
+
+.release-news-list {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        line-height: 1.4;
+
+        svg {
+            margin-top: 3px;
+            color: #16a34a;
+        }
+    }
+}
+
+.release-news-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 22px;
 }
 
 // Profile Pic Button with Dropdown

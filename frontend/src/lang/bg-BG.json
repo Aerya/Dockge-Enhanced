@@ -1,5 +1,6 @@
 {
     "languageName": "Български",
+    "stackLogs": "Logs",
     "Create your admin account": "Създайте администраторски профил",
     "authIncorrectCreds": "Грешно име или парола.",
     "PasswordsDoNotMatch": "Паролите не съвпадат.",

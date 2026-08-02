@@ -1,5 +1,6 @@
 {
     "languageName": "Dansk",
+    "stackLogs": "Logs",
     "authIncorrectCreds": "Forkert brugernavn eller adgangskode.",
     "PasswordsDoNotMatch": "Adgangskoder stemmer ikke overens.",
     "Repeat Password": "Gentag adgangskode",

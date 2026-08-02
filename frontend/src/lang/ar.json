@@ -1,5 +1,6 @@
 {
     "languageName": "العربية",
+    "stackLogs": "Logs",
     "Create your admin account": "إنشاء حساب المشرف",
     "authIncorrectCreds": "اسم المستخدم أو كلمة المرور غير صحيحة.",
     "PasswordsDoNotMatch": "كلمة المرور غير مطابقة.",
