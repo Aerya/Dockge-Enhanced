@@ -480,6 +480,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**Restic**](https://restic.net/) — encrypted backup tool
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
+- [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — real-time Docker log viewer (MIT licence)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — optional DNS and Nginx Proxy Manager automation (GPLv3)
 
 ---

@@ -480,6 +480,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 - [**Restic**](https://restic.net/) — outil de backup chiffré
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
 - [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
+- [**Dozzle**](https://github.com/amir20/dozzle) par Amir Rajan — visualisation en temps réel des logs Docker (licence MIT)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) par DeepSpace2 — automatisation optionnelle du DNS et de Nginx Proxy Manager (GPLv3)
 
 ---
