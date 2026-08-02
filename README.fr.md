@@ -27,7 +27,7 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
-| **Multi-instance** | Noms d'instances, sélection multiple et regroupement coloré par serveur, copie/migration transactionnelle, jobs reprenables et réplication froide automatique sans dépôt à configurer |
+| **Multi-instance** | Maillage complet en une action, gestion depuis chaque instance liée, sélection et regroupement multi-serveurs, copie/migration transactionnelle, jobs reprenables et réplication froide automatique |
 | **Gestion des stacks** | Actions et planification par stack et conteneur, Build + Recreate, notes et outils Git facultatifs, et protections pour les services partageant le réseau d'un VPN |
 | **Sauvegarde & reprise** | Restic multi-destination, volumes, cohérence par stack, restauration sélective, tests et diffs de snapshots |
 | **Automatisation & audit** | API REST limitée par droits et stacks, webhooks par stack, exemples Home Assistant et historique central avec origine et durée |
@@ -40,6 +40,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
+
+**2026-08-02 — Synchronisation complète des instances en maillage** — Toute instance Enhanced qui connaît déjà les autres serveurs peut désormais synchroniser le catalogue complet en une seule opération. Après avoir saisi une fois l'URL joignable et les identifiants de l'instance courante, chaque serveur se connecte directement à tous les autres : les stacks et conteneurs peuvent alors être consultés, démarrés, arrêtés, mis à jour, copiés, déplacés, synchronisés et planifiés depuis n'importe quelle WebUI liée, sans dépendre durablement d'un contrôleur central. Toutes les destinations sont authentifiées avant la moindre modification, chaque cible reçoit une liste adaptée qui l'exclut elle-même, les synchronisations répétées sont idempotentes, les entrées obsolètes sont retirées et une courte attente au démarrage empêche les actions de devancer la connexion initiale des agents. Le parcours et ses retours sont disponibles en français et en anglais.
 
 **2026-08-02 — Dozzle, logs responsives, planification des conteneurs et popup de nouveautés** — L'onglet Monitoring peut déployer et gérer facultativement [Dozzle](https://dozzle.dev/) avec données persistantes, socket monté en lecture seule, raccourci dans la barre supérieure et liens directs pour chaque conteneur. La sortie des stacks s'appelle désormais **Logs** et dispose d'une barre responsive avec filtre par service, recherche, horodatage et hauteurs x1/x1,5/x2. Les actions des stacks et conteneurs partagent des modes compacts ou avec texte ; les encarts Note, Git et Planification s'affichent uniquement à la demande, tandis que le moteur de planification reste toujours disponible. Chaque conteneur peut définir ses propres horaires de démarrage et d'arrêt. Après une mise à jour, un popup **Nouveautés** localisé FR/EN présente une fois les derniers changements pour chaque navigateur et révision des nouveautés.
 

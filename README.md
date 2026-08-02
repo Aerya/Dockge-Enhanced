@@ -27,7 +27,7 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 | Area | Dockge Enhanced adds |
 | --- | --- |
-| **Multi-instance** | Instance names, multi-server selection and color-coded grouping, transactional copy/migration, resumable jobs, and automatic cold replication with no repository setup |
+| **Multi-instance** | One-click full-mesh synchronization, management from every linked instance, multi-server selection and grouping, transactional copy/migration, resumable jobs, and automatic cold replication |
 | **Stack management** | Per-stack and per-container actions and scheduling, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
 | **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
 | **Automation & audit** | REST API scoped by permissions and stacks, per-stack webhooks, Home Assistant examples, and centralized history with origin and duration |
@@ -40,6 +40,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
+
+**2026-08-02 — Full-mesh instance synchronization** — Any Enhanced instance that already knows the other servers can now synchronize the complete peer catalogue in one operation. After entering the current instance's reachable URL and credentials once, every server connects directly to every other server: stacks and containers can then be viewed, started, stopped, updated, transferred, moved, synchronized and scheduled from any linked WebUI without depending on a permanent central controller. All destinations are authenticated before any catalogue is changed, each target receives its own target-specific list, repeated synchronization is idempotent, stale entries are removed, and a short startup retry prevents actions from racing the initial agent connections. The workflow and its feedback are available in French and English.
 
 **2026-08-02 — Dozzle, responsive logs, container scheduling, and update news** — The Monitoring tab can optionally deploy and manage [Dozzle](https://dozzle.dev/) with persistent data, a read-only socket mount, a navbar shortcut, and direct per-container links. Stack output is now labelled **Logs** and uses a responsive toolbar with service filtering, search, timestamps, and x1/x1.5/x2 panel heights. Stack and container actions share compact or labelled button modes; Note, Git, and Scheduling panels are shown only on demand, while the scheduling engine itself is always available. Every container can define independent Start and Stop schedules. After an update, a localized FR/EN **What's new** popup presents the latest changes once per browser and news revision.
 
