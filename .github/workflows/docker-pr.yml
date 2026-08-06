@@ -3,21 +3,6 @@ name: Validation Docker PR
 on:
   pull_request:
     branches: [main]
-    paths:
-      - "Dockerfile"
-      - "Dockerfile.*"
-      - "**/Dockerfile"
-      - "**/Dockerfile.*"
-      - "docker-compose.yml"
-      - "compose.yml"
-      - "package.json"
-      - "package-lock.json"
-      - "pnpm-lock.yaml"
-      - "requirements*.txt"
-      - "**/requirements*.txt"
-      - "go.mod"
-      - "go.sum"
-      - ".github/workflows/docker-pr.yml"
 
 permissions:
   contents: read
