@@ -158,6 +158,7 @@ export default {
             editingAgentEndpoint: null,
             agentNameDraft: "",
             connectingAgent: false,
+            federationMigrationAttempted: false,
             agent: {
                 url: "http://",
                 username: "",
@@ -194,6 +195,13 @@ export default {
     mounted() {
         this.initialPerPage = this.perPage;
 
+        this.$watch(() => this.$root.agentCount, (count) => {
+            if (count > 1 && !this.federationMigrationAttempted) {
+                this.federationMigrationAttempted = true;
+                this.migrateFederation();
+            }
+        }, { immediate: true });
+
         window.addEventListener("resize", this.updatePerPage);
         this.updatePerPage();
     },
@@ -203,6 +211,16 @@ export default {
     },
 
     methods: {
+
+        migrateFederation() {
+            this.$root.getSocket().emit("repairAgentMesh", {
+                self: this.federationSelf(),
+            }, (res) => {
+                if (!res.ok) {
+                    this.$root.toastRes(res);
+                }
+            });
+        },
 
         addAgent() {
             this.connectingAgent = true;

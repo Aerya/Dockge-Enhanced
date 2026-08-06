@@ -1,6 +1,8 @@
 {
     "languageName": "Inglés",
     "stackLogs": "Logs",
+    "remoteInstances.openOn": "Abrir en otra instancia:",
+    "remoteInstances.openOnNamed": "Abrir en {name}",
     "Create your admin account": "Crea tu cuenta de administrador",
     "authIncorrectCreds": "Nombre de usuario o contraseña incorrectos.",
     "PasswordsDoNotMatch": "Las contraseñas no coinciden.",

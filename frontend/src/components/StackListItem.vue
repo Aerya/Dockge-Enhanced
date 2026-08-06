@@ -1,14 +1,32 @@
 <template>
-    <router-link :to="url" :class="{ 'dim' : !stack.isManagedByDockge }" :style="agentStyle" class="item">
+    <div
+        :class="{ 'dim' : !stack.isManagedByDockge }"
+        :style="agentStyle"
+        class="item"
+        role="link"
+        tabindex="0"
+        @click="$router.push(url)"
+        @keydown.enter="$router.push(url)"
+    >
         <Uptime :stack="stack" :fixed-width="true" class="me-2" />
         <div class="title">
             <span>{{ stackName }}</span>
             <font-awesome-icon v-if="scheduled" icon="calendar-days" class="scheduled-indicator ms-1" :title="$t('stackScheduler.scheduledTooltip')" />
             <StackUpdateBadge :stack-name="stackName" />
             <StackStatsBadge :stack-name="stackName" />
-            <div v-if="$root.agentCount > 1" class="endpoint">{{ endpointDisplay }}</div>
+            <div v-if="$root.agentCount > 1" class="endpoint">
+                <a
+                    v-if="remoteStackUrl"
+                    :href="remoteStackUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    @click.stop
+                    @keydown.stop
+                >{{ endpointDisplay }}</a>
+                <span v-else>{{ endpointDisplay }}</span>
+            </div>
         </div>
-    </router-link>
+    </div>
 </template>
 
 <script>
@@ -70,6 +88,13 @@ export default {
     computed: {
         endpointDisplay() {
             return this.$root.endpointDisplayFunction(this.stack.endpoint);
+        },
+        remoteStackUrl() {
+            const agentUrl = this.$root.agentList[this.stack.endpoint]?.url;
+            if (!this.stack.endpoint || !agentUrl) {
+                return "";
+            }
+            return new URL(`compose/${encodeURIComponent(this.stack.name)}`, agentUrl.replace(/\/?$/, "/")).toString();
         },
         url() {
             if (this.stack.endpoint) {
@@ -157,6 +182,7 @@ export default {
 
 .item {
     text-decoration: none;
+    cursor: pointer;
     display: flex;
     align-items: center;
     min-height: 52px;
@@ -196,6 +222,12 @@ export default {
     .endpoint {
         font-size: 12px;
         color: $dark-font-color3;
+
+        a {
+            color: inherit;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
     }
 
     .scheduled-indicator {
