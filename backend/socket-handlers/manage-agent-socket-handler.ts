@@ -4,6 +4,11 @@ import { log } from "../log";
 import { callbackError, callbackResult, checkLogin, DockgeSocket } from "../util-server";
 import { LooseObject } from "../../common/util-common";
 import { meshEndpoint, normalizeMeshSelf, synchronizeAgentMesh, upsertMeshPeers, validateMeshCatalogue } from "../agent-mesh";
+import { Settings } from "../settings";
+
+const AGENT_MESH_REPAIR_REVISION_KEY = "agentMeshRepairRevision";
+const AGENT_MESH_REPAIR_REVISION = 1;
+let meshRepairInFlight : Promise<string[]> | null = null;
 
 export function normalizeAgentDisplayName(value: unknown): string {
     if (value === undefined || value === null) return "";
@@ -38,6 +43,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 const data = requestData as LooseObject;
                 const peers = validateMeshCatalogue(data.peers as unknown[]);
                 await upsertMeshPeers(peers, socket.endpoint);
+                await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                 callbackResult({ ok: true,
                     count: peers.length }, callback);
                 setTimeout(() => server.disconnectAllSocketClients(undefined, socket.id), 100);
@@ -54,12 +60,23 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 }
                 const data = requestData as LooseObject;
                 const self = normalizeMeshSelf(data.self);
-                const endpoints = await synchronizeAgentMesh(self);
+                if (await Settings.get(AGENT_MESH_REPAIR_REVISION_KEY) === AGENT_MESH_REPAIR_REVISION) {
+                    callbackResult({ ok: true,
+                        repaired: false }, callback);
+                    return;
+                }
+                meshRepairInFlight ??= synchronizeAgentMesh(self);
+                let endpoints : string[];
+                try {
+                    endpoints = await meshRepairInFlight;
+                    await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
+                } finally {
+                    meshRepairInFlight = null;
+                }
                 callbackResult({
                     ok: true,
-                    msg: "agentFederationRepaired",
-                    msgi18n: true,
                     count: endpoints.length,
+                    repaired: true,
                 }, callback);
                 server.disconnectAllSocketClients(undefined, socket.id);
                 await socket.instanceManager.sendAgentList();
@@ -87,6 +104,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
 
                 try {
                     await synchronizeAgentMesh(self);
+                    await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                 } catch (error) {
                     await manager.remove(data.url);
                     throw error;
@@ -155,6 +173,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                     username: "removed",
                     password: "removed",
                     displayName: "" }));
+                await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                 await manager.remove(data.url);
 
                 server.disconnectAllSocketClients(undefined, socket.id);

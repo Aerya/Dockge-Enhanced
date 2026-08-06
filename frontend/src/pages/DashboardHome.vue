@@ -89,18 +89,7 @@
                             </BModal>
                         </div>
 
-                        <div class="d-flex flex-wrap gap-2">
-                            <button v-if="!showAgentForm" class="btn btn-normal" @click="showAgentForm = !showAgentForm">{{ $t("addAgent") }}</button>
-                            <button
-                                v-if="$root.agentCount > 1"
-                                class="btn btn-normal"
-                                :disabled="repairingFederation"
-                                @click="repairFederation"
-                            >
-                                <font-awesome-icon icon="sync-alt" class="me-1" />
-                                {{ repairingFederation ? $t("agentFederation.repairing") : $t("agentFederation.repair") }}
-                            </button>
-                        </div>
+                        <button v-if="!showAgentForm" class="btn btn-normal" @click="showAgentForm = !showAgentForm">{{ $t("addAgent") }}</button>
 
                         <!-- Add Agent Form -->
                         <form v-if="showAgentForm" @submit.prevent="addAgent">
@@ -169,7 +158,7 @@ export default {
             editingAgentEndpoint: null,
             agentNameDraft: "",
             connectingAgent: false,
-            repairingFederation: false,
+            federationMigrationAttempted: false,
             agent: {
                 url: "http://",
                 username: "",
@@ -206,6 +195,13 @@ export default {
     mounted() {
         this.initialPerPage = this.perPage;
 
+        this.$watch(() => this.$root.agentCount, (count) => {
+            if (count > 1 && !this.federationMigrationAttempted) {
+                this.federationMigrationAttempted = true;
+                this.migrateFederation();
+            }
+        }, { immediate: true });
+
         window.addEventListener("resize", this.updatePerPage);
         this.updatePerPage();
     },
@@ -216,13 +212,13 @@ export default {
 
     methods: {
 
-        repairFederation() {
-            this.repairingFederation = true;
+        migrateFederation() {
             this.$root.getSocket().emit("repairAgentMesh", {
                 self: this.federationSelf(),
             }, (res) => {
-                this.repairingFederation = false;
-                this.$root.toastRes(res);
+                if (!res.ok) {
+                    this.$root.toastRes(res);
+                }
             });
         },
 
