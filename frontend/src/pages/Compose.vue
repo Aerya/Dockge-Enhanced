@@ -5,7 +5,12 @@
             <h1 v-else class="mb-3">
                 <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }}
                 <span v-if="$root.agentCount > 1" class="agent-name">
-                    ({{ endpointDisplay }})
+                    (<a
+                        v-if="remoteStackUrl"
+                        :href="remoteStackUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >{{ endpointDisplay }}</a><template v-else>{{ endpointDisplay }}</template>)
                 </span>
                 <RemoteInstanceLinks
                     v-if="endpoint && !isAdd"
@@ -720,6 +725,13 @@ export default {
     computed: {
         endpointDisplay() {
             return this.$root.endpointDisplayFunction(this.endpoint);
+        },
+        remoteStackUrl() {
+            const agentUrl = this.$root.agentList[this.endpoint]?.url;
+            if (!this.endpoint || !agentUrl || !this.stack.name) {
+                return "";
+            }
+            return new URL(`compose/${encodeURIComponent(this.stack.name)}`, agentUrl.replace(/\/?$/, "/")).toString();
         },
 
         urls() {

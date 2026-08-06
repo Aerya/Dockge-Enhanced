@@ -9,7 +9,7 @@
     "releaseNews.title": "What's new",
     "releaseNews.intro": "This update strengthens multi-instance management from any linked Dockge-Enhanced WebUI.",
     "releaseNews.item.agentMesh": "Asymmetric federations created by older versions are repaired automatically once after upgrading, with no button or reconfiguration.",
-    "releaseNews.item.remoteLinks": "Every watcher tab links directly to the same tab on other instances, and every remote stack links back to its originating WebUI.",
+    "releaseNews.item.remoteLinks": "Every watcher tab links directly to the same tab on other instances. In stack lists and on the Compose page, the remote instance name is directly clickable.",
     "releaseNews.item.dozzle": "Optional Dozzle deployment, a navbar shortcut and direct access to each container's logs.",
     "releaseNews.item.logs": "A responsive Logs panel with search, service filters, timestamps and x1, x1.5 or x2 height.",
     "releaseNews.item.actions": "Compact or labelled action buttons for stacks and containers, with optional Note and Git panels.",

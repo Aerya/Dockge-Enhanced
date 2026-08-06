@@ -9,7 +9,7 @@
     "releaseNews.title": "Nouveautés",
     "releaseNews.intro": "Cette mise à jour consolide le pilotage de plusieurs instances Dockge-Enhanced depuis n'importe quelle WebUI liée.",
     "releaseNews.item.agentMesh": "Les fédérations asymétriques créées par d'anciennes versions sont réparées automatiquement une seule fois après la mise à jour, sans bouton ni reconfiguration.",
-    "releaseNews.item.remoteLinks": "Chaque onglet de surveillance propose des accès directs au même onglet sur les autres instances, et chaque stack distante renvoie vers sa WebUI d'origine.",
+    "releaseNews.item.remoteLinks": "Chaque onglet de surveillance propose des accès directs au même onglet sur les autres instances. Dans les listes de stacks et sur la page Compose, le nom de l'instance distante est directement cliquable.",
     "releaseNews.item.dozzle": "Déploiement facultatif de Dozzle, raccourci dans la barre supérieure et accès direct aux logs de chaque conteneur.",
     "releaseNews.item.logs": "Encart Logs responsive avec recherche, filtre par service, horodatage et hauteur x1, x1,5 ou x2.",
     "releaseNews.item.actions": "Boutons d'action compacts ou avec texte pour les stacks et conteneurs, avec encarts Note et Git facultatifs.",

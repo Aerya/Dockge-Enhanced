@@ -41,7 +41,7 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
 
-**2026-08-06 — Automatic federation migration and direct links** — On the first authenticated session after upgrading, a one-time migration automatically repairs asymmetric catalogues created by older versions, with no button or reconfiguration. Every `/watcher` tab links directly to the same tab on other instances, while a remote stack header links back to its page on the WebUI that hosts it.
+**2026-08-06 — Automatic federation migration and direct links** — On the first authenticated session after upgrading, a one-time migration automatically repairs asymmetric catalogues created by older versions, with no button or reconfiguration. Every `/watcher` tab links directly to the same tab on other instances. In stack lists and on the Compose page, a remote stack's instance name is directly clickable and opens that stack on its hosting WebUI.
 
 **2026-08-02 — Automatic full-mesh instance federation** — Adding an agent to any Enhanced instance now automatically shares it with every server already linked and gives the new server the complete instance catalogue. Removing an agent is propagated in the same way. Return connections use the current authenticated session as a dedicated federation credential instead of asking users to re-enter the local instance details. Every destination is authenticated before catalogues change, each target receives its own target-specific list, stale entries are removed, and stacks and containers can be managed from any linked WebUI without a permanent central controller. The workflow and its feedback are available in French and English.
 
