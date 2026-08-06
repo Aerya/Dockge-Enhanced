@@ -26,6 +26,7 @@ declare module 'vue' {
     NetworkInput: typeof import('./src/components/NetworkInput.vue')['default']
     PendingStackMoveStatus: typeof import('./src/components/PendingStackMoveStatus.vue')['default']
     PlugNPiNLabelAssistant: typeof import('./src/components/PlugNPiNLabelAssistant.vue')['default']
+    RemoteInstanceLinks: typeof import('./src/components/RemoteInstanceLinks.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Security: typeof import('./src/components/settings/Security.vue')['default']

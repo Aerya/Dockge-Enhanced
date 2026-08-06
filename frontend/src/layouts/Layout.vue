@@ -267,9 +267,10 @@ export default {
             kulaUrl:          null,
             dozzleUrl:        null,
             showReleaseNews:  false,
-            releaseNewsId:    "2026-08-02-automatic-agent-federation",
+            releaseNewsId:    "2026-08-06-agent-federation-migration-links",
             releaseNewsItems: [
                 "releaseNews.item.agentMesh",
+                "releaseNews.item.remoteLinks",
                 "releaseNews.item.dozzle",
                 "releaseNews.item.logs",
                 "releaseNews.item.actions",
