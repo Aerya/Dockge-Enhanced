@@ -27,6 +27,12 @@
       </div>
     </div>
 
+    <RemoteInstanceLinks
+      class="mb-3"
+      :agents="$root.agentList"
+      :path="`/watcher?tab=${encodeURIComponent(tab)}`"
+    />
+
     <div class="shadow-box shadow-box-settings">
       <!-- ═══ TAB BAR ═══ -->
       <div class="watcher-tab-bar mb-4">
@@ -1410,6 +1416,7 @@ import DockerResources from "../pages/DockerResources.vue";
 import MonitoringTab from "./MonitoringTab.vue";
 import AuditLogTab from "./AuditLogTab.vue";
 import StackSchedulerTab from "./StackSchedulerTab.vue";
+import RemoteInstanceLinks from "./RemoteInstanceLinks.vue";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -1544,7 +1551,9 @@ onMounted(async () => {
   await setWatcherLang(watcherLang.value);
 });
 
-const tab = ref("images");
+const WATCHER_TABS = new Set([ "images", "scheduler", "trivy", "backup", "resources", "notifications", "monitoring", "audit" ]);
+const requestedTab = new URLSearchParams(window.location.search).get("tab") ?? "";
+const tab = ref(WATCHER_TABS.has(requestedTab) ? requestedTab : "images");
 const imgSettings = ref<ImgSettings>({
   enabled: false,
   intervalHours: 6,

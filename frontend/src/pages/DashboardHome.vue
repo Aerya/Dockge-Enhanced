@@ -89,7 +89,18 @@
                             </BModal>
                         </div>
 
-                        <button v-if="!showAgentForm" class="btn btn-normal" @click="showAgentForm = !showAgentForm">{{ $t("addAgent") }}</button>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button v-if="!showAgentForm" class="btn btn-normal" @click="showAgentForm = !showAgentForm">{{ $t("addAgent") }}</button>
+                            <button
+                                v-if="$root.agentCount > 1"
+                                class="btn btn-normal"
+                                :disabled="repairingFederation"
+                                @click="repairFederation"
+                            >
+                                <font-awesome-icon icon="sync-alt" class="me-1" />
+                                {{ repairingFederation ? $t("agentFederation.repairing") : $t("agentFederation.repair") }}
+                            </button>
+                        </div>
 
                         <!-- Add Agent Form -->
                         <form v-if="showAgentForm" @submit.prevent="addAgent">
@@ -158,6 +169,7 @@ export default {
             editingAgentEndpoint: null,
             agentNameDraft: "",
             connectingAgent: false,
+            repairingFederation: false,
             agent: {
                 url: "http://",
                 username: "",
@@ -203,6 +215,16 @@ export default {
     },
 
     methods: {
+
+        repairFederation() {
+            this.repairingFederation = true;
+            this.$root.getSocket().emit("repairAgentMesh", {
+                self: this.federationSelf(),
+            }, (res) => {
+                this.repairingFederation = false;
+                this.$root.toastRes(res);
+            });
+        },
 
         addAgent() {
             this.connectingAgent = true;

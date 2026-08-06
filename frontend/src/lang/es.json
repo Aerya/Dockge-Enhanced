@@ -1,6 +1,11 @@
 {
     "languageName": "Inglés",
     "stackLogs": "Logs",
+    "agentFederation.repair": "Reparar la federación",
+    "agentFederation.repairing": "Reparando…",
+    "agentFederationRepaired": "Federación reparada y compartida con todas las instancias",
+    "remoteInstances.openOn": "Abrir en otra instancia:",
+    "remoteInstances.openOnNamed": "Abrir en {name}",
     "Create your admin account": "Crea tu cuenta de administrador",
     "authIncorrectCreds": "Nombre de usuario o contraseña incorrectos.",
     "PasswordsDoNotMatch": "Las contraseñas no coinciden.",

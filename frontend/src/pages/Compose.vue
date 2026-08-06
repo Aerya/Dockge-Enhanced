@@ -7,6 +7,13 @@
                 <span v-if="$root.agentCount > 1" class="agent-name">
                     ({{ endpointDisplay }})
                 </span>
+                <RemoteInstanceLinks
+                    v-if="endpoint && !isAdd"
+                    class="stack-remote-link"
+                    :agents="$root.agentList"
+                    :endpoint="endpoint"
+                    :path="`/compose/${encodeURIComponent(stack.name)}`"
+                />
                 <div v-if="lastUpdated || lastStartedAt" class="stack-meta-bar">
                     <span v-if="lastUpdated" class="stack-meta-item" :title="new Date(lastUpdated).toLocaleString()">
                         <font-awesome-icon icon="clock" class="me-1" />{{ $t('updatedAt') }} {{ relativeTime(lastUpdated) }}
@@ -571,6 +578,7 @@ import StackScheduleEditor from "../components/StackScheduleEditor.vue";
 import StackTransferModal from "../components/StackTransferModal.vue";
 import StackReplicationStatus from "../components/StackReplicationStatus.vue";
 import PendingStackMoveStatus from "../components/PendingStackMoveStatus.vue";
+import RemoteInstanceLinks from "../components/RemoteInstanceLinks.vue";
 import PlugNPiNLabelAssistant from "../components/PlugNPiNLabelAssistant.vue";
 import StackGitPanel from "../components/StackGitPanel.vue";
 import { applyPlugNPiNLabelsToCompose, PlugNPiNSequenceLabelsError } from "../plugnpin-labels";
@@ -600,6 +608,7 @@ export default {
         StackTransferModal,
         StackReplicationStatus,
         PendingStackMoveStatus,
+        RemoteInstanceLinks,
         PlugNPiNLabelAssistant,
         StackGitPanel,
     },

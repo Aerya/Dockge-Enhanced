@@ -46,6 +46,28 @@ export class ManageAgentSocketHandler extends SocketHandler {
             }
         });
 
+        socket.on("repairAgentMesh", async (requestData : unknown, callback : unknown) => {
+            try {
+                checkLogin(socket);
+                if (!requestData || typeof requestData !== "object") {
+                    throw new Error("Data must be an object");
+                }
+                const data = requestData as LooseObject;
+                const self = normalizeMeshSelf(data.self);
+                const endpoints = await synchronizeAgentMesh(self);
+                callbackResult({
+                    ok: true,
+                    msg: "agentFederationRepaired",
+                    msgi18n: true,
+                    count: endpoints.length,
+                }, callback);
+                server.disconnectAllSocketClients(undefined, socket.id);
+                await socket.instanceManager.sendAgentList();
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // addAgent
         socket.on("addAgent", async (requestData : unknown, callback : unknown) => {
             try {
