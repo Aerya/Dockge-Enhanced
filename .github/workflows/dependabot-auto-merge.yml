@@ -23,15 +23,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Activer la fusion squash pour les mises à jour patch et mineures
-        if: >-
-          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-          steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
-          steps.metadata.outputs.dependency-group == 'minor-and-patch'
+      - name: Activer la fusion squash après les contrôles requis
+        # Les mises à jour indirectes n'ont pas toujours de type sémantique.
+        # La protection de main attend les builds et le scan de sécurité avant la fusion.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          if ! gh pr merge --auto --squash --delete-branch "$PR_URL"; then
-            echo "::notice::L'auto-merge natif est indisponible; la fusion sera réévaluée à la fin des contrôles."
-          fi
+          gh pr merge --auto --squash --delete-branch "$PR_URL"
