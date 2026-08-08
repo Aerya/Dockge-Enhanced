@@ -70,7 +70,6 @@
 <script>
 
 import dayjs from "dayjs";
-import { timezoneList } from "../../util-frontend";
 
 export default {
     components: {
@@ -83,7 +82,7 @@ export default {
 
     data() {
         return {
-            timezoneList: timezoneList(),
+            timezoneList: [],
         };
     },
 
