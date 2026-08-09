@@ -138,5 +138,7 @@
     "New Container Name...": "Nombre del nuevo Container...",
     "Network name...": "Nombre de la red...",
     "Select a network...": "Selecciona una red...",
-    "NoNetworksAvailable": "No hay redes disponibles. Primero debes agregar redes internas o habilitar redes externas en el lado derecho."
+    "NoNetworksAvailable": "No hay redes disponibles. Primero debes agregar redes internas o habilitar redes externas en el lado derecho.",
+    "stackPin": "Fijar esta pila en la parte superior de la lista",
+    "stackUnpin": "Dejar de fijar esta pila"
 }

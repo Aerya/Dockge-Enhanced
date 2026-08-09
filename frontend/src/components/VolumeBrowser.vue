@@ -153,7 +153,7 @@ export default {
                 extensions.push(yaml());
             } else if ([ "json", "jsonc" ].includes(extension)) {
                 extensions.push(json());
-            } else if (extension === "py") {
+            } else if (extension === "py" || fileName === ".env" || fileName.startsWith(".env.")) {
                 extensions.push(python());
             } else if ([ "sh", "bash", "zsh" ].includes(extension) || [ ".bashrc", ".zshrc", "dockerfile" ].includes(fileName)) {
                 extensions.push(StreamLanguage.define(shell));

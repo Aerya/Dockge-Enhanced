@@ -97,6 +97,7 @@ import {
     faDiagramProject,
     faCodeBranch,
     faCloudArrowUp,
+    faThumbtack,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -195,6 +196,7 @@ library.add(
     faDiagramProject,
     faCodeBranch,
     faCloudArrowUp,
+    faThumbtack,
 );
 
 export { FontAwesomeIcon };

@@ -164,8 +164,10 @@
                     :isSelectMode="selectMode"
                     :isSelected="isSelected"
                     :scheduled="isStackScheduled(item.name, item.endpoint)"
+                    :pinned="isStackPinned(item)"
                     :select="select"
                     :deselect="deselect"
+                    @toggle-pin="toggleStackPin(item)"
                 />
             </template>
         </div>
@@ -209,6 +211,7 @@ export default {
             stackAgentFilters: this.loadAgentFilters(),
             stackGroupByAgent: this.loadStackGrouping(),
             stackSort: this.loadStackSort(),
+            pinnedStacks: this.loadPinnedStacks(),
             filterState: {
                 status: null,
                 active: null,
@@ -280,6 +283,10 @@ export default {
             });
 
             result.sort((m1, m2) => {
+                const pinnedOrder = Number(this.isStackPinned(m2)) - Number(this.isStackPinned(m1));
+                if (pinnedOrder !== 0) {
+                    return pinnedOrder;
+                }
 
                 if (this.stackSort === "name") {
                     return m1.name.localeCompare(m2.name, undefined, { sensitivity: "base" });
@@ -495,6 +502,27 @@ export default {
         window.removeEventListener("scroll", this.onScroll);
     },
     methods: {
+        stackPinKey(stack) {
+            return JSON.stringify([ stack.endpoint || "", stack.name ]);
+        },
+        loadPinnedStacks() {
+            try {
+                const stored = JSON.parse(localStorage.getItem("pinnedStacks") || "[]");
+                return Array.isArray(stored) ? stored.filter(key => typeof key === "string") : [];
+            } catch {
+                return [];
+            }
+        },
+        isStackPinned(stack) {
+            return this.pinnedStacks.includes(this.stackPinKey(stack));
+        },
+        toggleStackPin(stack) {
+            const key = this.stackPinKey(stack);
+            this.pinnedStacks = this.pinnedStacks.includes(key)
+                ? this.pinnedStacks.filter(candidate => candidate !== key)
+                : [ ...this.pinnedStacks, key ];
+            localStorage.setItem("pinnedStacks", JSON.stringify(this.pinnedStacks));
+        },
         loadStackSort() {
             const stored = localStorage.getItem("stackSort");
             const migrationKey = "stackSortNameDefaultV1";
