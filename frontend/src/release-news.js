@@ -17,6 +17,14 @@ export const RELEASE_NEWS = [
             "releaseNews.item.logWrap",
         ],
     },
+    {
+        id: "2026-08-09-compose-workspace-pins",
+        items: [
+            "releaseNews.item.stackPins",
+            "releaseNews.item.composeWorkspace",
+            "releaseNews.item.rawComposeCopy",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {
