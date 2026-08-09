@@ -1,4 +1,11 @@
 {
+    "releaseNews.intro": "Estas son las funciones añadidas desde tu anterior actualización de Dockge-Enhanced.",
+    "releaseNews.item.updateRange": "La ventana emergente agrupa solo las funciones publicadas desde tu actualización anterior, sin importar cuántas versiones se hayan omitido.",
+    "releaseNews.item.logWrap": "Un botón en los registros permite alternar el ajuste de línea o mantener cada entrada completa en una sola línea con desplazamiento horizontal.",
+    "logLineWrap": "Ajuste de línea",
+    "logLineWrapToggle": "Activar o desactivar el ajuste automático de línea",
+    "logLineWrapOn": "Líneas ajustadas",
+    "logLineWrapOff": "Líneas completas",
     "languageName": "Inglés",
     "stackLogs": "Logs",
     "remoteInstances.openOn": "Abrir en otra instancia:",

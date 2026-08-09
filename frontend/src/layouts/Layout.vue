@@ -247,6 +247,7 @@ import Login from "../components/Login.vue";
 import { compareVersions } from "compare-versions";
 import { ALL_ENDPOINTS } from "../../../common/util-common";
 import { setLowPower, POLL, makePoller } from "../composables/useLowPower";
+import { getLatestReleaseNewsId, getReleaseNewsSince } from "../release-news";
 
 export default {
 
@@ -267,15 +268,7 @@ export default {
             kulaUrl:          null,
             dozzleUrl:        null,
             showReleaseNews:  false,
-            releaseNewsId:    "2026-08-06-agent-federation-migration-links",
-            releaseNewsItems: [
-                "releaseNews.item.agentMesh",
-                "releaseNews.item.remoteLinks",
-                "releaseNews.item.dozzle",
-                "releaseNews.item.logs",
-                "releaseNews.item.actions",
-                "releaseNews.item.scheduling",
-            ],
+            releaseNewsItems: [],
         };
     },
 
@@ -322,11 +315,12 @@ export default {
 
     methods: {
         checkReleaseNews() {
-            this.showReleaseNews = localStorage.getItem("releaseNewsSeen") !== this.releaseNewsId;
+            this.releaseNewsItems = getReleaseNewsSince(localStorage.getItem("releaseNewsSeen"));
+            this.showReleaseNews = this.releaseNewsItems.length > 0;
         },
 
         closeReleaseNews() {
-            localStorage.setItem("releaseNewsSeen", this.releaseNewsId);
+            localStorage.setItem("releaseNewsSeen", getLatestReleaseNewsId());
             this.showReleaseNews = false;
         },
         async checkSelfUpdate() {

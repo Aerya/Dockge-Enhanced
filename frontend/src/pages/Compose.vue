@@ -383,17 +383,27 @@
                                 >
                                     <font-awesome-icon icon="clock" class="me-1" />{{ $t('logTimestamps') }}
                                 </button>
+                                <button
+                                    class="btn btn-sm"
+                                    :class="logLineWrap ? 'btn-primary' : 'btn-normal'"
+                                    :title="$t('logLineWrapToggle')"
+                                    style="font-size:0.78rem; padding: 2px 8px;"
+                                    @click="toggleLogLineWrap"
+                                >
+                                    <font-awesome-icon icon="stream" class="me-1" />{{ $t(logLineWrap ? 'logLineWrapOn' : 'logLineWrapOff') }}
+                                </button>
                             </div>
                         </div>
                         <Terminal
                             :key="selectedLogTerminalName"
                             ref="combinedTerminal"
                             class="mb-3 terminal combined-terminal"
-                            :class="{ 'logs-expanded': !containersExpanded }"
+                            :class="{ 'logs-expanded': !containersExpanded, 'logs-no-wrap': !logLineWrap }"
                             :name="selectedLogTerminalName"
                             :endpoint="endpoint"
                             :rows="combinedTerminalRows"
                             :cols="combinedTerminalCols"
+                            :wrap-lines="logLineWrap"
                             :style="{ height: `${315 * Number(terminalScale)}px` }"
                         ></Terminal>
                     </div>
@@ -691,6 +701,7 @@ export default {
             lastUpdated: null,
             lastStartedAt: null,
             logTimestamps: false,
+            logLineWrap: localStorage.getItem("logLineWrap") !== "false",
             isEditMode: false,
             submitted: false,
             showDeleteDialog: false,
@@ -1176,6 +1187,11 @@ export default {
             }
             this.logTimestamps = !currentTs;
             this.joinSelectedLogTerminal();
+        },
+
+        toggleLogLineWrap() {
+            this.logLineWrap = !this.logLineWrap;
+            localStorage.setItem("logLineWrap", String(this.logLineWrap));
         },
 
         searchLogs(previous) {
@@ -1831,6 +1847,11 @@ export default {
     width: 100%;
     padding: 0;
     overflow: hidden;
+}
+
+.combined-terminal.logs-no-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 .combined-terminal.logs-expanded {
