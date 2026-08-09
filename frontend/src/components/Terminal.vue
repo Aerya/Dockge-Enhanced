@@ -1,5 +1,5 @@
 <template>
-    <div class="shadow-box">
+    <div class="shadow-box" :class="{ 'terminal-no-wrap': !wrapLines }">
         <div v-pre ref="terminal" class="main-terminal"></div>
     </div>
 </template>
@@ -55,6 +55,11 @@ export default {
             default: TERMINAL_COLS,
         },
 
+        wrapLines: {
+            type: Boolean,
+            default: true,
+        },
+
         // Mode
         // displayOnly: Only display terminal output
         // mainTerminal: Allow input limited commands and output
@@ -75,7 +80,13 @@ export default {
             searchLines: [],
             partialSearchLine: "",
             suppressSelectionCopy: false,
+            longestOutputLine: 0,
         };
+    },
+    watch: {
+        wrapLines() {
+            this.$nextTick(() => this.updateTerminalSize());
+        },
     },
     created() {
 
@@ -289,7 +300,23 @@ export default {
                 this.terminal.loadAddon(this.terminalFitAddOn);
                 window.addEventListener("resize", this.onResizeEvent);
             }
-            this.terminalFitAddOn.fit();
+            const xtermElement = this.$refs.terminal?.querySelector(".xterm");
+            if (xtermElement) {
+                xtermElement.style.width = "";
+            }
+
+            if (this.wrapLines || this.mode !== "displayOnly") {
+                this.terminalFitAddOn.fit();
+                return;
+            }
+
+            const dimensions = this.terminalFitAddOn.proposeDimensions();
+            const columns = Math.min(2000, Math.max(dimensions?.cols ?? this.cols, this.longestOutputLine + 1));
+            const rows = dimensions?.rows ?? this.rows;
+            if (xtermElement) {
+                xtermElement.style.width = `${columns}ch`;
+            }
+            this.terminal.resize(columns, rows);
         },
 
         terminalWriteProxy() {
@@ -300,6 +327,18 @@ export default {
 
         writeTerminalData(data) {
             this.appendSearchData(data);
+            if (this.mode === "displayOnly") {
+                const longestIncomingLine = this.stripAnsi(String(data ?? ""))
+                    .split(/\r?\n/)
+                    .reduce((longest, line) => Math.max(longest, line.length), 0);
+                const longestLine = Math.max(longestIncomingLine, this.partialSearchLine.length);
+                if (longestLine > this.longestOutputLine) {
+                    this.longestOutputLine = longestLine;
+                    if (!this.wrapLines) {
+                        this.updateTerminalSize();
+                    }
+                }
+            }
             this.terminal.write(data);
         },
 
@@ -308,6 +347,7 @@ export default {
             this.partialSearchLine = "";
             this.lastSearchTerm = "";
             this.lastSearchLine = -1;
+            this.longestOutputLine = 0;
         },
 
         appendSearchData(data) {
@@ -600,6 +640,11 @@ export default {
 <style scoped lang="scss">
 .main-terminal {
     height: 100%;
+}
+
+.terminal-no-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 </style>
 

@@ -12,14 +12,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build linux/amd64,linux/arm64
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+  build-platform:
+    name: Build ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
-      - uses: docker/setup-qemu-action@v3
 
       - uses: docker/setup-buildx-action@v3
 
@@ -28,6 +34,17 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: false
           pull: true
+
+  build:
+    name: Build linux/amd64,linux/arm64
+    if: always()
+    needs: build-platform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier les deux architectures
+        env:
+          BUILD_RESULT: ${{ needs.build-platform.result }}
+        run: test "$BUILD_RESULT" = "success"
