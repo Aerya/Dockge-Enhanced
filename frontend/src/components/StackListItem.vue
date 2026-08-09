@@ -26,6 +26,18 @@
                 <span v-else>{{ endpointDisplay }}</span>
             </div>
         </div>
+        <button
+            class="stack-pin-button"
+            :class="{ 'stack-pin-button--pinned': pinned }"
+            type="button"
+            :title="$t(pinned ? 'stackUnpin' : 'stackPin')"
+            :aria-label="$t(pinned ? 'stackUnpin' : 'stackPin')"
+            :aria-pressed="pinned"
+            @click.stop="$emit('toggle-pin')"
+            @keydown.stop
+        >
+            <font-awesome-icon icon="thumbtack" />
+        </button>
     </div>
 </template>
 
@@ -55,6 +67,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        pinned: {
+            type: Boolean,
+            default: false,
+        },
         agentColors: {
             type: Object,
             default: null,
@@ -80,6 +96,7 @@ export default {
             default: () => {}
         },
     },
+    emits: [ "toggle-pin" ],
     data() {
         return {
             isCollapsed: true,
@@ -209,6 +226,8 @@ export default {
     }
     .title {
         margin-top: -4px;
+        min-width: 0;
+        flex: 1;
 
         > span:first-child {
             color: var(--agent-color, inherit);
@@ -233,6 +252,32 @@ export default {
     .scheduled-indicator {
         color: #3b82f6;
         font-size: .78rem;
+    }
+
+    .stack-pin-button {
+        flex: 0 0 auto;
+        border: 0;
+        padding: 6px;
+        background: transparent;
+        color: $dark-font-color3;
+        opacity: 0;
+        transition: opacity .15s ease, color .15s ease;
+
+        &:focus-visible,
+        &--pinned {
+            opacity: 1;
+            color: #d97706;
+        }
+    }
+
+    &:hover .stack-pin-button {
+        opacity: 1;
+    }
+
+    @media (hover: none) {
+        .stack-pin-button {
+            opacity: .6;
+        }
     }
 }
 

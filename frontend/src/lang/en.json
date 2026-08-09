@@ -1021,5 +1021,7 @@
     "stackGit.pushConfirm": "Push the current branch using the host's configured Git credentials?",
     "stackGit.history": "History",
     "stackGit.restore": "Restore files",
-    "stackGit.restoreConfirm": "Restore tracked stack files from commit {hash}? The worktree must be clean and Compose is validated with automatic rollback on failure."
+    "stackGit.restoreConfirm": "Restore tracked stack files from commit {hash}? The worktree must be clean and Compose is validated with automatic rollback on failure.",
+    "stackPin": "Pin this stack to the top of the list",
+    "stackUnpin": "Unpin this stack"
 }

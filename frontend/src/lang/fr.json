@@ -1015,5 +1015,7 @@
     "stackGit.pushConfirm": "Pousser la branche actuelle avec les identifiants Git configurés sur l’hôte ?",
     "stackGit.history": "Historique",
     "stackGit.restore": "Restaurer les fichiers",
-    "stackGit.restoreConfirm": "Restaurer les fichiers suivis de la stack depuis le commit {hash} ? Le répertoire doit être propre et Compose sera validé avec rollback automatique en cas d’échec."
+    "stackGit.restoreConfirm": "Restaurer les fichiers suivis de la stack depuis le commit {hash} ? Le répertoire doit être propre et Compose sera validé avec rollback automatique en cas d’échec.",
+    "stackPin": "Épingler cette stack en haut de la liste",
+    "stackUnpin": "Désépingler cette stack"
 }
