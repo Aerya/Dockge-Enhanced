@@ -1,6 +1,6 @@
 <template>
     <transition name="slide-fade" appear>
-        <div>
+        <div class="compose-page" :class="{ 'logs-fullscreen-active': logsFullscreen }">
             <h1 v-if="isAdd" class="mb-3">{{ $t("compose") }}</h1>
             <h1 v-else class="mb-3">
                 <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }}
@@ -205,8 +205,14 @@
                 ></Terminal>
             </transition>
 
-            <div v-if="stack.isManagedByDockge" class="row">
-                <div class="col-lg-6">
+            <div
+                v-if="stack.isManagedByDockge"
+                ref="composeWorkspace"
+                class="compose-workspace"
+                :class="{ 'compose-collapsed': composeEffectivelyCollapsed }"
+                :style="composeWorkspaceStyle"
+            >
+                <div class="compose-runtime-pane">
                     <!-- General -->
                     <div v-if="isAdd">
                         <h4 class="mb-3">{{ $t("general") }}</h4>
@@ -316,7 +322,7 @@
                     </div>
 
                     <!-- Combined Terminal Output -->
-                    <div v-show="!isEditMode">
+                    <div v-show="!isEditMode" class="logs-panel" :class="{ 'logs-fullscreen': logsFullscreen }">
                         <div class="terminal-toolbar mb-3">
                             <h4 class="mb-0">{{ $t("stackLogs") }}</h4>
                             <div class="terminal-toolbar-right">
@@ -392,6 +398,20 @@
                                 >
                                     <font-awesome-icon icon="stream" class="me-1" />{{ $t(logLineWrap ? 'logLineWrapOn' : 'logLineWrapOff') }}
                                 </button>
+                                <button
+                                    class="btn btn-sm btn-normal"
+                                    :title="$t(logsFullscreen ? 'logsExitFullscreen' : 'logsFullscreen')"
+                                    @click="toggleLogsFullscreen"
+                                >
+                                    <font-awesome-icon :icon="logsFullscreen ? 'compress' : 'expand'" />
+                                </button>
+                                <button
+                                    class="btn btn-sm btn-normal"
+                                    :title="$t(composeCollapsed ? 'composeRestore' : 'composeCollapse')"
+                                    @click="toggleComposeCollapsed"
+                                >
+                                    <font-awesome-icon :icon="composeCollapsed ? 'chevron-left' : 'chevron-right'" />
+                                </button>
                             </div>
                         </div>
                         <Terminal
@@ -409,12 +429,36 @@
                     </div>
 
                 </div>
-                <div class="col-lg-6">
+                <div
+                    v-if="!composeEffectivelyCollapsed"
+                    class="compose-resize-handle"
+                    role="separator"
+                    aria-orientation="vertical"
+                    :aria-label="$t('composeResize')"
+                    aria-valuemin="25"
+                    aria-valuemax="75"
+                    :aria-valuenow="composePaneWidth"
+                    tabindex="0"
+                    @pointerdown="startComposeResize"
+                    @keydown.left.prevent="resizeComposeBy(5)"
+                    @keydown.right.prevent="resizeComposeBy(-5)"
+                >
+                    <span></span>
+                </div>
+                <div v-show="!composeEffectivelyCollapsed" class="compose-editor-pane">
                     <div class="editor-header mb-3">
                         <h4 class="mb-0">{{ stack.composeFileName }}</h4>
-                        <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('yaml')">
-                            <font-awesome-icon :icon="fullscreenEditor === 'yaml' ? 'compress' : 'expand'" />
-                        </button>
+                        <div class="editor-header-actions">
+                            <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('copyRawCompose')" @click="copyRawCompose">
+                                <font-awesome-icon icon="copy" />
+                            </button>
+                            <button v-if="!isEditMode" type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('composeCollapse')" @click="toggleComposeCollapsed">
+                                <font-awesome-icon icon="chevron-right" />
+                            </button>
+                            <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('yaml')">
+                                <font-awesome-icon :icon="fullscreenEditor === 'yaml' ? 'compress' : 'expand'" />
+                            </button>
+                        </div>
                     </div>
 
                     <!-- YAML editor -->
@@ -731,9 +775,24 @@ export default {
             plugNPiNEnabled: false,
             noteSaving: false,
             noteExpanded: false,
+            composePaneWidth: Math.min(75, Math.max(25, Number(localStorage.getItem("composePaneWidth")) || 50)),
+            composeCollapsed: localStorage.getItem("composeCollapsed") === "1",
+            logsFullscreen: false,
+            composeResizing: false,
         };
     },
     computed: {
+        composeWorkspaceStyle() {
+            if (this.composeEffectivelyCollapsed) {
+                return { gridTemplateColumns: "minmax(0, 1fr)" };
+            }
+            return {
+                gridTemplateColumns: `minmax(0, ${100 - this.composePaneWidth}fr) 10px minmax(0, ${this.composePaneWidth}fr)`,
+            };
+        },
+        composeEffectivelyCollapsed() {
+            return this.composeCollapsed && !this.isEditMode;
+        },
         endpointDisplay() {
             return this.$root.endpointDisplayFunction(this.endpoint);
         },
@@ -989,15 +1048,88 @@ export default {
 
         this.requestServiceStatus();
         document.addEventListener("visibilitychange", this.onVisibilityServiceStatus);
+        window.addEventListener("keydown", this.handleWorkspaceEscape);
     },
     unmounted() {
         document.removeEventListener("visibilitychange", this.onVisibilityServiceStatus);
+        window.removeEventListener("keydown", this.handleWorkspaceEscape);
+        this.stopComposeResize();
         clearTimeout(serviceStatusTimeout);
         if (this.logSearchTimer) {
             clearTimeout(this.logSearchTimer);
         }
     },
     methods: {
+        toggleLogsFullscreen() {
+            this.logsFullscreen = !this.logsFullscreen;
+            this.$nextTick(this.resizeCombinedTerminal);
+        },
+        toggleComposeCollapsed() {
+            this.composeCollapsed = !this.composeCollapsed;
+            localStorage.setItem("composeCollapsed", this.composeCollapsed ? "1" : "0");
+            this.$nextTick(this.resizeCombinedTerminal);
+        },
+        handleWorkspaceEscape(event) {
+            if (event.key !== "Escape") {
+                return;
+            }
+            if (this.logsFullscreen) {
+                this.logsFullscreen = false;
+                this.$nextTick(this.resizeCombinedTerminal);
+            }
+        },
+        startComposeResize(event) {
+            if (window.innerWidth < 992) {
+                return;
+            }
+            event.preventDefault();
+            this.composeResizing = true;
+            document.body.classList.add("compose-resizing");
+            window.addEventListener("pointermove", this.moveComposeResize);
+            window.addEventListener("pointerup", this.stopComposeResize, { once: true });
+        },
+        moveComposeResize(event) {
+            if (!this.composeResizing) {
+                return;
+            }
+            const bounds = this.$refs.composeWorkspace?.getBoundingClientRect();
+            if (!bounds?.width) {
+                return;
+            }
+            const editorWidth = ((bounds.right - event.clientX) / bounds.width) * 100;
+            this.composePaneWidth = Math.min(75, Math.max(25, Math.round(editorWidth)));
+            this.resizeCombinedTerminal();
+        },
+        stopComposeResize() {
+            if (this.composeResizing) {
+                localStorage.setItem("composePaneWidth", String(this.composePaneWidth));
+            }
+            this.composeResizing = false;
+            document.body.classList.remove("compose-resizing");
+            window.removeEventListener("pointermove", this.moveComposeResize);
+            window.removeEventListener("pointerup", this.stopComposeResize);
+        },
+        resizeComposeBy(delta) {
+            this.composePaneWidth = Math.min(75, Math.max(25, this.composePaneWidth + delta));
+            localStorage.setItem("composePaneWidth", String(this.composePaneWidth));
+            this.$nextTick(this.resizeCombinedTerminal);
+        },
+        async copyRawCompose() {
+            const content = this.stack.composeYAML || "";
+            try {
+                await navigator.clipboard.writeText(content);
+            } catch {
+                const textarea = document.createElement("textarea");
+                textarea.value = content;
+                textarea.style.position = "fixed";
+                textarea.style.opacity = "0";
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                textarea.remove();
+            }
+            this.$root.toastSuccess(this.$t("rawComposeCopied"));
+        },
         async loadDozzleStatus() {
             try {
                 const token = this.$root.getAuthToken();
@@ -1764,6 +1896,77 @@ export default {
     }
 }
 
+.compose-page {
+    font-size: .94rem;
+
+    :deep(.shadow-box) {
+        padding: 12px;
+    }
+
+    :deep(.mb-3) {
+        margin-bottom: .7rem !important;
+    }
+
+    :deep(.big-padding) {
+        padding: 14px;
+    }
+}
+
+.compose-workspace {
+    display: grid;
+    align-items: start;
+    width: 100%;
+}
+
+.compose-runtime-pane,
+.compose-editor-pane {
+    min-width: 0;
+}
+
+.compose-resize-handle {
+    align-self: stretch;
+    min-height: 240px;
+    cursor: col-resize;
+    display: flex;
+    justify-content: center;
+    touch-action: none;
+    outline: none;
+
+    span {
+        width: 3px;
+        height: 100%;
+        min-height: 240px;
+        border-radius: 2px;
+        background: rgba(127, 127, 127, .28);
+        transition: width .15s ease, background-color .15s ease;
+    }
+
+    &:hover span,
+    &:focus-visible span {
+        width: 5px;
+        background: $primary;
+    }
+}
+
+:global(body.compose-resizing) {
+    cursor: col-resize;
+    user-select: none;
+}
+
+@media (max-width: 991.98px) {
+    .compose-workspace {
+        display: block;
+    }
+
+    .compose-resize-handle {
+        display: none;
+    }
+
+    .compose-editor-pane {
+        margin-top: .75rem;
+    }
+}
+
 .terminal-toolbar {
     display: flex;
     align-items: center;
@@ -1856,6 +2059,24 @@ export default {
 
 .combined-terminal.logs-expanded {
     height: clamp(340px, 38vh, 420px);
+}
+
+.logs-panel.logs-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 1055;
+    padding: 12px;
+    overflow: hidden;
+    background: #fff;
+
+    .dark & {
+        background: $dark-bg;
+    }
+
+    .combined-terminal {
+        height: calc(100vh - 102px) !important;
+        margin-bottom: 0 !important;
+    }
 }
 
 @media (max-width: 575px) {
@@ -1967,6 +2188,12 @@ export default {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+}
+
+.editor-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .editor-fullscreen-btn {

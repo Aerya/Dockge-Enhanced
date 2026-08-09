@@ -28,18 +28,22 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | Area | Dockge Enhanced adds |
 | --- | --- |
 | **Multi-instance** | Automatic full-mesh federation when an agent is added or removed, management from every linked instance, multi-server selection and grouping, transactional copy/migration, resumable jobs, and automatic cold replication |
-| **Stack management** | Per-stack and per-container actions and scheduling, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
+| **Stack management** | Pinned stacks, resizable Logs/Compose workspace, reliable raw YAML copy, per-stack and per-container actions and scheduling, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
 | **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
 | **Automation & audit** | REST API scoped by permissions and stacks, per-stack webhooks, Home Assistant examples, and centralized history with origin and duration |
 | **Docker resources** | Images, volumes, unmanaged containers and networks, bulk actions, auto-prune, and safeguards for risky deletions |
 | **Images & security** | Update monitoring, auto-update with rollback, Trivy scans, and CVE exceptions |
-| **Monitoring** | System, stack, and container stats, crash loops, healthcheck auto-heal, responsive logs, and optional Kula and managed Dozzle integrations |
+| **Monitoring** | System, stack, and container stats, crash loops, healthcheck auto-heal, responsive and fullscreen logs, and optional Kula and managed Dozzle integrations |
 | **Integrations** | Optional PlugNPiN and per-service label assistant for Nginx Proxy Manager, Pi-hole, and AdGuard Home |
 | **Notifications & access** | Discord, Apprise, 2FA, trusted proxy, Turnstile, and mobile clients |
 
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
+
+**2026-08-09 — Denser, resizable Logs and Compose workspace** — Stack pages use tighter spacing and replace the fixed half-width desktop layout with a keyboard-accessible draggable divider whose position is remembered in the browser. Logs can take the entire screen, while the Compose panel can be collapsed and restored when only runtime output matters. A dedicated action copies the raw Compose YAML directly, without line-number gutters or visual-selection artefacts. Mobile layouts remain stacked and touch-friendly.
+
+**2026-08-09 — Pinned stacks and broader file highlighting** — Any stack can be pinned to the top of the sidebar while preserving the selected name, status or instance sort. Pins are stored per browser and distinguish identically named stacks on different instances. The mounted-volume file editor now highlights YAML, JSON, Python, JavaScript, TypeScript, shell, Dockerfile and `.env` content.
 
 **2026-08-06 — Automatic federation migration and direct links** — On the first authenticated session after upgrading, a one-time migration automatically repairs asymmetric catalogues created by older versions, with no button or reconfiguration. Every `/watcher` tab links directly to the same tab on other instances. In stack lists and on the Compose page, a remote stack's instance name is directly clickable and opens that stack on its hosting WebUI.
 

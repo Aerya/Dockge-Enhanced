@@ -30,18 +30,22 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 | Área | Lo que agrega Dockge Enhanced |
 | --- | --- |
 | **Multiinstancia** | Federación automática en malla completa al agregar o quitar un agente, gestión desde cada instancia vinculada, selección y agrupación multiservidor, copia/migración transaccional, trabajos reanudables y replicación en frío automática |
-| **Gestión de stacks** | Acciones y programación por stack y por contenedor, Construir + Recrear, notas y herramientas Git opcionales, y protecciones para servicios que comparten una red VPN |
+| **Gestión de stacks** | Stacks fijados, espacio Registros/Compose redimensionable, copia fiable del YAML sin formato, acciones y programación por stack y por contenedor, Construir + Recrear, notas y herramientas Git opcionales, y protecciones para servicios que comparten una red VPN |
 | **Copias de seguridad y recuperación** | Restic con múltiples destinos, volúmenes, consistencia por stack, restauración selectiva, pruebas de instantáneas y diferencias (diffs) |
 | **Automatización y auditoría** | API REST acotada por permisos y stacks, webhooks por stack, ejemplos para Home Assistant e historial centralizado con origen y duración |
 | **Recursos de Docker** | Imágenes, volúmenes, contenedores no gestionados y redes, acciones masivas, limpieza automática y protecciones para eliminaciones de riesgo |
 | **Imágenes y seguridad** | Monitoreo de actualizaciones, actualización automática con reversión, escaneos Trivy y excepciones CVE |
-| **Monitoreo** | Estadísticas del sistema, stack y contenedor, bucles de fallo, auto-reparación de healthchecks, registros responsivos e integraciones opcionales con Kula y Dozzle gestionado |
+| **Monitoreo** | Estadísticas del sistema, stack y contenedor, bucles de fallo, auto-reparación de healthchecks, registros responsivos y a pantalla completa e integraciones opcionales con Kula y Dozzle gestionado |
 | **Integraciones** | PlugNPiN opcional y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
 | **Notificaciones y acceso** | Discord, Apprise, 2FA, proxy de confianza, Turnstile y clientes móviles |
 
 
 <details>
 <summary><strong>Mostrar el catálogo completo de funcionalidades</strong></summary>
+
+**2026-08-09 — Espacio Registros y Compose más denso y redimensionable** — Las páginas de stack reducen sus espacios y sustituyen la división fija por mitades en escritorio por un separador arrastrable y accesible mediante teclado, cuya posición se recuerda en el navegador. Los registros pueden ocupar toda la pantalla, mientras que el panel Compose puede contraerse y restaurarse cuando solo importa la salida de ejecución. Una acción dedicada copia directamente el YAML Compose sin formato, sin números de línea ni artefactos de selección visual. En móviles, los paneles permanecen apilados y adaptados al uso táctil.
+
+**2026-08-09 — Stacks fijados y resaltado de archivos ampliado** — Cualquier stack puede fijarse en la parte superior del panel lateral conservando la ordenación elegida por nombre, estado o instancia. Las preferencias se guardan por navegador y distinguen stacks con el mismo nombre en instancias diferentes. El editor de archivos de volúmenes montados ahora resalta contenidos YAML, JSON, Python, JavaScript, TypeScript, shell, Dockerfile y `.env`.
 
 **2026-08-06 — Migración automática de federaciones y accesos directos** — En la primera sesión autenticada después de actualizar, una migración única repara automáticamente los catálogos asimétricos creados por versiones anteriores, sin botón ni reconfiguración. Cada pestaña de `/watcher` enlaza directamente con la misma pestaña de las otras instancias. Tanto en las listas de stacks como en la página Compose, el nombre de la instancia de un stack remoto es directamente clicable y abre ese stack en la WebUI que lo aloja.
 
