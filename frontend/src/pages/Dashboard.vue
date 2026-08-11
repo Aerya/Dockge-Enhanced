@@ -112,13 +112,18 @@ export default {
 
 .dashboard-layout {
     display: grid;
-    align-items: start;
+    align-items: stretch;
     width: 100%;
 }
 
 .stack-sidebar,
 .dashboard-content {
     min-width: 0;
+}
+
+.stack-sidebar {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
 }
 
 .dashboard-resize-handle {

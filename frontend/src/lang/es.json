@@ -5,7 +5,7 @@
     "releaseNews.item.stackPins": "Los stacks de uso frecuente pueden fijarse en la parte superior del panel lateral, con una preferencia guardada por navegador.",
     "releaseNews.item.composeWorkspace": "El espacio Registros y Compose más denso incluye un separador redimensionable recordado, registros a pantalla completa y un panel Compose contraíble.",
     "releaseNews.item.rawComposeCopy": "Una acción dedicada copia el YAML Compose sin formato, sin números de línea ni artefactos de selección visual.",
-    "releaseNews.item.stackSidebar": "La columna de stacks más densa se puede redimensionar con el ratón o el teclado, y su anchura se recuerda por navegador.",
+    "releaseNews.item.stackSidebar": "La columna de stacks más densa se puede redimensionar con el ratón o el teclado, recuerda su anchura por navegador y sigue toda la altura de la página.",
     "logLineWrap": "Ajuste de línea",
     "logLineWrapToggle": "Activar o desactivar el ajuste automático de línea",
     "logLineWrapOn": "Líneas ajustadas",

@@ -41,7 +41,7 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
 
-**2026-08-11 — Colonne des stacks plus dense et redimensionnable** — Le tableau de bord sur ordinateur affiche davantage de stacks à hauteur égale et remplace ses colonnes Bootstrap fixes par une poignée accessible à la souris et au clavier. La largeur de la colonne est bornée pour préserver les deux panneaux, mémorisée par navigateur et ignorée sur mobile, où la navigation empilée existante reste inchangée.
+**2026-08-11 — Colonne des stacks plus dense et redimensionnable** — Le tableau de bord sur ordinateur affiche davantage de stacks à hauteur égale et remplace ses colonnes Bootstrap fixes par une poignée accessible à la souris et au clavier. La largeur de la colonne est bornée pour préserver les deux panneaux et mémorisée par navigateur, tandis que sa hauteur suit le contenu réel de Compose, des conteneurs et du terminal au lieu de s’arrêter au viewport. Sur mobile, la navigation empilée existante reste inchangée.
 
 **2026-08-09 — Espace Logs et Compose plus dense et redimensionnable** — Les pages de stack réduisent leurs espacements et remplacent le partage fixe en deux moitiés sur ordinateur par une poignée accessible au clavier, dont la position est mémorisée dans le navigateur. Les logs peuvent occuper tout l’écran, tandis que l’encart Compose peut être réduit puis restauré lorsque seule la sortie d’exécution est utile. Une action dédiée copie directement le YAML Compose brut, sans gouttière de numéros de ligne ni artefact de sélection visuelle. Sur mobile, les encarts restent empilés et adaptés au tactile.
 
