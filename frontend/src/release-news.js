@@ -25,6 +25,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.rawComposeCopy",
         ],
     },
+    {
+        id: "2026-08-11-resizable-stack-sidebar",
+        items: [
+            "releaseNews.item.stackSidebar",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

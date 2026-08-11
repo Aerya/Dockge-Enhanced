@@ -787,8 +787,8 @@ export default {
     border-bottom: 1px solid #dee2e6;
     border-radius: 10px 10px 0 0;
     margin: -10px;
-    margin-bottom: 10px;
-    padding: 10px;
+    margin-bottom: 7px;
+    padding: 8px 10px;
     container-type: inline-size;
 
     .dark & {
@@ -800,7 +800,7 @@ export default {
 .header-top {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
+    gap: 7px;
 }
 
 .header-filter {
@@ -979,9 +979,9 @@ export default {
     display: flex;
     align-items: center;
     gap: 8px;
-    min-height: 34px;
-    margin: 6px 2px 4px;
-    padding: 6px 10px;
+    min-height: 30px;
+    margin: 4px 2px 3px;
+    padding: 4px 8px;
     border-inline-start: 4px solid var(--agent-color);
     border-radius: 7px;
     background: var(--agent-tint);

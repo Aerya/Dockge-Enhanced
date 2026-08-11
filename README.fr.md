@@ -28,7 +28,7 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
 | **Multi-instance** | Fédération automatique en maillage complet à l'ajout ou au retrait d'un agent, gestion depuis chaque instance liée, sélection et regroupement multi-serveurs, copie/migration transactionnelle, jobs reprenables et réplication froide automatique |
-| **Gestion des stacks** | Stacks épinglées, espace Logs/Compose redimensionnable, copie fiable du YAML brut, actions et planification par stack et conteneur, Build + Recreate, notes et outils Git facultatifs, et protections pour les services partageant le réseau d'un VPN |
+| **Gestion des stacks** | Stacks épinglées, colonne des stacks plus dense et redimensionnable, espace Logs/Compose redimensionnable, copie fiable du YAML brut, actions et planification par stack et conteneur, Build + Recreate, notes et outils Git facultatifs, et protections pour les services partageant le réseau d'un VPN |
 | **Sauvegarde & reprise** | Restic multi-destination, volumes, cohérence par stack, restauration sélective, tests et diffs de snapshots |
 | **Automatisation & audit** | API REST limitée par droits et stacks, webhooks par stack, exemples Home Assistant et historique central avec origine et durée |
 | **Ressources Docker** | Images, volumes, conteneurs hors Dockge et réseaux, actions groupées, auto-prune et protections contre les suppressions risquées |
@@ -40,6 +40,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
+
+**2026-08-11 — Colonne des stacks plus dense et redimensionnable** — Le tableau de bord sur ordinateur affiche davantage de stacks à hauteur égale et remplace ses colonnes Bootstrap fixes par une poignée accessible à la souris et au clavier. La largeur de la colonne est bornée pour préserver les deux panneaux, mémorisée par navigateur et ignorée sur mobile, où la navigation empilée existante reste inchangée.
 
 **2026-08-09 — Espace Logs et Compose plus dense et redimensionnable** — Les pages de stack réduisent leurs espacements et remplacent le partage fixe en deux moitiés sur ordinateur par une poignée accessible au clavier, dont la position est mémorisée dans le navigateur. Les logs peuvent occuper tout l’écran, tandis que l’encart Compose peut être réduit puis restauré lorsque seule la sortie d’exécution est utile. Une action dédiée copie directement le YAML Compose brut, sans gouttière de numéros de ligne ni artefact de sélection visuelle. Sur mobile, les encarts restent empilés et adaptés au tactile.
 

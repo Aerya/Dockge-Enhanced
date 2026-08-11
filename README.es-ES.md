@@ -30,7 +30,7 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 | Área | Lo que agrega Dockge Enhanced |
 | --- | --- |
 | **Multiinstancia** | Federación automática en malla completa al agregar o quitar un agente, gestión desde cada instancia vinculada, selección y agrupación multiservidor, copia/migración transaccional, trabajos reanudables y replicación en frío automática |
-| **Gestión de stacks** | Stacks fijados, espacio Registros/Compose redimensionable, copia fiable del YAML sin formato, acciones y programación por stack y por contenedor, Construir + Recrear, notas y herramientas Git opcionales, y protecciones para servicios que comparten una red VPN |
+| **Gestión de stacks** | Stacks fijados, columna de stacks más densa y redimensionable, espacio Registros/Compose redimensionable, copia fiable del YAML sin formato, acciones y programación por stack y por contenedor, Construir + Recrear, notas y herramientas Git opcionales, y protecciones para servicios que comparten una red VPN |
 | **Copias de seguridad y recuperación** | Restic con múltiples destinos, volúmenes, consistencia por stack, restauración selectiva, pruebas de instantáneas y diferencias (diffs) |
 | **Automatización y auditoría** | API REST acotada por permisos y stacks, webhooks por stack, ejemplos para Home Assistant e historial centralizado con origen y duración |
 | **Recursos de Docker** | Imágenes, volúmenes, contenedores no gestionados y redes, acciones masivas, limpieza automática y protecciones para eliminaciones de riesgo |
@@ -42,6 +42,8 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 
 <details>
 <summary><strong>Mostrar el catálogo completo de funcionalidades</strong></summary>
+
+**2026-08-11 — Columna de stacks más densa y redimensionable** — El panel de escritorio muestra más stacks en la misma altura y sustituye sus columnas Bootstrap fijas por un separador accesible con ratón y teclado. La anchura de la columna está limitada para conservar ambos paneles, se recuerda por navegador y se ignora en móviles, donde la navegación apilada existente no cambia.
 
 **2026-08-09 — Espacio Registros y Compose más denso y redimensionable** — Las páginas de stack reducen sus espacios y sustituyen la división fija por mitades en escritorio por un separador arrastrable y accesible mediante teclado, cuya posición se recuerda en el navegador. Los registros pueden ocupar toda la pantalla, mientras que el panel Compose puede contraerse y restaurarse cuando solo importa la salida de ejecución. Una acción dedicada copia directamente el YAML Compose sin formato, sin números de línea ni artefactos de selección visual. En móviles, los paneles permanecen apilados y adaptados al uso táctil.
 
