@@ -28,7 +28,7 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | Area | Dockge Enhanced adds |
 | --- | --- |
 | **Multi-instance** | Automatic full-mesh federation when an agent is added or removed, management from every linked instance, multi-server selection and grouping, transactional copy/migration, resumable jobs, and automatic cold replication |
-| **Stack management** | Pinned stacks, resizable Logs/Compose workspace, reliable raw YAML copy, per-stack and per-container actions and scheduling, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
+| **Stack management** | Pinned stacks, denser resizable stack sidebar, resizable Logs/Compose workspace, reliable raw YAML copy, per-stack and per-container actions and scheduling, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
 | **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
 | **Automation & audit** | REST API scoped by permissions and stacks, per-stack webhooks, Home Assistant examples, and centralized history with origin and duration |
 | **Docker resources** | Images, volumes, unmanaged containers and networks, bulk actions, auto-prune, and safeguards for risky deletions |
@@ -40,6 +40,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
+
+**2026-08-11 — Denser, resizable stack sidebar** — The desktop dashboard shows more stacks in the same height and replaces its fixed Bootstrap columns with a draggable, keyboard-accessible divider. The sidebar width is constrained to preserve both panels, remembered per browser and ignored on mobile, where the existing stacked navigation remains unchanged.
 
 **2026-08-09 — Denser, resizable Logs and Compose workspace** — Stack pages use tighter spacing and replace the fixed half-width desktop layout with a keyboard-accessible draggable divider whose position is remembered in the browser. Logs can take the entire screen, while the Compose panel can be collapsed and restored when only runtime output matters. A dedicated action copies the raw Compose YAML directly, without line-number gutters or visual-selection artefacts. Mobile layouts remain stacked and touch-friendly.
 

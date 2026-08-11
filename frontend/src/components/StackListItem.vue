@@ -202,11 +202,11 @@ export default {
     cursor: pointer;
     display: flex;
     align-items: center;
-    min-height: 52px;
-    border-radius: 10px;
+    min-height: 44px;
+    border-radius: 8px;
     transition: all ease-in-out 0.15s;
     width: 100%;
-    padding: 5px 8px;
+    padding: 3px 6px;
     border-inline-start: 4px solid var(--agent-color, transparent);
     background: linear-gradient(90deg, var(--agent-tint, transparent), transparent 42%);
 
@@ -225,7 +225,7 @@ export default {
         background-color: #cdf8f4;
     }
     .title {
-        margin-top: -4px;
+        margin-top: -2px;
         min-width: 0;
         flex: 1;
 
