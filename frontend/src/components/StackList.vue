@@ -1,5 +1,5 @@
 <template>
-    <div class="shadow-box mb-3" :style="boxStyle">
+    <div class="shadow-box">
         <div class="list-header">
             <div class="header-top">
                 <!-- TODO -->
@@ -206,7 +206,6 @@ export default {
             selectAll: false,
             disableSelectAllWatcher: false,
             selectedStacks: {},
-            windowTop: 0,
             stackStatusFilter: "all",
             stackAgentFilters: this.loadAgentFilters(),
             stackGroupByAgent: this.loadStackGrouping(),
@@ -220,25 +219,6 @@ export default {
         };
     },
     computed: {
-        /**
-         * Improve the sticky appearance of the list by increasing its
-         * height as user scrolls down.
-         * Not used on mobile.
-         * @returns {object} Style for stack list
-         */
-        boxStyle() {
-            if (window.innerWidth > 550) {
-                return {
-                    height: `calc(100vh - 160px + ${this.windowTop}px)`,
-                };
-            } else {
-                return {
-                    height: "calc(100vh - 160px)",
-                };
-            }
-
-        },
-
         /**
          * Returns a sorted list of stacks based on the applied filters and search text.
          * @returns {Array} The sorted list of stacks.
@@ -495,12 +475,6 @@ export default {
             }
         },
     },
-    mounted() {
-        window.addEventListener("scroll", this.onScroll);
-    },
-    beforeUnmount() {
-        window.removeEventListener("scroll", this.onScroll);
-    },
     methods: {
         stackPinKey(stack) {
             return JSON.stringify([ stack.endpoint || "", stack.name ]);
@@ -644,18 +618,6 @@ export default {
             };
         },
         /**
-         * Handle user scroll
-         * @returns {void}
-         */
-        onScroll() {
-            if (window.top.scrollY <= 133) {
-                this.windowTop = window.top.scrollY;
-            } else {
-                this.windowTop = 133;
-            }
-        },
-
-        /**
          * Clear the search bar
          * @returns {void}
          */
@@ -770,9 +732,7 @@ export default {
 @import "../styles/vars.scss";
 
 .shadow-box {
-    height: calc(100vh - 150px);
-    position: sticky;
-    top: 10px;
+    height: 100%;
     display: flex;
     flex-direction: column;
     min-height: 0;
