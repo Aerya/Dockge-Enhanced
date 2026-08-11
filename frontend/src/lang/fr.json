@@ -19,7 +19,7 @@
     "releaseNews.item.stackPins": "Les stacks utilisées fréquemment peuvent être épinglées en tête du panneau latéral, avec une préférence mémorisée par navigateur.",
     "releaseNews.item.composeWorkspace": "L’espace Logs et Compose plus dense dispose d’une séparation redimensionnable mémorisée, de logs plein écran et d’un encart Compose réductible.",
     "releaseNews.item.rawComposeCopy": "Une action dédiée copie le YAML Compose brut sans numéros de ligne ni artefacts de sélection visuelle.",
-    "releaseNews.item.stackSidebar": "La colonne des stacks plus dense se redimensionne à la souris ou au clavier, mémorise sa largeur par navigateur et suit toute la hauteur de la page.",
+    "releaseNews.item.stackSidebar": "La colonne des stacks plus dense se redimensionne à la souris ou au clavier, mémorise sa largeur et remplit la hauteur visible ou suit le contenu plus long de la page.",
     "releaseNews.close": "Fermer",
     "releaseNews.gotIt": "J'ai compris",
     "Create your admin account": "Créez votre compte administrateur",

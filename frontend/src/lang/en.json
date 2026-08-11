@@ -19,7 +19,7 @@
     "releaseNews.item.stackPins": "Frequently used stacks can be pinned to the top of the sidebar, with a preference remembered per browser.",
     "releaseNews.item.composeWorkspace": "The denser Logs and Compose workspace has a remembered draggable divider, fullscreen logs and a collapsible Compose panel.",
     "releaseNews.item.rawComposeCopy": "A dedicated action copies the raw Compose YAML without line numbers or visual-selection artefacts.",
-    "releaseNews.item.stackSidebar": "The denser stack sidebar can be resized with a mouse or keyboard, remembers its width per browser and follows the full page height.",
+    "releaseNews.item.stackSidebar": "The denser stack sidebar can be resized with a mouse or keyboard, remembers its width and fills the visible height or follows longer page content.",
     "releaseNews.close": "Close",
     "releaseNews.gotIt": "Got it",
     "Create your admin account": "Create your admin account",
