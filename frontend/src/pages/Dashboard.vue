@@ -46,6 +46,8 @@ export default {
             height: 0,
             stackSidebarWidth: Math.min(40, Math.max(18, Number(localStorage.getItem("stackSidebarWidth")) || 25)),
             dashboardResizing: false,
+            dashboardMinHeight: 240,
+            dashboardHeightObserver: null,
         };
     },
     computed: {
@@ -55,16 +57,33 @@ export default {
             }
             return {
                 gridTemplateColumns: `minmax(0, ${this.stackSidebarWidth}fr) 10px minmax(0, ${100 - this.stackSidebarWidth}fr)`,
+                minHeight: `${this.dashboardMinHeight}px`,
             };
         },
     },
     mounted() {
         this.height = this.$refs.container.offsetHeight;
+        this.$nextTick(this.updateDashboardMinHeight);
+        window.addEventListener("resize", this.updateDashboardMinHeight);
+        const desktopHeader = document.querySelector(".desktop-header");
+        if (desktopHeader && typeof ResizeObserver !== "undefined") {
+            this.dashboardHeightObserver = new ResizeObserver(this.updateDashboardMinHeight);
+            this.dashboardHeightObserver.observe(desktopHeader);
+        }
     },
     unmounted() {
         this.stopDashboardResize();
+        window.removeEventListener("resize", this.updateDashboardMinHeight);
+        this.dashboardHeightObserver?.disconnect();
     },
     methods: {
+        updateDashboardMinHeight() {
+            const top = this.$refs.dashboardLayout?.getBoundingClientRect().top;
+            if (typeof top !== "number") {
+                return;
+            }
+            this.dashboardMinHeight = Math.max(240, Math.floor(window.innerHeight - top - 16));
+        },
         startDashboardResize(event) {
             if (window.innerWidth < 768) {
                 return;
