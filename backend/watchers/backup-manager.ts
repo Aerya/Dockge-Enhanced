@@ -437,13 +437,16 @@ export function assertPathWithinRoots(candidate: string, roots: string[]): strin
         throw new ValidationError("Chemin invalide");
     }
     const resolved = path.resolve(candidate);
-    const allowed = roots.some(root => {
+    for (const root of roots) {
         const resolvedRoot = path.resolve(root);
         const relative = path.relative(resolvedRoot, resolved);
-        return relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative));
-    });
-    if (!allowed) throw new ValidationError("Chemin hors des emplacements autorisés");
-    return resolved;
+        if (relative === "") return resolvedRoot;
+        const segments = relative.split(path.sep);
+        if (!path.isAbsolute(relative) && segments.every(segment => /^[a-zA-Z0-9][a-zA-Z0-9_. -]*$/.test(segment))) {
+            return path.join(resolvedRoot, ...segments);
+        }
+    }
+    throw new ValidationError("Chemin hors des emplacements autorisés");
 }
 
 export async function assertExistingPathWithinRoots(candidate: string, roots: string[]): Promise<string> {
