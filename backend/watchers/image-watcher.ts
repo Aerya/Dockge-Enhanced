@@ -5,7 +5,7 @@
  */
 
 import * as cron from "node-cron";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
@@ -29,7 +29,7 @@ import {
   syncDockerRegistryCredentials,
 } from "../registry-auth";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const STACKS_DIR = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
@@ -480,22 +480,25 @@ function withExplicitTag(image: string): string {
   return `${image}:latest`;
 }
 
-/** Protège une valeur passée comme argument à une commande shell */
-function shellQuote(value: string): string {
-  return '"' + value.replace(/(["\\$`])/g, "\\$1") + '"';
-}
-
-function composeExecCommand(
+export function composeExecInvocation(
   composePath: string,
-  action: string,
-  serviceArg = "",
-): { command: string; cwd: string } {
+  args: string[],
+): { args: string[]; cwd: string } {
   const composeDir = path.dirname(composePath);
   const composeFile = path.basename(composePath);
   return {
-    command: `docker compose -f ${shellQuote(composeFile)} ${action}${serviceArg}`,
+    args: [ "compose", "-f", composeFile, ...args ],
     cwd: composeDir,
   };
+}
+
+async function docker(args: string[], options: { cwd?: string; timeout: number }): Promise<string> {
+  const { stdout } = await execFileAsync("docker", args, {
+    ...options,
+    encoding: "utf8",
+    maxBuffer: 20 * 1024 * 1024,
+  });
+  return stdout;
 }
 
 /** Normalise l'intervalle cron en heures pour éviter les expressions invalides */
@@ -509,10 +512,7 @@ function sanitizeIntervalHours(value: unknown, fallback = 6): number {
 async function getLocalImageInfo(image: string): Promise<LocalImageInfo> {
   try {
     const ref = withExplicitTag(image);
-    const { stdout } = await execAsync(
-      `docker image inspect --format '{{json .}}' ${shellQuote(ref)} 2>/dev/null`,
-      { timeout: 15000 },
-    );
+    const stdout = await docker([ "image", "inspect", "--format", "{{json .}}", ref ], { timeout: 15000 });
     const data = JSON.parse(stdout.trim());
     const repoDigests = findRepoDigestsForImage(image, data?.RepoDigests);
     const looseDigest = extractShaDigest(data?.Digest);
@@ -591,9 +591,9 @@ function extractImagesFromComposeYaml(composePath: string): string[] {
  * `config --images` prend en charge les variables, ancres, extends et includes.
  */
 async function extractImagesFromCompose(composePath: string): Promise<string[]> {
-  const configCommand = composeExecCommand(composePath, "config --images");
+  const configCommand = composeExecInvocation(composePath, [ "config", "--images" ]);
   try {
-    const { stdout } = await execAsync(configCommand.command, {
+    const stdout = await docker(configCommand.args, {
       cwd: configCommand.cwd,
       timeout: 30000,
     });
@@ -1050,7 +1050,7 @@ export class ImageWatcher {
     }
     this._updatingImages.add(key);
     const service = this.findServiceForImage(composePath, status.image);
-    const serviceArg = service ? ` ${shellQuote(service)}` : "";
+    const services = service ? [ service ] : [];
     console.log(
       `[ImageWatcher] Auto-update: ${status.stack}/${status.image}${service ? ` (service: ${service})` : ""}`,
     );
@@ -1060,22 +1060,19 @@ export class ImageWatcher {
       let oldImageId = "";
       try {
         const ref = withExplicitTag(status.image);
-        const { stdout } = await execAsync(
-          `docker image inspect --format '{{.Id}}' ${shellQuote(ref)} 2>/dev/null`,
-          { timeout: 10000 },
-        );
+        const stdout = await docker([ "image", "inspect", "--format", "{{.Id}}", ref ], { timeout: 10000 });
         oldImageId = stdout.trim();
       } catch {
         /* image absente localement, rollback impossible */
       }
 
-      const pullCommand = composeExecCommand(composePath, "pull", serviceArg);
-      await execAsync(pullCommand.command, {
+      const pullCommand = composeExecInvocation(composePath, [ "pull", ...services ]);
+      await docker(pullCommand.args, {
         cwd: pullCommand.cwd,
         timeout: 600000,
       });
-      const upCommand = composeExecCommand(composePath, "up -d", serviceArg);
-      await execAsync(upCommand.command, {
+      const upCommand = composeExecInvocation(composePath, [ "up", "-d", ...services ]);
+      await docker(upCommand.args, {
         cwd: upCommand.cwd,
         timeout: 120000,
       });
@@ -1117,7 +1114,9 @@ export class ImageWatcher {
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);
       console.error(
-        `[ImageWatcher] Auto-update échouée: ${status.stack}/${status.image}:`,
+        "[ImageWatcher] Échec de l’auto-update:",
+        status.stack,
+        status.image,
         e,
       );
       this._updatingImages.delete(key);
@@ -1221,20 +1220,14 @@ export class ImageWatcher {
     const existing = rollbackStore.get(entry.key);
     if (existing) {
       try {
-        await execAsync(
-          `docker rmi ${shellQuote(rollbackTag(existing.key))} 2>/dev/null`,
-          { timeout: 10000 },
-        );
+        await docker([ "rmi", rollbackTag(existing.key) ], { timeout: 10000 });
       } catch {}
     }
     rollbackStore.set(entry.key, entry);
     await this.saveRollbackRegistry();
     // Tague l'ancienne image pour la protéger des `docker image prune`
     try {
-      await execAsync(
-        `docker tag ${shellQuote(entry.oldImageId)} ${shellQuote(rollbackTag(entry.key))}`,
-        { timeout: 10000 },
-      );
+      await docker([ "tag", entry.oldImageId, rollbackTag(entry.key) ], { timeout: 10000 });
     } catch {
       /* non-bloquant — l'image sera juste non protégée */
     }
@@ -1253,16 +1246,10 @@ export class ImageWatcher {
           `[ImageWatcher] Expiration rollback — suppression image ${entry.oldImageId.slice(0, 19)}`,
         );
         try {
-          await execAsync(
-            `docker rmi ${shellQuote(rollbackTag(key))} 2>/dev/null`,
-            { timeout: 10000 },
-          );
+          await docker([ "rmi", rollbackTag(key) ], { timeout: 10000 });
         } catch {}
         try {
-          await execAsync(
-            `docker rmi ${shellQuote(entry.oldImageId)} 2>/dev/null`,
-            { timeout: 30000 },
-          );
+          await docker([ "rmi", entry.oldImageId ], { timeout: 30000 });
         } catch {
           /* peut déjà être supprimée ou utilisée ailleurs */
         }
@@ -1283,26 +1270,20 @@ export class ImageWatcher {
     }
 
     const image = withExplicitTag(entry.image);
-    const serviceArg = entry.service ? ` ${shellQuote(entry.service)}` : "";
+    const services = entry.service ? [ entry.service ] : [];
     console.log(
       `[ImageWatcher] Rollback: ${entry.stack}/${entry.image} → ${entry.oldImageId.slice(0, 19)}`,
     );
 
     // Re-tag l'ancienne image pour lui redonner son nom (détache la nouvelle)
-    await execAsync(
-      `docker tag ${shellQuote(entry.oldImageId)} ${shellQuote(image)}`,
-      { timeout: 30000 },
-    );
+    await docker([ "tag", entry.oldImageId, image ], { timeout: 30000 });
     // Retire le tag de protection — l'image est de nouveau la production active
     try {
-      await execAsync(
-        `docker rmi ${shellQuote(rollbackTag(entry.key))} 2>/dev/null`,
-        { timeout: 10000 },
-      );
+      await docker([ "rmi", rollbackTag(entry.key) ], { timeout: 10000 });
     } catch {}
     // Redémarre le container avec l'ancienne image
-    const upCommand = composeExecCommand(entry.composePath, "up -d", serviceArg);
-    await execAsync(upCommand.command, {
+    const upCommand = composeExecInvocation(entry.composePath, [ "up", "-d", ...services ]);
+    await docker(upCommand.args, {
       cwd: upCommand.cwd,
       timeout: 120000,
     });
@@ -1322,10 +1303,7 @@ export class ImageWatcher {
     if (!rollbackStore.has(key)) return;
     try {
       // Retire le tag de protection — Docker supprime l'image si plus aucun autre tag ne la référence
-      await execAsync(
-        `docker rmi ${shellQuote(rollbackTag(key))} 2>/dev/null`,
-        { timeout: 30000 },
-      );
+      await docker([ "rmi", rollbackTag(key) ], { timeout: 30000 });
     } catch {
       /* déjà supprimée */
     }
