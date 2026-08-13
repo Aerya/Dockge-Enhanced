@@ -1,9 +1,14 @@
-import { exec } from "child_process";
-import { promisify } from "util";
 import * as fs from "fs/promises";
 import * as path from "path";
+import childProcessAsync from "promisify-child-process";
 
-const execAsync = promisify(exec);
+async function docker(args: string[]): Promise<string> {
+    const result = await childProcessAsync.spawn("docker", args, { encoding: "utf8" });
+    if ((result.code ?? 0) !== 0) {
+        throw new Error(result.stderr?.toString() || `docker ${args[0]} failed`);
+    }
+    return result.stdout?.toString() ?? "";
+}
 const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const STACKS_DIR = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 const SETTINGS_PATH = path.join(DATA_DIR, "dozzle-settings.json");
@@ -99,15 +104,15 @@ export class DozzleManager {
         try {
             await this.stop();
             await this.writeComposeFile();
-            await execAsync([
-                "docker run -d",
-                `--name ${DOZZLE_CONTAINER_NAME}`,
-                `-p ${this.settings.port}:8080`,
-                "-v /var/run/docker.sock:/var/run/docker.sock:ro",
-                "-v dozzle_dockge_data:/data",
-                "--restart unless-stopped",
+            await docker([
+                "run", "-d",
+                "--name", DOZZLE_CONTAINER_NAME,
+                "-p", `${this.settings.port}:8080`,
+                "-v", "/var/run/docker.sock:/var/run/docker.sock:ro",
+                "-v", "dozzle_dockge_data:/data",
+                "--restart", "unless-stopped",
                 DOZZLE_IMAGE,
-            ].join(" "));
+            ]);
         } finally {
             this._starting = false;
         }
@@ -115,14 +120,14 @@ export class DozzleManager {
 
     async stop(): Promise<void> {
         try {
-            await execAsync(`docker stop ${DOZZLE_CONTAINER_NAME}`);
-            await execAsync(`docker rm ${DOZZLE_CONTAINER_NAME}`);
+            await docker([ "stop", DOZZLE_CONTAINER_NAME ]);
+            await docker([ "rm", DOZZLE_CONTAINER_NAME ]);
         } catch { /* absent: normal */ }
     }
 
     async getStatus(): Promise<DozzleStatus> {
         try {
-            const { stdout } = await execAsync(`docker inspect --format "{{.State.Running}}" ${DOZZLE_CONTAINER_NAME}`);
+            const stdout = await docker([ "inspect", "--format", "{{.State.Running}}", DOZZLE_CONTAINER_NAME ]);
             return stdout.trim() === "true" ? "running" : "stopped";
         } catch {
             return "stopped";
