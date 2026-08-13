@@ -24,10 +24,20 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Activer la fusion squash après les contrôles requis
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
         # Les mises à jour indirectes n'ont pas toujours de type sémantique.
-        # La protection de main attend les builds et le scan de sécurité avant la fusion.
+        # Les versions majeures restent ouvertes : un build vert ne prouve pas à lui seul
+        # l'absence de régression fonctionnelle. Les patchs et mineures restent automatiques.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           gh pr merge --auto --squash --delete-branch "$PR_URL"
+
+      - name: Signaler une mise à jour majeure à valider
+        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr comment "$PR_URL" --body "Mise à jour majeure détectée : la fusion automatique reste désactivée jusqu'à une validation fonctionnelle explicite."
