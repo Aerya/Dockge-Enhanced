@@ -31,7 +31,13 @@ export function normalizeRegistryHost(registry: string): string {
         const parsed = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`);
         return normalizeDockerHubAlias(parsed.host.toLowerCase());
     } catch {
-        const host = trimmed.replace(/^https?:\/\//i, "").replace(/\/+$/, "").toLowerCase();
+        const lower = trimmed.toLowerCase();
+        const withoutScheme = lower.startsWith("https://")
+            ? lower.slice(8)
+            : lower.startsWith("http://") ? lower.slice(7) : lower;
+        const host = withoutScheme.slice(0, withoutScheme.search(/[/?#]/) < 0
+            ? withoutScheme.length
+            : withoutScheme.search(/[/?#]/));
         return normalizeDockerHubAlias(host);
     }
 }

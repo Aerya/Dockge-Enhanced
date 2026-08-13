@@ -451,7 +451,7 @@ export class WatcherRouter extends Router {
 
         router.get("/backup/snapshots/:id/browse", async (req: Request, res: Response) => {
             try {
-                const dirPath = (req.query.path as string) ?? "";
+                const dirPath = typeof req.query.path === "string" ? req.query.path : "";
                 if (!dirPath.startsWith("/") || dirPath.includes("..") || dirPath.length > 1000) {
                     res.status(400).json({ ok: false, message: "Chemin invalide" });
                     return;
