@@ -19,6 +19,23 @@ updates:
       - dependency-name: "typescript"
         update-types:
           - "version-update:semver-major"
+      # Ces majeures changent leurs API publiques et exigent une migration
+      # applicative dédiée. Leurs patchs et mineures restent automatisés.
+      - dependency-name: "express"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/express"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "promisify-child-process"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "croner"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "jwt-decode"
+        update-types:
+          - "version-update:semver-major"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
