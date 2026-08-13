@@ -177,6 +177,30 @@ interface RemoteDigestInfo {
   platform: ImagePlatform;
 }
 
+export function assertRegistryHost(registry: string): string {
+  const host = registry.trim().toLowerCase();
+  const dnsOrIpv4 = /^(?:localhost|[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::[0-9]{1,5})?$/;
+  const ipv6 = /^\[[0-9a-f:]+\](?::[0-9]{1,5})?$/;
+  if ((!dnsOrIpv4.test(host) && !ipv6.test(host)) || host.includes("..")) {
+    throw new Error("Hôte de registry invalide");
+  }
+  const parsed = new URL(`https://${host}`);
+  if (parsed.host !== host || (parsed.port && Number(parsed.port) > 65535)) {
+    throw new Error("Hôte de registry invalide");
+  }
+  return host;
+}
+
+export function buildManifestUrl(registry: string, name: string, tag: string): string {
+  const safeRegistry = assertRegistryHost(registry);
+  const safeName = name.split("/").map(segment => {
+    if (!/^[a-z0-9][a-z0-9._-]*$/i.test(segment)) throw new Error("Nom d’image invalide");
+    return encodeURIComponent(segment);
+  }).join("/");
+  if (!/^[a-z0-9_][a-z0-9_.-]{0,127}$/i.test(tag)) throw new Error("Tag d’image invalide");
+  return `https://${safeRegistry}/v2/${safeName}/manifests/${encodeURIComponent(tag)}`;
+}
+
 interface LocalImageInfo {
   digest: string;
   repoDigests: string[];
@@ -316,11 +340,14 @@ async function resolveChallenge(
   const params = new URLSearchParams();
   if (serviceM) params.set("service", serviceM[1]);
   if (scopeM) params.set("scope", scopeM[1]);
-  const tokenUrl = `${realmM[1]}?${params.toString()}`;
+  const realm = new URL(realmM[1]);
+  if (realm.protocol !== "https:" || realm.username || realm.password || realm.hash) return "";
+  realm.search = params.toString();
+  const tokenUrl = realm.toString();
 
   // Utilise les credentials si disponibles (registry exact ou domaine du realm)
   const cred = credentials.find(
-    (c) => c.registry === registry || realmM[1].includes(c.registry),
+    (c) => c.registry === registry || assertRegistryHost(c.registry) === realm.host,
   );
 
   try {
@@ -328,8 +355,9 @@ async function resolveChallenge(
       ? await axios.get(tokenUrl, {
           auth: { username: cred.username, password: cred.token },
           timeout: 10000,
+          maxRedirects: 0,
         })
-      : await axios.get(tokenUrl, { timeout: 10000 });
+      : await axios.get(tokenUrl, { timeout: 10000, maxRedirects: 0 });
     const token = res.data.token ?? res.data.access_token;
     return token ? `Bearer ${token}` : "";
   } catch {
@@ -393,12 +421,7 @@ async function getRemoteDigest(
     return { digest: tag, platformDigest: tag, indexDigest: "", platform };
   }
 
-  const baseUrl =
-    registry === "registry-1.docker.io"
-      ? "https://registry-1.docker.io"
-      : `https://${registry}`;
-
-  const manifestUrl = `${baseUrl}/v2/${name}/manifests/${tag}`;
+  const manifestUrl = buildManifestUrl(registry, name, tag);
 
   let auth = await getInitialAuth(registry, name, credentials);
 
@@ -413,6 +436,7 @@ async function getRemoteDigest(
       return await axios.get(manifestUrl, {
         headers: makeHeaders(),
         timeout: 15000,
+        maxRedirects: 0,
       });
     } catch (err: any) {
       if (err.response?.status === 401) {
@@ -423,6 +447,7 @@ async function getRemoteDigest(
           return await axios.get(manifestUrl, {
             headers: makeHeaders(),
             timeout: 15000,
+            maxRedirects: 0,
           });
         }
       }
