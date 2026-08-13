@@ -91,7 +91,7 @@
         "bootstrap-vue-next": "~0.45.10",
         "codemirror": "^6.0.1",
         "concurrently": "^8.2.2",
-        "cross-env": "~7.0.3",
+        "cross-env": "~10.1.0",
         "eslint": "~8.50.0",
         "eslint-plugin-jsdoc": "~46.10.1",
         "eslint-plugin-vue": "~9.33.0",
