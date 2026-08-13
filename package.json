@@ -22,7 +22,7 @@
         "@louislam/sqlite3": "~15.1.6",
         "axios": "^1.19.0",
         "bcryptjs": "~2.4.3",
-        "check-password-strength": "~2.0.10",
+        "check-password-strength": "~3.0.0",
         "command-exists": "~1.2.9",
         "compare-versions": "~6.1.1",
         "composerize": "~1.7.6",
