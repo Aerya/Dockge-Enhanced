@@ -46,8 +46,8 @@
     "deleteContainer": "Izbriši",
     "addContainer": "Dodaj kontejner",
     "addNetwork": "Dodaj omrežje",
-    "disableauth.message1": "Ste prepričani, da želite <strong>onemogočiti overjanje</strong>?",
-    "disableauth.message2": "Namerno je zasnovano za scenarije, <strong>kjer nameravate izvajati avtentikacijo tretjih oseb</strong> pred Dockge, kot so Cloudflare Access, Authelia ali druge avtentikacijske mehanizme.",
+    "disableauth.message1": "Ste prepričani, da želite {disableAuth}?",
+    "disableauth.message2": "Namerno je zasnovano za scenarije, {scenarios} pred Dockge, kot so Cloudflare Access, Authelia ali druge avtentikacijske mehanizme.",
     "passwordNotMatchMsg": "Ponovljeno geslo se ne ujema.",
     "autoGet": "Samodejno pridobi",
     "add": "Dodaj",
@@ -113,5 +113,7 @@
     "agentRemovedSuccessfully": "Agent uspešno odstranjen.",
     "removeAgent": "Odstrani agent",
     "removeAgentMsg": "Ali ste prepričani, da želite odstraniti agenta?",
-    "LongSyntaxNotSupported": "Long syntax-a ni podprta tukaj. Prosim uporabite YAML urejevalnik."
+    "LongSyntaxNotSupported": "Long syntax-a ni podprta tukaj. Prosim uporabite YAML urejevalnik.",
+    "disableAuth": "onemogočiti overjanje",
+    "scenarios": "kjer nameravate izvajati avtentikacijo tretjih oseb"
 }

@@ -4,8 +4,8 @@
 # ═══════════════════════════════════════════════════
 #
 # Usage :
-#   ./sync-upstream.sh           (merge la dernière version)
-#   ./sync-upstream.sh v1.5.1    (merge un tag spécifique)
+#   ./sync-upstream.sh           (merge la branche master active)
+#   ./sync-upstream.sh 1.5.1     (merge un tag spécifique)
 
 set -e
 
@@ -20,23 +20,19 @@ if ! git remote | grep -q "^${UPSTREAM_REMOTE}$"; then
 fi
 
 echo "📥 Récupération des dernières versions upstream..."
-git fetch "$UPSTREAM_REMOTE" --tags
+git fetch "$UPSTREAM_REMOTE" master --tags
 
-# Détermine la cible (argument ou dernier tag)
+# Détermine la cible (argument ou branche active upstream)
 if [ -n "$1" ]; then
-    TAG="$1"
+    UPSTREAM_REF="$1"
 else
-    TAG=$(git tag -l --sort=-v:refname | head -n1)
-    if [ -z "$TAG" ]; then
-        echo "❌ Aucun tag trouvé. Spécifie un tag : ./sync-upstream.sh v1.5.1"
-        exit 1
-    fi
+    UPSTREAM_REF="$UPSTREAM_REMOTE/master"
 fi
 
 CURRENT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "inconnu")
 echo ""
 echo "📌 Version actuelle : $CURRENT_TAG"
-echo "🎯 Version cible    : $TAG"
+echo "🎯 Référence cible  : $UPSTREAM_REF"
 echo ""
 
 # Vérifie qu'on est sur la bonne branche
@@ -48,26 +44,19 @@ if [ "$CURRENT_BRANCH" != "$TARGET_BRANCH" ]; then
 fi
 
 # Merge
-echo "🔀 Merge de $TAG dans $TARGET_BRANCH..."
+echo "🔀 Merge de $UPSTREAM_REF dans $TARGET_BRANCH..."
 echo "   Si des conflits apparaissent, résous-les puis :"
 echo "     git add ."
 echo "     git commit"
 echo ""
 
-git merge "$TAG" --no-edit || {
+git merge "$UPSTREAM_REF" --no-edit || {
     echo ""
-    echo "⚠️  CONFLITS DÉTECTÉS — c'est normal !"
-    echo ""
-    echo "   Les fichiers en conflit sont probablement ceux qu'on a modifiés :"
-    echo "   - backend/dockge-server.ts"
-    echo "   - frontend/src/layouts/Layout.vue"
-    echo "   - frontend/src/router.ts"
-    echo "   - frontend/src/icon.ts"
-    echo "   - package.json"
+    echo "⚠️  CONFLITS DÉTECTÉS — merge interrompu"
     echo ""
     echo "   Pour chaque fichier en conflit :"
-    echo "     1. Ouvre-le et garde NOS modifications (Enhanced)"
-    echo "     2. Intègre les changements upstream s'ils sont pertinents"
+    echo "     1. Compare explicitement Enhanced et upstream"
+    echo "     2. Préserve les fonctionnalités Enhanced et les correctifs upstream"
     echo "     3. git add <fichier>"
     echo ""
     echo "   Quand tout est résolu : git commit"

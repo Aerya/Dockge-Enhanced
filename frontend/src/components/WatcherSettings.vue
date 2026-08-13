@@ -203,7 +203,10 @@
               $t("watcher.creds.heading")
             }}
           </h5>
-          <p class="form-text mb-3" v-html="$t('watcher.creds.hint')"></p>
+          <i18n-t keypath="watcher.creds.hint" tag="p" class="form-text mb-3">
+            <template #registry><strong>ghcr.io</strong></template>
+            <template #scope><code>read:packages</code></template>
+          </i18n-t>
 
           <div v-if="credentials.length > 0" class="mb-3">
             <div

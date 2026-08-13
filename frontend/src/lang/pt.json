@@ -46,8 +46,8 @@
     "deleteContainer": "Excluir",
     "addContainer": "Adicionar Contêiner",
     "addNetwork": "Adicionar Rede",
-    "disableauth.message1": "Tem certeza de que deseja <strong>desativar a autenticação</strong>?",
-    "disableauth.message2": "Isso é projetado para cenários <strong>onde você pretende implementar autenticação de terceiros</strong> no Dockge, como Cloudflare Access, Authelia ou outros mecanismos de autenticação.",
+    "disableauth.message1": "Tem certeza de que deseja {disableAuth}?",
+    "disableauth.message2": "Isso é projetado para cenários {scenarios} no Dockge, como Cloudflare Access, Authelia ou outros mecanismos de autenticação.",
     "passwordNotMatchMsg": "A senha repetida não coincide.",
     "autoGet": "Obter Automaticamente",
     "add": "Adicionar",
@@ -113,5 +113,7 @@
     "extra": "Extra",
     "reconnecting...": "Reconectando…",
     "connecting...": "Conectando ao servidor de socket…",
-    "LongSyntaxNotSupported": "Sintaxes longas não são suportadas aqui. Por favor, utilize um editor YAML."
+    "LongSyntaxNotSupported": "Sintaxes longas não são suportadas aqui. Por favor, utilize um editor YAML.",
+    "disableAuth": "desativar a autenticação",
+    "scenarios": "onde você pretende implementar autenticação de terceiros"
 }

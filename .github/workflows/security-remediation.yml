@@ -1,0 +1,83 @@
+name: Correction automatique des dépendances
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: security-remediation
+  cancel-in-progress: false
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Actualiser Restic depuis sa dernière release stable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          latest=$(gh api repos/restic/restic/releases/latest --jq '.tag_name | ltrimstr("v")')
+          sed -i -E "s/ARG RESTIC_VERSION=[0-9.]+/ARG RESTIC_VERSION=$latest/" Dockerfile
+
+      - name: Appliquer uniquement les corrections npm non destructives
+        run: |
+          set +e
+          npm audit fix --package-lock-only --ignore-scripts
+          status=$?
+          set -e
+          test "$status" -le 1
+
+      - name: Valider le verrou corrigé
+        run: |
+          npm ci
+          npm audit --audit-level=high
+          npm run check-ts
+          npx tsx --test backend/auth.test.ts
+          npm run build:frontend
+
+      - name: Créer ou actualiser la PR de correction
+        id: pull-request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/security-remediation
+          delete-branch: true
+          commit-message: "Corriger automatiquement les dépendances vulnérables"
+          title: "Corriger automatiquement les dépendances vulnérables"
+          body: |
+            Cette PR applique uniquement les corrections non destructives proposées par `npm audit fix`.
+
+            La fusion reste conditionnée à l’audit npm, à TypeScript, aux tests d’authentification, au build frontend, aux builds Docker amd64/arm64 et à Trivy.
+          labels: dependencies
+
+      - name: Déclencher les contrôles protégés
+        if: steps.pull-request.outputs.pull-request-number != '' && steps.pull-request.outputs.pull-request-number != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: automation/security-remediation
+        run: |
+          gh workflow run ci.yml --ref "$BRANCH"
+          gh workflow run docker-pr.yml --ref "$BRANCH"
+          gh workflow run security-trivy.yml --ref "$BRANCH"
+          gh workflow run codeql.yml --ref "$BRANCH"
+
+      - name: Activer la fusion après tous les contrôles
+        if: steps.pull-request.outputs.pull-request-number != '' && steps.pull-request.outputs.pull-request-number != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ steps.pull-request.outputs.pull-request-url }}
+        run: gh pr merge --auto --merge --delete-branch "$PR_URL"

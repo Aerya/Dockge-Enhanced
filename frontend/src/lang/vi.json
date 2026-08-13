@@ -107,10 +107,12 @@
     "stackNotManagedByDockgeMsg": "Stack này không được quản lý bởi Dockge.",
     "dependsOn": "Container Phụ Thuộc | Các Container Phụ Thuộc",
     "general": "Tổng Quan",
-    "disableauth.message1": "Bạn có chắc chắn muốn <strong>tắt xác thực đăng nhập</strong>?",
+    "disableauth.message1": "Bạn có chắc chắn muốn {disableAuth}?",
     "container": "Container",
-    "disableauth.message2": "Nó được thiết kế trong hoàn cảnh <strong>mà bạn dự định triển khai xác thực đăng nhập bên thứ ba</strong> trước Dockge như là Cloudflare Access, Authelia hay các phương thức xác minh đăng nhập khác.",
+    "disableauth.message2": "Nó được thiết kế trong hoàn cảnh {scenarios} trước Dockge như là Cloudflare Access, Authelia hay các phương thức xác minh đăng nhập khác.",
     "dockerImage": "Image",
     "Show update if available": "Hiển thị cập nhật nếu có",
-    "restartPolicyUnlessStopped": "Trừ Khi Dừng Lại"
+    "restartPolicyUnlessStopped": "Trừ Khi Dừng Lại",
+    "disableAuth": "tắt xác thực đăng nhập",
+    "scenarios": "mà bạn dự định triển khai xác thực đăng nhập bên thứ ba"
 }

@@ -1,5 +1,5 @@
 # ─── Stage 1 : build ─────────────────────────────────────────────
-FROM node:22-alpine AS builder
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
 
 WORKDIR /app
 
@@ -8,8 +8,8 @@ RUN apk add --no-cache python3 make g++
 
 # Toutes les dépendances (dev incluses pour le build frontend)
 COPY package*.json ./
-# npm install (plus souple que npm ci — tolère un lock file désynchronisé)
-RUN npm install
+# Installation strictement reproductible depuis le verrou audité
+RUN npm ci
 
 # Build du frontend Vite → /app/frontend-dist
 COPY . .
@@ -19,7 +19,7 @@ RUN npm run build:frontend
 RUN npm prune --omit=dev
 
 # ─── Stage 2 : image de production ───────────────────────────────
-FROM node:22-alpine
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
 
 WORKDIR /app
 
@@ -29,10 +29,15 @@ ENV NODE_ENV=production
 # Trivy n'est pas installé ici — le scanner utilise aquasec/trivy:latest via Docker
 RUN apk add --no-cache docker-cli docker-cli-compose git openssh-client sshpass rsync
 
+# npm et Corepack ne sont pas nécessaires à l’exécution. Les retirer élimine
+# aussi leur propre arbre de dépendances de l’image exposée.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
+
 # Restic depuis GitHub releases — compilé avec Go récent (fix CVE stdlib).
 # Mettre à jour RESTIC_VERSION dès qu'une nouvelle release est disponible :
 # https://github.com/restic/restic/releases
-ARG RESTIC_VERSION=0.18.1
+ARG RESTIC_VERSION=0.19.1
 RUN case "$(uname -m)" in \
         aarch64) ARCH=arm64 ;; \
         armv7l)  ARCH=arm   ;; \

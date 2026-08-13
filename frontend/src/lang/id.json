@@ -39,7 +39,7 @@
     "deleteContainer": "Hapus",
     "addContainer": "Tambah Kontainer",
     "addNetwork": "Tambah Jaringan",
-    "disableauth.message1": "Apakah Anda yakin untuk <strong>mematikan otentikasi</strong>?",
+    "disableauth.message1": "Apakah Anda yakin untuk {disableAuth}?",
     "passwordNotMatchMsg": "Kata sandi berulang tidak cocok.",
     "autoGet": "Otomatis Dapatkan",
     "add": "Tambah",
@@ -94,7 +94,7 @@
     "deleteStack": "Hapus",
     "deleteStackMsg": "Apakah Anda yakin Anda ingin menghapus tumpukan ini ?",
     "restartPolicyOnFailure": "Ketika Gagal",
-    "disableauth.message2": "Ini dirancang untuk skenario <strong>di mana Anda bermaksud untuk mengimplementasikan otentikasi pihak ketiga</strong> di depan Dockge seperti Cloudflare Access, Authelia, atau mekanisme otentikasi lainnya.",
+    "disableauth.message2": "Ini dirancang untuk skenario {scenarios} di depan Dockge seperti Cloudflare Access, Authelia, atau mekanisme otentikasi lainnya.",
     "applyToYAML": "Aplikasikan ke YAML",
     "Current User": "Pengguna Saat Ini",
     "Please use this option carefully!": "Mohon berhati - hati menggunakan opsi ini!",
@@ -119,5 +119,7 @@
     "Updated": "Telah diperbaharui",
     "Started": "Aplikasi dimulai",
     "Stopped": "Aplikasi dihentikan",
-    "Restarted": "Aplikasi memuat kembali"
+    "Restarted": "Aplikasi memuat kembali",
+    "disableAuth": "mematikan otentikasi",
+    "scenarios": "di mana Anda bermaksud untuk mengimplementasikan otentikasi pihak ketiga"
 }

@@ -194,6 +194,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     msgi18n: true,
                 }, callback);
                 server.sendStackList();
+
+                stack.leaveCombinedTerminal(socket);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -419,6 +421,22 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     lastStartedAt,
                     lowPowerMode: isLowPower(),
                 }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        // Docker stats
+        agentSocket.on("dockerStats", async (callback) => {
+            try {
+                checkLogin(socket);
+
+                const dockerStats = Object.fromEntries(await server.getDockerStats());
+                callbackResult({
+                    ok: true,
+                    dockerStats,
+                }, callback);
+                server.sendStackList();
             } catch (e) {
                 callbackError(e, callback);
             }

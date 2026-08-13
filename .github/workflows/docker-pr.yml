@@ -3,9 +3,13 @@ name: Validation Docker PR
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.72.0
 
 concurrency:
   group: docker-pr-${{ github.event.pull_request.number }}
@@ -36,7 +40,47 @@ jobs:
           file: Dockerfile
           platforms: ${{ matrix.platform }}
           push: false
+          load: true
+          tags: dockge-enhanced-pr:${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           pull: true
+
+      - name: Scanner l’image construite
+        run: |
+          tag="${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}"
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/.trivyignore.yaml:/work/.trivyignore.yaml:ro" \
+            "$TRIVY_IMAGE" image \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --ignorefile /work/.trivyignore.yaml \
+            --list-all-pkgs=false \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+            "dockge-enhanced-pr:$tag"
+
+      - name: Tester le démarrage et l’endpoint de santé
+        run: |
+          tag="${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}"
+          mkdir -p /tmp/dockge-validation-stacks
+          docker run -d --name dockge-pr-validation \
+            -p 127.0.0.1:5001:5001 \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /tmp/dockge-validation-stacks:/opt/stacks \
+            -e DOCKGE_STACKS_DIR=/opt/stacks \
+            "dockge-enhanced-pr:$tag"
+          for _ in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:5001/status; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs dockge-pr-validation
+          exit 1
+
+      - name: Nettoyer le conteneur de validation
+        if: always()
+        run: |
+          docker stop dockge-pr-validation 2>/dev/null || true
+          docker container rm dockge-pr-validation 2>/dev/null || true
 
   build:
     name: Build linux/amd64,linux/arm64

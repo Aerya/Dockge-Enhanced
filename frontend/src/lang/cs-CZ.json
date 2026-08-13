@@ -47,8 +47,8 @@
     "deleteContainer": "Smazat",
     "addContainer": "Přidat kontejner",
     "addNetwork": "Přidat síť",
-    "disableauth.message1": "Opravdu chcete <strong>zakázat ověřování</strong>?",
-    "disableauth.message2": "Je navrženo pro scénáře, kde <strong>plánujete implementovat ověřování třetí strany</strong> před Dockge, například Cloudflare Access, Authelia nebo jiné ověřovací mechanismy.",
+    "disableauth.message1": "Opravdu chcete {disableAuth}?",
+    "disableauth.message2": "Je navrženo pro scénáře, kde {scenarios} před Dockge, například Cloudflare Access, Authelia nebo jiné ověřovací mechanismy.",
     "passwordNotMatchMsg": "Hesla se neshodují.",
     "autoGet": "Automaticky získat",
     "add": "Přidat",
@@ -126,5 +126,7 @@
     "New Container Name...": "Název nového kontejneru...",
     "Network name...": "Název sítě...",
     "Select a network...": "Vyberte síť...",
-    "NoNetworksAvailable": "Žádná síť není dostupná. Musíte přidat interní síť nebo povolit externí sítě v pravé části."
+    "NoNetworksAvailable": "Žádná síť není dostupná. Musíte přidat interní síť nebo povolit externí sítě v pravé části.",
+    "disableAuth": "zakázat ověřování",
+    "scenarios": "plánujete implementovat ověřování třetí strany"
 }

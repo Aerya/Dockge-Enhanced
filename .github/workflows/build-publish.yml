@@ -12,6 +12,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  TRIVY_IMAGE: aquasec/trivy:0.72.0
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
@@ -40,7 +41,7 @@ jobs:
 
       - name: 🔡 Image name en minuscules
         id: image
-        run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: 🔑 Login GHCR
         uses: docker/login-action@v3
@@ -49,12 +50,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🏗️ Build & Push (tag plateforme)
+      - name: 🏗️ Construire l’image plateforme
         run: |
           docker build \
             --platform ${{ matrix.platform }} \
             -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }} \
             .
+
+      - name: 🔐 Refuser une image vulnérable
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/.trivyignore.yaml:/work/.trivyignore.yaml:ro" \
+            "$TRIVY_IMAGE" image \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --ignorefile /work/.trivyignore.yaml \
+            --list-all-pkgs=false \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+            "${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }}"
+
+      - name: 📤 Publier l’image plateforme validée
+        run: |
           docker push ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }}
 
   # ─── Merge des deux images en un manifest multi-arch ─────────────────
@@ -65,7 +81,7 @@ jobs:
     steps:
       - name: 🔡 Image name en minuscules
         id: image
-        run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: 🔑 Login GHCR
         uses: docker/login-action@v3
@@ -91,7 +107,12 @@ jobs:
 
       - name: 🔀 Créer manifest multi-arch et push
         run: |
+          mapfile -t tags < <(jq -r '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          tag_args=()
+          for tag in "${tags[@]}"; do
+            tag_args+=("-t" "$tag")
+          done
           docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            "${tag_args[@]}" \
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:amd64 \
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:arm64

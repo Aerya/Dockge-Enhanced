@@ -3,6 +3,7 @@ name: CI — Vérification build
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-check:
@@ -27,6 +28,9 @@ jobs:
 
       - name: Tests d’authentification
         run: npx tsx --test backend/auth.test.ts
+
+      - name: Audit npm HIGH/CRITICAL
+        run: npm audit --audit-level=high
 
       - name: Build frontend (Vite)
         run: npm run build:frontend

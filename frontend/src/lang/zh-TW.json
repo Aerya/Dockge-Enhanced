@@ -46,8 +46,8 @@
     "deleteContainer": "刪除容器",
     "addContainer": "新增容器",
     "addNetwork": "新增網路",
-    "disableauth.message1": "您確定要<strong>停用身份驗證</strong>嗎？",
-    "disableauth.message2": "該選項設計用於某些場景，<strong>例如在 Dockge 之介接接第三方身份驗證</strong>，例如 Cloudflare Access、Authelia 或其他身份驗證機制。",
+    "disableauth.message1": "您確定要{disableAuth}嗎？",
+    "disableauth.message2": "該選項設計用於某些場景，{scenarios}，例如 Cloudflare Access、Authelia 或其他身份驗證機制。",
     "passwordNotMatchMsg": "兩次輸入的密碼不一致。",
     "autoGet": "自動取得",
     "add": "新增",
@@ -129,5 +129,7 @@
     "Network name...": "網路名稱...",
     "Select a network...": "選擇網路...",
     "removeAgent": "刪除代理",
-    "removeAgentMsg": "您確定要刪除這個代理嗎？"
+    "removeAgentMsg": "您確定要刪除這個代理嗎？",
+    "disableAuth": "停用身份驗證",
+    "scenarios": "例如在 Dockge 之介接接第三方身份驗證"
 }

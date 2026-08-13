@@ -47,8 +47,8 @@
     "deleteContainer": "Radera",
     "addContainer": "Lägg till container",
     "addNetwork": "Lägg till nätverk",
-    "disableauth.message1": "Är du säker på att du vill <strong>inaktivera autentisering</strong>?",
-    "disableauth.message2": "Det är designat för scenarion <strong>där du ska implementera tredjepartsautentisering</strong> framför Dockge som Cloudflare Access, Authelia eller andra autentiseringsmekanismer.",
+    "disableauth.message1": "Är du säker på att du vill {disableAuth}?",
+    "disableauth.message2": "Det är designat för scenarion {scenarios} framför Dockge som Cloudflare Access, Authelia eller andra autentiseringsmekanismer.",
     "passwordNotMatchMsg": "Det upprepade lösenordet matchar inte.",
     "autoGet": "Auto-hämta",
     "add": "Lägg till",
@@ -129,5 +129,7 @@
     "New Container Name...": "Nytt kontainernamn...",
     "Network name...": "Nätverksnamn...",
     "Select a network...": "Välj ett nätverk...",
-    "NoNetworksAvailable": "Inga nätverk tillgängliga. Du måste lägga till interna nätverk eller aktivera externa nätverk på högra sidan först."
+    "NoNetworksAvailable": "Inga nätverk tillgängliga. Du måste lägga till interna nätverk eller aktivera externa nätverk på högra sidan först.",
+    "disableAuth": "inaktivera autentisering",
+    "scenarios": "där du ska implementera tredjepartsautentisering"
 }

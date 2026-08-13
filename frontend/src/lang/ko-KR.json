@@ -46,8 +46,8 @@
     "deleteContainer": "삭제",
     "addContainer": "컨테이너 추가",
     "addNetwork": "네트워크 추가",
-    "disableauth.message1": "정말로 <strong>인증을 비활성화</strong>하시겠습니까?",
-    "disableauth.message2": "이 기능은 Dockge 앞에 Cloudflare Access, Authelia 등과 같은 <strong>서드 파티 인증을 사용하려는 경우</strong>에 사용하기 위해서 만들어졌어요.",
+    "disableauth.message1": "정말로 {disableAuth}하시겠습니까?",
+    "disableauth.message2": "이 기능은 Dockge 앞에 Cloudflare Access, Authelia 등과 같은 {scenarios}에 사용하기 위해서 만들어졌어요.",
     "passwordNotMatchMsg": "비밀번호 재입력이 일치하지 않아요..",
     "autoGet": "자동으로 가져오기",
     "add": "추가",
@@ -113,5 +113,7 @@
     "currentEndpoint": "현재",
     "connecting": "연결 중",
     "agentRemovedSuccessfully": "에이전트를 성공적으로 삭제했습니다.",
-    "LongSyntaxNotSupported": "긴 문법은 여기서 지원되지 않습니다. YAML 에디터를 사용하세요."
+    "LongSyntaxNotSupported": "긴 문법은 여기서 지원되지 않습니다. YAML 에디터를 사용하세요.",
+    "disableAuth": "인증을 비활성화",
+    "scenarios": "서드 파티 인증을 사용하려는 경우"
 }

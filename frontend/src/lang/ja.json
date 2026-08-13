@@ -88,8 +88,8 @@
     "addFirstStackMsg": "最初のスタックを組み立てましょう！",
     "deleteStackMsg": "本当にこのスタックを削除しますか？",
     "deleteContainer": "削除",
-    "disableauth.message1": "本当に<strong>認証を無効化</strong>しますか?",
-    "disableauth.message2": "これはCloudflare AccessやAutheliaなどの認証手段をDockgeの前段に置いて<strong>サードパーティー認証を実装することをあなたが意図している</strong>場合のために設計されています。",
+    "disableauth.message1": "本当に{disableAuth}しますか?",
+    "disableauth.message2": "これはCloudflare AccessやAutheliaなどの認証手段をDockgeの前段に置いて{scenarios}場合のために設計されています。",
     "Current User": "現在のユーザー",
     "Repeat New Password": "新しいパスワードを繰り返してください",
     "I understand, please disable": "理解しました。無効化してください",
@@ -126,5 +126,7 @@
     "New Container Name...": "新しいコンテナ名...",
     "Network name...": "ネットワーク名...",
     "Select a network...": "ネットワークを選択...",
-    "NoNetworksAvailable": "利用可能なネットワークがありません。まず右側の内部ネットワークを追加するか、外部ネットワークを有効にする必要があります。"
+    "NoNetworksAvailable": "利用可能なネットワークがありません。まず右側の内部ネットワークを追加するか、外部ネットワークを有効にする必要があります。",
+    "disableAuth": "認証を無効化",
+    "scenarios": "サードパーティー認証を実装することをあなたが意図している"
 }

@@ -47,8 +47,8 @@
     "deleteContainer": "ลบ",
     "addContainer": "เพิ่ม Container",
     "addNetwork": "เพิ่ม เครือข่าย",
-    "disableauth.message1": "คุณแน่ใจหรือไม่ว่าต้องการ <strong>ปิดใช้งานการตรวจสอบสิทธิ์</strong>?",
-    "disableauth.message2": "ได้รับการออกแบบมาสำหรับสถานการณ์ <strong>ที่คุณตั้งใจจะใช้การตรวจสอบสิทธิ์ของบุคคลที่สาม</strong> หน้า Dockge เช่น Cloudflare Access, Authelia หรือกลไกการตรวจสอบสิทธิ์อื่นๆ",
+    "disableauth.message1": "คุณแน่ใจหรือไม่ว่าต้องการ {disableAuth}?",
+    "disableauth.message2": "ได้รับการออกแบบมาสำหรับสถานการณ์ {scenarios} หน้า Dockge เช่น Cloudflare Access, Authelia หรือกลไกการตรวจสอบสิทธิ์อื่นๆ",
     "passwordNotMatchMsg": "รหัสผ่านซ้ำไม่ตรงกัน",
     "autoGet": "รับอัตโนมัติ",
     "add": "เพิ่ม",
@@ -113,5 +113,7 @@
     "removeAgent": "ลบเอเย่นต์",
     "removeAgentMsg": "คุณแน่ใจหรือไม่ที่จะลบเอเย่นต์นี้?",
     "dockgeURL": "ลิ้งก์ Dockge (เช่น http://127.0.0.1:5001)",
-    "LongSyntaxNotSupported": "Syntax แบบยาสไม่รองรับที่นี่ กรุณาใช้ตัวแก้ไข YAML"
+    "LongSyntaxNotSupported": "Syntax แบบยาสไม่รองรับที่นี่ กรุณาใช้ตัวแก้ไข YAML",
+    "disableAuth": "ปิดใช้งานการตรวจสอบสิทธิ์",
+    "scenarios": "ที่คุณตั้งใจจะใช้การตรวจสอบสิทธิ์ของบุคคลที่สาม"
 }

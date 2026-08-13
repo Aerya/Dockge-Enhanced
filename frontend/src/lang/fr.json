@@ -142,8 +142,8 @@
     "containerImageUpdateAvailable": "MàJ",
     "addContainer": "Ajouter un conteneur",
     "addNetwork": "Ajouter un réseau",
-    "disableauth.message1": "Voulez-vous vraiment <strong>désactiver l'authentification</strong> ?",
-    "disableauth.message2": "Il est conçu pour les scénarios <strong>dans lesquels vous avez l'intention d'implémenter une authentification tierce</strong> devant Dockge, comme Cloudflare Access, Authelia ou d'autres mécanismes d'authentification.",
+    "disableauth.message1": "Voulez-vous vraiment {disableAuth} ?",
+    "disableauth.message2": "Il est conçu pour les scénarios {scenarios} devant Dockge, comme Cloudflare Access, Authelia ou d'autres mécanismes d'authentification.",
     "passwordNotMatchMsg": "Le mot de passe de confirmation ne correspond pas.",
     "autoGet": "Obtention automatique",
     "add": "Ajouter",
@@ -585,7 +585,7 @@
     "watcher.img.saved": "✅ Paramètres sauvegardés",
     "watcher.img.checking": "🔍 Vérification lancée en arrière-plan",
     "watcher.creds.heading": "Credentials registries privés",
-    "watcher.creds.hint": "Pour <strong>ghcr.io privé</strong> : utilise un Personal Access Token GitHub avec le scope <code>read:packages</code>.",
+    "watcher.creds.hint": "Pour {registry} privé : utilise un Personal Access Token GitHub avec le scope {scope}.",
     "watcher.creds.none": "Aucun credential configuré.",
     "watcher.creds.registry": "Registry",
     "watcher.creds.username": "Utilisateur",
@@ -771,7 +771,7 @@
     "watcher.backup.restUrl": "URL du serveur REST",
     "watcher.backup.restUser": "Utilisateur",
     "watcher.backup.restPassword": "Mot de passe",
-    "watcher.backup.includeEnv": "Inclure les fichiers <code>.env</code>",
+    "watcher.backup.includeEnv": "Inclure les fichiers {env}",
     "watcher.backup.includeEnvHint": "(peuvent contenir des secrets)",
     "watcher.backup.webhooks": "Webhooks Discord",
     "watcher.backup.webhooksHint": "(succès & échecs)",
@@ -1033,5 +1033,7 @@
     "stackGit.restore": "Restaurer les fichiers",
     "stackGit.restoreConfirm": "Restaurer les fichiers suivis de la stack depuis le commit {hash} ? Le répertoire doit être propre et Compose sera validé avec rollback automatique en cas d’échec.",
     "stackPin": "Épingler cette stack en haut de la liste",
-    "stackUnpin": "Désépingler cette stack"
+    "stackUnpin": "Désépingler cette stack",
+    "disableAuth": "désactiver l'authentification",
+    "scenarios": "dans lesquels vous avez l'intention d'implémenter une authentification tierce"
 }

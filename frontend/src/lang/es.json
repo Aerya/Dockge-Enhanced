@@ -63,8 +63,8 @@
     "deleteContainer": "Eliminar",
     "addContainer": "Agregar Contenedor",
     "addNetwork": "Agregar Red",
-    "disableauth.message1": "¿Estás seguro de que deseas <strong>desactivar la autenticación</strong>?",
-    "disableauth.message2": "Está diseñado para escenarios <strong>donde pretendes implementar autenticación de terceros</strong> frente a Dockge, como Cloudflare Access, Authelia u otros mecanismos de autenticación.",
+    "disableauth.message1": "¿Estás seguro de que deseas {disableAuth}?",
+    "disableauth.message2": "Está diseñado para escenarios {scenarios} frente a Dockge, como Cloudflare Access, Authelia u otros mecanismos de autenticación.",
     "passwordNotMatchMsg": "La contraseña repetida no coincide.",
     "autoGet": "Obtener Automáticamente",
     "add": "Agregar",
@@ -156,5 +156,7 @@
     "composeResize": "Redimensionar las columnas Registros y Compose",
     "stackListResize": "Redimensionar la columna de stacks",
     "copyRawCompose": "Copiar el YAML Compose sin formato",
-    "rawComposeCopied": "YAML Compose copiado sin formato"
+    "rawComposeCopied": "YAML Compose copiado sin formato",
+    "disableAuth": "desactivar la autenticación",
+    "scenarios": "donde pretendes implementar autenticación de terceros"
 }

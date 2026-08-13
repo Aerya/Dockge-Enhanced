@@ -98,8 +98,8 @@
     "Language": "Limbă",
     "Please use this option carefully!": "Vă rugăm să utilizați această opțiune cu atenție!",
     "Show update if available": "Afișează actualizarea dacă este disponibilă",
-    "disableauth.message1": "Sigur doriți să <strong>dezactivați autentificarea</strong>?",
-    "disableauth.message2": "Este conceput pentru scenarii <strong>în care intenționați să implementați autentificarea terță</strong> în fața Dockge-lui, cum ar fi Cloudflare Access, Authelia sau alte mecanisme de autentificare.",
+    "disableauth.message1": "Sigur doriți să {disableAuth}?",
+    "disableauth.message2": "Este conceput pentru scenarii {scenarios} în fața Dockge-lui, cum ar fi Cloudflare Access, Authelia sau alte mecanisme de autentificare.",
     "newUpdate": "Actualizare nouă",
     "dockgeAgent": "Agent Dockge | Agenții Dockge",
     "currentEndpoint": "Actual",
@@ -129,5 +129,7 @@
     "New Container Name...": "Nume nou de container...",
     "Network name...": "Numele rețelei...",
     "Select a network...": "Selectați o rețea...",
-    "NoNetworksAvailable": "Nu există rețele disponibile. Mai întâi trebuie să adăugați rețele interne sau să activați rețele externe în partea dreaptă."
+    "NoNetworksAvailable": "Nu există rețele disponibile. Mai întâi trebuie să adăugați rețele interne sau să activați rețele externe în partea dreaptă.",
+    "disableAuth": "dezactivați autentificarea",
+    "scenarios": "în care intenționați să implementați autentificarea terță"
 }
