@@ -9,10 +9,9 @@ updates:
     open-pull-requests-limit: 10
     rebase-strategy: "auto"
     groups:
-      minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
+      npm-validated-batch:
+        patterns:
+          - "*"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -22,10 +21,9 @@ updates:
     open-pull-requests-limit: 10
     rebase-strategy: "auto"
     groups:
-      minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
+      docker-validated-batch:
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -35,7 +33,6 @@ updates:
     open-pull-requests-limit: 10
     rebase-strategy: "auto"
     groups:
-      minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
+      actions-validated-batch:
+        patterns:
+          - "*"
