@@ -451,10 +451,12 @@ export function assertPathWithinRoots(candidate: string, roots: string[]): strin
 
 export async function assertExistingPathWithinRoots(candidate: string, roots: string[]): Promise<string> {
     const validatedCandidate = assertPathWithinRoots(candidate, roots);
-    const [ realCandidate, realRoots ] = await Promise.all([
-        fs.realpath(validatedCandidate),
-        Promise.all(roots.map(root => fs.realpath(root).catch(() => null))),
+    const [ candidateResult, rootResults ] = await Promise.all([
+        execFileAsync("realpath", [ "--", validatedCandidate ]),
+        Promise.all(roots.map(root => execFileAsync("realpath", [ "--", root ]).then(result => result.stdout.trim()).catch(() => null))),
     ]);
+    const realCandidate = candidateResult.stdout.trim();
+    const realRoots = rootResults;
     return assertPathWithinRoots(realCandidate, realRoots.filter((root): root is string => root !== null));
 }
 
