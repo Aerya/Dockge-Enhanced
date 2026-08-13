@@ -28,6 +28,7 @@ import packageJSON from "../package.json";
 import { log } from "./log";
 import * as socketIO from "socket.io";
 import express, { Express } from "express";
+import { rateLimit } from "express-rate-limit";
 import { parse } from "ts-command-line-args";
 import https from "https";
 import http from "http";
@@ -215,6 +216,18 @@ export class DockgeServer {
 
         // Create express
         this.app = express();
+
+        // Toutes les routes HTTP sensibles sont placées derrière une limite
+        // commune. Le plafond reste volontairement généreux pour les écrans de
+        // supervision, tout en empêchant l'abus soutenu des opérations Docker,
+        // fichiers, sauvegardes et authentification par jeton.
+        this.app.use("/api", rateLimit({
+            windowMs: 60 * 1000,
+            limit: 600,
+            standardHeaders: "draft-8",
+            legacyHeaders: false,
+            message: { ok: false, message: "Trop de requêtes, réessayez dans quelques instants." },
+        }));
 
         // Create HTTP server
         if (this.config.sslKey && this.config.sslCert) {
