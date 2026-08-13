@@ -12,6 +12,13 @@ updates:
       npm-validated-batch:
         patterns:
           - "*"
+    # TypeScript 7 ne peut pas encore être installé avec la dernière version
+    # publiée de TypeScript-ESLint (contrainte actuelle : TypeScript < 6.1).
+    # Les versions mineures et correctives restent suivies automatiquement.
+    ignore:
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
