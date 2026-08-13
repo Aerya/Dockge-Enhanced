@@ -3,7 +3,13 @@ import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { BackupRunLock, normalizeStackBackupPolicy, readDiskUsage } from "./backup-manager";
+import {
+    BackupRunLock,
+    buildComposeCommandArgs,
+    buildResticCommandArgs,
+    normalizeStackBackupPolicy,
+    readDiskUsage,
+} from "./backup-manager";
 
 test("defaults unknown stack policies to hot mode", () => {
     assert.deepEqual(normalizeStackBackupPolicy(undefined), { mode: "hot" });
@@ -63,4 +69,16 @@ test("mesure un chemin sans interpréter ses caractères comme une commande", as
     } finally {
         await fs.rm(root, { recursive: true, force: true });
     }
+});
+
+test("conserve les valeurs Restic et Compose dans des arguments séparés", () => {
+    const hostilePath = "/tmp/archive;touch /tmp/commande-executee";
+    assert.deepEqual(buildResticCommandArgs(hostilePath, [], [ "dump", "snapshot", hostilePath ], false), [
+        "--repo", hostilePath, "dump", "snapshot", hostilePath,
+    ]);
+    assert.deepEqual(buildComposeCommandArgs("/opt/stacks/demo/compose.yaml", [
+        "exec", "-T", "service;false", "sh", "-c", "echo sauvegarde",
+    ]), [
+        "compose", "-f", "compose.yaml", "exec", "-T", "service;false", "sh", "-c", "echo sauvegarde",
+    ]);
 });
