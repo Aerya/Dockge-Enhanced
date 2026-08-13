@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizeStackBackupPolicy } from "./backup-manager";
+import { BackupRunLock, normalizeStackBackupPolicy } from "./backup-manager";
 
 test("defaults unknown stack policies to hot mode", () => {
     assert.deepEqual(normalizeStackBackupPolicy(undefined), { mode: "hot" });
@@ -27,4 +27,23 @@ test("trims application hook settings", () => {
         preHook: "pg_dumpall",
         postHook: undefined,
     });
+});
+
+test("blocks a second backup when overlap protection is enabled", () => {
+    const lock = new BackupRunLock();
+    assert.equal(lock.acquire(true), true);
+    assert.equal(lock.acquire(true), false);
+    assert.equal(lock.isActive(), true);
+    lock.release();
+    assert.equal(lock.isActive(), false);
+});
+
+test("allows concurrent backups when overlap protection is disabled", () => {
+    const lock = new BackupRunLock();
+    assert.equal(lock.acquire(false), true);
+    assert.equal(lock.acquire(false), true);
+    lock.release();
+    assert.equal(lock.isActive(), true);
+    lock.release();
+    assert.equal(lock.isActive(), false);
 });

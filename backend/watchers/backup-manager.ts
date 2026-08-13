@@ -125,6 +125,7 @@ export interface BackupSettings {
     volumeBackup: VolumeBackupConfig;
     notificationLang: "fr" | "en";
     backupOnSave: boolean;               // déclenche un backup immédiat quand un compose est sauvegardé
+    preventConcurrentBackups: boolean;   // refuse un nouveau backup tant que le précédent tourne
     excludedStacks: string[];            // stacks exclues de la sauvegarde
     stackPolicies: Record<string, StackBackupPolicy>; // cohérence applicative par stack
     excludePatterns: string[];           // patterns restic --exclude supplémentaires (ex: *.wal, *.tmp)
@@ -207,6 +208,31 @@ export interface BackupResult {
     warnings?: string[];            // chemins demandés mais absents / ignorés
     timestamp: string;
     destinations?: DestinationResult[];
+}
+
+export class BackupAlreadyRunningError extends Error {
+    constructor() {
+        super("Un backup Restic est déjà en cours");
+        this.name = "BackupAlreadyRunningError";
+    }
+}
+
+export class BackupRunLock {
+    private activeRuns = 0;
+
+    acquire(preventConcurrent: boolean): boolean {
+        if (preventConcurrent && this.activeRuns > 0) return false;
+        this.activeRuns++;
+        return true;
+    }
+
+    release(): void {
+        this.activeRuns = Math.max(0, this.activeRuns - 1);
+    }
+
+    isActive(): boolean {
+        return this.activeRuns > 0;
+    }
 }
 
 interface BackupPathsResult {
@@ -475,12 +501,27 @@ export class BackupManager {
     private stalenessCron:    cron.ScheduledTask | null = null;
     private lastStalenessNotif = 0;
     private lastOnSaveTrigger  = 0;
+    private backupRunLock = new BackupRunLock();
+    private lastBlockedBackup: { trigger: "scheduled" | "manual" | "on-save"; timestamp: number } | null = null;
 
     // Destinations dont le backup est actuellement en cours { label → timestamp démarrage }
     private runningDests = new Map<string, number>();
 
     getRunningDests(): { label: string; startedAt: number }[] {
         return Array.from(this.runningDests.entries()).map(([label, startedAt]) => ({ label, startedAt }));
+    }
+
+    isBackupRunActive(): boolean {
+        return this.backupRunLock.isActive();
+    }
+
+    getLastBlockedBackup(): { trigger: "scheduled" | "manual" | "on-save"; timestamp: number } | null {
+        return this.lastBlockedBackup;
+    }
+
+    recordBlockedBackup(trigger: "scheduled" | "manual" | "on-save"): void {
+        this.lastBlockedBackup = { trigger, timestamp: Date.now() };
+        console.warn(`[BackupManager] Backup ${trigger} bloqué : un backup Restic est déjà en cours`);
     }
 
     settings: BackupSettings = {
@@ -508,6 +549,7 @@ export class BackupManager {
         notificationLang: "fr",
         volumeBackup: { selectedVolumes: [] },
         backupOnSave: true,
+        preventConcurrentBackups: true,
         excludedStacks: [],
         stackPolicies: {},
         excludePatterns: [],
@@ -603,7 +645,15 @@ export class BackupManager {
         this.settings.intervalHours = intervalHours;
         const cronExpr = cronExpressionForIntervalHours(intervalHours);
         console.log(`[BackupManager] Démarrage — backup toutes les ${intervalHours}h (${cronExpr})`);
-        this.cronJob = cron.schedule(cronExpr, () => this.runBackup({ trigger: "scheduled" }));
+        this.cronJob = cron.schedule(cronExpr, () => {
+            this.runBackup({ trigger: "scheduled" }).catch(e => {
+                if (e instanceof BackupAlreadyRunningError) {
+                    console.log("[BackupManager] Backup planifié ignoré : un backup Restic est déjà en cours");
+                } else {
+                    console.error("[BackupManager] Backup planifié échoué:", e);
+                }
+            });
+        });
         this.stalenessCron = cron.schedule("0 * * * *", () => this.checkStaleness().catch(console.error));
     }
 
@@ -821,6 +871,23 @@ export class BackupManager {
     }
 
     async runBackup(opts: {
+        skipForget?: boolean;
+        tag?: string;
+        trigger?: "scheduled" | "manual" | "on-save";
+        stackName?: string;
+    } = {}): Promise<BackupResult> {
+        if (!this.backupRunLock.acquire(this.settings.preventConcurrentBackups)) {
+            this.recordBlockedBackup(opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual"));
+            throw new BackupAlreadyRunningError();
+        }
+        try {
+            return await this.runBackupUnlocked(opts);
+        } finally {
+            this.backupRunLock.release();
+        }
+    }
+
+    private async runBackupUnlocked(opts: {
         skipForget?: boolean;
         tag?: string;
         trigger?: "scheduled" | "manual" | "on-save";
