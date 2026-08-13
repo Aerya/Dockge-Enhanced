@@ -45,7 +45,7 @@
     "Edit": "Cuir in eagar",
     "applyToYAML": "Déan iarratas ar YAML",
     "createExternalNetwork": "Cruthaigh",
-    "disableauth.message1": "An bhfuil tú cinnte gur mhaith leat <strong>fíordheimhniú a dhíchumasú</strong>?",
+    "disableauth.message1": "An bhfuil tú cinnte gur mhaith leat {disableAuth}?",
     "passwordNotMatchMsg": "Ní hionann an pasfhocal athfhillteach.",
     "autoGet": "Faigh Uathoibríoch",
     "addInternalNetwork": "Cuir",
@@ -111,7 +111,7 @@
     "notAvailableShort": "Níl ar Fáil",
     "stackNotManagedByDockgeMsg": "Ní bhainistítear an staca seo ag Dockge.",
     "containerName": "Ainm na gCoimeádán",
-    "disableauth.message2": "Tá sé deartha do chúinsí <strong>ina bhfuil sé beartaithe agat tríú páirtí athbhreithniú a chur i bhfeidhm</strong> os comhair Dockge cosúil le Rochtain Cloudflare, Authelia nó múnlaí deimhniú eile.",
+    "disableauth.message2": "Tá sé deartha do chúinsí {scenarios} os comhair Dockge cosúil le Rochtain Cloudflare, Authelia nó múnlaí deimhniú eile.",
     "Settings": "Socruithe",
     "active": "gníomhach",
     "Lost connection to the socket server. Reconnecting...": "Ceangal caillte leis an bhfreastalaí soicéad. Ag athcheangal...",
@@ -129,5 +129,7 @@
     "New Container Name...": "Ainm Gabhdáin Nua...",
     "Network name...": "Ainm líonra...",
     "Select a network...": "Roghnaigh líonra...",
-    "NoNetworksAvailable": "Níl líonraí ar fáil. Ní mór duit líonraí inmheánacha a chur leis nó líonraí seachtracha a chumasú ar an taobh deas ar dtús."
+    "NoNetworksAvailable": "Níl líonraí ar fáil. Ní mór duit líonraí inmheánacha a chur leis nó líonraí seachtracha a chumasú ar an taobh deas ar dtús.",
+    "disableAuth": "fíordheimhniú a dhíchumasú",
+    "scenarios": "ina bhfuil sé beartaithe agat tríú páirtí athbhreithniú a chur i bhfeidhm"
 }

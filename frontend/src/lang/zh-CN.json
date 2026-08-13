@@ -46,8 +46,8 @@
     "deleteContainer": "删除",
     "addContainer": "添加容器",
     "addNetwork": "添加网络",
-    "disableauth.message1": "你确定要<strong>禁用身份验证</strong>吗?",
-    "disableauth.message2": "该选项设计用于某些场景，<strong>例如在Dockge之上接入第三方认证</strong>，比如Cloudflare Access、Authelia或其他认证机制，如果你不清楚这个选项的作用，不要禁用验证！",
+    "disableauth.message1": "你确定要{disableAuth}吗?",
+    "disableauth.message2": "该选项设计用于某些场景，{scenarios}，比如Cloudflare Access、Authelia或其他认证机制，如果你不清楚这个选项的作用，不要禁用验证！",
     "passwordNotMatchMsg": "两次输入的密码不一致。",
     "autoGet": "自动获取",
     "add": "添加",
@@ -129,5 +129,7 @@
     "Network name...": "网络名称...",
     "Select a network...": "选择网络...",
     "NoNetworksAvailable": "网络不可用.你需要在正确的方向先添加内部网络或者启用外部网络.",
-    "Downed": "已宕机"
+    "Downed": "已宕机",
+    "disableAuth": "禁用身份验证",
+    "scenarios": "例如在Dockge之上接入第三方认证"
 }

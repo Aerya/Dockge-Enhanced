@@ -46,8 +46,8 @@
     "deleteContainer": "Удалить",
     "addContainer": "Добавить контейнер",
     "addNetwork": "Добавить сеть",
-    "disableauth.message1": "Вы уверены что хотите <strong>отключить аутентификацию</strong>?",
-    "disableauth.message2": "Это предназначено для сценариев, <strong>когда Вы собираетесь использовать стороннюю аутентификацию</strong> перед Dockge, например Cloudflare Access, Authelia или другие механизмы аутентификации.",
+    "disableauth.message1": "Вы уверены что хотите {disableAuth}?",
+    "disableauth.message2": "Это предназначено для сценариев, {scenarios} перед Dockge, например Cloudflare Access, Authelia или другие механизмы аутентификации.",
     "passwordNotMatchMsg": "Повторный пароль не совпадает.",
     "autoGet": "Авто",
     "add": "Добавить",
@@ -113,5 +113,7 @@
     "dockgeAgent": "Агент Dockge | Агенты Dockge",
     "dockgeURL": "URL-адрес Dockge (например: http://127.0.0.1:5001)",
     "agentRemovedSuccessfully": "Агент успешно удален.",
-    "LongSyntaxNotSupported": "Длинный синтаксис здесь не поддерживается. Пожалуйста, используйте редактор YAML."
+    "LongSyntaxNotSupported": "Длинный синтаксис здесь не поддерживается. Пожалуйста, используйте редактор YAML.",
+    "disableAuth": "отключить аутентификацию",
+    "scenarios": "когда Вы собираетесь использовать стороннюю аутентификацию"
 }

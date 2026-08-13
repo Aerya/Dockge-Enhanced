@@ -96,8 +96,8 @@
     "deleteStackMsg": "Er du sikker på, at du vil slette denne stak?",
     "environmentVariable": "Miljøvariabel | miljøvariabler",
     "addContainer": "Tilføj Container",
-    "disableauth.message1": "Er du sikker på, at du vil <strong>deaktivere godkendelse</strong>?",
-    "disableauth.message2": "Det er designet til scenarier <strong>hvor du har til hensigt at implementere tredjepartsgodkendelse</strong> foran Dockge såsom Cloudflare Access, Authelia eller andre godkendelsesmekanismer.",
+    "disableauth.message1": "Er du sikker på, at du vil {disableAuth}?",
+    "disableauth.message2": "Det er designet til scenarier {scenarios} foran Dockge såsom Cloudflare Access, Authelia eller andre godkendelsesmekanismer.",
     "Show update if available": "Vis opdatering, hvis tilgængelig",
     "Lowercase only": "Kun små bogstaver",
     "newUpdate": "Ny Opdatering",
@@ -123,5 +123,7 @@
     "terminal": "Terminal",
     "Network name...": "Netværksnavn...",
     "Select a network...": "Vælg et netværk...",
-    "Deployed": "Udrullet"
+    "Deployed": "Udrullet",
+    "disableAuth": "deaktivere godkendelse",
+    "scenarios": "hvor du har til hensigt at implementere tredjepartsgodkendelse"
 }

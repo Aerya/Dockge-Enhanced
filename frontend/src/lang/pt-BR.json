@@ -46,8 +46,8 @@
     "deleteContainer": "Excluir",
     "addContainer": "Adicionar contêiner",
     "addNetwork": "Adicionar rede",
-    "disableauth.message1": "Tem certeza que deseja <strong>desativar a autenticação</strong>?",
-    "disableauth.message2": "Isso foi projetado para ambientes <strong>onde você pretende implementar autenticação de terceiros</strong> no Dockge, como Cloudflare Access, Authelia entre outros mecanismos de autenticação.",
+    "disableauth.message1": "Tem certeza que deseja {disableAuth}?",
+    "disableauth.message2": "Isso foi projetado para ambientes {scenarios} no Dockge, como Cloudflare Access, Authelia entre outros mecanismos de autenticação.",
     "passwordNotMatchMsg": "A senha repetida não corresponde.",
     "autoGet": "Obter automaticamente",
     "add": "Adicionar",
@@ -129,5 +129,7 @@
     "New Container Name...": "Nome do novo container...",
     "Network name...": "Nome da rede...",
     "Select a network...": "Selecione uma rede...",
-    "NoNetworksAvailable": "Nenhuma rede disponível. Você precisa adicionar redes internas ou habilitar redes externas no lado direito primeiro."
+    "NoNetworksAvailable": "Nenhuma rede disponível. Você precisa adicionar redes internas ou habilitar redes externas no lado direito primeiro.",
+    "disableAuth": "desativar a autenticação",
+    "scenarios": "onde você pretende implementar autenticação de terceiros"
 }

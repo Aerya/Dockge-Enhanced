@@ -46,8 +46,8 @@
     "deleteContainer": "Löschen",
     "addContainer": "Container hinzufügen",
     "addNetwork": "Netzwerk hinzufügen",
-    "disableauth.message1": "Bist du sicher, dass du die <strong>Anmeldung deaktivieren</strong> möchtest?",
-    "disableauth.message2": "Es ist für Szenarien vorgesehen, <strong>in denen du beabsichtigst, eine Drittanbieter-Authentifizierung</strong> vor Dockge zu implementieren, wie zum Beispiel Cloudflare Access, Authelia oder andere Authentifizierungsmechanismen.",
+    "disableauth.message1": "Bist du sicher, dass du die {disableAuth} möchtest?",
+    "disableauth.message2": "Es ist für Szenarien vorgesehen, {scenarios} vor Dockge zu implementieren, wie zum Beispiel Cloudflare Access, Authelia oder andere Authentifizierungsmechanismen.",
     "passwordNotMatchMsg": "Das wiederholte Passwort stimmt nicht überein.",
     "autoGet": "Automatisch laden",
     "add": "Hinzufügen",
@@ -129,5 +129,7 @@
     "terminal": "Terminal",
     "CurrentHostname": "(nicht gesetzt: verwende aktuellen Hostname)",
     "Downed": "Heruntergefahren",
-    "NoNetworksAvailable": "Keine Netzwerke verfügbar. Du musst zunächst interne Netzwerke hinzufügen oder externe Netzwerke auf der rechten Seite aktivieren."
+    "NoNetworksAvailable": "Keine Netzwerke verfügbar. Du musst zunächst interne Netzwerke hinzufügen oder externe Netzwerke auf der rechten Seite aktivieren.",
+    "disableAuth": "Anmeldung deaktivieren",
+    "scenarios": "in denen du beabsichtigst, eine Drittanbieter-Authentifizierung"
 }

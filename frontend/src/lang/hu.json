@@ -96,8 +96,8 @@
     "restartPolicyOnFailure": "Hibába Futáskor",
     "restartPolicy": "Újraindítási Elv",
     "dependsOn": "Konténer Függés | Konténer Függései",
-    "disableauth.message1": "Biztos hogy szeretné a <strong>hitelesítést kikapcsolni</strong>?",
-    "disableauth.message2": "Olyan esetekre ahol <strong>harmadfél általi hitelesítést szeretne alkalmazni</strong> a Dockge elött, mint például Cloudflare Access, Authelia vagy egyéb hitelesítő program.",
+    "disableauth.message1": "Biztos hogy szeretné a {disableAuth}?",
+    "disableauth.message2": "Olyan esetekre ahol {scenarios} a Dockge elött, mint például Cloudflare Access, Authelia vagy egyéb hitelesítő program.",
     "passwordNotMatchMsg": "Az ismételt jelszó nem eggyezik.",
     "autoGet": "Automatikus Megszerzés",
     "createExternalNetwork": "Készítés",
@@ -129,5 +129,7 @@
     "New Container Name...": "Új konténer név...",
     "Network name...": "Hálózat név...",
     "Select a network...": "Válasszon ki egy hálózatot...",
-    "NoNetworksAvailable": "Nincs elérhető hálózat. Először hozzá kell adnia belső hálózatokat, vagy engedélyeznie kell a külső hálózatokat a jobb oldalon."
+    "NoNetworksAvailable": "Nincs elérhető hálózat. Először hozzá kell adnia belső hálózatokat, vagy engedélyeznie kell a külső hálózatokat a jobb oldalon.",
+    "disableAuth": "hitelesítést kikapcsolni",
+    "scenarios": "harmadfél általi hitelesítést szeretne alkalmazni"
 }

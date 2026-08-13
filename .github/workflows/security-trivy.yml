@@ -31,10 +31,14 @@ jobs:
 
       - name: Analyser la révision courante
         run: |
-          docker run --rm -v "$PWD:/work" "$TRIVY_IMAGE" fs \
+          docker run --rm -v "$PWD:/work" -v "$PWD/.trivyignore.yaml:/trivyignore.yaml:ro" -v trivy-cache:/root/.cache/ "$TRIVY_IMAGE" fs \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --ignorefile /trivyignore.yaml \
             --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
             --ignore-unfixed --format json --output /work/trivy-head.json /work || true
-          docker run --rm -v "$PWD:/work" "$TRIVY_IMAGE" fs \
+          docker run --rm -v "$PWD:/work" -v "$PWD/.trivyignore.yaml:/trivyignore.yaml:ro" -v trivy-cache:/root/.cache/ "$TRIVY_IMAGE" fs \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --ignorefile /trivyignore.yaml \
             --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
             --ignore-unfixed --format sarif --output /work/trivy-head.sarif /work || true
 
@@ -44,7 +48,9 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           git worktree add /tmp/trivy-base "$BASE_SHA"
-          docker run --rm -v /tmp/trivy-base:/work "$TRIVY_IMAGE" fs \
+          docker run --rm -v /tmp/trivy-base:/work -v "$PWD/.trivyignore.yaml:/trivyignore.yaml:ro" -v trivy-cache:/root/.cache/ "$TRIVY_IMAGE" fs \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --ignorefile /trivyignore.yaml \
             --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
             --ignore-unfixed --format json --output /work/trivy-base.json /work || true
           cp /tmp/trivy-base/trivy-base.json trivy-base.json
@@ -53,6 +59,15 @@ jobs:
       - name: Refuser uniquement les nouvelles régressions corrigibles
         if: github.event_name == 'pull_request'
         run: python3 .github/scripts/trivy_compare.py trivy-base.json trivy-head.json
+
+      - name: Refuser le passif HIGH/CRITICAL sur main
+        if: github.event_name != 'pull_request'
+        run: |
+          docker run --rm -v "$PWD:/work" -v "$PWD/.trivyignore.yaml:/trivyignore.yaml:ro" -v trivy-cache:/root/.cache/ "$TRIVY_IMAGE" fs \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --ignorefile /trivyignore.yaml \
+            --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
+            --ignore-unfixed --exit-code 1 /work
 
       - name: Publier le rapport SARIF
         if: always() && hashFiles('trivy-head.sarif') != ''

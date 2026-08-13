@@ -235,7 +235,9 @@
                         <input v-model="settings.includeEnvFiles" type="checkbox"
                             class="form-check-input" id="includeEnv" />
                         <label class="form-check-label" for="includeEnv">
-                            <span v-html="$t('watcher.backup.includeEnv')"></span>
+                            <i18n-t keypath="watcher.backup.includeEnv" tag="span">
+                                <template #env><code>.env</code></template>
+                            </i18n-t>
                             <small class="form-text">{{ $t('watcher.backup.includeEnvHint') }}</small>
                         </label>
                     </div>

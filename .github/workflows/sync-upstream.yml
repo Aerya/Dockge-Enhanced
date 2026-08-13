@@ -1,173 +1,144 @@
-name: 🔄 Sync Upstream Dockge
+name: Synchronisation sécurisée de Dockge upstream
 
 on:
   schedule:
-    # Vérifie chaque jour à 6h UTC si une nouvelle release stable existe
     - cron: "0 6 * * *"
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag upstream à merger (ex: v1.5.1). Vide = dernier tag stable."
-        required: false
 
 permissions:
+  actions: write
   contents: write
+  issues: write
   pull-requests: write
+  security-events: write
+
+concurrency:
+  group: sync-upstream-dockge
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REF: upstream/master
+  SYNC_BRANCH: sync/upstream-master
+  TRIVY_IMAGE: aquasec/trivy:0.72.0
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - name: 📥 Checkout Enhanced
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🔗 Ajouter upstream remote
+      - name: Récupérer la branche active de Dockge
         run: |
-          git remote add upstream https://github.com/louislam/dockge.git || true
-          git fetch upstream --tags
+          git remote add upstream https://github.com/louislam/dockge.git
+          git fetch upstream master --tags
 
-      - name: 🏷️ Déterminer le tag cible
-        id: target
+      - name: Scanner les sources upstream récupérées
         run: |
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
-            TAG="${{ github.event.inputs.tag }}"
-          else
-            # Dernier tag stable (pas de -beta, -rc, etc.)
-            TAG=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
-          fi
-          if [ -z "$TAG" ]; then
-            echo "⚠️ Aucun tag upstream trouvé — rien à synchroniser."
-            echo "tag=" >> $GITHUB_OUTPUT
-            echo "found=false" >> $GITHUB_OUTPUT
-          else
-            echo "tag=$TAG" >> $GITHUB_OUTPUT
-            echo "found=true" >> $GITHUB_OUTPUT
-            echo "🎯 Tag cible : $TAG"
-          fi
+          git worktree add /tmp/dockge-upstream "$UPSTREAM_REF"
+          docker run --rm -v /tmp/dockge-upstream:/work -v trivy-cache:/root/.cache/ "$TRIVY_IMAGE" fs \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
+            --ignore-unfixed --format json --output /work/trivy-upstream.json /work
+          docker run --rm -v /tmp/dockge-upstream:/work -v trivy-cache:/root/.cache/ "$TRIVY_IMAGE" fs \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
+            --ignore-unfixed --format sarif --output /work/trivy-upstream.sarif /work
+          cp /tmp/dockge-upstream/trivy-upstream.* .
+          git worktree remove /tmp/dockge-upstream --force
 
-      - name: 📌 Vérifier si déjà synchronisé
-        id: check
-        if: steps.target.outputs.found == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publier le scan upstream dans GitHub Security
+        if: always() && hashFiles('trivy-upstream.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-upstream.sarif
+          category: dockge-upstream-master
+
+      - name: Conserver le rapport upstream
+        if: always() && hashFiles('trivy-upstream.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-dockge-upstream-${{ github.sha }}
+          path: trivy-upstream.json
+          retention-days: 30
+
+      - name: Déterminer si upstream est déjà intégré
+        id: changes
         run: |
-          TAG="${{ steps.target.outputs.tag }}"
-          BRANCH="sync/upstream-${TAG}"
-          if git merge-base --is-ancestor "$TAG" origin/main; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "✅ Déjà synchronisé avec $TAG"
-          elif git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "⏳ Une synchronisation de $TAG est déjà en attente"
+          if git merge-base --is-ancestor "$UPSTREAM_REF" origin/main; then
+            echo "pending=false" >> "$GITHUB_OUTPUT"
           else
-            echo "skip=false" >> $GITHUB_OUTPUT
-            echo "🆕 Nouvelle version détectée : $TAG"
+            echo "pending=true" >> "$GITHUB_OUTPUT"
+            echo "sha=$(git rev-parse "$UPSTREAM_REF")" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 🔀 Merge upstream
-        if: steps.target.outputs.found == 'true' && steps.check.outputs.skip == 'false'
+      - name: Préparer le merge sans résolution destructive
+        if: steps.changes.outputs.pending == 'true'
         id: merge
         run: |
-          TAG="${{ steps.target.outputs.tag }}"
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Crée une branche pour le merge
-          BRANCH="sync/upstream-${TAG}"
-          git checkout -b "$BRANCH"
-
-          # Tente le merge
-          if git merge "$TAG" --no-edit -m "🔄 Sync upstream Dockge $TAG"; then
-            echo "conflict=false" >> $GITHUB_OUTPUT
-            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
-            echo "✅ Merge réussi sans conflit"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$SYNC_BRANCH" origin/main
+          set +e
+          git merge --no-ff "$UPSTREAM_REF" -m "Synchroniser Dockge upstream ${{ steps.changes.outputs.sha }}"
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "conflict=false" >> "$GITHUB_OUTPUT"
           else
-            echo "conflict=true" >> $GITHUB_OUTPUT
-            # En cas de conflit, on garde NOS versions et on exige une revue explicite
-            echo "⚠️ Conflits détectés — résolution automatique (ours pour nos fichiers)"
-
-            AUTH_SENSITIVE_FILES=(
-              "backend/auth.ts"
-              "backend/dockge-server.ts"
-              "backend/socket-handlers/main-socket-handler.ts"
-              "frontend/src/mixins/socket.ts"
-            )
-            AUTH_CONFLICTS=()
-            for f in "${AUTH_SENSITIVE_FILES[@]}"; do
-              if git diff --name-only --diff-filter=U | grep -q "^${f}$"; then
-                AUTH_CONFLICTS+=("$f")
-              fi
-            done
-            AUTH_CONFLICTS_CSV=$(IFS=,; echo "${AUTH_CONFLICTS[*]}")
-            echo "auth_conflicts=$AUTH_CONFLICTS_CSV" >> $GITHUB_OUTPUT
-
-            ENHANCED_FILES=(
-              "backend/dockge-server.ts"
-              "frontend/src/layouts/Layout.vue"
-              "frontend/src/router.ts"
-              "frontend/src/icon.ts"
-              "frontend/src/components/StackListItem.vue"
-              "frontend/src/components/settings/About.vue"
-              "package.json"
-              "docker/Dockerfile.local"
-              ".dockerignore"
-              "README.md"
-            )
-
-            for f in "${ENHANCED_FILES[@]}"; do
-              if git diff --name-only --diff-filter=U | grep -q "^${f}$"; then
-                echo "  → Conflit sur $f : on garde notre version Enhanced"
-                git checkout --ours "$f"
-                git add "$f"
-              fi
-            done
-
-            # Si d'autres conflits restent, les résoudre aussi en faveur d'ours
-            REMAINING=$(git diff --name-only --diff-filter=U || true)
-            if [ -n "$REMAINING" ]; then
-              echo "  → Conflits restants résolus avec ours :"
-              echo "$REMAINING"
-              git checkout --ours $REMAINING
-              git add $REMAINING
-            fi
-
-            git commit --no-edit -m "🔄 Sync upstream Dockge $TAG (conflits résolus auto)"
-            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+            git diff --name-only --diff-filter=U > /tmp/upstream-conflicts.txt
+            git merge --abort
+            echo "conflict=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 📤 Push et créer PR
-        if: steps.target.outputs.found == 'true' && steps.check.outputs.skip == 'false'
+      - name: Signaler automatiquement un conflit upstream
+        if: steps.merge.outputs.conflict == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_SHA: ${{ steps.changes.outputs.sha }}
+        run: |
+          title="Synchronisation Dockge upstream bloquée"
+          body=$(printf "La synchronisation automatique vers \`%s\` a détecté des conflits et a été arrêtée sans choisir arbitrairement une version.\n\nFichiers concernés :\n\`\`\`\n%s\n\`\`\`\n\nAucun changement n'a été fusionné ni publié." "$UPSTREAM_SHA" "$(cat /tmp/upstream-conflicts.txt)")
+          issue=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
+          exit 1
+
+      - name: Publier ou actualiser la PR upstream
+        if: steps.changes.outputs.pending == 'true' && steps.merge.outputs.conflict == 'false'
+        id: pull-request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_SHA: ${{ steps.changes.outputs.sha }}
+        run: |
+          git push --force-with-lease origin "$SYNC_BRANCH"
+          url=$(gh pr list --head "$SYNC_BRANCH" --state open --json url --jq '.[0].url // empty')
+          if [ -z "$url" ]; then
+            url=$(gh pr create --base main --head "$SYNC_BRANCH" \
+              --title "Synchroniser Dockge upstream" \
+              --body "Cette PR intègre automatiquement Dockge upstream jusqu’à \`$UPSTREAM_SHA\`. Elle ne sera fusionnée qu’après les contrôles TypeScript, fonctionnels, Docker et de sécurité.")
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Déclencher les contrôles protégés
+        if: steps.pull-request.outputs.url != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ steps.target.outputs.tag }}"
-          BRANCH="${{ steps.merge.outputs.branch }}"
-          CONFLICT="${{ steps.merge.outputs.conflict }}"
-          AUTH_CONFLICTS="${{ steps.merge.outputs.auth_conflicts }}"
+          gh workflow run ci.yml --ref "$SYNC_BRANCH"
+          gh workflow run docker-pr.yml --ref "$SYNC_BRANCH"
+          gh workflow run security-trivy.yml --ref "$SYNC_BRANCH"
+          gh workflow run codeql.yml --ref "$SYNC_BRANCH"
 
-          git push origin "$BRANCH"
-
-          BODY="## 🔄 Sync avec Dockge upstream \`$TAG\`
-
-          Ce merge a été créé automatiquement.
-
-          **Conflits ?** $([ "$CONFLICT" = "true" ] && echo "⚠️ Oui — résolus automatiquement en gardant nos modifications Enhanced. **Vérifie que tout est correct.**" || echo "✅ Non — merge propre.")
-
-          $([ -n "$AUTH_CONFLICTS" ] && echo "**⚠️ Conflits d’authentification à examiner manuellement :** \`$AUTH_CONFLICTS\`" || true)
-
-          ### Checklist avant merge
-          - [ ] Vérifier que le build Docker fonctionne
-          - [ ] Vérifier les changements dans \`package.json\` (nouvelles dépendances upstream ?)
-          - [ ] Tester l'interface Surveillance
-          - [ ] Si l’authentification est touchée, comparer manuellement les versions upstream et Enhanced
-          "
-
-          gh pr create \
-            --base main \
-            --head "$BRANCH" \
-            --title "🔄 Sync upstream Dockge $TAG" \
-            --body "$BODY" \
-            --label "upstream-sync"
+      - name: Activer la fusion après tous les contrôles
+        if: steps.pull-request.outputs.url != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ steps.pull-request.outputs.url }}
+        run: gh pr merge --auto --merge --delete-branch "$PR_URL"

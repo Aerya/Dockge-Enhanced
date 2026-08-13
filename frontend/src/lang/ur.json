@@ -46,8 +46,8 @@
     "deleteContainer": "حذف کریں",
     "addContainer": "کنٹینر شامل کریں",
     "addNetwork": "نیٹ ورک شامل کریں",
-    "disableauth.message1": "کیا آپ واقعی <strong>تصدیق کو غیر فعال</strong> کرنا چاہتے ہیں؟",
-    "disableauth.message2": "یہ ان منظرناموں کے لیے ڈیزائن کیا گیا ہے جہاں <strong>آپ کا ارادہ ہے تیسرے فریق کی توثیق کو لاگو کرنے کا</strong> Dockge کے سامنے جیسے Cloudflare Access، Authelia یا دیگر تصدیقی طریقہ کار۔",
+    "disableauth.message1": "کیا آپ واقعی {disableAuth} کرنا چاہتے ہیں؟",
+    "disableauth.message2": "یہ ان منظرناموں کے لیے ڈیزائن کیا گیا ہے جہاں {scenarios} Dockge کے سامنے جیسے Cloudflare Access، Authelia یا دیگر تصدیقی طریقہ کار۔",
     "passwordNotMatchMsg": "دہرانے والا پاس ورڈ مماثل نہیں ہے۔",
     "autoGet": "آٹو حاصل کریں",
     "add": "شامل کریں",
@@ -113,5 +113,7 @@
     "agentRemovedSuccessfully": "ایجنٹ کو کامیابی سے ہٹا دیا گیا۔",
     "removeAgent": "ایجنٹ کو ہٹا دیں",
     "removeAgentMsg": "کیا آپ واقعی اس ایجنٹ کو ہٹانا چاہتے ہیں؟",
-    "LongSyntaxNotSupported": "لمبا نحو یہاں تعاون یافتہ نہیں ہے۔ براہ کرم YAML ایڈیٹر استعمال کریں۔"
+    "LongSyntaxNotSupported": "لمبا نحو یہاں تعاون یافتہ نہیں ہے۔ براہ کرم YAML ایڈیٹر استعمال کریں۔",
+    "disableAuth": "تصدیق کو غیر فعال",
+    "scenarios": "آپ کا ارادہ ہے تیسرے فریق کی توثیق کو لاگو کرنے کا"
 }

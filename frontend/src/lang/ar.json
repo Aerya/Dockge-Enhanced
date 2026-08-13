@@ -47,8 +47,8 @@
     "deleteContainer": "حذف",
     "addContainer": "أضافة حاوية",
     "addNetwork": "أضافة شبكة",
-    "disableauth.message1": "هل أنت متأكد أنك تريد <strong>تعطيل المصادقة</strong>؟",
-    "disableauth.message2": "إنه مصمم للحالات <strong>التي تنوي فيها مصادقة الطرف الثالث</strong> أمام Dockge مثل Cloudflare Access, Authelia أو أي من آليات المصادقة الأخرى.",
+    "disableauth.message1": "هل أنت متأكد أنك تريد {disableAuth}؟",
+    "disableauth.message2": "إنه مصمم للحالات {scenarios} أمام Dockge مثل Cloudflare Access, Authelia أو أي من آليات المصادقة الأخرى.",
     "passwordNotMatchMsg": "كلمة المرور المكررة غير متطابقة.",
     "autoGet": "الجلب التلقائي",
     "add": "إضافة",
@@ -110,5 +110,7 @@
     "dockgeAgent": "سيرفر Dockge",
     "removeAgent": "حذف الوكيل",
     "removeAgentMsg": "هل انت متأكد من حذف هذا الوكيل؟",
-    "LongSyntaxNotSupported": "كتابة النصوص المدعومة غير المدعومة هنا. الرجاء استخدام محرر YAML."
+    "LongSyntaxNotSupported": "كتابة النصوص المدعومة غير المدعومة هنا. الرجاء استخدام محرر YAML.",
+    "disableAuth": "تعطيل المصادقة",
+    "scenarios": "التي تنوي فيها مصادقة الطرف الثالث"
 }

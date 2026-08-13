@@ -1,0 +1,24 @@
+vulnerabilities:
+  # Restic 0.19.1 est la dernière release disponible. Ces exceptions expirent
+  # rapidement afin que le pipeline les réévalue au lieu de les oublier.
+  - id: CVE-2026-46600
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Corrigé upstream après la dernière release Restic disponible.
+  - id: CVE-2026-56852
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Corrigé upstream après la dernière release Restic disponible.
+  - id: GHSA-hrxh-6v49-42gf
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Corrigé upstream après la dernière release Restic disponible.
+  - id: CVE-2026-39822
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Corrigé upstream après la dernière release Restic disponible.
+
+misconfigurations:
+  - id: AVD-DS-0002
+    paths: ["Dockerfile"]
+    statement: Le GID du socket Docker varie selon l’hôte; un USER statique casserait certains déploiements.

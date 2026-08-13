@@ -47,8 +47,8 @@
     "deleteContainer": "Elimina",
     "addContainer": "Aggiungi container",
     "addNetwork": "Aggiungi rete",
-    "disableauth.message1": "Sei sicuro di voler <strong>disabilitare l'autenticazione</strong>?",
-    "disableauth.message2": "È stato progettato per scenari <strong>in cui intendi implementare un'autenticazione di terze parti</strong> davanti a Dockge come ad esempio Cloudflare Access, Authelia o altri meccanismi di autenticazione.",
+    "disableauth.message1": "Sei sicuro di voler {disableAuth}?",
+    "disableauth.message2": "È stato progettato per scenari {scenarios} davanti a Dockge come ad esempio Cloudflare Access, Authelia o altri meccanismi di autenticazione.",
     "passwordNotMatchMsg": "La password ripetuta non corrisponde.",
     "autoGet": "Ottieni automaticamente",
     "add": "Aggiungi",
@@ -113,5 +113,7 @@
     "removeAgentMsg": "Sei sicuro di voler rimuovere questo agente?",
     "addAgent": "Aggungi Agente",
     "agentAddedSuccessfully": "Agente aggiunto correttamente.",
-    "LongSyntaxNotSupported": "La sintassi lunga non è supportata qui. Utilizzare l'editor YAML."
+    "LongSyntaxNotSupported": "La sintassi lunga non è supportata qui. Utilizzare l'editor YAML.",
+    "disableAuth": "disabilitare l'autenticazione",
+    "scenarios": "in cui intendi implementare un'autenticazione di terze parti"
 }

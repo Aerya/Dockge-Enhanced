@@ -92,8 +92,8 @@
     "addFirstStackMsg": "Maak je eerste stack!",
     "deleteStackMsg": "Zeker dat je deze stack wilt verwijderen?",
     "dependsOn": "Container afhankelijkheid | afhankelijkheden",
-    "disableauth.message1": "Zeker dat u <strong>aanmelden</strong> wilt uitschakelen?",
-    "disableauth.message2": "Dit is enkel bedoeld om te gebruiken wanneer je<strong> third-party autorisatie wilt gebruiken voor Dockge</strong>, zoals Cloudflare Acces, Authelia, ...",
+    "disableauth.message1": "Zeker dat u {disableAuth} wilt uitschakelen?",
+    "disableauth.message2": "Dit is enkel bedoeld om te gebruiken wanneer je{scenarios}, zoals Cloudflare Acces, Authelia, ...",
     "passwordNotMatchMsg": "De wachtwoorden komen niet overeen.",
     "Current User": "Huidige gebruiker",
     "Please use this option carefully!": "Wees voorzichtig met deze optie!",
@@ -113,5 +113,7 @@
     "agentRemovedSuccessfully": "Agent verwijderd.",
     "removeAgent": "Verwijder agent",
     "removeAgentMsg": "Weet je zeker dat je deze agent wilt verwijderen?",
-    "LongSyntaxNotSupported": "Lange syntax wordt hier niet ondersteund. Gebruik de YAML editor."
+    "LongSyntaxNotSupported": "Lange syntax wordt hier niet ondersteund. Gebruik de YAML editor.",
+    "disableAuth": "aanmelden",
+    "scenarios": " third-party autorisatie wilt gebruiken voor Dockge"
 }

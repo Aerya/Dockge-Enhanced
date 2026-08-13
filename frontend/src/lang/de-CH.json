@@ -46,8 +46,8 @@
     "deleteContainer": "Lösche",
     "addContainer": "Container hinzuefüege",
     "addNetwork": "Netzwerk hinzuefüege",
-    "disableauth.message1": "Bisch der sicher, dass du d'<strong>Ameldung deaktiviere</strong> wotsch?",
-    "disableauth.message2": "Es isch für Szenarien vorgseh, <strong>in dene du beabsichtigsch, e Drittabüter-Authentifizierig</strong> vor Dockge z'implementiere, wie zum Bispiel Cloudflare Access, Authelia oder anderi Authentifizierigsmechanisme.",
+    "disableauth.message1": "Bisch der sicher, dass du d'{disableAuth} wotsch?",
+    "disableauth.message2": "Es isch für Szenarien vorgseh, {scenarios} vor Dockge z'implementiere, wie zum Bispiel Cloudflare Access, Authelia oder anderi Authentifizierigsmechanisme.",
     "passwordNotMatchMsg": "s'wiederholte Passwort stimmt nöd überein.",
     "autoGet": "Automatisch lade",
     "add": "Hinzuefüege",
@@ -129,5 +129,7 @@
     "terminal": "Terminal",
     "CurrentHostname": "(nöd gsetzt: verwendet aktuelli Hostname)",
     "Downed": "Abegfahre",
-    "NoNetworksAvailable": "Kei Netzwerk verfüegbar. Du muesch zersch interni Netzwerk hinzuefüege oder externi Netzwerk uf de rechte Siite aktiviere."
+    "NoNetworksAvailable": "Kei Netzwerk verfüegbar. Du muesch zersch interni Netzwerk hinzuefüege oder externi Netzwerk uf de rechte Siite aktiviere.",
+    "disableAuth": "Ameldung deaktiviere",
+    "scenarios": "in dene du beabsichtigsch, e Drittabüter-Authentifizierig"
 }

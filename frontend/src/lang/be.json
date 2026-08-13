@@ -50,10 +50,10 @@
     "deleteContainer": "Выдаліць",
     "addContainer": "Дадаць кантэйнер",
     "addNetwork": "Дадаць сетку",
-    "disableauth.message1": "Вы ўпэўнены, што хочаце <strong>адключыць аўтэнтыфікацыю</strong>?",
+    "disableauth.message1": "Вы ўпэўнены, што хочаце {disableAuth}?",
     "Show update if available": "Паказаць абнаўленне, калі яно даступна",
     "Also check beta release": "Атрымліваць бэта-версіі",
-    "disableauth.message2": "Гэта прызначана для сцэнарыяў, <strong>калі вы збіраецеся выкарыстоўваць староннюю аўтэнтыфікацыю</strong> перад Dockge, напрыклад, Cloudflare Access, Authelia або іншыя механізмы аўтэнтыфікацыі.",
+    "disableauth.message2": "Гэта прызначана для сцэнарыяў, {scenarios} перад Dockge, напрыклад, Cloudflare Access, Authelia або іншыя механізмы аўтэнтыфікацыі.",
     "passwordNotMatchMsg": "Паўторны пароль не супадае.",
     "autoGet": "Аўта",
     "add": "Дадаць",
@@ -113,5 +113,7 @@
     "addAgent": "Дадаць Агента",
     "agentAddedSuccessfully": "Агент паспяхова дададзены.",
     "agentRemovedSuccessfully": "Агент паспяхова выдалены.",
-    "removeAgent": "Выдаліць агента"
+    "removeAgent": "Выдаліць агента",
+    "disableAuth": "адключыць аўтэнтыфікацыю",
+    "scenarios": "калі вы збіраецеся выкарыстоўваць староннюю аўтэнтыфікацыю"
 }

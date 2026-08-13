@@ -106,12 +106,14 @@
     "deleteStackMsg": "Estàs segur que vols eliminar aquesta pila?",
     "restartPolicyUnlessStopped": "A menys que s'aturi",
     "dependsOn": "Dependència del contenidor | Dependències del contenidor",
-    "disableauth.message1": "Esteu segur que voleu <strong>desactivar l'autenticació</strong>?",
-    "disableauth.message2": "Està dissenyat per a escenaris <strong>on voleu implementar l'autenticació de tercers</strong> per davant de Dockge, com ara Cloudflare Access, Authelia o altres mecanismes d'autenticació.",
+    "disableauth.message1": "Esteu segur que voleu {disableAuth}?",
+    "disableauth.message2": "Està dissenyat per a escenaris {scenarios} per davant de Dockge, com ara Cloudflare Access, Authelia o altres mecanismes d'autenticació.",
     "Repeat New Password": "Repetiu la nova contrasenya",
     "Please use this option carefully!": "Si us plau, utilitzeu aquesta opció amb cura!",
     "Enable Auth": "Habilitar autenticació",
     "I understand, please disable": "Ho entenc, si us plau deshabilita",
     "Password": "Contrasenya",
-    "LongSyntaxNotSupported": "La sintaxi llarga no està suportada aquí. Si us plau, fes servir l'editor YAML."
+    "LongSyntaxNotSupported": "La sintaxi llarga no està suportada aquí. Si us plau, fes servir l'editor YAML.",
+    "disableAuth": "desactivar l'autenticació",
+    "scenarios": "on voleu implementar l'autenticació de tercers"
 }

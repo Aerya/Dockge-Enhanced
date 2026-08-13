@@ -46,8 +46,8 @@
     "deleteContainer": "Usuń kontener",
     "addContainer": "Dodaj kontener",
     "addNetwork": "Dodaj sieć",
-    "disableauth.message1": "Czy na pewno chcesz <strong>wyłączyć uwierzytelnianie</strong>?",
-    "disableauth.message2": "Przeznaczone dla sytuacji, <strong>w których zamierzasz zaimplementować zewnętrzne mechanizmy uwierzytelniania</strong> przed Dockge, takie jak Cloudflare Access, Authelia lub inne.",
+    "disableauth.message1": "Czy na pewno chcesz {disableAuth}?",
+    "disableauth.message2": "Przeznaczone dla sytuacji, {scenarios} przed Dockge, takie jak Cloudflare Access, Authelia lub inne.",
     "passwordNotMatchMsg": "Hasła się nie zgadzają.",
     "autoGet": "Automatyczne pobieranie",
     "add": "Dodaj",
@@ -129,5 +129,7 @@
     "Network name...": "Nazwa sieci...",
     "Select a network...": "Wybierz sieć...",
     "NoNetworksAvailable": "Brak dostępnych sieci. Musisz najpierw dodać sieć wewnętrzną lub włączyć sieci zewnętrzne po prawej stronie.",
-    "CurrentHostname": "(Odznacze: Podążaj za aktualnym hostem)"
+    "CurrentHostname": "(Odznacze: Podążaj za aktualnym hostem)",
+    "disableAuth": "wyłączyć uwierzytelnianie",
+    "scenarios": "w których zamierzasz zaimplementować zewnętrzne mechanizmy uwierzytelniania"
 }

@@ -46,8 +46,8 @@
     "deleteContainer": "Видалити",
     "addContainer": "Додати Контейнер",
     "addNetwork": "Додати Мережу",
-    "disableauth.message1": "Ви впевнені що хочете <strong>вимкнути авторизацію</strong>?",
-    "disableauth.message2": "Це призначено для сценаріїв, <strong>де ви збираєтесь використати сторонню авторизацію</strong> перед Dockge, наприклад Cloudflare Access, Authelia чи інші.",
+    "disableauth.message1": "Ви впевнені що хочете {disableAuth}?",
+    "disableauth.message2": "Це призначено для сценаріїв, {scenarios} перед Dockge, наприклад Cloudflare Access, Authelia чи інші.",
     "passwordNotMatchMsg": "Повторення паролю не збігається.",
     "autoGet": "Отримати",
     "add": "Додати",
@@ -129,5 +129,7 @@
     "Lost connection to the socket server. Reconnecting...": "Втрачено зв'язок з сервером сокетів. Повторне підключення...",
     "Restarted": "Перезапущено",
     "CurrentHostname": "(Не встановлено: використовувати поточну назву хосту)",
-    "NoNetworksAvailable": "Немає доступних мереж. Спочатку потрібно додати внутрішні мережі або увімкнути зовнішні мережі в правій частині."
+    "NoNetworksAvailable": "Немає доступних мереж. Спочатку потрібно додати внутрішні мережі або увімкнути зовнішні мережі в правій частині.",
+    "disableAuth": "вимкнути авторизацію",
+    "scenarios": "де ви збираєтесь використати сторонню авторизацію"
 }

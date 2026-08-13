@@ -46,8 +46,8 @@
     "deleteContainer": "Sil",
     "addContainer": "Konteyner Ekle",
     "addNetwork": "Ağ Ekle",
-    "disableauth.message1": "<strong>Kimlik doğrulamayı devre dışı bırakmak</strong> istediğinizden emin misiniz?",
-    "disableauth.message2": "Cloudflare Access, Authelia veya diğer kimlik doğrulama mekanizmaları Dockge önünde <strong>üçüncü taraf kimlik doğrulaması uygulamak</strong> istediğiniz senaryolar için tasarlanmıştır.",
+    "disableauth.message1": "{disableAuth} istediğinizden emin misiniz?",
+    "disableauth.message2": "Cloudflare Access, Authelia veya diğer kimlik doğrulama mekanizmaları Dockge önünde {scenarios} istediğiniz senaryolar için tasarlanmıştır.",
     "passwordNotMatchMsg": "Tekrarlanan parola eşleşmiyor.",
     "autoGet": "Otomatik Al",
     "add": "Ekle",
@@ -129,5 +129,7 @@
     "CurrentHostname": "(Ayarlanmamış: Mevcut hostname'i takip et)",
     "New Container Name...": "Yeni Konteyner Adı...",
     "Network name...": "Ağ adı...",
-    "Select a network...": "Bir ağ seçin..."
+    "Select a network...": "Bir ağ seçin...",
+    "disableAuth": "Kimlik doğrulamayı devre dışı bırakmak",
+    "scenarios": "üçüncü taraf kimlik doğrulaması uygulamak"
 }
