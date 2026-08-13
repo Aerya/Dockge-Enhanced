@@ -1027,7 +1027,12 @@ export class BackupManager {
                 destResult.error = e instanceof Error ? e.message : String(e);
                 allSuccess = false;
                 if (!result.error) result.error = destResult.error;
-                console.error(`[BackupManager] ❌ "${dest.label}" échoué en ${formatDuration(Date.now() - destStart)}:`, destResult.error);
+                console.error(
+                    "[BackupManager] Échec de destination:",
+                    dest.label,
+                    `après ${formatDuration(Date.now() - destStart)}:`,
+                    destResult.error
+                );
             } finally {
                 this.runningDests.delete(dest.label);
             }
