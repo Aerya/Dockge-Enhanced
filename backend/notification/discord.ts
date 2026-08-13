@@ -5,6 +5,24 @@
 
 import axios from "axios";
 
+const DISCORD_API_URL = "https://discord.com";
+const discordApi = axios.create({ baseURL: DISCORD_API_URL });
+
+export function discordWebhookPath(value: string): string | null {
+    try {
+        const url = new URL(value);
+        if (url.protocol !== "https:" || url.hostname !== "discord.com" || url.port || url.username || url.password) {
+            return null;
+        }
+        if (!/^\/api\/webhooks\/[0-9]+\/[A-Za-z0-9._-]+$/.test(url.pathname)) {
+            return null;
+        }
+        return `${url.pathname}${url.search}`;
+    } catch {
+        return null;
+    }
+}
+
 interface EmbedField {
     name: string;
     value: string;
@@ -33,13 +51,9 @@ export class DiscordNotifier {
     }
 
     private async sendEmbedToUrl(url: string, options: EmbedOptions): Promise<boolean> {
-        // Validation basique : rejette silencieusement les URLs manifestement invalides
-        try { new URL(url); } catch {
-            console.error(`[DiscordNotifier] URL invalide ignorée : ${url.slice(0, 80)}…`);
-            return false;
-        }
-        if (!url.startsWith("https://discord.com/api/webhooks/")) {
-            console.error(`[DiscordNotifier] URL non-Discord ignorée : ${url.slice(0, 80)}…`);
+        const webhookPath = discordWebhookPath(url);
+        if (!webhookPath) {
+            console.error("[DiscordNotifier] URL non-Discord ou invalide ignorée");
             return false;
         }
 
@@ -65,7 +79,7 @@ export class DiscordNotifier {
         const MAX_RETRIES = 3;
         for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
             try {
-                await axios.post(url, payload, {
+                await discordApi.post(webhookPath, payload, {
                     headers: { "Content-Type": "application/json" },
                     timeout: 10000,
                 });
@@ -87,14 +101,14 @@ export class DiscordNotifier {
                         await new Promise(r => setTimeout(r, delay));
                         continue;
                     }
-                    console.error(`[DiscordNotifier] Erreur HTTP ${status} (${url}):`, e.response?.data);
+                    console.error("[DiscordNotifier] Erreur HTTP:", status, e.response?.data);
                 } else {
                     // Erreur réseau — backoff et retry
                     if (attempt < MAX_RETRIES) {
                         await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
                         continue;
                     }
-                    console.error(`[DiscordNotifier] Erreur réseau (${url}):`, e);
+                    console.error("[DiscordNotifier] Erreur réseau:", e);
                 }
                 return false;
             }
@@ -118,10 +132,15 @@ export class DiscordNotifier {
     /** Envoie un message texte simple sur tous les webhooks */
     async sendMessage(content: string): Promise<void> {
         if (this.urls.length === 0) return;
-        await Promise.all(this.urls.map(url =>
-            axios.post(url, { username: "Dockge Enhanced", content }, { timeout: 10000 })
-                .catch(e => console.error(`[DiscordNotifier] Erreur envoi message (${url}):`, e))
-        ));
+        await Promise.all(this.urls.map(async url => {
+            const webhookPath = discordWebhookPath(url);
+            if (!webhookPath) {
+                console.error("[DiscordNotifier] URL non-Discord ou invalide ignorée");
+                return;
+            }
+            await discordApi.post(webhookPath, { username: "Dockge Enhanced", content }, { timeout: 10000 })
+                .catch(e => console.error("[DiscordNotifier] Erreur envoi message:", e));
+        }));
     }
 
     /** Teste le premier webhook de la liste */
