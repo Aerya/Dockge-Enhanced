@@ -27,8 +27,19 @@ export function buildAppriseEndpoint(serverUrl: string): string {
     if (![ "http:", "https:" ].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) {
         throw new Error("URL du serveur Apprise invalide");
     }
-    parsed.pathname = `${parsed.pathname.replace(/\/+$/, "")}/notify/`;
-    return parsed.toString();
+    const host = parsed.host.toLowerCase();
+    const dnsOrIpv4 = /^(?:localhost|[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::[0-9]{1,5})?$/;
+    const ipv6 = /^\[[0-9a-f:]+\](?::[0-9]{1,5})?$/;
+    if ((!dnsOrIpv4.test(host) && !ipv6.test(host)) || host.includes("..")) {
+        throw new Error("URL du serveur Apprise invalide");
+    }
+    const safeProtocol = parsed.protocol === "https:" ? "https:" : "http:";
+    const basePath = parsed.pathname.split("/").filter(Boolean).map(segment => {
+        const decoded = decodeURIComponent(segment);
+        if (decoded === "." || decoded === ".." || decoded.includes("/")) throw new Error("URL du serveur Apprise invalide");
+        return encodeURIComponent(decoded);
+    });
+    return `${safeProtocol}//${host}/${[ ...basePath, "notify" ].join("/")}/`;
 }
 
 export class AppriseNotifier {
