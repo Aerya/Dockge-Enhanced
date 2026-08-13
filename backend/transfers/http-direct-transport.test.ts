@@ -36,6 +36,10 @@ test("transfers an archive over authenticated HTTP with Range and SHA-256 verifi
             size: payload.length });
 
         const descriptor = JSON.parse(Buffer.from(snapshotId.slice("http-snapshot:".length), "base64url").toString("utf8")) as { id: string; token: string };
+        for (const invalidId of [ "not-a-uuid", `${descriptor.id}-suffix`, "..%2F..%2Fetc%2Fpasswd" ]) {
+            const invalidResponse: Response = await fetch(`http://127.0.0.1:${address.port}/api/transfer/http/${invalidId}`, { headers: { Authorization: `Bearer ${descriptor.token}` } });
+            assert.equal(invalidResponse.status, 404);
+        }
         const ranged = await fetch(`http://127.0.0.1:${address.port}/api/transfer/http/${descriptor.id}`, { headers: { Authorization: `Bearer ${descriptor.token}`,
             Range: "bytes=100-" } });
         assert.equal(ranged.status, 206);
