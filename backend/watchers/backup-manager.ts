@@ -432,6 +432,29 @@ export function buildComposeCommandArgs(composeFile: string, args: string[]): st
     return [ "compose", "-f", path.basename(composeFile), ...args ];
 }
 
+export function assertPathWithinRoots(candidate: string, roots: string[]): string {
+    if (!path.isAbsolute(candidate) || candidate.length > 1000) {
+        throw new ValidationError("Chemin invalide");
+    }
+    const resolved = path.resolve(candidate);
+    const allowed = roots.some(root => {
+        const resolvedRoot = path.resolve(root);
+        const relative = path.relative(resolvedRoot, resolved);
+        return relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative));
+    });
+    if (!allowed) throw new ValidationError("Chemin hors des emplacements autorisés");
+    return resolved;
+}
+
+export async function assertExistingPathWithinRoots(candidate: string, roots: string[]): Promise<string> {
+    assertPathWithinRoots(candidate, roots);
+    const [ realCandidate, realRoots ] = await Promise.all([
+        fs.realpath(candidate),
+        Promise.all(roots.map(root => fs.realpath(root).catch(() => null))),
+    ]);
+    return assertPathWithinRoots(realCandidate, realRoots.filter((root): root is string => root !== null));
+}
+
 function buildRepoUrl(dest: BackupDestination): string {
     switch (dest.type) {
         case "local":
@@ -1318,7 +1341,9 @@ export class BackupManager {
     /** Liste les sous-dossiers immédiats d'un chemin (sans tailles, rapide) */
     async getVolumeDirs(volPath: string): Promise<string[]> {
         try {
-            const entries = await fs.readdir(volPath, { withFileTypes: true });
+            const mountedRoots = (await this.getMountedVolumes()).map(volume => volume.destination);
+            const safePath = await assertExistingPathWithinRoots(volPath, mountedRoots);
+            const entries = await fs.readdir(safePath, { withFileTypes: true });
             return entries.filter(e => e.isDirectory()).map(e => e.name).sort();
         } catch { return []; }
     }
@@ -1336,10 +1361,12 @@ export class BackupManager {
 
     /** Calcule la taille de chaque sous-dossier d'un chemin (du -sh, à la demande) */
     async getVolumeSubdirSizes(volPath: string): Promise<Record<string, string>> {
-        const dirs = await this.getVolumeDirs(volPath);
+        const mountedRoots = (await this.getMountedVolumes()).map(volume => volume.destination);
+        const safePath = await assertExistingPathWithinRoots(volPath, mountedRoots);
+        const dirs = await this.getVolumeDirs(safePath);
         const results: Record<string, string> = {};
         await Promise.all(dirs.map(async dir => {
-            const p = path.join(volPath, dir);
+            const p = await assertExistingPathWithinRoots(path.join(safePath, dir), [ safePath ]);
             try {
                 results[dir] = await readDiskUsage(p, 60_000);
             } catch { results[dir] = "?"; }
@@ -1845,22 +1872,21 @@ export class BackupManager {
     /** Retourne le contenu d'un fichier texte depuis un snapshot + sa version disque actuelle + version snapshot précédent */
     async getSnapshotFileContent(snapshotId: string, filePath: string, prevSnapshotId?: string): Promise<{ snapshot: string; disk: string | null; prev: string | null }> {
         const safeId = assertSafeResticId(snapshotId);
-        if (!filePath.startsWith("/") || filePath.includes("..") || filePath.length > 1000) {
-            throw new Error("Chemin de fichier invalide");
-        }
-        const snapshotContent = await this.resticDump(this.primaryDest(), safeId, filePath);
+        const backupRoots = [ STACKS_DIR, ...(this.settings.volumeBackup?.selectedVolumes ?? []), ...(this.settings.extraPaths ?? []) ];
+        const safeFilePath = await assertExistingPathWithinRoots(filePath, backupRoots);
+        const snapshotContent = await this.resticDump(this.primaryDest(), safeId, safeFilePath);
         let disk: string | null = null;
         try {
-            const stat = await fs.stat(filePath);
+            const stat = await fs.stat(safeFilePath);
             if (stat.size <= 500 * 1024) {
-                disk = await fs.readFile(filePath, "utf8");
+                disk = await fs.readFile(safeFilePath, "utf8");
             }
         } catch { /* fichier absent */ }
         let prev: string | null = null;
         if (prevSnapshotId) {
             try {
                 const safePrev = assertSafeResticId(prevSnapshotId);
-                prev = await this.resticDump(this.primaryDest(), safePrev, filePath);
+                prev = await this.resticDump(this.primaryDest(), safePrev, safeFilePath);
             } catch { /* fichier absent du snapshot précédent */ }
         }
         return { snapshot: snapshotContent, disk, prev };
