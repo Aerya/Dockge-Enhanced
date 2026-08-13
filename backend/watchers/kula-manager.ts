@@ -13,12 +13,17 @@
  * Fichier : backend/watchers/kula-manager.ts
  */
 
-import { exec } from "child_process";
-import { promisify } from "util";
 import * as fs from "fs/promises";
 import * as path from "path";
+import childProcessAsync from "promisify-child-process";
 
-const execAsync = promisify(exec);
+async function docker(args: string[]): Promise<string> {
+    const result = await childProcessAsync.spawn("docker", args, { encoding: "utf8" });
+    if ((result.code ?? 0) !== 0) {
+        throw new Error(result.stderr?.toString() || `docker ${args[0]} failed`);
+    }
+    return result.stdout?.toString() ?? "";
+}
 
 const DATA_DIR      = process.env.DOCKGE_DATA_DIR  ?? "/opt/dockge/data";
 const STACKS_DIR    = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
@@ -151,23 +156,21 @@ export class KulaManager {
         await this._writeComposeFile();
 
         const port = this.settings.port ?? 27960;
-        const networkArgs = this.settings.networkMode === "host"
-            ? "--network host"
-            : `-p ${port}:27960`;
-
-        const cmd = [
-            "docker run -d",
-            `--name ${KULA_CONTAINER_NAME}`,
-            "--pid host",
-            networkArgs,
-            "-v kula_dockge_data:/app/data",
-            "--restart unless-stopped",
+        const args = [
+            "run", "-d",
+            "--name", KULA_CONTAINER_NAME,
+            "--pid", "host",
+            ...(this.settings.networkMode === "host"
+                ? [ "--network", "host" ]
+                : [ "-p", `${port}:27960` ]),
+            "-v", "kula_dockge_data:/app/data",
+            "--restart", "unless-stopped",
             KULA_IMAGE,
-        ].join(" ");
+        ];
 
-        console.log(`[KulaManager] Démarrage : ${cmd}`);
+        console.log(`[KulaManager] Démarrage du conteneur sur le port ${port}`);
         try {
-            await execAsync(cmd);
+            await docker(args);
             console.log(`[KulaManager] Container démarré (port ${port})`);
         } catch (e) {
             console.error(`[KulaManager] Échec docker run :`, e);
@@ -177,8 +180,8 @@ export class KulaManager {
 
     async stop(): Promise<void> {
         try {
-            await execAsync(`docker stop ${KULA_CONTAINER_NAME}`);
-            await execAsync(`docker rm ${KULA_CONTAINER_NAME}`);
+            await docker([ "stop", KULA_CONTAINER_NAME ]);
+            await docker([ "rm", KULA_CONTAINER_NAME ]);
             console.log("[KulaManager] Container arrêté");
         } catch {
             // Container n'existait pas — normal
@@ -187,9 +190,7 @@ export class KulaManager {
 
     async getStatus(): Promise<KulaStatus> {
         try {
-            const { stdout } = await execAsync(
-                `docker inspect --format "{{.State.Running}}" ${KULA_CONTAINER_NAME}`,
-            );
+            const stdout = await docker([ "inspect", "--format", "{{.State.Running}}", KULA_CONTAINER_NAME ]);
             return stdout.trim() === "true" ? "running" : "stopped";
         } catch {
             return "stopped";
