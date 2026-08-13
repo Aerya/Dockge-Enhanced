@@ -108,7 +108,11 @@ function quoteYaml(value: string): string {
 }
 
 function normalizeUrl(value: unknown): string {
-    return String(value ?? "").trim().replace(/\/+$/, "");
+    let normalized = String(value ?? "").trim();
+    while (normalized.endsWith("/")) {
+        normalized = normalized.slice(0, -1);
+    }
+    return normalized;
 }
 
 export function normalizePlugNPiNSettings(input: Partial<PlugNPiNSettings>): PlugNPiNSettings {
