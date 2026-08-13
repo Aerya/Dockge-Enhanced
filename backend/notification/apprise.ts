@@ -22,6 +22,26 @@ export interface AppriseOptions {
     type?: AppriseNotifType;
 }
 
+export function buildAppriseEndpoint(serverUrl: string): string {
+    const parsed = new URL(serverUrl.trim());
+    if (![ "http:", "https:" ].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) {
+        throw new Error("URL du serveur Apprise invalide");
+    }
+    const host = parsed.host.toLowerCase();
+    const dnsOrIpv4 = /^(?:localhost|[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::[0-9]{1,5})?$/;
+    const ipv6 = /^\[[0-9a-f:]+\](?::[0-9]{1,5})?$/;
+    if ((!dnsOrIpv4.test(host) && !ipv6.test(host)) || host.includes("..")) {
+        throw new Error("URL du serveur Apprise invalide");
+    }
+    const safeProtocol = parsed.protocol === "https:" ? "https:" : "http:";
+    const basePath = parsed.pathname.split("/").filter(Boolean).map(segment => {
+        const decoded = decodeURIComponent(segment);
+        if (decoded === "." || decoded === ".." || decoded.includes("/")) throw new Error("URL du serveur Apprise invalide");
+        return encodeURIComponent(decoded);
+    });
+    return `${safeProtocol}//${host}/${[ ...basePath, "notify" ].join("/")}/`;
+}
+
 export class AppriseNotifier {
     private serverUrl: string;
     private urls:      string[];
@@ -31,7 +51,7 @@ export class AppriseNotifier {
      * @param urls       URLs Apprise (format ntfy://, tgram://, etc.) — optionnel
      */
     constructor(serverUrl: string, urls: string[] = []) {
-        this.serverUrl = serverUrl.replace(/\/$/, "");
+        this.serverUrl = serverUrl.trim();
         this.urls      = urls.filter(Boolean);
     }
 
@@ -44,7 +64,7 @@ export class AppriseNotifier {
     async send(options: AppriseOptions): Promise<boolean> {
         if (!this.isConfigured) return false;
 
-        const endpoint = `${this.serverUrl}/notify/`;
+        const endpoint = buildAppriseEndpoint(this.serverUrl);
 
         const payload: Record<string, unknown> = {
             title:  options.title,
@@ -64,6 +84,7 @@ export class AppriseNotifier {
                 const res = await axios.post(endpoint, payload, {
                     headers: { "Content-Type": "application/json" },
                     timeout: 15000,
+                    maxRedirects: 0,
                 });
                 // Apprise renvoie 200 pour succès, 204 si aucun plugin configuré
                 if (res.status === 200 || res.status === 204) {
