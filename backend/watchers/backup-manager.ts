@@ -5,7 +5,7 @@
  */
 
 import * as cron from "node-cron";
-import { exec, spawn } from "child_process";
+import { exec, execFile, spawn } from "child_process";
 import { promisify } from "util";
 import * as readline from "readline";
 import * as fs from "fs/promises";
@@ -17,6 +17,7 @@ import { Settings } from "../settings";
 import { ValidationError } from "../util-server";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const STACKS_DIR         = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 const DATA_DIR           = process.env.DOCKGE_DATA_DIR   ?? "/opt/dockge/data";
@@ -112,6 +113,11 @@ const EXCLUDED_VOL_DESTINATIONS = new Set([
     "/etc/resolv.conf",
 ]);
 const EXCLUDED_VOL_PREFIXES = ["/proc", "/sys", "/dev", "/run", "/tmp"];
+
+export async function readDiskUsage(dir: string, timeout = 15_000): Promise<string> {
+    const { stdout } = await execFileAsync("du", [ "-sh", "--", dir ], { timeout });
+    return stdout.split("\t")[0].trim() || "?";
+}
 
 export interface BackupSettings {
     enabled: boolean;
@@ -1262,8 +1268,7 @@ export class BackupManager {
     async getDirSizes(selectedVolumes: string[] = []): Promise<{ appData: string; volumes: Record<string, string> }> {
         const du = async (dir: string): Promise<string> => {
             try {
-                const { stdout } = await execAsync(`du -sh ${shellQuote(dir)} 2>/dev/null`, { timeout: 15000 });
-                return stdout.split("\t")[0].trim() || "?";
+                return await readDiskUsage(dir);
             } catch {
                 return "?";
             }
@@ -1329,8 +1334,7 @@ export class BackupManager {
         await Promise.all(dirs.map(async dir => {
             const p = path.join(volPath, dir);
             try {
-                const { stdout } = await execAsync(`du -sh ${shellQuote(p)} 2>/dev/null`, { timeout: 60000 });
-                results[dir] = stdout.split("\t")[0].trim() || "?";
+                results[dir] = await readDiskUsage(p, 60_000);
             } catch { results[dir] = "?"; }
         }));
         return results;
