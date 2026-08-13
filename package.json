@@ -88,7 +88,7 @@
         "bootstrap": "5.3.8",
         "bootstrap-vue-next": "~0.45.10",
         "codemirror": "^6.0.1",
-        "concurrently": "^8.2.2",
+        "concurrently": "^10.0.4",
         "cross-env": "~7.0.3",
         "eslint": "~8.50.0",
         "eslint-plugin-jsdoc": "~46.10.1",
