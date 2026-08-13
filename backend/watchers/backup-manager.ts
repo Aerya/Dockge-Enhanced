@@ -386,8 +386,8 @@ function buildResticEnv(dest: BackupDestination): Record<string, string> {
  * - Mot de passe : -o sftp.command utilisant sshpass -f <tmpFile>
  *   (le chemin du fichier temporaire est créé par resticFor() avant l'appel)
  */
-function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string {
-    if (dest.type !== "sftp" || !dest.sftp) return "";
+function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string[] {
+    if (dest.type !== "sftp" || !dest.sftp) return [];
     const s = dest.sftp;
     const port = sanitizePort(s.port);
 
@@ -408,7 +408,7 @@ function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string {
             s.host,
             "-s", "sftp",
         ].join(" ");
-        return `-o ${shellQuote(`sftp.command=${sshCommand}`)}`;
+        return [ "-o", `sftp.command=${sshCommand}` ];
     }
 
     if (s.authMode === "key") {
@@ -418,10 +418,18 @@ function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string {
             "-p", String(port),
             "-o", "StrictHostKeyChecking=no",
         ].join(" ");
-        return `-o ${shellQuote(`sftp.args=${sshArgs}`)}`;
+        return [ "-o", `sftp.args=${sshArgs}` ];
     }
 
-    return "";
+    return [];
+}
+
+export function buildResticCommandArgs(repo: string, sftpOptions: string[], args: string[], json = true): string[] {
+    return [ "--repo", repo, ...(json ? [ "--json" ] : []), ...sftpOptions, ...args ];
+}
+
+export function buildComposeCommandArgs(composeFile: string, args: string[]): string[] {
+    return [ "compose", "-f", path.basename(composeFile), ...args ];
 }
 
 function buildRepoUrl(dest: BackupDestination): string {
@@ -678,7 +686,7 @@ export class BackupManager {
 
     private async resticFor(
         dest: BackupDestination,
-        args: string,
+        args: string[],
         extraEnv: Record<string, string> = {},
         toleratedExitCodes: number[] = [],
         timeoutMs: number = 2 * 60 * 60 * 1000,
@@ -698,9 +706,8 @@ export class BackupManager {
             }
 
             const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
-            const cmd = `restic --repo ${shellQuote(repo)} --json ${sftpOpts} ${args}`;
             try {
-                const { stdout } = await execAsync(cmd, {
+                const { stdout } = await execFileAsync("restic", buildResticCommandArgs(repo, sftpOpts, args), {
                     maxBuffer: 20 * 1024 * 1024,
                     timeout:   timeoutMs,
                     env: {
@@ -768,11 +775,11 @@ export class BackupManager {
                 const safeId    = assertSafeResticId(snapshotId);
                 // Pas de restriction de chemin : restic ls /chemin ne liste que les
                 // enfants directs (non récursif). On filtre en streaming à la place.
-                const cmd       = `restic --repo ${shellQuote(repo)} --json ${sftpOpts} ls ${shellQuote(safeId)} --json --long`;
+                const resticArgs = buildResticCommandArgs(repo, sftpOpts, [ "ls", safeId, "--json", "--long" ]);
 
-                console.log(`[BackupManager] resticLsLines cmd: ${cmd}`);
+                console.log("[BackupManager] resticLsLines lancé");
 
-                const proc = spawn("sh", ["-c", cmd], {
+                const proc = spawn("restic", resticArgs, {
                     env: {
                         PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
                         ...process.env,
@@ -825,7 +832,7 @@ export class BackupManager {
     /** Initialise le repo d'une destination si pas encore fait */
     async initRepoFor(dest: BackupDestination): Promise<void> {
         try {
-            await this.resticFor(dest, "snapshots --quiet");
+            await this.resticFor(dest, [ "snapshots", "--quiet" ]);
             console.log(`[BackupManager] "${dest.label}" déjà initialisé.`);
         } catch (e: any) {
             const msg = e?.message ?? "";
@@ -837,7 +844,7 @@ export class BackupManager {
             }
             console.log(`[BackupManager] Initialisation du repo "${dest.label}"...`);
             try {
-                await this.resticFor(dest, "init");
+                await this.resticFor(dest, [ "init" ]);
                 console.log(`[BackupManager] "${dest.label}" initialisé.`);
             } catch (initErr: any) {
                 if ((initErr?.message ?? "").includes("config file already exists")) {
@@ -930,14 +937,15 @@ export class BackupManager {
             return result;
         }
 
-        const pathArgs = paths.map(shellQuote).join(" ");
         const tags = ["dockge-enhanced", new Date().toISOString().slice(0, 10), trigger];
         if (opts.tag && !tags.includes(opts.tag)) tags.push(opts.tag);
-        const tagArg = tags.map(t => `--tag ${shellQuote(t)}`).join(" ");
         const builtinExcludes = ["*.log", "__pycache__", "node_modules"];
         const userExcludes    = this.settings.excludePatterns ?? [];
-        const excludes = [...builtinExcludes, ...userExcludes]
-            .map(p => `--exclude ${shellQuote(p)}`).join(" ");
+        const resticArgs = [
+            "backup", "-q", ...paths,
+            ...tags.flatMap(tag => [ "--tag", tag ]),
+            ...[...builtinExcludes, ...userExcludes].flatMap(pattern => [ "--exclude", pattern ]),
+        ];
 
         let totalDataAdded = 0;
         let allSuccess = true;
@@ -977,11 +985,11 @@ export class BackupManager {
                 }
 
                 // Libère un éventuel verrou obsolète avant toute opération restic
-                try { await this.resticFor(dest, "unlock --remove-all"); } catch { /* ignore */ }
+                try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
 
                 await this.initRepoFor(dest);
 
-                const stdout = await this.resticFor(dest, `backup -q ${pathArgs} ${tagArg} ${excludes}`, {}, [3]);
+                const stdout = await this.resticFor(dest, resticArgs, {}, [3]);
 
                 const lines = stdout.split("\n").filter(Boolean);
                 const summary = lines.reduce<Record<string, unknown> | null>((acc, line) => {
@@ -1105,10 +1113,6 @@ export class BackupManager {
         throw new Error(`Compose introuvable pour la stack "${stack}"`);
     }
 
-    private composeCommand(composeFile: string, args: string): string {
-        return `docker compose -f ${shellQuote(path.basename(composeFile))} ${args}`;
-    }
-
     private async prepareStacksForBackup(stackName?: string): Promise<PreparedStack[]> {
         const prepared: PreparedStack[] = [];
         const excluded = new Set(this.settings.excludedStacks ?? []);
@@ -1124,14 +1128,13 @@ export class BackupManager {
                 const entry: PreparedStack = { stack, policy, composeFile, runningServices: [] };
 
                 if (policy.mode === "stop") {
-                    const { stdout } = await execAsync(this.composeCommand(composeFile, "ps --status running --services"), {
+                    const { stdout } = await execFileAsync("docker", buildComposeCommandArgs(composeFile, [ "ps", "--status", "running", "--services" ]), {
                         cwd, timeout: 30_000,
                     });
                     entry.runningServices = stdout.split("\n").map(s => s.trim()).filter(Boolean);
                     prepared.push(entry);
                     if (entry.runningServices.length > 0) {
-                        const services = entry.runningServices.map(shellQuote).join(" ");
-                        await execAsync(this.composeCommand(composeFile, `stop ${services}`), { cwd, timeout: 5 * 60_000 });
+                        await execFileAsync("docker", buildComposeCommandArgs(composeFile, [ "stop", ...entry.runningServices ]), { cwd, timeout: 5 * 60_000 });
                     }
                 } else {
                     // Enregistrer avant le pre-hook : le post-hook doit pouvoir réparer
@@ -1156,8 +1159,7 @@ export class BackupManager {
             try {
                 const cwd = path.dirname(entry.composeFile);
                 if (entry.policy.mode === "stop" && entry.runningServices.length > 0) {
-                    const services = entry.runningServices.map(shellQuote).join(" ");
-                    await execAsync(this.composeCommand(entry.composeFile, `start ${services}`), { cwd, timeout: 5 * 60_000 });
+                    await execFileAsync("docker", buildComposeCommandArgs(entry.composeFile, [ "start", ...entry.runningServices ]), { cwd, timeout: 5 * 60_000 });
                 } else if (entry.policy.mode === "hooks") {
                     await this.runStackHook(entry.composeFile, entry.policy, "post");
                 }
@@ -1172,8 +1174,8 @@ export class BackupManager {
         const command = phase === "pre" ? policy.preHook : policy.postHook;
         if (!command?.trim()) return;
         if (!policy.hookService?.trim()) throw new Error("Service requis pour les hooks applicatifs");
-        const args = `exec -T ${shellQuote(policy.hookService.trim())} sh -c ${shellQuote(command)}`;
-        await execAsync(this.composeCommand(composeFile, args), {
+        const args = buildComposeCommandArgs(composeFile, [ "exec", "-T", policy.hookService.trim(), "sh", "-c", command ]);
+        await execFileAsync("docker", args, {
             cwd: path.dirname(composeFile), timeout: 5 * 60_000, maxBuffer: 2 * 1024 * 1024,
         });
     }
@@ -1347,18 +1349,18 @@ export class BackupManager {
 
     private async runForgetFor(dest: BackupDestination): Promise<void> {
         // Libère un éventuel verrou laissé par le backup (ex: crash, timeout)
-        try { await this.resticFor(dest, "unlock --remove-all"); } catch { /* ignore */ }
+        try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
 
         const r = this.settings.retention;
-        const args = [
-            `--keep-last ${sanitizeRetention(r.keepLast)}`,
-            `--keep-daily ${sanitizeRetention(r.keepDaily)}`,
-            `--keep-weekly ${sanitizeRetention(r.keepWeekly)}`,
-            `--keep-monthly ${sanitizeRetention(r.keepMonthly)}`,
-            "--tag", shellQuote("dockge-enhanced"),
+        const args = [ "forget",
+            "--keep-last", String(sanitizeRetention(r.keepLast)),
+            "--keep-daily", String(sanitizeRetention(r.keepDaily)),
+            "--keep-weekly", String(sanitizeRetention(r.keepWeekly)),
+            "--keep-monthly", String(sanitizeRetention(r.keepMonthly)),
+            "--tag", "dockge-enhanced",
             "--prune",
-        ].join(" ");
-        await this.resticFor(dest, `forget ${args}`);
+        ];
+        await this.resticFor(dest, args);
     }
 
     /** Retourne la première destination activée (pour snapshots/restore) */
@@ -1372,7 +1374,7 @@ export class BackupManager {
 
     async listSnapshots(): Promise<ResticSnapshot[]> {
         try {
-            const stdout = await this.resticFor(this.primaryDest(), `snapshots --tag ${shellQuote("dockge-enhanced")}`);
+            const stdout = await this.resticFor(this.primaryDest(), [ "snapshots", "--tag", "dockge-enhanced" ]);
             return JSON.parse(stdout) as ResticSnapshot[];
         } catch {
             return [];
@@ -1390,7 +1392,7 @@ export class BackupManager {
             : snapshots.slice(0, 10);
 
         try {
-            const stdout = await this.resticFor(dest, "stats --mode raw-data", {}, [], 15_000);
+            const stdout = await this.resticFor(dest, [ "stats", "--mode", "raw-data" ], {}, [], 15_000);
             const repoStats = parseResticStats(stdout);
             stats.repositorySize = repoStats.size;
             stats.repositoryFileCount = repoStats.fileCount;
@@ -1409,7 +1411,7 @@ export class BackupManager {
                     return;
                 }
 
-                const stdout = await this.resticFor(dest, `stats --mode restore-size ${shellQuote(id)}`, {}, [], 8_000);
+                const stdout = await this.resticFor(dest, [ "stats", "--mode", "restore-size", id ], {}, [], 8_000);
                 const parsed = parseResticStats(stdout);
                 stats.snapshots[snapshot.short_id] = {
                     size: parsed.size,
@@ -1426,8 +1428,8 @@ export class BackupManager {
 
     async deleteSnapshot(id: string): Promise<void> {
         const dest = this.primaryDest();
-        try { await this.resticFor(dest, "unlock --remove-all"); } catch { /* ignore */ }
-        await this.resticFor(dest, `forget ${shellQuote(assertSafeResticId(id))} --prune`);
+        try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
+        await this.resticFor(dest, [ "forget", assertSafeResticId(id), "--prune" ]);
     }
 
     /**
@@ -1460,10 +1462,10 @@ export class BackupManager {
             // Passe B : ls /opt/stacks/stack1 /opt/stacks/stack2 … → liste les
             //           fichiers directement dans chaque stack (compose.yaml, .env).
             // Les deux appels sont petits → resticFor (exec) convient.
-            const safeId = shellQuote(assertSafeResticId(snapshotId));
+            const safeId = assertSafeResticId(snapshotId);
 
             // Passe A — sous-dossiers de STACKS_DIR
-            const passA = await this.resticFor(this.primaryDest(), `ls ${safeId} ${shellQuote(STACKS_DIR)} --json --long`);
+            const passA = await this.resticFor(this.primaryDest(), [ "ls", safeId, STACKS_DIR, "--json", "--long" ]);
             const stackPaths: string[] = [];
             for (const line of passA.split("\n").filter(Boolean)) {
                 try {
@@ -1479,8 +1481,7 @@ export class BackupManager {
             if (stackPaths.length === 0) return [];
 
             // Passe B — fichiers dans chaque stack (compose.yaml, .env…)
-            const stackArgs = stackPaths.map(p => shellQuote(p)).join(" ");
-            const passB = await this.resticFor(this.primaryDest(), `ls ${safeId} ${stackArgs} --json --long`);
+            const passB = await this.resticFor(this.primaryDest(), [ "ls", safeId, ...stackPaths, "--json", "--long" ]);
             const lsLines = passB.split("\n").filter(line => line.includes('"type":"file"'));
             console.log(`[BackupManager] listSnapshotFiles: ${lsLines.length} fichiers trouvés`);
 
@@ -1610,7 +1611,7 @@ export class BackupManager {
                 try {
                     const diffPromise = this.resticFor(
                         this.primaryDest(),
-                        `diff ${shellQuote(assertSafeResticId(prevSnap.short_id))} ${shellQuote(assertSafeResticId(snapshotId))}`
+                        [ "diff", assertSafeResticId(prevSnap.short_id), assertSafeResticId(snapshotId) ]
                     );
                     const timeoutPromise = new Promise<never>((_, rej) =>
                         setTimeout(() => rej(new Error("restic diff timeout")), DIFF_TIMEOUT_MS)
@@ -1681,9 +1682,8 @@ export class BackupManager {
     async browseSnapshotPath(snapshotId: string, dirPath: string): Promise<Array<{
         name: string; path: string; type: "file" | "dir"; size: number; mtime: string;
     }>> {
-        const safeId   = shellQuote(assertSafeResticId(snapshotId));
-        const safePath = shellQuote(dirPath);
-        const out = await this.resticFor(this.primaryDest(), `ls ${safeId} ${safePath} --json --long`);
+        const safeId = assertSafeResticId(snapshotId);
+        const out = await this.resticFor(this.primaryDest(), [ "ls", safeId, dirPath, "--json", "--long" ]);
         const results: Array<{ name: string; path: string; type: "file" | "dir"; size: number; mtime: string }> = [];
         for (const line of out.split("\n").filter(Boolean)) {
             try {
@@ -1705,14 +1705,12 @@ export class BackupManager {
     /** Restaure une liste de fichiers depuis un snapshot à leur emplacement d'origine */
     async restoreFiles(snapshotId: string, filePaths: string[]): Promise<{ restored: number; errors: string[] }> {
         if (filePaths.length === 0) return { restored: 0, errors: [] };
-        const safeSnapshotId = shellQuote(assertSafeResticId(snapshotId));
+        const safeSnapshotId = assertSafeResticId(snapshotId);
         const includes = filePaths
             .map(p => p.trim())
-            .filter(Boolean)
-            .map(p => `--include ${shellQuote(p)}`)
-            .join(" ");
+            .filter(Boolean);
         try {
-            await this.resticFor(this.primaryDest(), `restore ${safeSnapshotId} --target ${shellQuote("/")} ${includes}`);
+            await this.resticFor(this.primaryDest(), [ "restore", safeSnapshotId, "--target", "/", ...includes.flatMap(p => [ "--include", p ]) ]);
             return { restored: filePaths.length, errors: [] };
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : String(e);
@@ -1735,7 +1733,7 @@ export class BackupManager {
     private async runRestoreTest(dest: BackupDestination, snapshotId: string): Promise<RestoreTestResult> {
         try {
             // 1. Lister uniquement les fichiers sous STACKS_DIR (évite de parcourir les volumes)
-            const lsOut = await this.resticFor(dest, `ls ${shellQuote(snapshotId)} ${shellQuote(STACKS_DIR)}`);
+            const lsOut = await this.resticFor(dest, [ "ls", snapshotId, STACKS_DIR ]);
 
             // 2. Trouver le premier compose.yaml dans le snapshot
             let composePath: string | undefined;
@@ -1781,8 +1779,7 @@ export class BackupManager {
                 await fs.writeFile(tmpFile, dest.sftp.password, { mode: 0o600 });
             }
             const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
-            const cmd = `restic --repo ${shellQuote(repo)} ${sftpOpts} dump ${shellQuote(snapshotId)} ${shellQuote(filePath)}`;
-            const { stdout } = await execAsync(cmd, {
+            const { stdout } = await execFileAsync("restic", buildResticCommandArgs(repo, sftpOpts, [ "dump", snapshotId, filePath ], false), {
                 maxBuffer: 10 * 1024 * 1024,
                 timeout: 30_000,
                 env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...repoEnv },
@@ -1796,7 +1793,7 @@ export class BackupManager {
     /** Exécute `restic check` sans `--json` pour vérifier l'intégrité d'un repo */
     private async resticCheck(dest: BackupDestination): Promise<string> {
         // Libère un éventuel verrou obsolète avant le check (comme pour backup/forget)
-        try { await this.resticFor(dest, "unlock --remove-all"); } catch { /* ignore */ }
+        try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
 
         const repoEnv = buildResticEnv(dest);
         const repo    = buildRepoUrl(dest);
@@ -1807,9 +1804,8 @@ export class BackupManager {
                 await fs.writeFile(tmpFile, dest.sftp.password, { mode: 0o600 });
             }
             const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
-            const cmd = `restic --repo ${shellQuote(repo)} ${sftpOpts} check 2>&1`;
             try {
-                const { stdout } = await execAsync(cmd, {
+                const { stdout } = await execFileAsync("restic", buildResticCommandArgs(repo, sftpOpts, [ "check" ], false), {
                     maxBuffer: 2 * 1024 * 1024,
                     timeout: 5 * 60_000,
                     env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...repoEnv },
@@ -1817,7 +1813,7 @@ export class BackupManager {
                 return stdout;
             } catch (e: any) {
                 // execAsync échoue avec exit code non-zéro → on retourne le stdout réel (2>&1 le contient)
-                const output = (e?.stdout ?? e?.message ?? String(e)).trim();
+                const output = (e?.stdout || e?.stderr || e?.message || String(e)).trim();
                 throw new Error(output);
             }
         } finally {
