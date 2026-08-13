@@ -29,6 +29,9 @@ jobs:
       - name: Tests d’authentification
         run: npx tsx --test backend/auth.test.ts
 
+      - name: Compatibilité du runtime frontend
+        run: npx tsx --test frontend/src/i18n-compat.test.ts
+
       - name: Audit npm HIGH/CRITICAL
         run: npm audit --audit-level=high
 

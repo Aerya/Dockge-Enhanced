@@ -12,6 +12,9 @@ updates:
       npm-validated-batch:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
     # TypeScript 7 ne peut pas encore être installé avec la dernière version
     # publiée de TypeScript-ESLint (contrainte actuelle : TypeScript < 6.1).
     # Les versions mineures et correctives restent suivies automatiquement.
