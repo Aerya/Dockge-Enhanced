@@ -90,7 +90,7 @@
         "codemirror": "^6.0.1",
         "concurrently": "^8.2.2",
         "cross-env": "~7.0.3",
-        "eslint": "~8.50.0",
+        "eslint": "~10.8.1",
         "eslint-plugin-jsdoc": "~46.10.1",
         "eslint-plugin-vue": "~9.33.0",
         "sass": "~1.102.0",
