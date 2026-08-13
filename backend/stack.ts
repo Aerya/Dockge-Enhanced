@@ -62,6 +62,18 @@ interface StackMetadata {
 // (découverte automatique, sans `-f` explicite).
 const COMPOSE_OVERRIDE_FILE = "compose.override.yaml";
 
+export function resolveStackPath(stacksDir: string, stackName: string): string {
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(stackName)) {
+        throw new ValidationError("Invalid stack name");
+    }
+    const root = path.resolve(stacksDir);
+    const resolved = path.resolve(root, stackName);
+    if (path.dirname(resolved) !== root) {
+        throw new ValidationError("Invalid stack path");
+    }
+    return resolved;
+}
+
 export class Stack {
 
     name: string;
@@ -85,6 +97,7 @@ export class Stack {
         this._composeOverrideYAML = composeOverrideYAML;
 
         if (!skipFSOperations) {
+            resolveStackPath(this.server.stacksDir, this.name);
             // Check if compose file name is different from compose.yaml
             for (const filename of acceptedComposeFileNames) {
                 if (fs.existsSync(path.join(this.path, filename))) {
@@ -516,7 +529,9 @@ export class Stack {
     }
 
     static async getStack(server: DockgeServer, stackName: string, skipFSOperations = false) : Promise<Stack> {
-        let dir = path.join(server.stacksDir, stackName);
+        let dir = skipFSOperations
+            ? path.resolve(server.stacksDir, stackName)
+            : resolveStackPath(server.stacksDir, stackName);
 
         if (!skipFSOperations) {
             if (!await fileExists(dir) || !(await fsAsync.stat(dir)).isDirectory()) {
