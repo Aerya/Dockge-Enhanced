@@ -41,6 +41,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
 
+**2026-08-13 — Optional Restic backup overlap protection** — Backup settings now include an enabled-by-default guard that prevents manual, scheduled, and compose-save backups from starting while another Restic backup is active. Manual attempts display an immediate WebUI modal; automatic attempts are logged and surfaced to an open Backup tab. Disabling the option restores parallel starts for installations that explicitly require them.
+
 **2026-08-11 — Denser, resizable stack sidebar** — The desktop dashboard shows more stacks in the same height and replaces its fixed Bootstrap columns with a draggable, keyboard-accessible divider. The sidebar width is constrained to preserve both panels and remembered per browser. Its height fills the remaining viewport on short pages and follows the actual Compose, container and terminal content on longer pages. On mobile, the existing stacked navigation remains unchanged.
 
 **2026-08-09 — Denser, resizable Logs and Compose workspace** — Stack pages use tighter spacing and replace the fixed half-width desktop layout with a keyboard-accessible draggable divider whose position is remembered in the browser. Logs can take the entire screen, while the Compose panel can be collapsed and restored when only runtime output matters. A dedicated action copies the raw Compose YAML directly, without line-number gutters or visual-selection artefacts. Mobile layouts remain stacked and touch-friendly.

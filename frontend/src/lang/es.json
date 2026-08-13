@@ -1,4 +1,8 @@
 {
+    "watcher.backup.preventConcurrent": "Impedir copias simultáneas",
+    "watcher.backup.preventConcurrentHint": "Rechaza cualquier nueva copia manual, programada o al guardar mientras ya se ejecuta una copia Restic.",
+    "watcher.backup.concurrentPopupTitle": "Copia ya en curso",
+    "watcher.backup.concurrentPopupBody": "Ya se está ejecutando una copia Restic. El nuevo inicio se bloqueó inmediatamente para proteger la CPU y el almacenamiento.",
     "releaseNews.intro": "Estas son las funciones añadidas desde tu anterior actualización de Dockge-Enhanced.",
     "releaseNews.item.updateRange": "La ventana emergente agrupa solo las funciones publicadas desde tu actualización anterior, sin importar cuántas versiones se hayan omitido.",
     "releaseNews.item.logWrap": "Un botón en los registros permite alternar el ajuste de línea o mantener cada entrada completa en una sola línea con desplazamiento horizontal.",

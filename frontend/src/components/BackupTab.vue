@@ -43,6 +43,16 @@
                     </div>
                     <div>
                         <div class="form-check form-switch mb-0">
+                            <input v-model="settings.preventConcurrentBackups" class="form-check-input" type="checkbox"
+                                id="preventConcurrentBackups" role="switch" />
+                            <label class="form-check-label fw-semibold" for="preventConcurrentBackups">
+                                {{ $t('watcher.backup.preventConcurrent') }}
+                            </label>
+                        </div>
+                        <small class="form-text">{{ $t('watcher.backup.preventConcurrentHint') }}</small>
+                    </div>
+                    <div>
+                        <div class="form-check form-switch mb-0">
                             <input v-model="settings.restoreTest" class="form-check-input" type="checkbox"
                                 id="restoreTest" role="switch" />
                             <label class="form-check-label fw-semibold" for="restoreTest">
@@ -1017,6 +1027,11 @@
             </div>
         </Teleport>
 
+        <BModal v-model="concurrentBackupModal" :title="$t('watcher.backup.concurrentPopupTitle')"
+            ok-only :ok-title="$t('close')">
+            <p class="mb-0">{{ $t('watcher.backup.concurrentPopupBody') }}</p>
+        </BModal>
+
         <!-- TOAST -->
         <Transition name="slide-fade">
             <div v-if="toast.msg" class="toast-float" :class="toast.ok ? 'toast-ok' : 'toast-err'">
@@ -1030,6 +1045,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
+import { BModal } from "bootstrap-vue-next";
 
 const { t } = useI18n();
 
@@ -1054,7 +1070,7 @@ interface VolumeBackupConfig { selectedVolumes: string[] }
 interface MountedVolume { source: string; destination: string }
 type StackBackupMode = "hot" | "stop" | "hooks";
 interface StackBackupPolicy { mode: StackBackupMode; hookService?: string; preHook?: string; postHook?: string }
-interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; excludedStacks: string[]; stackPolicies: Record<string, StackBackupPolicy>; excludePatterns: string[]; restoreTest: boolean }
+interface Settings { enabled: boolean; intervalHours: number; destinations: Destination[]; retention: Retention; includeEnvFiles: boolean; discordWebhooks?: string[]; notificationLang?: "fr" | "en"; volumeBackup: VolumeBackupConfig; extraPaths?: string[]; backupOnSave: boolean; preventConcurrentBackups: boolean; excludedStacks: string[]; stackPolicies: Record<string, StackBackupPolicy>; excludePatterns: string[]; restoreTest: boolean }
 type BackupTrigger = "scheduled" | "manual" | "on-save";
 type BackupViewFilter = "scheduled" | "on-save" | "manual" | "all" | "errors";
 type SnapshotFilter = Exclude<BackupViewFilter, "errors">;
@@ -1115,6 +1131,7 @@ const settings = ref<Settings>({
     volumeBackup: { selectedVolumes: [] },
     extraPaths: [],
     backupOnSave: true,
+    preventConcurrentBackups: true,
     excludedStacks: [],
     stackPolicies: {},
     excludePatterns: [],
@@ -1206,6 +1223,8 @@ function toggleError(i: number) {
 const saving = ref(false);
 const initing = ref(false);
 const running = ref(false);
+const concurrentBackupModal = ref(false);
+const lastBlockedSeen = ref(0);
 
 // ── Backup en cours ──────────────────────────────────────────────
 type RunningDest = { label: string; startedAt: number };
@@ -1219,8 +1238,13 @@ function startPolling() {
     pollTimer = setInterval(async () => {
         try {
             const res = await api("GET", "/backup/running");
-            if (res.ok) runningDests.value = res.data;
-            if (runningDests.value.length === 0) stopPolling();
+            if (res.ok) {
+                runningDests.value = res.data;
+                if (res.blocked?.timestamp > lastBlockedSeen.value) {
+                    lastBlockedSeen.value = res.blocked.timestamp;
+                    concurrentBackupModal.value = true;
+                }
+            }
         } catch { /* silencieux */ }
     }, 3000);
     tickTimer = setInterval(() => { elapsedTick.value++; }, 1000);
@@ -1740,6 +1764,14 @@ onMounted(async () => {
     if (snapsRes.ok) void loadSnapshotStats();
     await initServerTz(api);
     await loadMountedVols();
+    const runningRes = await api("GET", "/backup/running");
+    if (runningRes.ok) {
+        runningDests.value = runningRes.data;
+        const blockedAt = runningRes.blocked?.timestamp ?? 0;
+        lastBlockedSeen.value = blockedAt;
+        if (blockedAt > Date.now() - 60_000) concurrentBackupModal.value = true;
+    }
+    startPolling();
 });
 
 watch(snapshotFilter, () => {
@@ -1778,7 +1810,15 @@ async function initRepo() {
 async function runBackup() {
     running.value = true;
     try {
-        await api("POST", "/backup/run");
+        const res = await api("POST", "/backup/run");
+        if (!res.ok && res.code === "backup_already_running") {
+            concurrentBackupModal.value = true;
+            return;
+        }
+        if (!res.ok) {
+            showToast(`❌ ${res.message}`, false);
+            return;
+        }
         showToast(t('watcher.backup.launched'));
         // Démarre le polling immédiatement (avec un léger délai pour que le backend enregistre la dest)
         setTimeout(() => startPolling(), 1500);

@@ -13,7 +13,7 @@ import express, { Express, Router as ExpressRouter, Request, Response, NextFunct
 import { ImageWatcher, imageStatusStore, rollbackStore, updateHistoryStore, RegistryCredential, WatcherSettings } from "../watchers/image-watcher";
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { TrivyScanner } from "../watchers/trivy-scanner";
-import { BackupManager } from "../watchers/backup-manager";
+import { BackupAlreadyRunningError, BackupManager } from "../watchers/backup-manager";
 import { KulaManager } from "../watchers/kula-manager";
 import { DozzleManager } from "../watchers/dozzle-manager";
 import { DiscordNotifier } from "../notification/discord";
@@ -343,13 +343,30 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.post("/backup/run", (req: Request, res: Response) => {
-            BackupManager.getInstance().runBackup({ trigger: "manual" }).catch(console.error);
+            const manager = BackupManager.getInstance();
+            if (manager.settings.preventConcurrentBackups && manager.isBackupRunActive()) {
+                manager.recordBlockedBackup("manual");
+                return res.status(409).json({
+                    ok: false,
+                    code: "backup_already_running",
+                    message: "Un backup Restic est déjà en cours",
+                    running: manager.getRunningDests(),
+                });
+            }
+            manager.runBackup({ trigger: "manual" }).catch(e => {
+                if (!(e instanceof BackupAlreadyRunningError)) console.error(e);
+            });
             auditWatcherAction(req, "backup.run", "backup", "manual").catch(() => {});
-            res.json({ ok: true, message: "Backup lancé en arrière-plan" });
+            return res.json({ ok: true, message: "Backup lancé en arrière-plan" });
         });
 
         router.get("/backup/running", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: BackupManager.getInstance().getRunningDests() });
+            const manager = BackupManager.getInstance();
+            res.json({
+                ok: true,
+                data: manager.getRunningDests(),
+                blocked: manager.getLastBlockedBackup(),
+            });
         });
 
         router.post("/backup/init", async (req: Request, res: Response) => {
