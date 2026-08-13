@@ -26,7 +26,7 @@
         "command-exists": "~1.2.9",
         "compare-versions": "~6.1.1",
         "composerize": "~1.7.6",
-        "croner": "~8.1.2",
+        "croner": "~10.0.1",
         "dayjs": "~1.11.21",
         "dotenv": "~16.6.1",
         "express": "~4.22.2",
