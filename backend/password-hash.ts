@@ -30,18 +30,16 @@ export function needRehashPassword(hash : string) : boolean {
     return false;
 }
 
-export const SHAKE256_LENGTH = 16;
-
 /**
- * @param {string} data The data to be hashed
- * @param {number} len Output length of the hash
- * @returns {string} The hashed data in hex format
+ * Create a keyed fingerprint of the stored bcrypt digest. It is embedded in
+ * JWTs only to invalidate them after a password change.
  */
-export function shake256(data : string, len : number) {
-    if (!data) {
+export function passwordVersionFingerprint(passwordHash : string, jwtSecret : string) {
+    if (!passwordHash) {
         return "";
     }
-    return crypto.createHash("shake256", { outputLength: len })
-        .update(data)
-        .digest("hex");
+    return crypto.createHmac("sha256", jwtSecret)
+        .update(passwordHash)
+        .digest("hex")
+        .slice(0, 32);
 }
