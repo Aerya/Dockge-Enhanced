@@ -13,14 +13,10 @@
 import { DockgeServer } from "../dockge-server";
 import { Router } from "../router";
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";
-import { exec } from "child_process";
-import { promisify } from "util";
 import { AutoPruneManager } from "../watchers/auto-prune-manager";
 import { AuditLogger, setAuditUser } from "../audit-log";
 import { requireHttpAuth } from "../auth";
 import childProcessAsync from "promisify-child-process";
-
-const execAsync = promisify(exec);
 
 // ─── Types internes ───────────────────────────────────────────────
 
@@ -35,10 +31,10 @@ interface ContainerRef {
 
 // ─── Helpers CLI ──────────────────────────────────────────────────
 
-async function dockerJsonLines(cmd: string): Promise<Record<string, string>[]> {
+async function dockerJsonLines(args: string[]): Promise<Record<string, string>[]> {
     try {
-        const { stdout } = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
-        return (stdout || "")
+        const stdout = await dockerArgs(args);
+        return stdout
             .trim()
             .split("\n")
             .filter(l => l.trim())
@@ -170,11 +166,11 @@ export class DockerResourcesRouter extends Router {
         router.get("/images", auth, async (_req: Request, res: Response) => {
             try {
                 const [rawImgs, allDangling, rawCtrs] = await Promise.all([
-                    dockerJsonLines("docker images --format '{{json .}}'"),
+                    dockerJsonLines([ "images", "--format", "{{json .}}" ]),
                     // -a --filter dangling=true capture les couches intermédiaires orphelines
                     // que docker images (sans -a) ne montre pas, mais que docker image prune supprime
-                    dockerJsonLines("docker images -a --filter dangling=true --format '{{json .}}'"),
-                    dockerJsonLines("docker ps -a --format '{{json .}}'"),
+                    dockerJsonLines([ "images", "-a", "--filter", "dangling=true", "--format", "{{json .}}" ]),
+                    dockerJsonLines([ "ps", "-a", "--format", "{{json .}}" ]),
                 ]);
 
                 // Merge : on ajoute les dangling intermédiaires absents de la liste principale
@@ -211,9 +207,7 @@ export class DockerResourcesRouter extends Router {
             const id = req.params["imageId"];
             const force = req.query["force"] === "true";
             try {
-                const cmd = force ? `docker rmi --force ${id}` : `docker rmi ${id}`;
-                const { stdout, stderr } = await execAsync(cmd);
-                const message = (stdout || stderr || "Supprimé").trim();
+                const message = (await dockerArgs([ "rmi", ...(force ? [ "--force" ] : []), id ])) || "Supprimé";
                 await auditDockerAction(req, "docker.image.delete", "image", id, "success", message, { force });
                 res.json({ ok: true, message });
             } catch (e: any) {
@@ -225,8 +219,7 @@ export class DockerResourcesRouter extends Router {
 
         router.post("/images/prune", auth, async (req: Request, res: Response) => {
             try {
-                const { stdout } = await execAsync("docker image prune -f");
-                const message = stdout.trim() || "Terminé";
+                const message = (await dockerArgs([ "image", "prune", "-f" ])) || "Terminé";
                 await auditDockerAction(req, "docker.image.prune_dangling", "image", "dangling", "success", message);
                 res.json({ ok: true, message });
             } catch (e: any) {
@@ -238,8 +231,7 @@ export class DockerResourcesRouter extends Router {
         // Supprime toutes les images non utilisées par un conteneur (orphelines + inutilisées taguées)
         router.post("/images/prune-unused", auth, async (req: Request, res: Response) => {
             try {
-                const { stdout } = await execAsync("docker image prune -a -f");
-                const message = stdout.trim() || "Terminé";
+                const message = (await dockerArgs([ "image", "prune", "-a", "-f" ])) || "Terminé";
                 await auditDockerAction(req, "docker.image.prune_unused", "image", "unused", "success", message);
                 res.json({ ok: true, message });
             } catch (e: any) {
@@ -252,18 +244,14 @@ export class DockerResourcesRouter extends Router {
 
         router.get("/volumes", auth, async (_req: Request, res: Response) => {
             try {
-                const rawVols = await dockerJsonLines("docker volume ls --format '{{json .}}'");
+                const rawVols = await dockerJsonLines([ "volume", "ls", "--format", "{{json .}}" ]);
 
                 // docker inspect donne les vrais noms de volumes (y compris anonymes SHA256)
                 let inspectData: Record<string, unknown>[] = [];
                 try {
-                    const { stdout: ids } = await execAsync("docker ps -aq 2>/dev/null || true");
-                    const idList = ids.trim();
-                    if (idList) {
-                        const { stdout: inspectOut } = await execAsync(
-                            `docker inspect ${idList.split("\n").join(" ")}`,
-                            { maxBuffer: 20 * 1024 * 1024 }
-                        );
+                    const idList = (await dockerArgs([ "ps", "-aq" ])).split("\n").filter(Boolean);
+                    if (idList.length > 0) {
+                        const inspectOut = await dockerArgs([ "inspect", ...idList ]);
                         inspectData = JSON.parse(inspectOut) as Record<string, unknown>[];
                     }
                 } catch { /* pas de conteneurs ou docker indisponible */ }
@@ -292,8 +280,7 @@ export class DockerResourcesRouter extends Router {
         router.delete("/volumes/:name", auth, async (req: Request, res: Response) => {
             const name = req.params["name"];
             try {
-                const { stdout, stderr } = await execAsync(`docker volume rm ${name}`);
-                const message = (stdout || stderr || "Supprimé").trim();
+                const message = (await dockerArgs([ "volume", "rm", name ])) || "Supprimé";
                 await auditDockerAction(req, "docker.volume.delete", "volume", name, "success", message);
                 res.json({ ok: true, message });
             } catch (e: any) {
@@ -305,8 +292,7 @@ export class DockerResourcesRouter extends Router {
 
         router.post("/volumes/prune", auth, async (req: Request, res: Response) => {
             try {
-                const { stdout } = await execAsync("docker volume prune -f");
-                const message = stdout.trim() || "Terminé";
+                const message = (await dockerArgs([ "volume", "prune", "-f" ])) || "Terminé";
                 await auditDockerAction(req, "docker.volume.prune", "volume", "unused", "success", message);
                 res.json({ ok: true, message });
             } catch (e: any) {
@@ -319,7 +305,7 @@ export class DockerResourcesRouter extends Router {
 
         router.get("/containers", auth, async (_req: Request, res: Response) => {
             try {
-                const rawCtrs = await dockerJsonLines("docker ps -a --format '{{json .}}'");
+                const rawCtrs = await dockerJsonLines([ "ps", "-a", "--format", "{{json .}}" ]);
                 const containers = rawCtrs.map(c => ({
                     id: c["ID"] ?? "",
                     name: (c["Names"] ?? "").replace(/^\//, ""),
@@ -339,8 +325,7 @@ export class DockerResourcesRouter extends Router {
         router.post("/containers/:id/stop", auth, async (req: Request, res: Response) => {
             const id = req.params["id"];
             try {
-                const { stdout, stderr } = await execAsync(`docker stop ${id}`);
-                const message = (stdout || stderr || "Arrêté").trim();
+                const message = (await dockerArgs([ "stop", id ])) || "Arrêté";
                 await auditDockerAction(req, "docker.container.stop", "container", id, "success", message);
                 res.json({ ok: true, message });
             } catch (e: any) {
@@ -354,9 +339,7 @@ export class DockerResourcesRouter extends Router {
             const id = req.params["id"];
             const force = req.query["force"] === "true";
             try {
-                const cmd = force ? `docker rm --force ${id}` : `docker rm ${id}`;
-                const { stdout, stderr } = await execAsync(cmd);
-                const message = (stdout || stderr || "Supprimé").trim();
+                const message = (await dockerArgs([ "rm", ...(force ? [ "--force" ] : []), id ])) || "Supprimé";
                 await auditDockerAction(req, "docker.container.delete", "container", id, "success", message, { force });
                 res.json({ ok: true, message });
             } catch (e: any) {
@@ -370,7 +353,7 @@ export class DockerResourcesRouter extends Router {
 
         router.get("/networks", auth, async (_req: Request, res: Response) => {
             try {
-                const rows = await dockerJsonLines("docker network ls --format '{{json .}}'");
+                const rows = await dockerJsonLines([ "network", "ls", "--format", "{{json .}}" ]);
                 const names = rows.map(row => row["Name"]).filter(Boolean);
                 let inspected: any[] = [];
                 if (names.length > 0) {
