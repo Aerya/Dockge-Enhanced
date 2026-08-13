@@ -5,7 +5,7 @@ import { log } from "./log";
 import { ERROR_TYPE_VALIDATION } from "../common/util-common";
 import { R } from "redbean-node";
 import { verifyPassword } from "./password-hash";
-import fs from "fs";
+import { execFile } from "child_process";
 import { AgentManager } from "./agent-manager";
 
 export interface JWTDecoded {
@@ -99,8 +99,10 @@ export async function doubleCheckPassword(socket : DockgeSocket, currentPassword
     return user;
 }
 
-export function fileExists(file : string) {
-    return fs.promises.access(file, fs.constants.F_OK)
-        .then(() => true)
-        .catch(() => false);
+export function fileExists(file : string) : Promise<boolean> {
+    return new Promise((resolve) => {
+        execFile("test", [ "-e", file ], { timeout: 5000 }, (error) => {
+            resolve(error === null);
+        });
+    });
 }
