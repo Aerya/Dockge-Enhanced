@@ -24,8 +24,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Activer la fusion squash après les contrôles requis
-        # Chaque lot, y compris majeur, doit passer les builds natifs, les scans,
-        # le contrôle TypeScript, le build frontend et le smoke test avant fusion.
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        # Les changements majeurs restent soumis à une validation fonctionnelle manuelle.
+        # Les correctifs et versions mineures sont fusionnés après les contrôles requis.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
