@@ -4,14 +4,14 @@
  */
 
 import * as cron from "node-cron";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import * as path from "path";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const DATA_DIR           = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH      = path.join(DATA_DIR, "trivy-settings.json");
@@ -43,10 +43,6 @@ const SEVERITY_EMOJI: Record<Severity, string> = {
     HIGH: "🟠",
     CRITICAL: "🔴",
 };
-
-function shellQuote(value: string): string {
-    return '"' + value.replace(/(["\\$`])/g, "\\$1") + '"';
-}
 
 function sanitizeIntervalHours(value: unknown, fallback = 24): number {
     const interval = Number(value);
@@ -265,7 +261,7 @@ export class TrivyScanner {
         try {
             // Pull de la dernière image Trivy avant chaque scan
             console.log("[TrivyScanner] Pull de ghcr.io/aquasecurity/trivy:latest...");
-            await execAsync("docker pull ghcr.io/aquasecurity/trivy:latest");
+            await execFileAsync("docker", [ "pull", "ghcr.io/aquasecurity/trivy:latest" ]);
 
             let images: Array<{ image: string; stack: string; scanTarget?: string }>;
 
@@ -285,7 +281,7 @@ export class TrivyScanner {
             console.error("[TrivyScanner] Erreur lors du scan:", e);
         } finally {
             // Suppression de l'image Trivy après le scan pour libérer l'espace disque
-            execAsync("docker rmi ghcr.io/aquasecurity/trivy:latest").catch(() => { /* silencieux */ });
+            execFileAsync("docker", [ "rmi", "ghcr.io/aquasecurity/trivy:latest" ]).catch(() => { /* silencieux */ });
         }
 
         const minLevel = SEVERITY_LEVELS[this.settings.minSeverityAlert];
@@ -327,12 +323,12 @@ export class TrivyScanner {
         return scanResults;
     }
 
-    private buildTrivyCommand(image: string): string {
+    private buildTrivyArgs(image: string): string[] {
         const args = [
-            "docker run --rm",
-            "-v /var/run/docker.sock:/var/run/docker.sock",
-            "ghcr.io/aquasecurity/trivy:latest image",
-            "--format json",
+            "run", "--rm",
+            "-v", "/var/run/docker.sock:/var/run/docker.sock",
+            "ghcr.io/aquasecurity/trivy:latest", "image",
+            "--format", "json",
             "--quiet",
         ];
 
@@ -340,8 +336,8 @@ export class TrivyScanner {
             args.push("--ignore-unfixed");
         }
 
-        args.push(shellQuote(image));
-        return args.join(" ");
+        args.push(image);
+        return args;
     }
 
     private async scanImage(image: string, stack: string, scanTarget = image): Promise<ScanResult> {
@@ -355,8 +351,7 @@ export class TrivyScanner {
 
         try {
             console.log(`[TrivyScanner] Scan de ${image}...`);
-            const command = this.buildTrivyCommand(scanTarget);
-            const { stdout } = await execAsync(command, {
+            const { stdout } = await execFileAsync("docker", this.buildTrivyArgs(scanTarget), {
                 maxBuffer: 50 * 1024 * 1024,
                 timeout: sanitizeTimeoutMinutes(this.settings.scanTimeoutMinutes) * 60 * 1000,
             });
@@ -379,7 +374,7 @@ export class TrivyScanner {
             }
         } catch (e: unknown) {
             result.error = e instanceof Error ? e.message : String(e);
-            console.error(`[TrivyScanner] Erreur scan ${image}:`, result.error);
+            console.error("[TrivyScanner] Erreur de scan:", image, result.error);
         }
 
         return result;
@@ -388,9 +383,9 @@ export class TrivyScanner {
     private async getAllRunningImages(): Promise<Array<{ image: string; stack: string; scanTarget?: string }>> {
         try {
             // Inclut l'ID du conteneur pour résoudre les images sans tag
-            const { stdout } = await execAsync(
-                `docker ps --format '{{.ID}}|{{.Image}}|{{.Label "com.docker.compose.project"}}'`
-            );
+            const { stdout } = await execFileAsync("docker", [
+                "ps", "--format", "{{.ID}}|{{.Image}}|{{.Label \"com.docker.compose.project\"}}",
+            ]);
             const entries = stdout
                 .trim()
                 .split("\n")
@@ -407,9 +402,9 @@ export class TrivyScanner {
             const resolved = await Promise.all(entries.map(async e => {
                 if (/^[a-f0-9]{6,64}$/.test(e.image)) {
                     try {
-                        const { stdout: name } = await execAsync(
-                            `docker inspect ${shellQuote(e.id)} --format '{{.Config.Image}}'`
-                        );
+                        const { stdout: name } = await execFileAsync("docker", [
+                            "inspect", e.id, "--format", "{{.Config.Image}}",
+                        ]);
                         const resolved = name.trim();
                         if (resolved) {
                             return {
