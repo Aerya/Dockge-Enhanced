@@ -10,7 +10,6 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
-  security-events: write
 
 concurrency:
   group: sync-upstream-dockge
@@ -42,20 +41,8 @@ jobs:
             --db-repository ghcr.io/aquasecurity/trivy-db:2 \
             --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
             --ignore-unfixed --format json --output /work/trivy-upstream.json /work
-          docker run --rm -v /tmp/dockge-upstream:/work -v trivy-cache:/root/.cache/ "$TRIVY_IMAGE" fs \
-            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
-            --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
-            --ignore-unfixed --format sarif --output /work/trivy-upstream.sarif /work
-          cp /tmp/dockge-upstream/trivy-upstream.* .
+          cp /tmp/dockge-upstream/trivy-upstream.json .
           git worktree remove /tmp/dockge-upstream --force
-
-      - name: Publier le scan upstream dans GitHub Security
-        if: always() && hashFiles('trivy-upstream.sarif') != ''
-        continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: trivy-upstream.sarif
-          category: dockge-upstream-master
 
       - name: Conserver le rapport upstream
         if: always() && hashFiles('trivy-upstream.json') != ''
