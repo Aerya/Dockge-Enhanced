@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { R } from "redbean-node";
 import { BeanModel } from "redbean-node/dist/bean-model";
-import { generatePasswordHash, shake256, SHAKE256_LENGTH } from "../password-hash";
+import { generatePasswordHash, passwordVersionFingerprint } from "../password-hash";
 
 export class User extends BeanModel {
     /**
@@ -37,7 +37,7 @@ export class User extends BeanModel {
     static createJWT(user : User, jwtSecret : string) {
         return jwt.sign({
             username: user.username,
-            h: shake256(user.password, SHAKE256_LENGTH),
+            h: passwordVersionFingerprint(user.password, jwtSecret),
         }, jwtSecret);
     }
 

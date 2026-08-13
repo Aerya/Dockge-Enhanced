@@ -60,7 +60,7 @@ function repositoryLocation(destination: BackupDestination): string {
 
 function repositoryId(destination: BackupDestination): string {
     return createHash("sha256")
-        .update(`${repositoryLocation(destination)}\0${destination.resticPassword}`)
+        .update(repositoryLocation(destination))
         .digest("hex")
         .slice(0, 24);
 }

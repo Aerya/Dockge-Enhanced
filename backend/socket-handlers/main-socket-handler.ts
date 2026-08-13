@@ -5,7 +5,7 @@ import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
 import { R } from "redbean-node";
 import { loginRateLimiter, twoFaRateLimiter } from "../rate-limiter";
-import { generatePasswordHash, needRehashPassword, shake256, SHAKE256_LENGTH, verifyPassword } from "../password-hash";
+import { generatePasswordHash, needRehashPassword, passwordVersionFingerprint, verifyPassword } from "../password-hash";
 import { User } from "../models/user";
 import {
     callbackError,
@@ -136,7 +136,7 @@ export class MainSocketHandler extends SocketHandler {
 
                 if (user) {
                     // Check if the password changed
-                    if (decoded.h !== shake256(user.password, SHAKE256_LENGTH)) {
+                    if (decoded.h !== passwordVersionFingerprint(user.password, server.jwtSecret)) {
                         throw new Error("The token is invalid due to password change or old token");
                     }
 
