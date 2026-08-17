@@ -18,6 +18,35 @@ vulnerabilities:
     expired_at: 2026-09-13
     statement: Corrigé upstream après la dernière release Restic disponible.
 
+  - id: CVE-2026-33818
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Restic 0.19.1 embarque une stdlib Go vulnérable (Go encoding/asn1); aucune release Go corrigée stable n'est encore disponible.
+  - id: CVE-2026-39821
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Restic 0.19.1 embarque une stdlib Go vulnérable (Go net/http / x/net/idna); aucune release Go corrigée stable n'est encore disponible.
+  - id: CVE-2026-56853
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Restic 0.19.1 embarque une stdlib Go vulnérable (Go net/http HTTP/2); aucune release Go corrigée stable n'est encore disponible.
+  - id: CVE-2026-56858
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Restic 0.19.1 embarque une stdlib Go vulnérable (Go html/template); aucune release Go corrigée stable n'est encore disponible.
+  - id: CVE-2026-56859
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Restic 0.19.1 embarque une stdlib Go vulnérable (Go encoding/xml); aucune release Go corrigée stable n'est encore disponible.
+  - id: CVE-2026-56860
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Restic 0.19.1 embarque une stdlib Go vulnérable (Go net/url); aucune release Go corrigée stable n'est encore disponible.
+  - id: CVE-2026-56862
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Restic 0.19.1 embarque une stdlib Go vulnérable (Go crypto/tls); aucune release Go corrigée stable n'est encore disponible.
+
 misconfigurations:
   - id: AVD-DS-0002
     paths: ["Dockerfile"]
