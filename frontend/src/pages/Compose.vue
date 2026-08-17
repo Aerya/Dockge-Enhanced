@@ -758,6 +758,8 @@ export default {
             joinedLogService: "",
             selectedLogSince: "",
             joinedLogSince: "",
+            joinedLogTimestamps: false,
+            logTerminalJoinRequest: 0,
             terminalScale: localStorage.getItem("terminalScale") || "1",
             containerActionLabels: localStorage.getItem("containerActionLabels") === "1",
             logSearch: "",
@@ -1289,35 +1291,61 @@ export default {
                 return;
             }
 
+            const requestId = ++this.logTerminalJoinRequest;
             const previousService = this.joinedLogService;
             const previousSince = this.joinedLogSince;
+            const previousTimestamps = this.joinedLogTimestamps;
             const nextService = this.selectedLogService;
             const nextSince = this.selectedLogSince;
+            const nextTimestamps = this.logTimestamps;
+            const nextTerminalName = this.selectedLogTerminalName;
+
+            const joinNextTerminal = () => {
+                if (requestId !== this.logTerminalJoinRequest) {
+                    return;
+                }
+
+                this.$root.emitAgent(this.endpoint, "joinStackLogsTerminal", this.stack.name, nextService, nextTimestamps, nextSince, (res) => {
+                    if (requestId !== this.logTerminalJoinRequest) {
+                        return;
+                    }
+
+                    if (res.ok) {
+                        this.joinedLogService = nextService;
+                        this.joinedLogSince = nextSince;
+                        this.joinedLogTimestamps = nextTimestamps;
+                        this.$nextTick(() => {
+                            if (requestId === this.logTerminalJoinRequest) {
+                                this.$refs.combinedTerminal?.bind(this.endpoint, nextTerminalName);
+                            }
+                        });
+                    } else {
+                        this.$root.toastRes(res);
+                    }
+                });
+            };
 
             if (previousService !== undefined) {
-                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, previousService, this.logTimestamps, previousSince, () => {});
+                this.$root.emitAgent(
+                    this.endpoint,
+                    "leaveStackLogsTerminal",
+                    this.stack.name,
+                    previousService,
+                    previousTimestamps,
+                    previousSince,
+                    () => joinNextTerminal()
+                );
+            } else {
+                joinNextTerminal();
             }
+        },
 
-            this.$root.emitAgent(this.endpoint, "joinStackLogsTerminal", this.stack.name, nextService, this.logTimestamps, nextSince, (res) => {
-                if (res.ok) {
-                    this.joinedLogService = nextService;
-                    this.joinedLogSince = nextSince;
-                    this.$nextTick(() => {
-                        this.$refs.combinedTerminal?.bind(this.endpoint, this.selectedLogTerminalName);
-                    });
-                } else {
-                    this.$root.toastRes(res);
-                }
-            });
+        refreshSelectedLogTerminal() {
+            this.joinSelectedLogTerminal();
         },
 
         toggleLogTimestamps() {
-            // Quitte l'ancien terminal (état ACTUEL avant bascule) et rejoint le nouveau
-            const currentTs = this.logTimestamps;
-            if (this.joinedLogService !== undefined) {
-                this.$root.emitAgent(this.endpoint, "leaveStackLogsTerminal", this.stack.name, this.joinedLogService, currentTs, this.joinedLogSince, () => {});
-            }
-            this.logTimestamps = !currentTs;
+            this.logTimestamps = !this.logTimestamps;
             this.joinSelectedLogTerminal();
         },
 
@@ -1525,6 +1553,9 @@ export default {
             this.$root.emitAgent(this.endpoint, "startStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
+                if (res.ok) {
+                    this.refreshSelectedLogTerminal();
+                }
             });
         },
 
@@ -1534,6 +1565,9 @@ export default {
             this.$root.emitAgent(this.endpoint, "stopStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
+                if (res.ok) {
+                    this.refreshSelectedLogTerminal();
+                }
             });
         },
 
@@ -1543,6 +1577,9 @@ export default {
             this.$root.emitAgent(this.endpoint, "downStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
+                if (res.ok) {
+                    this.refreshSelectedLogTerminal();
+                }
             });
         },
 
@@ -1552,6 +1589,9 @@ export default {
             this.$root.emitAgent(this.endpoint, "restartStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
+                if (res.ok) {
+                    this.refreshSelectedLogTerminal();
+                }
             });
         },
 
@@ -1564,6 +1604,9 @@ export default {
             this.$root.emitAgent(this.endpoint, "recreateStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
+                if (res.ok) {
+                    this.refreshSelectedLogTerminal();
+                }
             });
         },
 
@@ -1573,6 +1616,9 @@ export default {
             this.$root.emitAgent(this.endpoint, "updateStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
+                if (res.ok) {
+                    this.refreshSelectedLogTerminal();
+                }
             });
         },
 
@@ -1585,6 +1631,9 @@ export default {
             this.$root.emitAgent(this.endpoint, "pullAndRecreateStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
+                if (res.ok) {
+                    this.refreshSelectedLogTerminal();
+                }
             });
         },
 
@@ -1596,6 +1645,9 @@ export default {
             this.$root.emitAgent(this.endpoint, "buildAndRecreateStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
+                if (res.ok) {
+                    this.refreshSelectedLogTerminal();
+                }
             });
         },
 

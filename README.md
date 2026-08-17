@@ -41,6 +41,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
 
+**2026-08-17 — Reliable live stack logs after Docker actions** — The Logs panel now automatically reconnects its live stream after stack start, stop, restart, update and recreate operations. The selected service, history range and timestamp mode are preserved, and terminal leave/join operations are sequenced so an older asynchronous callback cannot rebind the wrong stream.
+
 **2026-08-13 — Optional Restic backup overlap protection** — Backup settings now include an enabled-by-default guard that prevents manual, scheduled, and compose-save backups from starting while another Restic backup is active. Manual attempts display an immediate WebUI modal; automatic attempts are logged and surfaced to an open Backup tab. Disabling the option restores parallel starts for installations that explicitly require them.
 
 **2026-08-11 — Denser, resizable stack sidebar** — The desktop dashboard shows more stacks in the same height and replaces its fixed Bootstrap columns with a draggable, keyboard-accessible divider. The sidebar width is constrained to preserve both panels and remembered per browser. Its height fills the remaining viewport on short pages and follows the actual Compose, container and terminal content on longer pages. On mobile, the existing stacked navigation remains unchanged.
