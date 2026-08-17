@@ -31,6 +31,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.stackSidebar",
         ],
     },
+    {
+        id: "2026-08-17-live-stack-logs-refresh",
+        items: [
+            "releaseNews.item.liveStackLogsRefresh",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

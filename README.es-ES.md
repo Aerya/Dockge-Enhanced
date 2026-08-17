@@ -43,6 +43,8 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 <details>
 <summary><strong>Mostrar el catálogo completo de funcionalidades</strong></summary>
 
+**2026-08-17 — Registros de stack fiables después de las acciones Docker** — El panel Registros vuelve a conectar automáticamente su flujo en tiempo real después de iniciar, detener, reiniciar, actualizar o recrear una stack. Se conservan el servicio, el periodo de historial y el modo de timestamps seleccionados, y las operaciones de salida/reconexión del terminal se secuencian para impedir que un callback asíncrono antiguo vuelva a enlazar el flujo equivocado.
+
 **2026-08-13 — Protección opcional contra copias Restic simultáneas** — Los ajustes de copia de seguridad incluyen ahora una protección activada por defecto que impide iniciar una copia manual, programada o al guardar un Compose mientras ya se ejecuta otra copia Restic. Los intentos manuales muestran inmediatamente una ventana en la WebUI; los intentos automáticos se registran y se notifican en la pestaña Copias de seguridad si está abierta. Desactivar la opción restablece los inicios paralelos para las instalaciones que los necesiten expresamente.
 
 **2026-08-11 — Columna de stacks más densa y redimensionable** — El panel de escritorio muestra más stacks en la misma altura y sustituye sus columnas Bootstrap fijas por un separador accesible con ratón y teclado. La anchura de la columna está limitada para conservar ambos paneles y se recuerda por navegador. Su altura llena el espacio visible restante en páginas cortas y sigue el contenido real de Compose, los contenedores y el terminal en páginas largas. En móviles, la navegación apilada existente no cambia.
