@@ -413,12 +413,16 @@ export default defineComponent({
         },
 
         bindTerminal(endpoint : string, terminalName : string, terminal : Terminal) {
+            terminalMap.set(terminalName, terminal);
+
             // Load terminal, get terminal screen
             this.emitAgent(endpoint, "terminalJoin", terminalName, (res) => {
                 if (res.ok) {
                     terminal.write(res.buffer);
-                    terminalMap.set(terminalName, terminal);
                 } else {
+                    if (terminalMap.get(terminalName) === terminal) {
+                        terminalMap.delete(terminalName);
+                    }
                     this.toastRes(res);
                 }
             });
