@@ -81,6 +81,8 @@ export default {
             partialSearchLine: "",
             suppressSelectionCopy: false,
             longestOutputLine: 0,
+            terminalResizeObserver: null,
+            terminalResizeFrame: null,
         };
     },
     watch: {
@@ -155,18 +157,47 @@ export default {
                 }
             });
         }
-        // Fit the terminal width to the div container size after terminal is created.
-        this.updateTerminalSize();
+        this.observeTerminalSize();
+        this.$nextTick(() => {
+            window.requestAnimationFrame(() => this.updateTerminalSize());
+        });
     },
 
     unmounted() {
         window.removeEventListener("resize", this.onResizeEvent); // Remove the resize event listener from the window object.
+        this.terminalResizeObserver?.disconnect();
+        if (this.terminalResizeFrame) {
+            window.cancelAnimationFrame(this.terminalResizeFrame);
+        }
         this.$root.unbindTerminal(this.name);
         this.terminal.dispose();
         this.$refs.terminal?.removeEventListener('contextmenu', this.handleContextMenu);
     },
 
     methods: {
+        observeTerminalSize() {
+            const element = this.$refs.terminal;
+            if (!element || typeof ResizeObserver === "undefined") {
+                return;
+            }
+
+            this.terminalResizeObserver = new ResizeObserver(() => {
+                if (this.terminalResizeFrame) {
+                    window.cancelAnimationFrame(this.terminalResizeFrame);
+                }
+
+                this.terminalResizeFrame = window.requestAnimationFrame(() => {
+                    this.terminalResizeFrame = null;
+                    if (element.clientWidth <= 0 || element.clientHeight <= 0) {
+                        return;
+                    }
+                    this.updateTerminalSize();
+                });
+            });
+
+            this.terminalResizeObserver.observe(element);
+        },
+
         bind(endpoint, name) {
             // Workaround: normally this.name should be set, but it is not sometimes, so we use the parameter, but eventually this.name and name must be the same name
             if (name) {
@@ -295,6 +326,11 @@ export default {
          * It then addes an event listener to the window object to listen for resize events and calls the fit method of the terminalFitAddOn.
          */
         updateTerminalSize() {
+            const host = this.$refs.terminal;
+            if (!host || host.clientWidth <= 0 || host.clientHeight <= 0) {
+                return;
+            }
+
             if (!Object.hasOwn(this, "terminalFitAddOn")) {
                 this.terminalFitAddOn = new FitAddon();
                 this.terminal.loadAddon(this.terminalFitAddOn);
@@ -530,7 +566,7 @@ export default {
          * Handles the resize event of the terminal component.
          */
         onResizeEvent() {
-            this.terminalFitAddOn.fit();
+            this.updateTerminalSize();
             let rows = this.terminal.rows;
             let cols = this.terminal.cols;
             this.$root.emitAgent(this.endpoint, "terminalResize", this.name, rows, cols);
