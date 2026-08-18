@@ -7,6 +7,7 @@ import {
     BackupRunLock,
     assertExistingPathWithinRoots,
     assertPathWithinRoots,
+    assertSafeSftpConfig,
     buildComposeCommandArgs,
     buildResticCommandArgs,
     normalizeStackBackupPolicy,
@@ -104,4 +105,38 @@ test("conserve les valeurs Restic et Compose dans des arguments séparés", () =
     ]), [
         "compose", "-f", "compose.yaml", "exec", "-T", "service;false", "sh", "-c", "echo sauvegarde",
     ]);
+});
+
+test("rejette les champs SFTP capables d'injecter des options SSH", () => {
+    const base = {
+        host: "backup.example.com",
+        port: 22,
+        user: "dockge",
+        path: "/backups/dockge",
+        authMode: "key" as const,
+        keyPath: "/run/secrets/id_ed25519",
+    };
+
+    assert.deepEqual(assertSafeSftpConfig(base), base);
+
+    assert.throws(
+        () => assertSafeSftpConfig({ ...base, host: "-oProxyCommand=touch /tmp/pwned" }),
+        /Hôte SFTP invalide/,
+    );
+    assert.throws(
+        () => assertSafeSftpConfig({ ...base, host: "backup.example.com -oProxyCommand=id" }),
+        /Hôte SFTP invalide/,
+    );
+    assert.throws(
+        () => assertSafeSftpConfig({ ...base, user: "dockge -oProxyCommand=id" }),
+        /Utilisateur SFTP invalide/,
+    );
+    assert.throws(
+        () => assertSafeSftpConfig({ ...base, keyPath: "/run/secrets/key -oProxyCommand=id" }),
+        /Chemin de clé SSH invalide/,
+    );
+    assert.throws(
+        () => assertSafeSftpConfig({ ...base, keyPath: "relative/id_ed25519" }),
+        /Chemin de clé SSH invalide/,
+    );
 });
