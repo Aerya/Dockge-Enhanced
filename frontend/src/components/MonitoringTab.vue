@@ -336,15 +336,6 @@
             </div>
 
             <div class="d-flex align-items-center gap-3 flex-wrap mb-4">
-                <div class="d-flex align-items-center gap-2">
-                    <small class="form-text">{{ $t('watcher.notifLang') }}</small>
-                    <div class="notif-lang-toggle">
-                        <button :class="['notif-lang-btn', monSettings.notificationLang !== 'en' && 'active']"
-                            @click="monSettings.notificationLang = 'fr'">🇫🇷</button>
-                        <button :class="['notif-lang-btn', monSettings.notificationLang === 'en' && 'active']"
-                            @click="monSettings.notificationLang = 'en'">🇬🇧</button>
-                    </div>
-                </div>
                 <button class="btn btn-primary btn-sm" @click="saveMonSettings" :disabled="savingMon">
                     <span v-if="savingMon" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
@@ -738,7 +729,6 @@ interface MonitoringSettings {
     healthcheckCooldownMinutes: number;
     discordWebhooks: string[];
     appriseUrls: string[];
-    notificationLang: "fr" | "en";
     lowPowerMode: boolean;
 }
 
@@ -817,7 +807,6 @@ const monSettings = ref<MonitoringSettings>({
     healthcheckCooldownMinutes: 30,
     discordWebhooks: [],
     appriseUrls: [],
-    notificationLang: "fr",
     lowPowerMode: false,
 });
 
@@ -1415,26 +1404,6 @@ onUnmounted(() => {
 .notif-url-display {
     font-family: monospace;
     font-size: .78rem;
-}
-.notif-lang-toggle {
-    display: flex;
-    gap: .2rem;
-    background: rgba(255,255,255,.06);
-    border-radius: 50rem;
-    padding: 2px 4px;
-    border: 1px solid rgba(255,255,255,.1);
-}
-.notif-lang-btn {
-    background: transparent;
-    border: none;
-    border-radius: 50rem;
-    padding: 1px 6px;
-    font-size: .8rem;
-    cursor: pointer;
-    opacity: .5;
-    transition: opacity .15s, background .15s;
-    &.active { opacity: 1; background: rgba(255,255,255,.12); }
-    &:hover:not(.active) { opacity: .75; }
 }
 .btn-normal {
     background: rgba(255,255,255,.08);

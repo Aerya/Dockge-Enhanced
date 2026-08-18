@@ -392,6 +392,21 @@ export class MainSocketHandler extends SocketHandler {
             }
         });
 
+        // Langue de l'interface : mémorisée côté serveur pour que les
+        // notifications (Discord/Apprise) suivent la langue du système.
+        socket.on("setUILocale", async (locale) => {
+            try {
+                checkLogin(socket);
+                if (typeof locale === "string" && /^[a-zA-Z-]{2,12}$/.test(locale)) {
+                    await Settings.set("uiLocale", locale, "general");
+                }
+            } catch (e) {
+                if (e instanceof Error) {
+                    log.warn("setUILocale", e.message);
+                }
+            }
+        });
+
         // Disconnect all other socket clients of the user
         socket.on("disconnectOtherSocketClients", async () => {
             try {

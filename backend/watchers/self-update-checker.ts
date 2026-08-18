@@ -12,6 +12,7 @@ import * as path from "path";
 import axios from "axios";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { getNotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 
 const SELF_REPO = "aerya/dockge-enhanced";
@@ -438,21 +439,33 @@ export class SelfUpdateChecker {
     const apprise = await this._loadApprise();
     if (webhooks.length === 0 && !apprise) return;
 
+    const en = (await getNotificationLang()) === "en";
     const hostname = (await Settings.get("primaryHostname")) || "";
     const hostnamePrefix = hostname ? `[${hostname}] ` : "";
     const footerHost = hostname ? ` · ${hostname}` : "";
 
-    const title = `${hostnamePrefix}🔔 Mise à jour Dockge-Enhanced disponible`;
-    const body = [
-      "Une nouvelle image est disponible sur GHCR.",
-      "",
-      "**Pour mettre à jour :**",
-      "```bash",
-      `docker pull ghcr.io/${repo}:${SELF_TAG}`,
-      `docker compose up -d`,
-      "```",
-      "_Exécuter depuis le dossier contenant votre compose.yaml_",
-    ].join("\n");
+    const title = `${hostnamePrefix}${en ? "🔔 Dockge-Enhanced update available" : "🔔 Mise à jour Dockge-Enhanced disponible"}`;
+    const body = en
+      ? [
+          "A new image is available on GHCR.",
+          "",
+          "**To update:**",
+          "```bash",
+          `docker pull ghcr.io/${repo}:${SELF_TAG}`,
+          `docker compose up -d`,
+          "```",
+          "_Run from the folder containing your compose.yaml_",
+        ].join("\n")
+      : [
+          "Une nouvelle image est disponible sur GHCR.",
+          "",
+          "**Pour mettre à jour :**",
+          "```bash",
+          `docker pull ghcr.io/${repo}:${SELF_TAG}`,
+          `docker compose up -d`,
+          "```",
+          "_Exécuter depuis le dossier contenant votre compose.yaml_",
+        ].join("\n");
 
     if (webhooks.length > 0) {
       await new DiscordNotifier(webhooks).sendEmbed({
@@ -475,15 +488,21 @@ export class SelfUpdateChecker {
     const apprise = await this._loadApprise();
     if (webhooks.length === 0 && !apprise) return;
 
+    const en = (await getNotificationLang()) === "en";
     const hostname = (await Settings.get("primaryHostname")) || "";
     const hostnamePrefix = hostname ? `[${hostname}] ` : "";
     const footerHost = hostname ? ` · ${hostname}` : "";
 
-    const title = `${hostnamePrefix}✅ Dockge-Enhanced mis à jour`;
-    const body = [
-      `Le conteneur **${containerName}** a été mis à jour automatiquement.`,
-      `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
-    ].join("\n");
+    const title = `${hostnamePrefix}${en ? "✅ Dockge-Enhanced updated" : "✅ Dockge-Enhanced mis à jour"}`;
+    const body = en
+      ? [
+          `The container **${containerName}** was updated automatically.`,
+          `New digest: \`${newDigest.slice(7, 19)}\``,
+        ].join("\n")
+      : [
+          `Le conteneur **${containerName}** a été mis à jour automatiquement.`,
+          `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
+        ].join("\n");
 
     if (webhooks.length > 0) {
       await new DiscordNotifier(webhooks).sendEmbed({

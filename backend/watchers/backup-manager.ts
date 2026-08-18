@@ -13,6 +13,7 @@ import * as path from "path";
 import * as yaml from "js-yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { getNotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { ValidationError } from "../util-server";
 
@@ -1977,7 +1978,7 @@ export class BackupManager {
         const apprise = await this.loadAppriseNotifier();
         if (!discord && !apprise) return;
 
-        const en     = (this.settings.notificationLang ?? "fr") === "en";
+        const en     = (await getNotificationLang()) === "en";
         const locale = en ? "en-GB" : "fr-FR";
         const hostname: string = await Settings.get("primaryHostname") || "";
         const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
@@ -2021,7 +2022,7 @@ export class BackupManager {
         const apprise  = await this.loadAppriseNotifier();
         if (!discord && !apprise) return;
 
-        const en       = (this.settings.notificationLang ?? "fr") === "en";
+        const en       = (await getNotificationLang()) === "en";
         const locale   = en ? "en-GB" : "fr-FR";
         const t        = (fr: string, enStr: string) => en ? enStr : fr;
         const hostname: string = await Settings.get("primaryHostname") || "";

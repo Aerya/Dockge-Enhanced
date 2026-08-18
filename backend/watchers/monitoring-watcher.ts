@@ -11,6 +11,7 @@ import { R } from "redbean-node";
 import yaml from "yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { getNotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
@@ -426,7 +427,7 @@ export class MonitoringWatcher {
         const hostnamePrefix = hostname ? `[${hostname}] ` : "";
         const footerHost     = hostname ? ` - ${hostname}` : "";
 
-        const en = (this.settings.notificationLang ?? "fr") === "en";
+        const en = (await getNotificationLang()) === "en";
         const tr = (fr: string, enStr: string) => en ? enStr : fr;
 
         const title = `${hostnamePrefix}` + tr(
@@ -458,7 +459,7 @@ export class MonitoringWatcher {
         const hostnamePrefix = hostname ? `[${hostname}] ` : "";
         const footerHost     = hostname ? ` - ${hostname}` : "";
 
-        const en = (this.settings.notificationLang ?? "fr") === "en";
+        const en = (await getNotificationLang()) === "en";
         const tr = (fr: string, enStr: string) => en ? enStr : fr;
         const actionLabel = this.healthActionLabel(event.action, en);
         const statusLabel = event.actionStatus === "success"
