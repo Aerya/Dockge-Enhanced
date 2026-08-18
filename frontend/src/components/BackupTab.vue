@@ -2705,31 +2705,6 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     &.diff-added   .diff-text { color: #bbf7d0; }
 }
 
-.notif-lang-toggle {
-    display: inline-flex;
-    gap: 2px;
-    background: rgba(255,255,255,.05);
-    border-radius: 50rem;
-    padding: 2px 4px;
-    border: 1px solid rgba(255,255,255,.08);
-}
-.notif-lang-btn {
-    background: none;
-    border: none;
-    font-size: .9rem;
-    line-height: 1;
-    padding: 1px 4px;
-    border-radius: 50rem;
-    cursor: pointer;
-    opacity: .4;
-    transition: opacity .15s, background .15s;
-    &:hover { opacity: .75; }
-    &.active {
-        opacity: 1;
-        background: rgba(255,255,255,.1);
-    }
-}
-
 // ─── Politiques de cohérence par stack ──────────────────────────
 .stacks-exclude-section {
     padding: 0 !important;

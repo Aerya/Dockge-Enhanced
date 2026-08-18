@@ -307,6 +307,8 @@ export default {
         this.checkSelfUpdate();
         this.fetchKulaStatus();
         this.fetchDozzleStatus();
+        // Informe le backend de la langue de l'interface (notifications)
+        this.$root.getSocket().emit("setUILocale", localStorage.getItem("locale") ?? "en");
         // Poll system stats : cadence selon le mode + pause si onglet caché
         this.statsPoller = makePoller({
             fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus(), this.fetchDozzleStatus() ]),

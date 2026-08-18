@@ -1235,13 +1235,7 @@
           </div>
 
           <div class="d-flex align-items-center gap-3 flex-wrap">
-            <div class="d-flex align-items-center gap-2">
-              <small class="form-text">{{ $t("watcher.notifLang") }}</small>
-              <div class="notif-lang-toggle">
-                <button :class="['notif-lang-btn', imgSettings.notificationLang !== 'en' && 'active']" @click="imgSettings.notificationLang = 'fr'">🇫🇷</button>
-                <button :class="['notif-lang-btn', imgSettings.notificationLang === 'en' && 'active']" @click="imgSettings.notificationLang = 'en'">🇬🇧</button>
-              </div>
-            </div>
+
             <button class="btn btn-primary btn-sm" @click="saveImgNotif" :disabled="savingImgNotif">
               <span v-if="savingImgNotif" class="spinner-border spinner-border-sm me-1" />
               <font-awesome-icon v-else icon="save" class="me-1" />{{ $t("watcher.apprise.save") }}
@@ -1294,13 +1288,7 @@
           </div>
 
           <div class="d-flex align-items-center gap-3 flex-wrap">
-            <div class="d-flex align-items-center gap-2">
-              <small class="form-text">{{ $t("watcher.notifLang") }}</small>
-              <div class="notif-lang-toggle">
-                <button :class="['notif-lang-btn', trivySettings.notificationLang !== 'en' && 'active']" @click="trivySettings.notificationLang = 'fr'">🇫🇷</button>
-                <button :class="['notif-lang-btn', trivySettings.notificationLang === 'en' && 'active']" @click="trivySettings.notificationLang = 'en'">🇬🇧</button>
-              </div>
-            </div>
+
             <button class="btn btn-primary btn-sm" @click="saveTrivyNotif" :disabled="savingTrivyNotif">
               <span v-if="savingTrivyNotif" class="spinner-border spinner-border-sm me-1" />
               <font-awesome-icon v-else icon="save" class="me-1" />{{ $t("watcher.apprise.save") }}
@@ -1353,13 +1341,7 @@
           </div>
 
           <div class="d-flex align-items-center gap-3 flex-wrap">
-            <div class="d-flex align-items-center gap-2">
-              <small class="form-text">{{ $t("watcher.notifLang") }}</small>
-              <div class="notif-lang-toggle">
-                <button :class="['notif-lang-btn', backupNotifLang !== 'en' && 'active']" @click="backupNotifLang = 'fr'">🇫🇷</button>
-                <button :class="['notif-lang-btn', backupNotifLang === 'en' && 'active']" @click="backupNotifLang = 'en'">🇬🇧</button>
-              </div>
-            </div>
+
             <button class="btn btn-primary btn-sm" @click="saveBackupNotif" :disabled="savingBackupNotif">
               <span v-if="savingBackupNotif" class="spinner-border spinner-border-sm me-1" />
               <font-awesome-icon v-else icon="save" class="me-1" />{{ $t("watcher.apprise.save") }}
@@ -1427,7 +1409,6 @@ interface ImgSettings {
   enabled: boolean;
   intervalHours: number;
   discordWebhooks: string[];
-  notificationLang: "fr" | "en";
   autoUpdateConfig: Record<string, AutoUpdateEntry>;
   pendingAutoUpdates: string[];
   imagePlatform: string;
@@ -1439,7 +1420,6 @@ interface TrivySettings {
   minSeverityAlert: string;
   ignoreUnfixed: boolean;
   scanTimeoutMinutes: number;
-  notificationLang: "fr" | "en";
   ignoredCVEs: string[];
 }
 interface ImageStatus {
@@ -1535,7 +1515,6 @@ const imgSettings = ref<ImgSettings>({
   enabled: false,
   intervalHours: 6,
   discordWebhooks: [],
-  notificationLang: "fr",
   autoUpdateConfig: {},
   pendingAutoUpdates: [],
   imagePlatform: "",
@@ -1548,7 +1527,6 @@ const trivySettings = ref<TrivySettings>({
   minSeverityAlert: "HIGH",
   ignoreUnfixed: false,
   scanTimeoutMinutes: 10,
-  notificationLang: "fr",
   ignoredCVEs: [],
 });
 const trivyWebhook = ref("");
@@ -1625,7 +1603,6 @@ const testingAppriseBackup = ref(false);
 const backupWebhooks = ref<string[]>([]);
 const backupNewWebhook = ref("");
 const backupTestingWh = ref(false);
-const backupNotifLang = ref<"fr" | "en">("fr");
 const savingBackupNotif = ref(false);
 const savingImgNotif   = ref(false);
 const savingTrivyNotif = ref(false);
@@ -1741,7 +1718,6 @@ onMounted(async () => {
       enabled: imgRes.data.enabled,
       intervalHours: imgRes.data.intervalHours,
       discordWebhooks: imgRes.data.discordWebhooks ?? [],
-      notificationLang: imgRes.data.notificationLang ?? "fr",
       autoUpdateConfig: imgRes.data.autoUpdateConfig ?? {},
       pendingAutoUpdates: imgRes.data.pendingAutoUpdates ?? [],
       imagePlatform: imgRes.data.imagePlatform ?? "",
@@ -1761,7 +1737,6 @@ onMounted(async () => {
   if (histRes.ok) updateHistory.value = histRes.data ?? [];
   if (backupRes.ok) {
     backupWebhooks.value = backupRes.data.discordWebhooks ?? [];
-    backupNotifLang.value = backupRes.data.notificationLang ?? "fr";
   }
   if (trivyStatusRes.ok)
     trivyStatus.value = {
@@ -1931,7 +1906,6 @@ async function saveBackupNotif() {
   try {
     const res = await api("POST", "/backup/settings", {
       discordWebhooks:  backupWebhooks.value,
-      notificationLang: backupNotifLang.value,
       appriseUrls:      appriseSettings.value.backupUrls,
     });
     showToast(res.ok ? t("watcher.backup.saved") : `❌ ${res.message}`, res.ok);
@@ -2068,7 +2042,6 @@ async function saveImgNotif() {
   try {
     const res = await api("POST", "/image/settings", {
       discordWebhooks:  imgSettings.value.discordWebhooks,
-      notificationLang: imgSettings.value.notificationLang,
       appriseUrls:      appriseSettings.value.imagesUrls,
     });
     showToast(res.ok ? t("watcher.img.saved") : `❌ ${res.message}`, res.ok);
@@ -2083,7 +2056,6 @@ async function saveTrivyNotif() {
   try {
     const res = await api("POST", "/trivy/settings", {
       discordWebhooks:  trivySettings.value.discordWebhooks,
-      notificationLang: trivySettings.value.notificationLang,
       appriseUrls:      appriseSettings.value.trivyUrls,
     });
     showToast(res.ok ? t("watcher.trivy.saved") : `❌ ${res.message}`, res.ok);
@@ -2551,36 +2523,6 @@ async function removeCred(registry: string) {
 .shadow-box-settings {
   padding: 20px;
   min-height: calc(100vh - 155px);
-}
-
-// Toggle langue notifications Discord
-.notif-lang-toggle {
-  display: inline-flex;
-  gap: 2px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 50rem;
-  padding: 2px 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.notif-lang-btn {
-  background: none;
-  border: none;
-  font-size: 0.9rem;
-  line-height: 1;
-  padding: 1px 4px;
-  border-radius: 50rem;
-  cursor: pointer;
-  opacity: 0.4;
-  transition:
-    opacity 0.15s,
-    background 0.15s;
-  &:hover {
-    opacity: 0.75;
-  }
-  &.active {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.1);
-  }
 }
 
 .settings-subheading {

@@ -34,6 +34,8 @@ export default defineComponent({
             this.$i18n.locale = lang;
             localStorage.locale = lang;
             setPageLocale();
+            // Informe le backend pour que les notifications suivent la langue du système
+            this.getSocket().emit("setUILocale", lang);
         }
     }
 });

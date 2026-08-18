@@ -18,6 +18,7 @@ import { parse as parseDotenv } from "dotenv";
 EventEmitter.defaultMaxListeners = 50;
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { getNotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import {
   acceptedComposeFileNames,
@@ -1456,7 +1457,7 @@ export class ImageWatcher {
         )
       : null;
     const uiUrl = this.baseUrl || null;
-    const en = (this.settings.notificationLang ?? "fr") === "en";
+    const en = (await getNotificationLang()) === "en";
     const locale = en ? "en-GB" : "fr-FR";
     const t = (fr: string, enStr: string) => (en ? enStr : fr);
     const hostname: string = (await Settings.get("primaryHostname")) || "";
