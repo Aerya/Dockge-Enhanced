@@ -662,8 +662,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from "vue";
-
-const props = defineProps<{ externalLang?: "fr" | "en" }>();
+import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -928,7 +927,10 @@ const i18n = {
 
 // ─── State ────────────────────────────────────────────────────────
 
-const lang = ref<"fr" | "en">("fr");
+// Suit la langue globale de l'app ; le dictionnaire inline n'existe
+// qu'en fr/en, toute autre langue retombe sur l'anglais.
+const { locale } = useI18n();
+const lang = computed(() => ((locale.value ?? "en").startsWith("fr") ? "fr" : "en"));
 const tab = ref<"images" | "volumes" | "containers" | "networks">("images");
 
 const images = ref<DockerImage[]>([]);
@@ -1129,19 +1131,11 @@ const ctrBadgeClass = computed(() => {
     return "bg-success";
 });
 
-// ─── Lang ─────────────────────────────────────────────────────────
-
-watch(() => props.externalLang, (v) => { if (v) lang.value = v; });
 watch(tab, (selected) => {
     if (selected === "networks" && networks.value.length === 0 && !loadingNetworks.value) {
         loadNetworks();
     }
 });
-
-function setLang(l: "fr" | "en") {
-    lang.value = l;
-    localStorage.setItem("dockerResourcesLang", l);
-}
 
 // ─── API ──────────────────────────────────────────────────────────
 
@@ -1535,16 +1529,8 @@ function fmtDate(iso?: string | null): string {
 // ─── Lifecycle ────────────────────────────────────────────────────
 
 onMounted(() => {
-    if (props.externalLang) {
-        lang.value = props.externalLang;
-    } else {
-        const saved = localStorage.getItem("dockerResourcesLang");
-        if (saved === "fr" || saved === "en") lang.value = saved;
-        else {
-            const appLang = localStorage.getItem("lang") ?? "fr";
-            lang.value = appLang.startsWith("fr") ? "fr" : "en";
-        }
-    }
+    // Nettoie l'ancienne clé de langue propre à cette page
+    localStorage.removeItem("dockerResourcesLang");
     loadImages();
     loadVolumes();
     loadContainers();
@@ -1554,27 +1540,6 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 @import "../styles/vars.scss";
-
-// ── Lang toggle (identique à WatcherSettings) ────────────────────
-.lang-toggle {
-    display: flex;
-    gap: 4px;
-}
-.lang-btn {
-    background: none;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    font-size: 1.4rem;
-    cursor: pointer;
-    padding: 2px 6px;
-    opacity: 0.45;
-    transition: opacity 0.15s, border-color 0.15s;
-    &:hover { opacity: 0.8; }
-    &.active {
-        opacity: 1;
-        border-color: $primary;
-    }
-}
 
 // ── Table ────────────────────────────────────────────────────────
 .th-sortable:hover { color: #d1d5db; }
