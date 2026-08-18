@@ -1050,5 +1050,9 @@
     "selfUpdate.banner": "Dockge-Enhanced: new version available",
     "selfUpdate.copy": "Copy",
     "selfUpdate.copied": "Copied!",
-    "selfUpdate.dismiss": "Dismiss"
+    "selfUpdate.dismiss": "Dismiss",
+    "timeUnit.second": "{0}s",
+    "timeUnit.minute": "{0} min",
+    "timeUnit.hour": "{0} h",
+    "timeUnit.day": "{0} d"
 }

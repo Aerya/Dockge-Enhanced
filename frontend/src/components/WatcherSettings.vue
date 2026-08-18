@@ -1795,7 +1795,9 @@ function rollbackCountdown(entry: RollbackEntry): string {
   if (ms <= 0) return t("watcher.rollback.expired");
   const h = Math.floor(ms / 3_600_000);
   const m = Math.floor((ms % 3_600_000) / 60_000);
-  return h > 0 ? `${h}h${String(m).padStart(2, "0")}` : `${m}min`;
+  return h > 0
+    ? `${t("timeUnit.hour", [ h ])} ${t("timeUnit.minute", [ String(m).padStart(2, "0") ])}`
+    : t("timeUnit.minute", [ m ]);
 }
 
 function fmtDate(iso: string): string {
