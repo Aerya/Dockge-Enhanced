@@ -57,12 +57,12 @@
                 <!-- Bannière mise à jour Dockge-Enhanced -->
                 <div v-if="selfUpdate.available && !selfUpdate.dismissed" class="self-update-banner">
                     <font-awesome-icon icon="arrow-circle-up" class="me-1" />
-                    Dockge-Enhanced : nouvelle version disponible —
-                    <code class="mx-2">docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d</code>
-                    <button class="btn-copy ms-1" @click="copyUpdateCmd" :title="selfUpdate.copied ? 'Copié !' : 'Copier'">
+                    {{ $t("selfUpdate.banner") }} —
+                    <code class="mx-2">{{ selfUpdateCmd }}</code>
+                    <button class="btn-copy ms-1" @click="copyUpdateCmd" :title="selfUpdate.copied ? $t('selfUpdate.copied') : $t('selfUpdate.copy')">
                         {{ selfUpdate.copied ? '✓' : '⧉' }}
                     </button>
-                    <button class="btn-dismiss ms-2" @click="selfUpdate.dismissed = true" title="Fermer">✕</button>
+                    <button class="btn-dismiss ms-2" @click="selfUpdate.dismissed = true" :title="$t('selfUpdate.dismiss')">✕</button>
                 </div>
             </div>
 
@@ -260,6 +260,7 @@ export default {
             selfUpdate: {
                 available:     false,
                 containerName: "dockge-enhanced",
+                repo:          "",
                 dismissed:     false,
                 copied:        false,
             },
@@ -288,6 +289,11 @@ export default {
             } else {
                 return false;
             }
+        },
+
+        selfUpdateCmd() {
+            const repo = this.selfUpdate.repo || "aerya/dockge-enhanced";
+            return `docker pull ghcr.io/${repo}:latest && docker compose up -d`;
         },
 
     },
@@ -333,12 +339,13 @@ export default {
                 if (data.ok && data.updateAvailable) {
                     this.selfUpdate.available     = true;
                     this.selfUpdate.containerName = data.containerName ?? "dockge-enhanced";
+                    this.selfUpdate.repo          = data.repo ?? "";
                 }
             } catch { /* silencieux */ }
         },
 
         copyUpdateCmd() {
-            const cmd = `docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`;
+            const cmd = this.selfUpdateCmd;
             const markCopied = () => {
                 this.selfUpdate.copied = true;
                 setTimeout(() => { this.selfUpdate.copied = false; }, 2000);

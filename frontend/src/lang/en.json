@@ -1100,5 +1100,9 @@
     "startGuard.nothing": "Do nothing",
     "startGuard.seconds": "seconds",
     "releaseNews.item.startGuard": "Each managed stack can now require host mounts or systemd services before it starts, restarts or recreates containers. For mounts, a subpath is accepted and Dockge remembers the resolved mount without falling back to a parent if it disappears.",
-    "releaseNews.item.startGuardWatch": "Stack prerequisites can also be monitored continuously: after a configurable delay, Dockge stops the stack when a dependency disappears and resumes it only after recovery, only when the watcher stopped it itself."
+    "releaseNews.item.startGuardWatch": "Stack prerequisites can also be monitored continuously: after a configurable delay, Dockge stops the stack when a dependency disappears and resumes it only after recovery, only when the watcher stopped it itself.",
+    "selfUpdate.banner": "Dockge-Enhanced: new version available",
+    "selfUpdate.copy": "Copy",
+    "selfUpdate.copied": "Copied!",
+    "selfUpdate.dismiss": "Dismiss"
 }

@@ -1046,5 +1046,9 @@
     "stackGit.restore": "還原檔案",
     "stackGit.restoreConfirm": "從提交 {hash} 還原已追蹤的堆疊檔案？工作區必須是乾淨的，Compose 會先經過校驗，失敗時自動復原。",
     "stackPin": "將此堆疊固定到列表頂部",
-    "stackUnpin": "取消置頂此堆疊"
+    "stackUnpin": "取消置頂此堆疊",
+    "selfUpdate.banner": "Dockge-Enhanced：有新版本可用",
+    "selfUpdate.copy": "複製",
+    "selfUpdate.copied": "已複製！",
+    "selfUpdate.dismiss": "關閉"
 }

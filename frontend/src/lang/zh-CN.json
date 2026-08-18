@@ -1046,5 +1046,9 @@
     "watcher.updateHistory.showAll": "显示全部 {count} 条记录",
     "watcher.updateHistory.stack": "堆栈",
     "watcher.updateHistory.status": "状态",
-    "watcher.updateHistory.summary": "共 {count} 条，{failures} 条失败，最近一次：{last}"
+    "watcher.updateHistory.summary": "共 {count} 条，{failures} 条失败，最近一次：{last}",
+    "selfUpdate.banner": "Dockge-Enhanced：有新版本可用",
+    "selfUpdate.copy": "复制",
+    "selfUpdate.copied": "已复制！",
+    "selfUpdate.dismiss": "关闭"
 }
