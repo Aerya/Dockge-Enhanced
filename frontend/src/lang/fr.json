@@ -1036,5 +1036,9 @@
     "stackPin": "Épingler cette stack en haut de la liste",
     "stackUnpin": "Désépingler cette stack",
     "disableAuth": "désactiver l'authentification",
-    "scenarios": "dans lesquels vous avez l'intention d'implémenter une authentification tierce"
+    "scenarios": "dans lesquels vous avez l'intention d'implémenter une authentification tierce",
+    "selfUpdate.banner": "Dockge-Enhanced : nouvelle version disponible",
+    "selfUpdate.copy": "Copier",
+    "selfUpdate.copied": "Copié !",
+    "selfUpdate.dismiss": "Fermer"
 }
