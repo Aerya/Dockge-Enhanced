@@ -298,6 +298,63 @@ function sanitizeRetention(value: unknown): number {
     return Math.max(0, Math.floor(n));
 }
 
+/**
+ * Restic transmet certaines options SFTP à ssh sous forme de chaînes ensuite
+ * découpées en argv. Les champs utilisateur qui entrent dans ces chaînes ne
+ * doivent donc jamais pouvoir créer un nouvel argument SSH.
+ */
+export function assertSafeSftpConfig(config: SftpConfig): SftpConfig {
+    const host = String(config.host ?? "");
+    const user = String(config.user ?? "");
+    const remotePath = String(config.path ?? "");
+    const keyPath = config.keyPath == null ? undefined : String(config.keyPath);
+
+    if (
+        host.length < 1 ||
+        host.length > 255 ||
+        host.startsWith("-") ||
+        /[\s\x00-\x1f\x7f]/.test(host)
+    ) {
+        throw new ValidationError("Hôte SFTP invalide");
+    }
+
+    if (
+        user.length < 1 ||
+        user.length > 128 ||
+        /[\s\x00-\x1f\x7f]/.test(user)
+    ) {
+        throw new ValidationError("Utilisateur SFTP invalide");
+    }
+
+    if (
+        remotePath.length < 1 ||
+        remotePath.length > 2000 ||
+        !remotePath.startsWith("/") ||
+        /[\x00-\x1f\x7f]/.test(remotePath)
+    ) {
+        throw new ValidationError("Chemin SFTP invalide");
+    }
+
+    if (config.authMode === "key" && keyPath) {
+        if (
+            !path.isAbsolute(keyPath) ||
+            keyPath.length > 2000 ||
+            /[\s\x00-\x1f\x7f]/.test(keyPath)
+        ) {
+            throw new ValidationError("Chemin de clé SSH invalide");
+        }
+    }
+
+    return {
+        ...config,
+        host,
+        user,
+        path: remotePath,
+        keyPath,
+        port: sanitizePort(config.port),
+    };
+}
+
 function assertSafeResticId(id: string): string {
     if (!/^[a-zA-Z0-9_-]{1,128}$/.test(id)) {
         throw new Error("Identifiant de snapshot invalide");
@@ -388,8 +445,8 @@ function buildResticEnv(dest: BackupDestination): Record<string, string> {
  */
 function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string[] {
     if (dest.type !== "sftp" || !dest.sftp) return [];
-    const s = dest.sftp;
-    const port = sanitizePort(s.port);
+    const s = assertSafeSftpConfig(dest.sftp);
+    const port = s.port;
 
     if (s.authMode === "password" && tmpFile) {
         // Restic parse la valeur de -o sftp.command= avec le parseur CSV de Go :
@@ -466,7 +523,7 @@ function buildRepoUrl(dest: BackupDestination): string {
             return dest.local!.path;
 
         case "sftp": {
-            const s = dest.sftp!;
+            const s = assertSafeSftpConfig(dest.sftp!);
             // Le port est passé via sftp.args/-o sftp.command, pas dans l'URL
             return `sftp:${s.user}@${s.host}:${s.path}`;
         }
