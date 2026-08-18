@@ -4,27 +4,6 @@
       <h1 class="mb-0">
         <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}
       </h1>
-      <div class="d-flex align-items-center gap-3">
-        <!-- Bouton bascule FR / EN -->
-        <div class="lang-toggle">
-        <button
-          class="lang-btn"
-          :class="{ active: watcherLang === 'fr' }"
-          @click="setWatcherLang('fr')"
-          title="Français"
-        >
-          🇫🇷
-        </button>
-        <button
-          class="lang-btn"
-          :class="{ active: watcherLang === 'en' }"
-          @click="setWatcherLang('en')"
-          title="English"
-        >
-          🇬🇧
-        </button>
-        </div>
-      </div>
     </div>
 
     <RemoteInstanceLinks
@@ -1171,7 +1150,7 @@
 
       <!-- ═══ TAB: RESOURCES ═══ -->
       <div v-if="tab === 'resources'">
-        <DockerResources :externalLang="watcherLang" />
+        <DockerResources />
       </div>
 
       <!-- ═══ TAB: NOTIFICATIONS ═══ -->
@@ -1526,45 +1505,22 @@ interface TrivyStatus {
 
 const { t, locale, setLocaleMessage } = useI18n();
 
-// ─── Gestion de la langue locale à la page watcher ────────────────────
-// On lit / écrit dans localStorage.watcherLang (indépendant du reste de l'app)
-// mais on met aussi à jour locale de i18n pour que $t() fonctionne.
-const SUPPORTED = ["fr", "en"] as const;
-type SupportedLang = (typeof SUPPORTED)[number];
-
-function resolveWatcherLang(): string {
-  // Choix explicite FR/EN sur cette page (clé "watcherLocale" ; l'ancienne
-  // clé "watcherLang" était écrite au montage même sans clic, donc ignorée).
-  const stored = localStorage.getItem("watcherLocale") as SupportedLang | null;
-  if (stored && SUPPORTED.includes(stored)) return stored;
-  // Sinon, suivre la langue globale de l'application (ex. "zh-CN", "de")
-  // au lieu de retomber sur l'anglais.
-  return localStorage.getItem("locale") ?? "en";
-}
-
-const watcherLang = ref<string>(resolveWatcherLang());
-
-async function applyWatcherLang(lang: string) {
-  try {
-    const mod = await import(`../lang/${lang}.json`);
-    setLocaleMessage(lang, mod.default ?? mod);
-    locale.value = lang;
-  } catch {
-    // Pas de fichier de langue dédié : retomber sur l'anglais.
-    locale.value = "en";
-  }
-}
-
-// Clic explicite sur la bascule FR/EN : on mémorise le choix.
-async function setWatcherLang(lang: string) {
-  watcherLang.value = lang;
-  localStorage.setItem("watcherLocale", lang);
-  await applyWatcherLang(lang);
-}
-
-// Applique la langue initiale au montage (sans la mémoriser)
+// ─── Langue : suit la langue globale de l'application ─────────────────────
+// Plus de bascule FR/EN propre à cette page : on s'assure simplement que
+// les messages de la langue globale sont chargés (fallback "en" sinon).
 onMounted(async () => {
-  await applyWatcherLang(watcherLang.value);
+  const lang = locale.value || "en";
+  if (lang !== "en") {
+    try {
+      const mod = await import(`../lang/${lang}.json`);
+      setLocaleMessage(lang, mod.default ?? mod);
+    } catch {
+      /* fallbackLocale: "en" prend le relais */
+    }
+  }
+  // Nettoie les anciennes clés de langue propres à cette page
+  localStorage.removeItem("watcherLang");
+  localStorage.removeItem("watcherLocale");
 });
 
 const WATCHER_TABS = new Set([ "images", "scheduler", "trivy", "backup", "resources", "notifications", "monitoring", "audit" ]);
@@ -1844,9 +1800,7 @@ function rollbackCountdown(entry: RollbackEntry): string {
 
 function fmtDate(iso: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString(
-    locale.value === "fr" ? "fr-FR" : "en-GB",
-  );
+  return new Date(iso).toLocaleString(locale.value || "en-GB");
 }
 
 const visibleUpdateHistory = computed(() =>
@@ -2589,37 +2543,7 @@ async function removeCred(registry: string) {
   min-height: calc(100vh - 155px);
 }
 
-.lang-toggle {
-  display: flex;
-  gap: 0.35rem;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 50rem;
-  padding: 3px 5px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.lang-btn {
-  background: none;
-  border: none;
-  font-size: 1.15rem;
-  line-height: 1;
-  padding: 2px 5px;
-  border-radius: 50rem;
-  cursor: pointer;
-  opacity: 0.45;
-  transition:
-    opacity 0.15s,
-    background 0.15s;
-  &:hover {
-    opacity: 0.8;
-  }
-  &.active {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.12);
-  }
-}
-
-// Toggle langue notifications Discord (plus petit que le lang-toggle principal)
+// Toggle langue notifications Discord
 .notif-lang-toggle {
   display: inline-flex;
   gap: 2px;
