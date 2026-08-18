@@ -313,7 +313,7 @@ export function assertSafeSftpConfig(config: SftpConfig): SftpConfig {
         host.length < 1 ||
         host.length > 255 ||
         host.startsWith("-") ||
-        !/^[a-zA-Z0-9._:\[\]-]+$/.test(host)
+        /[\s\x00-\x1f\x7f]/.test(host)
     ) {
         throw new ValidationError("Hôte SFTP invalide");
     }
@@ -321,7 +321,7 @@ export function assertSafeSftpConfig(config: SftpConfig): SftpConfig {
     if (
         user.length < 1 ||
         user.length > 128 ||
-        !/^[a-zA-Z0-9._-]+$/.test(user)
+        /[\s\x00-\x1f\x7f]/.test(user)
     ) {
         throw new ValidationError("Utilisateur SFTP invalide");
     }
@@ -339,7 +339,7 @@ export function assertSafeSftpConfig(config: SftpConfig): SftpConfig {
         if (
             !path.isAbsolute(keyPath) ||
             keyPath.length > 2000 ||
-            /[\s\x00-\x1f\x7f,"'`$;&|<>\\]/.test(keyPath)
+            /[\s\x00-\x1f\x7f]/.test(keyPath)
         ) {
             throw new ValidationError("Chemin de clé SSH invalide");
         }
