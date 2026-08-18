@@ -192,8 +192,7 @@
             <div
               v-for="cred in credentials"
               :key="cred.registry"
-              class="d-flex align-items-center gap-3 p-2 rounded mb-2"
-              style="background: rgba(255, 255, 255, 0.04)"
+              class="d-flex align-items-center gap-3 p-2 rounded mb-2 cred-row"
             >
               <span class="badge bg-secondary">{{ cred.registry }}</span>
               <span class="form-text">{{ cred.username }}</span>
@@ -271,6 +270,18 @@
               }}
             </h5>
             <div class="d-flex align-items-center gap-3">
+              <div class="form-check form-switch mb-0">
+                <input
+                  v-model="showDigests"
+                  class="form-check-input"
+                  type="checkbox"
+                  id="showDigests"
+                  role="switch"
+                />
+                <label class="form-check-label small" for="showDigests">{{
+                  $t("watcher.status.showDigests")
+                }}</label>
+              </div>
               <small class="form-text"
                 >{{ $t("watcher.status.lastCheck") }} :
                 {{ lastCheckDisplay }}</small
@@ -320,8 +331,12 @@
                 <tr>
                   <th>{{ $t("watcher.status.image") }}</th>
                   <th>{{ $t("watcher.status.state") }}</th>
-                  <th>{{ $t("watcher.status.localDigest") }}</th>
-                  <th>{{ $t("watcher.status.remoteDigest") }}</th>
+                  <th v-if="showDigests">
+                    {{ $t("watcher.status.localDigest") }}
+                  </th>
+                  <th v-if="showDigests">
+                    {{ $t("watcher.status.remoteDigest") }}
+                  </th>
                   <th>{{ $t("watcher.status.checkedAt") }}</th>
                   <th
                     :title="$t('watcher.status.autoUpdateHint')"
@@ -337,7 +352,7 @@
               <tbody>
                 <template v-for="group in imagesByStack" :key="group.stack">
                   <tr class="stack-group-header">
-                    <td colspan="7">
+                    <td :colspan="showDigests ? 7 : 5">
                       <font-awesome-icon
                         icon="layer-group"
                         class="me-2 opacity-75"
@@ -434,12 +449,12 @@
                         }}
                       </span>
                     </td>
-                    <td>
+                    <td v-if="showDigests">
                       <code class="small">{{
                         s.localDigest ? s.localDigest.slice(7, 19) + "…" : "—"
                       }}</code>
                     </td>
-                    <td>
+                    <td v-if="showDigests">
                       <code class="small">{{
                         s.remoteDigest ? s.remoteDigest.slice(7, 19) + "…" : "—"
                       }}</code>
@@ -781,7 +796,7 @@
             </div>
 
             <div class="col-12">
-              <small style="color: #9ca3af">{{
+              <small class="hint-muted">{{
                 $t("watcher.trivy.dockerInfo")
               }}</small>
             </div>
@@ -1636,6 +1651,7 @@ const nextTrivyDate = computed(() => {
 });
 
 const imageFilter = ref("");
+const showDigests = ref(false);
 
 const imagesByStack = computed(() => {
   const q = imageFilter.value.toLowerCase();
@@ -2281,19 +2297,11 @@ async function removeCred(registry: string) {
 // Tables État des images + Résultats du dernier scan
 .table-responsive .table {
   --bs-table-bg: transparent;
-  --bs-table-color: #e5e7eb;
 
   > thead > tr > th {
-    color: #9ca3af;
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-
-  > tbody > tr > td {
-    color: #e5e7eb;
-    border-bottom-color: rgba(255, 255, 255, 0.06);
   }
 
   // "Voir le projet →" : btn-link force $link-color:#111, on l'écrase
@@ -2301,6 +2309,20 @@ async function removeCred(registry: string) {
     color: $primary;
     &:hover {
       color: lighten(#74c2ff, 10%);
+    }
+  }
+
+  .dark & {
+    --bs-table-color: #e5e7eb;
+
+    > thead > tr > th {
+      color: #9ca3af;
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    > tbody > tr > td {
+      color: #e5e7eb;
+      border-bottom-color: rgba(255, 255, 255, 0.06);
     }
   }
 }
@@ -2314,12 +2336,6 @@ async function removeCred(registry: string) {
   font-family: monospace;
   color: #f59e0b;
   cursor: default;
-}
-.btn-xs {
-  padding: 2px 7px;
-  font-size: 0.72rem;
-  line-height: 1.4;
-  border-radius: 4px;
 }
 .btn-rollback {
   background: rgba(251, 191, 36, 0.15);
@@ -2336,41 +2352,55 @@ async function removeCred(registry: string) {
 // Panneau CVE Trivy (hors table-responsive)
 .trivy-detail-panel .table {
   --bs-table-bg: transparent;
-  --bs-table-color: #e5e7eb;
-
-  > :not(caption) > * > * {
-    color: #e5e7eb;
-  }
 
   > thead > tr > th {
-    color: #9ca3af;
     font-weight: 500;
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom-color: rgba(255, 255, 255, 0.1);
   }
 
-  > tbody > tr > td {
-    border-bottom-color: rgba(255, 255, 255, 0.06);
+  .dark & {
+    --bs-table-color: #e5e7eb;
+
+    > :not(caption) > * > * {
+      color: #e5e7eb;
+    }
+
+    > thead > tr > th {
+      color: #9ca3af;
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    > tbody > tr > td {
+      border-bottom-color: rgba(255, 255, 255, 0.06);
+    }
   }
 }
 
 .trivy-row {
   cursor: pointer;
   &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+  .dark &:hover {
     background: rgba(255, 255, 255, 0.04);
   }
 }
 
 .stack-group-header {
   td {
-    background: rgba(255, 255, 255, 0.05);
-    border-top: 2px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.04);
+    border-top: 2px solid rgba(0, 0, 0, 0.08);
     padding: 0.45rem 0.75rem;
     font-size: 0.85rem;
     letter-spacing: 0.02em;
-    color: #d1d5db;
+
+    .dark & {
+      background: rgba(255, 255, 255, 0.05);
+      border-top-color: rgba(255, 255, 255, 0.1);
+      color: #d1d5db;
+    }
   }
   &:first-child td {
     border-top-color: transparent;
@@ -2382,8 +2412,13 @@ async function removeCred(registry: string) {
 }
 
 .trivy-detail-panel {
-  background: rgba(0, 0, 0, 0.15);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.04);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+
+  .dark & {
+    background: rgba(0, 0, 0, 0.15);
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
 }
 
 .cve-link {
@@ -2420,7 +2455,11 @@ async function removeCred(registry: string) {
 .cve-ignored-id {
   font-family: monospace;
   font-size: 0.78rem;
-  color: #9ca3af;
+  color: #6b7280;
+
+  .dark & {
+    color: #9ca3af;
+  }
 }
 .btn-cve-clear {
   background: none;
@@ -2468,36 +2507,35 @@ async function removeCred(registry: string) {
 // ─── Onglets ─────────────────────────────────────────────────────
 .watcher-tab-bar {
   display: flex;
-  gap: 6px;
+  gap: 0.25rem;
   overflow-x: auto;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.04);
   border-radius: 10px;
   padding: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-}
+  border: 1px solid rgba(0, 0, 0, 0.08);
 
-@media (max-width: 900px) {
-  .watcher-tab {
-    flex: 0 0 auto;
-    min-width: 105px;
+  .dark & {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.07);
   }
 }
 
 .watcher-tab {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 5px 8px;
+  padding: 0.4rem 0.9rem;
   border: none;
-  border-radius: 7px;
+  border-radius: 50rem;
   background: transparent;
-  color: #9ca3af;
+  color: #6b7280;
   font-size: 0.82rem;
   font-weight: 500;
   letter-spacing: 0.02em;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background 0.15s,
@@ -2509,14 +2547,23 @@ async function removeCred(registry: string) {
   }
 
   &:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.06);
-    color: #d1d5db;
+    background: rgba(0, 0, 0, 0.05);
+    color: #374151;
   }
 
   &.active {
     background: rgba(116, 194, 255, 0.15);
     color: #74c2ff;
     box-shadow: 0 0 0 1px rgba(116, 194, 255, 0.25);
+  }
+
+  .dark & {
+    color: #9ca3af;
+
+    &:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.06);
+      color: #d1d5db;
+    }
   }
 }
 
@@ -2584,11 +2631,15 @@ async function removeCred(registry: string) {
 
 .update-history-summary {
   min-width: 0;
-  color: #9ca3af;
+  color: #6b7280;
   font-size: 0.82rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  .dark & {
+    color: #9ca3af;
+  }
 }
 
 .update-history-chevron,
@@ -2619,8 +2670,12 @@ async function removeCred(registry: string) {
   margin-left: 34px;
   padding: 8px 10px;
   border-left: 2px solid rgba(116, 194, 255, 0.35);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.04);
   border-radius: 6px;
+
+  .dark & {
+    background: rgba(255, 255, 255, 0.04);
+  }
 }
 
 @media (max-width: 768px) {
@@ -2638,36 +2693,59 @@ async function removeCred(registry: string) {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   opacity: 0.55;
-  border-bottom-color: $dark-border-color;
+
+  .dark & {
+    border-bottom-color: $dark-border-color;
+  }
 }
 
 .table td {
   vertical-align: middle;
-  border-bottom-color: $dark-border-color;
+
+  .dark & {
+    border-bottom-color: $dark-border-color;
+  }
+}
+
+// Ligne d'identifiant de registry (onglet Images) + texte d'aide discret
+.cred-row {
+  background: rgba(0, 0, 0, 0.04);
+
+  .dark & {
+    background: rgba(255, 255, 255, 0.04);
+  }
+}
+
+.hint-muted {
+  color: #6b7280;
+
+  .dark & {
+    color: #9ca3af;
+  }
 }
 
 // Toast
 .toast-float {
   position: fixed;
+  right: 1.25rem;
   bottom: 1.5rem;
-  right: 1.5rem;
   z-index: 9999;
-  padding: 0.65rem 1.25rem;
-  border-radius: 50rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 
-.toast-ok {
-  background: #166534;
-  color: #bbf7d0;
-  border: 1px solid #15803d;
-}
+  &.toast-ok {
+    background: #16a34a;
+  }
 
-.toast-err {
-  background: #7f1d1d;
-  color: #fecaca;
-  border: 1px solid #b91c1c;
+  &.toast-err {
+    background: #dc2626;
+  }
+
+  @media (max-width: 768px) {
+    bottom: 76px;
+  }
 }
 </style>

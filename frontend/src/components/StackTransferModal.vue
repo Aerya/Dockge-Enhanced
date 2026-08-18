@@ -159,10 +159,10 @@
 
                 <details ref="targetComposeEditor" class="mb-4">
                     <summary class="transfer-rules-summary">{{ $t("stackTransfer.targetCompose") }}</summary>
-                    <div class="alert alert-info mt-3 mb-3">
+                    <p class="form-text mt-3 mb-3">
                         <font-awesome-icon icon="circle-info" class="me-1" />
                         {{ $t("stackTransfer.targetComposeHint") }}
-                    </div>
+                    </p>
                     <div class="d-flex justify-content-end mb-2">
                         <button class="btn btn-sm btn-normal" type="button" @click="resetTargetCompose">
                             <font-awesome-icon icon="undo" class="me-1" />{{ $t("stackTransfer.targetComposeReset") }}
@@ -280,15 +280,15 @@
                     <small v-if="currentJob?.logs?.length" class="d-block mt-2">{{ currentJob.logs[currentJob.logs.length - 1].message }}</small>
                 </div>
 
-                <div class="d-flex align-items-center justify-content-end gap-2">
+                <div class="d-flex align-items-center justify-content-end flex-wrap gap-2 mt-4 pt-3 border-top">
                     <div v-if="actionDisabledReason" class="text-warning small me-auto">
                         <font-awesome-icon icon="circle-info" class="me-1" />{{ $t(actionDisabledReason) }}
                     </div>
                     <div v-else-if="operation === 'replicate'" class="form-text me-auto">
                         {{ $t("stackReplication.configureHint") }}
                     </div>
-                    <button class="btn btn-normal" @click="visible = false">{{ $t("cancel") }}</button>
-                    <button class="btn" :class="operation === 'move' ? 'btn-warning' : 'btn-primary'" :disabled="!canTransfer || transferring" @click="executeTransfer">
+                    <button class="btn btn-normal px-4" @click="visible = false">{{ $t("cancel") }}</button>
+                    <button class="btn btn-primary px-4" :disabled="!canTransfer || transferring" @click="executeTransfer">
                         <span v-if="transferring" class="spinner-border spinner-border-sm me-1" />
                         <font-awesome-icon v-else :icon="operation === 'move' ? 'clone' : operation === 'replicate' ? 'database' : 'copy'" class="me-1" />
                         {{ operation === "move" ? $t("stackTransfer.moveAction") : operation === "replicate" ? $t("stackReplication.configureAction") : $t("stackTransfer.copyAction") }}
@@ -1085,14 +1085,26 @@ export default {
 .transfer-rules-summary { cursor: pointer; font-weight: 600; }
 .transfer-issues { display: grid; gap: .4rem; }
 .transfer-issue { display: flex; align-items: center; border-radius: .4rem; padding: .55rem .75rem; }
-.transfer-issue-success { background: rgba(25, 135, 84, .14); color: #75d5a5; }
-.transfer-issue-warning { background: rgba(255, 193, 7, .14); color: #ffd76a; }
-.transfer-issue-error { background: rgba(220, 53, 69, .14); color: #ff8793; }
-.transfer-override-preview { max-height: 260px; overflow: auto; border-radius: .4rem; padding: .75rem; background: rgba(0, 0, 0, .25); font-size: .8rem; }
+.transfer-issue-success { background: var(--bs-success-bg-subtle); color: var(--bs-success-text-emphasis); }
+.transfer-issue-warning { background: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); }
+.transfer-issue-error { background: var(--bs-danger-bg-subtle); color: var(--bs-danger-text-emphasis); }
+.transfer-override-preview { max-height: 260px; overflow: auto; border-radius: .4rem; padding: .75rem; background: var(--bs-tertiary-bg); font-size: .8rem; }
 .target-compose-editor { min-height: 8rem; resize: vertical; font-family: var(--bs-font-monospace); font-size: .82rem; line-height: 1.45; }
+
+.dark & {
+    .transfer-issue-success { background: rgba(25, 135, 84, .14); color: #75d5a5; }
+    .transfer-issue-warning { background: rgba(255, 193, 7, .14); color: #ffd76a; }
+    .transfer-issue-error { background: rgba(220, 53, 69, .14); color: #ff8793; }
+    .transfer-override-preview { background: rgba(0, 0, 0, .25); }
+}
 </style>
 
 <style lang="scss">
+.stack-transfer-modal .modal-body {
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
 .dark .stack-transfer-modal {
     .modal-title,
     .form-label,

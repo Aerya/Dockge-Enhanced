@@ -652,7 +652,7 @@
 
         <!-- ═══ TOAST ═══ -->
         <transition name="slide-fade">
-            <div v-if="toast.show" class="toast-notify" :class="toast.ok ? 'toast-ok' : 'toast-err'">
+            <div v-if="toast.show" class="toast-float" :class="toast.ok ? 'toast-ok' : 'toast-err'">
                 <font-awesome-icon :icon="toast.ok ? 'check-circle' : 'exclamation-circle'" class="me-2" />
                 {{ toast.msg }}
             </div>
@@ -1346,36 +1346,19 @@ onMounted(() => {
 @import "../styles/vars.scss";
 
 // ── Table ────────────────────────────────────────────────────────
-.th-sortable:hover { color: #d1d5db; }
+.th-sortable:hover {
+    .dark & { color: #d1d5db; }
+}
 .sort-indicator { font-size: .65rem; margin-left: 3px; letter-spacing: -2px; }
 
 .resources-table {
     font-size: 0.875rem;
     --bs-table-bg: transparent;
-    --bs-table-color: #e5e7eb;
 
     th {
         font-size: 0.75rem;
         letter-spacing: .04em;
-        color: #9ca3af;
-        border-bottom: 1px solid rgba(255,255,255,.1);
         opacity: 1;
-    }
-
-    > :not(caption) > * > * {
-        color: #e5e7eb;
-        border-bottom-color: rgba(255,255,255,.06);
-    }
-
-    // Hover : fond subtil sans écraser le texte
-    tbody tr:hover td {
-        background-color: rgba(255, 255, 255, 0.06) !important;
-        color: #e5e7eb !important;
-    }
-
-    // text-muted dans Bootstrap dark → gris quasi-noir, on force un gris lisible
-    .text-muted {
-        color: #9ca3af !important;
     }
 
     // Ligne : conteneur Dockge arrêté → orange à gauche
@@ -1392,21 +1375,51 @@ onMounted(() => {
     .row-orphan-running td:first-child {
         border-left: 3px solid #ef4444;
     }
+
+    .dark & {
+        --bs-table-color: #e5e7eb;
+
+        th {
+            color: #9ca3af;
+            border-bottom: 1px solid rgba(255,255,255,.1);
+        }
+
+        > :not(caption) > * > * {
+            color: #e5e7eb;
+            border-bottom-color: rgba(255,255,255,.06);
+        }
+
+        // Hover : fond subtil sans écraser le texte
+        tbody tr:hover td {
+            background-color: rgba(255, 255, 255, 0.06) !important;
+            color: #e5e7eb !important;
+        }
+
+        // text-muted dans Bootstrap dark → gris quasi-noir, on force un gris lisible
+        .text-muted {
+            color: #9ca3af !important;
+        }
+    }
 }
 
 // ── Auto-prune panel ─────────────────────────────────────────────
 .auto-prune-panel {
     .ap-toggle-btn {
-        color: $dark-font-color;
-        &:hover { color: #fff; }
+        .dark & {
+            color: $dark-font-color;
+            &:hover { color: #fff; }
+        }
     }
 }
 
 .auto-prune-body {
-    background-color: $dark-bg2;
-    border: 1px solid $dark-border-color;
     border-radius: 4px;
-    color: $dark-font-color;
+
+    .dark & {
+        background-color: $dark-bg2;
+        border: 1px solid $dark-border-color;
+        color: $dark-font-color;
+    }
 }
 
 .auto-prune-sections {
@@ -1425,52 +1438,71 @@ onMounted(() => {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #9ca3af;
     margin-bottom: 0.75rem;
     padding-bottom: 0.35rem;
-    border-bottom: 1px solid $dark-border-color;
+    border-bottom: 1px solid var(--bs-border-color);
+
+    .dark & {
+        color: #9ca3af;
+        border-bottom-color: $dark-border-color;
+    }
 }
 
 .ap-label {
-    color: $dark-font-color !important;
+    .dark & { color: $dark-font-color !important; }
 }
 
 .ap-select {
     width: auto;
-    background-color: $dark-bg;
-    border-color: $dark-border-color;
-    color: $dark-font-color;
+
     &:focus {
         border-color: $primary;
         box-shadow: 0 0 0 2px rgba($primary, 0.25);
+    }
+
+    .dark & {
+        background-color: $dark-bg;
+        border-color: $dark-border-color;
+        color: $dark-font-color;
     }
 }
 
 .ap-meta {
     font-size: 0.8rem;
-    color: #9ca3af;
     line-height: 1.6;
-    strong { color: $dark-font-color; }
+
+    .dark & {
+        color: #9ca3af;
+        strong { color: $dark-font-color; }
+    }
 }
 
 .ap-exclusions {
-    border-top: 1px solid $dark-border-color;
+    border-top: 1px solid var(--bs-border-color);
     padding-top: 0.6rem;
     margin-top: 0.4rem;
+
+    .dark & { border-top-color: $dark-border-color; }
 }
 
 .ap-exclusions-label {
     font-size: 0.8rem;
     font-weight: 600;
-    color: $dark-font-color;
     margin-bottom: 0.4rem;
+
+    .dark & { color: $dark-font-color; }
 }
 
 .ap-exclusion-badge {
-    background-color: rgba(255,255,255,0.1);
-    border: 1px solid $dark-border-color;
+    background-color: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--bs-border-color);
     font-weight: normal;
     font-size: 0.78rem;
+
+    .dark & {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: $dark-border-color;
+    }
 }
 
 .ap-exclusion-code {
@@ -1508,37 +1540,30 @@ onMounted(() => {
     width: 90%;
     padding: 1.5rem;
     border-radius: 16px;
-}
 
-// ── Toast ────────────────────────────────────────────────────────
-.toast-notify {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 9999;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #fff;
-    box-shadow: 0 4px 20px rgba(0,0,0,.3);
-    &.toast-ok  { background: #28a745; }
-    &.toast-err { background: #dc3545; }
-}
-.slide-fade-enter-active, .slide-fade-leave-active { transition: all .3s ease; }
-.slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(16px); opacity: 0; }
-
-// ── Dark mode ────────────────────────────────────────────────────
-.dark {
-    .resources-table {
-        tr:hover td {
-            background-color: rgba(255, 255, 255, 0.06) !important;
-            color: #e5e7eb !important;
-        }
-    }
-    .modal-card {
+    .dark & {
         background-color: $dark-bg;
         color: $dark-font-color;
     }
 }
+
+// ── Toast ────────────────────────────────────────────────────────
+.toast-float {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.5rem;
+    z-index: 9999;
+    padding: .6rem 1rem;
+    border-radius: 10px;
+    font-size: .85rem;
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+
+    &.toast-ok { background: #16a34a; }
+    &.toast-err { background: #dc2626; }
+
+    @media (max-width: 768px) { bottom: 76px; }
+}
+.slide-fade-enter-active, .slide-fade-leave-active { transition: all .3s ease; }
+.slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(16px); opacity: 0; }
 </style>

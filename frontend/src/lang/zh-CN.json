@@ -1223,5 +1223,14 @@
     "Auto": "自动",
     "Copy": "复制",
     "Reconnecting...": "正在重新连接…",
-    "dataRetentionTimeError": "数据保留天数必须大于或等于 0。"
+    "dataRetentionTimeError": "数据保留天数必须大于或等于 0。",
+    "watcher.status.showDigests": "显示 digest",
+    "home.summary.images.title": "镜像更新",
+    "home.summary.backup.title": "最近备份",
+    "home.summary.backup.never": "从未备份",
+    "home.summary.monitoring.title": "异常容器",
+    "home.summary.trivy.title": "存在漏洞的镜像",
+    "home.summary.time.minutesAgo": "{n} 分钟前",
+    "home.summary.time.hoursAgo": "{n} 小时前",
+    "home.summary.time.daysAgo": "{n} 天前"
 }

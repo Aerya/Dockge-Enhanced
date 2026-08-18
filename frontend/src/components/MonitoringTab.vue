@@ -185,7 +185,7 @@
                     </label>
                     <div v-for="(p, idx) in diskPartitions" :key="idx"
                         class="d-flex align-items-center gap-2 mb-2">
-                        <code class="form-control form-control-sm" style="max-width:220px;background:rgba(255,255,255,.04)">{{ p }}</code>
+                        <code class="form-control form-control-sm" style="max-width:220px;background:rgba(127,127,127,.08)">{{ p }}</code>
                         <button class="btn btn-sm btn-outline-danger" @click="removePartition(idx)">
                             <font-awesome-icon icon="times" />
                         </button>
@@ -1240,8 +1240,8 @@ onUnmounted(() => {
     display: flex;
     gap: 16px;
     align-items: flex-start;
-    border: 1px solid rgba(255,255,255,.07);
-    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(127,127,127,.18);
+    background: rgba(127,127,127,.06);
     transition: border-color .2s;
     min-height: 90px;
 }
@@ -1249,7 +1249,7 @@ onUnmounted(() => {
 .monitoring-card.mc-ok     { border-color: rgba(34,197,94,.35);  }
 .monitoring-card.mc-warn   { border-color: rgba(245,158,11,.35); }
 .monitoring-card.mc-danger { border-color: rgba(239,68,68,.35);  }
-.monitoring-card.mc-neutral{ border-color: rgba(255,255,255,.1); }
+.monitoring-card.mc-neutral{ border-color: rgba(127,127,127,.28); }
 
 .mc-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; padding-top: 2px; }
 
@@ -1259,8 +1259,9 @@ onUnmounted(() => {
     font-size: .72rem;
     text-transform: uppercase;
     letter-spacing: .05em;
-    color: #9ca3af;
+    color: #6b7280;
     margin-bottom: 6px;
+    .dark & { color: #9ca3af; }
 }
 .mc-value {
     font-size: 1.1rem;
@@ -1273,11 +1274,12 @@ onUnmounted(() => {
 }
 .mc-detail {
     font-size: .75rem;
-    color: #9ca3af;
+    color: #6b7280;
     font-weight: 400;
     margin-top: 4px;
     white-space: normal;
     word-break: break-word;
+    .dark & { color: #9ca3af; }
 }
 
 /* ── Toast (clone du BackupTab) ── */
@@ -1293,21 +1295,23 @@ onUnmounted(() => {
     gap: 3px;
     min-width: 0;
     padding: 12px 14px;
-    border: 1px solid rgba(255,255,255,.08);
+    border: 1px solid rgba(127,127,127,.18);
     border-radius: 8px;
-    background: rgba(255,255,255,.035);
+    background: rgba(127,127,127,.05);
 }
 
 .host-item span,
 .host-item small {
-    color: #9ca3af;
+    color: #6b7280;
     font-size: .75rem;
+    .dark & { color: #9ca3af; }
 }
 
 .host-item strong {
-    color: #e5e7eb;
+    color: #1f2937;
     font-size: .95rem;
     overflow-wrap: anywhere;
+    .dark & { color: #e5e7eb; }
 }
 
 .core-grid {
@@ -1328,7 +1332,7 @@ onUnmounted(() => {
     height: 7px;
     overflow: hidden;
     border-radius: 999px;
-    background: rgba(255,255,255,.1);
+    background: rgba(127,127,127,.18);
 }
 
 .core-bar span {
@@ -1346,7 +1350,8 @@ onUnmounted(() => {
 
 .temperature-grid h6 {
     margin-bottom: 8px;
-    color: #d1d5db;
+    color: #374151;
+    .dark & { color: #d1d5db; }
 }
 
 .temp-chip {
@@ -1354,9 +1359,10 @@ onUnmounted(() => {
     margin: 0 6px 6px 0;
     padding: 3px 8px;
     border-radius: 999px;
-    background: rgba(255,255,255,.08);
-    color: #e5e7eb;
+    background: rgba(127,127,127,.12);
+    color: #374151;
     font-size: .75rem;
+    .dark & { color: #e5e7eb; }
 }
 
 .navbar-host-options {
@@ -1376,18 +1382,13 @@ onUnmounted(() => {
 }
 
 .toast-float {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 9999;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: .875rem;
-    font-weight: 600;
-    box-shadow: 0 4px 16px rgba(0,0,0,.4);
+    position: fixed; right: 1.25rem; bottom: 1.5rem; z-index: 9999;
+    padding: .6rem 1rem; border-radius: 10px; font-size: .85rem; color: #fff;
+    box-shadow: 0 6px 24px rgba(0,0,0,.35);
+    &.toast-ok { background: #16a34a; }
+    &.toast-err { background: #dc2626; }
+    @media (max-width: 768px) { bottom: 76px; }
 }
-.toast-ok  { background: #22c55e; color: #fff; }
-.toast-err { background: #ef4444; color: #fff; }
 
 .slide-fade-enter-active, .slide-fade-leave-active { transition: all .25s ease; }
 .slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(12px); opacity: 0; }
@@ -1404,13 +1405,6 @@ onUnmounted(() => {
 .notif-url-display {
     font-family: monospace;
     font-size: .78rem;
-}
-.btn-normal {
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.12);
-    color: #d1d5db;
-    &:hover { background: rgba(255,255,255,.14); color: #fff; }
-    &:disabled { opacity: .5; cursor: default; }
 }
 
 .disk-display-example {
@@ -1453,11 +1447,13 @@ onUnmounted(() => {
 /* ── Kula open link ── */
 .kula-open-hint {
     font-size: .875rem;
-    color: #9ca3af;
+    color: #6b7280;
+    .dark & { color: #9ca3af; }
 }
 .kula-open-link {
-    color: #93c5fd;
+    color: #2563eb;
     text-decoration: none;
     &:hover { text-decoration: underline; }
+    .dark & { color: #93c5fd; }
 }
 </style>

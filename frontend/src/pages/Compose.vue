@@ -1,8 +1,8 @@
 <template>
     <transition name="slide-fade" appear>
         <div class="compose-page" :class="{ 'logs-fullscreen-active': logsFullscreen }">
-            <h1 v-if="isAdd" class="mb-3">{{ $t("compose") }}</h1>
-            <h1 v-else class="mb-3">
+            <h1 v-if="isAdd" class="mb-3 compose-tight">{{ $t("compose") }}</h1>
+            <h1 v-else class="mb-3 compose-tight">
                 <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }}
                 <span v-if="$root.agentCount > 1" class="agent-name">
                     (<a
@@ -43,7 +43,7 @@
                 :source-stack-name="stack.name"
             />
 
-            <div v-if="stack.isManagedByDockge" class="mb-3">
+            <div v-if="stack.isManagedByDockge" class="mb-3 compose-tight">
                 <div class="stack-action-bar" :class="{ 'stack-action-bar--labeled': stackActionLabels }" role="toolbar" :aria-label="$t('stackActions')">
                     <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('deployStack')" :aria-label="$t('deployStack')" :disabled="processing" @click="deployStack">
                         <font-awesome-icon icon="rocket" />
@@ -152,13 +152,13 @@
             </div>
 
             <!-- URLs -->
-            <div v-if="urls.length > 0" class="mb-3">
+            <div v-if="urls.length > 0" class="mb-3 compose-tight">
                 <a v-for="(url, index) in urls" :key="index" target="_blank" :href="url.url">
                     <span class="badge bg-secondary me-2">{{ url.display }}</span>
                 </a>
             </div>
 
-            <div v-if="showStackNote && !isAdd && stack.isManagedByDockge" class="shadow-box stack-note-panel mb-3">
+            <div v-if="showStackNote && !isAdd && stack.isManagedByDockge" class="shadow-box stack-note-panel mb-3 compose-tight">
                 <button
                     class="stack-note-toggle"
                     type="button"
@@ -197,7 +197,7 @@
                 <Terminal
                     v-show="showProgressTerminal"
                     ref="progressTerminal"
-                    class="mb-3 terminal progress-terminal"
+                    class="mb-3 compose-tight terminal progress-terminal"
                     :name="terminalName"
                     :endpoint="endpoint"
                     :rows="progressTerminalRows"
@@ -215,8 +215,8 @@
                 <div class="compose-runtime-pane">
                     <!-- General -->
                     <div v-if="isAdd">
-                        <h4 class="mb-3">{{ $t("general") }}</h4>
-                        <div class="shadow-box big-padding mb-3">
+                        <h4 class="mb-3 compose-tight">{{ $t("general") }}</h4>
+                        <div class="shadow-box big-padding mb-3 compose-tight compose-box">
                             <!-- Stack Name -->
                             <div>
                                 <label for="name" class="form-label">{{ $t("stackName") }}</label>
@@ -239,7 +239,7 @@
                     <!-- Containers -->
                     <button
                         type="button"
-                        class="containers-toggle mb-3"
+                        class="containers-toggle mb-3 compose-tight"
                         :aria-expanded="containersExpanded"
                         :aria-label="$t(containersExpanded ? 'collapseContainers' : 'expandContainers')"
                         aria-controls="stack-containers"
@@ -264,7 +264,7 @@
                     </button>
 
                     <div v-show="containersExpanded" id="stack-containers">
-                        <div v-if="isEditMode" class="input-group mb-3">
+                        <div v-if="isEditMode" class="input-group mb-3 compose-tight">
                             <input
                                 v-model="newContainerName"
                                 :placeholder="$t(`New Container Name...`)"
@@ -305,12 +305,12 @@
                         </div>
                     </div>
 
-                    <button v-if="false && isEditMode && jsonConfig.services && Object.keys(jsonConfig.services).length > 0" class="btn btn-normal mb-3" @click="addContainer">{{ $t("addContainer") }}</button>
+                    <button v-if="false && isEditMode && jsonConfig.services && Object.keys(jsonConfig.services).length > 0" class="btn btn-normal mb-3 compose-tight" @click="addContainer">{{ $t("addContainer") }}</button>
 
                     <!-- General -->
                     <div v-if="isEditMode">
-                        <h4 class="mb-3">{{ $t("extra") }}</h4>
-                        <div class="shadow-box big-padding mb-3">
+                        <h4 class="mb-3 compose-tight">{{ $t("extra") }}</h4>
+                        <div class="shadow-box big-padding mb-3 compose-tight compose-box">
                             <!-- URLs -->
                             <div class="mb-4">
                                 <label class="form-label">
@@ -323,7 +323,7 @@
 
                     <!-- Combined Terminal Output -->
                     <div v-show="!isEditMode" class="logs-panel" :class="{ 'logs-fullscreen': logsFullscreen }">
-                        <div class="terminal-toolbar mb-3">
+                        <div class="terminal-toolbar mb-3 compose-tight">
                             <h4 class="mb-0">{{ $t("stackLogs") }}</h4>
                             <div class="terminal-toolbar-right">
                                 <div class="terminal-log-since">
@@ -417,7 +417,7 @@
                         <Terminal
                             :key="selectedLogTerminalName"
                             ref="combinedTerminal"
-                            class="mb-3 terminal combined-terminal"
+                            class="mb-3 compose-tight terminal combined-terminal"
                             :class="{ 'logs-expanded': !containersExpanded, 'logs-no-wrap': !logLineWrap }"
                             :name="selectedLogTerminalName"
                             :endpoint="endpoint"
@@ -446,7 +446,7 @@
                     <span></span>
                 </div>
                 <div v-show="!composeEffectivelyCollapsed" class="compose-editor-pane">
-                    <div class="editor-header mb-3">
+                    <div class="editor-header mb-3 compose-tight">
                         <h4 class="mb-0">{{ stack.composeFileName }}</h4>
                         <div class="editor-header-actions">
                             <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('copyRawCompose')" @click="copyRawCompose">
@@ -462,7 +462,7 @@
                     </div>
 
                     <!-- YAML editor -->
-                    <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'yaml'}">
+                    <div class="shadow-box mb-3 compose-tight compose-box editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'yaml'}">
                         <button v-if="fullscreenEditor === 'yaml'" type="button" class="btn btn-sm btn-normal editor-fullscreen-close" :title="$t('toggleFullscreen')" @click="toggleFullscreen('yaml')">
                             <font-awesome-icon icon="compress" />
                         </button>
@@ -479,20 +479,20 @@
                             @change="yamlCodeChange"
                         />
                     </div>
-                    <div v-if="isEditMode" class="mb-3">
+                    <div v-if="isEditMode" class="mb-3 compose-tight">
                         {{ yamlError }}
                     </div>
 
                     <!-- Override editor -->
                     <div v-if="isEditMode">
-                        <div class="editor-header mb-3">
+                        <div class="editor-header mb-3 compose-tight">
                             <h4 class="mb-0">compose.override.yaml</h4>
                             <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('override')">
                                 <font-awesome-icon :icon="fullscreenEditor === 'override' ? 'compress' : 'expand'" />
                             </button>
                         </div>
                         <div class="form-text mb-2">{{ $t("composeOverrideHint") }}</div>
-                        <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'override'}">
+                        <div class="shadow-box mb-3 compose-tight compose-box editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'override'}">
                             <button v-if="fullscreenEditor === 'override'" type="button" class="btn btn-sm btn-normal editor-fullscreen-close" :title="$t('toggleFullscreen')" @click="toggleFullscreen('override')">
                                 <font-awesome-icon icon="compress" />
                             </button>
@@ -512,13 +512,13 @@
 
                     <!-- ENV editor -->
                     <div v-if="isEditMode">
-                        <div class="editor-header mb-3">
+                        <div class="editor-header mb-3 compose-tight">
                             <h4 class="mb-0">.env</h4>
                             <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('env')">
                                 <font-awesome-icon :icon="fullscreenEditor === 'env' ? 'compress' : 'expand'" />
                             </button>
                         </div>
-                        <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'env'}">
+                        <div class="shadow-box mb-3 compose-tight compose-box editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'env'}">
                             <button v-if="fullscreenEditor === 'env'" type="button" class="btn btn-sm btn-normal editor-fullscreen-close" :title="$t('toggleFullscreen')" @click="toggleFullscreen('env')">
                                 <font-awesome-icon icon="compress" />
                             </button>
@@ -546,14 +546,14 @@
 
                         <!-- Volumes -->
                         <div v-if="false">
-                            <h4 class="mb-3">{{ $tc("volume", 2) }}</h4>
-                            <div class="shadow-box big-padding mb-3">
+                            <h4 class="mb-3 compose-tight">{{ $tc("volume", 2) }}</h4>
+                            <div class="shadow-box big-padding mb-3 compose-tight compose-box">
                             </div>
                         </div>
 
                         <!-- Networks -->
-                        <h4 class="mb-3">{{ $tc("network", 2) }}</h4>
-                        <div class="shadow-box big-padding mb-3">
+                        <h4 class="mb-3 compose-tight">{{ $tc("network", 2) }}</h4>
+                        <div class="shadow-box big-padding mb-3 compose-tight compose-box">
                             <NetworkInput />
                         </div>
                     </div>
@@ -1950,16 +1950,16 @@ export default {
 
 .compose-page {
     font-size: .94rem;
+}
 
-    :deep(.shadow-box) {
-        padding: 12px;
-    }
+.compose-tight {
+    margin-bottom: .7rem !important;
+}
 
-    :deep(.mb-3) {
-        margin-bottom: .7rem !important;
-    }
+.compose-box {
+    padding: 12px;
 
-    :deep(.big-padding) {
+    &.big-padding {
         padding: 14px;
     }
 }
@@ -2023,8 +2023,6 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px 14px;
     gap: 12px;
     flex-wrap: wrap;
 }
@@ -2136,6 +2134,14 @@ export default {
         display: none;
     }
 
+    .terminal {
+        height: min(40vh, 200px);
+    }
+
+    .progress-terminal {
+        height: min(50vh, 360px);
+    }
+
     .combined-terminal.logs-expanded {
         height: min(45vh, 360px);
     }
@@ -2157,7 +2163,7 @@ export default {
     gap: 4px;
 
     .form-label {
-        color: #9ca3af !important;
+        color: $dark-font-color3 !important;
     }
 
     .form-select {
@@ -2226,7 +2232,7 @@ export default {
 .stack-meta-item {
     font-size: 0.78rem;
     font-weight: 400;
-    color: #9ca3af;
+    color: $dark-font-color3;
     cursor: default;
 }
 
