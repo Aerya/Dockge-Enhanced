@@ -1232,5 +1232,7 @@
     "home.summary.trivy.title": "存在漏洞的映像",
     "home.summary.time.minutesAgo": "{n} 分鐘前",
     "home.summary.time.hoursAgo": "{n} 小時前",
-    "home.summary.time.daysAgo": "{n} 天前"
+    "home.summary.time.daysAgo": "{n} 天前",
+    "home.summary.state.ok": "正常",
+    "home.summary.state.disabled": "未啟用"
 }
