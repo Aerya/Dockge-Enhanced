@@ -138,7 +138,7 @@
                             <div v-if="restoreTestEnabled" class="col-md-6">
                                 <label class="form-label">{{ $t("stackReplication.restoreTestFrequency") }}</label>
                                 <select v-model.number="restoreTestIntervalHours" class="form-select">
-                                    <option :value="24">24 h</option><option :value="168">7 j</option><option :value="720">30 j</option>
+                                    <option :value="24">{{ $t("stackReplication.restoreTestInterval.24") }}</option><option :value="168">{{ $t("stackReplication.restoreTestInterval.168") }}</option><option :value="720">{{ $t("stackReplication.restoreTestInterval.720") }}</option>
                                 </select>
                             </div>
                             <div v-if="restoreTestEnabled" class="col-12">
@@ -860,7 +860,7 @@ export default {
                             rollbackErrors.push(error instanceof Error ? error.message : String(error));
                         }
                         try {
-                            await this.emitAgent(this.targetEndpoint, "completeStackTransferJob", result.job.id, false, stopped.msg || "Source stop failed");
+                            await this.emitAgent(this.targetEndpoint, "completeStackTransferJob", result.job.id, false, stopped.msg || this.$t("stackTransfer.sourceStopFailed"));
                         } catch (error) {
                             rollbackErrors.push(error instanceof Error ? error.message : String(error));
                         }

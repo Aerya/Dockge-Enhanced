@@ -131,15 +131,16 @@
 
             <!-- Plateforme image -->
             <div class="col-lg-3">
-              <label class="form-label">Plateforme image</label>
+              <label class="form-label">{{
+                $t("watcher.img.platform")
+              }}</label>
               <input
                 v-model.trim="imgSettings.imagePlatform"
                 class="form-control"
                 placeholder="auto, linux/amd64, linux/arm64"
               />
               <small class="text-muted">
-                Laisser vide pour auto. Utile si Podman/rootless ou ARM détecte
-                mal le digest multi-arch.
+                {{ $t("watcher.img.platformHint") }}
               </small>
             </div>
 
@@ -196,7 +197,7 @@
             >
               <span class="badge bg-secondary">{{ cred.registry }}</span>
               <span class="form-text">{{ cred.username }}</span>
-              <span class="form-text">Token : ***</span>
+              <span class="form-text">{{ $t("watcher.creds.token") }} : ***</span>
               <button
                 class="btn btn-sm btn-outline-danger ms-auto"
                 @click="removeCred(cred.registry)"
@@ -345,8 +346,10 @@
                       <span
                         class="ms-2 text-muted"
                         style="font-size: 0.8rem; font-weight: 400"
-                        >{{ group.items.length }} image{{
-                          group.items.length > 1 ? "s" : ""
+                        >{{
+                          $t("watcher.status.imageCount", {
+                            count: group.items.length,
+                          })
                         }}</span
                       >
                     </td>
@@ -726,8 +729,8 @@
               >
                 <option :value="12">12h</option>
                 <option :value="24">24h</option>
-                <option :value="72">3 days</option>
-                <option :value="168">7 days</option>
+                <option :value="72">{{ $t("watcher.trivy.every3d") }}</option>
+                <option :value="168">{{ $t("watcher.trivy.every7d") }}</option>
               </select>
             </div>
 
@@ -911,8 +914,10 @@
                       <span
                         class="ms-2 text-muted"
                         style="font-size: 0.8rem; font-weight: 400"
-                        >{{ group.items.length }} image{{
-                          group.items.length > 1 ? "s" : ""
+                        >{{
+                          $t("watcher.status.imageCount", {
+                            count: group.items.length,
+                          })
                         }}</span
                       >
                     </td>
@@ -934,7 +939,7 @@
                           <font-awesome-icon
                             icon="exclamation-triangle"
                             class="me-1"
-                          />Erreur
+                          />{{ $t("watcher.status.error") }}
                         </span>
                         <span
                           v-else-if="
@@ -996,7 +1001,7 @@
                           class="btn btn-xs btn-outline-secondary"
                           style="font-size: 0.7rem; padding: 1px 5px"
                           :disabled="scanning"
-                          :title="`Scanner ${r.image}`"
+                          :title="$t('watcher.trivy.scanImage')"
                           @click="runScanSingle(r.image)"
                         >
                           <font-awesome-icon icon="shield-alt" />
@@ -1025,7 +1030,7 @@
                             "
                             class="fst-italic text-muted p-2"
                           >
-                            Aucune vulnérabilité au-dessus du seuil.
+                            {{ $t("watcher.trivy.noVulnsAboveThreshold") }}
                           </div>
                           <table
                             v-else
@@ -1035,7 +1040,7 @@
                             <thead>
                               <tr>
                                 <th>CVE</th>
-                                <th>Package</th>
+                                <th>{{ $t("watcher.trivy.package") }}</th>
                                 <th>
                                   {{ $t("watcher.trivy.installedVersion") }}
                                 </th>
@@ -2287,10 +2292,13 @@ async function removeCred(registry: string) {
       );
       showToast(t("watcher.creds.removed"));
     } else {
-      showToast(`❌ ${res.message ?? "Erreur lors de la suppression"}`, false);
+      showToast(
+        `❌ ${res.message ?? t("watcher.creds.removeFail")}`,
+        false,
+      );
     }
   } catch {
-    showToast("❌ Erreur réseau lors de la suppression", false);
+    showToast(t("watcher.creds.removeNetworkFail"), false);
   }
 }
 </script>

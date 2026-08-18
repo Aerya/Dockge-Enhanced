@@ -113,7 +113,7 @@
                         <div class="col-md-4 d-flex align-items-end">
                             <div class="form-check form-switch mb-2">
                                 <input id="plugnpin-debug" v-model="settings.debug" class="form-check-input" type="checkbox">
-                                <label class="form-check-label" for="plugnpin-debug">Debug</label>
+                                <label class="form-check-label" for="plugnpin-debug">{{ $t("plugnpin.debug") }}</label>
                             </div>
                         </div>
                         <div class="col-12">

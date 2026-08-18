@@ -3,7 +3,7 @@
         <!-- ═══ HEADER ═══ -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="mb-0">
-                <font-awesome-icon icon="cube" /> {{ t.title }}
+                <font-awesome-icon icon="cube" /> {{ $t("dockerResources.title") }}
             </h1>
         </div>
 
@@ -13,28 +13,28 @@
             <ul class="nav nav-pills mb-4">
                 <li class="nav-item">
                     <button class="nav-link" :class="{ active: tab === 'images' }" @click="tab = 'images'">
-                        <font-awesome-icon icon="images" class="me-1" />{{ t.tab.images }}
+                        <font-awesome-icon icon="images" class="me-1" />{{ $t("dockerResources.tab.images") }}
                         <span v-if="!loadingImages" class="ms-1 badge rounded-pill"
                             :class="imgBadgeClass">{{ images.length }}</span>
                     </button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link" :class="{ active: tab === 'volumes' }" @click="tab = 'volumes'">
-                        <font-awesome-icon icon="database" class="me-1" />{{ t.tab.volumes }}
+                        <font-awesome-icon icon="database" class="me-1" />{{ $t("dockerResources.tab.volumes") }}
                         <span v-if="!loadingVolumes" class="ms-1 badge rounded-pill"
                             :class="volBadgeClass">{{ volumes.length }}</span>
                     </button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link" :class="{ active: tab === 'containers' }" @click="tab = 'containers'">
-                        <font-awesome-icon icon="layer-group" class="me-1" />{{ t.tab.containers }}
+                        <font-awesome-icon icon="layer-group" class="me-1" />{{ $t("dockerResources.tab.containers") }}
                         <span v-if="!loadingContainers" class="ms-1 badge rounded-pill"
                             :class="ctrBadgeClass">{{ containers.length }}</span>
                     </button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link" :class="{ active: tab === 'networks' }" @click="tab = 'networks'">
-                        <font-awesome-icon icon="diagram-project" class="me-1" />{{ t.tab.networks }}
+                        <font-awesome-icon icon="diagram-project" class="me-1" />{{ $t("dockerResources.tab.networks") }}
                         <span v-if="!loadingNetworks" class="ms-1 badge rounded-pill bg-success">{{ networks.length }}</span>
                     </button>
                 </li>
@@ -48,13 +48,13 @@
                     v-model.trim="resourceFilter"
                     class="form-control"
                     type="search"
-                    :placeholder="t.searchPlaceholder"
+                    :placeholder="$t('dockerResources.searchPlaceholder')"
                 />
                 <button
                     v-if="resourceFilter"
                     class="btn btn-outline-secondary"
                     type="button"
-                    :title="t.clearSearch"
+                    :title="$t('dockerResources.clearSearch')"
                     @click="resourceFilter = ''"
                 >
                     <font-awesome-icon icon="times" />
@@ -68,28 +68,28 @@
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                     <button class="btn btn-normal btn-sm" @click="loadImages" :disabled="loadingImages">
                         <span v-if="loadingImages" class="spinner-border spinner-border-sm me-1" />
-                        <font-awesome-icon v-else icon="arrows-rotate" class="me-1" />{{ t.images.refresh }}
+                        <font-awesome-icon v-else icon="arrows-rotate" class="me-1" />{{ $t("dockerResources.images.refresh") }}
                     </button>
                     <button class="btn btn-outline-danger btn-sm" @click="pruneImages" :disabled="pruningImages">
                         <span v-if="pruningImages" class="spinner-border spinner-border-sm me-1" />
-                        <font-awesome-icon v-else icon="trash" class="me-1" />{{ t.images.pruneBtn }}
+                        <font-awesome-icon v-else icon="trash" class="me-1" />{{ $t("dockerResources.images.pruneBtn") }}
                     </button>
                     <button class="btn btn-outline-warning btn-sm" @click="pruneUnusedImages" :disabled="pruningUnusedImages">
                         <span v-if="pruningUnusedImages" class="spinner-border spinner-border-sm me-1" />
-                        <font-awesome-icon v-else icon="trash" class="me-1" />{{ t.images.pruneUnusedBtn }}
+                        <font-awesome-icon v-else icon="trash" class="me-1" />{{ $t("dockerResources.images.pruneUnusedBtn") }}
                     </button>
                     <button v-if="someImagesSelected" class="btn btn-danger btn-sm"
                         @click="deleteSelectedImages">
-                        <font-awesome-icon icon="trash" class="me-1" />{{ t.images.deleteSelected }}
+                        <font-awesome-icon icon="trash" class="me-1" />{{ $t("dockerResources.images.deleteSelected") }}
                         <span class="badge bg-white text-danger ms-1">{{ selectedImages.size }}</span>
                     </button>
                     <div v-if="!loadingImages" class="ms-auto text-muted small">
-                        <span class="me-3">{{ images.length }} {{ t.images.total }}</span>
+                        <span class="me-3">{{ images.length }} {{ $t("dockerResources.images.total") }}</span>
                         <span v-if="unusedImagesCount > 0" class="me-2 text-secondary">
-                            {{ unusedImagesCount }} {{ t.images.unused }}
+                            {{ unusedImagesCount }} {{ $t("dockerResources.images.unused") }}
                         </span>
                         <span v-if="danglingCount > 0" class="text-danger">
-                            {{ danglingCount }} {{ t.images.dangling }}
+                            {{ danglingCount }} {{ $t("dockerResources.images.dangling") }}
                         </span>
                     </div>
                 </div>
@@ -99,12 +99,12 @@
                     <button class="btn btn-link btn-sm p-0 text-decoration-none ap-toggle-btn"
                         @click="autoPruneOpen = !autoPruneOpen">
                         <font-awesome-icon :icon="autoPruneOpen ? 'chevron-down' : 'chevron-right'" class="me-1" />
-                        {{ t.autoPrune.heading }}
+                        {{ $t("dockerResources.autoPrune.heading") }}
                         <span v-if="autoPrune.danglingEnabled" class="badge bg-success ms-2" style="font-size:.7rem">
-                            {{ t.autoPrune.danglingHeading }}
+                            {{ $t("dockerResources.autoPrune.danglingHeading") }}
                         </span>
                         <span v-if="autoPrune.unusedEnabled" class="badge bg-info text-dark ms-1" style="font-size:.7rem">
-                            {{ t.autoPrune.unusedHeading }}
+                            {{ $t("dockerResources.autoPrune.unusedHeading") }}
                         </span>
                     </button>
 
@@ -113,13 +113,13 @@
 
                             <!-- ── Section 1 : Orphelines (dangling) ──────── -->
                             <div class="auto-prune-section">
-                                <div class="auto-prune-section-title">{{ t.autoPrune.danglingHeading }}</div>
+                                <div class="auto-prune-section-title">{{ $t("dockerResources.autoPrune.danglingHeading") }}</div>
 
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="danglingToggle"
                                         v-model="autoPrune.danglingEnabled" @change="saveAutoPrune">
                                     <label class="form-check-label ap-label" for="danglingToggle">
-                                        {{ t.autoPrune.enable }}
+                                        {{ $t("dockerResources.autoPrune.enable") }}
                                     </label>
                                 </div>
 
@@ -127,24 +127,24 @@
                                     <select class="form-select form-select-sm ap-select"
                                         v-model.number="autoPrune.danglingIntervalHours" @change="saveAutoPrune"
                                         :disabled="savingPrune">
-                                        <option :value="24">{{ t.autoPrune.intervals[24] }}</option>
-                                        <option :value="48">{{ t.autoPrune.intervals[48] }}</option>
-                                        <option :value="168">{{ t.autoPrune.intervals[168] }}</option>
+                                        <option :value="24">{{ $t("dockerResources.autoPrune.intervals.24") }}</option>
+                                        <option :value="48">{{ $t("dockerResources.autoPrune.intervals.48") }}</option>
+                                        <option :value="168">{{ $t("dockerResources.autoPrune.intervals.168") }}</option>
                                     </select>
                                     <button class="btn btn-outline-secondary btn-sm"
                                         @click="runDanglingPruneNow" :disabled="runningDanglingPrune">
                                         <span v-if="runningDanglingPrune" class="spinner-border spinner-border-sm me-1" />
                                         <font-awesome-icon v-else icon="play" class="me-1" />
-                                        {{ runningDanglingPrune ? t.autoPrune.running : t.autoPrune.runNow }}
+                                        {{ runningDanglingPrune ? $t("dockerResources.autoPrune.running") : $t("dockerResources.autoPrune.runNow") }}
                                     </button>
                                 </div>
 
                                 <div v-if="autoPrune.danglingEnabled" class="ap-meta">
-                                    <div>{{ t.autoPrune.lastRun }} :
+                                    <div>{{ $t("dockerResources.autoPrune.lastRun") }} :
                                         <strong>{{ fmtDate(autoPrune.lastDanglingRun) }}</strong>
                                         <span v-if="autoPrune.lastDanglingResult" class="ms-1">({{ autoPrune.lastDanglingResult }})</span>
                                     </div>
-                                    <div>{{ t.autoPrune.nextRun }} :
+                                    <div>{{ $t("dockerResources.autoPrune.nextRun") }} :
                                         <strong>{{ fmtDate(autoPrune.nextDanglingRun) }}</strong>
                                     </div>
                                 </div>
@@ -152,13 +152,13 @@
 
                             <!-- ── Section 2 : Inutilisées (unused tagged) ── -->
                             <div class="auto-prune-section">
-                                <div class="auto-prune-section-title">{{ t.autoPrune.unusedHeading }}</div>
+                                <div class="auto-prune-section-title">{{ $t("dockerResources.autoPrune.unusedHeading") }}</div>
 
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="unusedToggle"
                                         v-model="autoPrune.unusedEnabled" @change="saveAutoPrune">
                                     <label class="form-check-label ap-label" for="unusedToggle">
-                                        {{ t.autoPrune.enable }}
+                                        {{ $t("dockerResources.autoPrune.enable") }}
                                     </label>
                                 </div>
 
@@ -166,24 +166,24 @@
                                     <select class="form-select form-select-sm ap-select"
                                         v-model.number="autoPrune.unusedIntervalHours" @change="saveAutoPrune"
                                         :disabled="savingPrune">
-                                        <option :value="24">{{ t.autoPrune.intervals[24] }}</option>
-                                        <option :value="48">{{ t.autoPrune.intervals[48] }}</option>
-                                        <option :value="168">{{ t.autoPrune.intervals[168] }}</option>
+                                        <option :value="24">{{ $t("dockerResources.autoPrune.intervals.24") }}</option>
+                                        <option :value="48">{{ $t("dockerResources.autoPrune.intervals.48") }}</option>
+                                        <option :value="168">{{ $t("dockerResources.autoPrune.intervals.168") }}</option>
                                     </select>
                                     <button class="btn btn-outline-secondary btn-sm"
                                         @click="runUnusedPruneNow" :disabled="runningUnusedPrune">
                                         <span v-if="runningUnusedPrune" class="spinner-border spinner-border-sm me-1" />
                                         <font-awesome-icon v-else icon="play" class="me-1" />
-                                        {{ runningUnusedPrune ? t.autoPrune.running : t.autoPrune.runNow }}
+                                        {{ runningUnusedPrune ? $t("dockerResources.autoPrune.running") : $t("dockerResources.autoPrune.runNow") }}
                                     </button>
                                 </div>
 
                                 <div v-if="autoPrune.unusedEnabled" class="ap-meta mb-3">
-                                    <div>{{ t.autoPrune.lastRun }} :
+                                    <div>{{ $t("dockerResources.autoPrune.lastRun") }} :
                                         <strong>{{ fmtDate(autoPrune.lastUnusedRun) }}</strong>
                                         <span v-if="autoPrune.lastUnusedResult" class="ms-1">({{ autoPrune.lastUnusedResult }})</span>
                                     </div>
-                                    <div>{{ t.autoPrune.nextRun }} :
+                                    <div>{{ $t("dockerResources.autoPrune.nextRun") }} :
                                         <strong>{{ fmtDate(autoPrune.nextUnusedRun) }}</strong>
                                     </div>
                                 </div>
@@ -191,12 +191,12 @@
                                 <!-- Exclusions -->
                                 <div class="ap-exclusions">
                                     <div class="ap-exclusions-label">
-                                        {{ t.autoPrune.exclusions }}
+                                        {{ $t("dockerResources.autoPrune.exclusions") }}
                                         <span v-if="autoPrune.unusedExclusions.length > 0"
                                             class="badge bg-secondary ms-1">{{ autoPrune.unusedExclusions.length }}</span>
                                     </div>
                                     <p v-if="autoPrune.unusedExclusions.length === 0" class="fst-italic ap-meta mb-1">
-                                        {{ t.autoPrune.noExclusions }}
+                                        {{ $t("dockerResources.autoPrune.noExclusions") }}
                                     </p>
                                     <div v-else class="d-flex flex-wrap gap-2 mb-2">
                                         <span v-for="ex in autoPrune.unusedExclusions" :key="ex"
@@ -204,12 +204,12 @@
                                             <code class="ap-exclusion-code">{{ ex }}</code>
                                             <button class="btn-close btn-close-white"
                                                 style="font-size:.5rem"
-                                                :title="t.autoPrune.removeExclusion"
+                                                :title="$t('dockerResources.autoPrune.removeExclusion')"
                                                 @click="removeUnusedExclusion(ex)" />
                                         </span>
                                     </div>
                                     <p class="ap-hint mb-0">
-                                        <font-awesome-icon icon="circle-info" class="me-1" />{{ t.autoPrune.excludeHint }}
+                                        <font-awesome-icon icon="circle-info" class="me-1" />{{ $t("dockerResources.autoPrune.excludeHint") }}
                                     </p>
                                 </div>
                             </div>
@@ -220,7 +220,7 @@
 
                 <!-- Loading / Error -->
                 <div v-if="loadingImages" class="text-center py-4 text-muted">
-                    <span class="spinner-border spinner-border-sm me-2" />{{ t.loading }}
+                    <span class="spinner-border spinner-border-sm me-2" />{{ $t("dockerResources.loading") }}
                 </div>
                 <div v-else-if="imageError" class="alert alert-danger py-2">
                     <font-awesome-icon icon="exclamation-triangle" class="me-1" />{{ imageError }}
@@ -240,18 +240,18 @@
                                         title="Tout sélectionner / désélectionner"
                                     />
                                 </th>
-                                <th>{{ t.images.cols.image }}</th>
+                                <th>{{ $t("dockerResources.images.cols.image") }}</th>
                                 <th class="th-sortable" @click="toggleImgSizeSort" style="cursor:pointer;user-select:none;white-space:nowrap">
-                                    {{ t.images.cols.size }}
+                                    {{ $t("dockerResources.images.cols.size") }}
                                     <span class="sort-indicator">
                                         <span :style="{ opacity: imgSizeSort === 'desc' ? 1 : 0.25 }">▼</span>
                                         <span :style="{ opacity: imgSizeSort === 'asc'  ? 1 : 0.25 }">▲</span>
                                     </span>
                                 </th>
-                                <th>{{ t.images.cols.created }}</th>
-                                <th>{{ t.images.cols.status }}</th>
-                                <th>{{ t.images.cols.containers }}</th>
-                                <th class="text-end">{{ t.images.cols.action }}</th>
+                                <th>{{ $t("dockerResources.images.cols.created") }}</th>
+                                <th>{{ $t("dockerResources.images.cols.status") }}</th>
+                                <th>{{ $t("dockerResources.images.cols.containers") }}</th>
+                                <th class="text-end">{{ $t("dockerResources.images.cols.action") }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -280,7 +280,7 @@
                                 <td class="small text-muted align-middle">{{ img.createdSince }}</td>
                                 <td class="align-middle">
                                     <span class="badge" :class="statusBadge(img.status)">
-                                        {{ t.images.status[img.status] ?? img.status }}
+                                        {{ tr("dockerResources.images.status." + img.status, img.status) }}
                                     </span>
                                 </td>
                                 <td class="align-middle">
@@ -303,7 +303,7 @@
                                         <button v-if="img.status === 'unused' && autoPruneLoaded"
                                             class="btn btn-sm"
                                             :class="isExcludedFromUnusedPrune(img) ? 'btn-secondary' : 'btn-outline-secondary'"
-                                            :title="isExcludedFromUnusedPrune(img) ? t.autoPrune.removeExclusion : t.autoPrune.excludeBtn"
+                                            :title="isExcludedFromUnusedPrune(img) ? $t('dockerResources.autoPrune.removeExclusion') : $t('dockerResources.autoPrune.excludeBtn')"
                                             @click="isExcludedFromUnusedPrune(img)
                                                 ? removeUnusedExclusion(`${img.repository}:${img.tag}`)
                                                 : addUnusedExclusion(`${img.repository}:${img.tag}`)">
@@ -324,7 +324,7 @@
                     </table>
                 </div>
                 <div v-else class="text-center text-muted py-4">
-                    {{ resourceFilter ? t.noSearchMatch : t.images.noImages }}
+                    {{ resourceFilter ? $t("dockerResources.noSearchMatch") : $t("dockerResources.images.noImages") }}
                 </div>
             </div>
 
@@ -335,23 +335,23 @@
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                     <button class="btn btn-normal btn-sm" @click="loadVolumes" :disabled="loadingVolumes">
                         <span v-if="loadingVolumes" class="spinner-border spinner-border-sm me-1" />
-                        <font-awesome-icon v-else icon="arrows-rotate" class="me-1" />{{ t.volumes.refresh }}
+                        <font-awesome-icon v-else icon="arrows-rotate" class="me-1" />{{ $t("dockerResources.volumes.refresh") }}
                     </button>
                     <button class="btn btn-outline-danger btn-sm" @click="pruneVolumes" :disabled="pruningVolumes">
                         <span v-if="pruningVolumes" class="spinner-border spinner-border-sm me-1" />
-                        <font-awesome-icon v-else icon="trash" class="me-1" />{{ t.volumes.pruneBtn }}
+                        <font-awesome-icon v-else icon="trash" class="me-1" />{{ $t("dockerResources.volumes.pruneBtn") }}
                     </button>
                     <div v-if="!loadingVolumes" class="ms-auto text-muted small">
-                        <span class="me-3">{{ volumes.length }} {{ t.volumes.total }}</span>
+                        <span class="me-3">{{ volumes.length }} {{ $t("dockerResources.volumes.total") }}</span>
                         <span v-if="unusedVolumesCount > 0" class="text-secondary">
-                            {{ unusedVolumesCount }} {{ t.volumes.unused }}
+                            {{ unusedVolumesCount }} {{ $t("dockerResources.volumes.unused") }}
                         </span>
                     </div>
                 </div>
 
                 <!-- Loading / Error -->
                 <div v-if="loadingVolumes" class="text-center py-4 text-muted">
-                    <span class="spinner-border spinner-border-sm me-2" />{{ t.loading }}
+                    <span class="spinner-border spinner-border-sm me-2" />{{ $t("dockerResources.loading") }}
                 </div>
                 <div v-else-if="volumeError" class="alert alert-danger py-2">
                     <font-awesome-icon icon="exclamation-triangle" class="me-1" />{{ volumeError }}
@@ -362,11 +362,11 @@
                     <table class="table resources-table">
                         <thead>
                             <tr>
-                                <th>{{ t.volumes.cols.name }}</th>
-                                <th>{{ t.volumes.cols.driver }}</th>
-                                <th>{{ t.volumes.cols.status }}</th>
-                                <th>{{ t.volumes.cols.containers }}</th>
-                                <th class="text-end">{{ t.volumes.cols.action }}</th>
+                                <th>{{ $t("dockerResources.volumes.cols.name") }}</th>
+                                <th>{{ $t("dockerResources.volumes.cols.driver") }}</th>
+                                <th>{{ $t("dockerResources.volumes.cols.status") }}</th>
+                                <th>{{ $t("dockerResources.volumes.cols.containers") }}</th>
+                                <th class="text-end">{{ $t("dockerResources.volumes.cols.action") }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -376,13 +376,13 @@
                                     <div class="fw-semibold font-monospace small">{{ vol.name }}</div>
                                     <div v-if="vol.dockgeStacks.length > 0" class="small text-warning-emphasis">
                                         <font-awesome-icon icon="exclamation-triangle" class="me-1" />
-                                        {{ t.dockge }}: {{ vol.dockgeStacks.join(", ") }}
+                                        {{ $t("dockerResources.dockge") }}: {{ vol.dockgeStacks.join(", ") }}
                                     </div>
                                 </td>
                                 <td class="small text-muted align-middle">{{ vol.driver }}</td>
                                 <td class="align-middle">
                                     <span class="badge" :class="statusBadge(vol.status)">
-                                        {{ t.volumes.status[vol.status] ?? vol.status }}
+                                        {{ tr("dockerResources.volumes.status." + vol.status, vol.status) }}
                                     </span>
                                 </td>
                                 <td class="align-middle">
@@ -413,7 +413,7 @@
                     </table>
                 </div>
                 <div v-else class="text-center text-muted py-4">
-                    {{ resourceFilter ? t.noSearchMatch : t.volumes.noVolumes }}
+                    {{ resourceFilter ? $t("dockerResources.noSearchMatch") : $t("dockerResources.volumes.noVolumes") }}
                 </div>
             </div>
 
@@ -424,12 +424,12 @@
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                     <button class="btn btn-normal btn-sm" @click="loadContainers" :disabled="loadingContainers">
                         <span v-if="loadingContainers" class="spinner-border spinner-border-sm me-1" />
-                        <font-awesome-icon v-else icon="arrows-rotate" class="me-1" />{{ t.containers.refresh }}
+                        <font-awesome-icon v-else icon="arrows-rotate" class="me-1" />{{ $t("dockerResources.containers.refresh") }}
                     </button>
                     <div v-if="!loadingContainers" class="ms-auto text-muted small">
-                        <span class="me-3">{{ containers.length }} {{ t.containers.total }}</span>
+                        <span class="me-3">{{ containers.length }} {{ $t("dockerResources.containers.total") }}</span>
                         <span v-if="orphanCount > 0" class="text-warning">
-                            {{ orphanCount }} {{ t.containers.orphan }}
+                            {{ orphanCount }} {{ $t("dockerResources.containers.orphan") }}
                         </span>
                     </div>
                 </div>
@@ -437,12 +437,12 @@
                 <!-- Info -->
                 <div v-if="!loadingContainers && orphanCount > 0" class="alert alert-warning py-2 small mb-3">
                     <font-awesome-icon icon="exclamation-triangle" class="me-1" />
-                    {{ t.containers.orphanHint }}
+                    {{ $t("dockerResources.containers.orphanHint") }}
                 </div>
 
                 <!-- Loading / Error -->
                 <div v-if="loadingContainers" class="text-center py-4 text-muted">
-                    <span class="spinner-border spinner-border-sm me-2" />{{ t.loading }}
+                    <span class="spinner-border spinner-border-sm me-2" />{{ $t("dockerResources.loading") }}
                 </div>
                 <div v-else-if="containerError" class="alert alert-danger py-2">
                     <font-awesome-icon icon="exclamation-triangle" class="me-1" />{{ containerError }}
@@ -453,10 +453,10 @@
                     <table class="table resources-table">
                         <thead>
                             <tr>
-                                <th>{{ t.containers.cols.name }}</th>
-                                <th>{{ t.containers.cols.image }}</th>
-                                <th>{{ t.containers.cols.status }}</th>
-                                <th class="text-end">{{ t.containers.cols.action }}</th>
+                                <th>{{ $t("dockerResources.containers.cols.name") }}</th>
+                                <th>{{ $t("dockerResources.containers.cols.image") }}</th>
+                                <th>{{ $t("dockerResources.containers.cols.status") }}</th>
+                                <th class="text-end">{{ $t("dockerResources.containers.cols.action") }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -469,7 +469,7 @@
                                 <td class="small text-muted align-middle">{{ ctr.image }}</td>
                                 <td class="align-middle">
                                     <span class="badge" :class="statusBadge(ctr.state)">
-                                        {{ t.containers.state[ctr.state] ?? ctr.status }}
+                                        {{ tr("dockerResources.containers.state." + ctr.state, ctr.status) }}
                                     </span>
                                 </td>
                                 <td class="align-middle text-end">
@@ -493,7 +493,7 @@
                     </table>
                 </div>
                 <div v-else class="text-center text-muted py-4">
-                    {{ resourceFilter ? t.noSearchMatch : t.containers.noContainers }}
+                    {{ resourceFilter ? $t("dockerResources.noSearchMatch") : $t("dockerResources.containers.noContainers") }}
                 </div>
             </div>
 
@@ -502,20 +502,20 @@
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                     <button class="btn btn-normal btn-sm" :disabled="loadingNetworks" @click="loadNetworks">
                         <span v-if="loadingNetworks" class="spinner-border spinner-border-sm me-1" />
-                        <font-awesome-icon v-else icon="arrows-rotate" class="me-1" />{{ t.networks.refresh }}
+                        <font-awesome-icon v-else icon="arrows-rotate" class="me-1" />{{ $t("dockerResources.networks.refresh") }}
                     </button>
                     <button class="btn btn-primary btn-sm" @click="networkCreateOpen = !networkCreateOpen">
-                        <font-awesome-icon icon="plus" class="me-1" />{{ t.networks.create }}
+                        <font-awesome-icon icon="plus" class="me-1" />{{ $t("dockerResources.networks.create") }}
                     </button>
                 </div>
 
                 <form v-if="networkCreateOpen" class="row g-2 p-3 mb-3 network-create" @submit.prevent="createNetwork">
                     <div class="col-md-4">
-                        <label class="form-label">{{ t.networks.name }}</label>
+                        <label class="form-label">{{ $t("dockerResources.networks.name") }}</label>
                         <input v-model.trim="networkForm.name" class="form-control form-control-sm" required>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">{{ t.networks.driver }}</label>
+                        <label class="form-label">{{ $t("dockerResources.networks.driver") }}</label>
                         <select v-model="networkForm.driver" class="form-select form-select-sm">
                             <option value="bridge">bridge</option>
                             <option value="macvlan">macvlan</option>
@@ -523,42 +523,42 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">{{ t.networks.subnet }}</label>
+                        <label class="form-label">{{ $t("dockerResources.networks.subnet") }}</label>
                         <input v-model.trim="networkForm.subnet" class="form-control form-control-sm" placeholder="172.28.0.0/16">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">{{ t.networks.gateway }}</label>
+                        <label class="form-label">{{ $t("dockerResources.networks.gateway") }}</label>
                         <input v-model.trim="networkForm.gateway" class="form-control form-control-sm" placeholder="172.28.0.1">
                     </div>
                     <div v-if="networkForm.driver !== 'bridge'" class="col-md-4">
-                        <label class="form-label">{{ t.networks.parent }}</label>
+                        <label class="form-label">{{ $t("dockerResources.networks.parent") }}</label>
                         <input v-model.trim="networkForm.parent" class="form-control form-control-sm" placeholder="eth0">
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
                         <label class="form-check mb-1">
                             <input v-model="networkForm.internal" class="form-check-input" type="checkbox">
-                            <span class="form-check-label">{{ t.networks.internal }}</span>
+                            <span class="form-check-label">{{ $t("dockerResources.networks.internal") }}</span>
                         </label>
                     </div>
                     <div class="col-12">
                         <button class="btn btn-sm btn-primary" :disabled="networkBusy">
-                            {{ t.networks.create }}
+                            {{ $t("dockerResources.networks.create") }}
                         </button>
                     </div>
                 </form>
 
                 <div v-if="networkError" class="alert alert-danger py-2">{{ networkError }}</div>
                 <div v-else-if="loadingNetworks" class="text-center py-4 text-muted">
-                    <span class="spinner-border spinner-border-sm me-2" />{{ t.loading }}
+                    <span class="spinner-border spinner-border-sm me-2" />{{ $t("dockerResources.loading") }}
                 </div>
                 <div v-else-if="filteredNetworks.length > 0" class="table-responsive">
                     <table class="table resources-table">
                         <thead>
                             <tr>
-                                <th>{{ t.networks.name }}</th>
-                                <th>{{ t.networks.driver }}</th>
-                                <th>{{ t.networks.scope }}</th>
-                                <th>{{ t.networks.containers }}</th>
+                                <th>{{ $t("dockerResources.networks.name") }}</th>
+                                <th>{{ $t("dockerResources.networks.driver") }}</th>
+                                <th>{{ $t("dockerResources.networks.scope") }}</th>
+                                <th>{{ $t("dockerResources.networks.containers") }}</th>
                                 <th class="text-end" />
                             </tr>
                         </thead>
@@ -570,7 +570,7 @@
                                         <span v-if="network.dockerManaged" class="badge bg-secondary me-1">Docker</span>
                                         <span v-if="network.composeProject" class="badge badge-stack me-1">Compose: {{ network.composeProject }}</span>
                                         <span v-if="network.dockgeManaged" class="badge bg-primary">Dockge Enhanced</span>
-                                        <span v-if="network.internal" class="badge bg-warning text-dark ms-1">{{ t.networks.internal }}</span>
+                                        <span v-if="network.internal" class="badge bg-warning text-dark ms-1">{{ $t("dockerResources.networks.internal") }}</span>
                                     </div>
                                     <small v-if="network.ipam.length" class="text-muted">{{ network.ipam.map(item => item.Subnet).filter(Boolean).join(", ") }}</small>
                                 </td>
@@ -582,13 +582,13 @@
                                         <span class="badge bg-secondary">{{ container.name }}</span>
                                         <small class="text-muted">{{ container.ipv4 }}</small>
                                         <button class="btn btn-sm btn-outline-warning py-0" @click="disconnectNetwork(network, container)">
-                                            {{ t.networks.disconnect }}
+                                            {{ $t("dockerResources.networks.disconnect") }}
                                         </button>
                                     </div>
                                     <div class="input-group input-group-sm mt-2">
-                                        <input v-model.trim="networkConnectInputs[network.name]" class="form-control" :placeholder="t.networks.containerName">
+                                        <input v-model.trim="networkConnectInputs[network.name]" class="form-control" :placeholder="$t('dockerResources.networks.containerName')">
                                         <button class="btn btn-outline-success" @click="connectNetwork(network)">
-                                            {{ t.networks.connect }}
+                                            {{ $t("dockerResources.networks.connect") }}
                                         </button>
                                     </div>
                                 </td>
@@ -602,7 +602,7 @@
                     </table>
                 </div>
                 <div v-else class="text-center text-muted py-4">
-                    {{ resourceFilter ? t.noSearchMatch : t.networks.empty }}
+                    {{ resourceFilter ? $t("dockerResources.noSearchMatch") : $t("dockerResources.networks.empty") }}
                 </div>
             </div>
 
@@ -613,22 +613,22 @@
             <div class="modal-card shadow-box">
                 <h5 class="mb-3">
                     <font-awesome-icon icon="exclamation-triangle" class="text-warning me-2" />
-                    {{ t.confirm1Title }}
+                    {{ $t("dockerResources.confirm1Title") }}
                 </h5>
                 <p class="mb-2">
-                    {{ t.confirm1Body }}
+                    {{ $t("dockerResources.confirm1Body") }}
                     <strong class="font-monospace">{{ pendingItem?.label }}</strong>
                 </p>
                 <div v-if="pendingItem?.status === 'stopped' || pendingItem?.status === 'exited'" class="alert alert-warning py-2 small mb-3">
                     <font-awesome-icon icon="exclamation-triangle" class="me-1" />
-                    {{ pendingItem?.type === 'image' ? t.images.confirm1Warning : pendingItem?.type === 'volume' ? t.volumes.confirm1Warning : t.containers.confirm1Warning }}
+                    {{ pendingItem?.type === 'image' ? $t("dockerResources.images.confirm1Warning") : pendingItem?.type === 'volume' ? $t("dockerResources.volumes.confirm1Warning") : $t("dockerResources.containers.confirm1Warning") }}
                     <div v-if="pendingItem?.dockgeStacks?.length > 0" class="mt-1">
-                        <strong>{{ t.stack }}:</strong> {{ pendingItem.dockgeStacks.join(", ") }}
+                        <strong>{{ $t("dockerResources.stack") }}:</strong> {{ pendingItem.dockgeStacks.join(", ") }}
                     </div>
                 </div>
                 <div class="d-flex gap-2 justify-content-end">
-                    <button class="btn btn-sm btn-normal" @click="cancelDelete">{{ t.cancelBtn }}</button>
-                    <button class="btn btn-sm btn-warning" @click="confirmStep1">{{ t.confirmBtn }}</button>
+                    <button class="btn btn-sm btn-normal" @click="cancelDelete">{{ $t("dockerResources.cancelBtn") }}</button>
+                    <button class="btn btn-sm btn-warning" @click="confirmStep1">{{ $t("dockerResources.confirmBtn") }}</button>
                 </div>
             </div>
         </div>
@@ -638,14 +638,14 @@
             <div class="modal-card shadow-box">
                 <h5 class="mb-3 text-danger">
                     <font-awesome-icon icon="exclamation-triangle" class="me-2" />
-                    {{ t.confirm2Title }}
+                    {{ $t("dockerResources.confirm2Title") }}
                 </h5>
                 <p class="mb-3">
-                    {{ pendingItem?.type === 'image' ? t.images.confirm2Body : pendingItem?.type === 'volume' ? t.volumes.confirm2Body : t.containers.confirm2Body }}
+                    {{ pendingItem?.type === 'image' ? $t("dockerResources.images.confirm2Body") : pendingItem?.type === 'volume' ? $t("dockerResources.volumes.confirm2Body") : $t("dockerResources.containers.confirm2Body") }}
                 </p>
                 <div class="d-flex gap-2 justify-content-end">
-                    <button class="btn btn-sm btn-normal" @click="cancelDelete">{{ t.cancelBtn }}</button>
-                    <button class="btn btn-sm btn-danger" @click="executeDelete">{{ t.confirmBtn }}</button>
+                    <button class="btn btn-sm btn-normal" @click="cancelDelete">{{ $t("dockerResources.cancelBtn") }}</button>
+                    <button class="btn btn-sm btn-danger" @click="executeDelete">{{ $t("dockerResources.confirmBtn") }}</button>
                 </div>
             </div>
         </div>
@@ -728,209 +728,15 @@ interface PendingItem {
     name?: string; // volume name
 }
 
-// ─── i18n inline ─────────────────────────────────────────────────
-
-const i18n = {
-    fr: {
-        title: "Ressources Docker",
-        searchPlaceholder: "Rechercher par nom, image, stack ou conteneur…",
-        clearSearch: "Effacer la recherche",
-        noSearchMatch: "Aucune ressource ne correspond à cette recherche.",
-        tab: { images: "Images", volumes: "Volumes", containers: "Hors Dockge", networks: "Réseaux" },
-        images: {
-            heading: "Images Docker",
-            refresh: "Rafraîchir",
-            pruneBtn: "Purger les orphelines",
-            pruneConfirm: "Supprimer toutes les images orphelines (sans tag) ? Note : des couches intermédiaires non listées seront également supprimées.",
-            pruneUnusedBtn: "Purger les inutilisées",
-            pruneUnusedConfirm: "Supprimer toutes les images non utilisées par un conteneur actif (y compris les images taguées inutilisées) ?",
-            total: "images",
-            unused: "inutilisées",
-            dangling: "orphelines",
-            cols: { image: "Image", size: "Taille", created: "Construit", status: "Utilisation", containers: "Conteneurs", action: "" },
-            status: { running: "En cours", stopped: "Arrêtée", unused: "Inutilisée", dangling: "Orpheline (sans tag)" } as Record<string, string>,
-            confirm1Warning: "Cette image est utilisée par des conteneurs arrêtés.",
-            confirm2Body: "⚠️ Suppression irréversible. Les données liées pourraient être perdues.",
-            noImages: "Aucune image trouvée.",
-            deleteSelected: "Supprimer la sélection",
-            deleteSelectedConfirm: (n: number) => `Supprimer ${n} image(s) sélectionnée(s) ?`,
-        },
-        volumes: {
-            heading: "Volumes Docker",
-            refresh: "Rafraîchir",
-            pruneBtn: "Supprimer les inutilisés",
-            pruneConfirm: "Supprimer tous les volumes non utilisés par un conteneur actif ?",
-            total: "volumes",
-            unused: "inutilisés",
-            cols: { name: "Nom", driver: "Driver", status: "Statut", containers: "Conteneurs", action: "" },
-            status: { running: "En cours", stopped: "Arrêté", unused: "Inutilisé" } as Record<string, string>,
-            confirm1Warning: "Ce volume est référencé par des conteneurs arrêtés.",
-            confirm2Body: "⚠️ Suppression irréversible. Toutes les données du volume seront définitivement perdues.",
-            noVolumes: "Aucun volume trouvé.",
-        },
-        containers: {
-            refresh: "Rafraîchir",
-            total: "conteneurs",
-            orphan: "hors Dockge",
-            orphanHint: "Ces conteneurs fonctionnent en dehors de Dockge. Arrêtez-les puis supprimez-les pour libérer les ressources.",
-            noStack: "Hors Dockge",
-            noContainers: "Aucun conteneur trouvé.",
-            cols: { name: "Nom", image: "Image", status: "État", stack: "Stack", action: "" },
-            state: { running: "En cours", exited: "Arrêté", created: "Créé", paused: "Pausé", restarting: "Redémarrage", removing: "Suppression", dead: "Mort" } as Record<string, string>,
-            confirm1Warning: "Ce conteneur sera définitivement supprimé.",
-            confirm2Body: "⚠️ Suppression irréversible du conteneur.",
-        },
-        networks: {
-            refresh: "Rafraîchir",
-            create: "Créer un réseau",
-            name: "Nom",
-            driver: "Driver",
-            scope: "Scope",
-            subnet: "Sous-réseau",
-            gateway: "Passerelle",
-            parent: "Interface parente",
-            internal: "Interne",
-            containers: "Conteneurs connectés",
-            containerName: "Nom du conteneur",
-            connect: "Connecter",
-            disconnect: "Déconnecter",
-            empty: "Aucun réseau trouvé.",
-            deleteConfirm: "Supprimer le réseau inutilisé « {name} » ?",
-            connectConfirm: "Connecter « {container} » au réseau « {network} » ?",
-            disconnectConfirm: "Déconnecter « {container} » du réseau « {network} » ? Cette action peut interrompre le service.",
-        },
-        autoPrune: {
-            heading: "Purge automatique",
-            danglingHeading: "Orphelines (sans tag)",
-            unusedHeading: "Inutilisées (avec tag)",
-            enable: "Activer",
-            interval: "Fréquence",
-            intervals: { 24: "Toutes les 24h", 48: "Toutes les 48h", 168: "Tous les 7 jours" } as Record<number, string>,
-            lastRun: "Dernier run",
-            nextRun: "Prochain run",
-            never: "jamais",
-            runNow: "Lancer",
-            running: "En cours…",
-            exclusions: "Images exclues",
-            noExclusions: "Aucune exclusion",
-            excludeBtn: "Exclure de la purge",
-            excludeHint: "Pour exclure une image inutilisée, cliquez sur l'icône 🚫 dans le tableau ci-dessous.",
-            removeExclusion: "Retirer de l'exclusion",
-        },
-        confirm1Title: "Confirmer la suppression",
-        confirm1Body: "Supprimer :",
-        confirm2Title: "Confirmation finale",
-        confirmBtn: "Oui, supprimer",
-        cancelBtn: "Annuler",
-        loading: "Chargement...",
-        errorLoad: "Erreur de chargement.",
-        stack: "Stack Dockge",
-        dockge: "Stack Dockge",
-    },
-    en: {
-        title: "Docker Resources",
-        searchPlaceholder: "Search by name, image, stack, or container…",
-        clearSearch: "Clear search",
-        noSearchMatch: "No resource matches this search.",
-        tab: { images: "Images", volumes: "Volumes", containers: "Unmanaged", networks: "Networks" },
-        images: {
-            heading: "Docker Images",
-            refresh: "Refresh",
-            pruneBtn: "Remove dangling",
-            pruneConfirm: "Remove all untagged (dangling) images? Note: unlisted intermediate layers will also be removed.",
-            pruneUnusedBtn: "Remove unused",
-            pruneUnusedConfirm: "Remove all images not used by any active container (including tagged but unused images)?",
-            total: "images",
-            unused: "unused",
-            dangling: "dangling",
-            cols: { image: "Image", size: "Size", created: "Built", status: "Usage", containers: "Containers", action: "" },
-            status: { running: "Running", stopped: "Stopped", unused: "Unused", dangling: "Dangling (untagged)" } as Record<string, string>,
-            confirm1Warning: "This image is used by stopped containers.",
-            confirm2Body: "⚠️ This action is irreversible. Related data may be lost.",
-            noImages: "No images found.",
-            deleteSelected: "Delete selected",
-            deleteSelectedConfirm: (n: number) => `Delete ${n} selected image(s)?`,
-        },
-        volumes: {
-            heading: "Docker Volumes",
-            refresh: "Refresh",
-            pruneBtn: "Remove unused",
-            pruneConfirm: "Remove all volumes not used by a running container?",
-            total: "volumes",
-            unused: "unused",
-            cols: { name: "Name", driver: "Driver", status: "Status", containers: "Containers", action: "" },
-            status: { running: "Running", stopped: "Stopped", unused: "Unused" } as Record<string, string>,
-            confirm1Warning: "This volume is referenced by stopped containers.",
-            confirm2Body: "⚠️ This action is irreversible. All volume data will be permanently lost.",
-            noVolumes: "No volumes found.",
-        },
-        containers: {
-            refresh: "Refresh",
-            total: "containers",
-            orphan: "outside Dockge",
-            orphanHint: "These containers run outside of Dockge. Stop them then delete to free resources.",
-            noStack: "Outside Dockge",
-            noContainers: "No containers found.",
-            cols: { name: "Name", image: "Image", status: "State", stack: "Stack", action: "" },
-            state: { running: "Running", exited: "Stopped", created: "Created", paused: "Paused", restarting: "Restarting", removing: "Removing", dead: "Dead" } as Record<string, string>,
-            confirm1Warning: "This container will be permanently deleted.",
-            confirm2Body: "⚠️ This action is irreversible.",
-        },
-        networks: {
-            refresh: "Refresh",
-            create: "Create network",
-            name: "Name",
-            driver: "Driver",
-            scope: "Scope",
-            subnet: "Subnet",
-            gateway: "Gateway",
-            parent: "Parent interface",
-            internal: "Internal",
-            containers: "Connected containers",
-            containerName: "Container name",
-            connect: "Connect",
-            disconnect: "Disconnect",
-            empty: "No network found.",
-            deleteConfirm: "Delete unused network “{name}”?",
-            connectConfirm: "Connect “{container}” to network “{network}”?",
-            disconnectConfirm: "Disconnect “{container}” from network “{network}”? This may interrupt the service.",
-        },
-        autoPrune: {
-            heading: "Automatic prune",
-            danglingHeading: "Dangling (untagged)",
-            unusedHeading: "Unused (tagged)",
-            enable: "Enable",
-            interval: "Frequency",
-            intervals: { 24: "Every 24h", 48: "Every 48h", 168: "Every 7 days" } as Record<number, string>,
-            lastRun: "Last run",
-            nextRun: "Next run",
-            never: "never",
-            runNow: "Run",
-            running: "Running…",
-            exclusions: "Excluded images",
-            noExclusions: "No exclusions",
-            excludeBtn: "Exclude from prune",
-            excludeHint: "To exclude an unused image, click the 🚫 icon in the table below.",
-            removeExclusion: "Remove exclusion",
-        },
-        confirm1Title: "Confirm deletion",
-        confirm1Body: "Delete:",
-        confirm2Title: "Final confirmation",
-        confirmBtn: "Yes, delete",
-        cancelBtn: "Cancel",
-        loading: "Loading...",
-        errorLoad: "Error loading data.",
-        stack: "Dockge Stack",
-        dockge: "Dockge Stack",
-    },
-};
-
 // ─── State ────────────────────────────────────────────────────────
 
-// Suit la langue globale de l'app ; le dictionnaire inline n'existe
-// qu'en fr/en, toute autre langue retombe sur l'anglais.
-const { locale } = useI18n();
-const lang = computed(() => ((locale.value ?? "en").startsWith("fr") ? "fr" : "en"));
+const { t, te } = useI18n();
+
+// Traduit une clé dynamique (statut/état), retombe sur la valeur brute si absente.
+function tr(key: string, fallback: string): string {
+    return te(key) ? t(key) : fallback;
+}
+
 const tab = ref<"images" | "volumes" | "containers" | "networks">("images");
 
 const images = ref<DockerImage[]>([]);
@@ -1002,8 +808,6 @@ const runningDanglingPrune = ref(false);
 const runningUnusedPrune   = ref(false);
 
 // ─── Computed ─────────────────────────────────────────────────────
-
-const t = computed(() => i18n[lang.value]);
 
 const normalizedResourceFilter = computed(() => resourceFilter.value.toLowerCase());
 
@@ -1168,10 +972,10 @@ async function loadImages() {
             images.value = data.images;
             selectedImages.value.clear();
         } else {
-            imageError.value = data.message ?? t.value.errorLoad;
+            imageError.value = data.message ?? t("dockerResources.errorLoad");
         }
     } catch {
-        imageError.value = t.value.errorLoad;
+        imageError.value = t("dockerResources.errorLoad");
     } finally {
         loadingImages.value = false;
     }
@@ -1196,7 +1000,7 @@ function toggleSelectAllImages() {
 async function deleteSelectedImages() {
     const keys = [...selectedImages.value];
     if (keys.length === 0) return;
-    if (!confirm(t.value.images.deleteSelectedConfirm(keys.length))) return;
+    if (!confirm(t("dockerResources.images.deleteSelectedConfirm", { n: keys.length }))) return;
 
     let ok = 0, fail = 0;
     for (const key of keys) {
@@ -1223,17 +1027,17 @@ async function loadVolumes() {
         if (data.ok) {
             volumes.value = data.volumes;
         } else {
-            volumeError.value = data.message ?? t.value.errorLoad;
+            volumeError.value = data.message ?? t("dockerResources.errorLoad");
         }
     } catch {
-        volumeError.value = t.value.errorLoad;
+        volumeError.value = t("dockerResources.errorLoad");
     } finally {
         loadingVolumes.value = false;
     }
 }
 
 async function pruneImages() {
-    if (!confirm(t.value.images.pruneConfirm)) return;
+    if (!confirm(t("dockerResources.images.pruneConfirm"))) return;
     pruningImages.value = true;
     try {
         const data = await api("POST", "images/prune");
@@ -1245,7 +1049,7 @@ async function pruneImages() {
 }
 
 async function pruneUnusedImages() {
-    if (!confirm(t.value.images.pruneUnusedConfirm)) return;
+    if (!confirm(t("dockerResources.images.pruneUnusedConfirm"))) return;
     pruningUnusedImages.value = true;
     try {
         const data = await api("POST", "images/prune-unused");
@@ -1257,7 +1061,7 @@ async function pruneUnusedImages() {
 }
 
 async function pruneVolumes() {
-    if (!confirm(t.value.volumes.pruneConfirm)) return;
+    if (!confirm(t("dockerResources.volumes.pruneConfirm"))) return;
     pruningVolumes.value = true;
     try {
         const data = await api("POST", "volumes/prune");
@@ -1277,10 +1081,10 @@ async function loadContainers() {
             // On ne garde que les conteneurs hors Dockge (pas de stack compose)
             containers.value = data.containers.filter((c: DockerContainer) => !c.stackName);
         } else {
-            containerError.value = data.message ?? t.value.errorLoad;
+            containerError.value = data.message ?? t("dockerResources.errorLoad");
         }
     } catch {
-        containerError.value = t.value.errorLoad;
+        containerError.value = t("dockerResources.errorLoad");
     } finally {
         loadingContainers.value = false;
     }
@@ -1294,10 +1098,10 @@ async function loadNetworks() {
         if (data.ok) {
             networks.value = data.networks;
         } else {
-            networkError.value = data.message ?? t.value.errorLoad;
+            networkError.value = data.message ?? t("dockerResources.errorLoad");
         }
     } catch {
-        networkError.value = t.value.errorLoad;
+        networkError.value = t("dockerResources.errorLoad");
     } finally {
         loadingNetworks.value = false;
     }
@@ -1319,7 +1123,7 @@ async function createNetwork() {
 }
 
 async function deleteNetwork(network: DockerNetwork) {
-    if (!confirm(t.value.networks.deleteConfirm.replace("{name}", network.name))) return;
+    if (!confirm(t("dockerResources.networks.deleteConfirm", { name: network.name }))) return;
     const data = await api("DELETE", `networks/${encodeURIComponent(network.name)}`, { confirmed: true });
     showToast(data.ok, data.message ?? "");
     if (data.ok) await loadNetworks();
@@ -1327,7 +1131,7 @@ async function deleteNetwork(network: DockerNetwork) {
 
 async function connectNetwork(network: DockerNetwork) {
     const container = networkConnectInputs.value[network.name]?.trim();
-    if (!container || !confirm(t.value.networks.connectConfirm.replace("{container}", container).replace("{network}", network.name))) return;
+    if (!container || !confirm(t("dockerResources.networks.connectConfirm", { container, network: network.name }))) return;
     const data = await api("POST", `networks/${encodeURIComponent(network.name)}/connect`, { container, confirmed: true });
     showToast(data.ok, data.message ?? "");
     if (data.ok) {
@@ -1337,7 +1141,7 @@ async function connectNetwork(network: DockerNetwork) {
 }
 
 async function disconnectNetwork(network: DockerNetwork, container: { id: string; name: string }) {
-    if (!confirm(t.value.networks.disconnectConfirm.replace("{container}", container.name).replace("{network}", network.name))) return;
+    if (!confirm(t("dockerResources.networks.disconnectConfirm", { container: container.name, network: network.name }))) return;
     const data = await api("POST", `networks/${encodeURIComponent(network.name)}/disconnect`, {
         container: container.id,
         confirmed: true,
@@ -1425,7 +1229,7 @@ async function executeDelete() {
             else await loadContainers();
         }
     } catch {
-        showToast(false, t.value.errorLoad);
+        showToast(false, t("dockerResources.errorLoad"));
     } finally {
         pendingItem.value = null;
     }
@@ -1522,7 +1326,7 @@ function isExcludedFromUnusedPrune(img: DockerImage): boolean {
 }
 
 function fmtDate(iso?: string | null): string {
-    if (!iso) return t.value.autoPrune.never;
+    if (!iso) return t("dockerResources.autoPrune.never");
     return new Date(iso).toLocaleString();
 }
 
