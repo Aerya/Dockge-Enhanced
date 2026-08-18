@@ -203,6 +203,7 @@ export default {
     display: flex;
     align-items: center;
     min-height: 44px;
+    margin-bottom: 4px;
     border-radius: 8px;
     transition: all ease-in-out 0.15s;
     width: 100%;
