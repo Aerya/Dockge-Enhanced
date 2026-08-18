@@ -114,7 +114,7 @@
           <tbody>
             <tr v-for="entry in entries" :key="entry.id">
               <td class="audit-date">{{ fmtDate(entry.timestamp) }}</td>
-              <td>{{ entry.username || "system" }}</td>
+              <td>{{ entry.username || t("watcher.audit.originSystem") }}</td>
               <td>
                 <span>{{ operationOrigin(entry) }}</span>
                 <small v-if="operationDuration(entry)" class="d-block audit-muted">{{ operationDuration(entry) }}</small>
@@ -158,7 +158,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { fmtDate } from "../composables/useServerTz";
+
+const { t } = useI18n();
 
 interface AuditEntry {
   id: number;
@@ -324,12 +327,12 @@ function operationOrigin(entry: AuditEntry) {
     return metadata.origin;
   }
   if (entry.username?.startsWith("api:")) {
-    return "api";
+    return t("watcher.audit.originApi");
   }
   if (entry.username?.startsWith("webhook:")) {
-    return "webhook";
+    return t("watcher.audit.originWebhook");
   }
-  return entry.username === "system" ? "system" : "manual";
+  return entry.username === "system" ? t("watcher.audit.originSystem") : t("watcher.audit.originManual");
 }
 
 function operationDuration(entry: AuditEntry) {

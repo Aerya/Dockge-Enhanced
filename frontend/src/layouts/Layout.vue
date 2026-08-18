@@ -451,8 +451,8 @@ export default {
             const total = Math.max(0, Number(seconds) || 0);
             const days = Math.floor(total / 86400);
             const hours = Math.floor((total % 86400) / 3600);
-            if (days > 0) return `${days}j ${hours}h`;
-            return `${hours}h`;
+            if (days > 0) return `${this.$t("timeUnit.day", [ days ])} ${this.$t("timeUnit.hour", [ hours ])}`;
+            return this.$t("timeUnit.hour", [ hours ]);
         },
 
         tempSummary(values) {

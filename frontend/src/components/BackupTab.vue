@@ -121,7 +121,7 @@
                         <div class="col-md-5">
                             <label class="form-label">{{ $t('watcher.backup.sftpHost') }}</label>
                             <input v-model="dest.sftp!.host" type="text"
-                                class="form-control" placeholder="192.168.1.100 ou nas.local" />
+                                class="form-control" :placeholder="$t('watcher.backup.sftpHostPlaceholder')" />
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">{{ $t('watcher.backup.sftpPort') }}</label>
@@ -522,7 +522,7 @@
                 </h5>
                 <small v-if="nextBackupDate" class="form-text">
                     <font-awesome-icon icon="clock" class="me-1" />
-                    Prochain backup : {{ fmtDate(nextBackupDate) }}
+                    {{ $t('watcher.backup.history.nextBackup') }} : {{ fmtDate(nextBackupDate) }}
                 </small>
             </div>
             <div v-if="history.length === 0" class="text-center form-text fst-italic py-3">
@@ -1114,7 +1114,7 @@ interface DiffLine { type: "same" | "added" | "removed"; line: string }
 // ─── State ────────────────────────────────────────────────────────
 
 const DEFAULT_DEST = (): Destination => ({
-    label: "Local",
+    label: t("watcher.backup.destDefaultLabel"),
     enabled: true,
     type: "local",
     resticPassword: "",
@@ -1200,7 +1200,7 @@ const volBadge = computed(() => {
     const parts: string[] = [];
     if (tops.has(APP_DATA)) parts.push("/app/data");
     const others = [...tops].filter(v => v !== APP_DATA).length;
-    if (others > 0) parts.push(`${others} vol.`);
+    if (others > 0) parts.push(t("watcher.backup.volumes.volCount", { count: others }));
     return parts.join(" · ") || null;
 });
 const volumesCollapsed = ref(localStorage.getItem("backupVolumesCollapsed") === "1");
@@ -1315,7 +1315,7 @@ const toast = ref({ msg: "", ok: true });
 
 function addDestination() {
     const d = DEFAULT_DEST();
-    d.label = `Destination ${settings.value.destinations.length + 1}`;
+    d.label = t("watcher.backup.destAutoLabel", { n: settings.value.destinations.length + 1 });
     settings.value.destinations.push(d);
     expandedDest.value = settings.value.destinations.length - 1;
 }

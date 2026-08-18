@@ -1581,14 +1581,14 @@ export default {
             this.processing = true;
 
             if (!this.jsonConfig.services) {
-                this.$root.toastError("No services found in compose.yaml");
+                this.$root.toastError(this.$t("noServicesFound"));
                 this.processing = false;
                 return;
             }
 
             // Check if services is object
             if (typeof this.jsonConfig.services !== "object") {
-                this.$root.toastError("Services must be an object");
+                this.$root.toastError(this.$t("servicesMustBeObject"));
                 this.processing = false;
                 return;
             }
@@ -1877,7 +1877,7 @@ export default {
             }
 
             if (Array.isArray(config.services) || typeof config.services !== "object") {
-                throw new Error("Services must be an object");
+                throw new Error(this.$t("servicesMustBeObject"));
             }
 
             return {
@@ -1930,12 +1930,12 @@ export default {
             this.checkYAML();
 
             if (this.jsonConfig.services[this.newContainerName]) {
-                this.$root.toastError("Container name already exists");
+                this.$root.toastError(this.$t("containerNameExists"));
                 return;
             }
 
             if (!this.newContainerName) {
-                this.$root.toastError("Container name cannot be empty");
+                this.$root.toastError(this.$t("containerNameEmpty"));
                 return;
             }
 

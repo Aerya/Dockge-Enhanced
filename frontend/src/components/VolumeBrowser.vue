@@ -219,7 +219,7 @@ export default {
                         this.openMount(this.mounts[0]);
                     }
                 } else {
-                    this.error = res.msg ?? "Error";
+                    this.error = res.msg ?? this.$t("volumeBrowserError");
                 }
             });
         },
@@ -239,7 +239,7 @@ export default {
                 if (res.ok) {
                     this.entries = res.entries ?? [];
                 } else {
-                    this.error = res.msg ?? "Error";
+                    this.error = res.msg ?? this.$t("volumeBrowserError");
                 }
             });
         },
@@ -264,7 +264,7 @@ export default {
                         dirty: false,
                     };
                 } else {
-                    this.error = res.msg ?? "Error";
+                    this.error = res.msg ?? this.$t("volumeBrowserError");
                 }
             });
         },

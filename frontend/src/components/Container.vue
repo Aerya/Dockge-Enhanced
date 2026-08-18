@@ -126,7 +126,7 @@
                 <font-awesome-icon icon="edit" />
                 {{ $t("Edit") }}
             </button>
-            <button v-if="false" class="btn btn-normal me-2">Rename</button>
+            <button v-if="false" class="btn btn-normal me-2">{{ $t("rename") }}</button>
             <button class="btn btn-danger me-2" @click="remove">
                 <font-awesome-icon icon="trash" />
                 {{ $t("deleteContainer") }}
@@ -216,7 +216,7 @@
                         {{ $t("NoNetworksAvailable") }}
                     </div>
 
-                    <ArraySelect name="networks" :display-name="$t('network')" placeholder="Network Name" :options="networkList" />
+                    <ArraySelect name="networks" :display-name="$t('network')" :placeholder="$t('Network name...')" :options="networkList" />
                 </div>
 
                 <!-- Depends on -->
