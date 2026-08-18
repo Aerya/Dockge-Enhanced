@@ -1532,26 +1532,39 @@ const { t, locale, setLocaleMessage } = useI18n();
 const SUPPORTED = ["fr", "en"] as const;
 type SupportedLang = (typeof SUPPORTED)[number];
 
-function resolveWatcherLang(): SupportedLang {
-  const stored = localStorage.getItem("watcherLang") as SupportedLang | null;
+function resolveWatcherLang(): string {
+  // Choix explicite FR/EN sur cette page (clé "watcherLocale" ; l'ancienne
+  // clé "watcherLang" était écrite au montage même sans clic, donc ignorée).
+  const stored = localStorage.getItem("watcherLocale") as SupportedLang | null;
   if (stored && SUPPORTED.includes(stored)) return stored;
-  const appLocale = (localStorage.getItem("locale") ?? "en").substring(0, 2);
-  return appLocale === "fr" ? "fr" : "en";
+  // Sinon, suivre la langue globale de l'application (ex. "zh-CN", "de")
+  // au lieu de retomber sur l'anglais.
+  return localStorage.getItem("locale") ?? "en";
 }
 
-const watcherLang = ref<SupportedLang>(resolveWatcherLang());
+const watcherLang = ref<string>(resolveWatcherLang());
 
-async function setWatcherLang(lang: SupportedLang) {
+async function applyWatcherLang(lang: string) {
+  try {
+    const mod = await import(`../lang/${lang}.json`);
+    setLocaleMessage(lang, mod.default ?? mod);
+    locale.value = lang;
+  } catch {
+    // Pas de fichier de langue dédié : retomber sur l'anglais.
+    locale.value = "en";
+  }
+}
+
+// Clic explicite sur la bascule FR/EN : on mémorise le choix.
+async function setWatcherLang(lang: string) {
   watcherLang.value = lang;
-  localStorage.setItem("watcherLang", lang);
-  const mod = await import(`../lang/${lang}.json`);
-  setLocaleMessage(lang, mod.default ?? mod);
-  locale.value = lang;
+  localStorage.setItem("watcherLocale", lang);
+  await applyWatcherLang(lang);
 }
 
-// Applique la langue initiale au montage
+// Applique la langue initiale au montage (sans la mémoriser)
 onMounted(async () => {
-  await setWatcherLang(watcherLang.value);
+  await applyWatcherLang(watcherLang.value);
 });
 
 const WATCHER_TABS = new Set([ "images", "scheduler", "trivy", "backup", "resources", "notifications", "monitoring", "audit" ]);
