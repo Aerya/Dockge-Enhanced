@@ -1286,5 +1286,7 @@
     "home.summary.trivy.title": "Vulnerable images",
     "home.summary.time.minutesAgo": "{n} min ago",
     "home.summary.time.hoursAgo": "{n} h ago",
-    "home.summary.time.daysAgo": "{n} d ago"
+    "home.summary.time.daysAgo": "{n} d ago",
+    "home.summary.state.ok": "All good",
+    "home.summary.state.disabled": "Not enabled"
 }

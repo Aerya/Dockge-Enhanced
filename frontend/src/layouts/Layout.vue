@@ -100,16 +100,15 @@
                     </span>
                     <span class="ms-1">{{ systemStats.ram.percent }}%</span>
                 </span>
-                <span v-for="d in (systemStats.disks ?? [systemStats.disk])" :key="d.mount"
-                    class="stat-pill" :class="statClass(d.percent)">
+                <span v-if="fullestDisk" class="stat-pill" :class="statClass(fullestDisk.percent)" :title="disksTooltip">
                     <font-awesome-icon icon="floppy-disk" class="me-1" />
                     <template v-if="systemStats.diskDisplayMode === 'bar'">
-                        {{ d.mount }}
-                        <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(d.percent)">
+                        {{ fullestDisk.mount }}
+                        <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(fullestDisk.percent)">
                             <span class="disk-bar-bracket">[</span>
                             <span class="disk-bar-cells" aria-hidden="true">
                                 <span
-                                    v-for="(filled, index) in diskUsageCells(d.percent)"
+                                    v-for="(filled, index) in diskUsageCells(fullestDisk.percent)"
                                     :key="index"
                                     class="disk-bar-cell"
                                     :class="{ filled }"
@@ -117,12 +116,13 @@
                             </span>
                             <span class="disk-bar-bracket">]</span>
                         </span>
-                        <span class="ms-1">{{ d.percent }}%</span>
-                        <span class="ms-1">{{ formatDiskTotal(d.total) }}</span>
+                        <span class="ms-1">{{ fullestDisk.percent }}%</span>
+                        <span class="ms-1">{{ formatDiskTotal(fullestDisk.total) }}</span>
                     </template>
                     <template v-else>
-                        {{ d.mount }} {{ d.percent }}%
+                        {{ fullestDisk.mount }} {{ fullestDisk.percent }}%
                     </template>
+                    <span v-if="diskList.length > 1" class="ms-1 stat-more">+{{ diskList.length - 1 }}</span>
                 </span>
                 <a v-if="kulaUrl" :href="kulaUrl" target="_blank" class="stat-pill stat-kula">
                     <font-awesome-icon icon="chart-bar" class="me-1" />Kula
@@ -294,6 +294,25 @@ export default {
         selfUpdateCmd() {
             const repo = this.selfUpdate.repo || "aerya/dockge-enhanced";
             return `docker pull ghcr.io/${repo}:latest && docker compose up -d`;
+        },
+
+        // Barre de stats : on n'affiche que le disque le plus plein,
+        // le détail de tous les disques est dans l'infobulle.
+        diskList() {
+            if (!this.systemStats) {
+                return [];
+            }
+            return this.systemStats.disks ?? (this.systemStats.disk ? [ this.systemStats.disk ] : []);
+        },
+
+        fullestDisk() {
+            return this.diskList.reduce((max, d) => (!max || d.percent > max.percent ? d : max), null);
+        },
+
+        disksTooltip() {
+            return this.diskList
+                .map((d) => `${d.mount} ${d.percent}% (${this.formatDiskTotal(d.total)})`)
+                .join("\n");
         },
 
     },
@@ -707,6 +726,12 @@ main {
     border: 1px solid rgba(0, 0, 0, 0.12);
     transition: color 0.3s;
     white-space: nowrap;
+
+    .stat-more {
+        font-size: 0.72em;
+        font-weight: 700;
+        opacity: 0.75;
+    }
 
     &.stat-ok      { color: #15803d; }
     &.stat-warning  { color: #a16207; }
