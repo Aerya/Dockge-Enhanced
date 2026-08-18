@@ -894,10 +894,12 @@ const lastTrivyMinutes = computed<number | null>(() => {
 function formatAge(minutes: number | null): string {
     if (minutes === null) return "—";
     if (minutes < 1) return t("watcher.monitoring.ageJustNow");
-    if (minutes < 60) return `${minutes} min`;
+    if (minutes < 60) return t("timeUnit.minute", [ minutes ]);
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    return m > 0 ? `${h}h ${m}min` : `${h}h`;
+    return m > 0
+        ? `${t("timeUnit.hour", [ h ])} ${t("timeUnit.minute", [ m ])}`
+        : t("timeUnit.hour", [ h ]);
 }
 
 function formatUptime(seconds: number): string {
@@ -905,9 +907,9 @@ function formatUptime(seconds: number): string {
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const parts = [];
-    if (days > 0) parts.push(`${days} j`);
-    if (hours > 0) parts.push(`${hours} h`);
-    parts.push(`${minutes} min`);
+    if (days > 0) parts.push(t("timeUnit.day", [ days ]));
+    if (hours > 0) parts.push(t("timeUnit.hour", [ hours ]));
+    parts.push(t("timeUnit.minute", [ minutes ]));
     return parts.join(" ");
 }
 

@@ -1268,15 +1268,15 @@ export default {
             }
             const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
             if (diff < 60) {
-                return `${diff}s`;
+                return this.$t("timeUnit.second", [ diff ]);
             }
             if (diff < 3600) {
-                return `${Math.floor(diff / 60)} min`;
+                return this.$t("timeUnit.minute", [ Math.floor(diff / 60) ]);
             }
             if (diff < 86400) {
-                return `${Math.floor(diff / 3600)} h`;
+                return this.$t("timeUnit.hour", [ Math.floor(diff / 3600) ]);
             }
-            return `${Math.floor(diff / 86400)} j`;
+            return this.$t("timeUnit.day", [ Math.floor(diff / 86400) ]);
         },
 
         startServiceStatusTimeout() {

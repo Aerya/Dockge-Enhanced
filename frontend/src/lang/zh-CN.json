@@ -1050,5 +1050,9 @@
     "selfUpdate.banner": "Dockge-Enhanced：有新版本可用",
     "selfUpdate.copy": "复制",
     "selfUpdate.copied": "已复制！",
-    "selfUpdate.dismiss": "关闭"
+    "selfUpdate.dismiss": "关闭",
+    "timeUnit.second": "{0} 秒",
+    "timeUnit.minute": "{0} 分钟",
+    "timeUnit.hour": "{0} 小时",
+    "timeUnit.day": "{0} 天"
 }
