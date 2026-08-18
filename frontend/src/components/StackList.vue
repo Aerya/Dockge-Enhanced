@@ -1002,7 +1002,8 @@ export default {
     }
 }
 
-@container (max-width: 470px) {
+// Narrow-layout rules shared by the container query and its media-query fallback.
+@mixin stack-list-narrow {
     .search-wrapper {
         grid-template-columns: minmax(0, 1fr) 32px;
     }
@@ -1025,28 +1026,13 @@ export default {
     }
 }
 
+@container (max-width: 470px) {
+    @include stack-list-narrow;
+}
+
 // Fallback for browsers without container-query support.
 @media (max-width: 900px) {
-    .search-wrapper {
-        grid-template-columns: minmax(0, 1fr) 32px;
-    }
-
-    .stack-sort-select,
-    .stack-search-field {
-        grid-column: 1 / -1;
-    }
-
-    .stack-search-field,
-    .stack-search-field form,
-    .search-input {
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-    }
-
-    .search-wrapper--single-agent {
-        grid-template-columns: minmax(0, 1fr);
-    }
+    @include stack-list-narrow;
 }
 
 .search-icon {

@@ -315,10 +315,12 @@ export default {
             interval: POLL.system,
         });
         this.statsPoller.start();
+        window.addEventListener("keydown", this.onReleaseNewsKeydown);
     },
 
     beforeUnmount() {
         if (this.statsPoller) this.statsPoller.stop();
+        window.removeEventListener("keydown", this.onReleaseNewsKeydown);
     },
 
     methods: {
@@ -330,6 +332,12 @@ export default {
         closeReleaseNews() {
             localStorage.setItem("releaseNewsSeen", getLatestReleaseNewsId());
             this.showReleaseNews = false;
+        },
+
+        onReleaseNewsKeydown(e) {
+            if (e.key === "Escape" && this.showReleaseNews) {
+                this.closeReleaseNews();
+            }
         },
         async checkSelfUpdate() {
             try {
@@ -635,26 +643,46 @@ main {
 }
 
 .github-badge {
-    color: #9ca3af;
+    color: #6b7280;
     text-decoration: none;
-    border: 1px solid rgba(255,255,255,.15);
+    border: 1px solid rgba(0,0,0,.18);
     border-radius: 50rem;
     padding: 1px 7px;
     transition: color .15s, border-color .15s;
 
     &:hover {
-        color: #e5e7eb;
-        border-color: rgba(255,255,255,.4);
+        color: #374151;
+        border-color: rgba(0,0,0,.45);
+    }
+
+    .dark & {
+        color: #9ca3af;
+        border-color: rgba(255,255,255,.15);
+
+        &:hover {
+            color: #e5e7eb;
+            border-color: rgba(255,255,255,.4);
+        }
     }
 }
 
 .github-badge-enhanced {
-    color: #f59e0b;
-    border-color: rgba(245,158,11,.35);
+    color: #b45309;
+    border-color: rgba(180,83,9,.4);
 
     &:hover {
-        color: #fcd34d;
-        border-color: rgba(245,158,11,.7);
+        color: #92400e;
+        border-color: rgba(180,83,9,.7);
+    }
+
+    .dark & {
+        color: #f59e0b;
+        border-color: rgba(245,158,11,.35);
+
+        &:hover {
+            color: #fcd34d;
+            border-color: rgba(245,158,11,.7);
+        }
     }
 }
 
@@ -676,19 +704,33 @@ main {
     align-items: center;
     padding: 3px 9px;
     border-radius: 50rem;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.12);
     transition: color 0.3s;
     white-space: nowrap;
 
-    &.stat-ok      { color: #a8d8b0; } // vert menthe pastel
-    &.stat-warning  { color: #f0d898; } // jaune blé pastel
-    &.stat-danger   { color: #f0a8a8; } // rose saumon pastel
-    &.stat-neutral  { color: #d1d5db; }
+    &.stat-ok      { color: #15803d; }
+    &.stat-warning  { color: #a16207; }
+    &.stat-danger   { color: #b91c1c; }
+    &.stat-neutral  { color: #374151; }
     &.stat-kula {
-        color: #93c5fd;
+        color: #1d4ed8;
         text-decoration: none;
-        border-color: rgba(99,172,255,.3);
-        &:hover { color: #bfdbfe; border-color: rgba(99,172,255,.6); }
+        border-color: rgba(29, 78, 216, .35);
+        &:hover { color: #1e40af; border-color: rgba(29, 78, 216, .6); }
+    }
+
+    .dark & {
+        border-color: rgba(255, 255, 255, 0.12);
+
+        &.stat-ok      { color: #a8d8b0; } // vert menthe pastel
+        &.stat-warning  { color: #f0d898; } // jaune blé pastel
+        &.stat-danger   { color: #f0a8a8; } // rose saumon pastel
+        &.stat-neutral  { color: #d1d5db; }
+        &.stat-kula {
+            color: #93c5fd;
+            border-color: rgba(99,172,255,.3);
+            &:hover { color: #bfdbfe; border-color: rgba(99,172,255,.6); }
+        }
     }
 }
 

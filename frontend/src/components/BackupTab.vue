@@ -249,7 +249,7 @@
         <!-- ═══ VOLUMES ═══ -->
         <div class="shadow-box mb-4 vol-section" :class="{ collapsed: volumesCollapsed }">
             <!-- Header cliquable -->
-            <div class="vol-section-header" @click="toggleVolumes">
+            <button type="button" class="vol-section-header" @click="toggleVolumes">
                 <h5 class="settings-subheading mb-0">
                     <font-awesome-icon icon="hdd" class="me-2" />{{ $t('watcher.backup.volumes.heading') }}
                     <span v-if="volumesCollapsed" class="badge-summary ms-2">
@@ -258,7 +258,7 @@
                     </span>
                 </h5>
                 <font-awesome-icon :icon="volumesCollapsed ? 'chevron-down' : 'chevron-up'" class="chevron-icon" />
-            </div>
+            </button>
             <!-- Body -->
             <div v-if="!volumesCollapsed" class="vol-section-body">
                 <p class="form-text mb-3">{{ $t('watcher.backup.volumes.hint') }}</p>
@@ -371,7 +371,7 @@
         <!-- ═══ COHÉRENCE PAR STACK ═══ -->
         <div v-if="stacksList.length > 0" class="shadow-box big-padding mb-4 stacks-exclude-section">
             <!-- Header cliquable -->
-            <div class="vol-section-header" @click="toggleStacksSection">
+            <button type="button" class="vol-section-header" @click="toggleStacksSection">
                 <h5 class="settings-subheading mb-0">
                     <font-awesome-icon icon="layer-group" class="me-2" />{{ $t('watcher.backup.excludeStacks.heading') }}
                     <span v-if="stacksCollapsed && (settings.excludedStacks?.length ?? 0) > 0" class="badge-summary ms-2">
@@ -379,7 +379,7 @@
                     </span>
                 </h5>
                 <font-awesome-icon :icon="stacksCollapsed ? 'chevron-down' : 'chevron-up'" class="chevron-icon" />
-            </div>
+            </button>
             <!-- Body -->
             <div v-if="!stacksCollapsed" class="vol-section-body">
                 <p class="form-text mb-3">{{ $t('watcher.backup.excludeStacks.hint') }}</p>
@@ -732,7 +732,7 @@
                                                 <div v-for="sg in stackGroups" :key="sg.name" class="snap-stack">
 
                                                     <!-- En-tête de stack (cliquable) -->
-                                                    <div class="snap-stack-header" @click="toggleStack(sg.name)">
+                                                    <button type="button" class="snap-stack-header" @click="toggleStack(sg.name)">
                                                         <input type="checkbox" class="form-check-input flex-shrink-0" @click.stop
                                                             :checked="isStackAllSelected(sg)"
                                                             :indeterminate.prop="isStackPartialSelected(sg)"
@@ -748,7 +748,7 @@
                                                             :title="$t('watcher.backup.snapshots.restoreStack')">
                                                             <font-awesome-icon icon="undo" />
                                                         </button>
-                                                    </div>
+                                                    </button>
 
                                                     <!-- Contenu de la stack -->
                                                     <div v-if="expandedStacks.has(sg.name)" class="snap-stack-body">
@@ -887,7 +887,7 @@
                                                         <div v-for="folder in sg.volFolders" :key="folder.name" class="snap-folder">
 
                                                             <!-- En-tête du dossier (cliquable) -->
-                                                            <div class="snap-folder-header" @click="toggleFolder(sg.name, folder.name)">
+                                                            <button type="button" class="snap-folder-header" @click="toggleFolder(sg.name, folder.name)">
                                                                 <input type="checkbox" class="form-check-input flex-shrink-0" @click.stop
                                                                     :checked="isFolderAllSelected(folder)"
                                                                     :indeterminate.prop="isFolderPartialSelected(folder)"
@@ -897,7 +897,7 @@
                                                                     class="snap-folder-icon" />
                                                                 <span class="snap-foldername">{{ folder.name }}/</span>
                                                                 <span class="snap-count">{{ folder.files.length }}</span>
-                                                            </div>
+                                                            </button>
 
                                                             <!-- Fichiers du dossier -->
                                                             <div v-if="expandedFolders.has(sg.name + '::' + folder.name)" class="snap-folder-body">
@@ -2005,59 +2005,83 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 // Tables Historique + Snapshots : même look que WatcherSettings
 .table-responsive .table {
     --bs-table-bg: transparent;
-    --bs-table-color: #e5e7eb;
 
     > thead > tr > th {
-        color: #9ca3af;
+        color: #6b7280;
         font-size: .72rem;
         text-transform: uppercase;
         letter-spacing: .05em;
-        border-bottom-color: rgba(255,255,255,.1);
+        border-bottom-color: rgba(0,0,0,.12);
         opacity: 1;
     }
 
     > tbody > tr > td {
-        color: #e5e7eb;
-        border-bottom-color: rgba(255,255,255,.06);
+        border-bottom-color: rgba(0,0,0,.07);
         vertical-align: middle;
     }
 
     > tbody > tr:hover > td {
-        background: rgba(255,255,255,.04);
+        background: rgba(0,0,0,.03);
+    }
+
+    .dark & {
+        --bs-table-color: #e5e7eb;
+
+        > thead > tr > th {
+            color: #9ca3af;
+            border-bottom-color: rgba(255,255,255,.1);
+        }
+
+        > tbody > tr > td {
+            color: #e5e7eb;
+            border-bottom-color: rgba(255,255,255,.06);
+        }
+
+        > tbody > tr:hover > td {
+            background: rgba(255,255,255,.04);
+        }
     }
 }
 
 // Coloration par statut : bordure gauche sur la 1ère cellule
 // ── Cartes destinations ──────────────────────────────────────────
 .dest-card {
-    border: 1px solid rgba(255,255,255,.1);
+    border: 1px solid rgba(0,0,0,.12);
     border-radius: 10px;
     overflow: hidden;
+
+    .dark & { border-color: rgba(255,255,255,.1); }
 }
 .dest-card-header {
     padding: .6rem .9rem;
-    background: rgba(255,255,255,.04);
-    border-bottom: 1px solid rgba(255,255,255,.07);
+    background: rgba(0,0,0,.03);
+    border-bottom: 1px solid rgba(0,0,0,.08);
+
+    .dark & {
+        background: rgba(255,255,255,.04);
+        border-bottom-color: rgba(255,255,255,.07);
+    }
 }
 .dest-card-body {
     padding: .75rem 1rem 1rem;
 }
 .dest-label-input {
     max-width: 180px;
-    background-color: rgba(255,255,255,.05);
-    border-color: rgba(255,255,255,.15);
-    color: #e5e7eb;
 }
 .dest-type-select {
     max-width: 140px;
-    background-color: rgba(255,255,255,.05);
-    border-color: rgba(255,255,255,.15);
-    color: #e5e7eb;
 }
 .dest-toggle-btn {
-    color: #9ca3af;
+    color: #6b7280;
     padding: 2px 6px;
-    &:hover { color: #e5e7eb; }
+
+    &:hover { color: #374151; }
+
+    .dark & {
+        color: #9ca3af;
+
+        &:hover { color: #e5e7eb; }
+    }
 }
 
 .exclude-pattern-list {
@@ -2069,12 +2093,16 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.1);
     border-radius: 4px;
     padding: 2px 8px 2px 10px;
+
+    .dark & {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.1);
+    }
 }
-.btn-xs { font-size: 0.7rem; line-height: 1; }
 
 .history-row-ok  > td:first-child { border-left: 3px solid #22c55e; }
 .history-row-err > td:first-child { border-left: 3px solid #ef4444; }
@@ -2085,9 +2113,14 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     flex-wrap: wrap;
     gap: 4px;
     padding: 4px;
-    border: 1px solid rgba(255, 255, 255, .08);
+    border: 1px solid rgba(0, 0, 0, .1);
     border-radius: 8px;
-    background: rgba(0, 0, 0, .16);
+    background: rgba(0, 0, 0, .04);
+
+    .dark & {
+        border-color: rgba(255, 255, 255, .08);
+        background: rgba(0, 0, 0, .16);
+    }
 }
 
 .backup-filter-btn {
@@ -2095,19 +2128,28 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     border-radius: 6px;
     padding: 4px 10px;
     background: transparent;
-    color: #9ca3af;
+    color: #6b7280;
     font-size: .78rem;
     font-weight: 500;
+
+    .dark & { color: #9ca3af; }
 }
 
 .backup-filter-btn:hover {
-    background: rgba(255, 255, 255, .06);
-    color: #d1d5db;
+    background: rgba(0, 0, 0, .06);
+    color: #374151;
+
+    .dark & {
+        background: rgba(255, 255, 255, .06);
+        color: #d1d5db;
+    }
 }
 
 .backup-filter-btn.active {
     background: rgba(116, 194, 255, .16);
-    color: #74c2ff;
+    color: #0b5ed7;
+
+    .dark & { color: #74c2ff; }
 }
 
 .backup-running-banner {
@@ -2122,10 +2164,12 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     animation: banner-pulse 2s ease-in-out infinite;
 }
 .backup-running-dest {
-    background: rgba(255,255,255,0.07);
+    background: rgba(0,0,0,0.06);
     border-radius: 4px;
     padding: 1px 8px;
     font-size: 0.875rem;
+
+    .dark & { background: rgba(255,255,255,0.07); }
 }
 @keyframes banner-pulse {
     0%, 100% { border-color: rgba(99, 172, 255, 0.35); }
@@ -2151,20 +2195,27 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     white-space: pre-wrap;
     word-break: break-all;
     font-size: 0.78rem;
-    color: #f87171;
-    background: rgba(0,0,0,0.2);
+    color: #b91c1c;
+    background: rgba(0,0,0,0.05);
     border-radius: 4px;
     padding: 8px 10px;
     max-height: 200px;
     overflow-y: auto;
+
+    .dark & {
+        color: #f87171;
+        background: rgba(0,0,0,0.2);
+    }
 }
 .backup-error-dest { display: flex; flex-direction: column; gap: 4px; }
 .backup-error-dest-label {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #fca5a5;
+    color: #b91c1c;
     text-transform: uppercase;
     letter-spacing: 0.03em;
+
+    .dark & { color: #fca5a5; }
 }
 
 .table th {
@@ -2172,36 +2223,31 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     text-transform: uppercase;
     letter-spacing: .05em;
     opacity: .55;
-    border-bottom-color: $dark-border-color;
+
+    .dark & { border-bottom-color: $dark-border-color; }
 }
 
 .table td {
     vertical-align: middle;
-    border-bottom-color: $dark-border-color;
+
+    .dark & { border-bottom-color: $dark-border-color; }
 }
 
 .toast-float {
     position: fixed;
+    right: 1.25rem;
     bottom: 1.5rem;
-    right: 1.5rem;
     z-index: 9999;
-    padding: .65rem 1.25rem;
-    border-radius: 50rem;
-    font-size: .875rem;
-    font-weight: 500;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
-}
+    padding: .6rem 1rem;
+    border-radius: 10px;
+    font-size: .85rem;
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(0,0,0,.35);
 
-.toast-ok {
-    background: #166534;
-    color: #bbf7d0;
-    border: 1px solid #15803d;
-}
+    &.toast-ok { background: #16a34a; }
+    &.toast-err { background: #dc2626; }
 
-.toast-err {
-    background: #7f1d1d;
-    color: #fecaca;
-    border: 1px solid #b91c1c;
+    @media (max-width: 768px) { bottom: 76px; }
 }
 
 // ─── Section Volumes rétractable ────────────────────────────────
@@ -2218,13 +2264,30 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
     padding: 14px 20px;
     cursor: pointer;
-    border-bottom: 1px solid rgba(255,255,255,.07);
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    text-align: left;
+    border-bottom: 1px solid rgba(0,0,0,.08);
     user-select: none;
     transition: background .15s;
 
-    &:hover { background: rgba(255,255,255,.03); }
+    &:hover { background: rgba(0,0,0,.03); }
+
+    &:focus-visible {
+        outline: 2px solid $primary;
+        outline-offset: -2px;
+    }
+
+    .dark & {
+        border-bottom-color: rgba(255,255,255,.07);
+
+        &:hover { background: rgba(255,255,255,.03); }
+    }
 
     .chevron-icon {
         font-size: .8rem;
@@ -2235,11 +2298,13 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     .badge-summary {
         font-size: .72rem;
         font-weight: 400;
-        color: #74c2ff;
+        color: #0b5ed7;
         background: rgba(116,194,255,.12);
         padding: 2px 8px;
         border-radius: 50rem;
         vertical-align: middle;
+
+        .dark & { color: #74c2ff; }
     }
 }
 
@@ -2253,8 +2318,10 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     justify-content: space-between;
     align-items: center;
     padding: 10px 14px;
-    background: rgba(0,0,0,.15);
+    background: rgba(0,0,0,.04);
     transition: background .15s;
+
+    .dark & { background: rgba(0,0,0,.15); }
 
     &.active {
         background: rgba(116,194,255,.07);
@@ -2262,10 +2329,12 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 
     .vol-path {
         font-size: .82rem;
-        color: #74c2ff;
+        color: #0b5ed7;
         background: rgba(116,194,255,.1);
         padding: 1px 6px;
         border-radius: 4px;
+
+        .dark & { color: #74c2ff; }
     }
 
     .vol-size {
@@ -2294,11 +2363,19 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 .vol-entry {
     border-radius: 8px;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,.08);
+    border: 1px solid rgba(0,0,0,.12);
     transition: border-color .15s;
 
     &.vol-entry-active {
-        border-color: rgba(116,194,255,.35);
+        border-color: rgba(13,110,253,.4);
+    }
+
+    .dark & {
+        border-color: rgba(255,255,255,.08);
+
+        &.vol-entry-active {
+            border-color: rgba(116,194,255,.35);
+        }
     }
 }
 
@@ -2312,9 +2389,14 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 
 // ─── Panel sous-dossiers ──────────────────────────────────────────
 .vol-subdirs-panel {
-    border-top: 1px solid rgba(255,255,255,.07);
-    background: rgba(0,0,0,.12);
+    border-top: 1px solid rgba(0,0,0,.08);
+    background: rgba(0,0,0,.03);
     padding: 10px 14px 12px;
+
+    .dark & {
+        border-top-color: rgba(255,255,255,.07);
+        background: rgba(0,0,0,.12);
+    }
 }
 
 .vol-subdirs-actions {
@@ -2342,11 +2424,17 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     cursor: pointer;
     transition: background .12s;
 
-    &:hover { background: rgba(255,255,255,.05); }
+    &:hover { background: rgba(0,0,0,.04); }
 
     &.active {
         background: rgba(116,194,255,.08);
-        .form-check-label code { color: #74c2ff; }
+        .form-check-label code { color: #0b5ed7; }
+    }
+
+    .dark & {
+        &:hover { background: rgba(255,255,255,.05); }
+
+        &.active .form-check-label code { color: #74c2ff; }
     }
 
     .vol-size {
@@ -2360,38 +2448,55 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 }
 
 .snapshot-row:hover td {
-    background: rgba(255,255,255,.04);
+    background: rgba(0,0,0,.03);
+
+    .dark & { background: rgba(255,255,255,.04); }
 }
 
 .snapshot-files-row td {
-    background: rgba(0,0,0,.2) !important;
-    border-bottom: 2px solid $dark-border-color !important;
+    background: rgba(0,0,0,.04) !important;
+    border-bottom: 2px solid rgba(0,0,0,.1) !important;
+
+    .dark & {
+        background: rgba(0,0,0,.2) !important;
+        border-bottom-color: $dark-border-color !important;
+    }
 }
 
 .snapshot-files-panel {
-    color: #e5e7eb;
-
     // Bootstrap applique color via --bs-table-color sur les cellules — on force direct
     .table {
         --bs-table-bg: transparent;
-        --bs-table-color: #e5e7eb;
-
-        > :not(caption) > * > * {
-            color: #e5e7eb;
-        }
 
         > thead > tr > th {
             opacity: 1; // annule le .55 du scope global
-            color: #9ca3af;
+        }
+
+        .dark & {
+            --bs-table-color: #e5e7eb;
+
+            > :not(caption) > * > * {
+                color: #e5e7eb;
+            }
+
+            > thead > tr > th {
+                color: #9ca3af;
+            }
         }
     }
 
     code {
-        background-color: rgba(255, 255, 255, 0.08);
-        color: #e5e7eb;
+        background-color: rgba(0, 0, 0, 0.06);
         padding: 0.1em 0.35em;
         border-radius: 3px;
+
+        .dark & {
+            background-color: rgba(255, 255, 255, 0.08);
+            color: #e5e7eb;
+        }
     }
+
+    .dark & { color: #e5e7eb; }
 }
 
 .snapshot-files-panel {
@@ -2407,16 +2512,24 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 }
 
 .snap-stack {
-    border: 1px solid rgba(255,255,255,.1);
+    border: 1px solid rgba(0,0,0,.12);
     border-radius: 7px;
     overflow: hidden;
+
+    .dark & { border-color: rgba(255,255,255,.1); }
 }
 
 .snap-stack-header {
     display: flex;
     align-items: center;
     gap: 8px;
+    width: 100%;
     padding: 7px 12px;
+    border: 0;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    text-align: left;
     background: rgba(245,158,11,.07);
     cursor: pointer;
     user-select: none;
@@ -2424,48 +2537,86 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 
     &:hover { background: rgba(245,158,11,.12); }
 
+    &:focus-visible {
+        outline: 2px solid $primary;
+        outline-offset: -2px;
+    }
+
     .snap-stack-name {
         font-size: .82rem;
-        color: #f59e0b;
+        color: #b45309;
         background: rgba(245,158,11,.12);
         padding: 1px 6px;
         border-radius: 4px;
         flex: 1;
+
+        .dark & { color: #f59e0b; }
     }
 }
 
 .snap-stack-body {
-    background: rgba(0,0,0,.12);
-    border-top: 1px solid rgba(255,255,255,.07);
+    background: rgba(0,0,0,.03);
+    border-top: 1px solid rgba(0,0,0,.07);
+
+    .dark & {
+        background: rgba(0,0,0,.12);
+        border-top-color: rgba(255,255,255,.07);
+    }
 }
 
 .snap-folder {
-    border-top: 1px solid rgba(255,255,255,.05);
+    border-top: 1px solid rgba(0,0,0,.06);
+
+    .dark & { border-top-color: rgba(255,255,255,.05); }
 }
 
 .snap-folder-header {
     display: flex;
     align-items: center;
     gap: 8px;
+    width: 100%;
     padding: 6px 12px 6px 32px;
+    border: 0;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    text-align: left;
     cursor: pointer;
     user-select: none;
-    background: rgba(255,255,255,.02);
+    background: rgba(0,0,0,.02);
     transition: background .12s;
 
-    &:hover { background: rgba(255,255,255,.05); }
+    &:hover { background: rgba(0,0,0,.05); }
+
+    &:focus-visible {
+        outline: 2px solid $primary;
+        outline-offset: -2px;
+    }
+
+    .dark & {
+        background: rgba(255,255,255,.02);
+
+        &:hover { background: rgba(255,255,255,.05); }
+    }
 
     .snap-foldername {
         font-family: monospace;
         font-size: .82rem;
-        color: #fbbf24;
+        color: #b45309;
         flex: 1;
+
+        .dark & { color: #fbbf24; }
     }
 }
 
 .snap-folder-body {
-    background: rgba(0,0,0,.08);
-    border-top: 1px solid rgba(255,255,255,.04);
+    background: rgba(0,0,0,.03);
+    border-top: 1px solid rgba(0,0,0,.05);
+
+    .dark & {
+        background: rgba(0,0,0,.08);
+        border-top-color: rgba(255,255,255,.04);
+    }
 }
 
 .snap-file-row {
@@ -2473,10 +2624,16 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     align-items: center;
     gap: 8px;
     padding: 5px 12px 5px 32px;
-    border-top: 1px solid rgba(255,255,255,.04);
+    border-top: 1px solid rgba(0,0,0,.05);
     transition: background .1s;
 
-    &:hover { background: rgba(255,255,255,.03); }
+    &:hover { background: rgba(0,0,0,.03); }
+
+    .dark & {
+        border-top-color: rgba(255,255,255,.04);
+
+        &:hover { background: rgba(255,255,255,.03); }
+    }
 
     &.snap-file-in-folder { padding-left: 52px; }
 }
@@ -2511,17 +2668,24 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 
 .snap-folder-icon {
     font-size: .82rem;
-    color: #fbbf24;
+    color: #b45309;
     flex-shrink: 0;
+
+    .dark & { color: #fbbf24; }
 }
 
 .snap-count {
     font-size: .65rem;
-    background: rgba(255,255,255,.12);
-    color: #9ca3af;
+    background: rgba(0,0,0,.08);
+    color: #6b7280;
     padding: 1px 6px;
     border-radius: 50rem;
     flex-shrink: 0;
+
+    .dark & {
+        background: rgba(255,255,255,.12);
+        color: #9ca3af;
+    }
 }
 
 .snap-alias {
@@ -2551,15 +2715,21 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 }
 
 .preview-modal {
-    background: #1a1d2e;
-    border: 1px solid rgba(255, 255, 255, .13);
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, .15);
     border-radius: 10px;
     width: 100%;
     max-width: 900px;
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - 96px);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, .6);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, .25);
+
+    .dark & {
+        background: #1a1d2e;
+        border-color: rgba(255, 255, 255, .13);
+        box-shadow: 0 16px 48px rgba(0, 0, 0, .6);
+    }
 }
 
 .preview-header {
@@ -2567,17 +2737,21 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     align-items: center;
     gap: 12px;
     padding: 11px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, .1);
+    border-bottom: 1px solid rgba(0, 0, 0, .1);
     flex-shrink: 0;
+
+    .dark & { border-bottom-color: rgba(255, 255, 255, .1); }
 
     .preview-filename {
         font-size: .82rem;
-        color: #74c2ff;
+        color: #0b5ed7;
         flex: 1;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+
+        .dark & { color: #74c2ff; }
     }
 }
 
@@ -2588,18 +2762,27 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 }
 
 .preview-tab-btn {
-    background: rgba(255, 255, 255, .06);
-    border: 1px solid rgba(255, 255, 255, .1);
-    color: #9ca3af;
+    background: rgba(0, 0, 0, .04);
+    border: 1px solid rgba(0, 0, 0, .12);
+    color: #4b5563;
     padding: 4px 12px;
     border-radius: 6px;
     font-size: .78rem;
     cursor: pointer;
     transition: background .12s, color .12s;
 
-    &:hover:not(:disabled) { background: rgba(255, 255, 255, .11); color: #e5e7eb; }
-    &.active { background: rgba(116, 194, 255, .15); color: #74c2ff; border-color: rgba(116, 194, 255, .3); }
+    &:hover:not(:disabled) { background: rgba(0, 0, 0, .08); color: #111827; }
+    &.active { background: rgba(116, 194, 255, .15); color: #0b5ed7; border-color: rgba(13, 110, 253, .35); }
     &:disabled { opacity: .35; cursor: not-allowed; }
+
+    .dark & {
+        background: rgba(255, 255, 255, .06);
+        border-color: rgba(255, 255, 255, .1);
+        color: #9ca3af;
+
+        &:hover:not(:disabled) { background: rgba(255, 255, 255, .11); color: #e5e7eb; }
+        &.active { background: rgba(116, 194, 255, .15); color: #74c2ff; border-color: rgba(116, 194, 255, .3); }
+    }
 }
 
 .preview-close-btn {
@@ -2610,7 +2793,10 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     cursor: pointer;
     padding: 2px 6px;
     flex-shrink: 0;
-    &:hover { color: #e5e7eb; }
+
+    &:hover { color: #111827; }
+
+    .dark &:hover { color: #e5e7eb; }
 }
 
 .preview-loading {
@@ -2630,12 +2816,14 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     margin: 0;
     padding: 16px 20px;
     font-size: .78rem;
-    color: #e5e7eb;
+    color: #212529;
     background: transparent;
     line-height: 1.6;
     white-space: pre;
     overflow: visible;
     tab-size: 2;
+
+    .dark & { color: #e5e7eb; }
 }
 
 .diff-view { display: flex; flex-direction: column; height: 100%; }
@@ -2645,12 +2833,14 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     gap: 20px;
     align-items: center;
     padding: 7px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, .07);
+    border-bottom: 1px solid rgba(0, 0, 0, .08);
     font-size: .74rem;
     flex-shrink: 0;
 
-    .diff-leg-rm  { color: #f87171; }
-    .diff-leg-add { color: #4ade80; }
+    .dark & { border-bottom-color: rgba(255, 255, 255, .07); }
+
+    .diff-leg-rm  { color: #dc2626; .dark & { color: #f87171; } }
+    .diff-leg-add { color: #16a34a; .dark & { color: #4ade80; } }
     .diff-leg-ok  { color: #9ca3af; margin-left: auto; }
 }
 
@@ -2675,10 +2865,15 @@ async function restoreStack(shortId: string, sg: StackGroup) {
         min-width: 46px;
         text-align: right;
         padding: 1px 8px 1px 4px;
-        color: #374151;
+        color: #9ca3af;
         user-select: none;
-        border-right: 1px solid rgba(255, 255, 255, .06);
+        border-right: 1px solid rgba(0, 0, 0, .08);
         flex-shrink: 0;
+
+        .dark & {
+            color: #374151;
+            border-right-color: rgba(255, 255, 255, .06);
+        }
     }
 
     .diff-marker {
@@ -2689,8 +2884,8 @@ async function restoreStack(shortId: string, sg: StackGroup) {
         flex-shrink: 0;
     }
 
-    &.diff-removed .diff-marker { color: #f87171; }
-    &.diff-added   .diff-marker { color: #4ade80; }
+    &.diff-removed .diff-marker { color: #dc2626; .dark & { color: #f87171; } }
+    &.diff-added   .diff-marker { color: #16a34a; .dark & { color: #4ade80; } }
     &.diff-same    .diff-marker { color: transparent; }
 
     .diff-text {
@@ -2698,11 +2893,13 @@ async function restoreStack(shortId: string, sg: StackGroup) {
         flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
-        color: #d1d5db;
+        color: #374151;
+
+        .dark & { color: #d1d5db; }
     }
 
-    &.diff-removed .diff-text { color: #fca5a5; }
-    &.diff-added   .diff-text { color: #bbf7d0; }
+    &.diff-removed .diff-text { color: #b91c1c; .dark & { color: #fca5a5; } }
+    &.diff-added   .diff-text { color: #166534; .dark & { color: #bbf7d0; } }
 }
 
 // ─── Politiques de cohérence par stack ──────────────────────────
@@ -2720,9 +2917,14 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 .stack-policy-item {
     padding: .65rem .75rem;
     border-radius: 6px;
-    border: 1px solid rgba(255,255,255,.08);
-    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(0,0,0,.1);
+    background: rgba(0,0,0,.03);
     transition: background .15s, border-color .15s;
+
+    .dark & {
+        border-color: rgba(255,255,255,.08);
+        background: rgba(255,255,255,.03);
+    }
 
     &.stack-excluded {
         background: rgba(107,114,128,.12);
@@ -2743,12 +2945,13 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 
 .stack-toggle-label {
     font-size: .85rem;
-    color: #d1d5db;
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 280px;
+
+    .dark & { color: #d1d5db; }
 }
 
 .stack-excluded-badge {
@@ -2767,24 +2970,33 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     cursor: pointer;
     user-select: none;
     background: rgba(116,194,255,.04);
-    border-top: 1px solid rgba(255,255,255,.05);
+    border-top: 1px solid rgba(0,0,0,.05);
     transition: background .12s;
 
     &:hover { background: rgba(116,194,255,.09); }
 
-    .snap-foldername { color: #74c2ff; }
-    .snap-folder-icon { color: #74c2ff; }
+    .dark & { border-top-color: rgba(255,255,255,.05); }
+
+    .snap-foldername { color: #0b5ed7; .dark & { color: #74c2ff; } }
+    .snap-folder-icon { color: #0b5ed7; .dark & { color: #74c2ff; } }
 }
 
 .snap-vol-children {
-    background: rgba(0,0,0,.12);
-    border-top: 1px solid rgba(255,255,255,.04);
+    background: rgba(0,0,0,.03);
+    border-top: 1px solid rgba(0,0,0,.05);
+
+    .dark & {
+        background: rgba(0,0,0,.12);
+        border-top-color: rgba(255,255,255,.04);
+    }
 }
 
 .snap-vol-child-row {
     display: flex;
     flex-direction: column;
-    border-top: 1px solid rgba(255,255,255,.03);
+    border-top: 1px solid rgba(0,0,0,.04);
+
+    .dark & { border-top-color: rgba(255,255,255,.03); }
 }
 
 .snap-vol-subdir-header {
@@ -2799,22 +3011,30 @@ async function restoreStack(shortId: string, sg: StackGroup) {
 
     &:hover { background: rgba(116,194,255,.08); }
 
-    .snap-foldername { color: #74c2ff; font-size: .8rem; }
-    .snap-folder-icon { color: #74c2ff; font-size: .78rem; }
+    .snap-foldername { color: #0b5ed7; font-size: .8rem; .dark & { color: #74c2ff; } }
+    .snap-folder-icon { color: #0b5ed7; font-size: .78rem; .dark & { color: #74c2ff; } }
 }
 
 .snap-vol-children--l2 {
-    background: rgba(0,0,0,.1);
+    background: rgba(0,0,0,.03);
+
+    .dark & { background: rgba(0,0,0,.1); }
 
     .snap-vol-child-row {
         flex-direction: row;
         align-items: center;
         gap: 8px;
         padding: 4px 12px 4px 52px;
-        border-top: 1px solid rgba(255,255,255,.03);
+        border-top: 1px solid rgba(0,0,0,.04);
         transition: background .1s;
 
-        &:hover { background: rgba(255,255,255,.03); }
+        &:hover { background: rgba(0,0,0,.03); }
+
+        .dark & {
+            border-top-color: rgba(255,255,255,.03);
+
+            &:hover { background: rgba(255,255,255,.03); }
+        }
 
         .snap-foldername { font-size: .78rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     }
@@ -2828,7 +3048,9 @@ async function restoreStack(shortId: string, sg: StackGroup) {
     padding: 4px 12px 4px 32px;
     transition: background .1s;
 
-    &:hover { background: rgba(255,255,255,.03); }
+    &:hover { background: rgba(0,0,0,.03); }
+
+    .dark &:hover { background: rgba(255,255,255,.03); }
 
     .snap-foldername { font-size: .8rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }

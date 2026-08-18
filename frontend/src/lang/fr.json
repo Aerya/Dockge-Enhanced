@@ -1273,5 +1273,14 @@
     "rmCode": "rm",
     "rmRfCode": "rm -rf",
     "envVarCode": "DOCKGE_ENABLE_CONSOLE=true",
-    "GlobalEnv": ".env global"
+    "GlobalEnv": ".env global",
+    "watcher.status.showDigests": "Afficher les digests",
+    "home.summary.images.title": "Mises à jour d'images",
+    "home.summary.backup.title": "Dernier backup",
+    "home.summary.backup.never": "Jamais",
+    "home.summary.monitoring.title": "Conteneurs en échec",
+    "home.summary.trivy.title": "Images vulnérables",
+    "home.summary.time.minutesAgo": "il y a {n} min",
+    "home.summary.time.hoursAgo": "il y a {n} h",
+    "home.summary.time.daysAgo": "il y a {n} j"
 }

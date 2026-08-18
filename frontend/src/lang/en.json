@@ -1277,5 +1277,14 @@
     "Auto": "Auto",
     "Copy": "Copy",
     "Reconnecting...": "Reconnecting...",
-    "dataRetentionTimeError": "Data retention period must be 0 or greater."
+    "dataRetentionTimeError": "Data retention period must be 0 or greater.",
+    "watcher.status.showDigests": "Show digests",
+    "home.summary.images.title": "Image updates",
+    "home.summary.backup.title": "Last backup",
+    "home.summary.backup.never": "Never",
+    "home.summary.monitoring.title": "Container issues",
+    "home.summary.trivy.title": "Vulnerable images",
+    "home.summary.time.minutesAgo": "{n} min ago",
+    "home.summary.time.hoursAgo": "{n} h ago",
+    "home.summary.time.daysAgo": "{n} d ago"
 }

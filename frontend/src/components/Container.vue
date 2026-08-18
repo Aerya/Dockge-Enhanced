@@ -96,16 +96,16 @@
                     </button>
                 </div>
                 <div v-if="!isEditMode" class="container-action-bar mt-3" :class="{ 'container-action-bar--labeled': containerActionLabels }">
-                    <button v-if="status !== 'running' && status !== 'healthy'" class="btn btn-sm btn-primary container-action" :title="$t('startStack')" :disabled="actionProcessing" @click="runAction('start')"><font-awesome-icon icon="play" /><span>{{ $t("startStack") }}</span></button>
-                    <button v-if="status === 'running' || status === 'healthy'" class="btn btn-sm btn-normal container-action" :title="$t('stopStack')" :disabled="actionProcessing" @click="runAction('stop')"><font-awesome-icon icon="stop" /><span>{{ $t("stopStack") }}</span></button>
-                    <button class="btn btn-sm btn-normal container-action" :title="$t('restartStack')" :disabled="actionProcessing" @click="runAction('restart')"><font-awesome-icon icon="arrows-rotate" /><span>{{ $t("restartStack") }}</span></button>
-                    <button class="btn btn-sm btn-normal container-action" :title="$t('updateStack')" :disabled="actionProcessing" @click="runAction('update')"><font-awesome-icon icon="cloud-arrow-down" /><span>{{ $t("updateStack") }}</span></button>
-                    <button class="btn btn-sm btn-normal container-action" :title="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="recycle" /><span>{{ $t("recreateStack") }}</span></button>
-                    <button class="btn btn-sm btn-normal container-action" :title="$t('pullAndRecreateStack')" :disabled="actionProcessing" @click="runAction('pull-recreate')"><font-awesome-icon icon="boxes-stacked" /><span>{{ $t("pullAndRecreateStack") }}</span></button>
-                    <button class="btn btn-sm container-action" :class="showSchedule ? 'btn-primary' : 'btn-normal'" :title="$t('stackScheduler.action')" @click="showSchedule = !showSchedule"><font-awesome-icon icon="calendar-days" /><span>{{ $t("stackScheduler.action") }}</span></button>
-                    <button class="btn btn-sm container-action" :class="containerActionLabels ? 'btn-primary' : 'btn-normal'" :title="$t('stackActionLabels')" @click="$emit('container-action-labels-change', !containerActionLabels)"><font-awesome-icon icon="list" /><span>{{ $t("stackActionLabels") }}</span></button>
-                    <router-link class="btn btn-sm btn-normal container-action" :to="terminalRouteLink" disabled=""><font-awesome-icon icon="terminal" /><span>{{ $t("terminal") }}</span></router-link>
-                    <a v-if="dozzleUrl" class="btn btn-sm btn-normal container-action" :href="dozzleContainerUrl" target="_blank" rel="noopener noreferrer"><font-awesome-icon icon="stream" /><span>Dozzle</span></a>
+                    <button v-if="status !== 'running' && status !== 'healthy'" class="btn btn-sm btn-primary container-action" :title="$t('startStack')" :aria-label="$t('startStack')" :disabled="actionProcessing" @click="runAction('start')"><font-awesome-icon icon="play" /><span>{{ $t("startStack") }}</span></button>
+                    <button v-if="status === 'running' || status === 'healthy'" class="btn btn-sm btn-normal container-action" :title="$t('stopStack')" :aria-label="$t('stopStack')" :disabled="actionProcessing" @click="runAction('stop')"><font-awesome-icon icon="stop" /><span>{{ $t("stopStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('restartStack')" :aria-label="$t('restartStack')" :disabled="actionProcessing" @click="runAction('restart')"><font-awesome-icon icon="arrows-rotate" /><span>{{ $t("restartStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('updateStack')" :aria-label="$t('updateStack')" :disabled="actionProcessing" @click="runAction('update')"><font-awesome-icon icon="cloud-arrow-down" /><span>{{ $t("updateStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('recreateStack')" :aria-label="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="recycle" /><span>{{ $t("recreateStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('pullAndRecreateStack')" :aria-label="$t('pullAndRecreateStack')" :disabled="actionProcessing" @click="runAction('pull-recreate')"><font-awesome-icon icon="boxes-stacked" /><span>{{ $t("pullAndRecreateStack") }}</span></button>
+                    <button class="btn btn-sm container-action" :class="showSchedule ? 'btn-primary' : 'btn-normal'" :title="$t('stackScheduler.action')" :aria-label="$t('stackScheduler.action')" @click="showSchedule = !showSchedule"><font-awesome-icon icon="calendar-days" /><span>{{ $t("stackScheduler.action") }}</span></button>
+                    <button class="btn btn-sm container-action" :class="containerActionLabels ? 'btn-primary' : 'btn-normal'" :title="$t('stackActionLabels')" :aria-label="$t('stackActionLabels')" @click="$emit('container-action-labels-change', !containerActionLabels)"><font-awesome-icon icon="list" /><span>{{ $t("stackActionLabels") }}</span></button>
+                    <router-link class="btn btn-sm btn-normal container-action" :to="terminalRouteLink" :aria-label="$t('terminal')" disabled=""><font-awesome-icon icon="terminal" /><span>{{ $t("terminal") }}</span></router-link>
+                    <a v-if="dozzleUrl" class="btn btn-sm btn-normal container-action" :href="dozzleContainerUrl" target="_blank" rel="noopener noreferrer" aria-label="Dozzle"><font-awesome-icon icon="stream" /><span>Dozzle</span></a>
                 </div>
                 <div v-if="!isEditMode && showSchedule" class="container-schedule mt-3">
                     <StackScheduleEditor :stack-name="`${stackName}::${name}`" compact :show-heading="false" />
@@ -549,7 +549,11 @@ export default defineComponent({
         font-size: 0.8rem;
         color: #6c757d;
         .tag {
-            color: #33383b;
+            color: #6c757d;
+
+            .dark & {
+                color: $dark-font-color3;
+            }
         }
     }
 
