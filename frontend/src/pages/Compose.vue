@@ -399,6 +399,16 @@
                                     <font-awesome-icon icon="stream" class="me-1" />{{ $t(logLineWrap ? 'logLineWrapOn' : 'logLineWrapOff') }}
                                 </button>
                                 <button
+                                    class="btn btn-sm"
+                                    :class="logFollowOutput ? 'btn-primary' : 'btn-normal'"
+                                    :title="$t(logFollowOutput ? 'logFollowPauseTitle' : 'logFollowResumeTitle')"
+                                    style="font-size:0.78rem; padding: 2px 8px;"
+                                    @click="toggleLogFollow"
+                                >
+                                    <font-awesome-icon :icon="logFollowOutput ? 'pause' : 'play'" class="me-1" />
+                                    {{ $t(logFollowOutput ? 'logFollowPause' : 'logFollowResume') }}
+                                </button>
+                                <button
                                     class="btn btn-sm btn-normal"
                                     :title="$t(logsFullscreen ? 'logsExitFullscreen' : 'logsFullscreen')"
                                     @click="toggleLogsFullscreen"
@@ -424,6 +434,7 @@
                             :rows="combinedTerminalRows"
                             :cols="combinedTerminalCols"
                             :wrap-lines="logLineWrap"
+                            :follow-output="logFollowOutput"
                             :style="{ height: `${315 * Number(terminalScale)}px` }"
                         ></Terminal>
                     </div>
@@ -746,6 +757,7 @@ export default {
             lastStartedAt: null,
             logTimestamps: false,
             logLineWrap: localStorage.getItem("logLineWrap") !== "false",
+            logFollowOutput: true,
             isEditMode: false,
             submitted: false,
             showDeleteDialog: false,
@@ -1352,6 +1364,10 @@ export default {
         toggleLogLineWrap() {
             this.logLineWrap = !this.logLineWrap;
             localStorage.setItem("logLineWrap", String(this.logLineWrap));
+        },
+
+        toggleLogFollow() {
+            this.logFollowOutput = !this.logFollowOutput;
         },
 
         searchLogs(previous) {

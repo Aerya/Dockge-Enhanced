@@ -43,6 +43,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.logNoWrapScrollbar",
         ],
     },
+    {
+        id: "2026-08-18-log-follow-toggle",
+        items: [
+            "releaseNews.item.logFollowToggle",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {
