@@ -58,11 +58,6 @@ export default {
             type: Object,
             default: null,
         },
-        /** If the user is in select mode */
-        isSelectMode: {
-            type: Boolean,
-            default: false,
-        },
         scheduled: {
             type: Boolean,
             default: false,
@@ -79,21 +74,6 @@ export default {
         depth: {
             type: Number,
             default: 0,
-        },
-        /** Callback to determine if stack is selected */
-        isSelected: {
-            type: Function,
-            default: () => {}
-        },
-        /** Callback fired when stack is selected */
-        select: {
-            type: Function,
-            default: () => {}
-        },
-        /** Callback fired when stack is deselected */
-        deselect: {
-            type: Function,
-            default: () => {}
         },
     },
     emits: [ "toggle-pin" ],
@@ -140,12 +120,6 @@ export default {
             };
         }
     },
-    watch: {
-        isSelectMode() {
-            // TODO: Resize the heartbeat bar, but too slow
-            // this.$refs.heartbeatBar.resize();
-        }
-    },
     beforeMount() {
 
     },
@@ -168,24 +142,11 @@ export default {
 
             window.localStorage.setItem("stackCollapsed", JSON.stringify(storageObject));
         },
-
-        /**
-         * Toggle selection of stack
-         * @returns {void}
-         */
-        toggleSelection() {
-            if (this.isSelected(this.stack.id)) {
-                this.deselect(this.stack.id);
-            } else {
-                this.select(this.stack.id);
-            }
-        },
     },
 };
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 .small-padding {
     padding-left: 5px !important;
@@ -197,17 +158,20 @@ export default {
     padding-right: 2px !important;
 }
 
+// Single source of truth for stack-list rows (the global
+// `.stack-list .item` rule in styles/main.scss was removed in favor of this).
+// Base values mirror the old global rule: height 52px, radius-md, 0 8px padding.
 .item {
     text-decoration: none;
     cursor: pointer;
     display: flex;
     align-items: center;
-    min-height: 44px;
+    height: 52px;
     margin-bottom: 4px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     transition: all ease-in-out 0.15s;
     width: 100%;
-    padding: 3px 6px;
+    padding: 0 8px;
     border-inline-start: 4px solid var(--agent-color, transparent);
     background: linear-gradient(90deg, var(--agent-tint, transparent), transparent 42%);
 
@@ -220,13 +184,13 @@ export default {
         opacity: 0.3;
     }
     &:hover {
-        background-color: $highlight-white;
+        background-color: var(--bg-raised);
     }
     &.active {
-        background-color: #cdf8f4;
+        background-color: var(--primary-soft);
     }
     .title {
-        margin-top: -2px;
+        margin-top: -4px;
         min-width: 0;
         flex: 1;
 
@@ -240,8 +204,8 @@ export default {
         }
     }
     .endpoint {
-        font-size: 12px;
-        color: $dark-font-color3;
+        font-size: var(--fs-xs);
+        color: var(--text-muted);
 
         a {
             color: inherit;
@@ -251,8 +215,8 @@ export default {
     }
 
     .scheduled-indicator {
-        color: #3b82f6;
-        font-size: .78rem;
+        color: var(--primary);
+        font-size: var(--fs-sm);
     }
 
     .stack-pin-button {
@@ -260,14 +224,14 @@ export default {
         border: 0;
         padding: 6px;
         background: transparent;
-        color: $dark-font-color3;
+        color: var(--text-muted);
         opacity: 0;
         transition: opacity .15s ease, color .15s ease;
 
         &:focus-visible,
         &--pinned {
             opacity: 1;
-            color: #d97706;
+            color: var(--warning);
         }
     }
 
@@ -288,16 +252,6 @@ export default {
 
 .animated {
     transition: all 0.2s $easing-in;
-}
-
-.select-input-wrapper {
-    float: left;
-    margin-top: 15px;
-    margin-left: 3px;
-    margin-right: 10px;
-    padding-left: 4px;
-    position: relative;
-    z-index: 15;
 }
 
 .dim {

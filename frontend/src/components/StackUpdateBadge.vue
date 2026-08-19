@@ -29,7 +29,6 @@ const tooltip = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 .badge-update {
     display: inline-flex;

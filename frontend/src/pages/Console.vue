@@ -51,6 +51,6 @@ export default {
 
 <style scoped lang="scss">
 .terminal {
-    height: 410px;
+    height: min(410px, 60vh);
 }
 </style>

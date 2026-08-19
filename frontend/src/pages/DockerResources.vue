@@ -100,10 +100,10 @@
                         @click="autoPruneOpen = !autoPruneOpen">
                         <font-awesome-icon :icon="autoPruneOpen ? 'chevron-down' : 'chevron-right'" class="me-1" />
                         {{ $t("dockerResources.autoPrune.heading") }}
-                        <span v-if="autoPrune.danglingEnabled" class="badge bg-success ms-2" style="font-size:.7rem">
+                        <span v-if="autoPrune.danglingEnabled" class="badge bg-success ms-2 text-xs">
                             {{ $t("dockerResources.autoPrune.danglingHeading") }}
                         </span>
-                        <span v-if="autoPrune.unusedEnabled" class="badge bg-info text-dark ms-1" style="font-size:.7rem">
+                        <span v-if="autoPrune.unusedEnabled" class="badge bg-info text-dark ms-1 text-xs">
                             {{ $t("dockerResources.autoPrune.unusedHeading") }}
                         </span>
                     </button>
@@ -272,7 +272,7 @@
                                         </span>
                                         <span v-else>
                                             <span class="text-muted fst-italic">{{ img.id }}</span>
-                                            <span class="ms-2 badge bg-secondary" style="font-family:sans-serif;font-size:.65rem;font-style:normal">ancienne image</span>
+                                            <span class="ms-2 badge bg-secondary old-image-badge">ancienne image</span>
                                         </span>
                                     </div>
                                 </td>
@@ -464,7 +464,7 @@
                                 :class="ctr.state === 'running' ? 'row-orphan-running' : 'row-stopped'">
                                 <td>
                                     <div class="fw-semibold font-monospace small">{{ ctr.name || ctr.id }}</div>
-                                    <div class="text-muted" style="font-size:.7rem">{{ ctr.id }}</div>
+                                    <div class="text-muted text-xs">{{ ctr.id }}</div>
                                 </td>
                                 <td class="small text-muted align-middle">{{ ctr.image }}</td>
                                 <td class="align-middle">
@@ -1343,62 +1343,30 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 // ── Table ────────────────────────────────────────────────────────
 .th-sortable:hover {
-    .dark & { color: #d1d5db; }
+    .dark & { color: var(--text-color); }
 }
-.sort-indicator { font-size: .65rem; margin-left: 3px; letter-spacing: -2px; }
+.sort-indicator { font-size: var(--fs-xs); margin-left: 3px; letter-spacing: -2px; }
 
 .resources-table {
-    font-size: 0.875rem;
-    --bs-table-bg: transparent;
-
-    th {
-        font-size: 0.75rem;
-        letter-spacing: .04em;
-        opacity: 1;
-    }
+    font-size: var(--fs-md);
+    @include data-table;
 
     // Ligne : conteneur Dockge arrêté → orange à gauche
     .row-stopped-dockge td:first-child {
-        border-left: 3px solid #f5a623;
+        border-left: 3px solid var(--warning);
     }
     .row-stopped td:first-child {
-        border-left: 3px solid #ffc107;
+        border-left: 3px solid var(--warning);
     }
     .row-dangling td:first-child {
-        border-left: 3px solid #dc3545;
+        border-left: 3px solid var(--danger);
     }
     // Ligne : conteneur orphelin en cours → rouge-orange
     .row-orphan-running td:first-child {
-        border-left: 3px solid #ef4444;
-    }
-
-    .dark & {
-        --bs-table-color: #e5e7eb;
-
-        th {
-            color: #9ca3af;
-            border-bottom: 1px solid rgba(255,255,255,.1);
-        }
-
-        > :not(caption) > * > * {
-            color: #e5e7eb;
-            border-bottom-color: rgba(255,255,255,.06);
-        }
-
-        // Hover : fond subtil sans écraser le texte
-        tbody tr:hover td {
-            background-color: rgba(255, 255, 255, 0.06) !important;
-            color: #e5e7eb !important;
-        }
-
-        // text-muted dans Bootstrap dark → gris quasi-noir, on force un gris lisible
-        .text-muted {
-            color: #9ca3af !important;
-        }
+        border-left: 3px solid var(--danger);
     }
 }
 
@@ -1406,19 +1374,19 @@ onMounted(() => {
 .auto-prune-panel {
     .ap-toggle-btn {
         .dark & {
-            color: $dark-font-color;
-            &:hover { color: #fff; }
+            color: var(--text-muted);
+            &:hover { color: var(--text-color); }
         }
     }
 }
 
 .auto-prune-body {
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
 
     .dark & {
-        background-color: $dark-bg2;
-        border: 1px solid $dark-border-color;
-        color: $dark-font-color;
+        background-color: var(--bg-input);
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
     }
 }
 
@@ -1434,94 +1402,86 @@ onMounted(() => {
 }
 
 .auto-prune-section-title {
-    font-size: 0.72rem;
+    font-size: var(--fs-xs);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-bottom: 0.75rem;
     padding-bottom: 0.35rem;
-    border-bottom: 1px solid var(--bs-border-color);
+    border-bottom: 1px solid var(--border-color);
 
     .dark & {
-        color: #9ca3af;
-        border-bottom-color: $dark-border-color;
+        color: var(--text-muted);
     }
 }
 
 .ap-label {
-    .dark & { color: $dark-font-color !important; }
+    .dark & { color: var(--text-color) !important; }
 }
 
 .ap-select {
     width: auto;
 
     &:focus {
-        border-color: $primary;
-        box-shadow: 0 0 0 2px rgba($primary, 0.25);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
     }
 
     .dark & {
-        background-color: $dark-bg;
-        border-color: $dark-border-color;
-        color: $dark-font-color;
+        background-color: var(--bg-input);
+        border-color: var(--border-color);
+        color: var(--text-color);
     }
 }
 
 .ap-meta {
-    font-size: 0.8rem;
+    font-size: var(--fs-sm);
     line-height: 1.6;
 
     .dark & {
-        color: #9ca3af;
-        strong { color: $dark-font-color; }
+        color: var(--text-muted);
+        strong { color: var(--text-color); }
     }
 }
 
 .ap-exclusions {
-    border-top: 1px solid var(--bs-border-color);
+    border-top: 1px solid var(--border-color);
     padding-top: 0.6rem;
     margin-top: 0.4rem;
-
-    .dark & { border-top-color: $dark-border-color; }
 }
 
 .ap-exclusions-label {
-    font-size: 0.8rem;
+    font-size: var(--fs-sm);
     font-weight: 600;
     margin-bottom: 0.4rem;
 
-    .dark & { color: $dark-font-color; }
+    .dark & { color: var(--text-color); }
 }
 
 .ap-exclusion-badge {
-    background-color: rgba(0, 0, 0, 0.05);
-    border: 1px solid var(--bs-border-color);
+    background-color: var(--bg-raised);
+    border: 1px solid var(--border-color);
     font-weight: normal;
-    font-size: 0.78rem;
-
-    .dark & {
-        background-color: rgba(255, 255, 255, 0.1);
-        border-color: $dark-border-color;
-    }
+    font-size: var(--fs-sm);
 }
 
 .ap-exclusion-code {
-    color: $primary;
+    color: var(--primary);
     background: none;
-    font-size: 0.75rem;
+    font-size: var(--fs-xs);
 }
 
 .ap-hint {
-    font-size: 0.78rem;
-    color: #6b7280;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
     font-style: italic;
 }
 
 // ── Badge stack Dockge ───────────────────────────────────────────
 .badge-stack {
-    background-color: rgba(245, 166, 35, 0.2);
-    color: #f5a623;
-    border: 1px solid rgba(245, 166, 35, 0.4);
+    background-color: var(--warning-soft);
+    color: var(--warning);
+    border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
 }
 
 // ── Modales ──────────────────────────────────────────────────────
@@ -1535,16 +1495,11 @@ onMounted(() => {
     justify-content: center;
 }
 .modal-card {
-    min-width: 340px;
+    min-width: min(340px, 100%);
     max-width: 480px;
     width: 90%;
     padding: 1.5rem;
-    border-radius: 16px;
-
-    .dark & {
-        background-color: $dark-bg;
-        color: $dark-font-color;
-    }
+    border-radius: var(--radius-lg);
 }
 
 // ── Toast ────────────────────────────────────────────────────────
@@ -1554,16 +1509,27 @@ onMounted(() => {
     bottom: 1.5rem;
     z-index: 9999;
     padding: .6rem 1rem;
-    border-radius: 10px;
-    font-size: .85rem;
-    color: #fff;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-md);
+    color: var(--primary-text);
+    box-shadow: var(--shadow-popover);
 
-    &.toast-ok { background: #16a34a; }
-    &.toast-err { background: #dc2626; }
+    &.toast-ok { background: var(--success); }
+    &.toast-err { background: var(--danger); }
 
-    @media (max-width: 768px) { bottom: 76px; }
+    @media (max-width: $bp-mobile) { bottom: var(--space-4); }
 }
 .slide-fade-enter-active, .slide-fade-leave-active { transition: all .3s ease; }
 .slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(16px); opacity: 0; }
+
+// ── Helpers ──────────────────────────────────────────────────────
+.text-xs {
+    font-size: var(--fs-xs);
+}
+
+.old-image-badge {
+    font-family: var(--font-sans);
+    font-size: var(--fs-xs);
+    font-style: normal;
+}
 </style>

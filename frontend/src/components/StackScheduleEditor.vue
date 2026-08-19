@@ -235,11 +235,10 @@ function formatFull(value: string | null): string {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/vars.scss";
 
 .stack-schedule-editor {
     padding: 12px 0;
-    border-bottom: 1px solid rgba(127, 127, 127, 0.18);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .schedule-heading,
@@ -263,8 +262,8 @@ function formatFull(value: string | null): string {
 
 .schedule-timezone {
     margin-left: 8px;
-    color: $dark-font-color3;
-    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
 }
 
 .schedule-actions {
@@ -280,7 +279,7 @@ function formatFull(value: string | null): string {
 
 .schedule-action-label {
     min-width: 82px;
-    font-size: 0.78rem;
+    font-size: var(--fs-sm);
     font-weight: 600;
 }
 
@@ -288,30 +287,30 @@ function formatFull(value: string | null): string {
 .schedule-time { width: 104px; }
 .schedule-weekday { width: 125px; }
 .schedule-date { width: 145px; }
-.schedule-cron { width: 175px; font-family: monospace; }
+.schedule-cron { width: 175px; font-family: var(--font-mono); }
 
 .schedule-monthday {
     gap: 4px;
-    font-size: 0.75rem;
+    font-size: var(--fs-xs);
 
     .form-control { width: 70px; }
 }
 
 .schedule-next {
-    color: $dark-font-color3;
-    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
 }
 
 .schedule-field-label {
-    color: $dark-font-color3;
-    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
 }
 
 .schedule-last {
-    font-size: 0.7rem;
+    font-size: var(--fs-xs);
 
-    &.success { color: #16a34a; }
-    &.failure { color: $danger; }
+    &.success { color: var(--success); }
+    &.failure { color: var(--danger); }
 }
 
 .compact {
@@ -321,7 +320,7 @@ function formatFull(value: string | null): string {
     .schedule-actions { gap: 6px 14px; }
 }
 
-@media (max-width: 575px) {
+@media (max-width: $bp-phone) {
     .schedule-action { align-items: flex-start; }
     .schedule-action-label { width: 100%; }
 }

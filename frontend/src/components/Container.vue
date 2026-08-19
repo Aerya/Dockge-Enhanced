@@ -502,8 +502,6 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
-@import "../styles/vars";
-
 .container {
     .container-action-bar {
         display: flex;
@@ -533,7 +531,7 @@ export default defineComponent({
         span {
             display: block;
             max-width: 7rem;
-            font-size: .64rem;
+            font-size: var(--fs-xs);
             line-height: 1.05;
             white-space: normal;
             text-align: center;
@@ -542,31 +540,27 @@ export default defineComponent({
 
     .container-schedule {
         padding: 0 10px;
-        border: 1px solid rgba(127, 127, 127, .18);
-        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
     }
     .image {
-        font-size: 0.8rem;
-        color: #6c757d;
+        font-size: var(--fs-sm);
+        color: var(--text-muted);
         .tag {
-            color: #6c757d;
-
-            .dark & {
-                color: $dark-font-color3;
-            }
+            color: var(--text-muted);
         }
     }
 
     .image-registry-link {
-        color: #6c757d;
+        color: var(--text-muted);
         opacity: 0.65;
         text-decoration: none;
-        font-size: 0.75rem;
+        font-size: var(--fs-xs);
         vertical-align: middle;
 
         &:hover {
             opacity: 1;
-            color: $primary;
+            color: var(--primary);
         }
     }
 
@@ -575,13 +569,13 @@ export default defineComponent({
         align-items: center;
         gap: 2px;
         padding: 2px 7px;
-        border-radius: 50rem;
-        font-size: 0.68rem;
+        border-radius: var(--radius-pill);
+        font-size: var(--fs-xs);
         font-weight: 600;
         line-height: 1;
-        color: $warning;
-        background: rgba(248, 163, 6, 0.14);
-        border: 1px solid rgba(248, 163, 6, 0.3);
+        color: var(--warning);
+        background: var(--warning-soft);
+        border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
         vertical-align: middle;
     }
 
@@ -594,12 +588,8 @@ export default defineComponent({
 
     .container-auto-update-label,
     .container-auto-update-state {
-        font-size: 0.72rem;
-        color: #6b7280;
-
-        .dark & {
-            color: $dark-font-color;
-        }
+        font-size: var(--fs-xs);
+        color: var(--text-muted);
     }
 
     .container-auto-update-select {
@@ -607,22 +597,22 @@ export default defineComponent({
         min-width: 118px;
         padding-top: 2px;
         padding-bottom: 2px;
-        font-size: 0.75rem;
+        font-size: var(--fs-xs);
     }
 
     .container-auto-update-time {
         width: 104px;
         padding-top: 2px;
         padding-bottom: 2px;
-        font-size: 0.75rem;
+        font-size: var(--fs-xs);
     }
 
     .container-auto-update-state.pending {
-        color: $warning;
+        color: var(--warning);
     }
 
     .container-auto-update-state.updating {
-        color: $primary;
+        color: var(--primary);
     }
 
     .container-volumes {
@@ -636,13 +626,9 @@ export default defineComponent({
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        color: #6b7280;
-        font-size: 0.72rem;
+        color: var(--text-muted);
+        font-size: var(--fs-xs);
         font-weight: 600;
-
-        .dark & {
-            color: $dark-font-color;
-        }
     }
 
     .container-volume-refresh {
@@ -660,16 +646,16 @@ export default defineComponent({
         width: 100%;
         max-width: 100%;
         padding: 4px 8px;
-        border: 1px solid rgba(127, 127, 127, 0.14);
-        border-radius: 6px;
-        background: rgba(127, 127, 127, 0.05);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        background: var(--bg-raised);
         color: inherit;
         text-align: left;
-        font-size: 0.75rem;
+        font-size: var(--fs-xs);
 
         &:hover {
-            border-color: rgba(13, 110, 253, 0.35);
-            background: rgba(13, 110, 253, 0.08);
+            border-color: var(--primary);
+            background: var(--primary-soft);
         }
 
         code,
@@ -680,14 +666,14 @@ export default defineComponent({
         }
     }
 
-    @media (max-width: 575.98px) {
+    @media (max-width: $bp-phone) {
         .container-action-bar { align-items: flex-start; }
     }
 }
 
 .container-started-at {
-    font-size: 0.75rem;
-    color: #6b7280;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
     vertical-align: middle;
 }
 </style>

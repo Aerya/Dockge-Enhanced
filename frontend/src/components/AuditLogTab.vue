@@ -352,32 +352,19 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .audit-table {
   min-width: 980px;
-  --bs-table-bg: transparent;
-  --bs-table-color: #e5e7eb;
-  --bs-table-border-color: rgba(148, 163, 184, 0.28);
-  color: #e5e7eb;
-}
-
-.audit-table th {
-  color: #f8fafc;
-  border-bottom-color: rgba(148, 163, 184, 0.38);
-}
-
-.audit-table td {
-  color: #e5e7eb;
-  border-top-color: rgba(148, 163, 184, 0.18);
+  @include data-table;
 }
 
 .audit-muted {
-  color: #cbd5e1;
+  color: var(--text-muted);
 }
 
 .audit-target-type {
-  color: #93c5fd;
-  font-size: 0.82rem;
+  color: var(--primary);
+  font-size: var(--fs-md);
   font-weight: 600;
 }
 
@@ -400,6 +387,6 @@ details pre {
   margin: 0.5rem 0 0;
   max-height: 180px;
   overflow: auto;
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
 }
 </style>

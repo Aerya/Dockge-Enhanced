@@ -1,0 +1,28 @@
+// Shared SCSS mixins — auto-injected into every SCSS block via vite
+// additionalData (see vite.config.ts). Use freely, no @import needed.
+
+// Standard data-table look. Replaces the copy-pasted table theming that
+// lived in BackupTab.vue / WatcherSettings.vue / DockerResources.vue.
+// Usage: .table-responsive .table { @include data-table; }
+@mixin data-table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-color);
+    --bs-table-border-color: var(--border-color);
+
+    > thead > tr > th {
+        font-size: var(--fs-xs);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+    }
+}
+
+// Small uppercase section label ("kicker").
+@mixin kicker {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}

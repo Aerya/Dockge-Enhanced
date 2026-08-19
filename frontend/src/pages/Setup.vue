@@ -4,7 +4,7 @@
             <form @submit.prevent="submit">
                 <div>
                     <object width="64" height="64" data="/icon.svg" />
-                    <div style="font-size: 28px; font-weight: bold; margin-top: 5px;">
+                    <div class="setup-title">
                         Dockge
                     </div>
                 </div>
@@ -134,5 +134,11 @@ export default {
     padding: 15px;
     margin: auto;
     text-align: center;
+}
+
+.setup-title {
+    font-size: var(--fs-2xl);
+    font-weight: bold;
+    margin-top: 5px;
 }
 </style>
