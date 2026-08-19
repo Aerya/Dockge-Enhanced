@@ -41,6 +41,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
 
+**2026-08-18 — Vertical log scrollbar with full lines** — Disabling line wrapping keeps long log entries on a single line with horizontal scrolling, while the xterm viewport remains pinned to the visible panel width so its vertical scrollbar stays accessible on the right.
+
 **2026-08-17 — Reliable live stack logs after Docker actions** — The Logs panel now automatically reconnects its live stream after stack start, stop, restart, update and recreate operations. The selected service, history range and timestamp mode are preserved, and terminal leave/join operations are sequenced so an older asynchronous callback cannot rebind the wrong stream.
 
 **2026-08-13 — Optional Restic backup overlap protection** — Backup settings now include an enabled-by-default guard that prevents manual, scheduled, and compose-save backups from starting while another Restic backup is active. Manual attempts display an immediate WebUI modal; automatic attempts are logged and surfaced to an open Backup tab. Disabling the option restores parallel starts for installations that explicitly require them.
