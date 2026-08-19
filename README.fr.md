@@ -41,6 +41,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
 
+**2026-08-18 — Pause et reprise du suivi des logs live** — La barre d'outils des Logs peut suspendre le défilement automatique sans couper le flux live : les nouvelles lignes continuent d'entrer dans le scrollback xterm tandis que la position de lecture reste figée. Reprendre revient immédiatement aux derniers logs et réactive le suivi automatique.
+
 **2026-08-18 — Barre de défilement verticale avec les lignes complètes** — Désactiver le retour à la ligne conserve les longues entrées sur une seule ligne avec défilement horizontal, tout en maintenant la viewport xterm à la largeur visible du panneau afin que sa barre de défilement verticale reste accessible à droite.
 
 **2026-08-17 — Logs de stack fiables après les actions Docker** — Le panneau Logs reconnecte désormais automatiquement son flux en temps réel après les opérations de démarrage, arrêt, redémarrage, mise à jour et recréation d’une stack. Le service, la période d’historique et le mode timestamps sélectionnés sont conservés, et les opérations de sortie/reconnexion du terminal sont séquencées afin qu’un ancien callback asynchrone ne puisse plus rattacher le mauvais flux.

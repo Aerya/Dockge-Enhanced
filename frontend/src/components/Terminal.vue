@@ -60,6 +60,11 @@ export default {
             default: true,
         },
 
+        followOutput: {
+            type: Boolean,
+            default: true,
+        },
+
         // Mode
         // displayOnly: Only display terminal output
         // mainTerminal: Allow input limited commands and output
@@ -83,11 +88,25 @@ export default {
             longestOutputLine: 0,
             terminalResizeObserver: null,
             terminalResizeFrame: null,
+            pausedViewportY: null,
+            terminalScrollDisposable: null,
         };
     },
     watch: {
         wrapLines() {
             this.$nextTick(() => this.updateTerminalSize());
+        },
+        followOutput(value) {
+            if (!this.terminal || this.mode !== "displayOnly") {
+                return;
+            }
+
+            if (value) {
+                this.pausedViewportY = null;
+                this.$nextTick(() => this.terminal?.scrollToBottom());
+            } else {
+                this.pausedViewportY = this.terminal.buffer.active.viewportY;
+            }
         },
     },
     created() {
@@ -131,6 +150,12 @@ export default {
             this.handleSelection();
         });
 
+        this.terminalScrollDisposable = this.terminal.onScroll((viewportY) => {
+            if (this.mode === "displayOnly" && !this.followOutput) {
+                this.pausedViewportY = viewportY;
+            }
+        });
+
         // Notify parent component when data is received
         this.terminal.onCursorMove(() => {
             console.debug("onData triggered");
@@ -170,6 +195,7 @@ export default {
             window.cancelAnimationFrame(this.terminalResizeFrame);
         }
         this.$root.unbindTerminal(this.name);
+        this.terminalScrollDisposable?.dispose();
         this.terminal.dispose();
         this.$refs.terminal?.removeEventListener('contextmenu', this.handleContextMenu);
     },
@@ -379,7 +405,26 @@ export default {
                     }
                 }
             }
-            this.terminal.write(data);
+            const pausedViewportY = this.mode === "displayOnly" && !this.followOutput
+                ? (this.pausedViewportY ?? this.terminal.buffer.active.viewportY)
+                : null;
+
+            this.terminal.write(data, () => {
+                if (this.mode !== "displayOnly") {
+                    return;
+                }
+
+                if (this.followOutput) {
+                    this.terminal.scrollToBottom();
+                    return;
+                }
+
+                if (pausedViewportY !== null) {
+                    const maxViewportY = Math.max(0, this.terminal.buffer.active.length - this.terminal.rows);
+                    this.pausedViewportY = Math.min(pausedViewportY, maxViewportY);
+                    this.terminal.scrollToLine(this.pausedViewportY);
+                }
+            });
         },
 
         resetSearchBuffer() {

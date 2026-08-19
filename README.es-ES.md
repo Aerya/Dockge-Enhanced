@@ -43,6 +43,8 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 <details>
 <summary><strong>Mostrar el catálogo completo de funcionalidades</strong></summary>
 
+**2026-08-18 — Pausa y reanudación del seguimiento de logs en vivo** — La barra de herramientas de Registros puede pausar el seguimiento automático sin desconectar el flujo en vivo: las nuevas líneas siguen entrando en el historial de xterm mientras la posición de lectura permanece fija. Reanudar vuelve inmediatamente a los últimos logs y reactiva el desplazamiento automático.
+
 **2026-08-18 — Barra de desplazamiento vertical con líneas completas** — Desactivar el ajuste de línea mantiene las entradas largas en una sola línea con desplazamiento horizontal, mientras la vista xterm conserva el ancho visible del panel para que su barra de desplazamiento vertical siga accesible a la derecha.
 
 **2026-08-17 — Registros de stack fiables después de las acciones Docker** — El panel Registros vuelve a conectar automáticamente su flujo en tiempo real después de iniciar, detener, reiniciar, actualizar o recrear una stack. Se conservan el servicio, el periodo de historial y el modo de timestamps seleccionados, y las operaciones de salida/reconexión del terminal se secuencian para impedir que un callback asíncrono antiguo vuelva a enlazar el flujo equivocado.
