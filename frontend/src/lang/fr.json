@@ -21,6 +21,7 @@
     "releaseNews.item.rawComposeCopy": "Une action dédiée copie le YAML Compose brut sans numéros de ligne ni artefacts de sélection visuelle.",
     "releaseNews.item.stackSidebar": "La colonne des stacks plus dense se redimensionne à la souris ou au clavier, mémorise sa largeur et remplit la hauteur visible ou suit le contenu plus long de la page.",
     "releaseNews.item.liveStackLogsRefresh": "Les logs de stack se reconnectent automatiquement après les actions de démarrage, arrêt, redémarrage, mise à jour et recréation, tout en conservant le service, la période et les timestamps sélectionnés.",
+    "releaseNews.item.logNoWrapScrollbar": "En mode lignes complètes, le défilement horizontal reste disponible sans repousser la barre de défilement verticale hors de la zone visible.",
     "releaseNews.close": "Fermer",
     "releaseNews.gotIt": "J'ai compris",
     "Create your admin account": "Créez votre compte administrateur",

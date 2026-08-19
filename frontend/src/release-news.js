@@ -37,6 +37,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.liveStackLogsRefresh",
         ],
     },
+    {
+        id: "2026-08-18-log-nowrap-scrollbar",
+        items: [
+            "releaseNews.item.logNoWrapScrollbar",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

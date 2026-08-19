@@ -41,6 +41,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
 
+**2026-08-18 — Barre de défilement verticale avec les lignes complètes** — Désactiver le retour à la ligne conserve les longues entrées sur une seule ligne avec défilement horizontal, tout en maintenant la viewport xterm à la largeur visible du panneau afin que sa barre de défilement verticale reste accessible à droite.
+
 **2026-08-17 — Logs de stack fiables après les actions Docker** — Le panneau Logs reconnecte désormais automatiquement son flux en temps réel après les opérations de démarrage, arrêt, redémarrage, mise à jour et recréation d’une stack. Le service, la période d’historique et le mode timestamps sélectionnés sont conservés, et les opérations de sortie/reconnexion du terminal sont séquencées afin qu’un ancien callback asynchrone ne puisse plus rattacher le mauvais flux.
 
 **2026-08-13 — Protection optionnelle contre le chevauchement des backups Restic** — Les réglages de sauvegarde proposent désormais un garde-fou activé par défaut qui empêche un backup manuel, planifié ou déclenché par l’enregistrement d’un Compose de démarrer pendant qu’un autre backup Restic tourne. Une tentative manuelle affiche immédiatement une popup dans la WebUI ; une tentative automatique est journalisée et signalée dans l’onglet Sauvegarde s’il est ouvert. Désactiver l’option rétablit les lancements parallèles pour les installations qui en ont explicitement besoin.

@@ -21,6 +21,7 @@
     "releaseNews.item.rawComposeCopy": "A dedicated action copies the raw Compose YAML without line numbers or visual-selection artefacts.",
     "releaseNews.item.stackSidebar": "The denser stack sidebar can be resized with a mouse or keyboard, remembers its width and fills the visible height or follows longer page content.",
     "releaseNews.item.liveStackLogsRefresh": "Stack logs automatically reconnect after start, stop, restart, update and recreate actions, while service, time range and timestamp selections are preserved.",
+    "releaseNews.item.logNoWrapScrollbar": "With full lines enabled, horizontal scrolling remains available without pushing the vertical scrollbar outside the visible Logs panel.",
     "releaseNews.close": "Close",
     "releaseNews.gotIt": "Got it",
     "Create your admin account": "Create your admin account",

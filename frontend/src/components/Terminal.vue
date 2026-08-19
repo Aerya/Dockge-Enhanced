@@ -349,10 +349,14 @@ export default {
             const dimensions = this.terminalFitAddOn.proposeDimensions();
             const columns = Math.min(2000, Math.max(dimensions?.cols ?? this.cols, this.longestOutputLine + 1));
             const rows = dimensions?.rows ?? this.rows;
-            if (xtermElement) {
-                xtermElement.style.width = `${columns}ch`;
-            }
             this.terminal.resize(columns, rows);
+
+            if (xtermElement) {
+                // Keep the xterm viewport at the visible terminal width. The rendered
+                // screen can still overflow horizontally, but the vertical scrollbar
+                // remains reachable at the right edge of the Logs panel.
+                xtermElement.style.width = "100%";
+            }
         },
 
         terminalWriteProxy() {
