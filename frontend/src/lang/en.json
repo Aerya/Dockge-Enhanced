@@ -501,14 +501,14 @@
     "watcher.monitoring.hostProcessor": "Processor",
     "watcher.monitoring.hostCpuTemps": "CPU temperatures",
     "watcher.monitoring.hostDiskTemps": "Disk temperatures",
-    "watcher.monitoring.navbarHostDisplay": "Show in top bar",
+    "watcher.monitoring.navbarHostDisplay": "System stats display",
     "watcher.monitoring.navbarCpuModel": "CPU name",
     "watcher.monitoring.navbarPerCoreCpu": "Per-core usage",
     "watcher.monitoring.navbarUptime": "System uptime",
     "watcher.monitoring.navbarUptimeShort": "Uptime",
     "watcher.monitoring.navbarCpuTemps": "CPU temperatures",
     "watcher.monitoring.navbarDiskTemps": "Disk temperatures",
-    "watcher.monitoring.navbarHostDisplayHint": "Adds these details to the compact system stats in the navigation bar.",
+    "watcher.monitoring.navbarHostDisplayHint": "Adds these details to the compact system stats bar.",
     "watcher.monitoring.stackStats": "Show CPU / RAM stats per stack",
     "watcher.monitoring.stackStatsHint": "Shows resource usage for each compose in the list and each container on its stack page (updated every 10 s).",
     "watcher.monitoring.lowPower": "Synology / low-power mode",
@@ -1290,5 +1290,8 @@
     "home.summary.state.ok": "All good",
     "home.summary.state.disabled": "Not enabled",
     "stackSidebarCollapse": "Collapse the stack sidebar",
-    "stackSidebarExpand": "Expand the stack sidebar"
+    "stackSidebarExpand": "Expand the stack sidebar",
+    "watcher.monitoring.navbarPosition": "Stats bar position",
+    "watcher.monitoring.navbarPositionTop": "Top (header)",
+    "watcher.monitoring.navbarPositionBottom": "Bottom (status bar)"
 }

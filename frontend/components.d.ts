@@ -48,6 +48,7 @@ declare module 'vue' {
     StackStatsBadge: typeof import('./src/components/StackStatsBadge.vue')['default']
     StackTransferModal: typeof import('./src/components/StackTransferModal.vue')['default']
     StackUpdateBadge: typeof import('./src/components/StackUpdateBadge.vue')['default']
+    SystemStatsBar: typeof import('./src/components/SystemStatsBar.vue')['default']
     Terminal: typeof import('./src/components/Terminal.vue')['default']
     TwoFADialog: typeof import('./src/components/TwoFADialog.vue')['default']
     Uptime: typeof import('./src/components/Uptime.vue')['default']
