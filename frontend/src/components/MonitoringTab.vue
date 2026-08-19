@@ -1448,7 +1448,7 @@ onUnmounted(() => {
     color: var(--text-muted);
 }
 .kula-open-link {
-    color: var(--primary);
+    color: var(--primary-strong);
     text-decoration: none;
     &:hover { text-decoration: underline; }
 }

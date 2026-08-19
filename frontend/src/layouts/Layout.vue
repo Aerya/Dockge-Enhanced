@@ -732,7 +732,7 @@ export default {
         justify-content: center;
         flex-shrink: 0;
         color: var(--primary-text);
-        background-color: var(--primary);
+        background-color: var(--primary-strong);
         width: 28px;
         height: 28px;
         border-radius: var(--radius-pill);
@@ -788,7 +788,7 @@ export default {
 
     &.router-link-exact-active, &.active {
         background: var(--primary-soft);
-        color: var(--primary);
+        color: var(--primary-strong);
         font-weight: bold;
     }
 }
@@ -877,7 +877,7 @@ main {
     &.stat-danger   { color: var(--danger); }
     &.stat-neutral  { color: var(--text-color); }
     &.stat-kula {
-        color: var(--primary);
+        color: var(--primary-strong);
         text-decoration: none;
         border-color: color-mix(in srgb, var(--primary) 35%, transparent);
         &:hover { color: var(--primary-hover); border-color: color-mix(in srgb, var(--primary) 60%, transparent); }
@@ -964,7 +964,7 @@ main {
 }
 
 .release-news-kicker {
-    color: var(--primary);
+    color: var(--primary-strong);
     font-size: var(--fs-xs);
     font-weight: 700;
     letter-spacing: .08em;
@@ -1047,7 +1047,7 @@ main {
             color: var(--text-color);
 
             &.active {
-                color: var(--primary);
+                color: var(--primary-strong);
                 background-color: var(--primary-soft) !important;
             }
 
@@ -1062,7 +1062,7 @@ main {
         align-items: center;
         justify-content: center;
         color: var(--primary-text);
-        background-color: var(--primary);
+        background-color: var(--primary-strong);
         width: 24px;
         height: 24px;
         margin-right: 5px;

@@ -294,7 +294,7 @@ async function loadVolSizes(volPath: string) {
     .badge-summary {
         font-size: var(--fs-xs);
         font-weight: 400;
-        color: var(--primary);
+        color: var(--primary-strong);
         background: var(--primary-soft);
         padding: 2px 8px;
         border-radius: var(--radius-pill);
@@ -323,7 +323,7 @@ async function loadVolSizes(volPath: string) {
 
     .vol-path {
         font-size: var(--fs-md);
-        color: var(--primary);
+        color: var(--primary-strong);
         background: var(--primary-soft);
         padding: 1px 6px;
         border-radius: var(--radius-sm);
@@ -407,7 +407,7 @@ async function loadVolSizes(volPath: string) {
 
     &.active {
         background: var(--primary-soft);
-        .form-check-label code { color: var(--primary); }
+        .form-check-label code { color: var(--primary-strong); }
     }
 
     .vol-size {

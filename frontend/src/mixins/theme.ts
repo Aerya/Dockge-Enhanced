@@ -70,7 +70,7 @@ export default defineComponent({
             if (this.theme === "dark") {
                 document.querySelector("#theme-color").setAttribute("content", "#090c10");
             } else {
-                document.querySelector("#theme-color").setAttribute("content", "#f6f8fa");
+                document.querySelector("#theme-color").setAttribute("content", "#ffffff");
             }
         }
     }

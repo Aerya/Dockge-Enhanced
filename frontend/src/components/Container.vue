@@ -560,7 +560,7 @@ export default defineComponent({
 
         &:hover {
             opacity: 1;
-            color: var(--primary);
+            color: var(--primary-strong);
         }
     }
 
@@ -612,7 +612,7 @@ export default defineComponent({
     }
 
     .container-auto-update-state.updating {
-        color: var(--primary);
+        color: var(--primary-strong);
     }
 
     .container-volumes {
@@ -654,7 +654,7 @@ export default defineComponent({
         font-size: var(--fs-xs);
 
         &:hover {
-            border-color: var(--primary);
+            border-color: var(--primary-strong);
             background: var(--primary-soft);
         }
 

@@ -304,7 +304,7 @@ onMounted(async () => {
 
     &.active {
         background: var(--primary-soft);
-        color: var(--primary);
+        color: var(--primary-strong);
         box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 25%, transparent);
     }
 }

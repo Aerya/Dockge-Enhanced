@@ -774,7 +774,7 @@ defineExpose({
 
 .backup-filter-btn.active {
     background: var(--primary-soft);
-    color: var(--primary);
+    color: var(--primary-strong);
 }
 
 .table th {
@@ -995,8 +995,8 @@ defineExpose({
 
     &:hover { background: color-mix(in srgb, var(--primary) 12%, transparent); }
 
-    .snap-foldername { color: var(--primary); }
-    .snap-folder-icon { color: var(--primary); }
+    .snap-foldername { color: var(--primary-strong); }
+    .snap-folder-icon { color: var(--primary-strong); }
 }
 
 .snap-vol-children {
@@ -1022,8 +1022,8 @@ defineExpose({
 
     &:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); }
 
-    .snap-foldername { color: var(--primary); font-size: var(--fs-sm); }
-    .snap-folder-icon { color: var(--primary); font-size: var(--fs-sm); }
+    .snap-foldername { color: var(--primary-strong); font-size: var(--fs-sm); }
+    .snap-folder-icon { color: var(--primary-strong); font-size: var(--fs-sm); }
 }
 
 .snap-vol-children--l2 {

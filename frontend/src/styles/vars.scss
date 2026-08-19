@@ -8,16 +8,16 @@ $bp-phone: 575.98px;
 $bp-mobile: 767.98px;   // below this = mobile shell
 $bp-tablet: 991.98px;   // below this = stacked/simplified layouts
 
-// Bootstrap overrides
-$primary: #3b82f6;
-$danger: #dc2626;
-$warning: #d97706;
+// Bootstrap overrides (palette matches upstream Dockge)
+$primary: #74c2ff;
+$danger: #dc3545;
+$warning: #f8a306;
 $maintenance: #1747f5;
 $link-color: #111;
 $border-radius: 10px;
 $badge-border-radius: 50rem;
 
-$highlight: #93c5fd;
+$highlight: #9dd1ff;
 
 $dark-font-color: #b1b8c0;
 $dark-font-color2: #020b05;
@@ -31,5 +31,5 @@ $easing-in: cubic-bezier(0.54, 0.78, 0.55, 0.97);
 
 $dropdown-border-radius: 0.5rem;
 
-$primary-gradient: linear-gradient(135deg, #3b82f6 0%, #3b82f6 75%, #22c55e);
-$primary-gradient-active: linear-gradient(135deg, #3b82f6 0%, #3b82f6 50%, #22c55e);
+$primary-gradient: linear-gradient(135deg, #74c2ff 0%, #74c2ff 75%, #86e6a9);
+$primary-gradient-active: linear-gradient(135deg, #74c2ff 0%, #74c2ff 50%, #86e6a9);

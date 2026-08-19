@@ -77,8 +77,8 @@ export default {
 .btn-check:active + .btn-outline-primary,
 .btn-check:checked + .btn-outline-primary,
 .btn-check:hover + .btn-outline-primary {
-    background-color: var(--primary);
-    border-color: var(--primary);
+    background-color: var(--primary-strong);
+    border-color: var(--primary-strong);
     color: var(--primary-text);
 }
 </style>

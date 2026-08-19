@@ -1423,7 +1423,7 @@ onMounted(() => {
     width: auto;
 
     &:focus {
-        border-color: var(--primary);
+        border-color: var(--primary-strong);
         box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
     }
 
@@ -1466,7 +1466,7 @@ onMounted(() => {
 }
 
 .ap-exclusion-code {
-    color: var(--primary);
+    color: var(--primary-strong);
     background: none;
     font-size: var(--fs-xs);
 }

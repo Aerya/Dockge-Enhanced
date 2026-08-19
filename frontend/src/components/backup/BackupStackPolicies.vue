@@ -143,7 +143,7 @@ function stackPolicy(stack: string): StackBackupPolicy {
     .badge-summary {
         font-size: var(--fs-xs);
         font-weight: 400;
-        color: var(--primary);
+        color: var(--primary-strong);
         background: var(--primary-soft);
         padding: 2px 8px;
         border-radius: var(--radius-pill);
