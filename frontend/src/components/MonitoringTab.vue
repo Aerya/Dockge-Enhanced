@@ -148,11 +148,18 @@
                     <small class="form-text">{{ $t('watcher.monitoring.lowPowerHint') }}</small>
                 </div>
 
-                <!-- Affichage barre haute -->
+                <!-- Affichage barre de stats système -->
                 <div class="col-12">
                     <label class="form-label small">
                         <font-awesome-icon icon="display" class="me-1" />{{ $t('watcher.monitoring.navbarHostDisplay') }}
                     </label>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <label class="form-check-label" for="navbarPosition">{{ $t('watcher.monitoring.navbarPosition') }}</label>
+                        <select id="navbarPosition" v-model="hostNavbarDisplay.navbarPosition" class="form-select form-select-sm navbar-position-select">
+                            <option value="bottom">{{ $t('watcher.monitoring.navbarPositionBottom') }}</option>
+                            <option value="top">{{ $t('watcher.monitoring.navbarPositionTop') }}</option>
+                        </select>
+                    </div>
                     <div class="navbar-host-options">
                         <div class="form-check form-switch">
                             <input id="navbarCpuModel" v-model="hostNavbarDisplay.cpuModel" class="form-check-input" type="checkbox" role="switch" />
@@ -767,6 +774,7 @@ interface HostNavbarDisplay {
     uptime: boolean;
     cpuTemperatures: boolean;
     diskTemperatures: boolean;
+    navbarPosition: "top" | "bottom";
 }
 
 // ─── API helper ───────────────────────────────────────────────────
@@ -818,6 +826,7 @@ const hostNavbarDisplay = ref<HostNavbarDisplay>({
     uptime: false,
     cpuTemperatures: false,
     diskTemperatures: false,
+    navbarPosition: "bottom",
 });
 const diskDisplayExampleCells = [true, true, false, false, false, false, false, false, false, false];
 const newPartition   = ref("");
@@ -1364,6 +1373,10 @@ onUnmounted(() => {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px 18px;
     max-width: 720px;
+}
+
+.navbar-position-select {
+    max-width: 220px;
 }
 
 @media (max-width: $bp-mobile) {

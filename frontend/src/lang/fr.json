@@ -466,14 +466,14 @@
     "watcher.monitoring.hostProcessor": "Processeur",
     "watcher.monitoring.hostCpuTemps": "Températures CPU",
     "watcher.monitoring.hostDiskTemps": "Températures disques",
-    "watcher.monitoring.navbarHostDisplay": "Afficher dans la barre du haut",
+    "watcher.monitoring.navbarHostDisplay": "Affichage des stats système",
     "watcher.monitoring.navbarCpuModel": "Nom du processeur",
     "watcher.monitoring.navbarPerCoreCpu": "Utilisation par cœur",
     "watcher.monitoring.navbarUptime": "Uptime de la machine",
     "watcher.monitoring.navbarUptimeShort": "Uptime",
     "watcher.monitoring.navbarCpuTemps": "Températures CPU",
     "watcher.monitoring.navbarDiskTemps": "Températures disques",
-    "watcher.monitoring.navbarHostDisplayHint": "Ajoute ces infos aux stats système compactes de la barre de navigation.",
+    "watcher.monitoring.navbarHostDisplayHint": "Ajoute ces infos à la barre de stats système compacte.",
     "watcher.monitoring.stackStats": "Afficher les stats CPU / RAM par stack",
     "watcher.monitoring.stackStatsHint": "Affiche la consommation de chaque compose dans la liste et de chaque conteneur dans ses stacks (mis à jour toutes les 10 s).",
     "watcher.monitoring.lowPower": "Mode Synology / faible consommation",
@@ -1232,5 +1232,8 @@
     "home.summary.state.ok": "OK",
     "home.summary.state.disabled": "Non activé",
     "stackSidebarCollapse": "Replier la barre latérale des stacks",
-    "stackSidebarExpand": "Déplier la barre latérale des stacks"
+    "stackSidebarExpand": "Déplier la barre latérale des stacks",
+    "watcher.monitoring.navbarPosition": "Position de la barre de stats",
+    "watcher.monitoring.navbarPositionTop": "Haut (en-tête)",
+    "watcher.monitoring.navbarPositionBottom": "Bas (barre de statut)"
 }
