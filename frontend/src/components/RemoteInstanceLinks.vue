@@ -63,8 +63,8 @@ export default defineComponent({
 }
 
 .remote-instance-links__label {
-    color: #9ca3af;
-    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-size: var(--fs-md);
 }
 
 .remote-instance-links__button {

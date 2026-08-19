@@ -49,16 +49,12 @@ export default {
 }
 
 .update-link {
-    font-size: 0.8em;
+    font-size: var(--fs-sm);
 }
 
 .frontend-version {
-    font-size: 0.9em;
-    color: #cccccc;
-
-    .dark & {
-        color: #333333;
-    }
+    font-size: var(--fs-md);
+    color: var(--text-muted);
 }
 
 </style>

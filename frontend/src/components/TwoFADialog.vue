@@ -14,7 +14,7 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <div v-if="uri && twoFAStatus == false" class="mx-auto text-center" style="width: 210px;">
-                                <vue-qrcode :key="uri" :value="uri" type="image/png" :quality="1" :color="{ light: '#ffffffff' }" />
+                                <vue-qrcode :key="uri" :value="uri" type="image/png" :quality="1" :color="{ light: '#ffffff' }" />
                                 <button v-show="!showURI" type="button" class="btn btn-outline-primary btn-sm mt-2" @click="showURI = true">{{ $t("Show URI") }}</button>
                             </div>
                             <p v-if="showURI && twoFAStatus == false" class="text-break mt-2">{{ uri }}</p>
@@ -47,7 +47,7 @@
                                     <input v-model="token" type="text" maxlength="6" class="form-control" autocomplete="one-time-code" required>
                                     <button class="btn btn-outline-primary" type="button" @click="verifyToken()">{{ $t("Verify Token") }}</button>
                                 </div>
-                                <p v-show="tokenValid" class="mt-2" style="color: green;">{{ $t("tokenValidSettingsMsg") }}</p>
+                                <p v-show="tokenValid" class="mt-2 token-valid">{{ $t("tokenValidSettingsMsg") }}</p>
                             </div>
                         </div>
                     </div>
@@ -193,11 +193,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
-
-.dark {
-    .modal-dialog .form-text, .modal-dialog p {
-        color: $dark-font-color;
-    }
+.token-valid {
+    color: var(--success);
 }
 </style>

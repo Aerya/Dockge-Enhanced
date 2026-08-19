@@ -40,7 +40,7 @@
                     <object class="bi me-2 ms-4" width="40" height="40" data="/icon.svg" />
                     <span class="fs-4 title">Dockge-Enhanced</span>
                 </router-link>
-                <span class="ms-2 d-flex gap-1 align-items-center" style="font-size:.72rem">
+                <span class="ms-2 d-flex gap-1 align-items-center brand-badges">
                     <a href="https://github.com/louislam/dockge" target="_blank" rel="noopener"
                         class="github-badge" title="Dockge upstream">Dockge</a>
                     <span style="opacity:.35">+</span>
@@ -156,7 +156,7 @@
 
                 <li v-if="$root.loggedIn" class="nav-item me-2">
                     <router-link to="/watcher" class="nav-link">
-                        <font-awesome-icon icon="bolt" /> Enhanced
+                        <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}
                     </router-link>
                 </li>
 
@@ -180,12 +180,6 @@
                             <li><hr class="dropdown-divider"></li>
 
                             <!-- Functions -->
-
-                            <!--<li>
-                                <router-link to="/registry" class="dropdown-item" :class="{ active: $route.path.includes('settings') }">
-                                    <font-awesome-icon icon="warehouse" /> {{ $t("registry") }}
-                                </router-link>
-                            </li>-->
 
                             <li>
                                 <button class="dropdown-item" @click="scanFolder">
@@ -211,6 +205,49 @@
             </ul>
         </header>
 
+        <!-- Mobile header -->
+        <header v-if="$root.isMobile" class="mobile-header">
+            <button type="button" class="mobile-nav-toggle" aria-label="Menu" @click="showMobileNav = true">
+                <font-awesome-icon icon="bars" />
+            </button>
+            <router-link to="/" class="mobile-brand text-decoration-none">
+                <object class="bi me-2" width="28" height="28" data="/icon.svg" />
+                <span class="title">Dockge-Enhanced</span>
+            </router-link>
+        </header>
+
+        <!-- Mobile navigation drawer -->
+        <BOffcanvas v-model="showMobileNav" placement="start" title="Dockge-Enhanced" body-class="mobile-drawer">
+            <div v-if="$root.loggedIn && $root.username != null" class="mobile-drawer-user">
+                <span class="profile-pic">{{ $root.usernameFirstChar }}</span>
+                <strong>{{ $root.username }}</strong>
+            </div>
+
+            <nav class="mobile-drawer-nav">
+                <router-link to="/" class="mobile-drawer-link">
+                    <font-awesome-icon icon="home" /> {{ $t("home") }}
+                </router-link>
+                <router-link to="/console" class="mobile-drawer-link">
+                    <font-awesome-icon icon="terminal" /> {{ $t("console") }}
+                </router-link>
+                <router-link to="/watcher" class="mobile-drawer-link">
+                    <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}
+                </router-link>
+                <router-link to="/settings/general" class="mobile-drawer-link" :class="{ active: $route.path.includes('settings') }">
+                    <font-awesome-icon icon="cog" /> {{ $t("Settings") }}
+                </router-link>
+                <button type="button" class="mobile-drawer-link" @click="mobileScanFolder">
+                    <font-awesome-icon icon="arrows-rotate" /> {{ $t("scanFolder") }}
+                </button>
+            </nav>
+
+            <div v-if="$root.loggedIn" class="mobile-drawer-footer">
+                <button type="button" class="mobile-drawer-link mobile-drawer-logout" @click="mobileLogout">
+                    <font-awesome-icon icon="sign-out-alt" /> {{ $t("Logout") }}
+                </button>
+            </div>
+        </BOffcanvas>
+
         <main>
             <div v-if="$root.socketIO.connecting" class="container mt-5">
                 <h4>{{ $t("connecting...") }}</h4>
@@ -219,26 +256,6 @@
             <router-view v-if="$root.loggedIn" />
             <Login v-if="! $root.loggedIn && $root.allowLoginDialog" />
         </main>
-
-        <!-- Mobile bottom nav -->
-        <nav v-if="$root.isMobile && $root.loggedIn" class="bottom-nav">
-            <router-link to="/">
-                <div><font-awesome-icon icon="home" /></div>
-                {{ $t("home") }}
-            </router-link>
-            <router-link to="/console">
-                <div><font-awesome-icon icon="terminal" /></div>
-                {{ $t("console") }}
-            </router-link>
-            <router-link to="/watcher">
-                <div><font-awesome-icon icon="bolt" /></div>
-                Enhanced
-            </router-link>
-            <router-link to="/settings/general">
-                <div><font-awesome-icon icon="cog" /></div>
-                {{ $t("Settings") }}
-            </router-link>
-        </nav>
     </div>
 </template>
 
@@ -270,6 +287,7 @@ export default {
             dozzleUrl:        null,
             showReleaseNews:  false,
             releaseNewsItems: [],
+            showMobileNav: false,
         };
     },
 
@@ -318,6 +336,11 @@ export default {
     },
 
     watch: {
+
+        // Close the mobile drawer on every navigation
+        "$route.path"() {
+            this.showMobileNav = false;
+        },
 
     },
 
@@ -540,17 +563,26 @@ export default {
                 this.$root.toastRes(res);
             });
         },
+
+        mobileScanFolder() {
+            this.showMobileNav = false;
+            this.scanFolder();
+        },
+
+        mobileLogout() {
+            this.showMobileNav = false;
+            this.$root.logout();
+        },
     },
 
 };
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 .nav-link {
     &.status-page {
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: var(--bg-raised);
     }
 }
 
@@ -585,123 +617,172 @@ export default {
 .self-update-banner {
     display: flex;
     align-items: center;
-    background: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.5);
-    border-radius: 8px;
+    background: var(--warning-soft);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-sm);
     padding: 5px 12px;
-    font-size: 0.85rem;
-    color: #d97706;
+    font-size: var(--fs-md);
+    color: var(--warning);
 
     code {
-        background: rgba(0,0,0,0.12);
-        border-radius: 4px;
+        background: var(--bg-raised);
+        border-radius: var(--radius-sm);
         padding: 1px 6px;
-        font-size: 0.82rem;
+        font-size: var(--fs-md);
         color: inherit;
     }
 
     .btn-copy, .btn-dismiss {
         background: none;
-        border: 1px solid rgba(245,158,11,0.4);
-        border-radius: 4px;
+        border: 1px solid var(--warning);
+        border-radius: var(--radius-sm);
         cursor: pointer;
-        font-size: 0.8rem;
+        font-size: var(--fs-sm);
         padding: 1px 5px;
         color: inherit;
         line-height: 1.4;
-        &:hover { background: rgba(245,158,11,0.2); }
+        &:hover { background: var(--warning-soft); }
     }
 }
 
-.bottom-nav {
-    z-index: 1000;
-    position: fixed;
-    bottom: 0;
-    height: calc(60px + env(safe-area-inset-bottom));
-    width: 100%;
-    left: 0;
-    background-color: #fff;
-    box-shadow: 0 15px 47px 0 rgba(0, 0, 0, 0.05), 0 5px 14px 0 rgba(0, 0, 0, 0.05);
-    text-align: center;
-    white-space: nowrap;
-    padding: 0 10px env(safe-area-inset-bottom);
+.mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000; // below Bootstrap modal (1055) and offcanvas backdrop (1040)
     display: flex;
-    align-items: stretch;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-color);
+}
 
-    a {
-        text-align: center;
-        flex: 1;
-        display: inline-flex;
-        flex-direction: column;
+.mobile-nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-color);
+}
+
+.mobile-brand {
+    display: flex;
+    align-items: center;
+    color: var(--text-color);
+    font-size: var(--fs-lg);
+}
+
+// BOffcanvas teleports to <body>, so the drawer styles must be global.
+:global(.mobile-drawer) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+:global(.mobile-drawer-user) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-color);
+
+    .profile-pic {
+        display: flex;
         align-items: center;
         justify-content: center;
-        height: 100%;
-        padding: 8px 10px 0;
-        font-size: 13px;
-        color: #c1c1c1;
-        overflow: hidden;
-        text-decoration: none;
-
-        &.router-link-exact-active, &.active {
-            color: $primary;
-            font-weight: bold;
-        }
-
-        div {
-            font-size: 20px;
-        }
+        color: var(--primary-text);
+        background-color: var(--primary);
+        width: 28px;
+        height: 28px;
+        border-radius: var(--radius-pill);
+        font-weight: bold;
+        font-size: var(--fs-xs);
     }
+}
+
+:global(.mobile-drawer-nav) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+:global(.mobile-drawer-link) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-color);
+    text-align: left;
+    text-decoration: none;
+
+    &:hover {
+        background: var(--bg-raised);
+    }
+
+    &.router-link-exact-active, &.active {
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-weight: bold;
+    }
+}
+
+:global(.mobile-drawer-footer) {
+    margin-top: auto;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-color);
+}
+
+:global(.mobile-drawer-logout) {
+    color: var(--danger);
 }
 
 main {
     min-height: calc(100vh - 160px);
+
+    @media (max-width: $bp-mobile) {
+        // Compact mobile header (~45px) instead of the desktop chrome
+        min-height: calc(100vh - 45px);
+    }
 }
 
 .title {
     font-weight: bold;
 }
 
+.brand-badges {
+    font-size: var(--fs-xs);
+}
+
 .github-badge {
-    color: #6b7280;
+    color: var(--text-muted);
     text-decoration: none;
-    border: 1px solid rgba(0,0,0,.18);
-    border-radius: 50rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
     padding: 1px 7px;
     transition: color .15s, border-color .15s;
 
     &:hover {
-        color: #374151;
-        border-color: rgba(0,0,0,.45);
-    }
-
-    .dark & {
-        color: #9ca3af;
-        border-color: rgba(255,255,255,.15);
-
-        &:hover {
-            color: #e5e7eb;
-            border-color: rgba(255,255,255,.4);
-        }
+        color: var(--text-color);
+        border-color: var(--text-muted);
     }
 }
 
 .github-badge-enhanced {
-    color: #b45309;
-    border-color: rgba(180,83,9,.4);
+    color: var(--warning);
+    border-color: color-mix(in srgb, var(--warning) 40%, transparent);
 
     &:hover {
-        color: #92400e;
-        border-color: rgba(180,83,9,.7);
-    }
-
-    .dark & {
-        color: #f59e0b;
-        border-color: rgba(245,158,11,.35);
-
-        &:hover {
-            color: #fcd34d;
-            border-color: rgba(245,158,11,.7);
-        }
+        color: var(--warning);
+        border-color: color-mix(in srgb, var(--warning) 70%, transparent);
     }
 }
 
@@ -710,7 +791,7 @@ main {
     justify-content: center;
     justify-self: center;
     width: min(100%, 80rem);
-    font-size: 0.78rem;
+    font-size: var(--fs-sm);
     font-weight: 500;
     letter-spacing: 0.01em;
     flex-wrap: wrap;
@@ -722,8 +803,8 @@ main {
     display: inline-flex;
     align-items: center;
     padding: 3px 9px;
-    border-radius: 50rem;
-    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
     transition: color 0.3s;
     white-space: nowrap;
 
@@ -733,29 +814,15 @@ main {
         opacity: 0.75;
     }
 
-    &.stat-ok      { color: #15803d; }
-    &.stat-warning  { color: #a16207; }
-    &.stat-danger   { color: #b91c1c; }
-    &.stat-neutral  { color: #374151; }
+    &.stat-ok      { color: var(--success); }
+    &.stat-warning  { color: var(--warning); }
+    &.stat-danger   { color: var(--danger); }
+    &.stat-neutral  { color: var(--text-color); }
     &.stat-kula {
-        color: #1d4ed8;
+        color: var(--primary);
         text-decoration: none;
-        border-color: rgba(29, 78, 216, .35);
-        &:hover { color: #1e40af; border-color: rgba(29, 78, 216, .6); }
-    }
-
-    .dark & {
-        border-color: rgba(255, 255, 255, 0.12);
-
-        &.stat-ok      { color: #a8d8b0; } // vert menthe pastel
-        &.stat-warning  { color: #f0d898; } // jaune blé pastel
-        &.stat-danger   { color: #f0a8a8; } // rose saumon pastel
-        &.stat-neutral  { color: #d1d5db; }
-        &.stat-kula {
-            color: #93c5fd;
-            border-color: rgba(99,172,255,.3);
-            &:hover { color: #bfdbfe; border-color: rgba(99,172,255,.6); }
-        }
+        border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+        &:hover { color: var(--primary-hover); border-color: color-mix(in srgb, var(--primary) 60%, transparent); }
     }
 }
 
@@ -763,7 +830,7 @@ main {
     display: inline-flex;
     align-items: center;
     gap: 1px;
-    font-family: "JetBrains Mono", monospace;
+    font-family: var(--font-mono);
     line-height: 1;
 }
 
@@ -796,8 +863,8 @@ main {
 
 .lost-connection {
     padding: 5px;
-    background-color: crimson;
-    color: white;
+    background-color: var(--danger);
+    color: var(--primary-text);
     position: fixed;
     width: 100%;
     z-index: 99999;
@@ -818,44 +885,37 @@ main {
     width: min(560px, 100%);
     max-height: min(720px, calc(100vh - 40px));
     overflow-y: auto;
-    padding: 24px;
-    border: 1px solid rgba(127, 127, 127, .24);
-    border-radius: 16px;
-    color: #1f2937;
-    background: #fff;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, .38);
-
-    .dark & {
-        color: $dark-font-color;
-        background: $dark-bg2;
-    }
+    padding: var(--space-6);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    color: var(--text-color);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-card);
 }
 
 .release-news-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
+    gap: var(--space-4);
 
     h2 {
         margin: 2px 0 0;
-        font-size: 1.55rem;
+        font-size: var(--fs-xl);
     }
 }
 
 .release-news-kicker {
-    color: $primary;
-    font-size: .72rem;
+    color: var(--primary);
+    font-size: var(--fs-xs);
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
 }
 
 .release-news-intro {
-    margin: 16px 0;
-    color: #6b7280;
-
-    .dark & { color: $dark-font-color3; }
+    margin: var(--space-4) 0;
+    color: var(--text-muted);
 }
 
 .release-news-list {
@@ -874,7 +934,7 @@ main {
 
         svg {
             margin-top: 3px;
-            color: #16a34a;
+            color: var(--success);
         }
     }
 }
@@ -894,11 +954,11 @@ main {
         display: flex;
         gap: 6px;
         align-items: center;
-        background-color: rgba(200, 200, 200, 0.2);
+        background-color: var(--bg-raised);
         padding: 0.5rem 0.8rem;
 
         &:hover {
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: var(--border-color);
         }
     }
 
@@ -907,40 +967,34 @@ main {
         padding-left: 0;
         padding-bottom: 0;
         margin-top: 8px !important;
-        border-radius: 16px;
+        border-radius: var(--radius-lg);
         overflow: hidden;
+        background-color: var(--bg-surface);
+        color: var(--text-color);
+        border-color: var(--border-color);
 
         .dropdown-divider {
             margin: 0;
-            border-top: 1px solid rgba(0, 0, 0, 0.4);
+            border-top: 1px solid var(--border-strong);
             background-color: transparent;
         }
 
         .dropdown-item-text {
-            font-size: 14px;
+            font-size: var(--fs-md);
             padding-bottom: 0.7rem;
         }
 
         .dropdown-item {
             padding: 0.7rem 1rem;
-        }
+            color: var(--text-color);
 
-        .dark & {
-            background-color: $dark-bg;
-            color: $dark-font-color;
-            border-color: $dark-border-color;
+            &.active {
+                color: var(--primary);
+                background-color: var(--primary-soft) !important;
+            }
 
-            .dropdown-item {
-                color: $dark-font-color;
-
-                &.active {
-                    color: $dark-font-color2;
-                    background-color: $highlight !important;
-                }
-
-                &:hover {
-                    background-color: $dark-bg2;
-                }
+            &:hover {
+                background-color: var(--bg-raised);
             }
         }
     }
@@ -949,29 +1003,25 @@ main {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        background-color: $primary;
+        color: var(--primary-text);
+        background-color: var(--primary);
         width: 24px;
         height: 24px;
         margin-right: 5px;
-        border-radius: 50rem;
+        border-radius: var(--radius-pill);
         font-weight: bold;
-        font-size: 10px;
+        font-size: var(--fs-xs);
     }
 }
 
 .dark {
     header {
-        background-color: $dark-header-bg;
-        border-bottom-color: $dark-header-bg !important;
+        background-color: var(--bg-raised);
+        border-bottom-color: var(--bg-raised) !important;
 
         span {
-            color: #f0f6fc;
+            color: var(--text-color);
         }
-    }
-
-    .bottom-nav {
-        background-color: $dark-bg;
     }
 }
 </style>

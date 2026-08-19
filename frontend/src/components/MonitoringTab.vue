@@ -185,7 +185,7 @@
                     </label>
                     <div v-for="(p, idx) in diskPartitions" :key="idx"
                         class="d-flex align-items-center gap-2 mb-2">
-                        <code class="form-control form-control-sm" style="max-width:220px;background:rgba(127,127,127,.08)">{{ p }}</code>
+                        <code class="form-control form-control-sm" style="max-width:220px;background:var(--bg-raised)">{{ p }}</code>
                         <button class="btn btn-sm btn-outline-danger" @click="removePartition(idx)">
                             <font-awesome-icon icon="times" />
                         </button>
@@ -560,8 +560,8 @@
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h5 class="settings-subheading mb-0">
                     <font-awesome-icon icon="chart-bar" class="me-2" />{{ $t('watcher.kula.heading') }}
-                    <span v-if="kulaStatus === 'running'" class="badge bg-success ms-2" style="font-size:.7rem">{{ $t('watcher.kula.running') }}</span>
-                    <span v-else-if="kulaSettings.enabled" class="badge bg-warning text-dark ms-2" style="font-size:.7rem">{{ $t('watcher.kula.stopped') }}</span>
+                    <span v-if="kulaStatus === 'running'" class="badge bg-success ms-2 badge-sm">{{ $t('watcher.kula.running') }}</span>
+                    <span v-else-if="kulaSettings.enabled" class="badge bg-warning text-dark ms-2 badge-sm">{{ $t('watcher.kula.stopped') }}</span>
                 </h5>
                 <div class="d-flex gap-2 align-items-center">
                     <a v-if="kulaStatus === 'running'" :href="kulaEffectiveUrl" target="_blank"
@@ -643,8 +643,8 @@
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h5 class="settings-subheading mb-0">
                     <font-awesome-icon icon="terminal" class="me-2" />{{ $t("watcher.dozzle.heading") }}
-                    <span v-if="dozzleStatus === 'running'" class="badge bg-success ms-2" style="font-size:.7rem">{{ $t("watcher.dozzle.running") }}</span>
-                    <span v-else-if="dozzleSettings.enabled" class="badge bg-warning text-dark ms-2" style="font-size:.7rem">{{ $t("watcher.dozzle.stopped") }}</span>
+                    <span v-if="dozzleStatus === 'running'" class="badge bg-success ms-2 badge-sm">{{ $t("watcher.dozzle.running") }}</span>
+                    <span v-else-if="dozzleSettings.enabled" class="badge bg-warning text-dark ms-2 badge-sm">{{ $t("watcher.dozzle.stopped") }}</span>
                 </h5>
                 <a v-if="dozzleStatus === 'running'" :href="dozzleEffectiveUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
                     <font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t("watcher.dozzle.open") }}
@@ -1222,7 +1222,7 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 /* ── Overview cards ── */
 .monitoring-cards {
     display: grid;
@@ -1230,41 +1230,40 @@ onUnmounted(() => {
     gap: 16px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: $bp-phone) {
     .monitoring-cards { grid-template-columns: 1fr; }
 }
 
 .monitoring-card {
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 20px 22px;
     display: flex;
     gap: 16px;
     align-items: flex-start;
-    border: 1px solid rgba(127,127,127,.18);
-    background: rgba(127,127,127,.06);
+    border: 1px solid var(--border-color);
+    background: var(--bg-raised);
     transition: border-color .2s;
     min-height: 90px;
 }
 
-.monitoring-card.mc-ok     { border-color: rgba(34,197,94,.35);  }
-.monitoring-card.mc-warn   { border-color: rgba(245,158,11,.35); }
-.monitoring-card.mc-danger { border-color: rgba(239,68,68,.35);  }
-.monitoring-card.mc-neutral{ border-color: rgba(127,127,127,.28); }
+.monitoring-card.mc-ok     { border-color: color-mix(in srgb, var(--success) 35%, transparent); }
+.monitoring-card.mc-warn   { border-color: color-mix(in srgb, var(--warning) 35%, transparent); }
+.monitoring-card.mc-danger { border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+.monitoring-card.mc-neutral{ border-color: var(--border-strong); }
 
-.mc-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; padding-top: 2px; }
+.mc-icon { font-size: var(--fs-2xl); line-height: 1; flex-shrink: 0; padding-top: 2px; }
 
 .mc-body { flex: 1; min-width: 0; }
 
 .mc-label {
-    font-size: .72rem;
+    font-size: var(--fs-xs);
     text-transform: uppercase;
     letter-spacing: .05em;
-    color: #6b7280;
+    color: var(--text-muted);
     margin-bottom: 6px;
-    .dark & { color: #9ca3af; }
 }
 .mc-value {
-    font-size: 1.1rem;
+    font-size: var(--fs-lg);
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -1273,13 +1272,12 @@ onUnmounted(() => {
     line-height: 1.4;
 }
 .mc-detail {
-    font-size: .75rem;
-    color: #6b7280;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
     font-weight: 400;
     margin-top: 4px;
     white-space: normal;
     word-break: break-word;
-    .dark & { color: #9ca3af; }
 }
 
 /* ── Toast (clone du BackupTab) ── */
@@ -1295,23 +1293,21 @@ onUnmounted(() => {
     gap: 3px;
     min-width: 0;
     padding: 12px 14px;
-    border: 1px solid rgba(127,127,127,.18);
-    border-radius: 8px;
-    background: rgba(127,127,127,.05);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
 }
 
 .host-item span,
 .host-item small {
-    color: #6b7280;
-    font-size: .75rem;
-    .dark & { color: #9ca3af; }
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
 }
 
 .host-item strong {
-    color: #1f2937;
+    color: var(--text-color);
     font-size: .95rem;
     overflow-wrap: anywhere;
-    .dark & { color: #e5e7eb; }
 }
 
 .core-grid {
@@ -1325,21 +1321,21 @@ onUnmounted(() => {
     grid-template-columns: 48px 1fr 44px;
     align-items: center;
     gap: 8px;
-    font-size: .75rem;
+    font-size: var(--fs-xs);
 }
 
 .core-bar {
     height: 7px;
     overflow: hidden;
-    border-radius: 999px;
-    background: rgba(127,127,127,.18);
+    border-radius: var(--radius-pill);
+    background: var(--bg-raised);
 }
 
 .core-bar span {
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: #60a5fa;
+    background: var(--primary);
 }
 
 .temperature-grid {
@@ -1350,19 +1346,17 @@ onUnmounted(() => {
 
 .temperature-grid h6 {
     margin-bottom: 8px;
-    color: #374151;
-    .dark & { color: #d1d5db; }
+    color: var(--text-color);
 }
 
 .temp-chip {
     display: inline-flex;
     margin: 0 6px 6px 0;
     padding: 3px 8px;
-    border-radius: 999px;
-    background: rgba(127,127,127,.12);
-    color: #374151;
-    font-size: .75rem;
-    .dark & { color: #e5e7eb; }
+    border-radius: var(--radius-pill);
+    background: var(--bg-raised);
+    color: var(--text-color);
+    font-size: var(--fs-xs);
 }
 
 .navbar-host-options {
@@ -1372,7 +1366,7 @@ onUnmounted(() => {
     max-width: 720px;
 }
 
-@media (max-width: 700px) {
+@media (max-width: $bp-mobile) {
     .host-grid,
     .core-grid,
     .temperature-grid,
@@ -1383,11 +1377,11 @@ onUnmounted(() => {
 
 .toast-float {
     position: fixed; right: 1.25rem; bottom: 1.5rem; z-index: 9999;
-    padding: .6rem 1rem; border-radius: 10px; font-size: .85rem; color: #fff;
-    box-shadow: 0 6px 24px rgba(0,0,0,.35);
-    &.toast-ok { background: #16a34a; }
-    &.toast-err { background: #dc2626; }
-    @media (max-width: 768px) { bottom: 76px; }
+    padding: .6rem 1rem; border-radius: var(--radius-md); font-size: var(--fs-md); color: var(--primary-text);
+    box-shadow: var(--shadow-popover);
+    &.toast-ok { background: var(--success); }
+    &.toast-err { background: var(--danger); }
+    @media (max-width: $bp-mobile) { bottom: var(--space-4); }
 }
 
 .slide-fade-enter-active, .slide-fade-leave-active { transition: all .25s ease; }
@@ -1395,16 +1389,20 @@ onUnmounted(() => {
 
 /* ── Notification providers ── */
 .notif-provider-label {
-    font-size: .7rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .08em;
-    color: #6b7280;
+    color: var(--text-muted);
     margin-bottom: .5rem;
 }
 .notif-url-display {
-    font-family: monospace;
-    font-size: .78rem;
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+}
+
+.badge-sm {
+    font-size: var(--fs-xs);
 }
 
 .disk-display-example {
@@ -1417,7 +1415,7 @@ onUnmounted(() => {
     display: inline-flex;
     align-items: center;
     gap: 1px;
-    font-family: "JetBrains Mono", monospace;
+    font-family: var(--font-mono);
     line-height: 1;
 }
 
@@ -1446,14 +1444,12 @@ onUnmounted(() => {
 
 /* ── Kula open link ── */
 .kula-open-hint {
-    font-size: .875rem;
-    color: #6b7280;
-    .dark & { color: #9ca3af; }
+    font-size: var(--fs-md);
+    color: var(--text-muted);
 }
 .kula-open-link {
-    color: #2563eb;
+    color: var(--primary);
     text-decoration: none;
     &:hover { text-decoration: underline; }
-    .dark & { color: #93c5fd; }
 }
 </style>

@@ -209,9 +209,9 @@ export default {
     max-height: 26rem;
     overflow: auto;
     padding: .85rem;
-    border-radius: .5rem;
-    color: #d8dee9;
-    background: #1f2430;
+    border-radius: var(--radius-sm);
+    color: var(--text-color);
+    background: var(--bg-raised);
     white-space: pre-wrap;
 }
 
@@ -232,16 +232,16 @@ export default {
 
 .git-summary:hover .settings-subheading,
 .git-summary:focus-visible .settings-subheading {
-    color: $primary;
+    color: var(--primary);
 }
 
 .git-summary:focus-visible {
-    outline: 2px solid $primary;
+    outline: 2px solid var(--primary);
     outline-offset: -2px;
 }
 
 .git-chevron {
-    color: $dark-font-color3;
+    color: var(--text-muted);
     transition: transform 0.2s ease;
 }
 

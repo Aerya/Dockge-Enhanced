@@ -361,7 +361,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/vars.scss";
 
 .vb-toolbar {
     display: flex;
@@ -370,13 +369,13 @@ export default {
 }
 
 .vb-editing-path {
-    font-size: 0.8rem;
+    font-size: var(--fs-sm);
     word-break: break-all;
 }
 
 .vb-editor-box {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
     max-height: 60vh;
     overflow: auto;
 }
@@ -396,7 +395,7 @@ export default {
 }
 
 .vb-breadcrumb {
-    font-size: 0.85rem;
+    font-size: var(--fs-md);
     a {
         text-decoration: none;
     }
@@ -409,7 +408,7 @@ export default {
 .vb-list {
     max-height: 55vh;
     overflow-y: auto;
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border-top: 1px solid var(--border-color);
 }
 
 .vb-row {
@@ -417,9 +416,9 @@ export default {
     align-items: center;
     padding: 5px 8px;
     cursor: pointer;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--border-color);
     &:hover {
-        background: rgba(0, 0, 0, 0.05);
+        background: var(--bg-raised);
         .vb-row-actions {
             opacity: 1;
         }
@@ -429,11 +428,7 @@ export default {
 .vb-name {
     flex: 1;
     word-break: break-all;
-    color: #212529;
-
-    .dark & {
-        color: $dark-font-color;
-    }
+    color: var(--text-color);
 }
 
 .vb-row-actions {
@@ -443,14 +438,10 @@ export default {
 }
 
 .vb-dir {
-    color: #f0b429;
+    color: var(--warning);
 }
 
 .vb-file {
-    color: #6c757d;
-
-    .dark & {
-        color: #9ca3af;
-    }
+    color: var(--text-muted);
 }
 </style>

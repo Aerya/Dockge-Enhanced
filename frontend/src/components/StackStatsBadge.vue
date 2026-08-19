@@ -29,15 +29,15 @@ const cpuClass = computed(() => {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    font-size: 10px;
+    font-size: var(--fs-xs);
     font-weight: 500;
     vertical-align: middle;
     letter-spacing: 0.01em;
     transition: color 0.3s;
 
-    &.stat-ok      { color: #a8d8b0; } // vert menthe pastel
-    &.stat-warning  { color: #f0d898; } // jaune blé pastel
-    &.stat-danger   { color: #f0a8a8; } // rose saumon pastel
+    &.stat-ok      { color: var(--success); }
+    &.stat-warning  { color: var(--warning); }
+    &.stat-danger   { color: var(--danger); }
 
     .sep {
         opacity: 0.35;

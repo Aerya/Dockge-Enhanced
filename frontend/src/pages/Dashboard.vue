@@ -1,7 +1,7 @@
 <template>
     <div class="container-fluid">
         <div ref="dashboardLayout" class="dashboard-layout" :style="dashboardLayoutStyle">
-            <aside v-if="!$root.isMobile" class="stack-sidebar">
+            <aside class="stack-sidebar">
                 <div>
                     <router-link to="/compose" class="btn btn-primary mb-3"><font-awesome-icon icon="plus" /> {{ $t("compose") }}</router-link>
                 </div>
@@ -85,7 +85,7 @@ export default {
             this.dashboardMinHeight = Math.max(240, Math.floor(window.innerHeight - top - 16));
         },
         startDashboardResize(event) {
-            if (window.innerWidth < 768) {
+            if (this.$root.isMobile) {
                 return;
             }
             event.preventDefault();
@@ -123,7 +123,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 .container-fluid {
     width: 98%;
@@ -158,15 +157,15 @@ export default {
         width: 3px;
         min-height: 240px;
         height: 100%;
-        border-radius: 2px;
-        background: rgba(127, 127, 127, .28);
+        border-radius: var(--radius-sm);
+        background: var(--border-color);
         transition: width .15s ease, background-color .15s ease;
     }
 
     &:hover span,
     &:focus-visible span {
         width: 5px;
-        background: $primary;
+        background: var(--primary);
     }
 }
 
@@ -175,9 +174,21 @@ export default {
     user-select: none;
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: $bp-mobile) {
     .dashboard-layout {
         display: block;
+    }
+
+    // Belt-and-braces with v-if="!$root.isMobile" on the handle
+    .dashboard-resize-handle {
+        display: none;
+    }
+
+    // Sidebar stacks above the content; StackList caps itself at 45vh
+    // (see StackList.vue) and scrolls internally.
+    .stack-sidebar {
+        display: block;
+        margin-bottom: 1rem;
     }
 }
 </style>

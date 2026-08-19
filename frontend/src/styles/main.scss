@@ -1,21 +1,27 @@
 @import "vars.scss";
 @import "bootstrap/scss/bootstrap";
 @import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
+@import "tokens.scss";
+
+body {
+    background-color: var(--bg-body);
+    color: var(--text-color);
+}
 
 #app {
-    font-family: BlinkMacSystemFont, segoe ui, Roboto, helvetica neue, Arial, noto sans, sans-serif, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji;
+    font-family: var(--font-sans);
 }
 
 h1 {
-    font-size: 32px;
+    font-size: var(--fs-2xl);
 }
 
 h2 {
-    font-size: 26px;
+    font-size: var(--fs-xl);
 }
 
 textarea.form-control {
-    border-radius: 19px;
+    border-radius: var(--radius-lg);
 }
 
 ::-webkit-scrollbar {
@@ -36,7 +42,7 @@ textarea.form-control {
 }
 
 ::placeholder {
-    color: $dark-font-color3;
+    color: var(--text-muted);
 }
 
 .incident a,
@@ -45,7 +51,7 @@ textarea.form-control {
 }
 
 .list-group {
-    border-radius: 0.75rem;
+    border-radius: var(--radius-md);
 
     .dark & {
         .list-group-item {
@@ -76,8 +82,8 @@ optgroup {
 
 // Scrollbar
 ::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 20px;
+    background: var(--border-strong);
+    border-radius: var(--radius-md);
 }
 
 .modal {
@@ -85,13 +91,9 @@ optgroup {
 }
 
 .modal-content {
-    border-radius: 1rem;
-    box-shadow: 0 15px 70px rgba(0, 0, 0, 0.1);
-
-    .dark & {
-        box-shadow: 0 15px 70px rgb(0 0 0);
-        background-color: $dark-bg;
-    }
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    background-color: var(--bg-surface);
 }
 
 .VuePagination__count {
@@ -100,9 +102,10 @@ optgroup {
 }
 
 .shadow-box {
-    box-shadow: 0 15px 70px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-card);
+    background-color: var(--bg-surface);
     padding: 10px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
 
     &.big-padding {
         padding: 20px;
@@ -115,21 +118,17 @@ optgroup {
 }
 
 .btn-sm {
-    border-radius: 25px;
+    border-radius: var(--radius-pill);
 }
 
 .btn-primary {
-    color: white;
+    color: var(--primary-text);
     background: $primary-gradient;
 
     &:hover, &:active, &:focus, &.active {
-        color: white;
+        color: var(--primary-text);
         background: $primary-gradient-active;
         border-color: $highlight;
-    }
-
-    .dark & {
-        color: $dark-font-color2;
     }
 }
 
@@ -168,8 +167,8 @@ optgroup {
 
 .btn-outline-normal {
     padding: 4px 10px;
-    border: 1px solid #ced4da;
-    border-radius: 25px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
     background-color: transparent;
 
     .dark & {
@@ -178,7 +177,7 @@ optgroup {
     }
 
     &.active {
-        background-color: $highlight-white;
+        background-color: var(--primary-soft);
 
         .dark & {
             background-color: $dark-font-color2;
@@ -186,7 +185,7 @@ optgroup {
     }
 }
 
-@media (max-width: 550px) {
+@media (max-width: $bp-phone) {
     .table-shadow-box {
         padding: 10px !important;
 
@@ -233,23 +232,24 @@ optgroup {
     }
 }
 
+// Form controls — token-driven, no per-theme overrides needed
+.form-control,
+.form-control:focus,
+.form-select,
+.form-select:focus {
+    color: var(--text-color);
+    background-color: var(--bg-input);
+}
+
+.form-control,
+.form-select {
+    border-color: var(--border-color);
+}
+
 // Dark Theme override here
 .dark {
-    background-color: #090c10;
-    color: $dark-font-color;
-
     mark, .mark {
         background-color: #b6ad86;
-    }
-
-    &::-webkit-scrollbar-thumb, ::-webkit-scrollbar-thumb {
-        background: $dark-border-color;
-    }
-
-    .shadow-box {
-        &:not(.alert) {
-            background-color: $dark-bg;
-        }
     }
 
     .form-check-input {
@@ -286,30 +286,18 @@ optgroup {
         color: inherit;
     }
 
-    .form-control,
-    .form-control:focus,
-    .form-select,
-    .form-select:focus {
-        color: $dark-font-color;
-        background-color: $dark-bg2;
-    }
-
     // Flèche du select en mode sombre (SVG clair)
     .form-select {
         background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23b1b8c0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
     }
 
     .form-select:disabled {
-        color: rgba($dark-font-color, 0.7);
-        background-color: $dark-bg;
-    }
-
-    .form-control, .form-select {
-        border-color: $dark-border-color;
+        color: var(--text-muted);
+        background-color: var(--bg-surface);
     }
 
     .form-control:disabled, .form-control[readonly] {
-        background-color: #232f3b;
+        background-color: var(--bg-raised);
         opacity: 1;
     }
 
@@ -387,19 +375,7 @@ optgroup {
         color: $dark-font-color;
     }
 
-    .stack-list {
-        .item {
-            &:hover {
-                background-color: $dark-bg2;
-            }
-
-            &.active {
-                background-color: $dark-bg2;
-            }
-        }
-    }
-
-    @media (max-width: 550px) {
+    @media (max-width: $bp-phone) {
         .table-shadow-box {
             tbody {
                 .shadow-box {
@@ -488,45 +464,13 @@ optgroup {
         overflow-y: auto;
     }
 
-    @media (max-width: 770px) {
-        &.scrollbar {
-            height: calc(100% - 97px);
-        }
-    }
-
-    .item {
-        display: flex;
-        align-items: center;
-        height: 52px;
-        text-decoration: none;
-        border-radius: 10px;
-        transition: all ease-in-out 0.15s;
-        width: 100%;
-        padding: 0 8px;
-
-        &.disabled {
-            opacity: 0.3;
-        }
-
-        &:hover {
-            background-color: $highlight-white;
-        }
-
-        &.active {
-            background-color: #cdf8f4;
-        }
-
-        .title {
-            display: inline-block;
-            margin-top: -4px;
-        }
-    }
+    // Row styles live in StackListItem.vue (scoped) — single source of truth.
 }
 
 .alert-success {
-    color: #122f21;
-    background-color: $primary;
-    border-color: $primary;
+    color: var(--success);
+    background-color: var(--success-soft);
+    border-color: var(--success);
 }
 
 .alert-info {
@@ -536,15 +480,15 @@ optgroup {
 }
 
 .alert-danger {
-    color: #842029;
-    background-color: #f8d7da;
-    border-color: #f8d7da;
+    color: var(--danger);
+    background-color: var(--danger-soft);
+    border-color: var(--danger);
 }
 
 .btn-success {
     color: #fff;
-    background-color: #4caf50;
-    border-color: #4caf50;
+    background-color: var(--success);
+    border-color: var(--success);
 }
 
 
@@ -604,16 +548,16 @@ h5.settings-subheading::after {
     display: block;
     width: 50%;
     padding-top: 8px;
-    border-bottom: 1px solid $dark-border-color;
+    border-bottom: 1px solid var(--border-color);
 }
 
 /* required class */
 .code-editor, .css-editor {
     /* we dont use `language-` classes anymore so thats why we need to add background and text color manually */
 
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
     padding: 10px 5px;
-    border: 1px solid #ced4da;
+    border: 1px solid var(--border-strong);
 
     .dark & {
         background: $dark-bg2;
@@ -646,16 +590,10 @@ $shadow-box-padding: 20px;
     }
 }
 
-@media (max-width: 770px) {
-    .toast-container {
-        margin-bottom: 100px !important;
-    }
-}
-
-@media (max-width: 550px) {
-    .toast-container {
-        margin-bottom: 126px !important;
-    }
+// Offcanvas (mobile navigation drawer) — token-driven, no per-theme overrides
+.offcanvas {
+    background-color: var(--bg-surface);
+    color: var(--text-color);
 }
 
 code {
@@ -663,19 +601,15 @@ code {
     margin: 0;
     font-size: 85%;
     white-space: break-spaces;
-    background-color: rgba(239, 239, 239, 0.15);
+    background-color: var(--bg-raised);
 
-    border-radius: 6px;
-    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    color: black;
-
-    .dark & {
-        color: $dark-font-color;
-    }
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    color: var(--text-color);
 }
 
 .form-text {
-    color: $dark-font-color3;
+    color: var(--text-muted);
 }
 
 
@@ -692,7 +626,7 @@ code {
 	background-color: transparent !important;
 }
 .cm-selectionBackground {
-    background-color: #74c2ff3d !important;
+    background-color: rgba(59, 130, 246, 0.24) !important;
 }
 .cm-focused {
     outline: none !important;

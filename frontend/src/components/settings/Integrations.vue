@@ -329,9 +329,9 @@ export default {
     max-height: 28rem;
     overflow: auto;
     padding: 1rem;
-    border-radius: .5rem;
-    color: #d8dee9;
-    background: #1f2430;
+    border-radius: var(--radius-sm);
+    color: var(--text-color);
+    background: var(--bg-raised);
     white-space: pre-wrap;
 }
 </style>

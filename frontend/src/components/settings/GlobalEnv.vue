@@ -87,10 +87,11 @@ export default {
 
 <style scoped lang="scss">
 .editor-box {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
 
     &.edit-mode {
+        // Matches the fixed dracula CodeMirror theme, which is always dark.
         background-color: #2c2f38 !important;
     }
 }

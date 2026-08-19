@@ -18,7 +18,7 @@
                     </router-link>
 
                     <!-- Logout Button -->
-                    <a v-if="$root.isMobile && $root.loggedIn && $root.socket.token !== 'autoLogin'" class="logout" @click.prevent="$root.logout">
+                    <a v-if="$root.isMobile && $root.loggedIn && $root.socketIO.token !== 'autoLogin'" class="logout" @click.prevent="$root.logout">
                         <div class="menu-item">
                             <font-awesome-icon icon="sign-out-alt" />
                             {{ $t("Logout") }}
@@ -27,6 +27,14 @@
                 </div>
                 <div class="settings-content col-lg-9 col-md-7">
                     <div v-if="currentPage" class="settings-content-header">
+                        <a
+                            v-if="$root.isMobile"
+                            class="settings-back"
+                            :aria-label="$t('Settings')"
+                            @click.prevent="$router.push('/settings')"
+                        >
+                            <font-awesome-icon icon="chevron-left" />
+                        </a>
                         {{ subMenus[currentPage].title }}
                     </div>
                     <div class="mx-3">
@@ -43,8 +51,6 @@
 </template>
 
 <script>
-import { useRoute } from "vue-router";
-
 export default {
     data() {
         return {
@@ -56,12 +62,11 @@ export default {
 
     computed: {
         currentPage() {
-            let pathSplit = useRoute().path.split("/");
-            let pathEnd = pathSplit[pathSplit.length - 1];
-            if (!pathEnd || pathEnd === "settings") {
-                return null;
+            const name = this.$route.name;
+            if (typeof name === "string" && name.startsWith("settings-")) {
+                return name.slice("settings-".length);
             }
-            return pathEnd;
+            return null;
         },
 
         showSubMenu() {
@@ -118,7 +123,7 @@ export default {
          */
         loadGeneralPage() {
             if (!this.currentPage && !this.$root.isMobile) {
-                this.$router.push("/settings/appearance");
+                this.$router.push("/settings/general");
             }
         },
 
@@ -181,7 +186,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 .shadow-box-settings {
     padding: 20px;
@@ -189,8 +193,8 @@ export default {
 }
 
 footer {
-    color: #aaa;
-    font-size: 13px;
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
     margin-top: 20px;
     padding-bottom: 30px;
     text-align: center;
@@ -202,7 +206,7 @@ footer {
     }
 
     .menu-item {
-        border-radius: 10px;
+        border-radius: var(--radius-md);
         margin: 0.5em;
         padding: 0.7em 1em;
         cursor: pointer;
@@ -211,42 +215,37 @@ footer {
     }
 
     .menu-item:hover {
-        background: $highlight-white;
-
-        .dark & {
-            background: $dark-header-bg;
-        }
+        background: var(--primary-soft);
     }
 
     .active .menu-item {
-        background: $highlight-white;
-        border-left: 4px solid $primary;
+        background: var(--primary-soft);
+        border-left: 4px solid var(--primary);
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
-
-        .dark & {
-            background: $dark-header-bg;
-        }
     }
 }
 
 .settings-content {
     .settings-content-header {
         width: calc(100% + 20px);
-        border-bottom: 1px solid #dee2e6;
-        border-radius: 0 10px 0 0;
+        border-bottom: 1px solid var(--border-color);
+        border-radius: 0 var(--radius-md) 0 0;
         margin-top: -20px;
         margin-right: -20px;
         padding: 12.5px 1em;
-        font-size: 26px;
+        font-size: var(--fs-xl);
 
         .dark & {
-            background: $dark-header-bg;
+            background: var(--bg-raised);
             border-bottom: 0;
         }
 
         .mobile & {
             padding: 15px 0 0 0;
+            display: flex;
+            align-items: center;
+            gap: 0.4em;
 
             .dark & {
                 background-color: transparent;
@@ -255,7 +254,17 @@ footer {
     }
 }
 
+.settings-back {
+    cursor: pointer;
+    font-size: 0.7em;
+    color: var(--primary);
+
+    .dark & {
+        color: var(--text-color);
+    }
+}
+
 .logout {
-    color: $danger !important;
+    color: var(--danger) !important;
 }
 </style>

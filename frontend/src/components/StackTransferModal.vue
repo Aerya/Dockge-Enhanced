@@ -1084,19 +1084,12 @@ export default {
 .transfer-files { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; }
 .transfer-rules-summary { cursor: pointer; font-weight: 600; }
 .transfer-issues { display: grid; gap: .4rem; }
-.transfer-issue { display: flex; align-items: center; border-radius: .4rem; padding: .55rem .75rem; }
-.transfer-issue-success { background: var(--bs-success-bg-subtle); color: var(--bs-success-text-emphasis); }
-.transfer-issue-warning { background: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); }
-.transfer-issue-error { background: var(--bs-danger-bg-subtle); color: var(--bs-danger-text-emphasis); }
-.transfer-override-preview { max-height: 260px; overflow: auto; border-radius: .4rem; padding: .75rem; background: var(--bs-tertiary-bg); font-size: .8rem; }
-.target-compose-editor { min-height: 8rem; resize: vertical; font-family: var(--bs-font-monospace); font-size: .82rem; line-height: 1.45; }
-
-.dark & {
-    .transfer-issue-success { background: rgba(25, 135, 84, .14); color: #75d5a5; }
-    .transfer-issue-warning { background: rgba(255, 193, 7, .14); color: #ffd76a; }
-    .transfer-issue-error { background: rgba(220, 53, 69, .14); color: #ff8793; }
-    .transfer-override-preview { background: rgba(0, 0, 0, .25); }
-}
+.transfer-issue { display: flex; align-items: center; border-radius: var(--radius-sm); padding: .55rem .75rem; }
+.transfer-issue-success { background: var(--success-soft); color: var(--success); }
+.transfer-issue-warning { background: var(--warning-soft); color: var(--warning); }
+.transfer-issue-error { background: var(--danger-soft); color: var(--danger); }
+.transfer-override-preview { max-height: 260px; overflow: auto; border-radius: var(--radius-sm); padding: .75rem; background: var(--bg-raised); font-size: var(--fs-sm); }
+.target-compose-editor { min-height: 8rem; resize: vertical; font-family: var(--font-mono); font-size: var(--fs-md); line-height: 1.45; }
 </style>
 
 <style lang="scss">
@@ -1105,7 +1098,7 @@ export default {
     overflow-y: auto;
 }
 
-.dark .stack-transfer-modal {
+.stack-transfer-modal {
     .modal-title,
     .form-label,
     .form-check-label,
@@ -1113,21 +1106,21 @@ export default {
     .transfer-files strong,
     .transfer-rules-summary,
     .fw-semibold {
-        color: #e5e7eb;
+        color: var(--text-color);
     }
 
     .form-text,
     .text-muted {
-        color: #aab4c0 !important;
+        color: var(--text-muted) !important;
     }
 
     .form-check-input:disabled ~ .form-check-label {
-        color: #aab4c0;
+        color: var(--text-muted);
         opacity: 1;
     }
 
     .transfer-mapping-table code {
-        color: #536273;
+        color: var(--text-muted);
     }
 }
 </style>

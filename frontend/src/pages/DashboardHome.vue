@@ -101,7 +101,7 @@
                 <div class="col-md-5">
                     <!-- Agent List -->
                     <div class="shadow-box big-padding">
-                        <h4 class="mb-3">{{ $tc("dockgeAgent", 2) }} <span class="badge bg-warning" style="font-size: 12px;">beta</span></h4>
+                        <h4 class="mb-3">{{ $tc("dockgeAgent", 2) }} <span class="badge bg-warning beta-badge">beta</span></h4>
 
                         <div v-for="(agent, endpoint) in $root.agentList" :key="endpoint" class="mb-3 agent">
                             <!-- Agent Status -->
@@ -587,20 +587,19 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars";
 
 .num {
-    font-size: 30px;
+    font-size: var(--fs-2xl);
 
     font-weight: bold;
     display: block;
 
     &.active {
-        color: $primary;
+        color: var(--primary);
     }
 
     &.exited {
-        color: $danger;
+        color: var(--danger);
     }
 }
 
@@ -609,13 +608,13 @@ export default {
 }
 
 table {
-    font-size: 14px;
+    font-size: var(--fs-md);
 
     tr {
         transition: all ease-in-out 0.2ms;
     }
 
-    @media (max-width: 550px) {
+    @media (max-width: $bp-phone) {
         table-layout: fixed;
         overflow-wrap: break-word;
     }
@@ -623,17 +622,21 @@ table {
 
 .docker-run {
     border: none;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 15px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-base);
 }
 
 .first-row .shadow-box {
 
 }
 
+.beta-badge {
+    font-size: var(--fs-xs);
+}
+
 .remove-agent {
     cursor: pointer;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-muted);
 }
 
 .agent {
@@ -656,7 +659,7 @@ table {
 }
 
 .rename-agent {
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--text-muted);
 }
 
 .summary-card {
@@ -668,7 +671,7 @@ table {
     padding: 16px 10px;
     text-align: center;
     cursor: pointer;
-    color: #6b7280;
+    color: var(--text-muted);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 
     &:hover {
@@ -676,39 +679,39 @@ table {
     }
 
     .summary-icon {
-        font-size: 20px;
+        font-size: var(--fs-lg);
     }
 
     .summary-value {
-        font-size: 22px;
+        font-size: var(--fs-lg);
         font-weight: bold;
-        color: #334155;
+        color: var(--text-color);
 
         &.text {
-            font-size: 16px;
+            font-size: var(--fs-base);
         }
     }
 
     .summary-label {
-        font-size: 13px;
+        font-size: var(--fs-sm);
     }
 
     &.warn,
     &.warning {
         .summary-icon, .summary-value {
-            color: $warning;
+            color: var(--warning);
         }
     }
 
     &.danger {
         .summary-icon, .summary-value {
-            color: $danger;
+            color: var(--danger);
         }
     }
 
     &.ok {
         .summary-icon, .summary-value {
-            color: #16a34a;
+            color: var(--success);
         }
     }
 
@@ -716,40 +719,7 @@ table {
         opacity: .75;
 
         .summary-icon, .summary-value {
-            color: #9ca3af;
-        }
-    }
-
-    .dark & {
-        color: $dark-font-color3;
-
-        .summary-value {
-            color: $dark-font-color;
-        }
-
-        &.warn,
-        &.warning {
-            .summary-icon, .summary-value {
-                color: $warning;
-            }
-        }
-
-        &.danger {
-            .summary-icon, .summary-value {
-                color: lighten($danger, 10%);
-            }
-        }
-
-        &.ok {
-            .summary-icon, .summary-value {
-                color: lighten(#16a34a, 15%);
-            }
-        }
-
-        &.disabled {
-            .summary-icon, .summary-value {
-                color: $dark-font-color3;
-            }
+            color: var(--text-muted);
         }
     }
 }

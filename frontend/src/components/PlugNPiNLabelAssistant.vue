@@ -142,8 +142,8 @@ export default {
     max-height: 18rem;
     overflow: auto;
     padding: .85rem;
-    border-radius: .5rem;
-    color: #d8dee9;
-    background: #1f2430;
+    border-radius: var(--radius-sm);
+    color: var(--text-color);
+    background: var(--bg-raised);
 }
 </style>

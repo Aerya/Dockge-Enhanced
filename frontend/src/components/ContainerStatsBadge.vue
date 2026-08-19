@@ -31,14 +31,14 @@ const cpuClass = computed(() => {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    font-size: 10px;
+    font-size: var(--fs-xs);
     font-weight: 500;
     vertical-align: middle;
     letter-spacing: 0.01em;
 
-    &.stat-ok { color: #a8d8b0; }
-    &.stat-warning { color: #f0d898; }
-    &.stat-danger { color: #f0a8a8; }
+    &.stat-ok { color: var(--success); }
+    &.stat-warning { color: var(--warning); }
+    &.stat-danger { color: var(--danger); }
 
     .sep { opacity: 0.35; margin: 0 1px; }
 }

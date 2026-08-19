@@ -1,6 +1,9 @@
 <template>
     <transition name="slide-fade" appear>
         <div class="compose-page" :class="{ 'logs-fullscreen-active': logsFullscreen }">
+            <router-link to="/" class="back-link">
+                <font-awesome-icon icon="chevron-left" /> {{ $t("back") }}
+            </router-link>
             <h1 v-if="isAdd" class="mb-3 compose-tight">{{ $t("compose") }}</h1>
             <h1 v-else class="mb-3 compose-tight">
                 <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }}
@@ -381,19 +384,17 @@
                                     </button>
                                 </div>
                                 <button
-                                    class="btn btn-sm"
+                                    class="btn btn-sm log-toggle-btn"
                                     :class="logTimestamps ? 'btn-primary' : 'btn-normal'"
                                     :title="$t('logTimestampsToggle')"
-                                    style="font-size:0.78rem; padding: 2px 8px;"
                                     @click="toggleLogTimestamps"
                                 >
                                     <font-awesome-icon icon="clock" class="me-1" />{{ $t('logTimestamps') }}
                                 </button>
                                 <button
-                                    class="btn btn-sm"
+                                    class="btn btn-sm log-toggle-btn"
                                     :class="logLineWrap ? 'btn-primary' : 'btn-normal'"
                                     :title="$t('logLineWrapToggle')"
-                                    style="font-size:0.78rem; padding: 2px 8px;"
                                     @click="toggleLogLineWrap"
                                 >
                                     <font-awesome-icon icon="stream" class="me-1" />{{ $t(logLineWrap ? 'logLineWrapOn' : 'logLineWrapOff') }}
@@ -424,7 +425,7 @@
                             :rows="combinedTerminalRows"
                             :cols="combinedTerminalCols"
                             :wrap-lines="logLineWrap"
-                            :style="{ height: `${315 * Number(terminalScale)}px` }"
+                            :style="{ '--combined-terminal-height': `${315 * Number(terminalScale)}px` }"
                         ></Terminal>
                     </div>
 
@@ -1081,7 +1082,7 @@ export default {
             }
         },
         startComposeResize(event) {
-            if (window.innerWidth < 992) {
+            if (this.$root.windowWidth < 992) {
                 return;
             }
             event.preventDefault();
@@ -1833,7 +1834,18 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/vars.scss";
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    text-decoration: none;
+
+    &:hover {
+        color: var(--text-color);
+    }
+}
 
 .terminal {
     height: 200px;
@@ -1852,7 +1864,7 @@ export default {
     width: 2.65rem;
     height: 2.45rem;
     padding: 0;
-    border-radius: .55rem;
+    border-radius: var(--radius-md);
     font-size: 1rem;
 }
 
@@ -1873,7 +1885,7 @@ export default {
 .stack-action-bar--labeled .stack-action-label {
     display: block;
     max-width: 7.5rem;
-    font-size: .66rem;
+    font-size: var(--fs-xs);
     font-weight: 500;
     line-height: 1.05;
     text-align: center;
@@ -1882,13 +1894,13 @@ export default {
 
 .stack-scheduler-inline {
     padding: 8px 12px;
-    border: 1px solid rgba(127, 127, 127, 0.18);
-    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
 }
 
 .stack-scheduler-inline-title {
-    color: $dark-font-color3;
-    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
     font-weight: 600;
 }
 
@@ -1912,16 +1924,16 @@ export default {
 
 .stack-note-toggle:hover .settings-subheading,
 .stack-note-toggle:focus-visible .settings-subheading {
-    color: $primary;
+    color: var(--primary);
 }
 
 .stack-note-toggle:focus-visible {
-    outline: 2px solid $primary;
+    outline: 2px solid var(--primary);
     outline-offset: -2px;
 }
 
 .stack-note-chevron {
-    color: $dark-font-color3;
+    color: var(--text-muted);
     transition: transform 0.2s ease;
 }
 
@@ -1934,7 +1946,7 @@ export default {
 }
 
 .stack-note-input::placeholder {
-    color: #9ca3af;
+    color: var(--text-muted);
     opacity: 1;
 }
 
@@ -1988,15 +2000,15 @@ export default {
         width: 3px;
         height: 100%;
         min-height: 240px;
-        border-radius: 2px;
-        background: rgba(127, 127, 127, .28);
+        border-radius: var(--radius-sm);
+        background: var(--border-color);
         transition: width .15s ease, background-color .15s ease;
     }
 
     &:hover span,
     &:focus-visible span {
         width: 5px;
-        background: $primary;
+        background: var(--primary);
     }
 }
 
@@ -2005,7 +2017,7 @@ export default {
     user-select: none;
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: $bp-tablet) {
     .compose-workspace {
         display: block;
     }
@@ -2027,6 +2039,11 @@ export default {
     flex-wrap: wrap;
 }
 
+.log-toggle-btn {
+    font-size: var(--fs-sm);
+    padding: 2px 8px;
+}
+
 .containers-toggle {
     width: 100%;
     min-height: 34px;
@@ -2042,11 +2059,11 @@ export default {
 }
 
 .containers-toggle:hover .containers-toggle-title {
-    color: $primary;
+    color: var(--primary);
 }
 
 .containers-toggle-title {
-    font-size: 1.25rem;
+    font-size: var(--fs-lg);
     font-weight: 500;
 }
 
@@ -2058,10 +2075,10 @@ export default {
     height: 24px;
     margin-left: 6px;
     padding: 0 7px;
-    border-radius: 50rem;
-    font-size: 0.75rem;
-    color: $dark-font-color3;
-    background: rgba(127, 127, 127, 0.14);
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    background: var(--bg-raised);
 }
 
 .containers-toggle-status {
@@ -2069,8 +2086,8 @@ export default {
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
-    color: $dark-font-color3;
-    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
 }
 
 .container-status-summary::before {
@@ -2080,23 +2097,23 @@ export default {
     height: 7px;
     margin-right: 4px;
     border-radius: 50%;
-    background: #6b7280;
+    background: var(--text-muted);
 }
 
 .container-status-summary.status-ok::before {
-    background: #16a34a;
+    background: var(--success);
 }
 
 .container-status-summary.status-error::before {
-    background: #dc2626;
+    background: var(--danger);
 }
 
 .container-status-summary.status-warning::before {
-    background: #f8a306;
+    background: var(--warning);
 }
 
 .combined-terminal {
-    height: 315px;
+    height: var(--combined-terminal-height, 315px);
     width: 100%;
     padding: 0;
     overflow: hidden;
@@ -2117,11 +2134,7 @@ export default {
     z-index: 1055;
     padding: 12px;
     overflow: hidden;
-    background: #fff;
-
-    .dark & {
-        background: $dark-bg;
-    }
+    background: var(--bg-surface);
 
     .combined-terminal {
         height: calc(100vh - 102px) !important;
@@ -2129,7 +2142,7 @@ export default {
     }
 }
 
-@media (max-width: 575px) {
+@media (max-width: $bp-phone) {
     .container-status-summary {
         display: none;
     }
@@ -2163,7 +2176,7 @@ export default {
     gap: 4px;
 
     .form-label {
-        color: $dark-font-color3 !important;
+        color: var(--text-muted) !important;
     }
 
     .form-select {
@@ -2180,7 +2193,7 @@ export default {
     justify-self: start;
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: $bp-tablet) {
     .terminal-toolbar {
         align-items: stretch;
     }
@@ -2208,7 +2221,7 @@ export default {
 
 }
 
-@media (max-width: 575.98px) {
+@media (max-width: $bp-phone) {
     .terminal-toolbar-right {
         grid-template-columns: 1fr;
     }
@@ -2230,15 +2243,15 @@ export default {
 }
 
 .stack-meta-item {
-    font-size: 0.78rem;
+    font-size: var(--fs-sm);
     font-weight: 400;
-    color: $dark-font-color3;
+    color: var(--text-muted);
     cursor: default;
 }
 
 .editor-box {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
 }
 
 .editor-header {
@@ -2255,7 +2268,7 @@ export default {
 }
 
 .editor-fullscreen-btn {
-    font-size: 0.78rem;
+    font-size: var(--fs-sm);
     padding: 2px 10px;
 }
 
@@ -2282,12 +2295,12 @@ export default {
     top: 8px;
     right: 12px;
     z-index: 1060;
-    font-size: 0.78rem;
+    font-size: var(--fs-sm);
     padding: 2px 10px;
 }
 
 .agent-name {
-    font-size: 13px;
-    color: $dark-font-color3;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
 }
 </style>
