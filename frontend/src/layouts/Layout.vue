@@ -66,81 +66,6 @@
                 </div>
             </div>
 
-            <!-- System Stats (desktop uniquement) -->
-            <div v-if="$root.loggedIn && systemStats" class="system-stats d-none d-lg-flex align-items-center">
-                <span class="stat-pill" :class="statClass(systemStats.cpu)" :title="cpuStatTooltip()">
-                    <font-awesome-icon icon="microchip" class="me-1" />CPU
-                    <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(systemStats.cpu)">
-                        <span class="disk-bar-bracket">[</span>
-                        <span class="disk-bar-cells" aria-hidden="true">
-                            <span
-                                v-for="(filled, index) in diskUsageCells(systemStats.cpu)"
-                                :key="index"
-                                class="disk-bar-cell"
-                                :class="{ filled }"
-                            ></span>
-                        </span>
-                        <span class="disk-bar-bracket">]</span>
-                    </span>
-                    <span class="ms-1">{{ systemStats.cpu }}%</span>
-                </span>
-                <span class="stat-pill" :class="statClass(systemStats.ram.percent)" :title="ramStatTooltip()">
-                    <font-awesome-icon icon="memory" class="me-1" />RAM
-                    <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(systemStats.ram.percent)">
-                        <span class="disk-bar-bracket">[</span>
-                        <span class="disk-bar-cells" aria-hidden="true">
-                            <span
-                                v-for="(filled, index) in diskUsageCells(systemStats.ram.percent)"
-                                :key="index"
-                                class="disk-bar-cell"
-                                :class="{ filled }"
-                            ></span>
-                        </span>
-                        <span class="disk-bar-bracket">]</span>
-                    </span>
-                    <span class="ms-1">{{ systemStats.ram.percent }}%</span>
-                </span>
-                <span v-if="fullestDisk" class="stat-pill" :class="statClass(fullestDisk.percent)" :title="disksTooltip">
-                    <font-awesome-icon icon="floppy-disk" class="me-1" />
-                    <template v-if="systemStats.diskDisplayMode === 'bar'">
-                        {{ fullestDisk.mount }}
-                        <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(fullestDisk.percent)">
-                            <span class="disk-bar-bracket">[</span>
-                            <span class="disk-bar-cells" aria-hidden="true">
-                                <span
-                                    v-for="(filled, index) in diskUsageCells(fullestDisk.percent)"
-                                    :key="index"
-                                    class="disk-bar-cell"
-                                    :class="{ filled }"
-                                ></span>
-                            </span>
-                            <span class="disk-bar-bracket">]</span>
-                        </span>
-                        <span class="ms-1">{{ fullestDisk.percent }}%</span>
-                        <span class="ms-1">{{ formatDiskTotal(fullestDisk.total) }}</span>
-                    </template>
-                    <template v-else>
-                        {{ fullestDisk.mount }} {{ fullestDisk.percent }}%
-                    </template>
-                    <span v-if="diskList.length > 1" class="ms-1 stat-more">+{{ diskList.length - 1 }}</span>
-                </span>
-                <a v-if="kulaUrl" :href="kulaUrl" target="_blank" class="stat-pill stat-kula">
-                    <font-awesome-icon icon="chart-bar" class="me-1" />Kula
-                </a>
-                <a v-if="dozzleUrl" :href="dozzleUrl" target="_blank" class="stat-pill stat-kula">
-                    <font-awesome-icon icon="terminal" class="me-1" />Dozzle
-                </a>
-                <span v-if="systemStats.hostNavbarDisplay?.uptime" class="stat-pill stat-neutral">
-                    <font-awesome-icon icon="clock" class="me-1" />{{ $t("watcher.monitoring.navbarUptimeShort") }} : {{ formatUptime(systemStats.host?.uptimeSeconds) }}
-                </span>
-                <span v-if="systemStats.hostNavbarDisplay?.cpuTemperatures && systemStats.host?.temperatures?.cpu?.length" class="stat-pill stat-neutral">
-                    <font-awesome-icon icon="temperature-half" class="me-1" />CPU {{ tempSummary(systemStats.host.temperatures.cpu) }}
-                </span>
-                <span v-if="systemStats.hostNavbarDisplay?.diskTemperatures && systemStats.host?.temperatures?.disks?.length" class="stat-pill stat-neutral">
-                    <font-awesome-icon icon="hard-drive" class="me-1" />{{ tempSummary(systemStats.host.temperatures.disks) }}
-                </span>
-            </div>
-
             <ul class="desktop-nav nav nav-pills">
                 <li v-if="$root.loggedIn" class="nav-item me-2">
                     <router-link to="/" class="nav-link">
@@ -285,6 +210,48 @@
             <router-view v-if="$root.loggedIn" />
             <Login v-if="! $root.loggedIn && $root.allowLoginDialog" />
         </main>
+
+        <!-- System status bar (VS Code-style slim bottom bar, desktop/tablet only) -->
+        <footer v-if="$root.loggedIn && systemStats" class="status-bar">
+            <span class="status-item" :class="statClass(systemStats.cpu)" :title="cpuStatTooltip()">
+                <font-awesome-icon icon="microchip" />CPU {{ systemStats.cpu }}%
+                <span class="status-meter" :aria-label="diskUsageBarLabel(systemStats.cpu)">
+                    <span class="status-meter-fill" :style="{ width: Math.min(100, systemStats.cpu) + '%' }"></span>
+                </span>
+            </span>
+            <span class="status-item" :class="statClass(systemStats.ram.percent)" :title="ramStatTooltip()">
+                <font-awesome-icon icon="memory" />RAM {{ systemStats.ram.percent }}%
+                <span class="status-meter" :aria-label="diskUsageBarLabel(systemStats.ram.percent)">
+                    <span class="status-meter-fill" :style="{ width: Math.min(100, systemStats.ram.percent) + '%' }"></span>
+                </span>
+            </span>
+            <span v-if="fullestDisk" class="status-item" :class="statClass(fullestDisk.percent)" :title="disksTooltip">
+                <font-awesome-icon icon="floppy-disk" />{{ fullestDisk.mount }} {{ fullestDisk.percent }}%
+                <span class="status-meter" :aria-label="diskUsageBarLabel(fullestDisk.percent)">
+                    <span class="status-meter-fill" :style="{ width: Math.min(100, fullestDisk.percent) + '%' }"></span>
+                </span>
+                <span v-if="systemStats.diskDisplayMode === 'bar'">{{ formatDiskTotal(fullestDisk.total) }}</span>
+                <span v-if="diskList.length > 1">+{{ diskList.length - 1 }}</span>
+            </span>
+            <span v-if="systemStats.hostNavbarDisplay?.uptime" class="status-item stat-neutral">
+                <font-awesome-icon icon="clock" />{{ formatUptime(systemStats.host?.uptimeSeconds) }}
+            </span>
+            <span v-if="systemStats.hostNavbarDisplay?.cpuTemperatures && systemStats.host?.temperatures?.cpu?.length" class="status-item stat-neutral">
+                <font-awesome-icon icon="temperature-half" />{{ tempSummary(systemStats.host.temperatures.cpu) }}
+            </span>
+            <span v-if="systemStats.hostNavbarDisplay?.diskTemperatures && systemStats.host?.temperatures?.disks?.length" class="status-item stat-neutral">
+                <font-awesome-icon icon="hard-drive" />{{ tempSummary(systemStats.host.temperatures.disks) }}
+            </span>
+
+            <span class="status-bar-spacer"></span>
+
+            <a v-if="kulaUrl" :href="kulaUrl" target="_blank" class="status-item status-link">
+                <font-awesome-icon icon="chart-bar" />Kula
+            </a>
+            <a v-if="dozzleUrl" :href="dozzleUrl" target="_blank" class="status-item status-link">
+                <font-awesome-icon icon="terminal" />Dozzle
+            </a>
+        </footer>
     </div>
 </template>
 
@@ -480,12 +447,6 @@ export default {
             return mb.toFixed(0) + " MB";
         },
 
-        diskUsageCells(percent) {
-            const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
-            const filled = Math.round(clamped / 10);
-            return Array.from({ length: 10 }, (_, index) => index < filled);
-        },
-
         diskUsageBarLabel(percent) {
             const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
             const filled = Math.round(clamped / 10);
@@ -619,8 +580,7 @@ export default {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-        "brand updates navigation"
-        "stats stats stats";
+        "brand updates navigation";
     align-items: center;
     gap: 0.75rem 1.25rem;
     padding-inline: 1.5rem;
@@ -806,6 +766,11 @@ export default {
 main {
     min-height: calc(100vh - 160px);
 
+    @media (min-width: $bp-mobile) {
+        // Reserve space for the fixed bottom status bar
+        padding-bottom: calc(28px + var(--space-3));
+    }
+
     @media (max-width: $bp-mobile) {
         // Compact mobile header (~45px) instead of the desktop chrome
         min-height: calc(100vh - 45px);
@@ -844,75 +809,70 @@ main {
     }
 }
 
-.system-stats {
-    grid-area: stats;
-    justify-content: center;
-    justify-self: center;
-    width: min(100%, 80rem);
-    font-size: var(--fs-sm);
+// Slim bottom status bar (VS Code-style). Hidden on mobile.
+.status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 900; // below mobile header (1000) and offcanvas backdrop (1040)
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    height: 28px;
+    padding: 0 var(--space-4);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-color);
+    font-size: var(--fs-xs);
     font-weight: 500;
-    letter-spacing: 0.01em;
-    flex-wrap: wrap;
-    gap: 0.35rem 1rem;
-    row-gap: 0.35rem;
+    white-space: nowrap;
+    overflow-x: auto;
+
+    @media (max-width: $bp-mobile) {
+        display: none;
+    }
 }
 
-.stat-pill {
+.status-bar-spacer {
+    flex: 1;
+}
+
+.status-item {
     display: inline-flex;
     align-items: center;
-    padding: 3px 9px;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--border-color);
+    gap: var(--space-1);
     transition: color 0.3s;
-    white-space: nowrap;
-
-    .stat-more {
-        font-size: 0.72em;
-        font-weight: 700;
-        opacity: 0.75;
-    }
 
     &.stat-ok      { color: var(--success); }
     &.stat-warning  { color: var(--warning); }
     &.stat-danger   { color: var(--danger); }
     &.stat-neutral  { color: var(--text-color); }
-    &.stat-kula {
-        color: var(--primary-strong);
-        text-decoration: none;
-        border-color: color-mix(in srgb, var(--primary) 35%, transparent);
-        &:hover { color: var(--primary-hover); border-color: color-mix(in srgb, var(--primary) 60%, transparent); }
+}
+
+.status-link {
+    color: var(--primary-strong);
+    text-decoration: none;
+
+    &:hover {
+        color: var(--primary-hover);
     }
 }
 
-.disk-bar {
-    display: inline-flex;
-    align-items: center;
-    gap: 1px;
-    font-family: var(--font-mono);
-    line-height: 1;
+.status-meter {
+    display: inline-block;
+    width: 3rem;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-raised);
+    overflow: hidden;
 }
 
-.disk-bar-bracket {
-    line-height: 1;
-}
-
-.disk-bar-cells {
-    display: inline-grid;
-    grid-template-columns: repeat(10, 0.38rem);
-    align-items: center;
-    column-gap: 1px;
-    height: 0.7rem;
-}
-
-.disk-bar-cell {
+.status-meter-fill {
     display: block;
-    width: 0.38rem;
-    height: 0.58rem;
-    border-radius: 1px;
-
-    &.filled {
-        background: currentColor;
-    }
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: currentColor;
+    transition: width 0.3s ease;
 }
 
 .nav {
