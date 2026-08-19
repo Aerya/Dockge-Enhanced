@@ -1052,5 +1052,8 @@
     "stackGit.restore": "Restore files",
     "stackGit.restoreConfirm": "Restore tracked stack files from commit {hash}? The worktree must be clean and Compose is validated with automatic rollback on failure.",
     "stackPin": "Pin this stack to the top of the list",
-    "stackUnpin": "Unpin this stack"
+    "stackUnpin": "Unpin this stack",
+    "stackSortCreated": "Creation date",
+    "stackSortUpdated": "Last update",
+    "releaseNews.item.stackDateSorting": "The stack list can now be sorted by creation date or last update. Existing stacks use filesystem creation time when available, while new stacks store an exact Dockge creation timestamp."
 }

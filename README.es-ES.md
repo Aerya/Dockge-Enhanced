@@ -43,6 +43,8 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 <details>
 <summary><strong>Mostrar el catálogo completo de funcionalidades</strong></summary>
 
+**2026-08-19 — Ordenar stacks por fecha de creación y última actualización** — El selector de stacks permite ordenar primero las más recientes por fecha de creación o por la última actualización registrada por Dockge. Las stacks nuevas guardan un `createdAt` exacto e inmutable; las existentes usan la fecha de creación del sistema de archivos cuando está disponible, marcada internamente como estimada. Las stacks fijadas mantienen la prioridad.
+
 **2026-08-18 — Pausa y reanudación del seguimiento de logs en vivo** — La barra de herramientas de Registros puede pausar el seguimiento automático sin desconectar el flujo en vivo: las nuevas líneas siguen entrando en el historial de xterm mientras la posición de lectura permanece fija. Reanudar vuelve inmediatamente a los últimos logs y reactiva el desplazamiento automático.
 
 **2026-08-18 — Barra de desplazamiento vertical con líneas completas** — Desactivar el ajuste de línea mantiene las entradas largas en una sola línea con desplazamiento horizontal, mientras la vista xterm conserva el ancho visible del panel para que su barra de desplazamiento vertical siga accesible a la derecha.

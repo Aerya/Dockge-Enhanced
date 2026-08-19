@@ -105,6 +105,8 @@
                         <option value="name">{{ $t("stackSortName") }}</option>
                         <option value="status">{{ $t("stackSortStatus") }}</option>
                         <option value="agent">{{ $t("stackSortAgent") }}</option>
+                        <option value="created">{{ $t("stackSortCreated") }}</option>
+                        <option value="updated">{{ $t("stackSortUpdated") }}</option>
                     </select>
                     <div class="stack-search-field">
                         <a v-if="searchText == ''" class="search-icon">
@@ -285,6 +287,26 @@ export default {
                         return endpointOrder;
                     }
                     return m1.name.localeCompare(m2.name);
+                }
+
+                if (this.stackSort === "created" || this.stackSort === "updated") {
+                    const field = this.stackSort === "created" ? "createdAt" : "lastUpdated";
+                    const date1 = m1[field] ? Date.parse(m1[field]) : Number.NaN;
+                    const date2 = m2[field] ? Date.parse(m2[field]) : Number.NaN;
+                    const valid1 = Number.isFinite(date1);
+                    const valid2 = Number.isFinite(date2);
+
+                    if (valid1 && !valid2) {
+                        return -1;
+                    }
+                    if (!valid1 && valid2) {
+                        return 1;
+                    }
+                    if (valid1 && valid2 && date1 !== date2) {
+                        return date2 - date1;
+                    }
+
+                    return m1.name.localeCompare(m2.name, undefined, { sensitivity: "base" });
                 }
 
                 // sort by managed by dockge

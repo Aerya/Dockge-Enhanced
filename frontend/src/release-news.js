@@ -49,6 +49,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.logFollowToggle",
         ],
     },
+    {
+        id: "2026-08-19-stack-date-sorting",
+        items: [
+            "releaseNews.item.stackDateSorting",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {
