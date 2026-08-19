@@ -82,15 +82,24 @@ const variableHighlightPlugin = ViewPlugin.fromClass(
 );
 
 const variableHighlightTheme = EditorView.baseTheme({
+    // Light theme (GitHub-light inspired, readable on white)
     ".cm-var-defined": {
-        color: "#79c0ff",
+        color: "#0550ae",
         fontWeight: "600",
     },
     ".cm-var-undefined": {
-        color: "#ff7b72",
+        color: "#cf222e",
         fontWeight: "600",
-        textDecoration: "underline wavy #ff7b72",
+        textDecoration: "underline wavy #cf222e",
         textUnderlineOffset: "2px",
+    },
+    // Dark theme
+    "&dark .cm-var-defined": {
+        color: "#79c0ff",
+    },
+    "&dark .cm-var-undefined": {
+        color: "#ff7b72",
+        textDecoration: "underline wavy #ff7b72",
     },
 });
 

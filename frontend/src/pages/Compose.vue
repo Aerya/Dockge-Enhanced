@@ -473,7 +473,7 @@
                             :extensions="extensions"
                             minimal
                             wrap="true"
-                            dark="true"
+                            :dark="$root.isDark"
                             tab="true"
                             :disabled="!isEditMode"
                             :hasFocus="editorFocus"
@@ -503,7 +503,7 @@
                                 :extensions="extensions"
                                 minimal
                                 wrap="true"
-                                dark="true"
+                                :dark="$root.isDark"
                                 tab="true"
                                 :disabled="!isEditMode"
                                 :hasFocus="editorFocus"
@@ -529,7 +529,7 @@
                                 :extensions="extensionsEnv"
                                 minimal
                                 wrap="true"
-                                dark="true"
+                                :dark="$root.isDark"
                                 tab="true"
                                 :disabled="!isEditMode"
                                 :hasFocus="editorFocus"
@@ -609,7 +609,7 @@
 import CodeMirror from "vue-codemirror6";
 import { yaml } from "@codemirror/lang-yaml";
 import { python } from "@codemirror/lang-python";
-import { dracula as editorTheme } from "thememirror";
+import { dracula, tomorrow } from "thememirror";
 import { lineNumbers, EditorView, keymap } from "@codemirror/view";
 import { foldGutter, foldKeymap } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
@@ -631,7 +631,7 @@ import {
 import { BModal } from "bootstrap-vue-next";
 import NetworkInput from "../components/NetworkInput.vue";
 import dotenv from "dotenv";
-import { ref } from "vue";
+import { computed, getCurrentInstance, ref } from "vue";
 import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
 import { useImageStatus } from "../composables/useImageStatus";
 import StackScheduleEditor from "../components/StackScheduleEditor.vue";
@@ -702,23 +702,21 @@ export default {
             keymap.of([ ...closeBracketsKeymap, ...searchKeymap, ...foldKeymap ]),
         ];
 
-        const extensions = [
-            editorTheme,
-            yaml(),
+        // The editor theme follows the app theme (dracula in dark mode,
+        // tomorrow in light mode); computed so toggling the theme
+        // reconfigures live editors via vue-codemirror6's extension watcher.
+        const root = getCurrentInstance().proxy.$root;
+        const buildExtensions = (lang) => [
+            ...(root.isDark ? [ dracula ] : [ tomorrow ]),
+            lang,
             lineNumbers(),
             ...commonEditing,
             yamlVariableHighlight,
             EditorView.focusChangeEffect.of(focusEffectHandler)
         ];
 
-        const extensionsEnv = [
-            editorTheme,
-            python(),
-            lineNumbers(),
-            ...commonEditing,
-            yamlVariableHighlight,
-            EditorView.focusChangeEffect.of(focusEffectHandler)
-        ];
+        const extensions = computed(() => buildExtensions(yaml()));
+        const extensionsEnv = computed(() => buildExtensions(python()));
 
         return { extensions,
             extensionsEnv,
