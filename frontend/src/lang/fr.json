@@ -1042,5 +1042,8 @@
     "stackPin": "Épingler cette stack en haut de la liste",
     "stackUnpin": "Désépingler cette stack",
     "disableAuth": "désactiver l'authentification",
-    "scenarios": "dans lesquels vous avez l'intention d'implémenter une authentification tierce"
+    "scenarios": "dans lesquels vous avez l'intention d'implémenter une authentification tierce",
+    "stackSortCreated": "Date de création",
+    "stackSortUpdated": "Dernière mise à jour",
+    "releaseNews.item.stackDateSorting": "La liste des stacks peut maintenant être triée par date de création ou dernière mise à jour. Les anciennes stacks utilisent leur date de création filesystem lorsqu'elle est disponible, tandis que les nouvelles enregistrent une date de création Dockge exacte."
 }

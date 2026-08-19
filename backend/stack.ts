@@ -52,6 +52,8 @@ interface StackContainerVolumeUsage {
 }
 
 interface StackMetadata {
+    createdAt: string | null;
+    createdAtEstimated: boolean;
     lastUpdated: string | null;
     lastStartedAt: string | null;
     note: string;
@@ -139,6 +141,15 @@ export class Stack {
     }
 
     toSimpleJSON(endpoint : string) : object {
+        const metadata = this.readMetaSync();
+        let createdAt = metadata.createdAt;
+        let createdAtEstimated = metadata.createdAtEstimated;
+
+        if (!createdAt && this.isManagedByDockge) {
+            createdAt = this.estimateCreatedAt();
+            createdAtEstimated = createdAt !== null;
+        }
+
         return {
             name: this.name,
             status: this._status,
@@ -146,6 +157,9 @@ export class Stack {
             isManagedByDockge: this.isManagedByDockge,
             composeFileName: this._composeFileName,
             buildServices: this.getBuildServices(),
+            createdAt,
+            createdAtEstimated,
+            lastUpdated: metadata.lastUpdated,
             endpoint,
         };
     }
@@ -294,6 +308,13 @@ export class Stack {
             await fsAsync.writeFile(envPath, this.composeENV);
         }
 
+        if (isAdd) {
+            await this.writeMeta({
+                createdAt: new Date().toISOString(),
+                createdAtEstimated: false,
+            });
+        }
+
         // Write/overwrite/remove the compose.override.yaml
         // Docker Compose le fusionne automatiquement avec le fichier principal.
         const overridePath = path.join(dir, COMPOSE_OVERRIDE_FILE);
@@ -306,20 +327,66 @@ export class Stack {
         }
     }
 
+    private emptyMeta(): StackMetadata {
+        return {
+            createdAt: null,
+            createdAtEstimated: false,
+            lastUpdated: null,
+            lastStartedAt: null,
+            note: "",
+        };
+    }
+
+    private normalizeMeta(parsed: Partial<StackMetadata>): StackMetadata {
+        return {
+            createdAt: typeof parsed.createdAt === "string" ? parsed.createdAt : null,
+            createdAtEstimated: parsed.createdAtEstimated === true,
+            lastUpdated: typeof parsed.lastUpdated === "string" ? parsed.lastUpdated : null,
+            lastStartedAt: typeof parsed.lastStartedAt === "string" ? parsed.lastStartedAt : null,
+            note: typeof parsed.note === "string" ? parsed.note : "",
+        };
+    }
+
+    private readMetaSync(): StackMetadata {
+        try {
+            const raw = fs.readFileSync(path.join(this.path, ".dockge-meta.json"), "utf8");
+            return this.normalizeMeta(JSON.parse(raw) as Partial<StackMetadata>);
+        } catch {
+            return this.emptyMeta();
+        }
+    }
+
+    /**
+     * Best-effort creation date for stacks created before createdAt existed.
+     * Prefer the stack directory birthtime, then the compose file birthtime.
+     */
+    private estimateCreatedAt(): string | null {
+        const candidates = [
+            this.path,
+            path.join(this.path, this._composeFileName),
+        ];
+
+        for (const candidate of candidates) {
+            try {
+                const stat = fs.statSync(candidate);
+                if (Number.isFinite(stat.birthtimeMs) && stat.birthtimeMs > 0) {
+                    return stat.birthtime.toISOString();
+                }
+            } catch {
+                // Try next candidate.
+            }
+        }
+
+        return null;
+    }
+
     /** Lit le fichier .dockge-meta.json du stack */
     private async readMeta(): Promise<StackMetadata> {
         try {
             const raw = await fsAsync.readFile(path.join(this.path, ".dockge-meta.json"), "utf8");
-            const parsed = JSON.parse(raw) as Partial<StackMetadata>;
-            return {
-                lastUpdated: parsed.lastUpdated ?? null,
-                lastStartedAt: parsed.lastStartedAt ?? null,
-                note: typeof parsed.note === "string" ? parsed.note : "",
-            };
+            return this.normalizeMeta(JSON.parse(raw) as Partial<StackMetadata>);
         } catch {
-            return { lastUpdated: null,
-                lastStartedAt: null,
-                note: "" };
+            return this.emptyMeta();
         }
     }
 
