@@ -38,9 +38,9 @@ export default defineComponent({
     },
 
     mounted() {
-        // Default Dark
+        // Default: follow the OS theme (light during the day, dark at night)
         if (! this.userTheme) {
-            this.userTheme = "dark";
+            this.userTheme = "auto";
         }
 
         // Follow OS theme changes while set to "auto"
@@ -53,6 +53,15 @@ export default defineComponent({
     },
 
     methods: {
+        /**
+         * Toggle between light and dark theme (explicit user choice,
+         * overrides "auto" until changed back in Settings → Appearance)
+         * @returns {void}
+         */
+        toggleTheme() {
+            this.userTheme = this.theme === "dark" ? "light" : "dark";
+        },
+
         /**
          * Update the theme color meta tag
          * @returns {void}

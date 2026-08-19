@@ -160,6 +160,12 @@
                     </router-link>
                 </li>
 
+                <li class="nav-item me-2 d-flex align-items-center">
+                    <button type="button" class="nav-link theme-toggle" :aria-label="$t('Theme')" @click="$root.toggleTheme">
+                        <font-awesome-icon :icon="$root.theme === 'dark' ? 'sun' : 'moon'" />
+                    </button>
+                </li>
+
                 <li v-if="$root.loggedIn" class="nav-item">
                     <div class="dropdown dropdown-profile-pic">
                         <div class="nav-link" data-bs-toggle="dropdown">
@@ -214,6 +220,9 @@
                 <object class="bi me-2" width="28" height="28" data="/icon.svg" />
                 <span class="title">Dockge-Enhanced</span>
             </router-link>
+            <button type="button" class="mobile-nav-toggle ms-auto" :aria-label="$t('Theme')" @click="$root.toggleTheme">
+                <font-awesome-icon :icon="$root.theme === 'dark' ? 'sun' : 'moon'" />
+            </button>
         </header>
 
         <!-- Mobile navigation drawer -->
@@ -233,12 +242,32 @@
                 <router-link to="/watcher" class="mobile-drawer-link">
                     <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}
                 </router-link>
-                <router-link to="/settings/general" class="mobile-drawer-link" :class="{ active: $route.path.includes('settings') }">
-                    <font-awesome-icon icon="cog" /> {{ $t("Settings") }}
-                </router-link>
                 <button type="button" class="mobile-drawer-link" @click="mobileScanFolder">
                     <font-awesome-icon icon="arrows-rotate" /> {{ $t("scanFolder") }}
                 </button>
+
+                <div class="mobile-drawer-section">{{ $t("Settings") }}</div>
+                <router-link to="/settings/general" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("general") }}
+                </router-link>
+                <router-link to="/settings/appearance" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("Appearance") }}
+                </router-link>
+                <router-link to="/settings/security" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("Security") }}
+                </router-link>
+                <router-link to="/settings/globalEnv" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("GlobalEnv") }}
+                </router-link>
+                <router-link to="/settings/integrations" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("Integrations") }}
+                </router-link>
+                <router-link to="/settings/automation" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("automation.heading") }}
+                </router-link>
+                <router-link to="/settings/about" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("About") }}
+                </router-link>
             </nav>
 
             <div v-if="$root.loggedIn" class="mobile-drawer-footer">
@@ -614,6 +643,12 @@ export default {
     justify-self: end;
 }
 
+.theme-toggle {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
 .self-update-banner {
     display: flex;
     align-items: center;
@@ -695,6 +730,7 @@ export default {
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
         color: var(--primary-text);
         background-color: var(--primary);
         width: 28px;
@@ -703,6 +739,28 @@ export default {
         font-weight: bold;
         font-size: var(--fs-xs);
     }
+
+    // Long usernames/emails ellipsize instead of breaking the row layout
+    strong {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+:global(.mobile-drawer-section) {
+    margin-top: var(--space-2);
+    padding: 0 var(--space-3);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+:global(.mobile-drawer-sublink) {
+    padding-left: var(--space-5);
 }
 
 :global(.mobile-drawer-nav) {

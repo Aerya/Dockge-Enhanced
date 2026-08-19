@@ -16,25 +16,9 @@
                             {{ item.title }}
                         </div>
                     </router-link>
-
-                    <!-- Logout Button -->
-                    <a v-if="$root.isMobile && $root.loggedIn && $root.socketIO.token !== 'autoLogin'" class="logout" @click.prevent="$root.logout">
-                        <div class="menu-item">
-                            <font-awesome-icon icon="sign-out-alt" />
-                            {{ $t("Logout") }}
-                        </div>
-                    </a>
                 </div>
                 <div class="settings-content col-lg-9 col-md-7">
                     <div v-if="currentPage" class="settings-content-header">
-                        <a
-                            v-if="$root.isMobile"
-                            class="settings-back"
-                            :aria-label="$t('Settings')"
-                            @click.prevent="$router.push('/settings')"
-                        >
-                            <font-awesome-icon icon="chevron-left" />
-                        </a>
                         {{ subMenus[currentPage].title }}
                     </div>
                     <div class="mx-3">
@@ -70,11 +54,9 @@ export default {
         },
 
         showSubMenu() {
-            if (this.$root.isMobile) {
-                return !this.currentPage;
-            } else {
-                return true;
-            }
+            // On mobile the settings sections live directly in the
+            // navigation drawer, so the side menu is desktop-only.
+            return !this.$root.isMobile;
         },
 
         subMenus() {
@@ -118,11 +100,10 @@ export default {
     methods: {
 
         /**
-         * Load the general settings page
-         * For desktop only, on mobile do nothing
+         * Redirect bare /settings to the general page
          */
         loadGeneralPage() {
-            if (!this.currentPage && !this.$root.isMobile) {
+            if (!this.currentPage) {
                 this.$router.push("/settings/general");
             }
         },
@@ -240,31 +221,6 @@ footer {
             background: var(--bg-raised);
             border-bottom: 0;
         }
-
-        .mobile & {
-            padding: 15px 0 0 0;
-            display: flex;
-            align-items: center;
-            gap: 0.4em;
-
-            .dark & {
-                background-color: transparent;
-            }
-        }
     }
-}
-
-.settings-back {
-    cursor: pointer;
-    font-size: 0.7em;
-    color: var(--primary);
-
-    .dark & {
-        color: var(--text-color);
-    }
-}
-
-.logout {
-    color: var(--danger) !important;
 }
 </style>
