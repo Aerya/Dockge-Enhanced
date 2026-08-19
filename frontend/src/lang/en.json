@@ -1288,5 +1288,7 @@
     "home.summary.time.hoursAgo": "{n} h ago",
     "home.summary.time.daysAgo": "{n} d ago",
     "home.summary.state.ok": "All good",
-    "home.summary.state.disabled": "Not enabled"
+    "home.summary.state.disabled": "Not enabled",
+    "stackSidebarCollapse": "Collapse the stack sidebar",
+    "stackSidebarExpand": "Expand the stack sidebar"
 }

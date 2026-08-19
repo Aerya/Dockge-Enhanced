@@ -1284,5 +1284,7 @@
     "home.summary.time.hoursAgo": "il y a {n} h",
     "home.summary.time.daysAgo": "il y a {n} j",
     "home.summary.state.ok": "OK",
-    "home.summary.state.disabled": "Non activé"
+    "home.summary.state.disabled": "Non activé",
+    "stackSidebarCollapse": "Replier la barre latérale des stacks",
+    "stackSidebarExpand": "Déplier la barre latérale des stacks"
 }

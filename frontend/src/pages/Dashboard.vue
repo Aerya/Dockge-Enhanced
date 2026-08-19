@@ -1,29 +1,24 @@
 <template>
     <div class="container-fluid">
-        <div ref="dashboardLayout" class="dashboard-layout" :style="dashboardLayoutStyle">
+        <div ref="dashboardLayout" class="dashboard-layout" :class="{ collapsed: sidebarCollapsed }" :style="dashboardLayoutStyle">
             <aside class="stack-sidebar">
-                <div>
-                    <router-link to="/compose" class="btn btn-primary mb-3"><font-awesome-icon icon="plus" /> {{ $t("compose") }}</router-link>
+                <div class="sidebar-header">
+                    <router-link v-if="!sidebarCollapsed" to="/compose" class="btn btn-primary"><font-awesome-icon icon="plus" /> {{ $t("compose") }}</router-link>
+                    <router-link v-else to="/compose" class="sidebar-icon-btn" :title="$t('compose')">
+                        <font-awesome-icon icon="plus" />
+                    </router-link>
+                    <button
+                        type="button"
+                        class="sidebar-icon-btn sidebar-toggle"
+                        :aria-label="$t(sidebarCollapsed ? 'stackSidebarExpand' : 'stackSidebarCollapse')"
+                        :title="$t(sidebarCollapsed ? 'stackSidebarExpand' : 'stackSidebarCollapse')"
+                        @click="toggleSidebar"
+                    >
+                        <font-awesome-icon :icon="sidebarCollapsed ? 'chevron-right' : 'chevron-left'" />
+                    </button>
                 </div>
-                <StackList :scrollbar="true" />
+                <StackList v-show="!sidebarCollapsed" :scrollbar="true" />
             </aside>
-
-            <div
-                v-if="!$root.isMobile"
-                class="dashboard-resize-handle"
-                role="separator"
-                aria-orientation="vertical"
-                :aria-label="$t('stackListResize')"
-                aria-valuemin="18"
-                aria-valuemax="40"
-                :aria-valuenow="stackSidebarWidth"
-                tabindex="0"
-                @pointerdown="startDashboardResize"
-                @keydown.left.prevent="resizeDashboardBy(-2)"
-                @keydown.right.prevent="resizeDashboardBy(2)"
-            >
-                <span></span>
-            </div>
 
             <main ref="container" class="dashboard-content mb-3">
                 <!-- Add :key to disable vue router re-use the same component -->
@@ -44,8 +39,9 @@ export default {
     data() {
         return {
             height: 0,
-            stackSidebarWidth: Math.min(40, Math.max(18, Number(localStorage.getItem("stackSidebarWidth")) || 25)),
-            dashboardResizing: false,
+            // Desktop: persisted collapse state. Mobile: always starts
+            // collapsed (accordion), the state is not persisted.
+            sidebarCollapsed: this.$root.isMobile || localStorage.getItem("stackSidebarCollapsed") === "true",
             dashboardMinHeight: 240,
             dashboardHeightObserver: null,
         };
@@ -56,7 +52,6 @@ export default {
                 return {};
             }
             return {
-                gridTemplateColumns: `minmax(0, ${this.stackSidebarWidth}fr) 10px minmax(0, ${100 - this.stackSidebarWidth}fr)`,
                 minHeight: `${this.dashboardMinHeight}px`,
             };
         },
@@ -72,7 +67,6 @@ export default {
         }
     },
     unmounted() {
-        this.stopDashboardResize();
         window.removeEventListener("resize", this.updateDashboardMinHeight);
         this.dashboardHeightObserver?.disconnect();
     },
@@ -84,39 +78,11 @@ export default {
             }
             this.dashboardMinHeight = Math.max(240, Math.floor(window.innerHeight - top - 16));
         },
-        startDashboardResize(event) {
-            if (this.$root.isMobile) {
-                return;
+        toggleSidebar() {
+            this.sidebarCollapsed = !this.sidebarCollapsed;
+            if (!this.$root.isMobile) {
+                localStorage.setItem("stackSidebarCollapsed", String(this.sidebarCollapsed));
             }
-            event.preventDefault();
-            this.dashboardResizing = true;
-            document.body.classList.add("dashboard-resizing");
-            window.addEventListener("pointermove", this.moveDashboardResize);
-            window.addEventListener("pointerup", this.stopDashboardResize, { once: true });
-        },
-        moveDashboardResize(event) {
-            if (!this.dashboardResizing) {
-                return;
-            }
-            const bounds = this.$refs.dashboardLayout?.getBoundingClientRect();
-            if (!bounds?.width) {
-                return;
-            }
-            const width = ((event.clientX - bounds.left) / bounds.width) * 100;
-            this.stackSidebarWidth = Math.min(40, Math.max(18, Math.round(width)));
-        },
-        stopDashboardResize() {
-            if (this.dashboardResizing) {
-                localStorage.setItem("stackSidebarWidth", String(this.stackSidebarWidth));
-            }
-            this.dashboardResizing = false;
-            document.body.classList.remove("dashboard-resizing");
-            window.removeEventListener("pointermove", this.moveDashboardResize);
-            window.removeEventListener("pointerup", this.stopDashboardResize);
-        },
-        resizeDashboardBy(delta) {
-            this.stackSidebarWidth = Math.min(40, Math.max(18, this.stackSidebarWidth + delta));
-            localStorage.setItem("stackSidebarWidth", String(this.stackSidebarWidth));
         },
     },
 };
@@ -130,8 +96,15 @@ export default {
 
 .dashboard-layout {
     display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: var(--space-4);
     align-items: stretch;
     width: 100%;
+    transition: grid-template-columns 0.2s ease;
+
+    &.collapsed {
+        grid-template-columns: 52px minmax(0, 1fr);
+    }
 }
 
 .stack-sidebar,
@@ -144,44 +117,54 @@ export default {
     grid-template-rows: auto minmax(0, 1fr);
 }
 
-.dashboard-resize-handle {
-    align-self: stretch;
-    min-height: 240px;
-    cursor: col-resize;
+.sidebar-header {
     display: flex;
-    justify-content: center;
-    touch-action: none;
-    outline: none;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
 
-    span {
-        width: 3px;
-        min-height: 240px;
-        height: 100%;
-        border-radius: var(--radius-sm);
-        background: var(--border-color);
-        transition: width .15s ease, background-color .15s ease;
+    .collapsed & {
+        flex-direction: column;
     }
 
-    &:hover span,
-    &:focus-visible span {
-        width: 5px;
-        background: var(--primary);
+    .btn {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .sidebar-toggle {
+        margin-left: auto;
+
+        .collapsed & {
+            margin-left: 0;
+        }
     }
 }
 
-:global(body.dashboard-resizing) {
-    cursor: col-resize;
-    user-select: none;
+.sidebar-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    cursor: pointer;
+
+    &:hover {
+        background: var(--bg-raised);
+        color: var(--text-color);
+    }
 }
 
 @media (max-width: $bp-mobile) {
-    .dashboard-layout {
+    .dashboard-layout,
+    .dashboard-layout.collapsed {
         display: block;
-    }
-
-    // Belt-and-braces with v-if="!$root.isMobile" on the handle
-    .dashboard-resize-handle {
-        display: none;
     }
 
     // Sidebar stacks above the content; StackList caps itself at 45vh
@@ -189,6 +172,11 @@ export default {
     .stack-sidebar {
         display: block;
         margin-bottom: 1rem;
+    }
+
+    .sidebar-header,
+    .collapsed .sidebar-header {
+        flex-direction: row;
     }
 }
 </style>
