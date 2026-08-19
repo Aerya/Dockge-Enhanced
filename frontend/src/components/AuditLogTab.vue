@@ -363,7 +363,7 @@ onMounted(async () => {
 }
 
 .audit-target-type {
-  color: var(--primary);
+  color: var(--primary-strong);
   font-size: var(--fs-md);
   font-weight: 600;
 }

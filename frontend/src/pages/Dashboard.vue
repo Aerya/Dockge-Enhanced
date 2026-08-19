@@ -1,6 +1,6 @@
 <template>
     <div class="container-fluid">
-        <div ref="dashboardLayout" class="dashboard-layout" :class="{ collapsed: sidebarCollapsed }" :style="dashboardLayoutStyle">
+        <div class="dashboard-layout" :class="{ collapsed: sidebarCollapsed }">
             <aside class="stack-sidebar">
                 <div class="sidebar-header">
                     <router-link v-if="!sidebarCollapsed" to="/compose" class="btn btn-primary"><font-awesome-icon icon="plus" /> {{ $t("compose") }}</router-link>
@@ -42,42 +42,12 @@ export default {
             // Desktop: persisted collapse state. Mobile: always starts
             // collapsed (accordion), the state is not persisted.
             sidebarCollapsed: this.$root.isMobile || localStorage.getItem("stackSidebarCollapsed") === "true",
-            dashboardMinHeight: 240,
-            dashboardHeightObserver: null,
         };
-    },
-    computed: {
-        dashboardLayoutStyle() {
-            if (this.$root.isMobile) {
-                return {};
-            }
-            return {
-                minHeight: `${this.dashboardMinHeight}px`,
-            };
-        },
     },
     mounted() {
         this.height = this.$refs.container.offsetHeight;
-        this.$nextTick(this.updateDashboardMinHeight);
-        window.addEventListener("resize", this.updateDashboardMinHeight);
-        const desktopHeader = document.querySelector(".desktop-header");
-        if (desktopHeader && typeof ResizeObserver !== "undefined") {
-            this.dashboardHeightObserver = new ResizeObserver(this.updateDashboardMinHeight);
-            this.dashboardHeightObserver.observe(desktopHeader);
-        }
-    },
-    unmounted() {
-        window.removeEventListener("resize", this.updateDashboardMinHeight);
-        this.dashboardHeightObserver?.disconnect();
     },
     methods: {
-        updateDashboardMinHeight() {
-            const top = this.$refs.dashboardLayout?.getBoundingClientRect().top;
-            if (typeof top !== "number") {
-                return;
-            }
-            this.dashboardMinHeight = Math.max(240, Math.floor(window.innerHeight - top - 16));
-        },
         toggleSidebar() {
             this.sidebarCollapsed = !this.sidebarCollapsed;
             if (!this.$root.isMobile) {
@@ -115,6 +85,12 @@ export default {
 .stack-sidebar {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
+    // Pinned card: the sidebar (and the collapsed rail) stays in place while
+    // the right content scrolls.
+    position: sticky;
+    top: var(--space-3);
+    height: calc(100vh - var(--space-6));
+    align-self: start;
 }
 
 .sidebar-header {
@@ -171,6 +147,8 @@ export default {
     // (see StackList.vue) and scrolls internally.
     .stack-sidebar {
         display: block;
+        position: static;
+        height: auto;
         margin-bottom: 1rem;
     }
 

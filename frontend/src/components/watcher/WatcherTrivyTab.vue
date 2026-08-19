@@ -715,7 +715,7 @@ async function clearIgnoredCVE(cveId: string) {
     }
 
     &.cve-low {
-        color: var(--primary);
+        color: var(--primary-strong);
     }
 
     &.cve-unknown {

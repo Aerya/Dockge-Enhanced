@@ -994,7 +994,7 @@ async function removeCred(registry: string) {
 
     // "Voir le projet →" : btn-link force $link-color:#111, on l'écrase
     .btn-link {
-        color: var(--primary);
+        color: var(--primary-strong);
 
         &:hover {
             color: var(--primary-hover);

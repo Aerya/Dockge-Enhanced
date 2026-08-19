@@ -7,25 +7,30 @@
 //   components do NOT need their own `.dark &` blocks for tokenized values.
 // - SCSS variables in vars.scss remain for compile-time-only concerns
 //   (Bootstrap overrides, breakpoints for media queries).
+//
+// Palette follows upstream Dockge (louislam/dockge): light-blue primary
+// with a green gradient tail, teal active states, GitHub-dark night theme.
 
 :root {
     // Brand & semantic colors
-    --primary: #3b82f6;
-    --primary-hover: #2563eb;
-    --primary-text: #ffffff;
-    --primary-soft: #eff6ff;            // tinted background (active/hover states)
-    --success: #16a34a;
-    --success-soft: #dcfce7;
-    --warning: #d97706;
+    --primary: #74c2ff;
+    --primary-hover: #9dd1ff;
+    --primary-text: #ffffff;            // text on primary background
+    --primary-strong: #2563eb;          // text-grade primary (readable on light tints)
+    --primary-soft: #cdf8f4;            // tinted background (active/hover states)
+    --hover-soft: #e7faec;              // quiet hover tint for list rows (upstream green)
+    --success: #4caf50;
+    --success-soft: #e7faec;
+    --warning: #f8a306;
     --warning-soft: #fef3c7;
-    --danger: #dc2626;
-    --danger-soft: #fee2e2;
+    --danger: #dc3545;
+    --danger-soft: #f8d7da;
     --maintenance: #1747f5;
 
     // Surfaces
-    --bg-body: #f6f8fa;
+    --bg-body: #ffffff;
     --bg-surface: #ffffff;              // cards, shadow-box, modals
-    --bg-raised: #f3f4f6;               // headers, toolbars, hover fills
+    --bg-raised: #f5f5f5;               // headers, toolbars, hover fills
     --bg-input: #ffffff;
 
     // Borders
@@ -33,8 +38,8 @@
     --border-strong: #ced4da;
 
     // Text
-    --text-color: #1f2937;
-    --text-muted: #6b7280;
+    --text-color: #212529;
+    --text-muted: #6c757d;
 
     // Typography
     --font-sans: BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -67,15 +72,17 @@
 }
 
 .dark {
-    --primary: #3b82f6;
-    --primary-hover: #60a5fa;
-    --primary-text: #ffffff;
-    --primary-soft: #16283f;
-    --success: #22c55e;
+    --primary: #74c2ff;
+    --primary-hover: #9dd1ff;
+    --primary-text: #020b05;
+    --primary-strong: #74c2ff;
+    --primary-soft: #070a10;
+    --hover-soft: #070a10;
+    --success: #4caf50;
     --success-soft: #122f21;
-    --warning: #f59e0b;
+    --warning: #f8a306;
     --warning-soft: #3a2a0d;
-    --danger: #ef4444;
+    --danger: #dc3545;
     --danger-soft: #3d1518;
     --maintenance: #1747f5;
 
@@ -87,7 +94,7 @@
     --border-color: #1d2634;
     --border-strong: #2d3a4d;
 
-    --text-color: #e6edf3;
+    --text-color: #b1b8c0;
     --text-muted: #9ca3af;
 
     --shadow-card: 0 15px 70px rgba(0, 0, 0, 0.5);

@@ -1,6 +1,6 @@
 <template>
     <div
-        :class="{ 'dim' : !stack.isManagedByDockge }"
+        :class="{ 'dim' : !stack.isManagedByDockge, 'active': active }"
         :style="agentStyle"
         class="item"
         role="link"
@@ -108,6 +108,9 @@ export default {
         stackName() {
             return this.stack.name;
         },
+        active() {
+            return this.$route.path === this.url;
+        },
         agentStyle() {
             if (!this.agentColors) {
                 return {};
@@ -160,18 +163,18 @@ export default {
 
 // Single source of truth for stack-list rows (the global
 // `.stack-list .item` rule in styles/main.scss was removed in favor of this).
-// Base values mirror the old global rule: height 52px, radius-md, 0 8px padding.
+// Base values mirror upstream Dockge: min-height 52px, radius-md, 5px 8px padding.
 .item {
     text-decoration: none;
     cursor: pointer;
     display: flex;
     align-items: center;
-    height: 52px;
+    min-height: 52px;
     margin-bottom: 4px;
     border-radius: var(--radius-md);
     transition: all ease-in-out 0.15s;
     width: 100%;
-    padding: 0 8px;
+    padding: 5px 8px;
     border-inline-start: 4px solid var(--agent-color, transparent);
     background: linear-gradient(90deg, var(--agent-tint, transparent), transparent 42%);
 
@@ -183,11 +186,12 @@ export default {
     &.disabled {
         opacity: 0.3;
     }
+    // Shorthand resets the agent-tint gradient so hover/active are clean tints.
     &:hover {
-        background-color: var(--bg-raised);
+        background: var(--hover-soft);
     }
     &.active {
-        background-color: var(--primary-soft);
+        background: var(--primary-soft);
     }
     .title {
         margin-top: -4px;
@@ -215,7 +219,7 @@ export default {
     }
 
     .scheduled-indicator {
-        color: var(--primary);
+        color: var(--primary-strong);
         font-size: var(--fs-sm);
     }
 

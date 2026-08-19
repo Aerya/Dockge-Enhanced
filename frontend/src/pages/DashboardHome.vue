@@ -595,7 +595,7 @@ export default {
     display: block;
 
     &.active {
-        color: var(--primary);
+        color: var(--primary-strong);
     }
 
     &.exited {

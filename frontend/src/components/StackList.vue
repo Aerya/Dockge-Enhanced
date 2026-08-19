@@ -2,6 +2,67 @@
     <div class="shadow-box">
         <div class="list-header">
             <div class="header-top">
+                <div class="search-wrapper">
+                    <div class="stack-search-field">
+                        <a v-if="searchText == ''" class="search-icon">
+                            <font-awesome-icon icon="search" />
+                        </a>
+                        <a v-if="searchText != ''" class="search-icon" style="cursor: pointer" @click="clearSearchText">
+                            <font-awesome-icon icon="times" />
+                        </a>
+                        <form>
+                            <input v-model="searchText" class="form-control search-input" autocomplete="off" />
+                        </form>
+                    </div>
+                    <label class="visually-hidden" for="stackSort">{{ $t("stackSortLabel") }}</label>
+                    <select id="stackSort" v-model="stackSort" class="form-select form-select-sm stack-sort-select">
+                        <option value="name">{{ $t("stackSortName") }}</option>
+                        <option value="status">{{ $t("stackSortStatus") }}</option>
+                        <option value="agent">{{ $t("stackSortAgent") }}</option>
+                    </select>
+                    <details v-if="agentOptions.length > 1" class="stack-agent-filter">
+                        <summary class="stack-agent-select">
+                            <span>{{ agentFilterLabel }}</span>
+                            <font-awesome-icon icon="chevron-down" />
+                        </summary>
+                        <div class="stack-agent-menu shadow">
+                            <label class="stack-agent-option stack-agent-option--all">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    :checked="allAgentsSelected"
+                                    @change="selectAllAgents"
+                                />
+                                <span>{{ $t("stackFilterAllInstances") }}</span>
+                            </label>
+                            <label
+                                v-for="agent in agentOptions"
+                                :key="agent.endpoint"
+                                class="stack-agent-option"
+                            >
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    :checked="isAgentSelected(agent.endpoint)"
+                                    @change="toggleAgent(agent.endpoint)"
+                                />
+                                <span class="agent-color-dot" :style="agentColorStyle(agent.endpoint)"></span>
+                                <span>{{ agent.label }}</span>
+                            </label>
+                        </div>
+                    </details>
+                    <button
+                        v-if="agentOptions.length > 1"
+                        class="btn btn-sm stack-group-toggle"
+                        :class="{ active: stackGroupByAgent }"
+                        type="button"
+                        :title="$t('stackGroupByInstance')"
+                        :aria-pressed="stackGroupByAgent"
+                        @click="stackGroupByAgent = !stackGroupByAgent"
+                    >
+                        <font-awesome-icon icon="layer-group" />
+                    </button>
+                </div>
                 <div class="stack-summary" :aria-label="$t('stackSummaryAria')" role="group">
                     <button
                         class="stack-summary-pill stack-summary-pill--total"
@@ -51,67 +112,6 @@
                         <span>{{ $t("stackScheduler.scheduled") }}</span>
                         <strong>{{ stackSummary.scheduled }}</strong>
                     </button>
-                </div>
-                <div class="search-wrapper" :class="{ 'search-wrapper--single-agent': agentOptions.length <= 1 }">
-                    <details v-if="agentOptions.length > 1" class="stack-agent-filter">
-                        <summary class="stack-agent-select">
-                            <span>{{ agentFilterLabel }}</span>
-                            <font-awesome-icon icon="chevron-down" />
-                        </summary>
-                        <div class="stack-agent-menu shadow">
-                            <label class="stack-agent-option stack-agent-option--all">
-                                <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    :checked="allAgentsSelected"
-                                    @change="selectAllAgents"
-                                />
-                                <span>{{ $t("stackFilterAllInstances") }}</span>
-                            </label>
-                            <label
-                                v-for="agent in agentOptions"
-                                :key="agent.endpoint"
-                                class="stack-agent-option"
-                            >
-                                <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    :checked="isAgentSelected(agent.endpoint)"
-                                    @change="toggleAgent(agent.endpoint)"
-                                />
-                                <span class="agent-color-dot" :style="agentColorStyle(agent.endpoint)"></span>
-                                <span>{{ agent.label }}</span>
-                            </label>
-                        </div>
-                    </details>
-                    <button
-                        v-if="agentOptions.length > 1"
-                        class="btn btn-sm stack-group-toggle"
-                        :class="{ active: stackGroupByAgent }"
-                        type="button"
-                        :title="$t('stackGroupByInstance')"
-                        :aria-pressed="stackGroupByAgent"
-                        @click="stackGroupByAgent = !stackGroupByAgent"
-                    >
-                        <font-awesome-icon icon="layer-group" />
-                    </button>
-                    <label class="visually-hidden" for="stackSort">{{ $t("stackSortLabel") }}</label>
-                    <select id="stackSort" v-model="stackSort" class="form-select form-select-sm stack-sort-select">
-                        <option value="name">{{ $t("stackSortName") }}</option>
-                        <option value="status">{{ $t("stackSortStatus") }}</option>
-                        <option value="agent">{{ $t("stackSortAgent") }}</option>
-                    </select>
-                    <div class="stack-search-field">
-                        <a v-if="searchText == ''" class="search-icon">
-                            <font-awesome-icon icon="search" />
-                        </a>
-                        <a v-if="searchText != ''" class="search-icon" style="cursor: pointer" @click="clearSearchText">
-                            <font-awesome-icon icon="times" />
-                        </a>
-                        <form>
-                            <input v-model="searchText" class="form-control search-input" autocomplete="off" />
-                        </form>
-                    </div>
                 </div>
             </div>
 
@@ -616,10 +616,11 @@ export default {
     border-bottom: 1px solid var(--border-color);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     margin: -10px;
-    margin-bottom: 7px;
-    padding: 8px 10px;
-    container-type: inline-size;
+    margin-bottom: 10px;
+    padding: 10px;
 
+    // Light theme has no fill (white card); dark gets a raised band like
+    // upstream — this cannot be expressed with tokens alone.
     .dark & {
         background-color: var(--bg-raised);
         border-bottom: 0;
@@ -627,9 +628,9 @@ export default {
 }
 
 .header-top {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 7px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .header-filter {
@@ -647,18 +648,23 @@ export default {
     }
 }
 
+// Row 1: search + sort + agent selector. Flex-wrap keeps the controls tidy
+// at the 280px sidebar width and wraps gracefully when they don't fit.
 .search-wrapper {
-    display: grid;
-    grid-template-columns: minmax(10.5rem, 1.35fr) 32px minmax(8.5rem, 1fr) minmax(9rem, 1.35fr);
+    display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
     width: 100%;
     min-width: 0;
 }
 
 .stack-sort-select {
-    width: 100%;
+    width: auto;
+    flex: 0 1 auto;
     min-width: 0;
+    border-color: var(--border-color);
+    color: var(--text-muted);
 }
 
 .stack-agent-select {
@@ -671,10 +677,10 @@ export default {
     min-width: 0;
     box-sizing: border-box;
     padding: 5px 10px;
-    border: 1px solid var(--border-strong);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    background: var(--bg-input);
-    color: var(--text-color);
+    background: transparent;
+    color: var(--text-muted);
     cursor: pointer;
     list-style: none;
 
@@ -702,12 +708,8 @@ export default {
 
 .stack-agent-filter {
     position: relative;
-    width: 100%;
+    flex: 1 1 8rem;
     min-width: 0;
-}
-
-.search-wrapper--single-agent {
-    grid-template-columns: minmax(8.5rem, 1fr) minmax(9rem, 1.35fr);
 }
 
 .stack-agent-menu {
@@ -758,16 +760,24 @@ export default {
     color: var(--text-muted);
 
     &.active {
-        border-color: var(--primary);
+        border-color: var(--primary-strong);
         background: var(--primary-soft);
-        color: var(--primary);
+        color: var(--primary-strong);
     }
 }
 
 .stack-search-field {
     display: flex;
     align-items: center;
+    flex: 1 1 9rem;
     min-width: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    transition: border-color 0.15s ease;
+
+    &:focus-within {
+        border-color: var(--primary-strong);
+    }
 }
 
 .stack-search-field form {
@@ -775,9 +785,23 @@ export default {
     min-width: 0;
 }
 
+// Quiet, upstream-style search: no visible box, just icon + text.
 .search-input {
     width: 100%;
     max-width: none;
+    height: 31px;
+    padding: 4px 4px 4px 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-color);
+    font-size: var(--fs-md);
+    box-shadow: none;
+
+    &:focus {
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
 }
 
 .stack-list {
@@ -841,42 +865,10 @@ export default {
     font-weight: 700;
 }
 
-// Narrow-layout rules shared by the container query and its media-query fallback.
-@mixin stack-list-narrow {
-    .search-wrapper {
-        grid-template-columns: minmax(0, 1fr) 32px;
-    }
-
-    .stack-sort-select,
-    .stack-search-field {
-        grid-column: 1 / -1;
-    }
-
-    .stack-search-field,
-    .stack-search-field form,
-    .search-input {
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-    }
-
-    .search-wrapper--single-agent {
-        grid-template-columns: minmax(0, 1fr);
-    }
-}
-
-@container (max-width: 470px) {
-    @include stack-list-narrow;
-}
-
-// Fallback for browsers without container-query support.
-@media (max-width: $bp-tablet) {
-    @include stack-list-narrow;
-}
-
 .search-icon {
-    padding: 10px;
+    padding: 6px 6px 6px 10px;
     color: var(--text-muted);
+    font-size: var(--fs-sm);
 
     // Clear filter button (X)
     svg[data-icon="times"] {
@@ -916,7 +908,7 @@ export default {
 
     &:hover,
     &.selected {
-        border-color: var(--primary);
+        border-color: var(--primary-strong);
         background: var(--primary-soft);
     }
 

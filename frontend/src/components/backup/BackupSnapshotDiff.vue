@@ -147,7 +147,7 @@ const snapDiffResult = computed<DiffLine[]>(() => {
 
     .preview-filename {
         font-size: var(--fs-md);
-        color: var(--primary);
+        color: var(--primary-strong);
         flex: 1;
         min-width: 0;
         overflow: hidden;
@@ -173,7 +173,7 @@ const snapDiffResult = computed<DiffLine[]>(() => {
     transition: background .12s, color .12s;
 
     &:hover:not(:disabled) { background: color-mix(in srgb, var(--text-color) 8%, transparent); color: var(--text-color); }
-    &.active { background: var(--primary-soft); color: var(--primary); border-color: color-mix(in srgb, var(--primary) 35%, transparent); }
+    &.active { background: var(--primary-soft); color: var(--primary-strong); border-color: color-mix(in srgb, var(--primary) 35%, transparent); }
     &:disabled { opacity: .35; cursor: not-allowed; }
 }
 

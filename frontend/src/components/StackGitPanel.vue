@@ -232,7 +232,7 @@ export default {
 
 .git-summary:hover .settings-subheading,
 .git-summary:focus-visible .settings-subheading {
-    color: var(--primary);
+    color: var(--primary-strong);
 }
 
 .git-summary:focus-visible {

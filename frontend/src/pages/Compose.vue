@@ -1922,7 +1922,7 @@ export default {
 
 .stack-note-toggle:hover .settings-subheading,
 .stack-note-toggle:focus-visible .settings-subheading {
-    color: var(--primary);
+    color: var(--primary-strong);
 }
 
 .stack-note-toggle:focus-visible {
@@ -2057,7 +2057,7 @@ export default {
 }
 
 .containers-toggle:hover .containers-toggle-title {
-    color: var(--primary);
+    color: var(--primary-strong);
 }
 
 .containers-toggle-title {
