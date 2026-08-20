@@ -39,6 +39,12 @@ const UPDATE_HISTORY_PATH = path.join(DATA_DIR, "update-history.json");
 
 const ROLLBACK_WINDOW_MS = 24 * 3_600_000; // 24 heures
 const UPDATE_HISTORY_MAX = 100;
+const MANAGED_DOZZLE_STACK = "dozzle-dockge-enhanced";
+const MANAGED_DOZZLE_IMAGE = "amir20/dozzle:latest";
+
+export function isMandatoryManagedUpdate(status: Pick<ImageStatus, "stack" | "image">): boolean {
+  return status.stack === MANAGED_DOZZLE_STACK && status.image === MANAGED_DOZZLE_IMAGE;
+}
 
 // Génère un tag Docker local qui protège l'ancienne image des `docker image prune`
 function rollbackTag(key: string): string {
@@ -915,6 +921,10 @@ export class ImageWatcher {
     for (const r of updates) {
       const key = `${r.stack}::${r.image}`;
       const cfg = autoUpdateConfig[key];
+      if (isMandatoryManagedUpdate(r)) {
+        toImmediate.push(r);
+        continue;
+      }
       if (!cfg) continue;
       if (cfg.mode === "immediate") {
         toImmediate.push(r);

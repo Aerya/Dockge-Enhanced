@@ -473,13 +473,15 @@ export class DockgeServer {
             const baseUrl = this.getBaseUrl();
             ImageWatcher.getInstance().setBaseUrl(baseUrl);
             TrivyScanner.getInstance().setBaseUrl(baseUrl);
-            ImageWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "ImageWatcher start error: " + e));
+            DozzleManager.getInstance().startIfEnabled()
+                .catch(e => log.error("server", "DozzleManager start error: " + e))
+                .finally(() => ImageWatcher.getInstance().startIfEnabled()
+                    .catch(e => log.error("server", "ImageWatcher start error: " + e)));
             TrivyScanner.getInstance().startIfEnabled().catch(e => log.error("server", "TrivyScanner start error: " + e));
             BackupManager.getInstance().startIfEnabled().catch(e => log.error("server", "BackupManager start error: " + e));
             MonitoringWatcher.getInstance().setServer(this);
             MonitoringWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "MonitoringWatcher start error: " + e));
             KulaManager.getInstance().startIfEnabled().catch(e => log.error("server", "KulaManager start error: " + e));
-            DozzleManager.getInstance().startIfEnabled().catch(e => log.error("server", "DozzleManager start error: " + e));
             PlugNPiNManager.getInstance().startIfEnabled().catch(e => log.error("server", "PlugNPiN start error: " + e));
             AutoPruneManager.getInstance().startIfEnabled().catch(e => log.error("server", "AutoPruneManager start error: " + e));
             StackScheduler.getInstance().start(this).catch(e => log.error("server", "StackScheduler start error: " + e));

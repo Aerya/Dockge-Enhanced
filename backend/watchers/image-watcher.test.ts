@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { assertRegistryHost, buildManifestUrl, composeExecInvocation } from "./image-watcher";
+import {
+  assertRegistryHost,
+  buildManifestUrl,
+  composeExecInvocation,
+  isMandatoryManagedUpdate,
+} from "./image-watcher";
 
 test("construit Compose avec des arguments séparés", () => {
   const composePath = path.join("/opt/stacks", "demo", "compose file.yaml");
@@ -20,4 +25,15 @@ test("construit uniquement des URLs de manifest registry valides", () => {
   assert.throws(() => buildManifestUrl("registry.example/path", "team/app", "latest"), /registry invalide/);
   assert.throws(() => buildManifestUrl("registry.example", "team/../app", "latest"), /Nom d’image invalide/);
   assert.throws(() => buildManifestUrl("registry.example", "team/app", "latest?url=http://127.0.0.1"), /Tag d’image invalide/);
+});
+
+test("met toujours à jour le Dozzle géré par Enhanced", () => {
+  assert.equal(isMandatoryManagedUpdate({
+    stack: "dozzle-dockge-enhanced",
+    image: "amir20/dozzle:latest",
+  }), true);
+  assert.equal(isMandatoryManagedUpdate({
+    stack: "mon-dozzle",
+    image: "amir20/dozzle:latest",
+  }), false);
 });
