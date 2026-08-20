@@ -247,6 +247,9 @@
     "stackTransfer.noSharedRepository": "No compatible shared Restic repository is configured on both instances. Configure the same repository location and encryption password in Backup settings.",
     "stackTransfer.transferRegistryAccess": "Transfer required registry access",
     "stackTransfer.transferRegistryAccessHint": "Copies only the credentials required for {registries}. The secret is end-to-end encrypted and never exposed to the browser or logs.",
+    "stackTransfer.transferImages": "Copy unavailable Docker images from the source",
+    "stackTransfer.transferImagesHint": "Transfers over resumable direct HTTP with SHA-256 verification: {images}. Useful for local builds or when the registry is unavailable or rate-limited.",
+    "stackTransfer.imageTransferUnavailable": "Direct Docker image transfer is not available between these instances.",
     "stackTransfer.directHttpUnavailable": "Direct HTTP transfer is unavailable. Configuration-only copy remains available; configure a shared Restic repository to transfer data.",
     "stackTransfer.targetNameRequired": "Enter a name for the target stack.",
     "stackTransfer.storageSelectionRequired": "Select at least one volume or bind mount to transfer.",
@@ -310,6 +313,9 @@
     "stackTransfer.issue.registry-auth-required": "Image {image} requires authentication to {registry} on the target.",
     "stackTransfer.issue.registry-auth-transfer-planned": "Access to {registry} will be transferred from the source and verified before deployment.",
     "stackTransfer.issue.image-access-unchecked": "Access to image {image} could not be verified; check the registry before deployment.",
+    "stackTransfer.issue.image-transfer-available": "Image {image} cannot be retrieved on the target but is available on the source. Enable image copy to continue.",
+    "stackTransfer.issue.image-transfer-planned": "Image {image} will be copied from the source before deployment.",
+    "stackTransfer.issue.registry-rate-limited": "The registry is rate-limiting {image} and no source copy is available.",
     "stackTransfer.issue.bind-found": "Target path {path} is available.",
     "stackTransfer.issue.bind-create": "Target path {path} does not exist yet; it will be created automatically during deployment.",
     "stackTransfer.issue.bind-missing": "Target path {path} does not exist yet; it will be created automatically during deployment.",
@@ -1064,5 +1070,6 @@
     "releaseNews.item.stackDateSorting": "The stack list can now be sorted by creation date or last update. Existing stacks use filesystem creation time when available, while new stacks store an exact Dockge creation timestamp.",
     "releaseNews.item.stackTransferErrors": "Stack moves now display the real Docker error and detect explicit container names already in use on the target before deployment.",
     "releaseNews.item.stackTransferData": "Stack moves automatically select data transfer when a compatible transport is available; configuration-only moves remain clearly identified.",
-    "releaseNews.item.stackTransferRegistryAccess": "Preflight now tests private-image access and offers to transfer only the required registry credentials with end-to-end encryption."
+    "releaseNews.item.stackTransferRegistryAccess": "Preflight now tests private-image access and offers to transfer only the required registry credentials with end-to-end encryption.",
+    "releaseNews.item.stackTransferImages": "Stack transfers can copy Docker images from the source instance when the registry is unavailable, rate-limited, or the image comes from a local build."
 }

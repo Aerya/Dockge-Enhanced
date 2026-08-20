@@ -41,6 +41,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
 
+**2026-08-20 — Docker images can follow stacks** — If the target cannot retrieve an image but the source has it, the wizard offers an optional copy, including for local builds. The transfer uses resumable direct HTTP with SHA-256 verification, loads the image through `docker image load`, rechecks it on the target, then removes the temporary archive.
+
 **2026-08-20 — Private registry access follows stack transfers** — Target preflight now verifies that every Compose image is reachable before snapshots or deployment begin. When a private image requires authentication and the source owns a matching credential, the wizard offers to transfer only that registry access. A one-use target key protects the credential with RSA-OAEP plus AES-256-GCM end to end; the browser, transfer jobs and logs only see ciphertext. The target stores the imported credential in its existing permission-restricted Docker configuration and immediately rechecks image access before continuing.
 
 **2026-08-20 — Safer stack moves with useful deployment errors** — The transfer wizard now detects explicit `container_name` conflicts during target preflight and displays Docker Compose's real bounded, ANSI-free deployment error instead of referring to an invisible terminal. Existing terminal streaming and transactional rollback behavior are preserved. For a move, volume-data transfer is selected automatically whenever a compatible direct or shared transport is available; configuration-only mode remains available and clearly identified.

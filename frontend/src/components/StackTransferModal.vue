@@ -44,6 +44,14 @@
                     <div class="form-text">{{ $t("stackTransfer.transferRegistryAccessHint", { registries: requiredRegistryAccess.join(", ") }) }}</div>
                 </div>
 
+                <div v-if="copyableImages.length" class="alert alert-warning mb-4">
+                    <div class="form-check">
+                        <input id="stack-transfer-images" v-model="transferImages" type="checkbox" class="form-check-input" @change="invalidatePreflight" />
+                        <label for="stack-transfer-images" class="form-check-label fw-semibold">{{ $t("stackTransfer.transferImages") }}</label>
+                    </div>
+                    <div class="form-text">{{ $t("stackTransfer.transferImagesHint", { images: copyableImages.join(", ") }) }}</div>
+                </div>
+
                 <div class="shadow-box big-padding mb-4">
                     <div v-if="operation !== 'replicate'" class="form-check mb-3">
                         <input id="stack-transfer-data" v-model="includeData" type="checkbox" class="form-check-input" :disabled="availableRepositories.length === 0 || operation === 'replicate'" @change="dataModeChanged" />
@@ -333,7 +341,9 @@ export default {
             deploy: true,
             includeData: false,
             transferRegistryAccess: true,
+            transferImages: false,
             sourceRegistryHosts: [],
+            sourceImages: [],
             overwriteExisting: false,
             sourceDataCapabilities: { repositories: [],
                 policy: { mode: "hot" },
@@ -399,6 +409,7 @@ export default {
                 consistencyMode: this.consistencyMode,
                 hooks: [ this.hookService, this.preHook, this.postHook ],
                 compose: [ this.targetComposeYAML, this.targetComposeENV, this.targetComposeOverrideYAML ],
+                imageTransfer: this.transferImages,
                 mappings: this.mappings.map(item => [ item.id, item.targetSource, item.transferData ]) });
         },
         sharedRepositories() {
@@ -415,6 +426,11 @@ export default {
             return [ ...new Set(this.issues
                 .filter(issue => [ "registry-auth-required", "registry-auth-transfer-planned" ].includes(issue.code) && issue.params?.transferable === "true")
                 .map(issue => issue.params.registry)) ];
+        },
+        copyableImages() {
+            return [ ...new Set(this.issues
+                .filter(issue => issue.params?.imageTransferable === "true")
+                .map(issue => issue.params.image)) ];
         },
         actionDisabledReason() {
             if (this.canTransfer) {
@@ -522,6 +538,7 @@ export default {
                 this.originalMounts = analysis.data.mounts.map(mount => ({ ...mount,
                     transferData: !mount.external && (mount.type === "bind" || mount.type === "volume") }));
                 this.sourceRunningServices = analysis.data.runningServices || [];
+                this.sourceImages = (analysis.data.images || []).filter(image => image.available).map(image => image.name);
                 this.analysisWarnings = analysis.data.warnings || [];
                 await this.loadDataCapabilities();
                 if (operation === "move" && this.availableRepositories.length > 0) {
@@ -576,7 +593,9 @@ export default {
             this.deploy = true;
             this.includeData = false;
             this.transferRegistryAccess = true;
+            this.transferImages = false;
             this.sourceRegistryHosts = [];
+            this.sourceImages = [];
             this.overwriteExisting = false;
             this.sourceDataCapabilities = { repositories: [],
                 policy: { mode: "hot" },
@@ -769,6 +788,8 @@ export default {
                 overwriteExisting: this.overwriteExisting,
                 sourceRegistryHosts: this.sourceRegistryHosts,
                 registryCredentialTransfer: this.transferRegistryAccess ? this.sourceRegistryHosts : [],
+                sourceImages: this.sourceImages,
+                imageTransfer: this.transferImages ? this.copyableImages : [],
             };
         },
         dataPolicy() {
@@ -840,6 +861,7 @@ export default {
             this.transferring = true;
             this.operationError = "";
             try {
+                await this.transferRequiredImages();
                 await this.transferRequiredRegistryCredentials();
                 if (this.operation === "replicate") {
                     await this.executeReplication();
@@ -910,6 +932,40 @@ export default {
                 this.operationError = error instanceof Error ? error.message : String(error);
             } finally {
                 this.transferring = false;
+            }
+        },
+        async transferRequiredImages() {
+            if (!this.transferImages || this.copyableImages.length === 0) {
+                return;
+            }
+            if (!this.directRepository?.id) {
+                throw new Error(this.$t("stackTransfer.imageTransferUnavailable"));
+            }
+            const images = [ ...this.copyableImages ];
+            for (const image of images) {
+                const exported = await this.emitAgentLong(this.endpoint, "exportStackImage", image, this.directRepository.id);
+                if (!exported.ok) {
+                    throw new Error(this.$t(exported.msg));
+                }
+                try {
+                    const imported = await this.emitAgentLong(this.targetEndpoint, "importStackImage", this.directRepository.id, exported.data);
+                    if (!imported.ok) {
+                        throw new Error(this.$t(imported.msg));
+                    }
+                } finally {
+                    await this.emitAgent(this.endpoint, "forgetStackTransferSnapshots", this.directRepository.id, [ exported.data.snapshotId ]).catch(() => {});
+                }
+            }
+            const verificationRequest = this.request();
+            verificationRequest.imageTransfer = [];
+            const verified = await this.emitAgent(this.targetEndpoint, "preflightStackTransfer", verificationRequest);
+            if (!verified.ok) {
+                throw new Error(this.$t(verified.msg));
+            }
+            this.issues = verified.data.issues;
+            const blocking = this.issues.find(issue => issue.severity === "error" && (issue.scope === "save" || this.deploy || this.includeData));
+            if (blocking) {
+                throw new Error(this.issueText(blocking));
             }
         },
         async transferRequiredRegistryCredentials() {
@@ -1138,7 +1194,19 @@ export default {
 .transfer-issue-success { background: rgba(25, 135, 84, .14); color: #75d5a5; }
 .transfer-issue-warning { background: rgba(255, 193, 7, .14); color: #ffd76a; }
 .transfer-issue-error { background: rgba(220, 53, 69, .14); color: #ff8793; }
-.transfer-operation-error { white-space: pre-wrap; overflow-wrap: anywhere; }
+.transfer-operation-error {
+    max-height: min(32rem, 45vh);
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    border-radius: .5rem;
+    border: 1px solid rgba(220, 53, 69, .35);
+    background: #fff1f2;
+    color: #9f2030;
+    font-family: var(--bs-font-monospace);
+    font-size: .8rem;
+    line-height: 1.45;
+}
 .transfer-override-preview { max-height: 260px; overflow: auto; border-radius: .4rem; padding: .75rem; background: rgba(0, 0, 0, .25); font-size: .8rem; }
 .target-compose-editor { min-height: 8rem; resize: vertical; font-family: var(--bs-font-monospace); font-size: .82rem; line-height: 1.45; }
 </style>
@@ -1167,6 +1235,12 @@ export default {
 
     .transfer-mapping-table code {
         color: #536273;
+    }
+
+    .transfer-operation-error {
+        border-color: rgba(255, 107, 122, .35);
+        background: #241116;
+        color: #ff8f9c;
     }
 }
 </style>
