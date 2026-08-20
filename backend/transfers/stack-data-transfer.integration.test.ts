@@ -111,7 +111,7 @@ async function down(root: string, name: string): Promise<void> {
     } catch { /* best effort */ }
 }
 
-async function createContext(root: string, repository: string): Promise<{ server: DockgeServer; socket: DockgeSocket; repositoryId: string }> {
+async function createContext(root: string, repository: string): Promise<{ server: DockgeServer; socket: DockgeSocket; repositoryId: string; memory: Map<string, unknown> }> {
     const memory = new Map<string, unknown>();
     mock.method(Settings, "get", async (key: string) => memory.get(key));
     mock.method(Settings, "set", async (key: string, value: unknown) => {
@@ -143,7 +143,8 @@ async function createContext(root: string, repository: string): Promise<{ server
         emitAgent() {} } as unknown as DockgeSocket;
     return { server,
         socket,
-        repositoryId: getStackTransferRepositories()[0].id };
+        repositoryId: getStackTransferRepositories()[0].id,
+        memory };
 }
 
 test("copies bind and named-volume data through a shared Restic repository", { skip: !integrationAvailable,
@@ -201,7 +202,7 @@ test("copies bind and named-volume data through resumable direct HTTP", { skip: 
     configureHttpDirectTransport(path.join(root, ".data"));
     const app = express();
     app.get("/api/transfer/http/:id", (request, response) => void serveDirectHttpArchive(request, response));
-    app.head("/api/transfer/http/:id", (request, response) => void serveDirectHttpArchive(request, response));
+    app.head("/api/transfer/http/:id", (_request, response) => response.sendStatus(405));
     const httpServer = createServer(app);
     await new Promise<void>(resolve => httpServer.listen(0, "127.0.0.1", resolve));
     try {
@@ -210,12 +211,19 @@ test("copies bind and named-volume data through resumable direct HTTP", { skip: 
         assert.ok(address && typeof address === "object");
         const repositoryId = directHttpRepositoryId(`http://127.0.0.1:${address.port}`);
         await writeSource(root, sourceName);
-        const snapshot = await createStackTransferDataSnapshot(context.server, { transferId,
+        const request = { transferId,
             stackName: sourceName,
             repositoryId,
             mappings: mappings(),
-            policy: { mode: "hot" },
-            phase: "copy" });
+            policy: { mode: "hot" as const },
+            phase: "copy" as const };
+        const expired = await createStackTransferDataSnapshot(context.server, request);
+        const jobs = context.memory.get("stackTransferDataSourceJobs") as Array<{ snapshotIds: string[] }>;
+        const descriptor = JSON.parse(Buffer.from(expired.snapshotId.slice("http-snapshot:".length), "base64url").toString("utf8")) as Record<string, unknown>;
+        descriptor.expiresAt = new Date(Date.now() - 1_000).toISOString();
+        jobs[0].snapshotIds = [ `http-snapshot:${Buffer.from(JSON.stringify(descriptor)).toString("base64url")}` ];
+        const snapshot = await createStackTransferDataSnapshot(context.server, request);
+        assert.notEqual(snapshot.snapshotId, expired.snapshotId);
         await stageStackTransferDataTarget(context.server, context.socket, { transferId,
             repositoryId,
             snapshotId: snapshot.snapshotId,
