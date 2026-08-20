@@ -25,6 +25,7 @@ import {
 } from "./stack-transfer";
 import { StackTransferRepository } from "./stack-transfer-restic";
 import { stackTransferTransport } from "./stack-transfer-transport";
+import { isDirectHttpRepository, isDirectHttpSnapshotReusable } from "./http-direct-transport";
 
 const execFileAsync = promisify(execFile);
 const SOURCE_JOBS_SETTING = "stackTransferDataSourceJobs";
@@ -360,9 +361,12 @@ export async function createStackTransferDataSnapshot(server: DockgeServer, requ
     const existing = (await readSourceJobs()).find(item => item.id === assertTransferId(request.transferId));
     if (existing?.status === "snapshotted" && existing.phase === request.phase && existing.snapshotIds.length) {
         const snapshotId = existing.snapshotIds.at(-1)!;
-        return { snapshotId,
-            archivePath: archivePath(existing.id, request.phase),
-            bytesTransferred: existing.snapshotBytes?.[snapshotId] || 0 };
+        if (!isDirectHttpRepository(existing.repositoryId) || isDirectHttpSnapshotReusable(snapshotId)) {
+            return { snapshotId,
+                archivePath: archivePath(existing.id, request.phase),
+                bytesTransferred: existing.snapshotBytes?.[snapshotId] || 0 };
+        }
+        await stackTransferTransport.cleanup(existing.repositoryId, existing.snapshotIds).catch(() => {});
     }
     const now = new Date().toISOString();
     const job: SourceDataJob = {

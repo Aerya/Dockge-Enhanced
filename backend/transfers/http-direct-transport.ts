@@ -126,6 +126,14 @@ export function isDirectHttpRepository(value: string): boolean {
     return value.startsWith(REPOSITORY_PREFIX);
 }
 
+export function isDirectHttpSnapshotReusable(value: string, minimumValidityMs = 60_000): boolean {
+    try {
+        return new Date(snapshot(value).expiresAt).getTime() > Date.now() + minimumValidityMs;
+    } catch {
+        return false;
+    }
+}
+
 export function directHttpUsesTls(value: string): boolean {
     return repository(value).baseUrl.startsWith("https://");
 }
