@@ -55,6 +55,13 @@ export const RELEASE_NEWS = [
             "releaseNews.item.stackDateSorting",
         ],
     },
+    {
+        id: "2026-08-20-stack-transfer-errors-data",
+        items: [
+            "releaseNews.item.stackTransferErrors",
+            "releaseNews.item.stackTransferData",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

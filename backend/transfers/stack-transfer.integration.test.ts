@@ -131,6 +131,27 @@ test("blocks deployment when a Compose device is missing on the target", { skip:
     }
 });
 
+test("blocks deployment when an explicit container name belongs to another project", { skip: !dockerAvailable,
+    timeout: 30_000 }, async () => {
+    const root = await fsAsync.mkdtemp(path.join(os.tmpdir(), "dockge-transfer-container-name-"));
+    const targetName = `transfer-name-${Date.now()}`;
+    const containerName = `dockge-transfer-occupied-${Date.now()}`;
+    const server = { stacksDir: root } as DockgeServer;
+    try {
+        await execFileAsync("docker", [ "create", "--name", containerName, "docker:29.6.1-cli", "sleep", "300" ]);
+        const transferRequest = request(targetName);
+        transferRequest.composeYAML = transferRequest.composeYAML.replace("    image: docker:29.6.1-cli\n", `    image: docker:29.6.1-cli\n    container_name: ${containerName}\n`);
+        const preflight = await preflightStackTransfer(server, transferRequest);
+        const issue = preflight.issues.find(item => item.code === "container-name-conflict");
+        assert.equal(issue?.severity, "error");
+        assert.equal(issue?.params?.name, containerName);
+    } finally {
+        await execFileAsync("docker", [ "rm", "-f", containerName ]).catch(() => {});
+        await fsAsync.rm(root, { recursive: true,
+            force: true });
+    }
+});
+
 test("rolls configuration and containers back when target verification fails", { skip: !dockerAvailable,
     timeout: 90_000 }, async () => {
     const root = await fsAsync.mkdtemp(path.join(os.tmpdir(), "dockge-transfer-rollback-"));
@@ -160,6 +181,34 @@ test("rolls configuration and containers back when target verification fails", {
         assert.equal(fs.existsSync(path.join(root, targetName)), false);
         const ids = String((await execFileAsync("docker", [ "ps", "-aq", "--filter", `label=com.docker.compose.project=${targetName}` ])).stdout).trim();
         assert.equal(ids, "");
+    } finally {
+        await fsAsync.rm(root, { recursive: true,
+            force: true });
+        mock.restoreAll();
+    }
+});
+
+test("surfaces Docker Compose output and rolls back when target deployment fails", { skip: !dockerAvailable,
+    timeout: 30_000 }, async () => {
+    const root = await fsAsync.mkdtemp(path.join(os.tmpdir(), "dockge-transfer-deploy-error-"));
+    const targetName = `transfer-deploy-error-${Date.now()}`;
+    const memory = new Map<string, unknown>();
+    mock.method(Settings, "get", async (key: string) => memory.get(key));
+    mock.method(Settings, "set", async (key: string, value: unknown) => {
+        memory.set(key, value);
+    });
+    mock.method(Terminal, "exec", async (_server: DockgeServer, _socket: DockgeSocket | undefined, _name: string, _file: string, _args: string | string[], _cwd: string, onOutput?: (data: string) => void) => {
+        onOutput?.("\u001b[31mError response from daemon: port is already allocated\u001b[0m\r\n");
+        return 1;
+    });
+    const server = { stacksDir: root } as DockgeServer;
+    const socket = { endpoint: "",
+        id: "integration",
+        connected: true,
+        emitAgent() {} } as unknown as DockgeSocket;
+    try {
+        await assert.rejects(importStackTransfer(server, socket, request(targetName)), /port is already allocated/);
+        assert.equal(fs.existsSync(path.join(root, targetName)), false);
     } finally {
         await fsAsync.rm(root, { recursive: true,
             force: true });

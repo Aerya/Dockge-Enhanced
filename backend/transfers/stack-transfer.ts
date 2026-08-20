@@ -668,6 +668,31 @@ export async function preflightStackTransfer(server: DockgeServer, request: Stac
     }
 
     const targetMounts = resolvedMounts(config);
+    for (const [ service, rawService ] of Object.entries(asRecord(config.services))) {
+        const containerName = asRecord(rawService).container_name;
+        if (typeof containerName !== "string" || !containerName.trim()) {
+            continue;
+        }
+        try {
+            const inspected = JSON.parse(await runDocker([ "container", "inspect", containerName.trim() ])) as unknown[];
+            const labels = asRecord(asRecord(asRecord(inspected[0]).Config).Labels);
+            const ownerProject = typeof labels["com.docker.compose.project"] === "string" ? String(labels["com.docker.compose.project"]) : "";
+            const ownerService = typeof labels["com.docker.compose.service"] === "string" ? String(labels["com.docker.compose.service"]) : "";
+            const ownerWorkingDir = typeof labels["com.docker.compose.project.working_dir"] === "string" ? path.resolve(String(labels["com.docker.compose.project.working_dir"])) : "";
+            const targetWorkingDir = path.resolve(server.stacksDir, request.targetName);
+            if (ownerProject !== request.targetName || ownerService !== service || ownerWorkingDir !== targetWorkingDir) {
+                issues.push({ severity: "error",
+                    scope: "deploy",
+                    code: "container-name-conflict",
+                    message: `${service}: container name ${containerName} is already used${ownerProject ? ` by Compose project ${ownerProject}` : ""}`,
+                    params: { service,
+                        name: containerName,
+                        project: ownerProject || "unknown" } });
+            }
+        } catch {
+            // An exact inspect failure means that this explicit name is available.
+        }
+    }
     const occupied = await inspectOccupiedPorts().catch(() => new Set<string>());
     for (const port of publishedPorts(config)) {
         if (occupied.has(`${port.published}/${port.protocol}`)) {

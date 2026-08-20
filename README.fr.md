@@ -41,6 +41,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
 
+**2026-08-20 — Déplacements de stacks plus sûrs et erreurs de déploiement utiles** — L’assistant de transfert détecte désormais les conflits de `container_name` explicites pendant la validation de la cible et affiche l’erreur Docker Compose réelle, bornée et débarrassée des séquences ANSI, au lieu de renvoyer vers un terminal invisible. Le streaming des terminaux existants et le rollback transactionnel sont conservés. Pour un déplacement, le transfert des données des volumes est sélectionné automatiquement dès qu’un transport direct ou partagé compatible est disponible ; le mode configuration seule reste disponible et clairement signalé.
+
 **2026-08-19 — Tri des stacks par date de création et dernière mise à jour** — Le sélecteur de stacks peut maintenant trier les stacks les plus récentes en premier selon leur date de création ou leur dernière mise à jour Dockge. Les nouvelles stacks enregistrent un `createdAt` exact et immuable ; les stacks existantes utilisent le birthtime du filesystem lorsqu'il est disponible, identifié en interne comme estimation. Les stacks épinglées restent prioritaires.
 
 **2026-08-18 — Pause et reprise du suivi des logs live** — La barre d'outils des Logs peut suspendre le défilement automatique sans couper le flux live : les nouvelles lignes continuent d'entrer dans le scrollback xterm tandis que la position de lecture reste figée. Reprendre revient immédiatement aux derniers logs et réactive le suivi automatique.

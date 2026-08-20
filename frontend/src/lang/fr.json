@@ -296,6 +296,7 @@
     "stackTransfer.issue.compose-valid": "La configuration Compose est valide sur la cible.",
     "stackTransfer.issue.compose-invalid": "Configuration Compose invalide : {error}",
     "stackTransfer.issue.port-conflict": "{service} : le port {published}/{protocol} est déjà utilisé sur la cible.",
+    "stackTransfer.issue.container-name-conflict": "{service} : le nom de conteneur {name} est déjà utilisé sur la cible par le projet Compose {project}.",
     "stackTransfer.issue.bind-found": "Le chemin cible {path} est disponible.",
     "stackTransfer.issue.bind-create": "Le chemin cible {path} n’existe pas encore ; il sera créé automatiquement lors du déploiement.",
     "stackTransfer.issue.bind-missing": "Le chemin cible {path} n’existe pas encore ; il sera créé automatiquement lors du déploiement.",
@@ -1045,5 +1046,7 @@
     "scenarios": "dans lesquels vous avez l'intention d'implémenter une authentification tierce",
     "stackSortCreated": "Date de création",
     "stackSortUpdated": "Dernière mise à jour",
-    "releaseNews.item.stackDateSorting": "La liste des stacks peut maintenant être triée par date de création ou dernière mise à jour. Les anciennes stacks utilisent leur date de création filesystem lorsqu'elle est disponible, tandis que les nouvelles enregistrent une date de création Dockge exacte."
+    "releaseNews.item.stackDateSorting": "La liste des stacks peut maintenant être triée par date de création ou dernière mise à jour. Les anciennes stacks utilisent leur date de création filesystem lorsqu'elle est disponible, tandis que les nouvelles enregistrent une date de création Dockge exacte.",
+    "releaseNews.item.stackTransferErrors": "Le déplacement d’une stack affiche maintenant l’erreur Docker réelle et détecte avant le déploiement les noms de conteneurs explicites déjà utilisés sur la cible.",
+    "releaseNews.item.stackTransferData": "Lors d’un déplacement, le transfert des données est sélectionné automatiquement lorsqu’un transport compatible est disponible ; la copie de configuration seule reste clairement signalée."
 }

@@ -304,6 +304,7 @@
     "stackTransfer.issue.compose-valid": "The Compose configuration is valid on the target.",
     "stackTransfer.issue.compose-invalid": "Invalid Compose configuration: {error}",
     "stackTransfer.issue.port-conflict": "{service}: port {published}/{protocol} is already in use on the target.",
+    "stackTransfer.issue.container-name-conflict": "{service}: container name {name} is already used on the target by Compose project {project}.",
     "stackTransfer.issue.bind-found": "Target path {path} is available.",
     "stackTransfer.issue.bind-create": "Target path {path} does not exist yet; it will be created automatically during deployment.",
     "stackTransfer.issue.bind-missing": "Target path {path} does not exist yet; it will be created automatically during deployment.",
@@ -1055,5 +1056,7 @@
     "stackUnpin": "Unpin this stack",
     "stackSortCreated": "Creation date",
     "stackSortUpdated": "Last update",
-    "releaseNews.item.stackDateSorting": "The stack list can now be sorted by creation date or last update. Existing stacks use filesystem creation time when available, while new stacks store an exact Dockge creation timestamp."
+    "releaseNews.item.stackDateSorting": "The stack list can now be sorted by creation date or last update. Existing stacks use filesystem creation time when available, while new stacks store an exact Dockge creation timestamp.",
+    "releaseNews.item.stackTransferErrors": "Stack moves now display the real Docker error and detect explicit container names already in use on the target before deployment.",
+    "releaseNews.item.stackTransferData": "Stack moves automatically select data transfer when a compatible transport is available; configuration-only moves remain clearly identified."
 }

@@ -226,7 +226,7 @@ export class Terminal {
         return terminal;
     }
 
-    public static exec(server : DockgeServer, socket : DockgeSocket | undefined, terminalName : string, file : string, args : string | string[], cwd : string) : Promise<number> {
+    public static exec(server : DockgeServer, socket : DockgeSocket | undefined, terminalName : string, file : string, args : string | string[], cwd : string, onOutput? : (data : string) => void) : Promise<number> {
         return new Promise((resolve, reject) => {
             // check if terminal exists
             if (Terminal.terminalMap.has(terminalName)) {
@@ -236,6 +236,12 @@ export class Terminal {
 
             let terminal = new Terminal(server, terminalName, file, args, cwd, process.env);
             terminal.rows = PROGRESS_TERMINAL_ROWS;
+            if (onOutput) {
+                terminal.outputTransform = (data) => {
+                    onOutput(data);
+                    return data;
+                };
+            }
 
             if (socket) {
                 terminal.join(socket);

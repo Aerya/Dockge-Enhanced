@@ -43,6 +43,8 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 <details>
 <summary><strong>Mostrar el catálogo completo de funcionalidades</strong></summary>
 
+**2026-08-20 — Movimientos de stacks más seguros y errores de despliegue útiles** — El asistente de transferencia ahora detecta conflictos de `container_name` explícitos durante la validación del destino y muestra el error real de Docker Compose, limitado y sin secuencias ANSI, en lugar de remitir a un terminal invisible. Se conservan el streaming de los terminales existentes y el rollback transaccional. Al mover una stack, la transferencia de datos de los volúmenes se selecciona automáticamente cuando hay un transporte directo o compartido compatible; el modo solo configuración sigue disponible y se indica claramente.
+
 **2026-08-19 — Ordenar stacks por fecha de creación y última actualización** — El selector de stacks permite ordenar primero las más recientes por fecha de creación o por la última actualización registrada por Dockge. Las stacks nuevas guardan un `createdAt` exacto e inmutable; las existentes usan la fecha de creación del sistema de archivos cuando está disponible, marcada internamente como estimada. Las stacks fijadas mantienen la prioridad.
 
 **2026-08-18 — Pausa y reanudación del seguimiento de logs en vivo** — La barra de herramientas de Registros puede pausar el seguimiento automático sin desconectar el flujo en vivo: las nuevas líneas siguen entrando en el historial de xterm mientras la posición de lectura permanece fija. Reanudar vuelve inmediatamente a los últimos logs y reactiva el desplazamiento automático.

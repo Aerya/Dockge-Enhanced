@@ -41,6 +41,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
 
+**2026-08-20 — Safer stack moves with useful deployment errors** — The transfer wizard now detects explicit `container_name` conflicts during target preflight and displays Docker Compose's real bounded, ANSI-free deployment error instead of referring to an invisible terminal. Existing terminal streaming and transactional rollback behavior are preserved. For a move, volume-data transfer is selected automatically whenever a compatible direct or shared transport is available; configuration-only mode remains available and clearly identified.
+
 **2026-08-19 — Sort stacks by creation date and last update** — The stack selector now supports newest-first sorting by creation date and Dockge's last-update timestamp. New stacks store an immutable exact `createdAt`; existing stacks fall back to filesystem birth time when available, marked internally as estimated. Pinned stacks keep priority.
 
 **2026-08-18 — Pause and resume live log following** — The Logs toolbar can pause automatic following without disconnecting the live stream: new lines continue entering xterm's scrollback while the current reading position stays fixed. Resume jumps straight back to the latest output and restores automatic scrolling.

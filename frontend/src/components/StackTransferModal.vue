@@ -271,7 +271,7 @@
                     <div v-if="operation === 'move'">{{ $t("stackTransfer.sourceKept") }}</div>
                 </div>
 
-                <div v-if="operationError" class="alert alert-danger">{{ operationError }}</div>
+                <div v-if="operationError" class="alert alert-danger transfer-operation-error">{{ operationError }}</div>
                 <div v-if="transferring && transferPhase" class="alert alert-primary">
                     <span class="spinner-border spinner-border-sm me-2" />{{ $t(`stackTransfer.phase.${transferPhase}`) }}
                     <div v-if="currentJob" class="progress mt-2" role="progressbar" :aria-valuenow="currentJob.progress" aria-valuemin="0" aria-valuemax="100">
@@ -509,6 +509,9 @@ export default {
                 this.sourceRunningServices = analysis.data.runningServices || [];
                 this.analysisWarnings = analysis.data.warnings || [];
                 await this.loadDataCapabilities();
+                if (operation === "move" && this.availableRepositories.length > 0) {
+                    this.includeData = true;
+                }
                 await this.loadRules();
                 this.applyRules();
                 if (operation === "replicate") {
@@ -1088,6 +1091,7 @@ export default {
 .transfer-issue-success { background: rgba(25, 135, 84, .14); color: #75d5a5; }
 .transfer-issue-warning { background: rgba(255, 193, 7, .14); color: #ffd76a; }
 .transfer-issue-error { background: rgba(220, 53, 69, .14); color: #ff8793; }
+.transfer-operation-error { white-space: pre-wrap; overflow-wrap: anywhere; }
 .transfer-override-preview { max-height: 260px; overflow: auto; border-radius: .4rem; padding: .75rem; background: rgba(0, 0, 0, .25); font-size: .8rem; }
 .target-compose-editor { min-height: 8rem; resize: vertical; font-family: var(--bs-font-monospace); font-size: .82rem; line-height: 1.45; }
 </style>
