@@ -412,9 +412,22 @@ export class Stack {
 
     async deploy(socket : DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--remove-orphans"), this.path);
+        const outputChunks : string[] = [];
+        let outputLength = 0;
+        const maxOutputLength = 16_384;
+        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--remove-orphans"), this.path, (data) => {
+            outputChunks.push(data);
+            outputLength += data.length;
+            while (outputLength > maxOutputLength && outputChunks.length > 1) {
+                outputLength -= outputChunks.shift()?.length || 0;
+            }
+        });
         if (exitCode !== 0) {
-            throw new Error("Failed to deploy, please check the terminal output for more information.");
+            const output = outputChunks.join("")
+                .replace(/[\u001B\u009B][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[-a-zA-Z\d/#&.:=?%@~_]+)*)?\u0007)|(?:(?:\d{1,4}(?:[;:]\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g, "")
+                .replace(/\r/g, "")
+                .trim();
+            throw new Error(output || "Docker Compose failed to deploy the stack.");
         }
         const now = new Date().toISOString();
         await this.writeMeta({ lastUpdated: now, lastStartedAt: now });
