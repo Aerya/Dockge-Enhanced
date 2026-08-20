@@ -218,7 +218,6 @@ export async function resumeDirectHttpArchive(repositoryId: string, snapshotId: 
 }
 
 export async function restoreDirectHttpArchive(repositoryId: string, snapshotId: string, output: Writable): Promise<void> {
-    await verifyDirectHttpArchive(repositoryId, snapshotId);
     const file = await download(repositoryId, snapshotId);
     await new Promise<void>((resolve, reject) => {
         const input = createReadStream(file);
