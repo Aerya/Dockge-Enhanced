@@ -139,7 +139,7 @@
                     v-for="item in group.stacks"
                     :key="`${item.endpoint || '__local__'}:${item.name}`"
                     :stack="item"
-                    :agent-colors="agentColors(item.endpoint)"
+                    :agent-colors="agentOptions.length > 1 ? agentColors(item.endpoint) : null"
                     :scheduled="isStackScheduled(item.name, item.endpoint)"
                     :pinned="isStackPinned(item)"
                     @toggle-pin="toggleStackPin(item)"
@@ -769,7 +769,9 @@ export default {
 .stack-search-field {
     display: flex;
     align-items: center;
-    flex: 1 1 9rem;
+    // Small basis so the sort select fits on the same row at 280px sidebar
+    // width instead of wrapping to its own line.
+    flex: 1 1 6rem;
     min-width: 0;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-pill);
