@@ -44,9 +44,9 @@
                     <div class="form-text">{{ $t("stackTransfer.transferRegistryAccessHint", { registries: requiredRegistryAccess.join(", ") }) }}</div>
                 </div>
 
-                <div v-if="copyableImages.length" class="alert alert-warning mb-4">
+                <div v-if="copyableImages.length" class="alert alert-warning transfer-image-option mb-4">
                     <div class="form-check">
-                        <input id="stack-transfer-images" v-model="transferImages" type="checkbox" class="form-check-input" @change="invalidatePreflight" />
+                        <input id="stack-transfer-images" v-model="transferImages" type="checkbox" class="form-check-input" :disabled="preflightLoading" @change="imageTransferChanged" />
                         <label for="stack-transfer-images" class="form-check-label fw-semibold">{{ $t("stackTransfer.transferImages") }}</label>
                     </div>
                     <div class="form-text">{{ $t("stackTransfer.transferImagesHint", { images: copyableImages.join(", ") }) }}</div>
@@ -773,6 +773,12 @@ export default {
             this.issues = [];
             this.result = null;
         },
+        async imageTransferChanged() {
+            this.preflightSignature = "";
+            this.mappedOverridePreview = "";
+            this.result = null;
+            await this.runPreflight();
+        },
         request() {
             return {
                 operation: this.operation === "replicate" ? "copy" : this.operation,
@@ -1234,7 +1240,29 @@ export default {
     }
 
     .transfer-mapping-table code {
-        color: #536273;
+        color: #c6d1dc;
+    }
+
+    .transfer-mapping-table {
+        --bs-table-bg: #111720;
+        --bs-table-color: #dce5ee;
+        --bs-table-border-color: #34404d;
+        --bs-table-striped-bg: #151d27;
+        --bs-table-hover-bg: #19232e;
+    }
+
+    .transfer-image-option {
+        border-color: #6c5422;
+        background: #211a0c;
+        color: #ffe29a;
+
+        .form-check-label {
+            color: #ffe29a;
+        }
+
+        .form-text {
+            color: #d8c58f !important;
+        }
     }
 
     .transfer-operation-error {
