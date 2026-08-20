@@ -21,7 +21,7 @@
                     :extensions="editorExtensions"
                     minimal
                     wrap="true"
-                    dark="true"
+                    :dark="$root.isDark"
                     tab="true"
                     @change="editing.dirty = true"
                 />
@@ -106,7 +106,7 @@ import { python } from "@codemirror/lang-python";
 import { yaml } from "@codemirror/lang-yaml";
 import { StreamLanguage } from "@codemirror/language";
 import { shell } from "@codemirror/legacy-modes/mode/shell";
-import { dracula as editorTheme } from "thememirror";
+import { dracula, tomorrow } from "thememirror";
 import { lineNumbers } from "@codemirror/view";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -145,7 +145,10 @@ export default {
     },
     computed: {
         editorExtensions() {
-            const extensions = [ editorTheme, lineNumbers() ];
+            // Follow the app theme (dracula in dark, tomorrow in light), like
+            // Compose.vue — computed so a theme toggle reconfigures the live
+            // editor via vue-codemirror6's extension watcher.
+            const extensions = [ ...(this.$root.isDark ? [ dracula ] : [ tomorrow ]), lineNumbers() ];
             const fileName = this.editing?.path?.split("/").pop()?.toLowerCase() ?? "";
             const extension = fileName.includes(".") ? fileName.split(".").pop() : "";
 
