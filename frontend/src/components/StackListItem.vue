@@ -19,8 +19,6 @@
             <div class="name-row">
                 <span class="name">{{ stackName }}</span>
                 <font-awesome-icon v-if="scheduled" icon="calendar-days" class="scheduled-indicator" :title="$t('stackScheduler.scheduledTooltip')" />
-                <StackUpdateBadge :stack-name="stackName" />
-                <StackStatsBadge :stack-name="stackName" />
             </div>
             <div v-if="$root.agentCount > 1" class="endpoint">
                 <a
@@ -32,6 +30,10 @@
                     @keydown.stop
                 >{{ endpointDisplay }}</a>
                 <span v-else>{{ endpointDisplay }}</span>
+            </div>
+            <div class="meta-row">
+                <StackUpdateBadge :stack-name="stackName" />
+                <StackStatsBadge :stack-name="stackName" />
             </div>
         </div>
         <button
@@ -220,7 +222,7 @@ export default {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 3px;
 }
 
 .name-row {
@@ -228,10 +230,6 @@ export default {
     align-items: center;
     gap: 6px;
     min-width: 0;
-
-    > * {
-        flex: 0 0 auto;
-    }
 }
 
 .name {
@@ -245,6 +243,21 @@ export default {
 
     .dark & {
         color: var(--agent-color-dark, inherit);
+    }
+}
+
+// Update/stats tags get their own wrapping line under the name so a narrow
+// sidebar never forces the row wider than the card (flex no-wrap on the
+// name line used to push the badges past the card edge).
+.meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+
+    &:empty {
+        display: none;
     }
 }
 
@@ -263,6 +276,7 @@ export default {
 }
 
 .scheduled-indicator {
+    flex: 0 0 auto;
     color: var(--primary-strong);
     font-size: var(--fs-sm);
 }

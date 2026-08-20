@@ -1,6 +1,6 @@
 <template>
-    <span v-if="hasUpdate" class="badge-update ms-2" :title="tooltip">
-        <font-awesome-icon icon="arrow-circle-up" class="me-1" />MàJ
+    <span v-if="hasUpdate" class="badge-update" :title="tooltip">
+        <font-awesome-icon icon="arrow-circle-up" />MàJ
     </span>
 </template>
 
@@ -21,7 +21,9 @@ const stackUpdates = computed(() =>
 const hasUpdate = computed(() => stackUpdates.value.length > 0);
 
 const tooltip = computed(() => {
-    if (!hasUpdate.value) return "";
+    if (!hasUpdate.value) {
+        return "";
+    }
     return stackUpdates.value
         .map(u => `${u.image}: mise à jour disponible`)
         .join("\n");
@@ -33,18 +35,26 @@ const tooltip = computed(() => {
 .badge-update {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
-    padding: 2px 8px;
-    border-radius: 50rem;
-    font-size: 10px;
+    gap: 4px;
+    padding: 1px 7px;
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-xs);
     font-weight: 600;
-    line-height: 1;
-    background: rgba(248, 163, 6, 0.15);
-    color: $warning;
-    border: 1px solid rgba(248, 163, 6, 0.3);
+    line-height: 1.5;
+    white-space: nowrap;
+    background: var(--warning-soft);
+    color: var(--warning);
     cursor: default;
-    vertical-align: middle;
-    animation: pulse-update 2s ease-in-out infinite;
+
+    svg {
+        font-size: 9px;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .badge-update {
+        animation: pulse-update 2s ease-in-out infinite;
+    }
 }
 
 @keyframes pulse-update {
