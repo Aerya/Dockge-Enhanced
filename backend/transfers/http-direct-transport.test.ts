@@ -22,7 +22,7 @@ test("transfers an archive over authenticated HTTP with Range and SHA-256 verifi
     configureHttpDirectTransport(root);
     const app = express();
     app.get("/api/transfer/http/:id", (request, response) => void serveDirectHttpArchive(request, response));
-    app.head("/api/transfer/http/:id", (request, response) => void serveDirectHttpArchive(request, response));
+    app.head("/api/transfer/http/:id", (_request, response) => response.sendStatus(405));
     const server = createServer(app);
     await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
     try {
@@ -32,7 +32,7 @@ test("transfers an archive over authenticated HTTP with Range and SHA-256 verifi
         const payload = Buffer.from("direct-http-transfer-".repeat(4096));
         const snapshotId = await uploadDirectHttpArchive(repositoryId, Readable.from(payload));
         await verifyDirectHttpArchive(repositoryId, snapshotId);
-        assert.deepEqual(await resumeDirectHttpArchive(repositoryId, snapshotId), { offset: 0,
+        assert.deepEqual(await resumeDirectHttpArchive(repositoryId, snapshotId), { offset: payload.length,
             size: payload.length });
 
         const descriptor = JSON.parse(Buffer.from(snapshotId.slice("http-snapshot:".length), "base64url").toString("utf8")) as { id: string; token: string };
