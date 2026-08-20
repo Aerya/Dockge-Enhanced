@@ -1053,7 +1053,7 @@ export default {
             persist();
             try {
                 this.transferPhase = this.operation === "move" ? "initialSnapshot" : "snapshot";
-                const snapshot = state.snapshot || await this.emitAgentLong(this.endpoint, "createStackTransferDataSnapshot", {
+                const snapshot = await this.emitAgentLong(this.endpoint, "createStackTransferDataSnapshot", {
                     transferId,
                     stackName: this.stack.name,
                     repositoryId: this.repositoryId,
