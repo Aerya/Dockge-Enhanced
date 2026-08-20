@@ -806,6 +806,8 @@ export default {
     flex: 1 1 0;
     min-height: 0;
     height: auto;
+    // Safety net: rows must never spill past the card into the content area.
+    overflow-x: hidden;
 }
 
 // Mobile: the sidebar is stacked in normal flow (no definite height), so the
