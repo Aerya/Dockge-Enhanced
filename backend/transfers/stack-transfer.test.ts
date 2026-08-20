@@ -52,6 +52,23 @@ test("offers a planned credential transfer only for a matching source registry",
     assert.equal(unavailable.params?.transferable, "false");
 });
 
+test("offers a source image copy when any registry retrieval fails", () => {
+    const available = registryAccessIssueForError("postgres:15-alpine", "429 Too Many Requests", new Set(), new Set(), new Set([ "postgres:15-alpine" ]), new Set());
+    assert.equal(available.code, "image-transfer-available");
+    assert.equal(available.severity, "error");
+    assert.equal(available.params?.imageTransferable, "true");
+
+    const planned = registryAccessIssueForError("local/app:dev", "manifest unknown", new Set(), new Set(), new Set([ "local/app:dev" ]), new Set([ "local/app:dev" ]));
+    assert.equal(planned.code, "image-transfer-planned");
+    assert.equal(planned.severity, "warning");
+});
+
+test("blocks a registry rate limit when the source has no image copy", () => {
+    const issue = registryAccessIssueForError("redis:7-alpine", "429 Too Many Requests", new Set(), new Set());
+    assert.equal(issue.code, "registry-rate-limited");
+    assert.equal(issue.severity, "error");
+});
+
 test("supports a root path mapping rule", () => {
     assert.equal(suggestTargetSource({ type: "bind",
         source: "/srv/app/data" }, [{

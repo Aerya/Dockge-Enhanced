@@ -42,6 +42,7 @@ import {
     RegistryCredentialEnvelope,
     RegistryCredentialTransferKey,
 } from "../transfers/registry-credential-transfer";
+import { exportStackImage, importStackImage, StackImageTransferArchive } from "../transfers/stack-image-transfer";
 
 function requireObject(value: unknown): Record<string, unknown> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -95,7 +96,7 @@ function requireTransferRequest(value: unknown): StackTransferRequest {
     if (request.transferId !== undefined && typeof request.transferId !== "string") {
         throw new ValidationError("transferId must be a string");
     }
-    for (const field of [ "sourceRegistryHosts", "registryCredentialTransfer" ]) {
+    for (const field of [ "sourceRegistryHosts", "registryCredentialTransfer", "sourceImages", "imageTransfer" ]) {
         if (request[field] !== undefined && (!Array.isArray(request[field]) || (request[field] as unknown[]).some(value => typeof value !== "string"))) {
             throw new ValidationError(`${field} must be an array of strings`);
         }
@@ -208,6 +209,38 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
                 checkLogin(socket);
                 callbackResult({ ok: true,
                     data: { credentialRegistries: ImageWatcher.getInstance().getRegistryCredentialHosts() } }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("exportStackImage", async (image: unknown, repositoryId: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof repositoryId !== "string") {
+                    throw new ValidationError("Invalid image transfer repository");
+                }
+                callbackResult({ ok: true,
+                    data: await exportStackImage(image, repositoryId) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("importStackImage", async (repositoryId: unknown, rawArchive: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof repositoryId !== "string") {
+                    throw new ValidationError("Invalid image transfer repository");
+                }
+                const archive = requireObject(rawArchive);
+                for (const field of [ "image", "snapshotId", "archivePath" ]) {
+                    if (typeof archive[field] !== "string") {
+                        throw new ValidationError(`Image transfer archive ${field} must be a string`);
+                    }
+                }
+                callbackResult({ ok: true,
+                    data: await importStackImage(repositoryId, archive as unknown as StackImageTransferArchive) }, callback);
             } catch (error) {
                 callbackError(error, callback);
             }

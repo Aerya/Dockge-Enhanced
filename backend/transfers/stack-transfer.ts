@@ -40,6 +40,7 @@ export interface StackTransferInventory {
     composeOverrideYAML: string;
     mounts: StackTransferMount[];
     runningServices: string[];
+    images: Array<{ name: string; available: boolean; size: number | null }>;
     warnings: string[];
 }
 
@@ -71,6 +72,8 @@ export interface StackTransferRequest {
     transferId?: string;
     sourceRegistryHosts?: string[];
     registryCredentialTransfer?: string[];
+    sourceImages?: string[];
+    imageTransfer?: string[];
 }
 
 export interface StackTransferJobLog {
@@ -124,18 +127,36 @@ function imageRegistry(image: string): string {
     return first.includes(".") || first.includes(":") || first === "localhost" ? first.toLowerCase() : "registry-1.docker.io";
 }
 
-export function registryAccessIssueForError(image: string, message: string, sourceRegistryHosts: Set<string>, plannedRegistryTransfers: Set<string>): StackTransferIssue {
+export function registryAccessIssueForError(image: string, message: string, sourceRegistryHosts: Set<string>, plannedRegistryTransfers: Set<string>, sourceImages = new Set<string>(), plannedImageTransfers = new Set<string>()): StackTransferIssue {
     const registry = imageRegistry(image);
+    const imageTransferable = sourceImages.has(image);
+    const imagePlanned = imageTransferable && plannedImageTransfers.has(image);
+    const params = { image,
+        registry,
+        transferable: String(sourceRegistryHosts.has(registry)),
+        imageTransferable: String(imageTransferable) };
     if (/unauthorized|authentication required|denied|no basic auth credentials/i.test(message)) {
         const transferable = sourceRegistryHosts.has(registry);
         const planned = transferable && plannedRegistryTransfers.has(registry);
-        return { severity: planned ? "warning" : "error",
+        return { severity: planned || imagePlanned ? "warning" : "error",
             scope: "deploy",
-            code: planned ? "registry-auth-transfer-planned" : "registry-auth-required",
-            message: planned ? `${registry}: registry access will be transferred from the source before deployment` : `${image}: target registry authentication is required`,
-            params: { image,
-                registry,
-                transferable: String(transferable) } };
+            code: planned ? "registry-auth-transfer-planned" : imagePlanned ? "image-transfer-planned" : "registry-auth-required",
+            message: planned ? `${registry}: registry access will be transferred from the source before deployment` : imagePlanned ? `${image}: the source image will be copied before deployment` : `${image}: target registry authentication is required`,
+            params };
+    }
+    if (imageTransferable) {
+        return { severity: imagePlanned ? "warning" : "error",
+            scope: "deploy",
+            code: imagePlanned ? "image-transfer-planned" : "image-transfer-available",
+            message: imagePlanned ? `${image}: the source image will be copied before deployment` : `${image}: registry retrieval failed; the image is available on the source`,
+            params };
+    }
+    if (/429|too many requests|rate limit/i.test(message)) {
+        return { severity: "error",
+            scope: "deploy",
+            code: "registry-rate-limited",
+            message: `${image}: registry rate limit reached and no source image is available`,
+            params };
     }
     return { severity: "warning",
         scope: "deploy",
@@ -340,10 +361,25 @@ export async function analyzeStackTransfer(server: DockgeServer, stackName: stri
     const composeOverrideYAML = stack.composeOverrideYAML;
     const warnings: string[] = [];
     let runningServices: string[] = [];
+    const images: StackTransferInventory["images"] = [];
     const definitions = volumeDefinitions(composeYAML, composeOverrideYAML);
     let resolved = new Map<string, ParsedMount & { service: string }>();
     try {
-        resolved = resolvedMounts(await resolvedComposeForStack(server, stack));
+        const config = await resolvedComposeForStack(server, stack);
+        resolved = resolvedMounts(config);
+        const names = [ ...new Set(Object.values(asRecord(config.services)).map(service => asRecord(service).image).filter((image): image is string => typeof image === "string" && Boolean(image.trim()))) ];
+        for (const name of names) {
+            try {
+                const size = Number((await runDocker([ "image", "inspect", name, "--format", "{{.Size}}" ])).trim());
+                images.push({ name,
+                    available: true,
+                    size: Number.isFinite(size) ? size : null });
+            } catch {
+                images.push({ name,
+                    available: false,
+                    size: null });
+            }
+        }
     } catch (error) {
         warnings.push(error instanceof Error ? error.message : String(error));
     }
@@ -395,6 +431,7 @@ export async function analyzeStackTransfer(server: DockgeServer, stackName: stri
         composeOverrideYAML,
         mounts,
         runningServices,
+        images,
         warnings };
 }
 
@@ -701,13 +738,22 @@ export async function preflightStackTransfer(server: DockgeServer, request: Stac
     const targetMounts = resolvedMounts(config);
     const sourceRegistryHosts = new Set((request.sourceRegistryHosts || []).map(value => value.toLowerCase()));
     const plannedRegistryTransfers = new Set((request.registryCredentialTransfer || []).map(value => value.toLowerCase()));
+    const sourceImages = new Set(request.sourceImages || []);
+    const plannedImageTransfers = new Set(request.imageTransfer || []);
     const images = [ ...new Set(Object.values(asRecord(config.services)).map(service => asRecord(service).image).filter((image): image is string => typeof image === "string" && Boolean(image.trim()))) ];
     await Promise.all(images.map(async (image) => {
+        const serviceUsesAlwaysPull = Object.values(asRecord(config.services)).some(service => asRecord(service).image === image && asRecord(service).pull_policy === "always");
+        if (!serviceUsesAlwaysPull) {
+            try {
+                await runDocker([ "image", "inspect", image ], undefined, 10_000);
+                return;
+            } catch { /* the target needs registry access or a source image copy */ }
+        }
         try {
             await runDocker([ "manifest", "inspect", image ], undefined, 20_000);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            issues.push(registryAccessIssueForError(image, message, sourceRegistryHosts, plannedRegistryTransfers));
+            issues.push(registryAccessIssueForError(image, message, sourceRegistryHosts, plannedRegistryTransfers, sourceImages, plannedImageTransfers));
         }
     }));
     for (const [ service, rawService ] of Object.entries(asRecord(config.services))) {
