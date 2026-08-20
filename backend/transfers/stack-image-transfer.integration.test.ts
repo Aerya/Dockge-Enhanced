@@ -30,7 +30,7 @@ test("copies a tagged local Docker image over verified direct HTTP", { skip: !do
     app.use("/api/transfer/http", rateLimit({ windowMs: 60_000,
         limit: 100 }));
     app.get("/api/transfer/http/:id", (request, response) => void serveDirectHttpArchive(request, response));
-    app.head("/api/transfer/http/:id", (request, response) => void serveDirectHttpArchive(request, response));
+    app.head("/api/transfer/http/:id", (_request, response) => response.sendStatus(405));
     const server = createServer(app);
     await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
     const address = server.address();
