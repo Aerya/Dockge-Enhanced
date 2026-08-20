@@ -69,6 +69,8 @@ export interface StackTransferRequest {
     dataTransfer?: boolean;
     overwriteExisting?: boolean;
     transferId?: string;
+    sourceRegistryHosts?: string[];
+    registryCredentialTransfer?: string[];
 }
 
 export interface StackTransferJobLog {
@@ -111,6 +113,35 @@ interface ParsedMount {
 
 function asRecord(value: unknown): Record<string, unknown> {
     return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function imageRegistry(image: string): string {
+    const withoutDigest = image.split("@")[0];
+    const withoutTag = withoutDigest.lastIndexOf(":") > withoutDigest.lastIndexOf("/")
+        ? withoutDigest.slice(0, withoutDigest.lastIndexOf(":"))
+        : withoutDigest;
+    const first = withoutTag.split("/")[0];
+    return first.includes(".") || first.includes(":") || first === "localhost" ? first.toLowerCase() : "registry-1.docker.io";
+}
+
+export function registryAccessIssueForError(image: string, message: string, sourceRegistryHosts: Set<string>, plannedRegistryTransfers: Set<string>): StackTransferIssue {
+    const registry = imageRegistry(image);
+    if (/unauthorized|authentication required|denied|no basic auth credentials/i.test(message)) {
+        const transferable = sourceRegistryHosts.has(registry);
+        const planned = transferable && plannedRegistryTransfers.has(registry);
+        return { severity: planned ? "warning" : "error",
+            scope: "deploy",
+            code: planned ? "registry-auth-transfer-planned" : "registry-auth-required",
+            message: planned ? `${registry}: registry access will be transferred from the source before deployment` : `${image}: target registry authentication is required`,
+            params: { image,
+                registry,
+                transferable: String(transferable) } };
+    }
+    return { severity: "warning",
+        scope: "deploy",
+        code: "image-access-unchecked",
+        message: `${image}: registry access could not be verified: ${message}`,
+        params: { image } };
 }
 
 function parseShortMount(value: string): ParsedMount | null {
@@ -668,6 +699,17 @@ export async function preflightStackTransfer(server: DockgeServer, request: Stac
     }
 
     const targetMounts = resolvedMounts(config);
+    const sourceRegistryHosts = new Set((request.sourceRegistryHosts || []).map(value => value.toLowerCase()));
+    const plannedRegistryTransfers = new Set((request.registryCredentialTransfer || []).map(value => value.toLowerCase()));
+    const images = [ ...new Set(Object.values(asRecord(config.services)).map(service => asRecord(service).image).filter((image): image is string => typeof image === "string" && Boolean(image.trim()))) ];
+    await Promise.all(images.map(async (image) => {
+        try {
+            await runDocker([ "manifest", "inspect", image ], undefined, 20_000);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            issues.push(registryAccessIssueForError(image, message, sourceRegistryHosts, plannedRegistryTransfers));
+        }
+    }));
     for (const [ service, rawService ] of Object.entries(asRecord(config.services))) {
         const containerName = asRecord(rawService).container_name;
         if (typeof containerName !== "string" || !containerName.trim()) {

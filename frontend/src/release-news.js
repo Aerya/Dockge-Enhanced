@@ -62,6 +62,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.stackTransferData",
         ],
     },
+    {
+        id: "2026-08-20-stack-transfer-registry-access",
+        items: [
+            "releaseNews.item.stackTransferRegistryAccess",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

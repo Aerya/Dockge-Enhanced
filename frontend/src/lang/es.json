@@ -6,6 +6,7 @@
     "releaseNews.intro": "Estas son las funciones añadidas desde tu anterior actualización de Dockge-Enhanced.",
     "releaseNews.item.stackTransferErrors": "Al mover una stack ahora se muestra el error real de Docker y se detectan antes del despliegue los nombres de contenedor explícitos ya utilizados en el destino.",
     "releaseNews.item.stackTransferData": "Al mover una stack, la transferencia de datos se selecciona automáticamente cuando hay un transporte compatible; los movimientos solo de configuración siguen indicándose claramente.",
+    "releaseNews.item.stackTransferRegistryAccess": "El preflight comprueba el acceso a las imágenes privadas y propone transferir únicamente las credenciales de registry necesarias, cifradas de extremo a extremo.",
     "releaseNews.item.updateRange": "La ventana emergente agrupa solo las funciones publicadas desde tu actualización anterior, sin importar cuántas versiones se hayan omitido.",
     "releaseNews.item.logWrap": "Un botón en los registros permite alternar el ajuste de línea o mantener cada entrada completa en una sola línea con desplazamiento horizontal.",
     "releaseNews.item.stackPins": "Los stacks de uso frecuente pueden fijarse en la parte superior del panel lateral, con una preferencia guardada por navegador.",

@@ -237,6 +237,8 @@
     "stackTransfer.includeData": "Transférer les données des volumes sélectionnés",
     "stackTransfer.includeDataHint": "Utilise un dépôt Restic configuré à l'identique sur les deux instances ; les données ne transitent jamais par Socket.IO.",
     "stackTransfer.noSharedRepository": "Aucun dépôt Restic partagé compatible n'est configuré sur les deux instances. Configurez le même emplacement et le même mot de passe de chiffrement dans les réglages Backup.",
+    "stackTransfer.transferRegistryAccess": "Transférer les accès aux registries nécessaires",
+    "stackTransfer.transferRegistryAccessHint": "Copie uniquement les identifiants requis pour {registries}. Le secret est chiffré de bout en bout et n’est jamais exposé au navigateur ni aux logs.",
     "stackTransfer.directHttpUnavailable": "Le transfert HTTP direct est indisponible. La copie de configuration reste utilisable ; configurez un dépôt Restic partagé pour transférer les données.",
     "stackTransfer.targetNameRequired": "Saisissez un nom pour la stack cible.",
     "stackTransfer.storageSelectionRequired": "Sélectionnez au moins un volume ou bind mount à transférer.",
@@ -297,6 +299,9 @@
     "stackTransfer.issue.compose-invalid": "Configuration Compose invalide : {error}",
     "stackTransfer.issue.port-conflict": "{service} : le port {published}/{protocol} est déjà utilisé sur la cible.",
     "stackTransfer.issue.container-name-conflict": "{service} : le nom de conteneur {name} est déjà utilisé sur la cible par le projet Compose {project}.",
+    "stackTransfer.issue.registry-auth-required": "L’image {image} exige une authentification à {registry} sur la cible.",
+    "stackTransfer.issue.registry-auth-transfer-planned": "L’accès à {registry} sera transféré depuis la source puis vérifié avant le déploiement.",
+    "stackTransfer.issue.image-access-unchecked": "L’accès à l’image {image} n’a pas pu être vérifié ; contrôlez le registry avant le déploiement.",
     "stackTransfer.issue.bind-found": "Le chemin cible {path} est disponible.",
     "stackTransfer.issue.bind-create": "Le chemin cible {path} n’existe pas encore ; il sera créé automatiquement lors du déploiement.",
     "stackTransfer.issue.bind-missing": "Le chemin cible {path} n’existe pas encore ; il sera créé automatiquement lors du déploiement.",
@@ -1048,5 +1053,6 @@
     "stackSortUpdated": "Dernière mise à jour",
     "releaseNews.item.stackDateSorting": "La liste des stacks peut maintenant être triée par date de création ou dernière mise à jour. Les anciennes stacks utilisent leur date de création filesystem lorsqu'elle est disponible, tandis que les nouvelles enregistrent une date de création Dockge exacte.",
     "releaseNews.item.stackTransferErrors": "Le déplacement d’une stack affiche maintenant l’erreur Docker réelle et détecte avant le déploiement les noms de conteneurs explicites déjà utilisés sur la cible.",
-    "releaseNews.item.stackTransferData": "Lors d’un déplacement, le transfert des données est sélectionné automatiquement lorsqu’un transport compatible est disponible ; la copie de configuration seule reste clairement signalée."
+    "releaseNews.item.stackTransferData": "Lors d’un déplacement, le transfert des données est sélectionné automatiquement lorsqu’un transport compatible est disponible ; la copie de configuration seule reste clairement signalée.",
+    "releaseNews.item.stackTransferRegistryAccess": "Le preflight teste maintenant l’accès aux images privées et propose de transférer uniquement les identifiants de registry nécessaires, chiffrés de bout en bout."
 }
