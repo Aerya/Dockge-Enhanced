@@ -85,6 +85,10 @@ export default {
 .stack-sidebar {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
+    // The implicit column would otherwise size to the widest child's
+    // min-content (a long stack name inside the no-wrap item flex) and spill
+    // past the 280px track into the content area. Pin it to the track.
+    grid-template-columns: minmax(0, 1fr);
     // Pinned card: the sidebar (and the collapsed rail) stays in place while
     // the right content scrolls.
     position: sticky;
