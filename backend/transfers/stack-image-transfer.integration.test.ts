@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
+import { rateLimit } from "express-rate-limit";
 import { createServer } from "node:http";
 import { execFileSync } from "node:child_process";
 import { promises as fs } from "node:fs";
@@ -26,6 +27,8 @@ test("copies a tagged local Docker image over verified direct HTTP", { skip: !do
     const image = `dockge-image-transfer-test:${Date.now()}`;
     configureHttpDirectTransport(root);
     const app = express();
+    app.use("/api/transfer/http", rateLimit({ windowMs: 60_000,
+        limit: 100 }));
     app.get("/api/transfer/http/:id", (request, response) => void serveDirectHttpArchive(request, response));
     app.head("/api/transfer/http/:id", (request, response) => void serveDirectHttpArchive(request, response));
     const server = createServer(app);
