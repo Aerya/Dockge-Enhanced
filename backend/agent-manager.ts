@@ -293,6 +293,19 @@ export class AgentManager {
         client.emit("agent", endpoint, eventName, ...args);
     }
 
+    requestEndpoint<T>(endpoint: string, eventName: string, ...args: unknown[]): Promise<T> {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error(`Agent request timed out: ${endpoint}`)), 60_000);
+            this.emitToEndpoint(endpoint, eventName, ...args, (response: T) => {
+                clearTimeout(timeout);
+                resolve(response);
+            }).catch((error) => {
+                clearTimeout(timeout);
+                reject(error);
+            });
+        });
+    }
+
     emitToAllEndpoints(eventName: string, ...args : unknown[]) {
         log.debug("agent-manager", "Emitting event to all endpoints");
         for (let endpoint in this.agentSocketList) {

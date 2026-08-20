@@ -1,7 +1,7 @@
 import test, { mock } from "node:test";
 import assert from "node:assert/strict";
 import yaml from "yaml";
-import { applyStackTransferMappings, listTransferJobs, markRunningTransferJobsInterrupted, StackTransferMount, suggestTargetSource } from "./stack-transfer";
+import { applyStackTransferMappings, listTransferJobs, markRunningTransferJobsInterrupted, registryAccessIssueForError, StackTransferMount, suggestTargetSource } from "./stack-transfer";
 import { Settings } from "../settings";
 
 function mount(overrides: Partial<StackTransferMount> = {}): StackTransferMount {
@@ -38,6 +38,18 @@ test("uses the longest matching path rule", () => {
 test("requires manual review for an unmapped absolute bind", () => {
     assert.equal(suggestTargetSource({ type: "bind",
         source: "/unknown/data" }, []).confidence, "manual");
+});
+
+test("offers a planned credential transfer only for a matching source registry", () => {
+    const transferable = registryAccessIssueForError("ghcr.io/aerya/private:latest", "unauthorized", new Set([ "ghcr.io" ]), new Set([ "ghcr.io" ]));
+    assert.equal(transferable.code, "registry-auth-transfer-planned");
+    assert.equal(transferable.severity, "warning");
+    assert.equal(transferable.params?.transferable, "true");
+
+    const unavailable = registryAccessIssueForError("ghcr.io/aerya/private:latest", "authentication required", new Set(), new Set());
+    assert.equal(unavailable.code, "registry-auth-required");
+    assert.equal(unavailable.severity, "error");
+    assert.equal(unavailable.params?.transferable, "false");
 });
 
 test("supports a root path mapping rule", () => {

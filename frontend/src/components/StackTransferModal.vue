@@ -36,6 +36,14 @@
                     {{ $t(operation === "replicate" ? "stackReplication.managedDataWarning" : includeData ? "stackTransfer.dataWarning" : "stackTransfer.configOnlyWarning") }}
                 </div>
 
+                <div v-if="requiredRegistryAccess.length" class="alert alert-warning mb-4">
+                    <div class="form-check">
+                        <input id="stack-transfer-registry-access" v-model="transferRegistryAccess" type="checkbox" class="form-check-input" @change="invalidatePreflight" />
+                        <label for="stack-transfer-registry-access" class="form-check-label fw-semibold">{{ $t("stackTransfer.transferRegistryAccess") }}</label>
+                    </div>
+                    <div class="form-text">{{ $t("stackTransfer.transferRegistryAccessHint", { registries: requiredRegistryAccess.join(", ") }) }}</div>
+                </div>
+
                 <div class="shadow-box big-padding mb-4">
                     <div v-if="operation !== 'replicate'" class="form-check mb-3">
                         <input id="stack-transfer-data" v-model="includeData" type="checkbox" class="form-check-input" :disabled="availableRepositories.length === 0 || operation === 'replicate'" @change="dataModeChanged" />
@@ -324,6 +332,8 @@ export default {
             targetName: "",
             deploy: true,
             includeData: false,
+            transferRegistryAccess: true,
+            sourceRegistryHosts: [],
             overwriteExisting: false,
             sourceDataCapabilities: { repositories: [],
                 policy: { mode: "hot" },
@@ -400,6 +410,11 @@ export default {
         },
         selectedRepository() {
             return this.availableRepositories.find(item => item.id === this.repositoryId) || null;
+        },
+        requiredRegistryAccess() {
+            return [ ...new Set(this.issues
+                .filter(issue => [ "registry-auth-required", "registry-auth-transfer-planned" ].includes(issue.code) && issue.params?.transferable === "true")
+                .map(issue => issue.params.registry)) ];
         },
         actionDisabledReason() {
             if (this.canTransfer) {
@@ -560,6 +575,8 @@ export default {
             this.directBandwidthKbps = 0;
             this.deploy = true;
             this.includeData = false;
+            this.transferRegistryAccess = true;
+            this.sourceRegistryHosts = [];
             this.overwriteExisting = false;
             this.sourceDataCapabilities = { repositories: [],
                 policy: { mode: "hot" },
@@ -608,9 +625,10 @@ export default {
             }
         },
         async loadDataCapabilities() {
-            const [ source, target ] = await Promise.all([
+            const [ source, target, registry ] = await Promise.all([
                 this.emitAgent(this.endpoint, "getStackTransferDataCapabilities", this.stack.name),
                 this.emitAgent(this.targetEndpoint, "getStackTransferDataCapabilities", this.stack.name),
+                this.emitAgent(this.endpoint, "getStackTransferRegistryCapabilities"),
             ]);
             if (!source.ok) {
                 throw new Error(this.$t(source.msg));
@@ -618,8 +636,12 @@ export default {
             if (!target.ok) {
                 throw new Error(this.$t(target.msg));
             }
+            if (!registry.ok) {
+                throw new Error(this.$t(registry.msg));
+            }
             this.sourceDataCapabilities = source.data;
             this.targetDataCapabilities = target.data;
+            this.sourceRegistryHosts = registry.data.credentialRegistries || [];
             await this.refreshDirectRepository();
             const policy = source.data.policy || { mode: "hot" };
             this.consistencyMode = policy.mode || "hot";
@@ -745,6 +767,8 @@ export default {
                 deploy: this.deploy,
                 dataTransfer: this.includeData,
                 overwriteExisting: this.overwriteExisting,
+                sourceRegistryHosts: this.sourceRegistryHosts,
+                registryCredentialTransfer: this.transferRegistryAccess ? this.sourceRegistryHosts : [],
             };
         },
         dataPolicy() {
@@ -816,6 +840,7 @@ export default {
             this.transferring = true;
             this.operationError = "";
             try {
+                await this.transferRequiredRegistryCredentials();
                 if (this.operation === "replicate") {
                     await this.executeReplication();
                     return;
@@ -885,6 +910,28 @@ export default {
                 this.operationError = error instanceof Error ? error.message : String(error);
             } finally {
                 this.transferring = false;
+            }
+        },
+        async transferRequiredRegistryCredentials() {
+            if (!this.transferRegistryAccess || this.requiredRegistryAccess.length === 0) {
+                return;
+            }
+            for (const registry of this.requiredRegistryAccess) {
+                const imported = await new Promise(resolve => this.$root.getSocket().emit("transferStackRegistryCredential", this.endpoint, this.targetEndpoint, registry, resolve));
+                if (!imported.ok) {
+                    throw new Error(this.$t(imported.msg));
+                }
+            }
+            const verificationRequest = this.request();
+            verificationRequest.registryCredentialTransfer = [];
+            const verified = await this.emitAgent(this.targetEndpoint, "preflightStackTransfer", verificationRequest);
+            if (!verified.ok) {
+                throw new Error(this.$t(verified.msg));
+            }
+            this.issues = verified.data.issues;
+            const blocking = this.issues.find(issue => issue.severity === "error" && (issue.scope === "save" || this.deploy || this.includeData));
+            if (blocking) {
+                throw new Error(this.issueText(blocking));
             }
         },
         async executeReplication() {

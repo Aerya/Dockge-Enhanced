@@ -750,6 +750,30 @@ export class ImageWatcher {
     };
   }
 
+  getRegistryCredentialHosts(): string[] {
+    return [...new Set(this.settings.credentials.map((credential) => normalizeRegistryHost(credential.registry)).filter(Boolean))];
+  }
+
+  getRegistryCredential(registry: string): RegistryCredential | undefined {
+    const normalized = normalizeRegistryHost(registry);
+    const credential = this.settings.credentials.find((item) => normalizeRegistryHost(item.registry) === normalized);
+    return credential ? { ...credential,
+      registry: normalized } : undefined;
+  }
+
+  async importRegistryCredential(credential: RegistryCredential): Promise<void> {
+    const registry = normalizeRegistryHost(credential.registry);
+    const username = credential.username.trim();
+    if (!registry || !username || !credential.token) {
+      throw new Error("Invalid registry credential");
+    }
+    const credentials = this.settings.credentials.filter((item) => normalizeRegistryHost(item.registry) !== registry);
+    credentials.push({ registry,
+      username,
+      token: credential.token });
+    await this.saveSettings({ credentials });
+  }
+
   getAutoUpdateState() {
     return {
       enabled: this.settings.enabled,

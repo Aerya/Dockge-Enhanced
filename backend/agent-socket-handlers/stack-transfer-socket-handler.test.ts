@@ -22,3 +22,23 @@ test("accepts zero as unlimited direct HTTP bandwidth", async () => {
     const response = await directRepository(0);
     assert.equal(response.ok, true);
 });
+
+test("does not expose registry transfer keys to a browser socket", async () => {
+    const agentSocket = new AgentSocket();
+    const socket = { userID: 1,
+        endpoint: "" } as DockgeSocket;
+    new StackTransferSocketHandler().create(socket, {} as DockgeServer, agentSocket);
+    const response = await new Promise<{ ok: boolean; msg?: string }>(resolve => agentSocket.call("createStackRegistryCredentialTransfer", resolve));
+    assert.equal(response.ok, false);
+    assert.match(response.msg || "", /authenticated instances/);
+});
+
+test("creates a short-lived registry transfer key for a federated instance", async () => {
+    const agentSocket = new AgentSocket();
+    const socket = { userID: 1,
+        endpoint: "source.example.test" } as DockgeSocket;
+    new StackTransferSocketHandler().create(socket, {} as DockgeServer, agentSocket);
+    const response = await new Promise<{ ok: boolean; data?: { id: string; publicKey: string } }>(resolve => agentSocket.call("createStackRegistryCredentialTransfer", resolve));
+    assert.equal(response.ok, true);
+    assert.match(response.data?.publicKey || "", /BEGIN PUBLIC KEY/);
+});

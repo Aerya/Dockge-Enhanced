@@ -34,6 +34,14 @@ import {
     syncStackReplicaTarget,
     testStackReplicaSnapshot,
 } from "../transfers/stack-replication-target";
+import { ImageWatcher } from "../watchers/image-watcher";
+import {
+    createRegistryCredentialTransferKey,
+    exportRegistryCredentialEnvelope,
+    importRegistryCredentialEnvelope,
+    RegistryCredentialEnvelope,
+    RegistryCredentialTransferKey,
+} from "../transfers/registry-credential-transfer";
 
 function requireObject(value: unknown): Record<string, unknown> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -86,6 +94,11 @@ function requireTransferRequest(value: unknown): StackTransferRequest {
     }
     if (request.transferId !== undefined && typeof request.transferId !== "string") {
         throw new ValidationError("transferId must be a string");
+    }
+    for (const field of [ "sourceRegistryHosts", "registryCredentialTransfer" ]) {
+        if (request[field] !== undefined && (!Array.isArray(request[field]) || (request[field] as unknown[]).some(value => typeof value !== "string"))) {
+            throw new ValidationError(`${field} must be an array of strings`);
+        }
     }
     return request as unknown as StackTransferRequest;
 }
@@ -185,6 +198,70 @@ export class StackTransferSocketHandler extends AgentSocketHandler {
                 }
                 callbackResult({ ok: true,
                     data: await getStackTransferDataCapabilities(stackName) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("getStackTransferRegistryCapabilities", (callback: unknown) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true,
+                    data: { credentialRegistries: ImageWatcher.getInstance().getRegistryCredentialHosts() } }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("createStackRegistryCredentialTransfer", (callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (!socket.endpoint) {
+                    throw new ValidationError("Registry credentials can only be transferred between authenticated instances");
+                }
+                callbackResult({ ok: true,
+                    data: createRegistryCredentialTransferKey() }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("exportStackRegistryCredential", (registry: unknown, rawKey: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (!socket.endpoint) {
+                    throw new ValidationError("Registry credentials can only be transferred between authenticated instances");
+                }
+                if (typeof registry !== "string") {
+                    throw new ValidationError("Registry must be a string");
+                }
+                const key = requireObject(rawKey);
+                for (const field of [ "id", "publicKey", "expiresAt" ]) {
+                    if (typeof key[field] !== "string") {
+                        throw new ValidationError(`Registry transfer key ${field} must be a string`);
+                    }
+                }
+                callbackResult({ ok: true,
+                    data: exportRegistryCredentialEnvelope(registry, key as unknown as RegistryCredentialTransferKey) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("importStackRegistryCredential", async (rawEnvelope: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (!socket.endpoint) {
+                    throw new ValidationError("Registry credentials can only be transferred between authenticated instances");
+                }
+                const envelope = requireObject(rawEnvelope);
+                for (const field of [ "keyId", "registry", "encryptedKey", "iv", "authTag", "ciphertext" ]) {
+                    if (typeof envelope[field] !== "string") {
+                        throw new ValidationError(`Registry credential envelope ${field} must be a string`);
+                    }
+                }
+                callbackResult({ ok: true,
+                    data: { registry: await importRegistryCredentialEnvelope(envelope as unknown as RegistryCredentialEnvelope) } }, callback);
             } catch (error) {
                 callbackError(error, callback);
             }
