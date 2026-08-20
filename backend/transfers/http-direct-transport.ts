@@ -200,13 +200,7 @@ async function download(repositoryId: string, snapshotId: string): Promise<strin
 }
 
 export async function verifyDirectHttpArchive(repositoryId: string, snapshotId: string): Promise<void> {
-    const config = repository(repositoryId);
-    const descriptor = snapshot(snapshotId);
-    const response = await fetch(`${config.baseUrl}/api/transfer/http/${descriptor.id}`, { method: "HEAD",
-        headers: await requestHeaders(descriptor) });
-    if (!response.ok || Number(response.headers.get("content-length")) !== descriptor.size || response.headers.get("x-content-sha256") !== descriptor.sha256) {
-        throw new Error("Direct HTTP archive verification failed");
-    }
+    await download(repositoryId, snapshotId);
 }
 
 export async function resumeDirectHttpArchive(repositoryId: string, snapshotId: string): Promise<{ offset: number; size: number }> {
