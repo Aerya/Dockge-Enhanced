@@ -113,7 +113,9 @@ export class MainSocketHandler extends SocketHandler {
         });
 
         socket.on("needSetup", (callback) => {
-            if (typeof callback === "function") callback(server.needSetup);
+            if (typeof callback === "function") {
+                callback(server.needSetup);
+            }
         });
 
         // Login by token
@@ -130,13 +132,14 @@ export class MainSocketHandler extends SocketHandler {
 
                 log.info("auth", "Username from JWT: " + decoded.username);
 
-                const user = await R.findOne("user", " username = ? AND active = 1 ", [
-                    decoded.username,
-                ]) as User;
+                const isFederationToken = decoded.scope === "federation";
+                const user = isFederationToken && Number.isInteger(decoded.userId)
+                    ? await R.findOne("user", " id = ? AND active = 1 ", [ Number(decoded.userId) ]) as User
+                    : await R.findOne("user", " username = ? AND active = 1 ", [ decoded.username ]) as User;
 
                 if (user) {
                     // Check if the password changed
-                    if (decoded.h !== passwordVersionFingerprint(user.password, server.jwtSecret)) {
+                    if (!isFederationToken && decoded.h !== passwordVersionFingerprint(user.password, server.jwtSecret)) {
                         throw new Error("The token is invalid due to password change or old token");
                     }
 
@@ -144,7 +147,7 @@ export class MainSocketHandler extends SocketHandler {
                     await server.afterLogin(socket, user);
                     log.debug("auth", "afterLogin ok");
 
-                    log.info("auth", `Successfully logged in user ${decoded.username}. IP=${clientIP}`);
+                    log.info("auth", `Successfully logged in user ${user.username}. IP=${clientIP}`);
 
                     callback({
                         ok: true,
