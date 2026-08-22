@@ -50,15 +50,21 @@
 
                             <!-- Agent Display Name -->
                             <template v-if="editingAgentEndpoint === endpoint">
-                                <input v-model="agentNameDraft" class="form-control form-control-sm agent-name-input"
+                                <input
+                                    v-model="agentNameDraft" class="form-control form-control-sm agent-name-input"
                                     maxlength="100" :placeholder="$t('agentNamePlaceholder')"
-                                    @keyup.enter="renameAgent(agent)" @keyup.esc="cancelRenameAgent" />
-                                <button class="btn btn-sm btn-link text-success p-1" :title="$t('saveAgentName')"
-                                    @click="renameAgent(agent)">
+                                    @keyup.enter="renameAgent(agent)" @keyup.esc="cancelRenameAgent"
+                                />
+                                <button
+                                    class="btn btn-sm btn-link text-success p-1" :title="$t('saveAgentName')"
+                                    @click="renameAgent(agent)"
+                                >
                                     <font-awesome-icon icon="check" />
                                 </button>
-                                <button class="btn btn-sm btn-link text-secondary p-1" :title="$t('cancel')"
-                                    @click="cancelRenameAgent">
+                                <button
+                                    class="btn btn-sm btn-link text-secondary p-1" :title="$t('cancel')"
+                                    @click="cancelRenameAgent"
+                                >
                                     <font-awesome-icon icon="times" />
                                 </button>
                             </template>
@@ -73,11 +79,21 @@
                                         <small v-if="agent.displayName" class="text-muted d-block">{{ endpoint }}</small>
                                     </template>
                                 </span>
-                                <button class="btn btn-sm btn-link p-1 rename-agent" :title="$t('renameAgent')"
-                                    @click="startRenameAgent(endpoint, agent)">
+                                <button
+                                    class="btn btn-sm btn-link p-1 rename-agent" :title="$t('renameAgent')"
+                                    @click="startRenameAgent(endpoint, agent)"
+                                >
                                     <font-awesome-icon icon="pen" />
                                 </button>
                             </template>
+
+                            <button
+                                v-if="endpoint !== '' && $root.agentStatusList[endpoint] === 'offline'"
+                                class="btn btn-sm btn-link p-1 ms-1" :title="$t('reauthenticateAgent')"
+                                @click="startReauthenticateAgent(agent)"
+                            >
+                                <font-awesome-icon icon="key" />
+                            </button>
 
                             <!-- Remove Button -->
                             <font-awesome-icon v-if="endpoint !== ''" class="ms-2 remove-agent" icon="trash" @click="showRemoveAgentDialog[agent.url] = !showRemoveAgentDialog[agent.url]" />
@@ -95,8 +111,10 @@
                         <form v-if="showAgentForm" @submit.prevent="addAgent">
                             <div class="mb-3">
                                 <label for="agentDisplayName" class="form-label">{{ $t("agentName") }}</label>
-                                <input id="agentDisplayName" v-model="agent.displayName" type="text" maxlength="100"
-                                    class="form-control" :placeholder="$t('agentNamePlaceholder')">
+                                <input
+                                    id="agentDisplayName" v-model="agent.displayName" type="text" maxlength="100"
+                                    class="form-control" :placeholder="$t('agentNamePlaceholder')"
+                                >
                             </div>
                             <div class="mb-3">
                                 <label for="url" class="form-label">{{ $t("dockgeURL") }}</label>
@@ -123,6 +141,29 @@
                     </div>
                 </div>
             </div>
+
+            <BModal
+                v-model="showReauthenticateAgentDialog" :title="$t('reauthenticateAgent')"
+                :okTitle="$t('reauthenticateAgent')" okVariant="primary" :okDisabled="reauthenticatingAgent"
+                @ok.prevent="reauthenticateAgent"
+            >
+                <p class="small text-muted">{{ reauthenticateAgentForm.url }}</p>
+                <div class="mb-3">
+                    <label for="reauthAgentUsername" class="form-label">{{ $t("Username") }}</label>
+                    <input
+                        id="reauthAgentUsername" v-model="reauthenticateAgentForm.username" type="text"
+                        class="form-control" required autocomplete="username"
+                    >
+                </div>
+                <div class="mb-3">
+                    <label for="reauthAgentPassword" class="form-label">{{ $t("Password") }}</label>
+                    <input
+                        id="reauthAgentPassword" v-model="reauthenticateAgentForm.password" type="password"
+                        class="form-control" required autocomplete="current-password"
+                    >
+                </div>
+                <p class="small text-muted mb-0">{{ $t("reauthenticateAgentHint") }}</p>
+            </BModal>
         </div>
     </transition>
     <router-view ref="child" />
@@ -158,6 +199,13 @@ export default {
             editingAgentEndpoint: null,
             agentNameDraft: "",
             connectingAgent: false,
+            reauthenticatingAgent: false,
+            showReauthenticateAgentDialog: false,
+            reauthenticateAgentForm: {
+                url: "",
+                username: "",
+                password: "",
+            },
             federationMigrationAttempted: false,
             agent: {
                 url: "http://",
@@ -247,9 +295,36 @@ export default {
         federationSelf() {
             return {
                 url: window.location.origin,
-                token: localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "",
                 displayName: this.$root.agentList?.[""]?.displayName || window.location.hostname,
             };
+        },
+
+        startReauthenticateAgent(agent) {
+            this.reauthenticateAgentForm = {
+                url: agent.url,
+                username: "",
+                password: "",
+            };
+            this.showReauthenticateAgentDialog = true;
+        },
+
+        reauthenticateAgent(event) {
+            event?.preventDefault?.();
+            if (!this.reauthenticateAgentForm.username || !this.reauthenticateAgentForm.password) {
+                return;
+            }
+            this.reauthenticatingAgent = true;
+            this.$root.getSocket().emit("reauthenticateAgent", {
+                ...this.reauthenticateAgentForm,
+                self: this.federationSelf(),
+            }, (res) => {
+                this.$root.toastRes(res);
+                this.reauthenticatingAgent = false;
+                if (res.ok) {
+                    this.showReauthenticateAgentDialog = false;
+                    this.reauthenticateAgentForm.password = "";
+                }
+            });
         },
 
         startRenameAgent(endpoint, agent) {
@@ -269,7 +344,9 @@ export default {
                 displayName: this.agentNameDraft,
             }, (res) => {
                 this.$root.toastRes(res);
-                if (res.ok) this.cancelRenameAgent();
+                if (res.ok) {
+                    this.cancelRenameAgent();
+                }
             });
         },
 
