@@ -74,6 +74,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.stackTransferImages",
         ],
     },
+    {
+        id: "2026-08-22-federation-token-rotation",
+        items: [
+            "releaseNews.item.federationTokens",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {
