@@ -5,13 +5,31 @@ import { callbackError, callbackResult, checkLogin, DockgeSocket } from "../util
 import { LooseObject } from "../../common/util-common";
 import { meshEndpoint, normalizeMeshSelf, synchronizeAgentMesh, upsertMeshPeers, validateMeshCatalogue } from "../agent-mesh";
 import { Settings } from "../settings";
+import { R } from "redbean-node";
+import { User } from "../models/user";
 
 const AGENT_MESH_REPAIR_REVISION_KEY = "agentMeshRepairRevision";
-const AGENT_MESH_REPAIR_REVISION = 1;
+const AGENT_MESH_REPAIR_REVISION = 2;
 let meshRepairInFlight : Promise<string[]> | null = null;
 
+async function federationSelfForSocket(socket: DockgeSocket, server: DockgeServer, value: unknown) {
+    const user = await R.findOne("user", " id = ? AND active = 1 ", [ socket.userID ]) as User | null;
+    if (!user) {
+        throw new Error("The authenticated user is inactive or deleted");
+    }
+    if (!value || typeof value !== "object") {
+        throw new Error("Current instance data is required");
+    }
+    return normalizeMeshSelf({
+        ...(value as LooseObject),
+        token: User.createFederationJWT(user, server.jwtSecret),
+    });
+}
+
 export function normalizeAgentDisplayName(value: unknown): string {
-    if (value === undefined || value === null) return "";
+    if (value === undefined || value === null) {
+        return "";
+    }
     if (typeof value !== "string") {
         throw new Error("Display name must be a string");
     }
@@ -25,6 +43,22 @@ export function normalizeAgentDisplayName(value: unknown): string {
 export class ManageAgentSocketHandler extends SocketHandler {
 
     create(socket : DockgeSocket, server : DockgeServer) {
+        socket.on("createAgentFederationToken", async (_requestData : unknown, callback : unknown) => {
+            try {
+                checkLogin(socket);
+                const user = await R.findOne("user", " id = ? AND active = 1 ", [ socket.userID ]) as User | null;
+                if (!user) {
+                    throw new Error("The authenticated user is inactive or deleted");
+                }
+                callbackResult({
+                    ok: true,
+                    token: User.createFederationJWT(user, server.jwtSecret),
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         socket.on("validateAgentMeshPeer", (_requestData : unknown, callback : unknown) => {
             try {
                 checkLogin(socket);
@@ -59,7 +93,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                     throw new Error("Data must be an object");
                 }
                 const data = requestData as LooseObject;
-                const self = normalizeMeshSelf(data.self);
+                const self = await federationSelfForSocket(socket, server, data.self);
                 if (await Settings.get(AGENT_MESH_REPAIR_REVISION_KEY) === AGENT_MESH_REPAIR_REVISION) {
                     callbackResult({ ok: true,
                         repaired: false }, callback);
@@ -97,7 +131,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
 
                 let data = requestData as LooseObject;
                 const displayName = normalizeAgentDisplayName(data.displayName);
-                const self = normalizeMeshSelf(data.self);
+                const self = await federationSelfForSocket(socket, server, data.self);
                 let manager = socket.instanceManager;
                 await manager.test(data.url, data.username, data.password);
                 await manager.add(data.url, data.username, data.password, displayName);
@@ -155,6 +189,44 @@ export class ManageAgentSocketHandler extends SocketHandler {
             }
         });
 
+        socket.on("reauthenticateAgent", async (requestData : unknown, callback : unknown) => {
+            try {
+                checkLogin(socket);
+                if (!requestData || typeof requestData !== "object") {
+                    throw new Error("Data must be an object");
+                }
+                const data = requestData as LooseObject;
+                if (typeof data.url !== "string" || typeof data.username !== "string" || typeof data.password !== "string") {
+                    throw new Error("Agent URL and credentials are required");
+                }
+
+                const manager = socket.instanceManager;
+                await manager.test(data.url, data.username, data.password, true);
+                await manager.updateCredentials(data.url, data.username, data.password);
+
+                let federated = false;
+                try {
+                    const self = await federationSelfForSocket(socket, server, data.self);
+                    await synchronizeAgentMesh(self);
+                    await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
+                    federated = true;
+                } catch (error) {
+                    log.warn("manage-agent-socket-handler", `Agent credentials updated; mesh synchronization is still pending: ${error instanceof Error ? error.message : String(error)}`);
+                }
+
+                server.disconnectAllSocketClients(undefined, socket.id);
+                await manager.sendAgentList();
+                callbackResult({
+                    ok: true,
+                    federated,
+                    msg: federated ? "agentReauthenticatedAndFederated" : "agentReauthenticatedMeshPending",
+                    msgi18n: true,
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // removeAgent
         socket.on("removeAgent", async (requestData : unknown, callback : unknown) => {
             try {
@@ -165,8 +237,10 @@ export class ManageAgentSocketHandler extends SocketHandler {
                     throw new Error("Data must be an object");
                 }
                 const data = requestData as LooseObject;
-                if (typeof data.url !== "string") throw new Error("URL must be a string");
-                const self = normalizeMeshSelf(data.self);
+                if (typeof data.url !== "string") {
+                    throw new Error("URL must be a string");
+                }
+                const self = await federationSelfForSocket(socket, server, data.self);
 
                 let manager = socket.instanceManager;
                 await synchronizeAgentMesh(self, meshEndpoint({ url: data.url,

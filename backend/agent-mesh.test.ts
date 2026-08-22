@@ -49,15 +49,15 @@ test("rejects non-HTTP peer URLs", () => {
         url: "file:///tmp/enhanced" }), /HTTP or HTTPS/);
 });
 
-test("turns the current browser session into a federation credential", () => {
+test("turns a server-issued token into a federation credential", () => {
     assert.deepEqual(normalizeMeshSelf({
         url: "https://enhanced-a.example.org/",
-        token: "signed-session-token",
+        token: "signed-federation-token",
         displayName: "A",
     }), {
         url: "https://enhanced-a.example.org",
         username: AGENT_TOKEN_USERNAME,
-        password: "signed-session-token",
+        password: "signed-federation-token",
         displayName: "A",
     });
 });

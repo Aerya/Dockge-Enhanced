@@ -41,6 +41,20 @@ export class User extends BeanModel {
         }, jwtSecret);
     }
 
+    /**
+     * Create a JWT for Enhanced instance federation.
+     * Unlike an interactive session, this credential survives username and
+     * password hash changes. Disabling or deleting the issuing user still
+     * revokes it because login resolves the active user by ID.
+     */
+    static createFederationJWT(user : User, jwtSecret : string) {
+        return jwt.sign({
+            username: user.username,
+            userId: user.id,
+            scope: "federation",
+        }, jwtSecret);
+    }
+
 }
 
 export default User;
