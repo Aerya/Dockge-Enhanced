@@ -69,7 +69,9 @@ export function validateMeshPeers(values: unknown[]): AgentMeshPeer[] {
 }
 
 export function normalizeMeshSelf(value: unknown): AgentMeshPeer {
-    if (!value || typeof value !== "object") throw new Error("Current instance data is required");
+    if (!value || typeof value !== "object") {
+        throw new Error("Current instance data is required");
+    }
     const raw = value as Record<string, unknown>;
     return normalizeMeshPeer({
         url: raw.url,
@@ -80,8 +82,12 @@ export function normalizeMeshSelf(value: unknown): AgentMeshPeer {
 }
 
 export function validateMeshCatalogue(values: unknown[]): AgentMeshPeer[] {
-    if (!Array.isArray(values)) throw new Error("Mesh catalogue must be an array");
-    if (values.length === 0) return [];
+    if (!Array.isArray(values)) {
+        throw new Error("Mesh catalogue must be an array");
+    }
+    if (values.length === 0) {
+        return [];
+    }
     return validateMeshPeers(values);
 }
 
@@ -171,9 +177,26 @@ function callPeer<T>(peer: AgentMeshPeer, event: string, payload: unknown): Prom
     });
 }
 
+async function exchangePeerCredential(peer: AgentMeshPeer): Promise<AgentMeshPeer> {
+    const response = await callPeer<{ token?: string }>(peer, "createAgentFederationToken", {});
+    if (typeof response.token !== "string" || response.token === "") {
+        throw new Error(`${meshEndpoint(peer)}: federation token was not issued`);
+    }
+    return {
+        ...peer,
+        username: AGENT_TOKEN_USERNAME,
+        password: response.token,
+    };
+}
+
 export async function synchronizeAgentMesh(self: AgentMeshPeer, removedEndpoint = ""): Promise<string[]> {
-    const peers = await localMeshPeers(self);
+    const currentPeers = await localMeshPeers(self);
     const selfEndpoint = meshEndpoint(self);
+    // Exchange every still-valid legacy session or direct credential for a
+    // dedicated federation token before any catalogue is changed.
+    const peers = await Promise.all(currentPeers.map((peer) => meshEndpoint(peer) === selfEndpoint
+        ? peer
+        : exchangePeerCredential(peer)));
     const desiredPeers = removedEndpoint ? peers.filter((peer) => meshEndpoint(peer) !== removedEndpoint) : peers;
 
     // Authenticate every destination before changing any catalogue.
