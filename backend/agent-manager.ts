@@ -39,7 +39,7 @@ export class AgentManager {
         return this._firstConnectTime;
     }
 
-    test(url : string, username : string, password : string) : Promise<void> {
+    test(url : string, username : string, password : string, allowExisting = false) : Promise<void> {
         return new Promise((resolve, reject) => {
             let obj = new URL(url);
             let endpoint = obj.host;
@@ -48,7 +48,7 @@ export class AgentManager {
                 reject(new Error("Invalid Dockge URL"));
             }
 
-            if (this.agentSocketList[endpoint]) {
+            if (!allowExisting && this.agentSocketList[endpoint]) {
                 reject(new Error("The Dockge URL already exists"));
             }
 
@@ -109,6 +109,22 @@ export class AgentManager {
         }
         bean.display_name = displayName;
         await R.store(bean);
+    }
+
+    async updateCredentials(url: string, username: string, password: string): Promise<void> {
+        const bean = await R.findOne("agent", " url = ? ", [ url ]) as Agent | null;
+        if (!bean) {
+            throw new Error("Agent not found");
+        }
+        bean.username = username;
+        bean.password = password;
+        await R.store(bean);
+
+        const endpoint = new URL(url).host;
+        this.disconnect(endpoint);
+        delete this.agentSocketList[endpoint];
+        delete this.agentLoggedInList[endpoint];
+        this.connect(url, username, password);
     }
 
     /**
