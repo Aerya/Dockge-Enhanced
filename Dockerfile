@@ -27,7 +27,8 @@ ENV NODE_ENV=production
 
 # Docker CLI + Compose plugin (nécessaires pour gérer les stacks)
 # Trivy n'est pas installé ici — le scanner utilise aquasec/trivy:latest via Docker
-RUN apk add --no-cache docker-cli docker-cli-compose git openssh-client sshpass rsync
+RUN apk upgrade --no-cache libcrypto3 libssl3 \
+    && apk add --no-cache docker-cli docker-cli-compose git openssh-client sshpass rsync
 
 # npm et Corepack ne sont pas nécessaires à l’exécution. Les retirer élimine
 # aussi leur propre arbre de dépendances de l’image exposée.
