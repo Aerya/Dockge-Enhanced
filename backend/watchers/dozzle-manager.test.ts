@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { buildDozzleCompose, isLegacyManagedDozzle, isManagedComposeContainer } from "./dozzle-manager";
 
 interface DozzleComposeModel {

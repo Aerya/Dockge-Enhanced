@@ -487,6 +487,8 @@
                             tab="true"
                             :disabled="!isEditMode"
                             :hasFocus="editorFocus"
+                            :scroll-into-view="false"
+                            preserve-scroll-position
                             @change="yamlCodeChange"
                         />
                     </div>
@@ -517,6 +519,8 @@
                                 tab="true"
                                 :disabled="!isEditMode"
                                 :hasFocus="editorFocus"
+                                :scroll-into-view="false"
+                                preserve-scroll-position
                             />
                         </div>
                     </div>
@@ -543,6 +547,8 @@
                                 tab="true"
                                 :disabled="!isEditMode"
                                 :hasFocus="editorFocus"
+                                :scroll-into-view="false"
+                                preserve-scroll-position
                                 @change="yamlCodeChange"
                             />
                         </div>
