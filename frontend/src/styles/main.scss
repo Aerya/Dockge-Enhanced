@@ -238,6 +238,12 @@ optgroup {
     background-color: #090c10;
     color: $dark-font-color;
 
+    // Bootstrap rend le texte secondaire trop sombre sur nos fonds sombres.
+    // Cette règle couvre les adresses d'agents, aides et métadonnées partout.
+    .text-muted {
+        color: #9ca3af !important;
+    }
+
     mark, .mark {
         background-color: #b6ad86;
     }
