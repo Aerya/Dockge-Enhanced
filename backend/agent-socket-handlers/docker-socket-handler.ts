@@ -8,6 +8,7 @@ import { BackupManager } from "../watchers/backup-manager";
 import { isLowPower } from "../low-power";
 import { AuditLogger } from "../audit-log";
 import { getVolumeMounts, listDir, readFile, writeFile, createEntry, renameEntry, removeEntry, uploadFile } from "../volume-files";
+import { StartGuardWatcher } from "../watchers/start-guard-watcher";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -72,6 +73,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 }
                 const opts = (options && typeof options === "object") ? options as { removeFiles?: boolean; force?: boolean } : {};
                 const stack = await Stack.getStack(server, name);
+                StartGuardWatcher.getInstance().cancelForManualAction(name);
 
                 try {
                     await stack.delete(socket, opts);
@@ -186,6 +188,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 }
 
                 const stack = await Stack.getStack(server, stackName);
+                StartGuardWatcher.getInstance().cancelForManualAction(stackName);
                 await stack.stop(socket);
                 await this.auditStack(socket, "stack.stop", stackName);
                 callbackResult({
@@ -404,6 +407,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 }
 
                 const stack = await Stack.getStack(server, stackName);
+                StartGuardWatcher.getInstance().cancelForManualAction(stackName);
                 await stack.down(socket);
                 await this.auditStack(socket, "stack.down", stackName);
                 callbackResult({

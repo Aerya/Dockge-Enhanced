@@ -61,6 +61,11 @@ export interface StartGuardCondition {
 export interface StartGuard {
     enabled: boolean;
     conditions: StartGuardCondition[];
+    watch: boolean;
+    onFailure: "none" | "stop";
+    onRecovery: "none" | "start";
+    failureDelaySeconds: number;
+    recoveryDelaySeconds: number;
 }
 
 export interface StartGuardConditionStatus extends StartGuardCondition {
@@ -371,7 +376,7 @@ export class Stack {
             lastUpdated: null,
             lastStartedAt: null,
             note: "",
-            startGuard: { enabled: false, conditions: [] },
+            startGuard: Stack.defaultStartGuard(),
         };
     }
 
@@ -388,15 +393,15 @@ export class Stack {
 
     static normalizeStartGuard(value: unknown, strict = false): StartGuard {
         if (!value || typeof value !== "object") {
-            return { enabled: false, conditions: [] };
+            return Stack.defaultStartGuard();
         }
-        const guard = value as { enabled?: unknown; conditions?: unknown };
+        const guard = value as Partial<StartGuard>;
         if (!Array.isArray(guard.conditions)) {
-            return { enabled: guard.enabled === true, conditions: [] };
+            return { ...Stack.defaultStartGuard(), enabled: guard.enabled === true, conditions: [] };
         }
         if (guard.conditions.length > 20) {
             if (!strict) {
-                return { enabled: false, conditions: [] };
+                return Stack.defaultStartGuard();
             }
             throw new ValidationError("A start guard supports at most 20 conditions");
         }
@@ -405,11 +410,39 @@ export class Stack {
             conditions = guard.conditions.map((condition) => Stack.normalizeStartGuardCondition(condition));
         } catch (error) {
             if (!strict) {
-                return { enabled: false, conditions: [] };
+                return Stack.defaultStartGuard();
             }
             throw error;
         }
-        return { enabled: guard.enabled === true, conditions };
+        if (strict && guard.watch !== undefined && typeof guard.watch !== "boolean") {
+            throw new ValidationError("Start guard watch must be a boolean");
+        }
+        if (strict && guard.onFailure !== undefined && guard.onFailure !== "none" && guard.onFailure !== "stop") {
+            throw new ValidationError("Invalid start guard failure action");
+        }
+        if (strict && guard.onRecovery !== undefined && guard.onRecovery !== "none" && guard.onRecovery !== "start") {
+            throw new ValidationError("Invalid start guard recovery action");
+        }
+        return {
+            enabled: guard.enabled === true,
+            conditions,
+            watch: guard.watch === true,
+            onFailure: guard.onFailure === "none" ? "none" : "stop",
+            onRecovery: guard.onRecovery === "none" ? "none" : "start",
+            failureDelaySeconds: Stack.normalizeStartGuardDelay(guard.failureDelaySeconds, 10, strict),
+            recoveryDelaySeconds: Stack.normalizeStartGuardDelay(guard.recoveryDelaySeconds, 5, strict),
+        };
+    }
+
+    static defaultStartGuard(): StartGuard {
+        return { enabled: false, conditions: [], watch: false, onFailure: "stop", onRecovery: "start", failureDelaySeconds: 10, recoveryDelaySeconds: 5 };
+    }
+
+    private static normalizeStartGuardDelay(value: unknown, fallback: number, strict: boolean): number {
+        if (value === undefined) return fallback;
+        if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3600) return value;
+        if (strict) throw new ValidationError("Start guard delay must be between 0 and 3600 seconds");
+        return fallback;
     }
 
     private static normalizeStartGuardCondition(value: unknown): StartGuardCondition {
@@ -498,6 +531,10 @@ export class Stack {
         const normalized = Stack.normalizeStartGuard(startGuard, true);
         await this.writeMeta({ startGuard: normalized });
         return normalized;
+    }
+
+    async getStartGuard(): Promise<StartGuard> {
+        return (await this.readMeta()).startGuard;
     }
 
     async getStartGuardStatus(startGuardInput?: unknown): Promise<StartGuardStatus> {
@@ -830,6 +867,10 @@ export class Stack {
         if (exitCode !== 0) throw new Error("Scheduled stack stop failed");
         serviceStatusCache.delete(this.name);
         return exitCode;
+    }
+
+    async stopInBackground(): Promise<number> {
+        return this.stopScheduled();
     }
 
     async validateScheduledService(serviceName: string): Promise<void> {

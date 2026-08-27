@@ -86,6 +86,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.startGuard",
         ],
     },
+    {
+        id: "2026-08-27-stack-start-guard-watch",
+        items: [
+            "releaseNews.item.startGuardWatch",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

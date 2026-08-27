@@ -21,6 +21,7 @@ import { AutoPruneManager } from "./watchers/auto-prune-manager";
 import { SelfUpdateChecker } from "./watchers/self-update-checker";
 import { StackScheduler } from "./watchers/stack-scheduler";
 import { StackReplicationManager } from "./watchers/stack-replication-manager";
+import { StartGuardWatcher } from "./watchers/start-guard-watcher";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
@@ -486,6 +487,7 @@ export class DockgeServer {
             AutoPruneManager.getInstance().startIfEnabled().catch(e => log.error("server", "AutoPruneManager start error: " + e));
             StackScheduler.getInstance().start(this).catch(e => log.error("server", "StackScheduler start error: " + e));
             StackReplicationManager.getInstance().start(this).catch(e => log.error("server", "StackReplication start error: " + e));
+            StartGuardWatcher.getInstance().start(this).catch(e => log.error("server", "StartGuardWatcher start error: " + e));
             SelfUpdateChecker.getInstance().start();
         });
 

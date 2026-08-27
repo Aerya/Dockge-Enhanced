@@ -209,6 +209,22 @@
                     </span>
                 </div>
                 <div v-if="startGuard.conditions.length === 0" class="text-muted small mb-2">{{ $t("startGuard.empty") }}</div>
+                <div v-if="startGuard.enabled && startGuard.conditions.length > 0" class="start-guard-watch mt-3 pt-3">
+                    <label class="form-check form-switch mb-3">
+                        <input v-model="startGuard.watch" class="form-check-input" type="checkbox">
+                        <span class="form-check-label">{{ $t("startGuard.watch") }}</span>
+                    </label>
+                    <div v-if="startGuard.watch" class="start-guard-watch-options">
+                        <label class="small fw-bold">{{ $t("startGuard.onFailure") }}</label>
+                        <select v-model="startGuard.onFailure" class="form-select form-select-sm"><option value="stop">{{ $t("startGuard.stop") }}</option><option value="none">{{ $t("startGuard.nothing") }}</option></select>
+                        <label class="small fw-bold">{{ $t("startGuard.failureDelay") }}</label>
+                        <div class="input-group input-group-sm"><input v-model.number="startGuard.failureDelaySeconds" class="form-control" type="number" min="0" max="3600"><span class="input-group-text">{{ $t("startGuard.seconds") }}</span></div>
+                        <label class="small fw-bold">{{ $t("startGuard.onRecovery") }}</label>
+                        <select v-model="startGuard.onRecovery" class="form-select form-select-sm"><option value="start">{{ $t("startGuard.start") }}</option><option value="none">{{ $t("startGuard.nothing") }}</option></select>
+                        <label class="small fw-bold">{{ $t("startGuard.recoveryDelay") }}</label>
+                        <div class="input-group input-group-sm"><input v-model.number="startGuard.recoveryDelaySeconds" class="form-control" type="number" min="0" max="3600"><span class="input-group-text">{{ $t("startGuard.seconds") }}</span></div>
+                    </div>
+                </div>
                 <div class="d-flex flex-wrap gap-2 mt-3">
                     <button type="button" class="btn btn-sm btn-normal" :disabled="startGuard.conditions.length >= 20" @click="addStartGuardCondition"><font-awesome-icon icon="plus" class="me-1" />{{ $t("startGuard.add") }}</button>
                     <button type="button" class="btn btn-sm btn-normal" :disabled="startGuardTesting" @click="testStartGuard"><font-awesome-icon :icon="startGuardTesting ? 'spinner' : 'check'" :spin="startGuardTesting" class="me-1" />{{ $t("startGuard.test") }}</button>
@@ -825,7 +841,7 @@ export default {
             noteSaving: false,
             noteExpanded: false,
             showStartGuard: false,
-            startGuard: { enabled: false, conditions: [] },
+            startGuard: { enabled: false, conditions: [], watch: false, onFailure: "stop", onRecovery: "start", failureDelaySeconds: 10, recoveryDelaySeconds: 5 },
             startGuardStatus: null,
             startGuardSaving: false,
             startGuardTesting: false,
@@ -1542,6 +1558,11 @@ export default {
                             type: condition.type === "systemd" ? "systemd" : "mount",
                             target: condition.target || "",
                         })),
+                        watch: res.stack.startGuard?.watch === true,
+                        onFailure: res.stack.startGuard?.onFailure === "none" ? "none" : "stop",
+                        onRecovery: res.stack.startGuard?.onRecovery === "none" ? "none" : "start",
+                        failureDelaySeconds: Number.isInteger(res.stack.startGuard?.failureDelaySeconds) ? res.stack.startGuard.failureDelaySeconds : 10,
+                        recoveryDelaySeconds: Number.isInteger(res.stack.startGuard?.recoveryDelaySeconds) ? res.stack.startGuard.recoveryDelaySeconds : 5,
                     };
                     this.startGuardStatus = null;
                     this.yamlCodeChange();
@@ -2053,6 +2074,18 @@ export default {
     grid-column: 1 / -1;
 }
 
+.start-guard-watch {
+    border-top: 1px solid rgba(148, 163, 184, .25);
+}
+
+.start-guard-watch-options {
+    display: grid;
+    grid-template-columns: minmax(11rem, 1fr) minmax(0, 1fr);
+    gap: .5rem .75rem;
+    align-items: center;
+    max-width: 38rem;
+}
+
 @media (max-width: 650px) {
     .start-guard-condition {
         grid-template-columns: minmax(0, 1fr) auto;
@@ -2066,6 +2099,10 @@ export default {
     .start-guard-condition .btn {
         grid-column: 2;
         grid-row: 1 / 3;
+    }
+
+    .start-guard-watch-options {
+        grid-template-columns: 1fr;
     }
 }
 
