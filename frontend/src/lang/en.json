@@ -1088,7 +1088,8 @@
     "startGuard.add": "Add condition",
     "startGuard.remove": "Remove condition",
     "startGuard.test": "Test now",
-    "startGuard.mountHelp": "Enter the exact mount point on the host, not a subdirectory. Example: /mnt/media, not /mnt/media/videos.",
+    "startGuard.mountHelp": "Enter the mount point or a path/file beneath it: Dockge will detect the matching mount.",
+    "startGuard.mountDetected": "Detected mount: {mountPoint}",
     "startGuard.watch": "Monitor these prerequisites continuously",
     "startGuard.onFailure": "When a prerequisite becomes unavailable",
     "startGuard.stop": "Stop the stack",
@@ -1098,6 +1099,6 @@
     "startGuard.recoveryDelay": "Delay before restarting",
     "startGuard.nothing": "Do nothing",
     "startGuard.seconds": "seconds",
-    "releaseNews.item.startGuard": "Each managed stack can now require host mounts or systemd services before it starts, restarts or recreates containers. The check also protects scheduled starts and can be tested from the stack page.",
+    "releaseNews.item.startGuard": "Each managed stack can now require host mounts or systemd services before it starts, restarts or recreates containers. For mounts, a subpath is accepted and Dockge remembers the resolved mount without falling back to a parent if it disappears.",
     "releaseNews.item.startGuardWatch": "Stack prerequisites can also be monitored continuously: after a configurable delay, Dockge stops the stack when a dependency disappears and resumes it only after recovery, only when the watcher stopped it itself."
 }

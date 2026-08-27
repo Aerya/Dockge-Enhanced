@@ -189,7 +189,8 @@
     "startGuard.add": "Añadir condición",
     "startGuard.remove": "Eliminar condición",
     "startGuard.test": "Probar ahora",
-    "startGuard.mountHelp": "Introduzca el punto de montaje exacto del host, no un subdirectorio. Ejemplo: /mnt/media, no /mnt/media/videos.",
+    "startGuard.mountHelp": "Introduzca el punto de montaje o una ruta/archivo dentro de él: Dockge detectará el montaje correspondiente.",
+    "startGuard.mountDetected": "Montaje detectado: {mountPoint}",
     "startGuard.watch": "Supervisar estos requisitos continuamente",
     "startGuard.onFailure": "Cuando un requisito deja de estar disponible",
     "startGuard.stop": "Detener la pila",
@@ -199,6 +200,6 @@
     "startGuard.recoveryDelay": "Retraso antes de reiniciar",
     "startGuard.nothing": "No hacer nada",
     "startGuard.seconds": "segundos",
-    "releaseNews.item.startGuard": "Cada pila gestionada puede exigir montajes del host o servicios systemd antes de iniciar, reiniciar o recrear contenedores. La comprobación también protege los inicios programados y se puede probar desde la página de la pila.",
+    "releaseNews.item.startGuard": "Cada pila gestionada puede exigir montajes del host o servicios systemd antes de iniciar, reiniciar o recrear contenedores. Para los montajes se acepta una subruta y Dockge recuerda el montaje resuelto sin recurrir a un padre si desaparece.",
     "releaseNews.item.startGuardWatch": "Los requisitos de una pila también pueden supervisarse continuamente: después de un retraso configurable, Dockge la detiene si una dependencia desaparece y solo la reinicia tras recuperarse si el vigilante la detuvo."
 }
