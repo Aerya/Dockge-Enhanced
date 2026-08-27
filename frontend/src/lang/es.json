@@ -189,6 +189,7 @@
     "startGuard.add": "Añadir condición",
     "startGuard.remove": "Eliminar condición",
     "startGuard.test": "Probar ahora",
+    "startGuard.mountHelp": "Introduzca el punto de montaje exacto del host, no un subdirectorio. Ejemplo: /mnt/media, no /mnt/media/videos.",
     "startGuard.watch": "Supervisar estos requisitos continuamente",
     "startGuard.onFailure": "Cuando un requisito deja de estar disponible",
     "startGuard.stop": "Detener la pila",

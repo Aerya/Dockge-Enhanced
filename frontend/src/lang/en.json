@@ -1088,6 +1088,7 @@
     "startGuard.add": "Add condition",
     "startGuard.remove": "Remove condition",
     "startGuard.test": "Test now",
+    "startGuard.mountHelp": "Enter the exact mount point on the host, not a subdirectory. Example: /mnt/media, not /mnt/media/videos.",
     "startGuard.watch": "Monitor these prerequisites continuously",
     "startGuard.onFailure": "When a prerequisite becomes unavailable",
     "startGuard.stop": "Stop the stack",
