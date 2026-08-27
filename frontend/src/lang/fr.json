@@ -1078,6 +1078,7 @@
     "startGuard.add": "Ajouter une condition",
     "startGuard.remove": "Supprimer la condition",
     "startGuard.test": "Tester maintenant",
+    "startGuard.mountHelp": "Entrez le point de montage exact sur l’hôte, pas un sous-dossier. Exemple : /mnt/media, pas /mnt/media/videos.",
     "startGuard.watch": "Surveiller ces prérequis en continu",
     "startGuard.onFailure": "Si un prérequis devient indisponible",
     "startGuard.stop": "Arrêter la stack",

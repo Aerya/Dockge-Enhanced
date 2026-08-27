@@ -391,7 +391,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 const savedStartGuard = await stack.saveStartGuard(startGuard);
                 await this.auditStack(socket, "stack.start_guard.save", stackName, "success", null, { conditions: savedStartGuard.conditions.length });
                 server.sendStackList();
-                callbackResult({ ok: true, startGuard: savedStartGuard }, callback);
+                callbackResult({ ok: true, msg: "Saved", msgi18n: true, startGuard: savedStartGuard }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
