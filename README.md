@@ -28,7 +28,7 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | Area | Dockge Enhanced adds |
 | --- | --- |
 | **Multi-instance** | Automatic full-mesh federation when an agent is added or removed, management from every linked instance, multi-server selection and grouping, transactional copy/migration, resumable jobs, and automatic cold replication |
-| **Stack management** | Pinned stacks, denser resizable stack sidebar, resizable Logs/Compose workspace, reliable raw YAML copy, per-stack and per-container actions and scheduling, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
+| **Stack management** | Pinned stacks, denser resizable stack sidebar, resizable Logs/Compose workspace, reliable raw YAML copy, per-stack and per-container actions and scheduling, optional host start prerequisites, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
 | **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
 | **Automation & audit** | REST API scoped by permissions and stacks, per-stack webhooks, Home Assistant examples, and centralized history with origin and duration |
 | **Docker resources** | Images, volumes, unmanaged containers and networks, bulk actions, auto-prune, and safeguards for risky deletions |
@@ -40,6 +40,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
+
+**2026-08-27 — Per-stack host start prerequisites** — Managed stacks can optionally verify host mount points and `systemd` services before they start, restart or recreate containers. The same guard protects scheduled stack and service starts, while Stop, Down and Delete remain available. Checks run through short-lived, network-isolated Docker helpers against the host, can be tested from the stack page, and keep existing behavior unchanged until enabled.
 
 **2026-08-22 — Resilient federation credentials and recovery** — Enhanced instances now exchange dedicated federation JWTs tied to an active user ID rather than to the mutable WebUI username and password hash. Renaming an account, changing its password or transparently rehashing it no longer takes linked instances offline. The first authenticated session after upgrading rotates an operational mesh automatically. If a link was already broken, a key action beside the offline instance accepts its current WebUI credentials once, replaces them with the dedicated token and retries full-mesh synchronization without removing the instance, stacks or data.
 

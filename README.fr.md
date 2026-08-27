@@ -28,7 +28,7 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
 | **Multi-instance** | Fédération automatique en maillage complet à l'ajout ou au retrait d'un agent, gestion depuis chaque instance liée, sélection et regroupement multi-serveurs, copie/migration transactionnelle, jobs reprenables et réplication froide automatique |
-| **Gestion des stacks** | Stacks épinglées, colonne des stacks plus dense et redimensionnable, espace Logs/Compose redimensionnable, copie fiable du YAML brut, actions et planification par stack et conteneur, Build + Recreate, notes et outils Git facultatifs, et protections pour les services partageant le réseau d'un VPN |
+| **Gestion des stacks** | Stacks épinglées, colonne des stacks plus dense et redimensionnable, espace Logs/Compose redimensionnable, copie fiable du YAML brut, actions et planification par stack et conteneur, prérequis de démarrage hôte facultatifs, Build + Recreate, notes et outils Git facultatifs, et protections pour les services partageant le réseau d'un VPN |
 | **Sauvegarde & reprise** | Restic multi-destination, volumes, cohérence par stack, restauration sélective, tests et diffs de snapshots |
 | **Automatisation & audit** | API REST limitée par droits et stacks, webhooks par stack, exemples Home Assistant et historique central avec origine et durée |
 | **Ressources Docker** | Images, volumes, conteneurs hors Dockge et réseaux, actions groupées, auto-prune et protections contre les suppressions risquées |
@@ -40,6 +40,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
+
+**2026-08-27 — Prérequis hôte par stack au démarrage** — Les stacks gérées peuvent vérifier facultativement des points de montage hôte et services `systemd` avant tout démarrage, redémarrage ou recréation. Le même garde protège les démarrages planifiés des stacks et services, tandis que Stop, Down et Delete restent disponibles. Les vérifications passent par des helpers Docker éphémères isolés du réseau, interrogent l’hôte, se testent depuis la page de la stack et ne changent aucun comportement tant qu’elles ne sont pas activées.
 
 **2026-08-22 — Identifiants de fédération résilients et récupération** — Les instances Enhanced échangent désormais des JWT de fédération dédiés, liés à l’ID d’un utilisateur actif plutôt qu’à l’identifiant WebUI et au hash de mot de passe modifiables. Renommer un compte, changer son mot de passe ou le rehasher automatiquement ne met plus les instances liées hors ligne. La première session authentifiée après la mise à jour renouvelle automatiquement un maillage encore fonctionnel. Si une liaison était déjà cassée, une action avec une clé à côté de l’instance hors ligne accepte une seule fois ses identifiants WebUI actuels, les remplace par le jeton dédié et retente la synchronisation complète sans supprimer l’instance, les stacks ni les données.
 

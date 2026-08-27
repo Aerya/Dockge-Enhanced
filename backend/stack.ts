@@ -51,12 +51,48 @@ interface StackContainerVolumeUsage {
     mounts: StackVolumeMountUsage[];
 }
 
+export type StartGuardConditionType = "mount" | "systemd";
+
+export interface StartGuardCondition {
+    type: StartGuardConditionType;
+    target: string;
+}
+
+export interface StartGuard {
+    enabled: boolean;
+    conditions: StartGuardCondition[];
+}
+
+export interface StartGuardConditionStatus extends StartGuardCondition {
+    ok: boolean;
+    message: string;
+}
+
+export interface StartGuardStatus {
+    ok: boolean;
+    enabled: boolean;
+    ready: boolean;
+    conditions: StartGuardConditionStatus[];
+}
+
 interface StackMetadata {
     createdAt: string | null;
     createdAtEstimated: boolean;
     lastUpdated: string | null;
     lastStartedAt: string | null;
     note: string;
+    startGuard: StartGuard;
+}
+
+const HOST_HELPER_IMAGE = process.env.DOCKGE_VOLUME_HELPER_IMAGE || "busybox:stable";
+const HOST_HELPER_TIMEOUT = 15_000;
+
+export function isHostMountPoint(mountInfo: string, target: string): boolean {
+    return mountInfo.split("\n").some((line) => {
+        const separator = line.indexOf(" - ");
+        const fields = (separator >= 0 ? line.slice(0, separator) : line).split(" ");
+        return fields[4] === `/host${target}`;
+    });
 }
 
 // Nom du fichier d'override compose. Docker Compose le fusionne automatiquement
@@ -136,6 +172,7 @@ export class Stack {
             composeENV: this.composeENV,
             composeOverrideYAML: this.composeOverrideYAML,
             note: metadata.note,
+            startGuard: metadata.startGuard,
             primaryHostname,
         };
     }
@@ -334,6 +371,7 @@ export class Stack {
             lastUpdated: null,
             lastStartedAt: null,
             note: "",
+            startGuard: { enabled: false, conditions: [] },
         };
     }
 
@@ -344,7 +382,53 @@ export class Stack {
             lastUpdated: typeof parsed.lastUpdated === "string" ? parsed.lastUpdated : null,
             lastStartedAt: typeof parsed.lastStartedAt === "string" ? parsed.lastStartedAt : null,
             note: typeof parsed.note === "string" ? parsed.note : "",
+            startGuard: Stack.normalizeStartGuard(parsed.startGuard),
         };
+    }
+
+    static normalizeStartGuard(value: unknown, strict = false): StartGuard {
+        if (!value || typeof value !== "object") {
+            return { enabled: false, conditions: [] };
+        }
+        const guard = value as { enabled?: unknown; conditions?: unknown };
+        if (!Array.isArray(guard.conditions)) {
+            return { enabled: guard.enabled === true, conditions: [] };
+        }
+        if (guard.conditions.length > 20) {
+            if (!strict) {
+                return { enabled: false, conditions: [] };
+            }
+            throw new ValidationError("A start guard supports at most 20 conditions");
+        }
+        let conditions: StartGuardCondition[];
+        try {
+            conditions = guard.conditions.map((condition) => Stack.normalizeStartGuardCondition(condition));
+        } catch (error) {
+            if (!strict) {
+                return { enabled: false, conditions: [] };
+            }
+            throw error;
+        }
+        return { enabled: guard.enabled === true, conditions };
+    }
+
+    private static normalizeStartGuardCondition(value: unknown): StartGuardCondition {
+        if (!value || typeof value !== "object") {
+            throw new ValidationError("Invalid start guard condition");
+        }
+        const condition = value as { type?: unknown; target?: unknown };
+        if ((condition.type !== "mount" && condition.type !== "systemd") || typeof condition.target !== "string") {
+            throw new ValidationError("Invalid start guard condition");
+        }
+        const target = condition.target.trim();
+        if (condition.type === "mount") {
+            if (!/^\/(?:[A-Za-z0-9._@+-]+\/)*[A-Za-z0-9._@+-]+$/.test(target)) {
+                throw new ValidationError("Mount prerequisite must be an absolute host path");
+            }
+        } else if (!/^[A-Za-z0-9][A-Za-z0-9@_.-]*\.service$/.test(target)) {
+            throw new ValidationError("Systemd prerequisite must be a .service unit name");
+        }
+        return { type: condition.type, target };
     }
 
     private readMetaSync(): StackMetadata {
@@ -410,7 +494,57 @@ export class Stack {
         return normalized;
     }
 
+    async saveStartGuard(startGuard: unknown): Promise<StartGuard> {
+        const normalized = Stack.normalizeStartGuard(startGuard, true);
+        await this.writeMeta({ startGuard: normalized });
+        return normalized;
+    }
+
+    async getStartGuardStatus(startGuardInput?: unknown): Promise<StartGuardStatus> {
+        const startGuard = startGuardInput === undefined
+            ? (await this.readMeta()).startGuard
+            : Stack.normalizeStartGuard(startGuardInput, true);
+        if (!startGuard.enabled || startGuard.conditions.length === 0) {
+            return { ok: true, enabled: startGuard.enabled, ready: true, conditions: [] };
+        }
+        const conditions = await Promise.all(startGuard.conditions.map((condition) => this.checkStartGuardCondition(condition)));
+        return { ok: conditions.every((condition) => condition.ok), enabled: true, ready: conditions.every((condition) => condition.ok), conditions };
+    }
+
+    private async assertStartGuard(): Promise<void> {
+        const status = await this.getStartGuardStatus();
+        if (!status.ready) {
+            const failed = status.conditions.find((condition) => !condition.ok);
+            throw new Error(`Start prerequisite failed: ${failed?.type === "mount" ? "host mount" : "systemd service"} ${failed?.target ?? "unknown"} — ${failed?.message ?? "not ready"}`);
+        }
+    }
+
+    private async checkStartGuardCondition(condition: StartGuardCondition): Promise<StartGuardConditionStatus> {
+        try {
+            if (condition.type === "mount") {
+                const result = await childProcessAsync.spawn("docker", [
+                    "run", "--rm", "--network", "none",
+                    "--mount", "type=bind,src=/,dst=/host,readonly",
+                    HOST_HELPER_IMAGE, "cat", "/proc/self/mountinfo",
+                ], { encoding: "utf-8", timeout: HOST_HELPER_TIMEOUT });
+                const mounted = isHostMountPoint(result.stdout?.toString() ?? "", condition.target);
+                return { ...condition, ok: mounted, message: mounted ? "Mounted" : "Host path is not a mount point" };
+            }
+
+            await childProcessAsync.spawn("docker", [
+                "run", "--rm", "--network", "none", "--privileged", "--pid", "host",
+                "--mount", "type=bind,src=/,dst=/host,readonly",
+                HOST_HELPER_IMAGE, "chroot", "/host", "/usr/bin/systemctl", "is-active", "--quiet", condition.target,
+            ], { encoding: "utf-8", timeout: HOST_HELPER_TIMEOUT });
+            return { ...condition, ok: true, message: "Service is active" };
+        } catch (error) {
+            const output = error instanceof Error ? error.message : "Host prerequisite check failed";
+            return { ...condition, ok: false, message: condition.type === "mount" ? "Host path is not a mount point" : `Service is inactive or unavailable (${output})` };
+        }
+    }
+
     async deploy(socket : DockgeSocket) : Promise<number> {
+        await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const outputChunks : string[] = [];
         let outputLength = 0;
@@ -656,6 +790,7 @@ export class Stack {
     }
 
     async start(socket: DockgeSocket) {
+        await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--remove-orphans"), this.path);
         if (exitCode !== 0) {
@@ -675,6 +810,7 @@ export class Stack {
     }
 
     async startScheduled(): Promise<number> {
+        await this.assertStartGuard();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--remove-orphans"), {
             cwd: this.path,
             encoding: "utf-8",
@@ -701,6 +837,9 @@ export class Stack {
     }
 
     async serviceScheduled(serviceName: string, action: "start" | "stop"): Promise<number> {
+        if (action === "start") {
+            await this.assertStartGuard();
+        }
         const targets = await this.getServiceActionTargets(serviceName);
         const args = action === "start"
             ? this.getComposeOptions("up", "-d", serviceName)
@@ -721,6 +860,7 @@ export class Stack {
     }
 
     async restart(socket: DockgeSocket) : Promise<number> {
+        await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("restart"), this.path);
         if (exitCode !== 0) {
@@ -734,6 +874,7 @@ export class Stack {
         if (!serviceName) {
             throw new ValidationError("Service name is required");
         }
+        await this.assertStartGuard();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("restart", serviceName), {
             cwd: this.path,
             encoding: "utf-8",
@@ -784,6 +925,9 @@ export class Stack {
     }
 
     async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate"): Promise<string[]> {
+        if (action !== "stop") {
+            await this.assertStartGuard();
+        }
         const targets = await this.getServiceActionTargets(serviceName);
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const exec = async (command: string, ...args: string[]) => {
@@ -831,6 +975,7 @@ export class Stack {
     }
 
     async recreate(socket: DockgeSocket) : Promise<number> {
+        await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), this.path);
         if (exitCode !== 0) {
@@ -841,6 +986,7 @@ export class Stack {
     }
 
     async recreateInBackground() : Promise<number> {
+        await this.assertStartGuard();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), {
             cwd: this.path,
             encoding: "utf-8",
@@ -864,6 +1010,13 @@ export class Stack {
 
     async update(socket: DockgeSocket) {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
+        const startGuard = (await this.readMeta()).startGuard;
+        if (startGuard.enabled && startGuard.conditions.length > 0) {
+            await this.updateStatus();
+            if (this.status === RUNNING) {
+                await this.assertStartGuard();
+            }
+        }
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("pull"), this.path);
         if (exitCode !== 0) {
             throw new Error("Failed to pull, please check the terminal output for more information.");
@@ -873,7 +1026,6 @@ export class Stack {
         await this.writeMeta({ lastUpdated: new Date().toISOString() });
 
         // If the stack is not running, we don't need to restart it
-        await this.updateStatus();
         log.debug("update", "Status: " + this.status);
         if (this.status !== RUNNING) {
             return exitCode;
@@ -889,6 +1041,7 @@ export class Stack {
     }
 
     async pullAndRecreate(socket: DockgeSocket) : Promise<number> {
+        await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("pull"), this.path);
         if (exitCode !== 0) {
@@ -911,6 +1064,7 @@ export class Stack {
         if (buildServices.length === 0) {
             throw new ValidationError("This stack has no service with a build configuration");
         }
+        await this.assertStartGuard();
 
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(

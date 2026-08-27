@@ -361,6 +361,39 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("getStackStartGuardStatus", async (stackName : unknown, startGuard : unknown, callback) => {
+            if (typeof startGuard === "function") {
+                callback = startGuard;
+                startGuard = undefined;
+            }
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string") {
+                    throw new ValidationError("Stack name must be a string");
+                }
+                const stack = await Stack.getStack(server, stackName);
+                callbackResult(await stack.getStartGuardStatus(startGuard), callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("saveStackStartGuard", async (stackName : unknown, startGuard : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string") {
+                    throw new ValidationError("Stack name must be a string");
+                }
+                const stack = await Stack.getStack(server, stackName);
+                const savedStartGuard = await stack.saveStartGuard(startGuard);
+                await this.auditStack(socket, "stack.start_guard.save", stackName, "success", null, { conditions: savedStartGuard.conditions.length });
+                server.sendStackList();
+                callbackResult({ ok: true, startGuard: savedStartGuard }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // down stack
         agentSocket.on("downStack", async (stackName : unknown, callback) => {
             try {

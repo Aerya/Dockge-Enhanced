@@ -80,6 +80,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.federationTokens",
         ],
     },
+    {
+        id: "2026-08-27-stack-start-guard",
+        items: [
+            "releaseNews.item.startGuard",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {
