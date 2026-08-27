@@ -1088,5 +1088,15 @@
     "startGuard.add": "Add condition",
     "startGuard.remove": "Remove condition",
     "startGuard.test": "Test now",
-    "releaseNews.item.startGuard": "Each managed stack can now require host mounts or systemd services before it starts, restarts or recreates containers. The check also protects scheduled starts and can be tested from the stack page."
+    "startGuard.watch": "Monitor these prerequisites continuously",
+    "startGuard.onFailure": "When a prerequisite becomes unavailable",
+    "startGuard.stop": "Stop the stack",
+    "startGuard.failureDelay": "Delay before stopping",
+    "startGuard.onRecovery": "When prerequisites become available again",
+    "startGuard.start": "Start the stack automatically",
+    "startGuard.recoveryDelay": "Delay before restarting",
+    "startGuard.nothing": "Do nothing",
+    "startGuard.seconds": "seconds",
+    "releaseNews.item.startGuard": "Each managed stack can now require host mounts or systemd services before it starts, restarts or recreates containers. The check also protects scheduled starts and can be tested from the stack page.",
+    "releaseNews.item.startGuardWatch": "Stack prerequisites can also be monitored continuously: after a configurable delay, Dockge stops the stack when a dependency disappears and resumes it only after recovery, only when the watcher stopped it itself."
 }

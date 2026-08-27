@@ -189,5 +189,15 @@
     "startGuard.add": "Añadir condición",
     "startGuard.remove": "Eliminar condición",
     "startGuard.test": "Probar ahora",
-    "releaseNews.item.startGuard": "Cada pila gestionada puede exigir montajes del host o servicios systemd antes de iniciar, reiniciar o recrear contenedores. La comprobación también protege los inicios programados y se puede probar desde la página de la pila."
+    "startGuard.watch": "Supervisar estos requisitos continuamente",
+    "startGuard.onFailure": "Cuando un requisito deja de estar disponible",
+    "startGuard.stop": "Detener la pila",
+    "startGuard.failureDelay": "Retraso antes de detener",
+    "startGuard.onRecovery": "Cuando los requisitos vuelven a estar disponibles",
+    "startGuard.start": "Iniciar la pila automáticamente",
+    "startGuard.recoveryDelay": "Retraso antes de reiniciar",
+    "startGuard.nothing": "No hacer nada",
+    "startGuard.seconds": "segundos",
+    "releaseNews.item.startGuard": "Cada pila gestionada puede exigir montajes del host o servicios systemd antes de iniciar, reiniciar o recrear contenedores. La comprobación también protege los inicios programados y se puede probar desde la página de la pila.",
+    "releaseNews.item.startGuardWatch": "Los requisitos de una pila también pueden supervisarse continuamente: después de un retraso configurable, Dockge la detiene si una dependencia desaparece y solo la reinicia tras recuperarse si el vigilante la detuvo."
 }
