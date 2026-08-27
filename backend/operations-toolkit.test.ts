@@ -60,9 +60,12 @@ test("stack notes preserve existing metadata and enforce their size limit", asyn
         assert.deepEqual(
             JSON.parse(await fs.readFile(path.join(stackDir, ".dockge-meta.json"), "utf8")),
             {
+                createdAt: null,
+                createdAtEstimated: false,
                 lastUpdated: "2026-07-26T00:00:00.000Z",
                 lastStartedAt: "2026-07-26T01:00:00.000Z",
                 note: "runbook: internal wiki",
+                startGuard: { enabled: false, conditions: [] },
             },
         );
         await assert.rejects(stack.saveNote("x".repeat(10_001)), /10000/);

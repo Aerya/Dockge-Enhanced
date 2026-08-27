@@ -1066,5 +1066,17 @@
     "releaseNews.item.stackTransferErrors": "Le déplacement d’une stack affiche maintenant l’erreur Docker réelle et détecte avant le déploiement les noms de conteneurs explicites déjà utilisés sur la cible.",
     "releaseNews.item.stackTransferData": "Lors d’un déplacement, le transfert des données est sélectionné automatiquement lorsqu’un transport compatible est disponible ; la copie de configuration seule reste clairement signalée.",
     "releaseNews.item.stackTransferRegistryAccess": "Le preflight teste maintenant l’accès aux images privées et propose de transférer uniquement les identifiants de registry nécessaires, chiffrés de bout en bout.",
-    "releaseNews.item.stackTransferImages": "Le déplacement de stacks peut copier les images Docker depuis l’instance source lorsque le registry est indisponible, limité ou que l’image vient d’un build local."
+    "releaseNews.item.stackTransferImages": "Le déplacement de stacks peut copier les images Docker depuis l’instance source lorsque le registry est indisponible, limité ou que l’image vient d’un build local.",
+    "startGuard.action": "Prérequis de démarrage",
+    "startGuard.heading": "Prérequis de démarrage",
+    "startGuard.enabled": "Vérifier les prérequis avant de démarrer cette stack",
+    "startGuard.type": "Type",
+    "startGuard.target": "Cible",
+    "startGuard.mount": "Montage hôte",
+    "startGuard.systemd": "Service systemd",
+    "startGuard.empty": "Aucun prérequis configuré. Le comportement de démarrage existant est inchangé.",
+    "startGuard.add": "Ajouter une condition",
+    "startGuard.remove": "Supprimer la condition",
+    "startGuard.test": "Tester maintenant",
+    "releaseNews.item.startGuard": "Chaque stack gérée peut maintenant exiger la présence de montages hôte ou de services systemd avant le démarrage, redémarrage ou la recréation des conteneurs. Le contrôle protège aussi les démarrages planifiés et se teste depuis la page de la stack."
 }

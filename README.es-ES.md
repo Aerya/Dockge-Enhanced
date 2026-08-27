@@ -30,7 +30,7 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 | Área | Lo que agrega Dockge Enhanced |
 | --- | --- |
 | **Multiinstancia** | Federación automática en malla completa al agregar o quitar un agente, gestión desde cada instancia vinculada, selección y agrupación multiservidor, copia/migración transaccional, trabajos reanudables y replicación en frío automática |
-| **Gestión de stacks** | Stacks fijados, columna de stacks más densa y redimensionable, espacio Registros/Compose redimensionable, copia fiable del YAML sin formato, acciones y programación por stack y por contenedor, Construir + Recrear, notas y herramientas Git opcionales, y protecciones para servicios que comparten una red VPN |
+| **Gestión de stacks** | Stacks fijados, columna de stacks más densa y redimensionable, espacio Registros/Compose redimensionable, copia fiable del YAML sin formato, acciones y programación por stack y por contenedor, requisitos de inicio del host opcionales, Construir + Recrear, notas y herramientas Git opcionales, y protecciones para servicios que comparten una red VPN |
 | **Copias de seguridad y recuperación** | Restic con múltiples destinos, volúmenes, consistencia por stack, restauración selectiva, pruebas de instantáneas y diferencias (diffs) |
 | **Automatización y auditoría** | API REST acotada por permisos y stacks, webhooks por stack, ejemplos para Home Assistant e historial centralizado con origen y duración |
 | **Recursos de Docker** | Imágenes, volúmenes, contenedores no gestionados y redes, acciones masivas, limpieza automática y protecciones para eliminaciones de riesgo |
@@ -42,6 +42,8 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 
 <details>
 <summary><strong>Mostrar el catálogo completo de funcionalidades</strong></summary>
+
+**2026-08-27 — Requisitos de inicio del host por stack** — Las stacks gestionadas pueden comprobar opcionalmente puntos de montaje del host y servicios `systemd` antes de iniciar, reiniciar o recrear contenedores. El mismo guardia protege los inicios programados de stacks y servicios, mientras que Detener, Down y Eliminar siguen disponibles. Las comprobaciones usan helpers Docker efímeros aislados de la red contra el host, se pueden probar desde la página de la stack y no cambian el comportamiento existente hasta activarlas.
 
 **2026-08-22 — Credenciales de federación resistentes y recuperación** — Las instancias Enhanced ahora intercambian JWT de federación dedicados, vinculados al ID de un usuario activo en lugar del nombre de usuario WebUI y el hash de contraseña modificables. Renombrar una cuenta, cambiar su contraseña o aplicar un rehash automático ya no deja sin conexión las instancias vinculadas. La primera sesión autenticada después de actualizar renueva automáticamente una malla que aún funciona. Si un enlace ya estaba roto, una acción con una llave junto a la instancia sin conexión acepta una sola vez sus credenciales WebUI actuales, las sustituye por el token dedicado y vuelve a intentar la sincronización completa sin eliminar la instancia, los stacks ni los datos.
 

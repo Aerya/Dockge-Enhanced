@@ -1076,5 +1076,17 @@
     "releaseNews.item.stackTransferErrors": "Stack moves now display the real Docker error and detect explicit container names already in use on the target before deployment.",
     "releaseNews.item.stackTransferData": "Stack moves automatically select data transfer when a compatible transport is available; configuration-only moves remain clearly identified.",
     "releaseNews.item.stackTransferRegistryAccess": "Preflight now tests private-image access and offers to transfer only the required registry credentials with end-to-end encryption.",
-    "releaseNews.item.stackTransferImages": "Stack transfers can copy Docker images from the source instance when the registry is unavailable, rate-limited, or the image comes from a local build."
+    "releaseNews.item.stackTransferImages": "Stack transfers can copy Docker images from the source instance when the registry is unavailable, rate-limited, or the image comes from a local build.",
+    "startGuard.action": "Start prerequisites",
+    "startGuard.heading": "Start prerequisites",
+    "startGuard.enabled": "Check prerequisites before starting this stack",
+    "startGuard.type": "Type",
+    "startGuard.target": "Target",
+    "startGuard.mount": "Host mount",
+    "startGuard.systemd": "systemd service",
+    "startGuard.empty": "No prerequisite configured. Existing start behavior is unchanged.",
+    "startGuard.add": "Add condition",
+    "startGuard.remove": "Remove condition",
+    "startGuard.test": "Test now",
+    "releaseNews.item.startGuard": "Each managed stack can now require host mounts or systemd services before it starts, restarts or recreates containers. The check also protects scheduled starts and can be tested from the stack page."
 }

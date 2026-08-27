@@ -177,5 +177,17 @@
     "copyRawCompose": "Copiar el YAML Compose sin formato",
     "rawComposeCopied": "YAML Compose copiado sin formato",
     "disableAuth": "desactivar la autenticación",
-    "scenarios": "donde pretendes implementar autenticación de terceros"
+    "scenarios": "donde pretendes implementar autenticación de terceros",
+    "startGuard.action": "Requisitos de inicio",
+    "startGuard.heading": "Requisitos de inicio",
+    "startGuard.enabled": "Comprobar los requisitos antes de iniciar esta pila",
+    "startGuard.type": "Tipo",
+    "startGuard.target": "Destino",
+    "startGuard.mount": "Montaje del host",
+    "startGuard.systemd": "Servicio systemd",
+    "startGuard.empty": "No hay requisitos configurados. El comportamiento de inicio actual no cambia.",
+    "startGuard.add": "Añadir condición",
+    "startGuard.remove": "Eliminar condición",
+    "startGuard.test": "Probar ahora",
+    "releaseNews.item.startGuard": "Cada pila gestionada puede exigir montajes del host o servicios systemd antes de iniciar, reiniciar o recrear contenedores. La comprobación también protege los inicios programados y se puede probar desde la página de la pila."
 }

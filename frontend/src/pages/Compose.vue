@@ -138,6 +138,10 @@
                         <font-awesome-icon icon="note-sticky" />
                         <span class="stack-action-label">{{ $t("showStackNote") }}</span>
                     </button>
+                    <button v-if="!isEditMode && !isAdd && stack.isManagedByDockge" type="button" class="btn stack-action" :class="showStartGuard ? 'btn-primary' : 'btn-normal'" :title="$t('startGuard.action')" :aria-label="$t('startGuard.action')" @click="showStartGuard = !showStartGuard">
+                        <font-awesome-icon icon="shield-alt" />
+                        <span class="stack-action-label">{{ $t("startGuard.action") }}</span>
+                    </button>
                     <button v-if="!endpoint" type="button" class="btn stack-action" :class="showStackGit ? 'btn-primary' : 'btn-normal'" :title="$t('showStackGit')" :aria-label="$t('showStackGit')" @click="showStackGit = !showStackGit">
                         <font-awesome-icon icon="code-branch" />
                         <span class="stack-action-label">{{ $t("showStackGit") }}</span>
@@ -184,6 +188,31 @@
                             <font-awesome-icon :icon="noteSaving ? 'spinner' : 'save'" :spin="noteSaving" class="me-1" />{{ $t("Save") }}
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <div v-if="showStartGuard && !isAdd && stack.isManagedByDockge" class="shadow-box start-guard-panel mb-3">
+                <div class="settings-subheading mb-2"><font-awesome-icon icon="shield-alt" class="me-2" />{{ $t("startGuard.heading") }}</div>
+                <label class="form-check form-switch mb-3">
+                    <input v-model="startGuard.enabled" class="form-check-input" type="checkbox">
+                    <span class="form-check-label">{{ $t("startGuard.enabled") }}</span>
+                </label>
+                <div v-for="(condition, index) in startGuard.conditions" :key="index" class="start-guard-condition mb-2">
+                    <select v-model="condition.type" class="form-select form-select-sm" :aria-label="$t('startGuard.type')">
+                        <option value="mount">{{ $t("startGuard.mount") }}</option>
+                        <option value="systemd">{{ $t("startGuard.systemd") }}</option>
+                    </select>
+                    <input v-model="condition.target" class="form-control form-control-sm" :placeholder="condition.type === 'mount' ? '/mnt/torrent' : 'rclone-synology.service'" :aria-label="$t('startGuard.target')">
+                    <button type="button" class="btn btn-sm btn-outline-danger" :title="$t('startGuard.remove')" :aria-label="$t('startGuard.remove')" @click="removeStartGuardCondition(index)"><font-awesome-icon icon="trash" /></button>
+                    <span v-if="startGuardStatus?.conditions?.[index]" class="small start-guard-status" :class="startGuardStatus.conditions[index].ok ? 'text-success' : 'text-danger'">
+                        {{ startGuardStatus.conditions[index].ok ? '✓' : '✗' }} {{ startGuardStatus.conditions[index].message }}
+                    </span>
+                </div>
+                <div v-if="startGuard.conditions.length === 0" class="text-muted small mb-2">{{ $t("startGuard.empty") }}</div>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <button type="button" class="btn btn-sm btn-normal" :disabled="startGuard.conditions.length >= 20" @click="addStartGuardCondition"><font-awesome-icon icon="plus" class="me-1" />{{ $t("startGuard.add") }}</button>
+                    <button type="button" class="btn btn-sm btn-normal" :disabled="startGuardTesting" @click="testStartGuard"><font-awesome-icon :icon="startGuardTesting ? 'spinner' : 'check'" :spin="startGuardTesting" class="me-1" />{{ $t("startGuard.test") }}</button>
+                    <button type="button" class="btn btn-sm btn-primary" :disabled="startGuardSaving" @click="saveStartGuard"><font-awesome-icon :icon="startGuardSaving ? 'spinner' : 'save'" :spin="startGuardSaving" class="me-1" />{{ $t("Save") }}</button>
                 </div>
             </div>
 
@@ -795,6 +824,11 @@ export default {
             plugNPiNEnabled: false,
             noteSaving: false,
             noteExpanded: false,
+            showStartGuard: false,
+            startGuard: { enabled: false, conditions: [] },
+            startGuardStatus: null,
+            startGuardSaving: false,
+            startGuardTesting: false,
             composePaneWidth: Math.min(75, Math.max(25, Number(localStorage.getItem("composePaneWidth")) || 50)),
             composeCollapsed: localStorage.getItem("composeCollapsed") === "1",
             logsFullscreen: false,
@@ -1502,6 +1536,14 @@ export default {
             this.$root.emitAgent(this.endpoint, "getStack", this.stack.name, (res) => {
                 if (res.ok) {
                     this.stack = res.stack;
+                    this.startGuard = {
+                        enabled: res.stack.startGuard?.enabled === true,
+                        conditions: (res.stack.startGuard?.conditions || []).map((condition) => ({
+                            type: condition.type === "systemd" ? "systemd" : "mount",
+                            target: condition.target || "",
+                        })),
+                    };
+                    this.startGuardStatus = null;
                     this.yamlCodeChange();
                     this.processing = false;
                     this.bindTerminal();
@@ -1681,6 +1723,42 @@ export default {
                 if (res.ok) {
                     this.stack.note = res.note;
                 }
+            });
+        },
+
+        addStartGuardCondition() {
+            if (this.startGuard.conditions.length < 20) {
+                this.startGuard.conditions.push({ type: "mount", target: "" });
+            }
+        },
+
+        removeStartGuardCondition(index) {
+            this.startGuard.conditions.splice(index, 1);
+            this.startGuardStatus = null;
+        },
+
+        saveStartGuard() {
+            this.startGuardSaving = true;
+            this.$root.emitAgent(this.endpoint, "saveStackStartGuard", this.stack.name, this.startGuard, (res) => {
+                this.startGuardSaving = false;
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.startGuard = res.startGuard;
+                    this.stack.startGuard = res.startGuard;
+                    this.startGuardStatus = null;
+                }
+            });
+        },
+
+        testStartGuard() {
+            this.startGuardTesting = true;
+            this.$root.emitAgent(this.endpoint, "getStackStartGuardStatus", this.stack.name, this.startGuard, (res) => {
+                this.startGuardTesting = false;
+                if (!res.ok) {
+                    this.$root.toastRes(res);
+                    return;
+                }
+                this.startGuardStatus = res;
             });
         },
 
@@ -1958,6 +2036,37 @@ export default {
 .stack-note-input::placeholder {
     color: #9ca3af;
     opacity: 1;
+}
+
+.start-guard-panel {
+    padding: 16px;
+}
+
+.start-guard-condition {
+    display: grid;
+    grid-template-columns: minmax(9rem, .8fr) minmax(0, 1.4fr) auto;
+    gap: .5rem;
+    align-items: center;
+}
+
+.start-guard-status {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 650px) {
+    .start-guard-condition {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .start-guard-condition .form-select,
+    .start-guard-condition .form-control {
+        grid-column: 1 / 2;
+    }
+
+    .start-guard-condition .btn {
+        grid-column: 2;
+        grid-row: 1 / 3;
+    }
 }
 
 /* Terminal de progression (deploy/restart/update) : plus haut pour afficher
