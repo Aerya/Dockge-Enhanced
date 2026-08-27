@@ -1078,7 +1078,8 @@
     "startGuard.add": "Ajouter une condition",
     "startGuard.remove": "Supprimer la condition",
     "startGuard.test": "Tester maintenant",
-    "startGuard.mountHelp": "Entrez le point de montage exact sur l’hôte, pas un sous-dossier. Exemple : /mnt/media, pas /mnt/media/videos.",
+    "startGuard.mountHelp": "Entrez le point de montage ou un chemin/fichier situé dessous : Dockge détectera le montage correspondant.",
+    "startGuard.mountDetected": "Montage détecté : {mountPoint}",
     "startGuard.watch": "Surveiller ces prérequis en continu",
     "startGuard.onFailure": "Si un prérequis devient indisponible",
     "startGuard.stop": "Arrêter la stack",
@@ -1088,6 +1089,6 @@
     "startGuard.recoveryDelay": "Délai avant redémarrage",
     "startGuard.nothing": "Ne rien faire",
     "startGuard.seconds": "secondes",
-    "releaseNews.item.startGuard": "Chaque stack gérée peut maintenant exiger la présence de montages hôte ou de services systemd avant le démarrage, redémarrage ou la recréation des conteneurs. Le contrôle protège aussi les démarrages planifiés et se teste depuis la page de la stack.",
+    "releaseNews.item.startGuard": "Chaque stack gérée peut maintenant exiger la présence de montages hôte ou de services systemd avant le démarrage, redémarrage ou la recréation des conteneurs. Pour un montage, un sous-chemin est accepté et Dockge mémorise automatiquement le montage réel, sans fallback vers un parent en cas de disparition.",
     "releaseNews.item.startGuardWatch": "Les prérequis d’une stack peuvent aussi être surveillés en continu : après un délai configurable, Dockge l’arrête si une dépendance disparaît et ne la redémarre qu’après son retour, uniquement s’il l’avait arrêtée lui-même."
 }

@@ -204,7 +204,7 @@
                     </select>
                     <input v-model="condition.target" class="form-control form-control-sm" :placeholder="condition.type === 'mount' ? '/mnt/torrent' : 'rclone-synology.service'" :aria-label="$t('startGuard.target')">
                     <button type="button" class="btn btn-sm btn-outline-danger" :title="$t('startGuard.remove')" :aria-label="$t('startGuard.remove')" @click="removeStartGuardCondition(index)"><font-awesome-icon icon="trash" /></button>
-                    <span v-if="condition.type === 'mount'" class="small text-muted start-guard-status">{{ $t("startGuard.mountHelp") }}</span>
+                    <span v-if="condition.type === 'mount'" class="small text-muted start-guard-status">{{ $t("startGuard.mountHelp") }}<template v-if="condition.mountPoint"> {{ $t("startGuard.mountDetected", { mountPoint: condition.mountPoint }) }}</template></span>
                     <span v-if="startGuardStatus?.conditions?.[index]" class="small start-guard-status" :class="startGuardStatus.conditions[index].ok ? 'text-success' : 'text-danger'">
                         {{ startGuardStatus.conditions[index].ok ? '✓' : '✗' }} {{ startGuardStatus.conditions[index].message }}
                     </span>
@@ -1558,6 +1558,7 @@ export default {
                         conditions: (res.stack.startGuard?.conditions || []).map((condition) => ({
                             type: condition.type === "systemd" ? "systemd" : "mount",
                             target: condition.target || "",
+                            ...(condition.mountPoint ? { mountPoint: condition.mountPoint } : {}),
                         })),
                         watch: res.stack.startGuard?.watch === true,
                         onFailure: res.stack.startGuard?.onFailure === "none" ? "none" : "stop",
@@ -1781,6 +1782,9 @@ export default {
                     return;
                 }
                 this.startGuardStatus = res;
+                res.conditions?.forEach((condition, index) => {
+                    if (condition.mountPoint && this.startGuard.conditions[index]) this.startGuard.conditions[index].mountPoint = condition.mountPoint;
+                });
             });
         },
 

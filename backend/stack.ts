@@ -56,6 +56,8 @@ export type StartGuardConditionType = "mount" | "systemd";
 export interface StartGuardCondition {
     type: StartGuardConditionType;
     target: string;
+    /** Exact host mount resolved when the guard is saved. */
+    mountPoint?: string;
 }
 
 export interface StartGuard {
@@ -98,6 +100,17 @@ export function isHostMountPoint(mountInfo: string, target: string): boolean {
         const fields = (separator >= 0 ? line.slice(0, separator) : line).split(" ");
         return fields[4] === `/host${target}`;
     });
+}
+
+export function resolveHostMountPoint(mountInfo: string, target: string): string | undefined {
+    return mountInfo.split("\n")
+        .map((line) => {
+            const separator = line.indexOf(" - ");
+            const fields = (separator >= 0 ? line.slice(0, separator) : line).split(" ");
+            return fields[4]?.startsWith("/host/") ? fields[4].slice(5) : fields[4] === "/host" ? "/" : undefined;
+        })
+        .filter((mountPoint): mountPoint is string => Boolean(mountPoint) && (mountPoint === "/" || target === mountPoint || target.startsWith(`${mountPoint}/`)))
+        .sort((a, b) => b.length - a.length)[0];
 }
 
 // Nom du fichier d'override compose. Docker Compose le fusionne automatiquement
@@ -449,7 +462,7 @@ export class Stack {
         if (!value || typeof value !== "object") {
             throw new ValidationError("Invalid start guard condition");
         }
-        const condition = value as { type?: unknown; target?: unknown };
+        const condition = value as { type?: unknown; target?: unknown; mountPoint?: unknown };
         if ((condition.type !== "mount" && condition.type !== "systemd") || typeof condition.target !== "string") {
             throw new ValidationError("Invalid start guard condition");
         }
@@ -461,7 +474,10 @@ export class Stack {
         } else if (!/^[A-Za-z0-9][A-Za-z0-9@_.-]*\.service$/.test(target)) {
             throw new ValidationError("Systemd prerequisite must be a .service unit name");
         }
-        return { type: condition.type, target };
+        const mountPoint = condition.type === "mount" && typeof condition.mountPoint === "string" && /^\/(?:[A-Za-z0-9._@+-]+\/)*[A-Za-z0-9._@+-]+$/.test(condition.mountPoint)
+            ? condition.mountPoint
+            : undefined;
+        return { type: condition.type, target, ...(mountPoint ? { mountPoint } : {}) };
     }
 
     private readMetaSync(): StackMetadata {
@@ -529,6 +545,12 @@ export class Stack {
 
     async saveStartGuard(startGuard: unknown): Promise<StartGuard> {
         const normalized = Stack.normalizeStartGuard(startGuard, true);
+        const mountInfo = normalized.conditions.some((condition) => condition.type === "mount") ? await this.readHostMountInfo() : "";
+        normalized.conditions = normalized.conditions.map((condition) => {
+            if (condition.type !== "mount") return condition;
+            const mountPoint = resolveHostMountPoint(mountInfo, condition.target);
+            return { ...condition, ...(mountPoint ? { mountPoint } : {}) };
+        });
         await this.writeMeta({ startGuard: normalized });
         return normalized;
     }
@@ -559,13 +581,10 @@ export class Stack {
     private async checkStartGuardCondition(condition: StartGuardCondition): Promise<StartGuardConditionStatus> {
         try {
             if (condition.type === "mount") {
-                const result = await childProcessAsync.spawn("docker", [
-                    "run", "--rm", "--network", "none",
-                    "--mount", "type=bind,src=/,dst=/host,readonly",
-                    HOST_HELPER_IMAGE, "cat", "/proc/self/mountinfo",
-                ], { encoding: "utf-8", timeout: HOST_HELPER_TIMEOUT });
-                const mounted = isHostMountPoint(result.stdout?.toString() ?? "", condition.target);
-                return { ...condition, ok: mounted, message: mounted ? "Mounted" : "Host path is not a mount point" };
+                const mountInfo = await this.readHostMountInfo();
+                const mountPoint = condition.mountPoint ?? resolveHostMountPoint(mountInfo, condition.target);
+                const mounted = mountPoint !== undefined && isHostMountPoint(mountInfo, mountPoint);
+                return { ...condition, ...(mountPoint ? { mountPoint } : {}), ok: mounted, message: mounted ? "Mounted" : "Resolved host mount is unavailable" };
             }
 
             await childProcessAsync.spawn("docker", [
@@ -578,6 +597,15 @@ export class Stack {
             const output = error instanceof Error ? error.message : "Host prerequisite check failed";
             return { ...condition, ok: false, message: condition.type === "mount" ? "Host path is not a mount point" : `Service is inactive or unavailable (${output})` };
         }
+    }
+
+    private async readHostMountInfo(): Promise<string> {
+        const result = await childProcessAsync.spawn("docker", [
+            "run", "--rm", "--network", "none",
+            "--mount", "type=bind,src=/,dst=/host,readonly",
+            HOST_HELPER_IMAGE, "cat", "/proc/self/mountinfo",
+        ], { encoding: "utf-8", timeout: HOST_HELPER_TIMEOUT });
+        return result.stdout?.toString() ?? "";
     }
 
     async deploy(socket : DockgeSocket) : Promise<number> {

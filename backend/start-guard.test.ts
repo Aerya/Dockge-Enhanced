@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isHostMountPoint, Stack } from "./stack";
+import { isHostMountPoint, resolveHostMountPoint, Stack } from "./stack";
 import { StartGuardWatcher } from "./watchers/start-guard-watcher";
 import { EXITED, RUNNING } from "../common/util-common";
 
@@ -72,8 +72,13 @@ test("watcher stops after failure delay and only restarts its own stop", async (
     assert.equal((watcher as unknown as { states: Map<string, unknown> }).states.has("media"), false);
 });
 
-test("recognizes a host mount point without trusting a directory", () => {
-    const mountInfo = "36 25 0:32 / /host/mnt/torrent rw,relatime - ext4 /dev/sda1 rw\n37 25 0:33 / /host/mnt/media rw,relatime - ext4 /dev/sdb1 rw";
-    assert.equal(isHostMountPoint(mountInfo, "/mnt/torrent"), true);
-    assert.equal(isHostMountPoint(mountInfo, "/mnt/torrent/missing"), false);
+test("resolves the most specific host mount and never falls back after it disappears", () => {
+    const mounted = "1 0 0:1 / /host rw - ext4 /dev/root rw\n2 1 0:2 / /host/home rw - ext4 /dev/root rw\n3 2 0:3 / /host/home/user/Montages/NAS rw - fuse.sshfs sshfs rw";
+    const target = "/home/user/Montages/NAS/Torrent/foo";
+    assert.equal(resolveHostMountPoint(mounted, target), "/home/user/Montages/NAS");
+    assert.equal(resolveHostMountPoint(mounted, "/home/user/Montages/NAS"), "/home/user/Montages/NAS");
+    assert.equal(isHostMountPoint(mounted, "/home/user/Montages/NAS"), true);
+    const disappeared = "1 0 0:1 / /host rw - ext4 /dev/root rw\n2 1 0:2 / /host/home rw - ext4 /dev/root rw";
+    assert.equal(isHostMountPoint(disappeared, "/home/user/Montages/NAS"), false);
+    assert.equal(isHostMountPoint(mounted, "/home/user/Montages/NAS"), true);
 });
