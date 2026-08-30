@@ -254,110 +254,120 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 <table>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/18-home-dashboard.png"><img src="screens/18-home-dashboard.png" width="100%"/></a>
-      <sub>Panel principal y Agentes de Dockge</sub>
+      <a href="screens/1.png"><img src="screens/1.png" width="100%"/></a>
+      <sub>Panel multiinstancia y estado global</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/01-stack-overview.png"><img src="screens/01-stack-overview.png" width="100%"/></a>
-      <sub>Vista general de stack, acciones, contenedores y registros</sub>
+      <a href="screens/2.png"><img src="screens/2.png" width="100%"/></a>
+      <sub>Vista de una stack con Compose, contenedores y registros</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/19-configuration-editor.png"><img src="screens/19-configuration-editor.png" width="100%"/></a>
-      <sub>Editor de configuración con búsqueda y reemplazo</sub>
+      <a href="screens/3.png"><img src="screens/3.png" width="100%"/></a>
+      <sub>Gestión detallada de una stack y sus acciones</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/02-image-monitoring.png"><img src="screens/02-image-monitoring.png" width="100%"/></a>
-      <sub>Monitoreo de imágenes y credenciales de registro</sub>
+      <a href="screens/4.png"><img src="screens/4.png" width="100%"/></a>
+      <sub>Asistente de copia/migración — selección de datos</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/06-docker-images.png"><img src="screens/06-docker-images.png" width="100%"/></a>
-      <sub>Inventario y limpieza de imágenes Docker</sub>
+      <a href="screens/5.png"><img src="screens/5.png" width="100%"/></a>
+      <sub>Asistente de copia/migración — preparación de la transferencia</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/07-docker-networks.png"><img src="screens/07-docker-networks.png" width="100%"/></a>
-      <sub>Inventario y protecciones de redes Docker</sub>
+      <a href="screens/6.png"><img src="screens/6.png" width="100%"/></a>
+      <sub>Asistente de copia/migración — mapeo y validación de volúmenes</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/14-volume-file-browser.png"><img src="screens/14-volume-file-browser.png" width="100%"/></a>
-      <sub>Explorador de archivos de volúmenes Docker</sub>
+      <a href="screens/7.png"><img src="screens/7.png" width="100%"/></a>
+      <sub>Vista de stack con herramientas avanzadas de operación</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/03-backup-configuration.png"><img src="screens/03-backup-configuration.png" width="100%"/></a>
-      <sub>Destinos Restic y copia de seguridad de volúmenes</sub>
+      <a href="screens/8.png"><img src="screens/8.png" width="100%"/></a>
+      <sub>Supervisión de actualizaciones de imágenes</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/04-backup-stack-consistency.png"><img src="screens/04-backup-stack-consistency.png" width="100%"/></a>
-      <sub>Estrategia de consistencia de copias de seguridad por stack</sub>
+      <a href="screens/9.png"><img src="screens/9.png" width="100%"/></a>
+      <sub>Estado detallado de las imágenes supervisadas</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/05-backup-history.png"><img src="screens/05-backup-history.png" width="100%"/></a>
-      <sub>Historial de copias de seguridad, retención y pruebas de restauración</sub>
+      <a href="screens/10.png"><img src="screens/10.png" width="100%"/></a>
+      <sub>Programación del inicio y parada de stacks</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/15-stack-replication.png"><img src="screens/15-stack-replication.png" width="100%"/></a>
-      <sub>Replicación programada de stacks y pruebas de recuperación</sub>
+      <a href="screens/11.png"><img src="screens/11.png" width="100%"/></a>
+      <sub>Análisis de seguridad y resultados de Trivy</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/16-stack-copy.png"><img src="screens/16-stack-copy.png" width="100%"/></a>
-      <sub>Copia de stacks entre instancias y mapeo de volúmenes</sub>
+      <a href="screens/12.png"><img src="screens/12.png" width="100%"/></a>
+      <sub>Configuración de copias Restic</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/17-monitoring-full-page.png"><img src="screens/17-monitoring-full-page.png" width="100%"/></a>
-      <sub>Monitoreo, detección de bucles de fallo y auto-reparación</sub>
+      <a href="screens/13.png"><img src="screens/13.png" width="100%"/></a>
+      <sub>Volúmenes incluidos, exclusiones y coherencia de las copias</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/08-notifications.png"><img src="screens/08-notifications.png" width="100%"/></a>
-      <sub>Canales de notificación y configuración de idioma</sub>
+      <a href="screens/14.png"><img src="screens/14.png" width="100%"/></a>
+      <sub>Gestión de recursos Docker</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/09-audit-log.png"><img src="screens/09-audit-log.png" width="100%"/></a>
-      <sub>Historial de auditoría centralizado</sub>
+      <a href="screens/15.png"><img src="screens/15.png" width="100%"/></a>
+      <sub>Supervisión y estado de los contenedores</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/10-security-settings.png"><img src="screens/10-security-settings.png" width="100%"/></a>
-      <sub>Configuración de autenticación y seguridad</sub>
+      <a href="screens/16.png"><img src="screens/16.png" width="100%"/></a>
+      <sub>Interfaz responsive / móvil</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/11-plugnpin-integration.png"><img src="screens/11-plugnpin-integration.png" width="100%"/></a>
-      <sub>Integración opcional PlugNPiN</sub>
+      <a href="screens/17.png"><img src="screens/17.png" width="100%"/></a>
+      <sub>Historial y registro de auditoría</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/12-api-and-webhooks.png"><img src="screens/12-api-and-webhooks.png" width="100%"/></a>
-      <sub>Tokens API acotados y webhooks de stack</sub>
+      <a href="screens/18.png"><img src="screens/18.png" width="100%"/></a>
+      <sub>Ajustes de seguridad y autenticación</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/13-trivy-security-scan.png"><img src="screens/13-trivy-security-scan.png" width="100%"/></a>
-      <sub>Resultados del escaneo de vulnerabilidades Trivy</sub>
+      <a href="screens/19.png"><img src="screens/19.png" width="100%"/></a>
+      <sub>Integraciones opcionales</sub>
     </td>
+    <td align="center" width="33%">
+      <a href="screens/20.png"><img src="screens/20.png" width="100%"/></a>
+      <sub>Automatización, API y webhooks</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/21.png"><img src="screens/21.png" width="100%"/></a>
+      <sub>Página Acerca de e información de versión</sub>
+    </td>
+  </tr>
+  <tr>
     <td align="center" width="33%">
       <a href="screens/EnhancedUpdate.png"><img src="screens/EnhancedUpdate.png" width="100%"/></a>
-      <sub>Auto-actualización en la aplicación</sub>
+      <sub>Actualización integrada de Dockge Enhanced</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/DiscordUpdates.png"><img src="screens/DiscordUpdates.png" width="100%"/></a>
-      <sub>Discord — alertas de actualización de imágenes</sub>
+      <sub>Discord — alertas de actualizaciones de imágenes</sub>
     </td>
-  </tr>
-  <tr>
     <td align="center" width="33%">
       <a href="screens/DiscordTrivy.png"><img src="screens/DiscordTrivy.png" width="100%"/></a>
       <sub>Discord — alertas de seguridad Trivy</sub>
     </td>
+  </tr>
+  <tr>
     <td align="center" width="33%">
       <a href="screens/DiscordBackup.png"><img src="screens/DiscordBackup.png" width="100%"/></a>
-      <sub>Discord — notificaciones de copia de seguridad</sub>
+      <sub>Discord — notificaciones de copias de seguridad</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/DiscordEnhancedUpdate.png"><img src="screens/DiscordEnhancedUpdate.png" width="100%"/></a>
@@ -365,7 +375,6 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
     </td>
   </tr>
 </table>
-
 ---
 
 ## Instalación

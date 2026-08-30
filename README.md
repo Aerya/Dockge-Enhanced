@@ -252,107 +252,117 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 <table>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/18-home-dashboard.png"><img src="screens/18-home-dashboard.png" width="100%"/></a>
-      <sub>Home dashboard and Dockge Agents</sub>
+      <a href="screens/1.png"><img src="screens/1.png" width="100%"/></a>
+      <sub>Multi-instance dashboard and global status</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/01-stack-overview.png"><img src="screens/01-stack-overview.png" width="100%"/></a>
-      <sub>Stack overview, actions, containers and logs</sub>
+      <a href="screens/2.png"><img src="screens/2.png" width="100%"/></a>
+      <sub>Stack view with Compose, containers and logs</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/19-configuration-editor.png"><img src="screens/19-configuration-editor.png" width="100%"/></a>
-      <sub>Configuration editor with search and replace</sub>
+      <a href="screens/3.png"><img src="screens/3.png" width="100%"/></a>
+      <sub>Detailed stack management and actions</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/02-image-monitoring.png"><img src="screens/02-image-monitoring.png" width="100%"/></a>
-      <sub>Image monitoring and registry credentials</sub>
+      <a href="screens/4.png"><img src="screens/4.png" width="100%"/></a>
+      <sub>Copy/migration wizard — data selection</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/06-docker-images.png"><img src="screens/06-docker-images.png" width="100%"/></a>
-      <sub>Docker image inventory and cleanup</sub>
+      <a href="screens/5.png"><img src="screens/5.png" width="100%"/></a>
+      <sub>Copy/migration wizard — transfer preparation</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/07-docker-networks.png"><img src="screens/07-docker-networks.png" width="100%"/></a>
-      <sub>Docker network inventory and safeguards</sub>
+      <a href="screens/6.png"><img src="screens/6.png" width="100%"/></a>
+      <sub>Copy/migration wizard — volume mapping and validation</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/14-volume-file-browser.png"><img src="screens/14-volume-file-browser.png" width="100%"/></a>
-      <sub>Docker volume file browser</sub>
+      <a href="screens/7.png"><img src="screens/7.png" width="100%"/></a>
+      <sub>Stack view with advanced operations tools</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/03-backup-configuration.png"><img src="screens/03-backup-configuration.png" width="100%"/></a>
-      <sub>Restic destinations and volume backup</sub>
+      <a href="screens/8.png"><img src="screens/8.png" width="100%"/></a>
+      <sub>Image update monitoring</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/04-backup-stack-consistency.png"><img src="screens/04-backup-stack-consistency.png" width="100%"/></a>
-      <sub>Per-stack backup consistency strategy</sub>
+      <a href="screens/9.png"><img src="screens/9.png" width="100%"/></a>
+      <sub>Detailed monitored-image status</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/05-backup-history.png"><img src="screens/05-backup-history.png" width="100%"/></a>
-      <sub>Backup history, retention and restore tests</sub>
+      <a href="screens/10.png"><img src="screens/10.png" width="100%"/></a>
+      <sub>Stack start and stop scheduling</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/15-stack-replication.png"><img src="screens/15-stack-replication.png" width="100%"/></a>
-      <sub>Scheduled stack replication and recovery tests</sub>
+      <a href="screens/11.png"><img src="screens/11.png" width="100%"/></a>
+      <sub>Security analysis and Trivy results</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/16-stack-copy.png"><img src="screens/16-stack-copy.png" width="100%"/></a>
-      <sub>Cross-instance stack copy and volume mapping</sub>
+      <a href="screens/12.png"><img src="screens/12.png" width="100%"/></a>
+      <sub>Restic backup configuration</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/17-monitoring-full-page.png"><img src="screens/17-monitoring-full-page.png" width="100%"/></a>
-      <sub>Monitoring, crash-loop detection and auto-heal</sub>
+      <a href="screens/13.png"><img src="screens/13.png" width="100%"/></a>
+      <sub>Included volumes, exclusions and backup consistency</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/08-notifications.png"><img src="screens/08-notifications.png" width="100%"/></a>
-      <sub>Notification channels and language settings</sub>
+      <a href="screens/14.png"><img src="screens/14.png" width="100%"/></a>
+      <sub>Docker resource management</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/09-audit-log.png"><img src="screens/09-audit-log.png" width="100%"/></a>
-      <sub>Centralized audit history</sub>
+      <a href="screens/15.png"><img src="screens/15.png" width="100%"/></a>
+      <sub>Monitoring and container health</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/10-security-settings.png"><img src="screens/10-security-settings.png" width="100%"/></a>
-      <sub>Authentication and security settings</sub>
+      <a href="screens/16.png"><img src="screens/16.png" width="100%"/></a>
+      <sub>Responsive / mobile interface</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/11-plugnpin-integration.png"><img src="screens/11-plugnpin-integration.png" width="100%"/></a>
-      <sub>Optional PlugNPiN integration</sub>
+      <a href="screens/17.png"><img src="screens/17.png" width="100%"/></a>
+      <sub>Central audit history</sub>
     </td>
     <td align="center" width="33%">
-      <a href="screens/12-api-and-webhooks.png"><img src="screens/12-api-and-webhooks.png" width="100%"/></a>
-      <sub>Scoped API tokens and stack webhooks</sub>
+      <a href="screens/18.png"><img src="screens/18.png" width="100%"/></a>
+      <sub>Security and authentication settings</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <a href="screens/13-trivy-security-scan.png"><img src="screens/13-trivy-security-scan.png" width="100%"/></a>
-      <sub>Trivy vulnerability scan results</sub>
+      <a href="screens/19.png"><img src="screens/19.png" width="100%"/></a>
+      <sub>Optional integrations</sub>
     </td>
+    <td align="center" width="33%">
+      <a href="screens/20.png"><img src="screens/20.png" width="100%"/></a>
+      <sub>Automation, API and webhooks</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/21.png"><img src="screens/21.png" width="100%"/></a>
+      <sub>About page and version information</sub>
+    </td>
+  </tr>
+  <tr>
     <td align="center" width="33%">
       <a href="screens/EnhancedUpdate.png"><img src="screens/EnhancedUpdate.png" width="100%"/></a>
-      <sub>In-app self-update</sub>
+      <sub>In-app Dockge Enhanced update</sub>
     </td>
     <td align="center" width="33%">
       <a href="screens/DiscordUpdates.png"><img src="screens/DiscordUpdates.png" width="100%"/></a>
       <sub>Discord — image update alerts</sub>
     </td>
-  </tr>
-  <tr>
     <td align="center" width="33%">
       <a href="screens/DiscordTrivy.png"><img src="screens/DiscordTrivy.png" width="100%"/></a>
       <sub>Discord — Trivy security alerts</sub>
     </td>
+  </tr>
+  <tr>
     <td align="center" width="33%">
       <a href="screens/DiscordBackup.png"><img src="screens/DiscordBackup.png" width="100%"/></a>
       <sub>Discord — backup notifications</sub>
@@ -363,7 +373,6 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
     </td>
   </tr>
 </table>
-
 ---
 
 ## Installation
