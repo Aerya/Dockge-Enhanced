@@ -11,6 +11,8 @@ interface WatchState {
     failureSince?: number;
     recoverySince?: number;
     stoppedByWatcher: boolean;
+    mountGenerations?: string;
+    recreateOnRecovery: boolean;
     busy: boolean;
 }
 
@@ -76,14 +78,23 @@ export class StartGuardWatcher {
         const fingerprint = JSON.stringify(guard);
         let state = this.states.get(stack.name);
         if (!state || state.fingerprint !== fingerprint) {
-            state = { fingerprint, stoppedByWatcher: false, busy: false };
+            state = { fingerprint, stoppedByWatcher: false, recreateOnRecovery: false, busy: false };
             this.states.set(stack.name, state);
         }
         if (state.busy) return;
 
-        const ready = (await stack.getStartGuardStatus()).ready;
+        const guardStatus = await stack.getStartGuardStatus();
+        const ready = guardStatus.ready;
+        const mountGenerations = JSON.stringify(guardStatus.conditions
+            .filter((condition) => condition.type === "mount")
+            .map((condition) => [ condition.mountPoint ?? condition.target, condition.mountGeneration ?? "" ]));
         await stack.updateStatus();
         if (!ready) {
+            if (stack.status === RUNNING && guardStatus.conditions.some((condition) => condition.type === "mount" && !condition.ok)) {
+                // A running container keeps the old FUSE mount namespace even
+                // when the host mount returns before the failure delay expires.
+                state.recreateOnRecovery = true;
+            }
             state.recoverySince = undefined;
             if (state.lastReady !== false) state.failureSince = now;
             state.lastReady = false;
@@ -104,21 +115,34 @@ export class StartGuardWatcher {
         }
 
         state.failureSince = undefined;
-        if (state.lastReady !== true) state.recoverySince = now;
+        const mountChanged = state.mountGenerations !== undefined && state.mountGenerations !== mountGenerations;
+        if (mountChanged && stack.status === RUNNING) state.recreateOnRecovery = true;
+        state.mountGenerations = mountGenerations;
+        if (state.lastReady !== true || mountChanged) state.recoverySince = now;
         state.lastReady = true;
-        if (!state.stoppedByWatcher || guard.onRecovery !== "start") return;
+        if (guard.onRecovery !== "start" || (!state.stoppedByWatcher && !state.recreateOnRecovery)) return;
         if (state.recoverySince === undefined || now - state.recoverySince < guard.recoveryDelaySeconds * 1000) return;
-        if (stack.status === RUNNING) {
+        if (state.stoppedByWatcher && stack.status === RUNNING) {
             state.stoppedByWatcher = false;
+            state.recreateOnRecovery = false;
             state.recoverySince = undefined;
             return;
         }
         state.busy = true;
         try {
-            await stack.startScheduled();
+            if (state.stoppedByWatcher) {
+                await stack.startScheduled();
+            } else if (stack.status === RUNNING) {
+                await stack.recreateScheduled();
+            } else {
+                state.recreateOnRecovery = false;
+                state.recoverySince = undefined;
+                return;
+            }
             state.stoppedByWatcher = false;
+            state.recreateOnRecovery = false;
             state.recoverySince = undefined;
-            log.info("start-guard-watcher", `Restarted ${stack.name}: prerequisites recovered`);
+            log.info("start-guard-watcher", `Recreated ${stack.name}: prerequisites recovered or a host mount was replaced`);
         } catch (error) {
             log.error("start-guard-watcher", `Unable to restart ${stack.name}: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
