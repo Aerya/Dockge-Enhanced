@@ -1,6 +1,9 @@
 <template>
     <transition name="slide-fade" appear>
         <div>
+            <router-link :to="backTo" class="back-link">
+                <font-awesome-icon icon="chevron-left" /> {{ $t("back") }}
+            </router-link>
             <h1 class="mb-3">{{ $t("terminal") }} - {{ serviceName }} ({{ stackName }})</h1>
 
             <div class="mb-3">
@@ -36,6 +39,13 @@ export default {
         serviceName() {
             return this.$route.params.serviceName;
         },
+        backTo() {
+            let path = `/compose/${encodeURIComponent(this.stackName)}`;
+            if (this.endpoint) {
+                path += `/${encodeURIComponent(this.endpoint)}`;
+            }
+            return path;
+        },
         terminalName() {
             return getContainerExecTerminalName(this.endpoint, this.stackName, this.serviceName, 0);
         },
@@ -69,7 +79,19 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.back-link {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    text-decoration: none;
+
+    &:hover {
+        color: var(--text-color);
+    }
+}
+
 .terminal {
-    height: 410px;
+    height: min(410px, 60vh);
 }
 </style>

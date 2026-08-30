@@ -201,5 +201,6 @@
     "startGuard.nothing": "No hacer nada",
     "startGuard.seconds": "segundos",
     "releaseNews.item.startGuard": "Cada pila gestionada puede exigir montajes del host o servicios systemd antes de iniciar, reiniciar o recrear contenedores. Para los montajes se acepta una subruta y Dockge recuerda el montaje resuelto sin recurrir a un padre si desaparece.",
-    "releaseNews.item.startGuardWatch": "Los requisitos de una pila también pueden supervisarse continuamente: después de un retraso configurable, Dockge la detiene si una dependencia desaparece y solo la reinicia tras recuperarse si el vigilante la detuvo."
+    "releaseNews.item.startGuardWatch": "Los requisitos de una pila también pueden supervisarse continuamente: después de un retraso configurable, Dockge la detiene si una dependencia desaparece y solo la reinicia tras recuperarse si el vigilante la detuvo.",
+    "releaseNews.item.crosslyUiIntegration": "La interfaz incorpora una columna de stacks plegable y redimensionable, una barra de estado del sistema configurable, tarjetas de resumen, editores que siguen el tema en directo, el tema Auto y una navegación móvil más coherente."
 }

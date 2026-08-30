@@ -1,12 +1,23 @@
+// Compile-time SCSS variables — Bootstrap overrides and breakpoints only.
+// Runtime-themable values (colors, radii, shadows, spacing) live in
+// tokens.scss as CSS custom properties; use var(--*) in components.
+
+// Breakpoints — the only values allowed in media queries.
+// Usage: @media (max-width: $bp-mobile) { … }
+$bp-phone: 575.98px;
+$bp-mobile: 767.98px;   // below this = mobile shell
+$bp-tablet: 991.98px;   // below this = stacked/simplified layouts
+
+// Bootstrap overrides (palette matches upstream Dockge)
 $primary: #74c2ff;
 $danger: #dc3545;
 $warning: #f8a306;
 $maintenance: #1747f5;
 $link-color: #111;
-$border-radius: 50rem;
+$border-radius: 10px;
+$badge-border-radius: 50rem;
 
 $highlight: #9dd1ff;
-$highlight-white: #e7faec;
 
 $dark-font-color: #b1b8c0;
 $dark-font-color2: #020b05;
@@ -17,8 +28,6 @@ $dark-border-color: #1d2634;
 $dark-header-bg: #161b22;
 
 $easing-in: cubic-bezier(0.54, 0.78, 0.55, 0.97);
-$easing-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-$easing-in-out: cubic-bezier(0.79, 0.14, 0.15, 0.86);
 
 $dropdown-border-radius: 0.5rem;
 

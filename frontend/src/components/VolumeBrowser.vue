@@ -21,7 +21,7 @@
                     :extensions="editorExtensions"
                     minimal
                     wrap="true"
-                    dark="true"
+                    :dark="$root.isDark"
                     tab="true"
                     @change="editing.dirty = true"
                 />
@@ -106,7 +106,7 @@ import { python } from "@codemirror/lang-python";
 import { yaml } from "@codemirror/lang-yaml";
 import { StreamLanguage } from "@codemirror/language";
 import { shell } from "@codemirror/legacy-modes/mode/shell";
-import { dracula as editorTheme } from "thememirror";
+import { dracula, tomorrow } from "thememirror";
 import { lineNumbers } from "@codemirror/view";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -145,7 +145,10 @@ export default {
     },
     computed: {
         editorExtensions() {
-            const extensions = [ editorTheme, lineNumbers() ];
+            // Follow the app theme (dracula in dark, tomorrow in light), like
+            // Compose.vue — computed so a theme toggle reconfigures the live
+            // editor via vue-codemirror6's extension watcher.
+            const extensions = [ ...(this.$root.isDark ? [ dracula ] : [ tomorrow ]), lineNumbers() ];
             const fileName = this.editing?.path?.split("/").pop()?.toLowerCase() ?? "";
             const extension = fileName.includes(".") ? fileName.split(".").pop() : "";
 
@@ -219,7 +222,7 @@ export default {
                         this.openMount(this.mounts[0]);
                     }
                 } else {
-                    this.error = res.msg ?? "Error";
+                    this.error = res.msg ?? this.$t("volumeBrowserError");
                 }
             });
         },
@@ -239,7 +242,7 @@ export default {
                 if (res.ok) {
                     this.entries = res.entries ?? [];
                 } else {
-                    this.error = res.msg ?? "Error";
+                    this.error = res.msg ?? this.$t("volumeBrowserError");
                 }
             });
         },
@@ -264,7 +267,7 @@ export default {
                         dirty: false,
                     };
                 } else {
-                    this.error = res.msg ?? "Error";
+                    this.error = res.msg ?? this.$t("volumeBrowserError");
                 }
             });
         },
@@ -361,7 +364,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/vars.scss";
 
 .vb-toolbar {
     display: flex;
@@ -370,13 +372,13 @@ export default {
 }
 
 .vb-editing-path {
-    font-size: 0.8rem;
+    font-size: var(--fs-sm);
     word-break: break-all;
 }
 
 .vb-editor-box {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
     max-height: 60vh;
     overflow: auto;
 }
@@ -396,7 +398,7 @@ export default {
 }
 
 .vb-breadcrumb {
-    font-size: 0.85rem;
+    font-size: var(--fs-md);
     a {
         text-decoration: none;
     }
@@ -409,7 +411,7 @@ export default {
 .vb-list {
     max-height: 55vh;
     overflow-y: auto;
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border-top: 1px solid var(--border-color);
 }
 
 .vb-row {
@@ -417,9 +419,9 @@ export default {
     align-items: center;
     padding: 5px 8px;
     cursor: pointer;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--border-color);
     &:hover {
-        background: rgba(0, 0, 0, 0.05);
+        background: var(--bg-raised);
         .vb-row-actions {
             opacity: 1;
         }
@@ -429,11 +431,7 @@ export default {
 .vb-name {
     flex: 1;
     word-break: break-all;
-    color: #212529;
-
-    .dark & {
-        color: $dark-font-color;
-    }
+    color: var(--text-color);
 }
 
 .vb-row-actions {
@@ -443,14 +441,10 @@ export default {
 }
 
 .vb-dir {
-    color: #f0b429;
+    color: var(--warning);
 }
 
 .vb-file {
-    color: #6c757d;
-
-    .dark & {
-        color: #9ca3af;
-    }
+    color: var(--text-muted);
 }
 </style>

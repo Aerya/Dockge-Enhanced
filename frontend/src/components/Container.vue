@@ -96,16 +96,16 @@
                     </button>
                 </div>
                 <div v-if="!isEditMode" class="container-action-bar mt-3" :class="{ 'container-action-bar--labeled': containerActionLabels }">
-                    <button v-if="status !== 'running' && status !== 'healthy'" class="btn btn-sm btn-primary container-action" :title="$t('startStack')" :disabled="actionProcessing" @click="runAction('start')"><font-awesome-icon icon="play" /><span>{{ $t("startStack") }}</span></button>
-                    <button v-if="status === 'running' || status === 'healthy'" class="btn btn-sm btn-normal container-action" :title="$t('stopStack')" :disabled="actionProcessing" @click="runAction('stop')"><font-awesome-icon icon="stop" /><span>{{ $t("stopStack") }}</span></button>
-                    <button class="btn btn-sm btn-normal container-action" :title="$t('restartStack')" :disabled="actionProcessing" @click="runAction('restart')"><font-awesome-icon icon="arrows-rotate" /><span>{{ $t("restartStack") }}</span></button>
-                    <button class="btn btn-sm btn-normal container-action" :title="$t('updateStack')" :disabled="actionProcessing" @click="runAction('update')"><font-awesome-icon icon="cloud-arrow-down" /><span>{{ $t("updateStack") }}</span></button>
-                    <button class="btn btn-sm btn-normal container-action" :title="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="recycle" /><span>{{ $t("recreateStack") }}</span></button>
-                    <button class="btn btn-sm btn-normal container-action" :title="$t('pullAndRecreateStack')" :disabled="actionProcessing" @click="runAction('pull-recreate')"><font-awesome-icon icon="boxes-stacked" /><span>{{ $t("pullAndRecreateStack") }}</span></button>
-                    <button class="btn btn-sm container-action" :class="showSchedule ? 'btn-primary' : 'btn-normal'" :title="$t('stackScheduler.action')" @click="showSchedule = !showSchedule"><font-awesome-icon icon="calendar-days" /><span>{{ $t("stackScheduler.action") }}</span></button>
-                    <button class="btn btn-sm container-action" :class="containerActionLabels ? 'btn-primary' : 'btn-normal'" :title="$t('stackActionLabels')" @click="$emit('container-action-labels-change', !containerActionLabels)"><font-awesome-icon icon="list" /><span>{{ $t("stackActionLabels") }}</span></button>
-                    <router-link class="btn btn-sm btn-normal container-action" :to="terminalRouteLink" disabled=""><font-awesome-icon icon="terminal" /><span>{{ $t("terminal") }}</span></router-link>
-                    <a v-if="dozzleUrl" class="btn btn-sm btn-normal container-action" :href="dozzleContainerUrl" target="_blank" rel="noopener noreferrer"><font-awesome-icon icon="stream" /><span>Dozzle</span></a>
+                    <button v-if="status !== 'running' && status !== 'healthy'" class="btn btn-sm btn-primary container-action" :title="$t('startStack')" :aria-label="$t('startStack')" :disabled="actionProcessing" @click="runAction('start')"><font-awesome-icon icon="play" /><span>{{ $t("startStack") }}</span></button>
+                    <button v-if="status === 'running' || status === 'healthy'" class="btn btn-sm btn-normal container-action" :title="$t('stopStack')" :aria-label="$t('stopStack')" :disabled="actionProcessing" @click="runAction('stop')"><font-awesome-icon icon="stop" /><span>{{ $t("stopStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('restartStack')" :aria-label="$t('restartStack')" :disabled="actionProcessing" @click="runAction('restart')"><font-awesome-icon icon="arrows-rotate" /><span>{{ $t("restartStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('updateStack')" :aria-label="$t('updateStack')" :disabled="actionProcessing" @click="runAction('update')"><font-awesome-icon icon="cloud-arrow-down" /><span>{{ $t("updateStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('recreateStack')" :aria-label="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="recycle" /><span>{{ $t("recreateStack") }}</span></button>
+                    <button class="btn btn-sm btn-normal container-action" :title="$t('pullAndRecreateStack')" :aria-label="$t('pullAndRecreateStack')" :disabled="actionProcessing" @click="runAction('pull-recreate')"><font-awesome-icon icon="boxes-stacked" /><span>{{ $t("pullAndRecreateStack") }}</span></button>
+                    <button class="btn btn-sm container-action" :class="showSchedule ? 'btn-primary' : 'btn-normal'" :title="$t('stackScheduler.action')" :aria-label="$t('stackScheduler.action')" @click="showSchedule = !showSchedule"><font-awesome-icon icon="calendar-days" /><span>{{ $t("stackScheduler.action") }}</span></button>
+                    <button class="btn btn-sm container-action" :class="containerActionLabels ? 'btn-primary' : 'btn-normal'" :title="$t('stackActionLabels')" :aria-label="$t('stackActionLabels')" @click="$emit('container-action-labels-change', !containerActionLabels)"><font-awesome-icon icon="list" /><span>{{ $t("stackActionLabels") }}</span></button>
+                    <router-link class="btn btn-sm btn-normal container-action" :to="terminalRouteLink" :aria-label="$t('terminal')" disabled=""><font-awesome-icon icon="terminal" /><span>{{ $t("terminal") }}</span></router-link>
+                    <a v-if="dozzleUrl" class="btn btn-sm btn-normal container-action" :href="dozzleContainerUrl" target="_blank" rel="noopener noreferrer" aria-label="Dozzle"><font-awesome-icon icon="stream" /><span>Dozzle</span></a>
                 </div>
                 <div v-if="!isEditMode && showSchedule" class="container-schedule mt-3">
                     <StackScheduleEditor :stack-name="`${stackName}::${name}`" compact :show-heading="false" />
@@ -126,7 +126,7 @@
                 <font-awesome-icon icon="edit" />
                 {{ $t("Edit") }}
             </button>
-            <button v-if="false" class="btn btn-normal me-2">Rename</button>
+            <button v-if="false" class="btn btn-normal me-2">{{ $t("rename") }}</button>
             <button class="btn btn-danger me-2" @click="remove">
                 <font-awesome-icon icon="trash" />
                 {{ $t("deleteContainer") }}
@@ -216,7 +216,7 @@
                         {{ $t("NoNetworksAvailable") }}
                     </div>
 
-                    <ArraySelect name="networks" :display-name="$t('network')" placeholder="Network Name" :options="networkList" />
+                    <ArraySelect name="networks" :display-name="$t('network')" :placeholder="$t('Network name...')" :options="networkList" />
                 </div>
 
                 <!-- Depends on -->
@@ -487,23 +487,21 @@ export default defineComponent({
             }
             const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
             if (diff < 60) {
-                return diff + "s";
+                return this.$t("timeUnit.second", [ diff ]);
             }
             if (diff < 3600) {
-                return Math.floor(diff / 60) + " min";
+                return this.$t("timeUnit.minute", [ Math.floor(diff / 60) ]);
             }
             if (diff < 86400) {
-                return Math.floor(diff / 3600) + " h";
+                return this.$t("timeUnit.hour", [ Math.floor(diff / 3600) ]);
             }
-            return Math.floor(diff / 86400) + " j";
+            return this.$t("timeUnit.day", [ Math.floor(diff / 86400) ]);
         },
     }
 });
 </script>
 
 <style scoped lang="scss">
-@import "../styles/vars";
-
 .container {
     .container-action-bar {
         display: flex;
@@ -533,7 +531,7 @@ export default defineComponent({
         span {
             display: block;
             max-width: 7rem;
-            font-size: .64rem;
+            font-size: var(--fs-xs);
             line-height: 1.05;
             white-space: normal;
             text-align: center;
@@ -542,27 +540,27 @@ export default defineComponent({
 
     .container-schedule {
         padding: 0 10px;
-        border: 1px solid rgba(127, 127, 127, .18);
-        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
     }
     .image {
-        font-size: 0.8rem;
-        color: #6c757d;
+        font-size: var(--fs-sm);
+        color: var(--text-muted);
         .tag {
-            color: #33383b;
+            color: var(--text-muted);
         }
     }
 
     .image-registry-link {
-        color: #6c757d;
+        color: var(--text-muted);
         opacity: 0.65;
         text-decoration: none;
-        font-size: 0.75rem;
+        font-size: var(--fs-xs);
         vertical-align: middle;
 
         &:hover {
             opacity: 1;
-            color: $primary;
+            color: var(--primary-strong);
         }
     }
 
@@ -571,13 +569,13 @@ export default defineComponent({
         align-items: center;
         gap: 2px;
         padding: 2px 7px;
-        border-radius: 50rem;
-        font-size: 0.68rem;
+        border-radius: var(--radius-pill);
+        font-size: var(--fs-xs);
         font-weight: 600;
         line-height: 1;
-        color: $warning;
-        background: rgba(248, 163, 6, 0.14);
-        border: 1px solid rgba(248, 163, 6, 0.3);
+        color: var(--warning);
+        background: var(--warning-soft);
+        border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
         vertical-align: middle;
     }
 
@@ -590,12 +588,8 @@ export default defineComponent({
 
     .container-auto-update-label,
     .container-auto-update-state {
-        font-size: 0.72rem;
-        color: #6b7280;
-
-        .dark & {
-            color: $dark-font-color;
-        }
+        font-size: var(--fs-xs);
+        color: var(--text-muted);
     }
 
     .container-auto-update-select {
@@ -603,22 +597,22 @@ export default defineComponent({
         min-width: 118px;
         padding-top: 2px;
         padding-bottom: 2px;
-        font-size: 0.75rem;
+        font-size: var(--fs-xs);
     }
 
     .container-auto-update-time {
         width: 104px;
         padding-top: 2px;
         padding-bottom: 2px;
-        font-size: 0.75rem;
+        font-size: var(--fs-xs);
     }
 
     .container-auto-update-state.pending {
-        color: $warning;
+        color: var(--warning);
     }
 
     .container-auto-update-state.updating {
-        color: $primary;
+        color: var(--primary-strong);
     }
 
     .container-volumes {
@@ -632,13 +626,9 @@ export default defineComponent({
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        color: #6b7280;
-        font-size: 0.72rem;
+        color: var(--text-muted);
+        font-size: var(--fs-xs);
         font-weight: 600;
-
-        .dark & {
-            color: $dark-font-color;
-        }
     }
 
     .container-volume-refresh {
@@ -656,16 +646,16 @@ export default defineComponent({
         width: 100%;
         max-width: 100%;
         padding: 4px 8px;
-        border: 1px solid rgba(127, 127, 127, 0.14);
-        border-radius: 6px;
-        background: rgba(127, 127, 127, 0.05);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        background: var(--bg-raised);
         color: inherit;
         text-align: left;
-        font-size: 0.75rem;
+        font-size: var(--fs-xs);
 
         &:hover {
-            border-color: rgba(13, 110, 253, 0.35);
-            background: rgba(13, 110, 253, 0.08);
+            border-color: var(--primary-strong);
+            background: var(--primary-soft);
         }
 
         code,
@@ -676,14 +666,14 @@ export default defineComponent({
         }
     }
 
-    @media (max-width: 575.98px) {
+    @media (max-width: $bp-phone) {
         .container-action-bar { align-items: flex-start; }
     }
 }
 
 .container-started-at {
-    font-size: 0.75rem;
-    color: #6b7280;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
     vertical-align: middle;
 }
 </style>

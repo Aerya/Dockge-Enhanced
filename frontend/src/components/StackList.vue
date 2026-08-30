@@ -2,11 +2,6 @@
     <div class="shadow-box">
         <div class="list-header">
             <div class="header-top">
-                <!-- TODO -->
-                <button v-if="false" class="btn btn-outline-normal ms-2" :class="{ 'active': selectMode }" type="button" @click="selectMode = !selectMode">
-                    {{ $t("Select") }}
-                </button>
-
                 <div class="stack-summary" :aria-label="$t('stackSummaryAria')" role="group">
                     <button
                         class="stack-summary-pill stack-summary-pill--total"
@@ -126,22 +121,6 @@
             <div v-if="false" class="header-filter">
                 <!--<StackListFilter :filterState="filterState" @update-filter="updateFilter" />-->
             </div>
-
-            <!-- TODO: Selection Controls -->
-            <div v-if="selectMode && false" class="selection-controls px-2 pt-2">
-                <input
-                    v-model="selectAll"
-                    class="form-check-input select-input"
-                    type="checkbox"
-                />
-
-                <button class="btn-outline-normal" @click="pauseDialog"><font-awesome-icon icon="pause" size="sm" /> {{ $t("Pause") }}</button>
-                <button class="btn-outline-normal" @click="resumeSelected"><font-awesome-icon icon="play" size="sm" /> {{ $t("Resume") }}</button>
-
-                <span v-if="selectedStackCount > 0">
-                    {{ $t("selectedStackCount", [ selectedStackCount ]) }}
-                </span>
-            </div>
         </div>
         <div ref="stackList" class="stack-list" :class="{ scrollbar: scrollbar }">
             <div v-if="Object.keys(sortedStackList).length === 0" class="text-center mt-3">
@@ -162,33 +141,23 @@
                     v-for="item in group.stacks"
                     :key="`${item.endpoint || '__local__'}:${item.name}`"
                     :stack="item"
-                    :agent-colors="agentColors(item.endpoint)"
-                    :isSelectMode="selectMode"
-                    :isSelected="isSelected"
+                    :agent-colors="agentOptions.length > 1 ? agentColors(item.endpoint) : null"
                     :scheduled="isStackScheduled(item.name, item.endpoint)"
                     :pinned="isStackPinned(item)"
-                    :select="select"
-                    :deselect="deselect"
                     @toggle-pin="toggleStackPin(item)"
                 />
             </template>
         </div>
     </div>
-
-    <Confirm ref="confirmPause" :yes-text="$t('Yes')" :no-text="$t('No')" @yes="pauseSelected">
-        {{ $t("pauseStackMsg") }}
-    </Confirm>
 </template>
 
 <script>
-import Confirm from "../components/Confirm.vue";
 import StackListItem from "../components/StackListItem.vue";
 import { CREATED_FILE, CREATED_STACK, EXITED, RUNNING, UNKNOWN } from "../../../common/util-common";
 import { useStackSchedules } from "../composables/useStackSchedules";
 
 export default {
     components: {
-        Confirm,
         StackListItem,
     },
     setup() {
@@ -204,10 +173,6 @@ export default {
     data() {
         return {
             searchText: "",
-            selectMode: false,
-            selectAll: false,
-            disableSelectAllWatcher: false,
-            selectedStacks: {},
             stackStatusFilter: "all",
             stackAgentFilters: this.loadAgentFilters(),
             stackGroupByAgent: this.loadStackGrouping(),
@@ -434,10 +399,6 @@ export default {
             return document.body.classList.contains("dark");
         },
 
-        selectedStackCount() {
-            return Object.keys(this.selectedStacks).length;
-        },
-
         /**
          * Determines if any filters are active.
          * @returns {boolean} True if any filter is active, false otherwise.
@@ -465,36 +426,6 @@ export default {
         },
         stackSort(value) {
             localStorage.setItem("stackSort", value);
-        },
-        searchText() {
-            for (let stack of this.sortedStackList) {
-                if (!this.selectedStacks[stack.id]) {
-                    if (this.selectAll) {
-                        this.disableSelectAllWatcher = true;
-                        this.selectAll = false;
-                    }
-                    break;
-                }
-            }
-        },
-        selectAll() {
-            if (!this.disableSelectAllWatcher) {
-                this.selectedStacks = {};
-
-                if (this.selectAll) {
-                    this.sortedStackList.forEach((item) => {
-                        this.selectedStacks[item.id] = true;
-                    });
-                }
-            } else {
-                this.disableSelectAllWatcher = false;
-            }
-        },
-        selectMode() {
-            if (!this.selectMode) {
-                this.selectAll = false;
-                this.selectedStacks = {};
-            }
         },
     },
     methods: {
@@ -685,73 +616,11 @@ export default {
         updateFilter(newFilter) {
             this.filterState = newFilter;
         },
-        /**
-         * Deselect a stack
-         * @param {number} id ID of stack
-         * @returns {void}
-         */
-        deselect(id) {
-            delete this.selectedStacks[id];
-        },
-        /**
-         * Select a stack
-         * @param {number} id ID of stack
-         * @returns {void}
-         */
-        select(id) {
-            this.selectedStacks[id] = true;
-        },
-        /**
-         * Determine if stack is selected
-         * @param {number} id ID of stack
-         * @returns {bool} Is the stack selected?
-         */
-        isSelected(id) {
-            return id in this.selectedStacks;
-        },
-        /**
-         * Disable select mode and reset selection
-         * @returns {void}
-         */
-        cancelSelectMode() {
-            this.selectMode = false;
-            this.selectedStacks = {};
-        },
-        /**
-         * Show dialog to confirm pause
-         * @returns {void}
-         */
-        pauseDialog() {
-            this.$refs.confirmPause.show();
-        },
-        /**
-         * Pause each selected stack
-         * @returns {void}
-         */
-        pauseSelected() {
-            Object.keys(this.selectedStacks)
-                .filter(id => this.$root.stackList[id].active)
-                .forEach(id => this.$root.getSocket().emit("pauseStack", id, () => {}));
-
-            this.cancelSelectMode();
-        },
-        /**
-         * Resume each selected stack
-         * @returns {void}
-         */
-        resumeSelected() {
-            Object.keys(this.selectedStacks)
-                .filter(id => !this.$root.stackList[id].active)
-                .forEach(id => this.$root.getSocket().emit("resumeStack", id, () => {}));
-
-            this.cancelSelectMode();
-        },
     },
 };
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 .shadow-box {
     height: 100%;
@@ -766,15 +635,15 @@ export default {
 }
 
 .list-header {
-    border-bottom: 1px solid #dee2e6;
-    border-radius: 10px 10px 0 0;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
     margin: -10px;
     margin-bottom: 7px;
     padding: 8px 10px;
     container-type: inline-size;
 
     .dark & {
-        background-color: $dark-header-bg;
+        background-color: var(--bg-raised);
         border-bottom: 0;
     }
 }
@@ -790,9 +659,11 @@ export default {
     align-items: center;
 }
 
-@media (max-width: 770px) {
+// The card's padding is 10px at every width, so the negative margin must
+// never exceed -10px (previously -20px bled 10px past the card edge).
+@media (max-width: $bp-mobile) {
     .list-header {
-        margin: -20px;
+        margin: -10px;
         margin-bottom: 10px;
         padding: 5px;
     }
@@ -822,18 +693,12 @@ export default {
     min-width: 0;
     box-sizing: border-box;
     padding: 5px 10px;
-    border: 1px solid #ced4da;
-    border-radius: .25rem;
-    background: #fff;
-    color: #212529;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-color);
     cursor: pointer;
     list-style: none;
-
-    .dark & {
-        border-color: #495057;
-        background: #111827;
-        color: #e5e7eb;
-    }
 
     &::-webkit-details-marker {
         display: none;
@@ -848,7 +713,7 @@ export default {
 
     svg {
         flex: 0 0 auto;
-        font-size: .72rem;
+        font-size: var(--fs-xs);
         transition: transform .15s ease;
     }
 }
@@ -876,14 +741,9 @@ export default {
     min-width: 100%;
     max-width: min(22rem, 85vw);
     padding: 6px;
-    border: 1px solid rgba(100, 116, 139, .25);
-    border-radius: 8px;
-    background: #fff;
-
-    .dark & {
-        border-color: rgba(148, 163, 184, .22);
-        background: $dark-header-bg;
-    }
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
 }
 
 .stack-agent-option {
@@ -892,19 +752,19 @@ export default {
     gap: 8px;
     min-height: 34px;
     padding: 5px 8px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     white-space: nowrap;
 
     &:hover {
-        background: rgba(100, 116, 139, .10);
+        background: var(--bg-raised);
     }
 }
 
 .stack-agent-option--all {
     margin-bottom: 4px;
-    border-bottom: 1px solid rgba(100, 116, 139, .18);
-    border-radius: 6px 6px 0 0;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
 .stack-group-toggle {
@@ -916,28 +776,22 @@ export default {
     min-width: 32px;
     height: 31px;
     padding: 0;
-    border: 1px solid rgba(100, 116, 139, .28);
-    color: #64748b;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
 
     &.active {
-        border-color: #3b82f6;
-        background: rgba(59, 130, 246, .12);
-        color: #2563eb;
-    }
-
-    .dark & {
-        color: #94a3b8;
-
-        &.active {
-            border-color: #60a5fa;
-            color: #60a5fa;
-        }
+        border-color: var(--primary);
+        background: var(--primary-soft);
+        color: var(--primary);
     }
 }
 
 .stack-search-field {
     display: flex;
     align-items: center;
+    // Small basis so the sort select fits on the same row at 280px sidebar
+    // width instead of wrapping to its own line.
+    flex: 1 1 6rem;
     min-width: 0;
 }
 
@@ -955,6 +809,22 @@ export default {
     flex: 1 1 0;
     min-height: 0;
     height: auto;
+    // Safety net: rows must never spill past the card into the content area.
+    overflow-x: hidden;
+}
+
+// Mobile: the sidebar is stacked in normal flow (no definite height), so the
+// box sizes to content, capped at 45vh, and the list scrolls internally.
+@media (max-width: $bp-mobile) {
+    .shadow-box {
+        height: auto;
+        max-height: 45vh;
+    }
+
+    .stack-list {
+        flex: 0 1 auto;
+        overflow-y: auto;
+    }
 }
 
 .stack-agent-group {
@@ -965,10 +835,10 @@ export default {
     margin: 4px 2px 3px;
     padding: 4px 8px;
     border-inline-start: 4px solid var(--agent-color);
-    border-radius: 7px;
+    border-radius: var(--radius-sm);
     background: var(--agent-tint);
     color: var(--agent-color);
-    font-size: .82rem;
+    font-size: var(--fs-md);
 
     .dark & {
         border-inline-start-color: var(--agent-color-dark);
@@ -992,66 +862,48 @@ export default {
 .stack-agent-count {
     margin-left: auto;
     padding: 1px 7px;
-    border-radius: 999px;
-    background: rgba(15, 23, 42, .08);
+    border-radius: var(--radius-pill);
+    background: var(--bg-raised);
     color: inherit;
     font-weight: 700;
+}
 
-    .dark & {
-        background: rgba(255, 255, 255, .10);
+// Narrow-layout rules shared by the container query and its media-query fallback.
+@mixin stack-list-narrow {
+    .search-wrapper {
+        grid-template-columns: minmax(0, 1fr) 32px;
+    }
+
+    .stack-sort-select,
+    .stack-search-field {
+        grid-column: 1 / -1;
+    }
+
+    .stack-search-field,
+    .stack-search-field form,
+    .search-input {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .search-wrapper--single-agent {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
 @container (max-width: 470px) {
-    .search-wrapper {
-        grid-template-columns: minmax(0, 1fr) 32px;
-    }
-
-    .stack-sort-select,
-    .stack-search-field {
-        grid-column: 1 / -1;
-    }
-
-    .stack-search-field,
-    .stack-search-field form,
-    .search-input {
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-    }
-
-    .search-wrapper--single-agent {
-        grid-template-columns: minmax(0, 1fr);
-    }
+    @include stack-list-narrow;
 }
 
 // Fallback for browsers without container-query support.
-@media (max-width: 900px) {
-    .search-wrapper {
-        grid-template-columns: minmax(0, 1fr) 32px;
-    }
-
-    .stack-sort-select,
-    .stack-search-field {
-        grid-column: 1 / -1;
-    }
-
-    .stack-search-field,
-    .stack-search-field form,
-    .search-input {
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-    }
-
-    .search-wrapper--single-agent {
-        grid-template-columns: minmax(0, 1fr);
-    }
+@media (max-width: $bp-tablet) {
+    @include stack-list-narrow;
 }
 
 .search-icon {
     padding: 10px;
-    color: #c0c0c0;
+    color: var(--text-muted);
 
     // Clear filter button (X)
     svg[data-icon="times"] {
@@ -1080,61 +932,57 @@ export default {
     gap: 6px;
     min-height: 28px;
     padding: 4px 9px;
-    border: 1px solid rgba(120, 138, 156, 0.35);
-    border-radius: 8px;
-    background: rgba(120, 138, 156, 0.08);
-    color: #334155;
-    font-size: 0.78rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    color: var(--text-color);
+    font-size: var(--fs-sm);
     line-height: 1;
     white-space: nowrap;
     transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 
-    .dark & {
-        color: $dark-font-color;
-    }
-
     &:hover,
     &.selected {
-        border-color: rgba(82, 186, 255, 0.7);
-        background: rgba(82, 186, 255, 0.14);
+        border-color: var(--primary);
+        background: var(--primary-soft);
     }
 
     strong {
-        font-size: 0.82rem;
+        font-size: var(--fs-md);
         font-weight: 700;
     }
 }
 
 .stack-summary-pill--active {
-    border-color: rgba(84, 207, 150, 0.45);
-    background: rgba(84, 207, 150, 0.13);
+    border-color: var(--success);
+    background: var(--success-soft);
 
     &.selected,
     &:hover {
-        border-color: rgba(84, 207, 150, 0.8);
-        background: rgba(84, 207, 150, 0.2);
+        border-color: var(--success);
+        background: var(--success-soft);
     }
 }
 
 .stack-summary-pill--stopped {
-    border-color: rgba(224, 183, 86, 0.45);
-    background: rgba(224, 183, 86, 0.13);
+    border-color: var(--warning);
+    background: var(--warning-soft);
 
     &.selected,
     &:hover {
-        border-color: rgba(224, 183, 86, 0.85);
-        background: rgba(224, 183, 86, 0.22);
+        border-color: var(--warning);
+        background: var(--warning-soft);
     }
 }
 
 .stack-summary-pill--inactive {
-    border-color: rgba(148, 163, 184, 0.38);
-    background: rgba(148, 163, 184, 0.1);
+    border-color: var(--border-strong);
+    background: var(--bg-raised);
 
     &.selected,
     &:hover {
-        border-color: rgba(148, 163, 184, 0.72);
-        background: rgba(148, 163, 184, 0.18);
+        border-color: var(--border-strong);
+        background: var(--bg-raised);
     }
 }
 
@@ -1153,13 +1001,6 @@ export default {
 .bottom-style {
     padding-left: 67px;
     margin-top: 5px;
-}
-
-.selection-controls {
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
 }
 
 </style>

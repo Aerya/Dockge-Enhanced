@@ -1,15 +1,27 @@
 <template>
     <div class="container-fluid">
-        <div ref="dashboardLayout" class="dashboard-layout" :style="dashboardLayoutStyle">
-            <aside v-if="!$root.isMobile" class="stack-sidebar">
-                <div>
-                    <router-link to="/compose" class="btn btn-primary mb-3"><font-awesome-icon icon="plus" /> {{ $t("compose") }}</router-link>
+        <div ref="dashboardLayout" class="dashboard-layout" :class="{ collapsed: sidebarCollapsed }" :style="dashboardLayoutStyle">
+            <aside class="stack-sidebar">
+                <div class="sidebar-header">
+                    <router-link v-if="!sidebarCollapsed" to="/compose" class="btn btn-primary"><font-awesome-icon icon="plus" /> {{ $t("compose") }}</router-link>
+                    <router-link v-else to="/compose" class="sidebar-icon-btn" :title="$t('compose')">
+                        <font-awesome-icon icon="plus" />
+                    </router-link>
+                    <button
+                        type="button"
+                        class="sidebar-icon-btn sidebar-toggle"
+                        :aria-label="$t(sidebarCollapsed ? 'stackSidebarExpand' : 'stackSidebarCollapse')"
+                        :title="$t(sidebarCollapsed ? 'stackSidebarExpand' : 'stackSidebarCollapse')"
+                        @click="toggleSidebar"
+                    >
+                        <font-awesome-icon :icon="sidebarCollapsed ? 'chevron-right' : 'chevron-left'" />
+                    </button>
                 </div>
-                <StackList :scrollbar="true" />
+                <StackList v-show="!sidebarCollapsed" :scrollbar="true" />
             </aside>
 
             <div
-                v-if="!$root.isMobile"
+                v-if="!$root.isMobile && !sidebarCollapsed"
                 class="dashboard-resize-handle"
                 role="separator"
                 aria-orientation="vertical"
@@ -44,6 +56,9 @@ export default {
     data() {
         return {
             height: 0,
+            // Desktop: persisted collapse state. Mobile: always starts
+            // collapsed (accordion), the state is not persisted.
+            sidebarCollapsed: this.$root.isMobile || localStorage.getItem("stackSidebarCollapsed") === "true",
             stackSidebarWidth: Math.min(40, Math.max(18, Number(localStorage.getItem("stackSidebarWidth")) || 25)),
             dashboardResizing: false,
             dashboardMinHeight: 240,
@@ -54,6 +69,12 @@ export default {
         dashboardLayoutStyle() {
             if (this.$root.isMobile) {
                 return {};
+            }
+            if (this.sidebarCollapsed) {
+                return {
+                    gridTemplateColumns: "52px minmax(0, 1fr)",
+                    minHeight: `${this.dashboardMinHeight}px`,
+                };
             }
             return {
                 gridTemplateColumns: `minmax(0, ${this.stackSidebarWidth}fr) 10px minmax(0, ${100 - this.stackSidebarWidth}fr)`,
@@ -77,6 +98,12 @@ export default {
         this.dashboardHeightObserver?.disconnect();
     },
     methods: {
+        toggleSidebar() {
+            this.sidebarCollapsed = !this.sidebarCollapsed;
+            if (!this.$root.isMobile) {
+                localStorage.setItem("stackSidebarCollapsed", String(this.sidebarCollapsed));
+            }
+        },
         updateDashboardMinHeight() {
             const top = this.$refs.dashboardLayout?.getBoundingClientRect().top;
             if (typeof top !== "number") {
@@ -123,7 +150,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 .container-fluid {
     width: 98%;
@@ -131,8 +157,11 @@ export default {
 
 .dashboard-layout {
     display: grid;
+    gap: var(--space-4);
     align-items: stretch;
     width: 100%;
+    transition: grid-template-columns 0.2s ease;
+
 }
 
 .stack-sidebar,
@@ -143,6 +172,60 @@ export default {
 .stack-sidebar {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
+    // The implicit column would otherwise size to the widest child's
+    // min-content (a long stack name inside the no-wrap item flex) and spill
+    // past the 280px track into the content area. Pin it to the track.
+    grid-template-columns: minmax(0, 1fr);
+    // Pinned card: the sidebar (and the collapsed rail) stays in place while
+    // the right content scrolls.
+    position: sticky;
+    top: var(--space-3);
+    height: calc(100vh - var(--space-6));
+    align-self: start;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+
+    .collapsed & {
+        flex-direction: column;
+    }
+
+    .btn {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .sidebar-toggle {
+        margin-left: auto;
+
+        .collapsed & {
+            margin-left: 0;
+        }
+    }
+}
+
+.sidebar-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    cursor: pointer;
+
+    &:hover {
+        background: var(--bg-raised);
+        color: var(--text-color);
+    }
 }
 
 .dashboard-resize-handle {
@@ -159,7 +242,7 @@ export default {
         min-height: 240px;
         height: 100%;
         border-radius: 2px;
-        background: rgba(127, 127, 127, .28);
+        background: var(--border-color);
         transition: width .15s ease, background-color .15s ease;
     }
 
@@ -175,9 +258,24 @@ export default {
     user-select: none;
 }
 
-@media (max-width: 767.98px) {
-    .dashboard-layout {
+@media (max-width: $bp-mobile) {
+    .dashboard-layout,
+    .dashboard-layout.collapsed {
         display: block;
+    }
+
+    // Sidebar stacks above the content; StackList caps itself at 45vh
+    // (see StackList.vue) and scrolls internally.
+    .stack-sidebar {
+        display: block;
+        position: static;
+        height: auto;
+        margin-bottom: 1rem;
+    }
+
+    .sidebar-header,
+    .collapsed .sidebar-header {
+        flex-direction: row;
     }
 }
 </style>

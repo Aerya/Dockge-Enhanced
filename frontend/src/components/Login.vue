@@ -58,6 +58,7 @@ export default {
             tokenRequired: false,
             turnstileToken: "",
             turnstileWidgetId: null,
+            previousTitle: "",
         };
     },
 
@@ -79,14 +80,15 @@ export default {
     },
 
     mounted() {
-        document.title += " - Login";
+        this.previousTitle = document.title;
+        document.title = `${this.$t("Login")} - Dockge Enhanced - ${location.host}`;
         if (this.turnstileEnabled) {
             this.$nextTick(() => this.loadTurnstile());
         }
     },
 
     unmounted() {
-        document.title = document.title.replace(" - Login", "");
+        document.title = this.previousTitle;
     },
 
     methods: {

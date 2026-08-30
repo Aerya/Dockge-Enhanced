@@ -22,9 +22,7 @@ import "./styles/main.scss";
 import socket from "./mixins/socket";
 import lang from "./mixins/lang";
 import theme from "./mixins/theme";
-
-// Set Title
-document.title = document.title + " - " + location.host;
+import mobile from "./mixins/mobile";
 
 const app = createApp(rootApp());
 
@@ -48,6 +46,7 @@ function rootApp() {
             socket,
             lang,
             theme,
+            mobile,
         ],
         data() {
             return {

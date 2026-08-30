@@ -114,7 +114,7 @@
           <tbody>
             <tr v-for="entry in entries" :key="entry.id">
               <td class="audit-date">{{ fmtDate(entry.timestamp) }}</td>
-              <td>{{ entry.username || "system" }}</td>
+              <td>{{ entry.username || t("watcher.audit.originSystem") }}</td>
               <td>
                 <span>{{ operationOrigin(entry) }}</span>
                 <small v-if="operationDuration(entry)" class="d-block audit-muted">{{ operationDuration(entry) }}</small>
@@ -158,7 +158,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { fmtDate } from "../composables/useServerTz";
+
+const { t } = useI18n();
 
 interface AuditEntry {
   id: number;
@@ -324,12 +327,12 @@ function operationOrigin(entry: AuditEntry) {
     return metadata.origin;
   }
   if (entry.username?.startsWith("api:")) {
-    return "api";
+    return t("watcher.audit.originApi");
   }
   if (entry.username?.startsWith("webhook:")) {
-    return "webhook";
+    return t("watcher.audit.originWebhook");
   }
-  return entry.username === "system" ? "system" : "manual";
+  return entry.username === "system" ? t("watcher.audit.originSystem") : t("watcher.audit.originManual");
 }
 
 function operationDuration(entry: AuditEntry) {
@@ -349,32 +352,19 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .audit-table {
   min-width: 980px;
-  --bs-table-bg: transparent;
-  --bs-table-color: #e5e7eb;
-  --bs-table-border-color: rgba(148, 163, 184, 0.28);
-  color: #e5e7eb;
-}
-
-.audit-table th {
-  color: #f8fafc;
-  border-bottom-color: rgba(148, 163, 184, 0.38);
-}
-
-.audit-table td {
-  color: #e5e7eb;
-  border-top-color: rgba(148, 163, 184, 0.18);
+  @include data-table;
 }
 
 .audit-muted {
-  color: #cbd5e1;
+  color: var(--text-muted);
 }
 
 .audit-target-type {
-  color: #93c5fd;
-  font-size: 0.82rem;
+  color: var(--primary-strong);
+  font-size: var(--fs-md);
   font-weight: 600;
 }
 
@@ -397,6 +387,6 @@ details pre {
   margin: 0.5rem 0 0;
   max-height: 180px;
   overflow: auto;
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
 }
 </style>

@@ -16,6 +16,15 @@ export default defineConfig({
         "FRONTEND_VERSION": JSON.stringify(process.env.npm_package_version),
     },
     root: "./frontend",
+    css: {
+        preprocessorOptions: {
+            scss: {
+                // Auto-inject compile-time vars (breakpoints, Bootstrap overrides)
+                // into every SCSS block so components don't need manual @import.
+                additionalData: "@import \"/src/styles/vars.scss\"; @import \"/src/styles/shared.scss\";",
+            },
+        },
+    },
     build: {
         outDir: "../frontend-dist",
     },

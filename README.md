@@ -28,18 +28,20 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | Area | Dockge Enhanced adds |
 | --- | --- |
 | **Multi-instance** | Automatic full-mesh federation when an agent is added or removed, management from every linked instance, multi-server selection and grouping, transactional copy/migration, resumable jobs, and automatic cold replication |
-| **Stack management** | Pinned stacks, denser resizable stack sidebar, resizable Logs/Compose workspace, reliable raw YAML copy, per-stack and per-container actions and scheduling, optional host start prerequisites, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
+| **Stack management** | Pinned stacks, collapsible and resizable stack sidebar with compact status and resource indicators, resizable Logs/Compose workspace, reliable raw YAML copy, per-stack and per-container actions and scheduling, optional host start prerequisites, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
 | **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
 | **Automation & audit** | REST API scoped by permissions and stacks, per-stack webhooks, Home Assistant examples, and centralized history with origin and duration |
 | **Docker resources** | Images, volumes, unmanaged containers and networks, bulk actions, auto-prune, and safeguards for risky deletions |
 | **Images & security** | Update monitoring, auto-update with rollback, Trivy scans, and CVE exceptions |
-| **Monitoring** | System, stack, and container stats, crash loops, healthcheck auto-heal, responsive and fullscreen logs, and optional Kula and managed Dozzle integrations |
+| **Monitoring** | Configurable header/bottom system status bar, dashboard health cards, system, stack, and container stats, crash loops, healthcheck auto-heal, responsive and fullscreen logs, and optional Kula and managed Dozzle integrations |
 | **Integrations** | Optional PlugNPiN and per-service label assistant for Nginx Proxy Manager, Pi-hole, and AdGuard Home |
 | **Notifications & access** | Discord, Apprise, 2FA, trusted proxy, Turnstile, and mobile clients |
 
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
+
+**2026-08-30 — Responsive interface and unified themes** — The desktop stack sidebar can now be collapsed as well as resized, while compact status, CPU and RAM indicators remain readable with long names. A configurable system status bar can sit in the header or at the bottom, and dashboard cards summarize image updates, backups, unhealthy containers and Trivy findings even when a feature is disabled. Theme-aware editors switch live with the application, the Auto theme follows the operating system, and mobile navigation, settings and stack access are more consistent. Backup and Watcher screens are also split into focused components for easier maintenance. This integration adapts work from [crossly/Dockge-Enhanced](https://github.com/crossly/Dockge-Enhanced) while preserving newer Dockge-Enhanced functionality.
 
 **2026-08-27 — Per-stack host start prerequisites** — Managed stacks can optionally verify host mount points and `systemd` services before they start, restart or recreate containers. For a host mount, enter its path or any path inside it: with real mount `/mnt/nas`, `/mnt/nas`, `/mnt/nas/torrents` and `/mnt/nas/torrents/downloads` resolve to `/mnt/nas`. Dockge remembers that resolved mount, so `/` or another parent is never accepted if `/mnt/nas` disappears. The path is on the Docker host, not inside Dockge; the existing `/var/run/docker.sock:/var/run/docker.sock` mount is sufficient and no extra host-directory bind mount is needed. The same guard protects scheduled stack and service starts, while Stop, Down and Delete remain available. Optional continuous monitoring stops a running stack only after a configurable failure delay, then resumes it after recovery only when the watcher stopped it itself. If a host mount disappears too briefly to stop the stack, or is remounted between checks, Dockge force-recreates the running stack after recovery so containers do not retain a disconnected FUSE mount; a Dockge restart never assumes ownership of an already stopped stack.
 
@@ -514,6 +516,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — real-time Docker log viewer (MIT licence)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — optional DNS and Nginx Proxy Manager automation (GPLv3)
+- [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — source of significant UI/UX, theming, internationalization and frontend architecture improvements adapted into this project
 
 ---
 

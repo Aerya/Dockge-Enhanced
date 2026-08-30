@@ -9,6 +9,7 @@ import { promisify } from "util";
 import * as path from "path";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { getNotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 
 const execFileAsync = promisify(execFile);
@@ -480,7 +481,7 @@ export class TrivyScanner {
     }
 
     private async sendImageAlert(discord: DiscordNotifier | null, apprise: AppriseNotifier | null, result: ScanResult): Promise<void> {
-        const en     = (this.settings.notificationLang ?? "fr") === "en";
+        const en     = (await getNotificationLang()) === "en";
         const locale = en ? "en-GB" : "fr-FR";
         const t      = (fr: string, enStr: string) => en ? enStr : fr;
         const hostname: string = await Settings.get("primaryHostname") || "";
@@ -557,7 +558,7 @@ export class TrivyScanner {
     }
 
     private async sendSummary(discord: DiscordNotifier | null, apprise: AppriseNotifier | null, results: ScanResult[]): Promise<void> {
-        const en     = (this.settings.notificationLang ?? "fr") === "en";
+        const en     = (await getNotificationLang()) === "en";
         const locale = en ? "en-GB" : "fr-FR";
         const t      = (fr: string, enStr: string) => en ? enStr : fr;
         const hostname: string = await Settings.get("primaryHostname") || "";

@@ -1,8 +1,11 @@
 <template>
     <transition name="slide-fade" appear>
         <div class="compose-page" :class="{ 'logs-fullscreen-active': logsFullscreen }">
-            <h1 v-if="isAdd" class="mb-3">{{ $t("compose") }}</h1>
-            <h1 v-else class="mb-3">
+            <router-link to="/" class="back-link">
+                <font-awesome-icon icon="chevron-left" /> {{ $t("back") }}
+            </router-link>
+            <h1 v-if="isAdd" class="mb-3 compose-tight">{{ $t("compose") }}</h1>
+            <h1 v-else class="mb-3 compose-tight">
                 <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }}
                 <span v-if="$root.agentCount > 1" class="agent-name">
                     (<a
@@ -43,7 +46,7 @@
                 :source-stack-name="stack.name"
             />
 
-            <div v-if="stack.isManagedByDockge" class="mb-3">
+            <div v-if="stack.isManagedByDockge" class="mb-3 compose-tight">
                 <div class="stack-action-bar" :class="{ 'stack-action-bar--labeled': stackActionLabels }" role="toolbar" :aria-label="$t('stackActions')">
                     <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('deployStack')" :aria-label="$t('deployStack')" :disabled="processing" @click="deployStack">
                         <font-awesome-icon icon="rocket" />
@@ -156,13 +159,13 @@
             </div>
 
             <!-- URLs -->
-            <div v-if="urls.length > 0" class="mb-3">
+            <div v-if="urls.length > 0" class="mb-3 compose-tight">
                 <a v-for="(url, index) in urls" :key="index" target="_blank" :href="url.url">
                     <span class="badge bg-secondary me-2">{{ url.display }}</span>
                 </a>
             </div>
 
-            <div v-if="showStackNote && !isAdd && stack.isManagedByDockge" class="shadow-box stack-note-panel mb-3">
+            <div v-if="showStackNote && !isAdd && stack.isManagedByDockge" class="shadow-box stack-note-panel mb-3 compose-tight">
                 <button
                     class="stack-note-toggle"
                     type="button"
@@ -243,7 +246,7 @@
                 <Terminal
                     v-show="showProgressTerminal"
                     ref="progressTerminal"
-                    class="mb-3 terminal progress-terminal"
+                    class="mb-3 compose-tight terminal progress-terminal"
                     :name="terminalName"
                     :endpoint="endpoint"
                     :rows="progressTerminalRows"
@@ -261,8 +264,8 @@
                 <div class="compose-runtime-pane">
                     <!-- General -->
                     <div v-if="isAdd">
-                        <h4 class="mb-3">{{ $t("general") }}</h4>
-                        <div class="shadow-box big-padding mb-3">
+                        <h4 class="mb-3 compose-tight">{{ $t("general") }}</h4>
+                        <div class="shadow-box big-padding mb-3 compose-tight compose-box">
                             <!-- Stack Name -->
                             <div>
                                 <label for="name" class="form-label">{{ $t("stackName") }}</label>
@@ -285,7 +288,7 @@
                     <!-- Containers -->
                     <button
                         type="button"
-                        class="containers-toggle mb-3"
+                        class="containers-toggle mb-3 compose-tight"
                         :aria-expanded="containersExpanded"
                         :aria-label="$t(containersExpanded ? 'collapseContainers' : 'expandContainers')"
                         aria-controls="stack-containers"
@@ -310,7 +313,7 @@
                     </button>
 
                     <div v-show="containersExpanded" id="stack-containers">
-                        <div v-if="isEditMode" class="input-group mb-3">
+                        <div v-if="isEditMode" class="input-group mb-3 compose-tight">
                             <input
                                 v-model="newContainerName"
                                 :placeholder="$t(`New Container Name...`)"
@@ -351,12 +354,12 @@
                         </div>
                     </div>
 
-                    <button v-if="false && isEditMode && jsonConfig.services && Object.keys(jsonConfig.services).length > 0" class="btn btn-normal mb-3" @click="addContainer">{{ $t("addContainer") }}</button>
+                    <button v-if="false && isEditMode && jsonConfig.services && Object.keys(jsonConfig.services).length > 0" class="btn btn-normal mb-3 compose-tight" @click="addContainer">{{ $t("addContainer") }}</button>
 
                     <!-- General -->
                     <div v-if="isEditMode">
-                        <h4 class="mb-3">{{ $t("extra") }}</h4>
-                        <div class="shadow-box big-padding mb-3">
+                        <h4 class="mb-3 compose-tight">{{ $t("extra") }}</h4>
+                        <div class="shadow-box big-padding mb-3 compose-tight compose-box">
                             <!-- URLs -->
                             <div class="mb-4">
                                 <label class="form-label">
@@ -369,7 +372,7 @@
 
                     <!-- Combined Terminal Output -->
                     <div v-show="!isEditMode" class="logs-panel" :class="{ 'logs-fullscreen': logsFullscreen }">
-                        <div class="terminal-toolbar mb-3">
+                        <div class="terminal-toolbar mb-3 compose-tight">
                             <h4 class="mb-0">{{ $t("stackLogs") }}</h4>
                             <div class="terminal-toolbar-right">
                                 <div class="terminal-log-since">
@@ -427,19 +430,17 @@
                                     </button>
                                 </div>
                                 <button
-                                    class="btn btn-sm"
+                                    class="btn btn-sm log-toggle-btn"
                                     :class="logTimestamps ? 'btn-primary' : 'btn-normal'"
                                     :title="$t('logTimestampsToggle')"
-                                    style="font-size:0.78rem; padding: 2px 8px;"
                                     @click="toggleLogTimestamps"
                                 >
                                     <font-awesome-icon icon="clock" class="me-1" />{{ $t('logTimestamps') }}
                                 </button>
                                 <button
-                                    class="btn btn-sm"
+                                    class="btn btn-sm log-toggle-btn"
                                     :class="logLineWrap ? 'btn-primary' : 'btn-normal'"
                                     :title="$t('logLineWrapToggle')"
-                                    style="font-size:0.78rem; padding: 2px 8px;"
                                     @click="toggleLogLineWrap"
                                 >
                                     <font-awesome-icon icon="stream" class="me-1" />{{ $t(logLineWrap ? 'logLineWrapOn' : 'logLineWrapOff') }}
@@ -473,7 +474,7 @@
                         <Terminal
                             :key="selectedLogTerminalName"
                             ref="combinedTerminal"
-                            class="mb-3 terminal combined-terminal"
+                            class="mb-3 compose-tight terminal combined-terminal"
                             :class="{ 'logs-expanded': !containersExpanded, 'logs-no-wrap': !logLineWrap }"
                             :name="selectedLogTerminalName"
                             :endpoint="endpoint"
@@ -481,7 +482,7 @@
                             :cols="combinedTerminalCols"
                             :wrap-lines="logLineWrap"
                             :follow-output="logFollowOutput"
-                            :style="{ height: `${315 * Number(terminalScale)}px` }"
+                            :style="{ '--combined-terminal-height': `${315 * Number(terminalScale)}px` }"
                         ></Terminal>
                     </div>
 
@@ -503,7 +504,7 @@
                     <span></span>
                 </div>
                 <div v-show="!composeEffectivelyCollapsed" class="compose-editor-pane">
-                    <div class="editor-header mb-3">
+                    <div class="editor-header mb-3 compose-tight">
                         <h4 class="mb-0">{{ stack.composeFileName }}</h4>
                         <div class="editor-header-actions">
                             <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('copyRawCompose')" @click="copyRawCompose">
@@ -519,7 +520,7 @@
                     </div>
 
                     <!-- YAML editor -->
-                    <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'yaml'}">
+                    <div class="shadow-box mb-3 compose-tight compose-box editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'yaml'}">
                         <button v-if="fullscreenEditor === 'yaml'" type="button" class="btn btn-sm btn-normal editor-fullscreen-close" :title="$t('toggleFullscreen')" @click="toggleFullscreen('yaml')">
                             <font-awesome-icon icon="compress" />
                         </button>
@@ -529,7 +530,7 @@
                             :extensions="extensions"
                             minimal
                             wrap="true"
-                            dark="true"
+                            :dark="$root.isDark"
                             tab="true"
                             :disabled="!isEditMode"
                             :hasFocus="editorFocus"
@@ -538,20 +539,20 @@
                             @change="yamlCodeChange"
                         />
                     </div>
-                    <div v-if="isEditMode" class="mb-3">
+                    <div v-if="isEditMode" class="mb-3 compose-tight">
                         {{ yamlError }}
                     </div>
 
                     <!-- Override editor -->
                     <div v-if="isEditMode">
-                        <div class="editor-header mb-3">
+                        <div class="editor-header mb-3 compose-tight">
                             <h4 class="mb-0">compose.override.yaml</h4>
                             <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('override')">
                                 <font-awesome-icon :icon="fullscreenEditor === 'override' ? 'compress' : 'expand'" />
                             </button>
                         </div>
                         <div class="form-text mb-2">{{ $t("composeOverrideHint") }}</div>
-                        <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'override'}">
+                        <div class="shadow-box mb-3 compose-tight compose-box editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'override'}">
                             <button v-if="fullscreenEditor === 'override'" type="button" class="btn btn-sm btn-normal editor-fullscreen-close" :title="$t('toggleFullscreen')" @click="toggleFullscreen('override')">
                                 <font-awesome-icon icon="compress" />
                             </button>
@@ -561,7 +562,7 @@
                                 :extensions="extensions"
                                 minimal
                                 wrap="true"
-                                dark="true"
+                                :dark="$root.isDark"
                                 tab="true"
                                 :disabled="!isEditMode"
                                 :hasFocus="editorFocus"
@@ -573,13 +574,13 @@
 
                     <!-- ENV editor -->
                     <div v-if="isEditMode">
-                        <div class="editor-header mb-3">
+                        <div class="editor-header mb-3 compose-tight">
                             <h4 class="mb-0">.env</h4>
                             <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('env')">
                                 <font-awesome-icon :icon="fullscreenEditor === 'env' ? 'compress' : 'expand'" />
                             </button>
                         </div>
-                        <div class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'env'}">
+                        <div class="shadow-box mb-3 compose-tight compose-box editor-box" :class="{'edit-mode' : isEditMode, 'editor-fullscreen': fullscreenEditor === 'env'}">
                             <button v-if="fullscreenEditor === 'env'" type="button" class="btn btn-sm btn-normal editor-fullscreen-close" :title="$t('toggleFullscreen')" @click="toggleFullscreen('env')">
                                 <font-awesome-icon icon="compress" />
                             </button>
@@ -589,7 +590,7 @@
                                 :extensions="extensionsEnv"
                                 minimal
                                 wrap="true"
-                                dark="true"
+                                :dark="$root.isDark"
                                 tab="true"
                                 :disabled="!isEditMode"
                                 :hasFocus="editorFocus"
@@ -609,14 +610,14 @@
 
                         <!-- Volumes -->
                         <div v-if="false">
-                            <h4 class="mb-3">{{ $tc("volume", 2) }}</h4>
-                            <div class="shadow-box big-padding mb-3">
+                            <h4 class="mb-3 compose-tight">{{ $tc("volume", 2) }}</h4>
+                            <div class="shadow-box big-padding mb-3 compose-tight compose-box">
                             </div>
                         </div>
 
                         <!-- Networks -->
-                        <h4 class="mb-3">{{ $tc("network", 2) }}</h4>
-                        <div class="shadow-box big-padding mb-3">
+                        <h4 class="mb-3 compose-tight">{{ $tc("network", 2) }}</h4>
+                        <div class="shadow-box big-padding mb-3 compose-tight compose-box">
                             <NetworkInput />
                         </div>
                     </div>
@@ -671,7 +672,7 @@
 import CodeMirror from "vue-codemirror6";
 import { yaml } from "@codemirror/lang-yaml";
 import { python } from "@codemirror/lang-python";
-import { dracula as editorTheme } from "thememirror";
+import { dracula, tomorrow } from "thememirror";
 import { lineNumbers, EditorView, keymap } from "@codemirror/view";
 import { foldGutter, foldKeymap } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
@@ -693,7 +694,7 @@ import {
 import { BModal } from "bootstrap-vue-next";
 import NetworkInput from "../components/NetworkInput.vue";
 import dotenv from "dotenv";
-import { ref } from "vue";
+import { computed, getCurrentInstance, ref } from "vue";
 import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
 import { useImageStatus } from "../composables/useImageStatus";
 import StackScheduleEditor from "../components/StackScheduleEditor.vue";
@@ -764,23 +765,21 @@ export default {
             keymap.of([ ...closeBracketsKeymap, ...searchKeymap, ...foldKeymap ]),
         ];
 
-        const extensions = [
-            editorTheme,
-            yaml(),
+        // The editor theme follows the app theme (dracula in dark mode,
+        // tomorrow in light mode); computed so toggling the theme
+        // reconfigures live editors via vue-codemirror6's extension watcher.
+        const root = getCurrentInstance().proxy.$root;
+        const buildExtensions = (lang) => [
+            ...(root.isDark ? [ dracula ] : [ tomorrow ]),
+            lang,
             lineNumbers(),
             ...commonEditing,
             yamlVariableHighlight,
             EditorView.focusChangeEffect.of(focusEffectHandler)
         ];
 
-        const extensionsEnv = [
-            editorTheme,
-            python(),
-            lineNumbers(),
-            ...commonEditing,
-            yamlVariableHighlight,
-            EditorView.focusChangeEffect.of(focusEffectHandler)
-        ];
+        const extensions = computed(() => buildExtensions(yaml()));
+        const extensionsEnv = computed(() => buildExtensions(python()));
 
         return { extensions,
             extensionsEnv,
@@ -1150,7 +1149,7 @@ export default {
             }
         },
         startComposeResize(event) {
-            if (window.innerWidth < 992) {
+            if (this.$root.windowWidth < 992) {
                 return;
             }
             event.preventDefault();
@@ -1268,15 +1267,15 @@ export default {
             }
             const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
             if (diff < 60) {
-                return `${diff}s`;
+                return this.$t("timeUnit.second", [ diff ]);
             }
             if (diff < 3600) {
-                return `${Math.floor(diff / 60)} min`;
+                return this.$t("timeUnit.minute", [ Math.floor(diff / 60) ]);
             }
             if (diff < 86400) {
-                return `${Math.floor(diff / 3600)} h`;
+                return this.$t("timeUnit.hour", [ Math.floor(diff / 3600) ]);
             }
-            return `${Math.floor(diff / 86400)} j`;
+            return this.$t("timeUnit.day", [ Math.floor(diff / 86400) ]);
         },
 
         startServiceStatusTimeout() {
@@ -1581,14 +1580,14 @@ export default {
             this.processing = true;
 
             if (!this.jsonConfig.services) {
-                this.$root.toastError("No services found in compose.yaml");
+                this.$root.toastError(this.$t("noServicesFound"));
                 this.processing = false;
                 return;
             }
 
             // Check if services is object
             if (typeof this.jsonConfig.services !== "object") {
-                this.$root.toastError("Services must be an object");
+                this.$root.toastError(this.$t("servicesMustBeObject"));
                 this.processing = false;
                 return;
             }
@@ -1877,7 +1876,7 @@ export default {
             }
 
             if (Array.isArray(config.services) || typeof config.services !== "object") {
-                throw new Error("Services must be an object");
+                throw new Error(this.$t("servicesMustBeObject"));
             }
 
             return {
@@ -1930,12 +1929,12 @@ export default {
             this.checkYAML();
 
             if (this.jsonConfig.services[this.newContainerName]) {
-                this.$root.toastError("Container name already exists");
+                this.$root.toastError(this.$t("containerNameExists"));
                 return;
             }
 
             if (!this.newContainerName) {
-                this.$root.toastError("Container name cannot be empty");
+                this.$root.toastError(this.$t("containerNameEmpty"));
                 return;
             }
 
@@ -1959,7 +1958,18 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/vars.scss";
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    text-decoration: none;
+
+    &:hover {
+        color: var(--text-color);
+    }
+}
 
 .terminal {
     height: 200px;
@@ -1978,7 +1988,7 @@ export default {
     width: 2.65rem;
     height: 2.45rem;
     padding: 0;
-    border-radius: .55rem;
+    border-radius: var(--radius-md);
     font-size: 1rem;
 }
 
@@ -1999,7 +2009,7 @@ export default {
 .stack-action-bar--labeled .stack-action-label {
     display: block;
     max-width: 7.5rem;
-    font-size: .66rem;
+    font-size: var(--fs-xs);
     font-weight: 500;
     line-height: 1.05;
     text-align: center;
@@ -2008,13 +2018,13 @@ export default {
 
 .stack-scheduler-inline {
     padding: 8px 12px;
-    border: 1px solid rgba(127, 127, 127, 0.18);
-    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
 }
 
 .stack-scheduler-inline-title {
-    color: $dark-font-color3;
-    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
     font-weight: 600;
 }
 
@@ -2038,16 +2048,16 @@ export default {
 
 .stack-note-toggle:hover .settings-subheading,
 .stack-note-toggle:focus-visible .settings-subheading {
-    color: $primary;
+    color: var(--primary-strong);
 }
 
 .stack-note-toggle:focus-visible {
-    outline: 2px solid $primary;
+    outline: 2px solid var(--primary);
     outline-offset: -2px;
 }
 
 .stack-note-chevron {
-    color: $dark-font-color3;
+    color: var(--text-muted);
     transition: transform 0.2s ease;
 }
 
@@ -2060,7 +2070,7 @@ export default {
 }
 
 .stack-note-input::placeholder {
-    color: #9ca3af;
+    color: var(--text-muted);
     opacity: 1;
 }
 
@@ -2123,16 +2133,16 @@ export default {
 
 .compose-page {
     font-size: .94rem;
+}
 
-    :deep(.shadow-box) {
-        padding: 12px;
-    }
+.compose-tight {
+    margin-bottom: .7rem !important;
+}
 
-    :deep(.mb-3) {
-        margin-bottom: .7rem !important;
-    }
+.compose-box {
+    padding: 12px;
 
-    :deep(.big-padding) {
+    &.big-padding {
         padding: 14px;
     }
 }
@@ -2161,15 +2171,15 @@ export default {
         width: 3px;
         height: 100%;
         min-height: 240px;
-        border-radius: 2px;
-        background: rgba(127, 127, 127, .28);
+        border-radius: var(--radius-sm);
+        background: var(--border-color);
         transition: width .15s ease, background-color .15s ease;
     }
 
     &:hover span,
     &:focus-visible span {
         width: 5px;
-        background: $primary;
+        background: var(--primary);
     }
 }
 
@@ -2178,7 +2188,7 @@ export default {
     user-select: none;
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: $bp-tablet) {
     .compose-workspace {
         display: block;
     }
@@ -2196,10 +2206,13 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px 14px;
     gap: 12px;
     flex-wrap: wrap;
+}
+
+.log-toggle-btn {
+    font-size: var(--fs-sm);
+    padding: 2px 8px;
 }
 
 .containers-toggle {
@@ -2217,11 +2230,11 @@ export default {
 }
 
 .containers-toggle:hover .containers-toggle-title {
-    color: $primary;
+    color: var(--primary-strong);
 }
 
 .containers-toggle-title {
-    font-size: 1.25rem;
+    font-size: var(--fs-lg);
     font-weight: 500;
 }
 
@@ -2233,10 +2246,10 @@ export default {
     height: 24px;
     margin-left: 6px;
     padding: 0 7px;
-    border-radius: 50rem;
-    font-size: 0.75rem;
-    color: $dark-font-color3;
-    background: rgba(127, 127, 127, 0.14);
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    background: var(--bg-raised);
 }
 
 .containers-toggle-status {
@@ -2244,8 +2257,8 @@ export default {
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
-    color: $dark-font-color3;
-    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
 }
 
 .container-status-summary::before {
@@ -2255,23 +2268,23 @@ export default {
     height: 7px;
     margin-right: 4px;
     border-radius: 50%;
-    background: #6b7280;
+    background: var(--text-muted);
 }
 
 .container-status-summary.status-ok::before {
-    background: #16a34a;
+    background: var(--success);
 }
 
 .container-status-summary.status-error::before {
-    background: #dc2626;
+    background: var(--danger);
 }
 
 .container-status-summary.status-warning::before {
-    background: #f8a306;
+    background: var(--warning);
 }
 
 .combined-terminal {
-    height: 315px;
+    height: var(--combined-terminal-height, 315px);
     width: 100%;
     padding: 0;
     overflow: hidden;
@@ -2292,11 +2305,7 @@ export default {
     z-index: 1055;
     padding: 12px;
     overflow: hidden;
-    background: #fff;
-
-    .dark & {
-        background: $dark-bg;
-    }
+    background: var(--bg-surface);
 
     .combined-terminal {
         height: calc(100vh - 102px) !important;
@@ -2304,9 +2313,17 @@ export default {
     }
 }
 
-@media (max-width: 575px) {
+@media (max-width: $bp-phone) {
     .container-status-summary {
         display: none;
+    }
+
+    .terminal {
+        height: min(40vh, 200px);
+    }
+
+    .progress-terminal {
+        height: min(50vh, 360px);
     }
 
     .combined-terminal.logs-expanded {
@@ -2330,7 +2347,7 @@ export default {
     gap: 4px;
 
     .form-label {
-        color: #9ca3af !important;
+        color: var(--text-muted) !important;
     }
 
     .form-select {
@@ -2347,7 +2364,7 @@ export default {
     justify-self: start;
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: $bp-tablet) {
     .terminal-toolbar {
         align-items: stretch;
     }
@@ -2375,7 +2392,7 @@ export default {
 
 }
 
-@media (max-width: 575.98px) {
+@media (max-width: $bp-phone) {
     .terminal-toolbar-right {
         grid-template-columns: 1fr;
     }
@@ -2397,15 +2414,15 @@ export default {
 }
 
 .stack-meta-item {
-    font-size: 0.78rem;
+    font-size: var(--fs-sm);
     font-weight: 400;
-    color: #9ca3af;
+    color: var(--text-muted);
     cursor: default;
 }
 
 .editor-box {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
 }
 
 .editor-header {
@@ -2422,7 +2439,7 @@ export default {
 }
 
 .editor-fullscreen-btn {
-    font-size: 0.78rem;
+    font-size: var(--fs-sm);
     padding: 2px 10px;
 }
 
@@ -2449,12 +2466,12 @@ export default {
     top: 8px;
     right: 12px;
     z-index: 1060;
-    font-size: 0.78rem;
+    font-size: var(--fs-sm);
     padding: 2px 10px;
 }
 
 .agent-name {
-    font-size: 13px;
-    color: $dark-font-color3;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
 }
 </style>

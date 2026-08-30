@@ -1,0 +1,102 @@
+// Design tokens — the single source of truth for runtime values.
+//
+// Rules:
+// - Components consume tokens via var(--token-name); never hard-code colors,
+//   radii, shadows, or font sizes.
+// - Theme variants live here only: `.dark` overrides the token values, so
+//   components do NOT need their own `.dark &` blocks for tokenized values.
+// - SCSS variables in vars.scss remain for compile-time-only concerns
+//   (Bootstrap overrides, breakpoints for media queries).
+//
+// Palette follows upstream Dockge (louislam/dockge): light-blue primary
+// with a green gradient tail, teal active states, GitHub-dark night theme.
+
+:root {
+    // Brand & semantic colors
+    --primary: #74c2ff;
+    --primary-hover: #9dd1ff;
+    --primary-text: #ffffff;            // text on primary background
+    --primary-strong: #2563eb;          // text-grade primary (readable on light tints)
+    --primary-soft: #cdf8f4;            // tinted background (active/hover states)
+    --hover-soft: #e7faec;              // quiet hover tint for list rows (upstream green)
+    --success: #4caf50;
+    --success-soft: #e7faec;
+    --warning: #f8a306;
+    --warning-soft: #fef3c7;
+    --danger: #dc3545;
+    --danger-soft: #f8d7da;
+    --maintenance: #1747f5;
+
+    // Surfaces
+    --bg-body: #ffffff;
+    --bg-surface: #ffffff;              // cards, shadow-box, modals
+    --bg-raised: #f5f5f5;               // headers, toolbars, hover fills
+    --bg-input: #ffffff;
+
+    // Borders
+    --border-color: #dee2e6;
+    --border-strong: #ced4da;
+
+    // Text
+    --text-color: #212529;
+    --text-muted: #6c757d;
+
+    // Typography
+    --font-sans: BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --fs-xs: 0.72rem;
+    --fs-sm: 0.78rem;
+    --fs-md: 0.85rem;
+    --fs-base: 1rem;
+    --fs-lg: 1.25rem;
+    --fs-xl: 1.6rem;
+    --fs-2xl: 2rem;
+
+    // Shape
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-pill: 50rem;
+
+    // Elevation
+    --shadow-card: 0 15px 70px rgba(0, 0, 0, 0.1);
+    --shadow-popover: 0 6px 24px rgba(0, 0, 0, 0.12);
+
+    // Spacing scale
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+}
+
+.dark {
+    --primary: #74c2ff;
+    --primary-hover: #9dd1ff;
+    --primary-text: #020b05;
+    --primary-strong: #74c2ff;
+    --primary-soft: #070a10;
+    --hover-soft: #070a10;
+    --success: #4caf50;
+    --success-soft: #122f21;
+    --warning: #f8a306;
+    --warning-soft: #3a2a0d;
+    --danger: #dc3545;
+    --danger-soft: #3d1518;
+    --maintenance: #1747f5;
+
+    --bg-body: #090c10;
+    --bg-surface: #0d1117;
+    --bg-raised: #161b22;
+    --bg-input: #070a10;
+
+    --border-color: #1d2634;
+    --border-strong: #2d3a4d;
+
+    --text-color: #b1b8c0;
+    --text-muted: #9ca3af;
+
+    --shadow-card: 0 15px 70px rgba(0, 0, 0, 0.5);
+    --shadow-popover: 0 6px 24px rgba(0, 0, 0, 0.35);
+}

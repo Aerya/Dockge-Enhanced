@@ -148,11 +148,18 @@
                     <small class="form-text">{{ $t('watcher.monitoring.lowPowerHint') }}</small>
                 </div>
 
-                <!-- Affichage barre haute -->
+                <!-- Affichage barre de stats système -->
                 <div class="col-12">
                     <label class="form-label small">
                         <font-awesome-icon icon="display" class="me-1" />{{ $t('watcher.monitoring.navbarHostDisplay') }}
                     </label>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <label class="form-check-label" for="navbarPosition">{{ $t('watcher.monitoring.navbarPosition') }}</label>
+                        <select id="navbarPosition" v-model="hostNavbarDisplay.navbarPosition" class="form-select form-select-sm navbar-position-select">
+                            <option value="bottom">{{ $t('watcher.monitoring.navbarPositionBottom') }}</option>
+                            <option value="top">{{ $t('watcher.monitoring.navbarPositionTop') }}</option>
+                        </select>
+                    </div>
                     <div class="navbar-host-options">
                         <div class="form-check form-switch">
                             <input id="navbarCpuModel" v-model="hostNavbarDisplay.cpuModel" class="form-check-input" type="checkbox" role="switch" />
@@ -185,7 +192,7 @@
                     </label>
                     <div v-for="(p, idx) in diskPartitions" :key="idx"
                         class="d-flex align-items-center gap-2 mb-2">
-                        <code class="form-control form-control-sm" style="max-width:220px;background:rgba(255,255,255,.04)">{{ p }}</code>
+                        <code class="form-control form-control-sm" style="max-width:220px;background:var(--bg-raised)">{{ p }}</code>
                         <button class="btn btn-sm btn-outline-danger" @click="removePartition(idx)">
                             <font-awesome-icon icon="times" />
                         </button>
@@ -336,15 +343,6 @@
             </div>
 
             <div class="d-flex align-items-center gap-3 flex-wrap mb-4">
-                <div class="d-flex align-items-center gap-2">
-                    <small class="form-text">{{ $t('watcher.notifLang') }}</small>
-                    <div class="notif-lang-toggle">
-                        <button :class="['notif-lang-btn', monSettings.notificationLang !== 'en' && 'active']"
-                            @click="monSettings.notificationLang = 'fr'">🇫🇷</button>
-                        <button :class="['notif-lang-btn', monSettings.notificationLang === 'en' && 'active']"
-                            @click="monSettings.notificationLang = 'en'">🇬🇧</button>
-                    </div>
-                </div>
                 <button class="btn btn-primary btn-sm" @click="saveMonSettings" :disabled="savingMon">
                     <span v-if="savingMon" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
@@ -569,8 +567,8 @@
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h5 class="settings-subheading mb-0">
                     <font-awesome-icon icon="chart-bar" class="me-2" />{{ $t('watcher.kula.heading') }}
-                    <span v-if="kulaStatus === 'running'" class="badge bg-success ms-2" style="font-size:.7rem">{{ $t('watcher.kula.running') }}</span>
-                    <span v-else-if="kulaSettings.enabled" class="badge bg-warning text-dark ms-2" style="font-size:.7rem">{{ $t('watcher.kula.stopped') }}</span>
+                    <span v-if="kulaStatus === 'running'" class="badge bg-success ms-2 badge-sm">{{ $t('watcher.kula.running') }}</span>
+                    <span v-else-if="kulaSettings.enabled" class="badge bg-warning text-dark ms-2 badge-sm">{{ $t('watcher.kula.stopped') }}</span>
                 </h5>
                 <div class="d-flex gap-2 align-items-center">
                     <a v-if="kulaStatus === 'running'" :href="kulaEffectiveUrl" target="_blank"
@@ -652,8 +650,8 @@
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h5 class="settings-subheading mb-0">
                     <font-awesome-icon icon="terminal" class="me-2" />{{ $t("watcher.dozzle.heading") }}
-                    <span v-if="dozzleStatus === 'running'" class="badge bg-success ms-2" style="font-size:.7rem">{{ $t("watcher.dozzle.running") }}</span>
-                    <span v-else-if="dozzleSettings.enabled" class="badge bg-warning text-dark ms-2" style="font-size:.7rem">{{ $t("watcher.dozzle.stopped") }}</span>
+                    <span v-if="dozzleStatus === 'running'" class="badge bg-success ms-2 badge-sm">{{ $t("watcher.dozzle.running") }}</span>
+                    <span v-else-if="dozzleSettings.enabled" class="badge bg-warning text-dark ms-2 badge-sm">{{ $t("watcher.dozzle.stopped") }}</span>
                 </h5>
                 <a v-if="dozzleStatus === 'running'" :href="dozzleEffectiveUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
                     <font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t("watcher.dozzle.open") }}
@@ -738,7 +736,6 @@ interface MonitoringSettings {
     healthcheckCooldownMinutes: number;
     discordWebhooks: string[];
     appriseUrls: string[];
-    notificationLang: "fr" | "en";
     lowPowerMode: boolean;
 }
 
@@ -777,6 +774,7 @@ interface HostNavbarDisplay {
     uptime: boolean;
     cpuTemperatures: boolean;
     diskTemperatures: boolean;
+    navbarPosition: "top" | "bottom";
 }
 
 // ─── API helper ───────────────────────────────────────────────────
@@ -817,7 +815,6 @@ const monSettings = ref<MonitoringSettings>({
     healthcheckCooldownMinutes: 30,
     discordWebhooks: [],
     appriseUrls: [],
-    notificationLang: "fr",
     lowPowerMode: false,
 });
 
@@ -829,6 +826,7 @@ const hostNavbarDisplay = ref<HostNavbarDisplay>({
     uptime: false,
     cpuTemperatures: false,
     diskTemperatures: false,
+    navbarPosition: "bottom",
 });
 const diskDisplayExampleCells = [true, true, false, false, false, false, false, false, false, false];
 const newPartition   = ref("");
@@ -894,10 +892,12 @@ const lastTrivyMinutes = computed<number | null>(() => {
 function formatAge(minutes: number | null): string {
     if (minutes === null) return "—";
     if (minutes < 1) return t("watcher.monitoring.ageJustNow");
-    if (minutes < 60) return `${minutes} min`;
+    if (minutes < 60) return t("timeUnit.minute", [ minutes ]);
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    return m > 0 ? `${h}h ${m}min` : `${h}h`;
+    return m > 0
+        ? `${t("timeUnit.hour", [ h ])} ${t("timeUnit.minute", [ m ])}`
+        : t("timeUnit.hour", [ h ]);
 }
 
 function formatUptime(seconds: number): string {
@@ -905,9 +905,9 @@ function formatUptime(seconds: number): string {
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const parts = [];
-    if (days > 0) parts.push(`${days} j`);
-    if (hours > 0) parts.push(`${hours} h`);
-    parts.push(`${minutes} min`);
+    if (days > 0) parts.push(t("timeUnit.day", [ days ]));
+    if (hours > 0) parts.push(t("timeUnit.hour", [ hours ]));
+    parts.push(t("timeUnit.minute", [ minutes ]));
     return parts.join(" ");
 }
 
@@ -1231,7 +1231,7 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 /* ── Overview cards ── */
 .monitoring-cards {
     display: grid;
@@ -1239,40 +1239,40 @@ onUnmounted(() => {
     gap: 16px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: $bp-phone) {
     .monitoring-cards { grid-template-columns: 1fr; }
 }
 
 .monitoring-card {
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 20px 22px;
     display: flex;
     gap: 16px;
     align-items: flex-start;
-    border: 1px solid rgba(255,255,255,.07);
-    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border-color);
+    background: var(--bg-raised);
     transition: border-color .2s;
     min-height: 90px;
 }
 
-.monitoring-card.mc-ok     { border-color: rgba(34,197,94,.35);  }
-.monitoring-card.mc-warn   { border-color: rgba(245,158,11,.35); }
-.monitoring-card.mc-danger { border-color: rgba(239,68,68,.35);  }
-.monitoring-card.mc-neutral{ border-color: rgba(255,255,255,.1); }
+.monitoring-card.mc-ok     { border-color: color-mix(in srgb, var(--success) 35%, transparent); }
+.monitoring-card.mc-warn   { border-color: color-mix(in srgb, var(--warning) 35%, transparent); }
+.monitoring-card.mc-danger { border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+.monitoring-card.mc-neutral{ border-color: var(--border-strong); }
 
-.mc-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; padding-top: 2px; }
+.mc-icon { font-size: var(--fs-2xl); line-height: 1; flex-shrink: 0; padding-top: 2px; }
 
 .mc-body { flex: 1; min-width: 0; }
 
 .mc-label {
-    font-size: .72rem;
+    font-size: var(--fs-xs);
     text-transform: uppercase;
     letter-spacing: .05em;
-    color: #9ca3af;
+    color: var(--text-muted);
     margin-bottom: 6px;
 }
 .mc-value {
-    font-size: 1.1rem;
+    font-size: var(--fs-lg);
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -1281,8 +1281,8 @@ onUnmounted(() => {
     line-height: 1.4;
 }
 .mc-detail {
-    font-size: .75rem;
-    color: #9ca3af;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
     font-weight: 400;
     margin-top: 4px;
     white-space: normal;
@@ -1302,19 +1302,19 @@ onUnmounted(() => {
     gap: 3px;
     min-width: 0;
     padding: 12px 14px;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 8px;
-    background: rgba(255,255,255,.035);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
 }
 
 .host-item span,
 .host-item small {
-    color: #9ca3af;
-    font-size: .75rem;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
 }
 
 .host-item strong {
-    color: #e5e7eb;
+    color: var(--text-color);
     font-size: .95rem;
     overflow-wrap: anywhere;
 }
@@ -1330,21 +1330,21 @@ onUnmounted(() => {
     grid-template-columns: 48px 1fr 44px;
     align-items: center;
     gap: 8px;
-    font-size: .75rem;
+    font-size: var(--fs-xs);
 }
 
 .core-bar {
     height: 7px;
     overflow: hidden;
-    border-radius: 999px;
-    background: rgba(255,255,255,.1);
+    border-radius: var(--radius-pill);
+    background: var(--bg-raised);
 }
 
 .core-bar span {
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: #60a5fa;
+    background: var(--primary);
 }
 
 .temperature-grid {
@@ -1355,17 +1355,17 @@ onUnmounted(() => {
 
 .temperature-grid h6 {
     margin-bottom: 8px;
-    color: #d1d5db;
+    color: var(--text-color);
 }
 
 .temp-chip {
     display: inline-flex;
     margin: 0 6px 6px 0;
     padding: 3px 8px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.08);
-    color: #e5e7eb;
-    font-size: .75rem;
+    border-radius: var(--radius-pill);
+    background: var(--bg-raised);
+    color: var(--text-color);
+    font-size: var(--fs-xs);
 }
 
 .navbar-host-options {
@@ -1375,7 +1375,11 @@ onUnmounted(() => {
     max-width: 720px;
 }
 
-@media (max-width: 700px) {
+.navbar-position-select {
+    max-width: 220px;
+}
+
+@media (max-width: $bp-mobile) {
     .host-grid,
     .core-grid,
     .temperature-grid,
@@ -1385,61 +1389,33 @@ onUnmounted(() => {
 }
 
 .toast-float {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 9999;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: .875rem;
-    font-weight: 600;
-    box-shadow: 0 4px 16px rgba(0,0,0,.4);
+    position: fixed; right: 1.25rem; bottom: 1.5rem; z-index: 9999;
+    padding: .6rem 1rem; border-radius: var(--radius-md); font-size: var(--fs-md); color: var(--primary-text);
+    box-shadow: var(--shadow-popover);
+    &.toast-ok { background: var(--success); }
+    &.toast-err { background: var(--danger); }
+    @media (max-width: $bp-mobile) { bottom: var(--space-4); }
 }
-.toast-ok  { background: #22c55e; color: #fff; }
-.toast-err { background: #ef4444; color: #fff; }
 
 .slide-fade-enter-active, .slide-fade-leave-active { transition: all .25s ease; }
 .slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(12px); opacity: 0; }
 
 /* ── Notification providers ── */
 .notif-provider-label {
-    font-size: .7rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .08em;
-    color: #6b7280;
+    color: var(--text-muted);
     margin-bottom: .5rem;
 }
 .notif-url-display {
-    font-family: monospace;
-    font-size: .78rem;
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
 }
-.notif-lang-toggle {
-    display: flex;
-    gap: .2rem;
-    background: rgba(255,255,255,.06);
-    border-radius: 50rem;
-    padding: 2px 4px;
-    border: 1px solid rgba(255,255,255,.1);
-}
-.notif-lang-btn {
-    background: transparent;
-    border: none;
-    border-radius: 50rem;
-    padding: 1px 6px;
-    font-size: .8rem;
-    cursor: pointer;
-    opacity: .5;
-    transition: opacity .15s, background .15s;
-    &.active { opacity: 1; background: rgba(255,255,255,.12); }
-    &:hover:not(.active) { opacity: .75; }
-}
-.btn-normal {
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.12);
-    color: #d1d5db;
-    &:hover { background: rgba(255,255,255,.14); color: #fff; }
-    &:disabled { opacity: .5; cursor: default; }
+
+.badge-sm {
+    font-size: var(--fs-xs);
 }
 
 .disk-display-example {
@@ -1452,7 +1428,7 @@ onUnmounted(() => {
     display: inline-flex;
     align-items: center;
     gap: 1px;
-    font-family: "JetBrains Mono", monospace;
+    font-family: var(--font-mono);
     line-height: 1;
 }
 
@@ -1481,11 +1457,11 @@ onUnmounted(() => {
 
 /* ── Kula open link ── */
 .kula-open-hint {
-    font-size: .875rem;
-    color: #9ca3af;
+    font-size: var(--fs-md);
+    color: var(--text-muted);
 }
 .kula-open-link {
-    color: #93c5fd;
+    color: var(--primary-strong);
     text-decoration: none;
     &:hover { text-decoration: underline; }
 }

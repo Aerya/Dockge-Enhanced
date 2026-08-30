@@ -1,6 +1,6 @@
 <template>
     <div
-        :class="{ 'dim' : !stack.isManagedByDockge }"
+        :class="{ 'dim' : !stack.isManagedByDockge, 'active': active }"
         :style="agentStyle"
         class="item"
         role="link"
@@ -8,12 +8,18 @@
         @click="$router.push(url)"
         @keydown.enter="$router.push(url)"
     >
-        <Uptime :stack="stack" :fixed-width="true" class="me-2" />
+        <span
+            class="status-dot"
+            :class="statusDotClass"
+            :title="statusText"
+            role="img"
+            :aria-label="statusText"
+        ></span>
         <div class="title">
-            <span>{{ stackName }}</span>
-            <font-awesome-icon v-if="scheduled" icon="calendar-days" class="scheduled-indicator ms-1" :title="$t('stackScheduler.scheduledTooltip')" />
-            <StackUpdateBadge :stack-name="stackName" />
-            <StackStatsBadge :stack-name="stackName" />
+            <div class="name-row">
+                <span class="name">{{ stackName }}</span>
+                <font-awesome-icon v-if="scheduled" icon="calendar-days" class="scheduled-indicator" :title="$t('stackScheduler.scheduledTooltip')" />
+            </div>
             <div v-if="$root.agentCount > 1" class="endpoint">
                 <a
                     v-if="remoteStackUrl"
@@ -24,6 +30,10 @@
                     @keydown.stop
                 >{{ endpointDisplay }}</a>
                 <span v-else>{{ endpointDisplay }}</span>
+            </div>
+            <div class="meta-row">
+                <StackUpdateBadge :stack-name="stackName" />
+                <StackStatsBadge :stack-name="stackName" />
             </div>
         </div>
         <button
@@ -42,13 +52,12 @@
 </template>
 
 <script>
-import Uptime from "./Uptime.vue";
+import { EXITED, RUNNING, statusNameShort } from "../../../common/util-common";
 import StackUpdateBadge from "./StackUpdateBadge.vue";
 import StackStatsBadge from "./StackStatsBadge.vue";
 
 export default {
     components: {
-        Uptime,
         StackUpdateBadge,
         StackStatsBadge,
     },
@@ -57,11 +66,6 @@ export default {
         stack: {
             type: Object,
             default: null,
-        },
-        /** If the user is in select mode */
-        isSelectMode: {
-            type: Boolean,
-            default: false,
         },
         scheduled: {
             type: Boolean,
@@ -80,28 +84,8 @@ export default {
             type: Number,
             default: 0,
         },
-        /** Callback to determine if stack is selected */
-        isSelected: {
-            type: Function,
-            default: () => {}
-        },
-        /** Callback fired when stack is selected */
-        select: {
-            type: Function,
-            default: () => {}
-        },
-        /** Callback fired when stack is deselected */
-        deselect: {
-            type: Function,
-            default: () => {}
-        },
     },
     emits: [ "toggle-pin" ],
-    data() {
-        return {
-            isCollapsed: true,
-        };
-    },
     computed: {
         endpointDisplay() {
             return this.$root.endpointDisplayFunction(this.stack.endpoint);
@@ -120,13 +104,24 @@ export default {
                 return `/compose/${this.stack.name}`;
             }
         },
-        depthMargin() {
-            return {
-                marginLeft: `${31 * this.depth}px`,
-            };
-        },
         stackName() {
             return this.stack.name;
+        },
+        active() {
+            return this.$route.path === this.url;
+        },
+        statusText() {
+            return this.$t(statusNameShort(this.stack?.status));
+        },
+        statusDotClass() {
+            switch (this.stack?.status) {
+                case RUNNING:
+                    return "status-dot--running";
+                case EXITED:
+                    return "status-dot--stopped";
+                default:
+                    return "status-dot--inactive";
+            }
         },
         agentStyle() {
             if (!this.agentColors) {
@@ -140,163 +135,176 @@ export default {
             };
         }
     },
-    watch: {
-        isSelectMode() {
-            // TODO: Resize the heartbeat bar, but too slow
-            // this.$refs.heartbeatBar.resize();
-        }
-    },
-    beforeMount() {
-
-    },
-    methods: {
-        /**
-         * Changes the collapsed value of the current stack and saves
-         * it to local storage
-         * @returns {void}
-         */
-        changeCollapsed() {
-            this.isCollapsed = !this.isCollapsed;
-
-            // Save collapsed value into local storage
-            let storage = window.localStorage.getItem("stackCollapsed");
-            let storageObject = {};
-            if (storage !== null) {
-                storageObject = JSON.parse(storage);
-            }
-            storageObject[`stack_${this.stack.id}`] = this.isCollapsed;
-
-            window.localStorage.setItem("stackCollapsed", JSON.stringify(storageObject));
-        },
-
-        /**
-         * Toggle selection of stack
-         * @returns {void}
-         */
-        toggleSelection() {
-            if (this.isSelected(this.stack.id)) {
-                this.deselect(this.stack.id);
-            } else {
-                this.select(this.stack.id);
-            }
-        },
-    },
 };
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
-.small-padding {
-    padding-left: 5px !important;
-    padding-right: 5px !important;
-}
-
-.collapse-padding {
-    padding-left: 8px !important;
-    padding-right: 2px !important;
-}
-
+// Single source of truth for stack-list rows (the global
+// `.stack-list .item` rule in styles/main.scss was removed in favor of this).
+// Modern quiet row: status dot + name, no per-item borders or tint fills.
+// Status colors mirror the summary filter pills in StackList.vue
+// (running = success, stopped = warning, inactive = hollow).
 .item {
     text-decoration: none;
     cursor: pointer;
     display: flex;
     align-items: center;
-    min-height: 44px;
-    border-radius: 8px;
-    transition: all ease-in-out 0.15s;
+    gap: 10px;
     width: 100%;
-    padding: 3px 6px;
-    border-inline-start: 4px solid var(--agent-color, transparent);
-    background: linear-gradient(90deg, var(--agent-tint, transparent), transparent 42%);
-
-    .dark & {
-        border-inline-start-color: var(--agent-color-dark, transparent);
-        background: linear-gradient(90deg, var(--agent-tint-dark, transparent), transparent 42%);
-    }
+    min-height: 40px;
+    margin-bottom: 2px;
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    transition: background-color ease-in-out 0.15s;
 
     &.disabled {
         opacity: 0.3;
     }
-    &:hover {
-        background-color: $highlight-white;
-    }
-    &.active {
-        background-color: #cdf8f4;
-    }
-    .title {
-        margin-top: -2px;
-        min-width: 0;
-        flex: 1;
 
-        > span:first-child {
-            color: var(--agent-color, inherit);
-            font-weight: 650;
+    &:hover {
+        background: var(--hover-soft);
+    }
+
+    &.active {
+        background: var(--primary-soft);
+
+        .name {
+            color: var(--agent-color, var(--primary-strong));
 
             .dark & {
-                color: var(--agent-color-dark, inherit);
+                color: var(--agent-color-dark, var(--primary-strong));
             }
         }
     }
-    .endpoint {
-        font-size: 12px;
-        color: $dark-font-color3;
+}
 
-        a {
-            color: inherit;
-            text-decoration: underline;
-            text-underline-offset: 2px;
-        }
+.status-dot {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    margin-inline-start: 3px;
+    border-radius: 50%;
+
+    &--running {
+        background: var(--success);
+        box-shadow: 0 0 0 3px var(--success-soft);
     }
 
-    .scheduled-indicator {
-        color: #3b82f6;
-        font-size: .78rem;
+    &--stopped {
+        background: var(--warning);
     }
 
-    .stack-pin-button {
-        flex: 0 0 auto;
-        border: 0;
-        padding: 6px;
+    &--inactive {
         background: transparent;
-        color: $dark-font-color3;
-        opacity: 0;
-        transition: opacity .15s ease, color .15s ease;
-
-        &:focus-visible,
-        &--pinned {
-            opacity: 1;
-            color: #d97706;
-        }
+        box-shadow: inset 0 0 0 2px var(--border-strong);
     }
+}
 
-    &:hover .stack-pin-button {
+// Gentle "live" breathing on the running dot only.
+@media (prefers-reduced-motion: no-preference) {
+    .status-dot--running {
+        animation: status-dot-pulse 2.4s ease-in-out infinite;
+    }
+}
+
+@keyframes status-dot-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 3px var(--success-soft);
+    }
+    50% {
+        box-shadow: 0 0 0 5px var(--success-soft);
+    }
+}
+
+.title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--agent-color, inherit);
+    font-weight: 600;
+
+    .dark & {
+        color: var(--agent-color-dark, inherit);
+    }
+}
+
+// Update/stats tags get their own wrapping line under the name so a narrow
+// sidebar never forces the row wider than the card (flex no-wrap on the
+// name line used to push the badges past the card edge).
+.meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+
+    &:empty {
+        display: none;
+    }
+}
+
+.endpoint {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    a {
+        color: inherit;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+}
+
+.scheduled-indicator {
+    flex: 0 0 auto;
+    color: var(--primary-strong);
+    font-size: var(--fs-sm);
+}
+
+.stack-pin-button {
+    flex: 0 0 auto;
+    border: 0;
+    padding: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity .15s ease, color .15s ease;
+
+    &:focus-visible,
+    &--pinned {
         opacity: 1;
-    }
-
-    @media (hover: none) {
-        .stack-pin-button {
-            opacity: .6;
-        }
+        color: var(--warning);
     }
 }
 
-.collapsed {
-    transform: rotate(-90deg);
+.item:hover .stack-pin-button {
+    opacity: 1;
 }
 
-.animated {
-    transition: all 0.2s $easing-in;
-}
-
-.select-input-wrapper {
-    float: left;
-    margin-top: 15px;
-    margin-left: 3px;
-    margin-right: 10px;
-    padding-left: 4px;
-    position: relative;
-    z-index: 15;
+@media (hover: none) {
+    .stack-pin-button {
+        opacity: .6;
+    }
 }
 
 .dim {

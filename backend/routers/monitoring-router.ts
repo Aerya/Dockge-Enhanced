@@ -64,6 +64,7 @@ export class MonitoringRouter extends Router {
                         uptime: Boolean(hostNavbarDisplay.uptime),
                         cpuTemperatures: Boolean(hostNavbarDisplay.cpuTemperatures),
                         diskTemperatures: Boolean(hostNavbarDisplay.diskTemperatures),
+                        navbarPosition: hostNavbarDisplay.navbarPosition === "top" ? "top" : "bottom",
                     }));
                 }
                 res.json({ ok: true });
@@ -91,6 +92,7 @@ export class MonitoringRouter extends Router {
                 uptime: false,
                 cpuTemperatures: false,
                 diskTemperatures: false,
+                navbarPosition: "bottom",
             };
             const rawHostNavbar = await Settings.get("hostNavbarDisplay");
             if (rawHostNavbar) {

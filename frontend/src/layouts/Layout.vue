@@ -34,13 +34,13 @@
         </div>
 
         <!-- Desktop header -->
-        <header v-if="! $root.isMobile" class="desktop-header py-3 mb-3 border-bottom">
+        <header v-if="! $root.isMobile" class="desktop-header py-3 mb-3 border-bottom" :class="{ 'has-stats': showHeaderStats }">
             <div class="desktop-brand d-flex align-items-center">
                 <router-link to="/" class="d-flex align-items-center text-dark text-decoration-none">
                     <object class="bi me-2 ms-4" width="40" height="40" data="/icon.svg" />
                     <span class="fs-4 title">Dockge-Enhanced</span>
                 </router-link>
-                <span class="ms-2 d-flex gap-1 align-items-center" style="font-size:.72rem">
+                <span class="ms-2 d-flex gap-1 align-items-center brand-badges">
                     <a href="https://github.com/louislam/dockge" target="_blank" rel="noopener"
                         class="github-badge" title="Dockge upstream">Dockge</a>
                     <span style="opacity:.35">+</span>
@@ -57,88 +57,13 @@
                 <!-- Bannière mise à jour Dockge-Enhanced -->
                 <div v-if="selfUpdate.available && !selfUpdate.dismissed" class="self-update-banner">
                     <font-awesome-icon icon="arrow-circle-up" class="me-1" />
-                    Dockge-Enhanced : nouvelle version disponible —
-                    <code class="mx-2">docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d</code>
-                    <button class="btn-copy ms-1" @click="copyUpdateCmd" :title="selfUpdate.copied ? 'Copié !' : 'Copier'">
+                    {{ $t("selfUpdate.banner") }} —
+                    <code class="mx-2">{{ selfUpdateCmd }}</code>
+                    <button class="btn-copy ms-1" @click="copyUpdateCmd" :title="selfUpdate.copied ? $t('selfUpdate.copied') : $t('selfUpdate.copy')">
                         {{ selfUpdate.copied ? '✓' : '⧉' }}
                     </button>
-                    <button class="btn-dismiss ms-2" @click="selfUpdate.dismissed = true" title="Fermer">✕</button>
+                    <button class="btn-dismiss ms-2" @click="selfUpdate.dismissed = true" :title="$t('selfUpdate.dismiss')">✕</button>
                 </div>
-            </div>
-
-            <!-- System Stats (desktop uniquement) -->
-            <div v-if="$root.loggedIn && systemStats" class="system-stats d-none d-lg-flex align-items-center">
-                <span class="stat-pill" :class="statClass(systemStats.cpu)" :title="cpuStatTooltip()">
-                    <font-awesome-icon icon="microchip" class="me-1" />CPU
-                    <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(systemStats.cpu)">
-                        <span class="disk-bar-bracket">[</span>
-                        <span class="disk-bar-cells" aria-hidden="true">
-                            <span
-                                v-for="(filled, index) in diskUsageCells(systemStats.cpu)"
-                                :key="index"
-                                class="disk-bar-cell"
-                                :class="{ filled }"
-                            ></span>
-                        </span>
-                        <span class="disk-bar-bracket">]</span>
-                    </span>
-                    <span class="ms-1">{{ systemStats.cpu }}%</span>
-                </span>
-                <span class="stat-pill" :class="statClass(systemStats.ram.percent)" :title="ramStatTooltip()">
-                    <font-awesome-icon icon="memory" class="me-1" />RAM
-                    <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(systemStats.ram.percent)">
-                        <span class="disk-bar-bracket">[</span>
-                        <span class="disk-bar-cells" aria-hidden="true">
-                            <span
-                                v-for="(filled, index) in diskUsageCells(systemStats.ram.percent)"
-                                :key="index"
-                                class="disk-bar-cell"
-                                :class="{ filled }"
-                            ></span>
-                        </span>
-                        <span class="disk-bar-bracket">]</span>
-                    </span>
-                    <span class="ms-1">{{ systemStats.ram.percent }}%</span>
-                </span>
-                <span v-for="d in (systemStats.disks ?? [systemStats.disk])" :key="d.mount"
-                    class="stat-pill" :class="statClass(d.percent)">
-                    <font-awesome-icon icon="floppy-disk" class="me-1" />
-                    <template v-if="systemStats.diskDisplayMode === 'bar'">
-                        {{ d.mount }}
-                        <span class="disk-bar ms-1" :aria-label="diskUsageBarLabel(d.percent)">
-                            <span class="disk-bar-bracket">[</span>
-                            <span class="disk-bar-cells" aria-hidden="true">
-                                <span
-                                    v-for="(filled, index) in diskUsageCells(d.percent)"
-                                    :key="index"
-                                    class="disk-bar-cell"
-                                    :class="{ filled }"
-                                ></span>
-                            </span>
-                            <span class="disk-bar-bracket">]</span>
-                        </span>
-                        <span class="ms-1">{{ d.percent }}%</span>
-                        <span class="ms-1">{{ formatDiskTotal(d.total) }}</span>
-                    </template>
-                    <template v-else>
-                        {{ d.mount }} {{ d.percent }}%
-                    </template>
-                </span>
-                <a v-if="kulaUrl" :href="kulaUrl" target="_blank" class="stat-pill stat-kula">
-                    <font-awesome-icon icon="chart-bar" class="me-1" />Kula
-                </a>
-                <a v-if="dozzleUrl" :href="dozzleUrl" target="_blank" class="stat-pill stat-kula">
-                    <font-awesome-icon icon="terminal" class="me-1" />Dozzle
-                </a>
-                <span v-if="systemStats.hostNavbarDisplay?.uptime" class="stat-pill stat-neutral">
-                    <font-awesome-icon icon="clock" class="me-1" />{{ $t("watcher.monitoring.navbarUptimeShort") }} : {{ formatUptime(systemStats.host?.uptimeSeconds) }}
-                </span>
-                <span v-if="systemStats.hostNavbarDisplay?.cpuTemperatures && systemStats.host?.temperatures?.cpu?.length" class="stat-pill stat-neutral">
-                    <font-awesome-icon icon="temperature-half" class="me-1" />CPU {{ tempSummary(systemStats.host.temperatures.cpu) }}
-                </span>
-                <span v-if="systemStats.hostNavbarDisplay?.diskTemperatures && systemStats.host?.temperatures?.disks?.length" class="stat-pill stat-neutral">
-                    <font-awesome-icon icon="hard-drive" class="me-1" />{{ tempSummary(systemStats.host.temperatures.disks) }}
-                </span>
             </div>
 
             <ul class="desktop-nav nav nav-pills">
@@ -156,8 +81,14 @@
 
                 <li v-if="$root.loggedIn" class="nav-item me-2">
                     <router-link to="/watcher" class="nav-link">
-                        <font-awesome-icon icon="bolt" /> Enhanced
+                        <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}
                     </router-link>
+                </li>
+
+                <li class="nav-item me-2 d-flex align-items-center">
+                    <button type="button" class="nav-link theme-toggle" :aria-label="$t('Theme')" @click="$root.toggleTheme">
+                        <font-awesome-icon :icon="$root.theme === 'dark' ? 'sun' : 'moon'" />
+                    </button>
                 </li>
 
                 <li v-if="$root.loggedIn" class="nav-item">
@@ -181,12 +112,6 @@
 
                             <!-- Functions -->
 
-                            <!--<li>
-                                <router-link to="/registry" class="dropdown-item" :class="{ active: $route.path.includes('settings') }">
-                                    <font-awesome-icon icon="warehouse" /> {{ $t("registry") }}
-                                </router-link>
-                            </li>-->
-
                             <li>
                                 <button class="dropdown-item" @click="scanFolder">
                                     <font-awesome-icon icon="arrows-rotate" /> {{ $t("scanFolder") }}
@@ -209,7 +134,81 @@
                     </div>
                 </li>
             </ul>
+
+            <SystemStatsBar
+                v-if="showHeaderStats"
+                variant="header"
+                :system-stats="systemStats"
+                :kula-url="kulaUrl"
+                :dozzle-url="dozzleUrl"
+            />
         </header>
+
+        <!-- Mobile header -->
+        <header v-if="$root.isMobile" class="mobile-header">
+            <button type="button" class="mobile-nav-toggle" aria-label="Menu" @click="showMobileNav = true">
+                <font-awesome-icon icon="bars" />
+            </button>
+            <router-link to="/" class="mobile-brand text-decoration-none">
+                <object class="bi me-2" width="28" height="28" data="/icon.svg" />
+                <span class="title">Dockge-Enhanced</span>
+            </router-link>
+            <button type="button" class="mobile-nav-toggle ms-auto" :aria-label="$t('Theme')" @click="$root.toggleTheme">
+                <font-awesome-icon :icon="$root.theme === 'dark' ? 'sun' : 'moon'" />
+            </button>
+        </header>
+
+        <!-- Mobile navigation drawer -->
+        <BOffcanvas v-model="showMobileNav" placement="start" title="Dockge-Enhanced" body-class="mobile-drawer">
+            <div v-if="$root.loggedIn && $root.username != null" class="mobile-drawer-user">
+                <span class="profile-pic">{{ $root.usernameFirstChar }}</span>
+                <strong>{{ $root.username }}</strong>
+            </div>
+
+            <nav class="mobile-drawer-nav">
+                <router-link to="/" class="mobile-drawer-link">
+                    <font-awesome-icon icon="home" /> {{ $t("home") }}
+                </router-link>
+                <router-link to="/console" class="mobile-drawer-link">
+                    <font-awesome-icon icon="terminal" /> {{ $t("console") }}
+                </router-link>
+                <router-link to="/watcher" class="mobile-drawer-link">
+                    <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}
+                </router-link>
+                <button type="button" class="mobile-drawer-link" @click="mobileScanFolder">
+                    <font-awesome-icon icon="arrows-rotate" /> {{ $t("scanFolder") }}
+                </button>
+
+                <div class="mobile-drawer-section">{{ $t("Settings") }}</div>
+                <router-link to="/settings/general" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("general") }}
+                </router-link>
+                <router-link to="/settings/appearance" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("Appearance") }}
+                </router-link>
+                <router-link to="/settings/security" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("Security") }}
+                </router-link>
+                <router-link to="/settings/globalEnv" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("GlobalEnv") }}
+                </router-link>
+                <router-link to="/settings/integrations" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("Integrations") }}
+                </router-link>
+                <router-link to="/settings/automation" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("automation.heading") }}
+                </router-link>
+                <router-link to="/settings/about" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("About") }}
+                </router-link>
+            </nav>
+
+            <div v-if="$root.loggedIn" class="mobile-drawer-footer">
+                <button type="button" class="mobile-drawer-link mobile-drawer-logout" @click="mobileLogout">
+                    <font-awesome-icon icon="sign-out-alt" /> {{ $t("Logout") }}
+                </button>
+            </div>
+        </BOffcanvas>
 
         <main>
             <div v-if="$root.socketIO.connecting" class="container mt-5">
@@ -220,30 +219,20 @@
             <Login v-if="! $root.loggedIn && $root.allowLoginDialog" />
         </main>
 
-        <!-- Mobile bottom nav -->
-        <nav v-if="$root.isMobile && $root.loggedIn" class="bottom-nav">
-            <router-link to="/">
-                <div><font-awesome-icon icon="home" /></div>
-                {{ $t("home") }}
-            </router-link>
-            <router-link to="/console">
-                <div><font-awesome-icon icon="terminal" /></div>
-                {{ $t("console") }}
-            </router-link>
-            <router-link to="/watcher">
-                <div><font-awesome-icon icon="bolt" /></div>
-                Enhanced
-            </router-link>
-            <router-link to="/settings/general">
-                <div><font-awesome-icon icon="cog" /></div>
-                {{ $t("Settings") }}
-            </router-link>
-        </nav>
+        <!-- System status bar (VS Code-style slim bottom bar, desktop/tablet only) -->
+        <SystemStatsBar
+            v-if="$root.loggedIn && systemStats && statsPosition === 'bottom'"
+            variant="bottom"
+            :system-stats="systemStats"
+            :kula-url="kulaUrl"
+            :dozzle-url="dozzleUrl"
+        />
     </div>
 </template>
 
 <script>
 import Login from "../components/Login.vue";
+import SystemStatsBar from "../components/SystemStatsBar.vue";
 import { compareVersions } from "compare-versions";
 import { ALL_ENDPOINTS } from "../../../common/util-common";
 import { setLowPower, POLL, makePoller } from "../composables/useLowPower";
@@ -253,6 +242,7 @@ export default {
 
     components: {
         Login,
+        SystemStatsBar,
     },
 
     data() {
@@ -260,6 +250,7 @@ export default {
             selfUpdate: {
                 available:     false,
                 containerName: "dockge-enhanced",
+                repo:          "",
                 dismissed:     false,
                 copied:        false,
             },
@@ -269,6 +260,7 @@ export default {
             dozzleUrl:        null,
             showReleaseNews:  false,
             releaseNewsItems: [],
+            showMobileNav: false,
         };
     },
 
@@ -290,9 +282,28 @@ export default {
             }
         },
 
+        selfUpdateCmd() {
+            const repo = this.selfUpdate.repo || "aerya/dockge-enhanced";
+            return `docker pull ghcr.io/${repo}:latest && docker compose up -d`;
+        },
+
+        // Where the system stats render (see MonitoringTab display settings)
+        statsPosition() {
+            return this.systemStats?.hostNavbarDisplay?.navbarPosition === "top" ? "top" : "bottom";
+        },
+
+        showHeaderStats() {
+            return this.$root.loggedIn && !!this.systemStats && this.statsPosition === "top";
+        },
+
     },
 
     watch: {
+
+        // Close the mobile drawer on every navigation
+        "$route.path"() {
+            this.showMobileNav = false;
+        },
 
     },
 
@@ -301,16 +312,20 @@ export default {
         this.checkSelfUpdate();
         this.fetchKulaStatus();
         this.fetchDozzleStatus();
+        // Informe le backend de la langue de l'interface (notifications)
+        this.$root.getSocket().emit("setUILocale", localStorage.getItem("locale") ?? "en");
         // Poll system stats : cadence selon le mode + pause si onglet caché
         this.statsPoller = makePoller({
             fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus(), this.fetchDozzleStatus() ]),
             interval: POLL.system,
         });
         this.statsPoller.start();
+        window.addEventListener("keydown", this.onReleaseNewsKeydown);
     },
 
     beforeUnmount() {
         if (this.statsPoller) this.statsPoller.stop();
+        window.removeEventListener("keydown", this.onReleaseNewsKeydown);
     },
 
     methods: {
@@ -323,6 +338,12 @@ export default {
             localStorage.setItem("releaseNewsSeen", getLatestReleaseNewsId());
             this.showReleaseNews = false;
         },
+
+        onReleaseNewsKeydown(e) {
+            if (e.key === "Escape" && this.showReleaseNews) {
+                this.closeReleaseNews();
+            }
+        },
         async checkSelfUpdate() {
             try {
                 const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
@@ -333,12 +354,13 @@ export default {
                 if (data.ok && data.updateAvailable) {
                     this.selfUpdate.available     = true;
                     this.selfUpdate.containerName = data.containerName ?? "dockge-enhanced";
+                    this.selfUpdate.repo          = data.repo ?? "";
                 }
             } catch { /* silencieux */ }
         },
 
         copyUpdateCmd() {
-            const cmd = `docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`;
+            const cmd = this.selfUpdateCmd;
             const markCopied = () => {
                 this.selfUpdate.copied = true;
                 setTimeout(() => { this.selfUpdate.copied = false; }, 2000);
@@ -376,90 +398,6 @@ export default {
                 // désactivé, supprimé ou temporairement injoignable.
                 this.kulaUrl = null;
             }
-        },
-
-        statClass(percent) {
-            if (percent >= 85) return "stat-danger";
-            if (percent >= 70) return "stat-warning";
-            return "stat-ok";
-        },
-
-        formatBytes(bytes) {
-            if (bytes === 0) return "0 B";
-            const gb = bytes / (1024 ** 3);
-            if (gb >= 1) return gb.toFixed(1) + " GB";
-            const mb = bytes / (1024 ** 2);
-            return mb.toFixed(0) + " MB";
-        },
-
-        diskUsageCells(percent) {
-            const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
-            const filled = Math.round(clamped / 10);
-            return Array.from({ length: 10 }, (_, index) => index < filled);
-        },
-
-        diskUsageBarLabel(percent) {
-            const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
-            const filled = Math.round(clamped / 10);
-            return `[${"⣿".repeat(filled)}${" ".repeat(10 - filled)}]`;
-        },
-
-        formatDiskTotal(bytes) {
-            if (!bytes) return "0B";
-            const units = ["B", "Kio", "Mio", "Gio", "Tio", "Pio"];
-            let value = bytes;
-            let unitIndex = 0;
-            while (value >= 1024 && unitIndex < units.length - 1) {
-                value /= 1024;
-                unitIndex += 1;
-            }
-            const precision = value >= 10 || unitIndex === 0 ? 0 : 1;
-            return `${value.toFixed(precision)}${units[unitIndex]}`;
-        },
-
-        coreSummary(values) {
-            return values.map((value, index) => `C${index + 1} ${value}%`).join(" ");
-        },
-
-        cpuStatTooltip() {
-            const details = [];
-            if (this.systemStats?.hostNavbarDisplay?.cpuModel && this.systemStats?.host?.cpuModel) {
-                details.push(this.systemStats.host.cpuModel);
-            }
-            if (this.systemStats?.hostNavbarDisplay?.perCoreCpu && this.systemStats?.host?.perCoreCpu?.length) {
-                details.push(this.coreSummary(this.systemStats.host.perCoreCpu));
-            }
-            return details.join("\n");
-        },
-
-        ramStatTooltip() {
-            const ram = this.systemStats?.ram;
-            if (!ram) {
-                return "";
-            }
-            return `${this.formatBytes(ram.used)} / ${this.formatBytes(ram.total)}`;
-        },
-
-        formatUptime(seconds) {
-            const total = Math.max(0, Number(seconds) || 0);
-            const days = Math.floor(total / 86400);
-            const hours = Math.floor((total % 86400) / 3600);
-            if (days > 0) return `${days}j ${hours}h`;
-            return `${hours}h`;
-        },
-
-        tempSummary(values) {
-            if (!Array.isArray(values) || values.length === 0) {
-                return "";
-            }
-            if (values.length === 1) {
-                return `${values[0].celsius}°C`;
-            }
-            const numbers = values.map(v => Number(v.celsius)).filter(Number.isFinite);
-            if (numbers.length === 0) {
-                return "";
-            }
-            return `${Math.min(...numbers)}-${Math.max(...numbers)}°C`;
         },
 
         async fetchKulaStatus() {
@@ -504,17 +442,26 @@ export default {
                 this.$root.toastRes(res);
             });
         },
+
+        mobileScanFolder() {
+            this.showMobileNav = false;
+            this.scanFolder();
+        },
+
+        mobileLogout() {
+            this.showMobileNav = false;
+            this.$root.logout();
+        },
     },
 
 };
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 .nav-link {
     &.status-page {
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: var(--bg-raised);
     }
 }
 
@@ -522,11 +469,16 @@ export default {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-        "brand updates navigation"
-        "stats stats stats";
+        "brand updates navigation";
     align-items: center;
     gap: 0.75rem 1.25rem;
     padding-inline: 1.5rem;
+
+    &.has-stats {
+        grid-template-areas:
+            "brand updates navigation"
+            "stats stats stats";
+    }
 }
 
 .desktop-brand {
@@ -546,171 +498,209 @@ export default {
     justify-self: end;
 }
 
+.theme-toggle {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
 .self-update-banner {
     display: flex;
     align-items: center;
-    background: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.5);
-    border-radius: 8px;
+    background: var(--warning-soft);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-sm);
     padding: 5px 12px;
-    font-size: 0.85rem;
-    color: #d97706;
+    font-size: var(--fs-md);
+    color: var(--warning);
 
     code {
-        background: rgba(0,0,0,0.12);
-        border-radius: 4px;
+        background: var(--bg-raised);
+        border-radius: var(--radius-sm);
         padding: 1px 6px;
-        font-size: 0.82rem;
+        font-size: var(--fs-md);
         color: inherit;
     }
 
     .btn-copy, .btn-dismiss {
         background: none;
-        border: 1px solid rgba(245,158,11,0.4);
-        border-radius: 4px;
+        border: 1px solid var(--warning);
+        border-radius: var(--radius-sm);
         cursor: pointer;
-        font-size: 0.8rem;
+        font-size: var(--fs-sm);
         padding: 1px 5px;
         color: inherit;
         line-height: 1.4;
-        &:hover { background: rgba(245,158,11,0.2); }
+        &:hover { background: var(--warning-soft); }
     }
 }
 
-.bottom-nav {
-    z-index: 1000;
-    position: fixed;
-    bottom: 0;
-    height: calc(60px + env(safe-area-inset-bottom));
-    width: 100%;
-    left: 0;
-    background-color: #fff;
-    box-shadow: 0 15px 47px 0 rgba(0, 0, 0, 0.05), 0 5px 14px 0 rgba(0, 0, 0, 0.05);
-    text-align: center;
-    white-space: nowrap;
-    padding: 0 10px env(safe-area-inset-bottom);
+.mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000; // below Bootstrap modal (1055) and offcanvas backdrop (1040)
     display: flex;
-    align-items: stretch;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-color);
+}
 
-    a {
-        text-align: center;
-        flex: 1;
-        display: inline-flex;
-        flex-direction: column;
+.mobile-nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-color);
+}
+
+.mobile-brand {
+    display: flex;
+    align-items: center;
+    color: var(--text-color);
+    font-size: var(--fs-lg);
+}
+
+// BOffcanvas teleports to <body>, so the drawer styles must be global.
+:global(.mobile-drawer) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+:global(.mobile-drawer-user) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-color);
+
+    .profile-pic {
+        display: flex;
         align-items: center;
         justify-content: center;
-        height: 100%;
-        padding: 8px 10px 0;
-        font-size: 13px;
-        color: #c1c1c1;
-        overflow: hidden;
-        text-decoration: none;
-
-        &.router-link-exact-active, &.active {
-            color: $primary;
-            font-weight: bold;
-        }
-
-        div {
-            font-size: 20px;
-        }
+        flex-shrink: 0;
+        color: var(--primary-text);
+        background-color: var(--primary-strong);
+        width: 28px;
+        height: 28px;
+        border-radius: var(--radius-pill);
+        font-weight: bold;
+        font-size: var(--fs-xs);
     }
+
+    // Long usernames/emails ellipsize instead of breaking the row layout
+    strong {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+:global(.mobile-drawer-section) {
+    margin-top: var(--space-2);
+    padding: 0 var(--space-3);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+:global(.mobile-drawer-sublink) {
+    padding-left: var(--space-5);
+}
+
+:global(.mobile-drawer-nav) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+:global(.mobile-drawer-link) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-color);
+    text-align: left;
+    text-decoration: none;
+
+    &:hover {
+        background: var(--bg-raised);
+    }
+
+    &.router-link-exact-active, &.active {
+        background: var(--primary-soft);
+        color: var(--primary-strong);
+        font-weight: bold;
+    }
+}
+
+:global(.mobile-drawer-footer) {
+    margin-top: auto;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-color);
+}
+
+:global(.mobile-drawer-logout) {
+    color: var(--danger);
 }
 
 main {
     min-height: calc(100vh - 160px);
+
+    @media (min-width: $bp-mobile) {
+        // Reserve space for the fixed bottom status bar
+        padding-bottom: calc(28px + var(--space-3));
+    }
+
+    @media (max-width: $bp-mobile) {
+        // Compact mobile header (~45px) instead of the desktop chrome
+        min-height: calc(100vh - 45px);
+    }
 }
 
 .title {
     font-weight: bold;
 }
 
+.brand-badges {
+    font-size: var(--fs-xs);
+}
+
 .github-badge {
-    color: #9ca3af;
+    color: var(--text-muted);
     text-decoration: none;
-    border: 1px solid rgba(255,255,255,.15);
-    border-radius: 50rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
     padding: 1px 7px;
     transition: color .15s, border-color .15s;
 
     &:hover {
-        color: #e5e7eb;
-        border-color: rgba(255,255,255,.4);
+        color: var(--text-color);
+        border-color: var(--text-muted);
     }
 }
 
 .github-badge-enhanced {
-    color: #f59e0b;
-    border-color: rgba(245,158,11,.35);
+    color: var(--warning);
+    border-color: color-mix(in srgb, var(--warning) 40%, transparent);
 
     &:hover {
-        color: #fcd34d;
-        border-color: rgba(245,158,11,.7);
-    }
-}
-
-.system-stats {
-    grid-area: stats;
-    justify-content: center;
-    justify-self: center;
-    width: min(100%, 80rem);
-    font-size: 0.78rem;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    flex-wrap: wrap;
-    gap: 0.35rem 1rem;
-    row-gap: 0.35rem;
-}
-
-.stat-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 9px;
-    border-radius: 50rem;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    transition: color 0.3s;
-    white-space: nowrap;
-
-    &.stat-ok      { color: #a8d8b0; } // vert menthe pastel
-    &.stat-warning  { color: #f0d898; } // jaune blé pastel
-    &.stat-danger   { color: #f0a8a8; } // rose saumon pastel
-    &.stat-neutral  { color: #d1d5db; }
-    &.stat-kula {
-        color: #93c5fd;
-        text-decoration: none;
-        border-color: rgba(99,172,255,.3);
-        &:hover { color: #bfdbfe; border-color: rgba(99,172,255,.6); }
-    }
-}
-
-.disk-bar {
-    display: inline-flex;
-    align-items: center;
-    gap: 1px;
-    font-family: "JetBrains Mono", monospace;
-    line-height: 1;
-}
-
-.disk-bar-bracket {
-    line-height: 1;
-}
-
-.disk-bar-cells {
-    display: inline-grid;
-    grid-template-columns: repeat(10, 0.38rem);
-    align-items: center;
-    column-gap: 1px;
-    height: 0.7rem;
-}
-
-.disk-bar-cell {
-    display: block;
-    width: 0.38rem;
-    height: 0.58rem;
-    border-radius: 1px;
-
-    &.filled {
-        background: currentColor;
+        color: var(--warning);
+        border-color: color-mix(in srgb, var(--warning) 70%, transparent);
     }
 }
 
@@ -720,8 +710,8 @@ main {
 
 .lost-connection {
     padding: 5px;
-    background-color: crimson;
-    color: white;
+    background-color: var(--danger);
+    color: var(--primary-text);
     position: fixed;
     width: 100%;
     z-index: 99999;
@@ -742,44 +732,37 @@ main {
     width: min(560px, 100%);
     max-height: min(720px, calc(100vh - 40px));
     overflow-y: auto;
-    padding: 24px;
-    border: 1px solid rgba(127, 127, 127, .24);
-    border-radius: 16px;
-    color: #1f2937;
-    background: #fff;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, .38);
-
-    .dark & {
-        color: $dark-font-color;
-        background: $dark-bg2;
-    }
+    padding: var(--space-6);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    color: var(--text-color);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-card);
 }
 
 .release-news-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
+    gap: var(--space-4);
 
     h2 {
         margin: 2px 0 0;
-        font-size: 1.55rem;
+        font-size: var(--fs-xl);
     }
 }
 
 .release-news-kicker {
-    color: $primary;
-    font-size: .72rem;
+    color: var(--primary-strong);
+    font-size: var(--fs-xs);
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
 }
 
 .release-news-intro {
-    margin: 16px 0;
-    color: #6b7280;
-
-    .dark & { color: $dark-font-color3; }
+    margin: var(--space-4) 0;
+    color: var(--text-muted);
 }
 
 .release-news-list {
@@ -798,7 +781,7 @@ main {
 
         svg {
             margin-top: 3px;
-            color: #16a34a;
+            color: var(--success);
         }
     }
 }
@@ -818,11 +801,11 @@ main {
         display: flex;
         gap: 6px;
         align-items: center;
-        background-color: rgba(200, 200, 200, 0.2);
+        background-color: var(--bg-raised);
         padding: 0.5rem 0.8rem;
 
         &:hover {
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: var(--border-color);
         }
     }
 
@@ -831,40 +814,34 @@ main {
         padding-left: 0;
         padding-bottom: 0;
         margin-top: 8px !important;
-        border-radius: 16px;
+        border-radius: var(--radius-lg);
         overflow: hidden;
+        background-color: var(--bg-surface);
+        color: var(--text-color);
+        border-color: var(--border-color);
 
         .dropdown-divider {
             margin: 0;
-            border-top: 1px solid rgba(0, 0, 0, 0.4);
+            border-top: 1px solid var(--border-strong);
             background-color: transparent;
         }
 
         .dropdown-item-text {
-            font-size: 14px;
+            font-size: var(--fs-md);
             padding-bottom: 0.7rem;
         }
 
         .dropdown-item {
             padding: 0.7rem 1rem;
-        }
+            color: var(--text-color);
 
-        .dark & {
-            background-color: $dark-bg;
-            color: $dark-font-color;
-            border-color: $dark-border-color;
+            &.active {
+                color: var(--primary-strong);
+                background-color: var(--primary-soft) !important;
+            }
 
-            .dropdown-item {
-                color: $dark-font-color;
-
-                &.active {
-                    color: $dark-font-color2;
-                    background-color: $highlight !important;
-                }
-
-                &:hover {
-                    background-color: $dark-bg2;
-                }
+            &:hover {
+                background-color: var(--bg-raised);
             }
         }
     }
@@ -873,29 +850,25 @@ main {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        background-color: $primary;
+        color: var(--primary-text);
+        background-color: var(--primary-strong);
         width: 24px;
         height: 24px;
         margin-right: 5px;
-        border-radius: 50rem;
+        border-radius: var(--radius-pill);
         font-weight: bold;
-        font-size: 10px;
+        font-size: var(--fs-xs);
     }
 }
 
 .dark {
     header {
-        background-color: $dark-header-bg;
-        border-bottom-color: $dark-header-bg !important;
+        background-color: var(--bg-raised);
+        border-bottom-color: var(--bg-raised) !important;
 
         span {
-            color: #f0f6fc;
+            color: var(--text-color);
         }
-    }
-
-    .bottom-nav {
-        background-color: $dark-bg;
     }
 }
 </style>

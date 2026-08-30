@@ -5,9 +5,6 @@ export default defineComponent({
         return {
             system: (window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light",
             userTheme: localStorage.theme,
-            statusPageTheme: "light",
-            forceStatusPageTheme: false,
-            path: "",
         };
     },
 
@@ -25,10 +22,6 @@ export default defineComponent({
     },
 
     watch: {
-        "$route.fullPath"(path) {
-            this.path = path;
-        },
-
         userTheme(to, from) {
             localStorage.theme = to;
         },
@@ -42,22 +35,18 @@ export default defineComponent({
             document.body.classList.add(this.theme);
             this.updateThemeColorMeta();
         },
-
-        userHeartbeatBar(to, from) {
-            localStorage.heartbeatBarTheme = to;
-        },
-
-        heartbeatBarTheme(to, from) {
-            document.body.classList.remove(from);
-            document.body.classList.add(this.heartbeatBarTheme);
-        }
     },
 
     mounted() {
-        // Default Dark
+        // Default: follow the OS theme (light during the day, dark at night)
         if (! this.userTheme) {
-            this.userTheme = "dark";
+            this.userTheme = "auto";
         }
+
+        // Follow OS theme changes while set to "auto"
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+            this.system = e.matches ? "dark" : "light";
+        });
 
         document.body.classList.add(this.theme);
         this.updateThemeColorMeta();
@@ -65,14 +54,23 @@ export default defineComponent({
 
     methods: {
         /**
+         * Toggle between light and dark theme (explicit user choice,
+         * overrides "auto" until changed back in Settings → Appearance)
+         * @returns {void}
+         */
+        toggleTheme() {
+            this.userTheme = this.theme === "dark" ? "light" : "dark";
+        },
+
+        /**
          * Update the theme color meta tag
          * @returns {void}
          */
         updateThemeColorMeta() {
             if (this.theme === "dark") {
-                document.querySelector("#theme-color").setAttribute("content", "#161B22");
+                document.querySelector("#theme-color").setAttribute("content", "#090c10");
             } else {
-                document.querySelector("#theme-color").setAttribute("content", "#5cdd8b");
+                document.querySelector("#theme-color").setAttribute("content", "#ffffff");
             }
         }
     }

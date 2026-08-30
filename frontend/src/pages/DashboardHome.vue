@@ -26,6 +26,69 @@
                         </div>
                     </div>
 
+                    <!-- Summary Cards -->
+                    <div v-if="hasSummaryCards" class="row g-3 mb-4">
+                        <!-- Image Updates -->
+                        <div v-if="summary.images !== null" class="col-6">
+                            <div class="shadow-box summary-card" :class="summary.images.state" role="button" tabindex="0"
+                                 @click="$router.push('/watcher?tab=images')"
+                                 @keyup.enter="$router.push('/watcher?tab=images')">
+                                <font-awesome-icon icon="sync-alt" class="summary-icon" />
+                                <div class="summary-value" :class="{ text: summary.images.state !== 'warn' }">
+                                    <template v-if="summary.images.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
+                                    <template v-else-if="summary.images.state === 'ok'">{{ $t("home.summary.state.ok") }}</template>
+                                    <template v-else>{{ summary.images.count }}</template>
+                                </div>
+                                <div class="summary-label">{{ $t("home.summary.images.title") }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Backup Status -->
+                        <div v-if="summary.backup !== null" class="col-6">
+                            <div class="shadow-box summary-card" :class="summary.backup.state" role="button" tabindex="0"
+                                 @click="$router.push('/watcher?tab=backup')"
+                                 @keyup.enter="$router.push('/watcher?tab=backup')">
+                                <font-awesome-icon icon="database" class="summary-icon" />
+                                <div class="summary-value text">
+                                    <template v-if="summary.backup.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
+                                    <template v-else-if="summary.backup.ageMs === null">{{ $t("home.summary.backup.never") }}</template>
+                                    <template v-else>{{ formatBackupAge(summary.backup.ageMs) }}</template>
+                                </div>
+                                <div class="summary-label">{{ $t("home.summary.backup.title") }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Crash-loop / Unhealthy Containers -->
+                        <div v-if="summary.containers !== null" class="col-6">
+                            <div class="shadow-box summary-card" :class="summary.containers.state" role="button" tabindex="0"
+                                 @click="$router.push('/watcher?tab=monitoring')"
+                                 @keyup.enter="$router.push('/watcher?tab=monitoring')">
+                                <font-awesome-icon icon="heartbeat" class="summary-icon" />
+                                <div class="summary-value" :class="{ text: summary.containers.state !== 'danger' }">
+                                    <template v-if="summary.containers.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
+                                    <template v-else-if="summary.containers.state === 'ok'">{{ $t("home.summary.state.ok") }}</template>
+                                    <template v-else>{{ summary.containers.count }}</template>
+                                </div>
+                                <div class="summary-label">{{ $t("home.summary.monitoring.title") }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Trivy Security Scan -->
+                        <div v-if="summary.trivy !== null" class="col-6">
+                            <div class="shadow-box summary-card" :class="summary.trivy.state" role="button" tabindex="0"
+                                 @click="$router.push('/watcher?tab=trivy')"
+                                 @keyup.enter="$router.push('/watcher?tab=trivy')">
+                                <font-awesome-icon icon="shield-alt" class="summary-icon" />
+                                <div class="summary-value" :class="{ text: summary.trivy.state !== 'danger' }">
+                                    <template v-if="summary.trivy.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
+                                    <template v-else-if="summary.trivy.state === 'ok'">{{ $t("home.summary.state.ok") }}</template>
+                                    <template v-else>{{ summary.trivy.count }}</template>
+                                </div>
+                                <div class="summary-label">{{ $t("home.summary.trivy.title") }}</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Docker Run -->
                     <h2 class="mb-3">{{ $t("Docker Run") }}</h2>
                     <div class="mb-3">
@@ -38,7 +101,7 @@
                 <div class="col-md-5">
                     <!-- Agent List -->
                     <div class="shadow-box big-padding">
-                        <h4 class="mb-3">{{ $tc("dockgeAgent", 2) }} <span class="badge bg-warning" style="font-size: 12px;">beta</span></h4>
+                        <h4 class="mb-3">{{ $tc("dockgeAgent", 2) }} <span class="badge bg-warning beta-badge">beta</span></h4>
 
                         <div v-for="(agent, endpoint) in $root.agentList" :key="endpoint" class="mb-3 agent">
                             <!-- Agent Status -->
@@ -207,6 +270,12 @@ export default {
                 password: "",
             },
             federationMigrationAttempted: false,
+            summary: {
+                images: null,
+                backup: null,
+                containers: null,
+                trivy: null,
+            },
             agent: {
                 url: "http://",
                 username: "",
@@ -225,6 +294,12 @@ export default {
         },
         exitedNum() {
             return this.getStatusNum("exited");
+        },
+        hasSummaryCards() {
+            return this.summary.images !== null
+                || this.summary.backup !== null
+                || this.summary.containers !== null
+                || this.summary.trivy !== null;
         },
     },
 
@@ -252,6 +327,8 @@ export default {
 
         window.addEventListener("resize", this.updatePerPage);
         this.updatePerPage();
+
+        this.fetchSummary();
     },
 
     beforeUnmount() {
@@ -259,6 +336,136 @@ export default {
     },
 
     methods: {
+
+        /**
+         * Auth headers for the watcher/monitoring REST APIs (same pattern as Layout.vue).
+         * @returns {object} headers object
+         */
+        summaryHeaders() {
+            const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
+            return token ? { "Authorization": `Bearer ${token}` } : {};
+        },
+
+        /**
+         * Silent GET helper — returns parsed JSON on success, null on any
+         * network error / non-2xx (401, feature off...) so cards stay hidden.
+         * @param {string} path - API path
+         * @returns {Promise<object|null>} parsed body or null
+         */
+        async summaryGet(path) {
+            try {
+                const res = await fetch(path, { headers: this.summaryHeaders() });
+                if (!res.ok) {
+                    return null;
+                }
+                const json = await res.json();
+                return json?.ok ? json : null;
+            } catch {
+                return null;
+            }
+        },
+
+        /**
+         * Loads the summary cards data. Every card is independent: any failed
+         * request or disabled feature simply hides its card.
+         * @returns {Promise<void>}
+         */
+        async fetchSummary() {
+            const [
+                imgSettings,
+                backupSettings,
+                backupHistory,
+                monSettings,
+                overview,
+                trivySettings,
+                trivyStatus,
+            ] = await Promise.all([
+                this.summaryGet("/api/watcher/image/settings"),
+                this.summaryGet("/api/watcher/backup/settings"),
+                this.summaryGet("/api/watcher/backup/history"),
+                this.summaryGet("/api/monitoring/settings"),
+                this.summaryGet("/api/monitoring/overview"),
+                this.summaryGet("/api/watcher/trivy/settings"),
+                this.summaryGet("/api/watcher/trivy/status"),
+            ]);
+
+            // 1. Image updates — card visible whenever the watcher settings respond
+            if (imgSettings?.data) {
+                if (!imgSettings.data.enabled) {
+                    this.summary.images = { state: "disabled" };
+                } else if (overview?.data?.images) {
+                    const n = overview.data.images.pendingCount ?? 0;
+                    this.summary.images = n > 0 ? { state: "warn",
+                        count: n } : { state: "ok" };
+                }
+            }
+
+            // 2. Backup — shown when settings respond; warning when never backed up or overdue
+            const bs = backupSettings?.data;
+            if (bs) {
+                if (!bs.enabled) {
+                    this.summary.backup = { state: "disabled" };
+                } else if (Array.isArray(backupHistory?.data)) {
+                    const lastSuccess = backupHistory.data.find((e) => e.success);
+                    if (!lastSuccess) {
+                        this.summary.backup = { state: "warn",
+                            ageMs: null };
+                    } else {
+                        const ageMs = Math.max(0, Date.now() - new Date(lastSuccess.timestamp).getTime());
+                        const intervalMs = (Number(bs.intervalHours) || 24) * 3_600_000;
+                        this.summary.backup = { state: ageMs > intervalMs * 1.5 ? "warn" : "ok",
+                            ageMs };
+                    }
+                }
+            }
+
+            // 3. Crash-loop / unhealthy containers
+            const ms = monSettings?.data;
+            if (ms) {
+                if (!(ms.crashLoopEnabled || ms.healthcheckEnabled)) {
+                    this.summary.containers = { state: "disabled" };
+                } else if (overview?.data) {
+                    const n = (overview.data.crashes?.length ?? 0) + (overview.data.health?.length ?? 0);
+                    this.summary.containers = n > 0 ? { state: "danger",
+                        count: n } : { state: "ok" };
+                }
+            }
+
+            // 4. Trivy — images at or above the configured severity threshold
+            const ts = trivySettings?.data;
+            if (ts) {
+                if (!ts.enabled) {
+                    this.summary.trivy = { state: "disabled" };
+                } else if (Array.isArray(trivyStatus?.data?.lastResults)) {
+                    const levels = { UNKNOWN: 0,
+                        LOW: 1,
+                        MEDIUM: 2,
+                        HIGH: 3,
+                        CRITICAL: 4 };
+                    const min = levels[ts.minSeverityAlert] ?? levels.HIGH;
+                    const n = trivyStatus.data.lastResults.filter((r) => (levels[r.maxSeverity] ?? 0) >= min).length;
+                    this.summary.trivy = n > 0 ? { state: "danger",
+                        count: n } : { state: "ok" };
+                }
+            }
+        },
+
+        /**
+         * Formats a backup age for the card value.
+         * @param {number} ageMs - age in milliseconds
+         * @returns {string} localized relative time
+         */
+        formatBackupAge(ageMs) {
+            const minutes = Math.floor(ageMs / 60_000);
+            if (minutes < 60) {
+                return this.$t("home.summary.time.minutesAgo", { n: Math.max(1, minutes) });
+            }
+            const hours = Math.floor(minutes / 60);
+            if (hours < 48) {
+                return this.$t("home.summary.time.hoursAgo", { n: hours });
+            }
+            return this.$t("home.summary.time.daysAgo", { n: Math.floor(hours / 24) });
+        },
 
         migrateFederation() {
             this.$root.getSocket().emit("repairAgentMesh", {
@@ -457,20 +664,19 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars";
 
 .num {
-    font-size: 30px;
+    font-size: var(--fs-2xl);
 
     font-weight: bold;
     display: block;
 
     &.active {
-        color: $primary;
+        color: var(--primary-strong);
     }
 
     &.exited {
-        color: $danger;
+        color: var(--danger);
     }
 }
 
@@ -479,13 +685,13 @@ export default {
 }
 
 table {
-    font-size: 14px;
+    font-size: var(--fs-md);
 
     tr {
         transition: all ease-in-out 0.2ms;
     }
 
-    @media (max-width: 550px) {
+    @media (max-width: $bp-phone) {
         table-layout: fixed;
         overflow-wrap: break-word;
     }
@@ -493,17 +699,21 @@ table {
 
 .docker-run {
     border: none;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 15px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-base);
 }
 
 .first-row .shadow-box {
 
 }
 
+.beta-badge {
+    font-size: var(--fs-xs);
+}
+
 .remove-agent {
     cursor: pointer;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-muted);
 }
 
 .agent {
@@ -526,7 +736,69 @@ table {
 }
 
 .rename-agent {
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--text-muted);
+}
+
+.summary-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    padding: 16px 10px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+    }
+
+    .summary-icon {
+        font-size: var(--fs-lg);
+    }
+
+    .summary-value {
+        font-size: var(--fs-lg);
+        font-weight: bold;
+        color: var(--text-color);
+
+        &.text {
+            font-size: var(--fs-base);
+        }
+    }
+
+    .summary-label {
+        font-size: var(--fs-sm);
+    }
+
+    &.warn,
+    &.warning {
+        .summary-icon, .summary-value {
+            color: var(--warning);
+        }
+    }
+
+    &.danger {
+        .summary-icon, .summary-value {
+            color: var(--danger);
+        }
+    }
+
+    &.ok {
+        .summary-icon, .summary-value {
+            color: var(--success);
+        }
+    }
+
+    &.disabled {
+        opacity: .75;
+
+        .summary-icon, .summary-value {
+            color: var(--text-muted);
+        }
+    }
 }
 
 </style>

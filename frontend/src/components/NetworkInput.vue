@@ -195,10 +195,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 .list-group {
-    background-color: $dark-bg2;
+    background-color: var(--bg-input);
 
     li {
         display: flex;
@@ -207,13 +206,13 @@ export default {
 
         .domain-input {
             flex-grow: 1;
-            background-color: $dark-bg2;
+            background-color: var(--bg-input);
             border: none;
-            color: $dark-font-color;
+            color: var(--text-color);
             outline: none;
 
             &::placeholder {
-                color: #1d2634;
+                color: var(--text-muted);
             }
         }
     }
@@ -221,7 +220,7 @@ export default {
 
 .delete {
     text-decoration: underline;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     cursor: pointer;
 }
 </style>

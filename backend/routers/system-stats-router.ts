@@ -47,6 +47,8 @@ interface HostNavbarDisplay {
     uptime: boolean;
     cpuTemperatures: boolean;
     diskTemperatures: boolean;
+    /** Where the host stats render: header row or slim bottom status bar */
+    navbarPosition: "top" | "bottom";
 }
 
 const DEFAULT_HOST_NAVBAR_DISPLAY: HostNavbarDisplay = {
@@ -55,6 +57,7 @@ const DEFAULT_HOST_NAVBAR_DISPLAY: HostNavbarDisplay = {
     uptime: false,
     cpuTemperatures: false,
     diskTemperatures: false,
+    navbarPosition: "bottom",
 };
 
 async function readCpuTimes(): Promise<CpuTimes> {
@@ -163,6 +166,7 @@ async function readHostNavbarDisplay(): Promise<HostNavbarDisplay> {
             uptime: Boolean(parsed.uptime),
             cpuTemperatures: Boolean(parsed.cpuTemperatures),
             diskTemperatures: Boolean(parsed.diskTemperatures),
+            navbarPosition: parsed.navbarPosition === "top" ? "top" : "bottom",
         };
     } catch {
         return { ...DEFAULT_HOST_NAVBAR_DISPLAY };

@@ -92,6 +92,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.startGuardWatch",
         ],
     },
+    {
+        id: "2026-08-30-crossly-ui-integration",
+        items: [
+            "releaseNews.item.crosslyUiIntegration",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

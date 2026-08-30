@@ -16,14 +16,6 @@
                             {{ item.title }}
                         </div>
                     </router-link>
-
-                    <!-- Logout Button -->
-                    <a v-if="$root.isMobile && $root.loggedIn && $root.socket.token !== 'autoLogin'" class="logout" @click.prevent="$root.logout">
-                        <div class="menu-item">
-                            <font-awesome-icon icon="sign-out-alt" />
-                            {{ $t("Logout") }}
-                        </div>
-                    </a>
                 </div>
                 <div class="settings-content col-lg-9 col-md-7">
                     <div v-if="currentPage" class="settings-content-header">
@@ -43,8 +35,6 @@
 </template>
 
 <script>
-import { useRoute } from "vue-router";
-
 export default {
     data() {
         return {
@@ -56,20 +46,17 @@ export default {
 
     computed: {
         currentPage() {
-            let pathSplit = useRoute().path.split("/");
-            let pathEnd = pathSplit[pathSplit.length - 1];
-            if (!pathEnd || pathEnd === "settings") {
-                return null;
+            const name = this.$route.name;
+            if (typeof name === "string" && name.startsWith("settings-")) {
+                return name.slice("settings-".length);
             }
-            return pathEnd;
+            return null;
         },
 
         showSubMenu() {
-            if (this.$root.isMobile) {
-                return !this.currentPage;
-            } else {
-                return true;
-            }
+            // On mobile the settings sections live directly in the
+            // navigation drawer, so the side menu is desktop-only.
+            return !this.$root.isMobile;
         },
 
         subMenus() {
@@ -113,12 +100,11 @@ export default {
     methods: {
 
         /**
-         * Load the general settings page
-         * For desktop only, on mobile do nothing
+         * Redirect bare /settings to the general page
          */
         loadGeneralPage() {
-            if (!this.currentPage && !this.$root.isMobile) {
-                this.$router.push("/settings/appearance");
+            if (!this.currentPage) {
+                this.$router.push("/settings/general");
             }
         },
 
@@ -181,7 +167,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
 
 .shadow-box-settings {
     padding: 20px;
@@ -189,8 +174,8 @@ export default {
 }
 
 footer {
-    color: #aaa;
-    font-size: 13px;
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
     margin-top: 20px;
     padding-bottom: 30px;
     text-align: center;
@@ -202,7 +187,7 @@ footer {
     }
 
     .menu-item {
-        border-radius: 10px;
+        border-radius: var(--radius-md);
         margin: 0.5em;
         padding: 0.7em 1em;
         cursor: pointer;
@@ -211,51 +196,31 @@ footer {
     }
 
     .menu-item:hover {
-        background: $highlight-white;
-
-        .dark & {
-            background: $dark-header-bg;
-        }
+        background: var(--primary-soft);
     }
 
     .active .menu-item {
-        background: $highlight-white;
-        border-left: 4px solid $primary;
+        background: var(--primary-soft);
+        border-left: 4px solid var(--primary);
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
-
-        .dark & {
-            background: $dark-header-bg;
-        }
     }
 }
 
 .settings-content {
     .settings-content-header {
         width: calc(100% + 20px);
-        border-bottom: 1px solid #dee2e6;
-        border-radius: 0 10px 0 0;
+        border-bottom: 1px solid var(--border-color);
+        border-radius: 0 var(--radius-md) 0 0;
         margin-top: -20px;
         margin-right: -20px;
         padding: 12.5px 1em;
-        font-size: 26px;
+        font-size: var(--fs-xl);
 
         .dark & {
-            background: $dark-header-bg;
+            background: var(--bg-raised);
             border-bottom: 0;
         }
-
-        .mobile & {
-            padding: 15px 0 0 0;
-
-            .dark & {
-                background-color: transparent;
-            }
-        }
     }
-}
-
-.logout {
-    color: $danger !important;
 }
 </style>

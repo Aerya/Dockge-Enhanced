@@ -12,10 +12,13 @@ import * as path from "path";
 import axios from "axios";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { getNotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 
 const SELF_REPO = "aerya/dockge-enhanced";
 const SELF_TAG = "latest";
+// Surcharge explicite du dépôt suivi (ex. un fork : "owner/dockge-enhanced")
+const SELF_REPO_OVERRIDE = process.env.DOCKGE_SELF_REPO?.trim() ?? "";
 const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 const DIGEST_CACHE = path.join(DATA_DIR, "self-update-digest.json");
@@ -104,6 +107,7 @@ function extractShaDigest(value: unknown): string {
 // ─── Helpers ──────────────────────────────────────────────────────
 
 async function fetchRemoteDigest(
+  repo: string,
   preferredPlatform = "",
 ): Promise<RemoteDigestInfo> {
   // GHCR_TOKEN = GitHub PAT avec scope read:packages (requis si repo privé)
@@ -113,7 +117,7 @@ async function fetchRemoteDigest(
   let token = "";
   try {
     const res = await axios.get(
-      `https://ghcr.io/token?scope=repository:${SELF_REPO}:pull`,
+      `https://ghcr.io/token?scope=repository:${repo}:pull`,
       {
         timeout: 10000,
         ...(ghcrToken
@@ -136,7 +140,7 @@ async function fetchRemoteDigest(
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const url = `https://ghcr.io/v2/${SELF_REPO}/manifests/${SELF_TAG}`;
+  const url = `https://ghcr.io/v2/${repo}/manifests/${SELF_TAG}`;
   const res = await axios.get(url, { headers, timeout: 15000 });
 
   const indexDigest = String(res.headers["docker-content-digest"] ?? "");
@@ -200,15 +204,17 @@ async function fetchLocalImageInfo(): Promise<{
   digest: string;
   comparable: boolean;
   source: "repoDigest" | "none";
+  repo: string;
   platform?: ImagePlatform;
 }> {
   try {
     // HOSTNAME = ID court du conteneur dans Docker
     const id = process.env.HOSTNAME ?? "";
-    if (!id) return { digest: "", comparable: false, source: "none" };
+    if (!id) return { digest: "", comparable: false, source: "none", repo: "" };
     const container = await dockerSocketGet(`/containers/${id}/json`);
     const imageId: string = container?.Image ?? "";
-    if (!imageId) return { digest: "", comparable: false, source: "none" };
+    if (!imageId)
+      return { digest: "", comparable: false, source: "none", repo: "" };
     const image = await dockerSocketGet(`/images/${imageId}/json`);
     const repoDigests: string[] = Array.isArray(image?.RepoDigests)
       ? image.RepoDigests
@@ -220,6 +226,12 @@ async function fetchLocalImageInfo(): Promise<{
           d.includes("dockge-enhanced") &&
           d.includes("@sha256:"),
       ) ?? "";
+    // Dépôt d'origine de l'image (ex. "owner/dockge-enhanced" pour GHCR) :
+    // permet à un fork de suivre son propre dépôt plutôt que celui d'Aerya.
+    const fullRepo = digest.split("@")[0] ?? "";
+    const repo = fullRepo.startsWith("ghcr.io/")
+      ? fullRepo.slice("ghcr.io/".length)
+      : "";
     const os = typeof image?.Os === "string" ? image.Os : "";
     const architecture =
       typeof image?.Architecture === "string" ? image.Architecture : "";
@@ -230,13 +242,14 @@ async function fetchLocalImageInfo(): Promise<{
       digest: extractShaDigest(digest),
       comparable: !!digest,
       source: digest ? "repoDigest" : "none",
+      repo,
       platform:
         os && architecture
           ? { os, architecture: normalizeArch(architecture), variant }
           : undefined,
     };
   } catch {
-    return { digest: "", comparable: false, source: "none" };
+    return { digest: "", comparable: false, source: "none", repo: "" };
   }
 }
 
@@ -281,6 +294,7 @@ export interface SelfUpdateStatus {
   localDigest: string;
   remoteDigest: string;
   containerName: string;
+  repo: string;
   checkedAt: string | null;
   error: string | null;
 }
@@ -295,6 +309,7 @@ export class SelfUpdateChecker {
     localDigest: "",
     remoteDigest: "",
     containerName: "dockge-enhanced",
+    repo: SELF_REPO_OVERRIDE || SELF_REPO,
     checkedAt: null,
     error: null,
   };
@@ -357,7 +372,9 @@ export class SelfUpdateChecker {
       const preferredPlatform = localInfo.platform
         ? platformToString(localInfo.platform)
         : "";
-      const remoteInfo = await fetchRemoteDigest(preferredPlatform);
+      // Dépôt suivi : surcharge env > dépôt d'origine de l'image > défaut
+      const repo = SELF_REPO_OVERRIDE || localInfo.repo || SELF_REPO;
+      const remoteInfo = await fetchRemoteDigest(repo, preferredPlatform);
       const localDigest = localInfo.digest;
       const remoteDigest = remoteInfo.platformDigest;
 
@@ -388,6 +405,7 @@ export class SelfUpdateChecker {
         localDigest,
         remoteDigest,
         containerName,
+        repo,
         checkedAt: new Date().toISOString(),
         error: localInfo.comparable
           ? null
@@ -402,7 +420,7 @@ export class SelfUpdateChecker {
       // Notif "mise à jour disponible" — une seule fois par digest distant
       if (updateAvailable && this._notifiedRemoteDigest !== remoteDigest) {
         this._notifiedRemoteDigest = remoteDigest;
-        await this._notifyAvailable(containerName);
+        await this._notifyAvailable(containerName, repo);
       }
     } catch (e: any) {
       this._status = {
@@ -413,26 +431,41 @@ export class SelfUpdateChecker {
     }
   }
 
-  private async _notifyAvailable(containerName: string): Promise<void> {
+  private async _notifyAvailable(
+    containerName: string,
+    repo: string,
+  ): Promise<void> {
     const webhooks = await loadWebhooks();
     const apprise = await this._loadApprise();
     if (webhooks.length === 0 && !apprise) return;
 
+    const en = (await getNotificationLang()) === "en";
     const hostname = (await Settings.get("primaryHostname")) || "";
     const hostnamePrefix = hostname ? `[${hostname}] ` : "";
     const footerHost = hostname ? ` · ${hostname}` : "";
 
-    const title = `${hostnamePrefix}🔔 Mise à jour Dockge-Enhanced disponible`;
-    const body = [
-      "Une nouvelle image est disponible sur GHCR.",
-      "",
-      "**Pour mettre à jour :**",
-      "```bash",
-      `docker pull ghcr.io/${SELF_REPO}:${SELF_TAG}`,
-      `docker compose up -d`,
-      "```",
-      "_Exécuter depuis le dossier contenant votre compose.yaml_",
-    ].join("\n");
+    const title = `${hostnamePrefix}${en ? "🔔 Dockge-Enhanced update available" : "🔔 Mise à jour Dockge-Enhanced disponible"}`;
+    const body = en
+      ? [
+          "A new image is available on GHCR.",
+          "",
+          "**To update:**",
+          "```bash",
+          `docker pull ghcr.io/${repo}:${SELF_TAG}`,
+          `docker compose up -d`,
+          "```",
+          "_Run from the folder containing your compose.yaml_",
+        ].join("\n")
+      : [
+          "Une nouvelle image est disponible sur GHCR.",
+          "",
+          "**Pour mettre à jour :**",
+          "```bash",
+          `docker pull ghcr.io/${repo}:${SELF_TAG}`,
+          `docker compose up -d`,
+          "```",
+          "_Exécuter depuis le dossier contenant votre compose.yaml_",
+        ].join("\n");
 
     if (webhooks.length > 0) {
       await new DiscordNotifier(webhooks).sendEmbed({
@@ -455,15 +488,21 @@ export class SelfUpdateChecker {
     const apprise = await this._loadApprise();
     if (webhooks.length === 0 && !apprise) return;
 
+    const en = (await getNotificationLang()) === "en";
     const hostname = (await Settings.get("primaryHostname")) || "";
     const hostnamePrefix = hostname ? `[${hostname}] ` : "";
     const footerHost = hostname ? ` · ${hostname}` : "";
 
-    const title = `${hostnamePrefix}✅ Dockge-Enhanced mis à jour`;
-    const body = [
-      `Le conteneur **${containerName}** a été mis à jour automatiquement.`,
-      `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
-    ].join("\n");
+    const title = `${hostnamePrefix}${en ? "✅ Dockge-Enhanced updated" : "✅ Dockge-Enhanced mis à jour"}`;
+    const body = en
+      ? [
+          `The container **${containerName}** was updated automatically.`,
+          `New digest: \`${newDigest.slice(7, 19)}\``,
+        ].join("\n")
+      : [
+          `Le conteneur **${containerName}** a été mis à jour automatiquement.`,
+          `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
+        ].join("\n");
 
     if (webhooks.length > 0) {
       await new DiscordNotifier(webhooks).sendEmbed({

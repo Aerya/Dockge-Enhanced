@@ -28,18 +28,20 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
 | **Multi-instance** | Fédération automatique en maillage complet à l'ajout ou au retrait d'un agent, gestion depuis chaque instance liée, sélection et regroupement multi-serveurs, copie/migration transactionnelle, jobs reprenables et réplication froide automatique |
-| **Gestion des stacks** | Stacks épinglées, colonne des stacks plus dense et redimensionnable, espace Logs/Compose redimensionnable, copie fiable du YAML brut, actions et planification par stack et conteneur, prérequis de démarrage hôte facultatifs, Build + Recreate, notes et outils Git facultatifs, et protections pour les services partageant le réseau d'un VPN |
+| **Gestion des stacks** | Stacks épinglées, colonne des stacks repliable et redimensionnable avec indicateurs compacts d’état et de ressources, espace Logs/Compose redimensionnable, copie fiable du YAML brut, actions et planification par stack et conteneur, prérequis de démarrage hôte facultatifs, Build + Recreate, notes et outils Git facultatifs, et protections pour les services partageant le réseau d'un VPN |
 | **Sauvegarde & reprise** | Restic multi-destination, volumes, cohérence par stack, restauration sélective, tests et diffs de snapshots |
 | **Automatisation & audit** | API REST limitée par droits et stacks, webhooks par stack, exemples Home Assistant et historique central avec origine et durée |
 | **Ressources Docker** | Images, volumes, conteneurs hors Dockge et réseaux, actions groupées, auto-prune et protections contre les suppressions risquées |
 | **Images & sécurité** | Surveillance des mises à jour, auto-update avec rollback, scan Trivy et exceptions CVE |
-| **Supervision** | Stats système, stacks et conteneurs, crash loops, healthchecks avec auto-heal, logs responsives et plein écran, Kula optionnel et Dozzle géré facultativement |
+| **Supervision** | Barre d’état système configurable en haut ou en bas, cartes de synthèse du tableau de bord, stats système, stacks et conteneurs, crash loops, healthchecks avec auto-heal, logs responsives et plein écran, Kula optionnel et Dozzle géré facultativement |
 | **Intégrations** | PlugNPiN optionnel et assistant de labels par service pour Nginx Proxy Manager, Pi-hole et AdGuard Home |
 | **Notifications & accès** | Discord, Apprise, 2FA, trusted proxy, Turnstile et clients mobiles |
 
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
+
+**2026-08-30 — Interface responsive et thèmes unifiés** — La colonne des stacks sur ordinateur peut désormais être repliée en plus d’être redimensionnée, avec des indicateurs compacts d’état, de CPU et de RAM qui restent lisibles malgré les noms longs. Une barre d’état système configurable peut prendre place dans l’en-tête ou en bas, tandis que des cartes du tableau de bord résument les mises à jour d’images, backups, conteneurs en échec et résultats Trivy, même lorsqu’une fonction est désactivée. Les éditeurs suivent le thème de l’application en direct, le mode Auto suit le système, et la navigation mobile, les réglages et l’accès aux stacks sont plus cohérents. Les écrans Backup et Watcher sont aussi découpés en composants ciblés pour faciliter leur maintenance. Cette intégration adapte le travail de [crossly/Dockge-Enhanced](https://github.com/crossly/Dockge-Enhanced) tout en préservant les fonctions plus récentes de Dockge-Enhanced.
 
 **2026-08-27 — Prérequis hôte par stack au démarrage** — Les stacks gérées peuvent vérifier facultativement des points de montage hôte et services `systemd` avant tout démarrage, redémarrage ou recréation. Pour un « Montage hôte », saisissez son chemin ou un chemin situé dessous : avec le montage réel `/mnt/nas`, `/mnt/nas`, `/mnt/nas/torrents` et `/mnt/nas/torrents/downloads` résolvent vers `/mnt/nas`. Dockge mémorise ce montage résolu : si `/mnt/nas` disparaît, `/` ou un parent ne sera jamais accepté à sa place. Le chemin désigne l’hôte Docker, pas le conteneur Dockge ; le montage existant `/var/run/docker.sock:/var/run/docker.sock` suffit et aucun bind mount de répertoire hôte supplémentaire n’est nécessaire. Le même garde protège les démarrages planifiés des stacks et services, tandis que Stop, Down et Delete restent disponibles. Une surveillance continue facultative arrête une stack active seulement après le délai de panne configuré, puis la redémarre après récupération uniquement si le watcher l’avait lui-même arrêtée. Si un montage hôte disparaît trop brièvement pour arrêter la stack, ou s’il est remonté entre deux contrôles, Dockge force la recréation de la stack active après récupération afin que les conteneurs ne conservent pas un montage FUSE déconnecté ; après un redémarrage de Dockge, aucune stack déjà arrêtée n’est considérée comme lui appartenant.
 
@@ -514,6 +516,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 - [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
 - [**Dozzle**](https://github.com/amir20/dozzle) par Amir Rajan — visualisation en temps réel des logs Docker (licence MIT)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) par DeepSpace2 — automatisation optionnelle du DNS et de Nginx Proxy Manager (GPLv3)
+- [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — source d’améliorations importantes de l’UI/UX, des thèmes, de l’internationalisation et de l’architecture frontend adaptées dans ce projet
 
 ---
 
