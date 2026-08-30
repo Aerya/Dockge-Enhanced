@@ -1234,5 +1234,6 @@
     "home.summary.time.hoursAgo": "{n} 小时前",
     "home.summary.time.daysAgo": "{n} 天前",
     "home.summary.state.ok": "正常",
-    "home.summary.state.disabled": "未启用"
+    "home.summary.state.disabled": "未启用",
+    "releaseNews.item.crosslyUiIntegration": "界面新增可折叠和可调整大小的堆栈侧栏、可配置的系统状态栏、概览状态卡片、实时跟随主题的编辑器、自动主题以及更一致的移动端导航。"
 }

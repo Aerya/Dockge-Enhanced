@@ -1,6 +1,6 @@
 <template>
     <div class="container-fluid">
-        <div class="dashboard-layout" :class="{ collapsed: sidebarCollapsed }">
+        <div ref="dashboardLayout" class="dashboard-layout" :class="{ collapsed: sidebarCollapsed }" :style="dashboardLayoutStyle">
             <aside class="stack-sidebar">
                 <div class="sidebar-header">
                     <router-link v-if="!sidebarCollapsed" to="/compose" class="btn btn-primary"><font-awesome-icon icon="plus" /> {{ $t("compose") }}</router-link>
@@ -19,6 +19,23 @@
                 </div>
                 <StackList v-show="!sidebarCollapsed" :scrollbar="true" />
             </aside>
+
+            <div
+                v-if="!$root.isMobile && !sidebarCollapsed"
+                class="dashboard-resize-handle"
+                role="separator"
+                aria-orientation="vertical"
+                :aria-label="$t('stackListResize')"
+                aria-valuemin="18"
+                aria-valuemax="40"
+                :aria-valuenow="stackSidebarWidth"
+                tabindex="0"
+                @pointerdown="startDashboardResize"
+                @keydown.left.prevent="resizeDashboardBy(-2)"
+                @keydown.right.prevent="resizeDashboardBy(2)"
+            >
+                <span></span>
+            </div>
 
             <main ref="container" class="dashboard-content mb-3">
                 <!-- Add :key to disable vue router re-use the same component -->
@@ -42,10 +59,43 @@ export default {
             // Desktop: persisted collapse state. Mobile: always starts
             // collapsed (accordion), the state is not persisted.
             sidebarCollapsed: this.$root.isMobile || localStorage.getItem("stackSidebarCollapsed") === "true",
+            stackSidebarWidth: Math.min(40, Math.max(18, Number(localStorage.getItem("stackSidebarWidth")) || 25)),
+            dashboardResizing: false,
+            dashboardMinHeight: 240,
+            dashboardHeightObserver: null,
         };
+    },
+    computed: {
+        dashboardLayoutStyle() {
+            if (this.$root.isMobile) {
+                return {};
+            }
+            if (this.sidebarCollapsed) {
+                return {
+                    gridTemplateColumns: "52px minmax(0, 1fr)",
+                    minHeight: `${this.dashboardMinHeight}px`,
+                };
+            }
+            return {
+                gridTemplateColumns: `minmax(0, ${this.stackSidebarWidth}fr) 10px minmax(0, ${100 - this.stackSidebarWidth}fr)`,
+                minHeight: `${this.dashboardMinHeight}px`,
+            };
+        },
     },
     mounted() {
         this.height = this.$refs.container.offsetHeight;
+        this.$nextTick(this.updateDashboardMinHeight);
+        window.addEventListener("resize", this.updateDashboardMinHeight);
+        const desktopHeader = document.querySelector(".desktop-header");
+        if (desktopHeader && typeof ResizeObserver !== "undefined") {
+            this.dashboardHeightObserver = new ResizeObserver(this.updateDashboardMinHeight);
+            this.dashboardHeightObserver.observe(desktopHeader);
+        }
+    },
+    unmounted() {
+        this.stopDashboardResize();
+        window.removeEventListener("resize", this.updateDashboardMinHeight);
+        this.dashboardHeightObserver?.disconnect();
     },
     methods: {
         toggleSidebar() {
@@ -53,6 +103,47 @@ export default {
             if (!this.$root.isMobile) {
                 localStorage.setItem("stackSidebarCollapsed", String(this.sidebarCollapsed));
             }
+        },
+        updateDashboardMinHeight() {
+            const top = this.$refs.dashboardLayout?.getBoundingClientRect().top;
+            if (typeof top !== "number") {
+                return;
+            }
+            this.dashboardMinHeight = Math.max(240, Math.floor(window.innerHeight - top - 16));
+        },
+        startDashboardResize(event) {
+            if (window.innerWidth < 768) {
+                return;
+            }
+            event.preventDefault();
+            this.dashboardResizing = true;
+            document.body.classList.add("dashboard-resizing");
+            window.addEventListener("pointermove", this.moveDashboardResize);
+            window.addEventListener("pointerup", this.stopDashboardResize, { once: true });
+        },
+        moveDashboardResize(event) {
+            if (!this.dashboardResizing) {
+                return;
+            }
+            const bounds = this.$refs.dashboardLayout?.getBoundingClientRect();
+            if (!bounds?.width) {
+                return;
+            }
+            const width = ((event.clientX - bounds.left) / bounds.width) * 100;
+            this.stackSidebarWidth = Math.min(40, Math.max(18, Math.round(width)));
+        },
+        stopDashboardResize() {
+            if (this.dashboardResizing) {
+                localStorage.setItem("stackSidebarWidth", String(this.stackSidebarWidth));
+            }
+            this.dashboardResizing = false;
+            document.body.classList.remove("dashboard-resizing");
+            window.removeEventListener("pointermove", this.moveDashboardResize);
+            window.removeEventListener("pointerup", this.stopDashboardResize);
+        },
+        resizeDashboardBy(delta) {
+            this.stackSidebarWidth = Math.min(40, Math.max(18, this.stackSidebarWidth + delta));
+            localStorage.setItem("stackSidebarWidth", String(this.stackSidebarWidth));
         },
     },
 };
@@ -66,15 +157,11 @@ export default {
 
 .dashboard-layout {
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
     gap: var(--space-4);
     align-items: stretch;
     width: 100%;
     transition: grid-template-columns 0.2s ease;
 
-    &.collapsed {
-        grid-template-columns: 52px minmax(0, 1fr);
-    }
 }
 
 .stack-sidebar,
@@ -139,6 +226,36 @@ export default {
         background: var(--bg-raised);
         color: var(--text-color);
     }
+}
+
+.dashboard-resize-handle {
+    align-self: stretch;
+    min-height: 240px;
+    cursor: col-resize;
+    display: flex;
+    justify-content: center;
+    touch-action: none;
+    outline: none;
+
+    span {
+        width: 3px;
+        min-height: 240px;
+        height: 100%;
+        border-radius: 2px;
+        background: var(--border-color);
+        transition: width .15s ease, background-color .15s ease;
+    }
+
+    &:hover span,
+    &:focus-visible span {
+        width: 5px;
+        background: $primary;
+    }
+}
+
+:global(body.dashboard-resizing) {
+    cursor: col-resize;
+    user-select: none;
 }
 
 @media (max-width: $bp-mobile) {

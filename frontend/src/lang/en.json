@@ -1293,5 +1293,6 @@
     "stackSidebarExpand": "Expand the stack sidebar",
     "watcher.monitoring.navbarPosition": "Stats bar position",
     "watcher.monitoring.navbarPositionTop": "Top (header)",
-    "watcher.monitoring.navbarPositionBottom": "Bottom (status bar)"
+    "watcher.monitoring.navbarPositionBottom": "Bottom (status bar)",
+    "releaseNews.item.crosslyUiIntegration": "The interface gains a collapsible and resizable stack sidebar, configurable system status bar, dashboard health cards, live theme-aware editors, Auto theme and more consistent mobile navigation."
 }

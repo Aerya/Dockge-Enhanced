@@ -1234,5 +1234,6 @@
     "home.summary.time.hoursAgo": "{n} 小時前",
     "home.summary.time.daysAgo": "{n} 天前",
     "home.summary.state.ok": "正常",
-    "home.summary.state.disabled": "未啟用"
+    "home.summary.state.disabled": "未啟用",
+    "releaseNews.item.crosslyUiIntegration": "介面新增可收合和可調整大小的堆疊側欄、可設定的系統狀態列、總覽狀態卡片、即時跟隨主題的編輯器、自動主題以及更一致的行動版導覽。"
 }

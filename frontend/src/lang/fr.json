@@ -1289,5 +1289,6 @@
     "stackSidebarExpand": "Déplier la barre latérale des stacks",
     "watcher.monitoring.navbarPosition": "Position de la barre de stats",
     "watcher.monitoring.navbarPositionTop": "Haut (en-tête)",
-    "watcher.monitoring.navbarPositionBottom": "Bas (barre de statut)"
+    "watcher.monitoring.navbarPositionBottom": "Bas (barre de statut)",
+    "releaseNews.item.crosslyUiIntegration": "L’interface bénéficie d’une colonne des stacks repliable et redimensionnable, d’une barre d’état système configurable, de cartes de synthèse, d’éditeurs qui suivent le thème en direct, du thème Auto et d’une navigation mobile plus cohérente."
 }
