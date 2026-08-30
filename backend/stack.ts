@@ -73,6 +73,8 @@ export interface StartGuard {
 export interface StartGuardConditionStatus extends StartGuardCondition {
     ok: boolean;
     message: string;
+    /** Opaque host mount generation used by the watcher to detect remounts. */
+    mountGeneration?: string;
 }
 
 export interface StartGuardStatus {
@@ -100,6 +102,21 @@ export function isHostMountPoint(mountInfo: string, target: string): boolean {
         const fields = (separator >= 0 ? line.slice(0, separator) : line).split(" ");
         return fields[4] === `/host${target}`;
     });
+}
+
+export function getHostMountGeneration(mountInfo: string, target: string): string | undefined {
+    for (const line of mountInfo.split("\n")) {
+        const separator = line.indexOf(" - ");
+        if (separator < 0) continue;
+        const fields = line.slice(0, separator).split(" ");
+        if (fields[4] !== `/host${target}`) continue;
+        const filesystemFields = line.slice(separator + 3).split(" ");
+        // major:minor changes when a FUSE filesystem is mounted again. The
+        // filesystem type is included so this remains an opaque comparison
+        // token without exposing the remote source path.
+        return `${fields[2] ?? ""}:${filesystemFields[0] ?? ""}`;
+    }
+    return undefined;
 }
 
 export function resolveHostMountPoint(mountInfo: string, target: string): string | undefined {
@@ -556,7 +573,25 @@ export class Stack {
     }
 
     async getStartGuard(): Promise<StartGuard> {
-        return (await this.readMeta()).startGuard;
+        const startGuard = (await this.readMeta()).startGuard;
+        if (!startGuard.conditions.some((condition) => condition.type === "mount" && !condition.mountPoint)) {
+            return startGuard;
+        }
+
+        // Guards saved before mountPoint persistence existed only contain the
+        // entered path. Resolve them once while the mount is healthy, otherwise
+        // a later outage could incorrectly fall back to / or another parent.
+        const mountInfo = await this.readHostMountInfo();
+        let changed = false;
+        startGuard.conditions = startGuard.conditions.map((condition) => {
+            if (condition.type !== "mount" || condition.mountPoint) return condition;
+            const mountPoint = resolveHostMountPoint(mountInfo, condition.target);
+            if (!mountPoint) return condition;
+            changed = true;
+            return { ...condition, mountPoint };
+        });
+        if (changed) await this.writeMeta({ startGuard });
+        return startGuard;
     }
 
     async getStartGuardStatus(startGuardInput?: unknown): Promise<StartGuardStatus> {
@@ -584,7 +619,8 @@ export class Stack {
                 const mountInfo = await this.readHostMountInfo();
                 const mountPoint = condition.mountPoint ?? resolveHostMountPoint(mountInfo, condition.target);
                 const mounted = mountPoint !== undefined && isHostMountPoint(mountInfo, mountPoint);
-                return { ...condition, ...(mountPoint ? { mountPoint } : {}), ok: mounted, message: mounted ? "Mounted" : "Resolved host mount is unavailable" };
+                const mountGeneration = mountPoint ? getHostMountGeneration(mountInfo, mountPoint) : undefined;
+                return { ...condition, ...(mountPoint ? { mountPoint } : {}), ...(mountGeneration ? { mountGeneration } : {}), ok: mounted, message: mounted ? "Mounted" : "Resolved host mount is unavailable" };
             }
 
             await childProcessAsync.spawn("docker", [
@@ -882,6 +918,18 @@ export class Stack {
         });
         const exitCode = res.code ?? 0;
         if (exitCode !== 0) throw new Error("Scheduled stack start failed");
+        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
+        return exitCode;
+    }
+
+    async recreateScheduled(): Promise<number> {
+        await this.assertStartGuard();
+        const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), {
+            cwd: this.path,
+            encoding: "utf-8",
+        });
+        const exitCode = res.code ?? 0;
+        if (exitCode !== 0) throw new Error("Scheduled stack recreation failed");
         await this.writeMeta({ lastStartedAt: new Date().toISOString() });
         return exitCode;
     }
