@@ -1036,6 +1036,7 @@ export class BackupManager {
         trigger?: "scheduled" | "manual" | "on-save";
         stackName?: string;
         onProgress?: (progress: BackupProgress) => void;
+        additionalPaths?: string[];
     } = {}): Promise<BackupResult> {
         if (!this.backupRunLock.acquire(this.settings.preventConcurrentBackups)) {
             this.recordBlockedBackup(opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual"));
@@ -1054,6 +1055,7 @@ export class BackupManager {
         trigger?: "scheduled" | "manual" | "on-save";
         stackName?: string;
         onProgress?: (progress: BackupProgress) => void;
+        additionalPaths?: string[];
     } = {}): Promise<BackupResult> {
         const start = Date.now();
         const trigger = opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual");
@@ -1074,7 +1076,7 @@ export class BackupManager {
             return result;
         }
 
-        const { paths, warnings } = await this.buildBackupPaths(opts.stackName);
+        const { paths, warnings } = await this.buildBackupPaths(opts.stackName, opts.additionalPaths);
         result.warnings = warnings;
         if (paths.length === 0) {
             result.error = warnings.length > 0
@@ -1331,7 +1333,7 @@ export class BackupManager {
         });
     }
 
-    private async buildBackupPaths(stackName?: string): Promise<BackupPathsResult> {
+    private async buildBackupPaths(stackName?: string, additionalPaths: string[] = []): Promise<BackupPathsResult> {
         const paths: string[] = [];
         const warnings: string[] = [];
         const seen = new Set<string>();
@@ -1349,6 +1351,10 @@ export class BackupManager {
                 warnings.push(`${label} absent ou non monté : ${p}`);
             }
         };
+
+        for (const additionalPath of additionalPaths) {
+            await addExistingPath(additionalPath, "Chemin obligatoire");
+        }
 
         // Parcourt les stacks
         const excludedSet = new Set(this.settings.excludedStacks ?? []);

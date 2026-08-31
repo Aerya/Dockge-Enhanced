@@ -56,6 +56,11 @@ jobs:
             --platform ${{ matrix.platform }} \
             -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }} \
             .
+          docker build \
+            --platform ${{ matrix.platform }} \
+            -f extra/self-update-sidecar/Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:${{ matrix.tag }} \
+            .
 
       - name: 🔐 Refuser une image vulnérable
         run: |
@@ -68,10 +73,20 @@ jobs:
             --list-all-pkgs=false \
             --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
             "${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }}"
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/.trivyignore.yaml:/work/.trivyignore.yaml:ro" \
+            "$TRIVY_IMAGE" image \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --ignorefile /work/.trivyignore.yaml \
+            --list-all-pkgs=false \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+            "${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:${{ matrix.tag }}"
 
       - name: 📤 Publier l’image plateforme validée
         run: |
           docker push ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }}
+          docker push ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:${{ matrix.tag }}
 
   # ─── Merge des deux images en un manifest multi-arch ─────────────────
   merge:
@@ -79,6 +94,9 @@ jobs:
     needs: build
 
     steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+
       - name: 🔡 Image name en minuscules
         id: image
         run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
@@ -112,6 +130,11 @@ jobs:
           for tag in "${tags[@]}"; do
             tag_args+=("-t" "$tag")
           done
+          version=$(jq -r .version package.json)
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:${version} \
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:amd64 \
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:arm64
           docker buildx imagetools create \
             "${tag_args[@]}" \
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:amd64 \

@@ -23,6 +23,9 @@ export interface SelfUpdatePlan {
     targetContainerName: string;
     targetImage: string;
     previousImage: string;
+    previousImageId: string;
+    allowedRepository: string;
+    recoveryFile: string;
     compose?: {
         workingDir: string;
         configFiles: string[];
@@ -33,12 +36,14 @@ export interface SelfUpdatePlan {
 
 export interface SelfUpdateOperation {
     id: string;
-    state: "idle" | "scheduled" | "backing-up" | "verifying-backup" | "updating" | "waiting-health" | "succeeded" | "failed" | "rolled-back";
+    state: "idle" | "scheduled" | "backing-up" | "verifying-backup" | "updating" | "waiting-health" | "rolling-back" | "succeeded" | "failed" | "rolled-back" | "rollback-failed";
     message: string;
     startedAt: string | null;
     finishedAt: string | null;
     targetImage: string;
     rollbackAttempted: boolean;
+    notificationPending?: boolean;
+    notificationSentAt?: string | null;
 }
 
 export interface SelfUpdateProgress {

@@ -44,6 +44,17 @@ jobs:
           tags: dockge-enhanced-pr:${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           pull: true
 
+      - name: Construire le sidecar de self-update sans publier
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: extra/self-update-sidecar/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: false
+          load: true
+          tags: dockge-enhanced-updater-pr:${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          pull: true
+
       - name: Scanner l’image construite
         run: |
           tag="${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}"
@@ -56,6 +67,15 @@ jobs:
             --list-all-pkgs=false \
             --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
             "dockge-enhanced-pr:$tag"
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/.trivyignore.yaml:/work/.trivyignore.yaml:ro" \
+            "$TRIVY_IMAGE" image \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --ignorefile /work/.trivyignore.yaml \
+            --list-all-pkgs=false \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+            "dockge-enhanced-updater-pr:$tag"
 
       - name: Tester le démarrage et l’endpoint de santé
         run: |
