@@ -328,7 +328,8 @@ export default {
         },
 
         allAgentsSelected() {
-            return this.stackAgentFilters.length === 0;
+            return this.stackAgentFilters.length === 0
+                || this.stackAgentFilters.length === this.agentOptions.length;
         },
 
         agentFilterLabel() {
@@ -483,7 +484,10 @@ export default {
             return legacy && legacy !== "__all__" ? [ legacy ] : [];
         },
         selectAllAgents() {
-            this.stackAgentFilters = [];
+            // Store every endpoint explicitly so Vue updates each native
+            // checkbox, including one that was unchecked before this click.
+            // An empty array remains supported as the legacy "all" value.
+            this.stackAgentFilters = this.agentOptions.map(agent => agent.endpoint);
         },
         isAgentSelected(endpoint) {
             return this.allAgentsSelected || this.stackAgentFilters.includes(endpoint);
