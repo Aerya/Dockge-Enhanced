@@ -9,7 +9,7 @@ import { TrivyScanner } from "../watchers/trivy-scanner";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
-import { SelfUpdateOperation, SelfUpdatePlan, SelfUpdateSettings } from "./types";
+import { SelfUpdateOperation, SelfUpdatePlan, SelfUpdateProgress, SelfUpdateSettings } from "./types";
 import { DEFAULT_SELF_UPDATE_SETTINGS, normalizeSelfUpdateSettings, selfUpdateMayRun } from "./settings";
 
 const execFileAsync = promisify(execFile);
@@ -55,6 +55,7 @@ export class SelfUpdateManager {
     private static instance: SelfUpdateManager;
     private settings: SelfUpdateSettings = normalizeSelfUpdateSettings(DEFAULT_SELF_UPDATE_SETTINGS);
     private operation: SelfUpdateOperation = idle();
+    private progress: SelfUpdateProgress | null = null;
     private lastDeferralKey = "";
 
     static getInstance(): SelfUpdateManager {
@@ -77,6 +78,7 @@ export class SelfUpdateManager {
 
     getSettings(): SelfUpdateSettings { return JSON.parse(JSON.stringify(this.settings)); }
     getOperation(): SelfUpdateOperation { return { ...this.operation }; }
+    getProgress(): SelfUpdateProgress | null { return this.progress ? { ...this.progress } : null; }
 
     async saveSettings(value: unknown): Promise<SelfUpdateSettings> {
         this.settings = normalizeSelfUpdateSettings(value);
@@ -122,12 +124,14 @@ export class SelfUpdateManager {
         const plan = this.buildPlan(inspected, safePlanId(), targetImage, previousImage);
 
         this.operation = { id: plan.id, state: "backing-up", message: "Mandatory backup in progress", startedAt: new Date().toISOString(), finishedAt: null, targetImage, rollbackAttempted: false };
+        this.progress = null;
         await this.saveOperation();
         let backup;
         try {
             backup = await BackupManager.getInstance().runBackup({
                 tag: "self-update",
                 trigger: "manual",
+                onProgress: (progress) => { this.progress = progress; },
             });
         } catch (error) {
             this.operation = { ...this.operation, state: "failed", message: `Backup failed: ${error instanceof Error ? error.message : String(error)}`, finishedAt: new Date().toISOString() };
@@ -139,6 +143,35 @@ export class SelfUpdateManager {
             await this.saveOperation();
             return this.getOperation();
         }
+
+        this.operation = { ...this.operation, state: "verifying-backup", message: "Restic repository verification in progress" };
+        this.progress = null;
+        await this.saveOperation();
+        let verification;
+        try {
+            verification = await BackupManager.getInstance().runCheck(undefined, (progress) => { this.progress = progress; });
+        } catch (error) {
+            this.operation = {
+                ...this.operation,
+                state: "failed",
+                message: `Backup verification failed: ${error instanceof Error ? error.message : String(error)}`,
+                finishedAt: new Date().toISOString(),
+            };
+            await this.saveOperation();
+            return this.getOperation();
+        }
+        const failedVerification = verification.find((result) => !result.ok);
+        if (failedVerification) {
+            this.operation = {
+                ...this.operation,
+                state: "failed",
+                message: `Backup verification failed for ${failedVerification.label}: ${failedVerification.output}`,
+                finishedAt: new Date().toISOString(),
+            };
+            await this.saveOperation();
+            return this.getOperation();
+        }
+        this.progress = null;
 
         const stateMount = (inspected.Mounts ?? []).find((mount) => mount.Destination === DATA_DIR);
         if (!stateMount?.Source) throw new Error(`The ${DATA_DIR} volume is required for self-update state`);

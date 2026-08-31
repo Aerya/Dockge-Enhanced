@@ -53,7 +53,17 @@
 
         <div class="shadow-box big-padding">
                 <h3 class="h6">{{ $t("updates.status.heading") }}</h3>
-                <p class="mb-1">{{ operation.message || $t("updates.status.idle") }}</p>
+                <p class="mb-1">{{ operationLabel }}</p>
+                <p v-if="operation.state === 'failed' || operation.state === 'scheduled'" class="form-text mb-1">{{ operation.message }}</p>
+                <div v-if="progress" class="form-text mb-1">
+                    <template v-if="progress.phase === 'backup'">
+                        {{ $t("updates.status.backupProgress", { label: progress.label, completed: formatBytes(progress.completed), total: formatBytes(progress.total) }) }}
+                        <span v-if="progress.total"> ({{ Math.round((progress.completed || 0) / progress.total * 100) }}%)</span>
+                    </template>
+                    <template v-else>
+                        {{ $t("updates.status.verificationProgress", { label: progress.label, current: progress.destinationIndex, total: progress.destinationCount }) }}
+                    </template>
+                </div>
                 <button
                     v-if="status.updateAvailable"
                     class="btn btn-sm btn-primary mt-2"
@@ -70,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { watcherApi } from "./shared";
 
@@ -79,10 +89,13 @@ const settings = ref({ mode: "manual", schedule: { type: "immediate", start: "03
 const globalPause = ref({ enabled: false, until: null as string | null });
 const status = ref({ updateAvailable: false, repo: "" });
 const operation = ref({ state: "idle", message: "" });
+const progress = ref<null | { phase: "backup" | "verification"; label: string; completed?: number; total?: number; destinationIndex?: number; destinationCount?: number }>(null);
 const updating = ref(false);
 const pausePreset = ref("7");
 const pauseDate = ref("");
 const weekDays = computed(() => [ 0, 1, 2, 3, 4, 5, 6 ].map((value) => ({ value, label: t(`updates.self.day${value}`) })));
+const operationLabel = computed(() => t(`updates.status.${operation.value.state}`, { fallback: operation.value.message || t("updates.status.idle") }));
+let statusTimer: ReturnType<typeof setInterval> | undefined;
 
 const pauseLabel = computed(() => globalPause.value.until ? t("updates.pause.until", { date: new Date(globalPause.value.until).toLocaleString() }) : t("updates.pause.indefinite"));
 
@@ -94,6 +107,7 @@ async function load() {
     if (statusResult.ok) {
         status.value = statusResult;
         operation.value = statusResult.operation ?? operation.value;
+        progress.value = statusResult.progress ?? null;
     }
     if (pauseResult.ok) globalPause.value = pauseResult.data.globalUpdatePause ?? globalPause.value;
 }
@@ -109,9 +123,17 @@ async function setCustomPause() {
     await saveGlobalPause();
 }
 
+function formatBytes(value?: number): string {
+    if (!value) return "0 B";
+    const units = [ "B", "KiB", "MiB", "GiB", "TiB" ];
+    const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+    return `${(value / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
 async function startUpdate() {
     if (!status.value.repo) return;
     updating.value = true;
+    statusTimer = setInterval(load, 2_000);
     try {
         const res = await watcherApi("POST", "/self/update", { targetImage: `ghcr.io/${status.value.repo}:latest` });
         if (res.ok) {
@@ -120,10 +142,13 @@ async function startUpdate() {
         }
     } finally {
         updating.value = false;
+        if (statusTimer) clearInterval(statusTimer);
+        statusTimer = undefined;
     }
 }
 
 onMounted(load);
+onBeforeUnmount(() => { if (statusTimer) clearInterval(statusTimer); });
 </script>
 
 <style scoped lang="scss">

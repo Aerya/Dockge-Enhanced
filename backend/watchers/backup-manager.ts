@@ -217,6 +217,18 @@ export interface BackupResult {
     destinations?: DestinationResult[];
 }
 
+export interface BackupProgress {
+    phase: "backup" | "verification";
+    label: string;
+    completed?: number;
+    total?: number;
+    filesDone?: number;
+    totalFiles?: number;
+    destinationIndex?: number;
+    destinationCount?: number;
+    ok?: boolean;
+}
+
 export class BackupAlreadyRunningError extends Error {
     constructor() {
         super("Un backup Restic est déjà en cours");
@@ -776,6 +788,7 @@ export class BackupManager {
         extraEnv: Record<string, string> = {},
         toleratedExitCodes: number[] = [],
         timeoutMs: number = 2 * 60 * 60 * 1000,
+        onProgress?: (progress: Omit<BackupProgress, "phase" | "label">) => void,
     ): Promise<string> {
         const repoEnv = buildResticEnv(dest);
         const repo    = buildRepoUrl(dest);
@@ -793,6 +806,9 @@ export class BackupManager {
 
             const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
             try {
+                if (onProgress) {
+                    return await this.streamResticFor(dest, repo, sftpOpts, [ ...args.filter((arg) => arg !== "-q"), "--json" ], allEnv, toleratedExitCodes, timeoutMs, onProgress);
+                }
                 const { stdout } = await execFileAsync("restic", buildResticCommandArgs(repo, sftpOpts, args), {
                     maxBuffer: 20 * 1024 * 1024,
                     timeout:   timeoutMs,
@@ -812,6 +828,51 @@ export class BackupManager {
         } finally {
             if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
         }
+    }
+
+    private streamResticFor(
+        dest: BackupDestination,
+        repo: string,
+        sftpOpts: string[],
+        args: string[],
+        env: Record<string, string>,
+        toleratedExitCodes: number[],
+        timeoutMs: number,
+        onProgress: (progress: Omit<BackupProgress, "phase" | "label">) => void,
+    ): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const proc = spawn("restic", buildResticCommandArgs(repo, sftpOpts, args), {
+                env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...env },
+            });
+            const lines: string[] = [];
+            let stderr = "";
+            const timer = setTimeout(() => proc.kill(), timeoutMs);
+            const rl = readline.createInterface({ input: proc.stdout, crlfDelay: Infinity });
+            rl.on("line", (line) => {
+                if (!line) return;
+                lines.push(line);
+                try {
+                    const status = JSON.parse(line) as Record<string, unknown>;
+                    if (status.message_type === "status") {
+                        onProgress({
+                            completed: Number(status.bytes_done ?? 0),
+                            total: Number(status.total_bytes ?? 0),
+                            filesDone: Number(status.files_done ?? 0),
+                            totalFiles: Number(status.total_files ?? 0),
+                        });
+                    }
+                } catch { /* non-JSON output is retained for the caller */ }
+            });
+            proc.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
+            proc.on("error", (error) => { clearTimeout(timer); reject(error); });
+            proc.on("close", (code) => {
+                clearTimeout(timer);
+                const stdout = lines.join("\n").trim();
+                if (code === 0 || toleratedExitCodes.includes(code ?? -1)) return resolve(stdout);
+                const error = Object.assign(new Error(stderr.trim() || `restic exited with code ${code}`), { code, stdout, stderr });
+                reject(error);
+            });
+        });
     }
 
     /**
@@ -974,6 +1035,7 @@ export class BackupManager {
         tag?: string;
         trigger?: "scheduled" | "manual" | "on-save";
         stackName?: string;
+        onProgress?: (progress: BackupProgress) => void;
     } = {}): Promise<BackupResult> {
         if (!this.backupRunLock.acquire(this.settings.preventConcurrentBackups)) {
             this.recordBlockedBackup(opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual"));
@@ -991,6 +1053,7 @@ export class BackupManager {
         tag?: string;
         trigger?: "scheduled" | "manual" | "on-save";
         stackName?: string;
+        onProgress?: (progress: BackupProgress) => void;
     } = {}): Promise<BackupResult> {
         const start = Date.now();
         const trigger = opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual");
@@ -1075,7 +1138,9 @@ export class BackupManager {
 
                 await this.initRepoFor(dest);
 
-                const stdout = await this.resticFor(dest, resticArgs, {}, [3]);
+                const stdout = await this.resticFor(dest, resticArgs, {}, [3], undefined, (progress) => {
+                    opts.onProgress?.({ phase: "backup", label: dest.label, ...progress });
+                });
 
                 const lines = stdout.split("\n").filter(Boolean);
                 const summary = lines.reduce<Record<string, unknown> | null>((acc, line) => {
@@ -1912,7 +1977,7 @@ export class BackupManager {
     }
 
     /** Vérifie l'intégrité de chaque destination activée */
-    async runCheck(destIndex?: number): Promise<Array<{ destIndex: number; label: string; ok: boolean; output: string }>> {
+    async runCheck(destIndex?: number, onProgress?: (progress: BackupProgress) => void): Promise<Array<{ destIndex: number; label: string; ok: boolean; output: string }>> {
         const activeDests = this.settings.destinations
             .map((d, i) => ({ dest: d, idx: i }))
             .filter(({ dest, idx }) => dest.enabled && (destIndex === undefined || idx === destIndex));
@@ -1921,12 +1986,15 @@ export class BackupManager {
             throw new Error("Aucune destination de backup activée");
         }
 
-        return Promise.all(activeDests.map(async ({ dest, idx }) => {
+        return Promise.all(activeDests.map(async ({ dest, idx }, destinationIndex) => {
+            onProgress?.({ phase: "verification", label: dest.label, destinationIndex: destinationIndex + 1, destinationCount: activeDests.length });
             try {
                 const output = await this.resticCheck(dest);
+                onProgress?.({ phase: "verification", label: dest.label, destinationIndex: destinationIndex + 1, destinationCount: activeDests.length, ok: true });
                 return { destIndex: idx, label: dest.label, ok: true, output };
             } catch (e: unknown) {
                 const raw = e instanceof Error ? e.message : String(e);
+                onProgress?.({ phase: "verification", label: dest.label, destinationIndex: destinationIndex + 1, destinationCount: activeDests.length, ok: false });
                 return { destIndex: idx, label: dest.label, ok: false, output: raw };
             }
         }));

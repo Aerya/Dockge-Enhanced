@@ -33,10 +33,21 @@ export interface SelfUpdatePlan {
 
 export interface SelfUpdateOperation {
     id: string;
-    state: "idle" | "scheduled" | "backing-up" | "updating" | "waiting-health" | "succeeded" | "failed" | "rolled-back";
+    state: "idle" | "scheduled" | "backing-up" | "verifying-backup" | "updating" | "waiting-health" | "succeeded" | "failed" | "rolled-back";
     message: string;
     startedAt: string | null;
     finishedAt: string | null;
     targetImage: string;
     rollbackAttempted: boolean;
+}
+
+export interface SelfUpdateProgress {
+    phase: "backup" | "verification";
+    label: string;
+    completed?: number;
+    total?: number;
+    filesDone?: number;
+    totalFiles?: number;
+    destinationIndex?: number;
+    destinationCount?: number;
 }

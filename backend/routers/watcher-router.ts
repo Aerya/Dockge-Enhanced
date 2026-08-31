@@ -654,7 +654,8 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.get("/self/status", (_req: Request, res: Response) => {
-            res.json({ ok: true, ...SelfUpdateChecker.getInstance().getStatus(), operation: SelfUpdateManager.getInstance().getOperation() });
+            const manager = SelfUpdateManager.getInstance();
+            res.json({ ok: true, ...SelfUpdateChecker.getInstance().getStatus(), operation: manager.getOperation(), progress: manager.getProgress() });
         });
 
         router.get("/self/settings", (_req: Request, res: Response) => {
