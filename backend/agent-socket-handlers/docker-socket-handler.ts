@@ -152,6 +152,36 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("discoverExternalStacks", async (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({
+                    ok: true,
+                    stacks: await server.externalStacks.discover(),
+                    allowedRoots: await server.externalStacks.getAllowedRoots(),
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("importExternalStack", async (input: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (!input || typeof input !== "object") throw new ValidationError("Invalid external stack import");
+                const value = input as { name?: unknown; project?: unknown; composeFile?: unknown };
+                if (typeof value.name !== "string" || typeof value.project !== "string" || typeof value.composeFile !== "string") {
+                    throw new ValidationError("Invalid external stack import");
+                }
+                const stack = await server.externalStacks.import(value.name, value.project, value.composeFile);
+                await this.auditStack(socket, "stack.external-import", stack.name, "success", null, { project: stack.project });
+                await server.sendStackList();
+                callbackResult({ ok: true, stack }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // startStack
         agentSocket.on("startStack", async (stackName : unknown, callback) => {
             try {

@@ -80,6 +80,12 @@
                 </li>
 
                 <li v-if="$root.loggedIn" class="nav-item me-2">
+                    <router-link to="/external-stacks" class="nav-link">
+                        <font-awesome-icon icon="folder-open" /> {{ $t("externalStacks.nav") }}
+                    </router-link>
+                </li>
+
+                <li v-if="$root.loggedIn" class="nav-item me-2">
                     <router-link to="/watcher" class="nav-link">
                         <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}
                     </router-link>
@@ -171,6 +177,9 @@
                 </router-link>
                 <router-link to="/console" class="mobile-drawer-link">
                     <font-awesome-icon icon="terminal" /> {{ $t("console") }}
+                </router-link>
+                <router-link to="/external-stacks" class="mobile-drawer-link">
+                    <font-awesome-icon icon="folder-open" /> {{ $t("externalStacks.nav") }}
                 </router-link>
                 <router-link to="/watcher" class="mobile-drawer-link">
                     <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}

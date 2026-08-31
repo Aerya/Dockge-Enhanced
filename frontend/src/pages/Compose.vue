@@ -6,7 +6,7 @@
             </router-link>
             <h1 v-if="isAdd" class="mb-3 compose-tight">{{ $t("compose") }}</h1>
             <h1 v-else class="mb-3 compose-tight">
-                <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }}
+                <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }} <span v-if="stack.isExternal" class="badge text-bg-info ms-1">{{ $t("externalStacks.external") }}</span>
                 <span v-if="$root.agentCount > 1" class="agent-name">
                     (<a
                         v-if="remoteStackUrl"

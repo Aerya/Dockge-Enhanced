@@ -64,6 +64,7 @@ import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-
 import { StackReplicationSocketHandler } from "./socket-handlers/stack-replication-socket-handler";
 import { StackMoveSocketHandler } from "./socket-handlers/stack-move-socket-handler";
 import { Terminal } from "./terminal";
+import { ExternalStackManager } from "./external-stacks";
 import {
     ensureTrustedProxyUser,
     getAuthMode,
@@ -124,6 +125,7 @@ export class DockgeServer {
     jwtSecret : string = "";
 
     stacksDir : string = "";
+    externalStacks: ExternalStackManager;
 
     /**
      *
@@ -201,6 +203,7 @@ export class DockgeServer {
         this.config.stacksDir = args.stacksDir || process.env.DOCKGE_STACKS_DIR || defaultStacksDir;
         this.config.enableConsole = args.enableConsole || process.env.DOCKGE_ENABLE_CONSOLE === "true" || false;
         this.stacksDir = this.config.stacksDir;
+        this.externalStacks = new ExternalStackManager(this.config.dataDir, this.stacksDir);
 
         log.debug("server", this.config);
 

@@ -2,7 +2,7 @@ name: 🐳 Build & Publish Docker Image
 
 on:
   push:
-    branches: [main]
+    branches: [main, experimental/external-stacks]
     paths-ignore:
       - "README.md"
       - "README.fr.md"
@@ -120,6 +120,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=experimental-external-stacks,enable=${{ github.ref == 'refs/heads/experimental/external-stacks' }}
             type=sha,prefix=
             type=raw,value={{date 'YYYYMMDD'}}
 

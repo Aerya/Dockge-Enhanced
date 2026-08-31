@@ -6,6 +6,8 @@
 
 # Dockge Enhanced
 
+> ⚠️ **Rama experimental:** `experimental/external-stacks` añade la gestión voluntaria de proyectos Compose fuera de `DOCKGE_STACKS_DIR`. No está integrada en la versión estable. Consulte la [guía experimental](README-EXPERIMENTAL-EXTERNAL-STACKS.md) antes de probarla.
+
 Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/dockge) — agrega monitoreo de imágenes, escaneo de seguridad, copias de seguridad automáticas, detección de bucles de fallo y gestión de recursos de Docker, todo desde la interfaz web.
 
 > 🇪🇸 Español · 🇬🇧 [English](README.md) · 🇫🇷 [Français](README.fr.md) · [Artículo de presentación (en francés)](https://upandclear.org/2026/03/28/gerer-ses-conteneurs-docker-autrement-le-fork-dockge-enhanced-surveillance-dimages-scan-cve-backup-automatique-gestion-des-ressources/)

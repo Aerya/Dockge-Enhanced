@@ -7,6 +7,7 @@ import DashboardHome from "./pages/DashboardHome.vue";
 import Console from "./pages/Console.vue";
 import Compose from "./pages/Compose.vue";
 import ContainerTerminal from "./pages/ContainerTerminal.vue";
+const ExternalStacks = () => import("./pages/ExternalStacks.vue");
 import WatcherSettings from "./components/WatcherSettings.vue";
 import { i18n } from "./i18n";
 
@@ -156,6 +157,11 @@ const routes = [
                         path: "/console",
                         component: Console,
                         meta: { title: "console" },
+                    },
+                    {
+                        path: "/external-stacks",
+                        component: ExternalStacks,
+                        meta: { title: "externalStacks.heading" },
                     },
                     {
                         path: "/settings",

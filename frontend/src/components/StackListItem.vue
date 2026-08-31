@@ -17,7 +17,7 @@
         ></span>
         <div class="title">
             <div class="name-row">
-                <span class="name">{{ stackName }}</span>
+                <span class="name">{{ stackName }}</span><span v-if="stack.isExternal" class="badge text-bg-info ms-1">{{ $t("externalStacks.external") }}</span>
                 <font-awesome-icon v-if="scheduled" icon="calendar-days" class="scheduled-indicator" :title="$t('stackScheduler.scheduledTooltip')" />
             </div>
             <div v-if="$root.agentCount > 1" class="endpoint">
