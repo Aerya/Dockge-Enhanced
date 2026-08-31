@@ -32,7 +32,7 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 | **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
 | **Automation & audit** | REST API scoped by permissions and stacks, per-stack webhooks, Home Assistant examples, and centralized history with origin and duration |
 | **Docker resources** | Images, volumes, unmanaged containers and networks, bulk actions, auto-prune, and safeguards for risky deletions |
-| **Images & security** | Update monitoring, auto-update with rollback, Trivy scans, and CVE exceptions |
+| **Images & security** | Update monitoring, auto-update with rollback, scheduled and pausable self-updates, Trivy scans, and CVE exceptions |
 | **Monitoring** | Configurable header/bottom system status bar, dashboard health cards, system, stack, and container stats, crash loops, healthcheck auto-heal, responsive and fullscreen logs, and optional Kula and managed Dozzle integrations |
 | **Integrations** | Optional PlugNPiN and per-service label assistant for Nginx Proxy Manager, Pi-hole, and AdGuard Home |
 | **Notifications & access** | Discord, Apprise, 2FA, trusted proxy, Turnstile, and mobile clients |
@@ -40,6 +40,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
+
+**2026-08-31 — Safe Dockge-Enhanced self-updates** — The new **Updates** tab brings Dockge-Enhanced and image-update controls together. Keep self-updates manual, or use the deliberately restricted Sidecar mode immediately or in a selected maintenance window and on selected days. A Restic backup and repository integrity check are mandatory before every self-update; their current destination and backup byte progress are shown in the tab, and the update stops if either step fails. It is postponed while image work, a Restic backup or verification, or a Trivy scan is running, with existing Discord and Apprise notifications reused for availability, deferral and completion. The sidecar has no published port, accepts only a signed plan for its own Dockge-Enhanced container, and prefers the stack's existing Docker Compose project; when that Compose configuration is unavailable it falls back to a Docker snapshot, which preserves the inspected container configuration but cannot reflect later Compose-file changes. A failed health check automatically restores the previous container. Global pause covers Dockge-Enhanced and every managed Docker image, while an individual image can also be paused temporarily. The Remote Agent option is visible but unavailable until a dedicated host agent exists.
 
 **2026-08-30 — Responsive interface and unified themes** — The desktop stack sidebar can now be collapsed as well as resized, while compact status, CPU and RAM indicators remain readable with long names. A configurable system status bar can sit in the header or at the bottom, and dashboard cards summarize image updates, backups, unhealthy containers and Trivy findings even when a feature is disabled. Theme-aware editors switch live with the application, the Auto theme follows the operating system, and mobile navigation, settings and stack access are more consistent. Backup and Watcher screens are also split into focused components for easier maintenance. This integration adapts work from [crossly/Dockge-Enhanced](https://github.com/crossly/Dockge-Enhanced) while preserving newer Dockge-Enhanced functionality.
 

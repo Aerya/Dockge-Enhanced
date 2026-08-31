@@ -25,6 +25,7 @@ import About from "./components/settings/About.vue";
 import WatcherImagesTab from "./components/watcher/WatcherImagesTab.vue";
 import WatcherTrivyTab from "./components/watcher/WatcherTrivyTab.vue";
 import WatcherNotificationsTab from "./components/watcher/WatcherNotificationsTab.vue";
+import WatcherUpdatesTab from "./components/watcher/WatcherUpdatesTab.vue";
 import BackupTab from "./components/BackupTab.vue";
 import MonitoringTab from "./components/MonitoringTab.vue";
 import AuditLogTab from "./components/AuditLogTab.vue";
@@ -32,7 +33,7 @@ import StackSchedulerTab from "./components/StackSchedulerTab.vue";
 const DockerResources = () => import("./pages/DockerResources.vue");
 
 // Valid watcher tab slugs, used to map legacy /watcher?tab=X deep links
-const WATCHER_TABS = new Set([ "images", "scheduler", "trivy", "backup", "resources", "notifications", "monitoring", "audit" ]);
+const WATCHER_TABS = new Set([ "images", "updates", "scheduler", "trivy", "backup", "resources", "notifications", "monitoring", "audit" ]);
 
 const routes = [
     {
@@ -96,6 +97,12 @@ const routes = [
                                 name: "watcher-images",
                                 component: WatcherImagesTab,
                                 meta: { title: "watcher.tab.images" },
+                            },
+                            {
+                                path: "updates",
+                                name: "watcher-updates",
+                                component: WatcherUpdatesTab,
+                                meta: { title: "updates.heading" },
                             },
                             {
                                 path: "scheduler",

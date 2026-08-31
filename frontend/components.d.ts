@@ -57,5 +57,6 @@ declare module 'vue' {
     WatcherNotificationsTab: typeof import('./src/components/watcher/WatcherNotificationsTab.vue')['default']
     WatcherSettings: typeof import('./src/components/WatcherSettings.vue')['default']
     WatcherTrivyTab: typeof import('./src/components/watcher/WatcherTrivyTab.vue')['default']
+    WatcherUpdatesTab: typeof import('./src/components/watcher/WatcherUpdatesTab.vue')['default']
   }
 }

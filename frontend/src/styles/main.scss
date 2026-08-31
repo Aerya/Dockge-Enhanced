@@ -254,7 +254,8 @@ optgroup {
 
     .form-check-input {
         background-color: $dark-bg2;
-        border-color: $dark-border-color;
+        border-color: var(--border-strong);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--border-strong) 55%, transparent);
     }
 
     .input-group-text {
