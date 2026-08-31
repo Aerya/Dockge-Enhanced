@@ -412,6 +412,17 @@
                                                 :title="$t('watcher.status.auPendingHint')"
                                             >⏳</span>
                                         </template>
+                                        <button
+                                            v-if="getAutoUpdateMode(s) !== 'off' && getAutoUpdateMode(s) !== 'ignored'"
+                                            class="btn btn-xs btn-outline-secondary"
+                                            :title="isAutoUpdatePaused(s) ? $t('updates.pause.resumeTarget') : $t('updates.pause.pauseTarget')"
+                                            @click="toggleAutoUpdatePause(s)"
+                                        >
+                                            <font-awesome-icon :icon="isAutoUpdatePaused(s) ? 'play' : 'pause'" />
+                                        </button>
+                                        <small v-if="isAutoUpdatePaused(s)" class="au-paused">
+                                            {{ autoUpdatePauseLabel(s) }}
+                                        </small>
                                     </div>
                                 </td>
                                 <!-- ─── Rollback ─── -->
@@ -870,6 +881,31 @@ function isPending(s: ImageStatus): boolean {
     );
 }
 
+function isAutoUpdatePaused(s: ImageStatus): boolean {
+    const pause = imgSettings.value.autoUpdateConfig[`${s.stack}::${s.image}`]?.pause;
+    return Boolean(pause?.enabled && (!pause.until || new Date(pause.until).getTime() > Date.now()));
+}
+
+function autoUpdatePauseLabel(s: ImageStatus): string {
+    const pause = imgSettings.value.autoUpdateConfig[`${s.stack}::${s.image}`]?.pause;
+    return pause?.until ? t("updates.pause.until", { date: fmtDate(pause.until) }) : t("updates.pause.indefinite");
+}
+
+async function toggleAutoUpdatePause(s: ImageStatus) {
+    const key = `${s.stack}::${s.image}`;
+    const active = isAutoUpdatePaused(s);
+    const pause = active
+        ? { enabled: false, until: null }
+        : { enabled: true, until: new Date(Date.now() + 7 * 86_400_000).toISOString() };
+    const res = await watcherApi("POST", "/image/auto-update-pause", { key, pause });
+    if (res.ok && imgSettings.value.autoUpdateConfig[key]) {
+        imgSettings.value.autoUpdateConfig[key] = { ...imgSettings.value.autoUpdateConfig[key], pause: res.data };
+        showToast(active ? t("updates.pause.resumedTarget") : t("updates.pause.pausedTarget"));
+    } else if (!res.ok) {
+        showToast(`❌ ${res.message}`, false);
+    }
+}
+
 async function ignoreVersion(s: ImageStatus) {
     const key = `${s.stack}::${s.image}`;
     ignoringKey.value = key;
@@ -1026,6 +1062,12 @@ async function removeCred(registry: string) {
     &:disabled {
         opacity: 0.5;
     }
+}
+
+.au-paused {
+    color: var(--warning);
+    display: block;
+    font-size: var(--fs-xs);
 }
 
 .stack-group-header {

@@ -17,6 +17,14 @@
             <div class="watcher-tab-bar mb-4">
                 <button
                     class="watcher-tab"
+                    :class="{ active: currentTab === 'updates' }"
+                    @click="$router.push('/watcher/updates')"
+                >
+                    <font-awesome-icon icon="sync-alt" class="watcher-tab-icon" />
+                    <span>{{ $t("updates.heading") }}</span>
+                </button>
+                <button
+                    class="watcher-tab"
                     :class="{ active: currentTab === 'images' }"
                     @click="$router.push('/watcher/images')"
                 >

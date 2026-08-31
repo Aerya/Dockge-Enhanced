@@ -22,6 +22,8 @@ import { AuditLogger, setAuditUser } from "../audit-log";
 import { normalizeRegistryHost } from "../registry-auth";
 import { StackScheduler } from "../watchers/stack-scheduler";
 import { requireHttpAuth } from "../auth";
+import { normalizeUpdatePause } from "../watchers/update-policy";
+import { SelfUpdateManager } from "../self-update/manager";
 
 async function auditWatcherAction(
     req: Request,
@@ -145,7 +147,7 @@ export class WatcherRouter extends Router {
         });
 
         router.post("/image/auto-update", async (req: Request, res: Response) => {
-            const { key, mode, time } = req.body as { key: string; mode: "off" | "immediate" | "scheduled" | "ignored"; time?: string };
+            const { key, mode, time, pause } = req.body as { key: string; mode: "off" | "immediate" | "scheduled" | "ignored"; time?: string; pause?: unknown };
             if (!key) return res.status(400).json({ ok: false, message: "key requis (format: stack::image)" });
             if (!["off", "immediate", "scheduled", "ignored"].includes(mode)) {
                 return res.status(400).json({ ok: false, message: "mode invalide (off | immediate | scheduled | ignored)" });
@@ -160,9 +162,13 @@ export class WatcherRouter extends Router {
                 await watcher.saveSettings({ autoUpdateConfig, pendingAutoUpdates });
             } else {
                 pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
+                const existingPause = autoUpdateConfig[key]?.pause;
+                const effectivePause = pause === undefined
+                    ? normalizeUpdatePause(existingPause)
+                    : normalizeUpdatePause(pause);
                 autoUpdateConfig[key] = mode === "scheduled"
-                    ? { mode, time: time ?? "02:00" }
-                    : { mode };
+                    ? { mode, time: time ?? "02:00", pause: effectivePause }
+                    : { mode, pause: effectivePause };
                 // Active automatiquement le watcher si ce n'est pas déjà le cas
                 const patch: Partial<WatcherSettings> = { autoUpdateConfig, pendingAutoUpdates };
                 if (!watcher.settings.enabled && mode !== "ignored") patch.enabled = true;
@@ -170,6 +176,26 @@ export class WatcherRouter extends Router {
             }
             await auditWatcherAction(req, "image.auto_update.configure", "image", key, "success", null, { mode, time: mode === "scheduled" ? time ?? "02:00" : undefined });
             return res.json({ ok: true });
+        });
+
+        router.post("/image/update-pause", async (req: Request, res: Response) => {
+            const watcher = ImageWatcher.getInstance();
+            await watcher.saveSettings({ globalUpdatePause: normalizeUpdatePause(req.body) });
+            await auditWatcherAction(req, "image.auto_update.pause", "updates", "global");
+            return res.json({ ok: true, data: watcher.getAutoUpdateState().globalUpdatePause });
+        });
+
+        router.post("/image/auto-update-pause", async (req: Request, res: Response) => {
+            const { key, pause } = req.body as { key?: string; pause?: unknown };
+            if (!key) return res.status(400).json({ ok: false, message: "key requis" });
+            const watcher = ImageWatcher.getInstance();
+            const autoUpdateConfig = { ...(watcher.settings.autoUpdateConfig ?? {}) };
+            const entry = autoUpdateConfig[key];
+            if (!entry) return res.status(404).json({ ok: false, message: "mise à jour automatique non configurée" });
+            autoUpdateConfig[key] = { ...entry, pause: normalizeUpdatePause(pause) };
+            await watcher.saveSettings({ autoUpdateConfig });
+            await auditWatcherAction(req, "image.auto_update.pause", "image", key);
+            return res.json({ ok: true, data: autoUpdateConfig[key].pause });
         });
 
         // ════════════════════════════════════════════════════════════════
@@ -628,7 +654,30 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.get("/self/status", (_req: Request, res: Response) => {
-            res.json({ ok: true, ...SelfUpdateChecker.getInstance().getStatus() });
+            res.json({ ok: true, ...SelfUpdateChecker.getInstance().getStatus(), operation: SelfUpdateManager.getInstance().getOperation() });
+        });
+
+        router.get("/self/settings", (_req: Request, res: Response) => {
+            res.json({ ok: true, data: SelfUpdateManager.getInstance().getSettings() });
+        });
+
+        router.post("/self/settings", async (req: Request, res: Response) => {
+            const settings = await SelfUpdateManager.getInstance().saveSettings(req.body);
+            await auditWatcherAction(req, "self_update.configure", "dockge", "self", "success", null, { mode: settings.mode, schedule: settings.schedule });
+            res.json({ ok: true, data: settings });
+        });
+
+        router.post("/self/update", async (req: Request, res: Response) => {
+            const targetImage = typeof req.body?.targetImage === "string" ? req.body.targetImage : "";
+            if (!targetImage) return res.status(400).json({ ok: false, message: "targetImage requis" });
+            try {
+                const operation = await SelfUpdateManager.getInstance().requestSidecarUpdate(targetImage);
+                await auditWatcherAction(req, "self_update.start", "dockge", "self", operation.state === "failed" ? "failure" : "success");
+                return res.json({ ok: true, data: operation });
+            } catch (e) {
+                await auditWatcherAction(req, "self_update.start", "dockge", "self", "failure", String(e));
+                return res.status(500).json({ ok: false, message: String(e) });
+            }
         });
 
         // Fuseau horaire du serveur (utilisé par le frontend pour formater les dates)

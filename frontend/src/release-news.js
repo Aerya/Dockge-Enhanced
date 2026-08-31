@@ -98,6 +98,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.crosslyUiIntegration",
         ],
     },
+    {
+        id: "2026-08-31-safe-self-updates",
+        items: [
+            "releaseNews.item.safeSelfUpdates",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

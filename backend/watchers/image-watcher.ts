@@ -29,6 +29,7 @@ import {
   normalizeRegistryHost,
   syncDockerRegistryCredentials,
 } from "../registry-auth";
+import { isUpdatePaused, normalizeUpdatePause, UpdatePause } from "./update-policy";
 
 const execFileAsync = promisify(execFile);
 
@@ -67,6 +68,7 @@ export interface RegistryCredential extends DockerRegistryCredential {
 export interface AutoUpdateEntry {
   mode: "immediate" | "scheduled" | "ignored";
   time?: string; // "HH:MM" — uniquement pour mode scheduled
+  pause?: UpdatePause;
 }
 
 export interface WatcherSettings {
@@ -81,6 +83,7 @@ export interface WatcherSettings {
   appriseUrls: string[]; // URLs Apprise (ntfy://, tgram://, etc.)
   ignoredDigests: Record<string, string[]>; // clé "stack::image" → digests à ignorer
   imagePlatform: string; // "" = auto, sinon ex: "linux/arm64" ou "linux/arm/v7"
+  globalUpdatePause: UpdatePause;
 }
 
 export interface ImageStatus {
@@ -686,6 +689,7 @@ export class ImageWatcher {
     appriseUrls: [],
     ignoredDigests: {},
     imagePlatform: "",
+    globalUpdatePause: { enabled: false, until: null },
   };
 
   static getInstance(): ImageWatcher {
@@ -713,6 +717,13 @@ export class ImageWatcher {
           };
         }
         delete data.autoUpdateImages;
+      }
+
+      data.globalUpdatePause = normalizeUpdatePause(data.globalUpdatePause);
+      if (data.autoUpdateConfig && typeof data.autoUpdateConfig === "object") {
+        for (const value of Object.values(data.autoUpdateConfig as Record<string, AutoUpdateEntry>)) {
+          if (value && typeof value === "object") value.pause = normalizeUpdatePause(value.pause);
+        }
       }
       this.settings = {
         ...this.settings,
@@ -781,7 +792,12 @@ export class ImageWatcher {
       autoUpdateConfig: this.settings.autoUpdateConfig ?? {},
       pendingAutoUpdates: this.settings.pendingAutoUpdates ?? [],
       updatingImages: [...this._updatingImages],
+      globalUpdatePause: normalizeUpdatePause(this.settings.globalUpdatePause),
     };
+  }
+
+  isBusy(): boolean {
+    return this._checkRunning || this._updatingImages.size > 0;
   }
 
   // ── Cycle de vie ──────────────────────────────────────────────
@@ -943,9 +959,11 @@ export class ImageWatcher {
     const toImmediate: ImageStatus[] = [];
     const newlyPending: string[] = [];
 
+    const globalPaused = isUpdatePaused(this.settings.globalUpdatePause);
     for (const r of updates) {
       const key = `${r.stack}::${r.image}`;
       const cfg = autoUpdateConfig[key];
+      if (globalPaused || isUpdatePaused(cfg?.pause)) continue;
       if (isMandatoryManagedUpdate(r)) {
         toImmediate.push(r);
         continue;
@@ -1018,9 +1036,11 @@ export class ImageWatcher {
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
+    if (isUpdatePaused(this.settings.globalUpdatePause)) return;
+
     const toApply = pending.filter((key) => {
       const cfg = this.settings.autoUpdateConfig?.[key];
-      return cfg?.mode === "scheduled" && cfg.time === currentTime;
+      return cfg?.mode === "scheduled" && cfg.time === currentTime && !isUpdatePaused(cfg.pause);
     });
     if (toApply.length === 0) return;
 

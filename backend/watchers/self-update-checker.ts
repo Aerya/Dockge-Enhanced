@@ -14,6 +14,7 @@ import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
+import { SelfUpdateManager } from "../self-update/manager";
 
 const SELF_REPO = "aerya/dockge-enhanced";
 const SELF_TAG = "latest";
@@ -418,9 +419,14 @@ export class SelfUpdateChecker {
       }
 
       // Notif "mise à jour disponible" — une seule fois par digest distant
+      const automaticMode = SelfUpdateManager.getInstance().isAutomaticMode();
       if (updateAvailable && this._notifiedRemoteDigest !== remoteDigest) {
         this._notifiedRemoteDigest = remoteDigest;
-        await this._notifyAvailable(containerName, repo);
+        await this._notifyAvailable(containerName, repo, automaticMode);
+      }
+
+      if (updateAvailable && SelfUpdateManager.getInstance().canAutoUpdate()) {
+        await SelfUpdateManager.getInstance().requestSidecarUpdate(`ghcr.io/${repo}:${SELF_TAG}`, true);
       }
     } catch (e: any) {
       this._status = {
@@ -434,6 +440,7 @@ export class SelfUpdateChecker {
   private async _notifyAvailable(
     containerName: string,
     repo: string,
+    automaticMode: boolean,
   ): Promise<void> {
     const webhooks = await loadWebhooks();
     const apprise = await this._loadApprise();
@@ -445,7 +452,11 @@ export class SelfUpdateChecker {
     const footerHost = hostname ? ` · ${hostname}` : "";
 
     const title = `${hostnamePrefix}${en ? "🔔 Dockge-Enhanced update available" : "🔔 Mise à jour Dockge-Enhanced disponible"}`;
-    const body = en
+    const body = automaticMode
+      ? (en
+        ? "A new image is available on GHCR. Automatic Sidecar update is configured."
+        : "Une nouvelle image est disponible sur GHCR. La mise à jour automatique par sidecar est configurée.")
+      : en
       ? [
           "A new image is available on GHCR.",
           "",

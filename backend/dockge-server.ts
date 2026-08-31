@@ -19,6 +19,7 @@ import { DozzleManager } from "./watchers/dozzle-manager";
 import { PlugNPiNManager } from "./integrations/plugnpin-manager";
 import { AutoPruneManager } from "./watchers/auto-prune-manager";
 import { SelfUpdateChecker } from "./watchers/self-update-checker";
+import { SelfUpdateManager } from "./self-update/manager";
 import { StackScheduler } from "./watchers/stack-scheduler";
 import { StackReplicationManager } from "./watchers/stack-replication-manager";
 import { StartGuardWatcher } from "./watchers/start-guard-watcher";
@@ -488,7 +489,9 @@ export class DockgeServer {
             StackScheduler.getInstance().start(this).catch(e => log.error("server", "StackScheduler start error: " + e));
             StackReplicationManager.getInstance().start(this).catch(e => log.error("server", "StackReplication start error: " + e));
             StartGuardWatcher.getInstance().start(this).catch(e => log.error("server", "StartGuardWatcher start error: " + e));
-            SelfUpdateChecker.getInstance().start();
+            SelfUpdateManager.getInstance().load()
+                .catch(e => log.error("server", "SelfUpdateManager load error: " + e))
+                .finally(() => SelfUpdateChecker.getInstance().start());
         });
 
         gracefulShutdown(this.httpServer, {

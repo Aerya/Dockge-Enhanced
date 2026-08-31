@@ -21,6 +21,7 @@ export interface Cred {
 export interface AutoUpdateEntry {
     mode: "immediate" | "scheduled" | "ignored";
     time?: string;
+    pause?: { enabled: boolean; until: string | null };
 }
 
 export interface ImgSettings {
