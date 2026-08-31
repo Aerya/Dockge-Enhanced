@@ -15,6 +15,7 @@ import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { SelfUpdateManager } from "../self-update/manager";
+import { atomicWriteJson } from "../self-update/state-file";
 
 const SELF_REPO = "aerya/dockge-enhanced";
 const SELF_TAG = "latest";
@@ -352,8 +353,7 @@ export class SelfUpdateChecker {
 
   private async _saveDigestCache(localDigest: string): Promise<void> {
     try {
-      await fs.mkdir(DATA_DIR, { recursive: true });
-      await fs.writeFile(DIGEST_CACHE, JSON.stringify({ localDigest }));
+      await atomicWriteJson(DIGEST_CACHE, { localDigest });
     } catch {
       /* non bloquant */
     }
@@ -414,7 +414,7 @@ export class SelfUpdateChecker {
       };
 
       // Notif "mise à jour appliquée" — le digest local a changé depuis le dernier check
-      if (wasUpdated) {
+      if (wasUpdated && !SelfUpdateManager.getInstance().wasSuccessfulTargetNotified(localDigest)) {
         await this._notifyApplied(containerName, localDigest);
       }
 
@@ -426,7 +426,7 @@ export class SelfUpdateChecker {
       }
 
       if (updateAvailable && SelfUpdateManager.getInstance().canAutoUpdate()) {
-        await SelfUpdateManager.getInstance().requestSidecarUpdate(`ghcr.io/${repo}:${SELF_TAG}`, true);
+        await SelfUpdateManager.getInstance().requestSidecarUpdate(`ghcr.io/${repo}@${remoteDigest}`, true);
       }
     } catch (e: any) {
       this._status = {

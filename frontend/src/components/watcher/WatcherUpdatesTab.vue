@@ -54,7 +54,7 @@
         <div class="shadow-box big-padding">
                 <h3 class="h6">{{ $t("updates.status.heading") }}</h3>
                 <p class="mb-1">{{ operationLabel }}</p>
-                <p v-if="operation.state === 'failed' || operation.state === 'scheduled'" class="form-text mb-1">{{ operation.message }}</p>
+                <p v-if="operation.message && operation.state !== 'idle'" class="form-text mb-1">{{ operation.message }}</p>
                 <div v-if="progress" class="form-text mb-1">
                     <template v-if="progress.phase === 'backup'">
                         {{ $t("updates.status.backupProgress", { label: progress.label, completed: formatBytes(progress.completed), total: formatBytes(progress.total) }) }}
@@ -87,7 +87,7 @@ import { watcherApi } from "./shared";
 const { t } = useI18n();
 const settings = ref({ mode: "manual", schedule: { type: "immediate", start: "03:00", end: "05:00", days: [ 0, 1, 2, 3, 4, 5, 6 ] }, pause: { enabled: false, until: null as string | null } });
 const globalPause = ref({ enabled: false, until: null as string | null });
-const status = ref({ updateAvailable: false, repo: "" });
+const status = ref({ updateAvailable: false, repo: "", remoteDigest: "" });
 const operation = ref({ state: "idle", message: "" });
 const progress = ref<null | { phase: "backup" | "verification"; label: string; completed?: number; total?: number; destinationIndex?: number; destinationCount?: number }>(null);
 const updating = ref(false);
@@ -131,11 +131,11 @@ function formatBytes(value?: number): string {
 }
 
 async function startUpdate() {
-    if (!status.value.repo) return;
+    if (!status.value.repo || !status.value.remoteDigest) return;
     updating.value = true;
     statusTimer = setInterval(load, 2_000);
     try {
-        const res = await watcherApi("POST", "/self/update", { targetImage: `ghcr.io/${status.value.repo}:latest` });
+        const res = await watcherApi("POST", "/self/update", { targetImage: `ghcr.io/${status.value.repo}@${status.value.remoteDigest}` });
         if (res.ok) {
             sessionStorage.setItem("dockge-self-update-in-progress", "1");
             operation.value = res.data;

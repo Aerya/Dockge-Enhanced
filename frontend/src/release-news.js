@@ -104,6 +104,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.safeSelfUpdates",
         ],
     },
+    {
+        id: "2026-08-31-self-update-hardening",
+        items: [
+            "releaseNews.item.selfUpdateHardening",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

@@ -5,6 +5,9 @@ vulnerabilities:
     paths: ["usr/local/bin/restic"]
     expired_at: 2026-09-13
     statement: Corrigé upstream après la dernière release Restic disponible.
+  - id: CVE-2026-14456
+    expired_at: 2026-09-07
+    statement: Le dépôt Alpine 3.24 fourni par Node 26 contient encore OpenSSL 3.5.7-r0; le correctif 3.5.8-r0 n'est pas encore publié pour cette base.
   - id: CVE-2026-56852
     paths: ["usr/local/bin/restic"]
     expired_at: 2026-09-13
@@ -30,6 +33,10 @@ vulnerabilities:
     paths: ["usr/local/bin/restic"]
     expired_at: 2026-09-13
     statement: Restic 0.19.1 embarque une stdlib Go vulnérable (Go net/http HTTP/2); aucune release Go corrigée stable n'est encore disponible.
+  - id: CVE-2026-56854
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Restic 0.19.1 est la dernière release stable; aucune archive officielle reconstruite avec golang.org/x/crypto 0.55.0 n'est disponible.
   - id: CVE-2026-56858
     paths: ["usr/local/bin/restic"]
     expired_at: 2026-09-13
