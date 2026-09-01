@@ -21,6 +21,18 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 ---
 
+⚠️ **Important — Dockge-Enhanced self-update fix**
+
+An error introduced in the Dockge-Enhanced self-update mechanism could prevent the sidecar from completing the update even though the interface reported that an update was in progress.
+
+The issue is now fixed. **If you enabled Dockge-Enhanced self-updates before this fix, one final manual update is required** on each Dockge-Enhanced instance to retrieve the corrected version:
+
+`docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`
+
+Once this version is installed, self-updates will work normally.
+
+**My apologies to the affected users.** This feature is specifically meant to avoid manual intervention, so this was obviously a particularly unfortunate bug. Thank you to everyone using and testing Dockge-Enhanced and helping identify this kind of issue quickly.
+
 ## Features
 
 ### What sets Dockge Enhanced apart

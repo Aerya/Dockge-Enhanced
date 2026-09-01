@@ -23,6 +23,18 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 
 ---
 
+⚠️ **Importante — corrección de la actualización automática de Dockge-Enhanced**
+
+Un error introducido en el mecanismo de actualización automática de Dockge-Enhanced podía impedir que el sidecar completara correctamente la actualización, aunque la interfaz indicara que estaba en curso.
+
+El problema ya está corregido. **Si habías activado la actualización automática de Dockge-Enhanced antes de esta corrección, es necesaria una última actualización manual** en cada instancia de Dockge-Enhanced para obtener la versión corregida:
+
+`docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`
+
+Una vez instalada esta versión, la actualización automática funcionará con normalidad.
+
+**Mis disculpas a los usuarios afectados.** Esta función está precisamente pensada para evitar intervenciones manuales, por lo que se trata de un fallo especialmente inoportuno. Gracias a quienes usan y prueban Dockge-Enhanced y ayudan a detectar rápidamente este tipo de problemas.
+
 ## Funcionalidades
 
 ### Lo que distingue a Dockge Enhanced
