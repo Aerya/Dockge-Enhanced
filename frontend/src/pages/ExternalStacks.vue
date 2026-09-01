@@ -12,10 +12,15 @@
 
         <div class="alert alert-warning py-2"><font-awesome-icon icon="flask" class="me-2" />{{ $t("externalStacks.experimental") }}</div>
         <div class="shadow-box p-3 mb-3">
-            <div class="fw-bold mb-1">{{ $t("externalStacks.allowedRoots") }}</div>
-            <div v-if="allowedRoots.length" class="font-monospace small">{{ allowedRoots.join(" · ") }}</div>
+            <div class="fw-bold mb-2">{{ $t("externalStacks.allowedRoots") }}</div>
+            <ul v-if="allowedRoots.length" class="external-root-list font-monospace small mb-3">
+                <li v-for="root in allowedRoots" :key="root"><code>{{ root }}:{{ root }}</code></li>
+            </ul>
             <div v-else class="text-warning small">{{ $t("externalStacks.noAllowedRoots") }}</div>
-            <div class="form-text mt-2">{{ $t("externalStacks.allowedRootsHelp") }}</div>
+            <div class="external-path-help">
+                <div><span class="badge text-bg-warning me-2">{{ $t("externalStacks.path.not-authorized") }}</span><span class="form-text">{{ $t("externalStacks.allowedRootsHelp") }}</span></div>
+                <div><span class="badge text-bg-secondary me-2">{{ $t("externalStacks.path.not-accessible") }}</span><span class="form-text">{{ $t("externalStacks.notAccessibleHelp") }}</span></div>
+            </div>
         </div>
 
         <div v-if="!loading && stacks.length === 0" class="shadow-box p-4 text-center text-muted">{{ $t("externalStacks.empty") }}</div>
@@ -99,5 +104,8 @@ export default {
 .external-stacks-page { max-width: 1200px; }
 .external-stack-card { overflow-wrap: anywhere; }
 .external-stack-import { min-width: min(100%, 340px); }
+.external-root-list { padding-left: 1.35rem; }
+.external-root-list li + li { margin-top: .3rem; }
+.external-path-help { display: grid; gap: .55rem; }
 @media (max-width: 576px) { .external-stack-import { width: 100%; } }
 </style>
