@@ -6,6 +6,10 @@
 
 # Dockge Enhanced
 
+> [!IMPORTANT]
+> **Corrección crítica de la autoactualización — actualización obligatoria.** Las builds publicadas entre **la tarde/noche del 31/08/2026 y la tarde/noche del 01/09/2026** contenían una ruta de autoactualización de Dockge-Enhanced que podía eliminar el contenedor en ejecución y no conseguir recrearlo si fallaba el reemplazo mediante Compose. **No conserve ni reinstale ninguna versión publicada durante ese intervalo. No utilice su autoactualización integrada para salir de ese intervalo: actualice manualmente con Docker Compose directamente a la versión 1.5.1 o posterior y, después, vuelva a activar las actualizaciones automáticas.** Este problema no elimina sus stacks ni sus datos persistentes; afecta a la recreación del propio contenedor Dockge-Enhanced. La versión 1.5.1 añade un rollback secundario e independiente basado en el snapshot de recuperación, sin depender de que el contenedor de reemplazo siga existiendo.
+
+
 Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/dockge) — agrega monitoreo de imágenes, escaneo de seguridad, copias de seguridad automáticas, detección de bucles de fallo y gestión de recursos de Docker, todo desde la interfaz web.
 
 > 🇪🇸 Español · 🇬🇧 [English](README.md) · 🇫🇷 [Français](README.fr.md) · 🇨🇳 [简体中文](README.zh-CN.md)

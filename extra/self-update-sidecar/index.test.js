@@ -129,3 +129,48 @@ test("a Compose creation failure restores the previous image without inspecting 
     const status = JSON.parse(fs.readFileSync(path.join(root, "status.json")));
     assert.equal(status.state, "rolled-back");
 });
+
+test("Compose rollback failure falls back to the signed recovery snapshot when the target container no longer exists", async () => {
+    process.env.SELF_UPDATE_ALLOW_TEST_IMAGES = "dockge-enhanced:test-v2";
+    const work = path.join(root, "snapshot-fallback"); fs.mkdirSync(work, { recursive: true });
+    const composeFile = path.join(work, "compose.yaml"); fs.writeFileSync(composeFile, "services:\n  dockge:\n    image: dockge-enhanced:test-v1\n");
+    process.env.SELF_UPDATE_COMPOSE_DIR = work;
+    const { plan, planPath } = signedPlan({ compose: { workingDir: work, configFiles: [ composeFile ], project: "test", service: "dockge" } });
+    fs.mkdirSync(path.join(root, "recovery"), { recursive: true });
+    fs.writeFileSync(path.join(root, "recovery", plan.recoveryFile), JSON.stringify({ id: plan.id, targetContainerId: plan.targetContainerId, targetContainerName: plan.targetContainerName, previousImage: plan.previousImage, previousImageId: plan.previousImageId, config: {}, hostConfig: {}, endpointsConfig: {} }));
+    const time = clock(); let initialInspect = true; let recovered = false; const apiCalls = [];
+    const docker = args => {
+        if (args[1] === "inspect") {
+            if (initialInspect) { initialInspect = false; return JSON.stringify({ Id: "container-id", Name: "/dockge-test", Config: { Image: "dockge-enhanced:test-v1" }, State: { Running: true, Status: "running" } }); }
+            if (!recovered) throw new Error("No such container: dockge-test");
+            return JSON.stringify({ Id: "recovered-id", Name: "/dockge-test", Config: { Image: plan.previousImageId }, State: { Running: true, Status: "running" } });
+        }
+        if (args.includes("up")) throw new Error("compose create failed");
+        if (args.includes("wget")) return "ok";
+        return "";
+    };
+    const dockerApi = async (method, requestPath) => {
+        apiCalls.push([ method, requestPath ]);
+        if (method === "POST" && requestPath.startsWith("/containers/create")) { recovered = true; return JSON.stringify({ Id: "recovered-id" }); }
+        return "";
+    };
+    const result = await sidecar.run({ planPath, docker, dockerApi, ...time, stableMs: 2_000, timeoutMs: 4_000, pollMs: 1_000 });
+    assert.equal(result, "rolled-back");
+    assert.ok(apiCalls.some(([ method, requestPath ]) => method === "POST" && requestPath.startsWith("/containers/create?name=dockge-test")));
+    const status = JSON.parse(fs.readFileSync(path.join(root, "status.json")));
+    assert.match(status.message, /restored from the recovery snapshot/);
+});
+
+test("snapshot recovery tolerates an already deleted container and removes any replacement by name", async () => {
+    const calls = [];
+    const recovery = { targetContainerName: "dockge-test", config: {}, hostConfig: {}, endpointsConfig: {} };
+    const dockerApi = async (method, requestPath, body, options = {}) => {
+        calls.push({ method, requestPath, options });
+        if (method === "POST" && requestPath.startsWith("/containers/create")) return JSON.stringify({ Id: "restored-id" });
+        return "";
+    };
+    await sidecar.snapshotCreate(recovery, null, `sha256:${"2".repeat(64)}`, { dockerApi });
+    assert.ok(calls.some(call => call.requestPath === "/containers/dockge-test/stop?t=30" && call.options.allow404 === true));
+    assert.ok(calls.some(call => call.requestPath === "/containers/dockge-test?force=1" && call.options.allow404 === true));
+    assert.ok(calls.some(call => call.requestPath === "/containers/create?name=dockge-test"));
+});
