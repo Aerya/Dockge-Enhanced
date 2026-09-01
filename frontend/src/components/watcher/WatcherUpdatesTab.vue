@@ -145,8 +145,9 @@ async function startUpdate() {
     }
 }
 
-onMounted(() => {
-    load();
+onMounted(async () => {
+    await watcherApi("POST", "/self/check");
+    await load();
     statusTimer = setInterval(load, 2_500);
 });
 onBeforeUnmount(() => { if (statusTimer) clearInterval(statusTimer); });
