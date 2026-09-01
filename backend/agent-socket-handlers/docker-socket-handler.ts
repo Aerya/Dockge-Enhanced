@@ -159,6 +159,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     ok: true,
                     stacks: await server.externalStacks.discover(),
                     allowedRoots: await server.externalStacks.getAllowedRoots(),
+                    allowedMounts: await server.externalStacks.getAllowedMounts(),
                 }, callback);
             } catch (e) {
                 callbackError(e, callback);

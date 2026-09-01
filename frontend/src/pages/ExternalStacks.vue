@@ -13,13 +13,13 @@
         <div class="alert alert-warning py-2"><font-awesome-icon icon="flask" class="me-2" />{{ $t("externalStacks.experimental") }}</div>
         <div class="shadow-box p-3 mb-3">
             <div class="fw-bold mb-2">{{ $t("externalStacks.allowedRoots") }}</div>
-            <ul v-if="allowedRoots.length" class="external-root-list font-monospace small mb-3">
-                <li v-for="root in allowedRoots" :key="root"><code>{{ root }}:{{ root }}</code></li>
+            <ul v-if="allowedMounts.length" class="external-root-list font-monospace small mb-3">
+                <li v-for="mount in allowedMounts" :key="`${mount.source}:${mount.destination}`"><code>{{ mount.source }}:{{ mount.destination }}</code></li>
             </ul>
-            <div v-else class="text-warning small">{{ $t("externalStacks.noAllowedRoots") }}</div>
+            <div v-else class="text-warning small mb-3">{{ $t("externalStacks.noAllowedMounts") }}</div>
             <div class="external-path-help">
-                <div><span class="badge text-bg-warning me-2">{{ $t("externalStacks.path.not-authorized") }}</span><span class="form-text">{{ $t("externalStacks.allowedRootsHelp") }}</span></div>
-                <div><span class="badge text-bg-secondary me-2">{{ $t("externalStacks.path.not-accessible") }}</span><span class="form-text">{{ $t("externalStacks.notAccessibleHelp") }}</span></div>
+                <div class="external-path-help-row"><span class="badge text-bg-warning">{{ $t("externalStacks.path.not-authorized") }}</span><span class="form-text">{{ $t("externalStacks.allowedRootsHelp") }}</span></div>
+                <div class="external-path-help-row"><span class="badge text-bg-secondary">{{ $t("externalStacks.path.not-accessible") }}</span><span class="form-text">{{ $t("externalStacks.notAccessibleHelp") }}</span></div>
             </div>
         </div>
 
@@ -50,7 +50,7 @@
 <script>
 export default {
     data() {
-        return { stacks: [], allowedRoots: [], names: {}, loading: false, importing: "" };
+        return { stacks: [], allowedMounts: [], names: {}, loading: false, importing: "" };
     },
     mounted() {
         this.refresh();
@@ -75,7 +75,7 @@ export default {
                 this.loading = false;
                 if (!res?.ok) return this.$root.toastRes(res);
                 this.stacks = res.stacks || [];
-                this.allowedRoots = res.allowedRoots || [];
+                this.allowedMounts = res.allowedMounts || [];
                 for (const stack of this.stacks) {
                     if (!this.names[stack.project]) this.names[stack.project] = this.suggestedName(stack.project);
                 }
@@ -107,5 +107,7 @@ export default {
 .external-root-list { padding-left: 1.35rem; }
 .external-root-list li + li { margin-top: .3rem; }
 .external-path-help { display: grid; gap: .55rem; }
+.external-path-help-row { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: start; gap: .65rem; }
+.external-path-help-row .form-text { margin-top: 0; }
 @media (max-width: 576px) { .external-stack-import { width: 100%; } }
 </style>

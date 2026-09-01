@@ -22,10 +22,30 @@ export interface DiscoveredExternalStack {
     imported: boolean;
 }
 
+export interface ExternalAllowedMount {
+    source: string;
+    destination: string;
+}
+
 interface DockerInspect {
     Config?: { Labels?: Record<string, string> };
     Mounts?: Array<{ Type?: string; Source?: string; Name?: string; Destination?: string }>;
     State?: { Status?: string };
+}
+
+export function selectAllowedMounts(mounts: DockerInspect["Mounts"], allowedRoots: string[]): ExternalAllowedMount[] {
+    const selected = new Map<string, ExternalAllowedMount>();
+    for (const mount of mounts ?? []) {
+        if (mount.Type !== "bind" || !mount.Source || !mount.Destination) continue;
+        const destination = path.resolve(mount.Destination);
+        const supportsAllowedRoot = allowedRoots.some((root) => {
+            const relative = path.relative(destination, path.resolve(root));
+            return relative === "" || (!path.isAbsolute(relative) && !relative.startsWith(`..${path.sep}`) && relative !== "..");
+        });
+        if (!supportsAllowedRoot) continue;
+        selected.set(`${mount.Source}:${destination}`, { source: mount.Source, destination });
+    }
+    return [ ...selected.values() ].sort((a, b) => a.destination.localeCompare(b.destination));
 }
 
 function isSafeStackName(value: string): boolean {
@@ -58,6 +78,21 @@ export class ExternalStackManager {
             }
         }
         return [ ...new Set(roots) ].sort();
+    }
+
+    async getAllowedMounts(): Promise<ExternalAllowedMount[]> {
+        const containerId = (process.env.HOSTNAME ?? "").trim();
+        if (!containerId) return [];
+        try {
+            const result = await childProcessAsync.spawn("docker", [ "inspect", containerId ], {
+                encoding: "utf8",
+                maxBuffer: 2 * 1024 * 1024,
+            });
+            const inspected = JSON.parse(result.stdout?.toString() ?? "[]") as DockerInspect[];
+            return selectAllowedMounts(inspected[0]?.Mounts, await this.getAllowedRoots());
+        } catch {
+            return [];
+        }
     }
 
     private async load(): Promise<ExternalStackRegistration[]> {

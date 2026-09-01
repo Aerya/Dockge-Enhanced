@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { promises as fs } from "node:fs";
-import { ExternalStackManager } from "./external-stacks";
+import { ExternalStackManager, selectAllowedMounts } from "./external-stacks";
 import { Stack } from "./stack";
 
 async function fixture() {
@@ -54,4 +54,14 @@ test("une stack externe conserve son répertoire et son projet Compose", async (
     } finally {
         await fs.rm(value.root, { recursive: true, force: true });
     }
+});
+
+test("affiche uniquement les bind mounts qui couvrent les racines externes autorisées", () => {
+    const mounts = selectAllowedMounts([
+        { Type: "bind", Source: "/srv/apps", Destination: "/srv/apps" },
+        { Type: "bind", Source: "/var/lib/dockge", Destination: "/app/data" },
+        { Type: "volume", Name: "cache", Destination: "/cache" },
+    ], [ "/srv/apps/radarr" ]);
+
+    assert.deepEqual(mounts, [ { source: "/srv/apps", destination: "/srv/apps" } ]);
 });
