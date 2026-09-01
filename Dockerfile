@@ -23,6 +23,12 @@ FROM node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781
 
 WORKDIR /app
 
+ARG BUILD_REVISION=""
+ARG BUILD_DATE=""
+LABEL org.opencontainers.image.source="https://github.com/Aerya/Dockge-Enhanced" \
+      org.opencontainers.image.revision="${BUILD_REVISION}" \
+      org.opencontainers.image.created="${BUILD_DATE}"
+
 ENV NODE_ENV=production
 
 # Docker CLI + Compose plugin (nécessaires pour gérer les stacks)
