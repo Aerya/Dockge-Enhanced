@@ -97,6 +97,18 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("watcherImageStatusGet", (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({
+                    ok: true,
+                    data: [...imageStatusStore.values()],
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         agentSocket.on("watcherImageAutoUpdateGet", (callback) => {
             try {
                 checkLogin(socket);

@@ -5,17 +5,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { useImageStatus } from "../composables/useImageStatus";
+import { computed, onMounted, onUnmounted } from "vue";
+import { useImageStatus, type RemoteStatusLoader } from "../composables/useImageStatus";
 
-const props = defineProps<{ stackName: string }>();
+const props = defineProps<{
+    stackName: string;
+    endpoint?: string;
+    loadRemoteStatus?: RemoteStatusLoader;
+}>();
 
-const { statusCache: statuses } = useImageStatus();
+const { statusForStack, registerRemoteEndpoint, unregisterRemoteEndpoint } = useImageStatus();
+
+onMounted(() => {
+    if (props.endpoint && props.loadRemoteStatus) {
+        registerRemoteEndpoint(props.endpoint, props.loadRemoteStatus);
+    }
+});
+
+onUnmounted(() => {
+    if (props.endpoint) {
+        unregisterRemoteEndpoint(props.endpoint);
+    }
+});
 
 const stackUpdates = computed(() =>
-    statuses.value.filter(s =>
-        s.stack === props.stackName && s.hasUpdate && !s.error
-    )
+    statusForStack(props.stackName, props.endpoint ?? "").filter(s => s.hasUpdate && !s.error)
 );
 
 const hasUpdate = computed(() => stackUpdates.value.length > 0);

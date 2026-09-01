@@ -31,6 +31,7 @@
     "releaseNews.item.liveStackLogsRefresh": "Los registros de la stack se reconectan automáticamente después de iniciar, detener, reiniciar, actualizar o recrear, conservando el servicio, el periodo y los timestamps seleccionados.",
     "releaseNews.item.safeSelfUpdates": "La pestaña Actualizaciones permite programar o pausar las actualizaciones automáticas de imágenes y Dockge-Enhanced. El modo Sidecar muestra la copia Restic y su verificación obligatoria, prioriza la stack Compose existente y restaura automáticamente el contenedor anterior si falla el healthcheck.",
     "releaseNews.item.selfUpdateHardening": "Las autoactualizaciones de Dockge-Enhanced usan ahora el digest exacto detectado, conservan las rutas Compose y los bind mounts relativos, esperan a que la aplicación esté realmente lista y guardan una instantánea de recuperación en la copia Restic.",
+    "releaseNews.item.remoteUpdateBadges": "Los indicadores de actualización de la lista de stacks ahora también muestran las actualizaciones detectadas por instancias remotas de Dockge-Enhanced, manteniendo el estado separado para cada servidor.",
     "logLineWrap": "Ajuste de línea",
     "logLineWrapToggle": "Activar o desactivar el ajuste automático de línea",
     "logLineWrapOn": "Líneas ajustadas",
