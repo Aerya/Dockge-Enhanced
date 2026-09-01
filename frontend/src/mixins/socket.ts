@@ -418,7 +418,10 @@ export default defineComponent({
         },
 
         afterLogin() {
-
+            // The initial locale event can be emitted before authentication and
+            // rejected server-side. Re-send it now that the socket is authenticated
+            // so Discord/Apprise notifications reliably follow the UI language.
+            this.getSocket().emit("setUILocale", localStorage.getItem("locale") ?? this.language ?? "en");
         },
 
         bindTerminal(endpoint : string, terminalName : string, terminal : Terminal) {
