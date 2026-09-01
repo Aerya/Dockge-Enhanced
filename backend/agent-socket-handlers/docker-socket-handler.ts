@@ -236,6 +236,76 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("discoverExternalStacks", async (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({
+                    ok: true,
+                    stacks: await server.externalStacks.discover(),
+                    allowedRoots: await server.externalStacks.getAllowedRoots(),
+                    allowedMounts: await server.externalStacks.getAllowedMounts(),
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("importExternalStack", async (input: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (!input || typeof input !== "object") throw new ValidationError("Invalid external stack import");
+                const value = input as { name?: unknown; project?: unknown; composeFile?: unknown };
+                if (typeof value.name !== "string" || typeof value.project !== "string" || typeof value.composeFile !== "string") {
+                    throw new ValidationError("Invalid external stack import");
+                }
+                const stack = await server.externalStacks.import(value.name, value.project, value.composeFile);
+                await this.auditStack(socket, "stack.external-import", stack.name, "success", null, { project: stack.project });
+                await server.sendStackList();
+                callbackResult({ ok: true, stack }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("getExternalStackAccessStatus", async (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({
+                    ok: true,
+                    operation: await server.externalStackAccess.getOperation(),
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("prepareExternalStackAccess", async (input: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (!input || typeof input !== "object" || typeof (input as { project?: unknown }).project !== "string") {
+                    throw new ValidationError("Invalid external stack access request");
+                }
+                const project = (input as { project: string }).project;
+                const operation = await server.externalStackAccess.request(project);
+                await AuditLogger.getInstance().logFromSocket(socket, {
+                    action: "stack.external-access",
+                    category: "stack",
+                    targetType: "external-stack",
+                    target: project,
+                    status: "success",
+                    metadata: {
+                        requestedPath: operation.requestedPath,
+                    },
+                });
+                callbackResult({
+                    ok: true,
+                    operation,
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // startStack
         agentSocket.on("startStack", async (stackName : unknown, callback) => {
             try {

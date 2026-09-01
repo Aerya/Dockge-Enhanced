@@ -2,7 +2,7 @@ name: 🐳 Build & Publish Docker Image
 
 on:
   push:
-    branches: [main]
+    branches: [main, experimental/external-stacks]
     paths-ignore:
       - "README.md"
       - "README.fr.md"
@@ -61,6 +61,11 @@ jobs:
             -f extra/self-update-sidecar/Dockerfile \
             -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:${{ matrix.tag }} \
             .
+          docker build \
+            --platform ${{ matrix.platform }} \
+            -f extra/external-stack-access-sidecar/Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-compose-helper:${{ matrix.tag }} \
+            .
 
       - name: 🔐 Refuser une image vulnérable
         run: |
@@ -82,11 +87,21 @@ jobs:
             --list-all-pkgs=false \
             --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
             "${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:${{ matrix.tag }}"
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/.trivyignore.yaml:/work/.trivyignore.yaml:ro" \
+            "$TRIVY_IMAGE" image \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 \
+            --ignorefile /work/.trivyignore.yaml \
+            --list-all-pkgs=false \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+            "${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-compose-helper:${{ matrix.tag }}"
 
       - name: 📤 Publier l’image plateforme validée
         run: |
           docker push ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }}
           docker push ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:${{ matrix.tag }}
+          docker push ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-compose-helper:${{ matrix.tag }}
 
   # ─── Merge des deux images en un manifest multi-arch ─────────────────
   merge:
@@ -120,6 +135,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=experimental-external-stacks,enable=${{ github.ref == 'refs/heads/experimental/external-stacks' }}
             type=sha,prefix=
             type=raw,value={{date 'YYYYMMDD'}}
 
@@ -131,10 +147,18 @@ jobs:
             tag_args+=("-t" "$tag")
           done
           version=$(jq -r .version package.json)
+          helper_tag="$version"
+          if [ "${{ github.ref }}" = "refs/heads/experimental/external-stacks" ]; then
+            helper_tag="experimental-external-stacks"
+          fi
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:${version} \
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:amd64 \
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:arm64
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-compose-helper:${helper_tag} \
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-compose-helper:amd64 \
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-compose-helper:arm64
           docker buildx imagetools create \
             "${tag_args[@]}" \
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:amd64 \

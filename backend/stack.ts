@@ -156,18 +156,22 @@ export class Stack {
     protected _composeOverrideYAML?: string;
     protected _configFilePath?: string;
     protected _composeFileName: string = "compose.yaml";
+    protected _externalPath?: string;
+    protected _externalProject?: string;
     protected server: DockgeServer;
 
     protected combinedTerminal? : Terminal;
 
     protected static managedStackList: Map<string, Stack> = new Map();
 
-    constructor(server : DockgeServer, name : string, composeYAML? : string, composeENV? : string, skipFSOperations = false, composeOverrideYAML? : string) {
+    constructor(server : DockgeServer, name : string, composeYAML? : string, composeENV? : string, skipFSOperations = false, composeOverrideYAML? : string, externalPath?: string, externalProject?: string) {
         this.name = name;
         this.server = server;
         this._composeYAML = composeYAML;
         this._composeENV = composeENV;
         this._composeOverrideYAML = composeOverrideYAML;
+        this._externalPath = externalPath;
+        this._externalProject = externalProject;
 
         if (!skipFSOperations) {
             resolveStackPath(this.server.stacksDir, this.name);
@@ -233,6 +237,8 @@ export class Stack {
             createdAtEstimated,
             lastUpdated: metadata.lastUpdated,
             endpoint,
+            isExternal: this.isExternal,
+            externalPath: this.isExternal ? this.path : undefined,
         };
     }
 
@@ -264,6 +270,10 @@ export class Stack {
 
     get isManagedByDockge() : boolean {
         return fs.existsSync(this.path) && fs.statSync(this.path).isDirectory();
+    }
+
+    get isExternal() : boolean {
+        return this._externalPath !== undefined;
     }
 
     get status() : number {
@@ -328,7 +338,7 @@ export class Stack {
     }
 
     get path() : string {
-        return path.join(this.server.stacksDir, this.name);
+        return this._externalPath ?? path.join(this.server.stacksDir, this.name);
     }
 
     get fullPath() : string {
@@ -768,6 +778,23 @@ export class Stack {
             this.managedStackList = new Map(stackList);
         }
 
+        // External stacks are opt-in registrations. Discovery alone never grants
+        // access, and every registration is revalidated through its allowlist.
+        const externalByProject = new Map<string, Stack>();
+        for (const registration of await server.externalStacks.list()) {
+            if (stackList.has(registration.name)) continue;
+            try {
+                const verified = await server.externalStacks.assertRegisteredPath(registration);
+                const stack = new Stack(server, verified.name, undefined, undefined, false, undefined, verified.workingDir, verified.project);
+                stack._composeFileName = path.basename(verified.composeFile);
+                stack._status = CREATED_FILE;
+                stackList.set(verified.name, stack);
+                externalByProject.set(verified.project, stack);
+            } catch (error) {
+                log.warn("getStackList", `External stack ${registration.name} is unavailable: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+
         // Get status from docker compose ls
         let res = await childProcessAsync.spawn("docker", [ "compose", "ls", "--all", "--format", "json" ], {
             encoding: "utf-8",
@@ -781,6 +808,10 @@ export class Stack {
 
         for (let composeStack of composeList) {
             let stack = stackList.get(composeStack.Name);
+
+            if (!stack) {
+                stack = externalByProject.get(composeStack.Name);
+            }
 
             // This stack probably is not managed by Dockge, but we still want to show it
             if (!stack) {
@@ -844,6 +875,15 @@ export class Stack {
     }
 
     static async getStack(server: DockgeServer, stackName: string, skipFSOperations = false) : Promise<Stack> {
+        const externalRegistration = skipFSOperations ? undefined : await server.externalStacks.get(stackName);
+        if (externalRegistration) {
+            const verified = await server.externalStacks.assertRegisteredPath(externalRegistration);
+            const stack = new Stack(server, verified.name, undefined, undefined, false, undefined, verified.workingDir, verified.project);
+            stack._composeFileName = path.basename(verified.composeFile);
+            stack._status = UNKNOWN;
+            stack._configFilePath = verified.composeFile;
+            return stack;
+        }
         let dir = skipFSOperations
             ? path.resolve(server.stacksDir, stackName)
             : resolveStackPath(server.stacksDir, stackName);
@@ -880,8 +920,8 @@ export class Stack {
 
     getComposeOptions(command : string, ...extraOptions : string[]) {
         //--env-file ./../global.env --env-file .env
-        let options = [ "compose", command, ...extraOptions ];
-        if (fs.existsSync(path.join(this.server.stacksDir, "global.env"))) {
+        let options = [ "compose", ...(this._externalProject ? [ "--project-name", this._externalProject ] : []), command, ...extraOptions ];
+        if (!this.isExternal && fs.existsSync(path.join(this.server.stacksDir, "global.env"))) {
             if (fs.existsSync(path.join(this.path, ".env"))) {
                 options.splice(1, 0, "--env-file", "./.env");
             }
@@ -1370,6 +1410,13 @@ export class Stack {
         // ── lastUpdated depuis .dockge-meta.json (écrit à chaque pull/deploy) ──
         const meta = await this.readMeta();
         lastUpdated = meta.lastUpdated ?? meta.lastStartedAt ?? null;
+
+        // Docker Compose reports projects that are not managed by Dockge too.
+        // Until an external project is imported, its synthetic /opt/stacks path
+        // does not exist and passing it as cwd makes spawn report ENOENT.
+        if (!await fileExists(this.path)) {
+            return { serviceStatusList, lastUpdated, lastStartedAt };
+        }
 
         try {
             const res = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--format", "json"), {
