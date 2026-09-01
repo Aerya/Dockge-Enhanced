@@ -30,7 +30,7 @@
         "dayjs": "~1.11.23",
         "dotenv": "~17.4.2",
         "express": "~4.22.2",
-        "express-rate-limit": "^8.6.2",
+        "express-rate-limit": "^8.7.0",
         "express-static-gzip": "~3.0.1",
         "http-graceful-shutdown": "~4.0.0",
         "js-yaml": "^5.4.1",
