@@ -13,6 +13,7 @@
  */
 
 import axios from "axios";
+import { getNotificationLang, notificationText } from "./notification-lang";
 
 export type AppriseNotifType = "info" | "success" | "warning" | "failure";
 
@@ -118,10 +119,23 @@ export class AppriseNotifier {
     /** Teste la connexion au serveur Apprise */
     async test(): Promise<boolean> {
         try {
+            const lang = await getNotificationLang();
             return await this.send({
-                title: "✅ Test de notification Dockge Enhanced",
-                body:  "Apprise est correctement configuré et connecté !",
-                type:  "success",
+                title: notificationText(
+                    lang,
+                    "✅ Test de notification Dockge Enhanced",
+                    "✅ Dockge Enhanced notification test",
+                    "✅ Prueba de notificación de Dockge Enhanced",
+                    "✅ Dockge Enhanced 通知测试",
+                ),
+                body: notificationText(
+                    lang,
+                    "Apprise est correctement configuré et connecté !",
+                    "Apprise is configured and connected correctly!",
+                    "¡Apprise está configurado y conectado correctamente!",
+                    "Apprise 配置并连接正确！",
+                ),
+                type: "success",
             });
         } catch {
             return false;

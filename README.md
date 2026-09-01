@@ -6,13 +6,13 @@
 
 A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image monitoring, security scanning, automatic backups, crash-loop detection and Docker resource management, all from the web UI.
 
-> 🇬🇧 English · 🇫🇷 [Français](README.fr.md) · 🇪🇸 [Español](README.es-ES.md)
+> 🇬🇧 English · 🇫🇷 [Français](README.fr.md) · 🇪🇸 [Español](README.es-ES.md) · 🇨🇳 [简体中文](README.zh-CN.md)
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
   <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
-  <img src="https://img.shields.io/badge/i18n-FR%20%7C%20EN-blue" alt="i18n">
+  <img src="https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20ES%20%7C%20zh--CN-blue" alt="i18n">
   <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
@@ -53,7 +53,7 @@ Once this version is installed, self-updates will work normally.
 | **Images & security** | Update monitoring, auto-update with rollback, scheduled and pausable self-updates, Trivy scans, and CVE exceptions |
 | **Monitoring** | Configurable header/bottom system status bar, dashboard health cards, system, stack, and container stats, crash loops, healthcheck auto-heal, responsive and fullscreen logs, and optional Kula and managed Dozzle integrations |
 | **Integrations** | Optional PlugNPiN and per-service label assistant for Nginx Proxy Manager, Pi-hole, and AdGuard Home |
-| **Notifications & access** | Discord, Apprise, 2FA, trusted proxy, Turnstile, and mobile clients |
+| **Notifications & access** | Discord and Apprise notifications localized in EN/FR/ES/zh-CN, 2FA, trusted proxy, Turnstile, and mobile clients |
 
 
 <details>

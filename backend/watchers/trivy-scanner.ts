@@ -9,7 +9,7 @@ import { promisify } from "util";
 import * as path from "path";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
-import { getNotificationLang } from "../notification/notification-lang";
+import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 
 const execFileAsync = promisify(execFile);
@@ -72,7 +72,7 @@ interface ScannerSettings {
     minSeverityAlert: Severity;
     ignoreUnfixed: boolean;
     scanTimeoutMinutes: number;
-    notificationLang: "fr" | "en";
+    notificationLang: NotificationLang;
     ignoredCVEs: string[];        // CVE IDs ignorés globalement (pas de notif, masqués dans l'UI)
 }
 
@@ -481,9 +481,9 @@ export class TrivyScanner {
     }
 
     private async sendImageAlert(discord: DiscordNotifier | null, apprise: AppriseNotifier | null, result: ScanResult): Promise<void> {
-        const en     = (await getNotificationLang()) === "en";
-        const locale = en ? "en-GB" : "fr-FR";
-        const t      = (fr: string, enStr: string) => en ? enStr : fr;
+        const lang   = await getNotificationLang();
+        const locale = getNotificationLocale(lang);
+        const t      = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
         const hostname: string = await Settings.get("primaryHostname") || "";
         const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
         const footerHost       = hostname ? ` · ${hostname}` : "";
@@ -508,7 +508,7 @@ export class TrivyScanner {
             .join("\n");
 
         if (countLines) {
-            fields.push({ name: t("Résumé", "Summary"), value: countLines, inline: true });
+            fields.push({ name: t("Résumé", "Summary", "Resumen", "摘要"), value: countLines, inline: true });
         }
 
         const allVulns: Vulnerability[] = result.results.flatMap(r => r.Vulnerabilities || []);
@@ -522,19 +522,19 @@ export class TrivyScanner {
         if (topVulns.length > 0) {
             const vulnLines = topVulns.map(v => {
                 const fix = v.FixedVersion
-                    ? `→ fix: ${v.FixedVersion}`
-                    : t("→ pas de fix", "→ no fix");
+                    ? `→ ${t("correctif", "fix", "corrección", "修复")}: ${v.FixedVersion}`
+                    : t("→ pas de fix", "→ no fix", "→ sin corrección", "→ 暂无修复");
                 const url = v.PrimaryURL ?? `https://nvd.nist.gov/vuln/detail/${v.VulnerabilityID}`;
                 return `${SEVERITY_EMOJI[v.Severity]} [${v.VulnerabilityID}](${url}) **${v.PkgName}** ${v.InstalledVersion} ${fix}`;
             }).join("\n");
-            fields.push({ name: t("Top vulnérabilités", "Top vulnerabilities"), value: vulnLines, inline: false });
+            fields.push({ name: t("Top vulnérabilités", "Top vulnerabilities", "Principales vulnerabilidades", "主要漏洞"), value: vulnLines, inline: false });
         }
 
         const uiUrl = this.baseUrl || null;
-        const title = `${hostnamePrefix}${SEVERITY_EMOJI[result.maxSeverity]} ${t("Alerte sécurité", "Security alert")} — ${result.image}`;
+        const title = `${hostnamePrefix}${SEVERITY_EMOJI[result.maxSeverity]} ${t("Alerte sécurité", "Security alert", "Alerta de seguridad", "安全警报")} — ${result.image}`;
         const description =
-            `${t("Stack", "Stack")} : **${result.stack}**\n${t("Sévérité max", "Max severity")} : **${result.maxSeverity}**` +
-            (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl})` : "");
+            `${t("Stack", "Stack", "Stack", "堆栈")} : **${result.stack}**\n${t("Sévérité max", "Max severity", "Severidad máxima", "最高严重级别")} : **${result.maxSeverity}**` +
+            (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge", "Abrir Dockge", "打开 Dockge")}](${uiUrl})` : "");
 
         if (discord) {
             await discord.sendEmbed({
@@ -558,9 +558,9 @@ export class TrivyScanner {
     }
 
     private async sendSummary(discord: DiscordNotifier | null, apprise: AppriseNotifier | null, results: ScanResult[]): Promise<void> {
-        const en     = (await getNotificationLang()) === "en";
-        const locale = en ? "en-GB" : "fr-FR";
-        const t      = (fr: string, enStr: string) => en ? enStr : fr;
+        const lang   = await getNotificationLang();
+        const locale = getNotificationLocale(lang);
+        const t      = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
         const hostname: string = await Settings.get("primaryHostname") || "";
         const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
         const footerHost       = hostname ? ` · ${hostname}` : "";
@@ -592,7 +592,7 @@ export class TrivyScanner {
         const uiUrl = this.baseUrl || null;
         const imageLines = results.map(r => {
             const header = `${SEVERITY_EMOJI[r.maxSeverity]} \`${r.image}\` (${r.stack})`;
-            if (r.error) return `${header}\n  ${t("⚠️ Erreur de scan", "⚠️ Scan error")}`;
+            if (r.error) return `${header}\n  ${t("⚠️ Erreur de scan", "⚠️ Scan error", "⚠️ Error de análisis", "⚠️ 扫描错误")}`;
 
             const topVulns = r.results
                 .flatMap(res => res.Vulnerabilities || [])
@@ -621,15 +621,20 @@ export class TrivyScanner {
             imagesValue += addition;
         }
         if (truncatedCount > 0) {
-            imagesValue += `\n_+${truncatedCount} ${t("autre(s) image(s)", "more image(s)")}_`;
+            imagesValue += `\n_+${truncatedCount} ${t("autre(s) image(s)", "more image(s)", "imagen(es) más", "个其他镜像")}_`;
         }
 
         const title = hasCritical
-            ? `${hostnamePrefix}🚨 ${t("Rapport de sécurité — Vulnérabilités détectées", "Security report — Vulnerabilities detected")}`
-            : `${hostnamePrefix}✅ ${t(`Rapport de sécurité — ${results.length} image(s) scannée(s)`, `Security report — ${results.length} image(s) scanned`)}`;
+            ? `${hostnamePrefix}🚨 ${t("Rapport de sécurité — Vulnérabilités détectées", "Security report — Vulnerabilities detected", "Informe de seguridad — Vulnerabilidades detectadas", "安全报告 — 检测到漏洞")}`
+            : `${hostnamePrefix}✅ ${t(
+                `Rapport de sécurité — ${results.length} image(s) scannée(s)`,
+                `Security report — ${results.length} image(s) scanned`,
+                `Informe de seguridad — ${results.length} imagen(es) analizada(s)`,
+                `安全报告 — 已扫描 ${results.length} 个镜像`,
+            )}`;
         const description =
-            (summaryLines || t("Aucune vulnérabilité significative détectée.", "No significant vulnerabilities detected.")) +
-            (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl})` : "");
+            (summaryLines || t("Aucune vulnérabilité significative détectée.", "No significant vulnerabilities detected.", "No se detectaron vulnerabilidades significativas.", "未检测到重大漏洞。")) +
+            (uiUrl ? `\n\n[${t("Ouvrir Dockge", "Open Dockge", "Abrir Dockge", "打开 Dockge")}](${uiUrl})` : "");
 
         if (discord) {
             await discord.sendEmbed({
@@ -639,7 +644,7 @@ export class TrivyScanner {
                 description,
                 fields: [
                     {
-                        name: t("Images scannées", "Scanned images"),
+                        name: t("Images scannées", "Scanned images", "Imágenes analizadas", "已扫描镜像"),
                         value: imagesValue,
                         inline: false,
                     }
@@ -651,7 +656,7 @@ export class TrivyScanner {
         if (apprise) {
             await apprise.send({
                 title,
-                body:  `${description}\n\n**${t("Images scannées", "Scanned images")}**\n${imagesValue}`.trim(),
+                body:  `${description}\n\n**${t("Images scannées", "Scanned images", "Imágenes analizadas", "已扫描镜像")}**\n${imagesValue}`.trim(),
                 type:  hasCritical ? "failure" : "success",
             });
         }

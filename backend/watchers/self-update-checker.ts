@@ -12,7 +12,7 @@ import * as path from "path";
 import axios from "axios";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
-import { getNotificationLang } from "../notification/notification-lang";
+import { getNotificationLang, notificationText } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { SelfUpdateManager } from "../self-update/manager";
 import { atomicWriteJson } from "../self-update/state-file";
@@ -470,58 +470,72 @@ export class SelfUpdateChecker {
     const apprise = await this._loadApprise();
     if (webhooks.length === 0 && !apprise) return;
 
-    const en = (await getNotificationLang()) === "en";
+    const lang = await getNotificationLang();
+    const t = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
     const hostname = (await Settings.get("primaryHostname")) || "";
     const hostnamePrefix = hostname ? `[${hostname}] ` : "";
     const footerHost = hostname ? ` · ${hostname}` : "";
 
-    const title = `${hostnamePrefix}${en ? "🔔 Dockge-Enhanced update available" : "🔔 Mise à jour Dockge-Enhanced disponible"}`;
-    const releaseNotes = en
-      ? [
-          "**What’s new:**",
-          "• Automatic Dockge-Enhanced updates now use the exact detected digest, preserve Compose/relative bind-mount context, wait for real application readiness and keep a Restic recovery snapshot.",
-          "• The Updates tab can schedule or pause image and Dockge-Enhanced automatic updates, with mandatory Restic backup/verification and rollback on failed health checks.",
-          `Read the full changelog: https://github.com/${repo}`,
-        ]
-      : [
-          "**Nouveautés :**",
-          "• Les auto-mises à jour Dockge-Enhanced utilisent le digest exact détecté, conservent le contexte Compose et les bind mounts relatifs, attendent une application réellement prête et gardent un snapshot de récupération Restic.",
-          "• L’onglet Mises à jour permet de planifier ou suspendre les mises à jour automatiques, avec backup/vérification Restic obligatoires et rollback si le healthcheck échoue.",
-          `Lire le changelog complet : https://github.com/${repo}`,
-        ];
+    const title = `${hostnamePrefix}${t(
+      "🔔 Mise à jour Dockge-Enhanced disponible",
+      "🔔 Dockge-Enhanced update available",
+      "🔔 Actualización de Dockge-Enhanced disponible",
+      "🔔 Dockge-Enhanced 有可用更新",
+    )}`;
+    const releaseNotes = [
+      t("**Nouveautés :**", "**What’s new:**", "**Novedades:**", "**更新内容：**"),
+      t(
+        "• Les auto-mises à jour Dockge-Enhanced utilisent le digest exact détecté, conservent le contexte Compose et les bind mounts relatifs, attendent une application réellement prête et gardent un snapshot de récupération Restic.",
+        "• Automatic Dockge-Enhanced updates now use the exact detected digest, preserve Compose/relative bind-mount context, wait for real application readiness and keep a Restic recovery snapshot.",
+        "• Las actualizaciones automáticas de Dockge-Enhanced usan el digest exacto detectado, conservan el contexto Compose y los bind mounts relativos, esperan a que la aplicación esté realmente lista y mantienen una instantánea de recuperación Restic.",
+        "• Dockge-Enhanced 自动更新现在使用检测到的精确摘要，保留 Compose 上下文和相对绑定挂载，等待应用真正就绪，并保留 Restic 恢复快照。",
+      ),
+      t(
+        "• L’onglet Mises à jour permet de planifier ou suspendre les mises à jour automatiques, avec backup/vérification Restic obligatoires et rollback si le healthcheck échoue.",
+        "• The Updates tab can schedule or pause image and Dockge-Enhanced automatic updates, with mandatory Restic backup/verification and rollback on failed health checks.",
+        "• La pestaña Actualizaciones permite programar o pausar las actualizaciones automáticas, con copia/verificación Restic obligatorias y rollback si falla el healthcheck.",
+        "• “更新”标签页可安排或暂停自动更新，并要求 Restic 备份/验证；健康检查失败时会自动回滚。",
+      ),
+      t(
+        `Lire le changelog complet : https://github.com/${repo}`,
+        `Read the full changelog: https://github.com/${repo}`,
+        `Leer el registro de cambios completo: https://github.com/${repo}`,
+        `查看完整更新日志：https://github.com/${repo}`,
+      ),
+    ];
 
     const body = automaticMode
       ? [
-          en
-            ? "A new image is available on GHCR. Automatic Sidecar update is configured."
-            : "Une nouvelle image est disponible sur GHCR. La mise à jour automatique par sidecar est configurée.",
+          t(
+            "Une nouvelle image est disponible sur GHCR. La mise à jour automatique par sidecar est configurée.",
+            "A new image is available on GHCR. Automatic Sidecar update is configured.",
+            "Hay una nueva imagen disponible en GHCR. La actualización automática mediante Sidecar está configurada.",
+            "GHCR 上有新镜像可用，并已配置 Sidecar 自动更新。",
+          ),
           "",
           ...releaseNotes,
-        ].join("\n")
-      : en
-      ? [
-          "A new image is available on GHCR.",
-          "",
-          ...releaseNotes,
-          "",
-          "**To update:**",
-          "```bash",
-          `docker pull ghcr.io/${repo}:${SELF_TAG}`,
-          `docker compose up -d`,
-          "```",
-          "_Run from the folder containing your compose.yaml_",
         ].join("\n")
       : [
-          "Une nouvelle image est disponible sur GHCR.",
+          t(
+            "Une nouvelle image est disponible sur GHCR.",
+            "A new image is available on GHCR.",
+            "Hay una nueva imagen disponible en GHCR.",
+            "GHCR 上有新镜像可用。",
+          ),
           "",
           ...releaseNotes,
           "",
-          "**Pour mettre à jour :**",
+          t("**Pour mettre à jour :**", "**To update:**", "**Para actualizar:**", "**更新方法：**"),
           "```bash",
           `docker pull ghcr.io/${repo}:${SELF_TAG}`,
           `docker compose up -d`,
           "```",
-          "_Exécuter depuis le dossier contenant votre compose.yaml_",
+          t(
+            "_Exécuter depuis le dossier contenant votre compose.yaml_",
+            "_Run from the folder containing your compose.yaml_",
+            "_Ejecutar desde la carpeta que contiene compose.yaml_",
+            "_请在包含 compose.yaml 的目录中执行_",
+          ),
         ].join("\n");
 
     if (webhooks.length > 0) {
@@ -545,21 +559,32 @@ export class SelfUpdateChecker {
     const apprise = await this._loadApprise();
     if (webhooks.length === 0 && !apprise) return;
 
-    const en = (await getNotificationLang()) === "en";
+    const lang = await getNotificationLang();
+    const t = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
     const hostname = (await Settings.get("primaryHostname")) || "";
     const hostnamePrefix = hostname ? `[${hostname}] ` : "";
     const footerHost = hostname ? ` · ${hostname}` : "";
 
-    const title = `${hostnamePrefix}${en ? "✅ Dockge-Enhanced updated" : "✅ Dockge-Enhanced mis à jour"}`;
-    const body = en
-      ? [
-          `The container **${containerName}** is now running a new image.`,
-          `New digest: \`${newDigest.slice(7, 19)}\``,
-        ].join("\n")
-      : [
-          `Le conteneur **${containerName}** utilise désormais une nouvelle image.`,
-          `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
-        ].join("\n");
+    const title = `${hostnamePrefix}${t(
+      "✅ Dockge-Enhanced mis à jour",
+      "✅ Dockge-Enhanced updated",
+      "✅ Dockge-Enhanced actualizado",
+      "✅ Dockge-Enhanced 已更新",
+    )}`;
+    const body = [
+      t(
+        `Le conteneur **${containerName}** utilise désormais une nouvelle image.`,
+        `The container **${containerName}** is now running a new image.`,
+        `El contenedor **${containerName}** utiliza ahora una nueva imagen.`,
+        `容器 **${containerName}** 现在正在运行新镜像。`,
+      ),
+      t(
+        `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
+        `New digest: \`${newDigest.slice(7, 19)}\``,
+        `Nuevo digest: \`${newDigest.slice(7, 19)}\``,
+        `新摘要：\`${newDigest.slice(7, 19)}\``,
+      ),
+    ].join("\n");
 
     if (webhooks.length > 0) {
       await new DiscordNotifier(webhooks).sendEmbed({

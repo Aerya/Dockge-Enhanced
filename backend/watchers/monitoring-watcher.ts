@@ -11,7 +11,7 @@ import { R } from "redbean-node";
 import yaml from "yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
-import { getNotificationLang } from "../notification/notification-lang";
+import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
@@ -41,7 +41,7 @@ export interface MonitoringSettings {
     healthcheckCooldownMinutes: number;
     discordWebhooks: string[];
     appriseUrls: string[];
-    notificationLang: "fr" | "en";
+    notificationLang: NotificationLang;
     lowPowerMode: boolean;
 }
 
@@ -427,22 +427,27 @@ export class MonitoringWatcher {
         const hostnamePrefix = hostname ? `[${hostname}] ` : "";
         const footerHost     = hostname ? ` - ${hostname}` : "";
 
-        const en = (await getNotificationLang()) === "en";
-        const tr = (fr: string, enStr: string) => en ? enStr : fr;
+        const lang = await getNotificationLang();
+        const locale = getNotificationLocale(lang);
+        const tr = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
 
         const title = `${hostnamePrefix}` + tr(
             `Boucle de crash - ${event.containerName}`,
             `Crash loop - ${event.containerName}`,
+            `Bucle de fallos - ${event.containerName}`,
+            `崩溃循环 - ${event.containerName}`,
         );
         const desc = tr(
             `Le conteneur **${event.containerName}** a redémarré **${event.restartCount} fois** en ${event.windowMinutes} min.`,
             `Container **${event.containerName}** restarted **${event.restartCount} times** in ${event.windowMinutes} min.`,
+            `El contenedor **${event.containerName}** se reinició **${event.restartCount} veces** en ${event.windowMinutes} min.`,
+            `容器 **${event.containerName}** 在 ${event.windowMinutes} 分钟内重启了 **${event.restartCount} 次**。`,
         );
 
         if (discord) {
             await discord.sendEmbed({
                 title, color: 0xef4444, description: desc, fields: [],
-                footer: `Dockge Enhanced - Monitoring${footerHost} - ${new Date().toLocaleString(en ? "en-GB" : "fr-FR")}`,
+                footer: `Dockge Enhanced - Monitoring${footerHost} - ${new Date().toLocaleString(locale)}`,
             });
         }
         if (apprise) await apprise.send({ title, body: desc, type: "failure" });
@@ -459,22 +464,27 @@ export class MonitoringWatcher {
         const hostnamePrefix = hostname ? `[${hostname}] ` : "";
         const footerHost     = hostname ? ` - ${hostname}` : "";
 
-        const en = (await getNotificationLang()) === "en";
-        const tr = (fr: string, enStr: string) => en ? enStr : fr;
-        const actionLabel = this.healthActionLabel(event.action, en);
+        const lang = await getNotificationLang();
+        const locale = getNotificationLocale(lang);
+        const tr = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
+        const actionLabel = this.healthActionLabel(event.action, lang);
         const statusLabel = event.actionStatus === "success"
-            ? tr("action réussie", "action succeeded")
+            ? tr("action réussie", "action succeeded", "acción correcta", "操作成功")
             : event.actionStatus === "failed"
-                ? tr("action échouée", "action failed")
-                : tr("notification seule", "notification only");
+                ? tr("action échouée", "action failed", "acción fallida", "操作失败")
+                : tr("notification seule", "notification only", "solo notificación", "仅通知");
 
         const title = `${hostnamePrefix}` + tr(
             `Healthcheck unhealthy - ${event.containerName}`,
             `Healthcheck unhealthy - ${event.containerName}`,
+            `Healthcheck unhealthy - ${event.containerName}`,
+            `健康检查异常 - ${event.containerName}`,
         );
         const desc = tr(
             `Le conteneur **${event.containerName}** est passé en **unhealthy**. Mode: **${actionLabel}** (${statusLabel}). ${event.message}`,
             `Container **${event.containerName}** became **unhealthy**. Mode: **${actionLabel}** (${statusLabel}). ${event.message}`,
+            `El contenedor **${event.containerName}** pasó a **unhealthy**. Modo: **${actionLabel}** (${statusLabel}). ${event.message}`,
+            `容器 **${event.containerName}** 变为 **unhealthy**。模式：**${actionLabel}**（${statusLabel}）。${event.message}`,
         );
 
         if (discord) {
@@ -483,23 +493,23 @@ export class MonitoringWatcher {
                 color: event.actionStatus === "failed" ? 0xef4444 : 0xf59e0b,
                 description: desc,
                 fields: [
-                    { name: "Stack", value: event.stackName ?? "-", inline: true },
-                    { name: "Service", value: event.serviceName ?? "-", inline: true },
+                    { name: tr("Stack", "Stack", "Stack", "堆栈"), value: event.stackName ?? "-", inline: true },
+                    { name: tr("Service", "Service", "Servicio", "服务"), value: event.serviceName ?? "-", inline: true },
                 ],
-                footer: `Dockge Enhanced - Monitoring${footerHost} - ${new Date().toLocaleString(en ? "en-GB" : "fr-FR")}`,
+                footer: `Dockge Enhanced - Monitoring${footerHost} - ${new Date().toLocaleString(locale)}`,
             });
         }
         if (apprise) await apprise.send({ title, body: desc, type: event.actionStatus === "failed" ? "failure" : "warning" });
     }
 
-    private healthActionLabel(action: HealthAutoHealMode, en: boolean): string {
-        const labels: Record<HealthAutoHealMode, { fr: string; en: string }> = {
-            notify: { fr: "Notification seule", en: "Notify only" },
-            restart_container: { fr: "Redémarrer le conteneur", en: "Restart container" },
-            restart_service: { fr: "Redémarrer le service Compose", en: "Restart Compose service" },
-            stack_aware: { fr: "Intelligent stack/network", en: "Stack/network aware" },
+    private healthActionLabel(action: HealthAutoHealMode, lang: NotificationLang): string {
+        const labels: Record<HealthAutoHealMode, [string, string, string, string]> = {
+            notify: [ "Notification seule", "Notify only", "Solo notificación", "仅通知" ],
+            restart_container: [ "Redémarrer le conteneur", "Restart container", "Reiniciar contenedor", "重启容器" ],
+            restart_service: [ "Redémarrer le service Compose", "Restart Compose service", "Reiniciar servicio Compose", "重启 Compose 服务" ],
+            stack_aware: [ "Intelligent stack/network", "Stack/network aware", "Inteligente stack/red", "智能堆栈/网络" ],
         };
-        return en ? labels[action].en : labels[action].fr;
+        return notificationText(lang, ...labels[action]);
     }
 
     getRecentCrashEvents(): CrashEvent[] {

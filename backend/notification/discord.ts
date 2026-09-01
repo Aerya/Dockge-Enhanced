@@ -4,6 +4,7 @@
  */
 
 import axios from "axios";
+import { getNotificationLang, notificationText } from "./notification-lang";
 
 const DISCORD_API_URL = "https://discord.com";
 const discordApi = axios.create({ baseURL: DISCORD_API_URL });
@@ -146,9 +147,22 @@ export class DiscordNotifier {
     /** Teste le premier webhook de la liste */
     async testWebhook(): Promise<boolean> {
         try {
+            const lang = await getNotificationLang();
             await this.sendEmbed({
-                title: "✅ Test de notification Dockge Enhanced",
-                description: "Le webhook Discord est correctement configuré !",
+                title: notificationText(
+                    lang,
+                    "✅ Test de notification Dockge Enhanced",
+                    "✅ Dockge Enhanced notification test",
+                    "✅ Prueba de notificación de Dockge Enhanced",
+                    "✅ Dockge Enhanced 通知测试",
+                ),
+                description: notificationText(
+                    lang,
+                    "Le webhook Discord est correctement configuré !",
+                    "The Discord webhook is configured correctly!",
+                    "¡El webhook de Discord está configurado correctamente!",
+                    "Discord Webhook 配置正确！",
+                ),
                 color: 0x22c55e,
                 footer: "Dockge Enhanced",
             });

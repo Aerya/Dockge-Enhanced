@@ -116,6 +116,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.remoteUpdateBadges",
         ],
     },
+    {
+        id: "2026-09-01-four-language-enhanced",
+        items: [
+            "releaseNews.item.fourLanguageEnhanced",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

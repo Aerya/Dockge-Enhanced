@@ -18,7 +18,7 @@ import { parse as parseDotenv } from "dotenv";
 EventEmitter.defaultMaxListeners = 50;
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
-import { getNotificationLang } from "../notification/notification-lang";
+import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import {
   acceptedComposeFileNames,
@@ -76,7 +76,7 @@ export interface WatcherSettings {
   intervalHours: number;
   discordWebhooks: string[]; // liste de webhooks (migration auto depuis discordWebhook)
   credentials: RegistryCredential[];
-  notificationLang: "fr" | "en";
+  notificationLang: NotificationLang;
   autoUpdateConfig: Record<string, AutoUpdateEntry>; // clé "stack::image" → config màj auto
   pendingAutoUpdates: string[]; // clés en attente de màj planifiée
   appriseServerUrl: string; // URL du serveur Apprise (ex: "http://apprise:8000")
@@ -1477,9 +1477,9 @@ export class ImageWatcher {
         )
       : null;
     const uiUrl = this.baseUrl || null;
-    const en = (await getNotificationLang()) === "en";
-    const locale = en ? "en-GB" : "fr-FR";
-    const t = (fr: string, enStr: string) => (en ? enStr : fr);
+    const lang = await getNotificationLang();
+    const locale = getNotificationLocale(lang);
+    const t = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
     const hostname: string = (await Settings.get("primaryHostname")) || "";
     const hostnamePrefix = hostname ? `[${hostname}] ` : "";
     const footerHost = hostname ? ` · ${hostname}` : "";
@@ -1503,17 +1503,19 @@ export class ImageWatcher {
       title = `${hostnamePrefix}${t(
         `✅ ${autoUpdated.length} image(s) mise(s) à jour automatiquement`,
         `✅ ${autoUpdated.length} image(s) auto-updated`,
+        `✅ ${autoUpdated.length} imagen(es) actualizada(s) automáticamente`,
+        `✅ ${autoUpdated.length} 个镜像已自动更新`,
       )}`;
     } else if (autoUpdated.length > 0) {
       const parts = [
         autoUpdated.length > 0
-          ? `${autoUpdated.length} ${t("auto", "auto")}`
+          ? `${autoUpdated.length} ${t("auto", "auto", "auto", "自动")}`
           : "",
         scheduled.length > 0
-          ? `${scheduled.length} ${t("planifiée(s)", "scheduled")}`
+          ? `${scheduled.length} ${t("planifiée(s)", "scheduled", "programada(s)", "计划")}`
           : "",
         manual.length > 0
-          ? `${manual.length} ${t("manuelle(s)", "manual")}`
+          ? `${manual.length} ${t("manuelle(s)", "manual", "manual(es)", "手动")}`
           : "",
       ]
         .filter(Boolean)
@@ -1521,11 +1523,15 @@ export class ImageWatcher {
       title = `${hostnamePrefix}${t(
         `🐳 ${updates.length} mise(s) à jour — ${parts}`,
         `🐳 ${updates.length} update(s) — ${parts}`,
+        `🐳 ${updates.length} actualización(es) — ${parts}`,
+        `🐳 ${updates.length} 个更新 — ${parts}`,
       )}`;
     } else {
       title = `${hostnamePrefix}${t(
         `🐳 ${updates.length} mise(s) à jour disponible(s)`,
         `🐳 ${updates.length} update(s) available`,
+        `🐳 ${updates.length} actualización(es) disponible(s)`,
+        `🐳 ${updates.length} 个更新可用`,
       )}`;
     }
 
@@ -1540,33 +1546,39 @@ export class ImageWatcher {
             ? `🕐 \`${u.image}\``
             : `🔄 \`${u.image}\``,
         value:
-          `${t("Stack", "Stack")} : **${u.stack}**\n` +
+          `${t("Stack", "Stack", "Stack", "堆栈")} : **${u.stack}**\n` +
           (wasAutoUpdated
-            ? t("Mise à jour immédiate effectuée.", "Immediate update applied.")
+            ? t("Mise à jour immédiate effectuée.", "Immediate update applied.", "Actualización inmediata aplicada.", "已执行即时更新。")
             : isSched
               ? t(
                   `Mise à jour planifiée à **${entry!.time}**.`,
                   `Scheduled update at **${entry!.time}**.`,
+                  `Actualización programada a las **${entry!.time}**.`,
+                  `计划于 **${entry!.time}** 更新。`,
                 )
-              : `${t("Distant", "Remote")} : \`${u.remoteDigest.slice(0, 19)}…\`\n` +
+              : `${t("Distant", "Remote", "Remoto", "远程")} : \`${u.remoteDigest.slice(0, 19)}…\`\n` +
                 (u.localDigest
-                  ? `${t("Local", "Local")}   : \`${u.localDigest.slice(0, 19)}…\``
+                  ? `${t("Local", "Local", "Local", "本地")}   : \`${u.localDigest.slice(0, 19)}…\``
                   : t(
                       "⚠️ Image non présente localement",
                       "⚠️ Image not present locally",
+                      "⚠️ La imagen no está disponible localmente",
+                      "⚠️ 本地不存在该镜像",
                     ))),
         inline: false,
       };
     };
 
     const description =
-      `${totalChecked} ${t("image(s) vérifiée(s)", "image(s) checked")} · ${new Date().toLocaleString(locale)}\n` +
+      `${totalChecked} ${t("image(s) vérifiée(s)", "image(s) checked", "imagen(es) comprobada(s)", "个镜像已检查")} · ${new Date().toLocaleString(locale)}\n` +
       (notAuto.length > 0
         ? uiUrl
-          ? `[${t("Ouvrir Dockge", "Open Dockge")}](${uiUrl}) ${t("pour décider des mises à jour en attente.", "to review pending updates.")}`
+          ? `[${t("Ouvrir Dockge", "Open Dockge", "Abrir Dockge", "打开 Dockge")}](${uiUrl}) ${t("pour décider des mises à jour en attente.", "to review pending updates.", "para revisar las actualizaciones pendientes.", "以查看待处理更新。")}`
           : t(
               "Connectez-vous à **Dockge** pour décider des mises à jour en attente.",
               "Log in to **Dockge** to review pending updates.",
+              "Inicia sesión en **Dockge** para revisar las actualizaciones pendientes.",
+              "登录 **Dockge** 以查看待处理更新。",
             )
         : "");
 

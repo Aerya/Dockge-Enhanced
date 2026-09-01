@@ -80,7 +80,7 @@ export interface Settings {
     retention: Retention;
     includeEnvFiles: boolean;
     discordWebhooks?: string[];
-    notificationLang?: "fr" | "en";
+    notificationLang?: "fr" | "en" | "es" | "zh-CN";
     volumeBackup: VolumeBackupConfig;
     extraPaths?: string[];
     backupOnSave: boolean;

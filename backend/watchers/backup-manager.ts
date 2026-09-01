@@ -13,7 +13,7 @@ import * as path from "path";
 import * as yaml from "js-yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
-import { getNotificationLang } from "../notification/notification-lang";
+import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { ValidationError } from "../util-server";
 
@@ -130,7 +130,7 @@ export interface BackupSettings {
     includeEnvFiles: boolean;
     extraPaths: string[];
     volumeBackup: VolumeBackupConfig;
-    notificationLang: "fr" | "en";
+    notificationLang: NotificationLang;
     backupOnSave: boolean;               // déclenche un backup immédiat quand un compose est sauvegardé
     preventConcurrentBackups: boolean;   // refuse un nouveau backup tant que le précédent tourne
     excludedStacks: string[];            // stacks exclues de la sauvegarde
@@ -2052,16 +2052,25 @@ export class BackupManager {
         const apprise = await this.loadAppriseNotifier();
         if (!discord && !apprise) return;
 
-        const en     = (await getNotificationLang()) === "en";
-        const locale = en ? "en-GB" : "fr-FR";
+        const lang   = await getNotificationLang();
+        const locale = getNotificationLocale(lang);
+        const t      = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
         const hostname: string = await Settings.get("primaryHostname") || "";
         const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
         const footerHost       = hostname ? ` · ${hostname}` : "";
         const hours  = Math.floor(ageMs / 3_600_000);
-        const title  = `${hostnamePrefix}${en ? "⚠️ Dockge backup overdue" : "⚠️ Backup Dockge en retard"}`;
-        const descr  = en
-            ? `No successful backup in the last **${hours}h**. Please check your backup configuration.`
-            : `Aucun backup réussi depuis **${hours}h**. Vérifiez votre configuration de backup.`;
+        const title  = `${hostnamePrefix}${t(
+            "⚠️ Backup Dockge en retard",
+            "⚠️ Dockge backup overdue",
+            "⚠️ Copia de Dockge atrasada",
+            "⚠️ Dockge 备份已逾期",
+        )}`;
+        const descr  = t(
+            `Aucun backup réussi depuis **${hours}h**. Vérifiez votre configuration de backup.`,
+            `No successful backup in the last **${hours}h**. Please check your backup configuration.`,
+            `No hay ninguna copia correcta desde hace **${hours} h**. Comprueba la configuración de copias de seguridad.`,
+            `过去 **${hours} 小时**没有成功备份。请检查备份配置。`,
+        );
 
         if (discord) {
             await discord.sendEmbed({
@@ -2096,29 +2105,30 @@ export class BackupManager {
         const apprise  = await this.loadAppriseNotifier();
         if (!discord && !apprise) return;
 
-        const en       = (await getNotificationLang()) === "en";
-        const locale   = en ? "en-GB" : "fr-FR";
-        const t        = (fr: string, enStr: string) => en ? enStr : fr;
+        const lang     = await getNotificationLang();
+        const locale   = getNotificationLocale(lang);
+        const t        = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
         const hostname: string = await Settings.get("primaryHostname") || "";
         const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
         const footerHost       = hostname ? ` · ${hostname}` : "";
 
         if (result.success) {
-            const title  = `${hostnamePrefix}${t("✅ Backup Dockge réussi", "✅ Dockge backup successful")}`;
-            const descr  = `Snapshot \`${result.snapshotId}\` ${t("créé avec succès", "created successfully")}`;
+            const title  = `${hostnamePrefix}${t("✅ Backup Dockge réussi", "✅ Dockge backup successful", "✅ Copia de Dockge correcta", "✅ Dockge 备份成功")}`;
+            const descr  = `Snapshot \`${result.snapshotId}\` ${t("créé avec succès", "created successfully", "creada correctamente", "创建成功")}`;
             const fields: Array<{ name: string; value: string; inline: boolean }> = [
-                { name: t("Durée", "Duration"),
+                { name: t("Durée", "Duration", "Duración", "耗时"),
                   value: formatDuration(result.duration),                                  inline: true },
-                { name: t("Données ajoutées", "Data added"),
+                { name: t("Données ajoutées", "Data added", "Datos añadidos", "新增数据"),
                   value: formatBytes(result.dataAdded ?? 0),                               inline: true },
-                { name: t("Fichiers", "Files"),
-                  value: `${result.filesNew} ${t("nouveaux", "new")} · ${result.filesChanged} ${t("modifiés", "modified")}`,
+                { name: t("Fichiers", "Files", "Archivos", "文件"),
+                  value: `${result.filesNew} ${t("nouveaux", "new", "nuevos", "新增")} · ${result.filesChanged} ${t("modifiés", "modified", "modificados", "已修改")}`,
                   inline: true },
-                { name: t("Destinations", "Destinations"),
+                { name: t("Destinations", "Destinations", "Destinos", "目标"),
                   value: (result.destinations ?? [])
                       .map(d => {
                           const rt = d.restoreTest;
-                          const rtIcon = rt == null ? "" : (rt.ok ? " · Restore test ✅" : " · Restore test ❌");
+                          const rtLabel = t("Test de restauration", "Restore test", "Prueba de restauración", "恢复测试");
+                          const rtIcon = rt == null ? "" : (rt.ok ? ` · ${rtLabel} ✅` : ` · ${rtLabel} ❌`);
                           return `${d.success ? "✅" : "❌"} ${d.label}${rtIcon}`;
                       })
                       .join("\n") || "—",
@@ -2127,7 +2137,7 @@ export class BackupManager {
 
             if ((result.warnings ?? []).length > 0) {
                 fields.push({
-                    name: t("⚠️ Avertissements", "⚠️ Warnings"),
+                    name: t("⚠️ Avertissements", "⚠️ Warnings", "⚠️ Advertencias", "⚠️ 警告"),
                     value: result.warnings!.slice(0, 8).join("\n"),
                     inline: false,
                 });
@@ -2144,12 +2154,12 @@ export class BackupManager {
                 await apprise.send({ title, body, type: "success" });
             }
         } else {
-            const title  = `${hostnamePrefix}${t("❌ Échec du backup Dockge", "❌ Dockge backup failed")}`;
-            const descr  = `**${t("Erreur", "Error")} :** ${result.error}`;
+            const title  = `${hostnamePrefix}${t("❌ Échec du backup Dockge", "❌ Dockge backup failed", "❌ Error en la copia de Dockge", "❌ Dockge 备份失败")}`;
+            const descr  = `**${t("Erreur", "Error", "Error", "错误")} :** ${result.error}`;
             const fields: Array<{ name: string; value: string; inline: boolean }> = [
-                { name: t("Durée", "Duration"),
+                { name: t("Durée", "Duration", "Duración", "耗时"),
                   value: formatDuration(result.duration),                                  inline: true },
-                { name: t("Destinations", "Destinations"),
+                { name: t("Destinations", "Destinations", "Destinos", "目标"),
                   value: (result.destinations ?? [])
                       .map(d => `${d.success ? "✅" : "❌"} ${d.label}`)
                       .join("\n") || "—",
@@ -2158,7 +2168,7 @@ export class BackupManager {
 
             if ((result.warnings ?? []).length > 0) {
                 fields.push({
-                    name: t("⚠️ Avertissements", "⚠️ Warnings"),
+                    name: t("⚠️ Avertissements", "⚠️ Warnings", "⚠️ Advertencias", "⚠️ 警告"),
                     value: result.warnings!.slice(0, 8).join("\n"),
                     inline: false,
                 });
