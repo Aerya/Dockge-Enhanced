@@ -32,7 +32,11 @@
                 <span v-else>{{ endpointDisplay }}</span>
             </div>
             <div class="meta-row">
-                <StackUpdateBadge :stack-name="stackName" />
+                <StackUpdateBadge
+                    :stack-name="stackName"
+                    :endpoint="stack.endpoint"
+                    :load-remote-status="loadRemoteImageStatus"
+                />
                 <StackStatsBadge :stack-name="stackName" />
             </div>
         </div>
@@ -86,6 +90,11 @@ export default {
         },
     },
     emits: [ "toggle-pin" ],
+    methods: {
+        loadRemoteImageStatus(endpoint, callback) {
+            this.$root.emitAgent(endpoint, "watcherImageStatusGet", callback);
+        },
+    },
     computed: {
         endpointDisplay() {
             return this.$root.endpointDisplayFunction(this.stack.endpoint);

@@ -71,6 +71,7 @@
     "releaseNews.item.logFollowToggle": "A Pause/Resume control freezes the current reading position while live lines keep arriving, then jumps back to the latest logs when following resumes.",
     "releaseNews.item.safeSelfUpdates": "An Updates tab lets you schedule or pause automatic updates for images and Dockge-Enhanced. Sidecar mode displays the mandatory Restic backup and verification, prefers the existing Compose stack and automatically restores the previous container if its health check fails.",
     "releaseNews.item.selfUpdateHardening": "Dockge-Enhanced self-updates now use the exact detected digest, preserve Compose paths and relative bind mounts, wait for real application readiness and keep a recovery snapshot in the Restic backup.",
+    "releaseNews.item.remoteUpdateBadges": "Image update badges in the stack list now also show updates detected by remote Dockge-Enhanced instances, with status kept separate for each server.",
     "releaseNews.close": "Close",
     "releaseNews.gotIt": "Got it",
     "Create your admin account": "Create your admin account",

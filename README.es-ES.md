@@ -11,7 +11,7 @@
 
 Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/dockge) — agrega monitoreo de imágenes, escaneo de seguridad, copias de seguridad automáticas, detección de bucles de fallo y gestión de recursos de Docker, todo desde la interfaz web.
 
-> 🇪🇸 Español · 🇬🇧 [English](README.md) · 🇫🇷 [Français](README.fr.md) · [Artículo de presentación (en francés)](https://upandclear.org/2026/03/28/gerer-ses-conteneurs-docker-autrement-le-fork-dockge-enhanced-surveillance-dimages-scan-cve-backup-automatique-gestion-des-ressources/)
+> 🇪🇸 Español · 🇬🇧 [English](README.md) · 🇫🇷 [Français](README.fr.md)
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
@@ -40,6 +40,10 @@ Una vez instalada esta versión, la actualización automática funcionará con n
 
 **Mis disculpas a los usuarios afectados.** Esta función está precisamente pensada para evitar intervenciones manuales, por lo que se trata de un fallo especialmente inoportuno. Gracias a quienes usan y prueban Dockge-Enhanced y ayudan a detectar rápidamente este tipo de problemas.
 
+<p align="center">
+  <img src="screens/D-E.vs.Others.EN.09.26.png" alt="Dockge Enhanced comparison" width="100%">
+</p>
+
 ## Funcionalidades
 
 ### Lo que distingue a Dockge Enhanced
@@ -59,6 +63,9 @@ Una vez instalada esta versión, la actualización automática funcionará con n
 
 <details>
 <summary><strong>Mostrar el catálogo completo de funcionalidades</strong></summary>
+
+**2026-09-01 — Indicadores de actualización para stacks remotas** — El estado de las actualizaciones de imágenes ahora se obtiene de cada instancia Dockge-Enhanced conectada y se mantiene separado por endpoint. El indicador de **actualización** aparece así también en los stacks remotos, sin mezclar stacks con el mismo nombre alojados en servidores diferentes.
+
 
 **2026-08-31 — Autoactualización segura de Dockge-Enhanced** — La nueva pestaña **Actualizaciones** reúne los controles de Dockge-Enhanced y de las imágenes. Mantenga manual la actualización de Dockge-Enhanced o active el modo Sidecar, deliberadamente limitado, de inmediato o en una franja y los días seleccionados. Una copia Restic y una verificación de integridad del repositorio son obligatorias antes de cada actualización; la pestaña muestra el destino en curso y el avance en bytes de la copia, y la actualización se detiene si falla cualquiera de los dos pasos. Se aplaza mientras haya una operación de imágenes, una copia o verificación de Restic, o un análisis Trivy en curso, y se reutilizan las notificaciones existentes de Discord y Apprise para avisar de disponibilidad, aplazamiento y resultado. El updater asociado a la versión instala el digest exacto detectado, conserva el directorio de trabajo Compose absoluto original (incluida la resolución de bind mounts relativos) y exige que la aplicación permanezca lista antes de declarar el éxito. El sidecar no publica puertos, solo acepta un plan firmado para su propio contenedor Dockge-Enhanced y el repositorio configurado, y prioriza el proyecto Docker Compose existente de la stack; si la configuración Compose no está disponible, usa una instantánea de recuperación Docker que conserva la configuración inspeccionada del contenedor, pero no puede reflejar cambios posteriores en el archivo Compose. Este archivo de recuperación con modo `0600` se escribe en los datos persistentes antes de ejecutar Restic para quedar incluido en la copia obligatoria; puede contener las variables de entorno necesarias para recrear el contenedor y debe permanecer protegido junto con el volumen de datos de Dockge. Si falla la readiness se restaura automáticamente la imagen anterior inmutable. La pausa global abarca Dockge-Enhanced y todas las imágenes Docker gestionadas; también se puede pausar temporalmente una imagen concreta. La opción Remote Agent permanece visible pero no está disponible hasta que exista un agente de host dedicado.
 

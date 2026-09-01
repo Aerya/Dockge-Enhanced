@@ -341,6 +341,7 @@
     "releaseNews.item.liveStackLogsRefresh": "堆栈日志在启动、停止、重启、更新和重新创建操作后自动重连，同时保留服务、时间范围和时间戳的选择。",
     "releaseNews.item.safeSelfUpdates": "“更新”标签页可为镜像和 Dockge-Enhanced 安排或暂停自动更新。Sidecar 模式会显示必需的 Restic 备份及验证，优先使用现有 Compose 堆栈，并在健康检查失败时自动恢复此前的容器。",
     "releaseNews.item.selfUpdateHardening": "Dockge-Enhanced 自更新现在使用检测到的精确摘要，保留 Compose 路径和相对绑定挂载，等待应用真正就绪，并在 Restic 备份中保存恢复快照。",
+    "releaseNews.item.remoteUpdateBadges": "堆栈列表中的镜像更新标记现在也会显示远程 Dockge-Enhanced 实例检测到的更新，并按服务器分别保存状态。",
     "releaseNews.item.logWrap": "日志按钮可切换自动换行，或将每条完整日志保持在一行并支持横向滚动。",
     "releaseNews.item.logs": "响应式日志面板，支持搜索、服务筛选、时间戳，以及 x1、x1.5 或 x2 高度。",
     "releaseNews.item.rawComposeCopy": "专用操作可复制不带行号或视觉选择痕迹的原始 Compose YAML。",

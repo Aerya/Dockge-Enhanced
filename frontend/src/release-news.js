@@ -110,6 +110,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.selfUpdateHardening",
         ],
     },
+    {
+        id: "2026-09-01-remote-update-badges",
+        items: [
+            "releaseNews.item.remoteUpdateBadges",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

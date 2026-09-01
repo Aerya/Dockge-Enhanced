@@ -9,7 +9,7 @@
 
 A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image monitoring, security scanning, automatic backups, crash-loop detection and Docker resource management, all from the web UI.
 
-> 🇬🇧 English · 🇫🇷 [Français](README.fr.md) · 🇪🇸 [Español](README.es-ES.md) · [Presentation article (in French)](https://upandclear.org/2026/03/28/gerer-ses-conteneurs-docker-autrement-le-fork-dockge-enhanced-surveillance-dimages-scan-cve-backup-automatique-gestion-des-ressources/)
+> 🇬🇧 English · 🇫🇷 [Français](README.fr.md) · 🇪🇸 [Español](README.es-ES.md)
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
@@ -38,6 +38,10 @@ Once this version is installed, self-updates will work normally.
 
 **My apologies to the affected users.** This feature is specifically meant to avoid manual intervention, so this was obviously a particularly unfortunate bug. Thank you to everyone using and testing Dockge-Enhanced and helping identify this kind of issue quickly.
 
+<p align="center">
+  <img src="screens/D-E.vs.Others.EN.09.26.png" alt="Dockge Enhanced comparison" width="100%">
+</p>
+
 ## Features
 
 ### What sets Dockge Enhanced apart
@@ -57,6 +61,9 @@ Once this version is installed, self-updates will work normally.
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
+
+**2026-09-01 — Remote update badges in multi-server stack lists** — Image update status is now retrieved from each connected Dockge-Enhanced instance and kept scoped to its endpoint. The **Update** badge therefore appears for remote stacks as well as local ones, without mixing identically named stacks hosted on different servers.
+
 
 **2026-08-31 — Safe Dockge-Enhanced self-updates** — The new **Updates** tab brings Dockge-Enhanced and image-update controls together. Keep self-updates manual, or use the deliberately restricted Sidecar mode immediately or in a selected maintenance window and on selected days. A Restic backup and repository integrity check are mandatory before every self-update; their current destination and backup byte progress are shown in the tab, and the update stops if either step fails. It is postponed while image work, a Restic backup or verification, or a Trivy scan is running, with existing Discord and Apprise notifications reused for availability, deferral and completion. The version-matched updater installs the exact detected image digest, keeps the original absolute Compose working directory (including relative bind-mount semantics), and requires the application to remain ready before declaring success. The sidecar has no published port, accepts only a signed plan for its own Dockge-Enhanced container and configured repository, and prefers the stack's existing Docker Compose project; when that Compose configuration is unavailable it falls back to a Docker recovery snapshot, which preserves the inspected container configuration but cannot reflect later Compose-file changes. This `0600` recovery file is written under the persistent self-update data before Restic runs so it is included in the mandatory backup; it may contain the environment values required to recreate the container and must therefore remain protected with the Dockge data volume. Failed readiness automatically restores the immutable previous image. Global pause covers Dockge-Enhanced and every managed Docker image, while an individual image can also be paused temporarily. The Remote Agent option is visible but unavailable until a dedicated host agent exists.
 
