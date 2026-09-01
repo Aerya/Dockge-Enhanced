@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - "README.md"
-      - "README.fr.md"
+      - "README*.md"
+      - "screens/**"
       - "*.sh"
       - ".github/workflows/sync-upstream.yml"
   workflow_dispatch:
