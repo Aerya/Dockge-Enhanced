@@ -44,8 +44,11 @@ export default {
 
 <style scoped>
 .badge {
-    min-width: 62px;
-
+    min-width: 0;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.72rem;
+    line-height: 1.05;
+    vertical-align: middle;
 }
 
 .fixed-width {
