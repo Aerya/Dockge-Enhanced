@@ -653,9 +653,31 @@ export class WatcherRouter extends Router {
         // SELF-UPDATE — Statut de la mise à jour de Dockge-Enhanced
         // ════════════════════════════════════════════════════════════════
 
-        router.get("/self/status", (_req: Request, res: Response) => {
+        router.get("/self/status", async (_req: Request, res: Response) => {
             const manager = SelfUpdateManager.getInstance();
-            res.json({ ok: true, ...SelfUpdateChecker.getInstance().getStatus(), operation: manager.getOperation(), progress: manager.getProgress() });
+            const operation = await manager.refreshOperation();
+            res.json({
+                ok: true,
+                ...SelfUpdateChecker.getInstance().getStatus(),
+                operation,
+                progress: manager.getProgress(),
+                selfUpdateSettings: manager.getSettings(),
+            });
+        });
+
+        router.post("/self/check", async (_req: Request, res: Response) => {
+            const checker = SelfUpdateChecker.getInstance();
+            await checker.check();
+
+            const manager = SelfUpdateManager.getInstance();
+            const operation = await manager.refreshOperation();
+            res.json({
+                ok: true,
+                ...checker.getStatus(),
+                operation,
+                progress: manager.getProgress(),
+                selfUpdateSettings: manager.getSettings(),
+            });
         });
 
         router.get("/self/settings", (_req: Request, res: Response) => {

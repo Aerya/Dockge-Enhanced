@@ -133,7 +133,6 @@ function formatBytes(value?: number): string {
 async function startUpdate() {
     if (!status.value.repo || !status.value.remoteDigest) return;
     updating.value = true;
-    statusTimer = setInterval(load, 2_000);
     try {
         const res = await watcherApi("POST", "/self/update", { targetImage: `ghcr.io/${status.value.repo}@${status.value.remoteDigest}` });
         if (res.ok) {
@@ -142,12 +141,15 @@ async function startUpdate() {
         }
     } finally {
         updating.value = false;
-        if (statusTimer) clearInterval(statusTimer);
-        statusTimer = undefined;
+        await load();
     }
 }
 
-onMounted(load);
+onMounted(async () => {
+    await watcherApi("POST", "/self/check");
+    await load();
+    statusTimer = setInterval(load, 2_500);
+});
 onBeforeUnmount(() => { if (statusTimer) clearInterval(statusTimer); });
 </script>
 

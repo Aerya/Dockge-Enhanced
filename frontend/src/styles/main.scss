@@ -8,6 +8,19 @@ body {
     color: var(--text-color);
 }
 
+// Bootstrap utility text uses its own palette. In dark mode, never let
+// muted/secondary helper text become dimmer than Dockge-Enhanced's
+// --text-muted reference. Brighter semantic colors are left untouched.
+.dark {
+    .text-muted,
+    .text-secondary,
+    .text-body-secondary,
+    .text-body-tertiary,
+    .form-text {
+        color: var(--text-muted) !important;
+    }
+}
+
 #app {
     font-family: var(--font-sans);
 }
@@ -73,7 +86,7 @@ optgroup {
 
 .dark {
     optgroup {
-        color: #535864;
+        color: var(--text-muted);
         option {
             color: $dark-font-color;
         }
@@ -408,7 +421,7 @@ optgroup {
 
 .form-floating > label {
     .dark & {
-        color: $dark-font-color3 !important;
+        color: var(--text-muted) !important;
     }
 }
 

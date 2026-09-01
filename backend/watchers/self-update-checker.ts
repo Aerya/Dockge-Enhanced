@@ -26,7 +26,8 @@ const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 const DIGEST_CACHE = path.join(DATA_DIR, "self-update-digest.json");
 const DOCKER_SOCKET =
   process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock";
-const CHECK_INTERVAL = 6 * 60 * 60 * 1000; // 6h
+const CHECK_INTERVAL = 10 * 60 * 1000; // 10 min
+const CHECK_JITTER = 2 * 60 * 1000; // ±2 min pour étaler les requêtes GHCR
 const STARTUP_DELAY = 30_000; // 30s après démarrage
 
 interface ImagePlatform {
@@ -322,7 +323,7 @@ export class SelfUpdateChecker {
   private _lastKnownLocalDigest = "";
 
   private _startupTimer: ReturnType<typeof setTimeout> | null = null;
-  private _intervalTimer: ReturnType<typeof setInterval> | null = null;
+  private _intervalTimer: ReturnType<typeof setTimeout> | null = null;
 
   static getInstance(): SelfUpdateChecker {
     if (!this._instance) this._instance = new SelfUpdateChecker();
@@ -335,9 +336,24 @@ export class SelfUpdateChecker {
 
   start(): void {
     this._loadDigestCache().then(() => {
-      this._startupTimer = setTimeout(() => this.check(), STARTUP_DELAY);
-      this._intervalTimer = setInterval(() => this.check(), CHECK_INTERVAL);
+      this._startupTimer = setTimeout(async () => {
+        await this.check();
+        this._scheduleNextCheck();
+      }, STARTUP_DELAY);
     });
+  }
+
+  private _scheduleNextCheck(): void {
+    const jitter = (Math.random() * 2 - 1) * CHECK_JITTER;
+    const delay = Math.max(1_000, Math.round(CHECK_INTERVAL + jitter));
+
+    this._intervalTimer = setTimeout(async () => {
+      try {
+        await this.check();
+      } finally {
+        this._scheduleNextCheck();
+      }
+    }, delay);
   }
 
   private async _loadDigestCache(): Promise<void> {
@@ -346,14 +362,19 @@ export class SelfUpdateChecker {
       const data = JSON.parse(raw) as Record<string, unknown>;
       this._lastKnownLocalDigest =
         typeof data.localDigest === "string" ? data.localDigest : "";
+      this._notifiedRemoteDigest =
+        typeof data.notifiedRemoteDigest === "string" ? data.notifiedRemoteDigest : "";
     } catch {
       /* premier démarrage */
     }
   }
 
-  private async _saveDigestCache(localDigest: string): Promise<void> {
+  private async _saveDigestCache(localDigest = this._lastKnownLocalDigest): Promise<void> {
     try {
-      await atomicWriteJson(DIGEST_CACHE, { localDigest });
+      await atomicWriteJson(DIGEST_CACHE, {
+        localDigest,
+        notifiedRemoteDigest: this._notifiedRemoteDigest,
+      });
     } catch {
       /* non bloquant */
     }
@@ -361,7 +382,7 @@ export class SelfUpdateChecker {
 
   stop(): void {
     if (this._startupTimer) clearTimeout(this._startupTimer);
-    if (this._intervalTimer) clearInterval(this._intervalTimer);
+    if (this._intervalTimer) clearTimeout(this._intervalTimer);
   }
 
   async check(): Promise<void> {
@@ -422,6 +443,9 @@ export class SelfUpdateChecker {
       const automaticMode = SelfUpdateManager.getInstance().isAutomaticMode();
       if (updateAvailable && this._notifiedRemoteDigest !== remoteDigest) {
         this._notifiedRemoteDigest = remoteDigest;
+        // Persist before notifying: if an immediate automatic update restarts
+        // Dockge-Enhanced, the new process must not announce the same digest again.
+        await this._saveDigestCache();
         await this._notifyAvailable(containerName, repo, automaticMode);
       }
 
@@ -452,13 +476,33 @@ export class SelfUpdateChecker {
     const footerHost = hostname ? ` · ${hostname}` : "";
 
     const title = `${hostnamePrefix}${en ? "🔔 Dockge-Enhanced update available" : "🔔 Mise à jour Dockge-Enhanced disponible"}`;
+    const releaseNotes = en
+      ? [
+          "**What’s new:**",
+          "• Automatic Dockge-Enhanced updates now use the exact detected digest, preserve Compose/relative bind-mount context, wait for real application readiness and keep a Restic recovery snapshot.",
+          "• The Updates tab can schedule or pause image and Dockge-Enhanced automatic updates, with mandatory Restic backup/verification and rollback on failed health checks.",
+          `Read the full changelog: https://github.com/${repo}`,
+        ]
+      : [
+          "**Nouveautés :**",
+          "• Les auto-mises à jour Dockge-Enhanced utilisent le digest exact détecté, conservent le contexte Compose et les bind mounts relatifs, attendent une application réellement prête et gardent un snapshot de récupération Restic.",
+          "• L’onglet Mises à jour permet de planifier ou suspendre les mises à jour automatiques, avec backup/vérification Restic obligatoires et rollback si le healthcheck échoue.",
+          `Lire le changelog complet : https://github.com/${repo}`,
+        ];
+
     const body = automaticMode
-      ? (en
-        ? "A new image is available on GHCR. Automatic Sidecar update is configured."
-        : "Une nouvelle image est disponible sur GHCR. La mise à jour automatique par sidecar est configurée.")
+      ? [
+          en
+            ? "A new image is available on GHCR. Automatic Sidecar update is configured."
+            : "Une nouvelle image est disponible sur GHCR. La mise à jour automatique par sidecar est configurée.",
+          "",
+          ...releaseNotes,
+        ].join("\n")
       : en
       ? [
           "A new image is available on GHCR.",
+          "",
+          ...releaseNotes,
           "",
           "**To update:**",
           "```bash",
@@ -469,6 +513,8 @@ export class SelfUpdateChecker {
         ].join("\n")
       : [
           "Une nouvelle image est disponible sur GHCR.",
+          "",
+          ...releaseNotes,
           "",
           "**Pour mettre à jour :**",
           "```bash",
@@ -507,11 +553,11 @@ export class SelfUpdateChecker {
     const title = `${hostnamePrefix}${en ? "✅ Dockge-Enhanced updated" : "✅ Dockge-Enhanced mis à jour"}`;
     const body = en
       ? [
-          `The container **${containerName}** was updated automatically.`,
+          `The container **${containerName}** is now running a new image.`,
           `New digest: \`${newDigest.slice(7, 19)}\``,
         ].join("\n")
       : [
-          `Le conteneur **${containerName}** a été mis à jour automatiquement.`,
+          `Le conteneur **${containerName}** utilise désormais une nouvelle image.`,
           `Nouveau digest : \`${newDigest.slice(7, 19)}\``,
         ].join("\n");
 

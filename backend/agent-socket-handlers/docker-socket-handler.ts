@@ -3,12 +3,13 @@ import { DockgeServer } from "../dockge-server";
 import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
 import { Stack } from "../stack";
 import { AgentSocket } from "../../common/agent-socket";
-import { imageStatusStore } from "../watchers/image-watcher";
+import { ImageWatcher, imageStatusStore, WatcherSettings } from "../watchers/image-watcher";
 import { BackupManager } from "../watchers/backup-manager";
 import { isLowPower } from "../low-power";
 import { AuditLogger } from "../audit-log";
 import { getVolumeMounts, listDir, readFile, writeFile, createEntry, renameEntry, removeEntry, uploadFile } from "../volume-files";
 import { StartGuardWatcher } from "../watchers/start-guard-watcher";
+import { normalizeUpdatePause } from "../watchers/update-policy";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -91,6 +92,77 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     msgi18n: true,
                 }, callback);
 
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("watcherImageAutoUpdateGet", (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({
+                    ok: true,
+                    data: ImageWatcher.getInstance().getAutoUpdateState(),
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("watcherImageAutoUpdateSet", async (payload : unknown, callback) => {
+            try {
+                checkLogin(socket);
+
+                const data = payload && typeof payload === "object" ? payload as {
+                    key?: unknown;
+                    mode?: unknown;
+                    time?: unknown;
+                    pause?: unknown;
+                } : {};
+                const key = typeof data.key === "string" ? data.key : "";
+                const mode = data.mode;
+                const time = typeof data.time === "string" ? data.time : undefined;
+
+                if (!key || !key.includes("::")) {
+                    throw new ValidationError("key must use stack::image format");
+                }
+                if (![ "off", "immediate", "scheduled", "ignored" ].includes(String(mode))) {
+                    throw new ValidationError("invalid auto-update mode");
+                }
+                if (mode === "scheduled" && time !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+                    throw new ValidationError("invalid scheduled time");
+                }
+
+                const watcher = ImageWatcher.getInstance();
+                const autoUpdateConfig = { ...(watcher.settings.autoUpdateConfig ?? {}) };
+                let pendingAutoUpdates = [ ...(watcher.settings.pendingAutoUpdates ?? []) ];
+
+                if (mode === "off") {
+                    delete autoUpdateConfig[key];
+                    pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
+                    await watcher.saveSettings({ autoUpdateConfig, pendingAutoUpdates });
+                } else {
+                    pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
+                    const existingPause = autoUpdateConfig[key]?.pause;
+                    const effectivePause = data.pause === undefined
+                        ? normalizeUpdatePause(existingPause)
+                        : normalizeUpdatePause(data.pause);
+
+                    autoUpdateConfig[key] = mode === "scheduled"
+                        ? { mode, time: time ?? "02:00", pause: effectivePause }
+                        : { mode: mode as "immediate" | "ignored", pause: effectivePause };
+
+                    const patch: Partial<WatcherSettings> = { autoUpdateConfig, pendingAutoUpdates };
+                    if (!watcher.settings.enabled && mode !== "ignored") {
+                        patch.enabled = true;
+                    }
+                    await watcher.saveSettings(patch);
+                }
+
+                callbackResult({
+                    ok: true,
+                    data: watcher.getAutoUpdateState(),
+                }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
