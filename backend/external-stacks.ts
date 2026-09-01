@@ -133,10 +133,11 @@ export class ExternalStackManager {
     }
 
     async discover(): Promise<DiscoveredExternalStack[]> {
-        const result = await childProcessAsync.spawn("docker", [ "ps", "-aq" ], { encoding: "utf8" });
+        const options = { encoding: "utf8", maxBuffer: 20 * 1024 * 1024 };
+        const result = await childProcessAsync.spawn("docker", [ "ps", "-aq", "--filter", "label=com.docker.compose.project" ], options);
         const ids = (result.stdout?.toString() ?? "").split("\n").map((id) => id.trim()).filter(Boolean);
         if (ids.length === 0) return [];
-        const inspected = await childProcessAsync.spawn("docker", [ "inspect", ...ids ], { encoding: "utf8" });
+        const inspected = await childProcessAsync.spawn("docker", [ "inspect", ...ids ], options);
         const containers = JSON.parse(inspected.stdout?.toString() ?? "[]") as DockerInspect[];
         const byProject = new Map<string, { status: string; composeFile: string | null; workingDir: string | null; mounts: Set<string> }>();
         for (const container of containers) {
