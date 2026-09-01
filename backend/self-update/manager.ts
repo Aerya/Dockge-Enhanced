@@ -9,6 +9,7 @@ import { TrivyScanner } from "../watchers/trivy-scanner";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
+import { getNotificationLang } from "../notification/notification-lang";
 import { SelfUpdateOperation, SelfUpdatePlan, SelfUpdateProgress, SelfUpdateSettings } from "./types";
 import { DEFAULT_SELF_UPDATE_SETTINGS, normalizeSelfUpdateSettings, selfUpdateMayRun } from "./settings";
 import { isAllowedTargetImage, isPathInside, isSafeComposeName, isSelfUpdateActive, normalizeSelfRepository } from "./policy";
@@ -87,6 +88,43 @@ export class SelfUpdateManager {
     getSettings(): SelfUpdateSettings { return JSON.parse(JSON.stringify(this.settings)); }
     getOperation(): SelfUpdateOperation { return { ...this.operation }; }
     getProgress(): SelfUpdateProgress | null { return this.progress ? { ...this.progress } : null; }
+
+    async refreshOperation(): Promise<SelfUpdateOperation> {
+        try {
+            const diskOperation = { ...idle(), ...JSON.parse(await fs.readFile(STATUS_PATH, "utf8")) } as SelfUpdateOperation;
+            this.operation = diskOperation;
+        } catch {
+            // Keep the in-memory state if the sidecar has not written a status yet.
+        }
+
+        // A detached sidecar can disappear before it has a chance to persist an
+        // error (bad permissions, runtime crash, etc.). Do not leave the UI stuck
+        // forever on "Updater sidecar started" in that case.
+        if (
+            this.operation.state === "updating"
+            && this.operation.message === "Updater sidecar started"
+            && this.operation.id
+            && this.operation.startedAt
+            && Date.now() - Date.parse(this.operation.startedAt) > 15_000
+        ) {
+            try {
+                await docker([ "container", "inspect", `dockge-enhanced-updater-${this.operation.id}`, "--format", "{{.State.Running}}" ], 10_000);
+            } catch {
+                this.operation = {
+                    ...this.operation,
+                    state: "failed",
+                    message: "Updater sidecar stopped unexpectedly before reporting its status",
+                    finishedAt: new Date().toISOString(),
+                    notificationPending: true,
+                    notificationSentAt: null,
+                };
+                await this.saveOperation();
+            }
+        }
+
+        await this.processTerminalNotification();
+        return this.getOperation();
+    }
 
     async saveSettings(value: unknown): Promise<SelfUpdateSettings> {
         this.settings = normalizeSelfUpdateSettings(value);
@@ -194,7 +232,28 @@ export class SelfUpdateManager {
         const dockerSocket = process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock";
         const socketGroup = (await fs.stat(dockerSocket)).gid;
         const sidecarImage = process.env.DOCKGE_SELF_UPDATE_SIDECAR_IMAGE?.trim() || `ghcr.io/${plan.allowedRepository}-updater:${packageJSON.version}`;
-        const args = [ "run", "-d", "--rm", "--name", `dockge-enhanced-updater-${plan.id}`, "--label", "io.dockge-enhanced.self-update=true", "--group-add", String(socketGroup), "-v", `${dockerSocket}:/var/run/docker.sock`, "-v", `${stateSource}:/state`, "-e", `SELF_UPDATE_PLAN=/state/self-update/${plan.id}.json`, "-e", `SELF_UPDATE_ALLOW_TEST_IMAGES=${process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? ""}`, "-e", `SELF_UPDATE_ALLOWED_REPOSITORY=${plan.allowedRepository}`, "-e", `SELF_UPDATE_TARGET_CONTAINER_ID=${plan.targetContainerId}`, "-e", `SELF_UPDATE_TARGET_CONTAINER_NAME=${plan.targetContainerName}`, sidecarImage ];
+        const args = [
+            "run", "-d", "--rm",
+            "--name", `dockge-enhanced-updater-${plan.id}`,
+            "--label", "io.dockge-enhanced.self-update=true",
+            // State files are intentionally 0600 in a 0700 directory. The updater
+            // therefore needs root inside its own container to read/write them.
+            // Drop every Linux capability and forbid privilege escalation: Docker
+            // access remains limited to the explicitly mounted socket.
+            "--user", "0:0",
+            "--cap-drop", "ALL",
+            "--security-opt", "no-new-privileges",
+            "--read-only",
+            "--group-add", String(socketGroup),
+            "-v", `${dockerSocket}:/var/run/docker.sock`,
+            "-v", `${stateSource}:/state`,
+            "-e", `SELF_UPDATE_PLAN=/state/self-update/${plan.id}.json`,
+            "-e", `SELF_UPDATE_ALLOW_TEST_IMAGES=${process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? ""}`,
+            "-e", `SELF_UPDATE_ALLOWED_REPOSITORY=${plan.allowedRepository}`,
+            "-e", `SELF_UPDATE_TARGET_CONTAINER_ID=${plan.targetContainerId}`,
+            "-e", `SELF_UPDATE_TARGET_CONTAINER_NAME=${plan.targetContainerName}`,
+            sidecarImage,
+        ];
         if (plan.compose) {
             args.splice(args.length - 1, 0, "-v", `${plan.compose.workingDir}:${plan.compose.workingDir}:ro`, "-e", `SELF_UPDATE_COMPOSE_DIR=${plan.compose.workingDir}`);
         }
@@ -217,13 +276,27 @@ export class SelfUpdateManager {
     private async notify(title: string, body: string, type: "warning" | "success" | "failure"): Promise<boolean> {
         try {
             const watcher = ImageWatcher.getInstance().settings;
+            const en = (await getNotificationLang()) === "en";
+            const titleFr: Record<string, string> = {
+                "⏳ Dockge-Enhanced update deferred": "⏳ Mise à jour Dockge-Enhanced reportée",
+                "✅ Dockge-Enhanced self-update succeeded": "✅ Mise à jour Dockge-Enhanced réussie",
+                "❌ Dockge-Enhanced self-update failed": "❌ Échec de la mise à jour Dockge-Enhanced",
+                "↩️ Dockge-Enhanced rollback succeeded": "↩️ Restauration Dockge-Enhanced réussie",
+                "🚨 Dockge-Enhanced rollback failed": "🚨 Échec de la restauration Dockge-Enhanced",
+            };
+            const bodyFr: Record<string, string> = {
+                "Dockge-Enhanced updated and remained ready": "Dockge-Enhanced a été mis à jour et est resté opérationnel.",
+                "Updater sidecar stopped unexpectedly before reporting its status": "Le sidecar de mise à jour s’est arrêté de façon inattendue avant de pouvoir transmettre son état.",
+            };
+            const localizedTitle = en ? title : (titleFr[title] ?? title);
+            const localizedBody = en ? body : (bodyFr[body] ?? body);
             const hostname = (await Settings.get("primaryHostname")) || "";
-            const fullTitle = hostname ? `[${hostname}] ${title}` : title;
+            const fullTitle = hostname ? `[${hostname}] ${localizedTitle}` : localizedTitle;
             if (watcher.discordWebhooks.length > 0) {
-                await new DiscordNotifier(watcher.discordWebhooks).sendEmbed({ title: fullTitle, description: body, color: type === "failure" ? 0xef4444 : type === "success" ? 0x22c55e : 0xf59e0b, footer: `Dockge Enhanced${hostname ? ` · ${hostname}` : ""}` });
+                await new DiscordNotifier(watcher.discordWebhooks).sendEmbed({ title: fullTitle, description: localizedBody, color: type === "failure" ? 0xef4444 : type === "success" ? 0x22c55e : 0xf59e0b, footer: `Dockge Enhanced${hostname ? ` · ${hostname}` : ""}` });
             }
             if (watcher.appriseServerUrl) {
-                await new AppriseNotifier(watcher.appriseServerUrl, watcher.appriseUrls).send({ title: fullTitle, body, type });
+                await new AppriseNotifier(watcher.appriseServerUrl, watcher.appriseUrls).send({ title: fullTitle, body: localizedBody, type });
             }
             return true;
         } catch (error) {

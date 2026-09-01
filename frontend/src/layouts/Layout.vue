@@ -55,14 +55,28 @@
                 </a>
 
                 <!-- Bannière mise à jour Dockge-Enhanced -->
-                <div v-if="selfUpdate.available && !selfUpdate.dismissed" class="self-update-banner">
-                    <font-awesome-icon icon="arrow-circle-up" class="me-1" />
-                    {{ $t("selfUpdate.banner") }} —
-                    <code class="mx-2">{{ selfUpdateCmd }}</code>
-                    <button class="btn-copy ms-1" @click="copyUpdateCmd" :title="selfUpdate.copied ? $t('selfUpdate.copied') : $t('selfUpdate.copy')">
-                        {{ selfUpdate.copied ? '✓' : '⧉' }}
-                    </button>
-                    <button class="btn-dismiss ms-2" @click="selfUpdate.dismissed = true" :title="$t('selfUpdate.dismiss')">✕</button>
+                <div v-if="selfUpdateBannerVisible" class="self-update-banner">
+                    <font-awesome-icon :icon="selfUpdateActive ? 'spinner' : 'arrow-circle-up'" :spin="selfUpdateActive" class="me-1" />
+                    <template v-if="selfUpdateActive">
+                        {{ $t("selfUpdate.updating") }}
+                        <router-link class="ms-2" to="/watcher/updates">{{ $t("selfUpdate.details") }}</router-link>
+                    </template>
+                    <template v-else-if="selfUpdateFailed">
+                        {{ $t("selfUpdate.failed") }}
+                        <router-link class="ms-2" to="/watcher/updates">{{ $t("selfUpdate.details") }}</router-link>
+                    </template>
+                    <template v-else-if="selfUpdate.automatic">
+                        {{ $t("selfUpdate.autoPending") }}
+                        <router-link class="ms-2" to="/watcher/updates">{{ $t("selfUpdate.details") }}</router-link>
+                    </template>
+                    <template v-else>
+                        {{ $t("selfUpdate.banner") }} —
+                        <code class="mx-2">{{ selfUpdateCmd }}</code>
+                        <button class="btn-copy ms-1" @click="copyUpdateCmd" :title="selfUpdate.copied ? $t('selfUpdate.copied') : $t('selfUpdate.copy')">
+                            {{ selfUpdate.copied ? '✓' : '⧉' }}
+                        </button>
+                    </template>
+                    <button v-if="!selfUpdateActive" class="btn-dismiss ms-2" @click="selfUpdate.dismissed = true" :title="$t('selfUpdate.dismiss')">✕</button>
                 </div>
             </div>
 
@@ -251,6 +265,9 @@ export default {
                 available:     false,
                 containerName: "dockge-enhanced",
                 repo:          "",
+                remoteDigest:  "",
+                automatic:     false,
+                operation:     { state: "idle", message: "" },
                 dismissed:     false,
                 copied:        false,
             },
@@ -280,6 +297,18 @@ export default {
             } else {
                 return false;
             }
+        },
+
+        selfUpdateActive() {
+            return [ "scheduled", "backing-up", "verifying-backup", "updating", "waiting-health", "rolling-back" ].includes(this.selfUpdate.operation?.state);
+        },
+
+        selfUpdateFailed() {
+            return [ "failed", "rolled-back", "rollback-failed" ].includes(this.selfUpdate.operation?.state);
+        },
+
+        selfUpdateBannerVisible() {
+            return !this.selfUpdate.dismissed && (this.selfUpdate.available || this.selfUpdateActive || this.selfUpdateFailed);
         },
 
         selfUpdateCmd() {
@@ -316,7 +345,7 @@ export default {
         this.$root.getSocket().emit("setUILocale", localStorage.getItem("locale") ?? "en");
         // Poll system stats : cadence selon le mode + pause si onglet caché
         this.statsPoller = makePoller({
-            fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus(), this.fetchDozzleStatus() ]),
+            fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus(), this.fetchDozzleStatus(), this.checkSelfUpdate() ]),
             interval: POLL.system,
         });
         this.statsPoller.start();
@@ -351,10 +380,21 @@ export default {
                     headers: { "Authorization": `Bearer ${token}` },
                 });
                 const data = await res.json();
-                if (data.ok && data.updateAvailable) {
-                    this.selfUpdate.available     = true;
+                if (data.ok) {
+                    const previousDigest = this.selfUpdate.remoteDigest;
+                    const nextDigest = data.remoteDigest ?? "";
+                    if (nextDigest && previousDigest && nextDigest !== previousDigest) {
+                        this.selfUpdate.dismissed = false;
+                    }
+                    this.selfUpdate.available = data.updateAvailable === true;
                     this.selfUpdate.containerName = data.containerName ?? "dockge-enhanced";
-                    this.selfUpdate.repo          = data.repo ?? "";
+                    this.selfUpdate.repo = data.repo ?? "";
+                    this.selfUpdate.remoteDigest = nextDigest;
+                    this.selfUpdate.automatic = data.selfUpdateSettings?.mode === "sidecar";
+                    this.selfUpdate.operation = data.operation ?? { state: "idle", message: "" };
+                    if (!this.selfUpdate.available && this.selfUpdate.operation?.state === "succeeded") {
+                        this.selfUpdate.dismissed = false;
+                    }
                 }
             } catch { /* silencieux */ }
         },
