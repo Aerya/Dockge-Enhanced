@@ -1,7 +1,7 @@
 {
     "externalStacks.nav": "Stacks externas",
     "externalStacks.heading": "Stacks Compose externas",
-    "externalStacks.intro": "Detecta proyectos Compose ya presentes en este host. La integración solo registra una ruta permitida; nunca mueve archivos ni datos.",
+    "externalStacks.intro": "Detecta proyectos Compose ya presentes en este host. La integración permite gestionarlos, actualizarlos y respaldarlos mediante Dockge-Enhanced; nunca mueve archivos ni datos.",
     "externalStacks.localOnly": "Esta página solo incluye las stacks de este host. Las stacks de los agentes vinculados deben integrarse desde su propia WebUI.",
     "externalStacks.scan": "Escanear",
     "externalStacks.timeout": "La detección no respondió a tiempo. Compruebe la conexión con esta instancia.",
@@ -25,6 +25,9 @@
     "externalStacks.path.not-accessible": "No accesible",
     "externalStacks.path.not-authorized": "No importable",
     "externalStacks.path.unknown": "Ruta desconocida",
+    "externalStacks.count.accessible": "Accesible | Accesibles",
+    "externalStacks.count.not-authorized": "No importable | No importables",
+    "externalStacks.count.not-accessible": "No accesible | No accesibles",
     "externalStacks.requiredConfiguration": "Para integrar esta stack",
     "externalStacks.requiredVolume": "Añada o compruebe este volumen en el Compose de Dockge-Enhanced:",
     "externalStacks.requiredAllowedPath": "Autorice también {path} en DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS.",

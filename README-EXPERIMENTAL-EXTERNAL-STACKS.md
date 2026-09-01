@@ -52,4 +52,6 @@ Open **External stacks** in the WebUI and select **Scan**. The counters distingu
 
 Once registered, an external stack is available in the existing Restic stack settings. Its verified Compose file and optional `.env` are included in global and targeted backups, and its original Compose project name is retained for stop or application-hook consistency policies. Snapshot browsing, file inspection and restore tests also recognize these external configuration files.
 
+Integrated external stacks are also included in ImageWatcher checks and image update policies. Pull, recreate and rollback operations retain the original Compose project name so that Dockge-Enhanced updates the existing project instead of creating a second one.
+
 Persistent data keeps the same opt-in behavior as regular stacks: select the relevant bind-mounted path or volume in the Restic settings when its contents must also be backed up. Registering an external stack never silently adds all of its data mounts to a backup.

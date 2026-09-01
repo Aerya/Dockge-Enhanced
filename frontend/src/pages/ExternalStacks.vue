@@ -26,9 +26,9 @@
         </div>
 
         <div v-if="hasScanned" class="external-stack-counts mb-3" role="status">
-            <div class="external-stack-count text-success"><span>{{ statusCounts.accessible }}</span>{{ $t("externalStacks.path.accessible") }}</div>
-            <div class="external-stack-count text-warning"><span>{{ statusCounts.notAuthorized }}</span>{{ $t("externalStacks.path.not-authorized") }}</div>
-            <div class="external-stack-count text-secondary"><span>{{ statusCounts.notAccessible }}</span>{{ $t("externalStacks.path.not-accessible") }}</div>
+            <div class="external-stack-count text-success"><span>{{ statusCounts.accessible }}</span>{{ $tc("externalStacks.count.accessible", statusCounts.accessible) }}</div>
+            <div class="external-stack-count text-warning"><span>{{ statusCounts.notAuthorized }}</span>{{ $tc("externalStacks.count.not-authorized", statusCounts.notAuthorized) }}</div>
+            <div class="external-stack-count text-secondary"><span>{{ statusCounts.notAccessible }}</span>{{ $tc("externalStacks.count.not-accessible", statusCounts.notAccessible) }}</div>
         </div>
 
         <div v-if="!loading && stacks.length === 0" class="shadow-box p-4 text-center text-muted">{{ $t("externalStacks.empty") }}</div>
@@ -54,14 +54,14 @@
                     <span v-else>—</span>
                 </dd>
             </dl>
-            <div v-if="stack.pathStatus === 'not-accessible'" class="alert alert-secondary py-2 mt-3 mb-0 small">
+            <div v-if="stack.pathStatus === 'not-accessible'" class="external-stack-requirements is-unavailable mt-3 small">
                 <div class="fw-bold mb-1">{{ $t("externalStacks.requiredConfiguration") }}</div>
                 <div>{{ $t("externalStacks.requiredVolume") }}</div>
                 <code v-if="stack.workingDir">- {{ stack.workingDir }}:{{ stack.workingDir }}</code>
                 <div v-else>{{ $t("externalStacks.composePathUnavailable") }}</div>
                 <div v-if="stack.workingDir" class="mt-1">{{ $t("externalStacks.requiredAllowedPath", { path: stack.workingDir }) }}</div>
             </div>
-            <div v-else-if="stack.pathStatus === 'not-authorized'" class="alert alert-warning py-2 mt-3 mb-0 small">
+            <div v-else-if="stack.pathStatus === 'not-authorized'" class="external-stack-requirements is-warning mt-3 small">
                 <div class="fw-bold mb-1">{{ $t("externalStacks.requiredConfiguration") }}</div>
                 <div>{{ $t("externalStacks.noAdditionalVolume") }}</div>
                 <div v-if="stack.workingDir">{{ $t("externalStacks.requiredAllowedPath", { path: stack.workingDir }) }}</div>
@@ -166,14 +166,18 @@ export default {
 .external-stack-import .btn { white-space: nowrap; }
 .external-root-list { padding-left: 1.35rem; }
 .external-root-list li + li { margin-top: .3rem; }
-.external-path-help { display: grid; gap: .55rem; }
-.external-path-help-row { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: start; gap: .65rem; }
-.external-path-help-row .form-text { margin-top: 0; }
+.external-path-help { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: start; gap: .55rem .65rem; }
+.external-path-help-row { display: contents; }
+.external-path-help-row .form-text { align-self: start; margin-top: 0; }
 .external-stack-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
-.external-stack-count { display: flex; align-items: center; justify-content: center; gap: .55rem; padding: .65rem .8rem; border: 1px solid var(--bs-border-color); border-radius: .65rem; background: var(--bs-body-bg); font-weight: 600; }
+.external-stack-count { display: flex; align-items: center; justify-content: center; gap: .55rem; padding: .65rem .8rem; border: 1px solid var(--border-color); border-radius: .65rem; background: var(--bg-raised); font-weight: 600; }
 .external-stack-count span { font-size: 1.2rem; }
 .external-volume-list { padding-left: 1.1rem; }
 .external-volume-list li + li { margin-top: .25rem; }
+.external-stack-requirements { padding: .75rem; border: 1px solid var(--border-color); border-left-width: 3px; border-radius: var(--radius-sm); background: var(--bg-raised); color: var(--text-color); }
+.external-stack-requirements.is-warning { border-left-color: var(--warning); }
+.external-stack-requirements.is-unavailable { border-left-color: var(--text-muted); }
+.external-stack-requirements code { display: block; width: fit-content; max-width: 100%; margin-top: .35rem; padding: .35rem .5rem; overflow-wrap: anywhere; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-input); color: var(--text-color); }
 @media (max-width: 576px) {
     .external-stack-import { width: 100%; }
     .external-stack-name { min-width: 0; width: 100%; }
