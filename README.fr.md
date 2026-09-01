@@ -35,6 +35,10 @@ Une fois cette version installée, l’auto-mise à jour fonctionnera normalemen
 
 **Toutes mes excuses aux utilisateurs concernés.** Cette fonctionnalité étant justement destinée à éviter les interventions manuelles, c’est évidemment un bug particulièrement mal placé. Merci à ceux qui utilisent et testent Dockge-Enhanced et qui permettent de repérer rapidement ce genre de problème.
 
+<p align="center">
+  <img src="screens/D-E.vs.Others.FR.09.26.png" alt="Dockge Enhanced comparison" width="100%">
+</p>
+
 ## Fonctionnalités
 
 ### Ce qui distingue Dockge Enhanced
@@ -54,6 +58,9 @@ Une fois cette version installée, l’auto-mise à jour fonctionnera normalemen
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
+
+**2026-09-01 — Badges de mise à jour pour les stacks distantes** — L’état des mises à jour d’images est désormais récupéré depuis chaque instance Dockge-Enhanced connectée et reste isolé par endpoint. Le badge **MàJ** apparaît donc aussi sur les stacks distantes, sans mélanger des stacks portant le même nom sur des serveurs différents.
+
 
 **2026-08-31 — Auto-mise à jour sûre de Dockge-Enhanced** — Le nouvel onglet **Mises à jour** réunit les contrôles de Dockge-Enhanced et des images. Gardez la mise à jour de Dockge-Enhanced manuelle, ou activez le mode Sidecar volontairement limité, immédiatement ou dans un créneau et les jours sélectionnés. Un backup Restic et une vérification d’intégrité du dépôt sont obligatoires avant chaque mise à jour ; l’onglet affiche la destination en cours et l’avancement en octets du backup, et la mise à jour s’arrête si l’une des deux étapes échoue. Elle est reportée si une opération d’image, un backup ou une vérification Restic, ou un scan Trivy est en cours, et les notifications Discord et Apprise existantes signalent disponibilité, report et résultat. L’updater assorti à la version installe le digest exact détecté, conserve le répertoire de travail Compose absolu d’origine (y compris la résolution des bind mounts relatifs) et exige que l’application reste prête avant de conclure au succès. Le sidecar n’expose aucun port, n’accepte qu’un plan signé pour son propre conteneur Dockge-Enhanced et le dépôt configuré, et privilégie le projet Docker Compose existant de la stack ; si cette configuration Compose est inaccessible, il utilise un snapshot de récupération Docker qui préserve la configuration inspectée du conteneur mais ne peut pas refléter les modifications ultérieures du fichier Compose. Ce fichier de récupération en `0600` est écrit dans les données persistantes avant Restic afin d’être inclus dans le backup obligatoire ; il peut contenir les variables d’environnement nécessaires à la recréation du conteneur et doit donc rester protégé avec le volume de données Dockge. Un échec de readiness restaure automatiquement l’image précédente immuable. La pause globale concerne Dockge-Enhanced et toutes les images Docker gérées ; une image peut aussi être suspendue temporairement. L’option Remote Agent reste visible mais indisponible tant qu’un agent hôte dédié n’existe pas.
 

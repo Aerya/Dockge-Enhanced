@@ -30,6 +30,7 @@
     "releaseNews.item.logFollowToggle": "Un bouton Pause/Reprendre permet de figer la position de lecture des logs live tout en continuant à recevoir les nouvelles lignes, puis de revenir instantanément aux derniers logs.",
     "releaseNews.item.safeSelfUpdates": "Un onglet Mises à jour permet de planifier ou suspendre les mises à jour automatiques des images et de Dockge-Enhanced. Le mode Sidecar affiche le backup Restic et sa vérification obligatoire, privilégie la stack Compose existante et restaure automatiquement le conteneur précédent si le healthcheck échoue.",
     "releaseNews.item.selfUpdateHardening": "Les auto-mises à jour Dockge-Enhanced utilisent désormais le digest exact détecté, conservent les chemins Compose et bind mounts relatifs, attendent une application réellement prête et conservent un snapshot de récupération dans le backup Restic.",
+    "releaseNews.item.remoteUpdateBadges": "Les badges MàJ de la liste des stacks affichent désormais aussi les mises à jour détectées par les instances Dockge-Enhanced distantes, avec un état séparé pour chaque serveur.",
     "releaseNews.close": "Fermer",
     "releaseNews.gotIt": "J'ai compris",
     "Create your admin account": "Créez votre compte administrateur",
