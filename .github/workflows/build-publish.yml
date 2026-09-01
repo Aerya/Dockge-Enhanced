@@ -52,8 +52,11 @@ jobs:
 
       - name: 🏗️ Construire l’image plateforme
         run: |
+          BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           docker build \
             --platform ${{ matrix.platform }} \
+            --build-arg BUILD_REVISION="${GITHUB_SHA}" \
+            --build-arg BUILD_DATE="${BUILD_DATE}" \
             -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }} \
             .
           docker build \

@@ -36,10 +36,28 @@ interface ImagePlatform {
   variant?: string;
 }
 
+export interface BuildMetadata {
+  revision: string;
+  created: string;
+}
+
 interface RemoteDigestInfo {
   platformDigest: string;
   indexDigest: string;
   platform: ImagePlatform;
+  build: BuildMetadata;
+}
+
+function emptyBuildMetadata(): BuildMetadata {
+  return { revision: "", created: "" };
+}
+
+function buildMetadataFromConfig(config: any): BuildMetadata {
+  const labels = config?.config?.Labels ?? config?.Config?.Labels ?? {};
+  return {
+    revision: typeof labels["org.opencontainers.image.revision"] === "string" ? labels["org.opencontainers.image.revision"] : "",
+    created: typeof labels["org.opencontainers.image.created"] === "string" ? labels["org.opencontainers.image.created"] : "",
+  };
 }
 
 function normalizeArch(arch: string): string {
@@ -143,41 +161,56 @@ async function fetchRemoteDigest(
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const url = `https://ghcr.io/v2/${repo}/manifests/${SELF_TAG}`;
-  const res = await axios.get(url, { headers, timeout: 15000 });
+  const baseUrl = `https://ghcr.io/v2/${repo}`;
+  const res = await axios.get(`${baseUrl}/manifests/${SELF_TAG}`, { headers, timeout: 15000 });
 
   const indexDigest = String(res.headers["docker-content-digest"] ?? "");
   const manifests = Array.isArray(res.data?.manifests)
     ? res.data.manifests
     : [];
 
-  if (manifests.length === 0) {
-    if (!indexDigest)
+  let platformDigest = indexDigest;
+  if (manifests.length > 0) {
+    const match = manifests.find((m: any) =>
+      platformMatches(m.platform, platform),
+    );
+    if (!match?.digest) {
+      const available = manifests
+        .map((m: any) => (m.platform ? platformToString(m.platform) : ""))
+        .filter(Boolean)
+        .join(", ");
+
       throw new Error(
-        "Header docker-content-digest absent dans la réponse GHCR",
+        `Aucun manifest distant Dockge-Enhanced pour ${platformToString(platform)}` +
+          (available ? `. Plateformes disponibles: ${available}` : ""),
       );
-    return { platformDigest: indexDigest, indexDigest: "", platform };
+    }
+    platformDigest = String(match.digest);
   }
 
-  const match = manifests.find((m: any) =>
-    platformMatches(m.platform, platform),
-  );
-  if (!match?.digest) {
-    const available = manifests
-      .map((m: any) => (m.platform ? platformToString(m.platform) : ""))
-      .filter(Boolean)
-      .join(", ");
+  if (!platformDigest) {
+    throw new Error("Header docker-content-digest absent dans la réponse GHCR");
+  }
 
-    throw new Error(
-      `Aucun manifest distant Dockge-Enhanced pour ${platformToString(platform)}` +
-        (available ? `. Plateformes disponibles: ${available}` : ""),
-    );
+  let build = emptyBuildMetadata();
+  try {
+    const manifest = manifests.length > 0
+      ? await axios.get(`${baseUrl}/manifests/${platformDigest}`, { headers, timeout: 15000 })
+      : res;
+    const configDigest = typeof manifest.data?.config?.digest === "string" ? manifest.data.config.digest : "";
+    if (configDigest) {
+      const config = await axios.get(`${baseUrl}/blobs/${configDigest}`, { headers, timeout: 15000 });
+      build = buildMetadataFromConfig(config.data);
+    }
+  } catch {
+    // Les anciennes images peuvent ne pas exposer les labels OCI. Le digest reste la référence.
   }
 
   return {
-    platformDigest: String(match.digest),
-    indexDigest,
+    platformDigest,
+    indexDigest: manifests.length > 0 ? indexDigest : "",
     platform,
+    build,
   };
 }
 
@@ -208,16 +241,17 @@ async function fetchLocalImageInfo(): Promise<{
   comparable: boolean;
   source: "repoDigest" | "none";
   repo: string;
+  build: BuildMetadata;
   platform?: ImagePlatform;
 }> {
   try {
     // HOSTNAME = ID court du conteneur dans Docker
     const id = process.env.HOSTNAME ?? "";
-    if (!id) return { digest: "", comparable: false, source: "none", repo: "" };
+    if (!id) return { digest: "", comparable: false, source: "none", repo: "", build: emptyBuildMetadata() };
     const container = await dockerSocketGet(`/containers/${id}/json`);
     const imageId: string = container?.Image ?? "";
     if (!imageId)
-      return { digest: "", comparable: false, source: "none", repo: "" };
+      return { digest: "", comparable: false, source: "none", repo: "", build: emptyBuildMetadata() };
     const image = await dockerSocketGet(`/images/${imageId}/json`);
     const repoDigests: string[] = Array.isArray(image?.RepoDigests)
       ? image.RepoDigests
@@ -246,13 +280,14 @@ async function fetchLocalImageInfo(): Promise<{
       comparable: !!digest,
       source: digest ? "repoDigest" : "none",
       repo,
+      build: buildMetadataFromConfig(image),
       platform:
         os && architecture
           ? { os, architecture: normalizeArch(architecture), variant }
           : undefined,
     };
   } catch {
-    return { digest: "", comparable: false, source: "none", repo: "" };
+    return { digest: "", comparable: false, source: "none", repo: "", build: emptyBuildMetadata() };
   }
 }
 
@@ -296,6 +331,8 @@ export interface SelfUpdateStatus {
   updateAvailable: boolean;
   localDigest: string;
   remoteDigest: string;
+  localBuild: BuildMetadata;
+  remoteBuild: BuildMetadata;
   containerName: string;
   repo: string;
   checkedAt: string | null;
@@ -311,6 +348,8 @@ export class SelfUpdateChecker {
     updateAvailable: false,
     localDigest: "",
     remoteDigest: "",
+    localBuild: emptyBuildMetadata(),
+    remoteBuild: emptyBuildMetadata(),
     containerName: "dockge-enhanced",
     repo: SELF_REPO_OVERRIDE || SELF_REPO,
     checkedAt: null,
@@ -426,6 +465,8 @@ export class SelfUpdateChecker {
         updateAvailable,
         localDigest,
         remoteDigest,
+        localBuild: localInfo.build,
+        remoteBuild: remoteInfo.build,
         containerName,
         repo,
         checkedAt: new Date().toISOString(),

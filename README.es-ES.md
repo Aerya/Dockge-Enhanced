@@ -61,6 +61,8 @@ Una vez instalada esta versión, la actualización automática funcionará con n
 <details>
 <summary><strong>Mostrar el catálogo completo de funcionalidades</strong></summary>
 
+**2026-09-01 — Identidad de builds y seguimiento claro de la actualización automática** — La pestaña **Actualizaciones** identifica ahora los builds GHCR instalados y disponibles a partir de metadatos OCI, usando la fecha de compilación y el SHA del commit de Git, y mantiene visible el digest inmutable de la imagen como referencia técnica. El estado de la actualización automática sigue una prioridad única en lugar de mezclar el trabajo anterior con la disponibilidad actual, conserva la última operación completada como historial y muestra las cuatro etapas, el progreso Restic en bytes/porcentaje, el tiempo transcurrido y una estimación Restic solo cuando puede calcularse. Las imágenes antiguas sin etiquetas OCI usan su digest como alternativa.
+
 **2026-09-01 — Indicadores de actualización para stacks remotas** — El estado de las actualizaciones de imágenes ahora se obtiene de cada instancia Dockge-Enhanced conectada y se mantiene separado por endpoint. El indicador de **actualización** aparece así también en los stacks remotos, sin mezclar stacks con el mismo nombre alojados en servidores diferentes.
 
 

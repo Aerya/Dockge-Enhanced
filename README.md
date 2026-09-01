@@ -59,6 +59,8 @@ Once this version is installed, self-updates will work normally.
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>
 
+**2026-09-01 — Clear self-update build identity and progress** — The **Updates** tab now identifies the installed and available GHCR builds from OCI metadata using the build date and Git commit SHA, while keeping the immutable image digest visible as the technical reference. Self-update status follows one clear priority instead of mixing the previous job with current availability, keeps the last completed operation as history, shows the four execution stages, Restic byte/percentage progress, elapsed time, and a Restic ETA only when enough progress data exists. Older images without OCI labels fall back safely to their digest.
+
 **2026-09-01 — Remote update badges in multi-server stack lists** — Image update status is now retrieved from each connected Dockge-Enhanced instance and kept scoped to its endpoint. The **Update** badge therefore appears for remote stacks as well as local ones, without mixing identically named stacks hosted on different servers.
 
 

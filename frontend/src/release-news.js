@@ -122,6 +122,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.fourLanguageEnhanced",
         ],
     },
+    {
+        id: "2026-09-01-self-update-tracking",
+        items: [
+            "releaseNews.item.selfUpdateTracking",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

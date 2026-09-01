@@ -59,6 +59,8 @@ Une fois cette version installée, l’auto-mise à jour fonctionnera normalemen
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>
 
+**2026-09-01 — Identification des builds et suivi clair de l’auto-mise à jour** — L’onglet **Mises à jour** identifie désormais les builds GHCR installés et disponibles à partir des métadonnées OCI, avec la date de build et le SHA du commit Git, tout en conservant le digest immuable de l’image comme référence technique. L’état de l’auto-mise à jour suit une priorité unique au lieu de mélanger le job précédent et la disponibilité actuelle, conserve la dernière opération terminée comme historique et affiche les quatre étapes, la progression Restic en octets/pourcentage, le temps écoulé et une estimation Restic uniquement lorsqu’elle peut être calculée. Les anciennes images sans labels OCI utilisent leur digest comme repli.
+
 **2026-09-01 — Badges de mise à jour pour les stacks distantes** — L’état des mises à jour d’images est désormais récupéré depuis chaque instance Dockge-Enhanced connectée et reste isolé par endpoint. Le badge **MàJ** apparaît donc aussi sur les stacks distantes, sans mélanger des stacks portant le même nom sur des serveurs différents.
 
 
