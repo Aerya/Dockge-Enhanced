@@ -6,7 +6,7 @@
 
 A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image monitoring, security scanning, automatic backups, crash-loop detection and Docker resource management, all from the web UI.
 
-> 🇬🇧 English · 🇫🇷 [Français](README.fr.md) · 🇪🇸 [Español](README.es-ES.md) · [Presentation article (in French)](https://upandclear.org/2026/03/28/gerer-ses-conteneurs-docker-autrement-le-fork-dockge-enhanced-surveillance-dimages-scan-cve-backup-automatique-gestion-des-ressources/)
+> 🇬🇧 English · 🇫🇷 [Français](README.fr.md) · 🇪🇸 [Español](README.es-ES.md)
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
