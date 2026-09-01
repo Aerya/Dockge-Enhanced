@@ -4,6 +4,25 @@
 
 # Dockge Enhanced
 
+⚠️ **重要 — Dockge-Enhanced 自动更新关键修复**
+
+Dockge-Enhanced 的自动更新机制中存在一个错误，影响了 **2026 年 8 月 31 日晚至 2026 年 9 月 1 日晚** 期间发布的部分版本。
+
+在某些情况下，sidecar 可能会停止并删除 Dockge-Enhanced 容器，但随后既无法创建新版本，**也无法自动恢复之前的版本**。
+
+**如果您的安装来自这一时间段，请先手动更新到最新版本，然后再重新启用自动更新：**
+
+```bash id="bluwho"
+docker pull ghcr.io/aerya/dockge-enhanced:latest
+docker compose up -d
+```
+
+Dockge-Enhanced 管理的 stacks 及其持久化数据不受此问题影响。
+
+该机制现已修复并进一步加强，增加了一条独立的恢复路径：即使通过 Docker Compose 替换失败，也可以重新创建之前的实例。
+
+**对于受到影响的用户，我深表歉意。** 一个本应让更新更加安全的功能，不应该让 Dockge-Enhanced 自身处于离线状态。感谢所有使用、测试并反馈问题的用户，你们的反馈帮助我们更快发现并修复这类问题。
+
 [Dockge](https://github.com/louislam/dockge) 的增强功能分支 —— 在保留简洁 Compose 管理体验的基础上，加入镜像更新监控、安全扫描、自动备份、崩溃循环检测、多实例管理以及 Docker 资源管理。
 
 > 🇨🇳 简体中文 · 🇬🇧 [English](README.md) · 🇫🇷 [Français](README.fr.md) · 🇪🇸 [Español](README.es-ES.md)
@@ -20,18 +39,6 @@
 > **正在使用？觉得不错？[⭐ 给项目一个 Star！](https://github.com/Aerya/Dockge-Enhanced)**
 
 ---
-
-⚠️ **重要 — Dockge-Enhanced 自更新修复**
-
-曾有一个自更新问题可能导致 Sidecar 无法完成更新，即使界面显示更新正在进行。
-
-**该问题影响 2026 年 8 月 31 日晚至 2026 年 9 月 1 日上午期间更新的 Dockge-Enhanced 实例。**
-
-问题现已修复。**如果你在修复前启用了 Dockge-Enhanced 自更新，每个实例都需要最后手动更新一次**：
-
-`docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`
-
-安装修复版本后，自更新会恢复正常工作。
 
 <p align="center">
   <img src="screens/D-E.vs.Others.EN.09.26.png" alt="Dockge Enhanced comparison" width="100%">
