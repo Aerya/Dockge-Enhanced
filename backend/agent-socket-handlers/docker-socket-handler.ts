@@ -255,6 +255,45 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("getExternalStackAccessStatus", async (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({
+                    ok: true,
+                    operation: await server.externalStackAccess.getOperation(),
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("prepareExternalStackAccess", async (input: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (!input || typeof input !== "object" || typeof (input as { project?: unknown }).project !== "string") {
+                    throw new ValidationError("Invalid external stack access request");
+                }
+                const project = (input as { project: string }).project;
+                const operation = await server.externalStackAccess.request(project);
+                await AuditLogger.getInstance().logFromSocket(socket, {
+                    action: "stack.external-access",
+                    category: "stack",
+                    targetType: "external-stack",
+                    target: project,
+                    status: "success",
+                    metadata: {
+                        requestedPath: operation.requestedPath,
+                    },
+                });
+                callbackResult({
+                    ok: true,
+                    operation,
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         // startStack
         agentSocket.on("startStack", async (stackName : unknown, callback) => {
             try {

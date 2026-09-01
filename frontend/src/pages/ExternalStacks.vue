@@ -34,6 +34,10 @@
             <div class="external-stack-count text-secondary"><span>{{ statusCounts.notAccessible }}</span>{{ $tc("externalStacks.count.not-accessible", statusCounts.notAccessible) }}</div>
         </div>
 
+        <div v-if="accessOperation && activeAccessStates.includes(accessOperation.state)" class="alert alert-info py-2">
+            <font-awesome-icon icon="spinner" spin class="me-2" />{{ $t("externalStacks.automaticAccessInProgress") }}
+        </div>
+
         <div v-if="!loading && stacks.length === 0" class="shadow-box p-4 text-center text-muted">{{ $t("externalStacks.empty") }}</div>
         <div v-for="stack in stacks" :key="stack.project" class="shadow-box p-3 mb-3 external-stack-card">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
@@ -63,11 +67,17 @@
                 <code v-if="stack.workingDir">- {{ stack.workingDir }}:{{ stack.workingDir }}</code>
                 <div v-else>{{ $t("externalStacks.composePathUnavailable") }}</div>
                 <div v-if="stack.workingDir" class="mt-1">{{ $t("externalStacks.requiredAllowedPath", { path: stack.workingDir }) }}</div>
+                <button v-if="stack.workingDir" class="btn btn-sm btn-primary mt-2" :disabled="configuring !== ''" @click="configureAccess(stack)">
+                    <font-awesome-icon :icon="configuring === stack.project ? 'spinner' : 'plus'" :spin="configuring === stack.project" class="me-1" />{{ $t("externalStacks.automaticAccess") }}
+                </button>
             </div>
             <div v-else-if="stack.pathStatus === 'not-authorized'" class="external-stack-requirements is-warning mt-3 small">
                 <div class="fw-bold mb-1">{{ $t("externalStacks.requiredConfiguration") }}</div>
                 <div>{{ $t("externalStacks.noAdditionalVolume") }}</div>
                 <div v-if="stack.workingDir">{{ $t("externalStacks.requiredAllowedPath", { path: stack.workingDir }) }}</div>
+                <button v-if="stack.workingDir" class="btn btn-sm btn-primary mt-2" :disabled="configuring !== ''" @click="configureAccess(stack)">
+                    <font-awesome-icon :icon="configuring === stack.project ? 'spinner' : 'plus'" :spin="configuring === stack.project" class="me-1" />{{ $t("externalStacks.automaticAccess") }}
+                </button>
             </div>
         </div>
     </div>
@@ -83,6 +93,10 @@ export default {
             loading: false,
             importing: "",
             hasScanned: false,
+            configuring: "",
+            accessOperation: null,
+            accessOperationTimer: null,
+            activeAccessStates: [ "preparing", "updating", "waiting-health", "rolling-back" ],
         };
     },
     computed: {
@@ -96,6 +110,13 @@ export default {
     },
     mounted() {
         this.refresh();
+        this.loadAccessOperation();
+        this.accessOperationTimer = window.setInterval(this.loadAccessOperation, 2000);
+    },
+    beforeUnmount() {
+        if (this.accessOperationTimer) {
+            window.clearInterval(this.accessOperationTimer);
+        }
     },
     methods: {
         suggestedName(project) {
@@ -144,6 +165,44 @@ export default {
                 if (res?.ok) {
                     this.refresh();
                 }
+            });
+        },
+        loadAccessOperation() {
+            this.$root.emitAgent("", "getExternalStackAccessStatus", (res) => {
+                if (!res?.ok) {
+                    return;
+                }
+                const previousState = this.accessOperation?.state;
+                this.accessOperation = res.operation;
+                if (this.activeAccessStates.includes(res.operation?.state)) {
+                    this.configuring = res.operation.project || this.configuring;
+                    return;
+                }
+                this.configuring = "";
+                if (previousState && previousState !== res.operation?.state) {
+                    sessionStorage.removeItem("dockge-external-access-in-progress");
+                    if (res.operation?.state === "succeeded") {
+                        this.$root.toastSuccess(this.$t("externalStacks.automaticAccessSucceeded"));
+                        this.refresh();
+                    } else if ([ "failed", "rolled-back", "rollback-failed" ].includes(res.operation?.state)) {
+                        this.$root.toastError(this.$t("externalStacks.automaticAccessFailed", { message: res.operation.message || "" }));
+                    }
+                }
+            });
+        },
+        configureAccess(stack) {
+            if (!confirm(this.$t("externalStacks.automaticAccessConfirm", { path: stack.workingDir }))) {
+                return;
+            }
+            this.configuring = stack.project;
+            this.$root.emitAgent("", "prepareExternalStackAccess", { project: stack.project }, (res) => {
+                if (!res?.ok) {
+                    this.configuring = "";
+                    return this.$root.toastRes(res);
+                }
+                this.accessOperation = res.operation;
+                sessionStorage.setItem("dockge-external-access-in-progress", "1");
+                this.$root.toastSuccess(this.$t("externalStacks.automaticAccessStarted"));
             });
         },
         statusClass(status) {
