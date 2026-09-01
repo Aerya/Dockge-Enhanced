@@ -4,6 +4,10 @@
 
 # Dockge Enhanced
 
+> [!IMPORTANT]
+> **Critical self-update fix — update immediately.** Builds published between **2026-08-31 evening and 2026-09-01 evening** contained an unsafe Dockge-Enhanced self-update path that could remove the running container and fail to recreate it if the Compose replacement failed. **Do not keep or reinstall any build from that window. Do not use its built-in self-update to leave that window: update manually with Docker Compose directly to 1.5.1 or newer, then re-enable automatic self-updates.** Your stacks and persistent data are not deleted by this issue; the failure concerns recreation of the Dockge-Enhanced container itself. Version 1.5.1 adds an independent recovery-snapshot fallback so rollback no longer depends on the replacement container still existing.
+
+
 A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image monitoring, security scanning, automatic backups, crash-loop detection and Docker resource management, all from the web UI.
 
 > 🇬🇧 English · 🇫🇷 [Français](README.fr.md) · 🇪🇸 [Español](README.es-ES.md) · 🇨🇳 [简体中文](README.zh-CN.md)

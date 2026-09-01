@@ -112,11 +112,15 @@ function composeUpdate(plan, image, deps = {}) {
     (deps.docker || docker)([ ...base, "up", "-d", "--no-deps", plan.compose.service ], { timeout: 180_000 });
     return override;
 }
-function dockerApi(method, requestPath, body) {
+function dockerApi(method, requestPath, body, options = {}) {
     return new Promise((resolve, reject) => {
         const req = http.request({ socketPath, path: requestPath, method, headers: body ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } : undefined }, res => {
             let raw = ""; res.on("data", chunk => { raw += chunk; });
-            res.on("end", () => res.statusCode >= 200 && res.statusCode < 300 ? resolve(raw) : reject(new Error(`Docker API ${method} ${requestPath}: ${res.statusCode} ${raw.slice(0, 500)}`)));
+            res.on("end", () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) return resolve(raw);
+                if (options.allow404 && res.statusCode === 404) return resolve("");
+                reject(new Error(`Docker API ${method} ${requestPath}: ${res.statusCode} ${raw.slice(0, 500)}`));
+            });
         });
         req.on("error", reject); if (body) req.write(body); req.end();
     });
@@ -125,8 +129,15 @@ async function snapshotCreate(recovery, currentId, image, deps = {}) {
     const config = { ...(recovery.config || {}), Image: image };
     const body = JSON.stringify({ ...config, HostConfig: recovery.hostConfig, NetworkingConfig: { EndpointsConfig: recovery.endpointsConfig || {} } });
     const api = deps.dockerApi || dockerApi;
-    await api("POST", `/containers/${encodeURIComponent(currentId)}/stop?t=30`);
-    await api("DELETE", `/containers/${encodeURIComponent(currentId)}?force=1`);
+    const stopAndRemove = async identifier => {
+        if (!identifier) return;
+        await api("POST", `/containers/${encodeURIComponent(identifier)}/stop?t=30`, undefined, { allow404: true });
+        await api("DELETE", `/containers/${encodeURIComponent(identifier)}?force=1`, undefined, { allow404: true });
+    };
+    // Remove whichever incarnation exists. During a failed Compose replace the
+    // original ID may already be gone while a half-created replacement owns the name.
+    await stopAndRemove(currentId);
+    if (currentId !== recovery.targetContainerName) await stopAndRemove(recovery.targetContainerName);
     const created = JSON.parse(await api("POST", `/containers/create?name=${encodeURIComponent(recovery.targetContainerName)}`, body));
     await api("POST", `/containers/${encodeURIComponent(created.Id)}/start`);
 }
@@ -151,15 +162,32 @@ async function run(deps = {}) {
         } catch (error) { updateError = error; }
         writeStatus("rolling-back", `Update failed; restoring the previous image: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan);
         try {
-            // A Compose update can remove the old container before the replacement
-            // is created.  Do not inspect the replacement before restoring: it may
-            // not exist, which would otherwise skip the only recovery path.
+            let composeRollbackError;
             if (plan.compose) {
-                override = composeUpdate(plan, plan.previousImageId, deps);
-            } else {
-                const current = inspect(plan.targetContainerName, deps);
-                await snapshotCreate(recovery, current.Id, plan.previousImageId, deps);
+                try {
+                    override = composeUpdate(plan, plan.previousImageId, deps);
+                    if (waitReady(plan.targetContainerName, deps)) {
+                        writeStatus("rolled-back", `Update failed and the previous container was restored through Compose: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan);
+                        return "rolled-back";
+                    }
+                    composeRollbackError = new Error("Compose restored the previous image but it did not become ready");
+                } catch (error) {
+                    composeRollbackError = error;
+                }
+                // Compose is the preferred recovery path because it preserves project
+                // semantics. If it cannot recreate a usable container, fall back to
+                // the signed pre-update Docker snapshot. This path deliberately does
+                // not inspect the missing replacement first.
+                await snapshotCreate(recovery, null, plan.previousImageId, deps);
+                if (waitReady(plan.targetContainerName, deps)) {
+                    writeStatus("rolled-back", `Update failed and Compose rollback failed (${composeRollbackError instanceof Error ? composeRollbackError.message : String(composeRollbackError)}); the previous container was restored from the recovery snapshot`, true, plan);
+                    return "rolled-back";
+                }
+                throw new Error(`Compose rollback failed (${composeRollbackError instanceof Error ? composeRollbackError.message : String(composeRollbackError)}) and snapshot recovery did not become ready`);
             }
+            let currentId = null;
+            try { currentId = inspect(plan.targetContainerName, deps).Id; } catch { /* replacement may not exist */ }
+            await snapshotCreate(recovery, currentId, plan.previousImageId, deps);
             if (waitReady(plan.targetContainerName, deps)) { writeStatus("rolled-back", `Update failed and the previous container was restored: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan); return "rolled-back"; }
             throw new Error("Previous container did not become ready");
         } catch (rollbackError) {
@@ -171,5 +199,5 @@ async function run(deps = {}) {
     } catch (error) { writeStatus("failed", error instanceof Error ? error.message : String(error), false, plan); return "failed"; }
     finally { if (override) fs.rmSync(override, { force: true }); if (claimed) fs.rmSync(claimed, { force: true }); }
 }
-module.exports = { applicationReady, atomicWriteJson, composeUpdate, imageRepository, inside, readAndClaimPlan, run, validateCompose, waitReady, writeStatus };
+module.exports = { applicationReady, atomicWriteJson, composeUpdate, dockerApi, imageRepository, inside, readAndClaimPlan, run, snapshotCreate, validateCompose, waitReady, writeStatus };
 if (require.main === module) run().then(result => { if ([ "failed", "rollback-failed" ].includes(result)) process.exitCode = 1; }).catch(error => { console.error(error); process.exitCode = 1; });
