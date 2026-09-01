@@ -4,8 +4,25 @@
 
 # Dockge Enhanced
 
-> [!IMPORTANT]
-> **Critical self-update fix — update immediately.** Builds published between **2026-08-31 evening and 2026-09-01 evening** contained an unsafe Dockge-Enhanced self-update path that could remove the running container and fail to recreate it if the Compose replacement failed. **Do not keep or reinstall any build from that window. Do not use its built-in self-update to leave that window: update manually with Docker Compose directly to 1.5.1 or newer, then re-enable automatic self-updates.** Your stacks and persistent data are not deleted by this issue; the failure concerns recreation of the Dockge-Enhanced container itself. Version 1.5.1 adds an independent recovery-snapshot fallback so rollback no longer depends on the replacement container still existing.
+⚠️ **Important — critical Dockge-Enhanced self-update fix**
+
+An issue in the Dockge-Enhanced self-update mechanism affected some versions published between **the evening of August 31, 2026 and the evening of September 1, 2026**.
+
+Under certain conditions, the sidecar could stop and remove the Dockge-Enhanced container, then fail both to create the new version **and to automatically restore the previous one**.
+
+**If your installation comes from this period, please update it manually to the latest version before enabling self-updates again:**
+
+```bash
+docker pull ghcr.io/aerya/dockge-enhanced:latest
+docker compose up -d
+```
+
+Stacks managed by Dockge-Enhanced and their persistent data are not affected by this issue.
+
+The update mechanism has now been fixed and strengthened with an additional independent recovery path, allowing the previous instance to be recreated even if the Docker Compose replacement fails.
+
+**My apologies to everyone affected.** A feature specifically designed to make updates safer should obviously never be able to leave Dockge-Enhanced offline. Thank you to everyone using, testing and reporting issues — your feedback helps identify and fix these problems quickly.
+
 
 
 A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image monitoring, security scanning, automatic backups, crash-loop detection and Docker resource management, all from the web UI.
@@ -24,20 +41,6 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 > **Using it? Liking it? [⭐ Drop a star!](https://github.com/Aerya/Dockge-Enhanced)** — takes two seconds.
 
 ---
-
-⚠️ **Important — Dockge-Enhanced self-update fix**
-
-An error introduced in the Dockge-Enhanced self-update mechanism could prevent the sidecar from completing the update even though the interface reported that an update was in progress.
-
-**This issue affects Dockge-Enhanced instances updated between the evening of August 31, 2026 and the morning of September 1, 2026.**
-
-The issue is now fixed. **If you enabled Dockge-Enhanced self-updates before this fix, one final manual update is required** on each Dockge-Enhanced instance to retrieve the corrected version:
-
-`docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`
-
-Once this version is installed, self-updates will work normally.
-
-**My apologies to the affected users.** This feature is specifically meant to avoid manual intervention, so this was obviously a particularly unfortunate bug. Thank you to everyone using and testing Dockge-Enhanced and helping identify this kind of issue quickly.
 
 <p align="center">
   <img src="screens/D-E.vs.Others.EN.09.26.png" alt="Dockge Enhanced comparison" width="100%">
