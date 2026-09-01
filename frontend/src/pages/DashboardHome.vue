@@ -152,7 +152,7 @@
 
                             <button
                                 v-if="endpoint !== '' && $root.agentStatusList[endpoint] === 'offline'"
-                                class="btn btn-sm btn-link p-1 ms-1" :title="$t('reauthenticateAgent')"
+                                class="btn btn-sm btn-link p-1 ms-1 reauthenticate-agent" :title="$t('reauthenticateAgent')"
                                 @click="startReauthenticateAgent(agent)"
                             >
                                 <font-awesome-icon icon="key" />
@@ -737,6 +737,10 @@ table {
 
 .rename-agent {
     color: var(--text-muted);
+}
+
+.reauthenticate-agent {
+    color: var(--warning);
 }
 
 .summary-card {
