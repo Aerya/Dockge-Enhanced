@@ -15,6 +15,7 @@
             <div class="fw-bold mb-1">{{ $t("externalStacks.allowedRoots") }}</div>
             <div v-if="allowedRoots.length" class="font-monospace small">{{ allowedRoots.join(" · ") }}</div>
             <div v-else class="text-warning small">{{ $t("externalStacks.noAllowedRoots") }}</div>
+            <div class="form-text mt-2">{{ $t("externalStacks.allowedRootsHelp") }}</div>
         </div>
 
         <div v-if="!loading && stacks.length === 0" class="shadow-box p-4 text-center text-muted">{{ $t("externalStacks.empty") }}</div>
