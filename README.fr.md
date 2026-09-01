@@ -4,8 +4,25 @@
 
 # Dockge Enhanced
 
-> [!IMPORTANT]
-> **Correctif critique de l’auto-mise à jour — mise à jour impérative.** Les builds publiés entre **le soir du 31/08/2026 et le soir du 01/09/2026** contenaient un chemin d’auto-mise à jour Dockge-Enhanced pouvant supprimer le conteneur en cours puis ne pas réussir à le recréer si le remplacement Compose échouait. **N’utilisez plus et ne réinstallez aucune version publiée dans cette fenêtre. N’utilisez pas son auto-mise à jour intégrée pour en sortir : effectuez une mise à jour manuelle avec Docker Compose directement vers la 1.5.1 ou supérieure, puis réactivez les mises à jour automatiques.** Ce problème ne supprime pas vos stacks ni leurs données persistantes ; il concerne la recréation du conteneur Dockge-Enhanced lui-même. La 1.5.1 ajoute un second rollback indépendant à partir du snapshot de récupération, qui ne dépend plus de l’existence du conteneur de remplacement.
+⚠️ **Important — correctif critique de l’auto-mise à jour de Dockge-Enhanced**
+
+Une erreur dans le mécanisme d’auto-mise à jour de Dockge-Enhanced a affecté certaines versions publiées entre **le 31 août 2026 au soir et le 1er septembre 2026 au soir**.
+
+Dans certaines conditions, le sidecar pouvait arrêter et supprimer le conteneur Dockge-Enhanced, puis échouer à recréer la nouvelle version **ainsi qu’à restaurer automatiquement l’ancienne**.
+
+**Si votre installation provient de cette période, merci de la mettre à jour manuellement vers la dernière version avant de réactiver l’auto-mise à jour :**
+
+```bash
+docker pull ghcr.io/aerya/dockge-enhanced:latest
+docker compose up -d
+```
+
+Les stacks gérées par Dockge-Enhanced et leurs données persistantes ne sont pas concernées par ce problème.
+
+Le mécanisme a été corrigé et renforcé avec un chemin de restauration supplémentaire indépendant, permettant de recréer l’instance précédente même si le remplacement via Docker Compose échoue.
+
+**Toutes mes excuses aux utilisateurs concernés.** Une fonction conçue précisément pour rendre les mises à jour plus sûres ne doit évidemment pas pouvoir laisser Dockge-Enhanced hors ligne. Merci à ceux qui utilisent, testent et signalent les problèmes : vos retours permettent de les identifier et de les corriger rapidement.
+
 
 
 Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la surveillance d'images, le scan de sécurité, les sauvegardes automatiques, la détection de crash loop et la gestion des ressources Docker, le tout depuis l'interface web.
@@ -24,20 +41,6 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 > **Tu l'utilises ? Tu l'aimes ? [⭐ Mets une étoile !](https://github.com/Aerya/Dockge-Enhanced)** — ça prend deux secondes.
 
 ---
-
-⚠️ **Important — correction de l’auto-mise à jour de Dockge-Enhanced**
-
-Une erreur introduite dans le mécanisme d’auto-mise à jour de Dockge-Enhanced pouvait empêcher le sidecar de terminer correctement la mise à jour alors même que l’interface indiquait qu’elle était en cours.
-
-**Ce problème concerne les instances Dockge-Enhanced mises à jour entre le 31 août 2026 au soir et le 1er septembre 2026 au matin.**
-
-Le problème est désormais corrigé. **Si vous aviez activé l’auto-mise à jour de Dockge-Enhanced avant ce correctif, une mise à jour manuelle est nécessaire une dernière fois** pour chaque instance Dockge-Enhanced afin de récupérer la version corrigée :
-
-`docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`
-
-Une fois cette version installée, l’auto-mise à jour fonctionnera normalement.
-
-**Toutes mes excuses aux utilisateurs concernés.** Cette fonctionnalité étant justement destinée à éviter les interventions manuelles, c’est évidemment un bug particulièrement mal placé. Merci à ceux qui utilisent et testent Dockge-Enhanced et qui permettent de repérer rapidement ce genre de problème.
 
 <p align="center">
   <img src="screens/D-E.vs.Others.FR.09.26.png" alt="Dockge Enhanced comparison" width="100%">
