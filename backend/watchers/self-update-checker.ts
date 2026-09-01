@@ -26,7 +26,8 @@ const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 const DIGEST_CACHE = path.join(DATA_DIR, "self-update-digest.json");
 const DOCKER_SOCKET =
   process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock";
-const CHECK_INTERVAL = 6 * 60 * 60 * 1000; // 6h
+const CHECK_INTERVAL = 10 * 60 * 1000; // 10 min
+const CHECK_JITTER = 2 * 60 * 1000; // ±2 min pour étaler les requêtes GHCR
 const STARTUP_DELAY = 30_000; // 30s après démarrage
 
 interface ImagePlatform {
@@ -322,7 +323,7 @@ export class SelfUpdateChecker {
   private _lastKnownLocalDigest = "";
 
   private _startupTimer: ReturnType<typeof setTimeout> | null = null;
-  private _intervalTimer: ReturnType<typeof setInterval> | null = null;
+  private _intervalTimer: ReturnType<typeof setTimeout> | null = null;
 
   static getInstance(): SelfUpdateChecker {
     if (!this._instance) this._instance = new SelfUpdateChecker();
@@ -335,9 +336,24 @@ export class SelfUpdateChecker {
 
   start(): void {
     this._loadDigestCache().then(() => {
-      this._startupTimer = setTimeout(() => this.check(), STARTUP_DELAY);
-      this._intervalTimer = setInterval(() => this.check(), CHECK_INTERVAL);
+      this._startupTimer = setTimeout(async () => {
+        await this.check();
+        this._scheduleNextCheck();
+      }, STARTUP_DELAY);
     });
+  }
+
+  private _scheduleNextCheck(): void {
+    const jitter = (Math.random() * 2 - 1) * CHECK_JITTER;
+    const delay = Math.max(1_000, Math.round(CHECK_INTERVAL + jitter));
+
+    this._intervalTimer = setTimeout(async () => {
+      try {
+        await this.check();
+      } finally {
+        this._scheduleNextCheck();
+      }
+    }, delay);
   }
 
   private async _loadDigestCache(): Promise<void> {
@@ -366,7 +382,7 @@ export class SelfUpdateChecker {
 
   stop(): void {
     if (this._startupTimer) clearTimeout(this._startupTimer);
-    if (this._intervalTimer) clearInterval(this._intervalTimer);
+    if (this._intervalTimer) clearTimeout(this._intervalTimer);
   }
 
   async check(): Promise<void> {

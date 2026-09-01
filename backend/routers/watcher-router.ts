@@ -665,6 +665,21 @@ export class WatcherRouter extends Router {
             });
         });
 
+        router.post("/self/check", async (_req: Request, res: Response) => {
+            const checker = SelfUpdateChecker.getInstance();
+            await checker.check();
+
+            const manager = SelfUpdateManager.getInstance();
+            const operation = await manager.refreshOperation();
+            res.json({
+                ok: true,
+                ...checker.getStatus(),
+                operation,
+                progress: manager.getProgress(),
+                selfUpdateSettings: manager.getSettings(),
+            });
+        });
+
         router.get("/self/settings", (_req: Request, res: Response) => {
             res.json({ ok: true, data: SelfUpdateManager.getInstance().getSettings() });
         });
