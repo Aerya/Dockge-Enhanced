@@ -831,6 +831,12 @@ export default {
             volumeUsageLoading: false,
             containersExpanded: true,
             autoUpdateSaving: {},
+            remoteAutoUpdateLoaded: false,
+            remoteAutoUpdateState: {
+                autoUpdateConfig: {},
+                pendingAutoUpdates: [],
+                updatingImages: [],
+            },
             serviceActionProcessing: {},
             stackActionLabels: localStorage.getItem("stackActionLabels") === "1",
             showStackNote: localStorage.getItem("showStackNote") === "1",
@@ -1507,10 +1513,43 @@ export default {
 
         autoUpdateForService(serviceName) {
             const image = this.envsubstJSONConfig?.services?.[serviceName]?.image;
-            if (!image || !this.stack.name || this.endpoint) {
+            if (!image || !this.stack.name) {
                 return null;
             }
-            return this.autoUpdateFor(this.stack.name, image);
+            if (!this.endpoint) {
+                return this.autoUpdateFor(this.stack.name, image);
+            }
+            if (!this.remoteAutoUpdateLoaded) {
+                return null;
+            }
+
+            const key = `${this.stack.name}::${image}`;
+            const config = this.remoteAutoUpdateState.autoUpdateConfig?.[key];
+            return {
+                mode: config?.mode ?? "off",
+                time: config?.time ?? "02:00",
+                pending: this.remoteAutoUpdateState.pendingAutoUpdates?.includes(key) ?? false,
+                updating: this.remoteAutoUpdateState.updatingImages?.includes(key) ?? false,
+            };
+        },
+
+        loadRemoteAutoUpdateState() {
+            if (!this.endpoint) {
+                this.remoteAutoUpdateLoaded = false;
+                return;
+            }
+            this.$root.emitAgent(this.endpoint, "watcherImageAutoUpdateGet", (res) => {
+                if (res?.ok) {
+                    this.remoteAutoUpdateState = {
+                        autoUpdateConfig: res.data?.autoUpdateConfig ?? {},
+                        pendingAutoUpdates: res.data?.pendingAutoUpdates ?? [],
+                        updatingImages: res.data?.updatingImages ?? [],
+                    };
+                    this.remoteAutoUpdateLoaded = true;
+                } else {
+                    this.remoteAutoUpdateLoaded = false;
+                }
+            });
         },
 
         async setServiceAutoUpdate(serviceName, { mode, time }) {
@@ -1520,7 +1559,32 @@ export default {
             }
 
             this.autoUpdateSaving[serviceName] = true;
-            const result = await this.saveAutoUpdateMode(this.stack.name, image, mode, time);
+            let result;
+            if (this.endpoint) {
+                const key = `${this.stack.name}::${image}`;
+                result = await new Promise((resolve) => {
+                    this.$root.emitAgent(
+                        this.endpoint,
+                        "watcherImageAutoUpdateSet",
+                        { key, mode, ...(mode === "scheduled" ? { time: time ?? "02:00" } : {}) },
+                        (res) => resolve({
+                            ok: res?.ok === true,
+                            message: res?.msg ?? res?.message,
+                            data: res?.data,
+                        })
+                    );
+                });
+                if (result.ok && result.data) {
+                    this.remoteAutoUpdateState = {
+                        autoUpdateConfig: result.data.autoUpdateConfig ?? {},
+                        pendingAutoUpdates: result.data.pendingAutoUpdates ?? [],
+                        updatingImages: result.data.updatingImages ?? [],
+                    };
+                    this.remoteAutoUpdateLoaded = true;
+                }
+            } else {
+                result = await this.saveAutoUpdateMode(this.stack.name, image, mode, time);
+            }
             this.autoUpdateSaving[serviceName] = false;
             this.$root.toastRes({
                 ok: result.ok,
@@ -1570,6 +1634,7 @@ export default {
                     this.processing = false;
                     this.bindTerminal();
                     this.loadVolumeUsage();
+                    this.loadRemoteAutoUpdateState();
                 } else {
                     this.$root.toastRes(res);
                 }
