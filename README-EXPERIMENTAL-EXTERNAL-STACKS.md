@@ -4,6 +4,8 @@ This branch is experimental and is looking for testers with varied Docker layout
 
 It can discover and explicitly register Compose stacks that already live outside `DOCKGE_STACKS_DIR`, for example under `/home/docker`, `/srv/apps`, or `/var/www`. Discovery and import never move, delete, copy, or migrate Compose files, containers, volumes, or data. Once you deliberately manage an imported stack from Dockge-Enhanced, normal stack actions naturally apply to that stack.
 
+Discovery and integration are local to the Docker host running the current Dockge-Enhanced instance. This page does not scan linked agents: open the WebUI of each agent to integrate stacks located on that host.
+
 Back up important configuration before testing.
 
 ## Host discovery and allowlist
@@ -44,7 +46,7 @@ Or pull the branch image after its GitHub workflow has published it:
 docker pull ghcr.io/aerya/dockge-enhanced:experimental-external-stacks
 ```
 
-Open **External stacks** in the WebUI, inspect the detected project, then explicitly add an accessible Compose path. Report bugs at [GitHub issues](https://github.com/Aerya/Dockge-Enhanced/issues) with Docker/Compose versions, relevant labels and sanitized paths. Never include `.env` files, passwords, tokens, or private registry credentials.
+Open **External stacks** in the WebUI and select **Scan**. The counters distinguish Compose files that are accessible, visible but not authorized, or not visible from the Dockge-Enhanced container. Each stack that cannot yet be integrated shows the bind mount and/or allowed path to add. Once the Compose file is accessible and authorized, select **Integrate**. Report bugs at [GitHub issues](https://github.com/Aerya/Dockge-Enhanced/issues) with Docker/Compose versions, relevant labels and sanitized paths. Never include `.env` files, passwords, tokens, or private registry credentials.
 
 ## Restic backups
 

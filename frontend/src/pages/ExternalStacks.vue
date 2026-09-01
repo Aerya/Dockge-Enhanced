@@ -6,11 +6,12 @@
                 <p class="form-text mb-0">{{ $t("externalStacks.intro") }}</p>
             </div>
             <button class="btn btn-normal" :disabled="loading" @click="refresh">
-                <font-awesome-icon :icon="loading ? 'spinner' : 'arrows-rotate'" :spin="loading" class="me-1" />{{ $t("refresh") }}
+                <font-awesome-icon :icon="loading ? 'spinner' : 'arrows-rotate'" :spin="loading" class="me-1" />{{ $t("externalStacks.scan") }}
             </button>
         </div>
 
         <div class="alert alert-warning py-2"><font-awesome-icon icon="flask" class="me-2" />{{ $t("externalStacks.experimental") }}</div>
+        <div class="alert alert-info py-2"><font-awesome-icon icon="server" class="me-2" />{{ $t("externalStacks.localOnly") }}</div>
         <div class="shadow-box p-3 mb-3">
             <div class="fw-bold mb-2">{{ $t("externalStacks.allowedRoots") }}</div>
             <ul v-if="allowedMounts.length" class="external-root-list font-monospace small mb-3">
@@ -18,9 +19,16 @@
             </ul>
             <div v-else class="text-warning small mb-3">{{ $t("externalStacks.noAllowedMounts") }}</div>
             <div class="external-path-help">
+                <div class="external-path-help-row"><span class="badge text-bg-success">{{ $t("externalStacks.path.accessible") }}</span><span class="form-text">{{ $t("externalStacks.accessibleHelp") }}</span></div>
                 <div class="external-path-help-row"><span class="badge text-bg-warning">{{ $t("externalStacks.path.not-authorized") }}</span><span class="form-text">{{ $t("externalStacks.allowedRootsHelp") }}</span></div>
                 <div class="external-path-help-row"><span class="badge text-bg-secondary">{{ $t("externalStacks.path.not-accessible") }}</span><span class="form-text">{{ $t("externalStacks.notAccessibleHelp") }}</span></div>
             </div>
+        </div>
+
+        <div v-if="hasScanned" class="external-stack-counts mb-3" role="status">
+            <div class="external-stack-count text-success"><span>{{ statusCounts.accessible }}</span>{{ $t("externalStacks.path.accessible") }}</div>
+            <div class="external-stack-count text-warning"><span>{{ statusCounts.notAuthorized }}</span>{{ $t("externalStacks.path.not-authorized") }}</div>
+            <div class="external-stack-count text-secondary"><span>{{ statusCounts.notAccessible }}</span>{{ $t("externalStacks.path.not-accessible") }}</div>
         </div>
 
         <div v-if="!loading && stacks.length === 0" class="shadow-box p-4 text-center text-muted">{{ $t("externalStacks.empty") }}</div>
@@ -32,7 +40,7 @@
                     <span class="badge ms-1" :class="statusClass(stack.pathStatus)">{{ $t(`externalStacks.path.${stack.pathStatus}`) }}</span>
                 </div>
                 <div v-if="!stack.imported" class="external-stack-import d-flex gap-2">
-                    <input v-model="names[stack.project]" class="form-control form-control-sm" :aria-label="$t('externalStacks.name')" :placeholder="$t('externalStacks.name')">
+                    <input v-model="names[stack.project]" class="form-control form-control-sm external-stack-name" :aria-label="$t('externalStacks.name')" :placeholder="$t('externalStacks.name')">
                     <button class="btn btn-sm btn-primary" :disabled="stack.pathStatus !== 'accessible' || !stack.composeFile || importing === stack.project" @click="importStack(stack)">
                         <font-awesome-icon :icon="importing === stack.project ? 'spinner' : 'plus'" :spin="importing === stack.project" class="me-1" />{{ $t("externalStacks.import") }}
                     </button>
@@ -40,9 +48,24 @@
             </div>
             <dl class="row small mt-3 mb-0">
                 <dt class="col-sm-3">{{ $t("externalStacks.composeFile") }}</dt><dd class="col-sm-9 font-monospace">{{ stack.composeFile || "—" }}</dd>
-                <dt class="col-sm-3">{{ $t("externalStacks.workingDir") }}</dt><dd class="col-sm-9 font-monospace">{{ stack.workingDir || "—" }}</dd>
-                <dt class="col-sm-3">{{ $t("externalStacks.mounts") }}</dt><dd class="col-sm-9"><span v-if="stack.mounts.length" class="font-monospace">{{ stack.mounts.join(" · ") }}</span><span v-else>—</span></dd>
+                <dt class="col-sm-3">{{ $t("externalStacks.volumes") }}</dt>
+                <dd class="col-sm-9">
+                    <ul v-if="stack.mounts.length" class="external-volume-list font-monospace mb-0"><li v-for="mount in stack.mounts" :key="mount">{{ formatMount(mount) }}</li></ul>
+                    <span v-else>—</span>
+                </dd>
             </dl>
+            <div v-if="stack.pathStatus === 'not-accessible'" class="alert alert-secondary py-2 mt-3 mb-0 small">
+                <div class="fw-bold mb-1">{{ $t("externalStacks.requiredConfiguration") }}</div>
+                <div>{{ $t("externalStacks.requiredVolume") }}</div>
+                <code v-if="stack.workingDir">- {{ stack.workingDir }}:{{ stack.workingDir }}</code>
+                <div v-else>{{ $t("externalStacks.composePathUnavailable") }}</div>
+                <div v-if="stack.workingDir" class="mt-1">{{ $t("externalStacks.requiredAllowedPath", { path: stack.workingDir }) }}</div>
+            </div>
+            <div v-else-if="stack.pathStatus === 'not-authorized'" class="alert alert-warning py-2 mt-3 mb-0 small">
+                <div class="fw-bold mb-1">{{ $t("externalStacks.requiredConfiguration") }}</div>
+                <div>{{ $t("externalStacks.noAdditionalVolume") }}</div>
+                <div v-if="stack.workingDir">{{ $t("externalStacks.requiredAllowedPath", { path: stack.workingDir }) }}</div>
+            </div>
         </div>
     </div>
 </template>
@@ -50,7 +73,23 @@
 <script>
 export default {
     data() {
-        return { stacks: [], allowedMounts: [], names: {}, loading: false, importing: "" };
+        return {
+            stacks: [],
+            allowedMounts: [],
+            names: {},
+            loading: false,
+            importing: "",
+            hasScanned: false,
+        };
+    },
+    computed: {
+        statusCounts() {
+            return {
+                accessible: this.stacks.filter((stack) => stack.pathStatus === "accessible").length,
+                notAuthorized: this.stacks.filter((stack) => stack.pathStatus === "not-authorized").length,
+                notAccessible: this.stacks.filter((stack) => stack.pathStatus === "not-accessible" || stack.pathStatus === "unknown").length,
+            };
+        },
     },
     mounted() {
         this.refresh();
@@ -63,38 +102,57 @@ export default {
             this.loading = true;
             let completed = false;
             const timeout = window.setTimeout(() => {
-                if (completed) return;
+                if (completed) {
+                    return;
+                }
                 completed = true;
                 this.loading = false;
                 this.$root.toastError(this.$t("externalStacks.timeout"));
             }, 15000);
             this.$root.emitAgent("", "discoverExternalStacks", (res) => {
-                if (completed) return;
+                if (completed) {
+                    return;
+                }
                 completed = true;
                 window.clearTimeout(timeout);
                 this.loading = false;
-                if (!res?.ok) return this.$root.toastRes(res);
+                if (!res?.ok) {
+                    return this.$root.toastRes(res);
+                }
                 this.stacks = res.stacks || [];
                 this.allowedMounts = res.allowedMounts || [];
+                this.hasScanned = true;
                 for (const stack of this.stacks) {
-                    if (!this.names[stack.project]) this.names[stack.project] = this.suggestedName(stack.project);
+                    if (!this.names[stack.project]) {
+                        this.names[stack.project] = this.suggestedName(stack.project);
+                    }
                 }
             });
         },
         importStack(stack) {
             this.importing = stack.project;
             this.$root.emitAgent("", "importExternalStack", {
-                name: this.names[stack.project], project: stack.project, composeFile: stack.composeFile,
+                name: this.names[stack.project],
+                project: stack.project,
+                composeFile: stack.composeFile,
             }, (res) => {
                 this.importing = "";
                 this.$root.toastRes(res);
-                if (res?.ok) this.refresh();
+                if (res?.ok) {
+                    this.refresh();
+                }
             });
         },
         statusClass(status) {
             return {
-                accessible: "text-bg-success", "not-accessible": "text-bg-secondary", "not-authorized": "text-bg-warning", unknown: "text-bg-secondary",
+                accessible: "text-bg-success",
+                "not-accessible": "text-bg-secondary",
+                "not-authorized": "text-bg-warning",
+                unknown: "text-bg-secondary",
             }[status] || "text-bg-secondary";
+        },
+        formatMount(mount) {
+            return mount.replace(/^bind:\s*/, "").replace(/^volume:\s*/, "");
         },
     },
 };
@@ -103,11 +161,22 @@ export default {
 <style lang="scss" scoped>
 .external-stacks-page { max-width: 1200px; }
 .external-stack-card { overflow-wrap: anywhere; }
-.external-stack-import { min-width: min(100%, 340px); }
+.external-stack-import { align-items: center; }
+.external-stack-name { width: 170px; }
+.external-stack-import .btn { white-space: nowrap; }
 .external-root-list { padding-left: 1.35rem; }
 .external-root-list li + li { margin-top: .3rem; }
 .external-path-help { display: grid; gap: .55rem; }
 .external-path-help-row { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: start; gap: .65rem; }
 .external-path-help-row .form-text { margin-top: 0; }
-@media (max-width: 576px) { .external-stack-import { width: 100%; } }
+.external-stack-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+.external-stack-count { display: flex; align-items: center; justify-content: center; gap: .55rem; padding: .65rem .8rem; border: 1px solid var(--bs-border-color); border-radius: .65rem; background: var(--bs-body-bg); font-weight: 600; }
+.external-stack-count span { font-size: 1.2rem; }
+.external-volume-list { padding-left: 1.1rem; }
+.external-volume-list li + li { margin-top: .25rem; }
+@media (max-width: 576px) {
+    .external-stack-import { width: 100%; }
+    .external-stack-name { min-width: 0; width: 100%; }
+    .external-stack-counts { grid-template-columns: 1fr; }
+}
 </style>

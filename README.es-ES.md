@@ -7,6 +7,7 @@
 # Dockge Enhanced
 
 > ⚠️ **Rama experimental:** `experimental/external-stacks` añade la gestión voluntaria de proyectos Compose fuera de `DOCKGE_STACKS_DIR`. No está integrada en la versión estable. Consulte la [guía experimental](README-EXPERIMENTAL-EXTERNAL-STACKS.md) antes de probarla.
+> La detección y la integración de stacks externas solo incluyen el host Docker de esta instancia de Dockge-Enhanced. Las stacks de los agentes vinculados deben integrarse desde la WebUI de cada agente.
 
 Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/dockge) — agrega monitoreo de imágenes, escaneo de seguridad, copias de seguridad automáticas, detección de bucles de fallo y gestión de recursos de Docker, todo desde la interfaz web.
 

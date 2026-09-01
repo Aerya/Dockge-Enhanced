@@ -5,6 +5,7 @@
 # Dockge Enhanced
 
 > ⚠️ **Experimental branch:** `experimental/external-stacks` adds opt-in management of Compose projects outside `DOCKGE_STACKS_DIR`. It is not merged into the stable release. Read [the experimental guide](README-EXPERIMENTAL-EXTERNAL-STACKS.md) before testing.
+> External-stack discovery and integration only cover the Docker host running this Dockge-Enhanced instance. Stacks belonging to linked agents must be integrated from the WebUI of each agent.
 
 A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image monitoring, security scanning, automatic backups, crash-loop detection and Docker resource management, all from the web UI.
 
