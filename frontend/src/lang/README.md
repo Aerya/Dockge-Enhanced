@@ -1,5 +1,16 @@
 # Translations
 
+## Dockge Enhanced translation policy
+
+Dockge Enhanced keeps its own new user-facing strings aligned in these four reference languages:
+
+- English (`en`)
+- French (`fr`)
+- Spanish (`es`)
+- Simplified Chinese (`zh-CN`)
+
+This applies to Enhanced-specific UI additions, the “What’s new” popup, project README files, and Discord/Apprise notification text. Other inherited Dockge translations remain available and continue to follow the upstream/Weblate workflow.
+
 A simple guide on how to translate `Dockge` in your native language.
 
 ## How to Translate

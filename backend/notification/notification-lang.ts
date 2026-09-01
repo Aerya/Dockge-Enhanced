@@ -1,18 +1,37 @@
 import { Settings } from "../settings";
 
-export type NotificationLang = "fr" | "en";
+export type NotificationLang = "fr" | "en" | "es" | "zh-CN";
 
-/**
- * Langue des notifications (Discord / Apprise).
- *
- * Elle suit la langue de l'interface : le frontend pousse la locale
- * courante via l'événement socket "setUILocale" (au démarrage et à
- * chaque changement de langue). Les chaînes de notification n'existent
- * qu'en fr/en — tout ce qui n'est pas français retombe sur l'anglais.
- *
- * @returns "fr" si l'interface est en français, "en" sinon
- */
 export async function getNotificationLang(): Promise<NotificationLang> {
     const locale = await Settings.get("uiLocale");
-    return typeof locale === "string" && locale.startsWith("fr") ? "fr" : "en";
+    if (typeof locale !== "string") return "en";
+    const normalized = locale.toLowerCase();
+    if (normalized.startsWith("fr")) return "fr";
+    if (normalized.startsWith("es")) return "es";
+    if (normalized.startsWith("zh")) return "zh-CN";
+    return "en";
+}
+
+export function getNotificationLocale(lang: NotificationLang): string {
+    switch (lang) {
+        case "fr": return "fr-FR";
+        case "es": return "es-ES";
+        case "zh-CN": return "zh-CN";
+        default: return "en-GB";
+    }
+}
+
+export function notificationText(
+    lang: NotificationLang,
+    fr: string,
+    en: string,
+    es: string,
+    zhCN: string,
+): string {
+    switch (lang) {
+        case "fr": return fr;
+        case "es": return es;
+        case "zh-CN": return zhCN;
+        default: return en;
+    }
 }

@@ -8,13 +8,13 @@
 
 Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/dockge) — agrega monitoreo de imágenes, escaneo de seguridad, copias de seguridad automáticas, detección de bucles de fallo y gestión de recursos de Docker, todo desde la interfaz web.
 
-> 🇪🇸 Español · 🇬🇧 [English](README.md) · 🇫🇷 [Français](README.fr.md)
+> 🇪🇸 Español · 🇬🇧 [English](README.md) · 🇫🇷 [Français](README.fr.md) · 🇨🇳 [简体中文](README.zh-CN.md)
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
   <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
-  <img src="https://img.shields.io/badge/i18n-FR%20%7C%20EN-blue" alt="i18n">
+  <img src="https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20ES%20%7C%20zh--CN-blue" alt="i18n">
   <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
@@ -55,7 +55,7 @@ Una vez instalada esta versión, la actualización automática funcionará con n
 | **Imágenes y seguridad** | Monitoreo de actualizaciones, actualización automática con reversión, autoactualizaciones programadas y pausables, escaneos Trivy y excepciones CVE |
 | **Monitoreo** | Barra de estado del sistema configurable arriba o abajo, tarjetas de resumen del panel, estadísticas del sistema, stack y contenedor, bucles de fallo, auto-reparación de healthchecks, registros responsivos y a pantalla completa e integraciones opcionales con Kula y Dozzle gestionado |
 | **Integraciones** | PlugNPiN opcional y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
-| **Notificaciones y acceso** | Discord, Apprise, 2FA, proxy de confianza, Turnstile y clientes móviles |
+| **Notificaciones y acceso** | Notificaciones Discord y Apprise localizadas en EN/FR/ES/zh-CN, 2FA, proxy de confianza, Turnstile y clientes móviles |
 
 
 <details>

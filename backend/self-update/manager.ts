@@ -9,7 +9,7 @@ import { TrivyScanner } from "../watchers/trivy-scanner";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
-import { getNotificationLang } from "../notification/notification-lang";
+import { getNotificationLang, notificationText } from "../notification/notification-lang";
 import { SelfUpdateOperation, SelfUpdatePlan, SelfUpdateProgress, SelfUpdateSettings } from "./types";
 import { DEFAULT_SELF_UPDATE_SETTINGS, normalizeSelfUpdateSettings, selfUpdateMayRun } from "./settings";
 import { isAllowedTargetImage, isPathInside, isSafeComposeName, isSelfUpdateActive, normalizeSelfRepository } from "./policy";
@@ -276,20 +276,108 @@ export class SelfUpdateManager {
     private async notify(title: string, body: string, type: "warning" | "success" | "failure"): Promise<boolean> {
         try {
             const watcher = ImageWatcher.getInstance().settings;
-            const en = (await getNotificationLang()) === "en";
-            const titleFr: Record<string, string> = {
-                "⏳ Dockge-Enhanced update deferred": "⏳ Mise à jour Dockge-Enhanced reportée",
-                "✅ Dockge-Enhanced self-update succeeded": "✅ Mise à jour Dockge-Enhanced réussie",
-                "❌ Dockge-Enhanced self-update failed": "❌ Échec de la mise à jour Dockge-Enhanced",
-                "↩️ Dockge-Enhanced rollback succeeded": "↩️ Restauration Dockge-Enhanced réussie",
-                "🚨 Dockge-Enhanced rollback failed": "🚨 Échec de la restauration Dockge-Enhanced",
+            const lang = await getNotificationLang();
+            const titleTranslations: Record<string, [string, string, string, string]> = {
+                "⏳ Dockge-Enhanced update deferred": [
+                    "⏳ Mise à jour Dockge-Enhanced reportée",
+                    "⏳ Dockge-Enhanced update deferred",
+                    "⏳ Actualización de Dockge-Enhanced aplazada",
+                    "⏳ Dockge-Enhanced 更新已推迟",
+                ],
+                "✅ Dockge-Enhanced self-update succeeded": [
+                    "✅ Mise à jour Dockge-Enhanced réussie",
+                    "✅ Dockge-Enhanced self-update succeeded",
+                    "✅ Actualización automática de Dockge-Enhanced correcta",
+                    "✅ Dockge-Enhanced 自更新成功",
+                ],
+                "❌ Dockge-Enhanced self-update failed": [
+                    "❌ Échec de la mise à jour Dockge-Enhanced",
+                    "❌ Dockge-Enhanced self-update failed",
+                    "❌ Error en la actualización automática de Dockge-Enhanced",
+                    "❌ Dockge-Enhanced 自更新失败",
+                ],
+                "↩️ Dockge-Enhanced rollback succeeded": [
+                    "↩️ Restauration Dockge-Enhanced réussie",
+                    "↩️ Dockge-Enhanced rollback succeeded",
+                    "↩️ Rollback de Dockge-Enhanced correcto",
+                    "↩️ Dockge-Enhanced 回滚成功",
+                ],
+                "🚨 Dockge-Enhanced rollback failed": [
+                    "🚨 Échec de la restauration Dockge-Enhanced",
+                    "🚨 Dockge-Enhanced rollback failed",
+                    "🚨 Error en el rollback de Dockge-Enhanced",
+                    "🚨 Dockge-Enhanced 回滚失败",
+                ],
             };
-            const bodyFr: Record<string, string> = {
-                "Dockge-Enhanced updated and remained ready": "Dockge-Enhanced a été mis à jour et est resté opérationnel.",
-                "Updater sidecar stopped unexpectedly before reporting its status": "Le sidecar de mise à jour s’est arrêté de façon inattendue avant de pouvoir transmettre son état.",
+            const bodyTranslations: Record<string, [string, string, string, string]> = {
+                "Dockge-Enhanced updated and remained ready": [
+                    "Dockge-Enhanced a été mis à jour et est resté opérationnel.",
+                    "Dockge-Enhanced updated and remained ready",
+                    "Dockge-Enhanced se actualizó y permaneció operativo.",
+                    "Dockge-Enhanced 已更新并保持正常运行。",
+                ],
+                "Updater sidecar stopped unexpectedly before reporting its status": [
+                    "Le sidecar de mise à jour s’est arrêté de façon inattendue avant de pouvoir transmettre son état.",
+                    "Updater sidecar stopped unexpectedly before reporting its status",
+                    "El sidecar de actualización se detuvo inesperadamente antes de informar de su estado.",
+                    "更新 Sidecar 在报告状态前意外停止。",
+                ],
             };
-            const localizedTitle = en ? title : (titleFr[title] ?? title);
-            const localizedBody = en ? body : (bodyFr[body] ?? body);
+            Object.assign(bodyTranslations, {
+                "Mandatory backup in progress": [
+                    "Backup obligatoire en cours",
+                    "Mandatory backup in progress",
+                    "Copia obligatoria en curso",
+                    "正在执行强制备份",
+                ],
+                "Restic repository verification in progress": [
+                    "Vérification du dépôt Restic en cours",
+                    "Restic repository verification in progress",
+                    "Verificación del repositorio Restic en curso",
+                    "正在验证 Restic 仓库",
+                ],
+                "Updater sidecar started": [
+                    "Sidecar de mise à jour démarré",
+                    "Updater sidecar started",
+                    "Sidecar de actualización iniciado",
+                    "更新 Sidecar 已启动",
+                ],
+            });
+            const titleSet = titleTranslations[title];
+            const bodySet = bodyTranslations[body];
+            const localizedTitle = titleSet ? notificationText(lang, ...titleSet) : title;
+            let localizedBody = bodySet ? notificationText(lang, ...bodySet) : body;
+            const prefixedBodies: Array<[string, [string, string, string, string]]> = [
+                ["Backup failed: ", [ "Échec du backup : ", "Backup failed: ", "Error en la copia: ", "备份失败：" ]],
+                ["Backup verification failed: ", [ "Échec de la vérification du backup : ", "Backup verification failed: ", "Error en la verificación de la copia: ", "备份验证失败：" ]],
+                ["Automatic self-update deferred: ", [ "Mise à jour automatique reportée : ", "Automatic self-update deferred: ", "Actualización automática aplazada: ", "自动更新已推迟：" ]],
+            ];
+            for (const [prefix, translatedPrefixes] of prefixedBodies) {
+                if (body.startsWith(prefix)) {
+                    localizedBody = `${notificationText(lang, ...translatedPrefixes)}${body.slice(prefix.length)}`;
+                    break;
+                }
+            }
+            const verificationMatch = body.match(/^Backup verification failed for (.+?): (.*)$/s);
+            if (verificationMatch) {
+                localizedBody = notificationText(
+                    lang,
+                    `Échec de la vérification du backup pour ${verificationMatch[1]} : ${verificationMatch[2]}`,
+                    body,
+                    `Error en la verificación de la copia para ${verificationMatch[1]}: ${verificationMatch[2]}`,
+                    `${verificationMatch[1]} 的备份验证失败：${verificationMatch[2]}`,
+                );
+            }
+            const deferredMatch = body.match(/^Automatic self-update was deferred because (.+)\. It will be retried by the existing update watcher\.$/s);
+            if (deferredMatch) {
+                localizedBody = notificationText(
+                    lang,
+                    `La mise à jour automatique a été reportée car ${deferredMatch[1]}. Elle sera retentée par le watcher de mise à jour existant.`,
+                    body,
+                    `La actualización automática se aplazó porque ${deferredMatch[1]}. El watcher de actualizaciones existente volverá a intentarlo.`,
+                    `自动更新已推迟，原因：${deferredMatch[1]}。现有更新监视器将稍后重试。`,
+                );
+            }
             const hostname = (await Settings.get("primaryHostname")) || "";
             const fullTitle = hostname ? `[${hostname}] ${localizedTitle}` : localizedTitle;
             if (watcher.discordWebhooks.length > 0) {
