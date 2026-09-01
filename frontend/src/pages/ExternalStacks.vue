@@ -19,9 +19,12 @@
             </ul>
             <div v-else class="text-warning small mb-3">{{ $t("externalStacks.noAllowedMounts") }}</div>
             <div class="external-path-help">
-                <div class="external-path-help-row"><span class="badge text-bg-success">{{ $t("externalStacks.path.accessible") }}</span><span class="form-text">{{ $t("externalStacks.accessibleHelp") }}</span></div>
-                <div class="external-path-help-row"><span class="badge text-bg-warning">{{ $t("externalStacks.path.not-authorized") }}</span><span class="form-text">{{ $t("externalStacks.allowedRootsHelp") }}</span></div>
-                <div class="external-path-help-row"><span class="badge text-bg-secondary">{{ $t("externalStacks.path.not-accessible") }}</span><span class="form-text">{{ $t("externalStacks.notAccessibleHelp") }}</span></div>
+                <span class="badge text-bg-success">{{ $t("externalStacks.path.accessible") }}</span>
+                <span class="form-text">{{ $t("externalStacks.accessibleHelp") }}</span>
+                <span class="badge text-bg-warning">{{ $t("externalStacks.path.not-authorized") }}</span>
+                <span class="form-text">{{ $t("externalStacks.allowedRootsHelp") }}</span>
+                <span class="badge text-bg-secondary">{{ $t("externalStacks.path.not-accessible") }}</span>
+                <span class="form-text">{{ $t("externalStacks.notAccessibleHelp") }}</span>
             </div>
         </div>
 
@@ -167,8 +170,8 @@ export default {
 .external-root-list { padding-left: 1.35rem; }
 .external-root-list li + li { margin-top: .3rem; }
 .external-path-help { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: start; gap: .55rem .65rem; }
-.external-path-help-row { display: contents; }
-.external-path-help-row .form-text { align-self: start; margin-top: 0; }
+.external-path-help .badge { align-self: start; justify-self: start; }
+.external-path-help .form-text { align-self: start; margin-top: 0; }
 .external-stack-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
 .external-stack-count { display: flex; align-items: center; justify-content: center; gap: .55rem; padding: .65rem .8rem; border: 1px solid var(--border-color); border-radius: .65rem; background: var(--bg-raised); font-weight: 600; }
 .external-stack-count span { font-size: 1.2rem; }
