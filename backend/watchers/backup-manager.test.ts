@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { ExternalStackManager } from "../external-stacks";
 import {
+    BackupManager,
     BackupRunLock,
     assertExistingPathWithinRoots,
     assertPathWithinRoots,
@@ -105,6 +107,64 @@ test("conserve les valeurs Restic et Compose dans des arguments séparés", () =
     ]), [
         "compose", "-f", "compose.yaml", "exec", "-T", "service;false", "sh", "-c", "echo sauvegarde",
     ]);
+    assert.deepEqual(buildComposeCommandArgs("/external/demo/compose.yaml", [ "ps" ], "existing-project"), [
+        "compose", "-p", "existing-project", "-f", "compose.yaml", "ps",
+    ]);
+});
+
+test("inclut le Compose et le fichier env d'une stack externe revalidée", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-backup-external-"));
+    const allowed = path.join(root, "allowed");
+    const workingDir = path.join(allowed, "radarr");
+    const dataDir = path.join(root, "data");
+    const stacksDir = path.join(root, "stacks");
+    const composeFile = path.join(workingDir, "compose.yaml");
+    try {
+        await fs.mkdir(workingDir, { recursive: true });
+        await fs.mkdir(stacksDir, { recursive: true });
+        await fs.writeFile(composeFile, "services:\n  radarr:\n    image: lscr.io/linuxserver/radarr:latest\n");
+        await fs.writeFile(path.join(workingDir, ".env"), "PUID=1000\n");
+        const external = new ExternalStackManager(dataDir, stacksDir, [ allowed ]);
+        await external.import("external-radarr", "external-real-radarr", composeFile);
+        const backup = new BackupManager(external);
+        backup.settings.includeEnvFiles = true;
+        const result = await (backup as unknown as {
+            buildBackupPaths(stackName?: string): Promise<{ paths: string[]; warnings: string[] }>;
+        }).buildBackupPaths("external-radarr");
+
+        assert.deepEqual(result.warnings, []);
+        assert.deepEqual(result.paths.sort(), [ composeFile, path.join(workingDir, ".env") ].sort());
+        assert.deepEqual(await backup.listStacks(), [ "external-radarr" ]);
+    } finally {
+        await fs.rm(root, { recursive: true, force: true });
+    }
+});
+
+test("refuse une inscription externe devenue inaccessible ou sortie des racines", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-backup-external-invalid-"));
+    const allowed = path.join(root, "allowed");
+    const workingDir = path.join(allowed, "sonarr");
+    const dataDir = path.join(root, "data");
+    const stacksDir = path.join(root, "stacks");
+    const composeFile = path.join(workingDir, "compose.yaml");
+    try {
+        await fs.mkdir(workingDir, { recursive: true });
+        await fs.mkdir(stacksDir, { recursive: true });
+        await fs.writeFile(composeFile, "services: {}\n");
+        const external = new ExternalStackManager(dataDir, stacksDir, [ allowed ]);
+        await external.import("external-sonarr", "external-real-sonarr", composeFile);
+        await fs.rm(composeFile);
+        const backup = new BackupManager(external);
+        const result = await (backup as unknown as {
+            buildBackupPaths(stackName?: string): Promise<{ paths: string[]; warnings: string[] }>;
+        }).buildBackupPaths("external-sonarr");
+
+        assert.deepEqual(result.paths, []);
+        assert.match(result.warnings.join(" "), /Impossible de préparer les fichiers/);
+        assert.deepEqual(await backup.listStacks(), []);
+    } finally {
+        await fs.rm(root, { recursive: true, force: true });
+    }
 });
 
 test("rejette les champs SFTP capables d'injecter des options SSH", () => {

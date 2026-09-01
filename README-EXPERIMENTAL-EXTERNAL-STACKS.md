@@ -45,3 +45,9 @@ docker pull ghcr.io/aerya/dockge-enhanced:experimental-external-stacks
 ```
 
 Open **External stacks** in the WebUI, inspect the detected project, then explicitly add an accessible Compose path. Report bugs at [GitHub issues](https://github.com/Aerya/Dockge-Enhanced/issues) with Docker/Compose versions, relevant labels and sanitized paths. Never include `.env` files, passwords, tokens, or private registry credentials.
+
+## Restic backups
+
+Once registered, an external stack is available in the existing Restic stack settings. Its verified Compose file and optional `.env` are included in global and targeted backups, and its original Compose project name is retained for stop or application-hook consistency policies. Snapshot browsing, file inspection and restore tests also recognize these external configuration files.
+
+Persistent data keeps the same opt-in behavior as regular stacks: select the relevant bind-mounted path or volume in the Restic settings when its contents must also be backed up. Registering an external stack never silently adds all of its data mounts to a backup.

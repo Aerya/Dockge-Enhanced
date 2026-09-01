@@ -102,10 +102,12 @@ export class ExternalStackManager {
     }
 
     async get(name: string): Promise<ExternalStackRegistration | undefined> {
+        this.registrations = null;
         return (await this.load()).find((entry) => entry.name === name);
     }
 
     async list(): Promise<ExternalStackRegistration[]> {
+        this.registrations = null;
         return [ ...(await this.load()) ];
     }
 
@@ -117,6 +119,7 @@ export class ExternalStackManager {
         if (canonical.workingDir === stacksRoot || canonical.workingDir.startsWith(`${stacksRoot}${path.sep}`)) {
             throw new ValidationError("This stack is already inside DOCKGE_STACKS_DIR");
         }
+        this.registrations = null;
         const registrations = await this.load();
         if (registrations.some((entry) => entry.name === name)) throw new ValidationError("External stack name already exists");
         if (registrations.some((entry) => entry.composeFile === canonical.composeFile)) throw new ValidationError("This external Compose file is already imported");
