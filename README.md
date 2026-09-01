@@ -25,6 +25,8 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 An error introduced in the Dockge-Enhanced self-update mechanism could prevent the sidecar from completing the update even though the interface reported that an update was in progress.
 
+**This issue affects Dockge-Enhanced instances updated between the evening of August 31, 2026 and the morning of September 1, 2026.**
+
 The issue is now fixed. **If you enabled Dockge-Enhanced self-updates before this fix, one final manual update is required** on each Dockge-Enhanced instance to retrieve the corrected version:
 
 `docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`

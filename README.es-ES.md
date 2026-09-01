@@ -27,6 +27,8 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 
 Un error introducido en el mecanismo de actualización automática de Dockge-Enhanced podía impedir que el sidecar completara correctamente la actualización, aunque la interfaz indicara que estaba en curso.
 
+**Este problema afecta a las instancias de Dockge-Enhanced actualizadas entre la noche del 31 de agosto de 2026 y la mañana del 1 de septiembre de 2026.**
+
 El problema ya está corregido. **Si habías activado la actualización automática de Dockge-Enhanced antes de esta corrección, es necesaria una última actualización manual** en cada instancia de Dockge-Enhanced para obtener la versión corregida:
 
 `docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`
