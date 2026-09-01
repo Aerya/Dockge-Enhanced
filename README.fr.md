@@ -25,6 +25,8 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 Une erreur introduite dans le mécanisme d’auto-mise à jour de Dockge-Enhanced pouvait empêcher le sidecar de terminer correctement la mise à jour alors même que l’interface indiquait qu’elle était en cours.
 
+**Ce problème concerne les instances Dockge-Enhanced mises à jour entre le 31 août 2026 au soir et le 1er septembre 2026 au matin.**
+
 Le problème est désormais corrigé. **Si vous aviez activé l’auto-mise à jour de Dockge-Enhanced avant ce correctif, une mise à jour manuelle est nécessaire une dernière fois** pour chaque instance Dockge-Enhanced afin de récupérer la version corrigée :
 
 `docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`
