@@ -151,13 +151,21 @@ async function run(deps = {}) {
         } catch (error) { updateError = error; }
         writeStatus("rolling-back", `Update failed; restoring the previous image: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan);
         try {
-            const current = inspect(plan.targetContainerName, deps);
-            if (plan.compose) override = composeUpdate(plan, plan.previousImageId, deps);
-            else await snapshotCreate(recovery, current.Id, plan.previousImageId, deps);
+            // A Compose update can remove the old container before the replacement
+            // is created.  Do not inspect the replacement before restoring: it may
+            // not exist, which would otherwise skip the only recovery path.
+            if (plan.compose) {
+                override = composeUpdate(plan, plan.previousImageId, deps);
+            } else {
+                const current = inspect(plan.targetContainerName, deps);
+                await snapshotCreate(recovery, current.Id, plan.previousImageId, deps);
+            }
             if (waitReady(plan.targetContainerName, deps)) { writeStatus("rolled-back", `Update failed and the previous container was restored: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan); return "rolled-back"; }
             throw new Error("Previous container did not become ready");
         } catch (rollbackError) {
-            writeStatus("rollback-failed", `Update failed and rollback failed: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`, true, plan);
+            const updateMessage = updateError instanceof Error ? updateError.message : String(updateError);
+            const rollbackMessage = rollbackError instanceof Error ? rollbackError.message : String(rollbackError);
+            writeStatus("rollback-failed", `Update failed (${updateMessage}) and rollback failed: ${rollbackMessage}`, true, plan);
             return "rollback-failed";
         }
     } catch (error) { writeStatus("failed", error instanceof Error ? error.message : String(error), false, plan); return "failed"; }
