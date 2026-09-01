@@ -11,4 +11,5 @@ RUN apk add --no-cache docker-cli docker-cli-compose \
 WORKDIR /helper
 COPY --from=dependencies /dependencies/node_modules/yaml ./node_modules/yaml
 COPY extra/external-stack-access-sidecar/index.js ./index.js
+USER node
 ENTRYPOINT ["node", "/helper/index.js"]
