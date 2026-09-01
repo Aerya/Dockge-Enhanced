@@ -97,6 +97,15 @@
     --text-color: #b1b8c0;
     --text-muted: #9ca3af;
 
+    // Keep Bootstrap's secondary/muted text at least as readable as our
+    // own muted token in dark mode. This fixes helpers, loading labels,
+    // agent endpoints/IPs and other Bootstrap utility text without
+    // flattening brighter semantic/brand colors.
+    --bs-body-color: var(--text-color);
+    --bs-secondary-color: var(--text-muted);
+    --bs-secondary-rgb: 156, 163, 175;
+    --bs-tertiary-color: var(--text-muted);
+
     --shadow-card: 0 15px 70px rgba(0, 0, 0, 0.5);
     --shadow-popover: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
