@@ -107,3 +107,25 @@ test("failed readiness rolls back and persists a deduplicatable terminal result"
     assert.equal(fs.existsSync(`${planPath}.claimed`), false);
     assert.equal(fs.existsSync(path.join(root, `${plan.id}.override.yaml`)), false);
 });
+
+test("a Compose creation failure restores the previous image without inspecting a missing replacement", async () => {
+    process.env.SELF_UPDATE_ALLOW_TEST_IMAGES = "dockge-enhanced:test-v2";
+    const work = path.join(root, "missing-replacement"); fs.mkdirSync(work, { recursive: true });
+    const composeFile = path.join(work, "compose.yaml"); fs.writeFileSync(composeFile, "services:\n  dockge:\n    image: dockge-enhanced:test-v1\n");
+    process.env.SELF_UPDATE_COMPOSE_DIR = work;
+    const { plan, planPath } = signedPlan({ compose: { workingDir: work, configFiles: [ composeFile ], project: "test", service: "dockge" } });
+    fs.mkdirSync(path.join(root, "recovery"), { recursive: true });
+    fs.writeFileSync(path.join(root, "recovery", plan.recoveryFile), JSON.stringify({ id: plan.id, targetContainerId: plan.targetContainerId, targetContainerName: plan.targetContainerName, previousImage: plan.previousImage, previousImageId: plan.previousImageId, config: {}, hostConfig: {}, endpointsConfig: {} }));
+    let upCalls = 0; const time = clock();
+    const docker = args => {
+        if (args[1] === "inspect") return JSON.stringify({ Id: "container-id", Name: "/dockge-test", Config: { Image: "dockge-enhanced:test-v1" }, State: { Running: true, Status: "running" } });
+        if (args.includes("up")) { upCalls += 1; if (upCalls === 1) throw new Error("replacement creation failed"); return ""; }
+        if (args.includes("wget")) return "ok";
+        return "";
+    };
+    const result = await sidecar.run({ planPath, docker, ...time, stableMs: 2_000, timeoutMs: 4_000, pollMs: 1_000 });
+    assert.equal(result, "rolled-back");
+    assert.equal(upCalls, 2);
+    const status = JSON.parse(fs.readFileSync(path.join(root, "status.json")));
+    assert.equal(status.state, "rolled-back");
+});
