@@ -6,8 +6,25 @@
 
 # Dockge Enhanced
 
-> [!IMPORTANT]
-> **Corrección crítica de la autoactualización — actualización obligatoria.** Las builds publicadas entre **la tarde/noche del 31/08/2026 y la tarde/noche del 01/09/2026** contenían una ruta de autoactualización de Dockge-Enhanced que podía eliminar el contenedor en ejecución y no conseguir recrearlo si fallaba el reemplazo mediante Compose. **No conserve ni reinstale ninguna versión publicada durante ese intervalo. No utilice su autoactualización integrada para salir de ese intervalo: actualice manualmente con Docker Compose directamente a la versión 1.5.1 o posterior y, después, vuelva a activar las actualizaciones automáticas.** Este problema no elimina sus stacks ni sus datos persistentes; afecta a la recreación del propio contenedor Dockge-Enhanced. La versión 1.5.1 añade un rollback secundario e independiente basado en el snapshot de recuperación, sin depender de que el contenedor de reemplazo siga existiendo.
+⚠️ **Importante — corrección crítica de la actualización automática de Dockge-Enhanced**
+
+Un error en el mecanismo de actualización automática de Dockge-Enhanced afectó a algunas versiones publicadas entre **la noche del 31 de agosto de 2026 y la noche del 1 de septiembre de 2026**.
+
+En determinadas condiciones, el sidecar podía detener y eliminar el contenedor Dockge-Enhanced y después no conseguir crear la nueva versión **ni restaurar automáticamente la anterior**.
+
+**Si tu instalación procede de este periodo, actualízala manualmente a la última versión antes de volver a activar las actualizaciones automáticas:**
+
+```bash
+docker pull ghcr.io/aerya/dockge-enhanced:latest
+docker compose up -d
+```
+
+Las stacks gestionadas por Dockge-Enhanced y sus datos persistentes no se ven afectados por este problema.
+
+El mecanismo ha sido corregido y reforzado con una vía de recuperación adicional e independiente, capaz de recrear la instancia anterior incluso si falla el reemplazo mediante Docker Compose.
+
+**Mis disculpas a todos los usuarios afectados.** Una función diseñada precisamente para hacer las actualizaciones más seguras no debería poder dejar Dockge-Enhanced fuera de servicio. Gracias a todos los que utilizan, prueban y reportan problemas: vuestros comentarios permiten identificarlos y corregirlos rápidamente.
+
 
 
 Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/dockge) — agrega monitoreo de imágenes, escaneo de seguridad, copias de seguridad automáticas, detección de bucles de fallo y gestión de recursos de Docker, todo desde la interfaz web.
@@ -26,20 +43,6 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 > **¿Lo usas? ¿Te gusta? [⭐ ¡Dale una estrella!] (https://github.com/Aerya/Dockge-Enhanced)** — solo toma dos segundos.
 
 ---
-
-⚠️ **Importante — corrección de la actualización automática de Dockge-Enhanced**
-
-Un error introducido en el mecanismo de actualización automática de Dockge-Enhanced podía impedir que el sidecar completara correctamente la actualización, aunque la interfaz indicara que estaba en curso.
-
-**Este problema afecta a las instancias de Dockge-Enhanced actualizadas entre la noche del 31 de agosto de 2026 y la mañana del 1 de septiembre de 2026.**
-
-El problema ya está corregido. **Si habías activado la actualización automática de Dockge-Enhanced antes de esta corrección, es necesaria una última actualización manual** en cada instancia de Dockge-Enhanced para obtener la versión corregida:
-
-`docker pull ghcr.io/aerya/dockge-enhanced:latest && docker compose up -d`
-
-Una vez instalada esta versión, la actualización automática funcionará con normalidad.
-
-**Mis disculpas a los usuarios afectados.** Esta función está precisamente pensada para evitar intervenciones manuales, por lo que se trata de un fallo especialmente inoportuno. Gracias a quienes usan y prueban Dockge-Enhanced y ayudan a detectar rápidamente este tipo de problemas.
 
 <p align="center">
   <img src="screens/D-E.vs.Others.EN.09.26.png" alt="Dockge Enhanced comparison" width="100%">
