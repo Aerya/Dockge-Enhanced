@@ -1037,6 +1037,7 @@ export class BackupManager {
         stackName?: string;
         onProgress?: (progress: BackupProgress) => void;
         additionalPaths?: string[];
+        selfUpdateOnly?: boolean;
     } = {}): Promise<BackupResult> {
         if (!this.backupRunLock.acquire(this.settings.preventConcurrentBackups)) {
             this.recordBlockedBackup(opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual"));
@@ -1056,6 +1057,7 @@ export class BackupManager {
         stackName?: string;
         onProgress?: (progress: BackupProgress) => void;
         additionalPaths?: string[];
+        selfUpdateOnly?: boolean;
     } = {}): Promise<BackupResult> {
         const start = Date.now();
         const trigger = opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual");
@@ -1076,7 +1078,11 @@ export class BackupManager {
             return result;
         }
 
-        const { paths, warnings } = await this.buildBackupPaths(opts.stackName, opts.additionalPaths);
+        const { paths, warnings } = await this.buildBackupPaths(
+            opts.stackName,
+            opts.additionalPaths,
+            !opts.selfUpdateOnly,
+        );
         result.warnings = warnings;
         if (paths.length === 0) {
             result.error = warnings.length > 0
@@ -1333,7 +1339,11 @@ export class BackupManager {
         });
     }
 
-    private async buildBackupPaths(stackName?: string, additionalPaths: string[] = []): Promise<BackupPathsResult> {
+    private async buildBackupPaths(
+        stackName?: string,
+        additionalPaths: string[] = [],
+        includeConfiguredData = true,
+    ): Promise<BackupPathsResult> {
         const paths: string[] = [];
         const warnings: string[] = [];
         const seen = new Set<string>();
@@ -1413,8 +1423,10 @@ export class BackupManager {
             console.error("[BackupManager] Impossible de lire STACKS_DIR:", e);
         }
 
-        // Volumes sélectionnés (entiers ou sous-dossiers spécifiques)
-        if (!stackName) {
+        // Les backups de self-update sont volontairement minimaux :
+        // compose/.env/.dockge-meta + données Dockge explicitement ajoutées.
+        // Les volumes applicatifs et extraPaths appartiennent aux backups généraux.
+        if (!stackName && includeConfiguredData) {
             for (const selected of this.settings.volumeBackup?.selectedVolumes ?? []) {
                 await addExistingPath(selected, "Volume sélectionné");
             }

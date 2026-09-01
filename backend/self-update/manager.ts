@@ -179,7 +179,8 @@ export class SelfUpdateManager {
                 tag: "self-update",
                 trigger: "manual",
                 onProgress: (progress) => { this.progress = progress; },
-                additionalPaths: [ recoveryPath ],
+                additionalPaths: [ DATA_DIR, recoveryPath ],
+                selfUpdateOnly: true,
             });
         } catch (error) {
             this.operation = { ...this.operation, state: "failed", message: `Backup failed: ${error instanceof Error ? error.message : String(error)}`, finishedAt: new Date().toISOString() };
