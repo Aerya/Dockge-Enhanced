@@ -2,6 +2,7 @@
     "externalStacks.nav": "Stacks externas",
     "externalStacks.heading": "Stacks Compose externas",
     "externalStacks.intro": "Detecta proyectos Compose ya presentes en este host. La importación solo registra una ruta permitida; nunca mueve archivos ni datos.",
+    "externalStacks.timeout": "La detección no respondió a tiempo. Compruebe la conexión con esta instancia.",
     "externalStacks.experimental": "Función experimental: haga una copia de seguridad de la configuración importante antes de gestionar una stack externa.",
     "externalStacks.allowedRoots": "Raíces de sistema de archivos permitidas",
     "externalStacks.noAllowedRoots": "No hay ninguna raíz permitida configurada. Defina DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS y monte las mismas rutas en Dockge-Enhanced.",

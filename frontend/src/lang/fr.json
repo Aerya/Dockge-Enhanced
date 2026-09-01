@@ -3,6 +3,7 @@
     "externalStacks.nav": "Stacks externes",
     "externalStacks.heading": "Stacks Compose externes",
     "externalStacks.intro": "Découvre les projets Compose déjà présents sur cet hôte. L'import enregistre uniquement un chemin autorisé ; il ne déplace jamais les fichiers ni les données.",
+    "externalStacks.timeout": "La découverte n'a pas répondu dans le délai prévu. Vérifiez la connexion à cette instance.",
     "externalStacks.experimental": "Fonctionnalité expérimentale : sauvegardez vos configurations importantes avant de gérer une stack externe.",
     "externalStacks.allowedRoots": "Racines filesystem autorisées",
     "externalStacks.noAllowedRoots": "Aucune racine autorisée n'est configurée. Définissez DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS et montez les mêmes chemins dans Dockge-Enhanced.",

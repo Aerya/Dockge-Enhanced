@@ -3,7 +3,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
                 <h1 class="mb-1"><font-awesome-icon icon="folder-open" class="me-2" />{{ $t("externalStacks.heading") }}</h1>
-                <p class="text-muted mb-0">{{ $t("externalStacks.intro") }}</p>
+                <p class="form-text mb-0">{{ $t("externalStacks.intro") }}</p>
             </div>
             <button class="btn btn-normal" :disabled="loading" @click="refresh">
                 <font-awesome-icon :icon="loading ? 'spinner' : 'arrows-rotate'" :spin="loading" class="me-1" />{{ $t("refresh") }}
@@ -55,7 +55,17 @@ export default {
         },
         refresh() {
             this.loading = true;
-            this.$root.getSocket().emit("discoverExternalStacks", (res) => {
+            let completed = false;
+            const timeout = window.setTimeout(() => {
+                if (completed) return;
+                completed = true;
+                this.loading = false;
+                this.$root.toastError(this.$t("externalStacks.timeout"));
+            }, 15000);
+            this.$root.emitAgent("", "discoverExternalStacks", (res) => {
+                if (completed) return;
+                completed = true;
+                window.clearTimeout(timeout);
                 this.loading = false;
                 if (!res?.ok) return this.$root.toastRes(res);
                 this.stacks = res.stacks || [];
@@ -67,7 +77,7 @@ export default {
         },
         importStack(stack) {
             this.importing = stack.project;
-            this.$root.getSocket().emit("importExternalStack", {
+            this.$root.emitAgent("", "importExternalStack", {
                 name: this.names[stack.project], project: stack.project, composeFile: stack.composeFile,
             }, (res) => {
                 this.importing = "";

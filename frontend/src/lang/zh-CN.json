@@ -3,6 +3,7 @@
     "externalStacks.nav": "外部堆栈",
     "externalStacks.heading": "外部 Compose 堆栈",
     "externalStacks.intro": "发现主机上已有的 Compose 项目。导入只登记允许的路径，绝不移动文件或数据。",
+    "externalStacks.timeout": "发现操作未及时响应。请检查与此实例的连接。",
     "externalStacks.experimental": "实验性功能：管理外部堆栈前请备份重要配置。",
     "externalStacks.allowedRoots": "允许的文件系统根目录",
     "externalStacks.noAllowedRoots": "尚未配置允许的根目录。请设置 DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS，并将相同路径挂载到 Dockge-Enhanced。",

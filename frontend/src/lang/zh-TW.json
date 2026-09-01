@@ -3,6 +3,7 @@
     "externalStacks.nav": "外部堆疊",
     "externalStacks.heading": "外部 Compose 堆疊",
     "externalStacks.intro": "探索主機上已有的 Compose 專案。匯入只會登錄允許的路徑，絕不移動檔案或資料。",
+    "externalStacks.timeout": "探索操作未及時回應。請檢查與此執行個體的連線。",
     "externalStacks.experimental": "實驗性功能：管理外部堆疊前請備份重要設定。",
     "externalStacks.allowedRoots": "允許的檔案系統根目錄",
     "externalStacks.noAllowedRoots": "尚未設定允許的根目錄。請設定 DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS，並將相同路徑掛載到 Dockge-Enhanced。",

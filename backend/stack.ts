@@ -1411,6 +1411,13 @@ export class Stack {
         const meta = await this.readMeta();
         lastUpdated = meta.lastUpdated ?? meta.lastStartedAt ?? null;
 
+        // Docker Compose reports projects that are not managed by Dockge too.
+        // Until an external project is imported, its synthetic /opt/stacks path
+        // does not exist and passing it as cwd makes spawn report ENOENT.
+        if (!await fileExists(this.path)) {
+            return { serviceStatusList, lastUpdated, lastStartedAt };
+        }
+
         try {
             const res = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--format", "json"), {
                 cwd: this.path,
