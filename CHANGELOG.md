@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — README chronology cleanup** — Recent September documentation is reorganized so remote announcements, linked-instance compatibility, persistent local instance identification and the unread release-news journal now live under the September 2026 section instead of being appended after the license. No functional behavior changes.
+
 **2026-09-03 — Fix monitored partition rendering** — The system stats bar once again shows every configured partition. Compact mode is restored to its gauge-free rendering (`/mnt/data 42%`), while Bar mode keeps the usage meter and total capacity for each partition. This fixes the regression introduced with the `SystemStatsBar` redesign.
 
 Detailed project history previously embedded in the README.
