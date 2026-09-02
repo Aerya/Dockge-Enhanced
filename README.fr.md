@@ -244,6 +244,21 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ---
 
+## Déroulement d’une mise à jour automatique de Dockge-Enhanced
+
+Dockge-Enhanced gère automatiquement le workflow complet : backup Restic obligatoire, vérification d’intégrité, remplacement contrôlé du conteneur, healthcheck puis confirmation finale. Les notifications Discord/Apprise permettent aussi de suivre l’opération sans rester devant la WebUI.
+
+<table>
+<tr>
+<td align="center" width="50%"><a href="screens/AutoUpdate-ResticVerification.png"><img src="screens/AutoUpdate-ResticVerification.png" width="100%"/></a><br/><sub><strong>1. Vérification Restic</strong> — contrôle du backup avant remplacement.</sub></td>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Healthcheck.png"><img src="screens/AutoUpdate-Healthcheck.png" width="100%"/></a><br/><sub><strong>2. Healthcheck</strong> — validation du nouveau conteneur.</sub></td>
+</tr>
+<tr>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Completed.png"><img src="screens/AutoUpdate-Completed.png" width="100%"/></a><br/><sub><strong>3. Mise à jour terminée</strong> — build installé et état final.</sub></td>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Notifications.png"><img src="screens/AutoUpdate-Notifications.png" width="100%"/></a><br/><sub><strong>4. Notifications</strong> — disponibilité, changements et confirmation finale.</sub></td>
+</tr>
+</table>
+
 ## Captures d'écran
 
 <table>

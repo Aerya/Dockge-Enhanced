@@ -247,6 +247,21 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ---
 
+## Dockge-Enhanced automatic update workflow
+
+Dockge-Enhanced handles the complete workflow automatically: mandatory Restic backup, integrity verification, controlled container replacement, health check and final confirmation. Discord/Apprise notifications also let users follow the operation without keeping the WebUI open.
+
+<table>
+<tr>
+<td align="center" width="50%"><a href="screens/AutoUpdate-ResticVerification.png"><img src="screens/AutoUpdate-ResticVerification.png" width="100%"/></a><br/><sub><strong>1. Restic verification</strong> — backup validation before replacement.</sub></td>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Healthcheck.png"><img src="screens/AutoUpdate-Healthcheck.png" width="100%"/></a><br/><sub><strong>2. Health check</strong> — validation of the new container.</sub></td>
+</tr>
+<tr>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Completed.png"><img src="screens/AutoUpdate-Completed.png" width="100%"/></a><br/><sub><strong>3. Update completed</strong> — installed build and final state.</sub></td>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Notifications.png"><img src="screens/AutoUpdate-Notifications.png" width="100%"/></a><br/><sub><strong>4. Notifications</strong> — availability, main changes and final confirmation.</sub></td>
+</tr>
+</table>
+
 ## Screenshots
 
 <table>

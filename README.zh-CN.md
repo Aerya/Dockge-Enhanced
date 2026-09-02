@@ -229,6 +229,21 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 ---
 ---
 
+## Dockge-Enhanced 自动更新流程
+
+Dockge-Enhanced 会自动处理完整流程：强制 Restic 备份、完整性验证、受控替换容器、健康检查和最终确认。Discord/Apprise 通知也可以在无需一直打开 WebUI 的情况下跟踪操作。
+
+<table>
+<tr>
+<td align="center" width="50%"><a href="screens/AutoUpdate-ResticVerification.png"><img src="screens/AutoUpdate-ResticVerification.png" width="100%"/></a><br/><sub><strong>1. Restic 验证</strong> — 替换容器前检查备份。</sub></td>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Healthcheck.png"><img src="screens/AutoUpdate-Healthcheck.png" width="100%"/></a><br/><sub><strong>2. 健康检查</strong> — 验证新容器。</sub></td>
+</tr>
+<tr>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Completed.png"><img src="screens/AutoUpdate-Completed.png" width="100%"/></a><br/><sub><strong>3. 更新完成</strong> — 已安装构建版本和最终状态。</sub></td>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Notifications.png"><img src="screens/AutoUpdate-Notifications.png" width="100%"/></a><br/><sub><strong>4. 通知</strong> — 更新可用、主要变更和最终确认。</sub></td>
+</tr>
+</table>
+
 ## 截图
 
 项目截图位于 [`screens/`](screens/) 目录。主 README 中展示了界面、更新、备份、Trivy、Discord 通知和多实例功能的最新截图。
