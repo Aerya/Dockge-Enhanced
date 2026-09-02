@@ -188,15 +188,30 @@ export class SelfUpdateManager {
                 onProgress: (progress) => { this.progress = progress; },
                 additionalPaths: [ DATA_DIR, recoveryPath ],
                 selfUpdateOnly: true,
+                suppressNotification: true,
             });
         } catch (error) {
-            this.operation = { ...this.operation, state: "failed", message: `Backup failed: ${error instanceof Error ? error.message : String(error)}`, finishedAt: new Date().toISOString() };
+            this.operation = {
+                ...this.operation,
+                state: "failed",
+                message: `Backup failed: ${error instanceof Error ? error.message : String(error)}`,
+                finishedAt: new Date().toISOString(),
+                notificationPending: true,
+                notificationSentAt: null,
+            };
             await this.saveOperation();
             return this.getOperation();
         }
         if (!backup.success) {
             log.error("self-update", `Backup Restic échoué — id=${plan.id} error=${backup.error ?? "unknown error"}`);
-            this.operation = { ...this.operation, state: "failed", message: `Backup failed: ${backup.error ?? "unknown error"}`, finishedAt: new Date().toISOString() };
+            this.operation = {
+                ...this.operation,
+                state: "failed",
+                message: `Backup failed: ${backup.error ?? "unknown error"}`,
+                finishedAt: new Date().toISOString(),
+                notificationPending: true,
+                notificationSentAt: null,
+            };
             await this.saveOperation();
             return this.getOperation();
         }
@@ -334,10 +349,10 @@ export class SelfUpdateManager {
                     "⏳ Dockge-Enhanced 更新已推迟",
                 ],
                 "✅ Dockge-Enhanced self-update succeeded": [
-                    "✅ Mise à jour Dockge-Enhanced réussie",
-                    "✅ Dockge-Enhanced self-update succeeded",
-                    "✅ Actualización automática de Dockge-Enhanced correcta",
-                    "✅ Dockge-Enhanced 自更新成功",
+                    "✅ Dockge-Enhanced mis à jour",
+                    "✅ Dockge-Enhanced updated",
+                    "✅ Dockge-Enhanced actualizado",
+                    "✅ Dockge-Enhanced 已更新",
                 ],
                 "❌ Dockge-Enhanced self-update failed": [
                     "❌ Échec de la mise à jour Dockge-Enhanced",
@@ -396,6 +411,93 @@ export class SelfUpdateManager {
             const bodySet = bodyTranslations[body];
             const localizedTitle = titleSet ? notificationText(lang, ...titleSet) : title;
             let localizedBody = bodySet ? notificationText(lang, ...bodySet) : body;
+
+            const targetDigest = this.operation.targetImage.match(/sha256:([a-f0-9]{64})/i)?.[1] ?? "";
+            const shortDigest = targetDigest ? targetDigest.slice(0, 12) : "";
+            const targetRepo = this.operation.targetImage.match(/^ghcr\.io\/(.+?)@sha256:/i)?.[1] ?? "aerya/dockge-enhanced";
+            const changelogUrl = `https://github.com/${targetRepo}`;
+
+            if (title === "✅ Dockge-Enhanced self-update succeeded") {
+                localizedBody = notificationText(
+                    lang,
+                    [
+                        "Mise à jour installée avec succès.",
+                        "",
+                        "**Backup Restic** · Vérifié",
+                        shortDigest ? `**Image** · \`${shortDigest}\`` : "",
+                        "**État** · Opérationnel",
+                        "",
+                        `Voir les changements : ${changelogUrl}`,
+                    ].filter(Boolean).join("\n"),
+                    [
+                        "Update installed successfully.",
+                        "",
+                        "**Restic backup** · Verified",
+                        shortDigest ? `**Image** · \`${shortDigest}\`` : "",
+                        "**Status** · Operational",
+                        "",
+                        `See changes: ${changelogUrl}`,
+                    ].filter(Boolean).join("\n"),
+                    [
+                        "Actualización instalada correctamente.",
+                        "",
+                        "**Copia Restic** · Verificada",
+                        shortDigest ? `**Imagen** · \`${shortDigest}\`` : "",
+                        "**Estado** · Operativo",
+                        "",
+                        `Ver los cambios: ${changelogUrl}`,
+                    ].filter(Boolean).join("\n"),
+                    [
+                        "更新已成功安装。",
+                        "",
+                        "**Restic 备份** · 已验证",
+                        shortDigest ? `**镜像** · \`${shortDigest}\`` : "",
+                        "**状态** · 运行正常",
+                        "",
+                        `查看更改：${changelogUrl}`,
+                    ].filter(Boolean).join("\n"),
+                );
+            } else if (title === "↩️ Dockge-Enhanced rollback succeeded") {
+                localizedBody = notificationText(
+                    lang,
+                    [
+                        "La mise à jour a échoué, mais l’ancienne version a été restaurée automatiquement.",
+                        "",
+                        "**Backup Restic** · Vérifié",
+                        "**Rollback** · Réussi",
+                        "**État** · Opérationnel",
+                        "",
+                        `Détail : ${body}`,
+                    ].join("\n"),
+                    [
+                        "The update failed, but the previous version was restored automatically.",
+                        "",
+                        "**Restic backup** · Verified",
+                        "**Rollback** · Successful",
+                        "**Status** · Operational",
+                        "",
+                        `Details: ${body}`,
+                    ].join("\n"),
+                    [
+                        "La actualización falló, pero la versión anterior se restauró automáticamente.",
+                        "",
+                        "**Copia Restic** · Verificada",
+                        "**Rollback** · Correcto",
+                        "**Estado** · Operativo",
+                        "",
+                        `Detalle: ${body}`,
+                    ].join("\n"),
+                    [
+                        "更新失败，但旧版本已自动恢复。",
+                        "",
+                        "**Restic 备份** · 已验证",
+                        "**回滚** · 成功",
+                        "**状态** · 运行正常",
+                        "",
+                        `详情：${body}`,
+                    ].join("\n"),
+                );
+            }
             const prefixedBodies: Array<[string, [string, string, string, string]]> = [
                 ["Backup failed: ", [ "Échec du backup : ", "Backup failed: ", "Error en la copia: ", "备份失败：" ]],
                 ["Backup verification failed: ", [ "Échec de la vérification du backup : ", "Backup verification failed: ", "Error en la verificación de la copia: ", "备份验证失败：" ]],
@@ -564,7 +666,7 @@ export class SelfUpdateManager {
         );
     }
 
-    wasSuccessfulTargetNotified(digest: string): boolean {
-        return this.operation.state === "succeeded" && !!this.operation.notificationSentAt && this.operation.targetImage.endsWith(`@${digest}`);
+    isSuccessfulTarget(digest: string): boolean {
+        return this.operation.state === "succeeded" && this.operation.targetImage.endsWith(`@${digest}`);
     }
 }
