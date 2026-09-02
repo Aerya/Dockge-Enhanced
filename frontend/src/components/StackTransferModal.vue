@@ -733,7 +733,6 @@ export default {
                 this.operationError = error instanceof Error ? error.message : String(error);
             }
         },
-        async loadDataCapabilities() {
         async checkTransferCompatibility() {
             this.compatibilityState = "checking";
             this.compatibilityOutdatedEndpoint = null;
@@ -817,6 +816,7 @@ export default {
                 this.compatibilityUpdating = false;
             }
         },
+        async loadDataCapabilities() {
             const [ source, target, registry ] = await Promise.all([
                 this.emitAgent(this.endpoint, "getStackTransferDataCapabilities", this.stack.name),
                 this.emitAgent(this.targetEndpoint, "getStackTransferDataCapabilities", this.stack.name),
