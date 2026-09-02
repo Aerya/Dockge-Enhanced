@@ -59,3 +59,11 @@ test("automatic retry of the same digest is blocked after rollback", async () =>
     assert.equal(manager.shouldBlockAutomaticRetry(target), true);
     assert.equal(manager.shouldBlockAutomaticRetry(`ghcr.io/aerya/dockge-enhanced@sha256:${"d".repeat(64)}`), false);
 });
+
+
+test("updater latest is the default sidecar channel", async () => {
+    const source = await fs.readFile(new URL("./manager.ts", import.meta.url), "utf8");
+    assert.match(source, /-updater:latest/);
+    assert.match(source, /image\", \"pull\", sidecarImage/);
+    assert.match(source, /run\", \"--pull=always/);
+});
