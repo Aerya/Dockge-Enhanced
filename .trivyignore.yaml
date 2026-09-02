@@ -54,6 +54,11 @@ vulnerabilities:
     expired_at: 2026-09-13
     statement: Restic 0.19.1 embarque une stdlib Go vulnérable (Go crypto/tls); aucune release Go corrigée stable n'est encore disponible.
 
+  - id: CVE-2026-84304
+    paths: ["usr/local/bin/restic"]
+    expired_at: 2026-09-13
+    statement: Restic 0.19.1 est la dernière release stable et embarque encore google.golang.org/grpc 1.81.1; le correctif grpc 1.83.1 n'est pas encore disponible dans une release officielle Restic.
+
 misconfigurations:
   - id: AVD-DS-0002
     paths: ["Dockerfile"]
