@@ -385,7 +385,76 @@ function copyYAMLCommentsItems(items: any, srcItems: any) {
  * @param input
  * @param hostname
  */
-export function parseDockerPort(input : string, hostname : string) {
+export interface DockerPortObject {
+    mode?: string;
+    protocol?: string;
+    published?: string | number;
+    target?: string | number;
+    host_ip?: string;
+}
+
+function formatDockerPortHostname(hostname: string): string {
+    const trimmed = hostname.trim();
+    if (trimmed.includes(":") && !trimmed.startsWith("[") && !trimmed.endsWith("]")) {
+        return `[${trimmed}]`;
+    }
+    return trimmed;
+}
+
+export function parseDockerPort(input : string | DockerPortObject, hostname : string) {
+    // Compose long syntax:
+    // ports:
+    //   - mode: ingress
+    //     protocol: tcp
+    //     published: 30432
+    //     target: 30432
+    if (input && typeof input === "object") {
+        const published = input.published;
+        const target = input.target;
+
+        if (published === undefined || published === null || published === "") {
+            return {
+                url: "",
+                display: target !== undefined && target !== null ? String(target) : "",
+            };
+        }
+
+        const port = String(published);
+        const portInt = parseInt(port, 10);
+        if (!Number.isFinite(portInt)) {
+            return {
+                url: "",
+                display: port,
+            };
+        }
+
+        let protocol = typeof input.protocol === "string" && input.protocol ? input.protocol : "tcp";
+        let targetHostname = typeof input.host_ip === "string" && input.host_ip.trim()
+            ? input.host_ip.trim()
+            : hostname;
+
+        targetHostname = formatDockerPortHostname(targetHostname);
+
+        if (portInt === 443) {
+            protocol = "https";
+        } else if (protocol === "tcp") {
+            protocol = "http";
+        }
+
+        return {
+            url: protocol + "://" + targetHostname + ":" + portInt,
+            display: port,
+        };
+    }
+
+    // Preserve the existing string behaviour exactly.
+    if (typeof input !== "string") {
+        return {
+            url: "",
+            display: "",
+        };
+    }
+
     let port;
     let display;
 
@@ -459,7 +528,6 @@ export function parseDockerPort(input : string, hostname : string) {
         display: display,
     };
 }
-
 export function resolveEndpointHostname(endpoint: string, agentUrl: string | undefined, localHostname: string, protocol = "http:"): string {
     if (!endpoint) {
         return localHostname;

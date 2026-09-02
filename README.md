@@ -91,6 +91,10 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**Compose long port syntax support**
+
+Container cards now support both short and long Compose port syntax. Definitions using `published`, `target`, `protocol`, `mode` or `host_ip` no longer trigger `split is not a function` and no longer make the container card disappear. IPv6 `host_ip` values are also formatted correctly in generated links.
+
 **tmpfs permission modes preserved by the Compose editor**
 
 The visual Compose editor now preserves leading-zero octal values such as `tmpfs.mode: 01777` when it regenerates YAML. Editing another field no longer silently rewrites that permission value as `1777`.

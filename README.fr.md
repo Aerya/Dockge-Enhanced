@@ -88,6 +88,10 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 ### 🆕 Septembre 2026
 
+**Prise en charge de la syntaxe longue des ports Compose**
+
+Les cartes des conteneurs prennent désormais en charge les syntaxes courte et longue des ports Compose. Les définitions utilisant `published`, `target`, `protocol`, `mode` ou `host_ip` ne provoquent plus l'erreur `split is not a function` et ne font plus disparaître la carte du conteneur. Les valeurs IPv6 de `host_ip` sont également correctement formatées dans les liens générés.
+
 **Préservation des permissions tmpfs dans l'éditeur Compose**
 
 L'éditeur visuel Compose conserve désormais les valeurs octales avec zéro initial telles que `tmpfs.mode: 01777` lorsqu'il régénère le YAML. Modifier un autre champ ne réécrit donc plus silencieusement cette permission en `1777`.
