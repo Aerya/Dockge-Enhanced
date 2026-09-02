@@ -33,9 +33,14 @@ Stacks managed by Dockge-Enhanced and their persistent data are not affected by 
 
 
 
-A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image monitoring, security scanning, automatic backups, crash-loop detection and Docker resource management, all from the web UI.
+A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turns its simple Compose management experience into a broader Docker management platform — with multi-server federation, stack migration and replication, Restic backups, image and self-updates with rollback, security scanning, monitoring, automation, notifications, and Docker resource management, all from the web UI.
 
-> 🇬🇧 English · 🇫🇷 [Français](README.fr.md) · 🇪🇸 [Español](README.es-ES.md) · 🇨🇳 [简体中文](README.zh-CN.md)
+<p align="center">
+  🇬🇧 English ·
+  🇫🇷 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.fr.md">Français</a> ·
+  🇪🇸 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.es-ES.md">Español</a> ·
+  🇨🇳 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.zh-CN.md">简体中文</a>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
@@ -46,7 +51,11 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
 
-> **Using it? Liking it? [⭐ Drop a star!](https://github.com/Aerya/Dockge-Enhanced)** — takes two seconds.
+<p align="center">
+  <strong>Using it? Liking it?</strong>
+  <a href="https://github.com/Aerya/Dockge-Enhanced"><strong>⭐ Drop a star!</strong></a>
+  — takes two seconds.
+</p>
 
 ---
 
@@ -60,16 +69,17 @@ A feature fork of [Dockge](https://github.com/louislam/dockge) — adds image mo
 
 | Area | Dockge Enhanced adds |
 | --- | --- |
-| **Multi-instance** | Automatic full-mesh federation when an agent is added or removed, management from every linked instance, multi-server selection and grouping, transactional copy/migration, resumable jobs, and automatic cold replication |
-| **Stack management** | Pinned stacks, collapsible and resizable stack sidebar with compact status and resource indicators, resizable Logs/Compose workspace, reliable raw YAML copy, per-stack and per-container actions and scheduling, optional host start prerequisites, Build + Recreate, optional notes and Git tools, and safeguards for services sharing a VPN network |
-| **Backup & recovery** | Multi-destination Restic, volumes, per-stack consistency, selective restore, snapshot tests and diffs |
-| **Automation & audit** | REST API scoped by permissions and stacks, per-stack webhooks, Home Assistant examples, and centralized history with origin and duration |
-| **Docker resources** | Images, volumes, unmanaged containers and networks, bulk actions, auto-prune, and safeguards for risky deletions |
-| **Images & security** | Update monitoring, auto-update with rollback, scheduled and pausable self-updates, Trivy scans, and CVE exceptions |
-| **Monitoring** | Configurable header/bottom system status bar, dashboard health cards, system, stack, and container stats, crash loops, healthcheck auto-heal, responsive and fullscreen logs, and optional Kula and managed Dozzle integrations |
-| **Integrations** | Optional PlugNPiN and per-service label assistant for Nginx Proxy Manager, Pi-hole, and AdGuard Home |
-| **Notifications & access** | Discord and Apprise notifications localized in EN/FR/ES/zh-CN, 2FA, trusted proxy, Turnstile, and mobile clients |
-
+| **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers, and scheduled cold replication |
+| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, per-stack and per-container actions and scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and safeguards for shared VPN network namespaces |
+| **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates |
+| **Updates** | Image update detection, manual or automatic container updates with rollback, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
+| **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
+| **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant examples, scheduled operations, and centralized history including operation origin, status and duration |
+| **Docker resources** | Management of images, volumes, networks and unmanaged containers, bulk operations, auto-prune and safeguards around destructive actions |
+| **Security** | Trivy vulnerability scanning, CVE exceptions, protected update workflows, 2FA, trusted-proxy authentication and Cloudflare Turnstile |
+| **Monitoring** | System, stack and container statistics, configurable system status bar, dashboard health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula and managed Dozzle integrations |
+| **Integrations** | PlugNPiN plus per-service label assistance for Nginx Proxy Manager, Pi-hole and AdGuard Home |
+| **Notifications & access** | Discord and Apprise notifications localized in EN/FR/ES/zh-CN, multi-instance awareness, 2FA, trusted proxy support, Turnstile and third-party mobile clients |
 
 <details>
 <summary><strong>Show the complete feature catalogue</strong></summary>

@@ -31,9 +31,14 @@ Dockge-Enhanced 管理的 stacks 及其持久化数据不受此问题影响。
 
 **对于受到影响的用户，我深表歉意。** 一个本应让更新更加安全的功能，不应该让 Dockge-Enhanced 自身处于离线状态。感谢所有使用、测试并反馈问题的用户，你们的反馈帮助我们快速定位并修复了这些缺陷。
 
-[Dockge](https://github.com/louislam/dockge) 的增强功能分支 —— 在保留简洁 Compose 管理体验的基础上，加入镜像更新监控、安全扫描、自动备份、崩溃循环检测、多实例管理以及 Docker 资源管理。
+[Dockge](https://github.com/louislam/dockge) 的功能增强分支，在保留简洁 Docker Compose 管理体验的基础上，将其扩展为更完整的 Docker 管理平台 —— 提供多服务器联邦、Stack 迁移与复制、Restic 备份、镜像与 Dockge-Enhanced 自更新及回滚、安全扫描、监控、自动化、通知和 Docker 资源管理，并全部集成于 Web UI。
 
-> 🇨🇳 简体中文 · 🇬🇧 [English](README.md) · 🇫🇷 [Français](README.fr.md) · 🇪🇸 [Español](README.es-ES.md)
+<p align="center">
+  🇨🇳 简体中文 ·
+  🇬🇧 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.md">English</a> ·
+  🇫🇷 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.fr.md">Français</a> ·
+  🇪🇸 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.es-ES.md">Español</a>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
@@ -44,7 +49,10 @@ Dockge-Enhanced 管理的 stacks 及其持久化数据不受此问题影响。
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
 
-> **正在使用？觉得不错？[⭐ 给项目一个 Star！](https://github.com/Aerya/Dockge-Enhanced)**
+<p align="center">
+  <strong>正在使用？觉得不错？</strong>
+  <a href="https://github.com/Aerya/Dockge-Enhanced"><strong>⭐ 给项目一个 Star！</strong></a>
+</p>
 
 ---
 
@@ -58,15 +66,17 @@ Dockge-Enhanced 管理的 stacks 及其持久化数据不受此问题影响。
 
 | 领域 | Dockge Enhanced 新增内容 |
 | --- | --- |
-| **多实例** | 添加或移除 Agent 时自动建立全网状联邦；可从任意已连接实例管理；支持多服务器筛选和分组、事务式复制/迁移、可恢复任务以及自动冷复制 |
-| **Stack 管理** | Stack 固定、可折叠和可调整宽度的侧栏、紧凑状态/资源指示器、可调整大小的 Logs/Compose 工作区、可靠的原始 YAML 复制、Stack/容器级操作与计划任务、主机启动前置条件、Build + Recreate、备注和 Git 工具 |
-| **备份与恢复** | Restic 多目标备份、卷数据、按 Stack 保持一致性、选择性恢复、快照测试与差异比较 |
-| **自动化与审计** | 按权限和 Stack 限定的 REST API、每 Stack Webhook、Home Assistant 示例、带来源和执行时间的集中审计历史 |
-| **Docker 资源** | 镜像、卷、未管理容器和网络；批量操作、自动清理以及高风险删除保护 |
-| **镜像与安全** | 镜像更新监控、带回滚的自动更新、可计划/暂停的 Dockge-Enhanced 自更新、Trivy 扫描和 CVE 忽略规则 |
-| **监控** | 可配置的顶部/底部系统状态栏、仪表盘健康卡片、系统/Stack/容器统计、崩溃循环检测、healthcheck 自动修复、响应式/全屏日志、可选 Kula 和受管 Dozzle |
-| **集成** | 可选 PlugNPiN，以及面向 Nginx Proxy Manager、Pi-hole 和 AdGuard Home 的服务标签助手 |
-| **通知与访问** | Discord 和 Apprise 通知支持 EN/FR/ES/zh-CN，另有 2FA、可信代理、Turnstile 和第三方客户端支持 |
+| **多服务器** | Dockge-Enhanced 实例之间的全网状联邦，可从任意已连接服务器管理，支持服务器选择与分组、远程更新状态、事务式 Stack 复制/迁移、可恢复传输以及计划冷复制 |
+| **Stack 管理** | Stack 固定、紧凑状态与资源指标、可折叠/可调整大小的导航、灵活的 Logs/Compose 工作区、原始 YAML 复制、Stack/容器级操作与计划任务、Build + Recreate、备注、Git 工具、主机启动前置条件以及共享 VPN 网络 namespace 的安全保护 |
+| **备份与恢复** | Restic 多目标备份 bind mount 与卷数据，按 Stack 保持一致性、选择性恢复、仓库检查、Snapshot 验证与差异比较，并支持受保护更新所需的恢复流程 |
+| **更新** | 镜像更新检测、支持 rollback 的手动/自动容器更新、远程更新标记、全局/单镜像暂停，以及带强制备份、完整性检查和自动恢复的 Dockge-Enhanced 受保护自更新 |
+| **迁移与复制** | 实例间事务式 Stack 传输、Compose 与持久化数据迁移、可恢复任务、显式完成移动、计划冷副本、恢复 Snapshot 与故障恢复流程 |
+| **自动化与审计** | 按权限限定的 REST API、每 Stack Webhook、Home Assistant 示例、计划操作，以及包含来源、状态和耗时的集中历史记录 |
+| **Docker 资源** | 管理镜像、卷、网络和未管理容器，支持批量操作、自动清理以及破坏性操作保护 |
+| **安全** | Trivy 漏洞扫描、CVE 例外规则、受保护更新流程、2FA、可信代理和 Cloudflare Turnstile |
+| **监控** | 系统/Stack/容器统计、可配置系统状态栏、仪表盘健康卡片、崩溃循环检测、healthcheck 自动修复、响应式/全屏日志，以及可选 Kula 和受管 Dozzle 集成 |
+| **集成** | PlugNPiN，以及面向 Nginx Proxy Manager、Pi-hole 和 AdGuard Home 的服务标签助手 |
+| **通知与访问** | Discord 和 Apprise 通知支持 EN/FR/ES/zh-CN，多实例感知、2FA、可信代理、Turnstile 和第三方移动客户端 |
 
 ### 最近的重要变化
 
