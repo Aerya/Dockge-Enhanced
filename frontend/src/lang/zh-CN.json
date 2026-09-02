@@ -1335,5 +1335,6 @@
   "stackTransfer.compatibilitySource": "源",
   "stackTransfer.compatibilityTarget": "目标",
   "stackReplication.status.waiting-compatibility": "等待兼容",
-  "releaseNews.item.transferCompatibility": "关联实例之间的移动、复制和副本现在会协商兼容协议。只要协议兼容，不同构建仍可继续；过旧的远程实例可以先更新并在重新连接后继续操作。"
+  "releaseNews.item.transferCompatibility": "关联实例之间的移动、复制和副本现在会协商兼容协议。只要协议兼容，不同构建仍可继续；过旧的远程实例可以先更新并在重新连接后继续操作。",
+  "releaseNews.item.cumulativeReleaseNews": "更新说明弹窗现在作为未读日志工作：连续多次自动更新期间，即使没有打开 WebUI，所有更新信息也会持续累积，直到用户明确确认后才标记为已读。"
 }

@@ -1398,5 +1398,6 @@
   "stackTransfer.compatibilitySource": "Source",
   "stackTransfer.compatibilityTarget": "Target",
   "stackReplication.status.waiting-compatibility": "Waiting for compatibility",
-  "releaseNews.item.transferCompatibility": "Moves, copies and replications between linked instances now negotiate a compatibility protocol. Different builds remain allowed when compatible; an outdated remote instance can be updated and the operation resumes after reconnection."
+  "releaseNews.item.transferCompatibility": "Moves, copies and replications between linked instances now negotiate a compatibility protocol. Different builds remain allowed when compatible; an outdated remote instance can be updated and the operation resumes after reconnection.",
+  "releaseNews.item.cumulativeReleaseNews": "The release-news popup now works as an unread journal: information from successive updates accumulates until explicitly acknowledged, even after several automatic updates without opening the WebUI."
 }

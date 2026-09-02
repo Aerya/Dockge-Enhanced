@@ -162,21 +162,40 @@ export const RELEASE_NEWS = [
             "releaseNews.item.remoteAnnouncements",
         ],
     },
+    {
+        id: "2026-09-02-cumulative-release-news",
+        items: [
+            "releaseNews.item.cumulativeReleaseNews",
+        ],
+    },
 ];
 
-export function getReleaseNewsSince(lastSeenId) {
-    if (RELEASE_NEWS.length === 0) {
-        return [];
-    }
-
-    const lastSeenIndex = RELEASE_NEWS.findIndex((release) => release.id === lastSeenId);
-    const releases = lastSeenIndex >= 0
-        ? RELEASE_NEWS.slice(lastSeenIndex + 1)
-        : RELEASE_NEWS.slice(-1);
-
-    return releases.flatMap((release) => release.items);
+function currentReleaseNewsIds() {
+    return new Set(RELEASE_NEWS.map((release) => release.id));
 }
 
-export function getLatestReleaseNewsId() {
-    return RELEASE_NEWS.at(-1)?.id ?? "";
+export function sanitizeSeenReleaseNewsIds(value) {
+    if (!Array.isArray(value)) return [];
+    const currentIds = currentReleaseNewsIds();
+    return [ ...new Set(value.filter((id) => typeof id === "string" && currentIds.has(id))) ];
+}
+
+export function getInitialSeenReleaseNewsIds(legacyLastSeenId) {
+    if (RELEASE_NEWS.length === 0) return [];
+
+    if (typeof legacyLastSeenId === "string" && legacyLastSeenId) {
+        const index = RELEASE_NEWS.findIndex((release) => release.id === legacyLastSeenId);
+        if (index >= 0) {
+            return RELEASE_NEWS.slice(0, index + 1).map((release) => release.id);
+        }
+    }
+
+    // Préserve le comportement historique au premier passage : seule la
+    // nouveauté courante reste non lue, sans rejouer tout l'historique.
+    return RELEASE_NEWS.slice(0, -1).map((release) => release.id);
+}
+
+export function getUnreadReleaseNews(seenIds) {
+    const seen = new Set(sanitizeSeenReleaseNewsIds(seenIds));
+    return RELEASE_NEWS.filter((release) => !seen.has(release.id));
 }

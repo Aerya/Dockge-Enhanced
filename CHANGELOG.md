@@ -4,6 +4,8 @@ Detailed project history previously embedded in the README.
 
 ---
 
+**2026-09-02 — Cumulative release news until acknowledgement** — The release-news popup no longer relies on a single “last seen ID”. Each release now has its own read/unread state, so several successive automatic updates can accumulate their information until the user explicitly closes the popup. `RELEASE_NEWS` ordering no longer affects detection. The legacy `releaseNewsSeen` value is migrated automatically, while a fresh installation still shows only the current release on its first visit.
+
 **2026-09-02 — Removed duplicate notification after self-update** — The checker no longer publishes the generic “Dockge-Enhanced updated” notification when an image change belongs to a sidecar-managed self-update. The guard also covers the short restart/health-check phase before the terminal state and possible differences between platform and multi-arch index digests. The detailed terminal self-update notification remains the single confirmation; existing notification layout and content are unchanged.
 
 **2026-09-02 — Negotiated compatibility between linked instances** — Copies, moves and replications now negotiate a protocol number instead of requiring identical builds. Different SHAs remain allowed when the protocol matches. Incompatibility blocks all mutations; a remote instance that supports this mechanism can be updated from the WebUI, which waits up to two hours for its Restic backup, restart, health check and reconnection before resuming. Instances too old to answer the handshake require a manual update. Incompatible replications wait and retry roughly every ten minutes without touching data.

@@ -541,3 +541,7 @@ Fermer une annonce ne la masque que pour la session du navigateur. **Ne plus aff
 ## Compatibilité entre instances liées
 
 Les opérations **Copier**, **Déplacer** et **Répliquer** négocient un **protocole de transfert** indépendant du SHA du build. Des builds différents restent autorisés lorsque leur protocole est compatible. En cas d’incompatibilité, aucun transfert ne démarre. Une instance distante assez récente pour connaître ce mécanisme peut être mise à jour depuis la WebUI via le self-update normal (backup Restic, sidecar, healthcheck et rollback), puis Dockge-Enhanced attend jusqu’à **2 heures** sa reconnexion avant de reprendre. Une version trop ancienne pour répondre au handshake exige une mise à jour manuelle. La réplication permanente passe en **En attente de compatibilité** et retente environ toutes les 10 minutes sans modifier les données.
+
+## Journal de nouveautés non lues
+
+La popup de nouveautés conserve désormais chaque entrée de release individuellement. Si plusieurs mises à jour automatiques sont installées sans que la WebUI soit ouverte, **toutes les nouveautés accumulées** sont présentées à la prochaine ouverture. Ouvrir ou recharger la page ne marque rien comme lu : les entrées affichées ne sont acquittées que lorsque l’utilisateur ferme explicitement la popup. Le stockage repose sur les IDs des releases et ne dépend plus de leur position dans la liste. L’ancien marqueur `releaseNewsSeen` est migré automatiquement sans réafficher tout l’historique aux utilisateurs existants.
