@@ -20,6 +20,7 @@ import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
+import { log } from "../log";
 import {
   acceptedComposeFileNames,
   envsubstYAML,
@@ -876,7 +877,7 @@ export class ImageWatcher {
       return [];
     }
     this._checkRunning = true;
-    console.log("[ImageWatcher] Vérification des images...");
+    log.info("image-watcher", "Vérification des images démarrée");
     const results: ImageStatus[] = [];
 
     let entries: string[];

@@ -11,6 +11,7 @@ import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
+import { log } from "../log";
 
 const execFileAsync = promisify(execFile);
 
@@ -233,7 +234,7 @@ export class TrivyScanner {
         const intervalHours = sanitizeIntervalHours(this.settings.intervalHours);
         this.settings.intervalHours = intervalHours;
         const cronExpr = `0 */${intervalHours} * * *`;
-        console.log(`[TrivyScanner] Démarrage — scan toutes les ${intervalHours}h`);
+        log.info("trivy", `Démarrage — scan toutes les ${intervalHours}h`);
         this.cronJob = cron.schedule(cronExpr, () => this.runScan());
     }
 

@@ -16,6 +16,7 @@ import { getNotificationLang, notificationText } from "../notification/notificat
 import { Settings } from "../settings";
 import { SelfUpdateManager } from "../self-update/manager";
 import { atomicWriteJson } from "../self-update/state-file";
+import { log } from "../log";
 
 const SELF_REPO = "aerya/dockge-enhanced";
 const SELF_TAG = "latest";
@@ -374,6 +375,7 @@ export class SelfUpdateChecker {
   }
 
   start(): void {
+    log.info("self-update-checker", `Démarrage — premier check dans ${STARTUP_DELAY / 1000}s puis toutes les ~${CHECK_INTERVAL / 60000} min (jitter ±${CHECK_JITTER / 60000} min)`);
     this._loadDigestCache().then(() => {
       this._startupTimer = setTimeout(async () => {
         await this.check();
@@ -461,6 +463,11 @@ export class SelfUpdateChecker {
         await this._saveDigestCache(localDigest);
       }
 
+      log.info(
+        "self-update-checker",
+        `Check GHCR — container=${containerName} repo=${repo} platform=${platformToString(remoteInfo.platform)} local=${localDigest || "indisponible"} remote=${remoteDigest || "indisponible"} update=${updateAvailable}`,
+      );
+
       this._status = {
         updateAvailable,
         localDigest,
@@ -491,9 +498,13 @@ export class SelfUpdateChecker {
       }
 
       if (updateAvailable && SelfUpdateManager.getInstance().canAutoUpdate()) {
+        log.info("self-update-checker", `Auto-update demandée — target=ghcr.io/${repo}@${remoteDigest}`);
         await SelfUpdateManager.getInstance().requestSidecarUpdate(`ghcr.io/${repo}@${remoteDigest}`, true);
+      } else if (updateAvailable) {
+        log.info("self-update-checker", "Mise à jour détectée mais auto-update non exécutable actuellement");
       }
     } catch (e: any) {
+      log.error("self-update-checker", `Check échoué — ${e?.message ?? String(e)}`);
       this._status = {
         ...this._status,
         checkedAt: new Date().toISOString(),

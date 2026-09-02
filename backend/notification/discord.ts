@@ -5,6 +5,7 @@
 
 import axios from "axios";
 import { getNotificationLang, notificationText } from "./notification-lang";
+import { log } from "../log";
 
 const DISCORD_API_URL = "https://discord.com";
 const discordApi = axios.create({ baseURL: DISCORD_API_URL });
@@ -126,7 +127,7 @@ export class DiscordNotifier {
         const results = await Promise.all(this.urls.map(url => this.sendEmbedToUrl(url, options)));
         const sent = results.filter(Boolean).length;
         const failed = this.urls.length - sent;
-        if (sent > 0) console.log(`[DiscordNotifier] Notification envoyée (${sent}/${this.urls.length} webhook(s)) : ${options.title}`);
+        if (sent > 0) log.info("discord", `Notification envoyée — success=${sent}/${this.urls.length} title=${options.title}`);
         if (failed > 0 && sent === 0) console.error(`[DiscordNotifier] Échec total — aucun webhook n'a reçu : ${options.title}`);
     }
 

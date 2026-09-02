@@ -14,6 +14,7 @@
 
 import axios from "axios";
 import { getNotificationLang, notificationText } from "./notification-lang";
+import { log } from "../log";
 
 export type AppriseNotifType = "info" | "success" | "warning" | "failure";
 
@@ -89,7 +90,7 @@ export class AppriseNotifier {
                 });
                 // Apprise renvoie 200 pour succès, 204 si aucun plugin configuré
                 if (res.status === 200 || res.status === 204) {
-                    console.log(`[AppriseNotifier] Notification envoyée : ${options.title}`);
+                    log.info("apprise", `Notification envoyée — title=${options.title}`);
                     return true;
                 }
                 console.warn(`[AppriseNotifier] Réponse inattendue : HTTP ${res.status}`);

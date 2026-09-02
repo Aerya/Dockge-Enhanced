@@ -16,6 +16,7 @@ import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { ValidationError } from "../util-server";
+import { log } from "../log";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -980,7 +981,7 @@ export class BackupManager {
     async initRepoFor(dest: BackupDestination): Promise<void> {
         try {
             await this.resticFor(dest, [ "snapshots", "--quiet" ]);
-            console.log(`[BackupManager] "${dest.label}" déjà initialisé.`);
+            log.info("backup", `Repository déjà initialisé — label=${dest.label} type=${dest.type}`);
         } catch (e: any) {
             const msg = e?.message ?? "";
             if (msg.includes("wrong password") || msg.includes("no key found")) {
@@ -1134,7 +1135,7 @@ export class BackupManager {
 
             const destStart = Date.now();
             this.runningDests.set(dest.label, destStart);
-            console.log(`[BackupManager] ▶ "${dest.label}" démarré…`);
+            log.info("backup", `Destination démarrée — label=${dest.label} type=${dest.type} trigger=${trigger}`);
 
             try {
                 if (!dest.resticPassword) {
