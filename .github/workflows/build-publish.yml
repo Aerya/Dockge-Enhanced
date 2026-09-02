@@ -5,7 +5,10 @@ on:
     branches: [main]
     paths-ignore:
       - "README*.md"
+      - "CHANGELOG*.md"
+      - "docs/**"
       - "screens/**"
+      - "*.md"
       - "*.sh"
       - ".github/workflows/sync-upstream.yml"
   workflow_dispatch:

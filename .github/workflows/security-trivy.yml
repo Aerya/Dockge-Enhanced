@@ -29,7 +29,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Détecter une PR documentaire
+        if: github.event_name == 'pull_request'
+        id: docs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if .github/scripts/is-docs-only.sh "$BASE_SHA" "$HEAD_SHA"; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: PR documentaire — validation légère
+        if: steps.docs.outputs.docs_only == 'true'
+        run: echo "Scan Trivy ignoré pour une PR purement documentaire."
+
       - name: Analyser la révision courante
+        if: steps.docs.outputs.docs_only != 'true'
         run: |
           docker run --rm -v "$PWD:/work" -v "$PWD/.trivyignore.yaml:/trivyignore.yaml:ro" -v trivy-cache:/root/.cache/ "$TRIVY_IMAGE" fs \
             --db-repository ghcr.io/aquasecurity/trivy-db:2 \
@@ -43,7 +61,7 @@ jobs:
             --ignore-unfixed --format sarif --output /work/trivy-head.sarif /work || true
 
       - name: Analyser la base de la PR
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.docs.outputs.docs_only != 'true'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
@@ -57,7 +75,7 @@ jobs:
           git worktree remove /tmp/trivy-base --force
 
       - name: Refuser uniquement les nouvelles régressions corrigibles
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.docs.outputs.docs_only != 'true'
         run: python3 .github/scripts/trivy_compare.py trivy-base.json trivy-head.json
 
       - name: Refuser le passif HIGH/CRITICAL sur main
@@ -70,7 +88,7 @@ jobs:
             --ignore-unfixed --exit-code 1 /work
 
       - name: Publier le rapport SARIF
-        if: always() && hashFiles('trivy-head.sarif') != ''
+        if: always() && steps.docs.outputs.docs_only != 'true' && hashFiles('trivy-head.sarif') != ''
         continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
@@ -78,7 +96,7 @@ jobs:
           category: trivy-filesystem
 
       - name: Conserver le rapport JSON
-        if: always() && hashFiles('trivy-head.json') != ''
+        if: always() && steps.docs.outputs.docs_only != 'true' && hashFiles('trivy-head.json') != ''
         uses: actions/upload-artifact@v7
         with:
           name: trivy-${{ github.sha }}

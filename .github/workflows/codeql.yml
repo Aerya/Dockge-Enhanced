@@ -24,12 +24,33 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Détecter une PR documentaire
+        if: github.event_name == 'pull_request'
+        id: docs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if .github/scripts/is-docs-only.sh "$BASE_SHA" "$HEAD_SHA"; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: PR documentaire — validation légère
+        if: steps.docs.outputs.docs_only == 'true'
+        run: echo "Analyse CodeQL ignorée pour une PR purement documentaire."
 
       - uses: github/codeql-action/init@v4
+        if: steps.docs.outputs.docs_only != 'true'
         with:
           languages: javascript-typescript
           build-mode: none
 
       - uses: github/codeql-action/analyze@v4
+        if: steps.docs.outputs.docs_only != 'true'
         with:
           category: /language:javascript-typescript
