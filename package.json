@@ -47,7 +47,7 @@
         "socket.io-client": "~4.8.3",
         "timezones-list": "~3.1.0",
         "ts-command-line-args": "~2.5.1",
-        "tsx": "~4.23.10",
+        "tsx": "~4.23.13",
         "type-fest": "~4.41.0",
         "yaml": "~2.9.0"
     },
@@ -93,7 +93,7 @@
         "concurrently": "^10.0.5",
         "cross-env": "~10.1.0",
         "eslint": "~8.57.1",
-        "eslint-plugin-jsdoc": "~64.2.1",
+        "eslint-plugin-jsdoc": "~64.3.1",
         "eslint-plugin-vue": "~9.33.0",
         "sass": "~1.103.1",
         "thememirror": "^2.0.1",
