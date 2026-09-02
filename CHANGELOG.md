@@ -4,6 +4,9 @@ Detailed project history previously embedded in the README.
 
 ---
 
+**2026-09-02 — Compose long port syntax support** — `parseDockerPort()` now accepts both the existing string syntax and Compose long-form port objects using `published`, `target`, `protocol`, `mode` and `host_ip`. Existing string-format behaviour is covered by regression tests and remains unchanged. Long-form definitions no longer trigger `split is not a function` or make the container card disappear, as reported in louislam/dockge#998. IPv4 and IPv6 `host_ip`, TCP, UDP, string/numeric published ports and missing published ports are covered. No auto-update, sidecar, Restic or rollback code is modified.
+
+
 **2026-09-02 — Preserve octal tmpfs modes in the Compose editor** — The structured Compose editor now preserves leading-zero octal `tmpfs.mode` literals such as `01777` when rebuilding YAML after a visual edit. Previously, the YAML value was parsed into the editor's JavaScript object and regenerated as `1777`, silently changing the permission semantics reported in louislam/dockge#990. A regression test covers single and multiple tmpfs modes as well as structure changes. No auto-update, sidecar, Restic or rollback code is modified.
 
 

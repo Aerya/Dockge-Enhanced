@@ -4,6 +4,9 @@
 
 ---
 
+**2026-09-02 — 支持 Compose 长格式端口语法** — `parseDockerPort()` 现在既支持现有字符串端口语法，也支持包含 `published`、`target`、`protocol`、`mode` 和 `host_ip` 的 Compose 长格式端口对象。现有字符串格式行为由回归测试覆盖并保持不变。长格式定义不再触发 `split is not a function`，也不会再导致容器卡片消失，对应 louislam/dockge#998。测试覆盖 IPv4/IPv6、TCP、UDP、数字或字符串 published 端口以及缺少 published 的情况。自动更新、sidecar、Restic 和 rollback 代码均未修改。
+
+
 **2026-09-02 — Compose 编辑器保留 tmpfs 八进制模式** — 结构化 Compose 编辑器在可视化修改后重新生成 YAML 时，现在会保留 `01777` 这类带前导零的 `tmpfs.mode` 八进制值。此前该值进入编辑器的 JavaScript 对象后会被重新输出为 `1777`，从而静默改变 louislam/dockge#990 所描述的权限语义。回归测试覆盖单个和多个 tmpfs mode 以及结构变化。自动更新、sidecar、Restic 和 rollback 代码均未修改。
 
 

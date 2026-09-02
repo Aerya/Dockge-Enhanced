@@ -90,6 +90,10 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Compatibilidad con la sintaxis larga de puertos Compose**
+
+Las tarjetas de contenedores admiten ahora tanto la sintaxis corta como la larga de puertos Compose. Las definiciones con `published`, `target`, `protocol`, `mode` o `host_ip` ya no provocan `split is not a function` ni hacen desaparecer la tarjeta del contenedor. Los valores IPv6 de `host_ip` también se formatean correctamente en los enlaces generados.
+
 **Conservación de permisos tmpfs en el editor Compose**
 
 El editor visual de Compose conserva ahora los valores octales con cero inicial, como `tmpfs.mode: 01777`, cuando regenera el YAML. Modificar otro campo ya no reescribe silenciosamente ese permiso como `1777`.

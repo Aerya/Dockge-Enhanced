@@ -98,6 +98,10 @@ README 会直接保留近期最重要的变化，方便快速了解 Dockge-Enhan
 
 ### 🆕 2026 年 9 月
 
+**支持 Compose 长格式端口语法**
+
+容器卡片现在同时支持 Compose 的短格式和长格式端口定义。使用 `published`、`target`、`protocol`、`mode` 或 `host_ip` 的配置不再触发 `split is not a function`，也不会再导致容器卡片消失。IPv6 `host_ip` 也会在生成的链接中正确格式化。
+
 **Compose 编辑器保留 tmpfs 权限模式**
 
 可视化 Compose 编辑器在重新生成 YAML 时会保留 `tmpfs.mode: 01777` 这类带前导零的八进制权限值。修改其他字段时不会再静默地将该权限重写为 `1777`。

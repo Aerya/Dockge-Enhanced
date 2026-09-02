@@ -140,6 +140,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.tmpfsOctalMode",
         ],
     },
+    {
+        id: "2026-09-02-compose-long-port-syntax-v2",
+        items: [
+            "releaseNews.item.composeLongPorts",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {
