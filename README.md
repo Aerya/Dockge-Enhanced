@@ -540,3 +540,7 @@ Dockge-Enhanced can display a **text-only operational announcement published fro
 Announcements come from [`remote-announcements.json`](remote-announcements.json). They are optional, HTTPS-only, schema-validated, limited in size/count, can be targeted by application version, Git revision or OCI build date, and **cannot execute commands, inject HTML or trigger an update**. Links are restricted to the Dockge-Enhanced GitHub repository. If GitHub is unavailable or the document is invalid, Dockge-Enhanced simply shows no announcement.
 
 Closing an announcement only hides it for the current browser session. **Do not show again** stores its ID in the persistent Dockge-Enhanced data directory; publishing a new announcement uses a new ID.
+
+## Linked-instance compatibility
+
+**Copy**, **Move** and **Replicate** negotiate a **transfer protocol** independently from the build SHA. Different builds remain allowed when their protocol is compatible. When protocols are incompatible, no transfer starts. A sufficiently recent remote instance can be updated from the WebUI through the normal self-update path (Restic backup, sidecar, health check and rollback), and Dockge-Enhanced waits up to **2 hours** for it to reconnect before resuming. An instance too old to answer the handshake requires a manual update. Permanent replication switches to **Waiting for compatibility** and retries roughly every 10 minutes without modifying data.

@@ -10,13 +10,17 @@ import { DockgeSocket, ValidationError } from "../util-server";
 import { StackTransferSocketHandler } from "../agent-socket-handlers/stack-transfer-socket-handler";
 import { StackBackupPolicy, normalizeStackBackupPolicy } from "./backup-manager";
 import { markRunningTransferJobsInterrupted, StackTransferMount, StackTransferRequest } from "../transfers/stack-transfer";
+import {
+    compareStackTransferCompatibility,
+    StackTransferCompatibilitySnapshot,
+} from "../transfers/stack-transfer-compatibility";
 
 const SETTINGS_KEY = "stackReplicationPolicies";
 const ALLOWED_INTERVALS = new Set([ 15, 60, 360, 1440 ]);
 const RPC_TIMEOUT = 2 * 60 * 60_000;
 export const MANAGED_REPLICATION_REPOSITORY = "dockge-managed";
 
-export type StackReplicationStatus = "idle" | "running" | "ready" | "error" | "active";
+export type StackReplicationStatus = "idle" | "running" | "ready" | "error" | "active" | "waiting-compatibility";
 
 export interface StackReplicationPolicy {
     id: string;
@@ -102,6 +106,8 @@ interface TransferAnalysis {
     composeOverrideYAML: string;
     mounts: StackTransferMount[];
 }
+
+class StackTransferCompatibilityWaitError extends Error {}
 
 function stringField(value: unknown, name: string, allowEmpty = false): string {
     if (typeof value !== "string" || (!allowEmpty && !value.trim())) {
@@ -297,7 +303,10 @@ export class StackReplicationManager {
     private async runDue(): Promise<void> {
         const now = Date.now();
         for (const policy of await this.read()) {
-            const dueAt = policy.lastSuccessAt ? new Date(policy.lastSuccessAt).getTime() + policy.intervalMinutes * 60_000 : 0;
+            const compatibilityRetry = policy.status === "waiting-compatibility";
+            const baseAt = compatibilityRetry ? policy.lastRunAt : policy.lastSuccessAt;
+            const intervalMinutes = compatibilityRetry ? Math.min(10, policy.intervalMinutes) : policy.intervalMinutes;
+            const dueAt = baseAt ? new Date(baseAt).getTime() + intervalMinutes * 60_000 : 0;
             if (policy.enabled && policy.status !== "active" && dueAt <= now && !this.running.has(policy.id)) {
                 this.run(policy.id).catch(error => log.error("StackReplication", `${policy.id}: ${error instanceof Error ? error.message : String(error)}`));
             }
@@ -325,6 +334,25 @@ export class StackReplicationManager {
             error: undefined,
             cleanupWarning: undefined });
         try {
+            let sourceCompatibility: StackTransferCompatibilitySnapshot;
+            let targetCompatibility: StackTransferCompatibilitySnapshot;
+            try {
+                [ sourceCompatibility, targetCompatibility ] = await Promise.all([
+                    this.callWithTimeout<StackTransferCompatibilitySnapshot>(policy.sourceEndpoint, "getStackTransferCompatibility", 20_000),
+                    this.callWithTimeout<StackTransferCompatibilitySnapshot>(policy.targetEndpoint, "getStackTransferCompatibility", 20_000),
+                ]);
+            } catch (error) {
+                throw new StackTransferCompatibilityWaitError(
+                    `Replication waiting for compatible Dockge-Enhanced instances: ${error instanceof Error ? error.message : String(error)}. Update the linked instance; replication will retry automatically.`,
+                );
+            }
+            const compatibility = compareStackTransferCompatibility(sourceCompatibility, targetCompatibility);
+            if (!compatibility.compatible) {
+                throw new StackTransferCompatibilityWaitError(
+                    "Replication waiting for compatibility. Update the older linked instance; replication will retry automatically.",
+                );
+            }
+
             if (policy.lastSuccessAt) {
                 const drift = await this.call<{ drifted: boolean; reason?: string }>(policy.targetEndpoint, "inspectStackReplicaDrift", policy.targetName, policy.id);
                 if (drift.drifted) {
@@ -449,6 +477,13 @@ export class StackReplicationManager {
                 error: undefined,
             });
         } catch (error) {
+            if (error instanceof StackTransferCompatibilityWaitError) {
+                return await this.update(id, {
+                    status: "waiting-compatibility",
+                    lastDurationMs: Date.now() - started,
+                    error: error.message,
+                });
+            }
             if (snapshotCreated && !targetSynchronized) {
                 await this.call(policy.sourceEndpoint, "completeStackTransferDataSource", transferId, false, false).catch(() => {});
             }
@@ -521,16 +556,22 @@ export class StackReplicationManager {
     }
 
     private async call<T = unknown>(endpoint: string, event: string, ...args: unknown[]): Promise<T> {
-        const response = endpoint ? await this.remoteCall<T>(endpoint, event, args) : await this.localCall<T>(event, args);
+        return this.callWithTimeout<T>(endpoint, event, RPC_TIMEOUT, ...args);
+    }
+
+    private async callWithTimeout<T = unknown>(endpoint: string, event: string, timeoutMs: number, ...args: unknown[]): Promise<T> {
+        const response = endpoint
+            ? await this.remoteCall<T>(endpoint, event, args, timeoutMs)
+            : await this.localCall<T>(event, args, timeoutMs);
         if (!response.ok) {
             throw new Error(response.msg || `${event} failed`);
         }
         return response.data as T;
     }
 
-    private localCall<T>(event: string, args: unknown[]): Promise<RpcResponse<T>> {
+    private localCall<T>(event: string, args: unknown[], timeoutMs = RPC_TIMEOUT): Promise<RpcResponse<T>> {
         return new Promise((resolve, reject) => {
-            const timer = setTimeout(() => reject(new Error(`${event} timed out`)), RPC_TIMEOUT);
+            const timer = setTimeout(() => reject(new Error(`${event} timed out`)), timeoutMs);
             this.localAgent.call(event, ...args, (response: RpcResponse<T>) => {
                 clearTimeout(timer);
                 resolve(response);
@@ -538,7 +579,7 @@ export class StackReplicationManager {
         });
     }
 
-    private async remoteCall<T>(endpoint: string, event: string, args: unknown[]): Promise<RpcResponse<T>> {
+    private async remoteCall<T>(endpoint: string, event: string, args: unknown[], timeoutMs = RPC_TIMEOUT): Promise<RpcResponse<T>> {
         const agent = (await Agent.getAgentList())[endpoint];
         if (!agent) {
             throw new ValidationError(`Agent not found: ${endpoint}`);
@@ -559,7 +600,7 @@ export class StackReplicationManager {
                     resolve(response!);
                 }
             };
-            const timer = setTimeout(() => finish(new Error(`${endpoint}: ${event} timed out`)), RPC_TIMEOUT);
+            const timer = setTimeout(() => finish(new Error(`${endpoint}: ${event} timed out`)), timeoutMs);
             client = io(agent.url, { reconnection: false,
                 extraHeaders: { endpoint } });
             client.once("connect_error", error => finish(error));

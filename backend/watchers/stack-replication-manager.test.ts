@@ -38,6 +38,15 @@ test("schedules repeat synchronizations, rotates the retained snapshot and activ
         calls.push({ endpoint,
             event,
             args });
+        if (event === "getStackTransferCompatibility") {
+            return {
+                protocolVersion: 1,
+                appVersion: "test",
+                buildRevision: "a".repeat(40),
+                buildCreated: "2026-09-02T00:00:00Z",
+                selfUpdate: { updateAvailable: false, remoteRevision: "", operationState: "idle", operationMessage: "" },
+            };
+        }
         if (event === "analyzeStackTransfer") {
             return { composeYAML: "services:\n  app:\n    image: busybox\n    volumes: [data:/data]\nvolumes:\n  data:\n",
                 composeENV: "",
@@ -168,6 +177,15 @@ test("provisions the managed replication transport without Backup repositories",
         calls.push({ endpoint,
             event,
             args });
+        if (event === "getStackTransferCompatibility") {
+            return {
+                protocolVersion: 1,
+                appVersion: "test",
+                buildRevision: "a".repeat(40),
+                buildCreated: "2026-09-02T00:00:00Z",
+                selfUpdate: { updateAvailable: false, remoteRevision: "", operationState: "idle", operationMessage: "" },
+            };
+        }
         if (event === "analyzeStackTransfer") {
             return { composeYAML: "services:\n  app:\n    image: busybox\n    volumes: [data:/data]\nvolumes:\n  data:\n",
                 composeENV: "",
