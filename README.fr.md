@@ -34,7 +34,6 @@
 ---
 
 Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnalités, qui transforme son expérience simple de gestion Docker Compose en une plateforme Docker plus complète — avec fédération multi-serveurs, migration et réplication de stacks, sauvegardes Restic, mises à jour des images et de Dockge-Enhanced avec rollback, scan de sécurité, supervision, automatisation, notifications et gestion des ressources Docker, le tout depuis l'interface web.
-Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnalités, qui transforme son expérience simple de gestion Docker Compose en une plateforme Docker plus complète — avec fédération multi-serveurs, migration et réplication de stacks, sauvegardes Restic, mises à jour des images et de Dockge-Enhanced avec rollback, scan de sécurité, supervision, automatisation, notifications et gestion des ressources Docker, le tout depuis l'interface web.
 
 <p align="center">
   🇫🇷 Français ·
@@ -121,7 +120,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ## Catalogue des fonctionnalités
 
-### 🌐 Multi-serveurs & fédération
+### Multi-serveurs & fédération
 - Fédération en maillage complet entre instances Dockge-Enhanced
 - Administration depuis n'importe quelle instance liée
 - Sélection et regroupement des serveurs
@@ -130,7 +129,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Récupération d'une liaison de fédération cassée
 - Gestion multi-instance unifiée
 
-### 📦 Gestion des stacks
+### Gestion des stacks
 - Création, édition, démarrage, arrêt et recréation des stacks Compose
 - Stacks épinglées
 - Tri par date de création ou dernière mise à jour
@@ -144,7 +143,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Colonne des stacks repliable et redimensionnable
 - Indicateurs compacts d'état, CPU et RAM
 
-### 🔄 Migration & réplication
+### Migration & réplication
 - Copie ou déplacement de stacks entre instances
 - Transfert de la configuration Compose
 - Transfert des bind mounts et volumes nommés
@@ -157,7 +156,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Réplication froide planifiée
 - Snapshots et mécanismes de récupération
 
-### 💾 Sauvegarde & restauration
+### Sauvegarde & restauration
 - Sauvegardes Restic
 - Plusieurs destinations de backup
 - Sauvegardes cohérentes par stack
@@ -168,7 +167,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Historique des sauvegardes
 - Intégration aux workflows de récupération et de mise à jour
 
-### ⬆️ Mises à jour
+### Mises à jour
 - Surveillance des mises à jour d'images Docker
 - Détection des mises à jour distantes
 - Mises à jour manuelles et automatiques
@@ -179,7 +178,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Backup Restic et contrôle d'intégrité obligatoires
 - Vérification de disponibilité et récupération automatique
 
-### 🛡️ Sécurité
+### Sécurité
 - Scan Trivy
 - Exceptions CVE
 - 2FA
@@ -189,7 +188,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Protections autour des opérations destructives
 - Transfert chiffré des identifiants de registries privés
 
-### 📊 Supervision
+### Supervision
 - Statistiques système, stacks et conteneurs
 - Barre d'état système configurable
 - Cartes de santé
@@ -199,26 +198,26 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Pause de l'autoscroll et gestion des longues lignes
 - Intégrations Kula et Dozzle
 
-### 🐳 Ressources Docker
+### Ressources Docker
 - Images, volumes, réseaux et conteneurs non gérés
 - Actions groupées
 - Auto-prune
 - Protections contre les suppressions à risque
 
-### 🤖 Automatisation & audit
+### Automatisation & audit
 - API REST limitée par permissions et stacks
 - Webhooks par stack
 - Exemples Home Assistant
 - Opérations planifiées
 - Historique centralisé avec origine, statut et durée
 
-### 🔌 Intégrations
+### Intégrations
 - PlugNPiN
 - Assistants de labels Nginx Proxy Manager, Pi-hole et AdGuard Home
 - Dozzle
 - Kula
 
-### 🔔 Notifications & accès
+### Notifications & accès
 - Discord et Apprise
 - Notifications localisées en EN / FR / ES / zh-CN
 - 2FA, trusted proxy et Cloudflare Turnstile

@@ -122,14 +122,14 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ## Catálogo de funcionalidades
 
-### 🌐 Multiservidor y federación
+### Multiservidor y federación
 - Federación en malla completa
 - Administración desde cualquier instancia vinculada
 - Selección y agrupación de servidores
 - Estado remoto de stacks y actualizaciones
 - Tokens de federación dedicados y recuperación de enlaces
 
-### 📦 Gestión de stacks
+### Gestión de stacks
 - Crear, editar, iniciar, detener y recrear stacks Compose
 - Stacks fijadas y ordenación avanzada
 - Notas y herramientas Git
@@ -139,7 +139,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Requisitos de host y protecciones VPN
 - Barra lateral redimensionable con indicadores de recursos
 
-### 🔄 Migración y replicación
+### Migración y replicación
 - Copia o movimiento entre instancias
 - Transferencia de Compose, bind mounts y volúmenes
 - Trabajos reanudables y SHA-256
@@ -148,54 +148,54 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Detección de conflictos `container_name`
 - Replicación en frío programada
 
-### 💾 Copias y recuperación
+### Copias y recuperación
 - Restic multidestino
 - Bind mounts y volúmenes
 - Restauración selectiva
 - Verificación de repositorios y snapshots
 - Historial e integración con recuperación protegida
 
-### ⬆️ Actualizaciones
+### Actualizaciones
 - Monitorización y detección remota
 - Actualización manual y automática
 - Rollback, programación y pausas
 - Autoactualización protegida de Dockge-Enhanced
 - Copia Restic, integridad, readiness y recuperación automática
 
-### 🛡️ Seguridad
+### Seguridad
 - Trivy y excepciones CVE
 - 2FA, Turnstile y trusted proxy
 - Sidecar restringido y plan firmado
 - Protecciones destructivas
 - Transferencia cifrada de credenciales
 
-### 📊 Monitorización
+### Monitorización
 - Estadísticas del sistema, stacks y contenedores
 - Barra de estado y tarjetas de salud
 - Crash loops y auto-heal
 - Logs live/pantalla completa
 - Kula y Dozzle
 
-### 🐳 Recursos Docker
+### Recursos Docker
 - Imágenes, volúmenes, redes y contenedores no gestionados
 - Acciones masivas y auto-prune
 - Protecciones de borrado
 
-### 🤖 Automatización y auditoría
+### Automatización y auditoría
 - API REST
 - Webhooks
 - Home Assistant
 - Operaciones programadas
 - Historial centralizado
 
-### 🔌 Integraciones
+### Integraciones
 - PlugNPiN
 - Nginx Proxy Manager
 - Pi-hole
 - AdGuard Home
 - Dozzle y Kula
 
-### 🔔 Notificaciones y acceso
+### Notificaciones y acceso
 - Discord y Apprise
 - EN / FR / ES / zh-CN
 - 2FA, trusted proxy, Turnstile
