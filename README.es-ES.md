@@ -222,6 +222,21 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ---
 
+## Flujo de actualización automática de Dockge-Enhanced
+
+Dockge-Enhanced gestiona automáticamente todo el flujo: copia Restic obligatoria, verificación de integridad, reemplazo controlado del contenedor, healthcheck y confirmación final. Las notificaciones Discord/Apprise permiten seguir la operación sin mantener abierta la WebUI.
+
+<table>
+<tr>
+<td align="center" width="50%"><a href="screens/AutoUpdate-ResticVerification.png"><img src="screens/AutoUpdate-ResticVerification.png" width="100%"/></a><br/><sub><strong>1. Verificación Restic</strong> — control de la copia antes del reemplazo.</sub></td>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Healthcheck.png"><img src="screens/AutoUpdate-Healthcheck.png" width="100%"/></a><br/><sub><strong>2. Healthcheck</strong> — validación del nuevo contenedor.</sub></td>
+</tr>
+<tr>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Completed.png"><img src="screens/AutoUpdate-Completed.png" width="100%"/></a><br/><sub><strong>3. Actualización completada</strong> — build instalado y estado final.</sub></td>
+<td align="center" width="50%"><a href="screens/AutoUpdate-Notifications.png"><img src="screens/AutoUpdate-Notifications.png" width="100%"/></a><br/><sub><strong>4. Notificaciones</strong> — disponibilidad, cambios y confirmación final.</sub></td>
+</tr>
+</table>
+
 ## Capturas de pantalla
 
 <table>
