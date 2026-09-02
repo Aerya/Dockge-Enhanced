@@ -46,6 +46,30 @@ test("a running process with an unavailable status endpoint is rejected", () => 
     assert.equal(sidecar.waitReady("dockge", { ...time, docker, stableMs: 2_000, timeoutMs: 4_000, pollMs: 1_000 }), false);
 });
 
+test("Docker API fallback pulls the immutable GHCR target before container creation", () => {
+    process.env.SELF_UPDATE_ALLOW_TEST_IMAGES = "";
+    const image = `ghcr.io/aerya/dockge-enhanced@sha256:${"a".repeat(64)}`;
+    const calls = [];
+    sidecar.ensureTargetImage(image, {
+        docker: (args, options) => {
+            calls.push({ args, options });
+            return "";
+        },
+    });
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0].args, [ "image", "pull", image ]);
+    assert.equal(calls[0].options.timeout, 600_000);
+});
+
+test("test images do not trigger a registry pull", () => {
+    process.env.SELF_UPDATE_ALLOW_TEST_IMAGES = "dockge-enhanced:test-v2";
+    let called = false;
+    sidecar.ensureTargetImage("dockge-enhanced:test-v2", {
+        docker: () => { called = true; return ""; },
+    });
+    assert.equal(called, false);
+});
+
 test("Compose keeps the original absolute project directory and relative bind semantics", () => {
     const work = path.join(root, "relative-bind"); fs.mkdirSync(work, { recursive: true });
     const composeFile = path.join(work, "compose.yaml"); fs.writeFileSync(composeFile, "services:\n  dockge:\n    volumes:\n      - ./data:/app/data\n");

@@ -72,6 +72,14 @@ function readAndClaimPlan(planPath = process.env.SELF_UPDATE_PLAN) {
     return { plan, claimed };
 }
 function docker(args, options = {}) { return execFileSync("docker", args, { encoding: "utf8", stdio: [ "ignore", "pipe", "pipe" ], ...options }); }
+function ensureTargetImage(image, deps = {}) {
+    const allowedTests = (process.env.SELF_UPDATE_ALLOW_TEST_IMAGES || "").split(",").map(value => value.trim()).filter(Boolean);
+    if (allowedTests.includes(image)) return;
+    if (!/^ghcr\.io\/.+@sha256:[a-f0-9]{64}$/i.test(image)) throw new Error("Production self-update target must use an immutable GHCR digest");
+    console.log(`[SelfUpdateUpdater] Pull de l’image cible — ${image}`);
+    (deps.docker || docker)([ "image", "pull", image ], { timeout: 600_000 });
+    console.log(`[SelfUpdateUpdater] Image cible disponible localement — ${image}`);
+}
 function inspect(name, deps = {}) { return JSON.parse((deps.docker || docker)([ "container", "inspect", name, "--format", "{{json .}}" ])); }
 function applicationReady(name, inspected, deps = {}) {
     const state = inspected.State || {};
@@ -154,8 +162,14 @@ async function run(deps = {}) {
         writeStatus("updating", plan.compose ? "Updating through Docker Compose" : "Updating from Docker recovery snapshot", false, plan);
         let updateError;
         try {
-            if (plan.compose) override = composeUpdate(plan, plan.targetImage, deps);
-            else await snapshotCreate(recovery, inspected.Id, plan.targetImage, deps);
+            if (plan.compose) {
+                console.log(`[SelfUpdateUpdater] Mise à jour via Docker Compose — project=${plan.compose.project} service=${plan.compose.service}`);
+                override = composeUpdate(plan, plan.targetImage, deps);
+            } else {
+                console.log("[SelfUpdateUpdater] Contexte Compose indisponible — utilisation du fallback Docker API");
+                ensureTargetImage(plan.targetImage, deps);
+                await snapshotCreate(recovery, inspected.Id, plan.targetImage, deps);
+            }
             writeStatus("waiting-health", "Waiting for stable Dockge-Enhanced application readiness", false, plan);
             if (waitReady(plan.targetContainerName, deps)) { writeStatus("succeeded", "Dockge-Enhanced updated and remained ready", false, plan); return "succeeded"; }
             updateError = new Error("Dockge-Enhanced did not remain ready");
@@ -199,5 +213,5 @@ async function run(deps = {}) {
     } catch (error) { writeStatus("failed", error instanceof Error ? error.message : String(error), false, plan); return "failed"; }
     finally { if (override) fs.rmSync(override, { force: true }); if (claimed) fs.rmSync(claimed, { force: true }); }
 }
-module.exports = { applicationReady, atomicWriteJson, composeUpdate, dockerApi, imageRepository, inside, readAndClaimPlan, run, snapshotCreate, validateCompose, waitReady, writeStatus };
+module.exports = { applicationReady, atomicWriteJson, composeUpdate, dockerApi, ensureTargetImage, imageRepository, inside, readAndClaimPlan, run, snapshotCreate, validateCompose, waitReady, writeStatus };
 if (require.main === module) run().then(result => { if ([ "failed", "rollback-failed" ].includes(result)) process.exitCode = 1; }).catch(error => { console.error(error); process.exitCode = 1; });
