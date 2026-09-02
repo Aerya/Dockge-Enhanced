@@ -678,6 +678,7 @@ import { foldGutter, foldKeymap } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { parseDocument, Document } from "yaml";
+import { preserveTmpfsModeLiterals } from "../compose-yaml-preserve";
 import { yamlVariableHighlight, setDefinedVars } from "../composables/codemirrorVariables";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -1070,7 +1071,7 @@ export default {
                         copyYAMLComments(doc, this.yamlDoc);
                     }
 
-                    this.stack.composeYAML = doc.toString();
+                    this.stack.composeYAML = preserveTmpfsModeLiterals(this.stack.composeYAML, doc.toString());
                     this.yamlDoc = doc;
                 }
             },

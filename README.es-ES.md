@@ -90,6 +90,10 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Conservación de permisos tmpfs en el editor Compose**
+
+El editor visual de Compose conserva ahora los valores octales con cero inicial, como `tmpfs.mode: 01777`, cuando regenera el YAML. Modificar otro campo ya no reescribe silenciosamente ese permiso como `1777`.
+
 **Protección reforzada contra path traversal en stacks**
 
 Los nombres de stacks enviados a las operaciones backend se validan ahora antes de resolver cualquier ruta, incluidos los caminos de código que omiten intencionadamente el descubrimiento del sistema de archivos. Un nombre manipulado como `../outside` ya no puede salir del directorio de stacks gestionadas para acceder a archivos Compose o `.env` de otra aplicación.

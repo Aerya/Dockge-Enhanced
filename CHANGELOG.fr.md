@@ -4,6 +4,9 @@ Historique détaillé du projet auparavant intégré directement au README.
 
 ---
 
+**2026-09-02 — Préservation des modes tmpfs octaux dans l'éditeur Compose** — L'éditeur Compose structuré conserve désormais les valeurs octales `tmpfs.mode` avec zéro initial, comme `01777`, lorsqu'il reconstruit le YAML après une modification visuelle. Auparavant, la valeur était convertie dans l'objet JavaScript de l'éditeur puis régénérée en `1777`, modifiant silencieusement la permission comme signalé dans louislam/dockge#990. Un test de régression couvre un ou plusieurs modes tmpfs ainsi que les changements de structure. Aucun code d'auto-mise à jour, sidecar, Restic ou rollback n'est modifié.
+
+
 **2026-09-02 — Renforcement de sécurité contre le path traversal des stacks** — Les noms de stacks sont désormais validés avant chaque résolution de chemin par `Stack.getStack()`, y compris pour les appels utilisant `skipFSOperations=true`. Cela ferme le contournement restant permettant à un nom forgé contenant des séquences de traversal de sortir du répertoire des stacks gérées. Le correctif est aligné sur le problème de sécurité signalé dans louislam/dockge#994 et sur la correction proposée dans louislam/dockge#997. Un test de régression couvre explicitement le chemin qui ignore les opérations filesystem. Aucune logique d'auto-mise à jour de Dockge-Enhanced, de sidecar, de backup Restic ou de rollback n'est modifiée.
 
 

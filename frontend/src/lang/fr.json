@@ -33,6 +33,7 @@
     "releaseNews.item.remoteUpdateBadges": "Les badges MàJ de la liste des stacks affichent désormais aussi les mises à jour détectées par les instances Dockge-Enhanced distantes, avec un état séparé pour chaque serveur.",
     "releaseNews.item.fourLanguageEnhanced": "Les ajouts utilisateur propres à Enhanced sont désormais maintenus de façon cohérente en anglais, français, espagnol et chinois simplifié. Les notifications Discord et Apprise suivent la langue de l’interface, et un README en chinois simplifié est maintenant disponible.",
     "releaseNews.item.selfUpdateTracking": "L’onglet Mises à jour identifie désormais les builds GHCR installés et disponibles par leur date de build et leur commit Git, conserve le digest de l’image comme référence technique, présente un seul état courant cohérent, sépare la dernière opération terminée et affiche les étapes, le temps écoulé ainsi qu’une estimation Restic lorsqu’elle peut être calculée.",
+    "releaseNews.item.tmpfsOctalMode": "L’éditeur visuel Compose conserve désormais les valeurs octales tmpfs.mode avec zéro initial, comme 01777, au lieu de les réécrire silencieusement en 1777.",
     "releaseNews.item.stackPathTraversal": "Les noms de stacks sont désormais validés sur chaque résolution de chemin backend, y compris lorsque les opérations filesystem sont ignorées, afin d’empêcher tout ../ path traversal hors du répertoire des stacks gérées.",
     "releaseNews.close": "Fermer",
     "releaseNews.gotIt": "J'ai compris",
