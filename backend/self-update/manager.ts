@@ -15,6 +15,7 @@ import { DEFAULT_SELF_UPDATE_SETTINGS, normalizeSelfUpdateSettings, selfUpdateMa
 import { isAllowedTargetImage, isPathInside, isSafeComposeName, isSelfUpdateActive, normalizeSelfRepository } from "./policy";
 import { atomicWriteFile, atomicWriteJson } from "./state-file";
 import packageJSON from "../../package.json";
+import { log } from "../log";
 
 const execFileAsync = promisify(execFile);
 const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
@@ -168,11 +169,17 @@ export class SelfUpdateManager {
         if (!inspected.Image || !/^sha256:[a-f0-9]{64}$/i.test(inspected.Image)) throw new Error("Current immutable Docker image identifier is unavailable");
         const plan = await this.buildPlan(inspected, safePlanId(), targetImage, previousImage, repository);
         const recoveryPath = path.join(RECOVERY_DIR, plan.recoveryFile);
+        const startedMs = Date.now();
+        log.info(
+            "self-update",
+            `Opération créée — id=${plan.id} automatic=${automatic} container=${containerName} current=${inspected.Image} target=${targetImage} repository=${repository}`,
+        );
         await atomicWriteJson(recoveryPath, this.buildRecoverySnapshot(inspected, plan));
 
         this.operation = { id: plan.id, state: "backing-up", message: "Mandatory backup in progress", startedAt: new Date().toISOString(), finishedAt: null, targetImage, rollbackAttempted: false };
         this.progress = null;
         await this.saveOperation();
+        log.info("self-update", `Étape 1/4 — backup Restic minimal démarré — id=${plan.id} data=${DATA_DIR} recovery=${recoveryPath}`);
         let backup;
         try {
             backup = await BackupManager.getInstance().runBackup({
@@ -188,12 +195,15 @@ export class SelfUpdateManager {
             return this.getOperation();
         }
         if (!backup.success) {
+            log.error("self-update", `Backup Restic échoué — id=${plan.id} error=${backup.error ?? "unknown error"}`);
             this.operation = { ...this.operation, state: "failed", message: `Backup failed: ${backup.error ?? "unknown error"}`, finishedAt: new Date().toISOString() };
             await this.saveOperation();
             return this.getOperation();
         }
 
+        log.info("self-update", `Backup Restic terminé — id=${plan.id} duration=${Date.now() - startedMs}ms`);
         this.operation = { ...this.operation, state: "verifying-backup", message: "Restic repository verification in progress" };
+        log.info("self-update", `Étape 2/4 — vérification Restic — id=${plan.id}`);
         this.progress = null;
         await this.saveOperation();
         let verification;
@@ -258,7 +268,9 @@ export class SelfUpdateManager {
         if (plan.compose) {
             args.splice(args.length - 1, 0, "-v", `${plan.compose.workingDir}:${plan.compose.workingDir}:ro`, "-e", `SELF_UPDATE_COMPOSE_DIR=${plan.compose.workingDir}`);
         }
+        log.info("self-update", `Étape 3/4 — lancement sidecar — id=${plan.id} image=${sidecarImage}`);
         await docker(args);
+        log.info("self-update", `Sidecar lancé — id=${plan.id} container=dockge-enhanced-updater-${plan.id}`);
         this.operation = { ...this.operation, state: "updating", message: "Updater sidecar started" };
         await this.saveOperation();
         return this.getOperation();
