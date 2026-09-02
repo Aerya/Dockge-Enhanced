@@ -90,6 +90,10 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Protección reforzada contra path traversal en stacks**
+
+Los nombres de stacks enviados a las operaciones backend se validan ahora antes de resolver cualquier ruta, incluidos los caminos de código que omiten intencionadamente el descubrimiento del sistema de archivos. Un nombre manipulado como `../outside` ya no puede salir del directorio de stacks gestionadas para acceder a archivos Compose o `.env` de otra aplicación.
+
 **Autoactualización protegida de Dockge-Enhanced**
 
 Dockge-Enhanced puede actualizarse mediante un sidecar deliberadamente restringido. Cada actualización exige una copia Restic y una comprobación de integridad del repositorio antes de reemplazar el contenedor. La nueva versión debe superar las comprobaciones de disponibilidad o se restaura automáticamente la imagen anterior.
@@ -163,6 +167,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Copia Restic, integridad, readiness y recuperación automática
 
 ### Seguridad
+- Validación centralizada de nombres de stacks para bloquear path traversal fuera del directorio gestionado
 - Trivy y excepciones CVE
 - 2FA, Turnstile y trusted proxy
 - Sidecar restringido y plan firmado

@@ -4,6 +4,9 @@ Historial detallado del proyecto anteriormente integrado en el README.
 
 ---
 
+**2026-09-02 — Refuerzo de seguridad contra path traversal en stacks** — Los nombres de stacks se validan ahora antes de cada resolución de ruta en `Stack.getStack()`, incluidos los usos con `skipFSOperations=true`. Esto cierra el bypass restante que permitía a un nombre manipulado con secuencias de traversal salir del directorio de stacks gestionadas. El cambio está alineado con el problema de seguridad louislam/dockge#994 y la corrección propuesta en louislam/dockge#997. Un test de regresión cubre específicamente el camino que omite operaciones del sistema de archivos. No se modifica la lógica de autoactualización de Dockge-Enhanced, sidecar, copias Restic ni rollback.
+
+
 
 **2026-09-01 — Identidad de builds y seguimiento claro de la actualización automática** — La pestaña **Actualizaciones** identifica ahora los builds GHCR instalados y disponibles a partir de metadatos OCI, usando la fecha de compilación y el SHA del commit de Git, y mantiene visible el digest inmutable de la imagen como referencia técnica. El estado de la actualización automática sigue una prioridad única en lugar de mezclar el trabajo anterior con la disponibilidad actual, conserva la última operación completada como historial y muestra las cuatro etapas, el progreso Restic en bytes/porcentaje, el tiempo transcurrido y una estimación Restic solo cuando puede calcularse. Las imágenes antiguas sin etiquetas OCI usan su digest como alternativa.
 

@@ -844,6 +844,9 @@ export class Stack {
     }
 
     static async getStack(server: DockgeServer, stackName: string, skipFSOperations = false) : Promise<Stack> {
+        // Validate every caller-supplied stack name, including skipFSOperations paths.
+        // This prevents ../ traversal from escaping the managed stacks directory.
+        resolveStackPath(server.stacksDir, stackName);
         let dir = skipFSOperations
             ? path.resolve(server.stacksDir, stackName)
             : resolveStackPath(server.stacksDir, stackName);

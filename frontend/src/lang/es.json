@@ -34,6 +34,7 @@
     "releaseNews.item.remoteUpdateBadges": "Los indicadores de actualización de la lista de stacks ahora también muestran las actualizaciones detectadas por instancias remotas de Dockge-Enhanced, manteniendo el estado separado para cada servidor.",
     "releaseNews.item.fourLanguageEnhanced": "Las novedades de cara al usuario propias de Enhanced se mantienen ahora de forma coherente en inglés, francés, español y chino simplificado. Las notificaciones de Discord y Apprise siguen el idioma de la interfaz y ya hay un README en chino simplificado.",
     "releaseNews.item.selfUpdateTracking": "La pestaña Actualizaciones identifica ahora los builds GHCR instalados y disponibles mediante la fecha de compilación y el commit de Git, mantiene visible el digest de la imagen como referencia técnica, muestra un único estado actual coherente, separa la última operación terminada y añade etapas, tiempo transcurrido y una estimación Restic cuando puede calcularse.",
+    "releaseNews.item.stackPathTraversal": "Los nombres de stacks se validan ahora en cada resolución de ruta del backend, incluidos los caminos que omiten operaciones del sistema de archivos, impidiendo que un ../ path traversal salga del directorio gestionado.",
     "logLineWrap": "Ajuste de línea",
     "logLineWrapToggle": "Activar o desactivar el ajuste automático de línea",
     "logLineWrapOn": "Líneas ajustadas",

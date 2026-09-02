@@ -4,6 +4,9 @@ Detailed project history previously embedded in the README.
 
 ---
 
+**2026-09-02 — Stack path traversal security hardening** — Stack names are now validated before every `Stack.getStack()` path resolution, including calls using `skipFSOperations=true`. This closes the remaining bypass where a crafted name containing traversal sequences could escape the managed stacks directory. The change is aligned with the security issue reported upstream in louislam/dockge#994 and the remediation proposed in louislam/dockge#997. A regression test covers the skipped-filesystem path. No Dockge-Enhanced self-update, sidecar, Restic backup or rollback logic is changed.
+
+
 
 **2026-09-01 — Clear self-update build identity and progress** — The **Updates** tab now identifies the installed and available GHCR builds from OCI metadata using the build date and Git commit SHA, while keeping the immutable image digest visible as the technical reference. Self-update status follows one clear priority instead of mixing the previous job with current availability, keeps the last completed operation as history, shows the four execution stages, Restic byte/percentage progress, elapsed time, and a Restic ETA only when enough progress data exists. Older images without OCI labels fall back safely to their digest.
 
