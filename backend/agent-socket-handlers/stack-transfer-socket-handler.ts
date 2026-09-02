@@ -36,6 +36,10 @@ import {
 } from "../transfers/stack-replication-target";
 import { ImageWatcher } from "../watchers/image-watcher";
 import {
+    getStackTransferCompatibilitySnapshot,
+    startStackTransferCompatibilityUpdate,
+} from "../transfers/stack-transfer-compatibility";
+import {
     createRegistryCredentialTransferKey,
     exportRegistryCredentialEnvelope,
     importRegistryCredentialEnvelope,
@@ -164,6 +168,24 @@ function requireReplicaSyncRequest(value: unknown): StackReplicaSyncRequest {
 
 export class StackTransferSocketHandler extends AgentSocketHandler {
     create(socket: DockgeSocket, server: DockgeServer, agentSocket: AgentSocket): void {
+        agentSocket.on("getStackTransferCompatibility", (callback: unknown) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true, data: getStackTransferCompatibilitySnapshot() }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("startStackTransferCompatibilityUpdate", async (callback: unknown) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true, data: await startStackTransferCompatibilityUpdate() }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
         agentSocket.on("analyzeStackTransfer", async (stackName: unknown, sourceEndpoint: unknown, callback: unknown) => {
             try {
                 checkLogin(socket);

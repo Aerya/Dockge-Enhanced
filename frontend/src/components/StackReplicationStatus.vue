@@ -43,7 +43,7 @@
         </div>
         <div v-if="restoreTestStale" class="alert alert-warning py-2 mt-3 mb-0">{{ $t("stackReplication.restoreTestStale") }}</div>
         <div v-if="policy.driftReason" class="alert alert-danger py-2 mt-3 mb-0">{{ $t("stackReplication.driftSuspended") }}: {{ policy.driftReason }}</div>
-        <div v-if="policy.error" class="alert alert-danger py-2 mt-3 mb-0">{{ policy.error }}</div>
+        <div v-if="policy.error" class="alert py-2 mt-3 mb-0" :class="policy.status === 'waiting-compatibility' ? 'alert-warning' : 'alert-danger'">{{ policy.error }}</div>
         <div v-if="policy.lastRestoreTestError" class="alert alert-danger py-2 mt-3 mb-0">{{ policy.lastRestoreTestError }}</div>
         <div v-else-if="policy.lastRestoreTestWarnings?.length" class="alert alert-warning py-2 mt-3 mb-0">{{ policy.lastRestoreTestWarnings.join(" · ") }}</div>
         <div v-else-if="policy.cleanupWarning" class="alert alert-warning py-2 mt-3 mb-0">{{ policy.cleanupWarning }}</div>
@@ -76,12 +76,15 @@ export default {
                 running: "bg-primary",
                 error: "bg-danger",
                 active: "bg-warning text-dark",
+                "waiting-compatibility": "bg-warning text-dark",
                 idle: "bg-secondary" }[this.policy?.status] || "bg-secondary";
         },
         nextRun() {
-            if (!this.policy?.enabled || !this.policy.lastSuccessAt || this.policy.status === "active") {
-                return "—";
+            if (!this.policy?.enabled || this.policy.status === "active") return "—";
+            if (this.policy.status === "waiting-compatibility" && this.policy.lastRunAt) {
+                return this.relative(new Date(this.policy.lastRunAt).getTime() + Math.min(10, this.policy.intervalMinutes) * 60_000);
             }
+            if (!this.policy.lastSuccessAt) return "—";
             return this.relative(new Date(this.policy.lastSuccessAt).getTime() + this.policy.intervalMinutes * 60_000);
         },
         duration() {

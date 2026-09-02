@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-02-linked-instance-transfer-compatibility",
+        items: [ "releaseNews.item.transferCompatibility" ],
+    },
+    {
         id: "2026-08-06-agent-federation-migration-links",
         items: [
             "releaseNews.item.agentMesh",

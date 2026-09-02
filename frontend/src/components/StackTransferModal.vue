@@ -36,6 +36,22 @@
                     {{ $t(operation === "replicate" ? "stackReplication.managedDataWarning" : includeData ? "stackTransfer.dataWarning" : "stackTransfer.configOnlyWarning") }}
                 </div>
 
+                <div v-if="compatibilityState !== 'idle'" class="alert mb-4" :class="compatibilityAlertClass">
+                    <div class="fw-semibold">{{ $t(compatibilityMessageKey, compatibilityParams) }}</div>
+                    <div v-if="compatibilitySummary" class="form-text">{{ compatibilitySummary }}</div>
+                    <div v-if="compatibilityState === 'updating'" class="form-text">{{ $t("stackTransfer.compatibilityWaitingHint") }}</div>
+                    <button
+                        v-if="canUpdateCompatibility"
+                        type="button"
+                        class="btn btn-sm btn-warning mt-2"
+                        :disabled="compatibilityUpdating"
+                        @click="updateIncompatibleInstance"
+                    >
+                        <span v-if="compatibilityUpdating" class="spinner-border spinner-border-sm me-1" />
+                        {{ compatibilityOutdatedEndpoint === "" ? $t("stackTransfer.compatibilityUpdateCurrent") : $t("stackTransfer.compatibilityUpdateContinue") }}
+                    </button>
+                </div>
+
                 <div v-if="requiredRegistryAccess.length" class="alert alert-warning mb-4">
                     <div class="form-check">
                         <input id="stack-transfer-registry-access" v-model="transferRegistryAccess" type="checkbox" class="form-check-input" @change="invalidatePreflight" />
@@ -328,6 +344,12 @@ export default {
         return {
             visible: false,
             loading: false,
+            compatibilityState: "idle",
+            compatibilitySource: null,
+            compatibilityTarget: null,
+            compatibilityOutdatedEndpoint: null,
+            compatibilityUpdating: false,
+            compatibilityExistingPolicy: null,
             operation: "copy",
             replicationId: "",
             replicationInterval: 60,
@@ -384,6 +406,47 @@ export default {
         };
     },
     computed: {
+        compatibilityReady() {
+            return this.compatibilityState === "compatible" || this.compatibilityState === "different-build";
+        },
+        compatibilityAlertClass() {
+            return {
+                checking: "alert-secondary",
+                compatible: "alert-success",
+                "different-build": "alert-info",
+                incompatible: "alert-warning",
+                legacy: "alert-danger",
+                updating: "alert-warning",
+                error: "alert-danger",
+            }[this.compatibilityState] || "alert-secondary";
+        },
+        compatibilityMessageKey() {
+            return {
+                checking: "stackTransfer.compatibilityChecking",
+                compatible: "stackTransfer.compatibilityCompatible",
+                "different-build": "stackTransfer.compatibilityDifferentBuild",
+                incompatible: "stackTransfer.compatibilityIncompatible",
+                legacy: "stackTransfer.compatibilityLegacy",
+                updating: "stackTransfer.compatibilityUpdating",
+                error: "stackTransfer.compatibilityError",
+            }[this.compatibilityState] || "stackTransfer.compatibilityChecking";
+        },
+        compatibilityParams() {
+            return {
+                sourceProtocol: this.compatibilitySource?.protocolVersion ?? "?",
+                targetProtocol: this.compatibilityTarget?.protocolVersion ?? "?",
+            };
+        },
+        compatibilitySummary() {
+            if (!this.compatibilitySource || !this.compatibilityTarget) return "";
+            const shortBuild = item => item.buildRevision?.slice(0, 8) || item.appVersion || "?";
+            return `${this.$t("stackTransfer.compatibilitySource")} ${shortBuild(this.compatibilitySource)} · ${this.$t("stackTransfer.compatibilityTarget")} ${shortBuild(this.compatibilityTarget)}`;
+        },
+        canUpdateCompatibility() {
+            if (this.compatibilityState !== "incompatible" || this.compatibilityOutdatedEndpoint === null) return false;
+            const outdated = this.compatibilityOutdatedEndpoint === this.endpoint ? this.compatibilitySource : this.compatibilityTarget;
+            return outdated?.selfUpdate?.updateAvailable === true;
+        },
         modalTitle() {
             if (this.operation === "replicate") {
                 return this.$t("stackReplication.title", [ this.stack.name ]);
@@ -433,6 +496,9 @@ export default {
                 .map(issue => issue.params.image)) ];
         },
         actionDisabledReason() {
+            if (!this.compatibilityReady) {
+                return "stackTransfer.compatibilityRequired";
+            }
             if (this.canTransfer) {
                 return "";
             }
@@ -454,6 +520,9 @@ export default {
             return "stackTransfer.actionUnavailable";
         },
         canTransfer() {
+            if (!this.compatibilityReady) {
+                return false;
+            }
             if (!this.targetEndpoint && !this.targetAgents.some(item => item.endpoint === "")) {
                 return false;
             }
@@ -494,6 +563,15 @@ export default {
                 });
             });
         },
+        emitCompatibility(endpoint, event, ...args) {
+            return new Promise((resolve, reject) => {
+                const timeout = window.setTimeout(() => reject(new Error("compatibility-timeout")), 15_000);
+                this.$root.emitAgent(endpoint, event, ...args, response => {
+                    window.clearTimeout(timeout);
+                    resolve(response);
+                });
+            });
+        },
         async emitAgentLong(endpoint, event, ...args) {
             let lastError;
             for (let attempt = 0; attempt < 8; attempt++) {
@@ -514,6 +592,7 @@ export default {
         },
         async open(operation, existingPolicy = null) {
             this.reset();
+            this.compatibilityExistingPolicy = existingPolicy;
             this.operation = operation;
             this.visible = true;
             this.loading = true;
@@ -521,6 +600,10 @@ export default {
             await this.$nextTick();
             this.targetEndpoint = existingPolicy?.targetEndpoint ?? this.targetAgents[0]?.endpoint ?? "";
             if (this.targetAgents.length === 0) {
+                this.loading = false;
+                return;
+            }
+            if (!await this.checkTransferCompatibility()) {
                 this.loading = false;
                 return;
             }
@@ -578,6 +661,12 @@ export default {
         },
         reset() {
             this.loading = false;
+            this.compatibilityState = "idle";
+            this.compatibilitySource = null;
+            this.compatibilityTarget = null;
+            this.compatibilityOutdatedEndpoint = null;
+            this.compatibilityUpdating = false;
+            this.compatibilityExistingPolicy = null;
             this.targetEndpoint = "";
             this.targetName = "";
             this.replicationId = "";
@@ -635,12 +724,96 @@ export default {
             this.invalidatePreflight();
             this.operationError = "";
             try {
+                if (!await this.checkTransferCompatibility()) return;
                 await this.loadTargetDataCapabilities();
                 await this.loadRules();
                 this.applyRules();
                 await this.runPreflight();
             } catch (error) {
                 this.operationError = error instanceof Error ? error.message : String(error);
+            }
+        },
+        async checkTransferCompatibility() {
+            this.compatibilityState = "checking";
+            this.compatibilityOutdatedEndpoint = null;
+            try {
+                const [ source, target ] = await Promise.all([
+                    this.emitCompatibility(this.endpoint, "getStackTransferCompatibility"),
+                    this.emitCompatibility(this.targetEndpoint, "getStackTransferCompatibility"),
+                ]);
+                if (!source?.ok || !target?.ok || !source.data || !target.data) {
+                    this.compatibilityState = "legacy";
+                    return false;
+                }
+                this.compatibilitySource = source.data;
+                this.compatibilityTarget = target.data;
+                const sourceProtocol = Number(source.data.protocolVersion) || 0;
+                const targetProtocol = Number(target.data.protocolVersion) || 0;
+                if (sourceProtocol <= 0 || targetProtocol <= 0) {
+                    this.compatibilityState = "legacy";
+                    return false;
+                }
+                if (sourceProtocol !== targetProtocol) {
+                    this.compatibilityOutdatedEndpoint = sourceProtocol < targetProtocol ? this.endpoint : this.targetEndpoint;
+                    this.compatibilityState = "incompatible";
+                    return false;
+                }
+                this.compatibilityState = source.data.buildRevision
+                    && target.data.buildRevision
+                    && source.data.buildRevision === target.data.buildRevision
+                    ? "compatible"
+                    : "different-build";
+                return true;
+            } catch {
+                this.compatibilityState = "legacy";
+                return false;
+            }
+        },
+        async updateIncompatibleInstance() {
+            if (!this.canUpdateCompatibility || this.compatibilityOutdatedEndpoint === null) return;
+            const endpoint = this.compatibilityOutdatedEndpoint;
+            const operation = this.operation;
+            const existingPolicy = this.compatibilityExistingPolicy;
+            this.compatibilityUpdating = true;
+            this.compatibilityState = "updating";
+            try {
+                const start = await this.emitCompatibility(endpoint, "startStackTransferCompatibilityUpdate");
+                if (!start?.ok || start.data?.started !== true) {
+                    throw new Error(this.$t("stackTransfer.compatibilityNoUpdate"));
+                }
+                const deadline = Date.now() + 2 * 60 * 60_000;
+                while (Date.now() < deadline) {
+                    await new Promise(resolve => window.setTimeout(resolve, 5000));
+                    try {
+                        const [ source, target ] = await Promise.all([
+                            this.emitCompatibility(this.endpoint, "getStackTransferCompatibility"),
+                            this.emitCompatibility(this.targetEndpoint, "getStackTransferCompatibility"),
+                        ]);
+                        if (!source?.ok || !target?.ok || !source.data || !target.data) continue;
+                        const updated = endpoint === this.endpoint ? source.data : target.data;
+                        if ([ "failed", "rolled-back", "rollback-failed" ].includes(updated.selfUpdate?.operationState)) {
+                            throw new Error(this.$t("stackTransfer.compatibilityUpdateFailed"));
+                        }
+                        if (Number(source.data.protocolVersion) > 0
+                            && Number(source.data.protocolVersion) === Number(target.data.protocolVersion)) {
+                            if (endpoint === "") {
+                                window.location.reload();
+                                return;
+                            }
+                            this.compatibilityUpdating = false;
+                            await this.open(operation, existingPolicy);
+                            return;
+                        }
+                    } catch (error) {
+                        if (error instanceof Error && error.message === this.$t("stackTransfer.compatibilityUpdateFailed")) throw error;
+                    }
+                }
+                throw new Error(this.$t("stackTransfer.compatibilityUpdateTimeout"));
+            } catch (error) {
+                this.compatibilityState = "error";
+                this.operationError = error instanceof Error ? error.message : String(error);
+            } finally {
+                this.compatibilityUpdating = false;
             }
         },
         async loadDataCapabilities() {
