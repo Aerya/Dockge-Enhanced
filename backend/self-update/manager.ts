@@ -669,4 +669,16 @@ export class SelfUpdateManager {
     isSuccessfulTarget(digest: string): boolean {
         return this.operation.state === "succeeded" && this.operation.targetImage.endsWith(`@${digest}`);
     }
+
+    isManagedImageTransition(now = Date.now()): boolean {
+        if (!this.operation.targetImage) return false;
+        if (isSelfUpdateActive(this.operation.state)) return true;
+        if (this.operation.state !== "succeeded" || !this.operation.finishedAt) return false;
+
+        const finishedAt = Date.parse(this.operation.finishedAt);
+        if (!Number.isFinite(finishedAt)) return false;
+
+        const age = now - finishedAt;
+        return age >= 0 && age <= 30 * 60_000;
+    }
 }

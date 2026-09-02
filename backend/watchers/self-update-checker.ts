@@ -526,8 +526,16 @@ export class SelfUpdateChecker {
         await SelfUpdateManager.getInstance().clearObsoleteFailureState();
       }
 
-      // Notif "mise à jour appliquée" — le digest local a changé depuis le dernier check
-      if (wasUpdated && !SelfUpdateManager.getInstance().isSuccessfulTarget(localDigest)) {
+      // Notif "mise à jour appliquée" uniquement pour un changement externe.
+      // Pendant un self-update géré, le nouveau conteneur peut redémarrer alors que
+      // le sidecar est encore en waiting-health et avant l'état terminal succeeded.
+      // La notification finale du SelfUpdateManager est alors la seule confirmation.
+      const selfUpdateManager = SelfUpdateManager.getInstance();
+      if (
+        wasUpdated
+        && !selfUpdateManager.isManagedImageTransition()
+        && !selfUpdateManager.isSuccessfulTarget(localDigest)
+      ) {
         await this._notifyApplied(containerName, localDigest);
       }
 
