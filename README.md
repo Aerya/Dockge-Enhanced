@@ -119,6 +119,27 @@ Image update information is retrieved independently from every connected Dockge-
 
 The Updates page now identifies installed and available builds using OCI metadata, including build date, Git commit and immutable digest. Update stages, Restic progress, elapsed time and remaining-time estimates are displayed consistently.
 
+
+**Remote announcements**
+
+Dockge-Enhanced can display a **text-only operational announcement published from this GitHub repository**, independently of the Docker image update mechanism. This safety channel was added after the self-update incident at the end of August / beginning of September 2026: if a future build has a serious issue, an affected installed version can receive a warning without waiting for that same update mechanism to work.
+
+Announcements come from [`remote-announcements.json`](remote-announcements.json). They are optional, HTTPS-only, schema-validated, limited in size/count, can be targeted by application version, Git revision or OCI build date, and **cannot execute commands, inject HTML or trigger an update**. Links are restricted to the Dockge-Enhanced GitHub repository. If GitHub is unavailable or the document is invalid, Dockge-Enhanced simply shows no announcement.
+
+Closing an announcement only hides it for the current browser session. **Do not show again** stores its ID in the persistent Dockge-Enhanced data directory; publishing a new announcement uses a new ID.
+
+**Linked-instance compatibility**
+
+**Copy**, **Move** and **Replicate** negotiate a **transfer protocol** independently from the build SHA. Different builds remain allowed when their protocol is compatible. When protocols are incompatible, no transfer starts. A sufficiently recent remote instance can be updated from the WebUI through the normal self-update path (Restic backup, sidecar, health check and rollback), and Dockge-Enhanced waits up to **2 hours** for it to reconnect before resuming. An instance too old to answer the handshake requires a manual update. Permanent replication switches to **Waiting for compatibility** and retries roughly every 10 minutes without modifying data.
+
+**Persistent local instance identification**
+
+The **local instance name** configured in Dockge Agents is permanently visible in the desktop/mobile header and in the browser tab title (`InstanceName · Dockge-Enhanced`). If no name is configured, the host (`IP:port` or domain) is used as a fallback. No additional setting is required.
+
+**Unread release-news journal**
+
+The release-news popup now tracks each release entry individually. If several automatic updates are installed while the WebUI is not opened, **all accumulated changes** are shown on the next visit. Opening or reloading the page does not mark anything as read: displayed entries are acknowledged only when the user explicitly closes the popup. Tracking uses release IDs and no longer depends on their position in the list. The legacy `releaseNewsSeen` marker is migrated automatically without replaying the full history to existing users.
+
 ### August 2026
 
 **Transactional stack migration and replication**
@@ -549,21 +570,3 @@ Commercial third-party clients are allowed by the license, but must not imply of
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-## Remote announcements
-
-Dockge-Enhanced can display a **text-only operational announcement published from this GitHub repository**, independently of the Docker image update mechanism. This safety channel was added after the self-update incident at the end of August / beginning of September 2026: if a future build has a serious issue, an affected installed version can receive a warning without waiting for that same update mechanism to work.
-
-Announcements come from [`remote-announcements.json`](remote-announcements.json). They are optional, HTTPS-only, schema-validated, limited in size/count, can be targeted by application version, Git revision or OCI build date, and **cannot execute commands, inject HTML or trigger an update**. Links are restricted to the Dockge-Enhanced GitHub repository. If GitHub is unavailable or the document is invalid, Dockge-Enhanced simply shows no announcement.
-
-Closing an announcement only hides it for the current browser session. **Do not show again** stores its ID in the persistent Dockge-Enhanced data directory; publishing a new announcement uses a new ID.
-
-## Linked-instance compatibility
-
-**Copy**, **Move** and **Replicate** negotiate a **transfer protocol** independently from the build SHA. Different builds remain allowed when their protocol is compatible. When protocols are incompatible, no transfer starts. A sufficiently recent remote instance can be updated from the WebUI through the normal self-update path (Restic backup, sidecar, health check and rollback), and Dockge-Enhanced waits up to **2 hours** for it to reconnect before resuming. An instance too old to answer the handshake requires a manual update. Permanent replication switches to **Waiting for compatibility** and retries roughly every 10 minutes without modifying data.
-
-The **local instance name** configured in Dockge Agents is permanently visible in the desktop/mobile header and in the browser tab title (`InstanceName · Dockge-Enhanced`). If no name is configured, the host (`IP:port` or domain) is used as a fallback. No additional setting is required.
-
-## Unread release-news journal
-
-The release-news popup now tracks each release entry individually. If several automatic updates are installed while the WebUI is not opened, **all accumulated changes** are shown on the next visit. Opening or reloading the page does not mark anything as read: displayed entries are acknowledged only when the user explicitly closes the popup. Tracking uses release IDs and no longer depends on their position in the list. The legacy `releaseNewsSeen` marker is migrated automatically without replaying the full history to existing users.

@@ -116,6 +116,27 @@ Les informations de mise à jour des images sont récupérées séparément depu
 
 L'onglet Mises à jour identifie désormais les builds installés et disponibles grâce aux métadonnées OCI : date de build, commit Git et digest immuable. Les différentes étapes, la progression Restic, le temps écoulé et l'estimation restante sont affichés de manière cohérente.
 
+
+**Annonces distantes**
+
+Dockge-Enhanced peut afficher une **annonce opérationnelle en texte uniquement publiée depuis ce dépôt GitHub**, indépendamment du mécanisme de mise à jour de l'image Docker. Ce canal de secours a été ajouté à la suite de l'incident d'auto-mise à jour de fin août / début septembre 2026 : si un futur build présente un problème important, une version installée concernée pourra recevoir un avertissement sans devoir attendre que ce même mécanisme de mise à jour fonctionne.
+
+Les annonces proviennent de [`remote-announcements.json`](remote-announcements.json). Elles sont facultatives, récupérées uniquement en HTTPS, validées par un schéma strict, limitées en taille et en nombre, et peuvent être ciblées par version de l'application, révision Git ou date de build OCI. Elles **ne peuvent exécuter aucune commande, injecter du HTML ni déclencher une mise à jour**. Les liens sont limités au dépôt GitHub de Dockge-Enhanced. Si GitHub est indisponible ou si le document est invalide, aucune annonce n'est affichée.
+
+Fermer une annonce ne la masque que pour la session du navigateur. **Ne plus afficher** mémorise son identifiant dans les données persistantes de Dockge-Enhanced ; une nouvelle annonce utilise un nouvel identifiant.
+
+**Compatibilité entre instances liées**
+
+Les opérations **Copier**, **Déplacer** et **Répliquer** négocient un **protocole de transfert** indépendant du SHA du build. Des builds différents restent autorisés lorsque leur protocole est compatible. En cas d’incompatibilité, aucun transfert ne démarre. Une instance distante assez récente pour connaître ce mécanisme peut être mise à jour depuis la WebUI via le self-update normal (backup Restic, sidecar, healthcheck et rollback), puis Dockge-Enhanced attend jusqu’à **2 heures** sa reconnexion avant de reprendre. Une version trop ancienne pour répondre au handshake exige une mise à jour manuelle. La réplication permanente passe en **En attente de compatibilité** et retente environ toutes les 10 minutes sans modifier les données.
+
+**Identification permanente de l’instance locale**
+
+Le **nom de l’instance locale** défini dans Dockge Agents est affiché en permanence dans le header desktop/mobile et dans le titre de l’onglet (`NomInstance · Dockge-Enhanced`). Si aucun nom n’est défini, l’hôte (`IP:port` ou domaine) est utilisé comme repère. Aucun réglage supplémentaire n’est nécessaire.
+
+**Journal de nouveautés non lues**
+
+La popup de nouveautés conserve désormais chaque entrée de release individuellement. Si plusieurs mises à jour automatiques sont installées sans que la WebUI soit ouverte, **toutes les nouveautés accumulées** sont présentées à la prochaine ouverture. Ouvrir ou recharger la page ne marque rien comme lu : les entrées affichées ne sont acquittées que lorsque l’utilisateur ferme explicitement la popup. Le stockage repose sur les IDs des releases et ne dépend plus de leur position dans la liste. L’ancien marqueur `releaseNewsSeen` est migré automatiquement sans réafficher tout l’historique aux utilisateurs existants.
+
 ### Août 2026
 
 **Migration transactionnelle et réplication des stacks**
@@ -546,21 +567,3 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 ## Licence
 
 MIT — voir [LICENSE](LICENSE).
-
-## Annonces distantes
-
-Dockge-Enhanced peut afficher une **annonce opérationnelle en texte uniquement publiée depuis ce dépôt GitHub**, indépendamment du mécanisme de mise à jour de l'image Docker. Ce canal de secours a été ajouté à la suite de l'incident d'auto-mise à jour de fin août / début septembre 2026 : si un futur build présente un problème important, une version installée concernée pourra recevoir un avertissement sans devoir attendre que ce même mécanisme de mise à jour fonctionne.
-
-Les annonces proviennent de [`remote-announcements.json`](remote-announcements.json). Elles sont facultatives, récupérées uniquement en HTTPS, validées par un schéma strict, limitées en taille et en nombre, et peuvent être ciblées par version de l'application, révision Git ou date de build OCI. Elles **ne peuvent exécuter aucune commande, injecter du HTML ni déclencher une mise à jour**. Les liens sont limités au dépôt GitHub de Dockge-Enhanced. Si GitHub est indisponible ou si le document est invalide, aucune annonce n'est affichée.
-
-Fermer une annonce ne la masque que pour la session du navigateur. **Ne plus afficher** mémorise son identifiant dans les données persistantes de Dockge-Enhanced ; une nouvelle annonce utilise un nouvel identifiant.
-
-## Compatibilité entre instances liées
-
-Les opérations **Copier**, **Déplacer** et **Répliquer** négocient un **protocole de transfert** indépendant du SHA du build. Des builds différents restent autorisés lorsque leur protocole est compatible. En cas d’incompatibilité, aucun transfert ne démarre. Une instance distante assez récente pour connaître ce mécanisme peut être mise à jour depuis la WebUI via le self-update normal (backup Restic, sidecar, healthcheck et rollback), puis Dockge-Enhanced attend jusqu’à **2 heures** sa reconnexion avant de reprendre. Une version trop ancienne pour répondre au handshake exige une mise à jour manuelle. La réplication permanente passe en **En attente de compatibilité** et retente environ toutes les 10 minutes sans modifier les données.
-
-Le **nom de l’instance locale** défini dans Dockge Agents est affiché en permanence dans le header desktop/mobile et dans le titre de l’onglet (`NomInstance · Dockge-Enhanced`). Si aucun nom n’est défini, l’hôte (`IP:port` ou domaine) est utilisé comme repère. Aucun réglage supplémentaire n’est nécessaire.
-
-## Journal de nouveautés non lues
-
-La popup de nouveautés conserve désormais chaque entrée de release individuellement. Si plusieurs mises à jour automatiques sont installées sans que la WebUI soit ouverte, **toutes les nouveautés accumulées** sont présentées à la prochaine ouverture. Ouvrir ou recharger la page ne marque rien comme lu : les entrées affichées ne sont acquittées que lorsque l’utilisateur ferme explicitement la popup. Le stockage repose sur les IDs des releases et ne dépend plus de leur position dans la liste. L’ancien marqueur `releaseNewsSeen` est migré automatiquement sans réafficher tout l’historique aux utilisateurs existants.

@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-09-03 — Remise en ordre chronologique des README** — Les nouveautés récentes de septembre sont réorganisées : annonces distantes, compatibilité entre instances liées, identification permanente de l’instance locale et journal des nouveautés non lues sont désormais rangés dans la section Septembre 2026 au lieu d’être ajoutés après la licence. Aucun changement fonctionnel.
+
 **2026-09-03 — Correction de l’affichage des partitions surveillées** — La barre de statistiques affiche de nouveau toutes les partitions configurées. Le mode Compact retrouve son rendu sans jauge (`/mnt/data 42%`), tandis que le mode Barre conserve la jauge et la capacité totale pour chaque partition. Cette correction annule la régression introduite lors de la refonte de `SystemStatsBar`.
 
 Historique détaillé du projet auparavant intégré directement au README.

@@ -118,6 +118,27 @@ La información de actualización de imágenes se obtiene independientemente de 
 
 La página de Actualizaciones identifica los builds mediante metadatos OCI y muestra de forma coherente las etapas, el progreso Restic y el tiempo transcurrido.
 
+
+**Anuncios remotos**
+
+Dockge-Enhanced puede mostrar un **anuncio operativo de solo texto publicado desde este repositorio de GitHub**, de forma independiente al mecanismo de actualización de la imagen Docker. Este canal de seguridad se añadió tras el incidente de autoactualización de finales de agosto / principios de septiembre de 2026: si una futura compilación presenta un problema importante, una versión instalada afectada podrá recibir una advertencia sin tener que esperar a que funcione ese mismo mecanismo de actualización.
+
+Los anuncios proceden de [`remote-announcements.json`](remote-announcements.json). Son opcionales, se obtienen únicamente mediante HTTPS, se validan con un esquema estricto, tienen límites de tamaño y cantidad y pueden dirigirse por versión de la aplicación, revisión Git o fecha de compilación OCI. **No pueden ejecutar comandos, inyectar HTML ni iniciar una actualización**. Los enlaces se limitan al repositorio GitHub de Dockge-Enhanced. Si GitHub no está disponible o el documento no es válido, no se muestra ningún anuncio.
+
+Cerrar un anuncio solo lo oculta durante la sesión del navegador. **No volver a mostrar** guarda su identificador en los datos persistentes de Dockge-Enhanced; un nuevo anuncio utiliza un identificador nuevo.
+
+**Compatibilidad entre instancias vinculadas**
+
+**Copiar**, **Mover** y **Replicar** negocian un **protocolo de transferencia** independiente del SHA del build. Se permiten builds diferentes cuando su protocolo es compatible. Si los protocolos son incompatibles, no comienza ninguna transferencia. Una instancia remota suficientemente reciente puede actualizarse desde la WebUI mediante el self-update normal (copia Restic, sidecar, healthcheck y rollback), y Dockge-Enhanced espera hasta **2 horas** a que vuelva a conectarse antes de continuar. Una versión demasiado antigua para responder al handshake requiere actualización manual. La réplica permanente pasa a **Esperando compatibilidad** y reintenta aproximadamente cada 10 minutos sin modificar datos.
+
+**Identificación permanente de la instancia local**
+
+El **nombre de la instancia local** configurado en Dockge Agents se muestra permanentemente en la cabecera de escritorio/móvil y en el título de la pestaña (`NombreInstancia · Dockge-Enhanced`). Si no hay nombre, se utiliza el host (`IP:puerto` o dominio). No se necesita ningún ajuste adicional.
+
+**Registro de novedades no leídas**
+
+La ventana de novedades conserva ahora cada entrada de release individualmente. Si se instalan varias actualizaciones automáticas sin abrir la WebUI, **todas las novedades acumuladas** se muestran en la siguiente visita. Abrir o recargar la página no marca nada como leído: las entradas mostradas solo se confirman cuando el usuario cierra explícitamente la ventana. El seguimiento usa los IDs de las releases y ya no depende de su posición en la lista. El antiguo marcador `releaseNewsSeen` se migra automáticamente sin volver a mostrar todo el historial a los usuarios existentes.
+
 ### Agosto de 2026
 
 **Migración transaccional y replicación de stacks**
@@ -524,21 +545,3 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 ## Licencia
 
 MIT — ver [LICENSE](LICENSE).
-
-## Anuncios remotos
-
-Dockge-Enhanced puede mostrar un **anuncio operativo de solo texto publicado desde este repositorio de GitHub**, de forma independiente al mecanismo de actualización de la imagen Docker. Este canal de seguridad se añadió tras el incidente de autoactualización de finales de agosto / principios de septiembre de 2026: si una futura compilación presenta un problema importante, una versión instalada afectada podrá recibir una advertencia sin tener que esperar a que funcione ese mismo mecanismo de actualización.
-
-Los anuncios proceden de [`remote-announcements.json`](remote-announcements.json). Son opcionales, se obtienen únicamente mediante HTTPS, se validan con un esquema estricto, tienen límites de tamaño y cantidad y pueden dirigirse por versión de la aplicación, revisión Git o fecha de compilación OCI. **No pueden ejecutar comandos, inyectar HTML ni iniciar una actualización**. Los enlaces se limitan al repositorio GitHub de Dockge-Enhanced. Si GitHub no está disponible o el documento no es válido, no se muestra ningún anuncio.
-
-Cerrar un anuncio solo lo oculta durante la sesión del navegador. **No volver a mostrar** guarda su identificador en los datos persistentes de Dockge-Enhanced; un nuevo anuncio utiliza un identificador nuevo.
-
-## Compatibilidad entre instancias vinculadas
-
-**Copiar**, **Mover** y **Replicar** negocian un **protocolo de transferencia** independiente del SHA del build. Se permiten builds diferentes cuando su protocolo es compatible. Si los protocolos son incompatibles, no comienza ninguna transferencia. Una instancia remota suficientemente reciente puede actualizarse desde la WebUI mediante el self-update normal (copia Restic, sidecar, healthcheck y rollback), y Dockge-Enhanced espera hasta **2 horas** a que vuelva a conectarse antes de continuar. Una versión demasiado antigua para responder al handshake requiere actualización manual. La réplica permanente pasa a **Esperando compatibilidad** y reintenta aproximadamente cada 10 minutos sin modificar datos.
-
-El **nombre de la instancia local** configurado en Dockge Agents se muestra permanentemente en la cabecera de escritorio/móvil y en el título de la pestaña (`NombreInstancia · Dockge-Enhanced`). Si no hay nombre, se utiliza el host (`IP:puerto` o dominio). No se necesita ningún ajuste adicional.
-
-## Registro de novedades no leídas
-
-La ventana de novedades conserva ahora cada entrada de release individualmente. Si se instalan varias actualizaciones automáticas sin abrir la WebUI, **todas las novedades acumuladas** se muestran en la siguiente visita. Abrir o recargar la página no marca nada como leído: las entradas mostradas solo se confirman cuando el usuario cierra explícitamente la ventana. El seguimiento usa los IDs de las releases y ya no depende de su posición en la lista. El antiguo marcador `releaseNewsSeen` se migra automáticamente sin volver a mostrar todo el historial a los usuarios existentes.
