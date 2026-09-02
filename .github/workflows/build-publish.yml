@@ -136,6 +136,7 @@ jobs:
           version=$(jq -r .version package.json)
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:${version} \
+            -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:${GITHUB_SHA} \
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:amd64 \
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-updater:arm64
           docker buildx imagetools create \

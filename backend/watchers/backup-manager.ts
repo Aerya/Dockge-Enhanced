@@ -189,6 +189,7 @@ export interface SnapshotFile {
 
 export interface RestoreTestResult {
     ok: boolean;
+    skipped?: boolean;
     testedFile?: string;
     error?: string;
 }
@@ -1217,7 +1218,7 @@ export class BackupManager {
         }
 
         // La rétention et le test de lecture n'exigent pas que les applications restent arrêtées.
-        if (!opts.skipForget) {
+        if (!opts.skipForget && opts.tag !== "self-update") {
             for (let i = 0; i < activeDests.length; i++) {
                 const dest = activeDests[i];
                 const destResult = result.destinations![i];
@@ -1926,7 +1927,7 @@ export class BackupManager {
             if (!composePath) {
                 // Snapshot vide ou sans compose — test trivial passé
                 console.log(`[BackupManager] Restore test "${dest.label}" — aucun compose trouvé dans le snapshot, test ignoré`);
-                return { ok: true };
+                return { ok: false, skipped: true, error: "Aucun compose trouvé dans le snapshot" };
             }
 
             // 3. Lire le fichier (déchiffrement + vérification de l'intégrité des données)
@@ -1940,6 +1941,39 @@ export class BackupManager {
             const raw = e instanceof Error ? e.message : String(e);
             return { ok: false, error: raw.slice(0, 300) };
         }
+    }
+
+    async verifyFreshBackup(result: BackupResult): Promise<Array<{ label: string; ok: boolean; output: string }>> {
+        const destinations = result.destinations ?? [];
+        const enabled = this.settings.destinations.filter(dest => dest.enabled);
+        const checks: Array<{ label: string; ok: boolean; output: string }> = [];
+
+        for (let i = 0; i < destinations.length; i++) {
+            const destResult = destinations[i];
+            const dest = enabled[i];
+            if (!dest || !destResult?.success || !destResult.snapshotId) {
+                checks.push({ label: destResult?.label ?? dest?.label ?? `destination-${i + 1}`, ok: false, output: "Snapshot fraîchement créé introuvable" });
+                continue;
+            }
+            try {
+                const safeId = assertSafeResticId(destResult.snapshotId);
+                const ls = await this.resticFor(dest, [ "ls", safeId, "--json" ]);
+                const file = ls.split("\n").filter(Boolean).map(line => {
+                    try { return JSON.parse(line) as Record<string, unknown>; }
+                    catch { return null; }
+                }).find(entry => entry?.struct_type === "node" && entry?.type === "file" && typeof entry?.path === "string");
+
+                if (!file?.path || typeof file.path !== "string") {
+                    checks.push({ label: dest.label, ok: false, output: "Aucun fichier lisible dans le snapshot fraîchement créé" });
+                    continue;
+                }
+                const content = await this.resticDump(dest, safeId, file.path);
+                checks.push({ label: dest.label, ok: content.length > 0, output: content.length > 0 ? `Lecture OK: ${file.path}` : `Fichier vide: ${file.path}` });
+            } catch (error) {
+                checks.push({ label: dest.label, ok: false, output: error instanceof Error ? error.message : String(error) });
+            }
+        }
+        return checks;
     }
 
     /** Exécute `restic dump` sans `--json` pour récupérer le contenu brut d'un fichier */
@@ -2141,7 +2175,7 @@ export class BackupManager {
                       .map(d => {
                           const rt = d.restoreTest;
                           const rtLabel = t("Test de restauration", "Restore test", "Prueba de restauración", "恢复测试");
-                          const rtIcon = rt == null ? "" : (rt.ok ? ` · ${rtLabel} ✅` : ` · ${rtLabel} ❌`);
+                          const rtIcon = rt == null ? "" : (rt.skipped ? ` · ${rtLabel} ⏭️` : (rt.ok ? ` · ${rtLabel} ✅` : ` · ${rtLabel} ❌`));
                           return `${d.success ? "✅" : "❌"} ${d.label}${rtIcon}`;
                       })
                       .join("\n") || "—",

@@ -497,9 +497,20 @@ export class SelfUpdateChecker {
         await this._notifyAvailable(containerName, repo, automaticMode);
       }
 
-      if (updateAvailable && SelfUpdateManager.getInstance().canAutoUpdate()) {
-        log.info("self-update-checker", `Auto-update demandée — target=ghcr.io/${repo}@${remoteDigest}`);
-        await SelfUpdateManager.getInstance().requestSidecarUpdate(`ghcr.io/${repo}@${remoteDigest}`, true);
+      const targetImage = `ghcr.io/${repo}@${remoteDigest}`;
+      if (
+        updateAvailable
+        && SelfUpdateManager.getInstance().canAutoUpdate()
+        && !SelfUpdateManager.getInstance().shouldBlockAutomaticRetry(targetImage)
+      ) {
+        log.info("self-update-checker", `Auto-update demandée — target=${targetImage}`);
+        await SelfUpdateManager.getInstance().requestSidecarUpdate(
+          targetImage,
+          true,
+          remoteInfo.build.revision || undefined,
+        );
+      } else if (updateAvailable && SelfUpdateManager.getInstance().shouldBlockAutomaticRetry(targetImage)) {
+        log.warn("self-update-checker", `Retry automatique bloqué pour ce digest après échec/rollback — target=${targetImage}`);
       } else if (updateAvailable) {
         log.info("self-update-checker", "Mise à jour détectée mais auto-update non exécutable actuellement");
       }

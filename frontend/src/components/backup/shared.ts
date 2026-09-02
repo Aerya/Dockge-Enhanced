@@ -132,6 +132,7 @@ export interface SnapshotFile {
 
 export interface RestoreTestResult {
     ok: boolean;
+    skipped?: boolean;
     testedFile?: string;
     error?: string;
 }

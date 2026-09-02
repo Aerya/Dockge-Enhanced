@@ -22,6 +22,7 @@ export interface SelfUpdatePlan {
     targetContainerId: string;
     targetContainerName: string;
     targetImage: string;
+    targetRevision?: string;
     previousImage: string;
     previousImageId: string;
     allowedRepository: string;
