@@ -442,11 +442,19 @@ export class SelfUpdateChecker {
       const remoteDigest = remoteInfo.platformDigest;
 
       // Docker/Podman peuvent exposer dans RepoDigests soit le digest du manifest plateforme,
-      // soit celui de l'index multi-arch. On accepte les deux pour éviter les faux positifs ARM64.
+      // soit celui de l'index multi-arch. La révision OCI reste l'identifiant fonctionnel
+      // du build : si elle est identique localement et à distance, il n'y a aucune mise à jour,
+      // même si les digests exposés par Docker/GHCR diffèrent.
+      const sameBuildRevision = !!(
+        localInfo.build.revision &&
+        remoteInfo.build.revision &&
+        localInfo.build.revision === remoteInfo.build.revision
+      );
       const updateAvailable = !!(
         localInfo.comparable &&
         localDigest &&
         remoteDigest &&
+        !sameBuildRevision &&
         !digestEquals(localDigest, remoteInfo.platformDigest) &&
         !digestEquals(localDigest, remoteInfo.indexDigest)
       );
@@ -481,6 +489,10 @@ export class SelfUpdateChecker {
           ? null
           : "Digest local registry indisponible",
       };
+
+      if (sameBuildRevision) {
+        await SelfUpdateManager.getInstance().clearObsoleteFailureState();
+      }
 
       // Notif "mise à jour appliquée" — le digest local a changé depuis le dernier check
       if (wasUpdated && !SelfUpdateManager.getInstance().wasSuccessfulTargetNotified(localDigest)) {

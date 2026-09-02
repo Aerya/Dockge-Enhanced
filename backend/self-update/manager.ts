@@ -546,6 +546,17 @@ export class SelfUpdateManager {
         }
     }
 
+    async clearObsoleteFailureState(): Promise<void> {
+        if (![ "failed", "rolled-back", "rollback-failed" ].includes(this.operation.state)) return;
+        log.info(
+            "self-update",
+            `Ancien état terminal effacé — state=${this.operation.state} target=${this.operation.targetImage || "indisponible"}`,
+        );
+        this.operation = idle();
+        this.progress = null;
+        await this.saveOperation();
+    }
+
     shouldBlockAutomaticRetry(targetImage: string): boolean {
         return (
             [ "failed", "rolled-back", "rollback-failed" ].includes(this.operation.state)
