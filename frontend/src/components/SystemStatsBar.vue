@@ -12,13 +12,24 @@
                 <span class="status-meter-fill" :style="{ width: Math.min(100, systemStats.ram.percent) + '%' }"></span>
             </span>
         </span>
-        <span v-if="fullestDisk" class="status-item" :class="statClass(fullestDisk.percent)" :title="disksTooltip">
-            <font-awesome-icon icon="floppy-disk" />{{ fullestDisk.mount }} {{ fullestDisk.percent }}%
-            <span class="status-meter" :aria-label="diskUsageBarLabel(fullestDisk.percent)">
-                <span class="status-meter-fill" :style="{ width: Math.min(100, fullestDisk.percent) + '%' }"></span>
-            </span>
-            <span v-if="systemStats.diskDisplayMode === 'bar'">{{ formatDiskTotal(fullestDisk.total) }}</span>
-            <span v-if="diskList.length > 1">+{{ diskList.length - 1 }}</span>
+        <span
+            v-for="disk in diskList"
+            :key="disk.mount"
+            class="status-item"
+            :class="statClass(disk.percent)"
+            :title="diskTooltip(disk)"
+        >
+            <font-awesome-icon icon="floppy-disk" />{{ disk.mount }}
+            <template v-if="systemStats.diskDisplayMode === 'bar'">
+                <span class="status-meter" :aria-label="diskUsageBarLabel(disk.percent)">
+                    <span class="status-meter-fill" :style="{ width: Math.min(100, disk.percent) + '%' }"></span>
+                </span>
+                <span>{{ disk.percent }}%</span>
+                <span>{{ formatDiskTotal(disk.total) }}</span>
+            </template>
+            <template v-else>
+                <span>{{ disk.percent }}%</span>
+            </template>
         </span>
         <span v-if="systemStats.hostNavbarDisplay?.uptime" class="status-item stat-neutral">
             <font-awesome-icon icon="clock" />{{ formatUptime(systemStats.host?.uptimeSeconds) }}
@@ -65,20 +76,8 @@ export default {
     },
 
     computed: {
-        // Barre de stats : on n'affiche que le disque le plus plein,
-        // le détail de tous les disques est dans l'infobulle.
         diskList() {
             return this.systemStats.disks ?? (this.systemStats.disk ? [ this.systemStats.disk ] : []);
-        },
-
-        fullestDisk() {
-            return this.diskList.reduce((max, d) => (!max || d.percent > max.percent ? d : max), null);
-        },
-
-        disksTooltip() {
-            return this.diskList
-                .map((d) => `${d.mount} ${d.percent}% (${this.formatDiskTotal(d.total)})`)
-                .join("\n");
         },
     },
 
@@ -91,6 +90,10 @@ export default {
                 return "stat-warning";
             }
             return "stat-ok";
+        },
+
+        diskTooltip(disk) {
+            return `${disk.mount} ${disk.percent}% (${this.formatDiskTotal(disk.total)})`;
         },
 
         formatBytes(bytes) {
