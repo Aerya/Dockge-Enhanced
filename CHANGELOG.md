@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — Fix Restic restore test** — The post-backup restore test now actually requests JSON output from `restic ls`, prefers a non-empty Compose file when available, and otherwise tests another real file from the snapshot. A valid Dockge backup without a Compose file is therefore no longer reported as a failed restore test. A snapshot with no files remains a real failure, while an all-empty-file snapshot is explicitly marked as a skipped content test.
+
 **2026-09-03 — README chronology cleanup** — Recent September documentation is reorganized so remote announcements, linked-instance compatibility, persistent local instance identification and the unread release-news journal now live under the September 2026 section instead of being appended after the license. No functional behavior changes.
 
 **2026-09-03 — Fix monitored partition rendering** — The system stats bar once again shows every configured partition. Compact mode is restored to its gauge-free rendering (`/mnt/data 42%`), while Bar mode keeps the usage meter and total capacity for each partition. This fixes the regression introduced with the `SystemStatsBar` redesign.

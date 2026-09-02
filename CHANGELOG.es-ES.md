@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-09-03 — Corrección de la prueba de restauración Restic** — La prueba posterior al backup solicita ahora realmente la salida JSON de `restic ls`, prefiere un archivo Compose no vacío cuando existe y, en caso contrario, prueba otro archivo real del snapshot. Un backup válido de Dockge sin Compose ya no se marca erróneamente como fallo de restauración. Un snapshot sin archivos sigue siendo un fallo real y uno compuesto únicamente por archivos vacíos se marca como prueba de contenido omitida.
+
 **2026-09-03 — Reordenación cronológica de los README** — Las novedades recientes de septiembre se reorganizan: anuncios remotos, compatibilidad entre instancias vinculadas, identificación permanente de la instancia local y registro de novedades no leídas pasan a la sección Septiembre de 2026 en lugar de quedar añadidas después de la licencia. Sin cambios funcionales.
 
 **2026-09-03 — Corrección de la visualización de particiones supervisadas** — La barra de estadísticas vuelve a mostrar todas las particiones configuradas. El modo Compacto recupera su visualización sin barra (`/mnt/data 42%`), mientras que el modo Barra mantiene el indicador y la capacidad total de cada partición. Corrige la regresión introducida con la renovación de `SystemStatsBar`.

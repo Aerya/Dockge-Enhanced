@@ -17,6 +17,7 @@ import { getNotificationLang, getNotificationLocale, notificationText, Notificat
 import { Settings } from "../settings";
 import { ValidationError } from "../util-server";
 import { log } from "../log";
+import { selectRestoreTestCandidate } from "./backup-restore-test";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -1234,7 +1235,7 @@ export class BackupManager {
                     await this.runForgetFor(dest);
                     if (this.settings.restoreTest && destResult.snapshotId) {
                         destResult.restoreTest = await this.runRestoreTest(dest, destResult.snapshotId);
-                        if (!destResult.restoreTest.ok) {
+                        if (!destResult.restoreTest.ok && !destResult.restoreTest.skipped) {
                             const msg = destResult.restoreTest.error ?? "Lecture du snapshot impossible";
                             result.warnings = [...(result.warnings ?? []), `[${dest.label}] Restore test échoué : ${msg}`];
                         }
@@ -1914,41 +1915,31 @@ export class BackupManager {
 
     /**
      * Teste la lisibilité d'un repo en lisant un fichier réel depuis le snapshot.
-     * Utilise `restic ls` pour trouver un compose.yaml puis `restic dump` pour le lire.
+     * Préfère un Compose non vide, puis n'importe quel fichier non vide : un backup
+     * Dockge valide n'est pas obligé de contenir un compose.yaml.
      * Aucun fichier temporaire n'est créé sur le disque — tout reste en mémoire.
      */
     private async runRestoreTest(dest: BackupDestination, snapshotId: string): Promise<RestoreTestResult> {
         try {
-            // 1. Lister uniquement les fichiers sous STACKS_DIR (évite de parcourir les volumes)
-            const lsOut = await this.resticFor(dest, [ "ls", snapshotId, STACKS_DIR ]);
+            const safeId = assertSafeResticId(snapshotId);
+            const lsOut = await this.resticFor(dest, [ "ls", safeId, "--json", "--long" ]);
+            const candidate = selectRestoreTestCandidate(lsOut);
 
-            // 2. Trouver le premier compose.yaml dans le snapshot
-            let composePath: string | undefined;
-            for (const line of lsOut.split("\n").filter(Boolean)) {
-                try {
-                    const obj = JSON.parse(line) as Record<string, unknown>;
-                    if (obj.struct_type !== "node" || obj.type !== "file") continue;
-                    const name = path.basename(obj.path as string);
-                    if (/^(compose|docker-compose)(\.ya?ml)?$/.test(name)) {
-                        composePath = obj.path as string;
-                        break;
-                    }
-                } catch { continue; }
+            if (!candidate) {
+                return { ok: false, error: "Aucun fichier trouvé dans le snapshot" };
             }
 
-            if (!composePath) {
-                // Snapshot vide ou sans compose — test trivial passé
-                console.log(`[BackupManager] Restore test "${dest.label}" — aucun compose trouvé dans le snapshot, test ignoré`);
-                return { ok: false, skipped: true, error: "Aucun compose trouvé dans le snapshot" };
+            if (candidate.size === 0) {
+                console.log(`[BackupManager] Restore test "${dest.label}" — snapshot sans fichier non vide, test de contenu ignoré`);
+                return { ok: true, skipped: true, testedFile: candidate.path };
             }
 
-            // 3. Lire le fichier (déchiffrement + vérification de l'intégrité des données)
-            const content = await this.resticDump(dest, snapshotId, composePath);
-            if (!content.trim()) {
-                return { ok: false, testedFile: composePath, error: "Fichier vide retourné par le snapshot" };
+            const content = await this.resticDump(dest, safeId, candidate.path);
+            if (content.length === 0) {
+                return { ok: false, testedFile: candidate.path, error: "Fichier vide retourné par le snapshot" };
             }
 
-            return { ok: true, testedFile: composePath };
+            return { ok: true, testedFile: candidate.path };
         } catch (e: unknown) {
             const raw = e instanceof Error ? e.message : String(e);
             return { ok: false, error: raw.slice(0, 300) };
