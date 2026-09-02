@@ -91,6 +91,10 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**Docker Compose project-name reconciliation**
+
+Managed stacks whose directory name contains dots or uppercase characters are now reconciled with Docker Compose using the actual `ConfigFiles` path instead of relying only on Docker's sanitized project name. This prevents duplicate “managed/stopped” and “external/running” entries for the same stack.
+
 **Compose long port syntax support**
 
 Container cards now support both short and long Compose port syntax. Definitions using `published`, `target`, `protocol`, `mode` or `host_ip` no longer trigger `split is not a function` and no longer make the container card disappear. IPv6 `host_ip` values are also formatted correctly in generated links.

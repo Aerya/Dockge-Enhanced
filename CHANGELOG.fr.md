@@ -4,6 +4,9 @@ Historique détaillé du projet auparavant intégré directement au README.
 
 ---
 
+**2026-09-02 — Rapprochement des dossiers de stacks avec les noms de projets Docker Compose** — La découverte des stacks et le rafraîchissement de leur statut utilisent désormais le chemin réel `ConfigFiles` renvoyé par `docker compose ls` pour rattacher un projet en cours à son dossier géré. Cela corrige les doublons lorsque Docker Compose normalise les points ou les majuscules du nom de projet, comme signalé dans louislam/dockge#960. Les stacks réellement externes conservent leur nom de projet Docker. Des tests couvrent les noms avec points, les majuscules, plusieurs fichiers de configuration, les projets externes, les chemins imbriqués et les métadonnées absentes. Aucun code d'auto-mise à jour, sidecar, Restic ou rollback n'est modifié.
+
+
 **2026-09-02 — Prise en charge de la syntaxe longue des ports Compose** — `parseDockerPort()` accepte désormais la syntaxe chaîne existante ainsi que les objets de ports Compose au format long avec `published`, `target`, `protocol`, `mode` et `host_ip`. Le comportement des formats string historiques est couvert par des tests de non-régression et reste inchangé. Les définitions longues ne provoquent plus `split is not a function` et ne font plus disparaître la carte du conteneur, comme signalé dans louislam/dockge#998. Les cas IPv4/IPv6, TCP, UDP, ports publiés numériques ou chaînes et absence de port publié sont couverts. Aucun code d'auto-mise à jour, sidecar, Restic ou rollback n'est modifié.
 
 

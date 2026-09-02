@@ -4,6 +4,9 @@
 
 ---
 
+**2026-09-02 — 受管理 Stack 目录与 Docker Compose 项目名称匹配** — Stack 发现和状态刷新现在使用 `docker compose ls` 返回的实际 `ConfigFiles` 路径，将运行中的项目匹配回受管理目录。这修复了 Docker Compose 规范化项目名称中的点号或大写字母时产生的重复条目，对应 louislam/dockge#960。真正的外部 Stack 仍保留 Docker 项目名称。回归测试覆盖点号名称、大写名称、多配置文件、外部项目、嵌套路径和缺失元数据。自动更新、sidecar、Restic 和 rollback 逻辑均未修改。
+
+
 **2026-09-02 — 支持 Compose 长格式端口语法** — `parseDockerPort()` 现在既支持现有字符串端口语法，也支持包含 `published`、`target`、`protocol`、`mode` 和 `host_ip` 的 Compose 长格式端口对象。现有字符串格式行为由回归测试覆盖并保持不变。长格式定义不再触发 `split is not a function`，也不会再导致容器卡片消失，对应 louislam/dockge#998。测试覆盖 IPv4/IPv6、TCP、UDP、数字或字符串 published 端口以及缺少 published 的情况。自动更新、sidecar、Restic 和 rollback 代码均未修改。
 
 
