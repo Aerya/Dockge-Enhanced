@@ -152,6 +152,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.composeProjectNames",
         ],
     },
+    {
+        id: "2026-09-02-remote-announcements",
+        items: [
+            "releaseNews.item.remoteAnnouncements",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

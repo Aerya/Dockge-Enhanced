@@ -4,6 +4,8 @@
 
 ---
 
+**2026-09-02 — 远程运维公告** — Dockge-Enhanced 现在可以从 GitHub 仓库的 `remote-announcements.json` 接收经过严格校验的纯文本公告，并且完全独立于自动更新执行路径。该安全通道源于 2026 年 8 月底至 9 月初的自动更新事故，使项目能够在受影响的更新机制本身不可靠时仍向已安装版本发送重要警告。公告仅通过 HTTPS 获取并缓存，具有大小和数量限制，可按版本、Git 修订或 OCI 构建日期定向；不会包含可执行 HTML 或命令，GitHub 不可用时会静默失败。已确认的公告 ID 保存在 Dockge 持久化数据目录中。自动更新、sidecar、Restic、rollback 和镜像 watcher 的执行代码均未修改。
+
 **2026-09-02 — 受管理 Stack 目录与 Docker Compose 项目名称匹配** — Stack 发现和状态刷新现在使用 `docker compose ls` 返回的实际 `ConfigFiles` 路径，将运行中的项目匹配回受管理目录。这修复了 Docker Compose 规范化项目名称中的点号或大写字母时产生的重复条目，对应 louislam/dockge#960。真正的外部 Stack 仍保留 Docker 项目名称。回归测试覆盖点号名称、大写名称、多配置文件、外部项目、嵌套路径和缺失元数据。自动更新、sidecar、Restic 和 rollback 逻辑均未修改。
 
 

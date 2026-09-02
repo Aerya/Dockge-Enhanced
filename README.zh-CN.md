@@ -380,3 +380,11 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 ## 许可证
 
 MIT — 参见 [LICENSE](LICENSE)。
+
+## 远程公告
+
+Dockge-Enhanced 现在可以显示**从此 GitHub 仓库发布的纯文本运维公告**，并且该通道独立于 Docker 镜像更新机制。这个安全通道是在 2026 年 8 月底至 9 月初的自动更新事故之后加入的：如果未来某个构建出现严重问题，受影响的已安装版本可以收到警告，而不必等待同一个更新机制先恢复正常。
+
+公告来自 [`remote-announcements.json`](remote-announcements.json)。公告是可选的，仅通过 HTTPS 获取，经过严格结构校验，并限制大小和数量；还可以按应用版本、Git 修订或 OCI 构建日期定向发布。公告**不能执行命令、注入 HTML 或触发更新**。可点击链接仅允许指向 Dockge-Enhanced 的 GitHub 仓库。如果 GitHub 不可用或公告文档无效，Dockge-Enhanced 只会不显示公告，不影响其他功能。
+
+关闭公告只会在当前浏览器会话中隐藏它。选择**不再显示**会把公告 ID 保存到 Dockge-Enhanced 的持久化数据目录；发布新的公告时使用新的 ID。
