@@ -137,7 +137,7 @@ export class SelfUpdateManager {
 
     isAutomaticMode(): boolean { return this.settings.mode === "sidecar"; }
 
-    async requestSidecarUpdate(targetImage: string, automatic = false): Promise<SelfUpdateOperation> {
+    async requestSidecarUpdate(targetImage: string, automatic = false, targetRevision?: string): Promise<SelfUpdateOperation> {
         const resumingScheduled = automatic && this.operation.state === "scheduled";
         if (this.requestInFlight || (isSelfUpdateActive(this.operation.state) && !resumingScheduled)) throw new Error("A self-update is already running");
         this.requestInFlight = true;
@@ -167,7 +167,7 @@ export class SelfUpdateManager {
         const testImages = (process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? "").split(",").map(value => value.trim()).filter(Boolean);
         if (!isAllowedTargetImage(targetImage, repository, testImages)) throw new Error("The requested self-update image is not allowed");
         if (!inspected.Image || !/^sha256:[a-f0-9]{64}$/i.test(inspected.Image)) throw new Error("Current immutable Docker image identifier is unavailable");
-        const plan = await this.buildPlan(inspected, safePlanId(), targetImage, previousImage, repository);
+        const plan = await this.buildPlan(inspected, safePlanId(), targetImage, previousImage, repository, targetRevision);
         const recoveryPath = path.join(RECOVERY_DIR, plan.recoveryFile);
         const startedMs = Date.now();
         log.info(
@@ -202,30 +202,33 @@ export class SelfUpdateManager {
         }
 
         log.info("self-update", `Backup Restic terminé — id=${plan.id} duration=${Date.now() - startedMs}ms`);
-        this.operation = { ...this.operation, state: "verifying-backup", message: "Restic repository verification in progress" };
-        log.info("self-update", `Étape 2/4 — vérification Restic — id=${plan.id}`);
+        this.operation = { ...this.operation, state: "verifying-backup", message: "Self-update snapshot verification in progress" };
+        log.info("self-update", `Étape 2/4 — validation ciblée du snapshot Restic — id=${plan.id}`);
         this.progress = null;
         await this.saveOperation();
-        let verification;
         try {
-            verification = await BackupManager.getInstance().runCheck(undefined, (progress) => { this.progress = progress; });
+            const verification = await BackupManager.getInstance().verifyFreshBackup(backup);
+            const failed = verification.find((result) => !result.ok);
+            if (failed) {
+                this.operation = {
+                    ...this.operation,
+                    state: "failed",
+                    message: `Backup verification failed for ${failed.label}: ${failed.output}`,
+                    finishedAt: new Date().toISOString(),
+                    notificationPending: true,
+                    notificationSentAt: null,
+                };
+                await this.saveOperation();
+                return this.getOperation();
+            }
         } catch (error) {
             this.operation = {
                 ...this.operation,
                 state: "failed",
                 message: `Backup verification failed: ${error instanceof Error ? error.message : String(error)}`,
                 finishedAt: new Date().toISOString(),
-            };
-            await this.saveOperation();
-            return this.getOperation();
-        }
-        const failedVerification = verification.find((result) => !result.ok);
-        if (failedVerification) {
-            this.operation = {
-                ...this.operation,
-                state: "failed",
-                message: `Backup verification failed for ${failedVerification.label}: ${failedVerification.output}`,
-                finishedAt: new Date().toISOString(),
+                notificationPending: true,
+                notificationSentAt: null,
             };
             await this.saveOperation();
             return this.getOperation();
@@ -234,6 +237,8 @@ export class SelfUpdateManager {
 
         const stateMount = (inspected.Mounts ?? []).find((mount) => mount.Destination === DATA_DIR);
         if (!stateMount?.Source) throw new Error(`The ${DATA_DIR} volume is required for self-update state`);
+        plan.issuedAt = new Date().toISOString();
+        plan.expiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
         const secret = await this.getOrCreateSecret();
         const payload = { plan, signature: signPlan(plan, secret) };
         await this.cleanupArtifacts(plan.id);
@@ -242,9 +247,29 @@ export class SelfUpdateManager {
         const stateSource = stateMount.Type === "volume" ? (stateMount.Name ?? stateMount.Source) : stateMount.Source;
         const dockerSocket = process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock";
         const socketGroup = (await fs.stat(dockerSocket)).gid;
-        const sidecarImage = process.env.DOCKGE_SELF_UPDATE_SIDECAR_IMAGE?.trim() || `ghcr.io/${plan.allowedRepository}-updater:${packageJSON.version}`;
+        const sidecarImage = process.env.DOCKGE_SELF_UPDATE_SIDECAR_IMAGE?.trim()
+            || (plan.targetRevision
+                ? `ghcr.io/${plan.allowedRepository}-updater:${plan.targetRevision}`
+                : `ghcr.io/${plan.allowedRepository}-updater:${packageJSON.version}`);
+
+        log.info("self-update", `Téléchargement du sidecar — id=${plan.id} image=${sidecarImage}`);
+        try {
+            await docker([ "image", "pull", sidecarImage ], 10 * 60_000);
+        } catch (error) {
+            this.operation = {
+                ...this.operation,
+                state: "failed",
+                message: `Updater sidecar pull failed: ${error instanceof Error ? error.message : String(error)}`,
+                finishedAt: new Date().toISOString(),
+                notificationPending: true,
+                notificationSentAt: null,
+            };
+            await this.saveOperation();
+            return this.getOperation();
+        }
+
         const args = [
-            "run", "-d", "--rm",
+            "run", "--pull=always", "-d", "--rm",
             "--name", `dockge-enhanced-updater-${plan.id}`,
             "--label", "io.dockge-enhanced.self-update=true",
             // State files are intentionally 0600 in a 0700 directory. The updater
@@ -269,7 +294,20 @@ export class SelfUpdateManager {
             args.splice(args.length - 1, 0, "-v", `${plan.compose.workingDir}:${plan.compose.workingDir}:ro`, "-e", `SELF_UPDATE_COMPOSE_DIR=${plan.compose.workingDir}`);
         }
         log.info("self-update", `Étape 3/4 — lancement sidecar — id=${plan.id} image=${sidecarImage}`);
-        await docker(args);
+        try {
+            await docker(args, 10 * 60_000);
+        } catch (error) {
+            this.operation = {
+                ...this.operation,
+                state: "failed",
+                message: `Updater sidecar launch failed: ${error instanceof Error ? error.message : String(error)}`,
+                finishedAt: new Date().toISOString(),
+                notificationPending: true,
+                notificationSentAt: null,
+            };
+            await this.saveOperation();
+            return this.getOperation();
+        }
         log.info("self-update", `Sidecar lancé — id=${plan.id} container=dockge-enhanced-updater-${plan.id}`);
         this.operation = { ...this.operation, state: "updating", message: "Updater sidecar started" };
         await this.saveOperation();
@@ -406,7 +444,7 @@ export class SelfUpdateManager {
         }
     }
 
-    private async buildPlan(inspected: DockerInspect, id: string, targetImage: string, previousImage: string, repository: string): Promise<SelfUpdatePlan> {
+    private async buildPlan(inspected: DockerInspect, id: string, targetImage: string, previousImage: string, repository: string, targetRevision?: string): Promise<SelfUpdatePlan> {
         const labels = inspected.Config?.Labels ?? {};
         const workingDir = labels["com.docker.compose.project.working_dir"];
         const configFiles = labels["com.docker.compose.project.config_files"]?.split(",").map((file) => file.trim()).filter(Boolean) ?? [];
@@ -433,6 +471,7 @@ export class SelfUpdateManager {
             targetContainerId: inspected.Id ?? process.env.HOSTNAME ?? "",
             targetContainerName: (inspected.Name ?? "").replace(/^\//, ""),
             targetImage,
+            targetRevision: targetRevision && /^[a-f0-9]{40}$/i.test(targetRevision) ? targetRevision.toLowerCase() : undefined,
             previousImage,
             previousImageId: inspected.Image ?? "",
             allowedRepository: repository,
@@ -507,6 +546,13 @@ export class SelfUpdateManager {
             this.operation = { ...this.operation, notificationPending: false, notificationSentAt: new Date().toISOString() };
             await this.saveOperation();
         }
+    }
+
+    shouldBlockAutomaticRetry(targetImage: string): boolean {
+        return (
+            [ "failed", "rolled-back", "rollback-failed" ].includes(this.operation.state)
+            && this.operation.targetImage === targetImage
+        );
     }
 
     wasSuccessfulTargetNotified(digest: string): boolean {

@@ -49,3 +49,13 @@ test("expired plans and obsolete recovery snapshots are cleaned without removing
     assert.equal(await fs.stat(path.join(recoveryDir, `${ids[2]}.json`)).then(() => true).catch(() => false), true);
     await fs.rm(dataDir, { recursive: true, force: true });
 });
+
+
+test("automatic retry of the same digest is blocked after rollback", async () => {
+    const { SelfUpdateManager } = await import(`./manager.ts?retry=${Date.now()}`);
+    const manager = SelfUpdateManager.getInstance() as any;
+    const target = `ghcr.io/aerya/dockge-enhanced@sha256:${"c".repeat(64)}`;
+    manager.operation = { id: "f".repeat(32), state: "rolled-back", message: "rollback", startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), targetImage: target, rollbackAttempted: true };
+    assert.equal(manager.shouldBlockAutomaticRetry(target), true);
+    assert.equal(manager.shouldBlockAutomaticRetry(`ghcr.io/aerya/dockge-enhanced@sha256:${"d".repeat(64)}`), false);
+});
