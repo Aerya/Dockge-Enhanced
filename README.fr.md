@@ -33,9 +33,15 @@ Les stacks gérées par Dockge-Enhanced et leurs données persistantes ne sont p
 
 
 
-Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la surveillance d'images, le scan de sécurité, les sauvegardes automatiques, la détection de crash loop et la gestion des ressources Docker, le tout depuis l'interface web.
+Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnalités, qui transforme son expérience simple de gestion Docker Compose en une plateforme Docker plus complète — avec fédération multi-serveurs, migration et réplication de stacks, sauvegardes Restic, mises à jour des images et de Dockge-Enhanced avec rollback, scan de sécurité, supervision, automatisation, notifications et gestion des ressources Docker, le tout depuis l'interface web.
 
-> 🇫🇷 Français · 🇬🇧 [English](README.md) · 🇪🇸 [Español](README.es-ES.md) · 🇨🇳 [简体中文](README.zh-CN.md) · [Article de présentation](https://upandclear.org/2026/08/30/dockge-enhanced-quelques-mois-plus-tard-le-petit-fork-a-bien-grandi/)
+<p align="center">
+  🇫🇷 Français ·
+  🇬🇧 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.md">English</a> ·
+  🇪🇸 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.es-ES.md">Español</a> ·
+  🇨🇳 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.zh-CN.md">简体中文</a> ·
+  <a href="https://upandclear.org/2026/08/30/dockge-enhanced-quelques-mois-plus-tard-le-petit-fork-a-bien-grandi/">Article de présentation</a>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
@@ -46,7 +52,11 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
 
-> **Tu l'utilises ? Tu l'aimes ? [⭐ Mets une étoile !](https://github.com/Aerya/Dockge-Enhanced)** — ça prend deux secondes.
+<p align="center">
+  <strong>Tu l'utilises ? Tu l'aimes ?</strong>
+  <a href="https://github.com/Aerya/Dockge-Enhanced"><strong>⭐ Mets une étoile !</strong></a>
+  — ça prend deux secondes.
+</p>
 
 ---
 
@@ -60,16 +70,17 @@ Un fork enrichi de [Dockge](https://github.com/louislam/dockge) — ajoute la su
 
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
-| **Multi-instance** | Fédération automatique en maillage complet à l'ajout ou au retrait d'un agent, gestion depuis chaque instance liée, sélection et regroupement multi-serveurs, copie/migration transactionnelle, jobs reprenables et réplication froide automatique |
-| **Gestion des stacks** | Stacks épinglées, colonne des stacks repliable et redimensionnable avec indicateurs compacts d’état et de ressources, espace Logs/Compose redimensionnable, copie fiable du YAML brut, actions et planification par stack et conteneur, prérequis de démarrage hôte facultatifs, Build + Recreate, notes et outils Git facultatifs, et protections pour les services partageant le réseau d'un VPN |
-| **Sauvegarde & reprise** | Restic multi-destination, volumes, cohérence par stack, restauration sélective, tests et diffs de snapshots |
-| **Automatisation & audit** | API REST limitée par droits et stacks, webhooks par stack, exemples Home Assistant et historique central avec origine et durée |
-| **Ressources Docker** | Images, volumes, conteneurs hors Dockge et réseaux, actions groupées, auto-prune et protections contre les suppressions risquées |
-| **Images & sécurité** | Surveillance des mises à jour, auto-update avec rollback, auto-mises à jour planifiées et suspendables, scan Trivy et exceptions CVE |
-| **Supervision** | Barre d’état système configurable en haut ou en bas, cartes de synthèse du tableau de bord, stats système, stacks et conteneurs, crash loops, healthchecks avec auto-heal, logs responsives et plein écran, Kula optionnel et Dozzle géré facultativement |
-| **Intégrations** | PlugNPiN optionnel et assistant de labels par service pour Nginx Proxy Manager, Pi-hole et AdGuard Home |
-| **Notifications & accès** | Discord, Apprise, 2FA, trusted proxy, Turnstile et clients mobiles |
-
+| **Multi-serveurs** | Fédération en maillage complet entre instances Dockge-Enhanced, administration depuis n'importe quel serveur lié, sélection et regroupement des serveurs, état des mises à jour distantes, copie/migration transactionnelle des stacks, transferts reprenables et réplication froide planifiée |
+| **Gestion des stacks** | Stacks épinglées, indicateurs compacts d'état et de ressources, navigation repliable/redimensionnable, espace Logs/Compose flexible, copie du YAML brut, actions et planification par stack et conteneur, Build + Recreate, notes, outils Git, prérequis de démarrage hôte et protections pour les namespaces réseau VPN partagés |
+| **Sauvegarde & reprise** | Sauvegardes Restic multi-destination des bind mounts et volumes, cohérence par stack, restauration sélective, vérification des dépôts, contrôle et diff des snapshots, ainsi que les mécanismes de récupération utilisés par les mises à jour protégées |
+| **Mises à jour** | Détection des mises à jour d'images, mises à jour manuelles ou automatiques des conteneurs avec rollback, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
+| **Migration & réplication** | Transferts transactionnels entre instances, migration du Compose et des données persistantes, jobs reprenables, finalisation explicite des déplacements, répliques froides planifiées, snapshots de récupération et workflows de reprise |
+| **Automatisation & audit** | API REST limitée par permissions, webhooks par stack, exemples Home Assistant, opérations planifiées et historique centralisé avec origine, statut et durée |
+| **Ressources Docker** | Gestion des images, volumes, réseaux et conteneurs hors Dockge, opérations groupées, auto-prune et protections autour des actions destructives |
+| **Sécurité** | Scan de vulnérabilités Trivy, exceptions CVE, workflows de mise à jour protégés, 2FA, trusted proxy et Cloudflare Turnstile |
+| **Supervision** | Statistiques système, stacks et conteneurs, barre d'état système configurable, cartes de santé du tableau de bord, détection des crash loops, auto-heal des healthchecks, logs responsives/plein écran, Kula optionnel et Dozzle géré |
+| **Intégrations** | PlugNPiN et assistant de labels par service pour Nginx Proxy Manager, Pi-hole et AdGuard Home |
+| **Notifications & accès** | Notifications Discord et Apprise localisées en EN/FR/ES/zh-CN, prise en compte du multi-instance, 2FA, trusted proxy, Turnstile et clients mobiles tiers |
 
 <details>
 <summary><strong>Afficher le catalogue complet des fonctionnalités</strong></summary>

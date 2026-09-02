@@ -35,9 +35,14 @@ Las stacks gestionadas por Dockge-Enhanced y sus datos persistentes no se ven af
 
 
 
-Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/dockge) — agrega monitoreo de imágenes, escaneo de seguridad, copias de seguridad automáticas, detección de bucles de fallo y gestión de recursos de Docker, todo desde la interfaz web.
+Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus funcionalidades, que convierte su sencilla experiencia de gestión de Docker Compose en una plataforma Docker más completa — con federación multiservidor, migración y replicación de stacks, copias Restic, actualizaciones de imágenes y de Dockge-Enhanced con rollback, análisis de seguridad, monitorización, automatización, notificaciones y gestión de recursos Docker, todo desde la interfaz web.
 
-> 🇪🇸 Español · 🇬🇧 [English](README.md) · 🇫🇷 [Français](README.fr.md) · 🇨🇳 [简体中文](README.zh-CN.md)
+<p align="center">
+  🇪🇸 Español ·
+  🇬🇧 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.md">English</a> ·
+  🇫🇷 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.fr.md">Français</a> ·
+  🇨🇳 <a href="https://github.com/Aerya/Dockge-Enhanced/blob/main/README.zh-CN.md">简体中文</a>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
@@ -48,7 +53,11 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
 
-> **¿Lo usas? ¿Te gusta? [⭐ ¡Dale una estrella!] (https://github.com/Aerya/Dockge-Enhanced)** — solo toma dos segundos.
+<p align="center">
+  <strong>¿Lo usas? ¿Te gusta?</strong>
+  <a href="https://github.com/Aerya/Dockge-Enhanced"><strong>⭐ ¡Dale una estrella!</strong></a>
+  — solo toma dos segundos.
+</p>
 
 ---
 
@@ -62,16 +71,17 @@ Un fork con funcionalidades adicionales de [Dockge](https://github.com/louislam/
 
 | Área | Lo que agrega Dockge Enhanced |
 | --- | --- |
-| **Multiinstancia** | Federación automática en malla completa al agregar o quitar un agente, gestión desde cada instancia vinculada, selección y agrupación multiservidor, copia/migración transaccional, trabajos reanudables y replicación en frío automática |
-| **Gestión de stacks** | Stacks fijados, columna de stacks plegable y redimensionable con indicadores compactos de estado y recursos, espacio Registros/Compose redimensionable, copia fiable del YAML sin formato, acciones y programación por stack y por contenedor, requisitos de inicio del host opcionales, Construir + Recrear, notas y herramientas Git opcionales, y protecciones para servicios que comparten una red VPN |
-| **Copias de seguridad y recuperación** | Restic con múltiples destinos, volúmenes, consistencia por stack, restauración selectiva, pruebas de instantáneas y diferencias (diffs) |
-| **Automatización y auditoría** | API REST acotada por permisos y stacks, webhooks por stack, ejemplos para Home Assistant e historial centralizado con origen y duración |
-| **Recursos de Docker** | Imágenes, volúmenes, contenedores no gestionados y redes, acciones masivas, limpieza automática y protecciones para eliminaciones de riesgo |
-| **Imágenes y seguridad** | Monitoreo de actualizaciones, actualización automática con reversión, autoactualizaciones programadas y pausables, escaneos Trivy y excepciones CVE |
-| **Monitoreo** | Barra de estado del sistema configurable arriba o abajo, tarjetas de resumen del panel, estadísticas del sistema, stack y contenedor, bucles de fallo, auto-reparación de healthchecks, registros responsivos y a pantalla completa e integraciones opcionales con Kula y Dozzle gestionado |
-| **Integraciones** | PlugNPiN opcional y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
-| **Notificaciones y acceso** | Notificaciones Discord y Apprise localizadas en EN/FR/ES/zh-CN, 2FA, proxy de confianza, Turnstile y clientes móviles |
-
+| **Multiservidor** | Federación en malla completa entre instancias Dockge-Enhanced, administración desde cualquier servidor vinculado, selección y agrupación de servidores, estado de actualizaciones remotas, copia/migración transaccional de stacks, transferencias reanudables y replicación en frío programada |
+| **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones y programación por stack y contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y protecciones para namespaces de red VPN compartidos |
+| **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, además de los mecanismos de recuperación usados por las actualizaciones protegidas |
+| **Actualizaciones** | Detección de actualizaciones de imágenes, actualizaciones manuales o automáticas de contenedores con rollback, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
+| **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
+| **Automatización y auditoría** | API REST limitada por permisos, webhooks por stack, ejemplos para Home Assistant, operaciones programadas e historial centralizado con origen, estado y duración |
+| **Recursos Docker** | Gestión de imágenes, volúmenes, redes y contenedores no gestionados, operaciones masivas, auto-prune y protecciones frente a acciones destructivas |
+| **Seguridad** | Escaneo de vulnerabilidades con Trivy, excepciones CVE, flujos de actualización protegidos, 2FA, trusted proxy y Cloudflare Turnstile |
+| **Monitorización** | Estadísticas del sistema, stacks y contenedores, barra de estado configurable, tarjetas de salud del panel, detección de crash loops, auto-heal de healthchecks, logs responsivos/a pantalla completa e integraciones opcionales con Kula y Dozzle gestionado |
+| **Integraciones** | PlugNPiN y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
+| **Notificaciones y acceso** | Notificaciones Discord y Apprise localizadas en EN/FR/ES/zh-CN, soporte multiinstancia, 2FA, trusted proxy, Turnstile y clientes móviles de terceros |
 
 <details>
 <summary><strong>Mostrar el catálogo completo de funcionalidades</strong></summary>
