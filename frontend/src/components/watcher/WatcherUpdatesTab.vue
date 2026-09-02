@@ -90,6 +90,9 @@
                 </div>
             </template>
 
+            <p v-if="operation.state === 'scheduled' && operation.deferredBy" class="alert alert-warning py-2 mb-3">
+                {{ $t("updates.status.deferredReason", { reason: blockerReason }) }}
+            </p>
             <p v-if="showTechnicalError" class="alert alert-danger py-2 mb-3">{{ operation.message }}</p>
 
             <button
@@ -122,6 +125,7 @@ interface Operation {
     startedAt?: string | null;
     finishedAt?: string | null;
     targetImage?: string;
+    deferredBy?: string;
 }
 
 const { t } = useI18n();
@@ -155,6 +159,9 @@ const currentStateClass = computed(() => {
     return status.value.updateAvailable ? "state-warning" : "state-success";
 });
 const showTechnicalError = computed(() => [ "failed", "rollback-failed" ].includes(operation.value.state) && !!operation.value.message);
+const blockerReason = computed(() => operation.value.deferredBy
+    ? t(`updates.blocker.${operation.value.deferredBy}`)
+    : operation.value.message);
 const showTargetBuild = computed(() => status.value.updateAvailable || operationActive.value);
 const targetBuildTitle = computed(() => operationActive.value ? t("updates.status.targetBuild") : t("updates.status.availableBuild"));
 const installedBuildLabel = computed(() => buildLabel(status.value.localBuild, status.value.localDigest));

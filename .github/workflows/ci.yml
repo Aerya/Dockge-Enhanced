@@ -57,6 +57,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/start-guard.test.ts
 
+      - name: Tests du garde des auto-mises à jour
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/self-update/operation-guard.test.ts
+
       - name: Compatibilité du runtime frontend
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/i18n-compat.test.ts
