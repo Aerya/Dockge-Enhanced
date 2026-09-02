@@ -95,6 +95,15 @@
                     <a href="https://github.com/Aerya/dockge-enhanced" target="_blank" rel="noopener"
                         class="github-badge github-badge-enhanced" title="Dockge Enhanced">Enhanced</a>
                 </span>
+                <span
+                    v-if="$root.loggedIn"
+                    class="instance-identity-badge ms-2"
+                    :title="$t('instanceIdentity.hint', { host: localInstanceHost })"
+                    :aria-label="$t('instanceIdentity.label', { name: localInstanceName })"
+                >
+                    <span class="instance-identity-dot" aria-hidden="true"></span>
+                    <span class="instance-identity-name">{{ localInstanceName }}</span>
+                </span>
             </div>
 
             <div class="desktop-update-area">
@@ -219,6 +228,15 @@
                 <object class="bi me-2" width="28" height="28" data="/icon.svg" />
                 <span class="title">Dockge-Enhanced</span>
             </router-link>
+            <span
+                v-if="$root.loggedIn"
+                class="instance-identity-badge instance-identity-badge-mobile"
+                :title="$t('instanceIdentity.hint', { host: localInstanceHost })"
+                :aria-label="$t('instanceIdentity.label', { name: localInstanceName })"
+            >
+                <span class="instance-identity-dot" aria-hidden="true"></span>
+                <span class="instance-identity-name">{{ localInstanceName }}</span>
+            </span>
             <button type="button" class="mobile-nav-toggle ms-auto" :aria-label="$t('Theme')" @click="$root.toggleTheme">
                 <font-awesome-icon :icon="$root.theme === 'dark' ? 'sun' : 'moon'" />
             </button>
@@ -364,6 +382,18 @@ export default {
             ) ?? null;
         },
 
+        localInstanceHost() {
+            return window.location.host;
+        },
+
+        localInstanceName() {
+            const displayName = this.$root.agentList?.[""]?.displayName;
+            if (typeof displayName === "string" && displayName.trim()) {
+                return displayName.trim();
+            }
+            return this.localInstanceHost;
+        },
+
         selfUpdateDeferred() {
             return this.selfUpdate.operation?.state === "scheduled" && !!this.selfUpdate.operation?.deferredBy;
         },
@@ -408,6 +438,13 @@ export default {
             this.showMobileNav = false;
         },
 
+        localInstanceName: {
+            immediate: true,
+            handler() {
+                this.updateDocumentTitle();
+            },
+        },
+
     },
 
     mounted() {
@@ -433,6 +470,10 @@ export default {
     },
 
     methods: {
+        updateDocumentTitle() {
+            document.title = `${this.localInstanceName} · Dockge-Enhanced`;
+        },
+
         async checkRemoteAnnouncements() {
             if (!this.$root.loggedIn) {
                 this.remoteAnnouncements = [];
@@ -717,6 +758,43 @@ export default {
         line-height: 1.4;
         &:hover { background: var(--warning-soft); }
     }
+}
+
+.instance-identity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    max-width: 220px;
+    padding: 0.24rem 0.55rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-color);
+    background: var(--bg-raised);
+}
+
+.instance-identity-dot {
+    width: 0.48rem;
+    height: 0.48rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+.instance-identity-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.instance-identity-badge-mobile {
+    max-width: min(34vw, 130px);
+    margin-left: 0.25rem;
+    padding: 0.2rem 0.45rem;
 }
 
 .mobile-header {

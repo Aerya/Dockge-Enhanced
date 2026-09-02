@@ -4,6 +4,8 @@ Historial detallado del proyecto anteriormente integrado en el README.
 
 ---
 
+**2026-09-03 — Identificación permanente de la instancia** — El nombre local ya configurado en Dockge Agents se muestra en la cabecera de escritorio/móvil y en el título de la pestaña (`NombreInstancia · Dockge-Enhanced`). Si no existe nombre, se utiliza el host sin añadir ningún ajuste ni almacenamiento paralelo.
+
 **2026-09-02 — Autoactualización coordinada con operaciones sensibles** — El self-update automático espera ahora a que terminen las copias/restauraciones Restic, copias/traslados/transferencias de datos y replicaciones de stacks, operaciones de imágenes Docker, análisis Trivy e integraciones protegidas de stacks externas. La razón se conserva en el estado `scheduled`, aparece en la WebUI y se notifica una sola vez por razón mediante Discord/Apprise; después el watcher reintenta automáticamente.
 
 **2026-09-02 — Novedades acumulativas hasta su confirmación** — La ventana de novedades ya no depende de un único «último ID visto». Cada release tiene ahora su propio estado leído/no leído, de modo que varias actualizaciones automáticas sucesivas pueden acumular su información hasta que el usuario cierre explícitamente la ventana. El orden de `RELEASE_NEWS` ya no afecta a la detección. El antiguo valor `releaseNewsSeen` se migra automáticamente y una instalación nueva sigue mostrando solo la novedad actual en su primera visita.
