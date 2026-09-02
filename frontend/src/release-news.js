@@ -146,6 +146,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.composeLongPorts",
         ],
     },
+    {
+        id: "2026-09-02-compose-project-name-reconciliation",
+        items: [
+            "releaseNews.item.composeProjectNames",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

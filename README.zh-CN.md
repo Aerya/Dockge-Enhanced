@@ -98,6 +98,10 @@ README 会直接保留近期最重要的变化，方便快速了解 Dockge-Enhan
 
 ### 🆕 2026 年 9 月
 
+**Docker Compose 项目名称匹配改进**
+
+当受管理 Stack 的目录名包含点号或大写字母时，现在会根据实际的 `ConfigFiles` 路径与 Docker Compose 进行匹配，而不再仅依赖 Docker 规范化后的项目名称。这样可避免同一个 Stack 同时出现“受管理/已停止”和“外部/运行中”的重复条目。
+
 **支持 Compose 长格式端口语法**
 
 容器卡片现在同时支持 Compose 的短格式和长格式端口定义。使用 `published`、`target`、`protocol`、`mode` 或 `host_ip` 的配置不再触发 `split is not a function`，也不会再导致容器卡片消失。IPv6 `host_ip` 也会在生成的链接中正确格式化。

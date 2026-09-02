@@ -147,6 +147,34 @@ export function resolveStackPath(stacksDir: string, stackName: string): string {
     return resolved;
 }
 
+export function getManagedStackNameFromConfigFiles(configFiles: unknown, stacksDir: string): string | null {
+    if (typeof configFiles !== "string" || !configFiles.trim()) {
+        return null;
+    }
+
+    const root = path.resolve(stacksDir);
+
+    for (const rawConfigFile of configFiles.split(",")) {
+        const configFile = rawConfigFile.trim();
+        if (!configFile) {
+            continue;
+        }
+
+        const resolvedConfigFile = path.resolve(configFile);
+        if (!acceptedComposeFileNames.includes(path.basename(resolvedConfigFile))) {
+            continue;
+        }
+
+        const stackPath = path.dirname(resolvedConfigFile);
+
+        if (path.dirname(stackPath) === root) {
+            return path.basename(stackPath);
+        }
+    }
+
+    return null;
+}
+
 export class Stack {
 
     name: string;
@@ -700,7 +728,7 @@ export class Stack {
     }
 
     async updateStatus() {
-        let statusList = await Stack.getStatusList();
+        let statusList = await Stack.getStatusList(this.server);
         let status = statusList.get(this.name);
 
         if (status) {
@@ -780,7 +808,10 @@ export class Stack {
         let composeList = JSON.parse(res.stdout.toString());
 
         for (let composeStack of composeList) {
-            let stack = stackList.get(composeStack.Name);
+            const managedName = getManagedStackNameFromConfigFiles(composeStack.ConfigFiles, stacksDir);
+            let stack = managedName
+                ? stackList.get(managedName)
+                : stackList.get(composeStack.Name);
 
             // This stack probably is not managed by Dockge, but we still want to show it
             if (!stack) {
@@ -803,7 +834,7 @@ export class Stack {
      * Get the status list, it will be used to update the status of the stacks
      * Not all status will be returned, only the stack that is deployed or created to `docker compose` will be returned
      */
-    static async getStatusList() : Promise<Map<string, number>> {
+    static async getStatusList(server?: DockgeServer) : Promise<Map<string, number>> {
         let statusList = new Map<string, number>();
 
         let res = await childProcessAsync.spawn("docker", [ "compose", "ls", "--all", "--format", "json" ], {
@@ -818,6 +849,12 @@ export class Stack {
 
         for (let composeStack of composeList) {
             statusList.set(composeStack.Name, this.statusConvert(composeStack.Status));
+            if (server) {
+                const managedName = getManagedStackNameFromConfigFiles(composeStack.ConfigFiles, server.stacksDir);
+                if (managedName) {
+                    statusList.set(managedName, this.statusConvert(composeStack.Status));
+                }
+            }
         }
 
         return statusList;

@@ -90,6 +90,10 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Correspondencia de nombres de proyecto Docker Compose**
+
+Las stacks gestionadas cuyo directorio contiene puntos o mayúsculas se relacionan ahora con Docker Compose mediante la ruta real `ConfigFiles`, en lugar de depender únicamente del nombre de proyecto normalizado por Docker. Esto evita entradas duplicadas “gestionada/detenida” y “externa/en ejecución” para la misma stack.
+
 **Compatibilidad con la sintaxis larga de puertos Compose**
 
 Las tarjetas de contenedores admiten ahora tanto la sintaxis corta como la larga de puertos Compose. Las definiciones con `published`, `target`, `protocol`, `mode` o `host_ip` ya no provocan `split is not a function` ni hacen desaparecer la tarjeta del contenedor. Los valores IPv6 de `host_ip` también se formatean correctamente en los enlaces generados.

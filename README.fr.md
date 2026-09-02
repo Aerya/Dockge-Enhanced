@@ -88,6 +88,10 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 ### 🆕 Septembre 2026
 
+**Rapprochement des noms de projets Docker Compose**
+
+Les stacks gérées dont le dossier contient des points ou des majuscules sont désormais rapprochées de Docker Compose à partir du chemin réel `ConfigFiles`, au lieu de dépendre uniquement du nom de projet normalisé par Docker. Cela évite les doublons « gérée/arrêtée » et « externe/en cours » pour une même stack.
+
 **Prise en charge de la syntaxe longue des ports Compose**
 
 Les cartes des conteneurs prennent désormais en charge les syntaxes courte et longue des ports Compose. Les définitions utilisant `published`, `target`, `protocol`, `mode` ou `host_ip` ne provoquent plus l'erreur `split is not a function` et ne font plus disparaître la carte du conteneur. Les valeurs IPv6 de `host_ip` sont également correctement formatées dans les liens générés.

@@ -4,6 +4,9 @@ Detailed project history previously embedded in the README.
 
 ---
 
+**2026-09-02 — Reconcile managed stack directories with Docker Compose project names** — Stack discovery and status refresh now use the actual `ConfigFiles` path reported by `docker compose ls` to map running projects back to their managed directory. This fixes duplicate entries when Docker Compose sanitizes dots or uppercase characters in project names, as reported in louislam/dockge#960. Genuine external stacks keep their Docker project name. Regression tests cover dotted names, uppercase names, multiple config files, external projects, nested paths and missing metadata. No auto-update, sidecar, Restic or rollback logic is modified.
+
+
 **2026-09-02 — Compose long port syntax support** — `parseDockerPort()` now accepts both the existing string syntax and Compose long-form port objects using `published`, `target`, `protocol`, `mode` and `host_ip`. Existing string-format behaviour is covered by regression tests and remains unchanged. Long-form definitions no longer trigger `split is not a function` or make the container card disappear, as reported in louislam/dockge#998. IPv4 and IPv6 `host_ip`, TCP, UDP, string/numeric published ports and missing published ports are covered. No auto-update, sidecar, Restic or rollback code is modified.
 
 
