@@ -67,3 +67,28 @@ test("updater latest is the default sidecar channel", async () => {
     assert.match(source, /image\", \"pull\", sidecarImage/);
     assert.match(source, /run\", \"--pull=always/);
 });
+
+
+test("obsolete rollback state is cleared once the installed build is current", async () => {
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-self-update-clear-"));
+    process.env.DOCKGE_DATA_DIR = dataDir;
+    const { SelfUpdateManager } = await import(`./manager.ts?clear=${Date.now()}`);
+    const manager = SelfUpdateManager.getInstance() as any;
+    manager.operation = {
+        id: "a".repeat(32),
+        state: "rolled-back",
+        message: "old rollback",
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        targetImage: `ghcr.io/aerya/dockge-enhanced@sha256:${"b".repeat(64)}`,
+        rollbackAttempted: true,
+    };
+
+    await manager.clearObsoleteFailureState();
+
+    assert.equal(manager.operation.state, "idle");
+    assert.equal(manager.operation.targetImage, "");
+    const persisted = JSON.parse(await fs.readFile(path.join(dataDir, "self-update", "status.json"), "utf8"));
+    assert.equal(persisted.state, "idle");
+    await fs.rm(dataDir, { recursive: true, force: true });
+});
