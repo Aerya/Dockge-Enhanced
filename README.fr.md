@@ -529,3 +529,11 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 ## Licence
 
 MIT — voir [LICENSE](LICENSE).
+
+## Annonces distantes
+
+Dockge-Enhanced peut afficher une **annonce opérationnelle en texte uniquement publiée depuis ce dépôt GitHub**, indépendamment du mécanisme de mise à jour de l'image Docker. Ce canal de secours a été ajouté à la suite de l'incident d'auto-mise à jour de fin août / début septembre 2026 : si un futur build présente un problème important, une version installée concernée pourra recevoir un avertissement sans devoir attendre que ce même mécanisme de mise à jour fonctionne.
+
+Les annonces proviennent de [`remote-announcements.json`](remote-announcements.json). Elles sont facultatives, récupérées uniquement en HTTPS, validées par un schéma strict, limitées en taille et en nombre, et peuvent être ciblées par version de l'application, révision Git ou date de build OCI. Elles **ne peuvent exécuter aucune commande, injecter du HTML ni déclencher une mise à jour**. Les liens sont limités au dépôt GitHub de Dockge-Enhanced. Si GitHub est indisponible ou si le document est invalide, aucune annonce n'est affichée.
+
+Fermer une annonce ne la masque que pour la session du navigateur. **Ne plus afficher** mémorise son identifiant dans les données persistantes de Dockge-Enhanced ; une nouvelle annonce utilise un nouvel identifiant.

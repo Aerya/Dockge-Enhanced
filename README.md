@@ -532,3 +532,11 @@ Commercial third-party clients are allowed by the license, but must not imply of
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Remote announcements
+
+Dockge-Enhanced can display a **text-only operational announcement published from this GitHub repository**, independently of the Docker image update mechanism. This safety channel was added after the self-update incident at the end of August / beginning of September 2026: if a future build has a serious issue, an affected installed version can receive a warning without waiting for that same update mechanism to work.
+
+Announcements come from [`remote-announcements.json`](remote-announcements.json). They are optional, HTTPS-only, schema-validated, limited in size/count, can be targeted by application version, Git revision or OCI build date, and **cannot execute commands, inject HTML or trigger an update**. Links are restricted to the Dockge-Enhanced GitHub repository. If GitHub is unavailable or the document is invalid, Dockge-Enhanced simply shows no announcement.
+
+Closing an announcement only hides it for the current browser session. **Do not show again** stores its ID in the persistent Dockge-Enhanced data directory; publishing a new announcement uses a new ID.

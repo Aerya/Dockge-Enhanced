@@ -4,6 +4,8 @@ Historique détaillé du projet auparavant intégré directement au README.
 
 ---
 
+**2026-09-02 — Annonces opérationnelles distantes** — Dockge-Enhanced peut désormais recevoir depuis `remote-announcements.json` du dépôt GitHub une annonce en texte uniquement et strictement validée, indépendamment du chemin d'exécution de l'auto-mise à jour. Ce canal de secours a été ajouté à la suite de l'incident d'auto-MàJ de fin août/début septembre 2026 afin de pouvoir diffuser un avertissement important même lorsque le mécanisme de mise à jour concerné ne peut pas lui-même être considéré comme fiable. Les annonces sont récupérées uniquement en HTTPS, mises en cache, limitées, ciblables par version/révision Git/date de build OCI, ne contiennent ni HTML exécutable ni commandes et échouent silencieusement si GitHub est indisponible. Les identifiants acquittés sont persistés dans les données Dockge. Aucun code d'exécution de l'auto-mise à jour, du sidecar, de Restic, du rollback ou de l'image watcher n'est modifié.
+
 **2026-09-02 — Rapprochement des dossiers de stacks avec les noms de projets Docker Compose** — La découverte des stacks et le rafraîchissement de leur statut utilisent désormais le chemin réel `ConfigFiles` renvoyé par `docker compose ls` pour rattacher un projet en cours à son dossier géré. Cela corrige les doublons lorsque Docker Compose normalise les points ou les majuscules du nom de projet, comme signalé dans louislam/dockge#960. Les stacks réellement externes conservent leur nom de projet Docker. Des tests couvrent les noms avec points, les majuscules, plusieurs fichiers de configuration, les projets externes, les chemins imbriqués et les métadonnées absentes. Aucun code d'auto-mise à jour, sidecar, Restic ou rollback n'est modifié.
 
 

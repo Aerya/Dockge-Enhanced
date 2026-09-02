@@ -24,6 +24,7 @@ import { StackScheduler } from "../watchers/stack-scheduler";
 import { requireHttpAuth } from "../auth";
 import { normalizeUpdatePause } from "../watchers/update-policy";
 import { SelfUpdateManager } from "../self-update/manager";
+import { RemoteAnnouncementManager } from "../remote-announcements";
 
 async function auditWatcherAction(
     req: Request,
@@ -650,6 +651,28 @@ export class WatcherRouter extends Router {
         });
 
         // ════════════════════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════════════════
+        // REMOTE ANNOUNCEMENTS — Messages administrés depuis GitHub
+        // ════════════════════════════════════════════════════════════════
+
+        router.get("/announcements", async (req: Request, res: Response) => {
+            const locale = typeof req.query.locale === "string" ? req.query.locale : "en";
+            const localBuild = SelfUpdateChecker.getInstance().getStatus().localBuild;
+            const data = await RemoteAnnouncementManager.getInstance().getVisibleAnnouncements(locale, localBuild);
+            res.json({ ok: true, data });
+        });
+
+        router.post("/announcements/:id/ack", async (req: Request, res: Response) => {
+            const id = decodeURIComponent(req.params.id);
+            try {
+                await RemoteAnnouncementManager.getInstance().acknowledge(id);
+                await auditWatcherAction(req, "announcement.acknowledge", "announcement", id);
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(400).json({ ok: false, message: e instanceof Error ? e.message : String(e) });
+            }
+        });
+
         // SELF-UPDATE — Statut de la mise à jour de Dockge-Enhanced
         // ════════════════════════════════════════════════════════════════
 

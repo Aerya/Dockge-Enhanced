@@ -9,7 +9,55 @@
             </div>
         </div>
 
-        <div v-if="showReleaseNews" class="release-news-backdrop" role="presentation" @click.self="closeReleaseNews">
+        <div v-if="$root.loggedIn && activeRemoteAnnouncement" class="release-news-backdrop" role="presentation">
+            <section
+                class="release-news-dialog remote-announcement-dialog"
+                :class="`remote-announcement--${activeRemoteAnnouncement.severity}`"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="remote-announcement-title"
+            >
+                <div class="release-news-header">
+                    <div>
+                        <div class="release-news-kicker">{{ $t(`remoteAnnouncement.severity.${activeRemoteAnnouncement.severity}`) }}</div>
+                        <h2 id="remote-announcement-title">{{ activeRemoteAnnouncement.title }}</h2>
+                    </div>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-normal"
+                        :aria-label="$t('remoteAnnouncement.close')"
+                        @click="closeRemoteAnnouncementForSession"
+                    >
+                        <font-awesome-icon icon="times" />
+                    </button>
+                </div>
+                <p class="release-news-intro remote-announcement-message">{{ activeRemoteAnnouncement.message }}</p>
+                <div class="release-news-actions remote-announcement-actions">
+                    <a
+                        v-if="activeRemoteAnnouncement.url"
+                        class="btn btn-normal"
+                        :href="activeRemoteAnnouncement.url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        {{ $t("remoteAnnouncement.learnMore") }}
+                    </a>
+                    <button type="button" class="btn btn-normal" @click="closeRemoteAnnouncementForSession">
+                        {{ $t("remoteAnnouncement.later") }}
+                    </button>
+                    <button
+                        v-if="activeRemoteAnnouncement.dismissible"
+                        type="button"
+                        class="btn btn-primary"
+                        @click="acknowledgeRemoteAnnouncement"
+                    >
+                        {{ $t("remoteAnnouncement.dismiss") }}
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <div v-if="showReleaseNews && !activeRemoteAnnouncement" class="release-news-backdrop" role="presentation" @click.self="closeReleaseNews">
             <section class="release-news-dialog" role="dialog" aria-modal="true" :aria-labelledby="'release-news-title'">
                 <div class="release-news-header">
                     <div>
@@ -271,6 +319,8 @@ export default {
                 dismissed:     false,
                 copied:        false,
             },
+            remoteAnnouncements: [],
+            remoteAnnouncementSessionDismissed: [],
             systemStats:      null,
             statsPoller:      null,
             kulaUrl:          null,
@@ -297,6 +347,12 @@ export default {
             } else {
                 return false;
             }
+        },
+
+        activeRemoteAnnouncement() {
+            return this.remoteAnnouncements.find((announcement) =>
+                !this.remoteAnnouncementSessionDismissed.includes(announcement.id)
+            ) ?? null;
         },
 
         selfUpdateActive() {
@@ -338,6 +394,7 @@ export default {
 
     mounted() {
         this.checkReleaseNews();
+        this.checkRemoteAnnouncements();
         this.checkSelfUpdate();
         this.fetchKulaStatus();
         this.fetchDozzleStatus();
@@ -345,7 +402,7 @@ export default {
         this.$root.getSocket().emit("setUILocale", localStorage.getItem("locale") ?? "en");
         // Poll system stats : cadence selon le mode + pause si onglet caché
         this.statsPoller = makePoller({
-            fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus(), this.fetchDozzleStatus(), this.checkSelfUpdate() ]),
+            fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus(), this.fetchDozzleStatus(), this.checkSelfUpdate(), this.checkRemoteAnnouncements() ]),
             interval: POLL.system,
         });
         this.statsPoller.start();
@@ -358,6 +415,54 @@ export default {
     },
 
     methods: {
+        async checkRemoteAnnouncements() {
+            if (!this.$root.loggedIn) {
+                this.remoteAnnouncements = [];
+                return;
+            }
+            try {
+                const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
+                const locale = localStorage.getItem("locale") ?? "en";
+                const res = await fetch(`/api/watcher/announcements?locale=${encodeURIComponent(locale)}`, {
+                    headers: { "Authorization": `Bearer ${token}` },
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    this.remoteAnnouncements = Array.isArray(data.data?.announcements) ? data.data.announcements : [];
+                }
+            } catch {
+                // Une indisponibilité GitHub ou de l'API d'annonces ne doit jamais affecter l'application.
+                this.remoteAnnouncements = [];
+            }
+        },
+
+        closeRemoteAnnouncementForSession() {
+            const id = this.activeRemoteAnnouncement?.id;
+            if (id && !this.remoteAnnouncementSessionDismissed.includes(id)) {
+                this.remoteAnnouncementSessionDismissed.push(id);
+            }
+        },
+
+        async acknowledgeRemoteAnnouncement() {
+            const id = this.activeRemoteAnnouncement?.id;
+            if (!id) return;
+            try {
+                const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
+                const res = await fetch(`/api/watcher/announcements/${encodeURIComponent(id)}/ack`, {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${token}` },
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    this.remoteAnnouncements = this.remoteAnnouncements.filter((announcement) => announcement.id !== id);
+                    return;
+                }
+                this.$root.toastRes(data);
+            } catch {
+                this.$root.toastError(this.$t("remoteAnnouncement.ackError"));
+            }
+        },
+
         checkReleaseNews() {
             this.releaseNewsItems = getReleaseNewsSince(localStorage.getItem("releaseNewsSeen"));
             this.showReleaseNews = this.releaseNewsItems.length > 0;
@@ -755,6 +860,28 @@ main {
     position: fixed;
     width: 100%;
     z-index: 99999;
+}
+
+.remote-announcement-dialog {
+    border-top: 4px solid var(--primary-strong);
+
+    &.remote-announcement--warning {
+        border-top-color: var(--warning);
+    }
+
+    &.remote-announcement--critical {
+        border-top-color: var(--danger);
+    }
+}
+
+.remote-announcement-message {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.remote-announcement-actions {
+    gap: var(--space-2);
+    flex-wrap: wrap;
 }
 
 .release-news-backdrop {
