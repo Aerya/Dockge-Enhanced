@@ -98,6 +98,10 @@ README 会直接保留近期最重要的变化，方便快速了解 Dockge-Enhan
 
 ### 🆕 2026 年 9 月
 
+**加强 Stack 路径遍历防护**
+
+后端操作现在会在解析任何路径之前验证传入的 Stack 名称，包括主动跳过文件系统发现的代码路径。类似 `../outside` 的恶意名称无法再逃离受管理的 Stack 目录，从而访问其他应用的 Compose 或 `.env` 文件。
+
 **受保护的 Dockge-Enhanced 自动更新**
 
 Dockge-Enhanced 现在可以通过受严格限制的 sidecar 自动更新。替换容器前必须完成 Restic 备份和仓库完整性检查，新版本必须通过可用性检查，否则自动恢复之前的镜像。
@@ -171,6 +175,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 失败时自动恢复
 
 ### 安全
+- 集中验证 Stack 名称，阻止路径遍历逃离受管理的 Stack 目录
 - Trivy 与 CVE 例外
 - 2FA、Turnstile、trusted proxy
 - 受限制 sidecar 与签名计划

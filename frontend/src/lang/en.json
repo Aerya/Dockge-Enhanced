@@ -33,6 +33,7 @@
     "releaseNews.item.remoteUpdateBadges": "Image update badges in the stack list now also show updates detected by remote Dockge-Enhanced instances, with status kept separate for each server.",
     "releaseNews.item.fourLanguageEnhanced": "Enhanced-specific user-facing additions now stay aligned in English, French, Spanish and Simplified Chinese. Discord and Apprise notifications follow the selected UI language, and a Simplified Chinese README is now available.",
     "releaseNews.item.selfUpdateTracking": "The Updates tab now identifies installed and available GHCR builds by build date and Git commit SHA, keeps the image digest visible as the technical reference, presents one coherent current state, separates the previous completed operation, and shows step-by-step progress, elapsed time and a Restic ETA when it can be calculated.",
+    "releaseNews.item.stackPathTraversal": "Stack names are now validated on every backend path resolution, including skipped-filesystem paths, preventing ../ traversal from escaping the managed stacks directory.",
     "releaseNews.close": "Close",
     "releaseNews.gotIt": "Got it",
     "Create your admin account": "Create your admin account",

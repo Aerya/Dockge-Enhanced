@@ -91,6 +91,10 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**Stack path traversal hardening**
+
+Stack names supplied to backend operations are now validated before any path is resolved, including code paths that intentionally skip filesystem discovery. Crafted names such as `../outside` can no longer escape the managed stacks directory to access another application's Compose or `.env` files.
+
 **Protected Dockge-Enhanced self-updates**
 
 Dockge-Enhanced can now update itself through a deliberately restricted sidecar. Every update requires a Restic backup and repository integrity check before the running container is replaced. The new version must then pass readiness checks or the previous immutable image is automatically restored.
@@ -182,6 +186,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Readiness validation and automatic recovery
 
 ### Security
+- Centralized stack-name validation blocks path traversal outside the managed stacks directory
 - Trivy vulnerability scanning
 - CVE exceptions
 - 2FA

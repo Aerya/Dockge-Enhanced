@@ -88,6 +88,10 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 ### 🆕 Septembre 2026
 
+**Protection renforcée contre le path traversal des stacks**
+
+Les noms de stacks fournis aux opérations backend sont désormais validés avant toute résolution de chemin, y compris dans les chemins de code qui ignorent volontairement la découverte filesystem. Un nom forgé tel que `../outside` ne peut plus sortir du répertoire des stacks gérées pour accéder aux fichiers Compose ou `.env` d'une autre application.
+
 **Auto-mise à jour protégée de Dockge-Enhanced**
 
 Dockge-Enhanced peut désormais se mettre à jour via un sidecar volontairement restreint. Chaque mise à jour exige un backup Restic et une vérification d'intégrité du dépôt avant remplacement du conteneur. La nouvelle version doit ensuite passer les contrôles de disponibilité ; sinon l'image précédente immuable est restaurée automatiquement.
@@ -179,6 +183,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Vérification de disponibilité et récupération automatique
 
 ### Sécurité
+- Validation centralisée des noms de stacks pour bloquer tout path traversal hors du répertoire géré
 - Scan Trivy
 - Exceptions CVE
 - 2FA

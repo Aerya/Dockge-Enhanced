@@ -128,6 +128,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.selfUpdateTracking",
         ],
     },
+    {
+        id: "2026-09-02-stack-path-traversal-hardening",
+        items: [
+            "releaseNews.item.stackPathTraversal",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {
