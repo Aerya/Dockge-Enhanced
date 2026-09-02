@@ -134,6 +134,12 @@ export const RELEASE_NEWS = [
             "releaseNews.item.stackPathTraversal",
         ],
     },
+    {
+        id: "2026-09-02-preserve-tmpfs-octal-mode",
+        items: [
+            "releaseNews.item.tmpfsOctalMode",
+        ],
+    },
 ];
 
 export function getReleaseNewsSince(lastSeenId) {

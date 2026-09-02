@@ -91,6 +91,10 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**tmpfs permission modes preserved by the Compose editor**
+
+The visual Compose editor now preserves leading-zero octal values such as `tmpfs.mode: 01777` when it regenerates YAML. Editing another field no longer silently rewrites that permission value as `1777`.
+
 **Stack path traversal hardening**
 
 Stack names supplied to backend operations are now validated before any path is resolved, including code paths that intentionally skip filesystem discovery. Crafted names such as `../outside` can no longer escape the managed stacks directory to access another application's Compose or `.env` files.

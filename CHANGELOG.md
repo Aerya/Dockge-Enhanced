@@ -4,6 +4,9 @@ Detailed project history previously embedded in the README.
 
 ---
 
+**2026-09-02 — Preserve octal tmpfs modes in the Compose editor** — The structured Compose editor now preserves leading-zero octal `tmpfs.mode` literals such as `01777` when rebuilding YAML after a visual edit. Previously, the YAML value was parsed into the editor's JavaScript object and regenerated as `1777`, silently changing the permission semantics reported in louislam/dockge#990. A regression test covers single and multiple tmpfs modes as well as structure changes. No auto-update, sidecar, Restic or rollback code is modified.
+
+
 **2026-09-02 — Stack path traversal security hardening** — Stack names are now validated before every `Stack.getStack()` path resolution, including calls using `skipFSOperations=true`. This closes the remaining bypass where a crafted name containing traversal sequences could escape the managed stacks directory. The change is aligned with the security issue reported upstream in louislam/dockge#994 and the remediation proposed in louislam/dockge#997. A regression test covers the skipped-filesystem path. No Dockge-Enhanced self-update, sidecar, Restic backup or rollback logic is changed.
 
 
