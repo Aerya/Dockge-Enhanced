@@ -6,22 +6,30 @@
 
 ⚠️ **Important — critical Dockge-Enhanced self-update fix**
 
-An issue in the Dockge-Enhanced self-update mechanism affected some versions published between **the evening of August 31, 2026 and the evening of September 1, 2026**.
+Several builds published between **August 31, 2026 and September 2, 2026** contained defects in the Dockge-Enhanced self-update mechanism.
 
-Under certain conditions, the sidecar could stop and remove the Dockge-Enhanced container, then fail both to create the new version **and to automatically restore the previous one**.
+Under certain conditions, the sidecar could stop the Dockge-Enhanced container, fail to create the new version and, on some builds, also fail to automatically restore the previous one.
 
-**If your installation comes from this period, please update it manually to the latest version before enabling self-updates again:**
+The mechanism has since been fixed and hardened. Starting with build **`0fc2564` / version 1.5.4**, self-update:
+
+- always pulls the latest `dockge-enhanced-updater:latest` before each update;
+- explicitly pulls the target Dockge-Enhanced image;
+- performs a mandatory Restic backup before replacement;
+- verifies the new container before confirming the update;
+- keeps rollback support and a recovery snapshot.
+
+**If your installation is running a build older than `0fc2564` / version 1.5.4, perform one final manual update before enabling or re-enabling automatic updates:**
 
 ```bash
 docker pull ghcr.io/aerya/dockge-enhanced:latest
 docker compose up -d
 ```
 
+Once this update is complete, you can enable **Automatic via protected sidecar**: subsequent updates are handled automatically by Dockge-Enhanced.
+
 Stacks managed by Dockge-Enhanced and their persistent data are not affected by this issue.
 
-The update mechanism has now been fixed and strengthened with an additional independent recovery path, allowing the previous instance to be recreated even if the Docker Compose replacement fails.
-
-**My apologies to everyone affected.** A feature specifically designed to make updates safer should obviously never be able to leave Dockge-Enhanced offline. Thank you to everyone using, testing and reporting issues — your feedback helps identify and fix these problems quickly.
+**My apologies to everyone affected.** A feature specifically designed to make updates safer should obviously never be able to leave Dockge-Enhanced offline. Thank you to everyone using, testing and reporting issues — your feedback helped identify and fix these defects quickly.
 
 
 

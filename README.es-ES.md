@@ -8,22 +8,30 @@
 
 ⚠️ **Importante — corrección crítica de la actualización automática de Dockge-Enhanced**
 
-Un error en el mecanismo de actualización automática de Dockge-Enhanced afectó a algunas versiones publicadas entre **la noche del 31 de agosto de 2026 y la noche del 1 de septiembre de 2026**.
+Varios builds publicados entre **el 31 de agosto de 2026 y el 2 de septiembre de 2026** contenían defectos en el mecanismo de actualización automática de Dockge-Enhanced.
 
-En determinadas condiciones, el sidecar podía detener y eliminar el contenedor Dockge-Enhanced y después no conseguir crear la nueva versión **ni restaurar automáticamente la anterior**.
+En determinadas condiciones, el sidecar podía detener el contenedor Dockge-Enhanced, no conseguir crear la nueva versión y, en algunos builds, tampoco restaurar automáticamente la versión anterior.
 
-**Si tu instalación procede de este periodo, actualízala manualmente a la última versión antes de volver a activar las actualizaciones automáticas:**
+El mecanismo ha sido corregido y reforzado. A partir del build **`0fc2564` / versión 1.5.4**, la actualización automática:
+
+- descarga siempre el último `dockge-enhanced-updater:latest` antes de cada actualización;
+- descarga explícitamente la imagen objetivo de Dockge-Enhanced;
+- realiza una copia Restic obligatoria antes del reemplazo;
+- verifica el nuevo contenedor antes de validar la actualización;
+- conserva el rollback y un snapshot de recuperación.
+
+**Si tu instalación utiliza un build anterior a `0fc2564` / versión 1.5.4, realiza una última actualización manual antes de activar o volver a activar las actualizaciones automáticas:**
 
 ```bash
 docker pull ghcr.io/aerya/dockge-enhanced:latest
 docker compose up -d
 ```
 
+Una vez completada esta actualización, puedes activar **Automática mediante sidecar protegido**: Dockge-Enhanced gestionará automáticamente las siguientes actualizaciones.
+
 Las stacks gestionadas por Dockge-Enhanced y sus datos persistentes no se ven afectados por este problema.
 
-El mecanismo ha sido corregido y reforzado con una vía de recuperación adicional e independiente, capaz de recrear la instancia anterior incluso si falla el reemplazo mediante Docker Compose.
-
-**Mis disculpas a todos los usuarios afectados.** Una función diseñada precisamente para hacer las actualizaciones más seguras no debería poder dejar Dockge-Enhanced fuera de servicio. Gracias a todos los que utilizan, prueban y reportan problemas: vuestros comentarios permiten identificarlos y corregirlos rápidamente.
+**Mis disculpas a todos los usuarios afectados.** Una función diseñada precisamente para hacer las actualizaciones más seguras no debería poder dejar Dockge-Enhanced fuera de servicio. Gracias a todos los que utilizan, prueban y reportan problemas: vuestros comentarios permitieron identificar y corregir rápidamente estos defectos.
 
 
 

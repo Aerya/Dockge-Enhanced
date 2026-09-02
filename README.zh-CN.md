@@ -6,22 +6,30 @@
 
 ⚠️ **重要 — Dockge-Enhanced 自动更新关键修复**
 
-Dockge-Enhanced 的自动更新机制中存在一个错误，影响了 **2026 年 8 月 31 日晚至 2026 年 9 月 1 日晚** 期间发布的部分版本。
+**2026 年 8 月 31 日至 2026 年 9 月 2 日** 期间发布的多个 build 在 Dockge-Enhanced 自动更新机制中存在缺陷。
 
-在某些情况下，sidecar 可能会停止并删除 Dockge-Enhanced 容器，但随后既无法创建新版本，**也无法自动恢复之前的版本**。
+在某些情况下，sidecar 可能会停止 Dockge-Enhanced 容器，但随后无法创建新版本；在部分 build 中，也可能无法自动恢复之前的版本。
 
-**如果您的安装来自这一时间段，请先手动更新到最新版本，然后再重新启用自动更新：**
+该机制现已修复并进一步加强。从 build **`0fc2564` / 版本 1.5.4** 开始，自动更新会：
 
-```bash id="bluwho"
+- 在每次更新前始终拉取最新的 `dockge-enhanced-updater:latest`；
+- 显式拉取目标 Dockge-Enhanced 镜像；
+- 在替换前执行强制 Restic 备份；
+- 在确认更新成功前验证新容器；
+- 保留 rollback 机制和恢复 snapshot。
+
+**如果您的安装版本早于 `0fc2564` / 1.5.4，请在启用或重新启用自动更新前，最后手动更新一次：**
+
+```bash
 docker pull ghcr.io/aerya/dockge-enhanced:latest
 docker compose up -d
 ```
 
+完成此次更新后，即可启用 **通过受保护 sidecar 自动更新**；之后的更新将由 Dockge-Enhanced 自动处理。
+
 Dockge-Enhanced 管理的 stacks 及其持久化数据不受此问题影响。
 
-该机制现已修复并进一步加强，增加了一条独立的恢复路径：即使通过 Docker Compose 替换失败，也可以重新创建之前的实例。
-
-**对于受到影响的用户，我深表歉意。** 一个本应让更新更加安全的功能，不应该让 Dockge-Enhanced 自身处于离线状态。感谢所有使用、测试并反馈问题的用户，你们的反馈帮助我们更快发现并修复这类问题。
+**对于受到影响的用户，我深表歉意。** 一个本应让更新更加安全的功能，不应该让 Dockge-Enhanced 自身处于离线状态。感谢所有使用、测试并反馈问题的用户，你们的反馈帮助我们快速定位并修复了这些缺陷。
 
 [Dockge](https://github.com/louislam/dockge) 的增强功能分支 —— 在保留简洁 Compose 管理体验的基础上，加入镜像更新监控、安全扫描、自动备份、崩溃循环检测、多实例管理以及 Docker 资源管理。
 
