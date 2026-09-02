@@ -1302,5 +1302,6 @@
   "stackTransfer.compatibilitySource": "來源",
   "stackTransfer.compatibilityTarget": "目標",
   "stackReplication.status.waiting-compatibility": "等待相容",
-  "releaseNews.item.transferCompatibility": "關聯執行個體之間的移動、複製和副本現在會協商相容協定。只要協定相容，不同建置仍可繼續；過舊的遠端執行個體可以先更新並在重新連線後繼續。"
+  "releaseNews.item.transferCompatibility": "關聯執行個體之間的移動、複製和副本現在會協商相容協定。只要協定相容，不同建置仍可繼續；過舊的遠端執行個體可以先更新並在重新連線後繼續。",
+  "releaseNews.item.cumulativeReleaseNews": "更新說明彈窗現在會作為未讀日誌運作：即使連續多次自動更新期間沒有開啟 WebUI，所有更新資訊也會持續累積，直到使用者明確確認後才標記為已讀。"
 }

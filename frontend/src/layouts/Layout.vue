@@ -298,7 +298,11 @@ import SystemStatsBar from "../components/SystemStatsBar.vue";
 import { compareVersions } from "compare-versions";
 import { ALL_ENDPOINTS } from "../../../common/util-common";
 import { setLowPower, POLL, makePoller } from "../composables/useLowPower";
-import { getLatestReleaseNewsId, getReleaseNewsSince } from "../release-news";
+import {
+    getInitialSeenReleaseNewsIds,
+    getUnreadReleaseNews,
+    sanitizeSeenReleaseNewsIds,
+} from "../release-news";
 
 export default {
 
@@ -327,6 +331,7 @@ export default {
             dozzleUrl:        null,
             showReleaseNews:  false,
             releaseNewsItems: [],
+            releaseNewsPendingIds: [],
             showMobileNav: false,
         };
     },
@@ -463,13 +468,34 @@ export default {
             }
         },
 
+        getReleaseNewsSeenIds() {
+            const stored = localStorage.getItem("releaseNewsSeenIds");
+            if (stored !== null) {
+                try {
+                    return sanitizeSeenReleaseNewsIds(JSON.parse(stored));
+                } catch {
+                    // Un stockage local corrompu ne doit jamais casser la WebUI.
+                }
+            }
+
+            const migrated = getInitialSeenReleaseNewsIds(localStorage.getItem("releaseNewsSeen"));
+            localStorage.setItem("releaseNewsSeenIds", JSON.stringify(migrated));
+            localStorage.removeItem("releaseNewsSeen");
+            return migrated;
+        },
+
         checkReleaseNews() {
-            this.releaseNewsItems = getReleaseNewsSince(localStorage.getItem("releaseNewsSeen"));
+            const releases = getUnreadReleaseNews(this.getReleaseNewsSeenIds());
+            this.releaseNewsPendingIds = releases.map((release) => release.id);
+            this.releaseNewsItems = releases.flatMap((release) => release.items);
             this.showReleaseNews = this.releaseNewsItems.length > 0;
         },
 
         closeReleaseNews() {
-            localStorage.setItem("releaseNewsSeen", getLatestReleaseNewsId());
+            const seen = this.getReleaseNewsSeenIds();
+            const nextSeen = sanitizeSeenReleaseNewsIds([ ...seen, ...this.releaseNewsPendingIds ]);
+            localStorage.setItem("releaseNewsSeenIds", JSON.stringify(nextSeen));
+            this.releaseNewsPendingIds = [];
             this.showReleaseNews = false;
         },
 

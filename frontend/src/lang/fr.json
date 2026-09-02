@@ -1394,5 +1394,6 @@
   "stackTransfer.compatibilitySource": "Source",
   "stackTransfer.compatibilityTarget": "Cible",
   "stackReplication.status.waiting-compatibility": "En attente de compatibilité",
-  "releaseNews.item.transferCompatibility": "Les déplacements, copies et réplications entre instances vérifient désormais un protocole de compatibilité. Des builds différents restent autorisés s’ils sont compatibles ; une instance distante trop ancienne peut être mise à jour puis l’opération reprend après sa reconnexion."
+  "releaseNews.item.transferCompatibility": "Les déplacements, copies et réplications entre instances vérifient désormais un protocole de compatibilité. Des builds différents restent autorisés s’ils sont compatibles ; une instance distante trop ancienne peut être mise à jour puis l’opération reprend après sa reconnexion.",
+  "releaseNews.item.cumulativeReleaseNews": "La popup de nouveautés fonctionne désormais comme un journal non lu : toutes les informations des mises à jour successives s’accumulent tant qu’elles n’ont pas été acquittées explicitement, même après plusieurs auto-mises à jour sans ouverture de la WebUI."
 }

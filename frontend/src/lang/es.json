@@ -302,5 +302,6 @@
   "stackTransfer.compatibilitySource": "Origen",
   "stackTransfer.compatibilityTarget": "Destino",
   "stackReplication.status.waiting-compatibility": "Esperando compatibilidad",
-  "releaseNews.item.transferCompatibility": "Los movimientos, copias y réplicas entre instancias vinculadas negocian ahora un protocolo de compatibilidad. Se permiten builds distintos si son compatibles; una instancia remota antigua puede actualizarse y la operación continúa tras reconectarse."
+  "releaseNews.item.transferCompatibility": "Los movimientos, copias y réplicas entre instancias vinculadas negocian ahora un protocolo de compatibilidad. Se permiten builds distintos si son compatibles; una instancia remota antigua puede actualizarse y la operación continúa tras reconectarse.",
+  "releaseNews.item.cumulativeReleaseNews": "La ventana de novedades funciona ahora como un registro no leído: la información de las actualizaciones sucesivas se acumula hasta que se confirma explícitamente, incluso tras varias actualizaciones automáticas sin abrir la WebUI."
 }

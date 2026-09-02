@@ -519,3 +519,7 @@ Cerrar un anuncio solo lo oculta durante la sesión del navegador. **No volver a
 ## Compatibilidad entre instancias vinculadas
 
 **Copiar**, **Mover** y **Replicar** negocian un **protocolo de transferencia** independiente del SHA del build. Se permiten builds diferentes cuando su protocolo es compatible. Si los protocolos son incompatibles, no comienza ninguna transferencia. Una instancia remota suficientemente reciente puede actualizarse desde la WebUI mediante el self-update normal (copia Restic, sidecar, healthcheck y rollback), y Dockge-Enhanced espera hasta **2 horas** a que vuelva a conectarse antes de continuar. Una versión demasiado antigua para responder al handshake requiere actualización manual. La réplica permanente pasa a **Esperando compatibilidad** y reintenta aproximadamente cada 10 minutos sin modificar datos.
+
+## Registro de novedades no leídas
+
+La ventana de novedades conserva ahora cada entrada de release individualmente. Si se instalan varias actualizaciones automáticas sin abrir la WebUI, **todas las novedades acumuladas** se muestran en la siguiente visita. Abrir o recargar la página no marca nada como leído: las entradas mostradas solo se confirman cuando el usuario cierra explícitamente la ventana. El seguimiento usa los IDs de las releases y ya no depende de su posición en la lista. El antiguo marcador `releaseNewsSeen` se migra automáticamente sin volver a mostrar todo el historial a los usuarios existentes.

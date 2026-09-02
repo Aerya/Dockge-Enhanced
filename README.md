@@ -544,3 +544,7 @@ Closing an announcement only hides it for the current browser session. **Do not 
 ## Linked-instance compatibility
 
 **Copy**, **Move** and **Replicate** negotiate a **transfer protocol** independently from the build SHA. Different builds remain allowed when their protocol is compatible. When protocols are incompatible, no transfer starts. A sufficiently recent remote instance can be updated from the WebUI through the normal self-update path (Restic backup, sidecar, health check and rollback), and Dockge-Enhanced waits up to **2 hours** for it to reconnect before resuming. An instance too old to answer the handshake requires a manual update. Permanent replication switches to **Waiting for compatibility** and retries roughly every 10 minutes without modifying data.
+
+## Unread release-news journal
+
+The release-news popup now tracks each release entry individually. If several automatic updates are installed while the WebUI is not opened, **all accumulated changes** are shown on the next visit. Opening or reloading the page does not mark anything as read: displayed entries are acknowledged only when the user explicitly closes the popup. Tracking uses release IDs and no longer depends on their position in the list. The legacy `releaseNewsSeen` marker is migrated automatically without replaying the full history to existing users.
