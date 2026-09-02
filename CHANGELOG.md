@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — Fix monitored partition rendering** — The system stats bar once again shows every configured partition. Compact mode is restored to its gauge-free rendering (`/mnt/data 42%`), while Bar mode keeps the usage meter and total capacity for each partition. This fixes the regression introduced with the `SystemStatsBar` redesign.
+
 Detailed project history previously embedded in the README.
 
 ---

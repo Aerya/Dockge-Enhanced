@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-09-03 — Corrección de la visualización de particiones supervisadas** — La barra de estadísticas vuelve a mostrar todas las particiones configuradas. El modo Compacto recupera su visualización sin barra (`/mnt/data 42%`), mientras que el modo Barra mantiene el indicador y la capacidad total de cada partición. Corrige la regresión introducida con la renovación de `SystemStatsBar`.
+
 Historial detallado del proyecto anteriormente integrado en el README.
 
 ---
