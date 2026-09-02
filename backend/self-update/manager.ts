@@ -248,9 +248,7 @@ export class SelfUpdateManager {
         const dockerSocket = process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock";
         const socketGroup = (await fs.stat(dockerSocket)).gid;
         const sidecarImage = process.env.DOCKGE_SELF_UPDATE_SIDECAR_IMAGE?.trim()
-            || (plan.targetRevision
-                ? `ghcr.io/${plan.allowedRepository}-updater:${plan.targetRevision}`
-                : `ghcr.io/${plan.allowedRepository}-updater:${packageJSON.version}`);
+            || `ghcr.io/${plan.allowedRepository}-updater:latest`;
 
         log.info("self-update", `Téléchargement du sidecar — id=${plan.id} image=${sidecarImage}`);
         try {
