@@ -1040,6 +1040,7 @@ export class BackupManager {
         onProgress?: (progress: BackupProgress) => void;
         additionalPaths?: string[];
         selfUpdateOnly?: boolean;
+        suppressNotification?: boolean;
     } = {}): Promise<BackupResult> {
         if (!this.backupRunLock.acquire(this.settings.preventConcurrentBackups)) {
             this.recordBlockedBackup(opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual"));
@@ -1060,6 +1061,7 @@ export class BackupManager {
         onProgress?: (progress: BackupProgress) => void;
         additionalPaths?: string[];
         selfUpdateOnly?: boolean;
+        suppressNotification?: boolean;
     } = {}): Promise<BackupResult> {
         const start = Date.now();
         const trigger = opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual");
@@ -1121,7 +1123,7 @@ export class BackupManager {
             backupHistory.unshift(result);
             if (backupHistory.length > 20) backupHistory.splice(20);
             await saveHistory();
-            await this.sendNotification(result);
+            if (!opts.suppressNotification) await this.sendNotification(result);
             return result;
         }
 
@@ -1253,7 +1255,7 @@ export class BackupManager {
         if (backupHistory.length > 20) backupHistory.splice(20);
         await saveHistory();
 
-        await this.sendNotification(result);
+        if (!opts.suppressNotification) await this.sendNotification(result);
 
         return result;
     }

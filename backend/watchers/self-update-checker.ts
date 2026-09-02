@@ -12,7 +12,7 @@ import * as path from "path";
 import axios from "axios";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
-import { getNotificationLang, notificationText } from "../notification/notification-lang";
+import { getNotificationLang, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { SelfUpdateManager } from "../self-update/manager";
 import { atomicWriteJson } from "../self-update/state-file";
@@ -124,6 +124,38 @@ function digestEquals(a: string, b: string): boolean {
 function extractShaDigest(value: unknown): string {
   if (typeof value !== "string") return "";
   return value.match(/sha256:[a-f0-9]{64}/)?.[0] ?? "";
+}
+
+async function fetchReleaseHighlights(
+  repo: string,
+  revision: string,
+  lang: NotificationLang,
+): Promise<string[]> {
+  if (!/^[a-f0-9]{40}$/i.test(revision)) return [];
+
+  const changelogFile: Record<NotificationLang, string> = {
+    fr: "CHANGELOG.fr.md",
+    en: "CHANGELOG.md",
+    es: "CHANGELOG.es-ES.md",
+    "zh-CN": "CHANGELOG.zh-CN.md",
+  };
+
+  try {
+    const url = `https://raw.githubusercontent.com/${repo}/${revision}/${changelogFile[lang]}`;
+    const response = await axios.get(url, {
+      timeout: 10_000,
+      responseType: "text",
+      maxContentLength: 256 * 1024,
+    });
+    const text = typeof response.data === "string" ? response.data : "";
+    return text
+      .split("\n")
+      .map((line) => line.match(/^\*\*\d{4}-\d{2}-\d{2}\s+—\s+(.+?)\*\*/)?.[1]?.trim() ?? "")
+      .filter(Boolean)
+      .slice(0, 3);
+  } catch {
+    return [];
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -495,7 +527,7 @@ export class SelfUpdateChecker {
       }
 
       // Notif "mise à jour appliquée" — le digest local a changé depuis le dernier check
-      if (wasUpdated && !SelfUpdateManager.getInstance().wasSuccessfulTargetNotified(localDigest)) {
+      if (wasUpdated && !SelfUpdateManager.getInstance().isSuccessfulTarget(localDigest)) {
         await this._notifyApplied(containerName, localDigest);
       }
 
@@ -506,7 +538,7 @@ export class SelfUpdateChecker {
         // Persist before notifying: if an immediate automatic update restarts
         // Dockge-Enhanced, the new process must not announce the same digest again.
         await this._saveDigestCache();
-        await this._notifyAvailable(containerName, repo, automaticMode);
+        await this._notifyAvailable(containerName, repo, automaticMode, remoteInfo.build.revision);
       }
 
       const targetImage = `ghcr.io/${repo}@${remoteDigest}`;
@@ -540,6 +572,7 @@ export class SelfUpdateChecker {
     containerName: string,
     repo: string,
     automaticMode: boolean,
+    remoteRevision: string,
   ): Promise<void> {
     const webhooks = await loadWebhooks();
     const apprise = await this._loadApprise();
@@ -557,35 +590,35 @@ export class SelfUpdateChecker {
       "🔔 Actualización de Dockge-Enhanced disponible",
       "🔔 Dockge-Enhanced 有可用更新",
     )}`;
+    const highlights = await fetchReleaseHighlights(repo, remoteRevision, lang);
     const releaseNotes = [
-      t("**Nouveautés :**", "**What’s new:**", "**Novedades:**", "**更新内容：**"),
+      ...(highlights.length > 0
+        ? [
+            t(
+              "**Principaux changements**",
+              "**Main changes**",
+              "**Cambios principales**",
+              "**主要更改**",
+            ),
+            ...highlights.map((item) => `• ${item}`),
+            "",
+          ]
+        : []),
       t(
-        "• Les auto-mises à jour Dockge-Enhanced utilisent le digest exact détecté, conservent le contexte Compose et les bind mounts relatifs, attendent une application réellement prête et gardent un snapshot de récupération Restic.",
-        "• Automatic Dockge-Enhanced updates now use the exact detected digest, preserve Compose/relative bind-mount context, wait for real application readiness and keep a Restic recovery snapshot.",
-        "• Las actualizaciones automáticas de Dockge-Enhanced usan el digest exacto detectado, conservan el contexto Compose y los bind mounts relativos, esperan a que la aplicación esté realmente lista y mantienen una instantánea de recuperación Restic.",
-        "• Dockge-Enhanced 自动更新现在使用检测到的精确摘要，保留 Compose 上下文和相对绑定挂载，等待应用真正就绪，并保留 Restic 恢复快照。",
-      ),
-      t(
-        "• L’onglet Mises à jour permet de planifier ou suspendre les mises à jour automatiques, avec backup/vérification Restic obligatoires et rollback si le healthcheck échoue.",
-        "• The Updates tab can schedule or pause image and Dockge-Enhanced automatic updates, with mandatory Restic backup/verification and rollback on failed health checks.",
-        "• La pestaña Actualizaciones permite programar o pausar las actualizaciones automáticas, con copia/verificación Restic obligatorias y rollback si falla el healthcheck.",
-        "• “更新”标签页可安排或暂停自动更新，并要求 Restic 备份/验证；健康检查失败时会自动回滚。",
-      ),
-      t(
-        `Lire le changelog complet : https://github.com/${repo}`,
-        `Read the full changelog: https://github.com/${repo}`,
-        `Leer el registro de cambios completo: https://github.com/${repo}`,
-        `查看完整更新日志：https://github.com/${repo}`,
+        `Détails et changelog : https://github.com/${repo}`,
+        `Details and changelog: https://github.com/${repo}`,
+        `Detalles y changelog: https://github.com/${repo}`,
+        `详情和更新日志：https://github.com/${repo}`,
       ),
     ];
 
     const body = automaticMode
       ? [
           t(
-            "Une nouvelle image est disponible sur GHCR. La mise à jour automatique par sidecar est configurée.",
-            "A new image is available on GHCR. Automatic Sidecar update is configured.",
-            "Hay una nueva imagen disponible en GHCR. La actualización automática mediante Sidecar está configurada.",
-            "GHCR 上有新镜像可用，并已配置 Sidecar 自动更新。",
+            "Une nouvelle image est disponible sur GHCR. Installation automatique configurée.",
+            "A new image is available on GHCR. Automatic installation is configured.",
+            "Hay una nueva imagen disponible en GHCR. La instalación automática está configurada.",
+            "GHCR 上有新镜像可用，已配置自动安装。",
           ),
           "",
           ...releaseNotes,
