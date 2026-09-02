@@ -1410,5 +1410,8 @@
   "stackReplication.status.waiting-compatibility": "Waiting for compatibility",
   "releaseNews.item.transferCompatibility": "Moves, copies and replications between linked instances now negotiate a compatibility protocol. Different builds remain allowed when compatible; an outdated remote instance can be updated and the operation resumes after reconnection.",
   "releaseNews.item.selfUpdateOperationGuard": "Automatic self-updates now wait for sensitive operations to finish: Restic backup/restore, stack copy/move/data transfer and replication, Docker image work, Trivy scans and protected external-stack integration. The reason is shown in the WebUI and sent as a notification, then the update retries automatically.",
+  "releaseNews.item.instanceIdentity": "The local instance name configured in Dockge Agents is now always visible in the header and in the browser tab title. If no name is configured, the host address is used as a fallback.",
+  "instanceIdentity.label": "Local instance: {name}",
+  "instanceIdentity.hint": "Local instance name configured in Dockge Agents. Host: {host}",
   "releaseNews.item.cumulativeReleaseNews": "The release-news popup now works as an unread journal: information from successive updates accumulates until explicitly acknowledged, even after several automatic updates without opening the WebUI."
 }

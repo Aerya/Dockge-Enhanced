@@ -1314,5 +1314,8 @@
   "stackReplication.status.waiting-compatibility": "等待相容",
   "releaseNews.item.transferCompatibility": "關聯執行個體之間的移動、複製和副本現在會協商相容協定。只要協定相容，不同建置仍可繼續；過舊的遠端執行個體可以先更新並在重新連線後繼續。",
   "releaseNews.item.selfUpdateOperationGuard": "自動自我更新現在會等待敏感操作結束，包括 Restic 備份/還原、堆疊複製/移動/資料傳輸與複寫、Docker 映像操作、Trivy 掃描以及受保護的外部堆疊整合。WebUI 與通知都會顯示等待原因，操作結束後會自動重試更新。",
+  "releaseNews.item.instanceIdentity": "Dockge Agents 中設定的本機執行個體名稱現在會持續顯示在頂部列與瀏覽器分頁標題中。若未設定名稱，則使用主機位址作為識別。",
+  "instanceIdentity.label": "本機執行個體：{name}",
+  "instanceIdentity.hint": "Dockge Agents 中設定的本機執行個體名稱。主機：{host}",
   "releaseNews.item.cumulativeReleaseNews": "更新說明彈窗現在會作為未讀日誌運作：即使連續多次自動更新期間沒有開啟 WebUI，所有更新資訊也會持續累積，直到使用者明確確認後才標記為已讀。"
 }

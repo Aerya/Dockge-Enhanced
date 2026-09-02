@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-03-instance-identity",
+        items: [ "releaseNews.item.instanceIdentity" ],
+    },
+    {
         id: "2026-09-02-self-update-operation-guard",
         items: [ "releaseNews.item.selfUpdateOperationGuard" ],
     },

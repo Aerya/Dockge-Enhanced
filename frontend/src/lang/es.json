@@ -314,5 +314,8 @@
   "stackReplication.status.waiting-compatibility": "Esperando compatibilidad",
   "releaseNews.item.transferCompatibility": "Los movimientos, copias y réplicas entre instancias vinculadas negocian ahora un protocolo de compatibilidad. Se permiten builds distintos si son compatibles; una instancia remota antigua puede actualizarse y la operación continúa tras reconectarse.",
   "releaseNews.item.selfUpdateOperationGuard": "Las autoactualizaciones esperan ahora a que terminen las operaciones sensibles: copia/restauración Restic, copia/traslado/transferencia de datos y replicación de stacks, operaciones de imágenes Docker, análisis Trivy e integración protegida de stacks externas. La razón aparece en la WebUI y se envía por notificación; después la actualización se reintenta automáticamente.",
+  "releaseNews.item.instanceIdentity": "El nombre de la instancia local configurado en Dockge Agents ahora permanece visible en la cabecera y en el título de la pestaña del navegador. Si no hay nombre configurado, se utiliza la dirección del host.",
+  "instanceIdentity.label": "Instancia local: {name}",
+  "instanceIdentity.hint": "Nombre de la instancia local configurado en Dockge Agents. Host: {host}",
   "releaseNews.item.cumulativeReleaseNews": "La ventana de novedades funciona ahora como un registro no leído: la información de las actualizaciones sucesivas se acumula hasta que se confirma explícitamente, incluso tras varias actualizaciones automáticas sin abrir la WebUI."
 }
