@@ -13,30 +13,58 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Détecter une PR documentaire
+        if: github.event_name == 'pull_request'
+        id: docs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if .github/scripts/is-docs-only.sh "$BASE_SHA" "$HEAD_SHA"; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+            echo "PR documentaire : CI frontend ignorée."
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: PR documentaire — validation légère
+        if: steps.docs.outputs.docs_only == 'true'
+        run: echo "Aucun fichier applicatif modifié."
 
       - name: Setup Node.js 22
+        if: steps.docs.outputs.docs_only != 'true'
         uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: "npm"
 
       - name: Installer les dépendances
+        if: steps.docs.outputs.docs_only != 'true'
         run: npm ci
 
       - name: Vérification TypeScript (tsc --noEmit)
+        if: steps.docs.outputs.docs_only != 'true'
         run: npm run check-ts
 
       - name: Tests d’authentification
+        if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/auth.test.ts
 
       - name: Tests des prérequis de démarrage
+        if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/start-guard.test.ts
 
       - name: Compatibilité du runtime frontend
+        if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/i18n-compat.test.ts
 
       - name: Audit npm HIGH/CRITICAL
+        if: steps.docs.outputs.docs_only != 'true'
         run: npm audit --audit-level=high
 
       - name: Build frontend (Vite)
+        if: steps.docs.outputs.docs_only != 'true'
         run: npm run build:frontend

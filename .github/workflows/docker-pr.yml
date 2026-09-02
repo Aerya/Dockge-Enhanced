@@ -16,8 +16,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Détection des changements
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.docs.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Détecter une PR documentaire
+        id: docs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]] && .github/scripts/is-docs-only.sh "$BASE_SHA" "$HEAD_SHA"; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-platform:
     name: Build ${{ matrix.platform }}
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -105,10 +129,15 @@ jobs:
   build:
     name: Build linux/amd64,linux/arm64
     if: always()
-    needs: build-platform
+    needs: [changes, build-platform]
     runs-on: ubuntu-latest
     steps:
+      - name: PR documentaire — validation légère
+        if: needs.changes.outputs.docs_only == 'true'
+        run: echo "Aucun build Docker nécessaire."
+
       - name: Vérifier les deux architectures
+        if: needs.changes.outputs.docs_only != 'true'
         env:
           BUILD_RESULT: ${{ needs.build-platform.result }}
         run: test "$BUILD_RESULT" = "success"
