@@ -130,14 +130,14 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ## 功能目录
 
-### 🌐 多服务器与联邦
+### 多服务器与联邦
 - 全网状联邦
 - 从任意已连接实例管理
 - 服务器选择与分组
 - 远程 Stack 与更新状态
 - 专用联邦 Token 与连接恢复
 
-### 📦 Stack 管理
+### Stack 管理
 - 创建、编辑、启动、停止和重新创建 Compose Stack
 - 固定与排序
 - 备注和 Git 工具
@@ -146,7 +146,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 主机前置条件与 VPN namespace 保护
 - 可折叠/调整大小的侧栏与资源指标
 
-### 🔄 迁移与复制
+### 迁移与复制
 - 实例间复制或移动
 - Compose、bind mount 与卷传输
 - 可恢复任务和 SHA-256 校验
@@ -155,14 +155,14 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - `container_name` 冲突检测
 - 计划冷复制
 
-### 💾 备份与恢复
+### 备份与恢复
 - Restic 多目标备份
 - Bind mount 与卷
 - 选择性恢复
 - 仓库与 Snapshot 检查
 - 历史记录与恢复流程集成
 
-### ⬆️ 更新
+### 更新
 - 镜像更新监控与远程检测
 - 手动和自动更新
 - Rollback、计划与暂停
@@ -170,40 +170,40 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 强制 Restic 备份、完整性和可用性检查
 - 失败时自动恢复
 
-### 🛡️ 安全
+### 安全
 - Trivy 与 CVE 例外
 - 2FA、Turnstile、trusted proxy
 - 受限制 sidecar 与签名计划
 - Docker 破坏性操作保护
 - 私有 Registry 凭据加密传输
 
-### 📊 监控
+### 监控
 - 系统、Stack 和容器统计
 - 状态栏与健康卡片
 - Crash loop 与 healthcheck 自动修复
 - 实时/全屏日志
 - Kula 与 Dozzle
 
-### 🐳 Docker 资源
+### Docker 资源
 - 镜像、卷、网络和未管理容器
 - 批量操作与自动清理
 - 高风险删除保护
 
-### 🤖 自动化与审计
+### 自动化与审计
 - REST API
 - 每 Stack Webhook
 - Home Assistant 示例
 - 计划操作
 - 集中历史记录
 
-### 🔌 集成
+### 集成
 - PlugNPiN
 - Nginx Proxy Manager
 - Pi-hole
 - AdGuard Home
 - Dozzle 与 Kula
 
-### 🔔 通知与访问
+### 通知与访问
 - Discord 与 Apprise
 - EN / FR / ES / zh-CN
 - 2FA、trusted proxy、Turnstile

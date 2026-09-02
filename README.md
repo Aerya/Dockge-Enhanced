@@ -34,7 +34,6 @@
 ---
 
 **My apologies to everyone affected.** A feature specifically designed to make updates safer should obviously never be able to leave Dockge-Enhanced offline. Thank you to everyone using, testing and reporting issues — your feedback helped identify and fix these defects quickly.
-**My apologies to everyone affected.** A feature specifically designed to make updates safer should obviously never be able to leave Dockge-Enhanced offline. Thank you to everyone using, testing and reporting issues — your feedback helped identify and fix these defects quickly.
 
 
 
@@ -124,7 +123,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ## Feature catalogue
 
-### 🌐 Multi-server & federation
+### Multi-server & federation
 - Full-mesh federation between Dockge-Enhanced instances
 - Administration from any linked instance
 - Server selection and grouping
@@ -133,7 +132,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Recovery of broken federation links
 - Unified multi-instance management
 
-### 📦 Stack management
+### Stack management
 - Create, edit, start, stop and recreate Compose stacks
 - Pinned stacks
 - Sort by creation date or last update
@@ -147,7 +146,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Collapsible and resizable stack sidebar
 - Compact status, CPU and RAM indicators
 
-### 🔄 Migration & replication
+### Migration & replication
 - Copy or move stacks between instances
 - Compose configuration transfer
 - Bind mount and named-volume transfer
@@ -160,7 +159,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Scheduled cold replication
 - Recovery snapshots and workflows
 
-### 💾 Backup & recovery
+### Backup & recovery
 - Restic backups
 - Multiple backup destinations
 - Stack-consistent backups
@@ -171,7 +170,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Backup history
 - Integration with protected update and recovery workflows
 
-### ⬆️ Updates
+### Updates
 - Docker image update monitoring
 - Remote update detection
 - Manual and automatic image updates
@@ -182,7 +181,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Mandatory Restic backup and integrity verification
 - Readiness validation and automatic recovery
 
-### 🛡️ Security
+### Security
 - Trivy vulnerability scanning
 - CVE exceptions
 - 2FA
@@ -192,7 +191,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Destructive-operation safeguards
 - Encrypted private-registry credential transfer
 
-### 📊 Monitoring
+### Monitoring
 - System, stack and container statistics
 - Configurable system status bar
 - Dashboard health cards
@@ -202,26 +201,26 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Autoscroll pause and long-line handling
 - Kula and Dozzle integrations
 
-### 🐳 Docker resources
+### Docker resources
 - Images, volumes, networks and unmanaged containers
 - Bulk actions
 - Auto-prune
 - Risky-deletion safeguards
 
-### 🤖 Automation & audit
+### Automation & audit
 - Permission- and stack-scoped REST API
 - Per-stack webhooks
 - Home Assistant examples
 - Scheduled operations
 - Centralized history with origin, status and duration
 
-### 🔌 Integrations
+### Integrations
 - PlugNPiN
 - Nginx Proxy Manager, Pi-hole and AdGuard Home label assistants
 - Dozzle
 - Kula
 
-### 🔔 Notifications & access
+### Notifications & access
 - Discord and Apprise
 - Notifications localized in EN / FR / ES / zh-CN
 - 2FA, trusted proxy and Cloudflare Turnstile
