@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-02-self-update-operation-guard",
+        items: [ "releaseNews.item.selfUpdateOperationGuard" ],
+    },
+    {
         id: "2026-09-02-linked-instance-transfer-compatibility",
         items: [ "releaseNews.item.transferCompatibility" ],
     },

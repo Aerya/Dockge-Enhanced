@@ -105,7 +105,11 @@
                 <!-- Bannière mise à jour Dockge-Enhanced -->
                 <div v-if="selfUpdateBannerVisible" class="self-update-banner">
                     <font-awesome-icon :icon="selfUpdateActive ? 'spinner' : 'arrow-circle-up'" :spin="selfUpdateActive" class="me-1" />
-                    <template v-if="selfUpdateActive">
+                    <template v-if="selfUpdateDeferred">
+                        {{ $t("selfUpdate.deferred", { reason: selfUpdateDeferredReason }) }}
+                        <router-link class="ms-2" to="/watcher/updates">{{ $t("selfUpdate.details") }}</router-link>
+                    </template>
+                    <template v-else-if="selfUpdateActive">
                         {{ $t("selfUpdate.updating") }}
                         <router-link class="ms-2" to="/watcher/updates">{{ $t("selfUpdate.details") }}</router-link>
                     </template>
@@ -360,8 +364,17 @@ export default {
             ) ?? null;
         },
 
+        selfUpdateDeferred() {
+            return this.selfUpdate.operation?.state === "scheduled" && !!this.selfUpdate.operation?.deferredBy;
+        },
+
+        selfUpdateDeferredReason() {
+            const code = this.selfUpdate.operation?.deferredBy;
+            return code ? this.$t(`updates.blocker.${code}`) : (this.selfUpdate.operation?.message || "");
+        },
+
         selfUpdateActive() {
-            return [ "scheduled", "backing-up", "verifying-backup", "updating", "waiting-health", "rolling-back" ].includes(this.selfUpdate.operation?.state);
+            return [ "backing-up", "verifying-backup", "updating", "waiting-health", "rolling-back" ].includes(this.selfUpdate.operation?.state);
         },
 
         selfUpdateFailed() {
@@ -369,7 +382,7 @@ export default {
         },
 
         selfUpdateBannerVisible() {
-            return !this.selfUpdate.dismissed && (this.selfUpdate.available || this.selfUpdateActive || this.selfUpdateFailed);
+            return !this.selfUpdate.dismissed && (this.selfUpdate.available || this.selfUpdateDeferred || this.selfUpdateActive || this.selfUpdateFailed);
         },
 
         selfUpdateCmd() {

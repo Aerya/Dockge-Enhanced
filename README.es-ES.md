@@ -226,6 +226,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 Dockge-Enhanced gestiona automáticamente todo el flujo: copia Restic obligatoria, verificación de integridad, reemplazo controlado del contenedor, healthcheck y confirmación final. Las notificaciones Discord/Apprise permiten seguir la operación sin mantener abierta la WebUI.
 
+Antes de iniciar una autoactualización, Enhanced comprueba también que no haya ninguna operación sensible en curso: copia o restauración Restic, copia/traslado/transferencia de datos o replicación de stacks, comprobaciones/actualizaciones de imágenes Docker, análisis Trivy e integración protegida de stacks externas. Si una operación bloquea la actualización, esta queda en espera, la razón aparece en la WebUI y se envía mediante Discord/Apprise, y el watcher la reintenta automáticamente.
+
 <table>
 <tr>
 <td align="center" width="50%"><a href="screens/AutoUpdate-ResticVerification.png"><img src="screens/AutoUpdate-ResticVerification.png" width="100%"/></a><br/><sub><strong>1. Verificación Restic</strong> — control de la copia antes del reemplazo.</sub></td>

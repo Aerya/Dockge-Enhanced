@@ -616,6 +616,7 @@ export class BackupManager {
     private lastStalenessNotif = 0;
     private lastOnSaveTrigger  = 0;
     private backupRunLock = new BackupRunLock();
+    private restoreRunLock = new BackupRunLock();
     private lastBlockedBackup: { trigger: "scheduled" | "manual" | "on-save"; timestamp: number } | null = null;
 
     // Destinations dont le backup est actuellement en cours { label → timestamp démarrage }
@@ -627,6 +628,10 @@ export class BackupManager {
 
     isBackupRunActive(): boolean {
         return this.backupRunLock.isActive();
+    }
+
+    isRestoreRunActive(): boolean {
+        return this.restoreRunLock.isActive();
     }
 
     getLastBlockedBackup(): { trigger: "scheduled" | "manual" | "on-save"; timestamp: number } | null {
@@ -1882,16 +1887,21 @@ export class BackupManager {
     /** Restaure une liste de fichiers depuis un snapshot à leur emplacement d'origine */
     async restoreFiles(snapshotId: string, filePaths: string[]): Promise<{ restored: number; errors: string[] }> {
         if (filePaths.length === 0) return { restored: 0, errors: [] };
-        const safeSnapshotId = assertSafeResticId(snapshotId);
-        const includes = filePaths
-            .map(p => p.trim())
-            .filter(Boolean);
+        this.restoreRunLock.acquire(false);
         try {
-            await this.resticFor(this.primaryDest(), [ "restore", safeSnapshotId, "--target", "/", ...includes.flatMap(p => [ "--include", p ]) ]);
-            return { restored: filePaths.length, errors: [] };
-        } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e);
-            return { restored: 0, errors: [msg] };
+            const safeSnapshotId = assertSafeResticId(snapshotId);
+            const includes = filePaths
+                .map(p => p.trim())
+                .filter(Boolean);
+            try {
+                await this.resticFor(this.primaryDest(), [ "restore", safeSnapshotId, "--target", "/", ...includes.flatMap(p => [ "--include", p ]) ]);
+                return { restored: filePaths.length, errors: [] };
+            } catch (e: unknown) {
+                const msg = e instanceof Error ? e.message : String(e);
+                return { restored: 0, errors: [msg] };
+            }
+        } finally {
+            this.restoreRunLock.release();
         }
     }
 

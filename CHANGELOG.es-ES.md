@@ -4,6 +4,8 @@ Historial detallado del proyecto anteriormente integrado en el README.
 
 ---
 
+**2026-09-02 — Autoactualización coordinada con operaciones sensibles** — El self-update automático espera ahora a que terminen las copias/restauraciones Restic, copias/traslados/transferencias de datos y replicaciones de stacks, operaciones de imágenes Docker, análisis Trivy e integraciones protegidas de stacks externas. La razón se conserva en el estado `scheduled`, aparece en la WebUI y se notifica una sola vez por razón mediante Discord/Apprise; después el watcher reintenta automáticamente.
+
 **2026-09-02 — Novedades acumulativas hasta su confirmación** — La ventana de novedades ya no depende de un único «último ID visto». Cada release tiene ahora su propio estado leído/no leído, de modo que varias actualizaciones automáticas sucesivas pueden acumular su información hasta que el usuario cierre explícitamente la ventana. El orden de `RELEASE_NEWS` ya no afecta a la detección. El antiguo valor `releaseNewsSeen` se migra automáticamente y una instalación nueva sigue mostrando solo la novedad actual en su primera visita.
 
 **2026-09-02 — Eliminado el duplicado de notificación tras el self-update** — El checker deja de publicar la notificación genérica «Dockge-Enhanced actualizado» cuando el cambio de imagen pertenece a una autoactualización gestionada por el sidecar. La protección cubre también la breve fase de reinicio/healthcheck anterior al estado terminal y las posibles diferencias entre el digest de plataforma y el digest del índice multi-arquitectura. La notificación final detallada del self-update queda como única confirmación; no cambia el diseño ni el contenido de las notificaciones existentes.

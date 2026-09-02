@@ -251,6 +251,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 Dockge-Enhanced handles the complete workflow automatically: mandatory Restic backup, integrity verification, controlled container replacement, health check and final confirmation. Discord/Apprise notifications also let users follow the operation without keeping the WebUI open.
 
+Before an automatic self-update starts, Enhanced also checks that no sensitive operation is running: Restic backup or restore, stack copy/move/data transfer or replication, Docker image checks/updates, Trivy scans and protected external-stack integration. When an operation blocks the update, it enters a waiting state, the reason is shown in the WebUI and sent through Discord/Apprise, and the watcher retries automatically.
+
 <table>
 <tr>
 <td align="center" width="50%"><a href="screens/AutoUpdate-ResticVerification.png"><img src="screens/AutoUpdate-ResticVerification.png" width="100%"/></a><br/><sub><strong>1. Restic verification</strong> — backup validation before replacement.</sub></td>

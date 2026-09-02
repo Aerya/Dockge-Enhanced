@@ -5,7 +5,6 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { BackupManager } from "../watchers/backup-manager";
 import { ImageWatcher } from "../watchers/image-watcher";
-import { TrivyScanner } from "../watchers/trivy-scanner";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
@@ -14,6 +13,7 @@ import { SelfUpdateOperation, SelfUpdatePlan, SelfUpdateProgress, SelfUpdateSett
 import { DEFAULT_SELF_UPDATE_SETTINGS, normalizeSelfUpdateSettings, selfUpdateMayRun } from "./settings";
 import { isAllowedTargetImage, isPathInside, isSafeComposeName, isSelfUpdateActive, normalizeSelfRepository } from "./policy";
 import { atomicWriteFile, atomicWriteJson } from "./state-file";
+import { getSelfUpdateBlocker } from "./operation-guard";
 import packageJSON from "../../package.json";
 import { log } from "../log";
 
@@ -145,17 +145,27 @@ export class SelfUpdateManager {
         if (automatic && !this.canAutoUpdate()) return this.getOperation();
         if (this.settings.mode !== "sidecar" && automatic) return this.getOperation();
         if (automatic) {
-            const reason = this.getBusyReason();
-            if (reason) {
-                const key = `${targetImage}:${reason}`;
-                this.operation = { id: "", state: "scheduled", message: `Automatic self-update deferred: ${reason}`, startedAt: null, finishedAt: null, targetImage, rollbackAttempted: false };
+            const blocker = await getSelfUpdateBlocker();
+            if (blocker) {
+                const key = `${targetImage}:${blocker.code}`;
+                this.operation = {
+                    id: "",
+                    state: "scheduled",
+                    message: `Automatic self-update deferred: ${blocker.message}`,
+                    startedAt: null,
+                    finishedAt: null,
+                    targetImage,
+                    rollbackAttempted: false,
+                    deferredBy: blocker.code,
+                };
                 await this.saveOperation();
                 if (key !== this.lastDeferralKey) {
                     this.lastDeferralKey = key;
-                    await this.notify("⏳ Dockge-Enhanced update deferred", `Automatic self-update was deferred because ${reason}. It will be retried by the existing update watcher.`, "warning");
+                    await this.notifySelfUpdateDeferred(blocker.code);
                 }
                 return this.getOperation();
             }
+            this.lastDeferralKey = "";
         }
         const containerId = process.env.HOSTNAME?.trim();
         if (!containerId) throw new Error("Current Docker container identifier is unavailable");
@@ -330,11 +340,30 @@ export class SelfUpdateManager {
         }
     }
 
-    private getBusyReason(): string | null {
-        if (ImageWatcher.getInstance().isBusy()) return "an image update or image check is in progress";
-        if (BackupManager.getInstance().isBackupRunActive()) return "a Restic backup or backup verification is in progress";
-        if (TrivyScanner.getInstance().getStatus().running) return "an image security scan is in progress";
-        return null;
+    private async notifySelfUpdateDeferred(code: import("./types").SelfUpdateBlockerCode): Promise<boolean> {
+        const lang = await getNotificationLang();
+        const reasons: Record<import("./types").SelfUpdateBlockerCode, string> = {
+            "image-work": notificationText(lang, "une vérification ou une mise à jour d’image Docker est en cours", "an image update or image check is in progress", "hay una comprobación o actualización de imagen Docker en curso", "Docker 镜像检查或更新正在进行"),
+            "restic-backup": notificationText(lang, "un backup Restic ou sa vérification est en cours", "a Restic backup or backup verification is in progress", "hay una copia Restic o su verificación en curso", "Restic 备份或备份验证正在进行"),
+            "restic-restore": notificationText(lang, "une restauration Restic est en cours", "a Restic restore is in progress", "hay una restauración Restic en curso", "Restic 恢复正在进行"),
+            "stack-transfer": notificationText(lang, "une copie, un déplacement ou un transfert de données de stack est en cours", "a stack copy, move or data transfer is in progress", "hay una copia, traslado o transferencia de datos de stack en curso", "堆栈复制、移动或数据传输正在进行"),
+            "stack-replication": notificationText(lang, "une réplication ou un test de restauration de stack est en cours", "a stack replication or recovery test is in progress", "hay una replicación o una prueba de recuperación de stack en curso", "堆栈复制或恢复测试正在进行"),
+            "trivy-scan": notificationText(lang, "un scan de sécurité Trivy est en cours", "an image security scan is in progress", "hay un análisis de seguridad Trivy en curso", "Trivy 安全扫描正在进行"),
+            "external-stack-integration": notificationText(lang, "une intégration protégée de stack externe est en cours", "a protected external-stack integration is in progress", "hay una integración protegida de stack externa en curso", "受保护的外部堆栈集成正在进行"),
+            "state-check-error": notificationText(lang, "l’état des opérations sensibles n’a pas pu être vérifié de façon sûre", "the state of sensitive operations could not be verified safely", "no se pudo verificar de forma segura el estado de las operaciones sensibles", "无法安全验证敏感操作的状态"),
+        };
+        const reason = reasons[code];
+        return this.notify(
+            "⏳ Dockge-Enhanced update deferred",
+            notificationText(
+                lang,
+                `La mise à jour automatique attend car ${reason}. Elle sera retentée automatiquement dès que l’opération sera terminée.`,
+                `The automatic self-update is waiting because ${reason}. It will retry automatically as soon as the operation finishes.`,
+                `La actualización automática está esperando porque ${reason}. Se reintentará automáticamente cuando termine la operación.`,
+                `自动更新正在等待，因为${reason}。操作完成后将自动重试。`,
+            ),
+            "warning",
+        );
     }
 
     private async notify(title: string, body: string, type: "warning" | "success" | "failure"): Promise<boolean> {

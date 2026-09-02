@@ -248,6 +248,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 Dockge-Enhanced gère automatiquement le workflow complet : backup Restic obligatoire, vérification d’intégrité, remplacement contrôlé du conteneur, healthcheck puis confirmation finale. Les notifications Discord/Apprise permettent aussi de suivre l’opération sans rester devant la WebUI.
 
+Avant de démarrer une auto-mise à jour, Enhanced vérifie aussi qu’aucune opération sensible n’est en cours : backup ou restauration Restic, copie/déplacement/transfert de données ou réplication de stack, vérification/mise à jour d’images Docker, scan Trivy et intégration protégée d’une stack externe. Si une opération bloque la mise à jour, celle-ci passe en attente, la raison est visible dans la WebUI et envoyée via Discord/Apprise, puis le watcher la retente automatiquement.
+
 <table>
 <tr>
 <td align="center" width="50%"><a href="screens/AutoUpdate-ResticVerification.png"><img src="screens/AutoUpdate-ResticVerification.png" width="100%"/></a><br/><sub><strong>1. Vérification Restic</strong> — contrôle du backup avant remplacement.</sub></td>
