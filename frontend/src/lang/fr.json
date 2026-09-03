@@ -21,6 +21,7 @@
     "releaseNews.item.scheduling": "Planification toujours disponible, avec règles indépendantes de démarrage et d'arrêt pour les stacks et les conteneurs.",
     "releaseNews.item.updateRange": "Le popup regroupe uniquement les nouveautés publiées depuis votre précédente mise à jour, quel que soit le nombre de versions intermédiaires.",
     "releaseNews.item.logWrap": "Un bouton dans les logs permet d'activer le retour à la ligne ou de conserver chaque entrée complète sur une seule ligne avec défilement horizontal.",
+    "releaseNews.item.serverPersistedStackPins": "Les stacks épinglées sont désormais enregistrées sur l’instance qui les héberge au lieu de dépendre du localStorage du navigateur. Une épingle est conservée après déconnexion, changement de navigateur ou mise à jour, et elle est visible depuis toutes les WebUI liées dès que le serveur propriétaire est inclus dans la liste affichée. Les anciennes épingles locales sont migrées automatiquement lorsque les instances concernées sont joignables.",
     "releaseNews.item.stackPins": "Les stacks utilisées fréquemment peuvent être épinglées en tête du panneau latéral, avec une préférence mémorisée par navigateur.",
     "releaseNews.item.composeWorkspace": "L’espace Logs et Compose plus dense dispose d’une séparation redimensionnable mémorisée, de logs plein écran et d’un encart Compose réductible.",
     "releaseNews.item.rawComposeCopy": "Une action dédiée copie le YAML Compose brut sans numéros de ligne ni artefacts de sélection visuelle.",
