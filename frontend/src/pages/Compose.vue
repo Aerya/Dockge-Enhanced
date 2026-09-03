@@ -646,6 +646,31 @@
                 @completed="stackTransferCompleted"
             />
 
+            <!-- Protection des modifications non enregistrées pendant un self-update automatique -->
+            <BModal
+                v-model="showSelfUpdateEditDialog"
+                :title="$t('selfUpdate.editor.title')"
+                hide-footer
+                @hidden="onSelfUpdateEditDialogHidden"
+            >
+                <p class="mb-2">{{ $t("selfUpdate.editor.body", { stack: stack.name || $t("compose"), instance: endpointDisplay }) }}</p>
+                <p class="form-text mb-3">{{ $t("selfUpdate.editor.hint") }}</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-primary" :disabled="processing || editLeaseActionPending" @click="saveStackAndResumeSelfUpdate">
+                        <font-awesome-icon icon="save" class="me-1" />{{ $t("selfUpdate.editor.saveAndUpdate") }}
+                    </button>
+                    <button type="button" class="btn btn-warning" :disabled="editLeaseActionPending" @click="deferSelfUpdateForEdit(30)">
+                        {{ $t("selfUpdate.editor.defer30") }}
+                    </button>
+                    <button type="button" class="btn btn-warning" :disabled="editLeaseActionPending" @click="deferSelfUpdateForEdit(60)">
+                        {{ $t("selfUpdate.editor.defer60") }}
+                    </button>
+                    <button type="button" class="btn btn-normal" :disabled="editLeaseActionPending" @click="continueEditingDuringSelfUpdate">
+                        {{ $t("selfUpdate.editor.continueEditing") }}
+                    </button>
+                </div>
+            </BModal>
+
             <!-- Delete Dialog -->
             <BModal v-model="showDeleteDialog" :cancelTitle="$t('cancel')" :okTitle="$t('deleteStack')" okVariant="danger" @ok="deleteDialog">
                 <p>{{ $t("deleteStackMsg") }}</p>
@@ -856,6 +881,15 @@ export default {
             composeCollapsed: localStorage.getItem("composeCollapsed") === "1",
             logsFullscreen: false,
             composeResizing: false,
+            composeEditBaseline: null,
+            editLeaseSessionId: "",
+            editLeaseTimer: null,
+            editLeaseActionPending: false,
+            showSelfUpdateEditDialog: false,
+            selfUpdateEditPromptPending: false,
+            selfUpdateEditTarget: "",
+            selfUpdateEditDismissedTarget: "",
+            selfUpdateEditDeferUntil: 0,
         };
     },
     computed: {
@@ -869,6 +903,14 @@ export default {
         },
         composeEffectivelyCollapsed() {
             return this.composeCollapsed && !this.isEditMode;
+        },
+        hasUnsavedComposeChanges() {
+            if (!this.isEditMode || !this.composeEditBaseline) {
+                return false;
+            }
+            return (this.stack.composeYAML ?? "") !== this.composeEditBaseline.composeYAML
+                || (this.stack.composeENV ?? "") !== this.composeEditBaseline.composeENV
+                || (this.stack.composeOverrideYAML ?? "") !== this.composeEditBaseline.composeOverrideYAML;
         },
         endpointDisplay() {
             return this.$root.endpointDisplayFunction(this.endpoint);
@@ -1039,6 +1081,14 @@ export default {
         containerActionLabels(value) {
             localStorage.setItem("containerActionLabels", value ? "1" : "0");
         },
+        hasUnsavedComposeChanges(dirty) {
+            if (dirty) {
+                this.startComposeEditLease();
+            } else {
+                this.stopComposeEditLeaseHeartbeat();
+                this.releaseComposeEditLease({ clearHold: false, resume: false });
+            }
+        },
         "stack.composeYAML": {
             handler() {
                 if (this.editorFocus) {
@@ -1083,6 +1133,7 @@ export default {
         }
     },
     mounted() {
+        this.ensureComposeEditLeaseSession();
         this.loadPlugNPiNIntegrationStatus();
         this.loadDozzleStatus();
         if (this.isAdd) {
@@ -1115,6 +1166,7 @@ export default {
                 isManagedByDockge: true,
                 endpoint: "",
             };
+            this.captureComposeEditBaseline();
 
             this.yamlCodeChange();
 
@@ -1128,6 +1180,8 @@ export default {
         window.addEventListener("keydown", this.handleWorkspaceEscape);
     },
     unmounted() {
+        this.stopComposeEditLeaseHeartbeat();
+        this.releaseComposeEditLease({ clearHold: false, resume: false });
         document.removeEventListener("visibilitychange", this.onVisibilityServiceStatus);
         window.removeEventListener("keydown", this.handleWorkspaceEscape);
         this.stopComposeResize();
@@ -1328,6 +1382,119 @@ export default {
             }
         },
 
+        ensureComposeEditLeaseSession() {
+            if (this.editLeaseSessionId) return this.editLeaseSessionId;
+            const randomPart = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            this.editLeaseSessionId = `compose-${randomPart}`;
+            return this.editLeaseSessionId;
+        },
+
+        captureComposeEditBaseline() {
+            this.composeEditBaseline = {
+                composeYAML: this.stack.composeYAML ?? "",
+                composeENV: this.stack.composeENV ?? "",
+                composeOverrideYAML: this.stack.composeOverrideYAML ?? "",
+            };
+        },
+
+        startComposeEditLease() {
+            if (!this.hasUnsavedComposeChanges) return;
+            this.ensureComposeEditLeaseSession();
+            this.syncComposeEditLease();
+            if (!this.editLeaseTimer) {
+                this.editLeaseTimer = window.setInterval(() => this.syncComposeEditLease(), 20_000);
+            }
+        },
+
+        stopComposeEditLeaseHeartbeat() {
+            if (this.editLeaseTimer) {
+                window.clearInterval(this.editLeaseTimer);
+                this.editLeaseTimer = null;
+            }
+        },
+
+        syncComposeEditLease(holdMinutes) {
+            if (!this.hasUnsavedComposeChanges && !holdMinutes) return;
+            const payload = {
+                sessionId: this.ensureComposeEditLeaseSession(),
+                stackName: this.stack.name || "new-stack",
+                dirty: this.hasUnsavedComposeChanges,
+                ...(holdMinutes ? { holdMinutes } : {}),
+            };
+            this.$root.emitAgent(this.endpoint, "composeEditLeaseUpdate", payload, (res) => {
+                if (res?.ok) {
+                    this.applyComposeEditLeaseStatus(res.data);
+                }
+            });
+        },
+
+        applyComposeEditLeaseStatus(data) {
+            const operation = data?.operation ?? {};
+            const blockedByEditor = operation.state === "scheduled" && operation.deferredBy === "active-editor";
+            this.selfUpdateEditPromptPending = blockedByEditor;
+            if (!blockedByEditor) return;
+
+            const target = operation.targetImage || data?.remoteDigest || "pending-update";
+            this.selfUpdateEditTarget = target;
+            if (
+                this.hasUnsavedComposeChanges
+                && Date.now() >= this.selfUpdateEditDeferUntil
+                && this.selfUpdateEditDismissedTarget !== target
+            ) {
+                this.showSelfUpdateEditDialog = true;
+            }
+        },
+
+        releaseComposeEditLease({ clearHold = false, resume = false } = {}) {
+            if (!this.editLeaseSessionId) return;
+            this.$root.emitAgent(this.endpoint, "composeEditLeaseRelease", {
+                sessionId: this.editLeaseSessionId,
+                clearHold,
+                resume,
+            }, () => {});
+        },
+
+        deferSelfUpdateForEdit(minutes) {
+            this.editLeaseActionPending = true;
+            this.selfUpdateEditDeferUntil = Date.now() + minutes * 60_000;
+            this.selfUpdateEditDismissedTarget = "";
+            this.showSelfUpdateEditDialog = false;
+            const payload = {
+                sessionId: this.ensureComposeEditLeaseSession(),
+                stackName: this.stack.name || "new-stack",
+                dirty: this.hasUnsavedComposeChanges,
+                holdMinutes: minutes,
+            };
+            this.$root.emitAgent(this.endpoint, "composeEditLeaseUpdate", payload, (res) => {
+                this.editLeaseActionPending = false;
+                if (res?.ok) {
+                    this.applyComposeEditLeaseStatus(res.data);
+                    this.$root.toastSuccess(this.$t("selfUpdate.editor.deferred", { minutes }));
+                } else {
+                    this.$root.toastRes(res);
+                }
+            });
+        },
+
+        continueEditingDuringSelfUpdate() {
+            this.selfUpdateEditDismissedTarget = this.selfUpdateEditTarget || "pending-update";
+            this.showSelfUpdateEditDialog = false;
+        },
+
+        onSelfUpdateEditDialogHidden() {
+            if (
+                this.selfUpdateEditPromptPending
+                && Date.now() >= this.selfUpdateEditDeferUntil
+                && this.selfUpdateEditTarget
+            ) {
+                this.selfUpdateEditDismissedTarget = this.selfUpdateEditTarget;
+            }
+        },
+
+        saveStackAndResumeSelfUpdate() {
+            this.saveStackInternal(true);
+        },
+
         exitConfirm(next) {
             if (this.isEditMode) {
                 if (confirm(this.$t("confirmLeaveStack"))) {
@@ -1344,6 +1511,8 @@ export default {
 
         exitAction() {
             console.log("exitAction");
+            this.stopComposeEditLeaseHeartbeat();
+            this.releaseComposeEditLease({ clearHold: false, resume: false });
             this.stopServiceStatusTimeout = true;
             clearTimeout(serviceStatusTimeout);
 
@@ -1617,6 +1786,7 @@ export default {
             this.$root.emitAgent(this.endpoint, "getStack", this.stack.name, (res) => {
                 if (res.ok) {
                     this.stack = res.stack;
+                    this.captureComposeEditBaseline();
                     this.startGuard = {
                         enabled: res.stack.startGuard?.enabled === true,
                         conditions: (res.stack.startGuard?.conditions || []).map((condition) => ({
@@ -1679,6 +1849,12 @@ export default {
                 this.$root.toastRes(res);
 
                 if (res.ok) {
+                    const resume = this.selfUpdateEditPromptPending && Date.now() >= this.selfUpdateEditDeferUntil;
+                    this.stopComposeEditLeaseHeartbeat();
+                    this.captureComposeEditBaseline();
+                    this.releaseComposeEditLease({ clearHold: resume, resume });
+                    this.selfUpdateEditPromptPending = false;
+                    this.showSelfUpdateEditDialog = false;
                     this.isEditMode = false;
                     this.$router.push(this.url);
                 }
@@ -1686,6 +1862,11 @@ export default {
         },
 
         saveStack() {
+            const resume = this.selfUpdateEditPromptPending && Date.now() >= this.selfUpdateEditDeferUntil;
+            this.saveStackInternal(resume);
+        },
+
+        saveStackInternal(resumeAfterSave = false) {
             this.processing = true;
 
             this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, this.stack.composeOverrideYAML ?? "", (res) => {
@@ -1693,6 +1874,13 @@ export default {
                 this.$root.toastRes(res);
 
                 if (res.ok) {
+                    this.stopComposeEditLeaseHeartbeat();
+                    this.captureComposeEditBaseline();
+                    this.releaseComposeEditLease({ clearHold: resumeAfterSave, resume: resumeAfterSave });
+                    this.selfUpdateEditPromptPending = false;
+                    this.selfUpdateEditDismissedTarget = "";
+                    this.selfUpdateEditDeferUntil = 0;
+                    this.showSelfUpdateEditDialog = false;
                     this.isEditMode = false;
                     this.$router.push(this.url);
                 }
@@ -1923,6 +2111,10 @@ export default {
         },
 
         discardStack() {
+            this.stopComposeEditLeaseHeartbeat();
+            this.releaseComposeEditLease({ clearHold: false, resume: false });
+            this.selfUpdateEditPromptPending = false;
+            this.showSelfUpdateEditDialog = false;
             this.loadStack();
             this.isEditMode = false;
         },
@@ -1984,6 +2176,7 @@ export default {
 
         enableEditMode() {
             this.containersExpanded = true;
+            this.captureComposeEditBaseline();
             this.isEditMode = true;
         },
 

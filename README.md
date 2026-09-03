@@ -91,6 +91,11 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**Automatic self-update protection while editing Compose/.env**
+
+When a compose, override or `.env` file has unsaved changes in the WebUI, the owning Dockge-Enhanced instance temporarily blocks its automatic self-update — including edits opened from another linked WebUI. The editor keeps a short-lived heartbeat lease so stale browser sessions expire automatically. If an update becomes ready while unsaved work is present, the user gets a dialog to **save and update**, **defer for 30 minutes**, **defer for 1 hour**, or **keep working**. The backend re-checks blockers again before preparing and launching the updater sidecar so an edit started during backup/verification cannot be interrupted by the restart.
+
+
 **Linked-instance overview on the home page**
 
 The existing agent panel on the home page now doubles as a compact infrastructure overview. Each linked Dockge-Enhanced instance shows its stack totals and states, host CPU/RAM usage, uptime and pinned-stack count while keeping the existing rename, reauthentication, removal and add-agent controls. Clicking an instance summary filters the stack list on the left to that server; clicking it again restores the all-servers view.

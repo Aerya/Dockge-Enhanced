@@ -4,6 +4,7 @@ import { Settings } from "../settings";
 import { BackupManager } from "../watchers/backup-manager";
 import { ImageWatcher } from "../watchers/image-watcher";
 import { TrivyScanner } from "../watchers/trivy-scanner";
+import { ComposeEditLeaseManager } from "./editor-lease";
 import {
     BLOCKER_MESSAGES,
     isExternalStackIntegrationStateActive,
@@ -54,6 +55,7 @@ export async function getSelfUpdateBlocker(): Promise<SelfUpdateBlocker | null> 
             hasActiveExternalStackIntegration(),
         ]);
         return selectSelfUpdateBlocker({
+            activeEditor: ComposeEditLeaseManager.getInstance().hasBlockingLease(),
             imageWork: ImageWatcher.getInstance().isBusy(),
             resticBackup: BackupManager.getInstance().isBackupRunActive(),
             resticRestore: BackupManager.getInstance().isRestoreRunActive(),

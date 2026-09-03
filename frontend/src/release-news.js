@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-03-self-update-edit-protection",
+        items: [ "releaseNews.item.selfUpdateEditProtection" ],
+    },
+    {
         id: "2026-09-03-linked-instances-home-overview",
         items: [ "releaseNews.item.linkedInstancesOverview" ],
     },

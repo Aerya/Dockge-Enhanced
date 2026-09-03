@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — Unsaved edit protection during automatic self-update** — A genuinely modified `compose.yaml`, `compose.override.yaml` or `.env` now creates a short-lived lease on the owning instance, including edits made from a linked WebUI. While the lease is active, automatic self-update is deferred with the `active-editor` blocker. A dialog lets the user save and update, defer for 30 minutes or 1 hour, or keep working. Explicit deferrals survive editor closure until their deadline while stale heartbeats expire automatically. The self-update also re-checks blockers before preparing and before launching the sidecar so edits started during backup or verification cannot be interrupted by a restart.
+
 **2026-09-03 — Self-update: targeted Restic verification and concurrent retry suppression** — The mandatory pre-update verification no longer walks the complete Restic snapshot: it directly reads the recovery file created for the operation and validates its identifier, avoiding multi-minute verification on large repositories. The GHCR checker also stops re-requesting the same automatic update while backup, verification, sidecar, health check or rollback is already running; scheduled updates remain retryable as intended.
 
 **2026-09-03 — Home stack counters now use dedicated pluralized labels** — The three large stack counters on the home page now use dedicated plural-aware labels. The generic `active`, `exited` and `inactive` translations remain unchanged so other screens are unaffected.

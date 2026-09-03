@@ -2,7 +2,7 @@ import { UpdatePause } from "../watchers/update-policy";
 
 export type SelfUpdateMode = "manual" | "sidecar" | "agent";
 export type SelfUpdateScheduleType = "immediate" | "window";
-export type SelfUpdateBlockerCode = "image-work" | "restic-backup" | "restic-restore" | "stack-transfer" | "stack-replication" | "trivy-scan" | "external-stack-integration" | "state-check-error";
+export type SelfUpdateBlockerCode = "active-editor" | "image-work" | "restic-backup" | "restic-restore" | "stack-transfer" | "stack-replication" | "trivy-scan" | "external-stack-integration" | "state-check-error";
 
 export interface SelfUpdateSettings {
     mode: SelfUpdateMode;

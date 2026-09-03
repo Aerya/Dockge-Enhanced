@@ -1361,6 +1361,15 @@
     "updates.status.failed": "La mise à jour a échoué.",
     "updates.status.scheduled": "La mise à jour est reportée.",
     "updates.status.deferredReason": "Mise à jour automatique mise en attente : {reason}. Nouvelle tentative automatique dès la fin de l’opération.",
+    "selfUpdate.editor.title": "Mise à jour automatique en attente",
+    "selfUpdate.editor.body": "Une mise à jour automatique de Dockge-Enhanced est prête sur {instance}, mais la stack « {stack} » contient des modifications non enregistrées.",
+    "selfUpdate.editor.hint": "La mise à jour reste bloquée pour protéger votre travail. Vous pouvez enregistrer maintenant, la reporter ou continuer à travailler.",
+    "selfUpdate.editor.saveAndUpdate": "Enregistrer et mettre à jour",
+    "selfUpdate.editor.defer30": "Reporter 30 min",
+    "selfUpdate.editor.defer60": "Reporter 1 h",
+    "selfUpdate.editor.continueEditing": "Continuer à travailler",
+    "selfUpdate.editor.deferred": "Mise à jour reportée de {minutes} min.",
+    "updates.blocker.active-editor": "des modifications non enregistrées d’un compose ou d’un fichier .env sont en cours",
     "updates.blocker.image-work": "une vérification ou une mise à jour d’image Docker est en cours",
     "updates.blocker.restic-backup": "un backup Restic ou sa vérification est en cours",
     "updates.blocker.restic-restore": "une restauration Restic est en cours",
@@ -1422,5 +1431,6 @@
     "linkedInstances.active": "active | actives",
     "linkedInstances.stopped": "arrêtée | arrêtées",
     "linkedInstances.inactive": "inactive | inactives",
+    "releaseNews.item.selfUpdateEditProtection": "Les mises à jour automatiques protègent désormais les éditions de compose/.env en cours : les modifications non enregistrées bloquent le redémarrage de l’instance propriétaire, y compris depuis une WebUI liée. Un popup permet d’enregistrer puis mettre à jour, de reporter 30 min ou 1 h, ou de continuer à travailler.",
     "releaseNews.item.linkedInstancesOverview": "L’accueil enrichit le bloc des agents avec un résumé compact des instances liées : état des stacks, CPU, RAM, uptime et nombre de stacks épinglées. Cliquer sur une instance filtre directement la liste des stacks à gauche sans supprimer les fonctions existantes de gestion des agents."
 }

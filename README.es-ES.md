@@ -90,6 +90,11 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Protección de la actualización automática durante la edición de Compose/.env**
+
+Cuando un compose, su override o su `.env` contiene cambios no guardados en la WebUI, la instancia Dockge-Enhanced propietaria bloquea temporalmente su actualización automática, incluso si la edición se abrió desde otra WebUI vinculada. El editor mantiene un lease corto mediante heartbeat para que las sesiones abandonadas caduquen automáticamente. Si una actualización queda lista mientras hay trabajo sin guardar, un diálogo permite **guardar y actualizar**, **aplazar 30 minutos**, **aplazar 1 hora** o **seguir trabajando**. El backend vuelve a comprobar los bloqueos antes de preparar y lanzar el sidecar para evitar que una edición iniciada durante el backup o la verificación sea interrumpida por el reinicio.
+
+
 **Resumen de las instancias vinculadas en la página de inicio**
 
 El panel de agentes existente en la página de inicio funciona ahora también como resumen compacto de la infraestructura. Cada instancia Dockge-Enhanced vinculada muestra el número y estado de sus stacks, el uso de CPU/RAM del host, el uptime y el número de stacks fijados, conservando las acciones existentes para renombrar, reautenticar, eliminar y añadir agentes. Un clic en una instancia filtra la lista de stacks de la izquierda a ese servidor; un segundo clic restaura la vista de todos los servidores.

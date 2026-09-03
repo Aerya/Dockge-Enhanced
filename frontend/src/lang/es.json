@@ -269,6 +269,15 @@
     "selfUpdate.deferred": "Actualización automática en espera — {reason}",
     "updates.status.scheduled": "La actualización se aplazó.",
     "updates.status.deferredReason": "Actualización automática aplazada: {reason}. Se reintentará automáticamente cuando termine la operación.",
+    "selfUpdate.editor.title": "Actualización automática en espera",
+    "selfUpdate.editor.body": "Hay una actualización automática de Dockge-Enhanced lista en {instance}, pero la stack «{stack}» contiene cambios no guardados.",
+    "selfUpdate.editor.hint": "La actualización permanece bloqueada para proteger tu trabajo. Puedes guardar ahora, aplazarla o seguir trabajando.",
+    "selfUpdate.editor.saveAndUpdate": "Guardar y actualizar",
+    "selfUpdate.editor.defer30": "Aplazar 30 min",
+    "selfUpdate.editor.defer60": "Aplazar 1 hora",
+    "selfUpdate.editor.continueEditing": "Seguir trabajando",
+    "selfUpdate.editor.deferred": "Actualización aplazada {minutes} min.",
+    "updates.blocker.active-editor": "se están editando cambios no guardados en un compose o archivo .env",
     "updates.blocker.image-work": "hay una comprobación o actualización de imagen Docker en curso",
     "updates.blocker.restic-backup": "hay una copia Restic o su verificación en curso",
     "updates.blocker.restic-restore": "hay una restauración Restic en curso",
@@ -330,5 +339,6 @@
     "linkedInstances.active": "activo | activos",
     "linkedInstances.stopped": "detenido | detenidos",
     "linkedInstances.inactive": "inactivo | inactivos",
+    "releaseNews.item.selfUpdateEditProtection": "Las actualizaciones automáticas protegen ahora las ediciones de compose/.env en curso: los cambios no guardados bloquean el reinicio de la instancia propietaria, incluso desde una WebUI vinculada. Un diálogo permite guardar y actualizar, aplazar 30 minutos o 1 hora, o seguir trabajando.",
     "releaseNews.item.linkedInstancesOverview": "La página de inicio amplía el bloque de agentes con un resumen compacto de las instancias vinculadas: estado de stacks, CPU, RAM, uptime y número de stacks fijados. Al pulsar una instancia se filtra directamente la lista de stacks de la izquierda sin perder las funciones actuales de gestión."
 }
