@@ -9,11 +9,12 @@ import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
 import { getNotificationLang, notificationText, type NotificationLang } from "../notification/notification-lang";
-import { SelfUpdateOperation, SelfUpdatePlan, SelfUpdateProgress, SelfUpdateSettings } from "./types";
+import { SelfUpdateBlockerCode, SelfUpdateOperation, SelfUpdatePlan, SelfUpdateProgress, SelfUpdateSettings } from "./types";
 import { DEFAULT_SELF_UPDATE_SETTINGS, normalizeSelfUpdateSettings, selfUpdateMayRun } from "./settings";
 import { isAllowedTargetImage, isPathInside, isSafeComposeName, isSelfUpdateActive, normalizeSelfRepository } from "./policy";
 import { atomicWriteFile, atomicWriteJson } from "./state-file";
 import { getSelfUpdateBlocker } from "./operation-guard";
+import { BLOCKER_MESSAGES } from "./operation-guard-policy";
 import { classifySelfUpdateFailure } from "./failure-detail";
 import packageJSON from "../../package.json";
 import { log } from "../log";
@@ -83,7 +84,9 @@ export class SelfUpdateManager {
             this.settings = normalizeSelfUpdateSettings(DEFAULT_SELF_UPDATE_SETTINGS);
         }
         try {
-            this.operation = { ...idle(), ...JSON.parse(await fs.readFile(STATUS_PATH, "utf8")) } as SelfUpdateOperation;
+            this.operation = this.normalizeDeferredOperation(
+                { ...idle(), ...JSON.parse(await fs.readFile(STATUS_PATH, "utf8")) } as SelfUpdateOperation,
+            );
         } catch {
             this.operation = idle();
         }
@@ -98,7 +101,7 @@ export class SelfUpdateManager {
     async refreshOperation(): Promise<SelfUpdateOperation> {
         try {
             const diskOperation = { ...idle(), ...JSON.parse(await fs.readFile(STATUS_PATH, "utf8")) } as SelfUpdateOperation;
-            this.operation = diskOperation;
+            this.operation = this.normalizeDeferredOperation(diskOperation);
         } catch {
             // Keep the in-memory state if the sidecar has not written a status yet.
         }
@@ -345,19 +348,35 @@ export class SelfUpdateManager {
         }
     }
 
-    private async notifySelfUpdateDeferred(code: import("./types").SelfUpdateBlockerCode): Promise<boolean> {
-        const lang = await getNotificationLang();
-        const reasons: Record<import("./types").SelfUpdateBlockerCode, string> = {
-            "image-work": notificationText(lang, "une vérification ou une mise à jour d’image Docker est en cours", "an image update or image check is in progress", "hay una comprobación o actualización de imagen Docker en curso", "Docker 镜像检查或更新正在进行"),
-            "restic-backup": notificationText(lang, "un backup Restic ou sa vérification est en cours", "a Restic backup or backup verification is in progress", "hay una copia Restic o su verificación en curso", "Restic 备份或备份验证正在进行"),
-            "restic-restore": notificationText(lang, "une restauration Restic est en cours", "a Restic restore is in progress", "hay una restauración Restic en curso", "Restic 恢复正在进行"),
-            "stack-transfer": notificationText(lang, "une copie, un déplacement ou un transfert de données de stack est en cours", "a stack copy, move or data transfer is in progress", "hay una copia, traslado o transferencia de datos de stack en curso", "堆栈复制、移动或数据传输正在进行"),
-            "stack-replication": notificationText(lang, "une réplication ou un test de restauration de stack est en cours", "a stack replication or recovery test is in progress", "hay una replicación o una prueba de recuperación de stack en curso", "堆栈复制或恢复测试正在进行"),
-            "trivy-scan": notificationText(lang, "un scan de sécurité Trivy est en cours", "an image security scan is in progress", "hay un análisis de seguridad Trivy en curso", "Trivy 安全扫描正在进行"),
-            "external-stack-integration": notificationText(lang, "une intégration protégée de stack externe est en cours", "a protected external-stack integration is in progress", "hay una integración protegida de stack externa en curso", "受保护的外部堆栈集成正在进行"),
-            "state-check-error": notificationText(lang, "l’état des opérations sensibles n’a pas pu être vérifié de façon sûre", "the state of sensitive operations could not be verified safely", "no se pudo verificar de forma segura el estado de las operaciones sensibles", "无法安全验证敏感操作的状态"),
+    private inferDeferredBlockerCode(message: string): SelfUpdateBlockerCode | null {
+        const normalized = message.toLowerCase();
+        const entries = Object.entries(BLOCKER_MESSAGES) as Array<[SelfUpdateBlockerCode, string]>;
+        return entries.find(([, blockerMessage]) => normalized.includes(blockerMessage.toLowerCase()))?.[0] ?? null;
+    }
+
+    private normalizeDeferredOperation(operation: SelfUpdateOperation): SelfUpdateOperation {
+        if (operation.state !== "scheduled" || operation.deferredBy || !operation.message) return operation;
+        const deferredBy = this.inferDeferredBlockerCode(operation.message);
+        return deferredBy ? { ...operation, deferredBy } : operation;
+    }
+
+    private localizedDeferredReason(code: SelfUpdateBlockerCode, lang: NotificationLang): string {
+        const reasons: Record<SelfUpdateBlockerCode, [string, string, string, string]> = {
+            "image-work": [ "une vérification ou une mise à jour d’image Docker est en cours", "an image update or image check is in progress", "hay una comprobación o actualización de imagen Docker en curso", "Docker 镜像检查或更新正在进行" ],
+            "restic-backup": [ "un backup Restic ou sa vérification est en cours", "a Restic backup or backup verification is in progress", "hay una copia Restic o su verificación en curso", "Restic 备份或备份验证正在进行" ],
+            "restic-restore": [ "une restauration Restic est en cours", "a Restic restore is in progress", "hay una restauración Restic en curso", "Restic 恢复正在进行" ],
+            "stack-transfer": [ "une copie, un déplacement ou un transfert de données de stack est en cours", "a stack copy, move or data transfer is in progress", "hay una copia, traslado o transferencia de datos de stack en curso", "堆栈复制、移动或数据传输正在进行" ],
+            "stack-replication": [ "une réplication ou un test de restauration de stack est en cours", "a stack replication or recovery test is in progress", "hay una replicación o una prueba de recuperación de stack en curso", "堆栈复制或恢复测试正在进行" ],
+            "trivy-scan": [ "un scan de sécurité Trivy est en cours", "an image security scan is in progress", "hay un análisis de seguridad Trivy en curso", "Trivy 安全扫描正在进行" ],
+            "external-stack-integration": [ "une intégration protégée de stack externe est en cours", "a protected external-stack integration is in progress", "hay una integración protegida de stack externa en curso", "受保护的外部堆栈集成正在进行" ],
+            "state-check-error": [ "l’état des opérations sensibles n’a pas pu être vérifié de façon sûre", "the state of sensitive operations could not be verified safely", "no se pudo verificar de forma segura el estado de las operaciones sensibles", "无法安全验证敏感操作的状态" ],
         };
-        const reason = reasons[code];
+        return notificationText(lang, ...reasons[code]);
+    }
+
+    private async notifySelfUpdateDeferred(code: SelfUpdateBlockerCode): Promise<boolean> {
+        const lang = await getNotificationLang();
+        const reason = this.localizedDeferredReason(code, lang);
         return this.notify(
             "⏳ Dockge-Enhanced update deferred",
             notificationText(
@@ -608,12 +627,28 @@ export class SelfUpdateManager {
             }
             const deferredMatch = body.match(/^Automatic self-update was deferred because (.+)\. It will be retried by the existing update watcher\.$/s);
             if (deferredMatch) {
+                const blockerCode = this.inferDeferredBlockerCode(deferredMatch[1]);
+                const reason = blockerCode ? this.localizedDeferredReason(blockerCode, lang) : deferredMatch[1];
                 localizedBody = notificationText(
                     lang,
-                    `La mise à jour automatique a été reportée car ${deferredMatch[1]}. Elle sera retentée par le watcher de mise à jour existant.`,
-                    body,
-                    `La actualización automática se aplazó porque ${deferredMatch[1]}. El watcher de actualizaciones existente volverá a intentarlo.`,
-                    `自动更新已推迟，原因：${deferredMatch[1]}。现有更新监视器将稍后重试。`,
+                    `La mise à jour automatique a été reportée car ${reason}. Elle sera retentée par le watcher de mise à jour existant.`,
+                    `The automatic self-update was deferred because ${reason}. It will be retried by the existing update watcher.`,
+                    `La actualización automática se aplazó porque ${reason}. El watcher de actualizaciones existente volverá a intentarlo.`,
+                    `自动更新已推迟，原因：${reason}。现有更新监视器将稍后重试。`,
+                );
+            }
+
+            const deferredPrefix = "Automatic self-update deferred: ";
+            if (body.startsWith(deferredPrefix)) {
+                const rawReason = body.slice(deferredPrefix.length);
+                const blockerCode = this.inferDeferredBlockerCode(rawReason);
+                const reason = blockerCode ? this.localizedDeferredReason(blockerCode, lang) : rawReason;
+                localizedBody = notificationText(
+                    lang,
+                    `Mise à jour automatique reportée : ${reason}`,
+                    `Automatic self-update deferred: ${reason}`,
+                    `Actualización automática aplazada: ${reason}`,
+                    `自动更新已推迟：${reason}`,
                 );
             }
             const hostname = (await Settings.get("primaryHostname")) || "";

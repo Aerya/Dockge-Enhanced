@@ -129,3 +129,29 @@ test("only post-restart sidecar states or pending terminal notifications arm the
     manager.operation = { ...base, state: "idle" };
     assert.equal(manager.shouldWatchTerminalStatus(), false);
 });
+
+
+test("legacy deferred messages recover their blocker code", async () => {
+    const { SelfUpdateManager } = await import(`./manager.ts?deferred-legacy=${Date.now()}`);
+    const manager = SelfUpdateManager.getInstance() as any;
+    const operation = {
+        id: "",
+        state: "scheduled",
+        message: "Automatic self-update was deferred because an image security scan is in progress. It will be retried by the existing update watcher.",
+        startedAt: null,
+        finishedAt: null,
+        targetImage: "ghcr.io/aerya/dockge-enhanced@sha256:" + "a".repeat(64),
+        rollbackAttempted: false,
+    };
+
+    const normalized = manager.normalizeDeferredOperation(operation);
+    assert.equal(normalized.deferredBy, "trivy-scan");
+});
+
+test("deferred blocker reasons are localized before notification rendering", async () => {
+    const { SelfUpdateManager } = await import(`./manager.ts?deferred-i18n=${Date.now()}`);
+    const manager = SelfUpdateManager.getInstance() as any;
+
+    assert.equal(manager.localizedDeferredReason("trivy-scan", "fr"), "un scan de sécurité Trivy est en cours");
+    assert.equal(manager.localizedDeferredReason("trivy-scan", "en"), "an image security scan is in progress");
+});
