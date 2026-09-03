@@ -1093,37 +1093,21 @@ export class Stack {
                 throw new Error(`Failed to ${action} service ${serviceName}; check the terminal for details.`);
             }
         };
-        const getServiceContainerIds = async () => {
-            const result = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--all", "--quiet", serviceName), {
-                cwd: this.path,
-                encoding: "utf-8",
-            });
-            return result.stdout?.toString().trim() ?? "";
-        };
-
         if (action === "start") {
             await exec("up", "-d", serviceName);
         } else if (action === "stop") {
             await exec("stop", ...[ ...targets ].reverse());
         } else if (action === "restart") {
             await exec("restart", ...targets);
-        } else if (action === "update") {
-            const previousContainerIds = await getServiceContainerIds();
+        } else if (action === "update" || action === "pull-recreate") {
+            // A manual update means "pull + recreate": once the image has been
+            // refreshed locally, force the selected service onto that image.
+            // Network namespace dependants are recreated in the same operation
+            // so they cannot remain attached to the old container namespace.
             await exec("pull", serviceName);
-            await exec("up", "-d", "--no-deps", serviceName);
-
-            // If Compose replaced a VPN/network namespace owner, its sharing
-            // services must also be replaced so they join the new namespace.
-            const currentContainerIds = await getServiceContainerIds();
-            const networkDependants = targets.slice(1);
-            if (currentContainerIds && currentContainerIds !== previousContainerIds && networkDependants.length > 0) {
-                await exec("up", "-d", "--force-recreate", "--no-deps", ...networkDependants);
-            }
+            await exec("up", "-d", "--force-recreate", "--no-deps", ...targets);
             await this.writeMeta({ lastUpdated: new Date().toISOString(), lastStartedAt: new Date().toISOString() });
         } else {
-            if (action === "pull-recreate") {
-                await exec("pull", serviceName);
-            }
             await exec("up", "-d", "--force-recreate", "--no-deps", ...targets);
             await this.writeMeta({ lastUpdated: new Date().toISOString(), lastStartedAt: new Date().toISOString() });
         }
@@ -1165,36 +1149,11 @@ export class Stack {
         return exitCode;
     }
 
-    async update(socket: DockgeSocket) {
-        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        const startGuard = (await this.readMeta()).startGuard;
-        if (startGuard.enabled && startGuard.conditions.length > 0) {
-            await this.updateStatus();
-            if (this.status === RUNNING) {
-                await this.assertStartGuard();
-            }
-        }
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("pull"), this.path);
-        if (exitCode !== 0) {
-            throw new Error("Failed to pull, please check the terminal output for more information.");
-        }
-
-        // Le pull vient de réussir — on enregistre la date de mise à jour
-        await this.writeMeta({ lastUpdated: new Date().toISOString() });
-
-        // If the stack is not running, we don't need to restart it
-        log.debug("update", "Status: " + this.status);
-        if (this.status !== RUNNING) {
-            return exitCode;
-        }
-
-        exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--remove-orphans"), this.path);
-        if (exitCode !== 0) {
-            throw new Error("Failed to restart, please check the terminal output for more information.");
-        }
-        // Le up a réussi — on enregistre la date de relance
-        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
-        return exitCode;
+    async update(socket: DockgeSocket) : Promise<number> {
+        // In the WebUI, "Update" is intentionally equivalent to the historical
+        // "Pull & Recreate" action: pull every image, then force-recreate the
+        // stack so running containers cannot keep using the previous image.
+        return this.pullAndRecreate(socket);
     }
 
     async pullAndRecreate(socket: DockgeSocket) : Promise<number> {
