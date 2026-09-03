@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-09-03 — Contadores de stacks de inicio con etiquetas pluralizadas dedicadas** — Los tres contadores grandes de stacks de la página de inicio usan ahora etiquetas específicas con singular/plural. Las traducciones genéricas `active`, `exited` e `inactive` no se modifican para no afectar a otras pantallas.
+
 **2026-09-03 — Resumen de instancias vinculadas en la página de inicio** — El bloque Dockge Agents se amplía sin cambiar de posición ni eliminar sus acciones de gestión. Cada instancia muestra sus stacks activos/detenidos/inactivos, CPU/RAM del host, uptime y stacks fijados. Un clic filtra directamente la columna de stacks por esa instancia.
 
 **2026-09-03 — Concordancia singular/plural del resumen de stacks en francés** — Los contadores de stacks en la interfaz francesa usan ahora el singular cuando corresponde exactamente una stack, manteniendo el género femenino.\n\n**2026-09-03 — Estadísticas CPU/RAM por stack propagadas entre instancias vinculadas** — La opción de visualización se guarda ahora en la instancia propietaria. Cuando está activada, esa instancia recopila sus propias estadísticas Docker y las proporciona a las WebUI vinculadas mediante un evento de agente dedicado. Los indicadores de stacks y contenedores usan la caché de su endpoint con un único poller compartido por instancia. Una instancia con la opción desactivada no ejecuta `docker stats` para esta visualización.

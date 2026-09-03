@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — Home stack counters now use dedicated pluralized labels** — The three large stack counters on the home page now use dedicated plural-aware labels. The generic `active`, `exited` and `inactive` translations remain unchanged so other screens are unaffected.
+
 **2026-09-03 — Linked-instance overview on the home page** — The existing Dockge Agents panel is enriched in place without removing its management actions. Each instance now shows active/stopped/inactive stack counts, its own host CPU/RAM stats, uptime and pinned-stack count. Clicking an instance directly filters the stack column to that server. Remote host stats use the existing agent channel and remain collected by the owning instance.
 
 **2026-09-03 — French stack summary singular/plural agreement** — The French stack counters now use the singular form when exactly one stack matches, while keeping the feminine wording used for “une stack”.\n\n**2026-09-03 — Per-stack CPU/RAM stats propagated across linked instances** — The display option is now persisted on the owning instance. When enabled, that instance collects its own Docker stats and exposes them to linked WebUIs through a dedicated agent event. Stack and container badges use their endpoint-specific cache with one shared poller per instance. An instance with the option disabled does not run `docker stats` for this display.
