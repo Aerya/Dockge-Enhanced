@@ -15,14 +15,26 @@ test("a terminal sidecar result is notified once and marked atomically", async (
         rollbackAttempted: false, notificationPending: true, notificationSentAt: null,
     };
     let notifications = 0;
-    manager.notify = async () => { notifications += 1; return true; };
+    manager.notify = async () => {
+        notifications += 1;
+        await new Promise(resolve => setTimeout(resolve, 25));
+        return true;
+    };
+
+    await Promise.all([
+        manager.processTerminalNotification(),
+        manager.processTerminalNotification(),
+    ]);
     await manager.processTerminalNotification();
-    await manager.processTerminalNotification();
+
     assert.equal(notifications, 1);
     assert.equal(manager.operation.notificationPending, false);
     assert.ok(manager.operation.notificationSentAt);
+    assert.equal(manager.terminalNotificationInFlight, false);
+
     const persisted = JSON.parse(await fs.readFile(path.join(dataDir, "self-update", "status.json"), "utf8"));
     assert.equal(persisted.notificationPending, false);
+    assert.ok(persisted.notificationSentAt);
     await fs.rm(dataDir, { recursive: true, force: true });
 });
 
