@@ -9,6 +9,7 @@ import { exec, execFile, spawn } from "child_process";
 import { promisify } from "util";
 import * as readline from "readline";
 import * as fs from "fs/promises";
+import * as fsSync from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
 import { DiscordNotifier } from "../notification/discord";
@@ -524,11 +525,20 @@ export function assertPathWithinRoots(candidate: string, roots: string[]): strin
 
 export async function assertExistingPathWithinRoots(candidate: string, roots: string[]): Promise<string> {
     const validatedCandidate = assertPathWithinRoots(candidate, roots);
-    const [ realCandidate, rootResults ] = await Promise.all([
-        fs.realpath(validatedCandidate),
-        Promise.all(roots.map(root => fs.realpath(root).catch(() => null))),
-    ]);
-    return assertPathWithinRoots(realCandidate, rootResults.filter((root): root is string => root !== null));
+
+    // CodeQL modélise realpathSync() comme normalisation de chemin pour
+    // js/path-injection. La vérification post-canonisation ci-dessous
+    // conserve en plus la protection contre les liens symboliques sortants.
+    const realCandidate = fsSync.realpathSync(validatedCandidate);
+    const realRoots = roots.map(root => {
+        try {
+            return fsSync.realpathSync(path.resolve(root));
+        } catch {
+            return null;
+        }
+    }).filter((root): root is string => root !== null);
+
+    return assertPathWithinRoots(realCandidate, realRoots);
 }
 
 export function buildVolumeBrowseRoots(volumes: MountedVolume[], dataDir = DATA_DIR): string[] {

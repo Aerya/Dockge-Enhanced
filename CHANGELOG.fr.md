@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-09-03 — Durcissement CodeQL de la validation des chemins Backup** — La canonisation des chemins utilisés par le navigateur Backup passe désormais par `fs.realpathSync()`, reconnue par CodeQL comme étape de normalisation pour les contrôles de path traversal, puis le chemin réel est toujours revérifié contre les racines autorisées. Cela conserve la protection contre les liens symboliques sortants tout en supprimant le finding `js/path-injection` introduit par l’usage de `fs.realpath()` dans #346.
+
 **2026-09-03 — Navigateur de volumes Backup : sous-dossiers à nouveau accessibles** — La validation des chemins utilise désormais `fs.realpath()` de Node au lieu du binaire `realpath`, dont l’option `--` n’est pas compatible avec BusyBox/Alpine. `/app/data` reste explicitement autorisé dans le navigateur même lorsqu’il est exclu de la liste des volumes montés affichés. Une erreur de validation ou de lecture est maintenant distinguée d’un dossier réellement vide dans la WebUI. Corrige #340.
 
 **2026-09-03 — Identifiant sécurisé pour les leases d’édition** — Le lease qui protège les modifications non enregistrées pendant un self-update utilise désormais exclusivement `crypto.getRandomValues()` pour générer son identifiant de session. Le fallback `Math.random()` signalé par CodeQL est supprimé ; en l’absence d’une API cryptographique sûre, aucun identifiant faible n’est généré.

@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-09-03 — Refuerzo CodeQL de la validación de rutas de Backup** — La canonización de rutas usa ahora `fs.realpathSync()`, reconocida por CodeQL como normalización de rutas, y la ruta canónica sigue verificándose después contra las raíces permitidas. Se mantiene la protección frente a enlaces simbólicos que salen de las raíces autorizadas y se elimina el finding `js/path-injection` de #346.
+
 **2026-09-03 — Navegador de volúmenes de Backup: subdirectorios accesibles de nuevo** — La validación de rutas usa ahora `fs.realpath()` de Node en lugar del binario `realpath`, cuya opción `--` no es compatible con BusyBox/Alpine. `/app/data` sigue autorizado explícitamente y la WebUI distingue los errores de lectura de un directorio realmente vacío. Corrige #340.
 
 **2026-09-03 — Identificador seguro para los leases de edición** — El lease que protege los cambios no guardados durante el self-update usa ahora exclusivamente `crypto.getRandomValues()` para generar su identificador de sesión. Se elimina el fallback `Math.random()` señalado por CodeQL.

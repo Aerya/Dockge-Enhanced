@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-09-03 — Backup 路径校验的 CodeQL 加固** — Backup 路径规范化现在使用 CodeQL 可识别为路径规范化步骤的 `fs.realpathSync()`，随后仍会将真实路径与允许的根目录再次校验。这样既保留了防止符号链接逃逸的保护，也消除了 #346 中 `fs.realpath()` 引入的 `js/path-injection` 告警。
+
 **2026-09-03 — Backup 数据卷浏览器：恢复子目录浏览** — 路径校验现在使用 Node 的 `fs.realpath()`，不再调用 BusyBox/Alpine 不兼容 `--` 参数的 `realpath` 命令。`/app/data` 始终作为允许的浏览根目录，并且 WebUI 现在会区分读取错误与真正的空目录。修复 #340。
 
 **2026-09-03 — 编辑 lease 使用安全会话标识符** — 用于在 self-update 期间保护未保存 compose/.env 修改的 lease 现在仅使用 `crypto.getRandomValues()` 生成会话标识符，并移除 CodeQL 标记的 `Math.random()` 回退。
