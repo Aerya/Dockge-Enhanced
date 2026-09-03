@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-03-linked-instances-home-overview",
+        items: [ "releaseNews.item.linkedInstancesOverview" ],
+    },
+    {
         id: "2026-09-03-linked-instance-stack-stats",
         items: [ "releaseNews.item.linkedInstanceStackStats" ],
     },

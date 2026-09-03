@@ -90,6 +90,11 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Resumen de las instancias vinculadas en la página de inicio**
+
+El panel de agentes existente en la página de inicio funciona ahora también como resumen compacto de la infraestructura. Cada instancia Dockge-Enhanced vinculada muestra el número y estado de sus stacks, el uso de CPU/RAM del host, el uptime y el número de stacks fijados, conservando las acciones existentes para renombrar, reautenticar, eliminar y añadir agentes. Un clic en una instancia filtra la lista de stacks de la izquierda a ese servidor; un segundo clic restaura la vista de todos los servidores.
+
+
 **Estadísticas CPU/RAM por stack entre instancias vinculadas**
 
 La opción **Mostrar estadísticas CPU / RAM por stack** pertenece ahora a cada instancia Dockge-Enhanced. Cuando se activa en un servidor, ese servidor recopila sus propias estadísticas Docker y las expone mediante el canal existente de instancias vinculadas. Cualquier WebUI vinculada que muestre ese servidor presenta los mismos indicadores CPU/RAM para sus stacks y contenedores. Ocultar el servidor oculta sus estadísticas; desactivar la opción en la instancia propietaria detiene su recopilación y exposición.

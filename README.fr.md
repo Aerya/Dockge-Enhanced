@@ -88,6 +88,11 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 ### 🆕 Septembre 2026
 
+**Vue synthétique des instances liées sur l’accueil**
+
+Le panneau des agents déjà présent sur l’accueil devient également une vue compacte de l’infrastructure. Chaque instance Dockge-Enhanced liée affiche le nombre et l’état de ses stacks, l’utilisation CPU/RAM de l’hôte, son uptime et le nombre de stacks épinglées, tout en conservant les actions existantes de renommage, réauthentification, suppression et ajout d’agent. Un clic sur le résumé d’une instance filtre la liste des stacks à gauche sur ce serveur ; un second clic rétablit la vue de tous les serveurs.
+
+
 **Stats CPU/RAM par stack entre instances liées**
 
 L’option **Afficher les stats CPU / RAM par stack** appartient désormais à chaque instance Dockge-Enhanced. Lorsqu’elle est activée sur un serveur, celui-ci collecte ses propres statistiques Docker et les expose via le canal existant des instances liées. Toute WebUI liée qui affiche ce serveur montre les mêmes badges CPU/RAM pour ses stacks et leurs conteneurs. Masquer le serveur masque ses statistiques ; désactiver l’option sur l’instance propriétaire arrête leur collecte et leur exposition pour cette instance.

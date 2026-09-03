@@ -436,9 +436,13 @@ export default {
         },
     },
     mounted() {
+        window.addEventListener("dockge-agent-filter", this.applyExternalAgentFilter);
         if (this.agentOptions.length > 0) {
             this.initializePinnedStacks(this.agentOptions);
         }
+    },
+    beforeUnmount() {
+        window.removeEventListener("dockge-agent-filter", this.applyExternalAgentFilter);
     },
     methods: {
         loadLegacyPinnedStacks() {
@@ -579,6 +583,16 @@ export default {
 
             const legacy = localStorage.getItem("stackAgentFilter");
             return legacy && legacy !== "__all__" ? [ legacy ] : [];
+        },
+        applyExternalAgentFilter(event) {
+            const endpoint = event?.detail?.endpoint;
+            if (endpoint === null || endpoint === undefined) {
+                this.stackAgentFilters = [];
+                return;
+            }
+            if (typeof endpoint === "string") {
+                this.stackAgentFilters = [ endpoint ];
+            }
         },
         selectAllAgents() {
             // Store every endpoint explicitly so Vue updates each native
