@@ -14,7 +14,7 @@ import { DEFAULT_SELF_UPDATE_SETTINGS, normalizeSelfUpdateSettings, selfUpdateMa
 import { isAllowedTargetImage, isPathInside, isSafeComposeName, isSelfUpdateActive, normalizeSelfRepository } from "./policy";
 import { atomicWriteFile, atomicWriteJson } from "./state-file";
 import { getSelfUpdateBlocker } from "./operation-guard";
-import { BLOCKER_MESSAGES } from "./operation-guard-policy";
+import { BLOCKER_MESSAGES, type SelfUpdateBlocker } from "./operation-guard-policy";
 import { classifySelfUpdateFailure } from "./failure-detail";
 import packageJSON from "../../package.json";
 import { log } from "../log";
@@ -153,6 +153,35 @@ export class SelfUpdateManager {
         );
     }
 
+    private async deferAutomaticUpdate(targetImage: string, blocker: SelfUpdateBlocker): Promise<SelfUpdateOperation> {
+        const key = `${targetImage}:${blocker.code}`;
+        this.operation = {
+            id: "",
+            state: "scheduled",
+            message: `Automatic self-update deferred: ${blocker.message}`,
+            startedAt: null,
+            finishedAt: null,
+            targetImage,
+            rollbackAttempted: false,
+            deferredBy: blocker.code,
+        };
+        this.progress = null;
+        await this.saveOperation();
+        if (key !== this.lastDeferralKey) {
+            this.lastDeferralKey = key;
+            await this.notifySelfUpdateDeferred(blocker.code);
+        }
+        return this.getOperation();
+    }
+
+    private async recheckAutomaticBlocker(targetImage: string, automatic: boolean, stage: string): Promise<SelfUpdateOperation | null> {
+        if (!automatic) return null;
+        const blocker = await getSelfUpdateBlocker();
+        if (!blocker) return null;
+        log.info("self-update", `Auto-update remise en attente avant ${stage} — blocker=${blocker.code}`);
+        return this.deferAutomaticUpdate(targetImage, blocker);
+    }
+
     async requestSidecarUpdate(targetImage: string, automatic = false, targetRevision?: string): Promise<SelfUpdateOperation> {
         const resumingScheduled = automatic && this.operation.state === "scheduled";
         if (this.requestInFlight || (isSelfUpdateActive(this.operation.state) && !resumingScheduled)) throw new Error("A self-update is already running");
@@ -162,25 +191,7 @@ export class SelfUpdateManager {
         if (this.settings.mode !== "sidecar" && automatic) return this.getOperation();
         if (automatic) {
             const blocker = await getSelfUpdateBlocker();
-            if (blocker) {
-                const key = `${targetImage}:${blocker.code}`;
-                this.operation = {
-                    id: "",
-                    state: "scheduled",
-                    message: `Automatic self-update deferred: ${blocker.message}`,
-                    startedAt: null,
-                    finishedAt: null,
-                    targetImage,
-                    rollbackAttempted: false,
-                    deferredBy: blocker.code,
-                };
-                await this.saveOperation();
-                if (key !== this.lastDeferralKey) {
-                    this.lastDeferralKey = key;
-                    await this.notifySelfUpdateDeferred(blocker.code);
-                }
-                return this.getOperation();
-            }
+            if (blocker) return this.deferAutomaticUpdate(targetImage, blocker);
             this.lastDeferralKey = "";
         }
         const containerId = process.env.HOSTNAME?.trim();
@@ -298,6 +309,9 @@ export class SelfUpdateManager {
             }
         }
 
+        const deferredBeforePreparation = await this.recheckAutomaticBlocker(targetImage, automatic, "la préparation du sidecar");
+        if (deferredBeforePreparation) return deferredBeforePreparation;
+
         const stateMount = (inspected.Mounts ?? []).find((mount) => mount.Destination === DATA_DIR);
         if (!stateMount?.Source) throw new Error(`The ${DATA_DIR} volume is required for self-update state`);
         plan.issuedAt = new Date().toISOString();
@@ -327,6 +341,9 @@ export class SelfUpdateManager {
             await this.saveOperation();
             return this.getOperation();
         }
+
+        const deferredBeforeLaunch = await this.recheckAutomaticBlocker(targetImage, automatic, "le lancement du sidecar");
+        if (deferredBeforeLaunch) return deferredBeforeLaunch;
 
         const args = [
             "run", "--pull=always", "-d", "--rm",
@@ -391,6 +408,7 @@ export class SelfUpdateManager {
 
     private localizedDeferredReason(code: SelfUpdateBlockerCode, lang: NotificationLang): string {
         const reasons: Record<SelfUpdateBlockerCode, [string, string, string, string]> = {
+            "active-editor": [ "des modifications non enregistrées sont en cours dans un compose ou un fichier .env", "unsaved compose or .env changes are being edited", "se están editando cambios no guardados en un compose o archivo .env", "正在编辑 compose 或 .env 中尚未保存的更改" ],
             "image-work": [ "une vérification ou une mise à jour d’image Docker est en cours", "an image update or image check is in progress", "hay una comprobación o actualización de imagen Docker en curso", "Docker 镜像检查或更新正在进行" ],
             "restic-backup": [ "un backup Restic ou sa vérification est en cours", "a Restic backup or backup verification is in progress", "hay una copia Restic o su verificación en curso", "Restic 备份或备份验证正在进行" ],
             "restic-restore": [ "une restauration Restic est en cours", "a Restic restore is in progress", "hay una restauración Restic en curso", "Restic 恢复正在进行" ],

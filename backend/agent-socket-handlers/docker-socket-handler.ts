@@ -13,6 +13,9 @@ import { normalizeUpdatePause } from "../watchers/update-policy";
 import { Settings } from "../settings";
 import { applyStackPin, normalizePinnedStacks, STACK_PINS_SETTING_KEY } from "../stack-pins";
 import { getStackStatsSnapshot, getSystemStatsSnapshot } from "../routers/system-stats-router";
+import { ComposeEditLeaseManager } from "../self-update/editor-lease";
+import { SelfUpdateManager } from "../self-update/manager";
+import { SelfUpdateChecker } from "../watchers/self-update-checker";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -31,6 +34,74 @@ export class DockerSocketHandler extends AgentSocketHandler {
             try {
                 checkLogin(socket);
                 callbackResult({ ok: true, ...(await getStackStatsSnapshot()) }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("composeEditLeaseUpdate", async (payload : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                const input = payload && typeof payload === "object" ? payload as {
+                    sessionId?: unknown;
+                    stackName?: unknown;
+                    dirty?: unknown;
+                    holdMinutes?: unknown;
+                } : {};
+                if (typeof input.sessionId !== "string" || typeof input.stackName !== "string" || typeof input.dirty !== "boolean") {
+                    throw new ValidationError("Invalid compose edit lease payload");
+                }
+                const holdMinutes = input.holdMinutes === undefined ? undefined : Number(input.holdMinutes);
+                const lease = ComposeEditLeaseManager.getInstance().update({
+                    sessionId: input.sessionId,
+                    stackName: input.stackName,
+                    dirty: input.dirty,
+                    ...(holdMinutes === undefined ? {} : { holdMinutes }),
+                });
+                const manager = SelfUpdateManager.getInstance();
+                const checkerStatus = SelfUpdateChecker.getInstance().getStatus();
+                callbackResult({
+                    ok: true,
+                    data: {
+                        lease,
+                        remoteDigest: checkerStatus.remoteDigest,
+                        operation: manager.getOperation(),
+                    },
+                }, callback);
+                if (holdMinutes && holdMinutes > 0) {
+                    setTimeout(() => {
+                        void SelfUpdateChecker.getInstance().check();
+                    }, holdMinutes * 60_000 + 1_000);
+                }
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("composeEditLeaseRelease", async (payload : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                const input = payload && typeof payload === "object" ? payload as {
+                    sessionId?: unknown;
+                    clearHold?: unknown;
+                    resume?: unknown;
+                } : {};
+                ComposeEditLeaseManager.getInstance().release(input.sessionId, input.clearHold === true);
+                callbackResult({ ok: true }, callback);
+                if (input.resume === true) {
+                    setTimeout(() => {
+                        void SelfUpdateChecker.getInstance().check();
+                    }, 250);
+                    // A save can itself trigger a Restic backup-on-save. Retry once
+                    // shortly afterwards so "Save and update" does not wait for the
+                    // normal 10-minute checker cadence if that backup was the only blocker.
+                    setTimeout(() => {
+                        const operation = SelfUpdateManager.getInstance().getOperation();
+                        if (operation.state === "scheduled") {
+                            void SelfUpdateChecker.getInstance().check();
+                        }
+                    }, 60_000);
+                }
             } catch (e) {
                 callbackError(e, callback);
             }

@@ -3,6 +3,7 @@ import type { SelfUpdateBlockerCode } from "./types";
 const EXTERNAL_STACK_ACTIVE_STATES = new Set([ "preparing", "updating", "waiting-health", "rolling-back" ]);
 
 export interface SelfUpdateOperationSnapshot {
+    activeEditor: boolean;
     imageWork: boolean;
     resticBackup: boolean;
     resticRestore: boolean;
@@ -18,6 +19,7 @@ export interface SelfUpdateBlocker {
 }
 
 export const BLOCKER_MESSAGES: Record<SelfUpdateBlockerCode, string> = {
+    "active-editor": "unsaved compose or environment changes are being edited",
     "external-stack-integration": "a protected external-stack integration is in progress",
     "restic-restore": "a Restic restore is in progress",
     "restic-backup": "a Restic backup or backup verification is in progress",
@@ -30,6 +32,7 @@ export const BLOCKER_MESSAGES: Record<SelfUpdateBlockerCode, string> = {
 
 export function selectSelfUpdateBlocker(snapshot: SelfUpdateOperationSnapshot): SelfUpdateBlocker | null {
     const ordered: Array<[SelfUpdateBlockerCode, boolean]> = [
+        [ "active-editor", snapshot.activeEditor ],
         [ "external-stack-integration", snapshot.externalStackIntegration ],
         [ "restic-restore", snapshot.resticRestore ],
         [ "restic-backup", snapshot.resticBackup ],

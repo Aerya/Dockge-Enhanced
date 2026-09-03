@@ -1284,6 +1284,15 @@
     "selfUpdate.deferred": "自動更新正在等待 — {reason}",
     "updates.status.scheduled": "更新已延後。",
     "updates.status.deferredReason": "自動更新已延後：{reason}。操作完成後將自動重試。",
+    "selfUpdate.editor.title": "自動更新正在等待",
+    "selfUpdate.editor.body": "{instance} 上的 Dockge-Enhanced 自動更新已準備就緒，但堆疊「{stack}」包含尚未儲存的變更。",
+    "selfUpdate.editor.hint": "為保護你的工作，更新會保持阻塞。你可以立即儲存並更新、延後更新或繼續編輯。",
+    "selfUpdate.editor.saveAndUpdate": "儲存並更新",
+    "selfUpdate.editor.defer30": "延後 30 分鐘",
+    "selfUpdate.editor.defer60": "延後 1 小時",
+    "selfUpdate.editor.continueEditing": "繼續編輯",
+    "selfUpdate.editor.deferred": "更新已延後 {minutes} 分鐘。",
+    "updates.blocker.active-editor": "正在編輯 compose 或 .env 中尚未儲存的變更",
     "updates.blocker.image-work": "Docker 映像檢查或更新正在進行",
     "updates.blocker.restic-backup": "Restic 備份或備份驗證正在進行",
     "updates.blocker.restic-restore": "Restic 還原正在進行",
@@ -1330,5 +1339,6 @@
     "linkedInstances.active": "執行中 | 執行中",
     "linkedInstances.stopped": "已停止 | 已停止",
     "linkedInstances.inactive": "未啟動 | 未啟動",
+    "releaseNews.item.selfUpdateEditProtection": "自動更新現在會保護正在進行的 compose/.env 編輯：未儲存的變更會阻止所屬執行個體重新啟動，包括從關聯 WebUI 進行的編輯。對話框可選擇儲存並更新、延後 30 分鐘或 1 小時，或繼續編輯。",
     "releaseNews.item.linkedInstancesOverview": "首頁代理區現在增加精簡的關聯執行個體概覽，顯示堆疊狀態、CPU、記憶體、運行時間和固定堆疊數量。點擊執行個體可直接篩選左側堆疊清單，同時保留現有代理管理功能。"
 }

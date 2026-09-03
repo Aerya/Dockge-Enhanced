@@ -1303,6 +1303,15 @@
     "selfUpdate.deferred": "自动更新正在等待 — {reason}",
     "updates.status.scheduled": "更新已被推迟。",
     "updates.status.deferredReason": "自动更新已延后：{reason}。操作完成后将自动重试。",
+    "selfUpdate.editor.title": "自动更新正在等待",
+    "selfUpdate.editor.body": "{instance} 上的 Dockge-Enhanced 自动更新已准备就绪，但堆栈“{stack}”包含尚未保存的更改。",
+    "selfUpdate.editor.hint": "为保护你的工作，更新会保持阻塞。你可以立即保存并更新、推迟更新或继续编辑。",
+    "selfUpdate.editor.saveAndUpdate": "保存并更新",
+    "selfUpdate.editor.defer30": "推迟 30 分钟",
+    "selfUpdate.editor.defer60": "推迟 1 小时",
+    "selfUpdate.editor.continueEditing": "继续编辑",
+    "selfUpdate.editor.deferred": "更新已推迟 {minutes} 分钟。",
+    "updates.blocker.active-editor": "正在编辑 compose 或 .env 中尚未保存的更改",
     "updates.blocker.image-work": "Docker 镜像检查或更新正在进行",
     "updates.blocker.restic-backup": "Restic 备份或备份验证正在进行",
     "updates.blocker.restic-restore": "Restic 恢复正在进行",
@@ -1363,5 +1372,6 @@
     "linkedInstances.active": "运行中 | 运行中",
     "linkedInstances.stopped": "已停止 | 已停止",
     "linkedInstances.inactive": "未启动 | 未启动",
+    "releaseNews.item.selfUpdateEditProtection": "自动更新现在会保护正在进行的 compose/.env 编辑：未保存的更改会阻止所属实例重启，包括从关联 WebUI 进行的编辑。对话框可选择保存并更新、推迟 30 分钟或 1 小时，或继续编辑。",
     "releaseNews.item.linkedInstancesOverview": "首页代理区现在增加紧凑的关联实例概览，显示堆栈状态、CPU、内存、运行时间和固定堆栈数量。点击实例可直接筛选左侧堆栈列表，同时保留现有代理管理功能。"
 }

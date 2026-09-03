@@ -7,6 +7,7 @@ import {
 } from "./operation-guard-policy";
 
 const idle = (): SelfUpdateOperationSnapshot => ({
+    activeEditor: false,
     imageWork: false,
     resticBackup: false,
     resticRestore: false,
@@ -22,6 +23,7 @@ test("self-update guard is idle when no sensitive operation is active", () => {
 
 test("self-update guard recognizes every supported blocker", () => {
     const cases: Array<[keyof SelfUpdateOperationSnapshot, string]> = [
+        [ "activeEditor", "active-editor" ],
         [ "imageWork", "image-work" ],
         [ "resticBackup", "restic-backup" ],
         [ "resticRestore", "restic-restore" ],
@@ -35,13 +37,14 @@ test("self-update guard recognizes every supported blocker", () => {
     }
 });
 
-test("self-update guard prioritizes container-recreation and restore operations", () => {
+test("self-update guard prioritizes unsaved editor work before backend operations", () => {
     assert.equal(selectSelfUpdateBlocker({
         ...idle(),
+        activeEditor: true,
         imageWork: true,
         resticBackup: true,
         externalStackIntegration: true,
-    })?.code, "external-stack-integration");
+    })?.code, "active-editor");
 });
 
 test("future protected external-stack helper active states are recognized", () => {

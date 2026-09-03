@@ -88,6 +88,11 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 ### 🆕 Septembre 2026
 
+**Protection de l’auto-mise à jour pendant l’édition d’un Compose/.env**
+
+Lorsqu’un compose, son override ou son `.env` contient des modifications non enregistrées dans la WebUI, l’instance Dockge-Enhanced propriétaire bloque temporairement son auto-mise à jour — y compris si l’édition a été ouverte depuis une autre WebUI liée. L’éditeur maintient un lease court par heartbeat afin qu’une session navigateur abandonnée expire automatiquement. Si une mise à jour devient prête pendant l’édition, un popup permet **d’enregistrer puis mettre à jour**, de **reporter de 30 minutes**, de **reporter d’1 heure** ou de **continuer à travailler**. Le backend revérifie aussi les bloqueurs juste avant la préparation puis le lancement du sidecar afin qu’une édition commencée pendant le backup/la vérification ne puisse pas être interrompue par le redémarrage.
+
+
 **Vue synthétique des instances liées sur l’accueil**
 
 Le panneau des agents déjà présent sur l’accueil devient également une vue compacte de l’infrastructure. Chaque instance Dockge-Enhanced liée affiche le nombre et l’état de ses stacks, l’utilisation CPU/RAM de l’hôte, son uptime et le nombre de stacks épinglées, tout en conservant les actions existantes de renommage, réauthentification, suppression et ajout d’agent. Un clic sur le résumé d’une instance filtre la liste des stacks à gauche sur ce serveur ; un second clic rétablit la vue de tous les serveurs.

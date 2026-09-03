@@ -1365,6 +1365,15 @@
     "updates.status.failed": "The update failed.",
     "updates.status.scheduled": "The update was deferred.",
     "updates.status.deferredReason": "Automatic update deferred: {reason}. It will retry automatically when the operation finishes.",
+    "selfUpdate.editor.title": "Automatic update waiting",
+    "selfUpdate.editor.body": "A Dockge-Enhanced automatic update is ready on {instance}, but stack “{stack}” has unsaved changes.",
+    "selfUpdate.editor.hint": "The update remains blocked to protect your work. You can save now, defer it, or keep working.",
+    "selfUpdate.editor.saveAndUpdate": "Save and update",
+    "selfUpdate.editor.defer30": "Defer 30 min",
+    "selfUpdate.editor.defer60": "Defer 1 hour",
+    "selfUpdate.editor.continueEditing": "Keep working",
+    "selfUpdate.editor.deferred": "Update deferred for {minutes} min.",
+    "updates.blocker.active-editor": "unsaved compose or .env changes are being edited",
     "updates.blocker.image-work": "an image update or image check is in progress",
     "updates.blocker.restic-backup": "a Restic backup or backup verification is in progress",
     "updates.blocker.restic-restore": "a Restic restore is in progress",
@@ -1426,5 +1435,6 @@
     "linkedInstances.active": "active | active",
     "linkedInstances.stopped": "stopped | stopped",
     "linkedInstances.inactive": "inactive | inactive",
+    "releaseNews.item.selfUpdateEditProtection": "Automatic updates now protect compose/.env edits in progress: unsaved changes block the owning instance restart, including edits made from a linked WebUI. A dialog lets you save and update, defer for 30 minutes or 1 hour, or keep working.",
     "releaseNews.item.linkedInstancesOverview": "The home page enriches the agent block with a compact linked-instance overview showing stack state, CPU, RAM, uptime and pinned-stack count. Clicking an instance directly filters the stack list on the left while preserving the existing agent-management actions."
 }

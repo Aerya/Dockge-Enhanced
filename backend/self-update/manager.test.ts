@@ -189,6 +189,8 @@ test("deferred blocker reasons are localized before notification rendering", asy
 
     assert.equal(manager.localizedDeferredReason("trivy-scan", "fr"), "un scan de sécurité Trivy est en cours");
     assert.equal(manager.localizedDeferredReason("trivy-scan", "en"), "an image security scan is in progress");
+    assert.equal(manager.localizedDeferredReason("active-editor", "fr"), "des modifications non enregistrées sont en cours dans un compose ou un fichier .env");
+    assert.equal(manager.localizedDeferredReason("active-editor", "en"), "unsaved compose or .env changes are being edited");
 });
 
 test("self-update Restic retention runs only after fresh backup verification", async () => {
@@ -220,4 +222,19 @@ test("self-update Restic retention runs only after fresh backup verification", a
     assert.match(backupSource, /snapshots", "--tag", instanceTag/);
     assert.match(backupSource, /const expired = ordered\.slice\(keep\)/);
     assert.match(backupSource, /"forget", \.\.\.ids, "--prune"/);
+});
+
+
+test("automatic self-update rechecks blockers before sidecar preparation and launch", async () => {
+    const source = await fs.readFile(new URL("./manager.ts", import.meta.url), "utf8");
+    const verifyPos = source.indexOf("verifyFreshBackup(");
+    const prepareCheckPos = source.indexOf('recheckAutomaticBlocker(targetImage, automatic, "la préparation du sidecar")');
+    const pullPos = source.indexOf('docker([ "image", "pull", sidecarImage ]');
+    const launchCheckPos = source.indexOf('recheckAutomaticBlocker(targetImage, automatic, "le lancement du sidecar")');
+    const argsPos = source.indexOf("const args = [", launchCheckPos);
+
+    assert.ok(prepareCheckPos > verifyPos);
+    assert.ok(pullPos > prepareCheckPos);
+    assert.ok(launchCheckPos > pullPos);
+    assert.ok(argsPos > launchCheckPos);
 });
