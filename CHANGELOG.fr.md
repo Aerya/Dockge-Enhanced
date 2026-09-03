@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-09-03 — Self-update : vérification Restic ciblée et suppression des relances concurrentes** — La vérification obligatoire précédant une mise à jour ne parcourt plus l’intégralité du snapshot Restic : elle lit directement le fichier de recovery créé pour l’opération et contrôle son identifiant, ce qui évite les validations pouvant durer plusieurs minutes sur de gros dépôts. Le checker GHCR n’essaie plus de relancer la même auto-mise à jour pendant qu’un backup, une vérification, le sidecar, le healthcheck ou un rollback est déjà en cours ; les mises à jour simplement planifiées restent, elles, réessayables normalement.
+
 **2026-09-03 — Accord féminin et singulier/pluriel des compteurs de l’accueil** — Les trois grands compteurs de stacks de l’accueil utilisent désormais des libellés dédiés et pluralisés : « Active/Actives », « Arrêtée/Arrêtées » et « Inactive/Inactives ». Les clés génériques `active`, `exited` et `inactive` restent inchangées afin de ne pas modifier les autres écrans.
 
 **2026-09-03 — Vue synthétique des instances liées sur l’accueil** — Le bloc Dockge Agents est enrichi sans changer sa position ni supprimer ses fonctions de gestion. Chaque instance affiche ses stacks actives/arrêtées/inactives, les stats CPU/RAM de son propre hôte, son uptime et son nombre de stacks épinglées. Un clic filtre directement la colonne de stacks sur l’instance choisie. Les stats hôte distantes passent par le canal d’agents existant et restent collectées côté instance propriétaire.

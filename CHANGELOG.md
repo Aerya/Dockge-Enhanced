@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — Self-update: targeted Restic verification and concurrent retry suppression** — The mandatory pre-update verification no longer walks the complete Restic snapshot: it directly reads the recovery file created for the operation and validates its identifier, avoiding multi-minute verification on large repositories. The GHCR checker also stops re-requesting the same automatic update while backup, verification, sidecar, health check or rollback is already running; scheduled updates remain retryable as intended.
+
 **2026-09-03 — Home stack counters now use dedicated pluralized labels** — The three large stack counters on the home page now use dedicated plural-aware labels. The generic `active`, `exited` and `inactive` translations remain unchanged so other screens are unaffected.
 
 **2026-09-03 — Linked-instance overview on the home page** — The existing Dockge Agents panel is enriched in place without removing its management actions. Each instance now shows active/stopped/inactive stack counts, its own host CPU/RAM stats, uptime and pinned-stack count. Clicking an instance directly filters the stack column to that server. Remote host stats use the existing agent channel and remain collected by the owning instance.

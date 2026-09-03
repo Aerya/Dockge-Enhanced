@@ -146,6 +146,13 @@ export class SelfUpdateManager {
 
     isAutomaticMode(): boolean { return this.settings.mode === "sidecar"; }
 
+    isUpdateExecutionInProgress(): boolean {
+        return this.requestInFlight || (
+            isSelfUpdateActive(this.operation.state)
+            && this.operation.state !== "scheduled"
+        );
+    }
+
     async requestSidecarUpdate(targetImage: string, automatic = false, targetRevision?: string): Promise<SelfUpdateOperation> {
         const resumingScheduled = automatic && this.operation.state === "scheduled";
         if (this.requestInFlight || (isSelfUpdateActive(this.operation.state) && !resumingScheduled)) throw new Error("A self-update is already running");
@@ -245,7 +252,11 @@ export class SelfUpdateManager {
         this.progress = null;
         await this.saveOperation();
         try {
-            const verification = await BackupManager.getInstance().verifyFreshBackup(backup);
+            const verification = await BackupManager.getInstance().verifyFreshBackup(
+                backup,
+                recoveryPath,
+                plan.id,
+            );
             const failed = verification.find((result) => !result.ok);
             if (failed) {
                 this.operation = {

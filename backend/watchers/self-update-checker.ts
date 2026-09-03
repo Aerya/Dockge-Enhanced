@@ -540,7 +540,7 @@ export class SelfUpdateChecker {
       }
 
       // Notif "mise à jour disponible" — une seule fois par digest distant
-      const automaticMode = SelfUpdateManager.getInstance().isAutomaticMode();
+      const automaticMode = selfUpdateManager.isAutomaticMode();
       if (updateAvailable && this._notifiedRemoteDigest !== remoteDigest) {
         this._notifiedRemoteDigest = remoteDigest;
         // Persist before notifying: if an immediate automatic update restarts
@@ -550,18 +550,20 @@ export class SelfUpdateChecker {
       }
 
       const targetImage = `ghcr.io/${repo}@${remoteDigest}`;
-      if (
+      if (updateAvailable && selfUpdateManager.isUpdateExecutionInProgress()) {
+        log.debug("self-update-checker", `Auto-update déjà en cours — nouvelle demande ignorée pour target=${targetImage}`);
+      } else if (
         updateAvailable
-        && SelfUpdateManager.getInstance().canAutoUpdate()
-        && !SelfUpdateManager.getInstance().shouldBlockAutomaticRetry(targetImage)
+        && selfUpdateManager.canAutoUpdate()
+        && !selfUpdateManager.shouldBlockAutomaticRetry(targetImage)
       ) {
         log.info("self-update-checker", `Auto-update demandée — target=${targetImage}`);
-        await SelfUpdateManager.getInstance().requestSidecarUpdate(
+        await selfUpdateManager.requestSidecarUpdate(
           targetImage,
           true,
           remoteInfo.build.revision || undefined,
         );
-      } else if (updateAvailable && SelfUpdateManager.getInstance().shouldBlockAutomaticRetry(targetImage)) {
+      } else if (updateAvailable && selfUpdateManager.shouldBlockAutomaticRetry(targetImage)) {
         log.warn("self-update-checker", `Retry automatique bloqué pour ce digest après échec/rollback — target=${targetImage}`);
       } else if (updateAvailable) {
         log.info("self-update-checker", "Mise à jour détectée mais auto-update non exécutable actuellement");
