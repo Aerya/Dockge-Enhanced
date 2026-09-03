@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-09-03 — 回滚通知更加简洁** — Docker/GHCR 的完整原始错误仍保留在状态和日志中，但 Discord/Apprise 不再显示 `pkg-containers.githubusercontent.com` 的超长临时签名 URL。自更新通知现在只概括有用原因：网络超时、身份验证失败、访问被拒绝、镜像/摘要不存在、DNS 错误或通用技术故障，包括成功回滚后的通知。
+
 **2026-09-03 — 自更新终态通知改为自主处理** — Sidecar 触发容器重启后，Dockge-Enhanced 现在会自行监控持久化的自更新状态直到出现终态。Discord/Apprise 的成功、失败或回滚通知不再依赖打开 WebUI 或调用 `/self/status`。该监控最长持续 15 分钟，覆盖 `updating`、`waiting-health`、`rolling-back` 以及仍待发送的终态通知。
 
 **2026-09-03 — 修复 Restic 恢复测试** — 备份后的恢复测试现在会正确请求 `restic ls` 的 JSON 输出，优先读取非空 Compose 文件；如果不存在，则读取快照中的其他真实非空文件。因此，不含 Compose 的有效 Dockge 备份不会再被误报为恢复测试失败。完全没有文件的快照仍视为真实失败，而只包含空文件的快照会明确标记为跳过内容读取测试。
