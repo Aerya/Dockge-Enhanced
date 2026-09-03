@@ -90,6 +90,11 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Búsqueda global multi-instancia (`Ctrl+K`)**
+
+Dockge-Enhanced incorpora una paleta de búsqueda global disponible desde cualquier página. Busca en paralelo en la instancia local y en todas las instancias vinculadas en línea para encontrar **stacks**, coincidencias seguras en **Compose/override**, **nombres de variables `.env`** y **metadatos del historial de backups**, además de accesos directos a las principales secciones de configuración Enhanced. Los resultados pueden filtrarse por categoría o instancia y abren directamente la stack o la pantalla correspondiente. La búsqueda empieza a partir de dos caracteres, usa debounce, limita los resultados por instancia y mantiene brevemente una caché en memoria de los documentos de stacks. Por seguridad, los valores `.env` nunca se buscan ni se devuelven, las líneas de configuración sensibles se excluyen de los resultados Compose, las consultas no se registran y nunca se usan para construir rutas de archivos.
+
+
 **Protección de la actualización automática durante la edición de Compose/.env**
 
 Cuando un compose, su override o su `.env` contiene cambios no guardados en la WebUI, la instancia Dockge-Enhanced propietaria bloquea temporalmente su actualización automática, incluso si la edición se abrió desde otra WebUI vinculada. El editor mantiene un lease corto mediante heartbeat para que las sesiones abandonadas caduquen automáticamente. Si una actualización queda lista mientras hay trabajo sin guardar, un diálogo permite **guardar y actualizar**, **aplazar 30 minutos**, **aplazar 1 hora** o **seguir trabajando**. El backend vuelve a comprobar los bloqueos antes de preparar y lanzar el sidecar para evitar que una edición iniciada durante el backup o la verificación sea interrumpida por el reinicio.

@@ -88,6 +88,11 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 ### 🆕 Septembre 2026
 
+**Recherche globale multi-instance (`Ctrl+K`)**
+
+Dockge-Enhanced dispose désormais d’une palette de recherche globale accessible depuis toutes les pages. Elle interroge en parallèle l’instance locale et toutes les instances liées en ligne pour retrouver des **stacks**, des correspondances sûres dans les **Compose/override**, des **noms de variables `.env`** et les **métadonnées de l’historique des backups**, tout en proposant des raccourcis vers les principales sections de configuration Enhanced. Les résultats peuvent être filtrés par catégorie ou par instance et ouvrent directement la stack ou l’écran concerné. La recherche démarre à partir de deux caractères, utilise un debounce, limite les résultats par instance et conserve brièvement en mémoire les documents de stacks pour éviter de rescanner les mêmes Compose à chaque frappe. Côté sécurité, les valeurs `.env` ne sont jamais recherchées ni renvoyées, les variables d’environnement déclarées directement dans un Compose ne sont recherchées que par leur nom et leur valeur reste masquée, les lignes d’affectation sensibles sont exclues, les requêtes ne sont pas journalisées et ne servent jamais à construire un chemin de fichier.
+
+
 **Protection de l’auto-mise à jour pendant l’édition d’un Compose/.env**
 
 Lorsqu’un compose, son override ou son `.env` contient des modifications non enregistrées dans la WebUI, l’instance Dockge-Enhanced propriétaire bloque temporairement son auto-mise à jour — y compris si l’édition a été ouverte depuis une autre WebUI liée. L’éditeur maintient un lease court par heartbeat afin qu’une session navigateur abandonnée expire automatiquement. Si une mise à jour devient prête pendant l’édition, un popup permet **d’enregistrer puis mettre à jour**, de **reporter de 30 minutes**, de **reporter d’1 heure** ou de **continuer à travailler**. Le backend revérifie aussi les bloqueurs juste avant la préparation puis le lancement du sidecar afin qu’une édition commencée pendant le backup/la vérification ne puisse pas être interrompue par le redémarrage.

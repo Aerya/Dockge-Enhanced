@@ -91,6 +91,11 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**Global multi-instance search (`Ctrl+K`)**
+
+Dockge-Enhanced now provides a global search palette available from every page. It searches the local instance and all online linked instances in parallel for **stacks**, safe **Compose/override** matches, **`.env` variable names**, and **backup history metadata**, while also exposing shortcuts to the main Enhanced configuration sections. Results can be filtered by category or instance and open the matching stack or screen directly. Search starts after two characters, is debounced, limits results per instance, and keeps a short in-memory stack-document cache to avoid repeatedly scanning the same Compose files while typing. For security, `.env` values are never searched or returned, inline Compose environment values are searched only by variable name and displayed redacted, sensitive configuration assignment lines are excluded, search queries are not logged, and the query is never used to build filesystem paths.
+
+
 **Automatic self-update protection while editing Compose/.env**
 
 When a compose, override or `.env` file has unsaved changes in the WebUI, the owning Dockge-Enhanced instance temporarily blocks its automatic self-update — including edits opened from another linked WebUI. The editor keeps a short-lived heartbeat lease so stale browser sessions expire automatically. If an update becomes ready while unsaved work is present, the user gets a dialog to **save and update**, **defer for 30 minutes**, **defer for 1 hour**, or **keep working**. The backend re-checks blockers again before preparing and launching the updater sidecar so an edit started during backup/verification cannot be interrupted by the restart.

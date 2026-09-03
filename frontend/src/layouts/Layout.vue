@@ -160,6 +160,10 @@
                     </router-link>
                 </li>
 
+                <li v-if="$root.loggedIn" class="nav-item me-2 d-flex align-items-center">
+                    <GlobalSearch />
+                </li>
+
                 <li class="nav-item me-2 d-flex align-items-center">
                     <button type="button" class="nav-link theme-toggle" :aria-label="$t('Theme')" @click="$root.toggleTheme">
                         <font-awesome-icon :icon="$root.theme === 'dark' ? 'sun' : 'moon'" />
@@ -237,7 +241,8 @@
                 <span class="instance-identity-dot" aria-hidden="true"></span>
                 <span class="instance-identity-name">{{ localInstanceName }}</span>
             </span>
-            <button type="button" class="mobile-nav-toggle ms-auto" :aria-label="$t('Theme')" @click="$root.toggleTheme">
+            <GlobalSearch v-if="$root.loggedIn" :mobile="true" class="ms-auto" />
+            <button type="button" class="mobile-nav-toggle" :aria-label="$t('Theme')" @click="$root.toggleTheme">
                 <font-awesome-icon :icon="$root.theme === 'dark' ? 'sun' : 'moon'" />
             </button>
         </header>
@@ -317,6 +322,7 @@
 <script>
 import Login from "../components/Login.vue";
 import SystemStatsBar from "../components/SystemStatsBar.vue";
+import GlobalSearch from "../components/GlobalSearch.vue";
 import { compareVersions } from "compare-versions";
 import { ALL_ENDPOINTS } from "../../../common/util-common";
 import { setLowPower, POLL, makePoller } from "../composables/useLowPower";
@@ -331,6 +337,7 @@ export default {
     components: {
         Login,
         SystemStatsBar,
+        GlobalSearch,
     },
 
     data() {
