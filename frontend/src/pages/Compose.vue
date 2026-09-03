@@ -88,11 +88,6 @@
                         <span class="stack-action-label">{{ $t("recreateStack") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('pullAndRecreateStack')" :aria-label="$t('pullAndRecreateStack')" :disabled="processing" @click="pullAndRecreateStack">
-                        <font-awesome-icon icon="boxes-stacked" />
-                        <span class="stack-action-label">{{ $t("pullAndRecreateStack") }}</span>
-                    </button>
-
                     <button v-if="!isEditMode && buildServices.length > 0" class="btn btn-normal stack-action" :title="$t('buildAndRecreateStack')" :aria-label="$t('buildAndRecreateStack')" :disabled="processing" @click="buildAndRecreateStack">
                         <font-awesome-icon icon="hammer" />
                         <span class="stack-action-label">{{ $t("buildAndRecreateStack") }}</span>
@@ -482,7 +477,7 @@
                             :cols="combinedTerminalCols"
                             :wrap-lines="logLineWrap"
                             :follow-output="logFollowOutput"
-                            :style="{ '--combined-terminal-height': `${315 * Number(terminalScale)}px` }"
+                            :style="{ height: `${(containersExpanded ? 315 : 420) * Number(terminalScale)}px` }"
                         ></Terminal>
                     </div>
 
@@ -1971,21 +1966,6 @@ export default {
             this.processing = true;
 
             this.$root.emitAgent(this.endpoint, "updateStack", this.stack.name, (res) => {
-                this.processing = false;
-                this.$root.toastRes(res);
-                if (res.ok) {
-                    this.refreshSelectedLogTerminal();
-                }
-            });
-        },
-
-        pullAndRecreateStack() {
-            if (!confirm(this.$t("pullAndRecreateStackMsg"))) {
-                return;
-            }
-            this.processing = true;
-
-            this.$root.emitAgent(this.endpoint, "pullAndRecreateStack", this.stack.name, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
                 if (res.ok) {
