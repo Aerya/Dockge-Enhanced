@@ -466,6 +466,58 @@ export async function getStackStatsSnapshot(): Promise<StackStatsSnapshot> {
     return { enabled: true, data, containerData, lowPowerMode: isLowPower() };
 }
 
+export async function getSystemStatsSnapshot() {
+    await sampleCpuIfDue();
+
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = totalMem - freeMem;
+
+    let partitions: string[] = [];
+    const rawArr = await Settings.get("diskPartitions");
+    if (rawArr) {
+        try { partitions = JSON.parse(rawArr) as string[]; } catch { /* ignore */ }
+    }
+    if (partitions.length === 0) {
+        const single = (await Settings.get("diskPartition")) || "/";
+        partitions = [single];
+    }
+    const rawDisplayMode = await Settings.get("diskDisplayMode");
+    const diskDisplayMode = rawDisplayMode === "bar" ? "bar" : "compact";
+
+    const disks = await Promise.all(partitions.map(async (mount) => {
+        try {
+            const { stdout } = await execAsync(
+                `df -B1 "${mount.replace(/"/g, "")}" 2>/dev/null | tail -1`
+            );
+            const parts = stdout.trim().split(/\s+/);
+            const total = parseInt(parts[1] ?? "0", 10) || 0;
+            const used = parseInt(parts[2] ?? "0", 10) || 0;
+            const percent = total > 0 ? Math.round(used / total * 100) : 0;
+            return { mount, used, total, percent };
+        } catch {
+            return { mount, used: 0, total: 0, percent: 0 };
+        }
+    }));
+
+    return {
+        data: {
+            cpu: cpuPercent,
+            ram: {
+                used: usedMem,
+                total: totalMem,
+                percent: Math.round(usedMem / totalMem * 100),
+            },
+            disk: disks[0] ?? { mount: "/", used: 0, total: 0, percent: 0 },
+            disks,
+            diskDisplayMode,
+            host: await readHostDetails(),
+            hostNavbarDisplay: await readHostNavbarDisplay(),
+        },
+        lowPowerMode: isLowPower(),
+    };
+}
+
 // ─── Router ───────────────────────────────────────────────────────
 
 export class SystemStatsRouter extends Router {
@@ -482,61 +534,7 @@ export class SystemStatsRouter extends Router {
 
         router.get("/stats", auth, async (_req: Request, res: Response) => {
             try {
-                // CPU — échantillonné à la demande, throttlé selon le mode
-                await sampleCpuIfDue();
-
-                // RAM
-                const totalMem = os.totalmem();
-                const freeMem  = os.freemem();
-                const usedMem  = totalMem - freeMem;
-
-                // Disques — support multi-partitions
-                // Lit diskPartitions (tableau JSON) ou diskPartition (ancien scalaire) en fallback
-                let partitions: string[] = [];
-                const rawArr = await Settings.get("diskPartitions");
-                if (rawArr) {
-                    try { partitions = JSON.parse(rawArr) as string[]; } catch { /* ignore */ }
-                }
-                if (partitions.length === 0) {
-                    const single = (await Settings.get("diskPartition")) || "/";
-                    partitions = [single];
-                }
-                const rawDisplayMode = await Settings.get("diskDisplayMode");
-                const diskDisplayMode = rawDisplayMode === "bar" ? "bar" : "compact";
-
-                const disks = await Promise.all(partitions.map(async (mount) => {
-                    try {
-                        const { stdout } = await execAsync(
-                            `df -B1 "${mount.replace(/"/g, "")}" 2>/dev/null | tail -1`
-                        );
-                        const parts = stdout.trim().split(/\s+/);
-                        const total   = parseInt(parts[1] ?? "0", 10) || 0;
-                        const used    = parseInt(parts[2] ?? "0", 10) || 0;
-                        const percent = total > 0 ? Math.round(used / total * 100) : 0;
-                        return { mount, used, total, percent };
-                    } catch {
-                        return { mount, used: 0, total: 0, percent: 0 };
-                    }
-                }));
-
-                res.json({
-                    ok: true,
-                    data: {
-                        cpu: cpuPercent,
-                        ram: {
-                            used:    usedMem,
-                            total:   totalMem,
-                            percent: Math.round(usedMem / totalMem * 100),
-                        },
-                        // disk kept for backward compat (first partition)
-                        disk:  disks[0] ?? { mount: "/", used: 0, total: 0, percent: 0 },
-                        disks,
-                        diskDisplayMode,
-                        host: await readHostDetails(),
-                        hostNavbarDisplay: await readHostNavbarDisplay(),
-                    },
-                    lowPowerMode: isLowPower(),
-                });
+                res.json({ ok: true, ...(await getSystemStatsSnapshot()) });
             } catch (e: any) {
                 res.status(500).json({ ok: false, message: e.message });
             }

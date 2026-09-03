@@ -91,6 +91,11 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**Linked-instance overview on the home page**
+
+The existing agent panel on the home page now doubles as a compact infrastructure overview. Each linked Dockge-Enhanced instance shows its stack totals and states, host CPU/RAM usage, uptime and pinned-stack count while keeping the existing rename, reauthentication, removal and add-agent controls. Clicking an instance summary filters the stack list on the left to that server; clicking it again restores the all-servers view.
+
+
 **Per-stack CPU/RAM stats across linked instances**
 
 The **Show CPU / RAM statistics per stack** option is now owned by each Dockge-Enhanced instance. When enabled on a server, that server collects its own Docker statistics and exposes them through the existing linked-instance channel. Every linked WebUI displaying that server shows the same CPU/RAM badges for its stacks and containers. Hiding the server hides its statistics; disabling the option on the owning instance stops collection and exposure for that instance.

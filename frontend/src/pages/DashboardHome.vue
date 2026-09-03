@@ -101,7 +101,10 @@
                 <div class="col-md-5">
                     <!-- Agent List -->
                     <div class="shadow-box big-padding">
-                        <h4 class="mb-3">{{ $tc("dockgeAgent", 2) }} <span class="badge bg-warning beta-badge">beta</span></h4>
+                        <div class="linked-instances-heading mb-3">
+                            <h4 class="mb-0">{{ $t("linkedInstances.title") }} <span class="badge bg-warning beta-badge">beta</span></h4>
+                            <small class="text-muted">{{ onlineAgentCount }} / {{ agentOverviewList.length }} {{ $t("linkedInstances.online") }}</small>
+                        </div>
 
                         <div v-for="(agent, endpoint) in $root.agentList" :key="endpoint" class="mb-3 agent">
                             <!-- Agent Status -->
@@ -160,6 +163,27 @@
 
                             <!-- Remove Button -->
                             <font-awesome-icon v-if="endpoint !== ''" class="ms-2 remove-agent" icon="trash" @click="showRemoveAgentDialog[agent.url] = !showRemoveAgentDialog[agent.url]" />
+
+                            <button
+                                type="button"
+                                class="instance-overview-summary"
+                                :class="{ selected: selectedOverviewEndpoint === endpoint }"
+                                :style="instanceAgentStyle(endpoint)"
+                                @click="selectInstanceStacks(endpoint)"
+                            >
+                                <div class="instance-stack-summary">
+                                    <span><strong>{{ instanceOverview(endpoint).total }}</strong> {{ $t("linkedInstances.stacks") }}</span>
+                                    <span class="instance-state active"><strong>{{ instanceOverview(endpoint).active }}</strong> {{ $tc("linkedInstances.active", instanceOverview(endpoint).active) }}</span>
+                                    <span class="instance-state stopped"><strong>{{ instanceOverview(endpoint).stopped }}</strong> {{ $tc("linkedInstances.stopped", instanceOverview(endpoint).stopped) }}</span>
+                                    <span class="instance-state inactive"><strong>{{ instanceOverview(endpoint).inactive }}</strong> {{ $tc("linkedInstances.inactive", instanceOverview(endpoint).inactive) }}</span>
+                                </div>
+                                <div class="instance-resource-summary">
+                                    <span><font-awesome-icon icon="microchip" /> {{ instanceSystemStats[endpoint]?.data ? `${instanceSystemStats[endpoint].data.cpu}%` : "—" }}</span>
+                                    <span><font-awesome-icon icon="memory" /> {{ formatInstanceRam(instanceSystemStats[endpoint]?.data?.ram) }}</span>
+                                    <span><font-awesome-icon icon="clock" /> {{ formatInstanceUptime(instanceSystemStats[endpoint]?.data?.host?.uptimeSeconds) }}</span>
+                                    <span><font-awesome-icon icon="thumbtack" /> {{ instancePins[endpoint]?.length ?? 0 }}</span>
+                                </div>
+                            </button>
 
                             <!-- Remoe Agent Dialog -->
                             <BModal v-model="showRemoveAgentDialog[agent.url]" :okTitle="$t('removeAgent')" okVariant="danger" @ok="removeAgent(agent.url)">
@@ -270,6 +294,10 @@ export default {
                 password: "",
             },
             federationMigrationAttempted: false,
+            instanceSystemStats: {},
+            instancePins: {},
+            selectedOverviewEndpoint: null,
+            instanceOverviewTimer: null,
             summary: {
                 images: null,
                 backup: null,
@@ -301,6 +329,12 @@ export default {
                 || this.summary.containers !== null
                 || this.summary.trivy !== null;
         },
+        agentOverviewList() {
+            return Object.entries(this.$root.agentList || {});
+        },
+        onlineAgentCount() {
+            return this.agentOverviewList.filter(([endpoint]) => this.$root.agentStatusList?.[endpoint] === "online").length;
+        },
     },
 
     watch: {
@@ -323,19 +357,100 @@ export default {
                 this.federationMigrationAttempted = true;
                 this.migrateFederation();
             }
+            this.$nextTick(() => this.refreshInstanceOverviews());
         }, { immediate: true });
 
         window.addEventListener("resize", this.updatePerPage);
         this.updatePerPage();
 
         this.fetchSummary();
+        this.refreshInstanceOverviews();
+        this.instanceOverviewTimer = window.setInterval(this.refreshInstanceOverviews, 15000);
     },
 
     beforeUnmount() {
         window.removeEventListener("resize", this.updatePerPage);
+        if (this.instanceOverviewTimer) {
+            window.clearInterval(this.instanceOverviewTimer);
+            this.instanceOverviewTimer = null;
+        }
     },
 
     methods: {
+
+        instanceOverview(endpoint) {
+            const overview = { total: 0, active: 0, stopped: 0, inactive: 0 };
+            for (const stack of Object.values(this.$root.completeStackList || {})) {
+                if ((stack.endpoint || "") !== endpoint) continue;
+                overview.total += 1;
+                const status = statusNameShort(stack.status);
+                if (status === "active") overview.active += 1;
+                else if (status === "exited") overview.stopped += 1;
+                else overview.inactive += 1;
+            }
+            return overview;
+        },
+
+        instanceAgentStyle(endpoint) {
+            const endpoints = Object.keys(this.$root.agentList || {});
+            const index = Math.max(0, endpoints.indexOf(endpoint)) % 8;
+            const light = [ "#1d4ed8", "#047857", "#b45309", "#7e22ce", "#be123c", "#0e7490", "#4d7c0f", "#c2410c" ];
+            const dark = [ "#60a5fa", "#34d399", "#fbbf24", "#c084fc", "#fb7185", "#22d3ee", "#a3e635", "#fb923c" ];
+            return { "--instance-color": light[index], "--instance-color-dark": dark[index] };
+        },
+
+        selectInstanceStacks(endpoint) {
+            const next = this.selectedOverviewEndpoint === endpoint ? null : endpoint;
+            this.selectedOverviewEndpoint = next;
+            window.dispatchEvent(new CustomEvent("dockge-agent-filter", { detail: { endpoint: next } }));
+        },
+
+        requestInstanceAgent(endpoint, eventName) {
+            return new Promise((resolve) => {
+                let settled = false;
+                const timer = window.setTimeout(() => {
+                    if (!settled) { settled = true; resolve(null); }
+                }, 8000);
+                this.$root.emitAgent(endpoint, eventName, (response) => {
+                    if (settled) return;
+                    settled = true;
+                    window.clearTimeout(timer);
+                    resolve(response?.ok ? response : null);
+                });
+            });
+        },
+
+        async refreshInstanceOverviews() {
+            const endpoints = Object.keys(this.$root.agentList || {});
+            const results = await Promise.all(endpoints.map(async (endpoint) => {
+                const [stats, pins] = await Promise.all([
+                    this.requestInstanceAgent(endpoint, "instanceSystemStatsGet"),
+                    this.requestInstanceAgent(endpoint, "stackPinsGet"),
+                ]);
+                return { endpoint, stats, pins };
+            }));
+            for (const { endpoint, stats, pins } of results) {
+                if (stats) this.instanceSystemStats = { ...this.instanceSystemStats, [endpoint]: stats };
+                if (pins && Array.isArray(pins.pinnedStacks)) this.instancePins = { ...this.instancePins, [endpoint]: pins.pinnedStacks };
+            }
+        },
+
+        formatInstanceRam(ram) {
+            if (!ram || !Number.isFinite(ram.used) || !Number.isFinite(ram.total) || ram.total <= 0) return "—";
+            const gib = 1024 ** 3;
+            const used = (ram.used / gib).toFixed(ram.used >= 10 * gib ? 0 : 1);
+            const total = (ram.total / gib).toFixed(ram.total >= 10 * gib ? 0 : 1);
+            return `${used}/${total} Go`;
+        },
+
+        formatInstanceUptime(seconds) {
+            if (!Number.isFinite(seconds) || seconds < 0) return "—";
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            if (days > 0) return `${days} j ${hours} h`;
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return `${hours} h ${minutes} min`;
+        },
 
         /**
          * Auth headers for the watcher/monitoring REST APIs (same pattern as Layout.vue).
@@ -714,6 +829,64 @@ table {
 .remove-agent {
     cursor: pointer;
     color: var(--text-muted);
+}
+
+.linked-instances-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.agent {
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+}
+
+.instance-overview-summary {
+    --instance-color: #1d4ed8;
+    --instance-color-dark: #60a5fa;
+    display: block;
+    width: 100%;
+    margin-top: 7px;
+    padding: 7px 8px;
+    border: 0;
+    border-left: 3px solid var(--instance-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color .15s ease;
+
+    .dark & { border-left-color: var(--instance-color-dark); }
+    &:hover, &.selected { background: var(--primary-soft); }
+    &.selected {
+        box-shadow: inset 0 0 0 1px var(--instance-color);
+        .dark & { box-shadow: inset 0 0 0 1px var(--instance-color-dark); }
+    }
+}
+
+.instance-stack-summary,
+.instance-resource-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px 10px;
+    flex-wrap: wrap;
+}
+.instance-stack-summary { font-size: var(--fs-xs); }
+.instance-state.active { color: var(--success); }
+.instance-state.stopped { color: var(--warning); }
+.instance-state.inactive { color: var(--text-muted); }
+.instance-resource-summary {
+    margin-top: 5px;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+    span { display: inline-flex; align-items: center; gap: 4px; }
 }
 
 .agent {
