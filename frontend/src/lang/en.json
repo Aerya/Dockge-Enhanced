@@ -847,6 +847,8 @@
     "watcher.backup.volumes.calcSizes": "Calculate sizes",
     "watcher.backup.volumes.loadingDirs": "Loading directories…",
     "watcher.backup.volumes.noDirs": "No subdirectory found.",
+    "watcher.backup.volumes.loadError": "Unable to browse this volume.",
+    "watcher.backup.volumes.retry": "Retry",
     "watcher.backup.retention.heading": "Retention policy",
     "watcher.backup.retention.keepLast": "Keep last N",
     "watcher.backup.retention.keepDaily": "By day (N days)",

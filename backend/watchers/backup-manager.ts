@@ -524,13 +524,19 @@ export function assertPathWithinRoots(candidate: string, roots: string[]): strin
 
 export async function assertExistingPathWithinRoots(candidate: string, roots: string[]): Promise<string> {
     const validatedCandidate = assertPathWithinRoots(candidate, roots);
-    const [ candidateResult, rootResults ] = await Promise.all([
-        execFileAsync("realpath", [ "--", validatedCandidate ]),
-        Promise.all(roots.map(root => execFileAsync("realpath", [ "--", root ]).then(result => result.stdout.trim()).catch(() => null))),
+    const [ realCandidate, rootResults ] = await Promise.all([
+        fs.realpath(validatedCandidate),
+        Promise.all(roots.map(root => fs.realpath(root).catch(() => null))),
     ]);
-    const realCandidate = candidateResult.stdout.trim();
-    const realRoots = rootResults;
-    return assertPathWithinRoots(realCandidate, realRoots.filter((root): root is string => root !== null));
+    return assertPathWithinRoots(realCandidate, rootResults.filter((root): root is string => root !== null));
+}
+
+export function buildVolumeBrowseRoots(volumes: MountedVolume[], dataDir = DATA_DIR): string[] {
+    return [ ...new Set([
+        path.resolve(dataDir),
+        path.resolve("/app/data"),
+        ...volumes.map(volume => path.resolve(volume.destination)),
+    ]) ];
 }
 
 function buildRepoUrl(dest: BackupDestination): string {
@@ -1562,12 +1568,10 @@ export class BackupManager {
 
     /** Liste les sous-dossiers immédiats d'un chemin (sans tailles, rapide) */
     async getVolumeDirs(volPath: string): Promise<string[]> {
-        try {
-            const mountedRoots = (await this.getMountedVolumes()).map(volume => volume.destination);
-            const safePath = await assertExistingPathWithinRoots(volPath, mountedRoots);
-            const entries = await fs.readdir(safePath, { withFileTypes: true });
-            return entries.filter(e => e.isDirectory()).map(e => e.name).sort();
-        } catch { return []; }
+        const browseRoots = buildVolumeBrowseRoots(await this.getMountedVolumes());
+        const safePath = await assertExistingPathWithinRoots(volPath, browseRoots);
+        const entries = await fs.readdir(safePath, { withFileTypes: true });
+        return entries.filter(e => e.isDirectory()).map(e => e.name).sort();
     }
 
     /** Retourne la liste des stacks présentes dans STACKS_DIR */
@@ -1583,8 +1587,8 @@ export class BackupManager {
 
     /** Calcule la taille de chaque sous-dossier d'un chemin (du -sh, à la demande) */
     async getVolumeSubdirSizes(volPath: string): Promise<Record<string, string>> {
-        const mountedRoots = (await this.getMountedVolumes()).map(volume => volume.destination);
-        const safePath = await assertExistingPathWithinRoots(volPath, mountedRoots);
+        const browseRoots = buildVolumeBrowseRoots(await this.getMountedVolumes());
+        const safePath = await assertExistingPathWithinRoots(volPath, browseRoots);
         const dirs = await this.getVolumeDirs(safePath);
         const results: Record<string, string> = {};
         await Promise.all(dirs.map(async dir => {

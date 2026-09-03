@@ -7,6 +7,7 @@ import {
     BackupRunLock,
     assertExistingPathWithinRoots,
     assertPathWithinRoots,
+    buildVolumeBrowseRoots,
     assertSafeSftpConfig,
     buildComposeCommandArgs,
     buildResticCommandArgs,
@@ -38,6 +39,26 @@ test("rejette un lien symbolique qui sort d’une racine autorisée", async () =
         await fs.rm(root, { recursive: true, force: true });
         await fs.rm(outside, { recursive: true, force: true });
     }
+});
+
+
+test("résout les chemins existants avec l’API Node", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-path-existing-"));
+    const child = path.join(root, "child");
+    try {
+        await fs.mkdir(child);
+        assert.equal(await assertExistingPathWithinRoots(child, [ root ]), await fs.realpath(child));
+    } finally {
+        await fs.rm(root, { recursive: true, force: true });
+    }
+});
+
+test("autorise toujours /app/data dans le navigateur de volumes", () => {
+    const roots = buildVolumeBrowseRoots([
+        { source: "/volume1/docker", destination: "/dockers-data" },
+    ], "/opt/dockge/data");
+    assert.deepEqual(roots, [ "/opt/dockge/data", "/app/data", "/dockers-data" ]);
+    assert.deepEqual(buildVolumeBrowseRoots([], "/app/data"), [ "/app/data" ]);
 });
 
 test("keeps stop mode without hook fields", () => {

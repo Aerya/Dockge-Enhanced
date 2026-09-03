@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-09-03 — Navegador de volúmenes de Backup: subdirectorios accesibles de nuevo** — La validación de rutas usa ahora `fs.realpath()` de Node en lugar del binario `realpath`, cuya opción `--` no es compatible con BusyBox/Alpine. `/app/data` sigue autorizado explícitamente y la WebUI distingue los errores de lectura de un directorio realmente vacío. Corrige #340.
+
 **2026-09-03 — Identificador seguro para los leases de edición** — El lease que protege los cambios no guardados durante el self-update usa ahora exclusivamente `crypto.getRandomValues()` para generar su identificador de sesión. Se elimina el fallback `Math.random()` señalado por CodeQL.
 
 **2026-09-03 — Protección de ediciones no guardadas durante la actualización automática** — Una modificación real de `compose.yaml`, `compose.override.yaml` o `.env` crea ahora un lease corto en la instancia propietaria, incluso desde una WebUI vinculada. Mientras el lease está activo, la actualización automática queda aplazada con el bloqueo `active-editor`. Un diálogo permite guardar y actualizar, aplazar 30 minutos o 1 hora, o seguir trabajando. Los aplazamientos explícitos se mantienen hasta su vencimiento y los heartbeats abandonados caducan automáticamente. El self-update vuelve a comprobar los bloqueos antes de preparar y lanzar el sidecar para impedir un reinicio si una edición empieza durante el backup o la verificación.

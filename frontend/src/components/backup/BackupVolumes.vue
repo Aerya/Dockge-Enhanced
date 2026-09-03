@@ -66,6 +66,17 @@
                             class="text-muted py-2 ps-3 vol-note">
                             <span class="spinner-border spinner-border-sm me-1" />{{ $t('watcher.backup.volumes.loadingDirs') }}
                         </div>
+                        <!-- Erreur de lecture -->
+                        <div v-else-if="volDirErrors[vol.destination]"
+                            class="text-danger py-2 ps-3 vol-note">
+                            <font-awesome-icon icon="triangle-exclamation" class="me-1" />
+                            {{ $t('watcher.backup.volumes.loadError') }}
+                            <button type="button" class="btn btn-xs btn-normal ms-2"
+                                @click="loadVolDirs(vol.destination)">
+                                {{ $t('watcher.backup.volumes.retry') }}
+                            </button>
+                            <div class="small text-muted mt-1">{{ volDirErrors[vol.destination] }}</div>
+                        </div>
                         <!-- Dossier vide -->
                         <div v-else-if="(volDirs[vol.destination] ?? []).length === 0"
                             class="text-muted py-2 ps-3 vol-note">
@@ -113,6 +124,7 @@ const props = defineProps<{
 const expandedVols = ref<Set<string>>(new Set());
 const volDirs = ref<Record<string, string[]>>({});
 const volSizes = ref<Record<string, string>>({});
+const volDirErrors = ref<Record<string, string>>({});
 const loadingVolDirs = ref<Record<string, boolean>>({});
 const loadingVolSizes = ref<Record<string, boolean>>({});
 
@@ -220,9 +232,21 @@ async function toggleExpand(volPath: string) {
 
 async function loadVolDirs(volPath: string) {
     loadingVolDirs.value = { ...loadingVolDirs.value, [volPath]: true };
+    const errors = { ...volDirErrors.value };
+    delete errors[volPath];
+    volDirErrors.value = errors;
     try {
         const res = await api("GET", `/backup/volume-dirs?path=${encodeURIComponent(volPath)}`);
-        if (res.ok) volDirs.value = { ...volDirs.value, [volPath]: res.data as string[] };
+        if (res.ok) {
+            volDirs.value = { ...volDirs.value, [volPath]: res.data as string[] };
+        } else {
+            volDirErrors.value = { ...volDirErrors.value, [volPath]: String(res.message ?? t("watcher.backup.volumes.loadError")) };
+        }
+    } catch (error) {
+        volDirErrors.value = {
+            ...volDirErrors.value,
+            [volPath]: error instanceof Error ? error.message : String(error),
+        };
     } finally {
         loadingVolDirs.value = { ...loadingVolDirs.value, [volPath]: false };
     }
