@@ -88,6 +88,11 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 ### 🆕 Septembre 2026
 
+**Rétention dédiée des backups de self-update**
+
+Les snapshots Restic obligatoires créés avant une auto-mise à jour protégée de Dockge-Enhanced utilisent désormais une politique de rétention dédiée. Une fois le nouveau snapshot **créé et vérifié**, Dockge-Enhanced conserve les **2 derniers snapshots self-update de cette installation** et supprime les générations plus anciennes avant de lancer le sidecar. Un tag stable propre à l’installation évite de nettoyer les snapshots d’une autre instance Dockge-Enhanced partageant le même dépôt Restic. La rétention normale (`keepLast`, quotidienne, hebdomadaire, mensuelle) reste inchangée. Si ce nettoyage dédié échoue, le backup vérifié est conservé et la mise à jour peut continuer ; l’erreur est journalisée et une auto-mise à jour ultérieure retentera le nettoyage.
+
+
 **Rapprochement des noms de projets Docker Compose**
 
 Les stacks gérées dont le dossier contient des points ou des majuscules sont désormais rapprochées de Docker Compose à partir du chemin réel `ConfigFiles`, au lieu de dépendre uniquement du nom de projet normalisé par Docker. Cela évite les doublons « gérée/arrêtée » et « externe/en cours » pour une même stack.

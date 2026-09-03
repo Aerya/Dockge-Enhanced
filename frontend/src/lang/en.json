@@ -1410,6 +1410,7 @@
   "stackReplication.status.waiting-compatibility": "Waiting for compatibility",
   "releaseNews.item.transferCompatibility": "Moves, copies and replications between linked instances now negotiate a compatibility protocol. Different builds remain allowed when compatible; an outdated remote instance can be updated and the operation resumes after reconnection.",
   "releaseNews.item.selfUpdateOperationGuard": "Automatic self-updates now wait for sensitive operations to finish: Restic backup/restore, stack copy/move/data transfer and replication, Docker image work, Trivy scans and protected external-stack integration. The reason is shown in the WebUI and sent as a notification, then the update retries automatically.",
+  "releaseNews.item.selfUpdateBackupRetention": "Mandatory Restic backups created for automatic self-updates now have dedicated retention. Once the new snapshot has been created and verified, Dockge-Enhanced keeps the latest 2 self-update snapshots for this installation and removes older ones. Cleanup never runs before the new backup is validated and does not affect normal backup retention.",
   "releaseNews.item.instanceIdentity": "The local instance name configured in Dockge Agents is now always visible in the header and in the browser tab title. If no name is configured, the host address is used as a fallback.",
   "instanceIdentity.label": "Local instance: {name}",
   "instanceIdentity.hint": "Local instance name configured in Dockge Agents. Host: {host}",

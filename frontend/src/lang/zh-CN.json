@@ -1347,6 +1347,7 @@
   "stackReplication.status.waiting-compatibility": "等待兼容",
   "releaseNews.item.transferCompatibility": "关联实例之间的移动、复制和副本现在会协商兼容协议。只要协议兼容，不同构建仍可继续；过旧的远程实例可以先更新并在重新连接后继续操作。",
   "releaseNews.item.selfUpdateOperationGuard": "自动自更新现在会等待敏感操作结束，包括 Restic 备份/恢复、堆栈复制/移动/数据传输与复制同步、Docker 镜像操作、Trivy 扫描以及受保护的外部堆栈集成。WebUI 和通知都会显示等待原因，操作结束后会自动重试更新。",
+  "releaseNews.item.selfUpdateBackupRetention": "自动自更新所需的 Restic 备份现在使用独立保留策略。新快照创建并验证成功后，Dockge-Enhanced 会为当前安装保留最近 2 个 self-update 快照并删除更旧的快照。清理绝不会在新备份验证前执行，也不会影响普通备份的保留策略。",
   "releaseNews.item.instanceIdentity": "Dockge Agents 中配置的本地实例名称现在会始终显示在顶部栏和浏览器标签标题中。如果未配置名称，则使用主机地址作为标识。",
   "instanceIdentity.label": "本地实例：{name}",
   "instanceIdentity.hint": "Dockge Agents 中配置的本地实例名称。主机：{host}",
