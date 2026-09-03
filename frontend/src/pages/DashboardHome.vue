@@ -12,15 +12,15 @@
                     <div class="shadow-box big-padding text-center mb-4">
                         <div class="row">
                             <div class="col">
-                                <h3>{{ $t("active") }}</h3>
+                                <h3>{{ $tc("home.stackState.active", activeNum) }}</h3>
                                 <span class="num active">{{ activeNum }}</span>
                             </div>
                             <div class="col">
-                                <h3>{{ $t("exited") }}</h3>
+                                <h3>{{ $tc("home.stackState.stopped", exitedNum) }}</h3>
                                 <span class="num exited">{{ exitedNum }}</span>
                             </div>
                             <div class="col">
-                                <h3>{{ $t("inactive") }}</h3>
+                                <h3>{{ $tc("home.stackState.inactive", inactiveNum) }}</h3>
                                 <span class="num inactive">{{ inactiveNum }}</span>
                             </div>
                         </div>
