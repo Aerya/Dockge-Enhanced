@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — Multi-instance global search** — Added a `Ctrl+K` palette available from every page. It searches the local instance and online linked instances in parallel for stacks, non-sensitive Compose/override lines, `.env` variable names and backup-history metadata. Type/instance filters, keyboard navigation and shortcuts to key Enhanced configuration pages are included. `.env` values are never searched or returned, inline Compose environment values are redacted and not searchable, sensitive assignment lines are excluded, queries are not logged, and a short 5-second cache limits rescans while typing.
+
 **2026-09-03 — CodeQL hardening for Backup path validation** — Backup path canonicalization now uses `fs.realpathSync()`, which CodeQL recognizes as a path normalization step, and the canonical path is still checked against the allowed roots afterwards. This preserves symlink-escape protection while removing the `js/path-injection` finding introduced by the `fs.realpath()` change in #346.
 
 **2026-09-03 — Backup volume browser: subdirectories are accessible again** — Path validation now uses Node `fs.realpath()` instead of the `realpath` binary, whose `--` option is not compatible with BusyBox/Alpine. `/app/data` remains explicitly allowed in the browser even when excluded from the displayed mounted-volume list. Validation or read failures are now shown separately from genuinely empty directories in the WebUI. Fixes #340.

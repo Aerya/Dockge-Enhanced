@@ -16,10 +16,20 @@ import { getStackStatsSnapshot, getSystemStatsSnapshot } from "../routers/system
 import { ComposeEditLeaseManager } from "../self-update/editor-lease";
 import { SelfUpdateManager } from "../self-update/manager";
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
+import { runGlobalSearch } from "../global-search";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         // Do not call super.create()
+
+        agentSocket.on("globalSearch", async (query : unknown, limit : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true, data: await runGlobalSearch(server, query, limit) }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
 
         agentSocket.on("instanceSystemStatsGet", async (callback) => {
             try {

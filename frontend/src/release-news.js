@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-03-global-search",
+        items: [ "releaseNews.item.globalSearch" ],
+    },
+    {
         id: "2026-09-03-self-update-edit-protection",
         items: [ "releaseNews.item.selfUpdateEditProtection" ],
     },

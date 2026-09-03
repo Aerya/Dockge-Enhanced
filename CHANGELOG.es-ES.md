@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-09-03 — Búsqueda global multi-instancia** — Se añade una paleta `Ctrl+K` disponible desde cualquier página. Busca en paralelo en la instancia local y en las instancias vinculadas en línea: stacks, líneas Compose/override no sensibles, nombres de variables `.env` y metadatos del historial de backups. Incluye filtros por tipo e instancia, navegación por teclado y accesos a las principales páginas de configuración Enhanced. Los valores `.env` nunca se buscan ni se devuelven y las líneas sensibles quedan excluidas.
+
 **2026-09-03 — Refuerzo CodeQL de la validación de rutas de Backup** — La canonización de rutas usa ahora `fs.realpathSync()`, reconocida por CodeQL como normalización de rutas, y la ruta canónica sigue verificándose después contra las raíces permitidas. Se mantiene la protección frente a enlaces simbólicos que salen de las raíces autorizadas y se elimina el finding `js/path-injection` de #346.
 
 **2026-09-03 — Navegador de volúmenes de Backup: subdirectorios accesibles de nuevo** — La validación de rutas usa ahora `fs.realpath()` de Node en lugar del binario `realpath`, cuya opción `--` no es compatible con BusyBox/Alpine. `/app/data` sigue autorizado explícitamente y la WebUI distingue los errores de lectura de un directorio realmente vacío. Corrige #340.
