@@ -91,9 +91,11 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
-**Global multi-instance search (`Ctrl+K`)**
+**Global multi-instance search V2 (`Ctrl+K`)**
 
-Dockge-Enhanced now provides a global search palette available from every page. It searches the local instance and all online linked instances in parallel for **stacks**, safe **Compose/override** matches, **`.env` variable names**, and **backup history metadata**, while also exposing shortcuts to the main Enhanced configuration sections. Results can be filtered by category or instance and open the matching stack or screen directly. Search starts after two characters, is debounced, limits results per instance, and keeps a short in-memory stack-document cache to avoid repeatedly scanning the same Compose files while typing. For security, `.env` values are never searched or returned, inline Compose environment values are searched only by variable name and displayed redacted, sensitive configuration assignment lines are excluded, search queries are not logged, and the query is never used to build filesystem paths.
+The global palette now supports **fuzzy matching** for small typing mistakes and assisted operators such as `type:`, `stack:`, `image:`, `port:`, `instance:` and operational filters including `is:update`, `is:stopped`, `is:vulnerable`, `is:critical` and `is:backup-failed`. Operator chips are displayed directly in the palette so the syntax does not need to be memorized. Compose and `.env` results open the matching stack and scroll CodeMirror directly to the matching line. Recent searches and pinned searches are stored locally in the browser.
+
+Historical configuration search in **recent Restic snapshots** can be enabled explicitly from the palette; it is bounded to 5 recent snapshots and 80 Compose/.env files per instance to protect remote repositories. Searching inside `.env` **values** is also an explicit opt-in: values are used only for matching, are never returned/displayed, and while this sensitive mode is active the query is never stored in recent or pinned searches. Linked instances use the V2 agent protocol when available, with a V1 fallback for simple searches on older linked instances.
 
 
 **Automatic self-update protection while editing Compose/.env**

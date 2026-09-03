@@ -90,9 +90,11 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
-**Búsqueda global multi-instancia (`Ctrl+K`)**
+**Búsqueda global multi-instancia V2 (`Ctrl+K`)**
 
-Dockge-Enhanced incorpora una paleta de búsqueda global disponible desde cualquier página. Busca en paralelo en la instancia local y en todas las instancias vinculadas en línea para encontrar **stacks**, coincidencias seguras en **Compose/override**, **nombres de variables `.env`** y **metadatos del historial de backups**, además de accesos directos a las principales secciones de configuración Enhanced. Los resultados pueden filtrarse por categoría o instancia y abren directamente la stack o la pantalla correspondiente. La búsqueda empieza a partir de dos caracteres, usa debounce, limita los resultados por instancia y mantiene brevemente una caché en memoria de los documentos de stacks. Por seguridad, los valores `.env` nunca se buscan ni se devuelven, las líneas de configuración sensibles se excluyen de los resultados Compose, las consultas no se registran y nunca se usan para construir rutas de archivos.
+La paleta global admite ahora **búsqueda difusa** para pequeños errores de escritura y operadores asistidos como `type:`, `stack:`, `image:`, `port:`, `instance:` y filtros operativos `is:update`, `is:stopped`, `is:vulnerable`, `is:critical` e `is:backup-failed`. Los operadores aparecen como botones dentro de la propia paleta, por lo que no hace falta memorizar la sintaxis. Los resultados Compose y `.env` abren la stack correspondiente y llevan CodeMirror directamente a la línea encontrada. Las búsquedas recientes y fijadas se guardan localmente en el navegador.
+
+La búsqueda histórica en **snapshots Restic recientes** se activa de forma explícita y está limitada a 5 snapshots y 80 archivos Compose/.env por instancia para proteger repositorios remotos. La búsqueda dentro de **valores `.env`** también es opcional: el valor solo se usa para detectar coincidencias, nunca se devuelve ni se muestra y, mientras este modo sensible está activo, la consulta no se guarda en recientes ni favoritos. Las instancias vinculadas usan el protocolo V2 cuando está disponible y conservan un fallback V1 para búsquedas simples en instancias antiguas.
 
 
 **Protección de la actualización automática durante la edición de Compose/.env**
