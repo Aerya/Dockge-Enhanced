@@ -8,7 +8,7 @@ import { ImageWatcher } from "../watchers/image-watcher";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
-import { getNotificationLang, notificationText } from "../notification/notification-lang";
+import { getNotificationLang, notificationText, type NotificationLang } from "../notification/notification-lang";
 import { SelfUpdateOperation, SelfUpdatePlan, SelfUpdateProgress, SelfUpdateSettings } from "./types";
 import { DEFAULT_SELF_UPDATE_SETTINGS, normalizeSelfUpdateSettings, selfUpdateMayRun } from "./settings";
 import { isAllowedTargetImage, isPathInside, isSafeComposeName, isSelfUpdateActive, normalizeSelfRepository } from "./policy";
@@ -371,7 +371,7 @@ export class SelfUpdateManager {
         );
     }
 
-    private summarizeFailureForNotification(body: string, lang: string): string {
+    private summarizeFailureForNotification(body: string, lang: NotificationLang): string {
         const kind = classifySelfUpdateFailure(body);
         const messages: Record<ReturnType<typeof classifySelfUpdateFailure>, [string, string, string, string]> = {
             "network-timeout": [
