@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — CodeQL hardening for Backup path validation** — Backup path canonicalization now uses `fs.realpathSync()`, which CodeQL recognizes as a path normalization step, and the canonical path is still checked against the allowed roots afterwards. This preserves symlink-escape protection while removing the `js/path-injection` finding introduced by the `fs.realpath()` change in #346.
+
 **2026-09-03 — Backup volume browser: subdirectories are accessible again** — Path validation now uses Node `fs.realpath()` instead of the `realpath` binary, whose `--` option is not compatible with BusyBox/Alpine. `/app/data` remains explicitly allowed in the browser even when excluded from the displayed mounted-volume list. Validation or read failures are now shown separately from genuinely empty directories in the WebUI. Fixes #340.
 
 **2026-09-03 — Secure edit-lease session identifier** — The lease protecting unsaved compose/.env edits during self-update now exclusively uses `crypto.getRandomValues()` for its session identifier. The `Math.random()` fallback reported by CodeQL has been removed; no weak identifier is generated when a secure crypto API is unavailable.
