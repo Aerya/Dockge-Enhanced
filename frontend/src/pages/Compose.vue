@@ -544,7 +544,7 @@
                     </div>
 
                     <!-- Override editor -->
-                    <div v-if="isEditMode">
+                    <div v-if="isEditMode || globalSearchFocusSource === 'override'">
                         <div class="editor-header mb-3 compose-tight">
                             <h4 class="mb-0">compose.override.yaml</h4>
                             <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('override')">
@@ -573,7 +573,7 @@
                     </div>
 
                     <!-- ENV editor -->
-                    <div v-if="isEditMode">
+                    <div v-if="isEditMode || globalSearchFocusSource === 'env'">
                         <div class="editor-header mb-3 compose-tight">
                             <h4 class="mb-0">.env</h4>
                             <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('env')">
@@ -904,6 +904,10 @@ export default {
         composeEffectivelyCollapsed() {
             return this.composeCollapsed && !this.isEditMode;
         },
+        globalSearchFocusSource() {
+            const source = this.$route.query?.gsSource;
+            return source === "compose" || source === "override" || source === "env" ? source : "";
+        },
         hasUnsavedComposeChanges() {
             if (!this.isEditMode || !this.composeEditBaseline) {
                 return false;
@@ -1129,7 +1133,9 @@ export default {
         },
 
         $route(to, from) {
-
+            if (to.query?.gsLine !== from.query?.gsLine || to.query?.gsSource !== from.query?.gsSource || to.query?.gsTerm !== from.query?.gsTerm) {
+                this.$nextTick(() => this.focusGlobalSearchResult());
+            }
         }
     },
     mounted() {
@@ -1816,6 +1822,7 @@ export default {
                     this.bindTerminal();
                     this.loadVolumeUsage();
                     this.loadRemoteAutoUpdateState();
+                    this.$nextTick(() => this.focusGlobalSearchResult());
                 } else {
                     this.$root.toastRes(res);
                 }
@@ -2093,6 +2100,36 @@ export default {
             // Laisse CodeMirror se redimensionner après le changement de layout
             this.$nextTick(() => {
                 window.dispatchEvent(new Event("resize"));
+            });
+        },
+
+        focusGlobalSearchResult(attempt = 0) {
+            const source = this.globalSearchFocusSource;
+            const requestedLine = Number(this.$route.query?.gsLine ?? 0);
+            if (!source || !Number.isInteger(requestedLine) || requestedLine < 1) return;
+
+            this.composeCollapsed = false;
+            const refName = source === "override" ? "overrideEditor" : source === "env" ? "envEditor" : "yamlEditor";
+            this.$nextTick(() => {
+                window.setTimeout(() => {
+                    const cm = this.$refs[refName];
+                    const view = cm && ((cm.view && cm.view.dispatch) ? cm.view : cm.view?.value);
+                    if (!view?.state?.doc || !view.dispatch) {
+                        if (attempt < 6) this.focusGlobalSearchResult(attempt + 1);
+                        return;
+                    }
+                    const lineNumber = Math.min(requestedLine, view.state.doc.lines);
+                    const line = view.state.doc.line(lineNumber);
+                    const term = String(this.$route.query?.gsTerm ?? "").trim();
+                    const index = term ? line.text.toLocaleLowerCase().indexOf(term.toLocaleLowerCase()) : -1;
+                    const anchor = index >= 0 ? line.from + index : line.from;
+                    const head = index >= 0 ? anchor + term.length : anchor;
+                    view.dispatch({
+                        selection: { anchor, head },
+                        effects: EditorView.scrollIntoView(anchor, { y: "center" }),
+                    });
+                    view.focus();
+                }, attempt === 0 ? 40 : 80);
             });
         },
 

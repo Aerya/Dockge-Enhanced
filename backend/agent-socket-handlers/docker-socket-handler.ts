@@ -16,7 +16,7 @@ import { getStackStatsSnapshot, getSystemStatsSnapshot } from "../routers/system
 import { ComposeEditLeaseManager } from "../self-update/editor-lease";
 import { SelfUpdateManager } from "../self-update/manager";
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
-import { runGlobalSearch } from "../global-search";
+import { runGlobalSearch, runGlobalSearchV2 } from "../global-search";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -26,6 +26,26 @@ export class DockerSocketHandler extends AgentSocketHandler {
             try {
                 checkLogin(socket);
                 callbackResult({ ok: true, data: await runGlobalSearch(server, query, limit) }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("globalSearchV2", async (payload : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                const request = payload && typeof payload === "object" ? payload as {
+                    query?: unknown;
+                    limit?: unknown;
+                    includeEnvValues?: unknown;
+                    searchSnapshots?: unknown;
+                } : { query: payload };
+                callbackResult({ ok: true, data: await runGlobalSearchV2(server, {
+                    query: request.query,
+                    limit: request.limit,
+                    includeEnvValues: request.includeEnvValues,
+                    searchSnapshots: request.searchSnapshots,
+                }) }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }

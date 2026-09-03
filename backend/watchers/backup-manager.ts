@@ -189,6 +189,19 @@ export interface SnapshotFile {
     prevSnapshotId: string | null;
 }
 
+export interface BackupSearchDocument {
+    snapshotId: string;
+    timestamp: string;
+    stackName: string;
+    source: "compose" | "override" | "env";
+    content: string;
+}
+
+export interface BackupSearchDocumentBatch {
+    documents: BackupSearchDocument[];
+    truncated: boolean;
+}
+
 export interface RestoreTestResult {
     ok: boolean;
     skipped?: boolean;
@@ -1991,6 +2004,101 @@ export class BackupManager {
         return backupHistory;
     }
 
+    /**
+     * Charge un échantillon borné des fichiers Compose/.env des snapshots récents.
+     * Cette méthode n'est pas exposée par le router : elle sert uniquement à la
+     * recherche globale historique déclenchée explicitement par l'utilisateur.
+     */
+    async getRecentConfigurationSearchDocuments(maxSnapshots = 5, maxFiles = 80, stackHint = ""): Promise<BackupSearchDocumentBatch> {
+        const snapshotCap = Math.max(1, Math.min(10, Math.floor(maxSnapshots)));
+        const fileCap = Math.max(1, Math.min(160, Math.floor(maxFiles)));
+        const normalizedStackHint = stackHint.trim().toLocaleLowerCase();
+        const snapshots = (await this.listSnapshots())
+            .slice()
+            .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+        const selected = snapshots.slice(0, snapshotCap);
+        if (selected.length === 0) return { documents: [], truncated: false };
+
+        const candidates: Array<{ snapshotId: string; timestamp: string; stackName: string; source: "compose" | "override" | "env"; path: string }> = [];
+        let truncated = snapshots.length > selected.length;
+        const dest = this.primaryDest();
+        const perSnapshotCap = normalizedStackHint ? fileCap : Math.max(1, Math.ceil(fileCap / Math.max(1, selected.length)));
+
+        for (const snapshot of selected) {
+            if (candidates.length >= fileCap) {
+                truncated = true;
+                break;
+            }
+            let snapshotCandidateCount = 0;
+            const snapshotId = assertSafeResticId(snapshot.short_id || snapshot.id);
+            try {
+                const passA = await this.resticFor(dest, [ "ls", snapshotId, STACKS_DIR, "--json", "--long" ], {}, [], 12_000);
+                const stackPaths: string[] = [];
+                for (const line of passA.split("\n").filter(Boolean)) {
+                    try {
+                        const entry = JSON.parse(line) as Record<string, unknown>;
+                        if (entry.type !== "dir" || typeof entry.path !== "string" || entry.path === STACKS_DIR) continue;
+                        if (path.dirname(entry.path) === STACKS_DIR) stackPaths.push(entry.path);
+                    } catch { /* entrée restic invalide : ignorée */ }
+                }
+                if (stackPaths.length === 0) continue;
+
+                const passB = await this.resticFor(dest, [ "ls", snapshotId, ...stackPaths, "--json", "--long" ], {}, [], 12_000);
+                for (const line of passB.split("\n").filter(Boolean)) {
+                    if (candidates.length >= fileCap || snapshotCandidateCount >= perSnapshotCap) {
+                        truncated = true;
+                        break;
+                    }
+                    let entry: Record<string, unknown>;
+                    try { entry = JSON.parse(line) as Record<string, unknown>; } catch { continue; }
+                    if (entry.type !== "file" || typeof entry.path !== "string") continue;
+                    const filePath = entry.path;
+                    const relative = path.relative(STACKS_DIR, filePath);
+                    if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) continue;
+                    const parts = relative.split(path.sep);
+                    if (parts.length !== 2) continue;
+                    const [ stackName, name ] = parts;
+                    if (normalizedStackHint && !stackName.toLocaleLowerCase().includes(normalizedStackHint)) continue;
+                    const isEnv = name === ".env";
+                    const isCompose = /^(?:compose|docker-compose)(?:\.override)?\.ya?ml$/i.test(name);
+                    if (!isEnv && !isCompose) continue;
+                    candidates.push({
+                        snapshotId,
+                        timestamp: snapshot.time,
+                        stackName,
+                        source: isEnv ? "env" : /override/i.test(name) ? "override" : "compose",
+                        path: filePath,
+                    });
+                    snapshotCandidateCount++;
+                }
+            } catch {
+                // La recherche historique est optionnelle : un snapshot inaccessible
+                // ne doit pas casser les résultats courants.
+            }
+        }
+
+        const loaded = await mapLimit(candidates.slice(0, fileCap), 4, async (candidate) => {
+            try {
+                const content = await this.resticDump(dest, candidate.snapshotId, candidate.path, 8_000);
+                if (content.length > 512 * 1024) return null;
+                return {
+                    snapshotId: candidate.snapshotId,
+                    timestamp: candidate.timestamp,
+                    stackName: candidate.stackName,
+                    source: candidate.source,
+                    content,
+                } satisfies BackupSearchDocument;
+            } catch {
+                return null;
+            }
+        });
+
+        return {
+            documents: loaded.filter((item): item is BackupSearchDocument => item !== null),
+            truncated,
+        };
+    }
+
     // ── Contenu de fichier dans un snapshot ──────────────────────
 
     /**
@@ -2076,7 +2184,7 @@ export class BackupManager {
     }
 
     /** Exécute `restic dump` sans `--json` pour récupérer le contenu brut d'un fichier */
-    private async resticDump(dest: BackupDestination, snapshotId: string, filePath: string): Promise<string> {
+    private async resticDump(dest: BackupDestination, snapshotId: string, filePath: string, timeoutMs = 30_000): Promise<string> {
         const repoEnv = buildResticEnv(dest);
         const repo    = buildRepoUrl(dest);
         let tmpFile: string | null = null;
@@ -2088,7 +2196,7 @@ export class BackupManager {
             const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
             const { stdout } = await execFileAsync("restic", buildResticCommandArgs(repo, sftpOpts, [ "dump", snapshotId, filePath ], false), {
                 maxBuffer: 10 * 1024 * 1024,
-                timeout: 30_000,
+                timeout: timeoutMs,
                 env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...repoEnv },
             });
             return stdout;

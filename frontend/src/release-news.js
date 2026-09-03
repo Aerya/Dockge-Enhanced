@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-03-global-search-v2",
+        items: [ "releaseNews.item.globalSearchV2" ],
+    },
+    {
         id: "2026-09-03-global-search",
         items: [ "releaseNews.item.globalSearch" ],
     },

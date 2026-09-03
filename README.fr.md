@@ -88,9 +88,11 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 ### 🆕 Septembre 2026
 
-**Recherche globale multi-instance (`Ctrl+K`)**
+**Recherche globale multi-instance V2 (`Ctrl+K`)**
 
-Dockge-Enhanced dispose désormais d’une palette de recherche globale accessible depuis toutes les pages. Elle interroge en parallèle l’instance locale et toutes les instances liées en ligne pour retrouver des **stacks**, des correspondances sûres dans les **Compose/override**, des **noms de variables `.env`** et les **métadonnées de l’historique des backups**, tout en proposant des raccourcis vers les principales sections de configuration Enhanced. Les résultats peuvent être filtrés par catégorie ou par instance et ouvrent directement la stack ou l’écran concerné. La recherche démarre à partir de deux caractères, utilise un debounce, limite les résultats par instance et conserve brièvement en mémoire les documents de stacks pour éviter de rescanner les mêmes Compose à chaque frappe. Côté sécurité, les valeurs `.env` ne sont jamais recherchées ni renvoyées, les variables d’environnement déclarées directement dans un Compose ne sont recherchées que par leur nom et leur valeur reste masquée, les lignes d’affectation sensibles sont exclues, les requêtes ne sont pas journalisées et ne servent jamais à construire un chemin de fichier.
+La palette globale accepte désormais les **correspondances floues** pour tolérer de petites fautes de frappe et des opérateurs assistés comme `type:`, `stack:`, `image:`, `port:`, `instance:` ainsi que des filtres opérationnels `is:update`, `is:stopped`, `is:vulnerable`, `is:critical` et `is:backup-failed`. Des boutons d’aide sont affichés directement dans la palette : il n’est pas nécessaire de mémoriser cette syntaxe. Un résultat Compose ou `.env` ouvre la bonne stack et positionne directement CodeMirror sur la ligne trouvée. Les recherches récentes et les recherches épinglées sont conservées localement dans le navigateur.
+
+La recherche dans la configuration des **snapshots Restic récents** s’active explicitement depuis la palette ; elle est volontairement bornée à 5 snapshots récents et 80 fichiers Compose/.env par instance afin de protéger les dépôts distants. La recherche dans les **valeurs `.env`** est elle aussi optionnelle : la valeur sert uniquement à détecter une correspondance, n’est jamais renvoyée ni affichée et, lorsque ce mode sensible est actif, la requête n’est enregistrée ni dans l’historique ni dans les favoris. Les instances liées utilisent le protocole V2 lorsqu’il est disponible, avec repli sur la V1 pour les recherches simples vers une instance encore ancienne.
 
 
 **Protection de l’auto-mise à jour pendant l’édition d’un Compose/.env**

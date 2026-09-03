@@ -46,7 +46,7 @@
                 <tbody>
                     <template v-for="snap in filteredSnapshots" :key="snap.id">
                         <!-- Ligne principale du snapshot -->
-                        <tr class="snapshot-row" @click="toggleSnapshotFiles(snap.short_id)"
+                        <tr class="snapshot-row" :id="`backup-snapshot-${snap.short_id}`" @click="toggleSnapshotFiles(snap.short_id)"
                             style="cursor:pointer">
                             <td>
                                 <font-awesome-icon
@@ -328,8 +328,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
+import { useRoute } from "vue-router";
 import { fmtDate } from "../../composables/useServerTz";
 import BackupSnapshotDiff from "./BackupSnapshotDiff.vue";
 import {
@@ -345,6 +346,7 @@ import {
 } from "./shared";
 
 const { t } = useI18n();
+const route = useRoute();
 
 const emit = defineEmits<{
     toast: [msg: string, ok?: boolean];
@@ -564,6 +566,15 @@ onMounted(async () => {
             (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
         );
         void loadSnapshotStats();
+
+        const requested = typeof route.query.snapshot === "string" ? route.query.snapshot : "";
+        const match = requested ? snapshots.value.find(snap => snap.id.startsWith(requested) || snap.short_id.startsWith(requested)) : undefined;
+        if (match) {
+            snapshotFilter.value = "all";
+            await toggleSnapshotFiles(match.short_id);
+            await nextTick();
+            document.getElementById(`backup-snapshot-${match.short_id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
     }
 });
 
