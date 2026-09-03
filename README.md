@@ -91,6 +91,11 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**Dedicated self-update backup retention**
+
+Mandatory Restic snapshots created before protected Dockge-Enhanced self-updates now use a dedicated retention policy. After the new snapshot has been created **and verified**, Dockge-Enhanced keeps the **2 latest self-update snapshots for this installation** and prunes older generations before launching the updater sidecar. A stable installation-specific tag prevents cleanup from touching another Dockge-Enhanced instance sharing the same Restic repository. Normal backup retention (`keepLast`, daily, weekly, monthly) is unchanged. If this dedicated pruning fails, the verified backup is kept and the update may continue; the cleanup error is logged and a later self-update will try again.
+
+
 **Docker Compose project-name reconciliation**
 
 Managed stacks whose directory name contains dots or uppercase characters are now reconciled with Docker Compose using the actual `ConfigFiles` path instead of relying only on Docker's sanitized project name. This prevents duplicate “managed/stopped” and “external/running” entries for the same stack.

@@ -195,6 +195,9 @@ export class SelfUpdateManager {
         );
         await atomicWriteJson(recoveryPath, this.buildRecoverySnapshot(inspected, plan));
 
+        const secret = await this.getOrCreateSecret();
+        const selfUpdateRetentionTag = `self-update-instance-${crypto.createHash("sha256").update(secret).digest("hex").slice(0, 16)}`;
+
         this.operation = { id: plan.id, state: "backing-up", message: "Mandatory backup in progress", startedAt: new Date().toISOString(), finishedAt: null, targetImage, rollbackAttempted: false };
         this.progress = null;
         await this.saveOperation();
@@ -208,6 +211,7 @@ export class SelfUpdateManager {
                 additionalPaths: [ DATA_DIR, recoveryPath ],
                 selfUpdateOnly: true,
                 suppressNotification: true,
+                additionalTags: [ selfUpdateRetentionTag ],
             });
         } catch (error) {
             this.operation = {
@@ -269,11 +273,24 @@ export class SelfUpdateManager {
         }
         this.progress = null;
 
+        const retentionResults = await BackupManager.getInstance().pruneSelfUpdateSnapshots(
+            backup,
+            selfUpdateRetentionTag,
+            2,
+        );
+        for (const retention of retentionResults) {
+            if (retention.error) {
+                log.warn(
+                    "self-update",
+                    `Nettoyage des anciens snapshots reporté — label=${retention.label} error=${retention.error}`,
+                );
+            }
+        }
+
         const stateMount = (inspected.Mounts ?? []).find((mount) => mount.Destination === DATA_DIR);
         if (!stateMount?.Source) throw new Error(`The ${DATA_DIR} volume is required for self-update state`);
         plan.issuedAt = new Date().toISOString();
         plan.expiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
-        const secret = await this.getOrCreateSecret();
         const payload = { plan, signature: signPlan(plan, secret) };
         await this.cleanupArtifacts(plan.id);
         await atomicWriteJson(path.join(STATE_DIR, `${plan.id}.json`), payload);

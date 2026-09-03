@@ -90,6 +90,11 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Retención dedicada de las copias de self-update**
+
+Los snapshots Restic obligatorios creados antes de una autoactualización protegida de Dockge-Enhanced usan ahora una política de retención dedicada. Una vez que el nuevo snapshot se ha **creado y verificado**, Dockge-Enhanced conserva los **2 últimos snapshots de self-update de esta instalación** y elimina las generaciones anteriores antes de iniciar el sidecar. Una etiqueta estable específica de la instalación evita limpiar snapshots de otra instancia Dockge-Enhanced que comparta el mismo repositorio Restic. La retención normal (`keepLast`, diaria, semanal y mensual) no cambia. Si esta limpieza dedicada falla, se conserva la copia verificada y la actualización puede continuar; el error queda registrado y una autoactualización posterior volverá a intentar la limpieza.
+
+
 **Correspondencia de nombres de proyecto Docker Compose**
 
 Las stacks gestionadas cuyo directorio contiene puntos o mayúsculas se relacionan ahora con Docker Compose mediante la ruta real `ConfigFiles`, en lugar de depender únicamente del nombre de proyecto normalizado por Docker. Esto evita entradas duplicadas “gestionada/detenida” y “externa/en ejecución” para la misma stack.

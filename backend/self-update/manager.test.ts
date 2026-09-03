@@ -167,3 +167,21 @@ test("deferred blocker reasons are localized before notification rendering", asy
     assert.equal(manager.localizedDeferredReason("trivy-scan", "fr"), "un scan de sécurité Trivy est en cours");
     assert.equal(manager.localizedDeferredReason("trivy-scan", "en"), "an image security scan is in progress");
 });
+
+test("self-update Restic retention runs only after fresh backup verification", async () => {
+    const managerSource = await fs.readFile(new URL("./manager.ts", import.meta.url), "utf8");
+    const backupSource = await fs.readFile(new URL("../watchers/backup-manager.ts", import.meta.url), "utf8");
+
+    const verifyPos = managerSource.indexOf("verifyFreshBackup(backup)");
+    const prunePos = managerSource.indexOf("pruneSelfUpdateSnapshots(");
+    const sidecarPos = managerSource.indexOf('docker([ "run", "--pull=always"');
+
+    assert.ok(verifyPos >= 0);
+    assert.ok(prunePos > verifyPos);
+    assert.ok(sidecarPos > prunePos);
+    assert.match(managerSource, /pruneSelfUpdateSnapshots\(\s*backup,\s*selfUpdateRetentionTag,\s*2,/s);
+    assert.match(managerSource, /additionalTags: \[ selfUpdateRetentionTag \]/);
+    assert.match(backupSource, /snapshots", "--tag", instanceTag/);
+    assert.match(backupSource, /const expired = ordered\.slice\(keep\)/);
+    assert.match(backupSource, /"forget", \.\.\.ids, "--prune"/);
+});

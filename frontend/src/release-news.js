@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-03-self-update-backup-retention",
+        items: [ "releaseNews.item.selfUpdateBackupRetention" ],
+    },
+    {
         id: "2026-09-03-instance-identity",
         items: [ "releaseNews.item.instanceIdentity" ],
     },

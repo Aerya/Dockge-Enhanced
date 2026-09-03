@@ -1018,6 +1018,63 @@ export class BackupManager {
         await this.initRepoFor(dest);
     }
 
+    /**
+     * Rétention dédiée aux snapshots créés juste avant un self-update.
+     * Le tag d'installation est stable et propre à cette instance, afin qu'un
+     * dépôt Restic partagé ne soit jamais nettoyé pour le compte d'une autre instance.
+     * Cette méthode n'est appelée qu'après vérification du nouveau snapshot.
+     */
+    async pruneSelfUpdateSnapshots(
+        backup: BackupResult,
+        instanceTag: string,
+        keepLast = 2,
+    ): Promise<Array<{ label: string; removed: number; error?: string }>> {
+        if (!/^self-update-instance-[a-f0-9]{16}$/.test(instanceTag)) {
+            throw new ValidationError("Tag de rétention self-update invalide");
+        }
+        const keep = Math.max(1, Math.floor(keepLast));
+        const results: Array<{ label: string; removed: number; error?: string }> = [];
+
+        for (const backedUp of backup.destinations ?? []) {
+            if (!backedUp.success) continue;
+            const dest = this.settings.destinations.find(candidate => candidate.enabled && candidate.label === backedUp.label);
+            if (!dest) {
+                results.push({ label: backedUp.label, removed: 0, error: "Destination de backup introuvable" });
+                continue;
+            }
+
+            try {
+                try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore stale lock cleanup */ }
+
+                const raw = await this.resticFor(dest, [ "snapshots", "--tag", instanceTag ]);
+                const snapshots = JSON.parse(raw) as ResticSnapshot[];
+                const ordered = snapshots
+                    .filter(snapshot => typeof snapshot.id === "string" && typeof snapshot.time === "string")
+                    .sort((a, b) => Date.parse(b.time) - Date.parse(a.time));
+
+                const expired = ordered.slice(keep);
+                if (expired.length === 0) {
+                    results.push({ label: dest.label, removed: 0 });
+                    continue;
+                }
+
+                const ids = expired.map(snapshot => assertSafeResticId(snapshot.id));
+                await this.resticFor(dest, [ "forget", ...ids, "--prune" ], {}, [], 20 * 60_000);
+                results.push({ label: dest.label, removed: ids.length });
+                log.info(
+                    "self-update",
+                    `Rétention Restic self-update — label=${dest.label} supprimés=${ids.length} conservés=${Math.min(keep, ordered.length)}`,
+                );
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                results.push({ label: dest.label, removed: 0, error: message });
+                log.warn("self-update", `Rétention Restic self-update échouée — label=${dest.label} error=${message}`);
+            }
+        }
+
+        return results;
+    }
+
     // ── Backup ────────────────────────────────────────────────────
 
     /**
@@ -1047,6 +1104,7 @@ export class BackupManager {
         additionalPaths?: string[];
         selfUpdateOnly?: boolean;
         suppressNotification?: boolean;
+        additionalTags?: string[];
     } = {}): Promise<BackupResult> {
         if (!this.backupRunLock.acquire(this.settings.preventConcurrentBackups)) {
             this.recordBlockedBackup(opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual"));
@@ -1068,6 +1126,7 @@ export class BackupManager {
         additionalPaths?: string[];
         selfUpdateOnly?: boolean;
         suppressNotification?: boolean;
+        additionalTags?: string[];
     } = {}): Promise<BackupResult> {
         const start = Date.now();
         const trigger = opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual");
@@ -1106,6 +1165,13 @@ export class BackupManager {
 
         const tags = ["dockge-enhanced", new Date().toISOString().slice(0, 10), trigger];
         if (opts.tag && !tags.includes(opts.tag)) tags.push(opts.tag);
+        for (const additionalTag of opts.additionalTags ?? []) {
+            const tag = additionalTag.trim();
+            if (!/^[a-zA-Z0-9_.:-]{1,128}$/.test(tag)) {
+                throw new ValidationError("Tag Restic additionnel invalide");
+            }
+            if (!tags.includes(tag)) tags.push(tag);
+        }
         const builtinExcludes = ["*.log", "__pycache__", "node_modules"];
         const userExcludes    = this.settings.excludePatterns ?? [];
         const resticArgs = [
