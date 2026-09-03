@@ -14,6 +14,7 @@ import { DEFAULT_SELF_UPDATE_SETTINGS, normalizeSelfUpdateSettings, selfUpdateMa
 import { isAllowedTargetImage, isPathInside, isSafeComposeName, isSelfUpdateActive, normalizeSelfRepository } from "./policy";
 import { atomicWriteFile, atomicWriteJson } from "./state-file";
 import { getSelfUpdateBlocker } from "./operation-guard";
+import { classifySelfUpdateFailure } from "./failure-detail";
 import packageJSON from "../../package.json";
 import { log } from "../log";
 
@@ -370,6 +371,49 @@ export class SelfUpdateManager {
         );
     }
 
+    private summarizeFailureForNotification(body: string, lang: string): string {
+        const kind = classifySelfUpdateFailure(body);
+        const messages: Record<ReturnType<typeof classifySelfUpdateFailure>, [string, string, string, string]> = {
+            "network-timeout": [
+                "Timeout réseau lors du téléchargement de l’image GHCR.",
+                "Network timeout while downloading the GHCR image.",
+                "Tiempo de espera de red agotado al descargar la imagen GHCR.",
+                "下载 GHCR 镜像时发生网络超时。",
+            ],
+            "registry-auth": [
+                "Authentification refusée par le registre GHCR.",
+                "Authentication was rejected by the GHCR registry.",
+                "El registro GHCR rechazó la autenticación.",
+                "GHCR 注册表拒绝了身份验证。",
+            ],
+            "registry-forbidden": [
+                "Accès refusé par le registre GHCR.",
+                "Access was denied by the GHCR registry.",
+                "El registro GHCR denegó el acceso.",
+                "GHCR 注册表拒绝了访问。",
+            ],
+            "image-not-found": [
+                "Image ou digest introuvable sur GHCR.",
+                "Image or digest not found on GHCR.",
+                "Imagen o digest no encontrado en GHCR.",
+                "在 GHCR 上找不到镜像或摘要。",
+            ],
+            dns: [
+                "Résolution DNS impossible pour le registre GHCR.",
+                "DNS resolution failed for the GHCR registry.",
+                "No se pudo resolver por DNS el registro GHCR.",
+                "无法解析 GHCR 注册表的 DNS。",
+            ],
+            generic: [
+                "Échec technique lors de la récupération ou de l’application de l’image GHCR.",
+                "Technical failure while fetching or applying the GHCR image.",
+                "Fallo técnico al descargar o aplicar la imagen GHCR.",
+                "获取或应用 GHCR 镜像时发生技术错误。",
+            ],
+        };
+        return notificationText(lang, ...messages[kind]);
+    }
+
     private async notify(title: string, body: string, type: "warning" | "success" | "failure"): Promise<boolean> {
         try {
             const watcher = ImageWatcher.getInstance().settings;
@@ -491,6 +535,7 @@ export class SelfUpdateManager {
                     ].filter(Boolean).join("\n"),
                 );
             } else if (title === "↩️ Dockge-Enhanced rollback succeeded") {
+                const failureSummary = this.summarizeFailureForNotification(body, lang);
                 localizedBody = notificationText(
                     lang,
                     [
@@ -500,7 +545,7 @@ export class SelfUpdateManager {
                         "**Rollback** · Réussi",
                         "**État** · Opérationnel",
                         "",
-                        `Détail : ${body}`,
+                        `**Cause** · ${failureSummary}`,
                     ].join("\n"),
                     [
                         "The update failed, but the previous version was restored automatically.",
@@ -509,7 +554,7 @@ export class SelfUpdateManager {
                         "**Rollback** · Successful",
                         "**Status** · Operational",
                         "",
-                        `Details: ${body}`,
+                        `**Cause** · ${failureSummary}`,
                     ].join("\n"),
                     [
                         "La actualización falló, pero la versión anterior se restauró automáticamente.",
@@ -518,7 +563,7 @@ export class SelfUpdateManager {
                         "**Rollback** · Correcto",
                         "**Estado** · Operativo",
                         "",
-                        `Detalle: ${body}`,
+                        `**Causa** · ${failureSummary}`,
                     ].join("\n"),
                     [
                         "更新失败，但旧版本已自动恢复。",
@@ -527,8 +572,17 @@ export class SelfUpdateManager {
                         "**回滚** · 成功",
                         "**状态** · 运行正常",
                         "",
-                        `详情：${body}`,
+                        `**原因** · ${failureSummary}`,
                     ].join("\n"),
+                );
+            } else if (title === "❌ Dockge-Enhanced self-update failed") {
+                const failureSummary = this.summarizeFailureForNotification(body, lang);
+                localizedBody = notificationText(
+                    lang,
+                    `La mise à jour automatique a échoué.\n\n**Cause** · ${failureSummary}`,
+                    `The automatic update failed.\n\n**Cause** · ${failureSummary}`,
+                    `La actualización automática falló.\n\n**Causa** · ${failureSummary}`,
+                    `自动更新失败。\n\n**原因** · ${failureSummary}`,
                 );
             }
             const prefixedBodies: Array<[string, [string, string, string, string]]> = [

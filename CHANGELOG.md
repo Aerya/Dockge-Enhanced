@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — Cleaner rollback notifications** — Raw Docker/GHCR errors remain available in state and logs, but Discord/Apprise no longer exposes long temporary signed `pkg-containers.githubusercontent.com` URLs. Self-update notifications now summarize the useful cause (network timeout, authentication, forbidden access, missing image/digest, DNS, or a generic technical failure), including after a successful rollback.
+
 **2026-09-03 — Autonomous self-update terminal notification** — After a sidecar-triggered restart, Dockge-Enhanced now monitors the persisted self-update state by itself until a terminal result is written. Discord/Apprise success, failure or rollback notifications therefore no longer depend on opening the WebUI or calling `/self/status`. A 15-minute bounded watcher covers `updating`, `waiting-health` and `rolling-back`, plus any terminal notification still pending.
 
 **2026-09-03 — Fix Restic restore test** — The post-backup restore test now actually requests JSON output from `restic ls`, prefers a non-empty Compose file when available, and otherwise tests another real file from the snapshot. A valid Dockge backup without a Compose file is therefore no longer reported as a failed restore test. A snapshot with no files remains a real failure, while an all-empty-file snapshot is explicitly marked as a skipped content test.

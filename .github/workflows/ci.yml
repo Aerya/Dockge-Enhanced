@@ -65,6 +65,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/self-update/manager.test.ts
 
+      - name: Tests des détails d’erreur du self-update
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/self-update/failure-detail.test.ts
+
       - name: Tests du restore-test Restic
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/watchers/backup-restore-test.test.ts
