@@ -174,11 +174,13 @@ test("self-update Restic retention runs only after fresh backup verification", a
 
     const verifyPos = managerSource.indexOf("verifyFreshBackup(backup)");
     const prunePos = managerSource.indexOf("pruneSelfUpdateSnapshots(");
-    const sidecarPos = managerSource.indexOf('docker([ "run", "--pull=always"');
+    const sidecarArgsPos = managerSource.indexOf('const args = [');
+    const sidecarLaunchPos = managerSource.indexOf('Étape 3/4 — lancement sidecar');
 
     assert.ok(verifyPos >= 0);
     assert.ok(prunePos > verifyPos);
-    assert.ok(sidecarPos > prunePos);
+    assert.ok(sidecarArgsPos > prunePos);
+    assert.ok(sidecarLaunchPos > sidecarArgsPos);
     assert.match(managerSource, /pruneSelfUpdateSnapshots\(\s*backup,\s*selfUpdateRetentionTag,\s*2,/s);
     assert.match(managerSource, /additionalTags: \[ selfUpdateRetentionTag \]/);
     assert.match(backupSource, /snapshots", "--tag", instanceTag/);
