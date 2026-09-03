@@ -90,6 +90,11 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Estadísticas CPU/RAM por stack entre instancias vinculadas**
+
+La opción **Mostrar estadísticas CPU / RAM por stack** pertenece ahora a cada instancia Dockge-Enhanced. Cuando se activa en un servidor, ese servidor recopila sus propias estadísticas Docker y las expone mediante el canal existente de instancias vinculadas. Cualquier WebUI vinculada que muestre ese servidor presenta los mismos indicadores CPU/RAM para sus stacks y contenedores. Ocultar el servidor oculta sus estadísticas; desactivar la opción en la instancia propietaria detiene su recopilación y exposición.
+
+
 **Stacks fijados persistentes entre instancias vinculadas**
 
 Los stacks fijados pertenecen ahora a la instancia Dockge-Enhanced que los aloja, y ya no al `localStorage` de un navegador. Fijar un stack de Garuda, DockerLab o LincStation guarda la preferencia en el servidor correspondiente. Cualquier WebUI vinculada que muestre ese servidor ve el mismo stack fijado; ocultar el servidor oculta sus pins sin borrarlos. Los pins sobreviven así a cierres e inicios de sesión, cambios de navegador y actualizaciones de Dockge-Enhanced. Los pins locales anteriores se migran automáticamente cuando sus instancias propietarias están disponibles.

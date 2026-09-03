@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-03-linked-instance-stack-stats",
+        items: [ "releaseNews.item.linkedInstanceStackStats" ],
+    },
+    {
         id: "2026-09-03-server-persisted-stack-pins",
         items: [ "releaseNews.item.serverPersistedStackPins" ],
     },

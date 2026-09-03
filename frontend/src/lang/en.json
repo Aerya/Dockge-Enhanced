@@ -21,6 +21,7 @@
     "releaseNews.item.scheduling": "Scheduling is always available, with independent start and stop rules for stacks and containers.",
     "releaseNews.item.updateRange": "The popup groups only the features released since your previous update, regardless of how many versions were skipped.",
     "releaseNews.item.logWrap": "A logs button toggles line wrapping or keeps each full entry on one line with horizontal scrolling.",
+    "releaseNews.item.linkedInstanceStackStats": "Per-stack CPU / RAM statistics now follow the owning instance. When enabled in a server's Monitoring settings, its stacks and containers show the same statistics from every linked WebUI that displays that server. An instance with the option disabled neither collects nor exposes these statistics.",
     "releaseNews.item.serverPersistedStackPins": "Pinned stacks are now stored on the instance that owns them instead of relying on browser localStorage. Pins therefore survive sign-out, browser changes and updates, and are visible from every linked WebUI whenever the owning server is included in the displayed list. Existing browser-local pins are migrated automatically when the relevant instances are reachable.",
     "releaseNews.item.stackPins": "Frequently used stacks can be pinned to the top of the sidebar, with a preference remembered per browser.",
     "releaseNews.item.composeWorkspace": "The denser Logs and Compose workspace has a remembered draggable divider, fullscreen logs and a collapsible Compose panel.",

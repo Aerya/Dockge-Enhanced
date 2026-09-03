@@ -46,16 +46,20 @@ export class MonitoringRouter extends Router {
 
         router.post("/monitoring/display-settings", async (req: Request, res: Response) => {
             try {
-                const { diskPartitions, diskDisplayMode, hostNavbarDisplay } = req.body as {
+                const { diskPartitions, diskDisplayMode, hostNavbarDisplay, stackStatsEnabled } = req.body as {
                     diskPartitions?: string[];
                     diskDisplayMode?: string;
                     hostNavbarDisplay?: Record<string, unknown>;
+                    stackStatsEnabled?: boolean;
                 };
                 if (Array.isArray(diskPartitions)) {
                     await Settings.set("diskPartitions", JSON.stringify(diskPartitions));
                 }
                 if (diskDisplayMode === "compact" || diskDisplayMode === "bar") {
                     await Settings.set("diskDisplayMode", diskDisplayMode);
+                }
+                if (typeof stackStatsEnabled === "boolean") {
+                    await Settings.set("stackStatsEnabled", stackStatsEnabled, "general");
                 }
                 if (hostNavbarDisplay && typeof hostNavbarDisplay === "object") {
                     await Settings.set("hostNavbarDisplay", JSON.stringify({
@@ -86,6 +90,7 @@ export class MonitoringRouter extends Router {
             }
             const rawDisplayMode = await Settings.get("diskDisplayMode");
             const diskDisplayMode = rawDisplayMode === "bar" ? "bar" : "compact";
+            const stackStatsEnabled = (await Settings.get("stackStatsEnabled")) === true;
             const hostNavbarDisplay = {
                 cpuModel: false,
                 perCoreCpu: false,
@@ -100,7 +105,7 @@ export class MonitoringRouter extends Router {
                     Object.assign(hostNavbarDisplay, JSON.parse(rawHostNavbar));
                 } catch { /* ignore */ }
             }
-            res.json({ ok: true, data: { diskPartitions, diskDisplayMode, hostNavbarDisplay } });
+            res.json({ ok: true, data: { diskPartitions, diskDisplayMode, hostNavbarDisplay, stackStatsEnabled } });
         });
 
         // ── Overview (dashboard cards) ────────────────────────────
