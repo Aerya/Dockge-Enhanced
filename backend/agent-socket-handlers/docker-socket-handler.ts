@@ -20,7 +20,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
         agentSocket.on("stackPinsGet", async (callback) => {
             try {
                 checkLogin(socket);
-                const stored = await Settings.get(STACK_PINS_SETTING_KEY, "general");
+                const stored = await Settings.get(STACK_PINS_SETTING_KEY);
                 callbackResult({ ok: true, pinnedStacks: normalizePinnedStacks(stored) }, callback);
             } catch (e) {
                 callbackError(e, callback);
@@ -30,7 +30,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
         agentSocket.on("stackPinSet", async (name : unknown, pinned : unknown, callback) => {
             try {
                 checkLogin(socket);
-                const current = await Settings.get(STACK_PINS_SETTING_KEY, "general");
+                const current = await Settings.get(STACK_PINS_SETTING_KEY);
                 const next = applyStackPin(current, name, pinned);
                 await Settings.set(STACK_PINS_SETTING_KEY, JSON.stringify(next), "general");
                 callbackResult({ ok: true, pinnedStacks: next }, callback);
