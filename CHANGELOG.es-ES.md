@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-09-03 — Self-update: verificación Restic dirigida y supresión de reintentos concurrentes** — La verificación obligatoria previa a la actualización ya no recorre todo el snapshot Restic: lee directamente el archivo de recovery creado para la operación y valida su identificador. El checker GHCR tampoco vuelve a solicitar la misma actualización automática mientras ya se ejecutan el backup, la verificación, el sidecar, el healthcheck o un rollback; las actualizaciones planificadas siguen siendo reintentables.
+
 **2026-09-03 — Contadores de stacks de inicio con etiquetas pluralizadas dedicadas** — Los tres contadores grandes de stacks de la página de inicio usan ahora etiquetas específicas con singular/plural. Las traducciones genéricas `active`, `exited` e `inactive` no se modifican para no afectar a otras pantallas.
 
 **2026-09-03 — Resumen de instancias vinculadas en la página de inicio** — El bloque Dockge Agents se amplía sin cambiar de posición ni eliminar sus acciones de gestión. Cada instancia muestra sus stacks activos/detenidos/inactivos, CPU/RAM del host, uptime y stacks fijados. Un clic filtra directamente la columna de stacks por esa instancia.

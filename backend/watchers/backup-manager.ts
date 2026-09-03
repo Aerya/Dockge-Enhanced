@@ -2012,10 +2012,18 @@ export class BackupManager {
         }
     }
 
-    async verifyFreshBackup(result: BackupResult): Promise<Array<{ label: string; ok: boolean; output: string }>> {
+    async verifyFreshBackup(
+        result: BackupResult,
+        expectedFilePath: string,
+        expectedRecoveryId?: string,
+    ): Promise<Array<{ label: string; ok: boolean; output: string }>> {
         const destinations = result.destinations ?? [];
         const enabled = this.settings.destinations.filter(dest => dest.enabled);
         const checks: Array<{ label: string; ok: boolean; output: string }> = [];
+
+        if (!path.isAbsolute(expectedFilePath)) {
+            throw new ValidationError("Le fichier de vérification Restic doit utiliser un chemin absolu");
+        }
 
         for (let i = 0; i < destinations.length; i++) {
             const destResult = destinations[i];
@@ -2026,18 +2034,26 @@ export class BackupManager {
             }
             try {
                 const safeId = assertSafeResticId(destResult.snapshotId);
-                const ls = await this.resticFor(dest, [ "ls", safeId, "--json" ]);
-                const file = ls.split("\n").filter(Boolean).map(line => {
-                    try { return JSON.parse(line) as Record<string, unknown>; }
-                    catch { return null; }
-                }).find(entry => entry?.struct_type === "node" && entry?.type === "file" && typeof entry?.path === "string");
-
-                if (!file?.path || typeof file.path !== "string") {
-                    checks.push({ label: dest.label, ok: false, output: "Aucun fichier lisible dans le snapshot fraîchement créé" });
+                const content = await this.resticDump(dest, safeId, expectedFilePath);
+                if (content.trim().length === 0) {
+                    checks.push({ label: dest.label, ok: false, output: `Fichier de recovery vide: ${expectedFilePath}` });
                     continue;
                 }
-                const content = await this.resticDump(dest, safeId, file.path);
-                checks.push({ label: dest.label, ok: content.length > 0, output: content.length > 0 ? `Lecture OK: ${file.path}` : `Fichier vide: ${file.path}` });
+
+                if (expectedRecoveryId) {
+                    try {
+                        const recovery = JSON.parse(content) as Record<string, unknown>;
+                        if (recovery.id !== expectedRecoveryId) {
+                            checks.push({ label: dest.label, ok: false, output: `Fichier de recovery incohérent: ${expectedFilePath}` });
+                            continue;
+                        }
+                    } catch {
+                        checks.push({ label: dest.label, ok: false, output: `Fichier de recovery JSON illisible: ${expectedFilePath}` });
+                        continue;
+                    }
+                }
+
+                checks.push({ label: dest.label, ok: true, output: `Lecture ciblée OK: ${expectedFilePath}` });
             } catch (error) {
                 checks.push({ label: dest.label, ok: false, output: error instanceof Error ? error.message : String(error) });
             }

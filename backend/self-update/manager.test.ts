@@ -73,6 +73,29 @@ test("automatic retry of the same digest is blocked after rollback", async () =>
 });
 
 
+test("active self-update execution is busy while scheduled remains retryable", async () => {
+    const { SelfUpdateManager } = await import(`./manager.ts?busy=${Date.now()}`);
+    const manager = SelfUpdateManager.getInstance() as any;
+
+    manager.requestInFlight = false;
+    manager.operation = { id: "", state: "idle", message: "", startedAt: null, finishedAt: null, targetImage: "", rollbackAttempted: false };
+    assert.equal(manager.isUpdateExecutionInProgress(), false);
+
+    manager.operation.state = "scheduled";
+    assert.equal(manager.isUpdateExecutionInProgress(), false);
+
+    manager.operation.state = "verifying-backup";
+    assert.equal(manager.isUpdateExecutionInProgress(), true);
+
+    manager.operation.state = "waiting-health";
+    assert.equal(manager.isUpdateExecutionInProgress(), true);
+
+    manager.operation.state = "idle";
+    manager.requestInFlight = true;
+    assert.equal(manager.isUpdateExecutionInProgress(), true);
+    manager.requestInFlight = false;
+});
+
 test("updater latest is the default sidecar channel", async () => {
     const source = await fs.readFile(new URL("./manager.ts", import.meta.url), "utf8");
     assert.match(source, /-updater:latest/);
@@ -172,7 +195,7 @@ test("self-update Restic retention runs only after fresh backup verification", a
     const managerSource = await fs.readFile(new URL("./manager.ts", import.meta.url), "utf8");
     const backupSource = await fs.readFile(new URL("../watchers/backup-manager.ts", import.meta.url), "utf8");
 
-    const verifyPos = managerSource.indexOf("verifyFreshBackup(backup)");
+    const verifyPos = managerSource.indexOf("verifyFreshBackup(");
     const prunePos = managerSource.indexOf("pruneSelfUpdateSnapshots(");
     const sidecarArgsPos = managerSource.indexOf('const args = [');
     const sidecarLaunchPos = managerSource.indexOf('Étape 3/4 — lancement sidecar');
@@ -182,7 +205,18 @@ test("self-update Restic retention runs only after fresh backup verification", a
     assert.ok(sidecarArgsPos > prunePos);
     assert.ok(sidecarLaunchPos > sidecarArgsPos);
     assert.match(managerSource, /pruneSelfUpdateSnapshots\(\s*backup,\s*selfUpdateRetentionTag,\s*2,/s);
+    assert.match(managerSource, /verifyFreshBackup\(\s*backup,\s*recoveryPath,\s*plan\.id,?\s*\)/s);
     assert.match(managerSource, /additionalTags: \[ selfUpdateRetentionTag \]/);
+
+    const verifyStart = backupSource.indexOf("async verifyFreshBackup(");
+    const dumpStart = backupSource.indexOf("private async resticDump", verifyStart);
+    assert.ok(verifyStart >= 0);
+    assert.ok(dumpStart > verifyStart);
+    const verifySource = backupSource.slice(verifyStart, dumpStart);
+    assert.doesNotMatch(verifySource, /this\.resticFor\(dest, \[ "ls"/);
+    assert.match(verifySource, /this\.resticDump\(dest, safeId, expectedFilePath\)/);
+    assert.match(verifySource, /recovery\.id !== expectedRecoveryId/);
+
     assert.match(backupSource, /snapshots", "--tag", instanceTag/);
     assert.match(backupSource, /const expired = ordered\.slice\(keep\)/);
     assert.match(backupSource, /"forget", \.\.\.ids, "--prune"/);
