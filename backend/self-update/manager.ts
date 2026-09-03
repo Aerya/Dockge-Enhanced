@@ -71,6 +71,7 @@ export class SelfUpdateManager {
     private terminalStatusWatchTimer: ReturnType<typeof setInterval> | null = null;
     private terminalStatusWatchInFlight = false;
     private terminalStatusWatchDeadline = 0;
+    private terminalNotificationInFlight = false;
 
     static getInstance(): SelfUpdateManager {
         if (!SelfUpdateManager.instance) SelfUpdateManager.instance = new SelfUpdateManager();
@@ -808,19 +809,36 @@ export class SelfUpdateManager {
     }
 
     private async processTerminalNotification(): Promise<void> {
+        if (this.terminalNotificationInFlight) return;
         if (!this.operation.notificationPending || this.operation.notificationSentAt || isSelfUpdateActive(this.operation.state)) return;
-        await ImageWatcher.getInstance().loadSettings();
-        const messages: Partial<Record<SelfUpdateOperation["state"], [string, "success" | "failure"]>> = {
-            succeeded: [ "✅ Dockge-Enhanced self-update succeeded", "success" ],
-            failed: [ "❌ Dockge-Enhanced self-update failed", "failure" ],
-            "rolled-back": [ "↩️ Dockge-Enhanced rollback succeeded", "failure" ],
-            "rollback-failed": [ "🚨 Dockge-Enhanced rollback failed", "failure" ],
-        };
-        const notification = messages[this.operation.state];
-        if (!notification) return;
-        if (await this.notify(notification[0], this.operation.message, notification[1])) {
-            this.operation = { ...this.operation, notificationPending: false, notificationSentAt: new Date().toISOString() };
-            await this.saveOperation();
+
+        this.terminalNotificationInFlight = true;
+        try {
+            // Un second chemin (watcher autonome, /self/status, load) peut arriver
+            // pendant l'envoi Discord/Apprise. Le verrou est acquis avant tout
+            // await pour empêcher deux envois du même résultat terminal.
+            if (!this.operation.notificationPending || this.operation.notificationSentAt || isSelfUpdateActive(this.operation.state)) return;
+
+            await ImageWatcher.getInstance().loadSettings();
+            const messages: Partial<Record<SelfUpdateOperation["state"], [string, "success" | "failure"]>> = {
+                succeeded: [ "✅ Dockge-Enhanced self-update succeeded", "success" ],
+                failed: [ "❌ Dockge-Enhanced self-update failed", "failure" ],
+                "rolled-back": [ "↩️ Dockge-Enhanced rollback succeeded", "failure" ],
+                "rollback-failed": [ "🚨 Dockge-Enhanced rollback failed", "failure" ],
+            };
+            const notification = messages[this.operation.state];
+            if (!notification) return;
+
+            if (await this.notify(notification[0], this.operation.message, notification[1])) {
+                this.operation = {
+                    ...this.operation,
+                    notificationPending: false,
+                    notificationSentAt: new Date().toISOString(),
+                };
+                await this.saveOperation();
+            }
+        } finally {
+            this.terminalNotificationInFlight = false;
         }
     }
 
