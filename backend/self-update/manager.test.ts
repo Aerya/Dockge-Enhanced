@@ -92,3 +92,40 @@ test("obsolete rollback state is cleared once the installed build is current", a
     assert.equal(persisted.state, "idle");
     await fs.rm(dataDir, { recursive: true, force: true });
 });
+
+test("post-restart terminal status no longer depends on a WebUI refresh", async () => {
+    const source = await fs.readFile(new URL("./manager.ts", import.meta.url), "utf8");
+    assert.match(source, /await this\.processTerminalNotification\(\);\s*this\.startTerminalStatusWatch\(\);/);
+    assert.match(source, /\[ "updating", "waiting-health", "rolling-back" \]\.includes\(this\.operation\.state\)/);
+    assert.match(source, /setInterval\(\(\) => \{ void poll\(\); \}, 2_000\)/);
+});
+
+test("only post-restart sidecar states or pending terminal notifications arm the watcher", async () => {
+    const { SelfUpdateManager } = await import(`./manager.ts?watch-policy=${Date.now()}`);
+    const manager = SelfUpdateManager.getInstance() as any;
+    const base = {
+        id: "a".repeat(32),
+        message: "",
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
+        targetImage: `ghcr.io/aerya/dockge-enhanced@sha256:${"b".repeat(64)}`,
+        rollbackAttempted: false,
+    };
+
+    for (const state of [ "updating", "waiting-health", "rolling-back" ]) {
+        manager.operation = { ...base, state };
+        assert.equal(manager.shouldWatchTerminalStatus(), true, state);
+    }
+
+    manager.operation = { ...base, state: "succeeded", finishedAt: new Date().toISOString(), notificationPending: true };
+    assert.equal(manager.shouldWatchTerminalStatus(), true);
+
+    manager.operation = { ...base, state: "succeeded", finishedAt: new Date().toISOString(), notificationPending: false };
+    assert.equal(manager.shouldWatchTerminalStatus(), false);
+
+    manager.operation = { ...base, state: "scheduled" };
+    assert.equal(manager.shouldWatchTerminalStatus(), false);
+
+    manager.operation = { ...base, state: "idle" };
+    assert.equal(manager.shouldWatchTerminalStatus(), false);
+});

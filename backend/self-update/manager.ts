@@ -66,6 +66,9 @@ export class SelfUpdateManager {
     private progress: SelfUpdateProgress | null = null;
     private lastDeferralKey = "";
     private requestInFlight = false;
+    private terminalStatusWatchTimer: ReturnType<typeof setInterval> | null = null;
+    private terminalStatusWatchInFlight = false;
+    private terminalStatusWatchDeadline = 0;
 
     static getInstance(): SelfUpdateManager {
         if (!SelfUpdateManager.instance) SelfUpdateManager.instance = new SelfUpdateManager();
@@ -84,6 +87,7 @@ export class SelfUpdateManager {
             this.operation = idle();
         }
         await this.processTerminalNotification();
+        this.startTerminalStatusWatch();
     }
 
     getSettings(): SelfUpdateSettings { return JSON.parse(JSON.stringify(this.settings)); }
@@ -658,6 +662,60 @@ export class SelfUpdateManager {
 
     private async saveOperation(): Promise<void> {
         await atomicWriteJson(STATUS_PATH, this.operation);
+    }
+
+    private shouldWatchTerminalStatus(): boolean {
+        return this.operation.notificationPending === true
+            || [ "updating", "waiting-health", "rolling-back" ].includes(this.operation.state);
+    }
+
+    private startTerminalStatusWatch(): void {
+        if (this.terminalStatusWatchTimer || !this.shouldWatchTerminalStatus()) return;
+
+        this.terminalStatusWatchDeadline = Date.now() + 15 * 60_000;
+        log.info(
+            "self-update",
+            `Surveillance autonome de l’état terminal démarrée — state=${this.operation.state} id=${this.operation.id || "indisponible"}`,
+        );
+
+        const poll = async () => {
+            if (this.terminalStatusWatchInFlight) return;
+            this.terminalStatusWatchInFlight = true;
+            try {
+                await this.refreshOperation();
+
+                if (!this.shouldWatchTerminalStatus()) {
+                    this.stopTerminalStatusWatch();
+                    return;
+                }
+
+                if (Date.now() >= this.terminalStatusWatchDeadline) {
+                    log.warn(
+                        "self-update",
+                        `Surveillance autonome arrêtée après 15 min — state=${this.operation.state} id=${this.operation.id || "indisponible"}`,
+                    );
+                    this.stopTerminalStatusWatch();
+                }
+            } catch (error) {
+                log.warn(
+                    "self-update",
+                    `Lecture autonome de l’état terminal échouée — ${error instanceof Error ? error.message : String(error)}`,
+                );
+            } finally {
+                this.terminalStatusWatchInFlight = false;
+            }
+        };
+
+        this.terminalStatusWatchTimer = setInterval(() => { void poll(); }, 2_000);
+        this.terminalStatusWatchTimer.unref?.();
+        void poll();
+    }
+
+    private stopTerminalStatusWatch(): void {
+        if (!this.terminalStatusWatchTimer) return;
+        clearInterval(this.terminalStatusWatchTimer);
+        this.terminalStatusWatchTimer = null;
+        this.terminalStatusWatchDeadline = 0;
     }
 
     private async processTerminalNotification(): Promise<void> {

@@ -61,6 +61,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/self-update/operation-guard.test.ts
 
+      - name: Tests du manager des auto-mises à jour
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/self-update/manager.test.ts
+
       - name: Tests du restore-test Restic
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/watchers/backup-restore-test.test.ts
