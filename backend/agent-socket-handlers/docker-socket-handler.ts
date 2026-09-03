@@ -10,10 +10,34 @@ import { AuditLogger } from "../audit-log";
 import { getVolumeMounts, listDir, readFile, writeFile, createEntry, renameEntry, removeEntry, uploadFile } from "../volume-files";
 import { StartGuardWatcher } from "../watchers/start-guard-watcher";
 import { normalizeUpdatePause } from "../watchers/update-policy";
+import { Settings } from "../settings";
+import { applyStackPin, normalizePinnedStacks, STACK_PINS_SETTING_KEY } from "../stack-pins";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         // Do not call super.create()
+
+        agentSocket.on("stackPinsGet", async (callback) => {
+            try {
+                checkLogin(socket);
+                const stored = await Settings.get(STACK_PINS_SETTING_KEY, "general");
+                callbackResult({ ok: true, pinnedStacks: normalizePinnedStacks(stored) }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("stackPinSet", async (name : unknown, pinned : unknown, callback) => {
+            try {
+                checkLogin(socket);
+                const current = await Settings.get(STACK_PINS_SETTING_KEY, "general");
+                const next = applyStackPin(current, name, pinned);
+                await Settings.set(STACK_PINS_SETTING_KEY, JSON.stringify(next), "general");
+                callbackResult({ ok: true, pinnedStacks: next }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
 
         agentSocket.on("deployStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, composeOverrideYAML : unknown, callback) => {
             // Compat : ancien client sans override → le dernier arg est le callback

@@ -177,7 +177,8 @@ export default {
             stackAgentFilters: this.loadAgentFilters(),
             stackGroupByAgent: this.loadStackGrouping(),
             stackSort: this.loadStackSort(),
-            pinnedStacks: this.loadPinnedStacks(),
+            pinnedStacks: this.loadLegacyPinnedStacks(),
+            pinsInitialized: false,
             filterState: {
                 status: null,
                 active: null,
@@ -415,6 +416,11 @@ export default {
             if (filtered.length !== this.stackAgentFilters.length) {
                 this.stackAgentFilters = filtered;
             }
+            if (this.pinsInitialized) {
+                this.refreshPinnedStacks(options);
+            } else if (options.length > 0) {
+                this.initializePinnedStacks(options);
+            }
         },
         stackAgentFilters: {
             deep: true,
@@ -429,27 +435,118 @@ export default {
             localStorage.setItem("stackSort", value);
         },
     },
+    mounted() {
+        if (this.agentOptions.length > 0) {
+            this.initializePinnedStacks(this.agentOptions);
+        }
+    },
     methods: {
-        stackPinKey(stack) {
-            return JSON.stringify([ stack.endpoint || "", stack.name ]);
-        },
-        loadPinnedStacks() {
+        loadLegacyPinnedStacks() {
+            const grouped = {};
             try {
                 const stored = JSON.parse(localStorage.getItem("pinnedStacks") || "[]");
-                return Array.isArray(stored) ? stored.filter(key => typeof key === "string") : [];
-            } catch {
-                return [];
-            }
+                if (!Array.isArray(stored)) return grouped;
+                for (const key of stored) {
+                    if (typeof key !== "string") continue;
+                    try {
+                        const parsed = JSON.parse(key);
+                        if (!Array.isArray(parsed) || parsed.length !== 2) continue;
+                        const endpoint = typeof parsed[0] === "string" ? parsed[0] : "";
+                        const name = typeof parsed[1] === "string" ? parsed[1].trim() : "";
+                        if (!name) continue;
+                        grouped[endpoint] = Array.from(new Set([ ...(grouped[endpoint] || []), name ]));
+                    } catch { /* ignore malformed legacy item */ }
+                }
+            } catch { /* server state will replace corrupted local state */ }
+            return grouped;
+        },
+        setPinnedNames(endpoint, names) {
+            const clean = Array.from(new Set(
+                (Array.isArray(names) ? names : [])
+                    .filter(name => typeof name === "string")
+                    .map(name => name.trim())
+                    .filter(Boolean)
+            ));
+            this.pinnedStacks = { ...this.pinnedStacks, [endpoint || ""]: clean };
         },
         isStackPinned(stack) {
-            return this.pinnedStacks.includes(this.stackPinKey(stack));
+            const endpoint = stack.endpoint || "";
+            return (this.pinnedStacks[endpoint] || []).includes(stack.name);
         },
-        toggleStackPin(stack) {
-            const key = this.stackPinKey(stack);
-            this.pinnedStacks = this.pinnedStacks.includes(key)
-                ? this.pinnedStacks.filter(candidate => candidate !== key)
-                : [ ...this.pinnedStacks, key ];
-            localStorage.setItem("pinnedStacks", JSON.stringify(this.pinnedStacks));
+        requestPinnedStacks(endpoint) {
+            return new Promise(resolve => {
+                let settled = false;
+                const timer = window.setTimeout(() => {
+                    if (!settled) { settled = true; resolve(null); }
+                }, 8000);
+                this.$root.emitAgent(endpoint, "stackPinsGet", response => {
+                    if (settled) return;
+                    settled = true;
+                    window.clearTimeout(timer);
+                    resolve(response?.ok ? response.pinnedStacks : null);
+                });
+            });
+        },
+        setRemoteStackPin(endpoint, name, pinned) {
+            return new Promise(resolve => {
+                let settled = false;
+                const timer = window.setTimeout(() => {
+                    if (!settled) { settled = true; resolve(null); }
+                }, 8000);
+                this.$root.emitAgent(endpoint, "stackPinSet", name, pinned, response => {
+                    if (settled) return;
+                    settled = true;
+                    window.clearTimeout(timer);
+                    resolve(response?.ok ? response.pinnedStacks : null);
+                });
+            });
+        },
+        async migrateLegacyPinnedStacks(options) {
+            if (localStorage.getItem("stackPinsServerMigrationV1") === "done") return;
+            const available = new Set(options.map(agent => agent.endpoint));
+            const jobs = [];
+            let unavailable = false;
+            for (const [endpoint, names] of Object.entries(this.pinnedStacks)) {
+                if (!available.has(endpoint)) {
+                    if (names.length > 0) unavailable = true;
+                    continue;
+                }
+                for (const name of names) jobs.push(this.setRemoteStackPin(endpoint, name, true));
+            }
+            const results = await Promise.all(jobs);
+            if (!unavailable && results.every(result => result !== null)) {
+                localStorage.setItem("stackPinsServerMigrationV1", "done");
+                localStorage.removeItem("pinnedStacks");
+            }
+        },
+        async refreshPinnedStacks(options = this.agentOptions) {
+            const results = await Promise.all(options.map(async agent => ({
+                endpoint: agent.endpoint,
+                names: await this.requestPinnedStacks(agent.endpoint),
+            })));
+            for (const result of results) {
+                if (result.names !== null) this.setPinnedNames(result.endpoint, result.names);
+            }
+        },
+        async initializePinnedStacks(options = this.agentOptions) {
+            await this.migrateLegacyPinnedStacks(options);
+            await this.refreshPinnedStacks(options);
+            this.pinsInitialized = true;
+        },
+        async toggleStackPin(stack) {
+            const endpoint = stack.endpoint || "";
+            const current = this.pinnedStacks[endpoint] || [];
+            const wasPinned = current.includes(stack.name);
+            this.setPinnedNames(endpoint, wasPinned
+                ? current.filter(candidate => candidate !== stack.name)
+                : [ ...current, stack.name ]);
+
+            const serverState = await this.setRemoteStackPin(endpoint, stack.name, !wasPinned);
+            if (serverState === null) {
+                this.setPinnedNames(endpoint, current);
+                return;
+            }
+            this.setPinnedNames(endpoint, serverState);
         },
         loadStackSort() {
             const stored = localStorage.getItem("stackSort");

@@ -90,6 +90,11 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Stacks fijados persistentes entre instancias vinculadas**
+
+Los stacks fijados pertenecen ahora a la instancia Dockge-Enhanced que los aloja, y ya no al `localStorage` de un navegador. Fijar un stack de Garuda, DockerLab o LincStation guarda la preferencia en el servidor correspondiente. Cualquier WebUI vinculada que muestre ese servidor ve el mismo stack fijado; ocultar el servidor oculta sus pins sin borrarlos. Los pins sobreviven así a cierres e inicios de sesión, cambios de navegador y actualizaciones de Dockge-Enhanced. Los pins locales anteriores se migran automáticamente cuando sus instancias propietarias están disponibles.
+
+
 **Retención dedicada de las copias de self-update**
 
 Los snapshots Restic obligatorios creados antes de una autoactualización protegida de Dockge-Enhanced usan ahora una política de retención dedicada. Una vez que el nuevo snapshot se ha **creado y verificado**, Dockge-Enhanced conserva los **2 últimos snapshots de self-update de esta instalación** y elimina las generaciones anteriores antes de iniciar el sidecar. Una etiqueta estable específica de la instalación evita limpiar snapshots de otra instancia Dockge-Enhanced que comparta el mismo repositorio Restic. La retención normal (`keepLast`, diaria, semanal y mensual) no cambia. Si esta limpieza dedicada falla, se conserva la copia verificada y la actualización puede continuar; el error queda registrado y una autoactualización posterior volverá a intentar la limpieza.

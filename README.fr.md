@@ -88,6 +88,11 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 ### 🆕 Septembre 2026
 
+**Stacks épinglées persistantes entre instances liées**
+
+Les stacks épinglées appartiennent désormais à l’instance Dockge-Enhanced qui les héberge, et non plus au `localStorage` d’un navigateur. Épingler une stack de Garuda, DockerLab ou LincStation enregistre la préférence sur le serveur correspondant. Toute WebUI liée qui affiche ce serveur retrouve la même stack épinglée ; masquer ce serveur masque ses épingles sans les supprimer. Les épingles survivent ainsi aux déconnexions/reconnexions, aux changements de navigateur et aux mises à jour de Dockge-Enhanced. Les anciennes épingles locales sont migrées automatiquement lorsque leurs instances propriétaires sont joignables.
+
+
 **Rétention dédiée des backups de self-update**
 
 Les snapshots Restic obligatoires créés avant une auto-mise à jour protégée de Dockge-Enhanced utilisent désormais une politique de rétention dédiée. Une fois le nouveau snapshot **créé et vérifié**, Dockge-Enhanced conserve les **2 derniers snapshots self-update de cette installation** et supprime les générations plus anciennes avant de lancer le sidecar. Un tag stable propre à l’installation évite de nettoyer les snapshots d’une autre instance Dockge-Enhanced partageant le même dépôt Restic. La rétention normale (`keepLast`, quotidienne, hebdomadaire, mensuelle) reste inchangée. Si ce nettoyage dédié échoue, le backup vérifié est conservé et la mise à jour peut continuer ; l’erreur est journalisée et une auto-mise à jour ultérieure retentera le nettoyage.

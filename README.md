@@ -91,6 +91,11 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**Server-persisted pinned stacks across linked instances**
+
+Pinned stacks are now owned by the Dockge-Enhanced instance that hosts them instead of by one browser's `localStorage`. Pinning a stack on Garuda, DockerLab or LincStation stores that preference on the corresponding server. Any linked WebUI that displays that server sees the same pinned stack; hiding that server hides its pins without deleting them. Pins therefore survive logout/login, browser changes and Dockge-Enhanced updates. Existing browser-local pins are migrated automatically when their owning instances are reachable.
+
+
 **Dedicated self-update backup retention**
 
 Mandatory Restic snapshots created before protected Dockge-Enhanced self-updates now use a dedicated retention policy. After the new snapshot has been created **and verified**, Dockge-Enhanced keeps the **2 latest self-update snapshots for this installation** and prunes older generations before launching the updater sidecar. A stable installation-specific tag prevents cleanup from touching another Dockge-Enhanced instance sharing the same Restic repository. Normal backup retention (`keepLast`, daily, weekly, monthly) is unchanged. If this dedicated pruning fails, the verified backup is kept and the update may continue; the cleanup error is logged and a later self-update will try again.

@@ -321,6 +321,7 @@
     "releaseNews.item.rawComposeCopy": "专用操作可复制不带行号或视觉选择痕迹的原始 Compose YAML。",
     "releaseNews.item.remoteLinks": "每个监视器标签页都直接链接到其他实例上的同一标签页。在堆栈列表和 Compose 页面上，远程实例名称可直接点击。",
     "releaseNews.item.scheduling": "定时计划始终可用，堆栈和容器均支持独立的启动和停止规则。",
+    "releaseNews.item.serverPersistedStackPins": "固定的堆栈现在保存在其所属实例上，而不再依赖浏览器 localStorage。因此，退出登录、更换浏览器或更新后固定状态仍会保留；只要所属服务器包含在当前显示列表中，所有已关联 WebUI 都能看到这些固定堆栈。旧的浏览器本地固定状态会在相关实例可访问时自动迁移。",
     "releaseNews.item.stackPins": "常用堆栈可以固定到侧边栏顶部，偏好按浏览器记忆。",
     "releaseNews.item.stackSidebar": "更紧凑的堆栈侧边栏可用鼠标或键盘调整宽度，会记住其宽度，并填满可视高度或跟随更长的页面内容。",
     "releaseNews.item.updateRange": "弹窗仅分组展示自你上次更新以来发布的功能，无论跳过了多少个版本。",

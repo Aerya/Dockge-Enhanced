@@ -147,6 +147,7 @@
     "releaseNews.item.scheduling": "排程始終可用，堆疊和容器均支援獨立的啟動和停止規則。",
     "releaseNews.item.updateRange": "彈窗僅分組展示自你上次更新以來發布的功能，無論跳過了多少個版本。",
     "releaseNews.item.logWrap": "日誌按鈕可切換自動換行，或將每條完整日誌保持在一行並支援橫向滾動。",
+    "releaseNews.item.serverPersistedStackPins": "固定的堆疊現在保存在其所屬執行個體上，而不再依賴瀏覽器 localStorage。因此，登出、更換瀏覽器或更新後固定狀態仍會保留；只要所屬伺服器包含在目前顯示清單中，所有已關聯 WebUI 都能看到這些固定堆疊。舊的瀏覽器本機固定狀態會在相關執行個體可連線時自動移轉。",
     "releaseNews.item.stackPins": "常用堆疊可以固定到側邊欄頂部，偏好按瀏覽器記憶。",
     "releaseNews.item.composeWorkspace": "更緊湊的日誌和 Compose 工作區，帶有可記憶的可拖拽分隔條、全螢幕日誌和可摺疊的 Compose 面板。",
     "releaseNews.item.rawComposeCopy": "專用操作可複製不帶行號或視覺選擇痕跡的原始 Compose YAML。",
