@@ -1384,7 +1384,17 @@ export default {
 
         ensureComposeEditLeaseSession() {
             if (this.editLeaseSessionId) return this.editLeaseSessionId;
-            const randomPart = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+            const cryptoApi = window.crypto;
+            if (!cryptoApi?.getRandomValues) {
+                throw new Error("Secure random generator unavailable");
+            }
+
+            const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
+            const randomPart = Array.from(
+                bytes,
+                (byte) => byte.toString(16).padStart(2, "0")
+            ).join("");
             this.editLeaseSessionId = `compose-${randomPart}`;
             return this.editLeaseSessionId;
         },
