@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-09-03 — Backup 数据卷浏览器：恢复子目录浏览** — 路径校验现在使用 Node 的 `fs.realpath()`，不再调用 BusyBox/Alpine 不兼容 `--` 参数的 `realpath` 命令。`/app/data` 始终作为允许的浏览根目录，并且 WebUI 现在会区分读取错误与真正的空目录。修复 #340。
+
 **2026-09-03 — 编辑 lease 使用安全会话标识符** — 用于在 self-update 期间保护未保存 compose/.env 修改的 lease 现在仅使用 `crypto.getRandomValues()` 生成会话标识符，并移除 CodeQL 标记的 `Math.random()` 回退。
 
 **2026-09-03 — 自动更新期间保护未保存的编辑** — 对 `compose.yaml`、`compose.override.yaml` 或 `.env` 的实际修改现在会在所属实例上创建短时 lease，包括从关联 WebUI 发起的编辑。lease 活跃时，自动更新会以 `active-editor` 阻塞原因进入等待。对话框可选择保存并更新、推迟 30 分钟或 1 小时，或继续编辑。显式推迟会持续到截止时间，失效的 heartbeat 会自动过期。self-update 还会在准备和启动 sidecar 前再次检查阻塞状态，防止在备份或校验期间开始的编辑被重启中断。

@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — Backup volume browser: subdirectories are accessible again** — Path validation now uses Node `fs.realpath()` instead of the `realpath` binary, whose `--` option is not compatible with BusyBox/Alpine. `/app/data` remains explicitly allowed in the browser even when excluded from the displayed mounted-volume list. Validation or read failures are now shown separately from genuinely empty directories in the WebUI. Fixes #340.
+
 **2026-09-03 — Secure edit-lease session identifier** — The lease protecting unsaved compose/.env edits during self-update now exclusively uses `crypto.getRandomValues()` for its session identifier. The `Math.random()` fallback reported by CodeQL has been removed; no weak identifier is generated when a secure crypto API is unavailable.
 
 **2026-09-03 — Unsaved edit protection during automatic self-update** — A genuinely modified `compose.yaml`, `compose.override.yaml` or `.env` now creates a short-lived lease on the owning instance, including edits made from a linked WebUI. While the lease is active, automatic self-update is deferred with the `active-editor` blocker. A dialog lets the user save and update, defer for 30 minutes or 1 hour, or keep working. Explicit deferrals survive editor closure until their deadline while stale heartbeats expire automatically. The self-update also re-checks blockers before preparing and before launching the sidecar so edits started during backup or verification cannot be interrupted by a restart.

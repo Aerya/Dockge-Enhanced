@@ -807,6 +807,8 @@
     "watcher.backup.volumes.calcSizes": "計算大小",
     "watcher.backup.volumes.loadingDirs": "正在載入目錄…",
     "watcher.backup.volumes.noDirs": "未找到子目錄。",
+    "watcher.backup.volumes.loadError": "無法瀏覽此資料卷。",
+    "watcher.backup.volumes.retry": "重試",
     "watcher.backup.retention.heading": "保留策略",
     "watcher.backup.retention.keepLast": "保留最近 N 個",
     "watcher.backup.retention.keepDaily": "按天 (N 天)",

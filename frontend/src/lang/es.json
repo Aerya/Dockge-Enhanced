@@ -10,6 +10,8 @@
     "watcher.backup.preventConcurrentHint": "Rechaza cualquier nueva copia manual, programada o al guardar mientras ya se ejecuta una copia Restic.",
     "watcher.backup.concurrentPopupTitle": "Copia ya en curso",
     "watcher.backup.concurrentPopupBody": "Ya se está ejecutando una copia Restic. El nuevo inicio se bloqueó inmediatamente para proteger la CPU y el almacenamiento.",
+    "watcher.backup.volumes.loadError": "No se puede explorar este volumen.",
+    "watcher.backup.volumes.retry": "Reintentar",
     "releaseNews.intro": "Estas son las funciones añadidas desde tu anterior actualización de Dockge-Enhanced.",
     "releaseNews.item.federationTokens": "Los tokens de federación dedicados ahora resisten los cambios de usuario y contraseña de la WebUI. Una instancia sin conexión puede volver a autenticarse sin eliminarla ni modificar sus stacks.",
     "releaseNews.item.stackTransferErrors": "Al mover una stack ahora se muestra el error real de Docker y se detectan antes del despliegue los nombres de contenedor explícitos ya utilizados en el destino.",

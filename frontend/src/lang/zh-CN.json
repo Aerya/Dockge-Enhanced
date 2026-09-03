@@ -809,6 +809,8 @@
     "watcher.backup.volumes.loadingDirs": "正在加载目录…",
     "watcher.backup.volumes.mountedHeading": "已挂载的数据卷",
     "watcher.backup.volumes.noDirs": "未找到子目录。",
+    "watcher.backup.volumes.loadError": "无法浏览此数据卷。",
+    "watcher.backup.volumes.retry": "重试",
     "watcher.backup.volumes.noneDetected": "未检测到额外的数据卷。在你的 compose 中挂载数据卷后即可在此看到。",
     "watcher.backup.volumes.noneSelected": "无",
     "watcher.backup.volumes.refresh": "刷新大小",

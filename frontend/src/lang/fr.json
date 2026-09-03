@@ -835,6 +835,8 @@
     "watcher.backup.volumes.calcSizes": "Calculer les tailles",
     "watcher.backup.volumes.loadingDirs": "Chargement des dossiers…",
     "watcher.backup.volumes.noDirs": "Aucun sous-dossier trouvé.",
+    "watcher.backup.volumes.loadError": "Impossible de parcourir ce volume.",
+    "watcher.backup.volumes.retry": "Réessayer",
     "watcher.backup.retention.heading": "Politique de rétention",
     "watcher.backup.retention.keepLast": "Garder les N derniers",
     "watcher.backup.retention.keepDaily": "Par jour (N jours)",
