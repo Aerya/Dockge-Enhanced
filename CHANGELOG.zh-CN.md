@@ -1,6 +1,6 @@
 # Dockge Enhanced 更新日志
 
-**2026-09-03 — 回滚通知更加简洁** — Docker/GHCR 的完整原始错误仍保留在状态和日志中，但 Discord/Apprise 不再显示 `pkg-containers.githubusercontent.com` 的超长临时签名 URL。自更新通知现在只概括有用原因：网络超时、身份验证失败、访问被拒绝、镜像/摘要不存在、DNS 错误或通用技术故障，包括成功回滚后的通知。
+**2026-09-03 — 自更新延后原因始终可见并正确本地化** — “更新”页面现在会在自更新等待时始终显示具体原因。对于旧版 `scheduled` 状态中缺失 `deferredBy` 的情况，系统会从持久化消息中自动恢复阻塞原因代码，从而正确翻译原因。Discord/Apprise 通知也不再出现本地化句子夹杂英文阻塞原因的情况。\n\n**2026-09-03 — 回滚通知更加简洁** — Docker/GHCR 的完整原始错误仍保留在状态和日志中，但 Discord/Apprise 不再显示 `pkg-containers.githubusercontent.com` 的超长临时签名 URL。自更新通知现在只概括有用原因：网络超时、身份验证失败、访问被拒绝、镜像/摘要不存在、DNS 错误或通用技术故障，包括成功回滚后的通知。
 
 **2026-09-03 — 自更新终态通知改为自主处理** — Sidecar 触发容器重启后，Dockge-Enhanced 现在会自行监控持久化的自更新状态直到出现终态。Discord/Apprise 的成功、失败或回滚通知不再依赖打开 WebUI 或调用 `/self/status`。该监控最长持续 15 分钟，覆盖 `updating`、`waiting-health`、`rolling-back` 以及仍待发送的终态通知。
 

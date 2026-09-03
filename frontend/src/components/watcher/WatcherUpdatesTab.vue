@@ -90,7 +90,7 @@
                 </div>
             </template>
 
-            <p v-if="operation.state === 'scheduled' && operation.deferredBy" class="alert alert-warning py-2 mb-3">
+            <p v-if="operation.state === 'scheduled'" class="alert alert-warning py-2 mb-3">
                 {{ $t("updates.status.deferredReason", { reason: blockerReason }) }}
             </p>
             <p v-if="showTechnicalError" class="alert alert-danger py-2 mb-3">{{ operation.message }}</p>
