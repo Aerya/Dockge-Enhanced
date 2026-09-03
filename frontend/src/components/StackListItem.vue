@@ -37,7 +37,7 @@
                     :endpoint="stack.endpoint"
                     :load-remote-status="loadRemoteImageStatus"
                 />
-                <StackStatsBadge :stack-name="stackName" />
+                <StackStatsBadge :stack-name="stackName" :endpoint="stack.endpoint || ''" />
             </div>
         </div>
         <button

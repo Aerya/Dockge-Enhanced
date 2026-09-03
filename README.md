@@ -91,6 +91,11 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**Per-stack CPU/RAM stats across linked instances**
+
+The **Show CPU / RAM statistics per stack** option is now owned by each Dockge-Enhanced instance. When enabled on a server, that server collects its own Docker statistics and exposes them through the existing linked-instance channel. Every linked WebUI displaying that server shows the same CPU/RAM badges for its stacks and containers. Hiding the server hides its statistics; disabling the option on the owning instance stops collection and exposure for that instance.
+
+
 **Server-persisted pinned stacks across linked instances**
 
 Pinned stacks are now owned by the Dockge-Enhanced instance that hosts them instead of by one browser's `localStorage`. Pinning a stack on Garuda, DockerLab or LincStation stores that preference on the corresponding server. Any linked WebUI that displays that server sees the same pinned stack; hiding that server hides its pins without deleting them. Pins therefore survive logout/login, browser changes and Dockge-Enhanced updates. Existing browser-local pins are migrated automatically when their owning instances are reachable.

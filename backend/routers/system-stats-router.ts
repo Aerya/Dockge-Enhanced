@@ -298,9 +298,16 @@ async function readTemperatures(): Promise<HostDetails["temperatures"]> {
 
 // ─── Stack stats collector ───────────────────────────────────────
 
-interface StackStat {
+export interface StackStat {
     cpu:     number; // % cumulé des conteneurs du stack
     memUsed: number; // bytes cumulés
+}
+
+export interface StackStatsSnapshot {
+    enabled: boolean;
+    data: Record<string, StackStat>;
+    containerData: Record<string, StackStat>;
+    lowPowerMode: boolean;
 }
 
 /** Convertit "128MiB", "1.2GiB", "500kB"… en bytes */
@@ -445,6 +452,20 @@ async function collectStackStatsIfDue(): Promise<void> {
     }
 }
 
+export async function getStackStatsSnapshot(): Promise<StackStatsSnapshot> {
+    const enabled = (await Settings.get("stackStatsEnabled")) === true;
+    if (!enabled) {
+        return { enabled: false, data: {}, containerData: {}, lowPowerMode: isLowPower() };
+    }
+
+    await collectStackStatsIfDue();
+    const data: Record<string, StackStat> = {};
+    for (const [key, value] of stackStatsCache) data[key] = value;
+    const containerData: Record<string, StackStat> = {};
+    for (const [key, value] of containerStatsCache) containerData[key] = value;
+    return { enabled: true, data, containerData, lowPowerMode: isLowPower() };
+}
+
 // ─── Router ───────────────────────────────────────────────────────
 
 export class SystemStatsRouter extends Router {
@@ -524,20 +545,7 @@ export class SystemStatsRouter extends Router {
         // ── Stats par stack ───────────────────────────────────────
 
         router.get("/stack-stats", auth, async (_req: Request, res: Response) => {
-            // Collecte lazy : ne lance `docker stats` que si le cache est périmé
-            await collectStackStatsIfDue();
-            const data: Record<string, StackStat> = {};
-            for (const [k, v] of stackStatsCache) data[k] = v;
-            const containerData: Record<string, StackStat> = {};
-            for (const [k, v] of containerStatsCache) {
-                containerData[k] = v;
-            }
-            res.json({
-                ok: true,
-                data,
-                containerData,
-                lowPowerMode: isLowPower(),
-            });
+            res.json({ ok: true, ...(await getStackStatsSnapshot()) });
         });
 
         const mountRouter = express.Router();

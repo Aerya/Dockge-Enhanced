@@ -7,11 +7,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { useStackStats, stackStatsEnabled, formatMem } from "../composables/useStackStats";
+import { computed, getCurrentInstance } from "vue";
+import { useStackStats, formatMem } from "../composables/useStackStats";
 
-const props = defineProps<{ stackName: string; serviceName: string }>();
-const { containerStatsCache } = useStackStats();
+const props = withDefaults(defineProps<{ stackName: string; serviceName: string; endpoint?: string }>(), { endpoint: "" });
+const root = getCurrentInstance()?.proxy?.$root as { emitAgent?: (endpoint: string, eventName: string, ...args: unknown[]) => void } | undefined;
+const emitAgent = (endpoint: string, eventName: string, ...args: unknown[]) => root?.emitAgent?.(endpoint, eventName, ...args);
+const { containerStatsCache, stackStatsEnabled } = useStackStats(props.endpoint, emitAgent);
 const stat = computed(() => containerStatsCache.value[`${props.stackName}:${props.serviceName}`] ?? null);
 
 const cpuClass = computed(() => {

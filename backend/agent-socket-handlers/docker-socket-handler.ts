@@ -12,10 +12,20 @@ import { StartGuardWatcher } from "../watchers/start-guard-watcher";
 import { normalizeUpdatePause } from "../watchers/update-policy";
 import { Settings } from "../settings";
 import { applyStackPin, normalizePinnedStacks, STACK_PINS_SETTING_KEY } from "../stack-pins";
+import { getStackStatsSnapshot } from "../routers/system-stats-router";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         // Do not call super.create()
+
+        agentSocket.on("stackStatsGet", async (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true, ...(await getStackStatsSnapshot()) }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
 
         agentSocket.on("stackPinsGet", async (callback) => {
             try {

@@ -127,7 +127,8 @@
                 <div class="col-12">
                     <div class="form-check form-switch mb-0">
                         <input id="monStackStats" v-model="localStackStatsEnabled"
-                            class="form-check-input" type="checkbox" role="switch" />
+                            class="form-check-input" type="checkbox" role="switch"
+                            @change="saveStackStatsSetting" />
                         <label class="form-check-label fw-semibold" for="monStackStats">
                             {{ $t('watcher.monitoring.stackStats') }}
                         </label>
@@ -861,12 +862,8 @@ const savingDozzle = ref(false);
 const dozzleActionLoading = ref(false);
 const dozzleEffectiveUrl = computed(() => dozzleSettings.value.customUrl?.trim() || `http://${windowHostname}:${dozzleSettings.value.port}`);
 
-// Sync with global stackStatsEnabled composable
-const localStackStatsEnabled = ref(stackStatsEnabled.value);
-watch(localStackStatsEnabled, (val) => {
-    stackStatsEnabled.value = val;
-    localStorage.setItem("stackStatsEnabled", String(val));
-});
+// L'option appartient à cette instance et est persistée côté serveur.
+const localStackStatsEnabled = ref(false);
 
 // ─── Computed ─────────────────────────────────────────────────────
 
@@ -1083,7 +1080,9 @@ async function loadSettings() {
         setLowPower(monSettings.value.lowPowerMode);
     }
     if (displayRes.ok) {
-        const d = displayRes.data as { diskPartitions?: string[]; diskDisplayMode?: "compact" | "bar"; hostNavbarDisplay?: Partial<HostNavbarDisplay> };
+        const d = displayRes.data as { diskPartitions?: string[]; diskDisplayMode?: "compact" | "bar"; hostNavbarDisplay?: Partial<HostNavbarDisplay>; stackStatsEnabled?: boolean };
+        localStackStatsEnabled.value = d.stackStatsEnabled === true;
+        stackStatsEnabled.value = localStackStatsEnabled.value;
         diskPartitions.value = d.diskPartitions?.length ? d.diskPartitions : ["/"];
         diskDisplayMode.value = d.diskDisplayMode === "bar" ? "bar" : "compact";
         hostNavbarDisplay.value = {
@@ -1119,6 +1118,12 @@ function removePartition(idx: number) {
     diskPartitions.value.splice(idx, 1);
 }
 
+async function saveStackStatsSetting() {
+    stackStatsEnabled.value = localStackStatsEnabled.value;
+    const res = await api("POST", "/monitoring/display-settings", { stackStatsEnabled: localStackStatsEnabled.value });
+    if (!res.ok) showToast(`❌ ${res.message}`, false);
+}
+
 async function saveDisplaySettings() {
     savingDisplay.value = true;
     try {
@@ -1126,6 +1131,7 @@ async function saveDisplaySettings() {
             diskPartitions: diskPartitions.value,
             diskDisplayMode: diskDisplayMode.value,
             hostNavbarDisplay: hostNavbarDisplay.value,
+            stackStatsEnabled: localStackStatsEnabled.value,
         });
         showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
     } finally { savingDisplay.value = false; }

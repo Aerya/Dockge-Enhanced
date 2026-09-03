@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-03 — Per-stack CPU/RAM stats propagated across linked instances** — The display option is now persisted on the owning instance. When enabled, that instance collects its own Docker stats and exposes them to linked WebUIs through a dedicated agent event. Stack and container badges use their endpoint-specific cache with one shared poller per instance. An instance with the option disabled does not run `docker stats` for this display.
+
 **2026-09-03 — Persistent pinned stacks shared across linked WebUIs** — Pins no longer depend on browser `localStorage`. Each instance stores server-side the pinned stacks it owns. A linked WebUI fetches pins from every displayed server: with all servers selected, pins from all visible instances are combined; hiding one instance only hides its pins. The state survives sign-out, browser changes and updates. Existing browser-local pins are migrated to their owning instances when reachable.
 
 **2026-09-03 — Dedicated self-update backup retention** — After the new mandatory Restic snapshot is created and verified, Dockge-Enhanced now keeps the **latest 2 self-update snapshots per installation** and removes older ones before launching the updater sidecar. A stable tag derived from the local secret isolates retention when multiple instances share a Restic repository. Cleanup never runs before verification, remains separate from normal retention, and a pruning failure is logged without cancelling an update already protected by a valid snapshot.
