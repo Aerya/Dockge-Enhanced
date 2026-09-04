@@ -21,6 +21,7 @@ import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { log } from "../log";
+import { ExternalStackManager } from "../external-stacks";
 import {
   acceptedComposeFileNames,
   envsubstYAML,
@@ -104,6 +105,10 @@ export interface RollbackEntry {
   image: string; // ex: "nginx:latest"
   stack: string;
   composePath: string; // chemin absolu vers le compose.yaml
+  project?: string; // project name Compose pour une stack externe
+  configFiles?: string[]; // chaîne -f complète pour les projets multi-Compose
+  workingDir?: string; // project directory Compose pour une stack externe
+  envFiles?: string[]; // --env-file explicites du projet externe
   service: string | null; // nom du service docker compose
   oldImageId: string; // sha256:... de l'image avant màj
   updatedAt: string; // ISO date de la màj
@@ -519,12 +524,29 @@ function withExplicitTag(image: string): string {
 export function composeExecInvocation(
   composePath: string,
   args: string[],
+  project?: string,
+  configFiles?: string[],
+  workingDir?: string,
+  envFiles?: string[],
 ): { args: string[]; cwd: string } {
   const composeDir = path.dirname(composePath);
-  const composeFile = path.basename(composePath);
+  const cwd = workingDir ? path.resolve(workingDir) : composeDir;
+  const files = configFiles?.length ? configFiles : [ composePath ];
+  const fileArgs = files.flatMap((file) => {
+    const resolved = path.resolve(file);
+    return [ "-f", path.dirname(resolved) === cwd ? path.basename(resolved) : resolved ];
+  });
+  const envArgs = (envFiles ?? []).flatMap((file) => [ "--env-file", path.resolve(file) ]);
   return {
-    args: [ "compose", "-f", composeFile, ...args ],
-    cwd: composeDir,
+    args: [
+      "compose",
+      ...(workingDir ? [ "--project-directory", cwd ] : []),
+      ...(project ? [ "--project-name", project ] : []),
+      ...envArgs,
+      ...fileArgs,
+      ...args,
+    ],
+    cwd,
   };
 }
 
@@ -626,8 +648,8 @@ function extractImagesFromComposeYaml(composePath: string): string[] {
  * Retourne toutes les images du modèle Compose résolu, même si la stack est arrêtée.
  * `config --images` prend en charge les variables, ancres, extends et includes.
  */
-async function extractImagesFromCompose(composePath: string): Promise<string[]> {
-  const configCommand = composeExecInvocation(composePath, [ "config", "--images" ]);
+async function extractImagesFromCompose(composePath: string, project?: string, configFiles?: string[], workingDir?: string, envFiles?: string[]): Promise<string[]> {
+  const configCommand = composeExecInvocation(composePath, [ "config", "--images" ], project, configFiles, workingDir, envFiles);
   try {
     const stdout = await docker(configCommand.args, {
       cwd: configCommand.cwd,
@@ -663,6 +685,38 @@ async function findComposePath(stackDir: string): Promise<string> {
   return "";
 }
 
+export interface WatchedComposeStack {
+  composePath: string;
+  project?: string;
+  configFiles?: string[];
+  workingDir?: string;
+  envFiles?: string[];
+}
+
+export async function collectWatchedComposeStacks(
+  stacksDir: string,
+  externalStacks: ExternalStackManager,
+): Promise<Map<string, WatchedComposeStack>> {
+  const watched = new Map<string, WatchedComposeStack>();
+  const entries = await fs.readdir(stacksDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const composePath = await findComposePath(path.join(stacksDir, entry.name));
+    if (composePath) watched.set(entry.name, { composePath });
+  }
+
+  for (const registration of await externalStacks.list()) {
+    if (watched.has(registration.name)) continue;
+    try {
+      const verified = await externalStacks.assertRegisteredPath(registration);
+      watched.set(verified.name, { composePath: verified.composeFile, project: verified.project, configFiles: verified.configFiles, workingDir: verified.workingDir, envFiles: verified.envFiles });
+    } catch (error) {
+      console.warn(`[ImageWatcher] Stack externe ${registration.name} ignorée: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  return watched;
+}
+
 // ─── Classe principale ────────────────────────────────────────────
 
 export class ImageWatcher {
@@ -673,6 +727,7 @@ export class ImageWatcher {
   private baseUrl: string = "";
   private _checkRunning = false;
   private _updatingImages = new Set<string>();
+  private externalStacks = new ExternalStackManager(DATA_DIR, STACKS_DIR);
 
   setBaseUrl(url: string): void {
     this.baseUrl = url;
@@ -880,9 +935,9 @@ export class ImageWatcher {
     log.info("image-watcher", "Vérification des images démarrée");
     const results: ImageStatus[] = [];
 
-    let entries: string[];
+    let watchedStacks: Map<string, WatchedComposeStack>;
     try {
-      entries = await fs.readdir(STACKS_DIR);
+      watchedStacks = await collectWatchedComposeStacks(STACKS_DIR, this.externalStacks);
     } catch {
       console.error(`[ImageWatcher] Impossible de lire ${STACKS_DIR}`);
       this._checkRunning = false;
@@ -891,16 +946,15 @@ export class ImageWatcher {
 
     // Collecte les clés traitées ce cycle pour purger les entrées obsolètes
     const processedKeys = new Set<string>();
-    // Map stack → composePath pour l'auto-update
-    const composePathByStack = new Map<string, string>();
+    // Map stack → compose pour l'auto-update
+    const composeByStack = new Map<string, WatchedComposeStack>();
 
-    for (const stack of entries) {
+    for (const [ stack, watched ] of watchedStacks) {
       try {
-        const composePath = await findComposePath(path.join(STACKS_DIR, stack));
-        if (!composePath) continue;
-        composePathByStack.set(stack, composePath);
+        const composePath = watched.composePath;
+        composeByStack.set(stack, watched);
 
-        const images = await extractImagesFromCompose(composePath);
+        const images = await extractImagesFromCompose(composePath, watched.project, watched.configFiles, watched.workingDir, watched.envFiles);
         if (images.length === 0) {
           console.log(
             `[ImageWatcher] ${stack}: aucune image trouvée dans ${composePath}`,
@@ -990,11 +1044,11 @@ export class ImageWatcher {
     // Applique les màj immédiates
     const autoUpdated: ImageStatus[] = [];
     for (const item of toImmediate) {
-      const composePath = composePathByStack.get(item.stack);
-      if (composePath) {
+      const watched = composeByStack.get(item.stack);
+      if (watched) {
         const success = await this.performAutoUpdate(
           item,
-          composePath,
+          watched,
           "immediate",
         );
         if (success) autoUpdated.push(item);
@@ -1057,15 +1111,16 @@ export class ImageWatcher {
     );
 
     const applied: ImageStatus[] = [];
+    const watchedStacks = await collectWatchedComposeStacks(STACKS_DIR, this.externalStacks);
     for (const key of toApply) {
       const sepIdx = key.indexOf("::");
       if (sepIdx === -1) continue;
       const stack = key.slice(0, sepIdx);
       const image = key.slice(sepIdx + 2);
 
-      // Trouve le fichier compose
-      const composePath = await findComposePath(path.join(STACKS_DIR, stack));
-      if (!composePath) continue;
+      // Trouve le fichier compose (stack native ou externe)
+      const watched = watchedStacks.get(stack);
+      if (!watched) continue;
 
       // Récupère le statut connu ou fait un check rapide
       const status: ImageStatus = imageStatusStore.get(key) ?? {
@@ -1079,7 +1134,7 @@ export class ImageWatcher {
 
       const success = await this.performAutoUpdate(
         status,
-        composePath,
+        watched,
         "scheduled",
       );
       if (success) applied.push(status);
@@ -1099,21 +1154,36 @@ export class ImageWatcher {
     }
   }
 
-  /** Trouve le nom du service docker compose qui utilise une image donnée */
-  private findServiceForImage(
+  /** Trouve le service qui utilise une image dans le modèle Compose résolu. */
+  private async findServiceForImage(
     composePath: string,
     image: string,
-  ): string | null {
+    project?: string,
+    configFiles?: string[],
+    workingDir?: string,
+    envFiles?: string[],
+  ): Promise<string | null> {
+    const configCommand = composeExecInvocation(composePath, [ "config", "--format", "json" ], project, configFiles, workingDir, envFiles);
     try {
-      const raw = fsSync.readFileSync(composePath, "utf8");
-      const doc = yaml.load(raw) as Record<string, unknown>;
-      if (!doc?.services) return null;
-      const services = doc.services as Record<string, { image?: string }>;
-      for (const [name, svc] of Object.entries(services)) {
-        if (svc?.image?.trim() === image.trim()) return name;
+      const stdout = await docker(configCommand.args, { cwd: configCommand.cwd, timeout: 30_000 });
+      const doc = JSON.parse(stdout) as { services?: Record<string, { image?: string }> };
+      for (const [ name, service ] of Object.entries(doc.services ?? {})) {
+        if (service?.image?.trim() === image.trim()) return name;
       }
     } catch {
-      /* ignore */
+      // Fall through to a best-effort raw YAML lookup.
+    }
+
+    for (const file of configFiles?.length ? configFiles : [ composePath ]) {
+      try {
+        const raw = fsSync.readFileSync(file, "utf8");
+        const doc = yaml.load(raw) as { services?: Record<string, { image?: string }> };
+        for (const [ name, service ] of Object.entries(doc?.services ?? {})) {
+          if (service?.image?.trim() === image.trim()) return name;
+        }
+      } catch {
+        /* ignore */
+      }
     }
     return null;
   }
@@ -1121,16 +1191,17 @@ export class ImageWatcher {
   /** Tire et redémarre une image via docker compose. Retourne true si succès. */
   private async performAutoUpdate(
     status: ImageStatus,
-    composePath: string,
+    watched: WatchedComposeStack,
     mode: "immediate" | "scheduled" = "immediate",
   ): Promise<boolean> {
     const key = `${status.stack}::${status.image}`;
+    const { composePath, project, configFiles, workingDir, envFiles } = watched;
     if (this._updatingImages.has(key)) {
       console.log(`[ImageWatcher] Auto-update ${key} déjà en cours, ignorée.`);
       return false;
     }
     this._updatingImages.add(key);
-    const service = this.findServiceForImage(composePath, status.image);
+    const service = await this.findServiceForImage(composePath, status.image, project, configFiles, workingDir, envFiles);
     const services = service ? [ service ] : [];
     console.log(
       `[ImageWatcher] Auto-update: ${status.stack}/${status.image}${service ? ` (service: ${service})` : ""}`,
@@ -1147,12 +1218,12 @@ export class ImageWatcher {
         /* image absente localement, rollback impossible */
       }
 
-      const pullCommand = composeExecInvocation(composePath, [ "pull", ...services ]);
+      const pullCommand = composeExecInvocation(composePath, [ "pull", ...services ], project, configFiles, workingDir, envFiles);
       await docker(pullCommand.args, {
         cwd: pullCommand.cwd,
         timeout: 600000,
       });
-      const upCommand = composeExecInvocation(composePath, [ "up", "-d", ...services ]);
+      const upCommand = composeExecInvocation(composePath, [ "up", "-d", ...services ], project, configFiles, workingDir, envFiles);
       await docker(upCommand.args, {
         cwd: upCommand.cwd,
         timeout: 120000,
@@ -1166,6 +1237,10 @@ export class ImageWatcher {
           image: status.image,
           stack: status.stack,
           composePath,
+          project,
+          configFiles,
+          workingDir,
+          envFiles,
           service: service ?? null,
           oldImageId,
           updatedAt: now.toISOString(),
@@ -1363,7 +1438,7 @@ export class ImageWatcher {
       await docker([ "rmi", rollbackTag(entry.key) ], { timeout: 10000 });
     } catch {}
     // Redémarre le container avec l'ancienne image
-    const upCommand = composeExecInvocation(entry.composePath, [ "up", "-d", ...services ]);
+    const upCommand = composeExecInvocation(entry.composePath, [ "up", "-d", ...services ], entry.project, entry.configFiles, entry.workingDir, entry.envFiles);
     await docker(upCommand.args, {
       cwd: upCommand.cwd,
       timeout: 120000,

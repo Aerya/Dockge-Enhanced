@@ -16,6 +16,22 @@ test("construit Compose avec des arguments séparés", () => {
   });
 });
 
+
+test("conserve tous les fichiers et le nom de projet d’une stack externe multi-Compose", () => {
+  const composePath = "/srv/demo/compose.yaml";
+  assert.deepEqual(composeExecInvocation(composePath, [ "config", "--images" ], "original-project", [
+    "/srv/demo/compose.yaml",
+    "/srv/demo/compose.prod.yaml",
+  ], "/srv/demo", [ "/srv/secrets/demo.env" ]), {
+    cwd: "/srv/demo",
+    args: [
+      "compose", "--project-directory", "/srv/demo", "--project-name", "original-project",
+      "--env-file", "/srv/secrets/demo.env",
+      "-f", "compose.yaml", "-f", "compose.prod.yaml", "config", "--images",
+    ],
+  });
+});
+
 test("construit uniquement des URLs de manifest registry valides", () => {
   assert.equal(
     buildManifestUrl("ghcr.io", "aerya/dockge-enhanced", "latest"),

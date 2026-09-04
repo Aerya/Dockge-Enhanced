@@ -19,6 +19,7 @@ import { Settings } from "../settings";
 import { ValidationError } from "../util-server";
 import { log } from "../log";
 import { selectRestoreTestCandidate } from "./backup-restore-test";
+import { ExternalStackManager } from "../external-stacks";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -98,7 +99,21 @@ interface PreparedStack {
     stack: string;
     policy: StackBackupPolicy;
     composeFile: string;
+    configFiles?: string[];
+    project?: string;
+    workingDir: string;
+    envFiles?: string[];
     runningServices: string[];
+}
+
+interface BackupStackSource {
+    name: string;
+    composeFile: string;
+    configFiles?: string[];
+    envFiles?: string[];
+    metadataFile?: string;
+    workingDir: string;
+    project?: string;
 }
 
 export interface MountedVolume {
@@ -515,8 +530,23 @@ export function buildResticCommandArgs(repo: string, sftpOptions: string[], args
     return [ "--repo", repo, ...(json ? [ "--json" ] : []), ...sftpOptions, ...args ];
 }
 
-export function buildComposeCommandArgs(composeFile: string, args: string[]): string[] {
-    return [ "compose", "-f", path.basename(composeFile), ...args ];
+export function buildComposeCommandArgs(
+    composeFile: string,
+    args: string[],
+    project?: string,
+    configFiles?: string[],
+    workingDir?: string,
+    envFiles?: string[],
+): string[] {
+    const composeDir = path.dirname(composeFile);
+    const cwd = workingDir ? path.resolve(workingDir) : composeDir;
+    const files = configFiles?.length ? configFiles : [ composeFile ];
+    const fileArgs = files.flatMap((file) => {
+        const resolved = path.resolve(file);
+        return [ "-f", path.dirname(resolved) === cwd ? path.basename(resolved) : resolved ];
+    });
+    const envArgs = (envFiles ?? []).flatMap((file) => [ "--env-file", path.resolve(file) ]);
+    return [ "compose", ...(workingDir ? [ "--project-directory", cwd ] : []), ...(project ? [ "-p", project ] : []), ...envArgs, ...fileArgs, ...args ];
 }
 
 export function assertPathWithinRoots(candidate: string, roots: string[]): string {
@@ -648,6 +678,11 @@ export class BackupManager {
     private backupRunLock = new BackupRunLock();
     private restoreRunLock = new BackupRunLock();
     private lastBlockedBackup: { trigger: "scheduled" | "manual" | "on-save"; timestamp: number } | null = null;
+    private readonly externalStackManager: ExternalStackManager;
+
+    constructor(externalStackManager = new ExternalStackManager(DATA_DIR, STACKS_DIR)) {
+        this.externalStackManager = externalStackManager;
+    }
 
     // Destinations dont le backup est actuellement en cours { label → timestamp démarrage }
     private runningDests = new Map<string, number>();
@@ -1361,20 +1396,61 @@ export class BackupManager {
         return result;
     }
 
-    private async findComposeFile(stack: string): Promise<string> {
+    private async getExternalStackSources(): Promise<{ sources: BackupStackSource[]; warnings: string[] }> {
+        const sources: BackupStackSource[] = [];
+        const warnings: string[] = [];
+        for (const registration of await this.externalStackManager.list()) {
+            try {
+                const verified = await this.externalStackManager.assertRegisteredPath(registration);
+                sources.push({
+                    name: verified.name,
+                    project: verified.project,
+                    composeFile: verified.composeFile,
+                    configFiles: verified.configFiles,
+                    envFiles: verified.envFiles,
+                    metadataFile: path.join(DATA_DIR, "external-stack-meta", `${verified.name}.json`),
+                    workingDir: verified.workingDir,
+                });
+            } catch (e: unknown) {
+                warnings.push(`Stack externe "${registration.name}" ignorée : ${e instanceof Error ? e.message : String(e)}`);
+            }
+        }
+        return { sources, warnings };
+    }
+
+    private async findManagedStackSource(stack: string): Promise<BackupStackSource> {
         const stacksRoot = path.resolve(STACKS_DIR);
         const stackDir = path.resolve(stacksRoot, stack);
         if (stackDir === stacksRoot || !stackDir.startsWith(stacksRoot + path.sep)) {
             throw new Error(`Nom de stack invalide : "${stack}"`);
         }
-        for (const name of ["compose.yaml", "docker-compose.yml", "docker-compose.yaml"]) {
+        for (const name of ["compose.yaml", "compose.yml", "docker-compose.yml", "docker-compose.yaml"]) {
             const candidate = path.join(stackDir, name);
             try {
                 await fs.access(candidate);
-                return candidate;
+                return { name: stack, composeFile: candidate, configFiles: [ candidate ], metadataFile: path.join(stackDir, ".dockge-meta.json"), workingDir: stackDir };
             } catch { /* next */ }
         }
         throw new Error(`Compose introuvable pour la stack "${stack}"`);
+    }
+
+    private async findStackSource(stack: string): Promise<BackupStackSource> {
+        try {
+            return await this.findManagedStackSource(stack);
+        } catch (managedError) {
+            const registration = await this.externalStackManager.get(stack);
+            if (!registration) throw managedError;
+            const verified = await this.externalStackManager.assertRegisteredPath(registration);
+            return {
+                name: verified.name,
+                project: verified.project,
+                composeFile: verified.composeFile,
+                configFiles: verified.configFiles,
+                envFiles: verified.envFiles,
+                metadataFile: path.join(DATA_DIR, "external-stack-meta", `${verified.name}.json`),
+                workingDir: verified.workingDir,
+            };
+        }
     }
 
     private async prepareStacksForBackup(stackName?: string): Promise<PreparedStack[]> {
@@ -1387,24 +1463,24 @@ export class BackupManager {
                 if (excluded.has(stack)) continue;
                 const policy = normalizeStackBackupPolicy(this.settings.stackPolicies[stack]);
                 if (policy.mode === "hot") continue;
-                const composeFile = await this.findComposeFile(stack);
-                const cwd = path.dirname(composeFile);
-                const entry: PreparedStack = { stack, policy, composeFile, runningServices: [] };
+                const source = await this.findStackSource(stack);
+                const { composeFile, configFiles, envFiles, project, workingDir: cwd } = source;
+                const entry: PreparedStack = { stack, policy, composeFile, configFiles, envFiles, project, workingDir: cwd, runningServices: [] };
 
                 if (policy.mode === "stop") {
-                    const { stdout } = await execFileAsync("docker", buildComposeCommandArgs(composeFile, [ "ps", "--status", "running", "--services" ]), {
+                    const { stdout } = await execFileAsync("docker", buildComposeCommandArgs(composeFile, [ "ps", "--status", "running", "--services" ], project, configFiles, cwd, envFiles), {
                         cwd, timeout: 30_000,
                     });
                     entry.runningServices = stdout.split("\n").map(s => s.trim()).filter(Boolean);
                     prepared.push(entry);
                     if (entry.runningServices.length > 0) {
-                        await execFileAsync("docker", buildComposeCommandArgs(composeFile, [ "stop", ...entry.runningServices ]), { cwd, timeout: 5 * 60_000 });
+                        await execFileAsync("docker", buildComposeCommandArgs(composeFile, [ "stop", ...entry.runningServices ], project, configFiles, cwd, envFiles), { cwd, timeout: 5 * 60_000 });
                     }
                 } else {
                     // Enregistrer avant le pre-hook : le post-hook doit pouvoir réparer
                     // un état partiellement modifié même si la commande retourne une erreur.
                     prepared.push(entry);
-                    await this.runStackHook(composeFile, policy, "pre");
+                    await this.runStackHook(composeFile, policy, "pre", project, configFiles, cwd, envFiles);
                 }
             }
             return prepared;
@@ -1421,11 +1497,11 @@ export class BackupManager {
         const errors: string[] = [];
         for (const entry of [...prepared].reverse()) {
             try {
-                const cwd = path.dirname(entry.composeFile);
+                const cwd = entry.workingDir;
                 if (entry.policy.mode === "stop" && entry.runningServices.length > 0) {
-                    await execFileAsync("docker", buildComposeCommandArgs(entry.composeFile, [ "start", ...entry.runningServices ]), { cwd, timeout: 5 * 60_000 });
+                    await execFileAsync("docker", buildComposeCommandArgs(entry.composeFile, [ "start", ...entry.runningServices ], entry.project, entry.configFiles, cwd, entry.envFiles), { cwd, timeout: 5 * 60_000 });
                 } else if (entry.policy.mode === "hooks") {
-                    await this.runStackHook(entry.composeFile, entry.policy, "post");
+                    await this.runStackHook(entry.composeFile, entry.policy, "post", entry.project, entry.configFiles, cwd, entry.envFiles);
                 }
             } catch (e: unknown) {
                 errors.push(`Stack "${entry.stack}" non restaurée correctement : ${e instanceof Error ? e.message : String(e)}`);
@@ -1434,13 +1510,13 @@ export class BackupManager {
         return errors;
     }
 
-    private async runStackHook(composeFile: string, policy: StackBackupPolicy, phase: "pre" | "post"): Promise<void> {
+    private async runStackHook(composeFile: string, policy: StackBackupPolicy, phase: "pre" | "post", project?: string, configFiles?: string[], workingDir?: string, envFiles?: string[]): Promise<void> {
         const command = phase === "pre" ? policy.preHook : policy.postHook;
         if (!command?.trim()) return;
         if (!policy.hookService?.trim()) throw new Error("Service requis pour les hooks applicatifs");
-        const args = buildComposeCommandArgs(composeFile, [ "exec", "-T", policy.hookService.trim(), "sh", "-c", command ]);
+        const args = buildComposeCommandArgs(composeFile, [ "exec", "-T", policy.hookService.trim(), "sh", "-c", command ], project, configFiles, workingDir, envFiles);
         await execFileAsync("docker", args, {
-            cwd: path.dirname(composeFile), timeout: 5 * 60_000, maxBuffer: 2 * 1024 * 1024,
+            cwd: workingDir ?? path.dirname(composeFile), timeout: 5 * 60_000, maxBuffer: 2 * 1024 * 1024,
         });
     }
 
@@ -1471,61 +1547,60 @@ export class BackupManager {
             await addExistingPath(additionalPath, "Chemin obligatoire");
         }
 
-        // Parcourt les stacks
+        // Parcourt les stacks natives et externes enregistrées.
         const excludedSet = new Set(this.settings.excludedStacks ?? []);
-        try {
-            const stacks = stackName ? [ stackName ] : await fs.readdir(STACKS_DIR);
-            for (const stack of stacks) {
-                const stackDir = path.join(STACKS_DIR, stack);
-                try {
-                    const stat = await fs.stat(stackDir);
-                    if (!stat.isDirectory()) continue;
-                } catch { continue; }
+        const addStackFiles = async (source: BackupStackSource): Promise<void> => {
+            if (excludedSet.has(source.name)) {
+                console.log(`[BackupManager] Stack "${source.name}" exclue de la sauvegarde — ignorée`);
+                return;
+            }
+            for (const composeConfig of source.configFiles?.length ? source.configFiles : [ source.composeFile ]) {
+                await addExistingPath(composeConfig, `Compose de la stack ${source.name}`);
+            }
 
-                if (excludedSet.has(stack)) {
-                    console.log(`[BackupManager] Stack "${stack}" exclue de la sauvegarde — ignorée`);
-                    continue;
-                }
+            if (source.metadataFile) {
+                try { await fs.access(source.metadataFile); await addExistingPath(source.metadataFile, "Métadonnées"); } catch { /* optionnel */ }
+            }
 
-                let composeFound = false;
-                for (const name of ["compose.yaml", "docker-compose.yml", "docker-compose.yaml"]) {
-                    const p = path.join(stackDir, name);
-                    try {
-                        await fs.access(p);
-                        if (!seen.has(p)) {
-                            seen.add(p);
-                            paths.push(p);
-                        }
-                        composeFound = true;
-                        break;
-                    } catch { /* next */ }
-                }
-                if (!composeFound) warnings.push(`Compose introuvable pour la stack : ${stack}`);
-
-                const metadataPath = path.join(stackDir, ".dockge-meta.json");
-                try {
-                    await fs.access(metadataPath);
-                    if (!seen.has(metadataPath)) {
-                        seen.add(metadataPath);
-                        paths.push(metadataPath);
-                    }
-                } catch { /* métadonnées optionnelles */ }
-
-                if (this.settings.includeEnvFiles) {
-                    const envPath = path.join(stackDir, ".env");
-                    try {
-                        await fs.access(envPath);
-                        if (!seen.has(envPath)) {
-                            seen.add(envPath);
-                            paths.push(envPath);
-                        }
-                    } catch { /* .env optionnel */ }
+            if (this.settings.includeEnvFiles) {
+                const envCandidates = source.envFiles?.length ? source.envFiles : [ path.join(source.workingDir, ".env") ];
+                for (const envPath of envCandidates) {
+                    try { await fs.access(envPath); await addExistingPath(envPath, "Fichier d'environnement"); } catch { /* optionnel */ }
                 }
             }
-        } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            warnings.push(`Impossible de lire STACKS_DIR (${STACKS_DIR}) : ${msg}`);
-            console.error("[BackupManager] Impossible de lire STACKS_DIR:", e);
+        };
+
+        if (stackName) {
+            try {
+                await addStackFiles(await this.findStackSource(stackName));
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
+                warnings.push(`Impossible de préparer les fichiers de la stack "${stackName}" : ${msg}`);
+            }
+        } else {
+            const managedNames = new Set<string>();
+            try {
+                for (const stack of await fs.readdir(STACKS_DIR)) {
+                    try {
+                        const source = await this.findManagedStackSource(stack);
+                        managedNames.add(stack);
+                        await addStackFiles(source);
+                    } catch { /* dossier sans Compose */ }
+                }
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
+                warnings.push(`Impossible de lire STACKS_DIR (${STACKS_DIR}) : ${msg}`);
+            }
+
+            const external = await this.getExternalStackSources();
+            warnings.push(...external.warnings);
+            for (const source of external.sources) {
+                if (managedNames.has(source.name)) {
+                    warnings.push(`Stack externe "${source.name}" ignorée : ce nom est déjà utilisé dans STACKS_DIR`);
+                    continue;
+                }
+                await addStackFiles(source);
+            }
         }
 
         // Les backups de self-update sont volontairement minimaux :
@@ -1597,15 +1672,31 @@ export class BackupManager {
         return entries.filter(e => e.isDirectory()).map(e => e.name).sort();
     }
 
-    /** Retourne la liste des stacks présentes dans STACKS_DIR */
+    /** Retourne les stacks natives et les stacks externes enregistrées et accessibles. */
     async listStacks(): Promise<string[]> {
+        const names = new Set<string>();
         try {
             const entries = await fs.readdir(STACKS_DIR, { withFileTypes: true });
-            return entries
-                .filter(e => e.isDirectory())
-                .map(e => e.name)
-                .sort();
-        } catch { return []; }
+            for (const entry of entries) if (entry.isDirectory()) names.add(entry.name);
+        } catch { /* STACKS_DIR indisponible */ }
+        const external = await this.getExternalStackSources();
+        for (const source of external.sources) names.add(source.name);
+        return [ ...names ].sort();
+    }
+
+    private async getAuthorizedBackupRoots(): Promise<string[]> {
+        const external = await this.getExternalStackSources();
+        return [ ...new Set([
+            STACKS_DIR,
+            ...external.sources.flatMap(source => [
+                source.workingDir,
+                ...(source.configFiles ?? [ source.composeFile ]),
+                ...(source.envFiles ?? []),
+                ...(source.metadataFile ? [ source.metadataFile ] : []),
+            ]),
+            ...(this.settings.volumeBackup?.selectedVolumes ?? []),
+            ...(this.settings.extraPaths ?? []),
+        ].map(candidate => path.resolve(candidate))) ];
     }
 
     /** Calcule la taille de chaque sous-dossier d'un chemin (du -sh, à la demande) */
@@ -1725,6 +1816,14 @@ export class BackupManager {
             );
             const prevSnap    = idx > 0 ? allSnaps[idx - 1] : null;
             const currentSnap = idx >= 0 ? allSnaps[idx]   : null;
+            const external = await this.getExternalStackSources();
+            const externalByDir = new Map(external.sources.map(source => [ path.resolve(source.workingDir), source ]));
+            const externalByFile = new Map<string, BackupStackSource>();
+            for (const source of external.sources) {
+                for (const file of [ ...(source.configFiles ?? [ source.composeFile ]), ...(source.envFiles ?? []), ...(source.metadataFile ? [ source.metadataFile ] : []) ]) {
+                    externalByFile.set(path.resolve(file), source);
+                }
+            }
 
             // ── 1b. Charge les volumes montés pour identifier les fichiers de données ──
             let mountedVols: MountedVolume[] = [];
@@ -1741,7 +1840,10 @@ export class BackupManager {
             const safeId = assertSafeResticId(snapshotId);
 
             // Passe A — sous-dossiers de STACKS_DIR
-            const passA = await this.resticFor(this.primaryDest(), [ "ls", safeId, STACKS_DIR, "--json", "--long" ]);
+            let passA = "";
+            try {
+                passA = await this.resticFor(this.primaryDest(), [ "ls", safeId, STACKS_DIR, "--json", "--long" ]);
+            } catch { /* backup ciblé externe sans chemin sous STACKS_DIR */ }
             const stackPaths: string[] = [];
             for (const line of passA.split("\n").filter(Boolean)) {
                 try {
@@ -1752,12 +1854,19 @@ export class BackupManager {
                     }
                 } catch { /* ignore */ }
             }
-            console.log(`[BackupManager] listSnapshotFiles: ${stackPaths.length} stacks détectés`);
+            for (const snapshotPath of currentSnap?.paths ?? []) {
+                const candidate = path.resolve(path.dirname(snapshotPath));
+                if (externalByDir.has(candidate)) stackPaths.push(candidate);
+                const resolved = path.resolve(snapshotPath);
+                if (externalByDir.has(resolved) || externalByFile.has(resolved)) stackPaths.push(resolved);
+            }
+            const uniqueStackPaths = [ ...new Set(stackPaths) ];
+            console.log(`[BackupManager] listSnapshotFiles: ${uniqueStackPaths.length} stacks détectés`);
 
-            if (stackPaths.length === 0) return [];
+            if (uniqueStackPaths.length === 0) return [];
 
             // Passe B — fichiers dans chaque stack (compose.yaml, .env…)
-            const passB = await this.resticFor(this.primaryDest(), [ "ls", safeId, ...stackPaths, "--json", "--long" ]);
+            const passB = await this.resticFor(this.primaryDest(), [ "ls", safeId, ...uniqueStackPaths, "--json", "--long" ]);
             const lsLines = passB.split("\n").filter(line => line.includes('"type":"file"'));
             console.log(`[BackupManager] listSnapshotFiles: ${lsLines.length} fichiers trouvés`);
 
@@ -1781,8 +1890,10 @@ export class BackupManager {
                 const name = path.basename(filePath);
                 const parts = filePath.split("/");
                 const stacksIdx = parts.lastIndexOf(stacksBase);
-                const isDirectInStack = stacksIdx >= 0 && parts.length - 1 === stacksIdx + 2;
-                const stack = isDirectInStack ? parts[stacksIdx + 1] : "unknown";
+                const externalSource = externalByFile.get(path.resolve(filePath)) ?? externalByDir.get(path.resolve(path.dirname(filePath)));
+                const isDirectInManagedStack = stacksIdx >= 0 && parts.length - 1 === stacksIdx + 2;
+                const isDirectInStack = isDirectInManagedStack || Boolean(externalSource);
+                const stack = externalSource?.name ?? (isDirectInManagedStack ? parts[stacksIdx + 1] : "unknown");
 
                 const raw: RawEntry = {
                     path: filePath, name, stack,
@@ -1816,16 +1927,19 @@ export class BackupManager {
             const makeFile = async (entries: RawEntry[]): Promise<SnapshotFile> => {
                 // Préfère le chemin sous STACKS_DIR comme canonique, sinon le plus court
                 entries.sort((a, b) => {
-                    const aCanon = a.path.startsWith(STACKS_DIR + "/");
-                    const bCanon = b.path.startsWith(STACKS_DIR + "/");
+                    const aCanon = a.path.startsWith(STACKS_DIR + "/") || externalByDir.has(path.resolve(path.dirname(a.path)));
+                    const bCanon = b.path.startsWith(STACKS_DIR + "/") || externalByDir.has(path.resolve(path.dirname(b.path)));
                     if (aCanon !== bCanon) return aCanon ? -1 : 1;
                     return a.path.length - b.path.length;
                 });
                 const canon = entries[0];
                 const aliases = entries.length > 1 ? entries.slice(1).map(e => e.path) : undefined;
 
-                const isCompose = /^(compose|docker-compose)(\.ya?ml)?$/.test(canon.name);
-                const isEnv = canon.name === ".env";
+                const externalSource = externalByFile.get(path.resolve(canon.path)) ?? externalByDir.get(path.resolve(path.dirname(canon.path)));
+                const isCompose = /^(compose|docker-compose)(\.ya?ml)?$/.test(canon.name)
+                    || Boolean(externalSource?.configFiles?.some(file => path.resolve(file) === path.resolve(canon.path)));
+                const isEnv = canon.name === ".env"
+                    || Boolean(externalSource?.envFiles?.some(file => path.resolve(file) === path.resolve(canon.path)));
                 const isVolume = !!canon.volumeRelPath;
 
                 // Statut vs disque
@@ -1984,9 +2098,11 @@ export class BackupManager {
         this.restoreRunLock.acquire(false);
         try {
             const safeSnapshotId = assertSafeResticId(snapshotId);
+            const roots = await this.getAuthorizedBackupRoots();
             const includes = filePaths
                 .map(p => p.trim())
-                .filter(Boolean);
+                .filter(Boolean)
+                .map(p => assertPathWithinRoots(p, roots));
             try {
                 await this.resticFor(this.primaryDest(), [ "restore", safeSnapshotId, "--target", "/", ...includes.flatMap(p => [ "--include", p ]) ]);
                 return { restored: filePaths.length, errors: [] };
@@ -2263,7 +2379,7 @@ export class BackupManager {
     /** Retourne le contenu d'un fichier texte depuis un snapshot + sa version disque actuelle + version snapshot précédent */
     async getSnapshotFileContent(snapshotId: string, filePath: string, prevSnapshotId?: string): Promise<{ snapshot: string; disk: string | null; prev: string | null }> {
         const safeId = assertSafeResticId(snapshotId);
-        const backupRoots = [ STACKS_DIR, ...(this.settings.volumeBackup?.selectedVolumes ?? []), ...(this.settings.extraPaths ?? []) ];
+        const backupRoots = await this.getAuthorizedBackupRoots();
         const safeFilePath = await assertExistingPathWithinRoots(filePath, backupRoots);
         const snapshotContent = await this.resticDump(this.primaryDest(), safeId, safeFilePath);
         let disk: string | null = null;

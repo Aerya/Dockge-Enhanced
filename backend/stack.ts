@@ -184,20 +184,32 @@ export class Stack {
     protected _composeOverrideYAML?: string;
     protected _configFilePath?: string;
     protected _composeFileName: string = "compose.yaml";
+    protected _externalPath?: string;
+    protected _externalProject?: string;
+    protected _externalConfigFiles?: string[];
+    protected _externalEnvFiles?: string[];
     protected server: DockgeServer;
 
     protected combinedTerminal? : Terminal;
 
     protected static managedStackList: Map<string, Stack> = new Map();
 
-    constructor(server : DockgeServer, name : string, composeYAML? : string, composeENV? : string, skipFSOperations = false, composeOverrideYAML? : string) {
+    constructor(server : DockgeServer, name : string, composeYAML? : string, composeENV? : string, skipFSOperations = false, composeOverrideYAML? : string, externalPath?: string, externalProject?: string, externalConfigFiles?: string[], externalEnvFiles?: string[]) {
         this.name = name;
         this.server = server;
         this._composeYAML = composeYAML;
         this._composeENV = composeENV;
         this._composeOverrideYAML = composeOverrideYAML;
+        this._externalPath = externalPath;
+        this._externalProject = externalProject;
+        this._externalConfigFiles = externalConfigFiles;
+        this._externalEnvFiles = externalEnvFiles;
 
-        if (!skipFSOperations) {
+        if (this.isExternal && externalConfigFiles?.length) {
+            this._composeFileName = path.basename(externalConfigFiles[0]);
+        }
+
+        if (!skipFSOperations && !this.isExternal) {
             resolveStackPath(this.server.stacksDir, this.name);
             // Check if compose file name is different from compose.yaml
             for (const filename of acceptedComposeFileNames) {
@@ -261,19 +273,46 @@ export class Stack {
             createdAtEstimated,
             lastUpdated: metadata.lastUpdated,
             endpoint,
+            isExternal: this.isExternal,
+            externalPath: this.isExternal ? this.path : undefined,
+            externalProject: this.isExternal ? this._externalProject : undefined,
+            externalConfigFiles: this.isExternal ? this._externalConfigFiles : undefined,
+            externalEnvFiles: this.isExternal ? this._externalEnvFiles : undefined,
         };
     }
 
-    getBuildServices(): string[] {
-        try {
-            const parsed = yaml.parse(this.composeYAML) as { services?: Record<string, { build?: unknown }> };
-            return Object.entries(parsed?.services ?? {})
-                .filter(([, service]) => service && Object.prototype.hasOwnProperty.call(service, "build") && service.build !== null)
-                .map(([ name ]) => name)
-                .sort();
-        } catch {
-            return [];
+    getComposeConfigTexts(): string[] {
+        const documents: string[] = [ this.composeYAML ];
+        if (this.isExternal && this._externalConfigFiles?.length) {
+            const primary = path.resolve(this._configFilePath ?? path.join(this.path, this._composeFileName));
+            for (const file of this._externalConfigFiles) {
+                if (path.resolve(file) === primary) continue;
+                try {
+                    documents.push(fs.readFileSync(file, "utf8"));
+                } catch {
+                    // A missing secondary file will also make Docker Compose fail;
+                    // keep the UI responsive and let the action surface that error.
+                }
+            }
+        } else if (this.composeOverrideYAML.trim() !== "") {
+            documents.push(this.composeOverrideYAML);
         }
+        return documents;
+    }
+
+    getBuildServices(): string[] {
+        const buildServices = new Set<string>();
+        for (const composeText of this.getComposeConfigTexts()) {
+            try {
+                const parsed = yaml.parse(composeText) as { services?: Record<string, { build?: unknown }> };
+                for (const [ name, service ] of Object.entries(parsed?.services ?? {})) {
+                    if (service && Object.prototype.hasOwnProperty.call(service, "build") && service.build !== null) buildServices.add(name);
+                }
+            } catch {
+                // Validation/action paths surface malformed Compose documents.
+            }
+        }
+        return [ ...buildServices ].sort();
     }
 
     /**
@@ -294,6 +333,10 @@ export class Stack {
         return fs.existsSync(this.path) && fs.statSync(this.path).isDirectory();
     }
 
+    get isExternal() : boolean {
+        return this._externalPath !== undefined;
+    }
+
     get status() : number {
         return this._status;
     }
@@ -307,8 +350,10 @@ export class Stack {
         // Check YAML format
         yaml.parse(this.composeYAML);
 
-        // Check override YAML format (if any)
-        if (this.composeOverrideYAML.trim() !== "") {
+        // External projects may use an arbitrary multi-file Compose chain.
+        // The native compose.override.yaml editor is therefore disabled for them:
+        // validating or rewriting an unrelated implicit override would alter their model.
+        if (!this.isExternal && this.composeOverrideYAML.trim() !== "") {
             yaml.parse(this.composeOverrideYAML);
         }
 
@@ -325,7 +370,7 @@ export class Stack {
     get composeYAML() : string {
         if (this._composeYAML === undefined) {
             try {
-                this._composeYAML = fs.readFileSync(path.join(this.path, this._composeFileName), "utf-8");
+                this._composeYAML = fs.readFileSync(this.isExternal && this._configFilePath ? this._configFilePath : path.join(this.path, this._composeFileName), "utf-8");
             } catch (e) {
                 this._composeYAML = "";
             }
@@ -336,7 +381,8 @@ export class Stack {
     get composeENV() : string {
         if (this._composeENV === undefined) {
             try {
-                this._composeENV = fs.readFileSync(path.join(this.path, ".env"), "utf-8");
+                const envPath = this.isExternal && this._externalEnvFiles?.length ? this._externalEnvFiles[0] : path.join(this.path, ".env");
+                this._composeENV = fs.readFileSync(envPath, "utf-8");
             } catch (e) {
                 this._composeENV = "";
             }
@@ -345,6 +391,7 @@ export class Stack {
     }
 
     get composeOverrideYAML() : string {
+        if (this.isExternal) return "";
         if (this._composeOverrideYAML === undefined) {
             try {
                 this._composeOverrideYAML = fs.readFileSync(path.join(this.path, COMPOSE_OVERRIDE_FILE), "utf-8");
@@ -356,7 +403,20 @@ export class Stack {
     }
 
     get path() : string {
-        return path.join(this.server.stacksDir, this.name);
+        return this._externalPath ?? path.join(this.server.stacksDir, this.name);
+    }
+
+    private get metaPath() : string {
+        if (!this.isExternal) return path.join(this.path, ".dockge-meta.json");
+        return path.join(this.server.config.dataDir, "external-stack-meta", `${this.name}.json`);
+    }
+
+    setComposeContent(composeYAML: string, composeENV: string, composeOverrideYAML = "") : void {
+        this._composeYAML = composeYAML;
+        this._composeENV = composeENV;
+        // External stacks preserve the exact Compose `-f` chain discovered at adoption.
+        // Their additional config files are intentionally read-only in this first Beta.
+        this._composeOverrideYAML = this.isExternal ? undefined : composeOverrideYAML;
     }
 
     get fullPath() : string {
@@ -398,9 +458,9 @@ export class Stack {
         }
 
         // Write or overwrite the compose.yaml
-        await fsAsync.writeFile(path.join(dir, this._composeFileName), this.composeYAML);
+        await fsAsync.writeFile(this.isExternal && this._configFilePath ? this._configFilePath : path.join(dir, this._composeFileName), this.composeYAML);
 
-        const envPath = path.join(dir, ".env");
+        const envPath = this.isExternal && this._externalEnvFiles?.length ? this._externalEnvFiles[0] : path.join(dir, ".env");
 
         // Write or overwrite the .env
         // If .env is not existing and the composeENV is empty, we don't need to write it
@@ -415,15 +475,16 @@ export class Stack {
             });
         }
 
-        // Write/overwrite/remove the compose.override.yaml
-        // Docker Compose le fusionne automatiquement avec le fichier principal.
-        const overridePath = path.join(dir, COMPOSE_OVERRIDE_FILE);
-        if (this.composeOverrideYAML.trim() !== "") {
-            await fsAsync.writeFile(overridePath, this.composeOverrideYAML);
-        } else if (await fileExists(overridePath)) {
-            // L'override a été vidé : on supprime le fichier pour éviter une
-            // fusion d'un fichier vide (et garder le dossier propre).
-            await fsAsync.rm(overridePath, { force: true });
+        // Native stacks keep Dockge's implicit compose.override.yaml behaviour.
+        // External stacks preserve their exact discovered `-f` chain and never create,
+        // rewrite or remove an implicit override behind the user's back.
+        if (!this.isExternal) {
+            const overridePath = path.join(dir, COMPOSE_OVERRIDE_FILE);
+            if (this.composeOverrideYAML.trim() !== "") {
+                await fsAsync.writeFile(overridePath, this.composeOverrideYAML);
+            } else if (await fileExists(overridePath)) {
+                await fsAsync.rm(overridePath, { force: true });
+            }
         }
     }
 
@@ -527,7 +588,7 @@ export class Stack {
 
     private readMetaSync(): StackMetadata {
         try {
-            const raw = fs.readFileSync(path.join(this.path, ".dockge-meta.json"), "utf8");
+            const raw = fs.readFileSync(this.metaPath, "utf8");
             return this.normalizeMeta(JSON.parse(raw) as Partial<StackMetadata>);
         } catch {
             return this.emptyMeta();
@@ -541,7 +602,7 @@ export class Stack {
     private estimateCreatedAt(): string | null {
         const candidates = [
             this.path,
-            path.join(this.path, this._composeFileName),
+            this.isExternal && this._configFilePath ? this._configFilePath : path.join(this.path, this._composeFileName),
         ];
 
         for (const candidate of candidates) {
@@ -561,7 +622,7 @@ export class Stack {
     /** Lit le fichier .dockge-meta.json du stack */
     private async readMeta(): Promise<StackMetadata> {
         try {
-            const raw = await fsAsync.readFile(path.join(this.path, ".dockge-meta.json"), "utf8");
+            const raw = await fsAsync.readFile(this.metaPath, "utf8");
             return this.normalizeMeta(JSON.parse(raw) as Partial<StackMetadata>);
         } catch {
             return this.emptyMeta();
@@ -575,7 +636,8 @@ export class Stack {
         try {
             const existing = await this.readMeta();
             const updated = { ...existing, ...fields };
-            await fsAsync.writeFile(path.join(this.path, ".dockge-meta.json"), JSON.stringify(updated), "utf8");
+            if (this.isExternal) await fsAsync.mkdir(path.dirname(this.metaPath), { recursive: true, mode: 0o700 });
+            await fsAsync.writeFile(this.metaPath, JSON.stringify(updated), { encoding: "utf8", mode: 0o600 });
         } catch { /* non bloquant */ }
     }
 
@@ -706,9 +768,29 @@ export class Stack {
      *   - force : si true, en cas d'échec du `down` on supprime quand même le
      *     dossier (utile quand `down` échoue mais qu'on veut nettoyer). Défaut : false.
      */
-    async delete(socket: DockgeSocket, options: { removeFiles?: boolean; force?: boolean } = {}) : Promise<number> {
-        const removeFiles = options.removeFiles ?? true;
+    async delete(socket: DockgeSocket, options: {
+        removeFiles?: boolean;
+        force?: boolean;
+        confirmExternalSourceDelete?: boolean;
+        confirmExternalSourcePath?: string;
+    } = {}) : Promise<number> {
+        // Existing managed stacks keep their historical behaviour. External stacks
+        // default to unregister-only so an older client can never erase a host path.
+        const removeFiles = options.removeFiles ?? !this.isExternal;
         const force = options.force ?? false;
+
+        let externalRegistration = this.isExternal ? await this.server.externalStacks.get(this.name) : undefined;
+        let externalDeletePath: string | undefined;
+        if (this.isExternal && !externalRegistration) {
+            throw new ValidationError("External stack registration no longer exists");
+        }
+        if (this.isExternal && removeFiles) {
+            if (options.confirmExternalSourceDelete !== true || typeof options.confirmExternalSourcePath !== "string") {
+                throw new ValidationError("External source deletion requires explicit confirmation");
+            }
+            const verified = await this.server.externalStacks.assertDeletableSourcePath(externalRegistration!, options.confirmExternalSourcePath);
+            externalDeletePath = verified.workingDir;
+        }
 
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("down", "--remove-orphans"), this.path);
@@ -716,12 +798,14 @@ export class Stack {
             throw new Error("Failed to delete, please check the terminal output for more information.");
         }
 
-        // Remove the stack folder (sauf si on veut conserver les fichiers)
         if (removeFiles) {
-            await fsAsync.rm(this.path, {
-                recursive: true,
-                force: true
-            });
+            const deletePath = externalDeletePath ?? this.path;
+            await fsAsync.rm(deletePath, { recursive: true, force: true });
+        }
+
+        if (this.isExternal) {
+            await this.server.externalStacks.unregister(this.name);
+            await fsAsync.rm(this.metaPath, { force: true }).catch(() => undefined);
         }
 
         return exitCode;
@@ -729,7 +813,7 @@ export class Stack {
 
     async updateStatus() {
         let statusList = await Stack.getStatusList(this.server);
-        let status = statusList.get(this.name);
+        let status = statusList.get(this.isExternal ? (this._externalProject ?? this.name) : this.name);
 
         if (status) {
             this._status = status;
@@ -764,7 +848,7 @@ export class Stack {
 
         // Use cached stack list?
         if (useCacheForManaged && this.managedStackList.size > 0) {
-            stackList = this.managedStackList;
+            stackList = new Map(this.managedStackList);
         } else {
             stackList = new Map<string, Stack>();
 
@@ -796,6 +880,25 @@ export class Stack {
             this.managedStackList = new Map(stackList);
         }
 
+        const externalByProject = new Map<string, Stack>();
+        for (const registration of await server.externalStacks.list()) {
+            if (stackList.has(registration.name)) {
+                log.warn("getStackList", `External stack ${registration.name} conflicts with a managed stack name and was ignored`);
+                continue;
+            }
+            try {
+                const verified = await server.externalStacks.assertRegisteredPath(registration);
+                const stack = new Stack(server, verified.name, undefined, undefined, false, undefined, verified.workingDir, verified.project, verified.configFiles, verified.envFiles);
+                stack._composeFileName = path.basename(verified.composeFile);
+                stack._status = CREATED_FILE;
+                stack._configFilePath = verified.composeFile;
+                stackList.set(verified.name, stack);
+                externalByProject.set(verified.project, stack);
+            } catch (error) {
+                log.warn("getStackList", `External stack ${registration.name} is unavailable: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+
         // Get status from docker compose ls
         let res = await childProcessAsync.spawn("docker", [ "compose", "ls", "--all", "--format", "json" ], {
             encoding: "utf-8",
@@ -809,9 +912,9 @@ export class Stack {
 
         for (let composeStack of composeList) {
             const managedName = getManagedStackNameFromConfigFiles(composeStack.ConfigFiles, stacksDir);
-            let stack = managedName
-                ? stackList.get(managedName)
-                : stackList.get(composeStack.Name);
+            let stack = managedName ? stackList.get(managedName) : undefined;
+            if (!stack) stack = externalByProject.get(composeStack.Name);
+            if (!stack) stack = stackList.get(composeStack.Name);
 
             // This stack probably is not managed by Dockge, but we still want to show it
             if (!stack) {
@@ -824,7 +927,7 @@ export class Stack {
             }
 
             stack._status = this.statusConvert(composeStack.Status);
-            stack._configFilePath = composeStack.ConfigFiles;
+            if (!stack.isExternal) stack._configFilePath = composeStack.ConfigFiles;
         }
 
         return stackList;
@@ -847,13 +950,21 @@ export class Stack {
 
         let composeList = JSON.parse(res.stdout.toString());
 
+        const externalProjectToName = new Map<string, string>();
+        if (server) {
+            for (const registration of await server.externalStacks.list()) {
+                externalProjectToName.set(registration.project, registration.name);
+            }
+        }
+
         for (let composeStack of composeList) {
-            statusList.set(composeStack.Name, this.statusConvert(composeStack.Status));
+            const converted = this.statusConvert(composeStack.Status);
+            statusList.set(composeStack.Name, converted);
             if (server) {
                 const managedName = getManagedStackNameFromConfigFiles(composeStack.ConfigFiles, server.stacksDir);
-                if (managedName) {
-                    statusList.set(managedName, this.statusConvert(composeStack.Status));
-                }
+                if (managedName) statusList.set(managedName, converted);
+                const externalName = externalProjectToName.get(composeStack.Name);
+                if (externalName) statusList.set(externalName, converted);
             }
         }
 
@@ -881,7 +992,19 @@ export class Stack {
     }
 
     static async getStack(server: DockgeServer, stackName: string, skipFSOperations = false) : Promise<Stack> {
-        // Validate every caller-supplied stack name, including skipFSOperations paths.
+        if (!skipFSOperations) {
+            const externalRegistration = await server.externalStacks.get(stackName);
+            if (externalRegistration) {
+                const verified = await server.externalStacks.assertRegisteredPath(externalRegistration);
+                const stack = new Stack(server, verified.name, undefined, undefined, false, undefined, verified.workingDir, verified.project, verified.configFiles, verified.envFiles);
+                stack._composeFileName = path.basename(verified.composeFile);
+                stack._status = UNKNOWN;
+                stack._configFilePath = verified.composeFile;
+                return stack;
+            }
+        }
+
+        // Validate every caller-supplied managed stack name, including skipFSOperations paths.
         // This prevents ../ traversal from escaping the managed stacks directory.
         resolveStackPath(server.stacksDir, stackName);
         let dir = skipFSOperations
@@ -920,8 +1043,22 @@ export class Stack {
 
     getComposeOptions(command : string, ...extraOptions : string[]) {
         //--env-file ./../global.env --env-file .env
-        let options = [ "compose", command, ...extraOptions ];
-        if (fs.existsSync(path.join(this.server.stacksDir, "global.env"))) {
+        const externalFiles = this.isExternal && this._externalConfigFiles?.length
+            ? this._externalConfigFiles.flatMap((file) => [ "-f", file ])
+            : [];
+        const externalEnvFiles = this.isExternal && this._externalEnvFiles?.length
+            ? this._externalEnvFiles.flatMap((file) => [ "--env-file", file ])
+            : [];
+        let options = [
+            "compose",
+            ...(this.isExternal ? [ "--project-directory", this.path ] : []),
+            ...(this._externalProject ? [ "--project-name", this._externalProject ] : []),
+            ...externalEnvFiles,
+            ...externalFiles,
+            command,
+            ...extraOptions,
+        ];
+        if (!this.isExternal && fs.existsSync(path.join(this.server.stacksDir, "global.env"))) {
             if (fs.existsSync(path.join(this.path, ".env"))) {
                 options.splice(1, 0, "--env-file", "./.env");
             }

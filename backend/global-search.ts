@@ -300,12 +300,12 @@ async function getStackSearchDocuments(server: DockgeServer): Promise<StackSearc
     const stacks = await Stack.getStackList(server, false);
     const documents = await Promise.all([ ...stacks.entries() ].map(async ([ stackName, stack ]) => {
         try {
-            const data = await stack.toJSON("") as { composeYAML?: string; composeENV?: string; composeOverrideYAML?: string };
+            const data = await stack.toJSON("") as { composeYAML?: string; composeENV?: string; composeOverrideYAML?: string; isExternal?: boolean };
             return {
                 stackName,
                 status: stack.status,
                 compose: data.composeYAML ?? "",
-                override: data.composeOverrideYAML ?? "",
+                override: data.isExternal ? "" : (data.composeOverrideYAML ?? ""),
                 envEntries: extractEnvEntries(data.composeENV ?? ""),
             };
         } catch {

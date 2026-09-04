@@ -23,6 +23,8 @@ import { SelfUpdateManager } from "./self-update/manager";
 import { StackScheduler } from "./watchers/stack-scheduler";
 import { StackReplicationManager } from "./watchers/stack-replication-manager";
 import { StartGuardWatcher } from "./watchers/start-guard-watcher";
+import { ExternalStackManager } from "./external-stacks";
+import { ExternalStackAccessManager } from "./external-stack-access";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
@@ -125,6 +127,9 @@ export class DockgeServer {
 
     stacksDir : string = "";
 
+    externalStacks: ExternalStackManager;
+    externalStackAccess: ExternalStackAccessManager;
+
     /**
      *
      */
@@ -201,6 +206,8 @@ export class DockgeServer {
         this.config.stacksDir = args.stacksDir || process.env.DOCKGE_STACKS_DIR || defaultStacksDir;
         this.config.enableConsole = args.enableConsole || process.env.DOCKGE_ENABLE_CONSOLE === "true" || false;
         this.stacksDir = this.config.stacksDir;
+        this.externalStacks = new ExternalStackManager(this.config.dataDir, this.stacksDir);
+        this.externalStackAccess = new ExternalStackAccessManager(this.config.dataDir, this.externalStacks);
 
         log.debug("server", this.config);
 

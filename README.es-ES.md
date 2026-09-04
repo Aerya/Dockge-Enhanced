@@ -90,6 +90,10 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 ### 🆕 Septiembre de 2026
 
+**Stacks externas (Beta)**
+
+Enhanced puede detectar proyectos Docker Compose existentes, adoptarlos **sin mover su Compose/.env ni sus datos** y gestionarlos después desde la interfaz normal de stacks. Si una ruta de origen aún no es accesible desde Enhanced, una autorización protegida en un clic adapta automáticamente el Compose de Enhanced. Las stacks adoptadas muestran la insignia **Externa**; borrar los archivos de origen requiere una confirmación explícita adicional.
+
 **Búsqueda global multi-instancia V2 (`Ctrl+K`)**
 
 La paleta global admite ahora **búsqueda difusa** para pequeños errores de escritura y operadores asistidos como `type:`, `stack:`, `image:`, `port:`, `instance:` y filtros operativos `is:update`, `is:stopped`, `is:vulnerable`, `is:critical` e `is:backup-failed`. Los operadores aparecen como botones dentro de la propia paleta, por lo que no hace falta memorizar la sintaxis. Los resultados Compose y `.env` abren la stack correspondiente y llevan CodeMirror directamente a la línea encontrada. Las búsquedas recientes y fijadas se guardan localmente en el navegador.

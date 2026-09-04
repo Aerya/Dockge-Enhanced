@@ -356,6 +356,9 @@ function resolvedMounts(config: Record<string, unknown>): Map<string, ParsedMoun
 
 export async function analyzeStackTransfer(server: DockgeServer, stackName: string, rules: StackTransferPathRule[] = []): Promise<StackTransferInventory> {
     const stack = await Stack.getStack(server, stackName);
+    if (stack.isExternal) {
+        throw new ValidationError("External stacks cannot be transferred or replicated while the feature is in Beta");
+    }
     const composeYAML = stack.composeYAML;
     const composeENV = stack.composeENV;
     const composeOverrideYAML = stack.composeOverrideYAML;
@@ -678,6 +681,15 @@ export async function preflightStackTransfer(server: DockgeServer, request: Stac
             scope: "save",
             code: "invalid-name",
             message: "Stack name can only contain [a-z][0-9] _ - only" });
+        return { issues,
+            mappedOverrideYAML: request.composeOverrideYAML };
+    }
+    const externalTarget = await server.externalStacks.get(request.targetName);
+    if (externalTarget) {
+        issues.push({ severity: "error",
+            scope: "save",
+            code: "external-target",
+            message: "An adopted external stack with this name already exists and cannot be overwritten by a transfer" });
         return { issues,
             mappedOverrideYAML: request.composeOverrideYAML };
     }

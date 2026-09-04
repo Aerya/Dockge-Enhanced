@@ -91,6 +91,10 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 ### 🆕 September 2026
 
+**External stacks (Beta)**
+
+Enhanced can detect existing Docker Compose projects, adopt them **without moving their Compose/.env or data**, and then manage them from the normal stack UI. If a source path is not yet available inside Enhanced, protected one-click authorization patches Enhanced's own Compose automatically. Adopted stacks are marked **External**; source-file deletion requires an additional explicit confirmation.
+
 **Global multi-instance search V2 (`Ctrl+K`)**
 
 The global palette now supports **fuzzy matching** for small typing mistakes and assisted operators such as `type:`, `stack:`, `image:`, `port:`, `instance:` and operational filters including `is:update`, `is:stopped`, `is:vulnerable`, `is:critical` and `is:backup-failed`. Operator chips are displayed directly in the palette so the syntax does not need to be memorized. Compose and `.env` results open the matching stack and scroll CodeMirror directly to the matching line. Recent searches and pinned searches are stored locally in the browser.

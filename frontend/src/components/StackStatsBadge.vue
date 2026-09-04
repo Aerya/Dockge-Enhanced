@@ -13,12 +13,12 @@
 import { computed, getCurrentInstance } from "vue";
 import { useStackStats, formatMem } from "../composables/useStackStats";
 
-const props = withDefaults(defineProps<{ stackName: string; endpoint?: string }>(), { endpoint: "" });
+const props = withDefaults(defineProps<{ stackName: string; statsName?: string; endpoint?: string }>(), { statsName: "", endpoint: "" });
 const root = getCurrentInstance()?.proxy?.$root as { emitAgent?: (endpoint: string, eventName: string, ...args: unknown[]) => void } | undefined;
 const emitAgent = (endpoint: string, eventName: string, ...args: unknown[]) => root?.emitAgent?.(endpoint, eventName, ...args);
 const { statsCache, stackStatsEnabled } = useStackStats(props.endpoint, emitAgent);
 
-const stat = computed(() => statsCache.value[props.stackName] ?? null);
+const stat = computed(() => statsCache.value[props.statsName || props.stackName] ?? null);
 
 const cpuClass = computed(() => {
     const cpu = stat.value?.cpu ?? 0;
