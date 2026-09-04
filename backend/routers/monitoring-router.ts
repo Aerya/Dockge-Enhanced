@@ -242,9 +242,9 @@ export class MonitoringRouter extends Router {
             }
         });
 
-        // Mount under /api — final paths: /api/monitoring/*
+        // Mount under /api/monitoring — final paths: /api/monitoring/*
         const mountRouter = express.Router();
-        mountRouter.use("/api", router);
+        mountRouter.use("/api/monitoring", router);
         return mountRouter;
     }
 }
