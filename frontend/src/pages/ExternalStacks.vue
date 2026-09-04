@@ -24,7 +24,7 @@
                         :value="entry.endpoint"
                         :disabled="entry.status && entry.status !== 'online'"
                     >
-                        {{ agentOptionLabel(entry) }}
+                        {{ entry.label }}
                     </option>
                 </select>
                 <button class="btn btn-primary external-scan-btn" :disabled="loading" @click="refresh">
