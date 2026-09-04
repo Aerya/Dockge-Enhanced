@@ -98,6 +98,10 @@ README 会直接保留近期最重要的变化，方便快速了解 Dockge-Enhan
 
 ### 🆕 2026 年 9 月
 
+**外部 Stack（Beta）**
+
+Enhanced 现在可以检测现有 Docker Compose 项目，并在**不移动 Compose/.env 或数据**的情况下将其接管，之后可从常规 Stack 界面管理。如果源路径尚未对 Enhanced 可见，可通过受保护的一键授权自动更新 Enhanced 自身的 Compose。已接管的 Stack 会显示 **外部** 标记；删除源文件需要额外的明确确认。
+
 **多实例全局搜索 V2（`Ctrl+K`）**
 
 全局搜索现在支持用于小型输入错误的**模糊匹配**，以及 `type:`、`stack:`、`image:`、`port:`、`instance:` 和 `is:update`、`is:stopped`、`is:vulnerable`、`is:critical`、`is:backup-failed` 等辅助筛选。面板会直接显示可点击的操作符提示，无需记忆语法。Compose 和 `.env` 结果会打开对应 Stack，并让 CodeMirror 直接定位到匹配行。最近搜索和固定搜索只保存在当前浏览器中。

@@ -389,6 +389,9 @@ export async function createStackTransferDataSnapshot(server: DockgeServer, requ
         updatedAt: now,
     };
     const stack = await Stack.getStack(server, request.stackName);
+    if (stack.isExternal) {
+        throw new ValidationError("External stacks cannot use stack-transfer snapshots while the feature is in Beta");
+    }
     let prepared = false;
     try {
         if (request.phase === "copy") {
@@ -440,6 +443,9 @@ export async function finalizeStackTransferDataSource(server: DockgeServer, tran
         throw new ValidationError("Source data transfer is not ready for finalization");
     }
     const stack = await Stack.getStack(server, job.stackName);
+    if (stack.isExternal) {
+        throw new ValidationError("External stacks cannot be finalized by stack transfer while the feature is in Beta");
+    }
     try {
         job.runningServices = await runningServices(stack);
         if (job.policy.mode === "hooks") {

@@ -160,6 +160,12 @@
                     </router-link>
                 </li>
 
+                <li v-if="$root.loggedIn" class="nav-item me-2">
+                    <router-link to="/external-stacks" class="nav-link">
+                        <font-awesome-icon icon="folder-open" /> {{ $t("externalStacks.nav") }}
+                    </router-link>
+                </li>
+
                 <li v-if="$root.loggedIn" class="nav-item me-2 d-flex align-items-center">
                     <GlobalSearch />
                 </li>
@@ -263,6 +269,9 @@
                 </router-link>
                 <router-link to="/watcher" class="mobile-drawer-link">
                     <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}
+                </router-link>
+                <router-link to="/external-stacks" class="mobile-drawer-link">
+                    <font-awesome-icon icon="folder-open" /> {{ $t("externalStacks.nav") }}
                 </router-link>
                 <button type="button" class="mobile-drawer-link" @click="mobileScanFolder">
                     <font-awesome-icon icon="arrows-rotate" /> {{ $t("scanFolder") }}

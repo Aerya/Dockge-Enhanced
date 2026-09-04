@@ -206,7 +206,9 @@ export default defineComponent({
                 console.log("disconnect");
                 this.socketIO.connectionErrorMsg = sessionStorage.getItem("dockge-self-update-in-progress") === "1"
                     ? `${this.$t("updates.self.reconnecting")}`
-                    : `${this.$t("Lost connection to the socket server. Reconnecting...")}`;
+                    : sessionStorage.getItem("dockge-external-access-in-progress") === "1"
+                        ? `${this.$t("externalStacks.automaticAccessReconnecting")}`
+                        : `${this.$t("Lost connection to the socket server. Reconnecting...")}`;
                 this.socketIO.connected = false;
             });
 
@@ -214,7 +216,9 @@ export default defineComponent({
                 console.error(`Failed to connect to the backend. Socket.io connect_error: ${err.message}`);
                 this.socketIO.connectionErrorMsg = sessionStorage.getItem("dockge-self-update-in-progress") === "1"
                     ? `${this.$t("updates.self.reconnecting")}`
-                    : `${this.$t("Cannot connect to the socket server.")} [${err}] ${this.$t("reconnecting...")}`;
+                    : sessionStorage.getItem("dockge-external-access-in-progress") === "1"
+                        ? `${this.$t("externalStacks.automaticAccessReconnecting")}`
+                        : `${this.$t("Cannot connect to the socket server.")} [${err}] ${this.$t("reconnecting...")}`;
                 this.socketIO.showReverseProxyGuide = true;
                 this.socketIO.connected = false;
                 this.socketIO.firstConnect = false;

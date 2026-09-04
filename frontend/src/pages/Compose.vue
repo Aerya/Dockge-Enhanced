@@ -7,6 +7,7 @@
             <h1 v-if="isAdd" class="mb-3 compose-tight">{{ $t("compose") }}</h1>
             <h1 v-else class="mb-3 compose-tight">
                 <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }}
+                <span v-if="stack.isExternal" class="external-stack-badge ms-2"><font-awesome-icon icon="external-link-square-alt" class="me-1" />{{ $t("externalStacks.external") }}</span>
                 <span v-if="$root.agentCount > 1" class="agent-name">
                     (<a
                         v-if="remoteStackUrl"
@@ -33,14 +34,14 @@
             </h1>
 
             <StackReplicationStatus
-                v-if="!isAdd && stack.isManagedByDockge && $root.agentCount > 1"
+                v-if="!isAdd && stack.isManagedByDockge && !stack.isExternal && $root.agentCount > 1"
                 ref="stackReplicationStatus"
                 :source-endpoint="endpoint"
                 :source-stack-name="stack.name"
                 @edit="openStackReplication"
             />
             <PendingStackMoveStatus
-                v-if="!isAdd && stack.isManagedByDockge"
+                v-if="!isAdd && stack.isManagedByDockge && !stack.isExternal"
                 ref="pendingStackMoveStatus"
                 :source-endpoint="endpoint"
                 :source-stack-name="stack.name"
@@ -103,17 +104,17 @@
                         <span class="stack-action-label">{{ $t("stackScheduler.action") }}</span>
                     </button>
 
-                    <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackTransfer.copyAction')" :aria-label="$t('stackTransfer.copyAction')" :disabled="processing" @click="openStackTransfer('copy')">
+                    <button v-if="$root.agentCount > 1 && !isEditMode && !stack.isExternal" class="btn btn-normal stack-action" :title="$t('stackTransfer.copyAction')" :aria-label="$t('stackTransfer.copyAction')" :disabled="processing" @click="openStackTransfer('copy')">
                         <font-awesome-icon icon="copy" />
                         <span class="stack-action-label">{{ $t("stackTransfer.copyAction") }}</span>
                     </button>
 
-                    <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackTransfer.moveAction')" :aria-label="$t('stackTransfer.moveAction')" :disabled="processing" @click="openStackTransfer('move')">
+                    <button v-if="$root.agentCount > 1 && !isEditMode && !stack.isExternal" class="btn btn-normal stack-action" :title="$t('stackTransfer.moveAction')" :aria-label="$t('stackTransfer.moveAction')" :disabled="processing" @click="openStackTransfer('move')">
                         <font-awesome-icon icon="clone" />
                         <span class="stack-action-label">{{ $t("stackTransfer.moveAction") }}</span>
                     </button>
 
-                    <button v-if="$root.agentCount > 1 && !isEditMode" class="btn btn-normal stack-action" :title="$t('stackReplication.configure')" :aria-label="$t('stackReplication.configure')" :disabled="processing" @click="openStackReplication()">
+                    <button v-if="$root.agentCount > 1 && !isEditMode && !stack.isExternal" class="btn btn-normal stack-action" :title="$t('stackReplication.configure')" :aria-label="$t('stackReplication.configure')" :disabled="processing" @click="openStackReplication()">
                         <font-awesome-icon icon="database" />
                         <span class="stack-action-label">{{ $t("stackReplication.configure") }}</span>
                     </button>
@@ -123,7 +124,7 @@
                         <span class="stack-action-label">{{ $t("downStack") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode" class="btn btn-danger stack-action" :title="$t('deleteStack')" :aria-label="$t('deleteStack')" :disabled="processing" @click="showDeleteDialog = !showDeleteDialog">
+                    <button v-if="!isEditMode" class="btn btn-danger stack-action" :title="$t('deleteStack')" :aria-label="$t('deleteStack')" :disabled="processing" @click="openDeleteDialog">
                         <font-awesome-icon icon="trash" />
                         <span class="stack-action-label">{{ $t("deleteStack") }}</span>
                     </button>
@@ -337,6 +338,7 @@
                                 :volume-loading="volumeUsageLoading"
                                 :action-processing="serviceActionProcessing[name] === true"
                                 :stack-name="stack.name"
+                                :stats-stack-name="stack.externalProject || stack.name"
                                 :endpoint="endpoint"
                                 :show-resource-stats="!endpoint"
                                 :dozzle-url="dozzleUrl"
@@ -538,8 +540,9 @@
                         {{ yamlError }}
                     </div>
 
-                    <!-- Override editor -->
-                    <div v-if="isEditMode || globalSearchFocusSource === 'override'">
+                    <!-- External projects preserve their discovered multi-file `-f` chain. -->
+                    <!-- Do not expose Dockge's implicit compose.override.yaml editor for them. -->
+                    <div v-if="!stack.isExternal && (isEditMode || globalSearchFocusSource === 'override')">
                         <div class="editor-header mb-3 compose-tight">
                             <h4 class="mb-0">compose.override.yaml</h4>
                             <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('toggleFullscreen')" @click="toggleFullscreen('override')">
@@ -667,20 +670,50 @@
             </BModal>
 
             <!-- Delete Dialog -->
-            <BModal v-model="showDeleteDialog" :cancelTitle="$t('cancel')" :okTitle="$t('deleteStack')" okVariant="danger" @ok="deleteDialog">
-                <p>{{ $t("deleteStackMsg") }}</p>
+            <BModal
+                v-model="showDeleteDialog"
+                :cancelTitle="$t('cancel')"
+                :okTitle="stack.isExternal && !deleteRemoveFiles ? $t('externalStacks.unregisterAction') : $t('deleteStack')"
+                okVariant="danger"
+                :okDisabled="stack.isExternal && deleteRemoveFiles && !deleteExternalConfirmed"
+                @ok="deleteDialog"
+            >
+                <template v-if="stack.isExternal">
+                    <div class="external-delete-notice">
+                        <div class="external-delete-notice__icon"><font-awesome-icon icon="shield-alt" /></div>
+                        <div>
+                            <strong>{{ $t("externalStacks.deleteTitle") }}</strong>
+                            <div class="form-text mt-1">{{ $t("externalStacks.deleteUnregisterHint") }}</div>
+                            <code class="external-delete-path">{{ stack.externalPath }}</code>
+                        </div>
+                    </div>
+                    <div class="form-check mt-3">
+                        <input id="delete-remove-external-files" v-model="deleteRemoveFiles" type="checkbox" class="form-check-input">
+                        <label class="form-check-label text-danger fw-semibold" for="delete-remove-external-files">
+                            {{ $t("externalStacks.deleteSourceFiles") }}
+                        </label>
+                        <div class="form-text">{{ $t("externalStacks.deleteSourceFilesHint") }}</div>
+                    </div>
+                    <div v-if="deleteRemoveFiles" class="form-check mt-3 external-delete-confirm">
+                        <input id="delete-external-confirm" v-model="deleteExternalConfirmed" type="checkbox" class="form-check-input">
+                        <label class="form-check-label" for="delete-external-confirm">
+                            {{ $t("externalStacks.deleteSourceConfirm", { path: stack.externalPath }) }}
+                        </label>
+                    </div>
+                </template>
+                <template v-else>
+                    <p>{{ $t("deleteStackMsg") }}</p>
+                    <div class="form-check mt-3">
+                        <input id="delete-remove-files" v-model="deleteRemoveFiles" type="checkbox" class="form-check-input">
+                        <label class="form-check-label" for="delete-remove-files">
+                            {{ $t("deleteStackRemoveFiles") }}
+                        </label>
+                        <div class="form-text">{{ $t("deleteStackRemoveFilesHint") }}</div>
+                    </div>
+                </template>
                 <div class="form-check mt-3">
-                    <input id="delete-remove-files" v-model="deleteRemoveFiles" type="checkbox" class="form-check-input">
-                    <label class="form-check-label" for="delete-remove-files">
-                        {{ $t("deleteStackRemoveFiles") }}
-                    </label>
-                    <div class="form-text">{{ $t("deleteStackRemoveFilesHint") }}</div>
-                </div>
-                <div class="form-check mt-2">
                     <input id="delete-force" v-model="deleteForce" type="checkbox" class="form-check-input">
-                    <label class="form-check-label" for="delete-force">
-                        {{ $t("deleteStackForce") }}
-                    </label>
+                    <label class="form-check-label" for="delete-force">{{ $t("deleteStackForce") }}</label>
                     <div class="form-text">{{ $t("deleteStackForceHint") }}</div>
                 </div>
             </BModal>
@@ -835,6 +868,7 @@ export default {
             showDeleteDialog: false,
             deleteRemoveFiles: true,
             deleteForce: false,
+            deleteExternalConfirmed: false,
             fullscreenEditor: null,
             newContainerName: "",
             stopServiceStatusTimeout: false,
@@ -2057,15 +2091,26 @@ export default {
             this.$refs.pendingStackMoveStatus?.load();
         },
 
+        openDeleteDialog() {
+            this.deleteRemoveFiles = !this.stack.isExternal;
+            this.deleteForce = false;
+            this.deleteExternalConfirmed = false;
+            this.showDeleteDialog = true;
+        },
+
         deleteDialog() {
             const options = {
                 removeFiles: this.deleteRemoveFiles,
                 force: this.deleteForce,
+                ...(this.stack.isExternal ? {
+                    confirmExternalSourceDelete: this.deleteRemoveFiles && this.deleteExternalConfirmed,
+                    confirmExternalSourcePath: this.stack.externalPath,
+                } : {}),
             };
             this.$root.emitAgent(this.endpoint, "deleteStack", this.stack.name, options, (res) => {
                 this.$root.toastRes(res);
                 if (res.ok) {
-                    if (options.removeFiles) {
+                    if (this.stack.isExternal || options.removeFiles) {
                         this.$router.push("/");
                     } else {
                         // Fichiers conservés : la stack reste éditable, on recharge
@@ -2754,6 +2799,55 @@ export default {
     z-index: 1060;
     font-size: var(--fs-sm);
     padding: 2px 10px;
+}
+
+.external-stack-badge {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    padding: 3px 8px;
+    border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+    border-radius: 999px;
+    background: var(--primary-soft);
+    color: var(--primary-strong);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: .01em;
+}
+
+.external-delete-notice {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+}
+
+.external-delete-notice__icon {
+    flex: 0 0 auto;
+    color: var(--warning);
+    font-size: 1.15rem;
+}
+
+.external-delete-path {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 8px;
+    padding: 5px 8px;
+    overflow-wrap: anywhere;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-color);
+}
+
+.external-delete-confirm {
+    padding: 10px 12px 10px 2.1rem;
+    border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border-color));
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--danger) 7%, transparent);
 }
 
 .agent-name {

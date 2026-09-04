@@ -61,7 +61,7 @@
                         <font-awesome-icon icon="rotate" />
                         {{ relativeTime(startedAt) }}
                     </span>
-                    <ContainerStatsBadge v-if="showResourceStats" :stack-name="stackName" :service-name="name" :endpoint="endpoint || ''" />
+                    <ContainerStatsBadge v-if="showResourceStats" :stack-name="statsStackName || stackName" :service-name="name" :endpoint="endpoint || ''" />
                 </div>
                 <div v-if="!isEditMode && (volumeLoading || volumeUsage.length > 0)" class="container-volumes mt-2">
                     <div class="container-volumes-title">
@@ -295,6 +295,10 @@ export default defineComponent({
             default: false,
         },
         stackName: {
+            type: String,
+            default: "",
+        },
+        statsStackName: {
             type: String,
             default: "",
         },

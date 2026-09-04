@@ -18,6 +18,7 @@
         <div class="title">
             <div class="name-row">
                 <span class="name">{{ stackName }}</span>
+                <span v-if="stack.isExternal" class="external-badge"><font-awesome-icon icon="external-link-square-alt" />{{ $t("externalStacks.external") }}</span>
                 <font-awesome-icon v-if="scheduled" icon="calendar-days" class="scheduled-indicator" :title="$t('stackScheduler.scheduledTooltip')" />
             </div>
             <div v-if="$root.agentCount > 1" class="endpoint">
@@ -37,7 +38,7 @@
                     :endpoint="stack.endpoint"
                     :load-remote-status="loadRemoteImageStatus"
                 />
-                <StackStatsBadge :stack-name="stackName" :endpoint="stack.endpoint || ''" />
+                <StackStatsBadge :stack-name="stackName" :stats-name="stack.externalProject || stackName" :endpoint="stack.endpoint || ''" />
             </div>
         </div>
         <button
@@ -253,6 +254,21 @@ export default {
     .dark & {
         color: var(--agent-color-dark, inherit);
     }
+}
+
+.external-badge {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border: 1px solid color-mix(in srgb, var(--primary) 32%, transparent);
+    border-radius: 999px;
+    background: var(--primary-soft);
+    color: var(--primary-strong);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.2;
 }
 
 // Update/stats tags get their own wrapping line under the name so a narrow

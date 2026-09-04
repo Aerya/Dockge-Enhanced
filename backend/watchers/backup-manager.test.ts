@@ -126,6 +126,13 @@ test("conserve les valeurs Restic et Compose dans des arguments séparés", () =
     ]), [
         "compose", "-f", "compose.yaml", "exec", "-T", "service;false", "sh", "-c", "echo sauvegarde",
     ]);
+    assert.deepEqual(buildComposeCommandArgs("/srv/demo/compose.yaml", [ "stop", "db" ], "original-project", [
+        "/srv/demo/compose.yaml", "/srv/demo/compose.prod.yaml",
+    ], "/srv/demo", [ "/srv/secrets/demo.env" ]), [
+        "compose", "--project-directory", "/srv/demo", "-p", "original-project",
+        "--env-file", "/srv/secrets/demo.env",
+        "-f", "compose.yaml", "-f", "compose.prod.yaml", "stop", "db",
+    ]);
 });
 
 test("rejette les champs SFTP capables d'injecter des options SSH", () => {

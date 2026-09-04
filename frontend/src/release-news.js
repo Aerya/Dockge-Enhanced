@@ -204,6 +204,13 @@ export const RELEASE_NEWS = [
             "releaseNews.item.cumulativeReleaseNews",
         ],
     },
+    {
+        id: "2026-09-04-external-stacks-beta",
+        items: [
+            "releaseNews.item.externalStacksBeta",
+        ],
+    },
+
 ];
 
 function currentReleaseNewsIds() {

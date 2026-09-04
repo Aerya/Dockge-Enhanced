@@ -306,7 +306,9 @@ export class MonitoringWatcher {
         this.healthCooldowns.set(name, now);
 
         const attrs = ev.Actor?.Attributes ?? {};
-        const stackName = attrs["com.docker.compose.project"] ?? null;
+        const composeProject = attrs["com.docker.compose.project"] ?? null;
+        const external = composeProject && this.server ? await this.server.externalStacks.getByProject(composeProject) : undefined;
+        const stackName = external?.name ?? composeProject;
         const serviceName = attrs["com.docker.compose.service"] ?? null;
         const action = this.settings.healthcheckAutoHealMode;
         const event: HealthEvent = {
@@ -373,7 +375,7 @@ export class MonitoringWatcher {
 
     private getNetworkProviderServices(stack: Stack): Set<string> {
         const providers = new Set<string>();
-        for (const composeText of [ stack.composeYAML, stack.composeOverrideYAML ]) {
+        for (const composeText of stack.getComposeConfigTexts()) {
             if (!composeText.trim()) continue;
             try {
                 const doc = yaml.parse(composeText) as { services?: Record<string, { network_mode?: unknown }> } | null;
