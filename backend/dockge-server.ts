@@ -25,6 +25,7 @@ import { StackReplicationManager } from "./watchers/stack-replication-manager";
 import { StartGuardWatcher } from "./watchers/start-guard-watcher";
 import { ExternalStackManager } from "./external-stacks";
 import { ExternalStackAccessManager } from "./external-stack-access";
+import { startAnonymousInstallCount } from "./anonymous-install-count";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
@@ -477,6 +478,8 @@ export class DockgeServer {
             });
 
             checkVersion.startInterval();
+
+            startAnonymousInstallCount(this.config.dataDir);
 
             // Start Enhanced watchers (on leur passe l'URL de la WebUI pour les notifications)
             const baseUrl = this.getBaseUrl();

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-05-external-stacks-managed-detection",
+        items: [ "releaseNews.item.externalStacksManagedDetection" ],
+    },
+    {
         id: "2026-09-03-global-search-v2",
         items: [ "releaseNews.item.globalSearchV2" ],
     },

@@ -90,7 +90,17 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 **Stacks externes (Beta)**
 
-Enhanced peut détecter des projets Docker Compose existants, les adopter **sans déplacer leur Compose/.env ni leurs données**, puis les gérer depuis l’interface normale des stacks. Si un chemin source n’est pas encore accessible dans Enhanced, une autorisation protégée en un clic adapte automatiquement le Compose d’Enhanced. Les stacks adoptées portent le badge **Externe** ; la suppression des fichiers source demande une confirmation supplémentaire explicite.
+Enhanced peut détecter des projets Docker Compose existants, les adopter **sans déplacer leur Compose/.env ni leurs données**, puis les gérer depuis l’interface normale des stacks. Si un chemin source n’est pas encore accessible dans Enhanced, une autorisation protégée en un clic adapte automatiquement le Compose d’Enhanced. Les stacks adoptées portent le badge **Externe** ; la suppression des fichiers source demande une confirmation supplémentaire explicite. Le scanner fait également correspondre le répertoire de stacks d’Enhanced avec son bind côté hôte : les stacks déjà gérées par l’instance sont donc exclues même lorsque les labels Docker Compose contiennent leurs chemins hôte.
+
+**Comptage anonyme des installations**
+
+Afin de connaître approximativement le nombre d’installations de Dockge-Enhanced réellement actives sans exploiter de service d’analytics séparé, Enhanced télécharge au maximum une fois par mois un minuscule fichier technique placé dans une release GitHub dédiée. Le `download_count` public de GitHub pour cet asset mensuel est le seul agrégat utilisé pour le comptage.
+
+Aucun identifiant d’installation n’est généré ni transmis pour ce comptage. La requête ne contient aucun hostname, nom d’instance, stack, conteneur, image Docker, configuration, chemin, compte GitHub, e-mail, architecture ou identifiant de build. Comme pour tout téléchargement d’asset GitHub, la connexion elle-même est traitée par GitHub ; Dockge-Enhanced ne reçoit ni ne stocke l’adresse IP des installations.
+
+Le mois déjà compté est mémorisé uniquement dans le répertoire de données local afin qu’une même installation ne télécharge l’asset qu’une fois par mois. Le comptage est activé par défaut et peut être désactivé avec `DOCKGE_USAGE_COUNT=false`. Une recréation ou suppression du répertoire de données peut faire recompter la même installation pendant le mois en cours : le chiffre reste donc volontairement approximatif.
+
+Le mécanisme est entièrement public : [code côté Enhanced](./backend/anonymous-install-count.ts), [workflow GitHub qui crée les assets mensuels](./.github/workflows/usage-count-asset.yml) et [compteurs mensuels agrégés](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count).
 
 **Recherche globale multi-instance V2 (`Ctrl+K`)**
 

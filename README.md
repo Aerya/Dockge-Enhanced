@@ -93,7 +93,17 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 **External stacks (Beta)**
 
-Enhanced can detect existing Docker Compose projects, adopt them **without moving their Compose/.env or data**, and then manage them from the normal stack UI. If a source path is not yet available inside Enhanced, protected one-click authorization patches Enhanced's own Compose automatically. Adopted stacks are marked **External**; source-file deletion requires an additional explicit confirmation.
+Enhanced can detect existing Docker Compose projects, adopt them **without moving their Compose/.env or data**, and then manage them from the normal stack UI. If a source path is not yet available inside Enhanced, protected one-click authorization patches Enhanced's own Compose automatically. Adopted stacks are marked **External**; source-file deletion requires an additional explicit confirmation. The scanner also maps Enhanced's stacks directory to its host-side bind mount, so stacks already managed by the instance are excluded even when Docker Compose labels contain host paths.
+
+**Anonymous installation count**
+
+To get an approximate number of active Dockge-Enhanced installations without running a separate analytics service, Enhanced downloads a tiny technical asset from a dedicated GitHub release at most once per month. GitHub's public `download_count` for that monthly asset is the only aggregate used for the count.
+
+No installation identifier is generated or sent for this count. The request contains no hostname, instance name, stack, container, Docker image, configuration, path, GitHub account, email, architecture or build identifier. As with any GitHub asset download, the connection itself is handled by GitHub; Dockge-Enhanced does not receive or store installation IP addresses.
+
+The already-counted month is stored only in the local data directory so the same installation downloads the asset at most once per month. Counting is enabled by default and can be disabled with `DOCKGE_USAGE_COUNT=false`. Recreating or deleting the data directory can make the same installation count again for the current month, so the figure is intentionally approximate.
+
+The mechanism is fully public: [Enhanced-side code](./backend/anonymous-install-count.ts), [GitHub workflow that creates the monthly assets](./.github/workflows/usage-count-asset.yml), and [aggregate monthly counters](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count).
 
 **Global multi-instance search V2 (`Ctrl+K`)**
 

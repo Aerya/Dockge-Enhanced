@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { promises as fs } from "node:fs";
-import { DiscoveredExternalStack, ExternalStackManager, isSafeExternalDataPath, selectAllowedMounts } from "./external-stacks";
+import { DiscoveredExternalStack, ExternalStackManager, isManagedComposeProject, isSafeExternalDataPath, selectAllowedMounts, selectManagedStackRoots } from "./external-stacks";
 import { Stack } from "./stack";
 
 async function fixture() {
@@ -235,4 +235,38 @@ test("affiche uniquement les bind mounts qui couvrent les racines externes autor
     ], [ "/srv/apps/radarr" ]);
 
     assert.deepEqual(mounts, [ { source: "/srv/apps", destination: "/srv/apps" } ]);
+});
+
+
+test("reconnaît le bind hôte du répertoire de stacks géré", () => {
+    const roots = selectManagedStackRoots([
+        { Type: "bind", Source: "/volume1/docker/dockge-enhanced/stacks", Destination: "/opt/stacks" },
+        { Type: "bind", Source: "/volume1/docker", Destination: "/opt" },
+    ], "/opt/stacks");
+
+    assert.deepEqual(roots, [
+        "/opt/stacks",
+        "/volume1/docker/dockge-enhanced/stacks",
+    ]);
+    assert.equal(isManagedComposeProject(
+        "/volume1/docker/dockge-enhanced/stacks/mealie",
+        [ "/volume1/docker/dockge-enhanced/stacks/mealie/compose.yaml" ],
+        roots,
+    ), true);
+    assert.equal(isManagedComposeProject(
+        "/srv/external/mealie",
+        [ "/srv/external/mealie/compose.yaml" ],
+        roots,
+    ), false);
+});
+
+test("mappe aussi un stacksDir imbriqué dans un bind parent", () => {
+    const roots = selectManagedStackRoots([
+        { Type: "bind", Source: "/home/aerya/docker/dockge-enhanced", Destination: "/opt/dockge" },
+    ], "/opt/dockge/stacks");
+
+    assert.deepEqual(roots, [
+        "/home/aerya/docker/dockge-enhanced/stacks",
+        "/opt/dockge/stacks",
+    ]);
 });
