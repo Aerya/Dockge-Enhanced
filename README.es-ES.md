@@ -92,7 +92,17 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 **Stacks externas (Beta)**
 
-Enhanced puede detectar proyectos Docker Compose existentes, adoptarlos **sin mover su Compose/.env ni sus datos** y gestionarlos después desde la interfaz normal de stacks. Si una ruta de origen aún no es accesible desde Enhanced, una autorización protegida en un clic adapta automáticamente el Compose de Enhanced. Las stacks adoptadas muestran la insignia **Externa**; borrar los archivos de origen requiere una confirmación explícita adicional.
+Enhanced puede detectar proyectos Docker Compose existentes, adoptarlos **sin mover su Compose/.env ni sus datos** y gestionarlos después desde la interfaz normal de stacks. Si una ruta de origen aún no es accesible desde Enhanced, una autorización protegida en un clic adapta automáticamente el Compose de Enhanced. Las stacks adoptadas muestran la insignia **Externa**; borrar los archivos de origen requiere una confirmación explícita adicional. El escáner también relaciona el directorio de stacks de Enhanced con su bind del host, por lo que las stacks ya gestionadas por la instancia se excluyen incluso cuando las etiquetas de Docker Compose contienen rutas del host.
+
+**Conteo anónimo de instalaciones**
+
+Para conocer de forma aproximada cuántas instalaciones de Dockge-Enhanced están realmente activas sin operar un servicio de analítica separado, Enhanced descarga como máximo una vez al mes un pequeño archivo técnico alojado en una release de GitHub dedicada. El `download_count` público de GitHub de ese asset mensual es el único agregado utilizado para el conteo.
+
+No se genera ni se transmite ningún identificador de instalación. La solicitud no contiene hostname, nombre de instancia, stack, contenedor, imagen Docker, configuración, ruta, cuenta de GitHub, correo electrónico, arquitectura ni identificador de build. Como con cualquier descarga de un asset de GitHub, la conexión es procesada por GitHub; Dockge-Enhanced no recibe ni almacena las direcciones IP de las instalaciones.
+
+El mes ya contabilizado se guarda únicamente en el directorio de datos local para que una misma instalación descargue el asset como máximo una vez al mes. El conteo está activado por defecto y puede desactivarse con `DOCKGE_USAGE_COUNT=false`. Recrear o borrar el directorio de datos puede hacer que una instalación vuelva a contarse durante el mismo mes, por lo que la cifra es deliberadamente aproximada.
+
+El mecanismo es completamente público: [código en Enhanced](./backend/anonymous-install-count.ts), [workflow de GitHub que crea los assets mensuales](./.github/workflows/usage-count-asset.yml) y [contadores mensuales agregados](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count).
 
 **Búsqueda global multi-instancia V2 (`Ctrl+K`)**
 

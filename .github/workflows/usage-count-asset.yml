@@ -1,0 +1,40 @@
+name: Compteur mensuel anonyme
+
+on:
+  schedule:
+    - cron: "17 0 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-monthly-asset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Préparer la release technique
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! gh release view usage-count --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create usage-count \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Anonymous installation count" \
+              --notes "Technical release used only for the transparent monthly Dockge-Enhanced installation count. Each installation downloads the current month's tiny asset at most once. No installation identifier is transmitted." \
+              --prerelease
+          fi
+
+      - name: Créer l'asset du mois si nécessaire
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          month="$(date -u +%Y-%m)"
+          if gh release view usage-count --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -Fxq "${month}.txt"; then
+            echo "Asset ${month}.txt déjà présent."
+            exit 0
+          fi
+          asset="$RUNNER_TEMP/${month}.txt"
+          printf 'Dockge-Enhanced anonymous installation count %s\n' "$month" > "$asset"
+          gh release upload usage-count "$asset" --repo "$GITHUB_REPOSITORY"

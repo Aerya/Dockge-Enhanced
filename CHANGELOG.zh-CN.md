@@ -1,5 +1,9 @@
 # Dockge Enhanced 更新日志
 
+**2026-09-05：修正外部 Stack 检测**：扫描器现在会把 Enhanced 容器内的 Stack 目录与对应的主机 bind 挂载进行映射，并排除工作目录或 Compose 文件位于任一受管理根目录中的项目。因此，原生 Stack 不会再仅因为 Docker Compose 标签暴露主机路径而被错误显示为外部 Stack。
+
+**2026-09-05：通过 GitHub 进行匿名活跃安装计数**：Dockge-Enhanced 现在每个安装每月最多下载一次专用 GitHub Release 中的极小 asset。不生成也不传输任何安装标识符；直接使用 GitHub asset 的公开 `download_count` 作为月度聚合值。请求中不包含 hostname、实例名称、Stack、容器、镜像、配置、路径、账户、电子邮件、架构或 build 标识。可通过 `DOCKGE_USAGE_COUNT=false` 禁用计数。[Enhanced 端代码](./backend/anonymous-install-count.ts)和[每月 asset workflow](./.github/workflows/usage-count-asset.yml)均公开在此仓库中。
+
 **2026-09-03 — Stack 更新语义与终端尺寸修复** — 手动 **更新** 操作现在会明确执行 pull 后强制 recreate，无论是整个 Stack 还是单个服务，都能保证容器实际使用刚拉取的新镜像。已从 Stack/服务操作栏移除重复的 **Pull & Recreate** 按钮，同时保留旧版后端操作的兼容性。终端 `x1 / x1.5 / x2` 尺寸选择现在会直接控制实际显示高度，包括容器区域折叠时。
 
 **2026-09-03 — 全局搜索 V2：模糊匹配、诊断与 Restic 历史** — `Ctrl+K` 现在可容忍小型输入错误，并以可点击提示提供 `type:`、`stack:`、`image:`、`port:`、`instance:` 与 `is:...` 操作符。诊断包括镜像更新、已停止/未激活 Stack、Trivy 漏洞/严重漏洞以及失败备份。Compose/.env 结果会直接定位到 CodeMirror 匹配行。最近与固定搜索保存在浏览器本地。按需历史搜索最多检查每个实例最近 5 个 Restic 快照 / 80 个文件。`.env` 值搜索必须显式开启，绝不返回值，并且不会把敏感查询写入历史或收藏。V2 Agent 协议对旧关联实例的简单搜索保留 V1 回退。

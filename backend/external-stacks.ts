@@ -62,6 +62,43 @@ export function selectAllowedMounts(mounts: DockerInspect["Mounts"], allowedRoot
     return [ ...selected.values() ].sort((a, b) => a.destination.localeCompare(b.destination));
 }
 
+
+function isCoveredByRoot(candidate: string, root: string): boolean {
+    const relative = path.relative(path.resolve(root), path.resolve(candidate));
+    return relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(`..${path.sep}`));
+}
+
+export function selectManagedStackRoots(mounts: DockerInspect["Mounts"], stacksDir: string): string[] {
+    const stacksRoot = path.resolve(stacksDir);
+    const roots = new Set<string>([ stacksRoot ]);
+    const candidates = (mounts ?? [])
+        .filter((mount) => mount.Type === "bind" && mount.Source && mount.Destination && path.isAbsolute(mount.Source))
+        .map((mount) => {
+            const destination = path.resolve(mount.Destination!);
+            const relative = path.relative(destination, stacksRoot);
+            const coversStacksDir = relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(`..${path.sep}`));
+            return coversStacksDir ? { source: path.resolve(mount.Source!), destination, relative } : null;
+        })
+        .filter((entry): entry is { source: string; destination: string; relative: string } => entry !== null);
+
+    // Docker resolves overlapping mounts using the most specific destination.
+    // Mirror that rule so a broad parent bind cannot hide the actual stacks bind.
+    const mostSpecificLength = candidates.reduce((max, entry) => Math.max(max, entry.destination.length), -1);
+    for (const entry of candidates) {
+        if (entry.destination.length !== mostSpecificLength) continue;
+        roots.add(path.resolve(entry.source, entry.relative));
+    }
+
+    return [ ...roots ].sort();
+}
+
+export function isManagedComposeProject(workingDir: string | null, configFiles: string[], managedRoots: string[]): boolean {
+    const candidates = [ workingDir, ...configFiles ]
+        .filter((candidate): candidate is string => typeof candidate === "string" && path.isAbsolute(candidate))
+        .map((candidate) => path.resolve(candidate));
+    return candidates.some((candidate) => managedRoots.some((root) => isCoveredByRoot(candidate, root)));
+}
+
 function isSafeStackName(value: string): boolean {
     return /^[a-z0-9][a-z0-9_-]*$/.test(value);
 }
@@ -148,6 +185,23 @@ export class ExternalStackManager {
                 .map((mount) => path.resolve(mount.Destination!))) ].sort();
         } catch {
             return [];
+        }
+    }
+
+
+    async getManagedStackRoots(): Promise<string[]> {
+        const fallback = [ path.resolve(this.stacksDir) ];
+        const containerId = (process.env.HOSTNAME ?? "").trim();
+        if (!containerId) return fallback;
+        try {
+            const result = await childProcessAsync.spawn("docker", [ "inspect", containerId ], {
+                encoding: "utf8",
+                maxBuffer: 2 * 1024 * 1024,
+            });
+            const inspected = JSON.parse(result.stdout?.toString() ?? "[]") as DockerInspect[];
+            return selectManagedStackRoots(inspected[0]?.Mounts, this.stacksDir);
+        } catch {
+            return fallback;
         }
     }
 
@@ -378,14 +432,11 @@ export class ExternalStackManager {
         const registrations = await this.load();
         const allowedRoots = await this.getAllowedRoots();
         const identityBindRoots = await this.getIdentityBindRoots();
+        const managedStackRoots = await this.getManagedStackRoots();
         const output: DiscoveredExternalStack[] = [];
         for (const [ project, item ] of byProject) {
             if (project === currentProject) continue;
-            if (item.workingDir) {
-                const workingDir = path.resolve(item.workingDir);
-                const stacksRoot = path.resolve(this.stacksDir);
-                if (workingDir === stacksRoot || workingDir.startsWith(`${stacksRoot}${path.sep}`)) continue;
-            }
+            if (isManagedComposeProject(item.workingDir, item.configFiles, managedStackRoots)) continue;
             const importedRegistration = registrations.find((entry) => entry.project === project || (item.composeFile !== null && entry.composeFile === item.composeFile));
             const imported = Boolean(importedRegistration);
             let pathStatus: DiscoveredExternalStack["pathStatus"] = "unknown";

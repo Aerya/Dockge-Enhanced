@@ -100,7 +100,17 @@ README 会直接保留近期最重要的变化，方便快速了解 Dockge-Enhan
 
 **外部 Stack（Beta）**
 
-Enhanced 现在可以检测现有 Docker Compose 项目，并在**不移动 Compose/.env 或数据**的情况下将其接管，之后可从常规 Stack 界面管理。如果源路径尚未对 Enhanced 可见，可通过受保护的一键授权自动更新 Enhanced 自身的 Compose。已接管的 Stack 会显示 **外部** 标记；删除源文件需要额外的明确确认。
+Enhanced 现在可以检测现有 Docker Compose 项目，并在**不移动 Compose/.env 或数据**的情况下将其接管，之后可从常规 Stack 界面管理。如果源路径尚未对 Enhanced 可见，可通过受保护的一键授权自动更新 Enhanced 自身的 Compose。已接管的 Stack 会显示 **外部** 标记；删除源文件需要额外的明确确认。 扫描器还会将 Enhanced 的 Stack 目录与主机侧 bind 挂载进行对应，因此即使 Docker Compose 标签记录的是主机路径，已经由当前实例管理的 Stack 也会被排除。
+
+**匿名安装计数**
+
+为了在不运行独立分析服务的情况下大致了解真正活跃的 Dockge-Enhanced 安装数量，Enhanced 每月最多下载一次托管在专用 GitHub Release 中的极小技术文件。计数仅使用 GitHub 为该月 asset 提供的公开 `download_count` 聚合值。
+
+此计数不会生成或发送任何安装标识符。请求中不包含 hostname、实例名称、Stack、容器、Docker 镜像、配置、路径、GitHub 账户、电子邮件、架构或 build 标识。与任何 GitHub asset 下载一样，连接本身由 GitHub 处理；Dockge-Enhanced 不会接收或存储安装实例的 IP 地址。
+
+已计数的月份只保存在本地数据目录中，以确保同一安装每月最多下载一次该 asset。计数默认启用，可通过 `DOCKGE_USAGE_COUNT=false` 禁用。重新创建或删除数据目录可能使同一安装在当月再次被计数，因此该数字有意保持为近似值。
+
+整个机制完全公开：[Enhanced 端代码](./backend/anonymous-install-count.ts)、[创建每月 asset 的 GitHub workflow](./.github/workflows/usage-count-asset.yml)以及[每月聚合计数](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count)。
 
 **多实例全局搜索 V2（`Ctrl+K`）**
 
