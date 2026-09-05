@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-09-05：通过配套工具的 bind 路径别名识别原生 Stack**：外部 Stack 扫描器现在可以识别已经由 Enhanced 管理的 Stack，即使另一个容器从不同的挂载路径运行 Docker Compose。已明确覆盖 [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion) 场景：它可能从 `/compose` 重新创建 Gluetun 项目，从而使 Docker 标签记录 `/compose/compose.yaml`，而不是 Enhanced 的 Stack 目录。Enhanced 现在会把这类 bind 路径别名映射回受管理的主机路径，并在排除外部接管前同时核对 Compose 项目名称。
+
 **2026-09-05：修正外部 Stack 检测**：扫描器现在会把 Enhanced 容器内的 Stack 目录与对应的主机 bind 挂载进行映射，并排除工作目录或 Compose 文件位于任一受管理根目录中的项目。因此，原生 Stack 不会再仅因为 Docker Compose 标签暴露主机路径而被错误显示为外部 Stack。
 
 **2026-09-05：通过 GitHub 进行匿名活跃安装计数**：Dockge-Enhanced 现在每个安装每月最多下载一次专用 GitHub Release 中的极小 asset。不生成也不传输任何安装标识符；直接使用 GitHub asset 的公开 `download_count` 作为月度聚合值。请求中不包含 hostname、实例名称、Stack、容器、镜像、配置、路径、账户、电子邮件、架构或 build 标识。可通过 `DOCKGE_USAGE_COUNT=false` 禁用计数。[Enhanced 端代码](./backend/anonymous-install-count.ts)和[每月 asset workflow](./.github/workflows/usage-count-asset.yml)均公开在此仓库中。

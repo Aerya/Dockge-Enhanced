@@ -1479,6 +1479,7 @@
     "externalStacks.deleteSourceFilesHint": "这会删除主机上的原始 Compose/.env 目录，但不会自动删除卷或已挂载的应用数据。",
     "externalStacks.deleteSourceConfirm": "我确认永久删除 {path}",
     "externalStacks.unregisterAction": "注销",
+    "releaseNews.item.externalStacksCompanionPathAlias": "外部 Stack：当配套工具从另一个 bind 挂载的 Compose 路径（例如 /compose）重新创建项目时，Enhanced 已管理的 Stack 不再被误报为外部 Stack。",
     "releaseNews.item.externalStacksBeta": "外部 Stack（Beta）：无需移动 Compose/.env 或数据即可接管现有 Docker Compose 项目，并提供受保护的一键路径授权和“外部”标记。",
     "releaseNews.item.externalStacksManagedDetection": "外部 Stack：扫描器现在会正确排除已由 Enhanced 管理的 Stack，即使 Docker Compose 标签暴露的是主机侧路径。",
     "externalStacks.configAccessCount": "{count} 个 Compose 文件待授权",

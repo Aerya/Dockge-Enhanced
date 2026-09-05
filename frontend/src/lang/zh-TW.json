@@ -1446,6 +1446,7 @@
     "externalStacks.deleteSourceFilesHint": "這會刪除主機上的原始 Compose/.env 目錄，但不會自動刪除 Volume 或已掛載的應用資料。",
     "externalStacks.deleteSourceConfirm": "我確認永久刪除 {path}",
     "externalStacks.unregisterAction": "取消註冊",
+    "releaseNews.item.externalStacksCompanionPathAlias": "外部 Stack：當配套工具從另一個 bind 掛載的 Compose 路徑（例如 /compose）重新建立專案時，Enhanced 已管理的 Stack 不再被誤判為外部 Stack。",
     "releaseNews.item.externalStacksBeta": "外部 Stack（Beta）：無需移動 Compose/.env 或資料即可接管現有 Docker Compose 專案，並提供受保護的一鍵路徑授權與「外部」標記。",
     "releaseNews.item.externalStacksManagedDetection": "外部 Stack：掃描器現在會正確排除已由 Enhanced 管理的 Stack，即使 Docker Compose 標籤顯示的是主機端路徑。",
     "externalStacks.configAccessCount": "{count} 個 Compose 檔案待授權",
