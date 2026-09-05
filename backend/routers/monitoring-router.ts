@@ -22,7 +22,7 @@ export class MonitoringRouter extends Router {
         router.use(express.json());
 
         // Auth middleware on all routes — uses server.jwtSecret like WatcherRouter
-        router.use((req: Request, res: Response, next: NextFunction) => {
+        router.use("/monitoring", (req: Request, res: Response, next: NextFunction) => {
             requireHttpAuth(req, res, next, server.jwtSecret).catch(next);
         });
 
@@ -242,7 +242,7 @@ export class MonitoringRouter extends Router {
             }
         });
 
-        // Mount under /api — final paths: /api/monitoring/*
+        // Mount under /api: final paths: /api/monitoring/*
         const mountRouter = express.Router();
         mountRouter.use("/api", router);
         return mountRouter;
