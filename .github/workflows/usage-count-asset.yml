@@ -12,6 +12,11 @@ jobs:
   prepare-monthly-asset:
     runs-on: ubuntu-latest
     steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
       - name: Préparer la release technique
         env:
           GH_TOKEN: ${{ github.token }}
@@ -38,3 +43,48 @@ jobs:
           asset="$RUNNER_TEMP/${month}.txt"
           printf 'Dockge-Enhanced anonymous installation count %s\n' "$month" > "$asset"
           gh release upload usage-count "$asset" --repo "$GITHUB_REPOSITORY"
+
+      - name: Pointer les badges vers le mois courant
+        run: |
+          set -euo pipefail
+          month="$(date -u +%Y-%m)"
+          python3 - "$month" <<'PYBADGE'
+          import re
+          import sys
+          from pathlib import Path
+
+          month = sys.argv[1]
+          files = [
+              Path("README.md"),
+              Path("README.fr.md"),
+              Path("README.es-ES.md"),
+              Path("README.zh-CN.md"),
+          ]
+
+          pattern = re.compile(
+              r"(https://img\.shields\.io/github/downloads/Aerya/Dockge-Enhanced/usage-count/)"
+              r"\d{4}-\d{2}"
+              r"(\.txt\?displayAssetName=false&label=)"
+          )
+
+          for file in files:
+              text = file.read_text(encoding="utf-8")
+              updated, count = pattern.subn(rf"\g<1>{month}\g<2>", text)
+              if count != 1:
+                  raise SystemExit(
+                      f"{file}: badge mensuel introuvable ou ambigu ({count})"
+                  )
+              file.write_text(updated, encoding="utf-8")
+          PYBADGE
+
+          if git diff --quiet -- README.md README.fr.md README.es-ES.md README.zh-CN.md; then
+            echo "Badges déjà positionnés sur ${month}."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md README.fr.md README.es-ES.md README.zh-CN.md
+          git commit -m "docs: actualiser le badge des installations actives"
+          git pull --rebase origin main
+          git push origin HEAD:main

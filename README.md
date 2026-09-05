@@ -47,8 +47,8 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
   <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
+  <a href="https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count"><img src="https://img.shields.io/github/downloads/Aerya/Dockge-Enhanced/usage-count/2026-09.txt?displayAssetName=false&label=active%20installs&color=blue" alt="Active installations"></a>
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
   <img src="https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20ES%20%7C%20zh--CN-blue" alt="i18n">
   <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
