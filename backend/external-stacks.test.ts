@@ -270,3 +270,32 @@ test("mappe aussi un stacksDir imbriqué dans un bind parent", () => {
         "/opt/dockge/stacks",
     ]);
 });
+
+test("exclut une stack native recréée depuis un alias bind d'un outil compagnon", () => {
+    const managedRoots = [
+        "/opt/stacks",
+        "/srv/dockge/stacks",
+    ];
+    const companionAliases = [
+        {
+            source: "/srv/dockge/stacks/airvpn",
+            destination: "/compose",
+        },
+    ];
+
+    assert.equal(isManagedComposeProject(
+        "/compose",
+        [ "/compose/compose.yaml", "/compose/compose.override.yaml" ],
+        managedRoots,
+        companionAliases,
+        "airvpn"
+    ), true);
+
+    assert.equal(isManagedComposeProject(
+        "/compose",
+        [ "/compose/compose.yaml" ],
+        managedRoots,
+        companionAliases,
+        "unrelated-project"
+    ), false);
+});

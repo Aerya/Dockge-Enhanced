@@ -94,6 +94,8 @@ Los cambios recientes más importantes permanecen visibles directamente en el RE
 
 Enhanced puede detectar proyectos Docker Compose existentes, adoptarlos **sin mover su Compose/.env ni sus datos** y gestionarlos después desde la interfaz normal de stacks. Si una ruta de origen aún no es accesible desde Enhanced, una autorización protegida en un clic adapta automáticamente el Compose de Enhanced. Las stacks adoptadas muestran la insignia **Externa**; borrar los archivos de origen requiere una confirmación explícita adicional. El escáner también relaciona el directorio de stacks de Enhanced con su bind del host, por lo que las stacks ya gestionadas por la instancia se excluyen incluso cuando las etiquetas de Docker Compose contienen rutas del host.
 
+Un caso admitido explícitamente es [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion): puede recrear una stack Gluetun ya gestionada por Enhanced desde una ruta `/compose` montada mediante bind. Enhanced ahora relaciona este tipo de alias de ruta Compose con la stack nativa y deja de proponerla erróneamente como externa.
+
 **Conteo anónimo de instalaciones**
 
 Para conocer de forma aproximada cuántas instalaciones de Dockge-Enhanced están realmente activas sin operar un servicio de analítica separado, Enhanced descarga como máximo una vez al mes un pequeño archivo técnico alojado en una release de GitHub dedicada. El `download_count` público de GitHub de ese asset mensual es el único agregado utilizado para el conteo.

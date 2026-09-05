@@ -446,6 +446,7 @@
     "externalStacks.deleteSourceFilesHint": "Elimina la carpeta Compose/.env original del host. Los volúmenes y datos de aplicación montados no se eliminan automáticamente.",
     "externalStacks.deleteSourceConfirm": "Confirmo la eliminación permanente de {path}",
     "externalStacks.unregisterAction": "Desregistrar",
+    "releaseNews.item.externalStacksCompanionPathAlias": "Stacks externas: las stacks ya gestionadas por Enhanced ya no se detectan como externas cuando una herramienta complementaria las recrea desde otra ruta Compose montada por bind, como /compose.",
     "releaseNews.item.externalStacksBeta": "Stacks externas (Beta): adopta proyectos Docker Compose existentes sin mover su Compose/.env ni sus datos, con autorización protegida de rutas en un clic e insignia Externa.",
     "releaseNews.item.externalStacksManagedDetection": "Stacks externas: el escáner ahora excluye correctamente las stacks ya gestionadas por Enhanced, incluso cuando las etiquetas de Docker Compose exponen su ruta en el host.",
     "externalStacks.configAccessCount": "{count} archivo(s) Compose por autorizar",

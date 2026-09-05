@@ -95,6 +95,8 @@ Major recent changes remain visible directly in the README so you can quickly se
 
 Enhanced can detect existing Docker Compose projects, adopt them **without moving their Compose/.env or data**, and then manage them from the normal stack UI. If a source path is not yet available inside Enhanced, protected one-click authorization patches Enhanced's own Compose automatically. Adopted stacks are marked **External**; source-file deletion requires an additional explicit confirmation. The scanner also maps Enhanced's stacks directory to its host-side bind mount, so stacks already managed by the instance are excluded even when Docker Compose labels contain host paths.
 
+A supported example is [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion): it may recreate an Enhanced-managed Gluetun stack from a bind-mounted `/compose` path. Enhanced now resolves this kind of Compose path alias back to the managed stack and does not offer it for external adoption.
+
 **Anonymous installation count**
 
 To get an approximate number of active Dockge-Enhanced installations without running a separate analytics service, Enhanced downloads a tiny technical asset from a dedicated GitHub release at most once per month. GitHub's public `download_count` for that monthly asset is the only aggregate used for the count.

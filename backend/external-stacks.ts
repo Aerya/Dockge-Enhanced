@@ -92,11 +92,81 @@ export function selectManagedStackRoots(mounts: DockerInspect["Mounts"], stacksD
     return [ ...roots ].sort();
 }
 
-export function isManagedComposeProject(workingDir: string | null, configFiles: string[], managedRoots: string[]): boolean {
+function normalizeComposeProjectName(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, "")
+        .replace(/^[^a-z0-9]+/, "");
+}
+
+function collectComposePathAliases(containers: DockerInspect[]): ExternalAllowedMount[] {
+    const aliases = new Map<string, ExternalAllowedMount>();
+    for (const container of containers) {
+        for (const mount of container.Mounts ?? []) {
+            if (mount.Type !== "bind" || !mount.Source || !mount.Destination) continue;
+            if (!path.isAbsolute(mount.Source) || !path.isAbsolute(mount.Destination)) continue;
+            const source = path.resolve(mount.Source);
+            const destination = path.resolve(mount.Destination);
+            aliases.set(`${source}:${destination}`, { source, destination });
+        }
+    }
+    return [ ...aliases.values() ].sort((a, b) =>
+        b.destination.length - a.destination.length || a.destination.localeCompare(b.destination)
+    );
+}
+
+export function isManagedComposeProject(
+    workingDir: string | null,
+    configFiles: string[],
+    managedRoots: string[],
+    pathAliases: ExternalAllowedMount[] = [],
+    project = ""
+): boolean {
     const candidates = [ workingDir, ...configFiles ]
         .filter((candidate): candidate is string => typeof candidate === "string" && path.isAbsolute(candidate))
         .map((candidate) => path.resolve(candidate));
-    return candidates.some((candidate) => managedRoots.some((root) => isCoveredByRoot(candidate, root)));
+
+    if (candidates.some((candidate) => managedRoots.some((root) => isCoveredByRoot(candidate, root)))) {
+        return true;
+    }
+
+    const normalizedProject = normalizeComposeProjectName(project);
+    if (!normalizedProject || pathAliases.length === 0) return false;
+
+    // A companion may operate the same Enhanced-managed stack from another
+    // container-side Compose path. Gluetun-Companion is a concrete example:
+    // the managed stack directory is bind-mounted as /compose and Compose can
+    // recreate the project from there.
+    // https://github.com/Aerya/Gluetun-Companion
+    for (const candidate of candidates) {
+        for (const alias of pathAliases) {
+            if (!isCoveredByRoot(candidate, alias.destination)) continue;
+
+            const relativeToAlias = path.relative(alias.destination, candidate);
+            const hostCandidate = path.resolve(alias.source, relativeToAlias);
+
+            for (const root of managedRoots) {
+                if (!isCoveredByRoot(hostCandidate, root)) continue;
+
+                const relativeToManagedRoot = path.relative(path.resolve(root), hostCandidate);
+                if (
+                    !relativeToManagedRoot ||
+                    relativeToManagedRoot === ".." ||
+                    path.isAbsolute(relativeToManagedRoot)
+                ) continue;
+
+                const stackDirectory = relativeToManagedRoot.split(path.sep)[0];
+                if (
+                    stackDirectory &&
+                    normalizeComposeProjectName(stackDirectory) === normalizedProject
+                ) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 function isSafeStackName(value: string): boolean {
@@ -433,10 +503,17 @@ export class ExternalStackManager {
         const allowedRoots = await this.getAllowedRoots();
         const identityBindRoots = await this.getIdentityBindRoots();
         const managedStackRoots = await this.getManagedStackRoots();
+        const composePathAliases = collectComposePathAliases(containers);
         const output: DiscoveredExternalStack[] = [];
         for (const [ project, item ] of byProject) {
             if (project === currentProject) continue;
-            if (isManagedComposeProject(item.workingDir, item.configFiles, managedStackRoots)) continue;
+            if (isManagedComposeProject(
+                item.workingDir,
+                item.configFiles,
+                managedStackRoots,
+                composePathAliases,
+                project
+            )) continue;
             const importedRegistration = registrations.find((entry) => entry.project === project || (item.composeFile !== null && entry.composeFile === item.composeFile));
             const imported = Boolean(importedRegistration);
             let pathStatus: DiscoveredExternalStack["pathStatus"] = "unknown";

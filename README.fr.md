@@ -92,6 +92,8 @@ Les évolutions majeures récentes restent visibles directement dans le README a
 
 Enhanced peut détecter des projets Docker Compose existants, les adopter **sans déplacer leur Compose/.env ni leurs données**, puis les gérer depuis l’interface normale des stacks. Si un chemin source n’est pas encore accessible dans Enhanced, une autorisation protégée en un clic adapte automatiquement le Compose d’Enhanced. Les stacks adoptées portent le badge **Externe** ; la suppression des fichiers source demande une confirmation supplémentaire explicite. Le scanner fait également correspondre le répertoire de stacks d’Enhanced avec son bind côté hôte : les stacks déjà gérées par l’instance sont donc exclues même lorsque les labels Docker Compose contiennent leurs chemins hôte.
 
+Un cas explicitement pris en charge est [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion) : il peut recréer une stack Gluetun déjà gérée par Enhanced depuis un chemin `/compose` monté par bind. Enhanced rapproche désormais ce type d’alias Compose de la stack native et ne la propose plus à tort comme externe.
+
 **Comptage anonyme des installations**
 
 Afin de connaître approximativement le nombre d’installations de Dockge-Enhanced réellement actives sans exploiter de service d’analytics séparé, Enhanced télécharge au maximum une fois par mois un minuscule fichier technique placé dans une release GitHub dédiée. Le `download_count` public de GitHub pour cet asset mensuel est le seul agrégat utilisé pour le comptage.

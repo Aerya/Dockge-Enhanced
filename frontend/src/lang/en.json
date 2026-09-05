@@ -1542,6 +1542,7 @@
     "externalStacks.deleteSourceFilesHint": "This deletes the original Compose/.env folder on the host. Volumes and bind-mounted application data are not automatically deleted.",
     "externalStacks.deleteSourceConfirm": "I confirm the permanent deletion of {path}",
     "externalStacks.unregisterAction": "Unregister",
+    "releaseNews.item.externalStacksCompanionPathAlias": "External stacks: stacks already managed by Enhanced are no longer reported as external when a companion tool recreates them from another bind-mounted Compose path, such as /compose.",
     "releaseNews.item.externalStacksBeta": "External stacks (Beta): adopt existing Docker Compose projects without moving their Compose/.env or data, with protected one-click path authorization and an External badge.",
     "releaseNews.item.externalStacksManagedDetection": "External stacks: the scanner now correctly excludes stacks already managed by Enhanced, including when Docker Compose labels expose their host-side path.",
     "externalStacks.configAccessCount": "{count} Compose file(s) to authorize",

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-05-external-stacks-companion-path-alias",
+        items: [ "releaseNews.item.externalStacksCompanionPathAlias" ],
+    },
+    {
         id: "2026-09-05-external-stacks-managed-detection",
         items: [ "releaseNews.item.externalStacksManagedDetection" ],
     },
