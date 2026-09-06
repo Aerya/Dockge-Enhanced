@@ -3,64 +3,6 @@
 </p>
 
 # Dockge Enhanced
-> [!WARNING]
-> ## Dockge-Enhanced 自动更新关键修复
->
-> **2026 年 8 月 31 日至 2026 年 9 月 2 日** 期间发布的多个 build 在 Dockge-Enhanced 自动更新机制中存在缺陷。
->
-> 在某些情况下，sidecar 可能会停止 Dockge-Enhanced 容器，但随后无法创建新版本；在部分 build 中，也可能无法自动恢复之前的版本。
->
-> 该机制现已修复并进一步加强。从 build **`0fc2564` / 版本 1.5.4** 开始，自动更新会：
->
-> - 在每次更新前始终拉取最新的 `dockge-enhanced-updater:latest`；
-> - 显式拉取目标 Dockge-Enhanced 镜像；
-> - 在替换前执行强制 Restic 备份；
-> - 在确认更新成功前验证新容器；
-> - 保留 rollback 机制和恢复 snapshot。
->
-> **如果您的安装版本早于 `0fc2564` / 1.5.4，请在启用或重新启用自动更新前，最后手动更新一次：**
->
-> ```bash
-> docker pull ghcr.io/aerya/dockge-enhanced:latest
-> docker compose up -d
-> ```
->
-> 完成此次更新后，即可启用 **通过受保护 sidecar 自动更新**；之后的更新将由 Dockge-Enhanced 自动处理。
->
-> **Dockge-Enhanced 管理的 stacks 及其持久化数据不受此问题影响。**
->
-> 对于受到影响的用户，我深表歉意。一个本应让更新更加安全的功能，不应该让 Dockge-Enhanced 自身处于离线状态。感谢所有使用、测试并反馈问题的用户，你们的反馈帮助我们快速定位并修复了这些缺陷。
-
----
-
-⚠️ **重要 — Dockge-Enhanced 自动更新关键修复**
-⚠️ **重要 — Dockge-Enhanced 自动更新关键修复**
-
-**2026 年 8 月 31 日至 2026 年 9 月 2 日** 期间发布的多个 build 在 Dockge-Enhanced 自动更新机制中存在缺陷。
-
-在某些情况下，sidecar 可能会停止 Dockge-Enhanced 容器，但随后无法创建新版本；在部分 build 中，也可能无法自动恢复之前的版本。
-
-该机制现已修复并进一步加强。从 build **`0fc2564` / 版本 1.5.4** 开始，自动更新会：
-
-- 在每次更新前始终拉取最新的 `dockge-enhanced-updater:latest`；
-- 显式拉取目标 Dockge-Enhanced 镜像；
-- 在替换前执行强制 Restic 备份；
-- 在确认更新成功前验证新容器；
-- 保留 rollback 机制和恢复 snapshot。
-
-**如果您的安装版本早于 `0fc2564` / 1.5.4，请在启用或重新启用自动更新前，最后手动更新一次：**
-
-```bash
-docker pull ghcr.io/aerya/dockge-enhanced:latest
-docker compose up -d
-```
-
-完成此次更新后，即可启用 **通过受保护 sidecar 自动更新**；之后的更新将由 Dockge-Enhanced 自动处理。
-
-Dockge-Enhanced 管理的 stacks 及其持久化数据不受此问题影响。
-
-**对于受到影响的用户，我深表歉意。** 一个本应让更新更加安全的功能，不应该让 Dockge-Enhanced 自身处于离线状态。感谢所有使用、测试并反馈问题的用户，你们的反馈帮助我们快速定位并修复了这些缺陷。
-
 [Dockge](https://github.com/louislam/dockge) 的功能增强分支，在保留简洁 Docker Compose 管理体验的基础上，将其扩展为更完整的 Docker 管理平台 —— 提供多服务器联邦、Stack 迁移与复制、Restic 备份、镜像与 Dockge-Enhanced 自更新及回滚、安全扫描、监控、自动化、通知和 Docker 资源管理，并全部集成于 Web UI。
 
 <p align="center">
@@ -72,7 +14,6 @@ Dockge-Enhanced 管理的 stacks 及其持久化数据不受此问题影响。
 
 <p align="center">
   <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
-  <a href="https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count"><img src="https://img.shields.io/github/downloads/Aerya/Dockge-Enhanced/usage-count/2026-09.txt?displayAssetName=false&label=%E6%B4%BB%E8%B7%83%E5%AE%89%E8%A3%85&color=blue" alt="活跃安装"></a>
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
   <img src="https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20ES%20%7C%20zh--CN-blue" alt="i18n">
   <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
@@ -358,6 +299,58 @@ docker compose up -d
 > 如果要备份多个数据目录，可以添加多个 volume，然后在 **Backup** 页面中的 **Additional paths** 注册对应的容器路径。
 
 > 如果要监控 `/` 之外的主机磁盘分区，请把目标路径只读挂载到容器，并在 **Monitoring** 页面中加入该路径。
+
+### 与 Dockge 并行测试 Dockge-Enhanced
+
+Dockge 和 Dockge-Enhanced 可以运行在同一台 Docker 主机上，但不能直接同时使用默认 Compose 配置，因为两者都会发布端口 `5001`。
+
+如需并行测试：
+
+- 从单独的 Compose 目录安装 Dockge-Enhanced；
+- 使用另一个主机端口，例如 `5002:5001`；
+- 使用独立的 `/app/data` 目录；
+- 建议使用独立的 stacks 目录，并只放置专用于测试的 stack。
+
+示例：
+
+```yaml
+ports:
+  - 5002:5001
+volumes:
+  - ./enhanced-data:/app/data
+  - /opt/dockge-enhanced-test-stacks:/opt/stacks
+environment:
+  - DOCKGE_STACKS_DIR=/opt/stacks
+  - DOCKGE_DATA_DIR=/app/data
+```
+
+随后可通过 **http://localhost:5002** 打开 Dockge-Enhanced，同时原有 Dockge 仍可通过端口 `5001` 访问。
+
+两个应用可以访问同一个 stacks 目录，但绝不能**同时**编辑、部署、更新或以其他方式操作同一个 stack。使用独立的 stacks 目录进行测试更安全。
+
+### 从 Dockge 迁移到 Dockge-Enhanced
+
+Dockge-Enhanced 与 Dockge 基于相同的基础，因此迁移很简单：
+
+1. 停止 Dockge。
+2. 备份 Dockge 的 Compose 文件、数据目录和 stacks 目录。
+3. 在现有 Dockge Compose 文件中，将镜像替换为：
+
+   ```yaml
+   image: ghcr.io/aerya/dockge-enhanced:latest
+   ```
+
+4. 保留现有的 `/app/data` 和 stacks volume 映射。
+5. 拉取镜像并重新启动 Compose 项目：
+
+   ```bash
+   docker compose pull
+   docker compose up -d
+   ```
+
+Dockge-Enhanced 将使用您现有的账号、设置和 stacks 启动。
+
+请保留迁移前创建的备份。如果决定返回 Dockge，请先停止 Dockge-Enhanced，恢复该备份，然后再启动原始 Dockge 镜像。
 
 ### 可选 PlugNPiN 集成
 

@@ -5,36 +5,6 @@
 </p>
 
 # Dockge Enhanced
-> [!WARNING]
-> ## Corrección crítica de la autoactualización de Dockge-Enhanced
->
-> Varios builds publicados entre **el 31 de agosto de 2026 y el 2 de septiembre de 2026** contenían defectos en el mecanismo de actualización automática de Dockge-Enhanced.
->
-> En determinadas condiciones, el sidecar podía detener el contenedor Dockge-Enhanced, no conseguir crear la nueva versión y, en algunos builds, tampoco restaurar automáticamente la versión anterior.
->
-> El mecanismo ha sido corregido y reforzado. A partir del build **`0fc2564` / versión 1.5.4**, la actualización automática:
->
-> - descarga siempre el último `dockge-enhanced-updater:latest` antes de cada actualización;
-> - descarga explícitamente la imagen objetivo de Dockge-Enhanced;
-> - realiza una copia Restic obligatoria antes del reemplazo;
-> - verifica el nuevo contenedor antes de validar la actualización;
-> - conserva el rollback y un snapshot de recuperación.
->
-> **Si tu instalación utiliza un build anterior a `0fc2564` / versión 1.5.4, realiza una última actualización manual antes de activar o volver a activar las actualizaciones automáticas:**
->
-> ```bash
-> docker pull ghcr.io/aerya/dockge-enhanced:latest
-> docker compose up -d
-> ```
->
-> Una vez completada esta actualización, puedes activar **Automática mediante sidecar protegido**. Dockge-Enhanced gestionará automáticamente las siguientes actualizaciones.
->
-> **Las stacks gestionadas por Dockge-Enhanced y sus datos persistentes no se ven afectados por este problema.**
->
-> Mis disculpas a todos los usuarios afectados. Una función diseñada precisamente para hacer las actualizaciones más seguras no debería poder dejar Dockge-Enhanced fuera de servicio. Gracias a todos los que utilizan, prueban y reportan problemas: vuestros comentarios permitieron identificar y corregir rápidamente estos defectos.
-
----
-
 Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus funcionalidades, que convierte su sencilla experiencia de gestión de Docker Compose en una plataforma Docker más completa — con federación multiservidor, migración y replicación de stacks, copias Restic, actualizaciones de imágenes y de Dockge-Enhanced con rollback, análisis de seguridad, monitorización, automatización, notificaciones y gestión de recursos Docker, todo desde la interfaz web.
 Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus funcionalidades, que convierte su sencilla experiencia de gestión de Docker Compose en una plataforma Docker más completa — con federación multiservidor, migración y replicación de stacks, copias Restic, actualizaciones de imágenes y de Dockge-Enhanced con rollback, análisis de seguridad, monitorización, automatización, notificaciones y gestión de recursos Docker, todo desde la interfaz web.
 
@@ -47,7 +17,6 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 
 <p align="center">
   <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
-  <a href="https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count"><img src="https://img.shields.io/github/downloads/Aerya/Dockge-Enhanced/usage-count/2026-09.txt?displayAssetName=false&label=instalaciones%20activas&color=blue" alt="Instalaciones activas"></a>
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
   <img src="https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20ES%20%7C%20zh--CN-blue" alt="i18n">
   <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
@@ -474,6 +443,58 @@ Abre **http://localhost:5001**, crea tu cuenta de administrador y luego haz clic
 > ```yaml
 >       - /mnt/data:/mnt/data:ro
 > ```
+
+### Probar Dockge-Enhanced junto a Dockge
+
+Dockge y Dockge-Enhanced pueden ejecutarse en el mismo host Docker, pero sus configuraciones Compose predeterminadas no pueden utilizarse sin cambios porque ambos publican el puerto `5001`.
+
+Para probarlos en paralelo:
+
+- instale Dockge-Enhanced desde un directorio Compose separado;
+- utilice otro puerto del host, por ejemplo `5002:5001`;
+- utilice un directorio `/app/data` separado;
+- utilice preferiblemente un directorio de stacks separado con una stack dedicada a la prueba.
+
+Ejemplo:
+
+```yaml
+ports:
+  - 5002:5001
+volumes:
+  - ./enhanced-data:/app/data
+  - /opt/dockge-enhanced-test-stacks:/opt/stacks
+environment:
+  - DOCKGE_STACKS_DIR=/opt/stacks
+  - DOCKGE_DATA_DIR=/app/data
+```
+
+Después puede abrir Dockge-Enhanced en **http://localhost:5002**, mientras su instalación de Dockge permanece disponible en el puerto `5001`.
+
+Ambas aplicaciones pueden acceder al mismo directorio de stacks, pero nunca deben editar, desplegar, actualizar ni realizar otra operación sobre la misma stack **simultáneamente**. Para una prueba prudente, es preferible utilizar un directorio de stacks separado.
+
+### Migrar de Dockge a Dockge-Enhanced
+
+La migración es sencilla porque Dockge-Enhanced comparte la misma base que Dockge:
+
+1. Detenga Dockge.
+2. Haga una copia de seguridad del archivo Compose, del directorio de datos y del directorio de stacks de Dockge.
+3. En el archivo Compose existente de Dockge, sustituya la imagen por:
+
+   ```yaml
+   image: ghcr.io/aerya/dockge-enhanced:latest
+   ```
+
+4. Conserve los montajes existentes de `/app/data` y del directorio de stacks.
+5. Descargue la imagen y reinicie el proyecto Compose:
+
+   ```bash
+   docker compose pull
+   docker compose up -d
+   ```
+
+Dockge-Enhanced se iniciará con su cuenta, configuración y stacks existentes.
+
+Conserve la copia de seguridad creada antes de la migración. Si decide volver a Dockge, detenga Dockge-Enhanced y restaure esa copia antes de reiniciar la imagen original de Dockge.
 
 ### Integración opcional PlugNPiN
 
