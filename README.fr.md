@@ -53,7 +53,10 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 
 ## Dernières nouveautés
 
-Les évolutions majeures récentes restent visibles directement dans le README afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
+<details>
+<summary>Afficher les dernières nouveautés</summary>
+
+Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
 ### 🆕 Septembre 2026
 
@@ -170,9 +173,14 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ➡️ **[Consulter le changelog complet](CHANGELOG.fr.md)**
 
+</details>
+
 ---
 
 ## Catalogue des fonctionnalités
+
+<details>
+<summary>Afficher toutes les fonctionnalités</summary>
 
 ### Multi-serveurs & fédération
 - Fédération en maillage complet entre instances Dockge-Enhanced
@@ -182,10 +190,15 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Jetons de fédération dédiés
 - Récupération d'une liaison de fédération cassée
 - Gestion multi-instance unifiée
+- Vue d’ensemble des instances liées avec accessibilité et accès direct à leur WebUI
+- Recherche globale multi-instance dans les stacks, fichiers Compose/.env, ressources Docker et snapshots Restic récents
+- Négociation des capacités entre différentes versions de Dockge-Enhanced
 
 ### Gestion des stacks
 - Création, édition, démarrage, arrêt et recréation des stacks Compose
-- Stacks épinglées
+- Stacks épinglées côté serveur et partagées entre les WebUI liées
+- Détection et intégration de stacks Compose externes sans déplacer leurs fichiers ni leurs données
+- Autorisation protégée en un clic des chemins de stacks externes
 - Tri par date de création ou dernière mise à jour
 - Notes par stack
 - Outils Git
@@ -196,6 +209,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Protections pour les services partageant le namespace réseau d'un VPN
 - Colonne des stacks repliable et redimensionnable
 - Indicateurs compacts d'état, CPU et RAM
+- Prise en charge des ports Compose en syntaxe longue et préservation des permissions `tmpfs` dans l’éditeur
 
 ### Migration & réplication
 - Copie ou déplacement de stacks entre instances
@@ -231,6 +245,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Auto-mise à jour protégée de Dockge-Enhanced
 - Backup Restic et contrôle d'intégrité obligatoires
 - Vérification de disponibilité et récupération automatique
+- Blocage du self-update tant que des modifications Compose ou `.env` ne sont pas enregistrées
+- Réconciliation du nom de projet Compose et respect du contexte exact de la stack pendant les mises à jour
 
 ### Sécurité
 - Validation centralisée des noms de stacks pour bloquer tout path traversal hors du répertoire géré
@@ -252,6 +268,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Logs live et plein écran
 - Pause de l'autoscroll et gestion des longues lignes
 - Intégrations Kula et Dozzle
+- Statistiques CPU/RAM par stack pour les instances locales et liées
 
 ### Ressources Docker
 - Images, volumes, réseaux et conteneurs non gérés
@@ -275,14 +292,19 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 ### Notifications & accès
 - Discord et Apprise
 - Notifications localisées en EN / FR / ES / zh-CN
+- Annonces opérationnelles distantes
+- Journal persistant des nouveautés non lues
 - 2FA, trusted proxy et Cloudflare Turnstile
 - Clients mobiles tiers
 
----
+</details>
 
 ---
 
 ## Déroulement d’une mise à jour automatique de Dockge-Enhanced
+
+<details>
+<summary>Afficher le fonctionnement de la mise à jour protégée</summary>
 
 Dockge-Enhanced gère automatiquement le workflow complet : backup Restic obligatoire, vérification d’intégrité, remplacement contrôlé du conteneur, healthcheck puis confirmation finale. Les notifications Discord/Apprise permettent aussi de suivre l’opération sans rester devant la WebUI.
 
@@ -299,7 +321,12 @@ Avant de démarrer une auto-mise à jour, Enhanced vérifie aussi qu’aucune op
 </tr>
 </table>
 
+</details>
+
 ## Captures d'écran
+
+<details>
+<summary>Afficher les captures d’écran</summary>
 
 <table>
   <tr>
@@ -425,6 +452,9 @@ Avant de démarrer une auto-mise à jour, Enhanced vérifie aussi qu’aucune op
     </td>
   </tr>
 </table>
+
+</details>
+
 ---
 
 ## Installation
@@ -520,6 +550,9 @@ Conservez la sauvegarde réalisée avant la migration. Si vous souhaitez revenir
 
 ### Intégration PlugNPiN facultative
 
+<details>
+<summary>Afficher les instructions de configuration</summary>
+
 Ouvrez **Paramètres → Intégrations** pour configurer [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN). L’intégration reste totalement inactive tant que **Activer PlugNPiN** n’est pas sélectionné et sauvegardé. Son activation crée la stack gérée `plugnpin-dockge-enhanced` ; sa désactivation exécute Compose down puis retire le dossier généré.
 
 Les identifiants Nginx Proxy Manager sont obligatoires pour PlugNPiN. Pi-hole, AdGuard Home, les métriques et les logs debug restent facultatifs et indépendants. Les mots de passe sont écrits via l’entrée standard dans le volume Docker dédié `dockge_enhanced_plugnpin_secrets` ; ils ne sont jamais renvoyés au navigateur ni inclus dans le Compose généré.
@@ -529,6 +562,8 @@ Pour publier un service, éditez sa stack puis utilisez **Publication PlugNPiN (
 > La désactivation du contrôleur arrête ses conteneurs, mais ne peut pas garantir la suppression immédiate des entrées qu’il a créées lorsque les conteneurs applicatifs étiquetés fonctionnent encore. Retirez les labels ou arrêtez les applications concernées pendant que PlugNPiN fonctionne si ces entrées doivent d’abord être supprimées.
 
 > PlugNPiN `1.0.0` est actuellement publié en amont uniquement pour `amd64`. Dockge maintient l’intégration désactivée avec un message explicite sur les architectures non prises en charge ; le reste de Dockge Enhanced demeure multi-architecture.
+
+</details>
 
 ---
 
