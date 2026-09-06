@@ -3,39 +3,6 @@
 </p>
 
 # Dockge Enhanced
-> [!WARNING]
-> ## Critical Dockge-Enhanced self-update fix
->
-> Several builds published between **August 31, 2026 and September 2, 2026** contained defects in the Dockge-Enhanced self-update mechanism.
->
-> Under certain conditions, the sidecar could stop the Dockge-Enhanced container, fail to create the new version and, on some builds, also fail to automatically restore the previous one.
->
-> The mechanism has since been fixed and hardened. Starting with build **`0fc2564` / version 1.5.4**, self-update:
->
-> - always pulls the latest `dockge-enhanced-updater:latest` before each update;
-> - explicitly pulls the target Dockge-Enhanced image;
-> - performs a mandatory Restic backup before replacement;
-> - verifies the new container before confirming the update;
-> - keeps rollback support and a recovery snapshot.
->
-> **If your installation is running a build older than `0fc2564` / version 1.5.4, perform one final manual update before enabling or re-enabling automatic updates:**
->
-> ```bash
-> docker pull ghcr.io/aerya/dockge-enhanced:latest
-> docker compose up -d
-> ```
->
-> Once this update is complete, you can enable **Automatic via protected sidecar**. Subsequent updates are then handled automatically by Dockge-Enhanced.
->
-> **Stacks managed by Dockge-Enhanced and their persistent data are not affected by this issue.**
->
-> My apologies to everyone affected. A feature specifically designed to make updates safer should obviously never be able to leave Dockge-Enhanced offline. Thank you to everyone using, testing and reporting issues — your feedback helped identify and fix these defects quickly.
-
----
-
-**My apologies to everyone affected.** A feature specifically designed to make updates safer should obviously never be able to leave Dockge-Enhanced offline. Thank you to everyone using, testing and reporting issues — your feedback helped identify and fix these defects quickly.
-
-
 
 A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turns its simple Compose management experience into a broader Docker management platform — with multi-server federation, stack migration and replication, Restic backups, image and self-updates with rollback, security scanning, monitoring, automation, notifications, and Docker resource management, all from the web UI.
 
@@ -48,7 +15,6 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 
 <p align="center">
   <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
-  <a href="https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count"><img src="https://img.shields.io/github/downloads/Aerya/Dockge-Enhanced/usage-count/2026-09.txt?displayAssetName=false&label=active%20installs&color=blue" alt="Active installations"></a>
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
   <img src="https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20ES%20%7C%20zh--CN-blue" alt="i18n">
   <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
@@ -499,6 +465,58 @@ Open **http://localhost:5001**, create your admin account, then click **Monitori
 > ```yaml
 >       - /mnt/data:/mnt/data:ro
 > ```
+
+### Testing Dockge-Enhanced alongside Dockge
+
+Dockge and Dockge-Enhanced can run on the same Docker host, but their default Compose configurations cannot be used unchanged because both publish port `5001`.
+
+To test them side by side:
+
+- install Dockge-Enhanced from a separate Compose directory;
+- use another host port, for example `5002:5001`;
+- use a separate `/app/data` directory;
+- preferably use a separate stacks directory with a dedicated test stack.
+
+Example:
+
+```yaml
+ports:
+  - 5002:5001
+volumes:
+  - ./enhanced-data:/app/data
+  - /opt/dockge-enhanced-test-stacks:/opt/stacks
+environment:
+  - DOCKGE_STACKS_DIR=/opt/stacks
+  - DOCKGE_DATA_DIR=/app/data
+```
+
+You can then open Dockge-Enhanced at **http://localhost:5002** while your existing Dockge installation remains available on port `5001`.
+
+Both applications may access the same stacks directory, but they should never edit, deploy, update or otherwise operate on the same stack **simultaneously**. Using a separate stacks directory for testing is safer.
+
+### Migrating from Dockge to Dockge-Enhanced
+
+Migration is straightforward because Dockge-Enhanced shares the same foundation as Dockge:
+
+1. Stop Dockge.
+2. Back up your Dockge Compose file, data directory and stacks directory.
+3. In your existing Dockge Compose file, replace the image with:
+
+   ```yaml
+   image: ghcr.io/aerya/dockge-enhanced:latest
+   ```
+
+4. Keep your existing `/app/data` and stacks volume mappings.
+5. Pull the image and restart the Compose project:
+
+   ```bash
+   docker compose pull
+   docker compose up -d
+   ```
+
+Dockge-Enhanced will start with your existing account, settings and stacks.
+
+Keep the backup created before migration. If you decide to return to Dockge, stop Dockge-Enhanced and restore that backup before restarting the original Dockge image.
 
 ### Optional PlugNPiN integration
 

@@ -3,36 +3,6 @@
 </p>
 
 # Dockge Enhanced
-> [!WARNING]
-> ## Correctif critique de l’auto-mise à jour de Dockge-Enhanced
->
-> Plusieurs builds publiés entre **le 31 août 2026 et le 2 septembre 2026** ont comporté des défauts dans le mécanisme d’auto-mise à jour de Dockge-Enhanced.
->
-> Dans certaines conditions, le sidecar pouvait arrêter le conteneur Dockge-Enhanced, échouer à recréer la nouvelle version et, sur certains builds, échouer également à restaurer automatiquement l’ancienne.
->
-> Le mécanisme a depuis été corrigé et renforcé. À partir du build **`0fc2564` / version 1.5.4**, l’auto-mise à jour :
->
-> - télécharge systématiquement le dernier `dockge-enhanced-updater:latest` avant chaque mise à jour ;
-> - télécharge explicitement l’image Dockge-Enhanced cible ;
-> - effectue un backup Restic obligatoire avant remplacement ;
-> - vérifie le nouveau conteneur avant de valider la mise à jour ;
-> - conserve un mécanisme de rollback et un snapshot de récupération.
->
-> **Si votre installation utilise un build antérieur à `0fc2564` / version 1.5.4, effectuez une dernière mise à jour manuelle avant d’activer ou réactiver les mises à jour automatiques :**
->
-> ```bash
-> docker pull ghcr.io/aerya/dockge-enhanced:latest
-> docker compose up -d
-> ```
->
-> Une fois cette mise à jour effectuée, vous pouvez activer **Automatique via sidecar protégé**. Les mises à jour suivantes seront alors prises en charge automatiquement par Dockge-Enhanced.
->
-> **Les stacks gérées par Dockge-Enhanced et leurs données persistantes ne sont pas concernées par ce problème.**
->
-> Toutes mes excuses aux utilisateurs concernés. Une fonction conçue précisément pour rendre les mises à jour plus sûres ne doit évidemment pas pouvoir laisser Dockge-Enhanced hors ligne. Merci à ceux qui utilisent, testent et signalent les problèmes : vos retours ont permis d’identifier puis de corriger rapidement ces défauts.
-
----
-
 Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnalités, qui transforme son expérience simple de gestion Docker Compose en une plateforme Docker plus complète — avec fédération multi-serveurs, migration et réplication de stacks, sauvegardes Restic, mises à jour des images et de Dockge-Enhanced avec rollback, scan de sécurité, supervision, automatisation, notifications et gestion des ressources Docker, le tout depuis l'interface web.
 
 <p align="center">
@@ -45,7 +15,6 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 
 <p align="center">
   <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
-  <a href="https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count"><img src="https://img.shields.io/github/downloads/Aerya/Dockge-Enhanced/usage-count/2026-09.txt?displayAssetName=false&label=installations%20actives&color=blue" alt="Installations actives"></a>
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
   <img src="https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20ES%20%7C%20zh--CN-blue" alt="i18n">
   <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
@@ -53,8 +22,8 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 </p>
 
 <p align="center">
-  <strong>Tu l'utilises ? Tu l'aimes ?</strong>
-  <a href="https://github.com/Aerya/Dockge-Enhanced"><strong>⭐ Mets une étoile !</strong></a>
+  <strong>Vous l'utilisez ? Vous l'appréciez ?</strong>
+  <a href="https://github.com/Aerya/Dockge-Enhanced"><strong>⭐ Ajoutez une étoile !</strong></a>
   — ça prend deux secondes.
 </p>
 
@@ -486,26 +455,78 @@ services:
 docker compose up -d
 ```
 
-Ouvre **http://localhost:5001**, crée ton compte admin, puis clique sur **Surveillance** dans la barre de navigation.
+Ouvrez **http://localhost:5001**, créez votre compte administrateur, puis cliquez sur **Surveillance** dans la barre de navigation.
 
-> Le volume `/backup:/backup` est optionnel mais recommandé si tu utilises **local** comme destination Restic — pointe la destination sur `/backup` pour que les snapshots atterrissent dans un répertoire dédié sur l'hôte, hors du container.
+> Le volume `/backup:/backup` est optionnel mais recommandé si vous utilisez **local** comme destination Restic — indiquez `/backup` comme destination afin que les snapshots soient enregistrés dans un répertoire dédié sur l'hôte, hors du conteneur.
 
-> **Tu veux sauvegarder plusieurs répertoires de données ?** Ajoute autant de volumes que nécessaire (ex : `../../media:/media-data`), puis enregistre chaque chemin dans l'onglet Backup sous **Chemins supplémentaires** — Restic les inclura tous à chaque exécution.
+> **Vous souhaitez sauvegarder plusieurs répertoires de données ?** Ajoutez autant de volumes que nécessaire (ex. : `../../media:/media-data`), puis enregistrez chaque chemin dans l'onglet Backup sous **Chemins supplémentaires** — Restic les inclura tous à chaque exécution.
 
-> **Tu veux surveiller une partition autre que `/` ?** Les stats disque sont lues depuis l'intérieur du container via `df`. Pour surveiller un chemin hôte comme `/mnt/data`, monte-le en lecture seule et ajoute-le dans l'onglet **Monitoring** sous *Partitions disque surveillées* :
+> **Vous souhaitez surveiller une partition autre que `/` ?** Les statistiques du disque sont lues depuis l'intérieur du conteneur avec `df`. Pour surveiller un chemin hôte comme `/mnt/data`, montez-le en lecture seule et ajoutez-le dans l'onglet **Monitoring** sous *Partitions disque surveillées* :
 > ```yaml
 >       - /mnt/data:/mnt/data:ro
 > ```
 
+### Tester Dockge-Enhanced à côté de Dockge
+
+Dockge et Dockge-Enhanced peuvent fonctionner sur le même hôte Docker, mais leurs configurations Compose par défaut ne peuvent pas être utilisées telles quelles, car les deux publient le port `5001`.
+
+Pour les tester côte à côte :
+
+- installez Dockge-Enhanced depuis un répertoire Compose séparé ;
+- utilisez un autre port sur l'hôte, par exemple `5002:5001` ;
+- utilisez un répertoire `/app/data` séparé ;
+- utilisez de préférence un répertoire de stacks séparé avec une stack dédiée au test.
+
+Exemple :
+
+```yaml
+ports:
+  - 5002:5001
+volumes:
+  - ./enhanced-data:/app/data
+  - /opt/dockge-enhanced-test-stacks:/opt/stacks
+environment:
+  - DOCKGE_STACKS_DIR=/opt/stacks
+  - DOCKGE_DATA_DIR=/app/data
+```
+
+Vous pouvez ensuite ouvrir Dockge-Enhanced sur **http://localhost:5002**, tout en conservant votre installation Dockge existante sur le port `5001`.
+
+Les deux applications peuvent accéder au même répertoire de stacks, mais elles ne doivent jamais modifier, déployer, mettre à jour ou effectuer une autre opération sur la même stack **simultanément**. Pour un test prudent, il est préférable d'utiliser un répertoire de stacks séparé.
+
+### Migrer de Dockge vers Dockge-Enhanced
+
+La migration est simple, car Dockge-Enhanced partage la même base que Dockge :
+
+1. Arrêtez Dockge.
+2. Sauvegardez le fichier Compose, le répertoire de données et le répertoire de stacks de Dockge.
+3. Dans le fichier Compose existant de Dockge, remplacez l'image par :
+
+   ```yaml
+   image: ghcr.io/aerya/dockge-enhanced:latest
+   ```
+
+4. Conservez les montages existants pour `/app/data` et le répertoire de stacks.
+5. Téléchargez l'image et redémarrez le projet Compose :
+
+   ```bash
+   docker compose pull
+   docker compose up -d
+   ```
+
+Dockge-Enhanced démarrera avec votre compte, vos paramètres et vos stacks existants.
+
+Conservez la sauvegarde réalisée avant la migration. Si vous souhaitez revenir à Dockge, arrêtez Dockge-Enhanced et restaurez cette sauvegarde avant de redémarrer l'image Dockge d'origine.
+
 ### Intégration PlugNPiN facultative
 
-Ouvre **Paramètres → Intégrations** pour configurer [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN). L’intégration reste totalement inactive tant que **Activer PlugNPiN** n’est pas sélectionné et sauvegardé. Son activation crée la stack gérée `plugnpin-dockge-enhanced` ; sa désactivation exécute Compose down puis retire le dossier généré.
+Ouvrez **Paramètres → Intégrations** pour configurer [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN). L’intégration reste totalement inactive tant que **Activer PlugNPiN** n’est pas sélectionné et sauvegardé. Son activation crée la stack gérée `plugnpin-dockge-enhanced` ; sa désactivation exécute Compose down puis retire le dossier généré.
 
 Les identifiants Nginx Proxy Manager sont obligatoires pour PlugNPiN. Pi-hole, AdGuard Home, les métriques et les logs debug restent facultatifs et indépendants. Les mots de passe sont écrits via l’entrée standard dans le volume Docker dédié `dockge_enhanced_plugnpin_secrets` ; ils ne sont jamais renvoyés au navigateur ni inclus dans le Compose généré.
 
-Pour publier un service, édite sa stack puis utilise **Publication PlugNPiN (facultative)** sous l’éditeur Compose. L’assistant génère et peut appliquer les labels obligatoires `plugNPiN.ip` et `plugNPiN.url`, ainsi que les options NPM sélectionnées. Les commentaires et labels existants sous forme de mapping sont préservés. Pour les labels sous forme de liste, Dockge fournit volontairement uniquement le YAML à copier au lieu de réécrire la structure existante.
+Pour publier un service, éditez sa stack puis utilisez **Publication PlugNPiN (facultative)** sous l’éditeur Compose. L’assistant génère et peut appliquer les labels obligatoires `plugNPiN.ip` et `plugNPiN.url`, ainsi que les options NPM sélectionnées. Les commentaires et labels existants sous forme de mapping sont préservés. Pour les labels sous forme de liste, Dockge fournit volontairement uniquement le YAML à copier au lieu de réécrire la structure existante.
 
-> La désactivation du contrôleur arrête ses conteneurs, mais ne peut pas garantir la suppression immédiate des entrées qu’il a créées lorsque les conteneurs applicatifs étiquetés fonctionnent encore. Retire les labels ou arrête les applications concernées pendant que PlugNPiN fonctionne si ces entrées doivent d’abord être supprimées.
+> La désactivation du contrôleur arrête ses conteneurs, mais ne peut pas garantir la suppression immédiate des entrées qu’il a créées lorsque les conteneurs applicatifs étiquetés fonctionnent encore. Retirez les labels ou arrêtez les applications concernées pendant que PlugNPiN fonctionne si ces entrées doivent d’abord être supprimées.
 
 > PlugNPiN `1.0.0` est actuellement publié en amont uniquement pour `amd64`. Dockge maintient l’intégration désactivée avec un message explicite sur les architectures non prises en charge ; le reste de Dockge Enhanced demeure multi-architecture.
 
@@ -538,9 +559,9 @@ Pour publier un service, édite sa stack puis utilise **Publication PlugNPiN (fa
 
 ### Authentification et premier setup
 
-**Installation existante : rien à changer.** Sans les variables ci-dessus, les comptes, la page de connexion, la 2FA et le réglage **Désactiver l’authentification** fonctionnent comme avant. Au premier démarrage d’une installation neuve, ouvre simplement `/setup` et crée l’administrateur. Une fois l’installation terminée, le serveur refuse toute nouvelle tentative de setup, même si l’URL SPA reste connue.
+**Installation existante : rien à changer.** Sans les variables ci-dessus, les comptes, la page de connexion, la 2FA et le réglage **Désactiver l’authentification** fonctionnent comme avant. Au premier démarrage d’une installation neuve, ouvrez simplement `/setup` et créez l’administrateur. Une fois l’installation terminée, le serveur refuse toute nouvelle tentative de setup, même si l’URL SPA reste connue.
 
-Pour un bootstrap non interactif, monte de préférence un secret puis renseigne uniquement ces variables optionnelles :
+Pour un bootstrap non interactif, montez de préférence un secret puis renseignez uniquement ces variables optionnelles :
 
 ```yaml
 services:
@@ -567,7 +588,7 @@ environment:
   - DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS=172.20.0.0/24
 ```
 
-Remplace le CIDR d’exemple par le réseau exact de ton proxy et configure celui-ci pour transmettre le header choisi. Le port Dockge ne doit pas être accessible directement : seuls les proxies déclarés peuvent fournir une identité. Tous les utilisateurs autorisés par le proxy disposent des droits administrateur dans Dockge Enhanced, qui ne propose pas encore de rôles distincts. Ne place jamais `/setup`, `/socket.io` ou `/api/*` dans une règle sans authentification ; le proxy doit transmettre les WebSockets et protéger tout le host.
+Remplacez le CIDR d’exemple par le réseau exact de votre proxy et configurez celui-ci pour transmettre le header choisi. Le port Dockge ne doit pas être accessible directement : seuls les proxies déclarés peuvent fournir une identité. Tous les utilisateurs autorisés par le proxy disposent des droits administrateur dans Dockge Enhanced, qui ne propose pas encore de rôles distincts. Ne placez jamais `/setup`, `/socket.io` ou `/api/*` dans une règle sans authentification ; le proxy doit transmettre les WebSockets et protéger tout le host.
 
 ---
 
