@@ -76,6 +76,8 @@ The already-counted month is stored only in the local data directory so the same
 
 The mechanism is fully public: [Enhanced-side code](./backend/anonymous-install-count.ts), [GitHub workflow that creates the monthly assets](./.github/workflows/usage-count-asset.yml), and [aggregate monthly counters](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count).
 
+Repository owners can add an Actions secret named `USAGE_COUNT_DISCORD_WEBHOOK` to receive a provisional count every Monday and the final count for the previous month on the first day of each month. The workflow can also be run manually to send the current count immediately. The webhook value remains encrypted by GitHub and is never committed to the repository.
+
 **Global multi-instance search V2 (`Ctrl+K`)**
 
 The global palette now supports **fuzzy matching** for small typing mistakes and assisted operators such as `type:`, `stack:`, `image:`, `port:`, `instance:` and operational filters including `is:update`, `is:stopped`, `is:vulnerable`, `is:critical` and `is:backup-failed`. Operator chips are displayed directly in the palette so the syntax does not need to be memorized. Compose and `.env` results open the matching stack and scroll CodeMirror directly to the matching line. Recent searches and pinned searches are stored locally in the browser.
@@ -294,6 +296,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Notifications localized in EN / FR / ES / zh-CN
 - Remote operational announcements
 - Persistent unread release-news journal
+- Optional weekly and monthly anonymous installation-count reports via a GitHub Actions Discord webhook
 - 2FA, trusted proxy and Cloudflare Turnstile
 - Third-party mobile clients
 
