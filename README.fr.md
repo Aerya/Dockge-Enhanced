@@ -76,6 +76,8 @@ Le mois déjà compté est mémorisé uniquement dans le répertoire de données
 
 Le mécanisme est entièrement public : [code côté Enhanced](./backend/anonymous-install-count.ts), [workflow GitHub qui crée les assets mensuels](./.github/workflows/usage-count-asset.yml) et [compteurs mensuels agrégés](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count).
 
+Les propriétaires du dépôt peuvent ajouter un secret Actions nommé `USAGE_COUNT_DISCORD_WEBHOOK` pour recevoir un compteur provisoire chaque lundi et le total définitif du mois précédent le premier jour de chaque mois. Le workflow peut également être lancé manuellement afin d’envoyer immédiatement le compteur actuel. La valeur du webhook reste chiffrée par GitHub et n’est jamais enregistrée dans le dépôt.
+
 **Recherche globale multi-instance V2 (`Ctrl+K`)**
 
 La palette globale accepte désormais les **correspondances floues** pour tolérer de petites fautes de frappe et des opérateurs assistés comme `type:`, `stack:`, `image:`, `port:`, `instance:` ainsi que des filtres opérationnels `is:update`, `is:stopped`, `is:vulnerable`, `is:critical` et `is:backup-failed`. Des boutons d’aide sont affichés directement dans la palette : il n’est pas nécessaire de mémoriser cette syntaxe. Un résultat Compose ou `.env` ouvre la bonne stack et positionne directement CodeMirror sur la ligne trouvée. Les recherches récentes et les recherches épinglées sont conservées localement dans le navigateur.
@@ -294,6 +296,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Notifications localisées en EN / FR / ES / zh-CN
 - Annonces opérationnelles distantes
 - Journal persistant des nouveautés non lues
+- Rapports facultatifs hebdomadaires et mensuels du comptage anonyme via un webhook Discord GitHub Actions
 - 2FA, trusted proxy et Cloudflare Turnstile
 - Clients mobiles tiers
 

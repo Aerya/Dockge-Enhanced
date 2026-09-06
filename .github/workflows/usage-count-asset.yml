@@ -1,8 +1,9 @@
-name: Compteur mensuel anonyme
+name: Compteur anonyme et notifications
 
 on:
   schedule:
-    - cron: "17 0 1 * *"
+    - cron: "17 8 1 * *"
+    - cron: "27 8 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -44,47 +45,88 @@ jobs:
           printf 'Dockge-Enhanced anonymous installation count %s\n' "$month" > "$asset"
           gh release upload usage-count "$asset" --repo "$GITHUB_REPOSITORY"
 
-      - name: Pointer les badges vers le mois courant
+      - name: Préparer le rapport d'utilisation
+        id: report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          TRIGGER_SCHEDULE: ${{ github.event.schedule }}
         run: |
           set -euo pipefail
+          report_type="weekly"
           month="$(date -u +%Y-%m)"
-          python3 - "$month" <<'PYBADGE'
-          import re
-          import sys
-          from pathlib import Path
 
-          month = sys.argv[1]
-          files = [
-              Path("README.md"),
-              Path("README.fr.md"),
-              Path("README.es-ES.md"),
-              Path("README.zh-CN.md"),
-          ]
+          if [[ "$EVENT_NAME" == "schedule" && "$TRIGGER_SCHEDULE" == "17 8 1 * *" ]]; then
+            report_type="monthly"
+            month="$(date -u -d '1 month ago' +%Y-%m)"
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            report_type="manual"
+          fi
 
-          pattern = re.compile(
-              r"(https://img\.shields\.io/github/downloads/Aerya/Dockge-Enhanced/usage-count/)"
-              r"\d{4}-\d{2}"
-              r"(\.txt\?displayAssetName=false&label=)"
-          )
-
-          for file in files:
-              text = file.read_text(encoding="utf-8")
-              updated, count = pattern.subn(rf"\g<1>{month}\g<2>", text)
-              if count != 1:
-                  raise SystemExit(
-                      f"{file}: badge mensuel introuvable ou ambigu ({count})"
-                  )
-              file.write_text(updated, encoding="utf-8")
-          PYBADGE
-
-          if git diff --quiet -- README.md README.fr.md README.es-ES.md README.zh-CN.md; then
-            echo "Badges déjà positionnés sur ${month}."
+          asset_json="$(gh release view usage-count --repo "$GITHUB_REPOSITORY" --json assets --jq ".assets[] | select(.name == \"${month}.txt\")")"
+          if [[ -z "$asset_json" ]]; then
+            echo "Aucun asset disponible pour ${month}; notification ignorée."
+            echo "available=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.fr.md README.es-ES.md README.zh-CN.md
-          git commit -m "docs: actualiser le badge des installations actives"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          count="$(jq -r '.downloadCount' <<<"$asset_json")"
+          created_at="$(jq -r '.createdAt' <<<"$asset_json")"
+          {
+            echo "available=true"
+            echo "report_type=$report_type"
+            echo "month=$month"
+            echo "count=$count"
+            echo "created_at=$created_at"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Envoyer le compteur sur Discord
+        if: steps.report.outputs.available == 'true'
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.USAGE_COUNT_DISCORD_WEBHOOK }}
+          REPORT_TYPE: ${{ steps.report.outputs.report_type }}
+          REPORT_MONTH: ${{ steps.report.outputs.month }}
+          INSTALL_COUNT: ${{ steps.report.outputs.count }}
+          ASSET_CREATED_AT: ${{ steps.report.outputs.created_at }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$DISCORD_WEBHOOK" ]]; then
+            echo "Secret USAGE_COUNT_DISCORD_WEBHOOK absent; notification ignorée."
+            exit 0
+          fi
+
+          case "$DISCORD_WEBHOOK" in
+            https://discord.com/api/webhooks/*|https://discordapp.com/api/webhooks/*) ;;
+            *) echo "::error::USAGE_COUNT_DISCORD_WEBHOOK n'est pas un webhook Discord valide."; exit 1 ;;
+          esac
+
+          case "$REPORT_TYPE" in
+            monthly)
+              title="Dockge-Enhanced — bilan mensuel"
+              description="**${INSTALL_COUNT} installations actives estimées** pour ${REPORT_MONTH}."
+              ;;
+            manual)
+              title="Dockge-Enhanced — compteur demandé"
+              description="**${INSTALL_COUNT} installations actives estimées** pour ${REPORT_MONTH}, au moment de la demande."
+              ;;
+            *)
+              title="Dockge-Enhanced — point hebdomadaire"
+              description="**${INSTALL_COUNT} installations actives estimées** pour ${REPORT_MONTH}, à ce jour."
+              ;;
+          esac
+
+          description+=$'\nComptage anonyme basé sur les téléchargements de l’asset mensuel GitHub.'
+          if [[ "$REPORT_TYPE" != "monthly" ]]; then
+            description+=$'\nMesure commencée à la création de l’asset : '
+            description+="$ASSET_CREATED_AT"
+          fi
+
+          payload="$(jq -n \
+            --arg title "$title" \
+            --arg description "$description" \
+            '{username:"Dockge Enhanced", embeds:[{title:$title, description:$description, color:5793266, timestamp:(now | todateiso8601)}]}')"
+
+          curl --fail --silent --show-error \
+            -H "Content-Type: application/json" \
+            --data "$payload" \
+            "$DISCORD_WEBHOOK"

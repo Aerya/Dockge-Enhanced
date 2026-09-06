@@ -78,6 +78,8 @@ El mes ya contabilizado se guarda únicamente en el directorio de datos local pa
 
 El mecanismo es completamente público: [código en Enhanced](./backend/anonymous-install-count.ts), [workflow de GitHub que crea los assets mensuales](./.github/workflows/usage-count-asset.yml) y [contadores mensuales agregados](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count).
 
+Los propietarios del repositorio pueden añadir un secreto de Actions llamado `USAGE_COUNT_DISCORD_WEBHOOK` para recibir un conteo provisional cada lunes y el total definitivo del mes anterior el primer día de cada mes. El workflow también puede ejecutarse manualmente para enviar el conteo actual de inmediato. El valor del webhook permanece cifrado por GitHub y nunca se guarda en el repositorio.
+
 **Búsqueda global multi-instancia V2 (`Ctrl+K`)**
 
 La paleta global admite ahora **búsqueda difusa** para pequeños errores de escritura y operadores asistidos como `type:`, `stack:`, `image:`, `port:`, `instance:` y filtros operativos `is:update`, `is:stopped`, `is:vulnerable`, `is:critical` e `is:backup-failed`. Los operadores aparecen como botones dentro de la propia paleta, por lo que no hace falta memorizar la sintaxis. Los resultados Compose y `.env` abren la stack correspondiente y llevan CodeMirror directamente a la línea encontrada. Las búsquedas recientes y fijadas se guardan localmente en el navegador.
@@ -272,6 +274,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - EN / FR / ES / zh-CN
 - Anuncios operativos remotos
 - Historial persistente de novedades no leídas
+- Informes opcionales semanales y mensuales del conteo anónimo mediante un webhook de Discord en GitHub Actions
 - 2FA, trusted proxy, Turnstile
 - Clientes móviles de terceros
 

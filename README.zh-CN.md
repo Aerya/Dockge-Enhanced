@@ -58,6 +58,8 @@ Enhanced 现在可以检测现有 Docker Compose 项目，并在**不移动 Comp
 
 整个机制完全公开：[Enhanced 端代码](./backend/anonymous-install-count.ts)、[创建每月 asset 的 GitHub workflow](./.github/workflows/usage-count-asset.yml)以及[每月聚合计数](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count)。
 
+仓库所有者可以添加名为 `USAGE_COUNT_DISCORD_WEBHOOK` 的 Actions Secret，以便每周一接收当月暂定计数，并在每月第一天接收上个月的最终计数。也可以手动运行 workflow，立即发送当前计数。Webhook 值由 GitHub 加密，绝不会提交到仓库。
+
 **多实例全局搜索 V2（`Ctrl+K`）**
 
 全局搜索现在支持用于小型输入错误的**模糊匹配**，以及 `type:`、`stack:`、`image:`、`port:`、`instance:` 和 `is:update`、`is:stopped`、`is:vulnerable`、`is:critical`、`is:backup-failed` 等辅助筛选。面板会直接显示可点击的操作符提示，无需记忆语法。Compose 和 `.env` 结果会打开对应 Stack，并让 CodeMirror 直接定位到匹配行。最近搜索和固定搜索只保存在当前浏览器中。
@@ -252,6 +254,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - EN / FR / ES / zh-CN
 - 远程运维公告
 - 持久化的未读版本新闻记录
+- 通过 GitHub Actions Discord Webhook 可选发送每周和每月匿名安装计数报告
 - 2FA、trusted proxy、Turnstile
 - 第三方移动客户端
 
