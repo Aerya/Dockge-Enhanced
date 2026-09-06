@@ -9,10 +9,11 @@ export interface RestoreTestCandidate {
  * backup Dockge valide peut ne contenir aucun Compose : dans ce cas, n'importe
  * quel autre fichier non vide convient pour tester le chiffrement/déchiffrement.
  */
-export function selectRestoreTestCandidate(lsOutput: string): RestoreTestCandidate | null {
+export function selectRestoreTestCandidate(lsOutput: string | string[]): RestoreTestCandidate | null {
     const files: RestoreTestCandidate[] = [];
 
-    for (const line of lsOutput.split("\n").filter(Boolean)) {
+    const lines = Array.isArray(lsOutput) ? lsOutput : lsOutput.split("\n");
+    for (const line of lines.filter(Boolean)) {
         try {
             const obj = JSON.parse(line) as Record<string, unknown>;
             if (obj.struct_type !== "node" || obj.type !== "file" || typeof obj.path !== "string") continue;

@@ -2226,8 +2226,17 @@ export class BackupManager {
     private async runRestoreTest(dest: BackupDestination, snapshotId: string): Promise<RestoreTestResult> {
         try {
             const safeId = assertSafeResticId(snapshotId);
-            const lsOut = await this.resticFor(dest, [ "ls", safeId, "--json", "--long" ]);
-            const candidate = selectRestoreTestCandidate(lsOut);
+            // Streaming via resticLsLines : un snapshot volumineux (100k+ fichiers)
+            // fait dépasser le maxBuffer de execFileAsync (20 Mo) si on accumule
+            // tout le `restic ls --json --long` en mémoire. On ne garde que les
+            // lignes de type fichier, ce qui suffit pour choisir un candidat.
+            const lsLines = await this.resticLsLines(
+                dest,
+                safeId,
+                120_000,
+                (line) => line.includes('"type":"file"'),
+            );
+            const candidate = selectRestoreTestCandidate(lsLines);
 
             if (!candidate) {
                 return { ok: false, error: "Aucun fichier trouvé dans le snapshot" };

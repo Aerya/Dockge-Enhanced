@@ -45,3 +45,15 @@ test("ne choisit un fichier vide que si aucun fichier non vide n'existe", () => 
 test("retourne null pour un snapshot sans fichier", () => {
     assert.equal(selectRestoreTestCandidate(""), null);
 });
+
+test("accepte un tableau de lignes JSON (mode streaming)", () => {
+    const result = selectRestoreTestCandidate([
+        node("/opt/dockge/data/settings.json", 120),
+        node("/opt/stacks/app/compose.yaml", 80),
+    ]);
+    assert.deepEqual(result, { path: "/opt/stacks/app/compose.yaml", size: 80 });
+});
+
+test("accepte un tableau vide", () => {
+    assert.equal(selectRestoreTestCandidate([]), null);
+});
