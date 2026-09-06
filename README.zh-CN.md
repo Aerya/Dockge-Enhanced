@@ -35,7 +35,10 @@
 
 ## 最新动态
 
-README 会直接保留近期最重要的变化，方便快速了解 Dockge-Enhanced 最近新增了什么。
+<details>
+<summary>查看最新变化</summary>
+
+本节汇总近期最重要的变化，方便快速了解 Dockge-Enhanced 最近新增了什么。
 
 ### 🆕 2026 年 9 月
 
@@ -152,9 +155,14 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ➡️ **[查看完整更新日志](CHANGELOG.zh-CN.md)**
 
+</details>
+
 ---
 
 ## 功能目录
+
+<details>
+<summary>查看全部功能</summary>
 
 ### 多服务器与联邦
 - 全网状联邦
@@ -162,15 +170,21 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 服务器选择与分组
 - 远程 Stack 与更新状态
 - 专用联邦 Token 与连接恢复
+- 已连接实例概览、可达性状态和 WebUI 直达入口
+- 跨 Stack、Compose/.env 文件、Docker 资源和近期 Restic Snapshot 的全局多实例搜索
+- 不同 Dockge-Enhanced 版本之间的能力协商
 
 ### Stack 管理
 - 创建、编辑、启动、停止和重新创建 Compose Stack
-- 固定与排序
+- 服务端持久化并在关联 WebUI 间共享的固定 Stack 与排序
+- 无需移动文件或数据即可发现并接管外部 Compose Stack
+- 通过受保护的一键授权开放外部 Stack 路径
 - 备注和 Git 工具
 - Build + Recreate
 - 服务/容器级操作和计划任务
 - 主机前置条件与 VPN namespace 保护
 - 可折叠/调整大小的侧栏与资源指标
+- Compose 编辑器支持端口长语法并保留 `tmpfs` 权限模式
 
 ### 迁移与复制
 - 实例间复制或移动
@@ -195,6 +209,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Dockge-Enhanced 受保护自动更新
 - 强制 Restic 备份、完整性和可用性检查
 - 失败时自动恢复
+- Compose 或 `.env` 存在未保存修改时阻止自更新
+- 更新时校准 Compose 项目名称并使用 Stack 的准确上下文
 
 ### 安全
 - 集中验证 Stack 名称，阻止路径遍历逃离受管理的 Stack 目录
@@ -210,6 +226,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Crash loop 与 healthcheck 自动修复
 - 实时/全屏日志
 - Kula 与 Dozzle
+- 本地及已连接实例的每 Stack CPU/RAM 统计
 
 ### Docker 资源
 - 镜像、卷、网络和未管理容器
@@ -233,13 +250,19 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 ### 通知与访问
 - Discord 与 Apprise
 - EN / FR / ES / zh-CN
+- 远程运维公告
+- 持久化的未读版本新闻记录
 - 2FA、trusted proxy、Turnstile
 - 第三方移动客户端
 
----
+</details>
+
 ---
 
 ## Dockge-Enhanced 自动更新流程
+
+<details>
+<summary>查看受保护的更新流程</summary>
 
 Dockge-Enhanced 会自动处理完整流程：强制 Restic 备份、完整性验证、受控替换容器、健康检查和最终确认。Discord/Apprise 通知也可以在无需一直打开 WebUI 的情况下跟踪操作。
 
@@ -256,9 +279,16 @@ Dockge-Enhanced 会自动处理完整流程：强制 Restic 备份、完整性�
 </tr>
 </table>
 
+</details>
+
 ## 截图
 
+<details>
+<summary>查看截图</summary>
+
 项目截图位于 [`screens/`](screens/) 目录。主 README 中展示了界面、更新、备份、Trivy、Discord 通知和多实例功能的最新截图。
+
+</details>
 
 ---
 
@@ -354,9 +384,14 @@ Dockge-Enhanced 将使用您现有的账号、设置和 stacks 启动。
 
 ### 可选 PlugNPiN 集成
 
+<details>
+<summary>查看配置说明</summary>
+
 在 **Settings → Integrations** 中配置 [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN)。只有明确启用并保存后，Dockge Enhanced 才会创建受管的 `plugnpin-dockge-enhanced` Stack。
 
 Nginx Proxy Manager 凭据是必需的；Pi-hole、AdGuard Home、metrics 和 debug 日志均可单独选择。密码通过 stdin 写入专用 Docker volume，不会返回浏览器，也不会写入生成的 Compose 文件。
+
+</details>
 
 ---
 
