@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { selectRestoreTestCandidate } from "./backup-restore-test";
+import { RestoreTestCandidateSelector, selectRestoreTestCandidate } from "./backup-restore-test";
 
 const node = (path: string, size: number) => JSON.stringify({
     struct_type: "node",
@@ -44,4 +44,25 @@ test("ne choisit un fichier vide que si aucun fichier non vide n'existe", () => 
 
 test("retourne null pour un snapshot sans fichier", () => {
     assert.equal(selectRestoreTestCandidate(""), null);
+});
+
+test("accepte un tableau de lignes JSON (mode streaming)", () => {
+    const result = selectRestoreTestCandidate([
+        node("/opt/dockge/data/settings.json", 120),
+        node("/opt/stacks/app/compose.yaml", 80),
+    ]);
+    assert.deepEqual(result, { path: "/opt/stacks/app/compose.yaml", size: 80 });
+});
+
+test("accepte un tableau vide", () => {
+    assert.equal(selectRestoreTestCandidate([]), null);
+});
+
+test("sélectionne un candidat au fil de l'eau sans conserver toutes les lignes", () => {
+    const selector = new RestoreTestCandidateSelector();
+    selector.addLine(node("/opt/dockge/data/settings.json", 120));
+    selector.addLine("ligne invalide");
+    selector.addLine(node("/opt/stacks/app/compose.yaml", 80));
+
+    assert.deepEqual(selector.getCandidate(), { path: "/opt/stacks/app/compose.yaml", size: 80 });
 });

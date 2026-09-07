@@ -18,7 +18,7 @@ import { getNotificationLang, getNotificationLocale, notificationText, Notificat
 import { Settings } from "../settings";
 import { ValidationError } from "../util-server";
 import { log } from "../log";
-import { selectRestoreTestCandidate } from "./backup-restore-test";
+import { RestoreTestCandidateSelector } from "./backup-restore-test";
 import { ExternalStackManager } from "../external-stacks";
 
 const execAsync = promisify(exec);
@@ -955,17 +955,14 @@ export class BackupManager {
      * Timeout configurable (défaut 120 s).
      */
     /**
-     * lineFilter : filtre appliqué sur chaque ligne brute PENDANT le streaming,
-     * avant JSON.parse — évite d'accumuler des millions de lignes en mémoire.
-     * Utiliser des checks sur les chaînes (ex: line.includes('"type":"file"'))
-     * plutôt que JSON.parse pour rester rapide.
+     * onLine traite chaque ligne au fil de l'eau sans accumuler la sortie en mémoire.
      */
     private resticLsLines(
         dest: BackupDestination,
         snapshotId: string,
         timeoutMs: number = 120_000,
-        lineFilter?: (line: string) => boolean,
-    ): Promise<string[]> {
+        onLine: (line: string) => void,
+    ): Promise<void> {
         return new Promise(async (resolve, reject) => {
             const repoEnv = buildResticEnv(dest);
             const repo    = buildRepoUrl(dest);
@@ -1012,12 +1009,10 @@ export class BackupManager {
                     fail(new Error(`restic ls timed out after ${timeoutMs / 1000}s`), tmpFile);
                 }, timeoutMs);
 
-                const lines: string[] = [];
                 const rl = readline.createInterface({ input: proc.stdout, crlfDelay: Infinity });
                 rl.on("line", (line: string) => {
                     if (!line) return;
-                    if (lineFilter && !lineFilter(line)) return;
-                    lines.push(line);
+                    onLine(line);
                 });
 
                 let exitCode: number | null = null;
@@ -1033,8 +1028,8 @@ export class BackupManager {
                     settled = true;
                     cleanup(tmpFile);
                     if (exitCode === 0 || exitCode === null) {
-                        console.log(`[BackupManager] resticLsLines: ${lines.length} lignes reçues`);
-                        resolve(lines);
+                        console.log("[BackupManager] resticLsLines terminé");
+                        resolve();
                     } else {
                         reject(new Error(`restic ls exited with code ${exitCode}: ${stderr.slice(0, 500)}`));
                     }
@@ -2226,8 +2221,16 @@ export class BackupManager {
     private async runRestoreTest(dest: BackupDestination, snapshotId: string): Promise<RestoreTestResult> {
         try {
             const safeId = assertSafeResticId(snapshotId);
-            const lsOut = await this.resticFor(dest, [ "ls", safeId, "--json", "--long" ]);
-            const candidate = selectRestoreTestCandidate(lsOut);
+            // Sélection au fil de l'eau : la consommation mémoire reste constante,
+            // quelle que soit la taille de la sortie de `restic ls`.
+            const selector = new RestoreTestCandidateSelector();
+            await this.resticLsLines(
+                dest,
+                safeId,
+                120_000,
+                (line) => selector.addLine(line),
+            );
+            const candidate = selector.getCandidate();
 
             if (!candidate) {
                 return { ok: false, error: "Aucun fichier trouvé dans le snapshot" };
