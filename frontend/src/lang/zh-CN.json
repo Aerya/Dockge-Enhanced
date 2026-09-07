@@ -1451,7 +1451,7 @@
     "externalStacks.volumes": "关联挂载 / 卷",
     "externalStacks.noVolumes": "Docker 未报告关联挂载。",
     "externalStacks.name": "Enhanced 中的名称",
-    "externalStacks.namePlaceholder": "external-my-stack",
+    "externalStacks.namePlaceholder": "my-stack",
     "externalStacks.import": "集成",
     "externalStacks.authorizeAndIntegrate": "授权并集成",
     "externalStacks.unavailable": "不可用",
