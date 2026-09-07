@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { selectRestoreTestCandidate } from "./backup-restore-test";
+import { RestoreTestCandidateSelector, selectRestoreTestCandidate } from "./backup-restore-test";
 
 const node = (path: string, size: number) => JSON.stringify({
     struct_type: "node",
@@ -56,4 +56,13 @@ test("accepte un tableau de lignes JSON (mode streaming)", () => {
 
 test("accepte un tableau vide", () => {
     assert.equal(selectRestoreTestCandidate([]), null);
+});
+
+test("sélectionne un candidat au fil de l'eau sans conserver toutes les lignes", () => {
+    const selector = new RestoreTestCandidateSelector();
+    selector.addLine(node("/opt/dockge/data/settings.json", 120));
+    selector.addLine("ligne invalide");
+    selector.addLine(node("/opt/stacks/app/compose.yaml", 80));
+
+    assert.deepEqual(selector.getCandidate(), { path: "/opt/stacks/app/compose.yaml", size: 80 });
 });
