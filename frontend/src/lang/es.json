@@ -418,7 +418,7 @@
     "externalStacks.volumes": "Montajes / volúmenes vinculados",
     "externalStacks.noVolumes": "Docker no informó de montajes vinculados.",
     "externalStacks.name": "Nombre en Enhanced",
-    "externalStacks.namePlaceholder": "external-mi-stack",
+    "externalStacks.namePlaceholder": "mi-stack",
     "externalStacks.import": "Integrar",
     "externalStacks.authorizeAndIntegrate": "Autorizar e integrar",
     "externalStacks.unavailable": "No disponible",

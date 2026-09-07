@@ -1510,7 +1510,7 @@
     "externalStacks.volumes": "Montages / volumes liés",
     "externalStacks.noVolumes": "Aucun montage lié signalé par Docker.",
     "externalStacks.name": "Nom dans Enhanced",
-    "externalStacks.namePlaceholder": "external-ma-stack",
+    "externalStacks.namePlaceholder": "ma-stack",
     "externalStacks.import": "Intégrer",
     "externalStacks.authorizeAndIntegrate": "Autoriser et intégrer",
     "externalStacks.unavailable": "Indisponible",

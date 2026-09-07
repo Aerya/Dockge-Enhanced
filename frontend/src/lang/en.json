@@ -1514,7 +1514,7 @@
     "externalStacks.volumes": "Linked mounts / volumes",
     "externalStacks.noVolumes": "No linked mount reported by Docker.",
     "externalStacks.name": "Name in Enhanced",
-    "externalStacks.namePlaceholder": "external-my-stack",
+    "externalStacks.namePlaceholder": "my-stack",
     "externalStacks.import": "Integrate",
     "externalStacks.authorizeAndIntegrate": "Authorize & integrate",
     "externalStacks.unavailable": "Unavailable",

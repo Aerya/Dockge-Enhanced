@@ -187,6 +187,8 @@
 </template>
 
 <script>
+import { suggestedExternalStackName } from "../util-external-stack-name";
+
 const PENDING_IMPORT_KEY = "dockge-external-stack-pending-import";
 
 export default {
@@ -257,8 +259,7 @@ export default {
             return this.selectedEndpoint ? `${base}/${encodeURIComponent(this.selectedEndpoint)}` : base;
         },
         suggestedName(project) {
-            const clean = project.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
-            return (clean || "external-stack").slice(0, 96);
+            return suggestedExternalStackName(project);
         },
         needsProtectedAccess(stack) {
             return stack.pathStatus !== "accessible" || Boolean(stack.configFilesNeedingAccess?.length) || Boolean(stack.envFilesNeedingAccess?.length) || Boolean(stack.dataPathsNeedingAccess?.length);

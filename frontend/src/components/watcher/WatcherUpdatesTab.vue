@@ -36,8 +36,8 @@
 
         <div class="shadow-box big-padding mb-3">
             <h3 class="h6">{{ $t("updates.pause.heading") }}</h3>
-            <label class="form-check-label d-block mb-2"><input v-model="globalPause.enabled" class="form-check-input me-1" type="checkbox" @change="saveGlobalPause">{{ $t("updates.pause.global") }}</label>
-            <div v-if="globalPause.enabled" class="d-flex flex-wrap gap-2 align-items-center">
+            <label class="form-check-label d-block mb-2"><input v-model="updatePause.enabled" class="form-check-input me-1" type="checkbox" @change="saveUpdatePause">{{ $t("updates.pause.global") }}</label>
+            <div v-if="updatePause.enabled" class="d-flex flex-wrap gap-2 align-items-center">
                 <select v-model="pausePreset" class="form-select form-select-sm pause-preset" @change="applyPausePreset">
                     <option value="1">{{ $t("updates.pause.oneDay") }}</option>
                     <option value="3">{{ $t("updates.pause.threeDays") }}</option>
@@ -48,7 +48,7 @@
                 </select>
                 <input v-model="pauseDate" class="form-control form-control-sm pause-date" type="datetime-local" @change="setCustomPause">
             </div>
-            <p v-if="globalPause.enabled" class="form-text mb-0">{{ pauseLabel }}</p>
+            <p v-if="updatePause.enabled" class="form-text mb-0">{{ pauseLabel }}</p>
         </div>
 
         <div class="shadow-box big-padding">
@@ -130,7 +130,7 @@ interface Operation {
 
 const { t } = useI18n();
 const settings = ref({ mode: "manual", schedule: { type: "immediate", start: "03:00", end: "05:00", days: [ 0, 1, 2, 3, 4, 5, 6 ] }, pause: { enabled: false, until: null as string | null } });
-const globalPause = ref({ enabled: false, until: null as string | null });
+const updatePause = ref({ enabled: false, until: null as string | null });
 const emptyBuild = (): BuildMetadata => ({ revision: "", created: "" });
 const status = ref({ updateAvailable: false, repo: "", localDigest: "", remoteDigest: "", localBuild: emptyBuild(), remoteBuild: emptyBuild() });
 const operation = ref<Operation>({ state: "idle", message: "", startedAt: null, finishedAt: null, targetImage: "" });
@@ -188,7 +188,7 @@ const lastOperationLabel = computed(() => {
     const state = t(`updates.status.${operation.value.state}`);
     return duration ? t("updates.status.lastOperationWithDuration", { state, date, duration }) : t("updates.status.lastOperationAt", { state, date });
 });
-const pauseLabel = computed(() => globalPause.value.until ? t("updates.pause.until", { date: new Date(globalPause.value.until).toLocaleString() }) : t("updates.pause.indefinite"));
+const pauseLabel = computed(() => updatePause.value.until ? t("updates.pause.until", { date: new Date(updatePause.value.until).toLocaleString() }) : t("updates.pause.indefinite"));
 
 async function load() {
     const [ settingsResult, statusResult, pauseResult ] = await Promise.all([
@@ -200,18 +200,28 @@ async function load() {
         operation.value = statusResult.operation ?? operation.value;
         progress.value = statusResult.progress ?? null;
     }
-    if (pauseResult.ok) globalPause.value = pauseResult.data.globalUpdatePause ?? globalPause.value;
+    const selfPause = settingsResult.ok ? settingsResult.data.pause : null;
+    const globalPause = pauseResult.ok ? pauseResult.data.globalUpdatePause : null;
+    const activePause = [ selfPause, globalPause ].find((pause) => pause?.enabled && (!pause.until || Date.parse(pause.until) > Date.now()));
+    updatePause.value = activePause ?? globalPause ?? selfPause ?? updatePause.value;
 }
 
 async function save() { await watcherApi("POST", "/self/settings", settings.value); }
-async function saveGlobalPause() { await watcherApi("POST", "/image/update-pause", globalPause.value); }
+async function saveUpdatePause() {
+    if (!updatePause.value.enabled) updatePause.value.until = null;
+    settings.value.pause = { ...updatePause.value };
+    await Promise.all([
+        watcherApi("POST", "/self/settings", settings.value),
+        watcherApi("POST", "/image/update-pause", updatePause.value),
+    ]);
+}
 async function applyPausePreset() {
-    globalPause.value.until = pausePreset.value === "indefinite" ? null : new Date(Date.now() + Number(pausePreset.value) * 86_400_000).toISOString();
-    await saveGlobalPause();
+    updatePause.value.until = pausePreset.value === "indefinite" ? null : new Date(Date.now() + Number(pausePreset.value) * 86_400_000).toISOString();
+    await saveUpdatePause();
 }
 async function setCustomPause() {
-    globalPause.value.until = pauseDate.value ? new Date(pauseDate.value).toISOString() : null;
-    await saveGlobalPause();
+    updatePause.value.until = pauseDate.value ? new Date(pauseDate.value).toISOString() : null;
+    await saveUpdatePause();
 }
 
 function formatBytes(value?: number): string {
