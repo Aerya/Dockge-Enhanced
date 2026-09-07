@@ -17,7 +17,7 @@
         ></span>
         <div class="title">
             <div class="name-row">
-                <span class="name">{{ stackName }}</span>
+                <span class="name">{{ displayName }}</span>
                 <span v-if="stack.isExternal" class="external-badge"><font-awesome-icon icon="external-link-square-alt" />{{ $t("externalStacks.external") }}</span>
                 <font-awesome-icon v-if="scheduled" icon="calendar-days" class="scheduled-indicator" :title="$t('stackScheduler.scheduledTooltip')" />
             </div>
@@ -60,6 +60,7 @@
 import { EXITED, RUNNING, statusNameShort } from "../../../common/util-common";
 import StackUpdateBadge from "./StackUpdateBadge.vue";
 import StackStatsBadge from "./StackStatsBadge.vue";
+import { externalStackDisplayName } from "../util-external-stack-name";
 
 export default {
     components: {
@@ -116,6 +117,9 @@ export default {
         },
         stackName() {
             return this.stack.name;
+        },
+        displayName() {
+            return this.stack.isExternal ? externalStackDisplayName(this.stackName) : this.stackName;
         },
         active() {
             return this.$route.path === this.url;
