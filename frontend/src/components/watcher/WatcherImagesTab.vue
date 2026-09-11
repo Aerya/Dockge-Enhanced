@@ -310,21 +310,38 @@
                                                 class="me-1"
                                             />{{ $t("watcher.status.updateAvailable") }}
                                         </span>
-                                        <button
-                                            class="btn btn-xs btn-outline-secondary btn-ignore-version"
-                                            :disabled="ignoringKey === `${s.stack}::${s.image}`"
-                                            :title="$t('watcher.status.ignoreVersion')"
-                                            @click="ignoreVersion(s)"
-                                        >
-                                            <span
-                                                v-if="ignoringKey === `${s.stack}::${s.image}`"
-                                                class="spinner-border spinner-border-sm"
-                                            />
-                                            <template v-else>
-                                                ⏭
-                                                {{ $t("watcher.status.ignoreVersion") }}
-                                            </template>
-                                        </button>
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <button
+                                                class="btn btn-xs btn-outline-primary"
+                                                :disabled="updatingKey === `${s.stack}::${s.image}`"
+                                                :title="$t('watcher.status.updateNow')"
+                                                @click="updateNow(s)"
+                                            >
+                                                <span
+                                                    v-if="updatingKey === `${s.stack}::${s.image}`"
+                                                    class="spinner-border spinner-border-sm"
+                                                />
+                                                <template v-else>
+                                                    <font-awesome-icon icon="cloud-arrow-down" class="me-1" />
+                                                    {{ $t("watcher.status.updateNow") }}
+                                                </template>
+                                            </button>
+                                            <button
+                                                class="btn btn-xs btn-outline-secondary btn-ignore-version"
+                                                :disabled="ignoringKey === `${s.stack}::${s.image}`"
+                                                :title="$t('watcher.status.ignoreVersion')"
+                                                @click="ignoreVersion(s)"
+                                            >
+                                                <span
+                                                    v-if="ignoringKey === `${s.stack}::${s.image}`"
+                                                    class="spinner-border spinner-border-sm"
+                                                />
+                                                <template v-else>
+                                                    ⏭
+                                                    {{ $t("watcher.status.ignoreVersion") }}
+                                                </template>
+                                            </button>
+                                        </div>
                                     </template>
                                     <template v-else-if="s.ignoredDigest">
                                         <span class="badge bg-secondary d-block mb-1">
@@ -643,6 +660,7 @@ const expandedUpdateHistoryRows = ref(new Set<number>());
 const rollbackingKey = ref<string | null>(null);
 const ignoringKey = ref<string | null>(null);
 const clearingKey = ref<string | null>(null);
+const updatingKey = ref<string | null>(null);
 const saving = ref(false);
 const running = ref(false);
 const imageFilter = ref("");
@@ -903,6 +921,22 @@ async function toggleAutoUpdatePause(s: ImageStatus) {
         showToast(active ? t("updates.pause.resumedTarget") : t("updates.pause.pausedTarget"));
     } else if (!res.ok) {
         showToast(`❌ ${res.message}`, false);
+    }
+}
+
+async function updateNow(s: ImageStatus) {
+    const key = `${s.stack}::${s.image}`;
+    updatingKey.value = key;
+    try {
+        const res = await watcherApi("POST", "/image/update-now", { key });
+        if (res.ok) {
+            await loadStatus();
+            showToast(t("watcher.status.updateNowDone"));
+        } else {
+            showToast(`❌ ${res.message || t("watcher.status.updateNowFailed")}`, false);
+        }
+    } finally {
+        updatingKey.value = null;
     }
 }
 

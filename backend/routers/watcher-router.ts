@@ -234,6 +234,29 @@ export class WatcherRouter extends Router {
         });
 
         // ════════════════════════════════════════════════════════════════
+        // IMAGE WATCHER — Mise à jour manuelle à la demande ("update now")
+        // ════════════════════════════════════════════════════════════════
+
+        router.post("/image/update-now", async (req: Request, res: Response) => {
+            const { key } = req.body as { key?: string };
+            if (!key) {
+                return res.status(400).json({ ok: false, message: "key requis" });
+            }
+            try {
+                const success = await ImageWatcher.getInstance().manualUpdate(key);
+                if (success) {
+                    await auditWatcherAction(req, "image.manual_update", "image", key);
+                    return res.json({ ok: true });
+                }
+                await auditWatcherAction(req, "image.manual_update", "image", key, "failure", "already in progress");
+                return res.json({ ok: false, message: "Update already in progress for this image" });
+            } catch (e) {
+                await auditWatcherAction(req, "image.manual_update", "image", key, "failure", String(e));
+                return res.status(500).json({ ok: false, message: String(e) });
+            }
+        });
+
+        // ════════════════════════════════════════════════════════════════
         // CREDENTIALS — Ajout / suppression de credentials registry
         // ════════════════════════════════════════════════════════════════
 
