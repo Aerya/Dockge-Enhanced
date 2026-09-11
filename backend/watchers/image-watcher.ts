@@ -121,7 +121,7 @@ export interface UpdateHistoryEntry {
   image: string;
   oldDigest: string;
   newDigest: string;
-  mode: "immediate" | "scheduled";
+  mode: "immediate" | "scheduled" | "manual";
   success: boolean;
   error?: string;
 }
@@ -1192,7 +1192,7 @@ export class ImageWatcher {
   private async performAutoUpdate(
     status: ImageStatus,
     watched: WatchedComposeStack,
-    mode: "immediate" | "scheduled" = "immediate",
+    mode: "immediate" | "scheduled" | "manual" = "immediate",
   ): Promise<boolean> {
     const key = `${status.stack}::${status.image}`;
     const { composePath, project, configFiles, workingDir, envFiles } = watched;
@@ -1342,6 +1342,30 @@ export class ImageWatcher {
       }
     }
     await this.persistToFile();
+  }
+
+  // ── Manual update (on-demand from UI) ─────────────────────────────
+
+  async manualUpdate(key: string): Promise<boolean> {
+    const sepIdx = key.indexOf("::");
+    if (sepIdx === -1) throw new Error("Invalid key format — expected 'stack::image'");
+    const stack = key.slice(0, sepIdx);
+    const image = key.slice(sepIdx + 2);
+
+    const watchedStacks = await collectWatchedComposeStacks(STACKS_DIR, this.externalStacks);
+    const watched = watchedStacks.get(stack);
+    if (!watched) throw new Error(`Stack "${stack}" not found`);
+
+    const status: ImageStatus = imageStatusStore.get(key) ?? {
+      image,
+      stack,
+      localDigest: "",
+      remoteDigest: "",
+      hasUpdate: true,
+      lastChecked: new Date().toISOString(),
+    };
+
+    return this.performAutoUpdate(status, watched, "manual");
   }
 
   // ── Rollback ──────────────────────────────────────────────────────
