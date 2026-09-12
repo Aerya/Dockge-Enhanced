@@ -69,7 +69,7 @@ export interface UpdateHistoryEntry {
     image: string;
     oldDigest: string;
     newDigest: string;
-    mode: "immediate" | "scheduled";
+    mode: "immediate" | "scheduled" | "manual";
     success: boolean;
     error?: string;
 }

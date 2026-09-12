@@ -248,8 +248,8 @@ export class WatcherRouter extends Router {
                     await auditWatcherAction(req, "image.manual_update", "image", key);
                     return res.json({ ok: true });
                 }
-                await auditWatcherAction(req, "image.manual_update", "image", key, "failure", "already in progress");
-                return res.json({ ok: false, message: "Update already in progress for this image" });
+                await auditWatcherAction(req, "image.manual_update", "image", key, "failure", "update failed or already in progress");
+                return res.status(409).json({ ok: false, message: "Update failed or is already in progress for this image" });
             } catch (e) {
                 await auditWatcherAction(req, "image.manual_update", "image", key, "failure", String(e));
                 return res.status(500).json({ ok: false, message: String(e) });

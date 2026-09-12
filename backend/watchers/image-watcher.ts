@@ -1352,18 +1352,17 @@ export class ImageWatcher {
     const stack = key.slice(0, sepIdx);
     const image = key.slice(sepIdx + 2);
 
+    const status = imageStatusStore.get(key);
+    if (!status || status.stack !== stack || status.image !== image) {
+      throw new Error("Image status not found; run an image check first");
+    }
+    if (!status.hasUpdate || status.error) {
+      throw new Error("No applicable update is available for this image");
+    }
+
     const watchedStacks = await collectWatchedComposeStacks(STACKS_DIR, this.externalStacks);
     const watched = watchedStacks.get(stack);
     if (!watched) throw new Error(`Stack "${stack}" not found`);
-
-    const status: ImageStatus = imageStatusStore.get(key) ?? {
-      image,
-      stack,
-      localDigest: "",
-      remoteDigest: "",
-      hasUpdate: true,
-      lastChecked: new Date().toISOString(),
-    };
 
     return this.performAutoUpdate(status, watched, "manual");
   }

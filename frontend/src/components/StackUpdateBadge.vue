@@ -1,11 +1,12 @@
 <template>
     <span v-if="hasUpdate" class="badge-update" :title="tooltip">
-        <font-awesome-icon icon="arrow-circle-up" />MàJ
+        <font-awesome-icon icon="arrow-circle-up" />{{ $t("containerImageUpdateAvailable") }}
     </span>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { useImageStatus, type RemoteStatusLoader } from "../composables/useImageStatus";
 
 const props = defineProps<{
@@ -15,6 +16,7 @@ const props = defineProps<{
 }>();
 
 const { statusForStack, registerRemoteEndpoint, unregisterRemoteEndpoint } = useImageStatus();
+const { t } = useI18n();
 
 onMounted(() => {
     if (props.endpoint && props.loadRemoteStatus) {
@@ -39,7 +41,7 @@ const tooltip = computed(() => {
         return "";
     }
     return stackUpdates.value
-        .map(u => `${u.image}: mise à jour disponible`)
+        .map(u => `${u.image}: ${t("watcher.status.updateAvailable")}`)
         .join("\n");
 });
 </script>

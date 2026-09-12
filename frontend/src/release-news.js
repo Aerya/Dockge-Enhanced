@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-12-manual-image-update-and-update-clarity",
+        items: [ "releaseNews.item.manualImageUpdateAndScope" ],
+    },
+    {
         id: "2026-09-05-external-stacks-companion-path-alias",
         items: [ "releaseNews.item.externalStacksCompanionPathAlias" ],
     },

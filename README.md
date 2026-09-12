@@ -45,6 +45,8 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | **Updates** | Image update detection, manual or automatic container updates with rollback, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
 | **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant examples, scheduled operations, and centralized history including operation origin, status and duration |
+
+> **Update schedules:** the maintenance window on the **Updates** tab controls Dockge-Enhanced self-updates. Container image schedules are configured separately for each image on the **Images** tab; detected updates can also be applied there with **Update now**.
 | **Docker resources** | Management of images, volumes, networks and unmanaged containers, bulk operations, auto-prune and safeguards around destructive actions |
 | **Security** | Trivy vulnerability scanning, CVE exceptions, protected update workflows, 2FA, trusted-proxy authentication and Cloudflare Turnstile |
 | **Monitoring** | System, stack and container statistics, configurable system status bar, dashboard health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula and managed Dozzle integrations |

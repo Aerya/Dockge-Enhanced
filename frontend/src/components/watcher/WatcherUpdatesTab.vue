@@ -5,6 +5,7 @@
         <div class="shadow-box big-padding mb-3">
             <h3 class="h6">{{ $t("updates.self.heading") }}</h3>
             <p class="form-text">{{ $t("updates.self.backupRequired") }}</p>
+            <p class="alert alert-info py-2">{{ $t("updates.self.scopeHint") }}</p>
             <label class="form-label" for="self-update-mode">{{ $t("updates.self.mode") }}</label>
             <select id="self-update-mode" v-model="settings.mode" class="form-select" @change="save">
                 <option value="manual">{{ $t("updates.self.manual") }}</option>
