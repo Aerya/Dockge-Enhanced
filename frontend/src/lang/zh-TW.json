@@ -1245,6 +1245,7 @@
     "home.summary.state.disabled": "未啟用",
     "releaseNews.item.crosslyUiIntegration": "介面新增可收合和可調整大小的堆疊側欄、可設定的系統狀態列、總覽狀態卡片、即時跟隨主題的編輯器、自動主題以及更一致的行動版導覽。",
     "releaseNews.item.manualImageUpdateAndScope": "現在可以直接在「映像檔」分頁套用可用更新。「更新」分頁也明確說明維護時段僅用於 Dockge-Enhanced 自我更新；映像檔仍需個別排程。",
+    "releaseNews.item.agentStatusReconciliation": "關聯執行個體收到通過驗證的遠端堆疊資料後會立即恢復為上線狀態，無需在初始連線競態後重新整理瀏覽器。",
     "updates.heading": "更新",
     "updates.self.heading": "Dockge-Enhanced 更新",
     "updates.self.backupRequired": "每次自動自我更新前都必須執行 Restic 備份；備份失敗會取消更新。",

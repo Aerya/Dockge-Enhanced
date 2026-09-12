@@ -1326,6 +1326,7 @@
     "watcher.monitoring.navbarPositionBottom": "Bottom (status bar)",
     "releaseNews.item.crosslyUiIntegration": "The interface gains a collapsible and resizable stack sidebar, configurable system status bar, dashboard health cards, live theme-aware editors, Auto theme and more consistent mobile navigation.",
     "releaseNews.item.manualImageUpdateAndScope": "Available image updates can now be applied directly from the Images tab. The Updates tab also clarifies that its maintenance window applies to Dockge-Enhanced itself; image schedules remain configured per image.",
+    "releaseNews.item.agentStatusReconciliation": "Linked instances now return to Online as soon as authenticated remote stack data is received, without requiring a browser reload after an initial connection race.",
     "updates.heading": "Updates",
     "updates.self.heading": "Dockge-Enhanced updates",
     "updates.self.backupRequired": "A Restic backup is required before every automatic self-update. The update is cancelled if it fails.",

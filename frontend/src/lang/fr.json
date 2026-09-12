@@ -1322,6 +1322,7 @@
     "watcher.monitoring.navbarPositionBottom": "Bas (barre de statut)",
     "releaseNews.item.crosslyUiIntegration": "L’interface bénéficie d’une colonne des stacks repliable et redimensionnable, d’une barre d’état système configurable, de cartes de synthèse, d’éditeurs qui suivent le thème en direct, du thème Auto et d’une navigation mobile plus cohérente.",
     "releaseNews.item.manualImageUpdateAndScope": "Les mises à jour d’images disponibles peuvent maintenant être appliquées directement depuis l’onglet Images. L’onglet Mises à jour précise aussi que son créneau de maintenance concerne Dockge-Enhanced lui-même ; les images restent planifiées individuellement.",
+    "releaseNews.item.agentStatusReconciliation": "Les instances liées repassent désormais En ligne dès la réception authentifiée de leurs stacks, sans rechargement du navigateur après une course de connexion initiale.",
     "updates.heading": "Mises à jour",
     "updates.self.heading": "Mises à jour de Dockge-Enhanced",
     "updates.self.backupRequired": "Un backup Restic est obligatoire avant chaque mise à jour automatique. La mise à jour est annulée en cas d’échec.",

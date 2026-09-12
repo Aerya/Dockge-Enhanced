@@ -226,6 +226,7 @@
     "releaseNews.item.startGuardWatch": "Los requisitos de una pila también pueden supervisarse continuamente: después de un retraso configurable, Dockge la detiene si una dependencia desaparece y solo la reinicia tras recuperarse si el vigilante la detuvo.",
     "releaseNews.item.crosslyUiIntegration": "La interfaz incorpora una columna de stacks plegable y redimensionable, una barra de estado del sistema configurable, tarjetas de resumen, editores que siguen el tema en directo, el tema Auto y una navegación móvil más coherente.",
     "releaseNews.item.manualImageUpdateAndScope": "Las actualizaciones de imágenes disponibles ahora se pueden aplicar directamente desde la pestaña Imágenes. La pestaña Actualizaciones también aclara que su ventana de mantenimiento se aplica a Dockge-Enhanced; las imágenes se programan individualmente.",
+    "releaseNews.item.agentStatusReconciliation": "Las instancias vinculadas vuelven a mostrarse En línea al recibir datos autenticados de sus stacks remotos, sin tener que recargar el navegador tras una condición de carrera inicial.",
     "updates.heading": "Actualizaciones",
     "updates.self.heading": "Actualizaciones de Dockge-Enhanced",
     "updates.self.backupRequired": "Se requiere una copia Restic antes de cada actualización automática. La actualización se cancela si falla.",

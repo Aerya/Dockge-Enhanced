@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-12-agent-status-reconciliation",
+        items: [ "releaseNews.item.agentStatusReconciliation" ],
+    },
+    {
         id: "2026-09-12-manual-image-update-and-update-clarity",
         items: [ "releaseNews.item.manualImageUpdateAndScope" ],
     },

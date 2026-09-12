@@ -274,6 +274,10 @@ export default defineComponent({
                             };
                         }
                         this.allAgentStackList[res.endpoint].stackList = res.stackList;
+                        // A successful remote payload proves that the authenticated
+                        // agent connection is live, even if an older offline event
+                        // arrived later during the initial connection race.
+                        this.agentStatusList[res.endpoint] = "online";
                     }
                 }
             });

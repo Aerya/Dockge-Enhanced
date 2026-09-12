@@ -1262,6 +1262,7 @@
     "home.summary.state.disabled": "未启用",
     "releaseNews.item.crosslyUiIntegration": "界面新增可折叠和可调整大小的堆栈侧栏、可配置的系统状态栏、概览状态卡片、实时跟随主题的编辑器、自动主题以及更一致的移动端导航。",
     "releaseNews.item.manualImageUpdateAndScope": "现在可以直接在“镜像”标签页应用可用的镜像更新。“更新”标签页也明确其维护窗口仅用于 Dockge-Enhanced 自更新；镜像仍需单独计划。",
+    "releaseNews.item.agentStatusReconciliation": "关联实例收到经过身份验证的远程堆栈数据后会立即恢复为在线状态，无需在初始连接竞态后刷新浏览器。",
     "updates.heading": "更新",
     "updates.self.heading": "Dockge-Enhanced 更新",
     "updates.self.backupRequired": "每次自动自更新前都必须执行 Restic 备份；备份失败会取消更新。",
