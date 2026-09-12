@@ -1,4 +1,15 @@
 # ─── Stage 1 : build ─────────────────────────────────────────────
+FROM golang:1.26-alpine AS restic-builder
+
+ARG RESTIC_VERSION=0.19.1
+ARG GRPC_VERSION=1.83.2
+WORKDIR /src
+RUN wget -qO- "https://github.com/restic/restic/archive/refs/tags/v${RESTIC_VERSION}.tar.gz" \
+    | tar -xz --strip-components=1 \
+    && go get "google.golang.org/grpc@v${GRPC_VERSION}" \
+    && go run build.go
+
+# ─── Stage 2 : build de l'application ─────────────────────────────────
 FROM node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019 AS builder
 
 WORKDIR /app
@@ -41,21 +52,9 @@ RUN apk upgrade --no-cache libcrypto3 libssl3 \
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
     /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 
-# Restic depuis GitHub releases — compilé avec Go récent (fix CVE stdlib).
-# Mettre à jour RESTIC_VERSION dès qu'une nouvelle release est disponible :
-# https://github.com/restic/restic/releases
-ARG RESTIC_VERSION=0.19.1
-RUN case "$(uname -m)" in \
-        aarch64) ARCH=arm64 ;; \
-        armv7l)  ARCH=arm   ;; \
-        *)       ARCH=amd64 ;; \
-    esac \
-    && wget -qO /tmp/restic.bz2 \
-       "https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}/restic_${RESTIC_VERSION}_linux_${ARCH}.bz2" \
-    && bunzip2 /tmp/restic.bz2 \
-    && mv /tmp/restic /usr/local/bin/restic \
-    && chmod +x /usr/local/bin/restic \
-    && rm -f /tmp/restic.bz2
+# La release stable est recompilée avec gRPC corrigé jusqu'à ce qu'un
+# binaire officiel Restic intègre la correction de CVE-2026-84445.
+COPY --from=restic-builder /src/restic /usr/local/bin/restic
 
 # node_modules déjà compilés (pas de recompilation nécessaire)
 COPY --from=builder /app/node_modules ./node_modules
