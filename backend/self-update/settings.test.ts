@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizeSelfUpdateSettings, selfUpdateMayRun } from "./settings";
+import {
+    automaticImageUpdatesMayRun,
+    getAutomaticImageUpdateWindow,
+    normalizeSelfUpdateSettings,
+    selfUpdateMayRun,
+} from "./settings";
 
 test("existing installations keep manual self-update by default", () => {
     assert.equal(normalizeSelfUpdateSettings({}).mode, "manual");
@@ -24,4 +29,32 @@ test("window updates only run on selected weekdays", () => {
     const settings = normalizeSelfUpdateSettings({ mode: "sidecar", schedule: { type: "window", start: "03:00", end: "05:00", days: [ 1 ] } });
     assert.equal(selfUpdateMayRun(settings, new Date("2026-08-31T04:00:00")), true);
     assert.equal(selfUpdateMayRun(settings, new Date("2026-09-01T04:00:00")), false);
+});
+
+test("self-update window gates every automatic image update", () => {
+    const settings = normalizeSelfUpdateSettings({
+        mode: "sidecar",
+        schedule: { type: "window", start: "03:00", end: "05:00", days: [ 1 ] },
+    });
+
+    assert.deepEqual(getAutomaticImageUpdateWindow(settings), {
+        start: "03:00",
+        end: "05:00",
+        days: [ 1 ],
+    });
+    assert.equal(automaticImageUpdatesMayRun(settings, new Date("2026-08-31T04:00:00")), true);
+    assert.equal(automaticImageUpdatesMayRun(settings, new Date("2026-08-31T06:00:00")), false);
+    assert.equal(automaticImageUpdatesMayRun(settings, new Date("2026-09-01T04:00:00")), false);
+});
+
+test("manual or immediate self-update settings do not delay automatic images", () => {
+    const manual = normalizeSelfUpdateSettings({
+        mode: "manual",
+        schedule: { type: "window", start: "03:00", end: "05:00" },
+    });
+    const immediate = normalizeSelfUpdateSettings({ mode: "sidecar", schedule: { type: "immediate" } });
+
+    assert.equal(getAutomaticImageUpdateWindow(manual), null);
+    assert.equal(automaticImageUpdatesMayRun(manual, new Date("2026-08-31T06:00:00")), true);
+    assert.equal(automaticImageUpdatesMayRun(immediate, new Date("2026-08-31T06:00:00")), true);
 });

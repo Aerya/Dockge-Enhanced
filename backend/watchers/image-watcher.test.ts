@@ -6,6 +6,8 @@ import {
   buildManifestUrl,
   composeExecInvocation,
   isMandatoryManagedUpdate,
+  pendingAutomaticImageUpdateMayRun,
+  resolveAutomaticImageUpdateAction,
 } from "./image-watcher";
 
 test("construit Compose avec des arguments séparés", () => {
@@ -52,4 +54,29 @@ test("met toujours à jour le Dozzle géré par Enhanced", () => {
     stack: "mon-dozzle",
     image: "amir20/dozzle:latest",
   }), false);
+});
+
+test("le créneau global met toutes les mises à jour automatiques en attente", () => {
+  const window = { start: "03:00", end: "05:00", days: [ 1 ] };
+
+  assert.equal(resolveAutomaticImageUpdateAction({ mode: "immediate" }, false, window, false), "pending");
+  assert.equal(resolveAutomaticImageUpdateAction({ mode: "scheduled", time: "02:00" }, false, window, false), "pending");
+  assert.equal(resolveAutomaticImageUpdateAction(undefined, true, window, false), "pending");
+  assert.equal(resolveAutomaticImageUpdateAction(undefined, false, window, false), null);
+});
+
+test("le créneau global applique les mises à jour en mode planifié", () => {
+  const window = { start: "03:00", end: "05:00", days: [ 1 ] };
+
+  assert.equal(resolveAutomaticImageUpdateAction({ mode: "immediate" }, false, window, true), "scheduled");
+  assert.equal(resolveAutomaticImageUpdateAction({ mode: "scheduled", time: "02:00" }, false, window, true), "scheduled");
+  assert.equal(resolveAutomaticImageUpdateAction(undefined, true, window, true), "scheduled");
+  assert.equal(resolveAutomaticImageUpdateAction({ mode: "immediate" }, false, window, true, true), null);
+});
+
+test("les mises à jour en attente reprennent correctement si le créneau global est retiré", () => {
+  assert.equal(pendingAutomaticImageUpdateMayRun({ mode: "immediate" }, false, null, true, "06:00"), true);
+  assert.equal(pendingAutomaticImageUpdateMayRun({ mode: "scheduled", time: "02:00" }, false, null, true, "01:59"), false);
+  assert.equal(pendingAutomaticImageUpdateMayRun({ mode: "scheduled", time: "02:00" }, false, null, true, "02:00"), true);
+  assert.equal(pendingAutomaticImageUpdateMayRun(undefined, true, null, true, "06:00"), true);
 });

@@ -44,7 +44,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | **Multiservidor** | Federación en malla completa entre instancias Dockge-Enhanced, administración desde cualquier servidor vinculado, selección y agrupación de servidores, estado de actualizaciones remotas, copia/migración transaccional de stacks, transferencias reanudables y replicación en frío programada |
 | **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones y programación por stack y contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y protecciones para namespaces de red VPN compartidos |
 | **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, además de los mecanismos de recuperación usados por las actualizaciones protegidas |
-| **Actualizaciones** | Detección de actualizaciones de imágenes, actualizaciones manuales o automáticas de contenedores con rollback, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
+| **Actualizaciones** | Detección de actualizaciones de imágenes, actualizaciones manuales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
 | **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
 | **Automatización y auditoría** | API REST limitada por permisos, webhooks por stack, ejemplos para Home Assistant, operaciones programadas e historial centralizado con origen, estado y duración |
 | **Recursos Docker** | Gestión de imágenes, volúmenes, redes y contenedores no gestionados, operaciones masivas, auto-prune y protecciones frente a acciones destructivas |
@@ -52,6 +52,8 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | **Monitorización** | Estadísticas del sistema, stacks y contenedores, barra de estado configurable, tarjetas de salud del panel, detección de crash loops, auto-heal de healthchecks, logs responsivos/a pantalla completa e integraciones opcionales con Kula y Dozzle gestionado |
 | **Integraciones** | PlugNPiN y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
 | **Notificaciones y acceso** | Notificaciones Discord y Apprise localizadas en EN/FR/ES/zh-CN, soporte multiinstancia, 2FA, trusted proxy, Turnstile y clientes móviles de terceros |
+
+> **Programación de actualizaciones:** cuando se configura una ventana de mantenimiento para la autoactualización de Dockge-Enhanced, la misma ventana se aplica a todas las actualizaciones automáticas de imágenes. Las actualizaciones detectadas fuera de ella quedan pendientes hasta la siguiente ventana permitida. Los horarios por imagen siguen disponibles sin ventana global y la acción manual **Actualizar ahora** siempre es inmediata.
 
 ## Últimas novedades
 
@@ -615,6 +617,8 @@ Este fork rastrea automáticamente los lanzamientos upstream de Dockge a través
 - **Si se encuentra** — fusiona cambios upstream y abre un PR
 - **Al fusionar** — reconstruye y publica imágenes Docker (`amd64` + `arm64`) a GHCR
 - **En conflictos de autenticación** — mantiene temporalmente la versión Enhanced en la rama de sincronización y lista explícitamente archivos que requieren comparación antes de fusionar
+
+La ventana configurada en la pestaña **Actualizaciones** es global: cuando está activa para la autoactualización de Dockge-Enhanced, también controla todas las actualizaciones automáticas de imágenes. Las imágenes detectadas fuera de los días y horas permitidos quedan pendientes. Las acciones manuales **Actualizar ahora** nunca se retrasan por esta ventana.
 
 ---
 

@@ -24,6 +24,7 @@ import { StackScheduler } from "../watchers/stack-scheduler";
 import { requireHttpAuth } from "../auth";
 import { normalizeUpdatePause } from "../watchers/update-policy";
 import { SelfUpdateManager } from "../self-update/manager";
+import { getAutomaticImageUpdateWindow } from "../self-update/settings";
 import { RemoteAnnouncementManager } from "../remote-announcements";
 
 async function auditWatcherAction(
@@ -144,7 +145,13 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.get("/image/auto-update", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: ImageWatcher.getInstance().getAutoUpdateState() });
+            res.json({
+                ok: true,
+                data: {
+                    ...ImageWatcher.getInstance().getAutoUpdateState(),
+                    globalMaintenanceWindow: getAutomaticImageUpdateWindow(SelfUpdateManager.getInstance().getSettings()),
+                },
+            });
         });
 
         router.post("/image/auto-update", async (req: Request, res: Response) => {

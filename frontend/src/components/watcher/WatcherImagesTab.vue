@@ -207,6 +207,11 @@
                 </div>
             </div>
 
+            <div v-if="globalMaintenanceWindow" class="alert alert-info py-2 mb-3">
+                <font-awesome-icon icon="clock" class="me-2" />
+                {{ $t("watcher.status.globalWindowActive", { window: globalWindowLabel }) }}
+            </div>
+
             <div
                 v-if="imageStatuses.length === 0"
                 class="text-center form-text fst-italic py-3"
@@ -404,13 +409,14 @@
                                                 🚫 {{ $t("watcher.status.auIgnored") }}
                                             </option>
                                             <option value="immediate">
-                                                ⚡ {{ $t("watcher.status.auImmediate") }}
+                                                {{ globalMaintenanceWindow ? "🕐" : "⚡" }}
+                                                {{ globalMaintenanceWindow ? $t("watcher.status.auGlobalWindow") : $t("watcher.status.auImmediate") }}
                                             </option>
                                             <option value="scheduled">
                                                 🕐 {{ $t("watcher.status.auScheduled") }}
                                             </option>
                                         </select>
-                                        <template v-if="getAutoUpdateMode(s) === 'scheduled'">
+                                        <template v-if="getAutoUpdateMode(s) === 'scheduled' && !globalMaintenanceWindow">
                                             <input
                                                 type="time"
                                                 class="form-control form-control-sm au-time"
@@ -423,12 +429,12 @@
                                                     )
                                                 "
                                             />
-                                            <span
-                                                v-if="isPending(s)"
-                                                class="au-pending"
-                                                :title="$t('watcher.status.auPendingHint')"
-                                            >⏳</span>
                                         </template>
+                                        <span
+                                            v-if="isPending(s)"
+                                            class="au-pending"
+                                            :title="globalMaintenanceWindow ? $t('watcher.status.auPendingGlobalHint', { window: globalWindowLabel }) : $t('watcher.status.auPendingHint')"
+                                        >⏳</span>
                                         <button
                                             v-if="getAutoUpdateMode(s) !== 'off' && getAutoUpdateMode(s) !== 'ignored'"
                                             class="btn btn-xs btn-outline-secondary"
@@ -636,7 +642,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { watcherApi } from "./shared";
-import type { Cred, ImageStatus, ImgSettings, RollbackEntry, UpdateHistoryEntry } from "./shared";
+import type { Cred, GlobalMaintenanceWindow, ImageStatus, ImgSettings, RollbackEntry, UpdateHistoryEntry } from "./shared";
 
 const imgSettings = defineModel<ImgSettings>("imgSettings", { required: true });
 const credentials = defineModel<Cred[]>("credentials", { required: true });
@@ -665,6 +671,7 @@ const saving = ref(false);
 const running = ref(false);
 const imageFilter = ref("");
 const showDigests = ref(false);
+const globalMaintenanceWindow = ref<GlobalMaintenanceWindow | null>(null);
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -679,6 +686,14 @@ const lastCheckDisplay = computed(() => {
         return "—";
     }
     return fmtDate(new Date(Math.max(...dates)));
+});
+
+const globalWindowLabel = computed(() => {
+    if (!globalMaintenanceWindow.value) return "";
+    const days = globalMaintenanceWindow.value.days
+        .map((day) => t(`updates.self.day${day}`))
+        .join(", ");
+    return `${days} · ${globalMaintenanceWindow.value.start}–${globalMaintenanceWindow.value.end}`;
 });
 
 const imagesByStack = computed(() => {
@@ -714,10 +729,11 @@ function showToast(msg: string, ok = true) {
 // ─── Init & polling ───────────────────────────────────────────────
 
 onMounted(async () => {
-    const [ statusRes, rollbackRes, histRes ] = await Promise.all([
+    const [ statusRes, rollbackRes, histRes, autoUpdateRes ] = await Promise.all([
         watcherApi("GET", "/image/status"),
         watcherApi("GET", "/image/rollback"),
         watcherApi("GET", "/image/update-history"),
+        watcherApi("GET", "/image/auto-update"),
     ]);
     if (statusRes.ok) {
         imageStatuses.value = statusRes.data ?? [];
@@ -727,6 +743,11 @@ onMounted(async () => {
     }
     if (histRes.ok) {
         updateHistory.value = histRes.data ?? [];
+    }
+    if (autoUpdateRes.ok) {
+        imgSettings.value.autoUpdateConfig = autoUpdateRes.data?.autoUpdateConfig ?? {};
+        imgSettings.value.pendingAutoUpdates = autoUpdateRes.data?.pendingAutoUpdates ?? [];
+        globalMaintenanceWindow.value = autoUpdateRes.data?.globalMaintenanceWindow ?? null;
     }
     pollTimer = setInterval(loadStatus, 10000);
 });
@@ -752,6 +773,7 @@ async function loadStatus() {
     if (autoUpdateRes.ok) {
         imgSettings.value.autoUpdateConfig = autoUpdateRes.data?.autoUpdateConfig ?? {};
         imgSettings.value.pendingAutoUpdates = autoUpdateRes.data?.pendingAutoUpdates ?? [];
+        globalMaintenanceWindow.value = autoUpdateRes.data?.globalMaintenanceWindow ?? null;
     }
 }
 

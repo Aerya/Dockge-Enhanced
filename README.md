@@ -42,16 +42,16 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers, and scheduled cold replication |
 | **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, per-stack and per-container actions and scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and safeguards for shared VPN network namespaces |
 | **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates |
-| **Updates** | Image update detection, manual or automatic container updates with rollback, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
+| **Updates** | Image update detection, manual or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
 | **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant examples, scheduled operations, and centralized history including operation origin, status and duration |
-
-> **Update schedules:** the maintenance window on the **Updates** tab controls Dockge-Enhanced self-updates. Container image schedules are configured separately for each image on the **Images** tab; detected updates can also be applied there with **Update now**.
 | **Docker resources** | Management of images, volumes, networks and unmanaged containers, bulk operations, auto-prune and safeguards around destructive actions |
 | **Security** | Trivy vulnerability scanning, CVE exceptions, protected update workflows, 2FA, trusted-proxy authentication and Cloudflare Turnstile |
 | **Monitoring** | System, stack and container statistics, configurable system status bar, dashboard health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula and managed Dozzle integrations |
 | **Integrations** | PlugNPiN plus per-service label assistance for Nginx Proxy Manager, Pi-hole and AdGuard Home |
 | **Notifications & access** | Discord and Apprise notifications localized in EN/FR/ES/zh-CN, multi-instance awareness, 2FA, trusted proxy support, Turnstile and third-party mobile clients |
+
+> **Update schedules:** when automatic Dockge-Enhanced updates use a maintenance window, the same window applies to every automatic container image update. Updates detected outside it are queued until the next allowed window. Per-image schedules remain available when no global window is configured, while **Update now** always remains immediate.
 
 ## Latest updates
 
@@ -639,6 +639,8 @@ This fork tracks upstream Dockge releases automatically via GitHub Actions:
 - **If found** — merges upstream changes and opens a PR
 - **On merge** — rebuilds and publishes Docker images (`amd64` + `arm64`) to GHCR
 - **On authentication conflicts** — temporarily keeps the Enhanced version in the sync branch and explicitly lists files that require comparison before merging
+
+The in-app maintenance window configured on the **Updates** tab is global: when enabled for automatic Dockge-Enhanced updates, it also gates all automatic image updates. Images detected outside the allowed days and hours remain queued. Manual **Update now** actions are never delayed by this window.
 
 ---
 
