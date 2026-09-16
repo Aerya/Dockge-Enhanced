@@ -42,16 +42,16 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 | **Multi-serveurs** | Fédération en maillage complet entre instances Dockge-Enhanced, administration depuis n'importe quel serveur lié, sélection et regroupement des serveurs, état des mises à jour distantes, copie/migration transactionnelle des stacks, transferts reprenables et réplication froide planifiée |
 | **Gestion des stacks** | Stacks épinglées, indicateurs compacts d'état et de ressources, navigation repliable/redimensionnable, espace Logs/Compose flexible, copie du YAML brut, actions et planification par stack et conteneur, Build + Recreate, notes, outils Git, prérequis de démarrage hôte et protections pour les namespaces réseau VPN partagés |
 | **Sauvegarde & reprise** | Sauvegardes Restic multi-destination des bind mounts et volumes, cohérence par stack, restauration sélective, vérification des dépôts, contrôle et diff des snapshots, ainsi que les mécanismes de récupération utilisés par les mises à jour protégées |
-| **Mises à jour** | Détection des mises à jour d'images, mises à jour manuelles ou automatiques des conteneurs avec rollback, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
+| **Mises à jour** | Détection des mises à jour d'images, mises à jour manuelles ou automatiques des conteneurs avec rollback, créneau de maintenance commun, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
 | **Migration & réplication** | Transferts transactionnels entre instances, migration du Compose et des données persistantes, jobs reprenables, finalisation explicite des déplacements, répliques froides planifiées, snapshots de récupération et workflows de reprise |
 | **Automatisation & audit** | API REST limitée par permissions, webhooks par stack, exemples Home Assistant, opérations planifiées et historique centralisé avec origine, statut et durée |
-
-> **Planification des mises à jour :** le créneau de maintenance de l’onglet **Mises à jour** pilote la mise à jour de Dockge-Enhanced lui-même. Les images des conteneurs se planifient séparément, image par image, dans l’onglet **Images**, où une mise à jour détectée peut aussi être appliquée avec **Mettre à jour**.
 | **Ressources Docker** | Gestion des images, volumes, réseaux et conteneurs hors Dockge, opérations groupées, auto-prune et protections autour des actions destructives |
 | **Sécurité** | Scan de vulnérabilités Trivy, exceptions CVE, workflows de mise à jour protégés, 2FA, trusted proxy et Cloudflare Turnstile |
 | **Supervision** | Statistiques système, stacks et conteneurs, barre d'état système configurable, cartes de santé du tableau de bord, détection des crash loops, auto-heal des healthchecks, logs responsives/plein écran, Kula optionnel et Dozzle géré |
 | **Intégrations** | PlugNPiN et assistant de labels par service pour Nginx Proxy Manager, Pi-hole et AdGuard Home |
 | **Notifications & accès** | Notifications Discord et Apprise localisées en EN/FR/ES/zh-CN, prise en compte du multi-instance, 2FA, trusted proxy, Turnstile et clients mobiles tiers |
+
+> **Planification des mises à jour :** lorsqu’un créneau de maintenance est configuré pour l’auto-mise à jour de Dockge-Enhanced, ce même créneau s’applique à toutes les mises à jour automatiques d’images. Celles détectées hors créneau restent en attente jusqu’à la prochaine période autorisée. Les horaires par image restent disponibles sans créneau global et l’action manuelle **Mettre à jour** reste toujours immédiate.
 
 ## Dernières nouveautés
 
@@ -639,6 +639,8 @@ Ce fork suit les releases stables de Dockge automatiquement via GitHub Actions :
 - **Si oui** — merge les changements upstream et crée une PR
 - **Au merge** — rebuild et publie les images Docker (`amd64` + `arm64`) sur GHCR
 - **En cas de conflit d’authentification** — conserve temporairement la version Enhanced dans la branche de synchronisation et signale explicitement les fichiers à comparer avant le merge
+
+Le créneau configuré dans l’onglet **Mises à jour** est global : lorsqu’il est activé pour l’auto-mise à jour de Dockge-Enhanced, il encadre aussi toutes les mises à jour automatiques d’images. Les images détectées hors des jours et heures autorisés restent en attente. Les actions manuelles **Mettre à jour** ne sont jamais retardées par ce créneau.
 
 ---
 

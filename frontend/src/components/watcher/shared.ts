@@ -24,6 +24,12 @@ export interface AutoUpdateEntry {
     pause?: { enabled: boolean; until: string | null };
 }
 
+export interface GlobalMaintenanceWindow {
+    start: string;
+    end: string;
+    days: number[];
+}
+
 export interface ImgSettings {
     enabled: boolean;
     intervalHours: number;

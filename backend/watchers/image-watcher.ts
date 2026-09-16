@@ -32,6 +32,12 @@ import {
   syncDockerRegistryCredentials,
 } from "../registry-auth";
 import { isUpdatePaused, normalizeUpdatePause, UpdatePause } from "./update-policy";
+import {
+  automaticImageUpdatesMayRun,
+  AutomaticImageUpdateWindow,
+  getAutomaticImageUpdateWindow,
+  readPersistedSelfUpdateSettings,
+} from "../self-update/settings";
 
 const execFileAsync = promisify(execFile);
 
@@ -48,6 +54,53 @@ const MANAGED_DOZZLE_IMAGE = "amir20/dozzle:latest";
 
 export function isMandatoryManagedUpdate(status: Pick<ImageStatus, "stack" | "image">): boolean {
   return status.stack === MANAGED_DOZZLE_STACK && status.image === MANAGED_DOZZLE_IMAGE;
+}
+
+type AutomaticImageUpdateAction = "immediate" | "scheduled" | "pending" | null;
+
+export function resolveAutomaticImageUpdateAction(
+  entry: AutoUpdateEntry | undefined,
+  mandatory: boolean,
+  globalWindow: AutomaticImageUpdateWindow | null,
+  globalWindowOpen: boolean,
+  alreadyPending = false,
+): AutomaticImageUpdateAction {
+  if (!mandatory && (!entry || entry.mode === "ignored")) return null;
+  if (globalWindow) {
+    if (alreadyPending) return null;
+    return globalWindowOpen ? "scheduled" : "pending";
+  }
+  if (mandatory || entry?.mode === "immediate") return "immediate";
+  return entry?.mode === "scheduled" && !alreadyPending ? "pending" : null;
+}
+
+export function pendingAutomaticImageUpdateMayRun(
+  entry: AutoUpdateEntry | undefined,
+  mandatory: boolean,
+  globalWindow: AutomaticImageUpdateWindow | null,
+  globalWindowOpen: boolean,
+  currentTime: string,
+): boolean {
+  if (!mandatory && (!entry || entry.mode === "ignored")) return false;
+  if (globalWindow) return globalWindowOpen;
+  if (mandatory || entry?.mode === "immediate") return true;
+  return entry?.mode === "scheduled" && entry.time === currentTime;
+}
+
+async function automaticImageUpdateWindowPolicy(now = new Date()): Promise<{
+  window: AutomaticImageUpdateWindow | null;
+  open: boolean;
+}> {
+  try {
+    const settings = await readPersistedSelfUpdateSettings(DATA_DIR);
+    return {
+      window: getAutomaticImageUpdateWindow(settings),
+      open: automaticImageUpdatesMayRun(settings, now),
+    };
+  } catch (error) {
+    console.warn("[ImageWatcher] Impossible de lire le créneau global de maintenance:", error);
+    return { window: null, open: true };
+  }
 }
 
 // Génère un tag Docker local qui protège l'ancienne image des `docker image prune`
@@ -1011,29 +1064,30 @@ export class ImageWatcher {
     const autoUpdateConfig = this.settings.autoUpdateConfig ?? {};
     const currentPending = new Set(this.settings.pendingAutoUpdates ?? []);
 
-    const toImmediate: ImageStatus[] = [];
+    const toApplyNow: Array<{ status: ImageStatus; mode: "immediate" | "scheduled" }> = [];
     const newlyPending: string[] = [];
 
     const globalPaused = isUpdatePaused(this.settings.globalUpdatePause);
+    const globalWindowPolicy = await automaticImageUpdateWindowPolicy();
     for (const r of updates) {
       const key = `${r.stack}::${r.image}`;
       const cfg = autoUpdateConfig[key];
       if (globalPaused || isUpdatePaused(cfg?.pause)) continue;
-      if (isMandatoryManagedUpdate(r)) {
-        toImmediate.push(r);
-        continue;
-      }
-      if (!cfg) continue;
-      if (cfg.mode === "immediate") {
-        toImmediate.push(r);
-      } else if (cfg.mode === "scheduled" && !currentPending.has(key)) {
-        newlyPending.push(key);
-      }
+      const action = resolveAutomaticImageUpdateAction(
+        cfg,
+        isMandatoryManagedUpdate(r),
+        globalWindowPolicy.window,
+        globalWindowPolicy.open,
+        currentPending.has(key),
+      );
+      if (action === "immediate" || action === "scheduled") {
+        toApplyNow.push({ status: r, mode: action });
+      } else if (action === "pending") newlyPending.push(key);
     }
 
     // Enregistre les nouvelles màj en attente (sans restart — watcher déjà actif)
     if (newlyPending.length > 0) {
-      const merged = [...currentPending, ...newlyPending];
+      const merged = [...new Set([...currentPending, ...newlyPending])];
       this.settings.pendingAutoUpdates = merged;
       await this.persistToFile();
       console.log(
@@ -1043,15 +1097,15 @@ export class ImageWatcher {
 
     // Applique les màj immédiates
     const autoUpdated: ImageStatus[] = [];
-    for (const item of toImmediate) {
-      const watched = composeByStack.get(item.stack);
+    for (const item of toApplyNow) {
+      const watched = composeByStack.get(item.status.stack);
       if (watched) {
         const success = await this.performAutoUpdate(
-          item,
+          item.status,
           watched,
-          "immediate",
+          item.mode,
         );
-        if (success) autoUpdated.push(item);
+        if (success) autoUpdated.push(item.status);
       }
     }
 
@@ -1066,6 +1120,7 @@ export class ImageWatcher {
         results.length,
         autoUpdated,
         this.settings.autoUpdateConfig,
+        globalWindowPolicy.window,
       );
     }
 
@@ -1093,9 +1148,24 @@ export class ImageWatcher {
 
     if (isUpdatePaused(this.settings.globalUpdatePause)) return;
 
+    const globalWindowPolicy = await automaticImageUpdateWindowPolicy(now);
+    if (globalWindowPolicy.window && !globalWindowPolicy.open) return;
+
     const toApply = pending.filter((key) => {
       const cfg = this.settings.autoUpdateConfig?.[key];
-      return cfg?.mode === "scheduled" && cfg.time === currentTime && !isUpdatePaused(cfg.pause);
+      const sepIdx = key.indexOf("::");
+      if (sepIdx === -1 || isUpdatePaused(cfg?.pause)) return false;
+      const mandatory = isMandatoryManagedUpdate({
+        stack: key.slice(0, sepIdx),
+        image: key.slice(sepIdx + 2),
+      });
+      return pendingAutomaticImageUpdateMayRun(
+        cfg,
+        mandatory,
+        globalWindowPolicy.window,
+        globalWindowPolicy.open,
+        currentTime,
+      );
     });
     if (toApply.length === 0) return;
 
@@ -1564,6 +1634,7 @@ export class ImageWatcher {
     totalChecked: number,
     autoUpdated: ImageStatus[] = [],
     cfg: Record<string, AutoUpdateEntry> = {},
+    globalWindow: AutomaticImageUpdateWindow | null = null,
   ): Promise<void> {
     const discordNotifier =
       this.settings.discordWebhooks.length > 0
@@ -1589,11 +1660,13 @@ export class ImageWatcher {
     const notAuto = updates.filter(
       (u) => !autoUpdatedKeys.has(`${u.stack}::${u.image}`),
     );
-    const scheduled = notAuto.filter(
-      (u) => cfg[`${u.stack}::${u.image}`]?.mode === "scheduled",
-    );
+    const scheduledKeys = new Set(notAuto
+      .filter((u) => (this.settings.pendingAutoUpdates ?? []).includes(`${u.stack}::${u.image}`)
+        || cfg[`${u.stack}::${u.image}`]?.mode === "scheduled")
+      .map((u) => `${u.stack}::${u.image}`));
+    const scheduled = notAuto.filter((u) => scheduledKeys.has(`${u.stack}::${u.image}`));
     const manual = notAuto.filter(
-      (u) => cfg[`${u.stack}::${u.image}`]?.mode !== "scheduled",
+      (u) => !scheduledKeys.has(`${u.stack}::${u.image}`),
     );
 
     // Titre selon ce qui s'est passé
@@ -1637,7 +1710,8 @@ export class ImageWatcher {
     const makeField = (u: ImageStatus, wasAutoUpdated: boolean) => {
       const key = `${u.stack}::${u.image}`;
       const entry = cfg[key];
-      const isSched = !wasAutoUpdated && entry?.mode === "scheduled";
+      const isPending = (this.settings.pendingAutoUpdates ?? []).includes(key);
+      const isSched = !wasAutoUpdated && (isPending || entry?.mode === "scheduled");
       return {
         name: wasAutoUpdated
           ? `✅ \`${u.image}\``
@@ -1649,12 +1723,19 @@ export class ImageWatcher {
           (wasAutoUpdated
             ? t("Mise à jour immédiate effectuée.", "Immediate update applied.", "Actualización inmediata aplicada.", "已执行即时更新。")
             : isSched
-              ? t(
-                  `Mise à jour planifiée à **${entry!.time}**.`,
-                  `Scheduled update at **${entry!.time}**.`,
-                  `Actualización programada a las **${entry!.time}**.`,
-                  `计划于 **${entry!.time}** 更新。`,
-                )
+              ? globalWindow
+                ? t(
+                    `Mise à jour mise en attente du créneau global **${globalWindow.start}–${globalWindow.end}**.`,
+                    `Update queued for the global **${globalWindow.start}–${globalWindow.end}** window.`,
+                    `Actualización en espera de la ventana global **${globalWindow.start}–${globalWindow.end}**.`,
+                    `更新已排队，等待全局时段 **${globalWindow.start}–${globalWindow.end}**。`,
+                  )
+                : t(
+                    `Mise à jour planifiée à **${entry!.time}**.`,
+                    `Scheduled update at **${entry!.time}**.`,
+                    `Actualización programada a las **${entry!.time}**.`,
+                    `计划于 **${entry!.time}** 更新。`,
+                  )
               : `${t("Distant", "Remote", "Remoto", "远程")} : \`${u.remoteDigest.slice(0, 19)}…\`\n` +
                 (u.localDigest
                   ? `${t("Local", "Local", "Local", "本地")}   : \`${u.localDigest.slice(0, 19)}…\``

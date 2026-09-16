@@ -1,5 +1,13 @@
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { isWithinMaintenanceWindow, normalizeUpdatePause } from "../watchers/update-policy";
 import { SelfUpdateSettings } from "./types";
+
+export interface AutomaticImageUpdateWindow {
+    start: string;
+    end: string;
+    days: number[];
+}
 
 export const DEFAULT_SELF_UPDATE_SETTINGS: SelfUpdateSettings = {
     mode: "manual",
@@ -32,4 +40,38 @@ export function selfUpdateMayRun(settings: SelfUpdateSettings, now = new Date())
     if (settings.mode !== "sidecar") return false;
     if (settings.pause.enabled && (!settings.pause.until || Date.parse(settings.pause.until) > now.getTime())) return false;
     return settings.schedule.type === "immediate" || (settings.schedule.days.includes(now.getDay()) && isWithinMaintenanceWindow(settings.schedule.start, settings.schedule.end, now));
+}
+
+/**
+ * The self-update maintenance window is also the global window for automatic
+ * container image updates. Manual image updates remain available at any time.
+ */
+export function getAutomaticImageUpdateWindow(settings: SelfUpdateSettings): AutomaticImageUpdateWindow | null {
+    if (settings.mode !== "sidecar" || settings.schedule.type !== "window") return null;
+    return {
+        start: settings.schedule.start,
+        end: settings.schedule.end,
+        days: [ ...settings.schedule.days ],
+    };
+}
+
+export function automaticImageUpdatesMayRun(settings: SelfUpdateSettings, now = new Date()): boolean {
+    const window = getAutomaticImageUpdateWindow(settings);
+    return !window || (window.days.includes(now.getDay()) && isWithinMaintenanceWindow(window.start, window.end, now));
+}
+
+export function selfUpdateSettingsPath(dataDir = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data"): string {
+    return path.join(dataDir, "self-update", "settings.json");
+}
+
+export async function readPersistedSelfUpdateSettings(dataDir?: string): Promise<SelfUpdateSettings> {
+    try {
+        const raw = await fs.readFile(selfUpdateSettingsPath(dataDir), "utf8");
+        return normalizeSelfUpdateSettings(JSON.parse(raw));
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            return normalizeSelfUpdateSettings(DEFAULT_SELF_UPDATE_SETTINGS);
+        }
+        throw error;
+    }
 }
