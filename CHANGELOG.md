@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-17 — Network namespace-safe targeted updates and rollbacks** — Before a targeted image update, service recreation or image rollback, Dockge-Enhanced now reads the resolved model from `docker compose config --format json`. It force-recreates the selected provider together with every direct or transitive consumer using `network_mode: service:<service>` or a local `network_mode: container:<container_name>`, while leaving unrelated services untouched. VPN, Gluetun and sidecar stacks therefore remain attached to the current container namespace after automatic, scheduled or manual updates and rollbacks.
+
 **2026-09-05: Managed stack detection through companion bind aliases**: the external-stack scanner now recognises an Enhanced-managed stack even when another container runs Docker Compose from a different bind-mounted path. The concrete [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion) use case is covered: it may recreate a Gluetun project from `/compose`, causing Docker labels to reference `/compose/compose.yaml` instead of Enhanced's stacks directory. Enhanced now maps these bind aliases back to the managed host path and also verifies the Compose project name before excluding the project from external adoption.
 
 **2026-09-05: External stack detection fix**: the external-stack scanner now maps Enhanced's container-side stacks directory to the corresponding host bind and excludes projects whose working directory or Compose files belong to either managed root. Native stacks therefore no longer appear as external merely because Docker Compose labels expose host-side paths.
@@ -281,4 +283,3 @@ Detailed project history previously embedded in the README.
 **2026-03-27 — FR/EN interface** — The `/watcher` and `/resources` pages have a 🇫🇷/🇬🇧 toggle to switch languages independently of the global app setting.
 
 **2026-03-28 — Mobile navigation** — Full bottom navigation bar on mobile with all sections: Home, Console, Surveillance, Resources, Settings.
-

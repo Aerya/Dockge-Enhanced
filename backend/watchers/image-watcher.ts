@@ -38,6 +38,12 @@ import {
   getAutomaticImageUpdateWindow,
   readPersistedSelfUpdateSettings,
 } from "../self-update/settings";
+import {
+  composeModelReadError,
+  findComposeServicesByImage,
+  parseResolvedComposeModel,
+  targetedComposeRecreateArgs,
+} from "../compose-network-namespace";
 
 const execFileAsync = promisify(execFile);
 
@@ -54,6 +60,25 @@ const MANAGED_DOZZLE_IMAGE = "amir20/dozzle:latest";
 
 export function isMandatoryManagedUpdate(status: Pick<ImageStatus, "stack" | "image">): boolean {
   return status.stack === MANAGED_DOZZLE_STACK && status.image === MANAGED_DOZZLE_IMAGE;
+}
+
+export function buildImageUpdateComposePlan(
+  resolvedComposeOutput: string,
+  image: string,
+): { services: string[]; recreateArgs: string[] } {
+  const model = parseResolvedComposeModel(resolvedComposeOutput);
+  const services = findComposeServicesByImage(model, image);
+  if (services.length === 0) {
+    throw composeModelReadError(new Error(`image "${image}" is not used by a service in the resolved model`));
+  }
+  return { services, recreateArgs: targetedComposeRecreateArgs(model, services) };
+}
+
+export function buildRollbackComposeRecreateArgs(
+  resolvedComposeOutput: string,
+  services: string[],
+): string[] {
+  return targetedComposeRecreateArgs(parseResolvedComposeModel(resolvedComposeOutput), services);
 }
 
 type AutomaticImageUpdateAction = "immediate" | "scheduled" | "pending" | null;
@@ -163,6 +188,7 @@ export interface RollbackEntry {
   workingDir?: string; // project directory Compose pour une stack externe
   envFiles?: string[]; // --env-file explicites du projet externe
   service: string | null; // nom du service docker compose
+  services?: string[]; // tous les services utilisant l'image (compatibilité: service ci-dessus)
   oldImageId: string; // sha256:... de l'image avant màj
   updatedAt: string; // ISO date de la màj
   expiresAt: string; // ISO date = updatedAt + 24h
@@ -1224,38 +1250,21 @@ export class ImageWatcher {
     }
   }
 
-  /** Trouve le service qui utilise une image dans le modèle Compose résolu. */
-  private async findServiceForImage(
+  private async resolveImageUpdatePlan(
     composePath: string,
     image: string,
     project?: string,
     configFiles?: string[],
     workingDir?: string,
     envFiles?: string[],
-  ): Promise<string | null> {
+  ): Promise<{ services: string[]; recreateArgs: string[] }> {
     const configCommand = composeExecInvocation(composePath, [ "config", "--format", "json" ], project, configFiles, workingDir, envFiles);
     try {
       const stdout = await docker(configCommand.args, { cwd: configCommand.cwd, timeout: 30_000 });
-      const doc = JSON.parse(stdout) as { services?: Record<string, { image?: string }> };
-      for (const [ name, service ] of Object.entries(doc.services ?? {})) {
-        if (service?.image?.trim() === image.trim()) return name;
-      }
-    } catch {
-      // Fall through to a best-effort raw YAML lookup.
+      return buildImageUpdateComposePlan(stdout, image);
+    } catch (error) {
+      throw composeModelReadError(error);
     }
-
-    for (const file of configFiles?.length ? configFiles : [ composePath ]) {
-      try {
-        const raw = fsSync.readFileSync(file, "utf8");
-        const doc = yaml.load(raw) as { services?: Record<string, { image?: string }> };
-        for (const [ name, service ] of Object.entries(doc?.services ?? {})) {
-          if (service?.image?.trim() === image.trim()) return name;
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-    return null;
   }
 
   /** Tire et redémarre une image via docker compose. Retourne true si succès. */
@@ -1271,13 +1280,19 @@ export class ImageWatcher {
       return false;
     }
     this._updatingImages.add(key);
-    const service = await this.findServiceForImage(composePath, status.image, project, configFiles, workingDir, envFiles);
-    const services = service ? [ service ] : [];
-    console.log(
-      `[ImageWatcher] Auto-update: ${status.stack}/${status.image}${service ? ` (service: ${service})` : ""}`,
-    );
     const oldDigest = status.localDigest ?? "";
     try {
+      const { services, recreateArgs } = await this.resolveImageUpdatePlan(
+        composePath,
+        status.image,
+        project,
+        configFiles,
+        workingDir,
+        envFiles,
+      );
+      console.log(
+        `[ImageWatcher] Auto-update: ${status.stack}/${status.image} (services: ${services.join(", ")})`,
+      );
       // ── Capture l'ID de l'image actuelle avant le pull (pour rollback) ──
       let oldImageId = "";
       try {
@@ -1293,7 +1308,7 @@ export class ImageWatcher {
         cwd: pullCommand.cwd,
         timeout: 600000,
       });
-      const upCommand = composeExecInvocation(composePath, [ "up", "-d", ...services ], project, configFiles, workingDir, envFiles);
+      const upCommand = composeExecInvocation(composePath, recreateArgs, project, configFiles, workingDir, envFiles);
       await docker(upCommand.args, {
         cwd: upCommand.cwd,
         timeout: 120000,
@@ -1311,7 +1326,8 @@ export class ImageWatcher {
           configFiles,
           workingDir,
           envFiles,
-          service: service ?? null,
+          service: services[0] ?? null,
+          services,
           oldImageId,
           updatedAt: now.toISOString(),
           expiresAt: new Date(now.getTime() + ROLLBACK_WINDOW_MS).toISOString(),
@@ -1519,10 +1535,28 @@ export class ImageWatcher {
     }
 
     const image = withExplicitTag(entry.image);
-    const services = entry.service ? [ entry.service ] : [];
+    const services = entry.services?.length ? entry.services : entry.service ? [ entry.service ] : [];
     console.log(
       `[ImageWatcher] Rollback: ${entry.stack}/${entry.image} → ${entry.oldImageId.slice(0, 19)}`,
     );
+
+    let recreateArgs = [ "up", "-d" ];
+    if (services.length > 0) {
+      const configCommand = composeExecInvocation(
+        entry.composePath,
+        [ "config", "--format", "json" ],
+        entry.project,
+        entry.configFiles,
+        entry.workingDir,
+        entry.envFiles,
+      );
+      try {
+        const output = await docker(configCommand.args, { cwd: configCommand.cwd, timeout: 30_000 });
+        recreateArgs = buildRollbackComposeRecreateArgs(output, services);
+      } catch (error) {
+        throw composeModelReadError(error);
+      }
+    }
 
     // Re-tag l'ancienne image pour lui redonner son nom (détache la nouvelle)
     await docker([ "tag", entry.oldImageId, image ], { timeout: 30000 });
@@ -1531,7 +1565,7 @@ export class ImageWatcher {
       await docker([ "rmi", rollbackTag(entry.key) ], { timeout: 10000 });
     } catch {}
     // Redémarre le container avec l'ancienne image
-    const upCommand = composeExecInvocation(entry.composePath, [ "up", "-d", ...services ], entry.project, entry.configFiles, entry.workingDir, entry.envFiles);
+    const upCommand = composeExecInvocation(entry.composePath, recreateArgs, entry.project, entry.configFiles, entry.workingDir, entry.envFiles);
     await docker(upCommand.args, {
       cwd: upCommand.cwd,
       timeout: 120000,

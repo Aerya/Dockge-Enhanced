@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-09-17 — Mises à jour ciblées et rollbacks respectant les namespaces réseau** — Avant une mise à jour d’image ciblée, une recréation de service ou un rollback d’image, Dockge-Enhanced lit désormais le modèle résolu via `docker compose config --format json`. Le fournisseur sélectionné est recréé de force avec tous ses consommateurs directs ou transitifs utilisant `network_mode: service:<service>` ou un `network_mode: container:<container_name>` local, sans toucher aux services sans rapport. Les stacks VPN, Gluetun et sidecars restent ainsi rattachées au namespace actuel après les mises à jour automatiques, planifiées ou manuelles et les rollbacks.
+
 **2026-09-05 : Détection des stacks natives via les alias de bind d’un outil compagnon** : le scanner des stacks externes reconnaît désormais une stack déjà gérée par Enhanced même lorsqu’un autre conteneur exécute Docker Compose depuis un chemin monté différent. Le cas concret de [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion) est pris en charge : il peut recréer un projet Gluetun depuis `/compose`, ce qui amène Docker à enregistrer `/compose/compose.yaml` dans ses labels au lieu du répertoire de stacks d’Enhanced. Enhanced rapproche maintenant ces alias de bind du chemin hôte géré et vérifie aussi le nom du projet Compose avant d’exclure le projet de l’adoption externe.
 
 **2026-09-05 : Correction de la détection des stacks externes** : le scanner fait désormais correspondre le répertoire de stacks vu depuis le conteneur Enhanced avec son bind côté hôte et exclut les projets dont le dossier de travail ou les fichiers Compose appartiennent à l’une de ces racines gérées. Les stacks natives ne sont donc plus présentées comme externes simplement parce que les labels Docker Compose exposent leurs chemins hôte.
@@ -281,4 +283,3 @@ Historique détaillé du projet auparavant intégré directement au README.
 **2026-03-27 — Interface FR/EN** — Les pages `/watcher` et `/resources` disposent d'un bouton 🇫🇷/🇬🇧 pour changer la langue indépendamment du paramètre global de l'application.
 
 **2026-03-28 — Navigation mobile** — Barre de navigation bas complète sur mobile avec toutes les sections : Accueil, Console, Surveillance, Ressources, Paramètres.
-

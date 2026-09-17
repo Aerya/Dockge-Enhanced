@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-09-17 — Actualizaciones dirigidas y rollbacks seguros para namespaces de red** — Antes de una actualización dirigida de imagen, una recreación de servicio o un rollback, Dockge-Enhanced lee ahora el modelo resuelto mediante `docker compose config --format json`. El proveedor seleccionado se recrea de forma forzada junto con todos sus consumidores directos o transitivos que usan `network_mode: service:<servicio>` o un `network_mode: container:<container_name>` local, sin modificar servicios no relacionados. Así, las stacks VPN, Gluetun y los sidecars permanecen conectados al namespace actual tras actualizaciones automáticas, programadas o manuales y rollbacks.
+
 **2026-09-05: Detección de stacks nativas mediante alias bind de una herramienta complementaria**: el escáner de stacks externas reconoce ahora una stack ya gestionada por Enhanced aunque otro contenedor ejecute Docker Compose desde una ruta montada diferente. Se cubre el caso concreto de [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion): puede recrear un proyecto Gluetun desde `/compose`, haciendo que Docker registre `/compose/compose.yaml` en sus etiquetas en lugar del directorio de stacks de Enhanced. Enhanced relaciona ahora estos alias bind con la ruta gestionada del host y también verifica el nombre del proyecto Compose antes de excluir el proyecto de la adopción externa.
 
 **2026-09-05: Corrección de la detección de stacks externas**: el escáner ahora relaciona el directorio de stacks visto desde el contenedor Enhanced con su bind del host y excluye los proyectos cuyo directorio de trabajo o archivos Compose pertenecen a cualquiera de esas raíces gestionadas. Las stacks nativas ya no aparecen como externas simplemente porque las etiquetas de Docker Compose expongan rutas del host.
@@ -281,4 +283,3 @@ Historial detallado del proyecto anteriormente integrado en el README.
 **2026-03-27 — Interfaz FR/EN** — Las páginas `/watcher` y `/resources` tienen un interruptor 🇫🇷/🇬🇧 para cambiar de idioma independientemente de la configuración global de la aplicación.
 
 **2026-03-28 — Navegación móvil** — Barra de navegación inferior completa en móvil con todas las secciones: Inicio, Consola, Vigilancia, Recursos, Configuración.
-
