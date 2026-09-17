@@ -8,7 +8,6 @@ import childProcessAsync from "promisify-child-process";
 import * as path from "path";
 import * as fs from "fs/promises";
 import { R } from "redbean-node";
-import yaml from "yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
@@ -360,10 +359,10 @@ export class MonitoringWatcher {
                 return { ok: true, message: `Compose service restarted: ${serviceName}` };
             }
 
-            const providers = this.getNetworkProviderServices(stack);
-            if (providers.has(serviceName)) {
-                await stack.recreateInBackground();
-                return { ok: true, message: `Stack recreated because ${serviceName} provides network_mode: service to another service` };
+            const affectedServices = await stack.getServiceActionTargets(serviceName);
+            if (affectedServices.length > 1) {
+                await stack.recreateServiceInBackground(serviceName);
+                return { ok: true, message: `Compose services recreated with their shared network namespace: ${affectedServices.join(", ")}` };
             }
 
             await stack.restartService(serviceName);
@@ -371,27 +370,6 @@ export class MonitoringWatcher {
         } catch (e) {
             return { ok: false, message: e instanceof Error ? e.message : String(e) };
         }
-    }
-
-    private getNetworkProviderServices(stack: Stack): Set<string> {
-        const providers = new Set<string>();
-        for (const composeText of stack.getComposeConfigTexts()) {
-            if (!composeText.trim()) continue;
-            try {
-                const doc = yaml.parse(composeText) as { services?: Record<string, { network_mode?: unknown }> } | null;
-                const services = doc?.services ?? {};
-                for (const config of Object.values(services)) {
-                    if (typeof config?.network_mode !== "string") continue;
-                    const match = config.network_mode.match(/^service:(.+)$/);
-                    if (match?.[1]) {
-                        providers.add(match[1]);
-                    }
-                }
-            } catch {
-                /* Invalid YAML is already handled when stacks are saved. Ignore here. */
-            }
-        }
-        return providers;
     }
 
     private trimCrashEvents(): void {

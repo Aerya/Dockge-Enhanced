@@ -42,7 +42,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | Área | Lo que agrega Dockge Enhanced |
 | --- | --- |
 | **Multiservidor** | Federación en malla completa entre instancias Dockge-Enhanced, administración desde cualquier servidor vinculado, selección y agrupación de servidores, estado de actualizaciones remotas, copia/migración transaccional de stacks, transferencias reanudables y replicación en frío programada |
-| **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones y programación por stack y contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y protecciones para namespaces de red VPN compartidos |
+| **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones y programación por stack y contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y recreación automática de servicios que comparten namespaces de red VPN |
 | **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, además de los mecanismos de recuperación usados por las actualizaciones protegidas |
 | **Actualizaciones** | Detección de actualizaciones de imágenes, actualizaciones manuales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
 | **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
@@ -63,6 +63,10 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
 ### 🆕 Septiembre de 2026
+
+**Actualizaciones dirigidas seguras para namespaces de red**
+
+Las actualizaciones dirigidas de imágenes, las recreaciones de servicios y los rollbacks de imágenes resuelven ahora el modelo Compose completo antes de sustituir un contenedor. Cuando otros servicios comparten su namespace de red mediante `network_mode: service:<servicio>` o `network_mode: container:<container_name>`, todos los consumidores directos y transitivos se recrean de forma forzada junto con el proveedor en una única operación Compose dirigida. Los servicios no relacionados no se modifican y las stacks VPN, Gluetun y los sidecars ya no conservan el namespace obsoleto de un contenedor eliminado.
 
 **Stacks externas (Beta)**
 
@@ -207,7 +211,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Build + Recreate
 - Acciones por servicio/contenedor
 - Operaciones programadas
-- Requisitos de host y protecciones VPN
+- Recreación automática de servicios directos y transitivos que comparten un namespace VPN mediante `service:` o `container:`
 - Barra lateral redimensionable con indicadores de recursos
 - Compatibilidad del editor con la sintaxis larga de puertos Compose y conservación de permisos `tmpfs`
 
