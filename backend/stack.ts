@@ -22,6 +22,12 @@ import childProcessAsync from "promisify-child-process";
 import { Settings } from "./settings";
 import { intervals } from "./low-power";
 import { getVolumeSourceSize } from "./volume-usage";
+import {
+    composeModelReadError,
+    parseResolvedComposeModel,
+    resolveNetworkNamespaceRecreateTargets,
+    targetedComposeRecreateArgsForTargets,
+} from "./compose-network-namespace";
 
 // ─── Cache court de getServiceStatusList (point #9 : éviter `docker inspect`
 // de TOUS les containers à chaque refresh / chaque onglet ouvert). TTL piloté
@@ -1181,41 +1187,41 @@ export class Stack {
         return exitCode;
     }
 
-    /**
-     * Returns the service being acted on and every service that shares its
-     * network namespace (`network_mode: service:<name>`). Recreating a VPN
-     * container without its dependants would leave those containers attached
-     * to the old namespace, so they must be recreated as one Compose action.
-     */
-    private async getServiceActionTargets(serviceName: string): Promise<string[]> {
+    async getServiceActionTargets(serviceName: string): Promise<string[]> {
         if (!/^[a-zA-Z0-9_.-]+$/.test(serviceName)) {
             throw new ValidationError("Invalid service name");
         }
-        const result = await childProcessAsync.spawn("docker", this.getComposeOptions("config", "--format", "json"), {
-            cwd: this.path,
-            encoding: "utf-8",
-        });
-        const config = JSON.parse(result.stdout?.toString() || "{}");
-        const services = config.services ?? {};
-        if (!services[serviceName]) {
-            throw new ValidationError("Service not found in this stack");
-        }
-
-        const targets = new Set<string>([ serviceName ]);
-        let changed = true;
-        while (changed) {
-            changed = false;
-            for (const [ name, service ] of Object.entries(services) as Array<[string, { network_mode?: string }]>) {
-                const owner = typeof service.network_mode === "string" && service.network_mode.startsWith("service:")
-                    ? service.network_mode.slice("service:".length)
-                    : "";
-                if (owner && targets.has(owner) && !targets.has(name)) {
-                    targets.add(name);
-                    changed = true;
-                }
+        try {
+            const result = await childProcessAsync.spawn("docker", this.getComposeOptions("config", "--format", "json"), {
+                cwd: this.path,
+                encoding: "utf-8",
+            });
+            if ((result.code ?? 0) !== 0) {
+                throw new Error(result.stderr?.toString().trim() || "docker compose config failed");
             }
+            return resolveNetworkNamespaceRecreateTargets(
+                parseResolvedComposeModel(result.stdout?.toString() || ""),
+                [ serviceName ],
+            );
+        } catch (error) {
+            throw composeModelReadError(error);
         }
-        return [ serviceName, ...[ ...targets ].filter(name => name !== serviceName).sort() ];
+    }
+
+    async recreateServiceInBackground(serviceName: string): Promise<string[]> {
+        await this.assertStartGuard();
+        const targets = await this.getServiceActionTargets(serviceName);
+        const result = await childProcessAsync.spawn(
+            "docker",
+            this.getComposeOptions(...targetedComposeRecreateArgsForTargets(targets)),
+            { cwd: this.path, encoding: "utf-8" },
+        );
+        if ((result.code ?? 0) !== 0) {
+            throw new Error(`Failed to recreate service ${serviceName}`);
+        }
+        await this.writeMeta({ lastUpdated: new Date().toISOString(), lastStartedAt: new Date().toISOString() });
+        serviceStatusCache.delete(this.name);
+        return targets;
     }
 
     async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate"): Promise<string[]> {
@@ -1242,10 +1248,10 @@ export class Stack {
             // Network namespace dependants are recreated in the same operation
             // so they cannot remain attached to the old container namespace.
             await exec("pull", serviceName);
-            await exec("up", "-d", "--force-recreate", "--no-deps", ...targets);
+            await exec(...targetedComposeRecreateArgsForTargets(targets));
             await this.writeMeta({ lastUpdated: new Date().toISOString(), lastStartedAt: new Date().toISOString() });
         } else {
-            await exec("up", "-d", "--force-recreate", "--no-deps", ...targets);
+            await exec(...targetedComposeRecreateArgsForTargets(targets));
             await this.writeMeta({ lastUpdated: new Date().toISOString(), lastStartedAt: new Date().toISOString() });
         }
         serviceStatusCache.delete(this.name);

@@ -40,7 +40,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
 | **Multi-serveurs** | Fédération en maillage complet entre instances Dockge-Enhanced, administration depuis n'importe quel serveur lié, sélection et regroupement des serveurs, état des mises à jour distantes, copie/migration transactionnelle des stacks, transferts reprenables et réplication froide planifiée |
-| **Gestion des stacks** | Stacks épinglées, indicateurs compacts d'état et de ressources, navigation repliable/redimensionnable, espace Logs/Compose flexible, copie du YAML brut, actions et planification par stack et conteneur, Build + Recreate, notes, outils Git, prérequis de démarrage hôte et protections pour les namespaces réseau VPN partagés |
+| **Gestion des stacks** | Stacks épinglées, indicateurs compacts d'état et de ressources, navigation repliable/redimensionnable, espace Logs/Compose flexible, copie du YAML brut, actions et planification par stack et conteneur, Build + Recreate, notes, outils Git, prérequis de démarrage hôte et recréation automatique des services partageant un namespace réseau VPN |
 | **Sauvegarde & reprise** | Sauvegardes Restic multi-destination des bind mounts et volumes, cohérence par stack, restauration sélective, vérification des dépôts, contrôle et diff des snapshots, ainsi que les mécanismes de récupération utilisés par les mises à jour protégées |
 | **Mises à jour** | Détection des mises à jour d'images, mises à jour manuelles ou automatiques des conteneurs avec rollback, créneau de maintenance commun, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
 | **Migration & réplication** | Transferts transactionnels entre instances, migration du Compose et des données persistantes, jobs reprenables, finalisation explicite des déplacements, répliques froides planifiées, snapshots de récupération et workflows de reprise |
@@ -61,6 +61,10 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
 ### 🆕 Septembre 2026
+
+**Mises à jour ciblées respectant les namespaces réseau**
+
+Les mises à jour d’images ciblées, les recréations de services et les rollbacks d’images résolvent désormais le modèle Compose complet avant de remplacer un conteneur. Lorsque d’autres services partagent son namespace réseau via `network_mode: service:<service>` ou `network_mode: container:<container_name>`, tous les consommateurs directs et transitifs sont recréés de force avec le fournisseur dans une même opération Compose ciblée. Les services sans rapport restent intacts, tandis que les stacks VPN, Gluetun et sidecars ne conservent plus le namespace réseau obsolète d’un conteneur supprimé.
 
 **Stacks externes (Beta)**
 
@@ -210,7 +214,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Actions par service et par conteneur
 - Opérations planifiées
 - Prérequis liés aux montages hôte et services `systemd`
-- Protections pour les services partageant le namespace réseau d'un VPN
+- Recréation automatique des services directs et transitifs partageant un namespace réseau VPN via `service:` ou `container:`
 - Colonne des stacks repliable et redimensionnable
 - Indicateurs compacts d'état, CPU et RAM
 - Prise en charge des ports Compose en syntaxe longue et préservation des permissions `tmpfs` dans l’éditeur

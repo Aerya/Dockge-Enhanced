@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-17-network-namespace-safe-updates",
+        items: [ "releaseNews.item.networkNamespaceSafeUpdates" ],
+    },
+    {
         id: "2026-09-12-agent-status-reconciliation",
         items: [ "releaseNews.item.agentStatusReconciliation" ],
     },

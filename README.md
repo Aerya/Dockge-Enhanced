@@ -40,7 +40,7 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | Area | Dockge Enhanced adds |
 | --- | --- |
 | **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers, and scheduled cold replication |
-| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, per-stack and per-container actions and scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and safeguards for shared VPN network namespaces |
+| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, per-stack and per-container actions and scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces |
 | **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates |
 | **Updates** | Image update detection, manual or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
@@ -61,6 +61,10 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 September 2026
+
+**Network namespace-safe targeted updates**
+
+Targeted image updates, service recreations and image rollbacks now resolve the complete Compose model before replacing a container. When other services share its network namespace through `network_mode: service:<service>` or `network_mode: container:<container_name>`, every direct and transitive consumer is force-recreated with the provider in one targeted Compose operation. Unrelated services are left untouched, while VPN, Gluetun and sidecar stacks no longer retain a removed container's stale network namespace.
 
 **External stacks (Beta)**
 
@@ -210,7 +214,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-service and per-container actions
 - Scheduled operations
 - Host mount and `systemd` prerequisites
-- Safeguards for shared VPN network namespaces
+- Automatic recreation of direct and transitive services sharing a VPN/network namespace through `service:` or `container:`
 - Collapsible and resizable stack sidebar
 - Compact status, CPU and RAM indicators
 - Compose editor support for long port syntax and preserved `tmpfs` permission modes
