@@ -3,12 +3,23 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import {
   assertRegistryHost,
+  buildImageUpdateComposePlan,
   buildManifestUrl,
+  buildRollbackComposeRecreateArgs,
   composeExecInvocation,
   isMandatoryManagedUpdate,
   pendingAutomaticImageUpdateMayRun,
   resolveAutomaticImageUpdateAction,
 } from "./image-watcher";
+import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
+
+const sharedNamespaceCompose = JSON.stringify({
+  services: {
+    provider: { image: "example/provider:latest", container_name: "provider-container" },
+    browser: { image: "example/browser:latest", network_mode: "container:provider-container" },
+    solver: { image: "example/solver:latest", network_mode: "service:provider" },
+  },
+});
 
 test("construit Compose avec des arguments séparés", () => {
   const composePath = path.join("/opt/stacks", "demo", "compose file.yaml");
@@ -79,4 +90,32 @@ test("les mises à jour en attente reprennent correctement si le créneau global
   assert.equal(pendingAutomaticImageUpdateMayRun({ mode: "scheduled", time: "02:00" }, false, null, true, "01:59"), false);
   assert.equal(pendingAutomaticImageUpdateMayRun({ mode: "scheduled", time: "02:00" }, false, null, true, "02:00"), true);
   assert.equal(pendingAutomaticImageUpdateMayRun(undefined, true, null, true, "06:00"), true);
+});
+
+test("automatic image updates recreate namespace consumers with the provider", () => {
+  assert.deepEqual(buildImageUpdateComposePlan(sharedNamespaceCompose, "example/provider:latest"), {
+    services: [ "provider" ],
+    recreateArgs: [ "up", "-d", "--force-recreate", "--no-deps", "provider", "browser", "solver" ],
+  });
+});
+
+test("manual image updates use the same namespace-safe recreate plan", () => {
+  assert.deepEqual(
+    targetedComposeRecreateArgsForTargets([ "provider", "browser", "solver" ]),
+    [ "up", "-d", "--force-recreate", "--no-deps", "provider", "browser", "solver" ],
+  );
+});
+
+test("image rollback recreates namespace consumers with the restored provider", () => {
+  assert.deepEqual(
+    buildRollbackComposeRecreateArgs(sharedNamespaceCompose, [ "provider" ]),
+    [ "up", "-d", "--force-recreate", "--no-deps", "provider", "browser", "solver" ],
+  );
+});
+
+test("image updates fail explicitly before recreation when Compose config is unreadable", () => {
+  assert.throws(
+    () => buildImageUpdateComposePlan("invalid", "example/provider:latest"),
+    /Unable to resolve Compose network namespace dependencies/,
+  );
 });

@@ -1,0 +1,16 @@
+services:
+  vpn-gateway:
+    image: ghcr.io/example/vpn-gateway:latest
+    container_name: example-vpn-gateway
+
+  browser-sidecar:
+    image: ghcr.io/example/browser:latest
+    network_mode: container:example-vpn-gateway
+
+  solver:
+    image: ghcr.io/example/solver:latest
+    network_mode: service:vpn-gateway
+
+  worker:
+    image: ghcr.io/example/worker:latest
+    network_mode: service:solver

@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-09-17 — 网络命名空间安全的定向更新与回滚** — 在定向镜像更新、服务重新创建或镜像回滚前，Dockge-Enhanced 现在会通过 `docker compose config --format json` 读取已解析的模型。选定的提供者会与所有使用 `network_mode: service:<service>` 或本地 `network_mode: container:<container_name>` 的直接和间接消费者一起强制重新创建，而无关服务保持不变。因此，VPN、Gluetun 和 sidecar Stack 在自动、计划或手动更新以及回滚后都会保持连接到当前容器命名空间。
+
 **2026-09-05：通过配套工具的 bind 路径别名识别原生 Stack**：外部 Stack 扫描器现在可以识别已经由 Enhanced 管理的 Stack，即使另一个容器从不同的挂载路径运行 Docker Compose。已明确覆盖 [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion) 场景：它可能从 `/compose` 重新创建 Gluetun 项目，从而使 Docker 标签记录 `/compose/compose.yaml`，而不是 Enhanced 的 Stack 目录。Enhanced 现在会把这类 bind 路径别名映射回受管理的主机路径，并在排除外部接管前同时核对 Compose 项目名称。
 
 **2026-09-05：修正外部 Stack 检测**：扫描器现在会把 Enhanced 容器内的 Stack 目录与对应的主机 bind 挂载进行映射，并排除工作目录或 Compose 文件位于任一受管理根目录中的项目。因此，原生 Stack 不会再仅因为 Docker Compose 标签暴露主机路径而被错误显示为外部 Stack。
@@ -84,4 +86,3 @@
 - **2026-08-20 — Stack 迁移增强**：支持必要时复制 Docker 镜像、加密迁移私有 Registry 凭据，并在部署前检测 `container_name` 冲突。
 
 完整历史和详细技术说明可参考 [英文 README](README.md)。
-
