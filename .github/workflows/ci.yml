@@ -45,6 +45,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npm ci
 
+      - name: Vérification ESLint
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npm run lint
+
       - name: Vérification TypeScript (tsc --noEmit)
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run check-ts
