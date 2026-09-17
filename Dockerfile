@@ -1,5 +1,5 @@
 # ─── Stage 1 : build ─────────────────────────────────────────────
-FROM golang:1.26-alpine AS restic-builder
+FROM golang:1.27-alpine AS restic-builder
 
 ARG RESTIC_VERSION=0.19.1
 ARG GRPC_VERSION=1.83.2
@@ -10,7 +10,7 @@ RUN wget -qO- "https://github.com/restic/restic/archive/refs/tags/v${RESTIC_VERS
     && go run build.go
 
 # ─── Stage 2 : build de l'application ─────────────────────────────────
-FROM node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019 AS builder
+FROM node:26-alpine@sha256:ef24c5053d50fdc3e4e56eb4e7ddb7861874ab0fdc797046ba897581deb8e868 AS builder
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ RUN npm run build:frontend
 RUN npm prune --omit=dev
 
 # ─── Stage 2 : image de production ───────────────────────────────
-FROM node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019
+FROM node:26-alpine@sha256:ef24c5053d50fdc3e4e56eb4e7ddb7861874ab0fdc797046ba897581deb8e868
 
 WORKDIR /app
 
