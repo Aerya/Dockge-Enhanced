@@ -1,0 +1,1045 @@
+{
+  "backend/agent-mesh.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 2
+    }
+  },
+  "backend/agent-socket-handlers/docker-socket-handler.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 38
+    },
+    "curly": {
+      "count": 1
+    }
+  },
+  "backend/agent-socket-handlers/stack-transfer-socket-handler.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 5
+    }
+  },
+  "backend/agent-socket-handlers/stack-transfer-socket-handler.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 2
+    }
+  },
+  "backend/anonymous-install-count.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 4
+    }
+  },
+  "backend/anonymous-install-count.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    },
+    "curly": {
+      "count": 7
+    }
+  },
+  "backend/audit-log.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "backend/auth.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/compose-network-namespace.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/database.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "backend/dockge-server.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    },
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "backend/external-stack-access.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 2
+    },
+    "curly": {
+      "count": 3
+    }
+  },
+  "backend/external-stacks.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 35
+    }
+  },
+  "backend/external-stacks.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 34
+    },
+    "curly": {
+      "count": 50
+    }
+  },
+  "backend/global-search.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 6
+    }
+  },
+  "backend/global-search.ts": {
+    "@stylistic/max-statements-per-line": {
+      "count": 5
+    },
+    "@stylistic/object-property-newline": {
+      "count": 61
+    },
+    "curly": {
+      "count": 48
+    }
+  },
+  "backend/integrations/plugnpin-manager.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 2
+    }
+  },
+  "backend/integrations/plugnpin-manager.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/notification/apprise.ts": {
+    "@stylistic/no-multi-spaces": {
+      "count": 3
+    },
+    "curly": {
+      "count": 2
+    }
+  },
+  "backend/notification/discord.ts": {
+    "@stylistic/no-multi-spaces": {
+      "count": 4
+    },
+    "@stylistic/object-property-newline": {
+      "count": 1
+    },
+    "curly": {
+      "count": 7
+    }
+  },
+  "backend/notification/notification-lang.ts": {
+    "curly": {
+      "count": 4
+    }
+  },
+  "backend/operations-toolkit.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 6
+    }
+  },
+  "backend/remote-announcements.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 10
+    }
+  },
+  "backend/remote-announcements.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 3
+    },
+    "curly": {
+      "count": 35
+    }
+  },
+  "backend/routers/audit-log-router.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 8
+    }
+  },
+  "backend/routers/docker-resources-router.ts": {
+    "@stylistic/brace-style": {
+      "count": 6
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 1
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 1
+    },
+    "@stylistic/object-property-newline": {
+      "count": 29
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 23
+    },
+    "curly": {
+      "count": 8
+    }
+  },
+  "backend/routers/monitoring-router.ts": {
+    "@stylistic/brace-style": {
+      "count": 2
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 1
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 6
+    },
+    "@stylistic/object-property-newline": {
+      "count": 18
+    }
+  },
+  "backend/routers/system-stats-router.ts": {
+    "@stylistic/brace-style": {
+      "count": 5
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 2
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 6
+    },
+    "@stylistic/object-property-newline": {
+      "count": 37
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "curly": {
+      "count": 14
+    }
+  },
+  "backend/routers/watcher-router.ts": {
+    "@stylistic/brace-style": {
+      "count": 10
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 2
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 1
+    },
+    "@stylistic/object-property-newline": {
+      "count": 117
+    },
+    "curly": {
+      "count": 9
+    }
+  },
+  "backend/self-update/editor-lease.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 8
+    }
+  },
+  "backend/self-update/editor-lease.ts": {
+    "curly": {
+      "count": 2
+    }
+  },
+  "backend/self-update/failure-detail.test.ts": {
+    "@stylistic/quotes": {
+      "count": 1
+    }
+  },
+  "backend/self-update/failure-detail.ts": {
+    "curly": {
+      "count": 5
+    }
+  },
+  "backend/self-update/manager.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 30
+    },
+    "@stylistic/quotes": {
+      "count": 5
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    },
+    "no-useless-escape": {
+      "count": 5
+    }
+  },
+  "backend/self-update/manager.ts": {
+    "@stylistic/brace-style": {
+      "count": 16
+    },
+    "@stylistic/indent": {
+      "count": 189
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 2
+    },
+    "@stylistic/object-property-newline": {
+      "count": 36
+    },
+    "curly": {
+      "count": 35
+    }
+  },
+  "backend/self-update/operation-guard-policy.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/self-update/operation-guard.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/self-update/operation-guard.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    },
+    "curly": {
+      "count": 1
+    }
+  },
+  "backend/self-update/policy.test.ts": {
+    "curly": {
+      "count": 2
+    }
+  },
+  "backend/self-update/policy.ts": {
+    "curly": {
+      "count": 3
+    }
+  },
+  "backend/self-update/settings.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 14
+    }
+  },
+  "backend/self-update/settings.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 4
+    },
+    "curly": {
+      "count": 3
+    }
+  },
+  "backend/self-update/state-file.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/socket-handlers/stack-move-socket-handler.ts": {
+    "@stylistic/brace-style": {
+      "count": 6
+    },
+    "curly": {
+      "count": 3
+    }
+  },
+  "backend/stack-git-service.ts": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "backend/stack-pins.ts": {
+    "curly": {
+      "count": 7
+    }
+  },
+  "backend/stack.ts": {
+    "@stylistic/no-multi-spaces": {
+      "count": 1
+    },
+    "@stylistic/object-property-newline": {
+      "count": 55
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "curly": {
+      "count": 28
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "backend/start-guard.test.ts": {
+    "@stylistic/brace-style": {
+      "count": 12
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 5
+    },
+    "@stylistic/object-property-newline": {
+      "count": 58
+    }
+  },
+  "backend/terminal.ts": {
+    "@stylistic/object-curly-spacing": {
+      "count": 2
+    },
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/transfers/http-direct-transport.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/transfers/http-direct-transport.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/transfers/managed-replication-transport.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/transfers/registry-credential-transfer.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/transfers/rsync-transfer-transport.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 3
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "backend/transfers/stack-data-transfer.integration.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 4
+    }
+  },
+  "backend/transfers/stack-data-transfer.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 14
+    },
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "backend/transfers/stack-replication-target.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 8
+    }
+  },
+  "backend/transfers/stack-transfer-compatibility.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 5
+    }
+  },
+  "backend/transfers/stack-transfer-restic.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 3
+    }
+  },
+  "backend/transfers/stack-transfer-transport.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 2
+    }
+  },
+  "backend/transfers/stack-transfer.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 11
+    }
+  },
+  "backend/util-server.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/volume-files.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 8
+    },
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "backend/volume-usage.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 2
+    }
+  },
+  "backend/volume-usage.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/watchers/auto-prune-manager.ts": {
+    "@stylistic/brace-style": {
+      "count": 12
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 3
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 20
+    },
+    "@stylistic/object-property-newline": {
+      "count": 12
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "curly": {
+      "count": 8
+    }
+  },
+  "backend/watchers/backup-manager.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 10
+    }
+  },
+  "backend/watchers/backup-manager.ts": {
+    "@stylistic/array-bracket-newline": {
+      "count": 1
+    },
+    "@stylistic/brace-style": {
+      "count": 46
+    },
+    "@stylistic/indent": {
+      "count": 84
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 17
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 63
+    },
+    "@stylistic/object-property-newline": {
+      "count": 154
+    },
+    "@stylistic/quotes": {
+      "count": 3
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    },
+    "curly": {
+      "count": 109
+    },
+    "no-async-promise-executor": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    },
+    "preserve-caught-error": {
+      "count": 3
+    }
+  },
+  "backend/watchers/backup-restore-test.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 8
+    }
+  },
+  "backend/watchers/backup-restore-test.ts": {
+    "curly": {
+      "count": 6
+    }
+  },
+  "backend/watchers/dozzle-manager.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "backend/watchers/image-watcher.test.ts": {
+    "@stylistic/indent": {
+      "count": 76
+    },
+    "@stylistic/object-property-newline": {
+      "count": 11
+    }
+  },
+  "backend/watchers/image-watcher.ts": {
+    "@stylistic/indent": {
+      "count": 1406
+    },
+    "@stylistic/object-property-newline": {
+      "count": 38
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    },
+    "curly": {
+      "count": 58
+    }
+  },
+  "backend/watchers/kula-manager.ts": {
+    "@stylistic/no-multi-spaces": {
+      "count": 8
+    },
+    "@stylistic/object-property-newline": {
+      "count": 3
+    },
+    "@stylistic/quotes": {
+      "count": 1
+    },
+    "curly": {
+      "count": 1
+    }
+  },
+  "backend/watchers/monitoring-watcher.ts": {
+    "@stylistic/brace-style": {
+      "count": 4
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 1
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 23
+    },
+    "@stylistic/object-property-newline": {
+      "count": 23
+    },
+    "curly": {
+      "count": 11
+    }
+  },
+  "backend/watchers/self-update-checker.ts": {
+    "@stylistic/indent": {
+      "count": 541
+    },
+    "@stylistic/object-property-newline": {
+      "count": 27
+    },
+    "@stylistic/quotes": {
+      "count": 1
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    },
+    "curly": {
+      "count": 20
+    }
+  },
+  "backend/watchers/stack-move-manager.test.ts": {
+    "@stylistic/brace-style": {
+      "count": 4
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 1
+    }
+  },
+  "backend/watchers/stack-replication-manager.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 13
+    }
+  },
+  "backend/watchers/stack-replication-manager.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 23
+    }
+  },
+  "backend/watchers/stack-scheduler.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 4
+    }
+  },
+  "backend/watchers/start-guard-watcher.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 3
+    },
+    "curly": {
+      "count": 13
+    }
+  },
+  "backend/watchers/trivy-scanner.ts": {
+    "@stylistic/brace-style": {
+      "count": 2
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 19
+    },
+    "@stylistic/object-property-newline": {
+      "count": 26
+    },
+    "curly": {
+      "count": 9
+    }
+  },
+  "backend/watchers/update-policy.test.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 3
+    }
+  },
+  "frontend/src/components/AuditLogTab.vue": {
+    "@stylistic/indent": {
+      "count": 122
+    },
+    "@stylistic/object-property-newline": {
+      "count": 2
+    },
+    "no-undef": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 150
+    }
+  },
+  "frontend/src/components/BackupTab.vue": {
+    "@stylistic/brace-style": {
+      "count": 14
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 3
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 8
+    },
+    "@stylistic/object-property-newline": {
+      "count": 20
+    },
+    "@stylistic/quotes": {
+      "count": 3
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "curly": {
+      "count": 15
+    },
+    "vue/html-indent": {
+      "count": 9
+    }
+  },
+  "frontend/src/components/Container.vue": {
+    "@stylistic/object-property-newline": {
+      "count": 2
+    }
+  },
+  "frontend/src/components/ContainerStatsBadge.vue": {
+    "@stylistic/object-property-newline": {
+      "count": 2
+    }
+  },
+  "frontend/src/components/GlobalSearch.vue": {
+    "@stylistic/object-property-newline": {
+      "count": 41
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    },
+    "curly": {
+      "count": 28
+    }
+  },
+  "frontend/src/components/MonitoringTab.vue": {
+    "@stylistic/brace-style": {
+      "count": 24
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 1
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 14
+    },
+    "@stylistic/object-property-newline": {
+      "count": 40
+    },
+    "curly": {
+      "count": 21
+    },
+    "vue/html-indent": {
+      "count": 37
+    }
+  },
+  "frontend/src/components/RemoteInstanceLinks.vue": {
+    "@stylistic/object-property-newline": {
+      "count": 2
+    }
+  },
+  "frontend/src/components/StackList.vue": {
+    "@stylistic/brace-style": {
+      "count": 4
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 2
+    },
+    "@stylistic/object-property-newline": {
+      "count": 1
+    },
+    "curly": {
+      "count": 10
+    }
+  },
+  "frontend/src/components/StackReplicationStatus.vue": {
+    "curly": {
+      "count": 2
+    }
+  },
+  "frontend/src/components/StackStatsBadge.vue": {
+    "@stylistic/object-property-newline": {
+      "count": 3
+    }
+  },
+  "frontend/src/components/StackTransferModal.vue": {
+    "curly": {
+      "count": 6
+    }
+  },
+  "frontend/src/components/Terminal.vue": {
+    "@stylistic/no-trailing-spaces": {
+      "count": 6
+    },
+    "@stylistic/object-property-newline": {
+      "count": 1
+    },
+    "@stylistic/quotes": {
+      "count": 2
+    }
+  },
+  "frontend/src/components/backup/BackupDestinations.vue": {
+    "@stylistic/no-multi-spaces": {
+      "count": 6
+    },
+    "@stylistic/object-property-newline": {
+      "count": 10
+    },
+    "curly": {
+      "count": 5
+    },
+    "vue/html-indent": {
+      "count": 28
+    }
+  },
+  "frontend/src/components/backup/BackupHistory.vue": {
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    },
+    "curly": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 61
+    }
+  },
+  "frontend/src/components/backup/BackupSnapshotDiff.vue": {
+    "curly": {
+      "count": 2
+    },
+    "vue/html-indent": {
+      "count": 7
+    }
+  },
+  "frontend/src/components/backup/BackupSnapshots.vue": {
+    "@stylistic/brace-style": {
+      "count": 10
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 3
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 12
+    },
+    "@stylistic/object-property-newline": {
+      "count": 23
+    },
+    "@stylistic/quotes": {
+      "count": 8
+    },
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 4
+    },
+    "curly": {
+      "count": 25
+    },
+    "vue/html-indent": {
+      "count": 134
+    }
+  },
+  "frontend/src/components/backup/BackupStackPolicies.vue": {
+    "vue/html-indent": {
+      "count": 6
+    }
+  },
+  "frontend/src/components/backup/BackupVolumes.vue": {
+    "@stylistic/object-property-newline": {
+      "count": 7
+    },
+    "curly": {
+      "count": 5
+    },
+    "vue/html-indent": {
+      "count": 18
+    }
+  },
+  "frontend/src/components/backup/shared.ts": {
+    "@stylistic/max-statements-per-line": {
+      "count": 1
+    },
+    "@stylistic/object-property-newline": {
+      "count": 14
+    },
+    "curly": {
+      "count": 12
+    },
+    "one-var": {
+      "count": 2
+    }
+  },
+  "frontend/src/components/settings/GlobalEnv.vue": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "frontend/src/components/watcher/WatcherImagesTab.vue": {
+    "@stylistic/object-property-newline": {
+      "count": 4
+    },
+    "curly": {
+      "count": 1
+    }
+  },
+  "frontend/src/components/watcher/WatcherUpdatesTab.vue": {
+    "@stylistic/brace-style": {
+      "count": 4
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 2
+    },
+    "@stylistic/object-property-newline": {
+      "count": 32
+    },
+    "curly": {
+      "count": 19
+    }
+  },
+  "frontend/src/components/watcher/shared.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  },
+  "frontend/src/composables/useLowPower.ts": {
+    "@stylistic/brace-style": {
+      "count": 6
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 3
+    },
+    "curly": {
+      "count": 5
+    }
+  },
+  "frontend/src/composables/useServerTz.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "curly": {
+      "count": 2
+    }
+  },
+  "frontend/src/composables/useStackStats.ts": {
+    "@stylistic/brace-style": {
+      "count": 9
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 3
+    },
+    "@stylistic/object-property-newline": {
+      "count": 8
+    },
+    "curly": {
+      "count": 15
+    }
+  },
+  "frontend/src/layouts/Layout.vue": {
+    "@stylistic/brace-style": {
+      "count": 6
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 2
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 2
+    },
+    "@stylistic/object-property-newline": {
+      "count": 2
+    },
+    "curly": {
+      "count": 3
+    },
+    "vue/html-indent": {
+      "count": 2
+    }
+  },
+  "frontend/src/pages/Compose.vue": {
+    "@stylistic/object-property-newline": {
+      "count": 16
+    },
+    "curly": {
+      "count": 8
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "frontend/src/pages/DashboardHome.vue": {
+    "@stylistic/brace-style": {
+      "count": 2
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 1
+    },
+    "@stylistic/object-property-newline": {
+      "count": 8
+    },
+    "curly": {
+      "count": 10
+    }
+  },
+  "frontend/src/pages/DockerResources.vue": {
+    "@stylistic/brace-style": {
+      "count": 10
+    },
+    "@stylistic/max-statements-per-line": {
+      "count": 5
+    },
+    "@stylistic/no-multi-spaces": {
+      "count": 17
+    },
+    "@stylistic/object-property-newline": {
+      "count": 21
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "curly": {
+      "count": 40
+    },
+    "one-var": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 48
+    }
+  },
+  "frontend/src/pages/ExternalStacks.vue": {
+    "@stylistic/object-property-newline": {
+      "count": 2
+    },
+    "curly": {
+      "count": 15
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "frontend/src/router.ts": {
+    "@stylistic/object-property-newline": {
+      "count": 1
+    }
+  }
+}
