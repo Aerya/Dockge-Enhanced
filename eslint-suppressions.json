@@ -63,19 +63,6 @@
       "count": 1
     }
   },
-  "backend/external-stacks.test.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 35
-    }
-  },
-  "backend/external-stacks.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 34
-    },
-    "curly": {
-      "count": 50
-    }
-  },
   "backend/global-search.test.ts": {
     "@stylistic/object-property-newline": {
       "count": 6
