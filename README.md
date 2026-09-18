@@ -70,6 +70,8 @@ Targeted image updates, service recreations and image rollbacks now resolve the 
 
 Enhanced can detect existing Docker Compose projects, adopt them **without moving their Compose/.env or data**, and then manage them from the normal stack UI. If a source path is not yet available inside Enhanced, protected one-click authorization patches Enhanced's own Compose automatically. Adopted stacks keep their project name without a redundant `external-` prefix and are marked **External**; source-file deletion requires an additional explicit confirmation. The scanner also maps Enhanced's stacks directory to its host-side bind mount, so stacks already managed by the instance are excluded even when Docker Compose labels contain host paths.
 
+When permanent source deletion is selected, Enhanced now removes the source bind and allowlist entry from its own Compose through the protected helper, recreates only its own container, and then deletes the host folder. This avoids `EBUSY` failures caused by trying to remove a directory that is still one of Enhanced's mount points.
+
 A supported example is [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion): it may recreate an Enhanced-managed Gluetun stack from a bind-mounted `/compose` path. Enhanced now resolves this kind of Compose path alias back to the managed stack and does not offer it for external adoption.
 
 **Anonymous installation count**
@@ -207,6 +209,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Server-persisted pinned stacks shared across linked WebUIs
 - External Compose stack discovery and adoption without moving files or data
 - Protected one-click authorization for external stack paths
+- Optional complete removal of adopted external stacks, including their source folder and Enhanced access mount
 - Sort by creation date or last update
 - Per-stack notes
 - Git tools

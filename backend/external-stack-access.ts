@@ -24,7 +24,8 @@ interface DockerInspect {
     Id?: string;
     Image?: string;
     Name?: string;
-    Config?: { Image?: string; Labels?: Record<string, string> };
+    Config?: { Image?: string;
+        Labels?: Record<string, string> };
     Mounts?: DockerMount[];
 }
 
@@ -41,7 +42,7 @@ export interface ExternalStackAccessOperation {
 
 interface ExternalStackAccessPlan {
     version: 1;
-    action: "external-stack-access";
+    action: "external-stack-access" | "external-stack-delete";
     id: string;
     issuedAt: string;
     expiresAt: string;
@@ -51,7 +52,9 @@ interface ExternalStackAccessPlan {
     previousImageId: string;
     externalProject: string;
     requestedPath: string;
-    requestedPaths: Array<{ path: string; addBind: boolean }>;
+    requestedPaths: Array<{ path: string;
+        addBind: boolean }>;
+    deletePath?: string;
     compose: {
         workingDir: string;
         configFiles: string[];
@@ -85,10 +88,14 @@ async function docker(args: string[], timeout = 120_000): Promise<string> {
 function identityBindCovers(mounts: DockerMount[] | undefined, candidate: string): boolean {
     const resolved = path.resolve(candidate);
     return (mounts ?? []).some((mount) => {
-        if (mount.Type !== "bind" || !mount.Source || !mount.Destination) return false;
+        if (mount.Type !== "bind" || !mount.Source || !mount.Destination) {
+            return false;
+        }
         const source = path.resolve(mount.Source);
         const destination = path.resolve(mount.Destination);
-        if (source !== destination) return false;
+        if (source !== destination) {
+            return false;
+        }
         const relative = path.relative(destination, resolved);
         return relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
     });
@@ -98,7 +105,9 @@ function collapseAccessPaths(values: string[]): string[] {
     const sorted = [ ...new Set(values.map((value) => path.resolve(value))) ].sort((a, b) => a.length - b.length || a.localeCompare(b));
     const result: string[] = [];
     for (const candidate of sorted) {
-        if (result.some((root) => candidate === root || candidate.startsWith(`${root}${path.sep}`))) continue;
+        if (result.some((root) => candidate === root || candidate.startsWith(`${root}${path.sep}`))) {
+            continue;
+        }
         result.push(candidate);
     }
     return result;
@@ -313,6 +322,133 @@ export class ExternalStackAccessManager {
                 finishedAt: new Date().toISOString(),
             };
             await atomicWriteJson(this.statusPath, failed);
+            throw error;
+        }
+        return operation;
+    }
+
+    async requestDeletion(project: string, requestedPath: string): Promise<ExternalStackAccessOperation> {
+        if (!project || project.length > 128 || !path.isAbsolute(requestedPath) || !isSafeExternalDataPath(requestedPath)) {
+            throw new ValidationError("Invalid external stack deletion request");
+        }
+        const current = await this.getOperation();
+        if (ACTIVE_STATES.has(current.state)) {
+            throw new ValidationError("An external-stack access operation is already running");
+        }
+        if (SelfUpdateManager.getInstance().isUpdateExecutionInProgress()) {
+            throw new ValidationError("Dockge-Enhanced self-update is currently running");
+        }
+        const blocker = await getSelfUpdateBlocker();
+        if (blocker) {
+            throw new ValidationError(`Protected Compose update is temporarily unavailable: ${blocker.message}`);
+        }
+
+        const deletePath = path.resolve(requestedPath);
+        const containerId = process.env.HOSTNAME?.trim();
+        if (!containerId) {
+            throw new Error("Current Docker container identifier is unavailable");
+        }
+        const inspected = JSON.parse(await docker([ "container", "inspect", containerId, "--format", "{{json .}}" ])) as DockerInspect;
+        const labels = inspected.Config?.Labels ?? {};
+        const targetContainerName = (inspected.Name ?? "").replace(/^\//, "");
+        const workingDir = labels["com.docker.compose.project.working_dir"] ?? "";
+        const configFiles = [ ...new Set((labels["com.docker.compose.project.config_files"] ?? "").split(",").map((file) => file.trim()).filter((file) => file.length > 0 && path.isAbsolute(file)).map((file) => path.resolve(file))) ].slice(0, 16);
+        const envFiles = [ ...new Set((labels["com.docker.compose.project.environment_file"] ?? "").split(",").map((file) => file.trim()).filter((file) => file.length > 0 && path.isAbsolute(file)).map((file) => path.resolve(file))) ].slice(0, 8);
+        const composeProject = labels["com.docker.compose.project"] ?? "";
+        const composeService = labels["com.docker.compose.service"] ?? "";
+        if (!inspected.Id || !inspected.Image || !inspected.Config?.Image || !targetContainerName) {
+            throw new Error("Current Dockge-Enhanced container metadata is incomplete");
+        }
+        if (!path.isAbsolute(workingDir) || !isSafeComposeName(composeProject) || !isSafeComposeName(composeService) || configFiles.length === 0) {
+            throw new ValidationError("The active Dockge-Enhanced Compose configuration cannot be modified safely");
+        }
+        const exactBind = (inspected.Mounts ?? []).some((mount) => mount.Type === "bind" && mount.Source && mount.Destination
+            && path.resolve(mount.Source) === deletePath && path.resolve(mount.Destination) === deletePath);
+        if (!exactBind) {
+            await fs.rm(deletePath, { recursive: true,
+                force: true });
+            const finished = new Date().toISOString();
+            const operation: ExternalStackAccessOperation = {
+                id: crypto.randomBytes(16).toString("hex"),
+                project,
+                requestedPath: deletePath,
+                state: "succeeded",
+                message: "External source deleted",
+                startedAt: finished,
+                finishedAt: finished,
+                rollbackAttempted: false,
+            };
+            await fs.mkdir(this.stateDir, { recursive: true,
+                mode: 0o700 });
+            await atomicWriteJson(this.statusPath, operation);
+            return operation;
+        }
+        const stateMount = (inspected.Mounts ?? []).find((mount) => mount.Destination === this.dataDir);
+        if (!stateMount?.Source) {
+            throw new ValidationError(`The ${this.dataDir} volume is required for protected configuration changes`);
+        }
+        const stateSource = stateMount.Type === "volume" ? (stateMount.Name ?? stateMount.Source) : stateMount.Source;
+        const dockerSocket = process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock";
+        const socketGroup = (await fs.stat(dockerSocket)).gid;
+        const id = crypto.randomBytes(16).toString("hex");
+        const issuedAt = new Date();
+        const plan: ExternalStackAccessPlan = {
+            version: 1,
+            action: "external-stack-delete",
+            id,
+            issuedAt: issuedAt.toISOString(),
+            expiresAt: new Date(issuedAt.getTime() + 15 * 60_000).toISOString(),
+            targetContainerId: inspected.Id,
+            targetContainerName,
+            previousImage: inspected.Config.Image,
+            previousImageId: inspected.Image,
+            externalProject: project,
+            requestedPath: deletePath,
+            requestedPaths: [{ path: deletePath,
+                addBind: false }],
+            deletePath,
+            compose: { workingDir,
+                configFiles,
+                envFiles,
+                project: composeProject,
+                service: composeService },
+        };
+        const secret = await this.getOrCreateSecret();
+        await fs.mkdir(this.stateDir, { recursive: true,
+            mode: 0o700 });
+        await atomicWriteJson(path.join(this.stateDir, `${id}.json`), { plan,
+            signature: signPlan(plan, secret) });
+        const operation: ExternalStackAccessOperation = {
+            id,
+            project,
+            requestedPath: deletePath,
+            state: "preparing",
+            message: "Preparing protected external source deletion",
+            startedAt: issuedAt.toISOString(),
+            finishedAt: null,
+            rollbackAttempted: false,
+        };
+        await atomicWriteJson(this.statusPath, operation);
+        const args = [
+            "run", "-d", "--rm", "--name", `dockge-enhanced-compose-helper-${id}`,
+            "--label", "io.dockge-enhanced.external-stack-access=true", "--user", "0:0",
+            "--cap-drop", "ALL", "--cap-add", "DAC_OVERRIDE", "--cap-add", "CHOWN",
+            "--security-opt", "no-new-privileges", "--read-only", "--network", "none", "--no-healthcheck",
+            "--group-add", String(socketGroup), "-v", `${dockerSocket}:/var/run/docker.sock`, "-v", `${stateSource}:/state`,
+            "-v", `${workingDir}:${workingDir}:rw`, "-v", `${path.dirname(deletePath)}:${path.dirname(deletePath)}:rw`,
+            "-e", `EXTERNAL_STACK_ACCESS_PLAN=/state/external-stack-access/${id}.json`,
+            "-e", "EXTERNAL_STACK_ACCESS_STATE_DIR=/state/external-stack-access",
+            "-e", `EXTERNAL_STACK_ACCESS_TARGET_ID=${inspected.Id}`, "-e", `EXTERNAL_STACK_ACCESS_TARGET_NAME=${targetContainerName}`,
+            "-e", `EXTERNAL_STACK_ACCESS_COMPOSE_DIR=${workingDir}`, "-e", "EXTERNAL_STACK_ACCESS_START_DELAY_MS=2000",
+            inspected.Image, "node", "/app/extra/external-stack-access-sidecar/index.cjs",
+        ];
+        try {
+            await docker(args);
+        } catch (error) {
+            await atomicWriteJson(this.statusPath, { ...operation,
+                state: "failed",
+                message: `Unable to start the protected Compose helper: ${error instanceof Error ? error.message : String(error)}`,
+                finishedAt: new Date().toISOString() });
             throw error;
         }
         return operation;

@@ -63,14 +63,6 @@
       "count": 1
     }
   },
-  "backend/external-stack-access.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 2
-    },
-    "curly": {
-      "count": 3
-    }
-  },
   "backend/external-stacks.test.ts": {
     "@stylistic/object-property-newline": {
       "count": 35
@@ -978,9 +970,6 @@
   "frontend/src/pages/Compose.vue": {
     "@stylistic/object-property-newline": {
       "count": 16
-    },
-    "curly": {
-      "count": 8
     },
     "no-useless-assignment": {
       "count": 1

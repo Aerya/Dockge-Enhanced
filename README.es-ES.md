@@ -72,6 +72,8 @@ Las actualizaciones dirigidas de imágenes, las recreaciones de servicios y los 
 
 Enhanced puede detectar proyectos Docker Compose existentes, adoptarlos **sin mover su Compose/.env ni sus datos** y gestionarlos después desde la interfaz normal de stacks. Si una ruta de origen aún no es accesible desde Enhanced, una autorización protegida en un clic adapta automáticamente el Compose de Enhanced. Las stacks adoptadas conservan el nombre del proyecto sin el prefijo redundante `external-` y muestran la insignia **Externa**; borrar los archivos de origen requiere una confirmación explícita adicional. El escáner también relaciona el directorio de stacks de Enhanced con su bind del host, por lo que las stacks ya gestionadas por la instancia se excluyen incluso cuando las etiquetas de Docker Compose contienen rutas del host.
 
+Cuando se selecciona la eliminación permanente del origen, Enhanced retira ahora el bind de origen y su entrada de autorización de su propio Compose mediante el helper protegido, recrea únicamente su contenedor y después elimina la carpeta del host. Así se evitan los errores `EBUSY` causados al intentar borrar un directorio que todavía es un punto de montaje de Enhanced.
+
 Un caso admitido explícitamente es [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion): puede recrear una stack Gluetun ya gestionada por Enhanced desde una ruta `/compose` montada mediante bind. Enhanced ahora relaciona este tipo de alias de ruta Compose con la stack nativa y deja de proponerla erróneamente como externa.
 
 **Conteo anónimo de instalaciones**
@@ -207,6 +209,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Stacks fijadas en el servidor, compartidas entre las WebUI vinculadas, y ordenación avanzada
 - Detección e integración de stacks Compose externas sin mover archivos ni datos
 - Autorización protegida en un clic para las rutas de stacks externas
+- Eliminación completa opcional de stacks externas integradas, incluida la carpeta de origen y el montaje de acceso de Enhanced
 - Notas y herramientas Git
 - Build + Recreate
 - Acciones por servicio/contenedor
