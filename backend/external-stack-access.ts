@@ -364,7 +364,8 @@ export class ExternalStackAccessManager {
         }
         const exactBind = (inspected.Mounts ?? []).some((mount) => mount.Type === "bind" && mount.Source && mount.Destination
             && path.resolve(mount.Source) === deletePath && path.resolve(mount.Destination) === deletePath);
-        if (!exactBind) {
+        const directlyAccessible = identityBindCovers(inspected.Mounts, deletePath);
+        if (!exactBind && directlyAccessible) {
             await fs.rm(deletePath, { recursive: true,
                 force: true });
             const finished = new Date().toISOString();

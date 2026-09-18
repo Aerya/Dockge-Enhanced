@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import childProcessAsync from "promisify-child-process";
+import crypto from "node:crypto";
 import { ValidationError } from "./util-server";
 
 export interface ExternalStackRegistration {
@@ -42,26 +43,69 @@ export interface ExternalAllowedMount {
 
 interface DockerInspect {
     Id?: string;
-    Config?: { Labels?: Record<string, string> };
-    Mounts?: Array<{ Type?: string; Source?: string; Name?: string; Destination?: string }>;
+    Image?: string;
+    Name?: string;
+    Config?: { Image?: string;
+        Labels?: Record<string, string> };
+    Mounts?: Array<{ Type?: string;
+        Source?: string;
+        Name?: string;
+        Destination?: string }>;
     State?: { Status?: string };
+    NetworkSettings?: { Networks?: Record<string, unknown> };
+}
+
+export interface ExternalStackCleanupPreview {
+    token: string;
+    expiresAt: string;
+    project: string;
+    registrationName: string | null;
+    sourcePath: string | null;
+    containers: Array<{ id: string;
+        name: string;
+        status: string }>;
+    volumes: string[];
+    networks: string[];
+    images: Array<{ id: string;
+        reference: string }>;
+}
+
+export interface ExternalStackCleanupResult {
+    project: string;
+    sourcePath: string | null;
+    removed: { containers: string[];
+        volumes: string[];
+        networks: string[];
+        images: string[] };
+    warnings: string[];
+}
+
+interface DockerLabeledResourceInspect {
+    Name?: string;
+    Labels?: Record<string, string>;
+    RepoTags?: string[];
+    Config?: { Labels?: Record<string, string> };
 }
 
 export function selectAllowedMounts(mounts: DockerInspect["Mounts"], allowedRoots: string[]): ExternalAllowedMount[] {
     const selected = new Map<string, ExternalAllowedMount>();
     for (const mount of mounts ?? []) {
-        if (mount.Type !== "bind" || !mount.Source || !mount.Destination) continue;
+        if (mount.Type !== "bind" || !mount.Source || !mount.Destination) {
+            continue;
+        }
         const destination = path.resolve(mount.Destination);
         const supportsAllowedRoot = allowedRoots.some((root) => {
             const relative = path.relative(destination, path.resolve(root));
             return relative === "" || (!path.isAbsolute(relative) && !relative.startsWith(`..${path.sep}`) && relative !== "..");
         });
-        if (!supportsAllowedRoot) continue;
-        selected.set(`${mount.Source}:${destination}`, { source: mount.Source, destination });
+        if (!supportsAllowedRoot) {
+            continue;
+        }
+        selected.set(`${mount.Source}:${destination}`, { source: mount.Source,
+            destination });
     }
     return [ ...selected.values() ].sort((a, b) => a.destination.localeCompare(b.destination));
 }
-
 
 function isCoveredByRoot(candidate: string, root: string): boolean {
     const relative = path.relative(path.resolve(root), path.resolve(candidate));
@@ -77,15 +121,21 @@ export function selectManagedStackRoots(mounts: DockerInspect["Mounts"], stacksD
             const destination = path.resolve(mount.Destination!);
             const relative = path.relative(destination, stacksRoot);
             const coversStacksDir = relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(`..${path.sep}`));
-            return coversStacksDir ? { source: path.resolve(mount.Source!), destination, relative } : null;
+            return coversStacksDir ? { source: path.resolve(mount.Source!),
+                destination,
+                relative } : null;
         })
-        .filter((entry): entry is { source: string; destination: string; relative: string } => entry !== null);
+        .filter((entry): entry is { source: string;
+            destination: string;
+            relative: string } => entry !== null);
 
     // Docker resolves overlapping mounts using the most specific destination.
     // Mirror that rule so a broad parent bind cannot hide the actual stacks bind.
     const mostSpecificLength = candidates.reduce((max, entry) => Math.max(max, entry.destination.length), -1);
     for (const entry of candidates) {
-        if (entry.destination.length !== mostSpecificLength) continue;
+        if (entry.destination.length !== mostSpecificLength) {
+            continue;
+        }
         roots.add(path.resolve(entry.source, entry.relative));
     }
 
@@ -103,11 +153,16 @@ function collectComposePathAliases(containers: DockerInspect[]): ExternalAllowed
     const aliases = new Map<string, ExternalAllowedMount>();
     for (const container of containers) {
         for (const mount of container.Mounts ?? []) {
-            if (mount.Type !== "bind" || !mount.Source || !mount.Destination) continue;
-            if (!path.isAbsolute(mount.Source) || !path.isAbsolute(mount.Destination)) continue;
+            if (mount.Type !== "bind" || !mount.Source || !mount.Destination) {
+                continue;
+            }
+            if (!path.isAbsolute(mount.Source) || !path.isAbsolute(mount.Destination)) {
+                continue;
+            }
             const source = path.resolve(mount.Source);
             const destination = path.resolve(mount.Destination);
-            aliases.set(`${source}:${destination}`, { source, destination });
+            aliases.set(`${source}:${destination}`, { source,
+                destination });
         }
     }
     return [ ...aliases.values() ].sort((a, b) =>
@@ -131,7 +186,9 @@ export function isManagedComposeProject(
     }
 
     const normalizedProject = normalizeComposeProjectName(project);
-    if (!normalizedProject || pathAliases.length === 0) return false;
+    if (!normalizedProject || pathAliases.length === 0) {
+        return false;
+    }
 
     // A companion may operate the same Enhanced-managed stack from another
     // container-side Compose path. Gluetun-Companion is a concrete example:
@@ -140,20 +197,26 @@ export function isManagedComposeProject(
     // https://github.com/Aerya/Gluetun-Companion
     for (const candidate of candidates) {
         for (const alias of pathAliases) {
-            if (!isCoveredByRoot(candidate, alias.destination)) continue;
+            if (!isCoveredByRoot(candidate, alias.destination)) {
+                continue;
+            }
 
             const relativeToAlias = path.relative(alias.destination, candidate);
             const hostCandidate = path.resolve(alias.source, relativeToAlias);
 
             for (const root of managedRoots) {
-                if (!isCoveredByRoot(hostCandidate, root)) continue;
+                if (!isCoveredByRoot(hostCandidate, root)) {
+                    continue;
+                }
 
                 const relativeToManagedRoot = path.relative(path.resolve(root), hostCandidate);
                 if (
                     !relativeToManagedRoot ||
                     relativeToManagedRoot === ".." ||
                     path.isAbsolute(relativeToManagedRoot)
-                ) continue;
+                ) {
+                    continue;
+                }
 
                 const stackDirectory = relativeToManagedRoot.split(path.sep)[0];
                 if (
@@ -184,11 +247,19 @@ const AUTO_ACCESS_DENIED_EXACT = new Set([
 ]);
 
 export function isSafeExternalDataPath(value: string): boolean {
-    if (!value || /[\0\r\n,]/.test(value) || !path.isAbsolute(value)) return false;
+    if (!value || /[\0\r\n,]/.test(value) || !path.isAbsolute(value)) {
+        return false;
+    }
     const resolved = path.resolve(value);
-    if (resolved !== value || AUTO_ACCESS_DENIED_EXACT.has(resolved)) return false;
-    if (AUTO_ACCESS_DENIED_PREFIXES.some((prefix) => resolved === prefix || resolved.startsWith(`${prefix}${path.sep}`))) return false;
-    if (resolved === "/var/run/docker.sock" || resolved.endsWith("/docker.sock")) return false;
+    if (resolved !== value || AUTO_ACCESS_DENIED_EXACT.has(resolved)) {
+        return false;
+    }
+    if (AUTO_ACCESS_DENIED_PREFIXES.some((prefix) => resolved === prefix || resolved.startsWith(`${prefix}${path.sep}`))) {
+        return false;
+    }
+    if (resolved === "/var/run/docker.sock" || resolved.endsWith("/docker.sock")) {
+        return false;
+    }
     return true;
 }
 
@@ -196,7 +267,9 @@ function collapsePaths(paths: string[]): string[] {
     const sorted = [ ...new Set(paths.map((entry) => path.resolve(entry))) ].sort((a, b) => a.length - b.length || a.localeCompare(b));
     const output: string[] = [];
     for (const candidate of sorted) {
-        if (output.some((root) => candidate === root || candidate.startsWith(`${root}${path.sep}`))) continue;
+        if (output.some((root) => candidate === root || candidate.startsWith(`${root}${path.sep}`))) {
+            continue;
+        }
         output.push(candidate);
     }
     return output;
@@ -204,6 +277,7 @@ function collapsePaths(paths: string[]): string[] {
 
 export class ExternalStackManager {
     private registrations: ExternalStackRegistration[] | null = null;
+    private cleanupPlans = new Map<string, ExternalStackCleanupPreview>();
 
     constructor(private readonly dataDir: string, private readonly stacksDir: string, private readonly allowedRoots = splitAllowedRoots(process.env.DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS)) {
     }
@@ -218,7 +292,9 @@ export class ExternalStackManager {
             try {
                 const real = await fs.realpath(root);
                 const stat = await fs.stat(real);
-                if (stat.isDirectory()) roots.push(real);
+                if (stat.isDirectory()) {
+                    roots.push(real);
+                }
             } catch {
                 // An unavailable bind mount is deliberately not an allowed path.
             }
@@ -228,7 +304,9 @@ export class ExternalStackManager {
 
     async getAllowedMounts(): Promise<ExternalAllowedMount[]> {
         const containerId = (process.env.HOSTNAME ?? "").trim();
-        if (!containerId) return [];
+        if (!containerId) {
+            return [];
+        }
         try {
             const result = await childProcessAsync.spawn("docker", [ "inspect", containerId ], {
                 encoding: "utf8",
@@ -243,7 +321,9 @@ export class ExternalStackManager {
 
     async getIdentityBindRoots(): Promise<string[]> {
         const containerId = (process.env.HOSTNAME ?? "").trim();
-        if (!containerId) return [];
+        if (!containerId) {
+            return [];
+        }
         try {
             const result = await childProcessAsync.spawn("docker", [ "inspect", containerId ], {
                 encoding: "utf8",
@@ -258,11 +338,12 @@ export class ExternalStackManager {
         }
     }
 
-
     async getManagedStackRoots(): Promise<string[]> {
         const fallback = [ path.resolve(this.stacksDir) ];
         const containerId = (process.env.HOSTNAME ?? "").trim();
-        if (!containerId) return fallback;
+        if (!containerId) {
+            return fallback;
+        }
         try {
             const result = await childProcessAsync.spawn("docker", [ "inspect", containerId ], {
                 encoding: "utf8",
@@ -276,7 +357,9 @@ export class ExternalStackManager {
     }
 
     private async load(): Promise<ExternalStackRegistration[]> {
-        if (this.registrations) return this.registrations;
+        if (this.registrations) {
+            return this.registrations;
+        }
         try {
             const parsed = JSON.parse(await fs.readFile(this.file, "utf8")) as unknown;
             this.registrations = Array.isArray(parsed)
@@ -312,24 +395,36 @@ export class ExternalStackManager {
         await fs.rename(temporary, this.file);
     }
 
-    private async canonicalComposeFile(composeFile: string, workingDirInput?: string): Promise<{ composeFile: string; workingDir: string }> {
-        if (!path.isAbsolute(composeFile)) throw new ValidationError("External compose path must be absolute");
+    private async canonicalComposeFile(composeFile: string, workingDirInput?: string): Promise<{ composeFile: string;
+        workingDir: string }> {
+        if (!path.isAbsolute(composeFile)) {
+            throw new ValidationError("External compose path must be absolute");
+        }
         const candidate = await fs.realpath(composeFile);
         const stat = await fs.stat(candidate);
         if (!stat.isFile() || !/\.ya?ml$/i.test(candidate)) {
             throw new ValidationError("External stack must reference a YAML Compose file");
         }
         const workingDirCandidate = workingDirInput ?? path.dirname(candidate);
-        if (!path.isAbsolute(workingDirCandidate)) throw new ValidationError("External Compose working directory must be absolute");
+        if (!path.isAbsolute(workingDirCandidate)) {
+            throw new ValidationError("External Compose working directory must be absolute");
+        }
         const workingDir = await fs.realpath(workingDirCandidate);
         const workingStat = await fs.stat(workingDir);
-        if (!workingStat.isDirectory()) throw new ValidationError("External Compose working directory is not a directory");
+        if (!workingStat.isDirectory()) {
+            throw new ValidationError("External Compose working directory is not a directory");
+        }
         const allowedRoots = await this.getAllowedRoots();
         const workingDirAllowed = allowedRoots.some((root) => workingDir === root || workingDir.startsWith(`${root}${path.sep}`));
         const composeAllowed = allowedRoots.some((root) => candidate === root || candidate.startsWith(`${root}${path.sep}`));
-        if (!workingDirAllowed) throw new ValidationError("External stack working directory is not in an allowed root");
-        if (!composeAllowed) throw new ValidationError("External Compose file is not in an allowed root");
-        return { composeFile: candidate, workingDir };
+        if (!workingDirAllowed) {
+            throw new ValidationError("External stack working directory is not in an allowed root");
+        }
+        if (!composeAllowed) {
+            throw new ValidationError("External Compose file is not in an allowed root");
+        }
+        return { composeFile: candidate,
+            workingDir };
     }
 
     private async canonicalConfigFiles(configFiles: string[], _workingDir: string, composeFile: string): Promise<string[]> {
@@ -337,12 +432,18 @@ export class ExternalStackManager {
         const verified: string[] = [];
         const allowedRoots = await this.getAllowedRoots();
         for (const candidate of candidates.slice(0, 16)) {
-            if (!path.isAbsolute(candidate)) throw new ValidationError("External Compose config paths must be absolute");
+            if (!path.isAbsolute(candidate)) {
+                throw new ValidationError("External Compose config paths must be absolute");
+            }
             const real = await fs.realpath(candidate);
             const stat = await fs.stat(real);
-            if (!stat.isFile() || !/\.ya?ml$/i.test(real)) throw new ValidationError("External Compose config must be a YAML file");
+            if (!stat.isFile() || !/\.ya?ml$/i.test(real)) {
+                throw new ValidationError("External Compose config must be a YAML file");
+            }
             const allowed = allowedRoots.some((root) => real === root || real.startsWith(`${root}${path.sep}`));
-            if (!allowed) throw new ValidationError("External Compose config is not in an allowed root");
+            if (!allowed) {
+                throw new ValidationError("External Compose config is not in an allowed root");
+            }
             verified.push(real);
         }
         return [ composeFile, ...[ ...new Set(verified) ].filter((file) => file !== composeFile) ];
@@ -352,12 +453,18 @@ export class ExternalStackManager {
         const verified: string[] = [];
         const allowedRoots = await this.getAllowedRoots();
         for (const candidate of envFiles.slice(0, 8)) {
-            if (!path.isAbsolute(candidate)) throw new ValidationError("External Compose env-file paths must be absolute");
+            if (!path.isAbsolute(candidate)) {
+                throw new ValidationError("External Compose env-file paths must be absolute");
+            }
             const real = await fs.realpath(candidate);
             const stat = await fs.stat(real);
-            if (!stat.isFile()) throw new ValidationError("External Compose env-file is not a regular file");
+            if (!stat.isFile()) {
+                throw new ValidationError("External Compose env-file is not a regular file");
+            }
             const allowed = allowedRoots.some((root) => real === root || real.startsWith(`${root}${path.sep}`));
-            if (!allowed) throw new ValidationError("External Compose env-file is not in an allowed root");
+            if (!allowed) {
+                throw new ValidationError("External Compose env-file is not in an allowed root");
+            }
             verified.push(real);
         }
         return [ ...new Set(verified) ];
@@ -374,20 +481,217 @@ export class ExternalStackManager {
     }
 
     async getByProject(project: string): Promise<ExternalStackRegistration | undefined> {
-        if (!project) return undefined;
+        if (!project) {
+            return undefined;
+        }
         this.registrations = null;
         return (await this.load()).find((entry) => entry.project === project);
     }
 
     async unregister(name: string): Promise<boolean> {
-        if (!isSafeStackName(name)) throw new ValidationError("Invalid external stack name");
+        if (!isSafeStackName(name)) {
+            throw new ValidationError("Invalid external stack name");
+        }
         this.registrations = null;
         const registrations = await this.load();
         const index = registrations.findIndex((entry) => entry.name === name);
-        if (index < 0) return false;
+        if (index < 0) {
+            return false;
+        }
         registrations.splice(index, 1);
         await this.save();
         return true;
+    }
+
+    async unregisterProject(project: string): Promise<boolean> {
+        this.registrations = null;
+        const registrations = await this.load();
+        const filtered = registrations.filter((entry) => entry.project !== project);
+        if (filtered.length === registrations.length) {
+            return false;
+        }
+        this.registrations = filtered;
+        await this.save();
+        return true;
+    }
+
+    private async dockerIds(resource: "container" | "volume" | "network" | "image", project: string): Promise<string[]> {
+        const noun = resource === "container" ? [ "ps", "-aq" ] : [ resource, "ls", "-q" ];
+        const result = await childProcessAsync.spawn("docker", [ ...noun, "--filter", `label=com.docker.compose.project=${project}` ], {
+            encoding: "utf8",
+            maxBuffer: 4 * 1024 * 1024,
+        });
+        return (result.stdout?.toString() ?? "").split("\n").map((value) => value.trim()).filter(Boolean);
+    }
+
+    private safeCleanupSource(candidate: string | null | undefined): string | null {
+        if (!candidate || !path.isAbsolute(candidate)) {
+            return null;
+        }
+        const resolved = path.resolve(candidate);
+        const protectedRoots = new Set([
+            "/", "/bin", "/boot", "/dev", "/etc", "/home", "/lib", "/lib64", "/mnt",
+            "/opt", "/proc", "/root", "/run", "/sbin", "/srv", "/sys", "/tmp", "/usr", "/var",
+            path.resolve(this.dataDir), path.resolve(this.stacksDir),
+        ]);
+        return isSafeExternalDataPath(resolved) && !protectedRoots.has(resolved) ? resolved : null;
+    }
+
+    private async buildCleanupPreview(project: string, token = crypto.randomBytes(24).toString("hex")): Promise<ExternalStackCleanupPreview> {
+        if (!/^[a-z0-9][a-z0-9_-]{0,127}$/.test(project)) {
+            throw new ValidationError("Invalid external Compose project");
+        }
+        const containerIds = await this.dockerIds("container", project);
+        const containers = containerIds.length > 0
+            ? JSON.parse((await childProcessAsync.spawn("docker", [ "inspect", ...containerIds ], { encoding: "utf8",
+                maxBuffer: 20 * 1024 * 1024 })).stdout?.toString() ?? "[]") as DockerInspect[]
+            : [];
+        const currentContainerId = (process.env.HOSTNAME ?? "").trim();
+        if (containers.some((container) => currentContainerId && container.Id?.startsWith(currentContainerId))) {
+            throw new ValidationError("Refusing to clean up the active Dockge-Enhanced project");
+        }
+        const managedProjectNames = new Set((await fs.readdir(this.stacksDir, { withFileTypes: true }).catch(() => []))
+            .filter((entry) => entry.isDirectory())
+            .map((entry) => normalizeComposeProjectName(entry.name)));
+        const managedStackRoots = await this.getManagedStackRoots();
+        const composePathAliases = collectComposePathAliases(containers);
+        const projectContainers = containers.flatMap((container) => {
+            const labels = container.Config?.Labels ?? {};
+            const workingDir = labels["com.docker.compose.project.working_dir"] ?? null;
+            const configFiles = (labels["com.docker.compose.project.config_files"] ?? "")
+                .split(",")
+                .map((candidate) => candidate.trim())
+                .filter((candidate) => path.isAbsolute(candidate));
+            return [{ workingDir,
+                configFiles }];
+        });
+        if (managedProjectNames.has(normalizeComposeProjectName(project)) || projectContainers.some((entry) => isManagedComposeProject(
+            entry.workingDir,
+            entry.configFiles,
+            managedStackRoots,
+            composePathAliases,
+            project
+        ))) {
+            throw new ValidationError("Refusing to clean up a stack managed by this Dockge-Enhanced instance");
+        }
+        const registration = await this.getByProject(project);
+        const volumeNames = new Set(await this.dockerIds("volume", project));
+        const networkNames = new Set(await this.dockerIds("network", project));
+        const labeledImageIds = new Set(await this.dockerIds("image", project));
+        if (containers.length === 0 && !registration && volumeNames.size === 0 && networkNames.size === 0 && labeledImageIds.size === 0) {
+            throw new ValidationError("External Compose project no longer exists");
+        }
+        const images = new Map<string, string>();
+        if (labeledImageIds.size > 0) {
+            const inspectedImages = JSON.parse((await childProcessAsync.spawn("docker", [ "image", "inspect", ...labeledImageIds ], {
+                encoding: "utf8",
+                maxBuffer: 20 * 1024 * 1024,
+            })).stdout?.toString() ?? "[]") as Array<{ Id?: string;
+                RepoTags?: string[] }>;
+            for (const image of inspectedImages) {
+                if (image.Id) {
+                    images.set(image.Id, image.RepoTags?.[0] ?? image.Id);
+                }
+            }
+        }
+        let labelWorkingDir: string | null = null;
+        for (const container of containers) {
+            for (const mount of container.Mounts ?? []) {
+                if (mount.Type === "volume" && mount.Name) {
+                    volumeNames.add(mount.Name);
+                }
+            }
+            for (const name of Object.keys(container.NetworkSettings?.Networks ?? {})) {
+                networkNames.add(name);
+            }
+            if (container.Image) {
+                images.set(container.Image, container.Config?.Image ?? container.Image);
+            }
+            const workingDir = container.Config?.Labels?.["com.docker.compose.project.working_dir"];
+            if (!labelWorkingDir && workingDir) {
+                labelWorkingDir = workingDir;
+            }
+        }
+        return {
+            token,
+            expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+            project,
+            registrationName: registration?.name ?? null,
+            sourcePath: this.safeCleanupSource(registration?.workingDir ?? labelWorkingDir),
+            containers: containers.map((container) => ({
+                id: container.Id ?? "",
+                name: (container.Name ?? "").replace(/^\//, ""),
+                status: container.State?.Status ?? "unknown",
+            })).filter((container) => container.id),
+            volumes: [ ...volumeNames ].sort(),
+            networks: [ ...networkNames ].sort(),
+            images: [ ...images ].map(([ id, reference ]) => ({ id,
+                reference })).sort((a, b) => a.reference.localeCompare(b.reference)),
+        };
+    }
+
+    async preparePermanentCleanup(project: string): Promise<ExternalStackCleanupPreview> {
+        const preview = await this.buildCleanupPreview(project);
+        this.cleanupPlans.set(preview.token, preview);
+        for (const [ token, plan ] of this.cleanupPlans) {
+            if (Date.parse(plan.expiresAt) <= Date.now()) {
+                this.cleanupPlans.delete(token);
+            }
+        }
+        return preview;
+    }
+
+    async executePermanentCleanup(input: {
+        token: string;
+        project: string;
+        typedProject: string;
+        confirmResources: boolean;
+        confirmIrreversible: boolean;
+    }): Promise<ExternalStackCleanupResult> {
+        const plan = this.cleanupPlans.get(input.token);
+        this.cleanupPlans.delete(input.token);
+        if (!plan || Date.parse(plan.expiresAt) <= Date.now()) {
+            throw new ValidationError("External cleanup preview expired; scan again");
+        }
+        if (input.project !== plan.project || input.typedProject !== plan.project || input.confirmResources !== true || input.confirmIrreversible !== true) {
+            throw new ValidationError("External cleanup confirmations do not match the preview");
+        }
+        const current = await this.buildCleanupPreview(plan.project, plan.token);
+        const signature = (value: ExternalStackCleanupPreview) => JSON.stringify({
+            containers: value.containers.map((entry) => entry.id).sort(),
+            volumes: value.volumes,
+            networks: value.networks,
+            images: value.images.map((entry) => entry.id).sort(),
+            sourcePath: value.sourcePath,
+        });
+        if (signature(current) !== signature(plan)) {
+            throw new ValidationError("External stack resources changed after preview; review them again");
+        }
+
+        const removed = { containers: [] as string[],
+            volumes: [] as string[],
+            networks: [] as string[],
+            images: [] as string[] };
+        const warnings: string[] = [];
+        const remove = async (kind: keyof typeof removed, args: string[], values: string[]) => {
+            for (const value of values) {
+                try {
+                    await childProcessAsync.spawn("docker", [ ...args, value ], { encoding: "utf8",
+                        maxBuffer: 4 * 1024 * 1024 });
+                    removed[kind].push(value);
+                } catch (error) {
+                    warnings.push(`${kind}:${value}: ${error instanceof Error ? error.message : String(error)}`);
+                }
+            }
+        };
+        await remove("containers", [ "container", "rm", "-f" ], plan.containers.map((entry) => entry.id));
+        await remove("volumes", [ "volume", "rm" ], plan.volumes);
+        await remove("networks", [ "network", "rm" ], plan.networks);
+        await remove("images", [ "image", "rm" ], plan.images.map((entry) => entry.id));
+        return { project: plan.project,
+            sourcePath: plan.sourcePath,
+            removed,
+            warnings };
     }
 
     async assertDeletableSourcePath(registration: ExternalStackRegistration, confirmedPath: string): Promise<ExternalStackRegistration> {
@@ -412,18 +716,28 @@ export class ExternalStackManager {
             throw new ValidationError("Refusing destructive deletion because this Compose project uses config files outside its source directory");
         }
         const composeStat = await fs.stat(verified.composeFile);
-        if (!composeStat.isFile()) throw new ValidationError("Registered Compose file is no longer a regular file");
+        if (!composeStat.isFile()) {
+            throw new ValidationError("Registered Compose file is no longer a regular file");
+        }
         return verified;
     }
 
     async import(name: string, project: string, composeFile: string): Promise<ExternalStackRegistration> {
-        if (!isSafeStackName(name)) throw new ValidationError("Invalid external stack name");
-        if (!project || project.length > 128) throw new ValidationError("Invalid Compose project name");
+        if (!isSafeStackName(name)) {
+            throw new ValidationError("Invalid external stack name");
+        }
+        if (!project || project.length > 128) {
+            throw new ValidationError("Invalid Compose project name");
+        }
         const discovered = (await this.discover()).find((entry) => entry.project === project);
-        if (!discovered?.composeFile) throw new ValidationError("External Compose project must still be discoverable before adoption");
+        if (!discovered?.composeFile) {
+            throw new ValidationError("External Compose project must still be discoverable before adoption");
+        }
         const canonical = await this.canonicalComposeFile(composeFile, discovered.workingDir ?? undefined);
         const discoveredCompose = await fs.realpath(discovered.composeFile);
-        if (discoveredCompose !== canonical.composeFile) throw new ValidationError("External Compose file does not match the discovered project");
+        if (discoveredCompose !== canonical.composeFile) {
+            throw new ValidationError("External Compose file does not match the discovered project");
+        }
         const configFiles = await this.canonicalConfigFiles(discovered.configFiles, canonical.workingDir, canonical.composeFile);
         const envFiles = await this.canonicalEnvFiles(discovered.envFiles ?? []);
         const dataPaths = collapsePaths((discovered.dataPaths ?? []).filter(isSafeExternalDataPath));
@@ -434,15 +748,32 @@ export class ExternalStackManager {
         }
         this.registrations = null;
         const registrations = await this.load();
-        if (registrations.some((entry) => entry.name === name)) throw new ValidationError("External stack name already exists");
-        if (registrations.some((entry) => entry.project === project)) throw new ValidationError("This external Compose project is already imported");
-        if (registrations.some((entry) => entry.composeFile === canonical.composeFile)) throw new ValidationError("This external Compose file is already imported");
-        try {
-            if ((await fs.stat(path.join(this.stacksDir, name))).isDirectory()) throw new ValidationError("A managed stack already uses this name");
-        } catch (error) {
-            if (error instanceof ValidationError) throw error;
+        if (registrations.some((entry) => entry.name === name)) {
+            throw new ValidationError("External stack name already exists");
         }
-        const registration: ExternalStackRegistration = { name, project, ...canonical, configFiles, envFiles, dataPaths, mounts, importedAt: new Date().toISOString() };
+        if (registrations.some((entry) => entry.project === project)) {
+            throw new ValidationError("This external Compose project is already imported");
+        }
+        if (registrations.some((entry) => entry.composeFile === canonical.composeFile)) {
+            throw new ValidationError("This external Compose file is already imported");
+        }
+        try {
+            if ((await fs.stat(path.join(this.stacksDir, name))).isDirectory()) {
+                throw new ValidationError("A managed stack already uses this name");
+            }
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                throw error;
+            }
+        }
+        const registration: ExternalStackRegistration = { name,
+            project,
+            ...canonical,
+            configFiles,
+            envFiles,
+            dataPaths,
+            mounts,
+            importedAt: new Date().toISOString() };
         registrations.push(registration);
         await this.save();
         return registration;
@@ -450,19 +781,25 @@ export class ExternalStackManager {
 
     async assertRegisteredPath(registration: ExternalStackRegistration): Promise<ExternalStackRegistration> {
         const canonical = await this.canonicalComposeFile(registration.composeFile, registration.workingDir);
-        if (canonical.workingDir !== registration.workingDir) throw new ValidationError("External stack working directory changed");
+        if (canonical.workingDir !== registration.workingDir) {
+            throw new ValidationError("External stack working directory changed");
+        }
         const configFiles = await this.canonicalConfigFiles(registration.configFiles ?? [ registration.composeFile ], canonical.workingDir, canonical.composeFile);
         const envFiles = await this.canonicalEnvFiles(registration.envFiles ?? []);
-        return { ...registration, ...canonical, configFiles, envFiles };
+        return { ...registration,
+            ...canonical,
+            configFiles,
+            envFiles };
     }
 
     async discover(): Promise<DiscoveredExternalStack[]> {
-        const options = { encoding: "utf8", maxBuffer: 20 * 1024 * 1024 };
+        const options = { encoding: "utf8",
+            maxBuffer: 20 * 1024 * 1024 };
         const result = await childProcessAsync.spawn("docker", [ "ps", "-aq", "--filter", "label=com.docker.compose.project" ], options);
         const ids = (result.stdout?.toString() ?? "").split("\n").map((id) => id.trim()).filter(Boolean);
-        if (ids.length === 0) return [];
-        const inspected = await childProcessAsync.spawn("docker", [ "inspect", ...ids ], options);
-        const containers = JSON.parse(inspected.stdout?.toString() ?? "[]") as DockerInspect[];
+        const containers = ids.length > 0
+            ? JSON.parse((await childProcessAsync.spawn("docker", [ "inspect", ...ids ], options)).stdout?.toString() ?? "[]") as DockerInspect[]
+            : [];
         const currentContainerId = (process.env.HOSTNAME ?? "").trim();
         let currentProject = "";
         for (const container of containers) {
@@ -471,12 +808,26 @@ export class ExternalStackManager {
                 break;
             }
         }
-        const byProject = new Map<string, { status: string; composeFile: string | null; configFiles: string[]; envFiles: string[]; workingDir: string | null; mounts: Set<string>; dataPaths: Set<string> }>();
+        const byProject = new Map<string, { status: string;
+            composeFile: string | null;
+            configFiles: string[];
+            envFiles: string[];
+            workingDir: string | null;
+            mounts: Set<string>;
+            dataPaths: Set<string> }>();
         for (const container of containers) {
             const labels = container.Config?.Labels ?? {};
             const project = labels["com.docker.compose.project"];
-            if (!project) continue;
-            const current = byProject.get(project) ?? { status: container.State?.Status ?? "unknown", composeFile: null, configFiles: [], envFiles: [], workingDir: null, mounts: new Set<string>(), dataPaths: new Set<string>() };
+            if (!project) {
+                continue;
+            }
+            const current = byProject.get(project) ?? { status: container.State?.Status ?? "unknown",
+                composeFile: null,
+                configFiles: [],
+                envFiles: [],
+                workingDir: null,
+                mounts: new Set<string>(),
+                dataPaths: new Set<string>() };
             const configFiles = labels["com.docker.compose.project.config_files"];
             if (configFiles) {
                 const files = configFiles.split(",").map((candidate) => candidate.trim()).filter((candidate) => path.isAbsolute(candidate));
@@ -489,10 +840,14 @@ export class ExternalStackManager {
                 current.envFiles = [ ...new Set([ ...current.envFiles, ...files ]) ];
             }
             current.workingDir = labels["com.docker.compose.project.working_dir"] ?? current.workingDir;
-            if (container.State?.Status === "running") current.status = "running";
+            if (container.State?.Status === "running") {
+                current.status = "running";
+            }
             for (const mount of container.Mounts ?? []) {
                 const source = mount.Source ?? mount.Name;
-                if (source) current.mounts.add(`${mount.Type ?? "volume"}: ${source}${mount.Destination ? ` → ${mount.Destination}` : ""}`);
+                if (source) {
+                    current.mounts.add(`${mount.Type ?? "volume"}: ${source}${mount.Destination ? ` → ${mount.Destination}` : ""}`);
+                }
                 if ((mount.Type === "bind" || mount.Type === "volume") && mount.Source && isSafeExternalDataPath(path.resolve(mount.Source))) {
                     current.dataPaths.add(path.resolve(mount.Source));
                 }
@@ -500,20 +855,72 @@ export class ExternalStackManager {
             byProject.set(project, current);
         }
         const registrations = await this.load();
+        const emptyProject = () => ({ status: "orphaned",
+            composeFile: null as string | null,
+            configFiles: [] as string[],
+            envFiles: [] as string[],
+            workingDir: null as string | null,
+            mounts: new Set<string>(),
+            dataPaths: new Set<string>() });
+        for (const registration of registrations) {
+            if (byProject.has(registration.project)) {
+                continue;
+            }
+            byProject.set(registration.project, {
+                ...emptyProject(),
+                composeFile: registration.composeFile,
+                configFiles: registration.configFiles,
+                envFiles: registration.envFiles,
+                workingDir: registration.workingDir,
+                mounts: new Set(registration.mounts),
+                dataPaths: new Set(registration.dataPaths),
+            });
+        }
+        for (const resource of [ "volume", "network", "image" ] as const) {
+            const listed = await childProcessAsync.spawn("docker", [ resource, "ls", "-q", "--filter", "label=com.docker.compose.project" ], options);
+            const resourceIds = (listed.stdout?.toString() ?? "").split("\n").map((id) => id.trim()).filter(Boolean);
+            if (resourceIds.length === 0) {
+                continue;
+            }
+            const inspectedResources = JSON.parse((await childProcessAsync.spawn("docker", [ resource, "inspect", ...resourceIds ], options)).stdout?.toString() ?? "[]") as DockerLabeledResourceInspect[];
+            for (const inspectedResource of inspectedResources) {
+                const project = inspectedResource.Labels?.["com.docker.compose.project"]
+                    ?? inspectedResource.Config?.Labels?.["com.docker.compose.project"];
+                if (!project) {
+                    continue;
+                }
+                const entry = byProject.get(project) ?? emptyProject();
+                const resourceName = inspectedResource.Name ?? inspectedResource.RepoTags?.[0];
+                if (resourceName) {
+                    entry.mounts.add(`${resource}: ${resourceName}`);
+                }
+                byProject.set(project, entry);
+            }
+        }
         const allowedRoots = await this.getAllowedRoots();
         const identityBindRoots = await this.getIdentityBindRoots();
         const managedStackRoots = await this.getManagedStackRoots();
+        const managedProjectNames = new Set((await fs.readdir(this.stacksDir, { withFileTypes: true }).catch(() => []))
+            .filter((entry) => entry.isDirectory())
+            .map((entry) => normalizeComposeProjectName(entry.name)));
         const composePathAliases = collectComposePathAliases(containers);
         const output: DiscoveredExternalStack[] = [];
         for (const [ project, item ] of byProject) {
-            if (project === currentProject) continue;
+            if (project === currentProject) {
+                continue;
+            }
+            if (managedProjectNames.has(normalizeComposeProjectName(project))) {
+                continue;
+            }
             if (isManagedComposeProject(
                 item.workingDir,
                 item.configFiles,
                 managedStackRoots,
                 composePathAliases,
                 project
-            )) continue;
+            )) {
+                continue;
+            }
             const importedRegistration = registrations.find((entry) => entry.project === project || (item.composeFile !== null && entry.composeFile === item.composeFile));
             const imported = Boolean(importedRegistration);
             let pathStatus: DiscoveredExternalStack["pathStatus"] = "unknown";

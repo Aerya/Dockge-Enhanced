@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { promises as fs } from "node:fs";
-import { DiscoveredExternalStack, ExternalStackManager, isManagedComposeProject, isSafeExternalDataPath, selectAllowedMounts, selectManagedStackRoots } from "./external-stacks";
+import { DiscoveredExternalStack, ExternalStackCleanupPreview, ExternalStackManager, isManagedComposeProject, isSafeExternalDataPath, selectAllowedMounts, selectManagedStackRoots } from "./external-stacks";
 import { Stack } from "./stack";
 
 async function fixture() {
@@ -13,7 +13,11 @@ async function fixture() {
     await fs.mkdir(stackDir, { recursive: true });
     const composeFile = path.join(stackDir, "compose.yaml");
     await fs.writeFile(composeFile, "services: {}\n");
-    return { root, allowed, stackDir, composeFile, manager: new ExternalStackManager(path.join(root, "data"), path.join(root, "stacks"), [ allowed ]) };
+    return { root,
+        allowed,
+        stackDir,
+        composeFile,
+        manager: new ExternalStackManager(path.join(root, "data"), path.join(root, "stacks"), [ allowed ]) };
 }
 
 function discovered(value: Awaited<ReturnType<typeof fixture>>, project = "demo", configFiles = [ value.composeFile ]): DiscoveredExternalStack {
@@ -51,7 +55,8 @@ test("importe une stack externe autorisée sans déplacer son Compose", async ()
         assert.equal(await fs.readFile(value.composeFile, "utf8"), "services: {}\n");
         assert.equal((await value.manager.get("external-demo"))?.composeFile, value.composeFile);
     } finally {
-        await fs.rm(value.root, { recursive: true, force: true });
+        await fs.rm(value.root, { recursive: true,
+            force: true });
     }
 });
 
@@ -72,7 +77,8 @@ test("refuse un chemin hors allowlist et les traversées", async () => {
         stubDiscovery(value, entry);
         await assert.rejects(value.manager.import("traversal", "demo", path.join(value.allowed, "..", "outside", "compose.yaml")), /allowed root/);
     } finally {
-        await fs.rm(value.root, { recursive: true, force: true });
+        await fs.rm(value.root, { recursive: true,
+            force: true });
     }
 });
 
@@ -83,7 +89,9 @@ test("une stack externe conserve son répertoire, son projet et sa chaîne multi
         await fs.writeFile(prodFile, "services:\n  demo:\n    image: alpine:latest\n");
         stubDiscovery(value, discovered(value, "original-project", [ value.composeFile, prodFile ]));
         await value.manager.import("external-demo", "original-project", value.composeFile);
-        const server = { stacksDir: path.join(value.root, "stacks"), externalStacks: value.manager, config: { dataDir: path.join(value.root, "data") } } as never;
+        const server = { stacksDir: path.join(value.root, "stacks"),
+            externalStacks: value.manager,
+            config: { dataDir: path.join(value.root, "data") } } as never;
         const stack = await Stack.getStack(server, "external-demo");
         assert.equal(stack.path, value.stackDir);
         assert.equal(stack.isExternal, true);
@@ -94,10 +102,10 @@ test("une stack externe conserve son répertoire, son projet et sa chaîne multi
             "ps",
         ]);
     } finally {
-        await fs.rm(value.root, { recursive: true, force: true });
+        await fs.rm(value.root, { recursive: true,
+            force: true });
     }
 });
-
 
 test("conserve les fichiers -f situés hors du project directory mais dans une racine autorisée", async () => {
     const value = await fixture();
@@ -110,7 +118,9 @@ test("conserve les fichiers -f situés hors du project directory mais dans une r
 
         const imported = await value.manager.import("external-demo", "original-project", value.composeFile);
         assert.deepEqual(imported.configFiles, [ value.composeFile, override ]);
-        const server = { stacksDir: path.join(value.root, "stacks"), externalStacks: value.manager, config: { dataDir: path.join(value.root, "data") } } as never;
+        const server = { stacksDir: path.join(value.root, "stacks"),
+            externalStacks: value.manager,
+            config: { dataDir: path.join(value.root, "data") } } as never;
         const stack = await Stack.getStack(server, "external-demo");
         assert.deepEqual(stack.getComposeOptions("config"), [
             "compose", "--project-directory", value.stackDir, "--project-name", "original-project",
@@ -120,7 +130,8 @@ test("conserve les fichiers -f situés hors du project directory mais dans une r
         ]);
         await assert.rejects(value.manager.assertDeletableSourcePath(imported, value.stackDir), /config files outside its source directory/);
     } finally {
-        await fs.rm(value.root, { recursive: true, force: true });
+        await fs.rm(value.root, { recursive: true,
+            force: true });
     }
 });
 
@@ -134,7 +145,9 @@ test("l'édition d'une stack externe écrit son Compose/.env d'origine sans cré
         await value.manager.import("external-demo", "original-project", value.composeFile);
 
         const stacksDir = path.join(value.root, "stacks");
-        const server = { stacksDir, externalStacks: value.manager, config: { dataDir: path.join(value.root, "data") } } as never;
+        const server = { stacksDir,
+            externalStacks: value.manager,
+            config: { dataDir: path.join(value.root, "data") } } as never;
         const stack = await Stack.getStack(server, "external-demo");
         stack.setComposeContent("services:\n  demo:\n    image: alpine:3.22\n", "MODE=prod\n", "services:\n  ignored: {}\n");
         await stack.save(false);
@@ -145,7 +158,8 @@ test("l'édition d'une stack externe écrit son Compose/.env d'origine sans cré
         await assert.rejects(fs.stat(path.join(value.stackDir, "compose.override.yaml")), /ENOENT/);
         await assert.rejects(fs.stat(path.join(stacksDir, "external-demo")), /ENOENT/);
     } finally {
-        await fs.rm(value.root, { recursive: true, force: true });
+        await fs.rm(value.root, { recursive: true,
+            force: true });
     }
 });
 
@@ -171,7 +185,9 @@ test("préserve un nom Compose arbitraire, le project directory et un --env-file
         assert.equal(imported.workingDir, value.stackDir);
         assert.deepEqual(imported.envFiles, [ envFile ]);
 
-        const server = { stacksDir: path.join(value.root, "stacks"), externalStacks: value.manager, config: { dataDir: path.join(value.root, "data") } } as never;
+        const server = { stacksDir: path.join(value.root, "stacks"),
+            externalStacks: value.manager,
+            config: { dataDir: path.join(value.root, "data") } } as never;
         const stack = await Stack.getStack(server, "external-demo");
         assert.equal(stack.composeENV, "MODE=production\n");
         assert.deepEqual(stack.getComposeOptions("config"), [
@@ -186,7 +202,8 @@ test("préserve un nom Compose arbitraire, le project directory et un --env-file
         assert.equal(await fs.readFile(envFile, "utf8"), "MODE=updated\n");
         await assert.rejects(fs.stat(path.join(value.stackDir, ".env")), /ENOENT/);
     } finally {
-        await fs.rm(value.root, { recursive: true, force: true });
+        await fs.rm(value.root, { recursive: true,
+            force: true });
     }
 });
 
@@ -196,14 +213,17 @@ test("stocke les métadonnées Enhanced hors du dossier source externe", async (
         stubDiscovery(value, discovered(value));
         await value.manager.import("external-demo", "demo", value.composeFile);
         const dataDir = path.join(value.root, "data");
-        const server = { stacksDir: path.join(value.root, "stacks"), externalStacks: value.manager, config: { dataDir } } as never;
+        const server = { stacksDir: path.join(value.root, "stacks"),
+            externalStacks: value.manager,
+            config: { dataDir } } as never;
         const stack = await Stack.getStack(server, "external-demo");
         await stack.saveNote("note externe");
         await assert.rejects(fs.stat(path.join(value.stackDir, ".dockge-meta.json")), /ENOENT/);
         const metadata = JSON.parse(await fs.readFile(path.join(dataDir, "external-stack-meta", "external-demo.json"), "utf8"));
         assert.equal(metadata.note, "note externe");
     } finally {
-        await fs.rm(value.root, { recursive: true, force: true });
+        await fs.rm(value.root, { recursive: true,
+            force: true });
     }
 });
 
@@ -214,7 +234,8 @@ test("refuse de supprimer une source externe si le chemin confirmé ne correspon
         const imported = await value.manager.import("external-demo", "demo", value.composeFile);
         await assert.rejects(value.manager.assertDeletableSourcePath(imported, path.join(value.allowed, "other")), /does not match/);
     } finally {
-        await fs.rm(value.root, { recursive: true, force: true });
+        await fs.rm(value.root, { recursive: true,
+            force: true });
     }
 });
 
@@ -229,19 +250,29 @@ test("filtre les chemins de données dangereux avant auto-autorisation", () => {
 
 test("affiche uniquement les bind mounts qui couvrent les racines externes autorisées", () => {
     const mounts = selectAllowedMounts([
-        { Type: "bind", Source: "/srv/apps", Destination: "/srv/apps" },
-        { Type: "bind", Source: "/var/lib/dockge", Destination: "/app/data" },
-        { Type: "volume", Name: "cache", Destination: "/cache" },
+        { Type: "bind",
+            Source: "/srv/apps",
+            Destination: "/srv/apps" },
+        { Type: "bind",
+            Source: "/var/lib/dockge",
+            Destination: "/app/data" },
+        { Type: "volume",
+            Name: "cache",
+            Destination: "/cache" },
     ], [ "/srv/apps/radarr" ]);
 
-    assert.deepEqual(mounts, [ { source: "/srv/apps", destination: "/srv/apps" } ]);
+    assert.deepEqual(mounts, [{ source: "/srv/apps",
+        destination: "/srv/apps" }]);
 });
-
 
 test("reconnaît le bind hôte du répertoire de stacks géré", () => {
     const roots = selectManagedStackRoots([
-        { Type: "bind", Source: "/volume1/docker/dockge-enhanced/stacks", Destination: "/opt/stacks" },
-        { Type: "bind", Source: "/volume1/docker", Destination: "/opt" },
+        { Type: "bind",
+            Source: "/volume1/docker/dockge-enhanced/stacks",
+            Destination: "/opt/stacks" },
+        { Type: "bind",
+            Source: "/volume1/docker",
+            Destination: "/opt" },
     ], "/opt/stacks");
 
     assert.deepEqual(roots, [
@@ -262,7 +293,9 @@ test("reconnaît le bind hôte du répertoire de stacks géré", () => {
 
 test("mappe aussi un stacksDir imbriqué dans un bind parent", () => {
     const roots = selectManagedStackRoots([
-        { Type: "bind", Source: "/home/aerya/docker/dockge-enhanced", Destination: "/opt/dockge" },
+        { Type: "bind",
+            Source: "/home/aerya/docker/dockge-enhanced",
+            Destination: "/opt/dockge" },
     ], "/opt/dockge/stacks");
 
     assert.deepEqual(roots, [
@@ -298,4 +331,86 @@ test("exclut une stack native recréée depuis un alias bind d'un outil compagno
         companionAliases,
         "unrelated-project"
     ), false);
+});
+
+test("exige les confirmations renforcées du nettoyage définitif", async () => {
+    const value = await fixture();
+    try {
+        const preview: ExternalStackCleanupPreview = {
+            token: "a".repeat(48),
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+            project: "broken-demo",
+            registrationName: null,
+            sourcePath: null,
+            containers: [],
+            volumes: [],
+            networks: [],
+            images: [],
+        };
+        const manager = value.manager as unknown as {
+            cleanupPlans: Map<string, typeof preview>;
+            buildCleanupPreview: () => Promise<typeof preview>;
+            executePermanentCleanup: ExternalStackManager["executePermanentCleanup"];
+        };
+        manager.buildCleanupPreview = async () => preview;
+
+        for (const invalid of [
+            { typedProject: "wrong",
+                confirmResources: true,
+                confirmIrreversible: true },
+            { typedProject: preview.project,
+                confirmResources: false,
+                confirmIrreversible: true },
+            { typedProject: preview.project,
+                confirmResources: true,
+                confirmIrreversible: false },
+        ]) {
+            manager.cleanupPlans.set(preview.token, preview);
+            await assert.rejects(manager.executePermanentCleanup({
+                token: preview.token,
+                project: preview.project,
+                ...invalid,
+            }), /confirmations do not match/);
+        }
+    } finally {
+        await fs.rm(value.root, { recursive: true,
+            force: true });
+    }
+});
+
+test("refuse le nettoyage si l’inventaire Docker change après l’aperçu", async () => {
+    const value = await fixture();
+    try {
+        const preview: ExternalStackCleanupPreview = {
+            token: "b".repeat(48),
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+            project: "broken-demo",
+            registrationName: null,
+            sourcePath: null,
+            containers: [],
+            volumes: [],
+            networks: [],
+            images: [],
+        };
+        const manager = value.manager as unknown as {
+            cleanupPlans: Map<string, typeof preview>;
+            buildCleanupPreview: () => Promise<typeof preview>;
+            executePermanentCleanup: ExternalStackManager["executePermanentCleanup"];
+        };
+        manager.cleanupPlans.set(preview.token, preview);
+        manager.buildCleanupPreview = async () => ({
+            ...preview,
+            volumes: [ "appeared-after-preview" ],
+        });
+        await assert.rejects(manager.executePermanentCleanup({
+            token: preview.token,
+            project: preview.project,
+            typedProject: preview.project,
+            confirmResources: true,
+            confirmIrreversible: true,
+        }), /resources changed after preview/);
+    } finally {
+        await fs.rm(value.root, { recursive: true,
+            force: true });
+    }
 });

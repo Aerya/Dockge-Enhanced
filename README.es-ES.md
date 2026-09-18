@@ -210,6 +210,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Detección e integración de stacks Compose externas sin mover archivos ni datos
 - Autorización protegida en un clic para las rutas de stacks externas
 - Eliminación completa opcional de stacks externas integradas, incluida la carpeta de origen y el montaje de acceso de Enhanced
+- Limpieza permanente por etiquetas para stacks externas rotas, con inventario fijado y confirmaciones reforzadas antes de eliminar contenedores, volúmenes, redes, imágenes y fuentes Compose
 - Notas y herramientas Git
 - Build + Recreate
 - Acciones por servicio/contenedor

@@ -90,7 +90,7 @@
                             <span v-if="stack.dataPathsNeedingAccess && stack.dataPathsNeedingAccess.length" class="external-pill external-pill--warning">{{ $t("externalStacks.dataAccessCount", { count: stack.dataPathsNeedingAccess.length }) }}</span>
                         </div>
                     </div>
-                    <div v-if="stack.imported" class="external-stack-card__header-actions">
+                    <div class="external-stack-card__header-actions">
                         <button
                             v-if="needsProtectedAccess(stack) && stack.autoAccessAllowed"
                             class="btn btn-sm btn-primary"
@@ -103,6 +103,10 @@
                         <router-link v-if="stack.importedName" class="btn btn-sm btn-normal" :to="composeUrl(stack.importedName)">
                             {{ $t("externalStacks.open") }} <font-awesome-icon icon="chevron-right" class="ms-1" />
                         </router-link>
+                        <button class="btn btn-sm btn-outline-danger" :disabled="cleanupLoading" @click="prepareCleanup(stack)">
+                            <font-awesome-icon :icon="cleanupLoading === stack.project ? 'spinner' : 'trash'" :spin="cleanupLoading === stack.project" class="me-1" />
+                            {{ $t("externalStacks.cleanup.action") }}
+                        </button>
                     </div>
                 </header>
 
@@ -183,6 +187,43 @@
             <span>{{ $t("externalStacks.allowedRoots") }}</span>
             <code v-for="mount in allowedMounts" :key="`${mount.source}:${mount.destination}`">{{ mount.source }} → {{ mount.destination }}</code>
         </div>
+
+        <BModal
+            v-model="showCleanupDialog"
+            :title="$t('externalStacks.cleanup.title')"
+            :cancelTitle="$t('cancel')"
+            :okTitle="$t('externalStacks.cleanup.execute')"
+            okVariant="danger"
+            :okDisabled="!cleanupReady || cleanupExecuting"
+            @ok="executeCleanup"
+            @hidden="resetCleanup"
+        >
+            <template v-if="cleanupPreview">
+                <div class="alert alert-danger">
+                    <strong>{{ $t("externalStacks.cleanup.warning", { project: cleanupPreview.project }) }}</strong>
+                    <div class="mt-1">{{ $t("externalStacks.cleanup.brokenHint") }}</div>
+                </div>
+                <div class="external-cleanup-inventory">
+                    <div><strong>{{ $t("externalStacks.cleanup.containers") }}</strong><code>{{ cleanupPreview.containers.map((item) => item.name).join(", ") || "—" }}</code></div>
+                    <div><strong>{{ $t("externalStacks.cleanup.volumes") }}</strong><code>{{ cleanupPreview.volumes.join(", ") || "—" }}</code></div>
+                    <div><strong>{{ $t("externalStacks.cleanup.networks") }}</strong><code>{{ cleanupPreview.networks.join(", ") || "—" }}</code></div>
+                    <div><strong>{{ $t("externalStacks.cleanup.images") }}</strong><code>{{ cleanupPreview.images.map((item) => item.reference).join(", ") || "—" }}</code></div>
+                    <div><strong>{{ $t("externalStacks.cleanup.source") }}</strong><code>{{ cleanupPreview.sourcePath || $t("externalStacks.cleanup.sourceMissing") }}</code></div>
+                </div>
+                <div class="form-check mt-3">
+                    <input id="external-cleanup-resources" v-model="cleanupConfirmResources" type="checkbox" class="form-check-input">
+                    <label for="external-cleanup-resources" class="form-check-label">{{ $t("externalStacks.cleanup.confirmResources") }}</label>
+                </div>
+                <label for="external-cleanup-project" class="form-label mt-3">
+                    {{ $t("externalStacks.cleanup.typeProject", { project: cleanupPreview.project }) }}
+                </label>
+                <input id="external-cleanup-project" v-model="cleanupTypedProject" class="form-control" autocomplete="off" spellcheck="false">
+                <div class="form-check mt-3">
+                    <input id="external-cleanup-irreversible" v-model="cleanupConfirmIrreversible" type="checkbox" class="form-check-input">
+                    <label for="external-cleanup-irreversible" class="form-check-label text-danger fw-semibold">{{ $t("externalStacks.cleanup.confirmIrreversible") }}</label>
+                </div>
+            </template>
+        </BModal>
     </div>
 </template>
 
@@ -211,6 +252,13 @@ export default {
             accessOperationTimer: null,
             handledOperationId: "",
             pendingImport,
+            cleanupLoading: "",
+            cleanupExecuting: false,
+            cleanupPreview: null,
+            cleanupTypedProject: "",
+            cleanupConfirmResources: false,
+            cleanupConfirmIrreversible: false,
+            showCleanupDialog: false,
             selectedEndpoint: localStorage.getItem("dockge-external-stacks-endpoint") || "",
             activeAccessStates: [ "preparing", "updating", "waiting-health", "rolling-back" ],
         };
@@ -228,6 +276,12 @@ export default {
                 ready: this.stacks.filter((stack) => stack.pathStatus === "accessible" && !stack.configFilesNeedingAccess?.length && !stack.envFilesNeedingAccess?.length && !stack.dataPathsNeedingAccess?.length && !stack.imported).length,
                 integrated: this.stacks.filter((stack) => stack.imported).length,
             };
+        },
+        cleanupReady() {
+            return Boolean(this.cleanupPreview
+                && this.cleanupConfirmResources
+                && this.cleanupConfirmIrreversible
+                && this.cleanupTypedProject === this.cleanupPreview.project);
         },
     },
     mounted() {
@@ -384,6 +438,61 @@ export default {
         formatMount(mount) {
             return mount.replace(/^bind:\s*/, "bind · ").replace(/^volume:\s*/, "volume · ");
         },
+        prepareCleanup(stack) {
+            if (!stack?.project || this.cleanupLoading) {
+                return;
+            }
+            this.cleanupLoading = stack.project;
+            this.$root.emitAgent(this.selectedEndpoint, "prepareExternalStackCleanup", { project: stack.project }, (res) => {
+                this.cleanupLoading = "";
+                if (!res?.ok) {
+                    return this.$root.toastRes(res);
+                }
+                this.cleanupPreview = res.preview;
+                this.cleanupTypedProject = "";
+                this.cleanupConfirmResources = false;
+                this.cleanupConfirmIrreversible = false;
+                this.showCleanupDialog = true;
+            });
+        },
+        executeCleanup() {
+            if (!this.cleanupReady || this.cleanupExecuting) {
+                return;
+            }
+            this.cleanupExecuting = true;
+            const preview = this.cleanupPreview;
+            this.$root.emitAgent(this.selectedEndpoint, "executeExternalStackCleanup", {
+                token: preview.token,
+                project: preview.project,
+                typedProject: this.cleanupTypedProject,
+                confirmResources: this.cleanupConfirmResources,
+                confirmIrreversible: this.cleanupConfirmIrreversible,
+            }, (res) => {
+                this.cleanupExecuting = false;
+                if (!res?.ok) {
+                    return this.$root.toastRes(res);
+                }
+                if (res.result?.warnings?.length) {
+                    this.$root.toastError(this.$t("externalStacks.cleanup.partial", { count: res.result.warnings.length }));
+                } else {
+                    this.$root.toastSuccess(this.$t("externalStacks.cleanup.succeeded"));
+                }
+                if (res.operation) {
+                    sessionStorage.setItem("dockge-external-delete-in-progress", "1");
+                }
+                this.showCleanupDialog = false;
+                this.refresh();
+            });
+        },
+        resetCleanup() {
+            if (this.cleanupExecuting) {
+                return;
+            }
+            this.cleanupPreview = null;
+            this.cleanupTypedProject = "";
+            this.cleanupConfirmResources = false;
+            this.cleanupConfirmIrreversible = false;
+        },
     },
 };
 </script>
@@ -428,6 +537,9 @@ export default {
 
 .external-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 42px 18px; border: 1px dashed var(--border-strong); border-radius: var(--radius-lg); color: var(--text-muted); text-align: center; }
 .external-empty > svg { color: var(--success); font-size: 1.6rem; }
+.external-cleanup-inventory { display: grid; gap: 8px; }
+.external-cleanup-inventory > div { display: grid; gap: 3px; }
+.external-cleanup-inventory code { max-height: 84px; overflow: auto; overflow-wrap: anywhere; white-space: normal; }
 .external-empty strong { color: var(--text-color); }
 
 .external-stack-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr)); gap: 16px; }

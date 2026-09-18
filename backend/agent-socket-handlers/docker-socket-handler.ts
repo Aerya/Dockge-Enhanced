@@ -394,6 +394,80 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("prepareExternalStackCleanup", async (input: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (!input || typeof input !== "object" || typeof (input as { project?: unknown }).project !== "string") {
+                    throw new ValidationError("Invalid external stack cleanup request");
+                }
+                const project = (input as { project: string }).project;
+                const preview = await server.externalStacks.preparePermanentCleanup(project);
+                await AuditLogger.getInstance().logFromSocket(socket, {
+                    action: "stack.external-cleanup-preview",
+                    category: "stack",
+                    targetType: "external-stack",
+                    target: project,
+                    status: "success",
+                    metadata: {
+                        containers: preview.containers.length,
+                        volumes: preview.volumes.length,
+                        networks: preview.networks.length,
+                        images: preview.images.length,
+                        sourcePath: preview.sourcePath,
+                    },
+                });
+                callbackResult({ ok: true,
+                    preview }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("executeExternalStackCleanup", async (input: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (!input || typeof input !== "object") {
+                    throw new ValidationError("Invalid external stack cleanup confirmation");
+                }
+                const value = input as {
+                    token?: unknown;
+                    project?: unknown;
+                    typedProject?: unknown;
+                    confirmResources?: unknown;
+                    confirmIrreversible?: unknown;
+                };
+                if (typeof value.token !== "string" || typeof value.project !== "string" || typeof value.typedProject !== "string") {
+                    throw new ValidationError("Invalid external stack cleanup confirmation");
+                }
+                const result = await server.externalStacks.executePermanentCleanup({
+                    token: value.token,
+                    project: value.project,
+                    typedProject: value.typedProject,
+                    confirmResources: value.confirmResources === true,
+                    confirmIrreversible: value.confirmIrreversible === true,
+                });
+                let operation = null;
+                if (result.sourcePath) {
+                    operation = await server.externalStackAccess.requestDeletion(result.project, result.sourcePath);
+                }
+                await server.externalStacks.unregisterProject(result.project);
+                await AuditLogger.getInstance().logFromSocket(socket, {
+                    action: "stack.external-cleanup",
+                    category: "stack",
+                    targetType: "external-stack",
+                    target: result.project,
+                    status: result.warnings.length > 0 ? "failure" : "success",
+                    metadata: result,
+                });
+                server.sendStackList();
+                callbackResult({ ok: true,
+                    result,
+                    operation }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         agentSocket.on("importExternalStack", async (input: unknown, callback) => {
             try {
                 checkLogin(socket);

@@ -188,6 +188,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 无需移动文件或数据即可发现并接管外部 Compose Stack
 - 通过受保护的一键授权开放外部 Stack 路径
 - 可选完整删除已接管的外部 Stack，包括源目录和 Enhanced 访问挂载
+- 基于标签永久清理损坏的外部 Stack，并在删除容器、卷、网络、镜像和 Compose 源文件前锁定资源清单并要求强化确认
 - 备注和 Git 工具
 - Build + Recreate
 - 服务/容器级操作和计划任务
