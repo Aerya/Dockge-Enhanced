@@ -104,7 +104,7 @@ function readAndClaimPlan(planPath = process.env.EXTERNAL_STACK_ACCESS_PLAN) {
     const expected = crypto.createHmac("sha256", secret).update(JSON.stringify(payload.plan)).digest("hex");
     if (!payload.plan || typeof payload.signature !== "string" || payload.signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(payload.signature))) throw new Error("External-stack access plan signature is invalid");
     const plan = payload.plan;
-    if (plan.version !== 1 || plan.action !== "external-stack-access" || !/^[a-f0-9]{32}$/.test(plan.id) || path.basename(planPath) !== `${plan.id}.json` || !Number.isFinite(Date.parse(plan.expiresAt)) || Date.parse(plan.expiresAt) <= Date.now()) throw new Error("External-stack access plan is expired or malformed");
+    if (plan.version !== 1 || ![ "external-stack-access", "external-stack-delete" ].includes(plan.action) || !/^[a-f0-9]{32}$/.test(plan.id) || path.basename(planPath) !== `${plan.id}.json` || !Number.isFinite(Date.parse(plan.expiresAt)) || Date.parse(plan.expiresAt) <= Date.now()) throw new Error("External-stack access plan is expired or malformed");
     if (!safeName(plan.targetContainerName) || !safeName(plan.externalProject)) throw new Error("External-stack access target is invalid");
     if (process.env.EXTERNAL_STACK_ACCESS_TARGET_ID !== plan.targetContainerId || process.env.EXTERNAL_STACK_ACCESS_TARGET_NAME !== plan.targetContainerName) throw new Error("External-stack access target does not match the authorized container");
     if (!path.isAbsolute(plan.requestedPath) || path.resolve(plan.requestedPath) !== plan.requestedPath || plan.requestedPath === "/") throw new Error("Requested external path is invalid");
@@ -119,6 +119,7 @@ function readAndClaimPlan(planPath = process.env.EXTERNAL_STACK_ACCESS_PLAN) {
     }
     if (!requestedPaths.some((entry) => entry.path === plan.requestedPath)) throw new Error("Primary external path is missing from the access plan");
     plan.requestedPaths = requestedPaths;
+    if (plan.action === "external-stack-delete" && (!path.isAbsolute(plan.deletePath || "") || path.resolve(plan.deletePath) !== plan.deletePath || plan.deletePath !== plan.requestedPath || plan.deletePath === "/")) throw new Error("External source deletion path is invalid");
     validateCompose(plan.compose);
     const claimed = `${planPath}.claimed`;
     fs.renameSync(planPath, claimed);
@@ -180,6 +181,12 @@ function mergeAllowedPaths(current, requestedPaths) {
     return roots.join(",");
 }
 
+function removeAllowedPath(current, requestedPath) {
+    const value = current == null ? "" : String(current);
+    if (value.includes("${") || value.includes("$")) throw new Error("DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS uses interpolation and must be edited manually");
+    return value.split(/[\n,]/).map((entry) => entry.trim()).filter((entry) => entry && path.resolve(entry) !== requestedPath).join(",");
+}
+
 function bindMount(entry) {
     if (typeof entry === "string") {
         const parts = entry.split(":");
@@ -194,6 +201,25 @@ function patchDocument(raw, plan) {
     if (doc.errors.length > 0) throw new Error(`Invalid Compose YAML: ${doc.errors[0].message}`);
     const service = doc.getIn([ "services", plan.compose.service ], true);
     if (!YAML.isMap(service)) return null;
+
+    if (plan.action === "external-stack-delete") {
+        const volumes = service.get("volumes", true);
+        if (YAML.isSeq(volumes)) {
+            volumes.items = volumes.items.filter((item) => {
+                const mount = bindMount(item?.toJSON());
+                return !(mount?.source && mount?.target && path.resolve(mount.source) === plan.deletePath && path.resolve(mount.target) === plan.deletePath);
+            });
+        }
+        const environment = service.get("environment", true);
+        if (YAML.isMap(environment)) {
+            environment.set("DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS", removeAllowedPath(environment.get("DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS"), plan.deletePath));
+        } else if (YAML.isSeq(environment)) {
+            const prefix = "DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS=";
+            const index = environment.items.findIndex((item) => String(item?.toJSON() || "").startsWith(prefix));
+            if (index >= 0) environment.set(index, `${prefix}${removeAllowedPath(String(environment.items[index].toJSON()).slice(prefix.length), plan.deletePath)}`);
+        }
+        return doc.toString({ lineWidth: 0 });
+    }
 
     const requestedPaths = plan.requestedPaths || [ { path: plan.requestedPath, addBind: plan.addBind === true } ];
     const bindsToAdd = requestedPaths.filter((entry) => entry.addBind);
@@ -274,6 +300,16 @@ function accessApplied(plan, inspected) {
     return true;
 }
 
+function accessRemoved(plan, inspected) {
+    const mounts = Array.isArray(inspected?.Mounts) ? inspected.Mounts : [];
+    const env = Array.isArray(inspected?.Config?.Env) ? inspected.Config.Env : [];
+    const prefix = "DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS=";
+    const configured = env.find((entry) => typeof entry === "string" && entry.startsWith(prefix));
+    const allowed = String(configured || "").slice(prefix.length).split(/[\n,]/).map((entry) => entry.trim()).filter(Boolean);
+    return !allowed.includes(plan.deletePath) && !mounts.some((mount) => mount?.Type === "bind" && mount.Source && mount.Destination
+        && path.resolve(mount.Source) === plan.deletePath && path.resolve(mount.Destination) === plan.deletePath);
+}
+
 function applyComposeAccess(plan, deps = {}) {
     let patchedFile = "";
     for (const file of plan.compose.configFiles) {
@@ -307,8 +343,10 @@ async function run(deps = {}) {
             writeStatus("waiting-health", "Waiting for Dockge-Enhanced to become ready", false, plan);
             if (waitReady(plan.targetContainerName, deps)) {
                 const updated = inspect(plan.targetContainerName, deps);
-                if (accessApplied(plan, updated)) {
-                    writeStatus("succeeded", "External path added to Dockge-Enhanced", false, plan);
+                const applied = plan.action === "external-stack-delete" ? accessRemoved(plan, updated) : accessApplied(plan, updated);
+                if (applied) {
+                    if (plan.action === "external-stack-delete") fs.rmSync(plan.deletePath, { recursive: true, force: true });
+                    writeStatus("succeeded", plan.action === "external-stack-delete" ? "External source removed from Dockge-Enhanced and deleted" : "External path added to Dockge-Enhanced", false, plan);
                     return "succeeded";
                 }
                 updateError = new Error("Dockge-Enhanced restarted but the requested external paths were not applied");
@@ -341,7 +379,7 @@ async function run(deps = {}) {
     }
 }
 
-module.exports = { accessApplied, applicationReady, applyComposeAccess, atomicWrite, backupCompose, bindMount, ensureDirectory, inside, mergeAllowedPaths, patchDocument, readAndClaimPlan, restoreCompose, run, waitReady, writeStatus };
+module.exports = { accessApplied, accessRemoved, applicationReady, applyComposeAccess, atomicWrite, backupCompose, bindMount, ensureDirectory, inside, mergeAllowedPaths, patchDocument, readAndClaimPlan, removeAllowedPath, restoreCompose, run, waitReady, writeStatus };
 if (require.main === module) run().then((result) => {
     if ([ "failed", "rollback-failed" ].includes(result)) process.exitCode = 1;
 }).catch((error) => {

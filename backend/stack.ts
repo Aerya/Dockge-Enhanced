@@ -804,7 +804,9 @@ export class Stack {
             throw new Error("Failed to delete, please check the terminal output for more information.");
         }
 
-        if (removeFiles) {
+        if (removeFiles && this.isExternal && externalDeletePath) {
+            await this.server.externalStackAccess.requestDeletion(externalRegistration!.project, externalDeletePath);
+        } else if (removeFiles) {
             const deletePath = externalDeletePath ?? this.path;
             await fsAsync.rm(deletePath, { recursive: true, force: true });
         }

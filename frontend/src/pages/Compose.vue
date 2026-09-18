@@ -1418,7 +1418,9 @@ export default {
         },
 
         ensureComposeEditLeaseSession() {
-            if (this.editLeaseSessionId) return this.editLeaseSessionId;
+            if (this.editLeaseSessionId) {
+                return this.editLeaseSessionId;
+            }
 
             const cryptoApi = window.crypto;
             if (!cryptoApi?.getRandomValues) {
@@ -1443,7 +1445,9 @@ export default {
         },
 
         startComposeEditLease() {
-            if (!this.hasUnsavedComposeChanges) return;
+            if (!this.hasUnsavedComposeChanges) {
+                return;
+            }
             this.ensureComposeEditLeaseSession();
             this.syncComposeEditLease();
             if (!this.editLeaseTimer) {
@@ -1459,7 +1463,9 @@ export default {
         },
 
         syncComposeEditLease(holdMinutes) {
-            if (!this.hasUnsavedComposeChanges && !holdMinutes) return;
+            if (!this.hasUnsavedComposeChanges && !holdMinutes) {
+                return;
+            }
             const payload = {
                 sessionId: this.ensureComposeEditLeaseSession(),
                 stackName: this.stack.name || "new-stack",
@@ -1477,7 +1483,9 @@ export default {
             const operation = data?.operation ?? {};
             const blockedByEditor = operation.state === "scheduled" && operation.deferredBy === "active-editor";
             this.selfUpdateEditPromptPending = blockedByEditor;
-            if (!blockedByEditor) return;
+            if (!blockedByEditor) {
+                return;
+            }
 
             const target = operation.targetImage || data?.remoteDigest || "pending-update";
             this.selfUpdateEditTarget = target;
@@ -1491,7 +1499,9 @@ export default {
         },
 
         releaseComposeEditLease({ clearHold = false, resume = false } = {}) {
-            if (!this.editLeaseSessionId) return;
+            if (!this.editLeaseSessionId) {
+                return;
+            }
             this.$root.emitAgent(this.endpoint, "composeEditLeaseRelease", {
                 sessionId: this.editLeaseSessionId,
                 clearHold,
@@ -2067,7 +2077,9 @@ export default {
                 }
                 this.startGuardStatus = res;
                 res.conditions?.forEach((condition, index) => {
-                    if (condition.mountPoint && this.startGuard.conditions[index]) this.startGuard.conditions[index].mountPoint = condition.mountPoint;
+                    if (condition.mountPoint && this.startGuard.conditions[index]) {
+                        this.startGuard.conditions[index].mountPoint = condition.mountPoint;
+                    }
                 });
             });
         },
@@ -2107,8 +2119,14 @@ export default {
                     confirmExternalSourcePath: this.stack.externalPath,
                 } : {}),
             };
+            if (this.stack.isExternal && options.removeFiles) {
+                sessionStorage.setItem("dockge-external-delete-in-progress", "1");
+            }
             this.$root.emitAgent(this.endpoint, "deleteStack", this.stack.name, options, (res) => {
                 this.$root.toastRes(res);
+                if (!res.ok) {
+                    sessionStorage.removeItem("dockge-external-delete-in-progress");
+                }
                 if (res.ok) {
                     if (this.stack.isExternal || options.removeFiles) {
                         this.$router.push("/");
@@ -2131,7 +2149,9 @@ export default {
         focusGlobalSearchResult(attempt = 0) {
             const source = this.globalSearchFocusSource;
             const requestedLine = Number(this.$route.query?.gsLine ?? 0);
-            if (!source || !Number.isInteger(requestedLine) || requestedLine < 1) return;
+            if (!source || !Number.isInteger(requestedLine) || requestedLine < 1) {
+                return;
+            }
 
             this.composeCollapsed = false;
             const refName = source === "override" ? "overrideEditor" : source === "env" ? "envEditor" : "yamlEditor";
@@ -2140,7 +2160,9 @@ export default {
                     const cm = this.$refs[refName];
                     const view = cm && ((cm.view && cm.view.dispatch) ? cm.view : cm.view?.value);
                     if (!view?.state?.doc || !view.dispatch) {
-                        if (attempt < 6) this.focusGlobalSearchResult(attempt + 1);
+                        if (attempt < 6) {
+                            this.focusGlobalSearchResult(attempt + 1);
+                        }
                         return;
                     }
                     const lineNumber = Math.min(requestedLine, view.state.doc.lines);

@@ -69,6 +69,21 @@ test("an already visible path only updates the allowlist", () => {
     assert.doesNotMatch(patched, /volumes:/);
 });
 
+test("removes the exact source bind and allowlist entry for protected deletion", () => {
+    const work = path.join(root, "delete-source");
+    fs.mkdirSync(work, { recursive: true });
+    const raw = "services:\n  dockge:\n    environment:\n      DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS: /opt/first,/opt/external-test\n    volumes:\n      - /opt/first:/opt/first\n      - type: bind\n        source: /opt/external-test\n        target: /opt/external-test\n";
+    const plan = composePlan(work, { action: "external-stack-delete", deletePath: "/opt/external-test" });
+    const patched = helper.patchDocument(raw, plan);
+    assert.match(patched, /DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS: \/opt\/first/);
+    assert.doesNotMatch(patched, /source: \/opt\/external-test/);
+    assert.match(patched, /\/opt\/first:\/opt\/first/);
+    assert.equal(helper.accessRemoved(plan, {
+        Config: { Env: [ "DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS=/opt/first" ] },
+        Mounts: [ { Type: "bind", Source: "/opt/first", Destination: "/opt/first" } ],
+    }), true);
+});
+
 
 test("patches only the first Compose file that defines the Dockge service", () => {
     const work = path.join(root, "multi-compose");
@@ -153,4 +168,35 @@ test("failed readiness restores the exact Compose backup and recreates the previ
     assert.equal(fs.readFileSync(composeFile, "utf8"), original);
     assert.equal(JSON.parse(fs.readFileSync(path.join(root, "status.json"))).state, "rolled-back");
     assert.equal(fs.statSync(path.join(root, "recovery")).uid, fs.statSync(root).uid);
+});
+
+test("protected deletion recreates Enhanced without the bind before removing the source folder", async () => {
+    const work = path.join(root, "delete-run");
+    const source = path.join(root, "external-source");
+    fs.mkdirSync(work, { recursive: true });
+    fs.mkdirSync(source, { recursive: true });
+    fs.writeFileSync(path.join(source, "compose.yaml"), "services: {}\n");
+    const composeFile = path.join(work, "compose.yaml");
+    fs.writeFileSync(composeFile, `services:\n  dockge:\n    environment:\n      DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS: ${source}\n    volumes:\n      - type: bind\n        source: ${source}\n        target: ${source}\n`);
+    const plan = composePlan(work, { action: "external-stack-delete", requestedPath: source, deletePath: source });
+    const planPath = signedPlan(plan);
+    let recreated = false;
+    const docker = args => {
+        if (args[1] === "inspect") return JSON.stringify({
+            Id: "container-id", Name: "/dockge-test", Image: plan.previousImageId,
+            State: { Running: true, Status: "running" },
+            Config: { Env: recreated ? [ "DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS=" ] : [ `DOCKGE_EXTERNAL_STACKS_ALLOWED_PATHS=${source}` ] },
+            Mounts: recreated ? [] : [ { Type: "bind", Source: source, Destination: source } ],
+        });
+        if (args.includes("up")) {
+            recreated = true;
+            return "";
+        }
+        if (args.includes("wget")) return "ok";
+        return "";
+    };
+    const result = await helper.run({ planPath, docker, ...clock(), stableMs: 1_000, timeoutMs: 4_000, pollMs: 1_000 });
+    assert.equal(result, "succeeded");
+    assert.equal(fs.existsSync(source), false);
+    assert.doesNotMatch(fs.readFileSync(composeFile, "utf8"), new RegExp(`source: ${source}`));
 });

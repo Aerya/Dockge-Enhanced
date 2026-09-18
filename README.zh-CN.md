@@ -50,6 +50,8 @@
 
 Enhanced 现在可以检测现有 Docker Compose 项目，并在**不移动 Compose/.env 或数据**的情况下将其接管，之后可从常规 Stack 界面管理。如果源路径尚未对 Enhanced 可见，可通过受保护的一键授权自动更新 Enhanced 自身的 Compose。已接管的 Stack 会显示 **外部** 标记；删除源文件需要额外的明确确认。 扫描器还会将 Enhanced 的 Stack 目录与主机侧 bind 挂载进行对应，因此即使 Docker Compose 标签记录的是主机路径，已经由当前实例管理的 Stack 也会被排除。
 
+选择永久删除源目录时，Enhanced 现在会通过受保护的 helper 从自身 Compose 中移除源 bind 和授权条目，仅重新创建自身容器，然后删除主机目录。这样可避免删除仍作为 Enhanced 挂载点的目录时出现 `EBUSY` 错误。
+
 一个明确支持的场景是 [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion)：它可以通过 bind 挂载的 `/compose` 路径重新创建已经由 Enhanced 管理的 Gluetun Stack。Enhanced 现在会把这种 Compose 路径别名映射回原生 Stack，不再错误地将其作为外部 Stack 提供接管。
 
 **匿名安装计数**
@@ -185,6 +187,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 服务端持久化并在关联 WebUI 间共享的固定 Stack 与排序
 - 无需移动文件或数据即可发现并接管外部 Compose Stack
 - 通过受保护的一键授权开放外部 Stack 路径
+- 可选完整删除已接管的外部 Stack，包括源目录和 Enhanced 访问挂载
 - 备注和 Git 工具
 - Build + Recreate
 - 服务/容器级操作和计划任务

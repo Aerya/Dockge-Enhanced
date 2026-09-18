@@ -70,6 +70,8 @@ Les mises à jour d’images ciblées, les recréations de services et les rollb
 
 Enhanced peut détecter des projets Docker Compose existants, les adopter **sans déplacer leur Compose/.env ni leurs données**, puis les gérer depuis l’interface normale des stacks. Si un chemin source n’est pas encore accessible dans Enhanced, une autorisation protégée en un clic adapte automatiquement le Compose d’Enhanced. Les stacks adoptées conservent le nom de leur projet sans préfixe `external-` redondant et portent le badge **Externe** ; la suppression des fichiers source demande une confirmation supplémentaire explicite. Le scanner fait également correspondre le répertoire de stacks d’Enhanced avec son bind côté hôte : les stacks déjà gérées par l’instance sont donc exclues même lorsque les labels Docker Compose contiennent leurs chemins hôte.
 
+Lorsque la suppression permanente des sources est choisie, Enhanced retire désormais le bind source et son entrée d’autorisation de son propre Compose via le helper protégé, recrée uniquement son conteneur, puis supprime le dossier hôte. Cela évite les erreurs `EBUSY` provoquées par la suppression d’un dossier encore utilisé comme point de montage d’Enhanced.
+
 Un cas explicitement pris en charge est [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion) : il peut recréer une stack Gluetun déjà gérée par Enhanced depuis un chemin `/compose` monté par bind. Enhanced rapproche désormais ce type d’alias Compose de la stack native et ne la propose plus à tort comme externe.
 
 **Comptage anonyme des installations**
@@ -207,6 +209,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Stacks épinglées côté serveur et partagées entre les WebUI liées
 - Détection et intégration de stacks Compose externes sans déplacer leurs fichiers ni leurs données
 - Autorisation protégée en un clic des chemins de stacks externes
+- Suppression complète optionnelle des stacks externes intégrées, dossier source et montage d’accès Enhanced inclus
 - Tri par date de création ou dernière mise à jour
 - Notes par stack
 - Outils Git
