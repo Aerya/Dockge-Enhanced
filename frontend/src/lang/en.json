@@ -1563,5 +1563,21 @@
     "externalStacks.dataAccessCount": "{count} data path(s) to authorize",
     "externalStacks.dataAccessHint": "{count} linked data path(s) still need access. Enhanced can add them automatically before adoption.",
     "externalStacks.automaticAccessBlocked": "Automatic authorization is blocked for this sensitive path. Mount and authorize this folder explicitly if you want to integrate it.",
-    "externalStacks.authorizePaths": "Authorize paths"
+    "externalStacks.authorizePaths": "Authorize paths",
+    "externalStacks.cleanup.action": "Permanent cleanup",
+    "externalStacks.cleanup.title": "Permanent external-stack cleanup",
+    "externalStacks.cleanup.execute": "Permanently delete",
+    "externalStacks.cleanup.warning": "All resources belonging to project {project} will be deleted.",
+    "externalStacks.cleanup.brokenHint": "This mode also works when the Compose file or part of the stack is already missing. The inventory below is frozen before deletion.",
+    "externalStacks.cleanup.containers": "Containers",
+    "externalStacks.cleanup.volumes": "Named volumes",
+    "externalStacks.cleanup.networks": "Networks",
+    "externalStacks.cleanup.images": "Images",
+    "externalStacks.cleanup.source": "Compose/source folder",
+    "externalStacks.cleanup.sourceMissing": "already missing or unknown",
+    "externalStacks.cleanup.confirmResources": "I reviewed the inventory and confirm deletion of the listed containers, volumes, networks, images and files.",
+    "externalStacks.cleanup.typeProject": "Type {project} exactly to confirm:",
+    "externalStacks.cleanup.confirmIrreversible": "I understand this deletion is irreversible and volume data will be lost.",
+    "externalStacks.cleanup.succeeded": "The external stack and its resources were deleted.",
+    "externalStacks.cleanup.partial": "Partial cleanup: {count} resource(s) could not be removed because they are still in use or protected."
 }

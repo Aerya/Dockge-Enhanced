@@ -1559,5 +1559,21 @@
     "externalStacks.dataAccessCount": "{count} chemin(s) de données à autoriser",
     "externalStacks.dataAccessHint": "{count} chemin(s) de données lié(s) doivent encore être accessibles. Enhanced peut les ajouter automatiquement avant l’adoption.",
     "externalStacks.automaticAccessBlocked": "L’autorisation automatique est bloquée pour ce chemin sensible. Montez et autorisez ce dossier explicitement si vous souhaitez l’intégrer.",
-    "externalStacks.authorizePaths": "Autoriser les chemins"
+    "externalStacks.authorizePaths": "Autoriser les chemins",
+    "externalStacks.cleanup.action": "Nettoyage définitif",
+    "externalStacks.cleanup.title": "Nettoyage définitif d’une stack externe",
+    "externalStacks.cleanup.execute": "Supprimer définitivement",
+    "externalStacks.cleanup.warning": "Toutes les ressources du projet {project} vont être supprimées.",
+    "externalStacks.cleanup.brokenHint": "Ce mode fonctionne même si le Compose ou une partie de la stack a déjà disparu. L’inventaire ci-dessous est figé avant suppression.",
+    "externalStacks.cleanup.containers": "Conteneurs",
+    "externalStacks.cleanup.volumes": "Volumes nommés",
+    "externalStacks.cleanup.networks": "Réseaux",
+    "externalStacks.cleanup.images": "Images",
+    "externalStacks.cleanup.source": "Dossier Compose/source",
+    "externalStacks.cleanup.sourceMissing": "déjà absent ou non déterminable",
+    "externalStacks.cleanup.confirmResources": "J’ai vérifié l’inventaire et je confirme la suppression des conteneurs, volumes, réseaux, images et fichiers listés.",
+    "externalStacks.cleanup.typeProject": "Saisissez exactement {project} pour confirmer :",
+    "externalStacks.cleanup.confirmIrreversible": "Je comprends que cette suppression est irréversible et que les données des volumes seront perdues.",
+    "externalStacks.cleanup.succeeded": "La stack externe et ses ressources ont été supprimées.",
+    "externalStacks.cleanup.partial": "Nettoyage partiel : {count} ressource(s) n’ont pas pu être supprimées car elles sont encore utilisées ou protégées."
 }

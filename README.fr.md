@@ -210,6 +210,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Détection et intégration de stacks Compose externes sans déplacer leurs fichiers ni leurs données
 - Autorisation protégée en un clic des chemins de stacks externes
 - Suppression complète optionnelle des stacks externes intégrées, dossier source et montage d’accès Enhanced inclus
+- Nettoyage définitif par labels des stacks externes cassées, avec inventaire figé et confirmations renforcées avant suppression des conteneurs, volumes, réseaux, images et sources Compose
 - Tri par date de création ou dernière mise à jour
 - Notes par stack
 - Outils Git

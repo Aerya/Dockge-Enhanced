@@ -1500,5 +1500,21 @@
     "externalStacks.dataAccessCount": "{count} 个数据路径待授权",
     "externalStacks.dataAccessHint": "仍有 {count} 个关联数据路径需要访问权限。Enhanced 可在接管前自动添加。",
     "externalStacks.automaticAccessBlocked": "此敏感路径已禁止自动授权。如需集成，请显式挂载并授权该目录。",
-    "externalStacks.authorizePaths": "授权路径"
+    "externalStacks.authorizePaths": "授权路径",
+    "externalStacks.cleanup.action": "永久清理",
+    "externalStacks.cleanup.title": "永久清理外部 Stack",
+    "externalStacks.cleanup.execute": "永久删除",
+    "externalStacks.cleanup.warning": "项目 {project} 的所有资源都将被删除。",
+    "externalStacks.cleanup.brokenHint": "即使 Compose 文件或部分 Stack 已丢失，此模式仍可工作。删除前会锁定以下清单。",
+    "externalStacks.cleanup.containers": "容器",
+    "externalStacks.cleanup.volumes": "命名卷",
+    "externalStacks.cleanup.networks": "网络",
+    "externalStacks.cleanup.images": "镜像",
+    "externalStacks.cleanup.source": "Compose/源目录",
+    "externalStacks.cleanup.sourceMissing": "已不存在或无法确定",
+    "externalStacks.cleanup.confirmResources": "我已检查清单，并确认删除列出的容器、卷、网络、镜像和文件。",
+    "externalStacks.cleanup.typeProject": "请输入完整的 {project} 以确认：",
+    "externalStacks.cleanup.confirmIrreversible": "我明白此删除操作不可逆，卷中的数据将丢失。",
+    "externalStacks.cleanup.succeeded": "外部 Stack 及其资源已删除。",
+    "externalStacks.cleanup.partial": "部分清理：{count} 个资源仍在使用或受保护，无法删除。"
 }

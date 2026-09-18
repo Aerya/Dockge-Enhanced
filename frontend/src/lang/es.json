@@ -464,5 +464,21 @@
     "externalStacks.dataAccessCount": "{count} ruta(s) de datos por autorizar",
     "externalStacks.dataAccessHint": "{count} ruta(s) de datos vinculada(s) aún necesitan acceso. Enhanced puede añadirlas automáticamente antes de la adopción.",
     "externalStacks.automaticAccessBlocked": "La autorización automática está bloqueada para esta ruta sensible. Monta y autoriza esta carpeta explícitamente si quieres integrarla.",
-    "externalStacks.authorizePaths": "Autorizar rutas"
+    "externalStacks.authorizePaths": "Autorizar rutas",
+    "externalStacks.cleanup.action": "Limpieza definitiva",
+    "externalStacks.cleanup.title": "Limpieza definitiva de una stack externa",
+    "externalStacks.cleanup.execute": "Eliminar definitivamente",
+    "externalStacks.cleanup.warning": "Se eliminarán todos los recursos del proyecto {project}.",
+    "externalStacks.cleanup.brokenHint": "Este modo funciona aunque el Compose o parte de la stack ya no exista. El inventario siguiente queda fijado antes de eliminar.",
+    "externalStacks.cleanup.containers": "Contenedores",
+    "externalStacks.cleanup.volumes": "Volúmenes con nombre",
+    "externalStacks.cleanup.networks": "Redes",
+    "externalStacks.cleanup.images": "Imágenes",
+    "externalStacks.cleanup.source": "Carpeta Compose/origen",
+    "externalStacks.cleanup.sourceMissing": "ya ausente o desconocida",
+    "externalStacks.cleanup.confirmResources": "He revisado el inventario y confirmo la eliminación de los contenedores, volúmenes, redes, imágenes y archivos listados.",
+    "externalStacks.cleanup.typeProject": "Escribe exactamente {project} para confirmar:",
+    "externalStacks.cleanup.confirmIrreversible": "Entiendo que esta eliminación es irreversible y que se perderán los datos de los volúmenes.",
+    "externalStacks.cleanup.succeeded": "La stack externa y sus recursos se eliminaron.",
+    "externalStacks.cleanup.partial": "Limpieza parcial: no se pudieron eliminar {count} recurso(s) porque siguen en uso o están protegidos."
 }

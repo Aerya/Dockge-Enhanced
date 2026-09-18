@@ -210,6 +210,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - External Compose stack discovery and adoption without moving files or data
 - Protected one-click authorization for external stack paths
 - Optional complete removal of adopted external stacks, including their source folder and Enhanced access mount
+- Label-based permanent cleanup for broken external stacks, with a frozen resource inventory and reinforced confirmations before containers, volumes, networks, images and Compose sources are removed
 - Sort by creation date or last update
 - Per-stack notes
 - Git tools

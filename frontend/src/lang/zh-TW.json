@@ -1467,5 +1467,21 @@
     "externalStacks.dataAccessCount": "{count} 個資料路徑待授權",
     "externalStacks.dataAccessHint": "仍有 {count} 個關聯資料路徑需要存取權限。Enhanced 可在接管前自動加入。",
     "externalStacks.automaticAccessBlocked": "此敏感路徑已禁止自動授權。如需整合，請明確掛載並授權該目錄。",
-    "externalStacks.authorizePaths": "授權路徑"
+    "externalStacks.authorizePaths": "授權路徑",
+    "externalStacks.cleanup.action": "永久清理",
+    "externalStacks.cleanup.title": "永久清理外部 Stack",
+    "externalStacks.cleanup.execute": "永久刪除",
+    "externalStacks.cleanup.warning": "專案 {project} 的所有資源都將被刪除。",
+    "externalStacks.cleanup.brokenHint": "即使 Compose 檔案或部分 Stack 已遺失，此模式仍可運作。刪除前會鎖定以下清單。",
+    "externalStacks.cleanup.containers": "容器",
+    "externalStacks.cleanup.volumes": "具名 Volume",
+    "externalStacks.cleanup.networks": "網路",
+    "externalStacks.cleanup.images": "映像",
+    "externalStacks.cleanup.source": "Compose/來源目錄",
+    "externalStacks.cleanup.sourceMissing": "已不存在或無法判定",
+    "externalStacks.cleanup.confirmResources": "我已檢查清單，並確認刪除列出的容器、Volume、網路、映像和檔案。",
+    "externalStacks.cleanup.typeProject": "請完整輸入 {project} 以確認：",
+    "externalStacks.cleanup.confirmIrreversible": "我明白此刪除操作不可逆，Volume 中的資料將遺失。",
+    "externalStacks.cleanup.succeeded": "外部 Stack 及其資源已刪除。",
+    "externalStacks.cleanup.partial": "部分清理：{count} 個資源仍在使用或受保護，無法刪除。"
 }
