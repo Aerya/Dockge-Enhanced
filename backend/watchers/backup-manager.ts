@@ -11,6 +11,7 @@ import * as readline from "readline";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
 import * as path from "path";
+import { randomBytes } from "node:crypto";
 import * as yaml from "js-yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
@@ -347,51 +348,39 @@ export interface BackupArgsOptions {
     paths: string[];
     tags: string[];
     excludes: string[];
+    host: string;
 }
 
 /**
- * Arguments `restic backup`.
- *
- * `--group-by host` : par défaut restic cherche son parent dans le groupe (host, paths).
- * Or le host est le hostname du conteneur — donc l'ID du conteneur, qui change à chaque
- * recréation (self-update, mise à jour d'image, `docker compose up -d`) — et la liste des
- * chemins change dès qu'un stack est ajouté ou retiré. Dans les deux cas le parent n'est plus
- * retrouvé et restic relit l'intégralité du périmètre : plus aucun « files_unmodified » et le
- * run repasse en durée pleine (mesuré sur un dépôt de ~131 Gio / 909 415 fichiers : 221 s
- * sans parent, 29 s avec, 902 512 unmodified).
- *
- * Grouper par host seul garde le parent d'un run à l'autre malgré les changements de chemins,
- * sans jamais remonter le snapshot d'un autre hôte : plusieurs hôtes peuvent partager un même
- * dépôt, et le parent d'un autre hôte ne décrit pas les mêmes chemins.
+ * Identité Restic aléatoire, stable et non sensible, propre à l'installation.
  */
+export function buildResticHostId(randomId: Uint8Array): string {
+    if (randomId.byteLength !== 8) {
+        throw new Error("Restic host identity requires exactly 8 random bytes");
+    }
+    return `dockge-${Buffer.from(randomId).toString("hex")}`;
+}
+
+/** Arguments `restic backup`, regroupés par installation stable. */
 export function buildBackupArgs(options: BackupArgsOptions): string[] {
     return [
         "backup", "-q", ...options.paths,
         ...options.tags.flatMap(tag => [ "--tag", tag ]),
         ...options.excludes.flatMap(pattern => [ "--exclude", pattern ]),
+        "--host", options.host,
         "--group-by", "host",
     ];
 }
 
 /**
- * Arguments `restic forget` pour la rétention.
- *
- * Même groupe que le backup, `host` : restic applique ensuite la politique à chaque groupe
- * séparément. Le défaut `host,paths` crée un groupe neuf à chaque changement d'identité ou de
- * chemins, et un groupe qui compte moins de `keepLast + 1` snapshots n'est jamais amputé : ces
- * snapshots deviennent définitivement impérissables (mesuré : 13 groupes pour 18 snapshots,
- * la politique n'en retirerait qu'un seul).
- *
- * `--group-by ""` corrigerait ce cas mais supprime le garde-fou de restic : la politique
- * s'applique alors à tous les snapshots du dépôt, hôtes confondus. Sur un dépôt partagé,
- * l'hôte qui sauvegarde le plus souvent ferait disparaître les snapshots des autres
- * (`--keep-last n` = n snapshots du dépôt, et non n par hôte). Grouper par host seul suffit :
- * la liste de chemins peut évoluer, chaque hôte conserve sa propre politique.
+ * Arguments `restic forget` limités à la même installation stable. Le filtre `--host`
+ * empêche une instance de toucher aux snapshots d'une autre instance sur un dépôt partagé.
  */
-export function buildRetentionArgs(retention: RetentionPolicy): string[] {
+export function buildRetentionArgs(retention: RetentionPolicy, host: string): string[] {
     return [
         "forget",
         "--group-by", "host",
+        "--host", host,
         "--keep-last", String(sanitizeRetention(retention.keepLast)),
         "--keep-daily", String(sanitizeRetention(retention.keepDaily)),
         "--keep-weekly", String(sanitizeRetention(retention.keepWeekly)),
@@ -735,6 +724,7 @@ export class BackupManager {
     private lastOnSaveTrigger  = 0;
     private backupRunLock = new BackupRunLock();
     private restoreRunLock = new BackupRunLock();
+    private resticHostIdPromise: Promise<string> | null = null;
     private lastBlockedBackup: { trigger: "scheduled" | "manual" | "on-save"; timestamp: number } | null = null;
     private readonly externalStackManager: ExternalStackManager;
 
@@ -801,6 +791,24 @@ export class BackupManager {
     static getInstance(): BackupManager {
         if (!BackupManager._instance) BackupManager._instance = new BackupManager();
         return BackupManager._instance;
+    }
+
+    private async getResticHostId(): Promise<string> {
+        if (!this.resticHostIdPromise) {
+            this.resticHostIdPromise = (async () => {
+                const existing = await Settings.get("resticHostId");
+                if (typeof existing === "string" && /^dockge-[a-f0-9]{16}$/.test(existing)) {
+                    return existing;
+                }
+                const created = buildResticHostId(randomBytes(8));
+                await Settings.set("resticHostId", created);
+                return created;
+            })().catch(error => {
+                this.resticHostIdPromise = null;
+                throw error;
+            });
+        }
+        return this.resticHostIdPromise;
     }
 
     // ── Persistance ───────────────────────────────────────────────
@@ -1291,10 +1299,14 @@ export class BackupManager {
         }
         const builtinExcludes = ["*.log", "__pycache__", "node_modules"];
         const userExcludes    = this.settings.excludePatterns ?? [];
+        const installationHost = await this.getResticHostId();
         const resticArgs = buildBackupArgs({
             paths,
             tags,
             excludes: [ ...builtinExcludes, ...userExcludes ],
+            // Les backups minimaux de self-update forment une chaîne distincte : ils ne
+            // deviennent ni parents ni candidats à la rétention des backups ordinaires.
+            host: opts.selfUpdateOnly ? `${installationHost}-self-update` : installationHost,
         });
 
         let totalDataAdded = 0;
@@ -1771,7 +1783,7 @@ export class BackupManager {
         // Libère un éventuel verrou laissé par le backup (ex: crash, timeout)
         try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
 
-        await this.resticFor(dest, buildRetentionArgs(this.settings.retention));
+        await this.resticFor(dest, buildRetentionArgs(this.settings.retention, await this.getResticHostId()));
     }
 
     /** Retourne la première destination activée (pour snapshots/restore) */
