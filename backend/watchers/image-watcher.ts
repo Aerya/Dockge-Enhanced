@@ -25,6 +25,7 @@ import { ExternalStackManager } from "../external-stacks";
 import {
   acceptedComposeFileNames,
   envsubstYAML,
+  sleep,
 } from "../../common/util-common";
 import {
   DockerRegistryCredential,
@@ -494,6 +495,52 @@ async function getInitialAuth(
   return "";
 }
 
+/** Nombre total de tentatives d'une requête de manifest (un envoi, deux reprises). */
+const MANIFEST_MAX_ATTEMPTS = 3;
+
+/** Délai de base du backoff (ms) quand le registry ne fournit pas de Retry-After exploitable. */
+const MANIFEST_RETRY_BASE_DELAY_MS = 1000;
+
+/** Plafond du délai entre deux tentatives (ms) : un cycle de vérification ne doit pas s'immobiliser. */
+const MANIFEST_RETRY_MAX_DELAY_MS = 20000;
+
+/** Statuts HTTP transitoires d'un registry qui justifient une reprise (limite de débit, surcharge). */
+export function isRetryableRegistryStatus(status: number): boolean {
+  return status === 429 || status === 503;
+}
+
+/**
+ * Délai (ms) avant de réessayer une requête registry.
+ * Priorité à l'en-tête Retry-After (secondes ou date HTTP, RFC 9110), sinon backoff exponentiel.
+ * Le résultat est toujours borné par maxDelayMs.
+ * Exporté pour les tests.
+ */
+export function registryRetryDelayMs(
+  retryAfterHeader: unknown,
+  attempt: number,
+  maxDelayMs = MANIFEST_RETRY_MAX_DELAY_MS,
+): number {
+  const raw = Array.isArray(retryAfterHeader) ? retryAfterHeader[0] : retryAfterHeader;
+  let delay = 0;
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    delay = raw * 1000;
+  } else if (typeof raw === "string" && raw.trim() !== "") {
+    const seconds = Number(raw);
+    if (Number.isFinite(seconds)) {
+      delay = seconds * 1000;
+    } else {
+      const timestamp = Date.parse(raw);
+      if (!Number.isNaN(timestamp)) {
+        delay = Math.max(0, timestamp - Date.now());
+      }
+    }
+  }
+  if (delay <= 0) {
+    delay = MANIFEST_RETRY_BASE_DELAY_MS * 2 ** Math.max(0, attempt - 1);
+  }
+  return Math.min(delay, maxDelayMs);
+}
+
 /**
  * Interroge l'API Registry v2 pour récupérer le digest distant du manifest.
  * Implémente le flux auth complet (RFC 7235 + Distribution Auth spec) :
@@ -550,7 +597,28 @@ async function getRemoteDigest(
     }
   };
 
-  const res = await fetchManifest();
+  // Un 429 ou un 503 transitoire (limite de débit partagée, proxy de registry) ne doit pas
+  // écarter l'image du cycle de vérification : reprise en respectant Retry-After.
+  const fetchManifestWithRetry = async () => {
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        return await fetchManifest();
+      } catch (err) {
+        const response = axios.isAxiosError(err) ? err.response : undefined;
+        const status = response?.status ?? 0;
+        if (!isRetryableRegistryStatus(status) || attempt === MANIFEST_MAX_ATTEMPTS) {
+          throw err;
+        }
+        const delay = registryRetryDelayMs(response?.headers?.["retry-after"], attempt);
+        console.warn(
+          `[ImageWatcher] ${registry}/${name}:${tag} → HTTP ${status}, reprise ${attempt + 1}/${MANIFEST_MAX_ATTEMPTS} dans ${Math.round(delay / 1000)} s`,
+        );
+        await sleep(delay);
+      }
+    }
+  };
+
+  const res = await fetchManifestWithRetry();
   const contentType = String(res.headers["content-type"] ?? "");
   const indexDigest = String(res.headers["docker-content-digest"] ?? "");
 

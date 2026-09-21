@@ -8,7 +8,9 @@ import {
   buildRollbackComposeRecreateArgs,
   composeExecInvocation,
   isMandatoryManagedUpdate,
+  isRetryableRegistryStatus,
   pendingAutomaticImageUpdateMayRun,
+  registryRetryDelayMs,
   resolveAutomaticImageUpdateAction,
 } from "./image-watcher";
 import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
@@ -118,4 +120,36 @@ test("image updates fail explicitly before recreation when Compose config is unr
     () => buildImageUpdateComposePlan("invalid", "example/provider:latest"),
     /Unable to resolve Compose network namespace dependencies/,
   );
+});
+
+test("registry rate limits and transient unavailability are retryable", () => {
+  assert.equal(isRetryableRegistryStatus(429), true);
+  assert.equal(isRetryableRegistryStatus(503), true);
+  assert.equal(isRetryableRegistryStatus(401), false);
+  assert.equal(isRetryableRegistryStatus(404), false);
+  assert.equal(isRetryableRegistryStatus(200), false);
+});
+
+test("Retry-After in seconds or milliseconds-style numbers is honored", () => {
+  assert.equal(registryRetryDelayMs("2", 1), 2000);
+  assert.equal(registryRetryDelayMs("1.5", 1), 1500);
+  assert.equal(registryRetryDelayMs(3, 2), 3000);
+});
+
+test("Retry-After as an HTTP date is honored", () => {
+  const future = new Date(Date.now() + 5000).toUTCString();
+  const delay = registryRetryDelayMs(future, 1);
+  assert.ok(delay > 3000 && delay <= 5000, `unexpected delay: ${delay}`);
+});
+
+test("without a usable Retry-After, the backoff stays exponential", () => {
+  assert.equal(registryRetryDelayMs(undefined, 1), 1000);
+  assert.equal(registryRetryDelayMs("", 2), 2000);
+  assert.equal(registryRetryDelayMs("n/a", 3), 4000);
+  assert.equal(registryRetryDelayMs("-5", 1), 1000);
+});
+
+test("the retry delay is always capped", () => {
+  assert.equal(registryRetryDelayMs("3600", 1), 20000);
+  assert.equal(registryRetryDelayMs(undefined, 8, 5000), 5000);
 });
