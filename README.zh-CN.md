@@ -217,6 +217,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 手动和自动更新
 - Rollback、计划与暂停
 - Dockge-Enhanced 受保护自动更新
+- 支持自定义 Compose `hostname:` 的可靠当前容器识别，并在无法验证更新时显示降级状态
 - 强制 Restic 备份、完整性和可用性检查
 - 失败时自动恢复
 - Compose 或 `.env` 存在未保存修改时阻止自更新

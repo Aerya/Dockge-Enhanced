@@ -246,7 +246,7 @@
       "count": 16
     },
     "@stylistic/indent": {
-      "count": 189
+      "count": 187
     },
     "@stylistic/max-statements-per-line": {
       "count": 2
@@ -255,7 +255,7 @@
       "count": 36
     },
     "curly": {
-      "count": 35
+      "count": 34
     }
   },
   "backend/self-update/operation-guard-policy.ts": {
@@ -583,10 +583,10 @@
   },
   "backend/watchers/self-update-checker.ts": {
     "@stylistic/indent": {
-      "count": 541
+      "count": 544
     },
     "@stylistic/object-property-newline": {
-      "count": 27
+      "count": 23
     },
     "@stylistic/quotes": {
       "count": 1
@@ -595,7 +595,7 @@
       "count": 6
     },
     "curly": {
-      "count": 20
+      "count": 18
     }
   },
   "backend/watchers/stack-move-manager.test.ts": {
@@ -887,10 +887,10 @@
       "count": 2
     },
     "@stylistic/object-property-newline": {
-      "count": 32
+      "count": 33
     },
     "curly": {
-      "count": 19
+      "count": 21
     }
   },
   "frontend/src/components/watcher/shared.ts": {

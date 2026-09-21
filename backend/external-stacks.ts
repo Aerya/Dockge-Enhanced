@@ -3,6 +3,7 @@ import path from "node:path";
 import childProcessAsync from "promisify-child-process";
 import crypto from "node:crypto";
 import { ValidationError } from "./util-server";
+import { resolveCurrentContainer } from "./current-container";
 
 export interface ExternalStackRegistration {
     name: string;
@@ -303,34 +304,18 @@ export class ExternalStackManager {
     }
 
     async getAllowedMounts(): Promise<ExternalAllowedMount[]> {
-        const containerId = (process.env.HOSTNAME ?? "").trim();
-        if (!containerId) {
-            return [];
-        }
         try {
-            const result = await childProcessAsync.spawn("docker", [ "inspect", containerId ], {
-                encoding: "utf8",
-                maxBuffer: 2 * 1024 * 1024,
-            });
-            const inspected = JSON.parse(result.stdout?.toString() ?? "[]") as DockerInspect[];
-            return selectAllowedMounts(inspected[0]?.Mounts, await this.getAllowedRoots());
+            const inspected = await resolveCurrentContainer() as DockerInspect;
+            return selectAllowedMounts(inspected.Mounts, await this.getAllowedRoots());
         } catch {
             return [];
         }
     }
 
     async getIdentityBindRoots(): Promise<string[]> {
-        const containerId = (process.env.HOSTNAME ?? "").trim();
-        if (!containerId) {
-            return [];
-        }
         try {
-            const result = await childProcessAsync.spawn("docker", [ "inspect", containerId ], {
-                encoding: "utf8",
-                maxBuffer: 2 * 1024 * 1024,
-            });
-            const inspected = JSON.parse(result.stdout?.toString() ?? "[]") as DockerInspect[];
-            return [ ...new Set((inspected[0]?.Mounts ?? [])
+            const inspected = await resolveCurrentContainer() as DockerInspect;
+            return [ ...new Set((inspected.Mounts ?? [])
                 .filter((mount) => mount.Type === "bind" && mount.Source && mount.Destination && path.resolve(mount.Source) === path.resolve(mount.Destination))
                 .map((mount) => path.resolve(mount.Destination!))) ].sort();
         } catch {
@@ -340,17 +325,9 @@ export class ExternalStackManager {
 
     async getManagedStackRoots(): Promise<string[]> {
         const fallback = [ path.resolve(this.stacksDir) ];
-        const containerId = (process.env.HOSTNAME ?? "").trim();
-        if (!containerId) {
-            return fallback;
-        }
         try {
-            const result = await childProcessAsync.spawn("docker", [ "inspect", containerId ], {
-                encoding: "utf8",
-                maxBuffer: 2 * 1024 * 1024,
-            });
-            const inspected = JSON.parse(result.stdout?.toString() ?? "[]") as DockerInspect[];
-            return selectManagedStackRoots(inspected[0]?.Mounts, this.stacksDir);
+            const inspected = await resolveCurrentContainer() as DockerInspect;
+            return selectManagedStackRoots(inspected.Mounts, this.stacksDir);
         } catch {
             return fallback;
         }
@@ -546,7 +523,7 @@ export class ExternalStackManager {
             ? JSON.parse((await childProcessAsync.spawn("docker", [ "inspect", ...containerIds ], { encoding: "utf8",
                 maxBuffer: 20 * 1024 * 1024 })).stdout?.toString() ?? "[]") as DockerInspect[]
             : [];
-        const currentContainerId = (process.env.HOSTNAME ?? "").trim();
+        const currentContainerId = (await resolveCurrentContainer()).Id ?? "";
         if (containers.some((container) => currentContainerId && container.Id?.startsWith(currentContainerId))) {
             throw new ValidationError("Refusing to clean up the active Dockge-Enhanced project");
         }
@@ -800,7 +777,7 @@ export class ExternalStackManager {
         const containers = ids.length > 0
             ? JSON.parse((await childProcessAsync.spawn("docker", [ "inspect", ...ids ], options)).stdout?.toString() ?? "[]") as DockerInspect[]
             : [];
-        const currentContainerId = (process.env.HOSTNAME ?? "").trim();
+        const currentContainerId = (await resolveCurrentContainer()).Id ?? "";
         let currentProject = "";
         for (const container of containers) {
             if (currentContainerId && container.Id?.startsWith(currentContainerId)) {

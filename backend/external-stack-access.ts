@@ -7,6 +7,7 @@ import { ExternalStackManager, isSafeExternalDataPath } from "./external-stacks"
 import { isPathInside, isSafeComposeName } from "./self-update/policy";
 import { atomicWriteFile, atomicWriteJson } from "./self-update/state-file";
 import { ValidationError } from "./util-server";
+import { resolveCurrentContainer } from "./current-container";
 import { SelfUpdateManager } from "./self-update/manager";
 import { getSelfUpdateBlocker } from "./self-update/operation-guard";
 
@@ -195,11 +196,7 @@ export class ExternalStackAccessManager {
         const envRoots = collapseAccessPaths((discovered.envFiles ?? []).map((candidate) => path.dirname(candidate)).filter((candidate) => isSafeExternalDataPath(candidate))).slice(0, 8);
         const requestedAccessPaths = collapseAccessPaths([ requestedPath, ...configRoots, ...envRoots, ...dataPaths ]).slice(0, 64);
 
-        const containerId = process.env.HOSTNAME?.trim();
-        if (!containerId) {
-            throw new Error("Current Docker container identifier is unavailable");
-        }
-        const inspected = JSON.parse(await docker([ "container", "inspect", containerId, "--format", "{{json .}}" ])) as DockerInspect;
+        const inspected = await resolveCurrentContainer() as DockerInspect;
         const labels = inspected.Config?.Labels ?? {};
         const targetContainerName = (inspected.Name ?? "").replace(/^\//, "");
         const workingDir = labels["com.docker.compose.project.working_dir"] ?? "";
@@ -344,11 +341,7 @@ export class ExternalStackAccessManager {
         }
 
         const deletePath = path.resolve(requestedPath);
-        const containerId = process.env.HOSTNAME?.trim();
-        if (!containerId) {
-            throw new Error("Current Docker container identifier is unavailable");
-        }
-        const inspected = JSON.parse(await docker([ "container", "inspect", containerId, "--format", "{{json .}}" ])) as DockerInspect;
+        const inspected = await resolveCurrentContainer() as DockerInspect;
         const labels = inspected.Config?.Labels ?? {};
         const targetContainerName = (inspected.Name ?? "").replace(/^\//, "");
         const workingDir = labels["com.docker.compose.project.working_dir"] ?? "";

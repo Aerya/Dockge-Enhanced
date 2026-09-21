@@ -255,6 +255,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Scheduled updates
 - Global and per-image pause
 - Protected Dockge-Enhanced self-update
+- Reliable current-container discovery with custom Compose `hostname:` values and a visible degraded state when update verification is unavailable
 - Mandatory Restic backup and integrity verification
 - Readiness validation and automatic recovery
 - Protection against self-update while Compose or `.env` changes are unsaved

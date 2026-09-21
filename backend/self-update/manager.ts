@@ -18,6 +18,7 @@ import { BLOCKER_MESSAGES, type SelfUpdateBlocker } from "./operation-guard-poli
 import { classifySelfUpdateFailure } from "./failure-detail";
 import packageJSON from "../../package.json";
 import { log } from "../log";
+import { resolveCurrentContainer } from "../current-container";
 
 const execFileAsync = promisify(execFile);
 const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
@@ -194,9 +195,7 @@ export class SelfUpdateManager {
             if (blocker) return this.deferAutomaticUpdate(targetImage, blocker);
             this.lastDeferralKey = "";
         }
-        const containerId = process.env.HOSTNAME?.trim();
-        if (!containerId) throw new Error("Current Docker container identifier is unavailable");
-        const inspected = JSON.parse(await docker([ "container", "inspect", containerId, "--format", "{{json .}}" ])) as DockerInspect;
+        const inspected = await resolveCurrentContainer() as DockerInspect;
         const containerName = (inspected.Name ?? "").replace(/^\//, "");
         const previousImage = inspected.Config?.Image ?? "";
         if (!containerName || !previousImage) throw new Error("Current container metadata is incomplete");
@@ -737,7 +736,7 @@ export class SelfUpdateManager {
             id,
             issuedAt: new Date().toISOString(),
             expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
-            targetContainerId: inspected.Id ?? process.env.HOSTNAME ?? "",
+            targetContainerId: inspected.Id ?? "",
             targetContainerName: (inspected.Name ?? "").replace(/^\//, ""),
             targetImage,
             targetRevision: targetRevision && /^[a-f0-9]{40}$/i.test(targetRevision) ? targetRevision.toLowerCase() : undefined,

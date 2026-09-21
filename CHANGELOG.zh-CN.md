@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-09-21 — 自定义 hostname 下可靠识别当前容器** — Dockge-Enhanced 不再假定 `HOSTNAME` 始终等于 Docker 短容器 ID。共享解析器支持 Compose `hostname:`，拒绝不明确的匹配，并可使用 `DOCKGE_CONTAINER_ID` 显式指定容器。自更新检查与执行、外部 Stack 访问、托管根目录检测以及活动项目清理保护现在都使用解析后的不可变 ID。若无法识别已安装镜像，检查器会记录警告，Updates 页面会显示降级状态，而不再误报实例已是最新。修复 #399。
+
 **2026-09-17 — 网络命名空间安全的定向更新与回滚** — 在定向镜像更新、服务重新创建或镜像回滚前，Dockge-Enhanced 现在会通过 `docker compose config --format json` 读取已解析的模型。选定的提供者会与所有使用 `network_mode: service:<service>` 或本地 `network_mode: container:<container_name>` 的直接和间接消费者一起强制重新创建，而无关服务保持不变。因此，VPN、Gluetun 和 sidecar Stack 在自动、计划或手动更新以及回滚后都会保持连接到当前容器命名空间。
 
 **2026-09-05：通过配套工具的 bind 路径别名识别原生 Stack**：外部 Stack 扫描器现在可以识别已经由 Enhanced 管理的 Stack，即使另一个容器从不同的挂载路径运行 Docker Compose。已明确覆盖 [Gluetun-Companion](https://github.com/Aerya/Gluetun-Companion) 场景：它可能从 `/compose` 重新创建 Gluetun 项目，从而使 Docker 标签记录 `/compose/compose.yaml`，而不是 Enhanced 的 Stack 目录。Enhanced 现在会把这类 bind 路径别名映射回受管理的主机路径，并在排除外部接管前同时核对 Compose 项目名称。

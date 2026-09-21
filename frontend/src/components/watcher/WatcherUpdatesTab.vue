@@ -72,6 +72,9 @@
                 <strong>{{ currentStateLabel }}</strong>
                 <span v-if="activeStep" class="ms-2">{{ $t("updates.status.step", { current: activeStep, total: 4 }) }}</span>
             </div>
+            <p v-if="status.error && !operationActive" class="alert alert-danger py-2 mb-3">
+                {{ $t("updates.status.checkUnavailable") }}
+            </p>
 
             <template v-if="operationActive">
                 <div v-if="progressPercent !== null" class="progress mb-2" role="progressbar" :aria-valuenow="progressPercent" aria-valuemin="0" aria-valuemax="100">
@@ -133,7 +136,7 @@ const { t } = useI18n();
 const settings = ref({ mode: "manual", schedule: { type: "immediate", start: "03:00", end: "05:00", days: [ 0, 1, 2, 3, 4, 5, 6 ] }, pause: { enabled: false, until: null as string | null } });
 const updatePause = ref({ enabled: false, until: null as string | null });
 const emptyBuild = (): BuildMetadata => ({ revision: "", created: "" });
-const status = ref({ updateAvailable: false, repo: "", localDigest: "", remoteDigest: "", localBuild: emptyBuild(), remoteBuild: emptyBuild() });
+const status = ref({ updateAvailable: false, repo: "", localDigest: "", remoteDigest: "", localBuild: emptyBuild(), remoteBuild: emptyBuild(), error: null as string | null });
 const operation = ref<Operation>({ state: "idle", message: "", startedAt: null, finishedAt: null, targetImage: "" });
 const progress = ref<null | { phase: "backup" | "verification"; label: string; completed?: number; total?: number; destinationIndex?: number; destinationCount?: number }>(null);
 const updating = ref(false);
@@ -152,11 +155,13 @@ const activeStep = computed(() => updateSteps[operation.value.state] ?? null);
 const currentStateLabel = computed(() => {
     if (operationActive.value) return t(`updates.status.${operation.value.state}`);
     if ([ "failed", "rolled-back", "rollback-failed" ].includes(operation.value.state)) return t(`updates.status.${operation.value.state}`);
+    if (status.value.error) return t("updates.status.checkUnavailableTitle");
     return status.value.updateAvailable ? t("updates.status.available") : t("updates.status.current");
 });
 const currentStateClass = computed(() => {
     if (operationActive.value) return "state-active";
     if ([ "failed", "rolled-back", "rollback-failed" ].includes(operation.value.state)) return "state-error";
+    if (status.value.error) return "state-error";
     return status.value.updateAvailable ? "state-warning" : "state-success";
 });
 const showTechnicalError = computed(() => [ "failed", "rollback-failed" ].includes(operation.value.state) && !!operation.value.message);
