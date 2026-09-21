@@ -473,9 +473,6 @@
     }
   },
   "backend/watchers/backup-manager.ts": {
-    "@stylistic/array-bracket-newline": {
-      "count": 1
-    },
     "@stylistic/brace-style": {
       "count": 46
     },

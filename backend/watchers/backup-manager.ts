@@ -343,6 +343,64 @@ function sanitizeRetention(value: unknown): number {
     return Math.max(0, Math.floor(n));
 }
 
+export interface BackupArgsOptions {
+    paths: string[];
+    tags: string[];
+    excludes: string[];
+}
+
+/**
+ * Arguments `restic backup`.
+ *
+ * `--group-by host` : par défaut restic cherche son parent dans le groupe (host, paths).
+ * Or le host est le hostname du conteneur — donc l'ID du conteneur, qui change à chaque
+ * recréation (self-update, mise à jour d'image, `docker compose up -d`) — et la liste des
+ * chemins change dès qu'un stack est ajouté ou retiré. Dans les deux cas le parent n'est plus
+ * retrouvé et restic relit l'intégralité du périmètre : plus aucun « files_unmodified » et le
+ * run repasse en durée pleine (mesuré sur un dépôt de ~131 Gio / 909 415 fichiers : 221 s
+ * sans parent, 29 s avec, 902 512 unmodified).
+ *
+ * Grouper par host seul garde le parent d'un run à l'autre malgré les changements de chemins,
+ * sans jamais remonter le snapshot d'un autre hôte : plusieurs hôtes peuvent partager un même
+ * dépôt, et le parent d'un autre hôte ne décrit pas les mêmes chemins.
+ */
+export function buildBackupArgs(options: BackupArgsOptions): string[] {
+    return [
+        "backup", "-q", ...options.paths,
+        ...options.tags.flatMap(tag => [ "--tag", tag ]),
+        ...options.excludes.flatMap(pattern => [ "--exclude", pattern ]),
+        "--group-by", "host",
+    ];
+}
+
+/**
+ * Arguments `restic forget` pour la rétention.
+ *
+ * Même groupe que le backup, `host` : restic applique ensuite la politique à chaque groupe
+ * séparément. Le défaut `host,paths` crée un groupe neuf à chaque changement d'identité ou de
+ * chemins, et un groupe qui compte moins de `keepLast + 1` snapshots n'est jamais amputé : ces
+ * snapshots deviennent définitivement impérissables (mesuré : 13 groupes pour 18 snapshots,
+ * la politique n'en retirerait qu'un seul).
+ *
+ * `--group-by ""` corrigerait ce cas mais supprime le garde-fou de restic : la politique
+ * s'applique alors à tous les snapshots du dépôt, hôtes confondus. Sur un dépôt partagé,
+ * l'hôte qui sauvegarde le plus souvent ferait disparaître les snapshots des autres
+ * (`--keep-last n` = n snapshots du dépôt, et non n par hôte). Grouper par host seul suffit :
+ * la liste de chemins peut évoluer, chaque hôte conserve sa propre politique.
+ */
+export function buildRetentionArgs(retention: RetentionPolicy): string[] {
+    return [
+        "forget",
+        "--group-by", "host",
+        "--keep-last", String(sanitizeRetention(retention.keepLast)),
+        "--keep-daily", String(sanitizeRetention(retention.keepDaily)),
+        "--keep-weekly", String(sanitizeRetention(retention.keepWeekly)),
+        "--keep-monthly", String(sanitizeRetention(retention.keepMonthly)),
+        "--tag", "dockge-enhanced",
+        "--prune",
+    ];
+}
+
 /**
  * Restic transmet certaines options SFTP à ssh sous forme de chaînes ensuite
  * découpées en argv. Les champs utilisateur qui entrent dans ces chaînes ne
@@ -1233,11 +1291,11 @@ export class BackupManager {
         }
         const builtinExcludes = ["*.log", "__pycache__", "node_modules"];
         const userExcludes    = this.settings.excludePatterns ?? [];
-        const resticArgs = [
-            "backup", "-q", ...paths,
-            ...tags.flatMap(tag => [ "--tag", tag ]),
-            ...[...builtinExcludes, ...userExcludes].flatMap(pattern => [ "--exclude", pattern ]),
-        ];
+        const resticArgs = buildBackupArgs({
+            paths,
+            tags,
+            excludes: [ ...builtinExcludes, ...userExcludes ],
+        });
 
         let totalDataAdded = 0;
         let allSuccess = true;
@@ -1713,16 +1771,7 @@ export class BackupManager {
         // Libère un éventuel verrou laissé par le backup (ex: crash, timeout)
         try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
 
-        const r = this.settings.retention;
-        const args = [ "forget",
-            "--keep-last", String(sanitizeRetention(r.keepLast)),
-            "--keep-daily", String(sanitizeRetention(r.keepDaily)),
-            "--keep-weekly", String(sanitizeRetention(r.keepWeekly)),
-            "--keep-monthly", String(sanitizeRetention(r.keepMonthly)),
-            "--tag", "dockge-enhanced",
-            "--prune",
-        ];
-        await this.resticFor(dest, args);
+        await this.resticFor(dest, buildRetentionArgs(this.settings.retention));
     }
 
     /** Retourne la première destination activée (pour snapshots/restore) */

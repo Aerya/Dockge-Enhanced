@@ -9,7 +9,9 @@ import {
     assertPathWithinRoots,
     buildVolumeBrowseRoots,
     assertSafeSftpConfig,
+    buildBackupArgs,
     buildComposeCommandArgs,
+    buildRetentionArgs,
     buildResticCommandArgs,
     normalizeStackBackupPolicy,
     readDiskUsage,
@@ -167,4 +169,37 @@ test("rejette les champs SFTP capables d'injecter des options SSH", () => {
         () => assertSafeSftpConfig({ ...base, keyPath: "relative/id_ed25519" }),
         /Chemin de clé SSH invalide/,
     );
+});
+
+test("groupe le backup par hôte pour garder un parent incrémental", () => {
+    const args = buildBackupArgs({
+        paths: [ "/opt/docker/data", "/opt/docker/projects" ],
+        tags: [ "dockge-enhanced", "manual" ],
+        excludes: [ "*.log" ],
+    });
+
+    assert.deepEqual(args, [
+        "backup", "-q", "/opt/docker/data", "/opt/docker/projects",
+        "--tag", "dockge-enhanced", "--tag", "manual",
+        "--exclude", "*.log",
+        "--group-by", "host",
+    ]);
+});
+
+test("la rétention reste groupée par hôte, jamais globale", () => {
+    const args = buildRetentionArgs({
+        keepLast: 10,
+        keepDaily: 7,
+        keepWeekly: 4,
+        keepMonthly: 3,
+    });
+
+    assert.equal(args[0], "forget");
+    // `--group-by ""` supprimerait le garde-fou de restic : sur un dépôt partagé, la
+    // politique s'appliquerait aux snapshots de tous les hôtes confondus.
+    assert.deepEqual(args.slice(1, 3), [ "--group-by", "host" ]);
+    assert.deepEqual(args.slice(3), [
+        "--keep-last", "10", "--keep-daily", "7", "--keep-weekly", "4", "--keep-monthly", "3",
+        "--tag", "dockge-enhanced", "--prune",
+    ]);
 });
