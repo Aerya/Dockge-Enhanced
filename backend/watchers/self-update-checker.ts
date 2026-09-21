@@ -17,6 +17,7 @@ import { Settings } from "../settings";
 import { SelfUpdateManager } from "../self-update/manager";
 import { atomicWriteJson } from "../self-update/state-file";
 import { log } from "../log";
+import { resolveCurrentContainer } from "../current-container";
 
 const SELF_REPO = "aerya/dockge-enhanced";
 const SELF_TAG = "latest";
@@ -278,10 +279,8 @@ async function fetchLocalImageInfo(): Promise<{
   platform?: ImagePlatform;
 }> {
   try {
-    // HOSTNAME = ID court du conteneur dans Docker
-    const id = process.env.HOSTNAME ?? "";
-    if (!id) return { digest: "", comparable: false, source: "none", repo: "", build: emptyBuildMetadata() };
-    const container = await dockerSocketGet(`/containers/${id}/json`);
+    const current = await resolveCurrentContainer();
+    const container = await dockerSocketGet(`/containers/${current.Id}/json`);
     const imageId: string = container?.Image ?? "";
     if (!imageId)
       return { digest: "", comparable: false, source: "none", repo: "", build: emptyBuildMetadata() };
@@ -327,10 +326,8 @@ async function fetchLocalImageInfo(): Promise<{
 /** Récupère le nom du conteneur courant via le socket Docker (sans CLI). */
 async function fetchContainerName(): Promise<string> {
   try {
-    const id = process.env.HOSTNAME ?? "";
-    if (!id) return "dockge-enhanced";
-    const container = await dockerSocketGet(`/containers/${id}/json`);
-    return (container?.Name ?? "").replace(/^\//, "") || "dockge-enhanced";
+    const container = await resolveCurrentContainer();
+    return (container.Name ?? "").replace(/^\//, "") || "dockge-enhanced";
   } catch {
     return "dockge-enhanced";
   }
@@ -507,6 +504,12 @@ export class SelfUpdateChecker {
         "self-update-checker",
         `Check GHCR — container=${containerName} repo=${repo} platform=${platformToString(remoteInfo.platform)} local=${localDigest || "indisponible"} remote=${remoteDigest || "indisponible"} update=${updateAvailable}`,
       );
+      if (!localInfo.comparable) {
+        log.warn(
+          "self-update-checker",
+          "Vérification dégradée — digest local indisponible, aucune conclusion de mise à jour ne peut être établie",
+        );
+      }
 
       this._status = {
         updateAvailable,

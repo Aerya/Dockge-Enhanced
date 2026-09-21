@@ -255,6 +255,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Planification
 - Pause globale et par image
 - Auto-mise à jour protégée de Dockge-Enhanced
+- Détection fiable du conteneur courant avec un `hostname:` Compose personnalisé et état dégradé visible si la vérification est indisponible
 - Backup Restic et contrôle d'intégrité obligatoires
 - Vérification de disponibilité et récupération automatique
 - Blocage du self-update tant que des modifications Compose ou `.env` ne sont pas enregistrées

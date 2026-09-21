@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-21-custom-hostname-self-update",
+        items: [ "releaseNews.item.customHostnameSelfUpdate" ],
+    },
+    {
         id: "2026-09-17-network-namespace-safe-updates",
         items: [ "releaseNews.item.networkNamespaceSafeUpdates" ],
     },
