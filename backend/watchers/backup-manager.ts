@@ -11,6 +11,7 @@ import * as readline from "readline";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
 import * as path from "path";
+import { randomBytes } from "node:crypto";
 import * as yaml from "js-yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
@@ -341,6 +342,52 @@ function sanitizeRetention(value: unknown): number {
     const n = Number(value);
     if (!Number.isFinite(n)) return 0;
     return Math.max(0, Math.floor(n));
+}
+
+export interface BackupArgsOptions {
+    paths: string[];
+    tags: string[];
+    excludes: string[];
+    host: string;
+}
+
+/**
+ * Identité Restic aléatoire, stable et non sensible, propre à l'installation.
+ */
+export function buildResticHostId(randomId: Uint8Array): string {
+    if (randomId.byteLength !== 8) {
+        throw new Error("Restic host identity requires exactly 8 random bytes");
+    }
+    return `dockge-${Buffer.from(randomId).toString("hex")}`;
+}
+
+/** Arguments `restic backup`, regroupés par installation stable. */
+export function buildBackupArgs(options: BackupArgsOptions): string[] {
+    return [
+        "backup", "-q", ...options.paths,
+        ...options.tags.flatMap(tag => [ "--tag", tag ]),
+        ...options.excludes.flatMap(pattern => [ "--exclude", pattern ]),
+        "--host", options.host,
+        "--group-by", "host",
+    ];
+}
+
+/**
+ * Arguments `restic forget` limités à la même installation stable. Le filtre `--host`
+ * empêche une instance de toucher aux snapshots d'une autre instance sur un dépôt partagé.
+ */
+export function buildRetentionArgs(retention: RetentionPolicy, host: string): string[] {
+    return [
+        "forget",
+        "--group-by", "host",
+        "--host", host,
+        "--keep-last", String(sanitizeRetention(retention.keepLast)),
+        "--keep-daily", String(sanitizeRetention(retention.keepDaily)),
+        "--keep-weekly", String(sanitizeRetention(retention.keepWeekly)),
+        "--keep-monthly", String(sanitizeRetention(retention.keepMonthly)),
+        "--tag", "dockge-enhanced",
+        "--prune",
+    ];
 }
 
 /**
@@ -677,6 +724,7 @@ export class BackupManager {
     private lastOnSaveTrigger  = 0;
     private backupRunLock = new BackupRunLock();
     private restoreRunLock = new BackupRunLock();
+    private resticHostIdPromise: Promise<string> | null = null;
     private lastBlockedBackup: { trigger: "scheduled" | "manual" | "on-save"; timestamp: number } | null = null;
     private readonly externalStackManager: ExternalStackManager;
 
@@ -743,6 +791,24 @@ export class BackupManager {
     static getInstance(): BackupManager {
         if (!BackupManager._instance) BackupManager._instance = new BackupManager();
         return BackupManager._instance;
+    }
+
+    private async getResticHostId(): Promise<string> {
+        if (!this.resticHostIdPromise) {
+            this.resticHostIdPromise = (async () => {
+                const existing = await Settings.get("resticHostId");
+                if (typeof existing === "string" && /^dockge-[a-f0-9]{16}$/.test(existing)) {
+                    return existing;
+                }
+                const created = buildResticHostId(randomBytes(8));
+                await Settings.set("resticHostId", created);
+                return created;
+            })().catch(error => {
+                this.resticHostIdPromise = null;
+                throw error;
+            });
+        }
+        return this.resticHostIdPromise;
     }
 
     // ── Persistance ───────────────────────────────────────────────
@@ -1233,11 +1299,15 @@ export class BackupManager {
         }
         const builtinExcludes = ["*.log", "__pycache__", "node_modules"];
         const userExcludes    = this.settings.excludePatterns ?? [];
-        const resticArgs = [
-            "backup", "-q", ...paths,
-            ...tags.flatMap(tag => [ "--tag", tag ]),
-            ...[...builtinExcludes, ...userExcludes].flatMap(pattern => [ "--exclude", pattern ]),
-        ];
+        const installationHost = await this.getResticHostId();
+        const resticArgs = buildBackupArgs({
+            paths,
+            tags,
+            excludes: [ ...builtinExcludes, ...userExcludes ],
+            // Les backups minimaux de self-update forment une chaîne distincte : ils ne
+            // deviennent ni parents ni candidats à la rétention des backups ordinaires.
+            host: opts.selfUpdateOnly ? `${installationHost}-self-update` : installationHost,
+        });
 
         let totalDataAdded = 0;
         let allSuccess = true;
@@ -1713,16 +1783,7 @@ export class BackupManager {
         // Libère un éventuel verrou laissé par le backup (ex: crash, timeout)
         try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
 
-        const r = this.settings.retention;
-        const args = [ "forget",
-            "--keep-last", String(sanitizeRetention(r.keepLast)),
-            "--keep-daily", String(sanitizeRetention(r.keepDaily)),
-            "--keep-weekly", String(sanitizeRetention(r.keepWeekly)),
-            "--keep-monthly", String(sanitizeRetention(r.keepMonthly)),
-            "--tag", "dockge-enhanced",
-            "--prune",
-        ];
-        await this.resticFor(dest, args);
+        await this.resticFor(dest, buildRetentionArgs(this.settings.retention, await this.getResticHostId()));
     }
 
     /** Retourne la première destination activée (pour snapshots/restore) */

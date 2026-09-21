@@ -9,7 +9,10 @@ import {
     assertPathWithinRoots,
     buildVolumeBrowseRoots,
     assertSafeSftpConfig,
+    buildBackupArgs,
     buildComposeCommandArgs,
+    buildResticHostId,
+    buildRetentionArgs,
     buildResticCommandArgs,
     normalizeStackBackupPolicy,
     readDiskUsage,
@@ -167,4 +170,48 @@ test("rejette les champs SFTP capables d'injecter des options SSH", () => {
         () => assertSafeSftpConfig({ ...base, keyPath: "relative/id_ed25519" }),
         /Chemin de clé SSH invalide/,
     );
+});
+
+test("construit une identité Restic stable à partir de 8 octets aléatoires", () => {
+    const randomId = Buffer.from("0123456789abcdef", "hex");
+    const host = buildResticHostId(randomId);
+
+    assert.equal(host, "dockge-0123456789abcdef");
+    assert.throws(() => buildResticHostId(Buffer.alloc(7)), /exactly 8 random bytes/);
+});
+
+test("groupe le backup avec l’identité stable de l’installation", () => {
+    const args = buildBackupArgs({
+        paths: [ "/opt/docker/data", "/opt/docker/projects" ],
+        tags: [ "dockge-enhanced", "manual" ],
+        excludes: [ "*.log" ],
+        host: "dockge-0123456789abcdef",
+    });
+
+    assert.deepEqual(args, [
+        "backup", "-q", "/opt/docker/data", "/opt/docker/projects",
+        "--tag", "dockge-enhanced", "--tag", "manual",
+        "--exclude", "*.log",
+        "--host", "dockge-0123456789abcdef",
+        "--group-by", "host",
+    ]);
+});
+
+test("limite la rétention à l’identité stable de l’installation", () => {
+    const args = buildRetentionArgs({
+        keepLast: 10,
+        keepDaily: 7,
+        keepWeekly: 4,
+        keepMonthly: 3,
+    }, "dockge-0123456789abcdef");
+
+    assert.equal(args[0], "forget");
+    // `--group-by ""` supprimerait le garde-fou de restic : sur un dépôt partagé, la
+    // politique s'appliquerait aux snapshots de tous les hôtes confondus.
+    assert.deepEqual(args.slice(1, 3), [ "--group-by", "host" ]);
+    assert.deepEqual(args.slice(3), [
+        "--host", "dockge-0123456789abcdef",
+        "--keep-last", "10", "--keep-daily", "7", "--keep-weekly", "4", "--keep-monthly", "3",
+        "--tag", "dockge-enhanced", "--prune",
+    ]);
 });
