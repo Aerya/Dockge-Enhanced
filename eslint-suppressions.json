@@ -527,7 +527,7 @@
   },
   "backend/watchers/image-watcher.test.ts": {
     "@stylistic/indent": {
-      "count": 76
+      "count": 138
     },
     "@stylistic/object-property-newline": {
       "count": 11
@@ -535,7 +535,7 @@
   },
   "backend/watchers/image-watcher.ts": {
     "@stylistic/indent": {
-      "count": 1406
+      "count": 1456
     },
     "@stylistic/object-property-newline": {
       "count": 38
