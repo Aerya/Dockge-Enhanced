@@ -11,6 +11,7 @@ import {
   isRetryableRegistryStatus,
   pendingAutomaticImageUpdateMayRun,
   registryRetryDelayMs,
+  requestRegistryWithRetry,
   resolveAutomaticImageUpdateAction,
 } from "./image-watcher";
 import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
@@ -152,4 +153,51 @@ test("without a usable Retry-After, the backoff stays exponential", () => {
 test("the retry delay is always capped", () => {
   assert.equal(registryRetryDelayMs("3600", 1), 20000);
   assert.equal(registryRetryDelayMs(undefined, 8, 5000), 5000);
+});
+
+test("a manifest request is retried after real 429 and 503 failures", async () => {
+  const responses = [
+    {
+      status: 429,
+      retryAfter: "0.001",
+    },
+    {
+      status: 503,
+      retryAfter: "0.002",
+    },
+  ];
+  const delays: number[] = [];
+  const warnings: string[] = [];
+  let attempts = 0;
+
+  const result = await requestRegistryWithRetry(async () => {
+    attempts += 1;
+    const response = responses.shift();
+    if (!response) {
+      return "manifest";
+    }
+    throw Object.assign(new Error(`HTTP ${response.status}`), {
+      isAxiosError: true,
+      response: {
+        status: response.status,
+        headers: {
+          "retry-after": response.retryAfter,
+        },
+      },
+    });
+  }, {
+    label: "registry.example/team/image:latest",
+    wait: async delay => {
+      delays.push(delay);
+    },
+    warn: message => {
+      warnings.push(message);
+    },
+  });
+
+  assert.equal(result, "manifest");
+  assert.equal(attempts, 3);
+  assert.deepEqual(delays, [ 1, 2 ]);
+  assert.match(warnings[0], /HTTP 429, reprise 2\/3/);
+  assert.match(warnings[1], /HTTP 503, reprise 3\/3/);
 });

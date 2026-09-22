@@ -53,6 +53,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run check-ts
 
+      - name: Tests des reprises registry de l’ImageWatcher
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/watchers/image-watcher.test.ts
+
       - name: Tests d’authentification
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/auth.test.ts

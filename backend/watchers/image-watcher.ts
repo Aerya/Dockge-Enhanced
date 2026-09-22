@@ -541,6 +541,38 @@ export function registryRetryDelayMs(
   return Math.min(delay, maxDelayMs);
 }
 
+interface RegistryRequestRetryOptions {
+  label: string;
+  wait?: (delayMs: number) => Promise<unknown>;
+  warn?: (message: string) => void;
+}
+
+/** Exécute réellement une requête registry avec une reprise bornée des erreurs transitoires. */
+export async function requestRegistryWithRetry<T>(
+  request: () => Promise<T>,
+  options: RegistryRequestRetryOptions,
+): Promise<T> {
+  const wait = options.wait ?? sleep;
+  const warn = options.warn ?? ((message: string) => console.warn(message));
+
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await request();
+    } catch (err) {
+      const response = axios.isAxiosError(err) ? err.response : undefined;
+      const status = response?.status ?? 0;
+      if (!isRetryableRegistryStatus(status) || attempt === MANIFEST_MAX_ATTEMPTS) {
+        throw err;
+      }
+      const delay = registryRetryDelayMs(response?.headers?.["retry-after"], attempt);
+      warn(
+        `[ImageWatcher] ${options.label} → HTTP ${status}, reprise ${attempt + 1}/${MANIFEST_MAX_ATTEMPTS} dans ${Math.round(delay / 1000)} s`,
+      );
+      await wait(delay);
+    }
+  }
+}
+
 /**
  * Interroge l'API Registry v2 pour récupérer le digest distant du manifest.
  * Implémente le flux auth complet (RFC 7235 + Distribution Auth spec) :
@@ -599,26 +631,9 @@ async function getRemoteDigest(
 
   // Un 429 ou un 503 transitoire (limite de débit partagée, proxy de registry) ne doit pas
   // écarter l'image du cycle de vérification : reprise en respectant Retry-After.
-  const fetchManifestWithRetry = async () => {
-    for (let attempt = 1; ; attempt += 1) {
-      try {
-        return await fetchManifest();
-      } catch (err) {
-        const response = axios.isAxiosError(err) ? err.response : undefined;
-        const status = response?.status ?? 0;
-        if (!isRetryableRegistryStatus(status) || attempt === MANIFEST_MAX_ATTEMPTS) {
-          throw err;
-        }
-        const delay = registryRetryDelayMs(response?.headers?.["retry-after"], attempt);
-        console.warn(
-          `[ImageWatcher] ${registry}/${name}:${tag} → HTTP ${status}, reprise ${attempt + 1}/${MANIFEST_MAX_ATTEMPTS} dans ${Math.round(delay / 1000)} s`,
-        );
-        await sleep(delay);
-      }
-    }
-  };
-
-  const res = await fetchManifestWithRetry();
+  const res = await requestRegistryWithRetry(fetchManifest, {
+    label: `${registry}/${name}:${tag}`,
+  });
   const contentType = String(res.headers["content-type"] ?? "");
   const indexDigest = String(res.headers["docker-content-digest"] ?? "");
 
