@@ -47,7 +47,7 @@
         "socket.io-client": "~4.8.3",
         "timezones-list": "~3.1.0",
         "ts-command-line-args": "~2.5.1",
-        "tsx": "~4.23.13",
+        "tsx": "~4.23.15",
         "type-fest": "~5.10.0",
         "yaml": "~2.9.1"
     },
