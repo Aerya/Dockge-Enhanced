@@ -83,7 +83,7 @@
         "@types/jsonwebtoken": "~9.0.10",
         "@types/node-cron": "^3.0.11",
         "@types/semver": "^7.8.0",
-        "@typescript-eslint/eslint-plugin": "~8.70.0",
+        "@typescript-eslint/eslint-plugin": "~8.70.1",
         "@typescript-eslint/parser": "~8.70.0",
         "@vitejs/plugin-vue": "~6.0.9",
         "@xterm/addon-fit": "beta",
