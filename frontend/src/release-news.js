@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-26-federation-storm-hardening",
+        items: [ "releaseNews.item.federationStormHardening" ],
+    },
+    {
         id: "2026-09-21-custom-hostname-self-update",
         items: [ "releaseNews.item.customHostnameSelfUpdate" ],
     },
