@@ -61,14 +61,19 @@ export class AgentManager {
     }
 
     private openReconnectCircuit(endpoint: string, url: string, username: string, password: string, detail: string) {
-        if (this.circuitRetryTimerList[endpoint]) return;
+        if (this.circuitRetryTimerList[endpoint]) {
+            return;
+        }
 
         const failures = this.reconnectFailureList[endpoint] ?? FEDERATION_FAILURE_THRESHOLD;
         const client = this.agentSocketList[endpoint];
         client?.disconnect();
         delete this.agentSocketList[endpoint];
         delete this.agentLoggedInList[endpoint];
-        this.socket.emit("agentStatus", { endpoint, status: "offline" });
+        this.socket.emit("agentStatus", {
+            endpoint,
+            status: "offline",
+        });
 
         void notifyFederationIncident({
             kind: "reconnect-circuit-open",
@@ -82,7 +87,9 @@ export class AgentManager {
         const timer = setTimeout(() => {
             delete this.circuitRetryTimerList[endpoint];
             this.reconnectFailureList[endpoint] = 0;
-            if (!this.socket.connected) return;
+            if (!this.socket.connected) {
+                return;
+            }
             this.connect(url, username, password);
         }, delay);
         timer.unref?.();
@@ -215,7 +222,10 @@ export class AgentManager {
 
         if (this.circuitRetryTimerList[endpoint]) {
             log.warn("agent-manager", `${endpoint}: connection held offline by federation circuit breaker`);
-            this.socket.emit("agentStatus", { endpoint, status: "offline" });
+            this.socket.emit("agentStatus", {
+            endpoint,
+            status: "offline",
+        });
             return;
         }
 
@@ -257,7 +267,11 @@ export class AgentManager {
                         endpoint: endpoint,
                         status: "offline",
                     });
-                    void notifyFederationIncident({ kind: "authentication-failed", endpoint, detail });
+                    void notifyFederationIncident({
+                        kind: "authentication-failed",
+                        endpoint,
+                        detail,
+                    });
                     client.disconnect();
                 }
             });
