@@ -42,6 +42,11 @@
 
 ### 🆕 2026 年 9 月
 
+**联邦重连风暴防护**
+
+联邦 socket 现在使用轻量认证路径，不再执行 WebUI 的 Stack/代理初始化。Socket.IO 重连被明确限制，并使用指数退避、随机抖动和 5 分钟断路器。过量入站联邦握手会在认证前被拒绝，同时限制并发入站联邦 socket 数量。如果重连保护触发或检测到 SQLite/Knex 争用，现有 Discord/Apprise 配置会在不查询 SQLite 的情况下发送限频告警。
+
+
 **网络命名空间安全的定向更新**
 
 定向镜像更新、服务重新创建和镜像回滚现在会在替换容器前解析完整的 Compose 模型。当其他服务通过 `network_mode: service:<service>` 或 `network_mode: container:<container_name>` 共享其网络命名空间时，所有直接和间接消费者都会与提供者一起在一次定向 Compose 操作中强制重新创建。无关服务不会受到影响，VPN、Gluetun 和 sidecar Stack 也不会再保留已删除容器的旧网络命名空间。

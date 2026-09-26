@@ -1578,5 +1578,7 @@
     "externalStacks.cleanup.typeProject": "Saisissez exactement {project} pour confirmer :",
     "externalStacks.cleanup.confirmIrreversible": "Je comprends que cette suppression est irréversible et que les données des volumes seront perdues.",
     "externalStacks.cleanup.succeeded": "La stack externe et ses ressources ont été supprimées.",
-    "externalStacks.cleanup.partial": "Nettoyage partiel : {count} ressource(s) n’ont pas pu être supprimées car elles sont encore utilisées ou protégées."
+    "externalStacks.cleanup.partial": "Nettoyage partiel : {count} ressource(s) n’ont pas pu être supprimées car elles sont encore utilisées ou protégées.",
+    "releaseNews.item.federationStormHardening": "Les liens de fédération sont désormais protégés contre les tempêtes de reconnexion : les connexions fédérées ne déclenchent plus l’initialisation WebUI des stacks/agents, les reprises Socket.IO sont bornées avec backoff exponentiel, jitter et coupe-circuit de 5 minutes, les handshakes entrants excessifs sont bloqués avant authentification, et Discord/Apprise envoie une alerte limitée en fréquence lorsqu’un garde-fou se déclenche ou qu’une contention SQLite/Knex est détectée."
+
 }

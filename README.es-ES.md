@@ -64,6 +64,11 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Septiembre de 2026
 
+**Protección contra tormentas de reconexión de federación**
+
+Los sockets federados usan ahora una ruta de autenticación ligera y ya no ejecutan la inicialización WebUI de stacks/agentes. Las reconexiones Socket.IO están explícitamente limitadas mediante backoff exponencial, jitter y un disyuntor de 5 minutos. Los handshakes de federación entrantes excesivos se rechazan antes de autenticar y se limita el número de sockets federados entrantes simultáneos. Si se activa una protección de reconexión o se detecta contención SQLite/Knex, la configuración Discord/Apprise existente envía una alerta limitada sin consultar SQLite.
+
+
 **Actualizaciones dirigidas seguras para namespaces de red**
 
 Las actualizaciones dirigidas de imágenes, las recreaciones de servicios y los rollbacks de imágenes resuelven ahora el modelo Compose completo antes de sustituir un contenedor. Cuando otros servicios comparten su namespace de red mediante `network_mode: service:<servicio>` o `network_mode: container:<container_name>`, todos los consumidores directos y transitivos se recrean de forma forzada junto con el proveedor en una única operación Compose dirigida. Los servicios no relacionados no se modifican y las stacks VPN, Gluetun y los sidecars ya no conservan el namespace obsoleto de un contenedor eliminado.
