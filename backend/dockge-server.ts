@@ -60,6 +60,13 @@ import gracefulShutdown from "http-graceful-shutdown";
 import User from "./models/user";
 import childProcessAsync from "promisify-child-process";
 import { AgentManager } from "./agent-manager";
+import {
+    FEDERATION_MAX_CONCURRENT_INBOUND,
+    FederationIngressGuard,
+    isKnexPoolTimeout,
+    notifyFederationIncident,
+    safeFederationErrorMessage,
+} from "./federation-health";
 import { AgentProxySocketHandler } from "./socket-handlers/agent-proxy-socket-handler";
 import { AgentSocketHandler } from "./agent-socket-handler";
 import { AgentSocket } from "../common/agent-socket";
@@ -81,6 +88,8 @@ export class DockgeServer {
     io : socketIO.Server;
     config : Config;
     indexHTML : string = "";
+    private readonly federationIngressGuard = new FederationIngressGuard();
+    private readonly federatedSocketIds = new Map<string, Set<string>>();
 
     /**
      * List of express routers
@@ -138,6 +147,11 @@ export class DockgeServer {
         // Catch unexpected errors here
         let unexpectedErrorHandler = (error : unknown) => {
             console.trace(error);
+            if (isKnexPoolTimeout(error)) {
+                const detail = safeFederationErrorMessage(error instanceof Error ? `${error.name}: ${error.message}` : String(error));
+                log.error("federation", `SQLite/Knex contention detected: ${detail}`);
+                void notifyFederationIncident({ kind: "database-contention", endpoint: "local", detail });
+            }
             console.error("If you keep encountering errors, please report to https://github.com/louislam/dockge");
         };
         process.addListener("unhandledRejection", unexpectedErrorHandler);
@@ -309,6 +323,26 @@ export class DockgeServer {
                     log.debug("auth", "Origin check is bypassed");
                 }
 
+                if (isOriginValid) {
+                    const endpointHeader = req.headers.endpoint;
+                    if (typeof endpointHeader === "string" && endpointHeader) {
+                        const ingressKey = `${req.socket.remoteAddress || "unknown"}|${endpointHeader}`;
+                        const decision = this.federationIngressGuard.registerAttempt(ingressKey);
+                        if (!decision.allowed) {
+                            if (decision.tripped) {
+                                log.warn("federation", `${endpointHeader}: inbound federation reconnect storm blocked after ${decision.attempts} handshakes`);
+                                void notifyFederationIncident({
+                                    kind: "inbound-storm",
+                                    endpoint: endpointHeader,
+                                    attempts: decision.attempts,
+                                    detail: "Handshake rate guard tripped before authentication",
+                                });
+                            }
+                            callback("Federation reconnect rate limited", false);
+                            return;
+                        }
+                    }
+                }
                 callback(null, isOriginValid);
             }
         });
@@ -329,6 +363,10 @@ export class DockgeServer {
                 dockgeSocket.endpoint = socket.request.headers.endpoint;
             } else {
                 dockgeSocket.endpoint = "";
+            }
+
+            if (dockgeSocket.endpoint && !this.registerFederatedSocket(dockgeSocket)) {
+                return;
             }
 
             if (dockgeSocket.endpoint) {
@@ -403,22 +441,65 @@ export class DockgeServer {
         }
     }
 
-    async afterLogin(socket : DockgeSocket, user : User) {
+    private registerFederatedSocket(socket: DockgeSocket): boolean {
+        const endpoint = socket.endpoint;
+        if (!endpoint) return true;
+
+        let socketIds = this.federatedSocketIds.get(endpoint);
+        if (!socketIds) {
+            socketIds = new Set<string>();
+            this.federatedSocketIds.set(endpoint, socketIds);
+        }
+
+        if (socketIds.size >= FEDERATION_MAX_CONCURRENT_INBOUND) {
+            log.warn("federation", `${endpoint}: rejecting federated socket because ${socketIds.size} are already active`);
+            void notifyFederationIncident({
+                kind: "inbound-storm",
+                endpoint,
+                attempts: socketIds.size + 1,
+                detail: `Concurrent federation socket limit (${FEDERATION_MAX_CONCURRENT_INBOUND}) reached`,
+            });
+            socket.disconnect(true);
+            return false;
+        }
+
+        socketIds.add(socket.id);
+        socket.once("disconnect", () => {
+            const active = this.federatedSocketIds.get(endpoint);
+            active?.delete(socket.id);
+            if (active && active.size === 0) this.federatedSocketIds.delete(endpoint);
+        });
+        return true;
+    }
+
+    async afterAgentLogin(socket : DockgeSocket, user : User) {
         socket.userID = user.id;
         socket.join(user.id.toString());
+        this.sendInfo(socket);
+        log.debug("federation", `Federated socket authenticated without UI bootstrap: ${socket.endpoint}`);
+    }
 
+    async afterLogin(socket : DockgeSocket, user : User) {
+        if (socket.endpoint) {
+            await this.afterAgentLogin(socket, user);
+            return;
+        }
+
+        socket.userID = user.id;
+        socket.join(user.id.toString());
         this.sendInfo(socket);
 
         try {
-            this.sendStackList();
+            await this.sendStackList();
+            await socket.instanceManager.sendAgentList();
+            await socket.instanceManager.connectAll();
         } catch (e) {
-            log.error("server", e);
+            const detail = safeFederationErrorMessage(e instanceof Error ? `${e.name}: ${e.message}` : String(e));
+            log.error("server", detail);
+            if (isKnexPoolTimeout(e)) {
+                void notifyFederationIncident({ kind: "database-contention", endpoint: "local", detail });
+            }
         }
-
-        socket.instanceManager.sendAgentList();
-
-        // Also connect to other dockge instances
-        socket.instanceManager.connectAll();
     }
 
     /**
