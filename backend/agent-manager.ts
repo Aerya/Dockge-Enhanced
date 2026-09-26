@@ -7,6 +7,17 @@ import semver from "semver";
 import { R } from "redbean-node";
 import dayjs, { Dayjs } from "dayjs";
 import { Settings } from "./settings";
+import {
+    FEDERATION_CIRCUIT_OPEN_MS,
+    FEDERATION_FAILURE_THRESHOLD,
+    FEDERATION_RECONNECT_ATTEMPTS,
+    FEDERATION_RECONNECT_DELAY_MAX_MS,
+    FEDERATION_RECONNECT_DELAY_MS,
+    FEDERATION_RECONNECT_RANDOMIZATION,
+    federationCircuitRetryDelayMs,
+    notifyFederationIncident,
+    safeFederationErrorMessage,
+} from "./federation-health";
 
 const LOCAL_AGENT_DISPLAY_NAME_SETTING = "localAgentDisplayName";
 export const AGENT_TOKEN_USERNAME = "__dockge_federation_token__";
@@ -29,6 +40,8 @@ export class AgentManager {
     protected socket : DockgeSocket;
     protected agentSocketList : Record<string, SocketClient> = {};
     protected agentLoggedInList : Record<string, boolean> = {};
+    protected reconnectFailureList : Record<string, number> = {};
+    protected circuitRetryTimerList : Record<string, NodeJS.Timeout> = {};
     protected _firstConnectTime : Dayjs = dayjs();
 
     constructor(socket: DockgeSocket) {
@@ -37,6 +50,43 @@ export class AgentManager {
 
     get firstConnectTime() : Dayjs {
         return this._firstConnectTime;
+    }
+
+    private clearCircuitRetry(endpoint: string) {
+        const timer = this.circuitRetryTimerList[endpoint];
+        if (timer) {
+            clearTimeout(timer);
+            delete this.circuitRetryTimerList[endpoint];
+        }
+    }
+
+    private openReconnectCircuit(endpoint: string, url: string, username: string, password: string, detail: string) {
+        if (this.circuitRetryTimerList[endpoint]) return;
+
+        const failures = this.reconnectFailureList[endpoint] ?? FEDERATION_FAILURE_THRESHOLD;
+        const client = this.agentSocketList[endpoint];
+        client?.disconnect();
+        delete this.agentSocketList[endpoint];
+        delete this.agentLoggedInList[endpoint];
+        this.socket.emit("agentStatus", { endpoint, status: "offline" });
+
+        void notifyFederationIncident({
+            kind: "reconnect-circuit-open",
+            endpoint,
+            attempts: failures,
+            detail,
+        });
+
+        const delay = federationCircuitRetryDelayMs(FEDERATION_CIRCUIT_OPEN_MS);
+        log.warn("agent-manager", `${endpoint}: federation circuit open, retry in ${Math.round(delay / 1000)}s`);
+        const timer = setTimeout(() => {
+            delete this.circuitRetryTimerList[endpoint];
+            this.reconnectFailureList[endpoint] = 0;
+            if (!this.socket.connected) return;
+            this.connect(url, username, password);
+        }, delay);
+        timer.unref?.();
+        this.circuitRetryTimerList[endpoint] = timer;
     }
 
     test(url : string, username : string, password : string, allowExisting = false) : Promise<void> {
@@ -163,6 +213,12 @@ export class AgentManager {
             return;
         }
 
+        if (this.circuitRetryTimerList[endpoint]) {
+            log.warn("agent-manager", `${endpoint}: connection held offline by federation circuit breaker`);
+            this.socket.emit("agentStatus", { endpoint, status: "offline" });
+            return;
+        }
+
         if (this.agentSocketList[endpoint]) {
             log.debug("agent-manager", "Already connected to the socket server: " + endpoint);
             return;
@@ -170,6 +226,12 @@ export class AgentManager {
 
         log.info("agent-manager", "Connecting to the socket server: " + endpoint);
         let client = io(url, {
+            reconnection: true,
+            reconnectionAttempts: FEDERATION_RECONNECT_ATTEMPTS,
+            reconnectionDelay: FEDERATION_RECONNECT_DELAY_MS,
+            reconnectionDelayMax: FEDERATION_RECONNECT_DELAY_MAX_MS,
+            randomizationFactor: FEDERATION_RECONNECT_RANDOMIZATION,
+            timeout: 10_000,
             extraHeaders: {
                 endpoint,
             }
@@ -181,28 +243,46 @@ export class AgentManager {
             loginAgentClient(client, username, password, (res : LooseObject) => {
                 if (res.ok) {
                     log.info("agent-manager", "Logged in to the socket server: " + endpoint);
+                    this.reconnectFailureList[endpoint] = 0;
                     this.agentLoggedInList[endpoint] = true;
                     this.socket.emit("agentStatus", {
                         endpoint: endpoint,
                         status: "online",
                     });
                 } else {
-                    log.error("agent-manager", "Failed to login to the socket server: " + endpoint);
+                    const detail = safeFederationErrorMessage(res.msg || "Federation login failed");
+                    log.error("agent-manager", `Failed to login to the socket server: ${endpoint} - ${detail}`);
                     this.agentLoggedInList[endpoint] = false;
                     this.socket.emit("agentStatus", {
                         endpoint: endpoint,
                         status: "offline",
                     });
+                    void notifyFederationIncident({ kind: "authentication-failed", endpoint, detail });
+                    client.disconnect();
                 }
             });
         });
 
         client.on("connect_error", (err) => {
-            log.error("agent-manager", "Error from the socket server: " + endpoint);
+            const detail = safeFederationErrorMessage(`${err.name || "Error"}: ${err.message || String(err)}`);
+            const failures = (this.reconnectFailureList[endpoint] ?? 0) + 1;
+            this.reconnectFailureList[endpoint] = failures;
+            log.error("agent-manager", `${endpoint}: federation connection error ${failures}/${FEDERATION_FAILURE_THRESHOLD} - ${detail}`);
             this.socket.emit("agentStatus", {
                 endpoint: endpoint,
                 status: "offline",
             });
+            if (failures >= FEDERATION_FAILURE_THRESHOLD) {
+                this.openReconnectCircuit(endpoint, url, username, password, detail);
+            }
+        });
+
+        client.io.on("reconnect_attempt", (attempt) => {
+            log.warn("agent-manager", `${endpoint}: bounded federation reconnect ${attempt}/${FEDERATION_RECONNECT_ATTEMPTS}`);
+        });
+
+        client.io.on("reconnect_failed", () => {
+            this.openReconnectCircuit(endpoint, url, username, password, "Socket.IO bounded reconnection attempts exhausted");
         });
 
         client.on("disconnect", () => {
@@ -235,6 +315,7 @@ export class AgentManager {
     }
 
     disconnect(endpoint : string) {
+        this.clearCircuitRetry(endpoint);
         let client = this.agentSocketList[endpoint];
         client?.disconnect();
     }
@@ -260,6 +341,9 @@ export class AgentManager {
     }
 
     disconnectAll() {
+        for (let endpoint in this.circuitRetryTimerList) {
+            this.clearCircuitRetry(endpoint);
+        }
         for (let endpoint in this.agentSocketList) {
             this.disconnect(endpoint);
         }
