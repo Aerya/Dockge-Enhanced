@@ -223,9 +223,9 @@ export class AgentManager {
         if (this.circuitRetryTimerList[endpoint]) {
             log.warn("agent-manager", `${endpoint}: connection held offline by federation circuit breaker`);
             this.socket.emit("agentStatus", {
-            endpoint,
-            status: "offline",
-        });
+                endpoint,
+                status: "offline",
+            });
             return;
         }
 
