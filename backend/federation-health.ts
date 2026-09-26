@@ -57,7 +57,10 @@ export class FederationIngressGuard {
     ) {}
 
     registerAttempt(key: string, now = Date.now()): IngressDecision {
-        const state = this.states.get(key) ?? { attempts: [], blockedUntil: 0 };
+        const state = this.states.get(key) ?? {
+            attempts: [],
+            blockedUntil: 0,
+        };
 
         if (state.blockedUntil > now) {
             return {
@@ -89,7 +92,12 @@ export class FederationIngressGuard {
         }
 
         this.states.set(key, state);
-        return { allowed: true, tripped: false, attempts: state.attempts.length, retryAfterMs: 0 };
+        return {
+            allowed: true,
+            tripped: false,
+            attempts: state.attempts.length,
+            retryAfterMs: 0,
+        };
     }
 }
 
@@ -121,11 +129,19 @@ interface NotificationConfig {
 const lastNotifications = new Map<string, number>();
 
 function normalizeLang(value: unknown): NotificationLang {
-    if (typeof value !== "string") return "en";
+    if (typeof value !== "string") {
+        return "en";
+    }
     const normalized = value.toLowerCase();
-    if (normalized.startsWith("fr")) return "fr";
-    if (normalized.startsWith("es")) return "es";
-    if (normalized.startsWith("zh")) return "zh-CN";
+    if (normalized.startsWith("fr")) {
+        return "fr";
+    }
+    if (normalized.startsWith("es")) {
+        return "es";
+    }
+    if (normalized.startsWith("zh")) {
+        return "zh-CN";
+    }
     return "en";
 }
 
@@ -150,7 +166,12 @@ async function loadNotificationConfig(): Promise<NotificationConfig> {
             lang: normalizeLang(data.notificationLang),
         };
     } catch {
-        return { discordWebhooks: [], appriseServerUrl: "", appriseUrls: [], lang: "en" };
+        return {
+            discordWebhooks: [],
+            appriseServerUrl: "",
+            appriseUrls: [],
+            lang: "en",
+        };
     }
 }
 
@@ -219,11 +240,15 @@ function incidentBody(lang: NotificationLang, incident: FederationIncident): str
 export async function notifyFederationIncident(incident: FederationIncident): Promise<void> {
     try {
         const config = await loadNotificationConfig();
-        if (config.discordWebhooks.length === 0 && !config.appriseServerUrl) return;
+        if (config.discordWebhooks.length === 0 && !config.appriseServerUrl) {
+            return;
+        }
 
         const key = `${incident.kind}:${incident.endpoint || "local"}`;
         const now = Date.now();
-        if (now - (lastNotifications.get(key) ?? 0) < NOTIFICATION_COOLDOWN_MS) return;
+        if (now - (lastNotifications.get(key) ?? 0) < NOTIFICATION_COOLDOWN_MS) {
+            return;
+        }
         lastNotifications.set(key, now);
 
         const title = incidentTitle(config.lang, incident.kind);
