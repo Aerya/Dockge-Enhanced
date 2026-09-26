@@ -62,6 +62,11 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Septembre 2026
 
+**Transport de fédération partagé au niveau du processus**
+
+La fédération utilise désormais un seul transport sortant partagé par processus Dockge-Enhanced, au lieu d’un jeu de connexions par socket WebUI. Les instances liées sont chargées depuis SQLite et connectées automatiquement dès que le serveur écoute. Ouvrir plusieurs WebUI ne multiplie plus les sockets distantes, fermer le dernier navigateur ne déconnecte plus les instances liées et la reprise du coupe-circuit continue après environ 5 minutes même sans WebUI ouverte. Un changement d’identifiants, une réparation du mesh ou la suppression d’un pair resynchronise immédiatement le transport partagé.
+
+
 **Protection contre les tempêtes de reconnexion de fédération**
 
 Les sockets fédérées suivent désormais un chemin d’authentification léger et ne déclenchent plus l’initialisation WebUI des stacks/agents. Les reconnexions Socket.IO sont explicitement bornées avec backoff exponentiel, jitter et coupe-circuit de 5 minutes. Les handshakes de fédération entrants excessifs sont rejetés avant authentification et le nombre de sockets fédérées entrantes simultanées est plafonné. Si un garde-fou de reconnexion se déclenche ou qu’une contention SQLite/Knex est détectée, la configuration Discord/Apprise existante envoie une alerte limitée en fréquence sans interroger SQLite.

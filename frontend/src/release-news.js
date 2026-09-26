@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-26-process-wide-federation",
+        items: [ "releaseNews.item.processWideFederation" ],
+    },
+    {
         id: "2026-09-26-federation-storm-hardening",
         items: [ "releaseNews.item.federationStormHardening" ],
     },

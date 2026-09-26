@@ -1,5 +1,5 @@
-import { DockgeSocket } from "./util-server";
-import { io, Socket as SocketClient } from "socket.io-client";
+import type { DockgeSocket } from "./util-server";
+import { io, type Socket as SocketClient } from "socket.io-client";
 import { log } from "./log";
 import { Agent } from "./models/agent";
 import { isDev, LooseObject, sleep } from "../common/util-common";
@@ -22,58 +22,193 @@ import {
 const LOCAL_AGENT_DISPLAY_NAME_SETTING = "localAgentDisplayName";
 export const AGENT_TOKEN_USERNAME = "__dockge_federation_token__";
 
-export function loginAgentClient<T>(client: SocketClient, username: string, password: string, callback: (res: T) => void) {
+export function loginAgentClient<T>(
+    client: SocketClient,
+    username: string,
+    password: string,
+    callback: (res: T) => void,
+) {
     if (username === AGENT_TOKEN_USERNAME) {
         client.emit("loginByToken", password, callback);
     } else {
-        client.emit("login", { username,
-            password }, callback);
+        client.emit("login", {
+            username,
+            password,
+        }, callback);
     }
 }
 
+interface SharedAgentConfig {
+    url: string;
+    username: string;
+    password: string;
+}
+
+type SharedAgentStatus = "connecting" | "online" | "offline";
+
 /**
- * Dockge Instance Manager
- * One AgentManager per Socket connection
+ * WebUI adapter + process-wide federation transport.
+ *
+ * All AgentManager instances share the same outbound Socket.IO clients.
+ * Browser sockets only subscribe to events/status and never own the remote
+ * connections, so closing the last WebUI cannot tear down federation.
  */
 export class AgentManager {
 
-    protected socket : DockgeSocket;
-    protected agentSocketList : Record<string, SocketClient> = {};
-    protected agentLoggedInList : Record<string, boolean> = {};
-    protected reconnectFailureList : Record<string, number> = {};
-    protected circuitRetryTimerList : Record<string, NodeJS.Timeout> = {};
-    protected _firstConnectTime : Dayjs = dayjs();
+    private static readonly sharedAgentSocketList : Record<string, SocketClient> = {};
+    private static readonly sharedAgentLoggedInList : Record<string, boolean> = {};
+    private static readonly sharedReconnectFailureList : Record<string, number> = {};
+    private static readonly sharedCircuitRetryTimerList : Record<string, NodeJS.Timeout> = {};
+    private static readonly sharedConfigs : Record<string, SharedAgentConfig> = {};
+    private static readonly subscribers = new Set<DockgeSocket>();
+    private static sharedFirstConnectTime : Dayjs = dayjs();
 
-    constructor(socket: DockgeSocket) {
+    protected socket? : DockgeSocket;
+
+    constructor(socket?: DockgeSocket) {
         this.socket = socket;
     }
 
     get firstConnectTime() : Dayjs {
-        return this._firstConnectTime;
+        return AgentManager.sharedFirstConnectTime;
     }
 
-    private clearCircuitRetry(endpoint: string) {
-        const timer = this.circuitRetryTimerList[endpoint];
-        if (timer) {
-            clearTimeout(timer);
-            delete this.circuitRetryTimerList[endpoint];
+    static async bootstrap(): Promise<void> {
+        log.info("agent-manager", "Starting process-wide federation transport");
+        await AgentManager.refreshFromDatabase();
+    }
+
+    static async refreshFromDatabase(): Promise<void> {
+        AgentManager.sharedFirstConnectTime = dayjs();
+        const manager = new AgentManager();
+        const list : Record<string, Agent> = await Agent.getAgentList();
+        const wanted = new Set(Object.keys(list));
+
+        for (const endpoint of Object.keys(AgentManager.sharedConfigs)) {
+            if (!wanted.has(endpoint)) {
+                manager.disconnect(endpoint);
+            }
+        }
+
+        for (const endpoint of Object.keys(list)) {
+            const agent = list[endpoint];
+            const next : SharedAgentConfig = {
+                url: agent.url,
+                username: agent.username,
+                password: agent.password,
+            };
+            const previous = AgentManager.sharedConfigs[endpoint];
+
+            if (previous && (
+                previous.url !== next.url
+                || previous.username !== next.username
+                || previous.password !== next.password
+            )) {
+                manager.disconnect(endpoint);
+            }
+
+            manager.connect(next.url, next.username, next.password);
         }
     }
 
-    private openReconnectCircuit(endpoint: string, url: string, username: string, password: string, detail: string) {
-        if (this.circuitRetryTimerList[endpoint]) {
+    static shutdown(): void {
+        const manager = new AgentManager();
+        for (const endpoint of Object.keys(AgentManager.sharedCircuitRetryTimerList)) {
+            manager.clearCircuitRetry(endpoint);
+        }
+        for (const endpoint of Object.keys(AgentManager.sharedAgentSocketList)) {
+            manager.disconnect(endpoint);
+        }
+        AgentManager.subscribers.clear();
+    }
+
+    subscribe(): void {
+        if (!this.socket || this.socket.endpoint) {
             return;
         }
 
-        const failures = this.reconnectFailureList[endpoint] ?? FEDERATION_FAILURE_THRESHOLD;
-        const client = this.agentSocketList[endpoint];
-        client?.disconnect();
-        delete this.agentSocketList[endpoint];
-        delete this.agentLoggedInList[endpoint];
-        this.socket.emit("agentStatus", {
+        AgentManager.subscribers.add(this.socket);
+
+        for (const endpoint of Object.keys(AgentManager.sharedConfigs)) {
+            this.socket.emit("agentStatus", {
+                endpoint,
+                status: this.statusFor(endpoint),
+            });
+        }
+    }
+
+    release(): void {
+        if (this.socket) {
+            AgentManager.subscribers.delete(this.socket);
+        }
+    }
+
+    private statusFor(endpoint: string): SharedAgentStatus {
+        const client = AgentManager.sharedAgentSocketList[endpoint];
+
+        if (client?.connected && AgentManager.sharedAgentLoggedInList[endpoint]) {
+            return "online";
+        }
+
+        if (client && !AgentManager.sharedCircuitRetryTimerList[endpoint]) {
+            return "connecting";
+        }
+
+        return "offline";
+    }
+
+    private broadcast(event: string, ...args: unknown[]): void {
+        for (const subscriber of AgentManager.subscribers) {
+            if (!subscriber.connected) {
+                AgentManager.subscribers.delete(subscriber);
+                continue;
+            }
+            subscriber.emit(event, ...args);
+        }
+    }
+
+    private broadcastStatus(endpoint: string, status: SharedAgentStatus, msg?: string): void {
+        const payload : LooseObject = {
             endpoint,
-            status: "offline",
-        });
+            status,
+        };
+
+        if (msg) {
+            payload.msg = msg;
+        }
+
+        this.broadcast("agentStatus", payload);
+    }
+
+    private clearCircuitRetry(endpoint: string): void {
+        const timer = AgentManager.sharedCircuitRetryTimerList[endpoint];
+
+        if (timer) {
+            clearTimeout(timer);
+            delete AgentManager.sharedCircuitRetryTimerList[endpoint];
+        }
+    }
+
+    private openReconnectCircuit(endpoint: string, detail: string): void {
+        if (AgentManager.sharedCircuitRetryTimerList[endpoint]) {
+            return;
+        }
+
+        const config = AgentManager.sharedConfigs[endpoint];
+
+        if (!config) {
+            return;
+        }
+
+        const failures = AgentManager.sharedReconnectFailureList[endpoint]
+            ?? FEDERATION_FAILURE_THRESHOLD;
+        const client = AgentManager.sharedAgentSocketList[endpoint];
+
+        delete AgentManager.sharedAgentSocketList[endpoint];
+        delete AgentManager.sharedAgentLoggedInList[endpoint];
+        client?.disconnect();
+
+        this.broadcastStatus(endpoint, "offline");
 
         void notifyFederationIncident({
             kind: "reconnect-circuit-open",
@@ -83,41 +218,55 @@ export class AgentManager {
         });
 
         const delay = federationCircuitRetryDelayMs(FEDERATION_CIRCUIT_OPEN_MS);
-        log.warn("agent-manager", `${endpoint}: federation circuit open, retry in ${Math.round(delay / 1000)}s`);
+        log.warn(
+            "agent-manager",
+            `${endpoint}: shared federation circuit open, retry in ${Math.round(delay / 1000)}s`,
+        );
+
         const timer = setTimeout(() => {
-            delete this.circuitRetryTimerList[endpoint];
-            this.reconnectFailureList[endpoint] = 0;
-            if (!this.socket.connected) {
+            delete AgentManager.sharedCircuitRetryTimerList[endpoint];
+            AgentManager.sharedReconnectFailureList[endpoint] = 0;
+
+            const latest = AgentManager.sharedConfigs[endpoint];
+
+            if (!latest) {
                 return;
             }
-            this.connect(url, username, password);
+
+            this.connect(latest.url, latest.username, latest.password);
         }, delay);
+
         timer.unref?.();
-        this.circuitRetryTimerList[endpoint] = timer;
+        AgentManager.sharedCircuitRetryTimerList[endpoint] = timer;
     }
 
     test(url : string, username : string, password : string, allowExisting = false) : Promise<void> {
         return new Promise((resolve, reject) => {
-            let obj = new URL(url);
-            let endpoint = obj.host;
+            const endpoint = new URL(url).host;
 
             if (!endpoint) {
                 reject(new Error("Invalid Dockge URL"));
+                return;
             }
 
-            if (!allowExisting && this.agentSocketList[endpoint]) {
+            if (!allowExisting && (
+                AgentManager.sharedConfigs[endpoint]
+                || AgentManager.sharedAgentSocketList[endpoint]
+            )) {
                 reject(new Error("The Dockge URL already exists"));
+                return;
             }
 
-            let client = io(url, {
+            const client = io(url, {
                 reconnection: false,
+                timeout: 10_000,
                 extraHeaders: {
                     endpoint,
-                }
+                },
             });
 
             client.on("connect", () => {
-                loginAgentClient(client, username, password, (res : LooseObject) => {
+                loginAgentClient<LooseObject>(client, username, password, (res) => {
                     if (res.ok) {
                         resolve();
                     } else {
@@ -127,25 +276,17 @@ export class AgentManager {
                 });
             });
 
-            client.on("connect_error", (err) => {
-                if (err.message === "xhr poll error") {
-                    reject(new Error("Unable to connect to the Dockge instance"));
-                } else {
-                    reject(err);
-                }
+            client.on("connect_error", (error) => {
+                reject(error.message === "xhr poll error"
+                    ? new Error("Unable to connect to the Dockge instance")
+                    : error);
                 client.disconnect();
             });
         });
     }
 
-    /**
-     *
-     * @param url
-     * @param username
-     * @param password
-     */
     async add(url : string, username : string, password : string, displayName = "") : Promise<Agent> {
-        let bean = R.dispense("agent") as Agent;
+        const bean = R.dispense("agent") as Agent;
         bean.url = url;
         bean.username = username;
         bean.password = password;
@@ -161,81 +302,81 @@ export class AgentManager {
         }
 
         const bean = await R.findOne("agent", " url = ? ", [ url ]) as Agent | null;
+
         if (!bean) {
             throw new Error("Agent not found");
         }
+
         bean.display_name = displayName;
         await R.store(bean);
     }
 
     async updateCredentials(url: string, username: string, password: string): Promise<void> {
         const bean = await R.findOne("agent", " url = ? ", [ url ]) as Agent | null;
+
         if (!bean) {
             throw new Error("Agent not found");
         }
+
         bean.username = username;
         bean.password = password;
         await R.store(bean);
 
         const endpoint = new URL(url).host;
         this.disconnect(endpoint);
-        delete this.agentSocketList[endpoint];
-        delete this.agentLoggedInList[endpoint];
         this.connect(url, username, password);
     }
 
-    /**
-     *
-     * @param url
-     */
     async remove(url : string) {
-        let bean = await R.findOne("agent", " url = ? ", [
-            url,
-        ]);
+        const bean = await R.findOne("agent", " url = ? ", [ url ]);
 
         if (bean) {
             await R.trash(bean);
-            let endpoint = bean.endpoint;
-            this.disconnect(endpoint);
-            this.sendAgentList();
-            delete this.agentSocketList[endpoint];
+            this.disconnect(bean.endpoint);
+            await this.sendAgentList();
         } else {
-            const endpoint = new URL(url).host;
-            this.disconnect(endpoint);
-            delete this.agentSocketList[endpoint];
+            this.disconnect(new URL(url).host);
         }
     }
 
-    connect(url : string, username : string, password : string) {
-        let obj = new URL(url);
-        let endpoint = obj.host;
-
-        this.socket.emit("agentStatus", {
-            endpoint: endpoint,
-            status: "connecting",
-        });
+    connect(url : string, username : string, password : string): void {
+        const endpoint = new URL(url).host;
 
         if (!endpoint) {
-            log.error("agent-manager", "Invalid endpoint: " + endpoint + " URL: " + url);
+            log.error("agent-manager", "Invalid endpoint for URL: " + url);
             return;
         }
 
-        if (this.circuitRetryTimerList[endpoint]) {
-            log.warn("agent-manager", `${endpoint}: connection held offline by federation circuit breaker`);
-            this.socket.emit("agentStatus", {
-                endpoint,
-                status: "offline",
-            });
+        const next : SharedAgentConfig = {
+            url,
+            username,
+            password,
+        };
+        const previous = AgentManager.sharedConfigs[endpoint];
+
+        if (previous && (
+            previous.url !== next.url
+            || previous.username !== next.username
+            || previous.password !== next.password
+        )) {
+            this.disconnect(endpoint);
+        }
+
+        AgentManager.sharedConfigs[endpoint] = next;
+
+        if (AgentManager.sharedCircuitRetryTimerList[endpoint]) {
+            this.broadcastStatus(endpoint, "offline");
             return;
         }
 
-        if (this.agentSocketList[endpoint]) {
-            log.debug("agent-manager", "Already connected to the socket server: " + endpoint);
+        if (AgentManager.sharedAgentSocketList[endpoint]) {
             return;
         }
 
-        log.info("agent-manager", "Connecting to the socket server: " + endpoint);
-        let client = io(url, {
+        this.broadcastStatus(endpoint, "connecting");
+        log.info("agent-manager", "Connecting shared transport to: " + endpoint);
+
+        const client = io(url, {
             reconnection: true,
             reconnectionAttempts: FEDERATION_RECONNECT_ATTEMPTS,
             reconnectionDelay: FEDERATION_RECONNECT_DELAY_MS,
@@ -244,162 +385,172 @@ export class AgentManager {
             timeout: 10_000,
             extraHeaders: {
                 endpoint,
-            }
+            },
         });
+
+        AgentManager.sharedAgentSocketList[endpoint] = client;
 
         client.on("connect", () => {
-            log.info("agent-manager", "Connected to the socket server: " + endpoint);
+            if (AgentManager.sharedAgentSocketList[endpoint] !== client) {
+                return;
+            }
 
-            loginAgentClient(client, username, password, (res : LooseObject) => {
-                if (res.ok) {
-                    log.info("agent-manager", "Logged in to the socket server: " + endpoint);
-                    this.reconnectFailureList[endpoint] = 0;
-                    this.agentLoggedInList[endpoint] = true;
-                    this.socket.emit("agentStatus", {
-                        endpoint: endpoint,
-                        status: "online",
-                    });
-                } else {
-                    const detail = safeFederationErrorMessage(res.msg || "Federation login failed");
-                    log.error("agent-manager", `Failed to login to the socket server: ${endpoint} - ${detail}`);
-                    this.agentLoggedInList[endpoint] = false;
-                    this.socket.emit("agentStatus", {
-                        endpoint: endpoint,
-                        status: "offline",
-                    });
-                    void notifyFederationIncident({
-                        kind: "authentication-failed",
-                        endpoint,
-                        detail,
-                    });
-                    client.disconnect();
+            loginAgentClient<LooseObject>(client, username, password, (res) => {
+                if (AgentManager.sharedAgentSocketList[endpoint] !== client) {
+                    return;
                 }
+
+                if (res.ok) {
+                    AgentManager.sharedReconnectFailureList[endpoint] = 0;
+                    AgentManager.sharedAgentLoggedInList[endpoint] = true;
+                    this.broadcastStatus(endpoint, "online");
+                    return;
+                }
+
+                const detail = safeFederationErrorMessage(
+                    res.msg || "Federation login failed",
+                );
+
+                delete AgentManager.sharedAgentSocketList[endpoint];
+                delete AgentManager.sharedAgentLoggedInList[endpoint];
+                this.broadcastStatus(endpoint, "offline");
+
+                void notifyFederationIncident({
+                    kind: "authentication-failed",
+                    endpoint,
+                    detail,
+                });
+
+                client.disconnect();
             });
         });
 
-        client.on("connect_error", (err) => {
-            const detail = safeFederationErrorMessage(`${err.name || "Error"}: ${err.message || String(err)}`);
-            const failures = (this.reconnectFailureList[endpoint] ?? 0) + 1;
-            this.reconnectFailureList[endpoint] = failures;
-            log.error("agent-manager", `${endpoint}: federation connection error ${failures}/${FEDERATION_FAILURE_THRESHOLD} - ${detail}`);
-            this.socket.emit("agentStatus", {
-                endpoint: endpoint,
-                status: "offline",
-            });
+        client.on("connect_error", (error) => {
+            if (AgentManager.sharedAgentSocketList[endpoint] !== client) {
+                return;
+            }
+
+            const detail = safeFederationErrorMessage(
+                `${error.name || "Error"}: ${error.message || String(error)}`,
+            );
+            const failures = (AgentManager.sharedReconnectFailureList[endpoint] ?? 0) + 1;
+            AgentManager.sharedReconnectFailureList[endpoint] = failures;
+
+            this.broadcastStatus(endpoint, "offline");
+            log.error(
+                "agent-manager",
+                `${endpoint}: shared federation connection error ${failures}/${FEDERATION_FAILURE_THRESHOLD} - ${detail}`,
+            );
+
             if (failures >= FEDERATION_FAILURE_THRESHOLD) {
-                this.openReconnectCircuit(endpoint, url, username, password, detail);
+                this.openReconnectCircuit(endpoint, detail);
             }
         });
 
         client.io.on("reconnect_attempt", (attempt) => {
-            log.warn("agent-manager", `${endpoint}: bounded federation reconnect ${attempt}/${FEDERATION_RECONNECT_ATTEMPTS}`);
+            if (AgentManager.sharedAgentSocketList[endpoint] !== client) {
+                return;
+            }
+            log.warn(
+                "agent-manager",
+                `${endpoint}: bounded shared reconnect ${attempt}/${FEDERATION_RECONNECT_ATTEMPTS}`,
+            );
         });
 
         client.io.on("reconnect_failed", () => {
-            this.openReconnectCircuit(endpoint, url, username, password, "Socket.IO bounded reconnection attempts exhausted");
+            if (AgentManager.sharedAgentSocketList[endpoint] !== client) {
+                return;
+            }
+            this.openReconnectCircuit(
+                endpoint,
+                "Socket.IO bounded reconnection attempts exhausted",
+            );
         });
 
         client.on("disconnect", () => {
-            log.info("agent-manager", "Disconnected from the socket server: " + endpoint);
-            this.socket.emit("agentStatus", {
-                endpoint: endpoint,
-                status: "offline",
-            });
+            if (AgentManager.sharedAgentSocketList[endpoint] !== client) {
+                return;
+            }
+            AgentManager.sharedAgentLoggedInList[endpoint] = false;
+            this.broadcastStatus(endpoint, "offline");
         });
 
         client.on("agent", (...args : unknown[]) => {
-            this.socket.emit("agent", ...args);
-        });
-
-        client.on("info", (res) => {
-            log.debug("agent-manager", res);
-
-            // Disconnect if the version is lower than 1.4.0
-            if (!isDev && semver.satisfies(res.version, "< 1.4.0")) {
-                this.socket.emit("agentStatus", {
-                    endpoint: endpoint,
-                    status: "offline",
-                    msg: `${endpoint}: Unsupported version: ` + res.version,
-                });
-                client.disconnect();
+            if (AgentManager.sharedAgentSocketList[endpoint] === client) {
+                this.broadcast("agent", ...args);
             }
         });
 
-        this.agentSocketList[endpoint] = client;
+        client.on("info", (res) => {
+            if (AgentManager.sharedAgentSocketList[endpoint] !== client) {
+                return;
+            }
+
+            if (!isDev && semver.satisfies(res.version, "< 1.4.0")) {
+                delete AgentManager.sharedAgentSocketList[endpoint];
+                delete AgentManager.sharedAgentLoggedInList[endpoint];
+                this.broadcastStatus(
+                    endpoint,
+                    "offline",
+                    `${endpoint}: Unsupported version: ` + res.version,
+                );
+                client.disconnect();
+            }
+        });
     }
 
-    disconnect(endpoint : string) {
+    disconnect(endpoint : string): void {
         this.clearCircuitRetry(endpoint);
-        let client = this.agentSocketList[endpoint];
+
+        const client = AgentManager.sharedAgentSocketList[endpoint];
+        delete AgentManager.sharedAgentSocketList[endpoint];
+        delete AgentManager.sharedAgentLoggedInList[endpoint];
+        delete AgentManager.sharedReconnectFailureList[endpoint];
+        delete AgentManager.sharedConfigs[endpoint];
+
         client?.disconnect();
+        this.broadcastStatus(endpoint, "offline");
     }
 
-    async connectAll() {
-        this._firstConnectTime = dayjs();
-
-        if (this.socket.endpoint) {
-            log.info("agent-manager", "This connection is connected as an agent, skip connectAll()");
+    async connectAll(): Promise<void> {
+        if (this.socket?.endpoint) {
             return;
         }
-
-        let list : Record<string, Agent> = await Agent.getAgentList();
-
-        if (Object.keys(list).length !== 0) {
-            log.info("agent-manager", "Connecting to all instance socket server(s)...");
-        }
-
-        for (let endpoint in list) {
-            let agent = list[endpoint];
-            this.connect(agent.url, agent.username, agent.password);
-        }
+        this.subscribe();
     }
 
-    disconnectAll() {
-        for (let endpoint in this.circuitRetryTimerList) {
-            this.clearCircuitRetry(endpoint);
-        }
-        for (let endpoint in this.agentSocketList) {
-            this.disconnect(endpoint);
-        }
+    disconnectAll(): void {
+        this.release();
     }
 
     async emitToEndpoint(endpoint: string, eventName: string, ...args : unknown[]) {
-        log.debug("agent-manager", "Emitting event to endpoint: " + endpoint);
-        let client = this.agentSocketList[endpoint];
-
-        // afterLogin() starts connectAll() asynchronously. A freshly reloaded UI can
-        // emit its first request before connect() has registered the socket client.
+        let client = AgentManager.sharedAgentSocketList[endpoint];
         let diff = dayjs().diff(this.firstConnectTime, "second");
+
         while (!client && diff < 10) {
             await sleep(250);
-            client = this.agentSocketList[endpoint];
+            client = AgentManager.sharedAgentSocketList[endpoint];
             diff = dayjs().diff(this.firstConnectTime, "second");
         }
 
         if (!client) {
-            log.error("agent-manager", "Socket client not found for endpoint: " + endpoint);
             throw new Error("Socket client not found for endpoint: " + endpoint);
         }
 
-        if (!client.connected || !this.agentLoggedInList[endpoint]) {
-            // Maybe the request is too quick, the socket is not connected yet, check firstConnectTime
-            // If it is within 10 seconds, we should apply retry logic here
+        if (!client.connected || !AgentManager.sharedAgentLoggedInList[endpoint]) {
             diff = dayjs().diff(this.firstConnectTime, "second");
-            log.debug("agent-manager", endpoint + ": diff: " + diff);
             let ok = false;
+
             while (diff < 10) {
-                if (client.connected && this.agentLoggedInList[endpoint]) {
-                    log.debug("agent-manager", `${endpoint}: Connected & Logged in`);
+                if (client.connected && AgentManager.sharedAgentLoggedInList[endpoint]) {
                     ok = true;
                     break;
                 }
-                log.debug("agent-manager", endpoint + ": not ready yet, retrying in 1 second...");
                 await sleep(1000);
                 diff = dayjs().diff(this.firstConnectTime, "second");
             }
 
             if (!ok) {
-                log.error("agent-manager", `${endpoint}: Socket client not connected`);
                 throw new Error("Socket client not connected for endpoint: " + endpoint);
             }
         }
@@ -409,7 +560,10 @@ export class AgentManager {
 
     requestEndpoint<T>(endpoint: string, eventName: string, ...args: unknown[]): Promise<T> {
         return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error(`Agent request timed out: ${endpoint}`)), 60_000);
+            const timeout = setTimeout(() => {
+                reject(new Error(`Agent request timed out: ${endpoint}`));
+            }, 60_000);
+
             this.emitToEndpoint(endpoint, eventName, ...args, (response: T) => {
                 clearTimeout(timeout);
                 resolve(response);
@@ -420,21 +574,26 @@ export class AgentManager {
         });
     }
 
-    emitToAllEndpoints(eventName: string, ...args : unknown[]) {
-        log.debug("agent-manager", "Emitting event to all endpoints");
-        for (let endpoint in this.agentSocketList) {
-            this.emitToEndpoint(endpoint, eventName, ...args).catch((e) => {
-                log.warn("agent-manager", e.message);
+    emitToAllEndpoints(eventName: string, ...args : unknown[]): void {
+        for (const endpoint of Object.keys(AgentManager.sharedAgentSocketList)) {
+            this.emitToEndpoint(endpoint, eventName, ...args).catch((error) => {
+                log.warn(
+                    "agent-manager",
+                    error instanceof Error ? error.message : String(error),
+                );
             });
         }
     }
 
     async sendAgentList() {
-        let list = await Agent.getAgentList();
-        let result : Record<string, LooseObject> = {};
+        if (!this.socket) {
+            return;
+        }
+
+        const list = await Agent.getAgentList();
+        const result : Record<string, LooseObject> = {};
         const localDisplayName = await Settings.get(LOCAL_AGENT_DISPLAY_NAME_SETTING);
 
-        // Myself
         result[""] = {
             url: "",
             username: "",
@@ -442,9 +601,8 @@ export class AgentManager {
             displayName: typeof localDisplayName === "string" ? localDisplayName : "",
         };
 
-        for (let endpoint in list) {
-            let agent = list[endpoint];
-            result[endpoint] = agent.toJSON();
+        for (const endpoint in list) {
+            result[endpoint] = list[endpoint].toJSON();
         }
 
         this.socket.emit("agentList", {

@@ -63,7 +63,7 @@ jobs:
 
       - name: Tests des garde-fous de fédération
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/federation-health.test.ts backend/agent-manager.test.ts
+        run: npx tsx --test backend/federation-health.test.ts backend/agent-manager-process.test.ts backend/agent-manager.test.ts
 
       - name: Tests des prérequis de démarrage
         if: steps.docs.outputs.docs_only != 'true'

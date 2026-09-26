@@ -62,6 +62,11 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 September 2026
 
+**Process-wide federation transport**
+
+Federation now uses one shared outbound transport per Dockge-Enhanced process instead of one connection set per WebUI socket. Linked instances are loaded from SQLite and connected automatically when the server starts listening. Opening several WebUIs no longer multiplies remote sockets, closing the last browser no longer disconnects linked instances, and the circuit-breaker retry continues after about 5 minutes even with no WebUI open. Credential changes, mesh repair and peer removal immediately resynchronize the shared transport.
+
+
 **Federation reconnect-storm hardening**
 
 Federated sockets now use a lightweight authentication path and no longer execute the WebUI stack/agent bootstrap. Socket.IO reconnects are explicitly bounded with exponential backoff, jitter and a 5-minute circuit breaker. Excessive inbound federation handshakes are rejected before authentication and simultaneous inbound federation sockets are capped. If a reconnect guard trips or SQLite/Knex contention is detected, the existing Discord/Apprise configuration emits a rate-limited alert without querying SQLite.
