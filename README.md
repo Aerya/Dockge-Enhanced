@@ -62,6 +62,11 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 September 2026
 
+**Federation reconnect-storm hardening**
+
+Federated sockets now use a lightweight authentication path and no longer execute the WebUI stack/agent bootstrap. Socket.IO reconnects are explicitly bounded with exponential backoff, jitter and a 5-minute circuit breaker. Excessive inbound federation handshakes are rejected before authentication and simultaneous inbound federation sockets are capped. If a reconnect guard trips or SQLite/Knex contention is detected, the existing Discord/Apprise configuration emits a rate-limited alert without querying SQLite.
+
+
 **Network namespace-safe targeted updates**
 
 Targeted image updates, service recreations and image rollbacks now resolve the complete Compose model before replacing a container. When other services share its network namespace through `network_mode: service:<service>` or `network_mode: container:<container_name>`, every direct and transitive consumer is force-recreated with the provider in one targeted Compose operation. Unrelated services are left untouched, while VPN, Gluetun and sidecar stacks no longer retain a removed container's stale network namespace.
