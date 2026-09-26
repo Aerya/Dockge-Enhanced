@@ -64,6 +64,11 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Septiembre de 2026
 
+**Transporte de federación compartido a nivel de proceso**
+
+La federación utiliza ahora un único transporte saliente compartido por proceso Dockge-Enhanced, en lugar de un conjunto de conexiones por socket WebUI. Las instancias vinculadas se cargan desde SQLite y se conectan automáticamente cuando el servidor empieza a escuchar. Abrir varias WebUI ya no multiplica los sockets remotos, cerrar el último navegador no desconecta las instancias vinculadas y el reintento del disyuntor continúa tras unos 5 minutos incluso sin ninguna WebUI abierta. Los cambios de credenciales, la reparación del mesh y la eliminación de un peer resincronizan inmediatamente el transporte compartido.
+
+
 **Protección contra tormentas de reconexión de federación**
 
 Los sockets federados usan ahora una ruta de autenticación ligera y ya no ejecutan la inicialización WebUI de stacks/agentes. Las reconexiones Socket.IO están explícitamente limitadas mediante backoff exponencial, jitter y un disyuntor de 5 minutos. Los handshakes de federación entrantes excesivos se rechazan antes de autenticar y se limita el número de sockets federados entrantes simultáneos. Si se activa una protección de reconexión o se detecta contención SQLite/Knex, la configuración Discord/Apprise existente envía una alerta limitada sin consultar SQLite.

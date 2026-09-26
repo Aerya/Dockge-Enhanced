@@ -1520,6 +1520,7 @@
     "externalStacks.cleanup.confirmIrreversible": "我明白此删除操作不可逆，卷中的数据将丢失。",
     "externalStacks.cleanup.succeeded": "外部 Stack 及其资源已删除。",
     "externalStacks.cleanup.partial": "部分清理：{count} 个资源仍在使用或受保护，无法删除。",
-    "releaseNews.item.federationStormHardening": "联邦连接现在可防止重连风暴：联邦登录不再触发 WebUI 的 Stack/代理初始化，Socket.IO 重试采用有界指数退避、随机抖动和 5 分钟断路器，过量入站握手会在认证前被阻止；当保护机制触发或检测到 SQLite/Knex 争用时，Discord/Apprise 会发送限频告警。"
+    "releaseNews.item.federationStormHardening": "联邦连接现在可防止重连风暴：联邦登录不再触发 WebUI 的 Stack/代理初始化，Socket.IO 重试采用有界指数退避、随机抖动和 5 分钟断路器，过量入站握手会在认证前被阻止；当保护机制触发或检测到 SQLite/Knex 争用时，Discord/Apprise 会发送限频告警。",
+    "releaseNews.item.processWideFederation": "联邦连接现在在进程级共享，而不再由浏览器会话拥有。服务器启动后会自动连接关联实例，多个 WebUI 共享同一组出站 socket，关闭最后一个浏览器也不会断开 mesh，并且即使没有打开 WebUI，断路器重试仍会自动继续。"
 
 }

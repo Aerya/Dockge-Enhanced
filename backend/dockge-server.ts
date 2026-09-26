@@ -429,7 +429,7 @@ export class DockgeServer {
             // Socket disconnect
             dockgeSocket.on("disconnect", () => {
                 log.info("server", "Socket disconnected!");
-                dockgeSocket.instanceManager.disconnectAll();
+                dockgeSocket.instanceManager.release();
             });
 
         });
@@ -556,6 +556,13 @@ export class DockgeServer {
 
         // Listen
         this.httpServer.listen(this.config.port, this.config.hostname, () => {
+            AgentManager.bootstrap()
+                .catch((error) => log.error(
+                    "agent-manager",
+                    "Process-wide federation bootstrap failed: "
+                    + (error instanceof Error ? error.message : String(error)),
+                ));
+
             if (this.config.hostname) {
                 log.info( "server", `Listening on ${this.config.hostname}:${this.config.port}`);
             } else {
@@ -880,6 +887,7 @@ export class DockgeServer {
         // TODO: Close all terminals?
 
         StackReplicationManager.getInstance().stop();
+        AgentManager.shutdown();
         await Database.close();
         Settings.stopCacheCleaner();
     }

@@ -7,6 +7,7 @@ import { meshEndpoint, normalizeMeshSelf, synchronizeAgentMesh, upsertMeshPeers,
 import { Settings } from "../settings";
 import { R } from "redbean-node";
 import { User } from "../models/user";
+import { AgentManager } from "../agent-manager";
 
 const AGENT_MESH_REPAIR_REVISION_KEY = "agentMeshRepairRevision";
 const AGENT_MESH_REPAIR_REVISION = 2;
@@ -77,6 +78,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 const data = requestData as LooseObject;
                 const peers = validateMeshCatalogue(data.peers as unknown[]);
                 await upsertMeshPeers(peers, socket.endpoint);
+                await AgentManager.refreshFromDatabase();
                 await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                 callbackResult({ ok: true,
                     count: peers.length }, callback);
@@ -103,6 +105,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 let endpoints : string[];
                 try {
                     endpoints = await meshRepairInFlight;
+                    await AgentManager.refreshFromDatabase();
                     await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                 } finally {
                     meshRepairInFlight = null;
@@ -138,6 +141,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
 
                 try {
                     await synchronizeAgentMesh(self);
+                    await AgentManager.refreshFromDatabase();
                     await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                 } catch (error) {
                     await manager.remove(data.url);
@@ -208,6 +212,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 try {
                     const self = await federationSelfForSocket(socket, server, data.self);
                     await synchronizeAgentMesh(self);
+                    await AgentManager.refreshFromDatabase();
                     await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                     federated = true;
                 } catch (error) {
@@ -249,6 +254,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                     displayName: "" }));
                 await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                 await manager.remove(data.url);
+                await AgentManager.refreshFromDatabase();
 
                 server.disconnectAllSocketClients(undefined, socket.id);
                 manager.sendAgentList();

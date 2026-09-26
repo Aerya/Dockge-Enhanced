@@ -1583,6 +1583,7 @@
     "externalStacks.cleanup.confirmIrreversible": "I understand this deletion is irreversible and volume data will be lost.",
     "externalStacks.cleanup.succeeded": "The external stack and its resources were deleted.",
     "externalStacks.cleanup.partial": "Partial cleanup: {count} resource(s) could not be removed because they are still in use or protected.",
-    "releaseNews.item.federationStormHardening": "Federation links are now protected against reconnect storms: federated logins no longer trigger the WebUI stack/agent bootstrap, Socket.IO retries are bounded with exponential backoff, jitter and a 5-minute circuit breaker, excessive inbound handshakes are blocked before authentication, and Discord/Apprise sends a rate-limited alert when a guard trips or SQLite/Knex contention is detected."
+    "releaseNews.item.federationStormHardening": "Federation links are now protected against reconnect storms: federated logins no longer trigger the WebUI stack/agent bootstrap, Socket.IO retries are bounded with exponential backoff, jitter and a 5-minute circuit breaker, excessive inbound handshakes are blocked before authentication, and Discord/Apprise sends a rate-limited alert when a guard trips or SQLite/Knex contention is detected.",
+    "releaseNews.item.processWideFederation": "Federation connections are now process-wide instead of being owned by browser sessions. Linked instances connect automatically after server startup, multiple WebUIs share the same outbound sockets, closing the last browser no longer disconnects the mesh, and circuit-breaker retries continue automatically even with no WebUI open."
 
 }
