@@ -150,7 +150,11 @@ export class DockgeServer {
             if (isKnexPoolTimeout(error)) {
                 const detail = safeFederationErrorMessage(error instanceof Error ? `${error.name}: ${error.message}` : String(error));
                 log.error("federation", `SQLite/Knex contention detected: ${detail}`);
-                void notifyFederationIncident({ kind: "database-contention", endpoint: "local", detail });
+                void notifyFederationIncident({
+                    kind: "database-contention",
+                    endpoint: "local",
+                    detail,
+                });
             }
             console.error("If you keep encountering errors, please report to https://github.com/louislam/dockge");
         };
@@ -443,7 +447,9 @@ export class DockgeServer {
 
     private registerFederatedSocket(socket: DockgeSocket): boolean {
         const endpoint = socket.endpoint;
-        if (!endpoint) return true;
+        if (!endpoint) {
+            return true;
+        }
 
         let socketIds = this.federatedSocketIds.get(endpoint);
         if (!socketIds) {
@@ -467,7 +473,9 @@ export class DockgeServer {
         socket.once("disconnect", () => {
             const active = this.federatedSocketIds.get(endpoint);
             active?.delete(socket.id);
-            if (active && active.size === 0) this.federatedSocketIds.delete(endpoint);
+            if (active && active.size === 0) {
+                this.federatedSocketIds.delete(endpoint);
+            }
         });
         return true;
     }
@@ -497,7 +505,11 @@ export class DockgeServer {
             const detail = safeFederationErrorMessage(e instanceof Error ? `${e.name}: ${e.message}` : String(e));
             log.error("server", detail);
             if (isKnexPoolTimeout(e)) {
-                void notifyFederationIncident({ kind: "database-contention", endpoint: "local", detail });
+                void notifyFederationIncident({
+                    kind: "database-contention",
+                    endpoint: "local",
+                    detail,
+                });
             }
         }
     }
