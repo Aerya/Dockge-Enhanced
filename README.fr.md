@@ -62,6 +62,11 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Septembre 2026
 
+**Protection contre les tempêtes de reconnexion de fédération**
+
+Les sockets fédérées suivent désormais un chemin d’authentification léger et ne déclenchent plus l’initialisation WebUI des stacks/agents. Les reconnexions Socket.IO sont explicitement bornées avec backoff exponentiel, jitter et coupe-circuit de 5 minutes. Les handshakes de fédération entrants excessifs sont rejetés avant authentification et le nombre de sockets fédérées entrantes simultanées est plafonné. Si un garde-fou de reconnexion se déclenche ou qu’une contention SQLite/Knex est détectée, la configuration Discord/Apprise existante envoie une alerte limitée en fréquence sans interroger SQLite.
+
+
 **Mises à jour ciblées respectant les namespaces réseau**
 
 Les mises à jour d’images ciblées, les recréations de services et les rollbacks d’images résolvent désormais le modèle Compose complet avant de remplacer un conteneur. Lorsque d’autres services partagent son namespace réseau via `network_mode: service:<service>` ou `network_mode: container:<container_name>`, tous les consommateurs directs et transitifs sont recréés de force avec le fournisseur dans une même opération Compose ciblée. Les services sans rapport restent intacts, tandis que les stacks VPN, Gluetun et sidecars ne conservent plus le namespace réseau obsolète d’un conteneur supprimé.
