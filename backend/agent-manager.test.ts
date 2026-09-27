@@ -44,7 +44,7 @@ test("replaces stale agent credentials and reconnects the existing endpoint", as
         assert.equal(bean.username, "operator");
         assert.equal(bean.password, "fresh-secret");
         assert.deepEqual(calls.map((call) => call[0]), [ "store", "disconnect", "connect" ]);
-        assert.deepEqual(calls.at(-1), [ "connect", "http://enhanced-b:5001", "operator", "fresh-secret" ]);
+        assert.deepEqual(calls.at(-1), [ "connect", "http://enhanced-b:5001", "operator", "fresh-secret", false ]);
     } finally {
         mock.restoreAll();
     }
