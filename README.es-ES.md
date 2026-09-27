@@ -64,6 +64,11 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Septiembre de 2026
 
+**Alertas de disponibilidad de federación sin spam nocturno**
+
+Las notificaciones del disyuntor ahora están ligadas a un episodio continuo de indisponibilidad: cada instancia vinculada envía como máximo una alerta mientras el peer siga fuera de línea y la alerta solo se rearma después de que el peer vuelva a autenticarse correctamente. Cada instancia remota también puede marcarse localmente como **Máquina intermitente — no alertar si no está disponible**. Este modo está pensado para PC, portátiles y otros peers que se apagan o suspenden habitualmente; las reconexiones automáticas, el backoff y la protección del disyuntor siguen activos. Como la preferencia es local, hay que marcar el peer intermitente en cada instancia Dockge siempre encendida desde la que no se quieran recibir alertas.
+
+
 **Transporte de federación compartido a nivel de proceso**
 
 La federación utiliza ahora un único transporte saliente compartido por proceso Dockge-Enhanced, en lugar de un conjunto de conexiones por socket WebUI. Las instancias vinculadas se cargan desde SQLite y se conectan automáticamente cuando el servidor empieza a escuchar. Abrir varias WebUI ya no multiplica los sockets remotos, cerrar el último navegador no desconecta las instancias vinculadas y el reintento del disyuntor continúa tras unos 5 minutos incluso sin ninguna WebUI abierta. Los cambios de credenciales, la reparación del mesh y la eliminación de un peer resincronizan inmediatamente el transporte compartido.

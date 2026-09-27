@@ -161,6 +161,16 @@
                                 <font-awesome-icon icon="key" />
                             </button>
 
+                            <div v-if="endpoint !== ''" class="form-check form-switch mt-2 mb-2 agent-offline-alert-setting">
+                                <input
+                                    class="form-check-input" type="checkbox" role="switch"
+                                    :checked="Boolean(agent.suppressOfflineAlerts)"
+                                    @change="setAgentOfflineAlertSuppressed(agent, $event.target.checked)"
+                                >
+                                <span class="form-check-label">{{ $t("agentOfflineAlerts.suppress") }}</span>
+                                <small class="text-muted d-block">{{ $t("agentOfflineAlerts.localHint") }}</small>
+                            </div>
+
                             <!-- Remove Button -->
                             <font-awesome-icon v-if="endpoint !== ''" class="ms-2 remove-agent" icon="trash" @click="showRemoveAgentDialog[agent.url] = !showRemoveAgentDialog[agent.url]" />
 
@@ -646,6 +656,15 @@ export default {
                     this.showReauthenticateAgentDialog = false;
                     this.reauthenticateAgentForm.password = "";
                 }
+            });
+        },
+
+        setAgentOfflineAlertSuppressed(agent, suppressOfflineAlerts) {
+            this.$root.getSocket().emit("setAgentOfflineAlertSuppressed", {
+                url: agent.url,
+                suppressOfflineAlerts,
+            }, (res) => {
+                this.$root.toastRes(res);
             });
         },
 

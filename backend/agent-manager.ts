@@ -14,6 +14,7 @@ import {
     FEDERATION_RECONNECT_DELAY_MAX_MS,
     FEDERATION_RECONNECT_DELAY_MS,
     FEDERATION_RECONNECT_RANDOMIZATION,
+    FederationAvailabilityAlertTracker,
     federationCircuitRetryDelayMs,
     notifyFederationIncident,
     safeFederationErrorMessage,
@@ -42,6 +43,7 @@ interface SharedAgentConfig {
     url: string;
     username: string;
     password: string;
+    suppressOfflineAlerts: boolean;
 }
 
 type SharedAgentStatus = "connecting" | "online" | "offline";
@@ -60,6 +62,7 @@ export class AgentManager {
     private static readonly sharedReconnectFailureList : Record<string, number> = {};
     private static readonly sharedCircuitRetryTimerList : Record<string, NodeJS.Timeout> = {};
     private static readonly sharedConfigs : Record<string, SharedAgentConfig> = {};
+    private static readonly sharedAvailabilityAlerts = new FederationAvailabilityAlertTracker();
     private static readonly subscribers = new Set<DockgeSocket>();
     private static sharedFirstConnectTime : Dayjs = dayjs();
 
@@ -96,6 +99,7 @@ export class AgentManager {
                 url: agent.url,
                 username: agent.username,
                 password: agent.password,
+                suppressOfflineAlerts: Boolean(Number(agent.suppress_offline_alerts)),
             };
             const previous = AgentManager.sharedConfigs[endpoint];
 
@@ -107,7 +111,12 @@ export class AgentManager {
                 manager.disconnect(endpoint);
             }
 
-            manager.connect(next.url, next.username, next.password);
+            manager.connect(
+                next.url,
+                next.username,
+                next.password,
+                next.suppressOfflineAlerts,
+            );
         }
     }
 
@@ -210,12 +219,17 @@ export class AgentManager {
 
         this.broadcastStatus(endpoint, "offline");
 
-        void notifyFederationIncident({
-            kind: "reconnect-circuit-open",
+        if (AgentManager.sharedAvailabilityAlerts.shouldNotify(
             endpoint,
-            attempts: failures,
-            detail,
-        });
+            config.suppressOfflineAlerts,
+        )) {
+            void notifyFederationIncident({
+                kind: "reconnect-circuit-open",
+                endpoint,
+                attempts: failures,
+                detail,
+            });
+        }
 
         const delay = federationCircuitRetryDelayMs(FEDERATION_CIRCUIT_OPEN_MS);
         log.warn(
@@ -233,7 +247,12 @@ export class AgentManager {
                 return;
             }
 
-            this.connect(latest.url, latest.username, latest.password);
+            this.connect(
+                latest.url,
+                latest.username,
+                latest.password,
+                latest.suppressOfflineAlerts,
+            );
         }, delay);
 
         timer.unref?.();
@@ -311,6 +330,17 @@ export class AgentManager {
         await R.store(bean);
     }
 
+    async setOfflineAlertSuppressed(url: string, suppressed: boolean): Promise<void> {
+        const bean = await R.findOne("agent", " url = ? ", [ url ]) as Agent | null;
+
+        if (!bean) {
+            throw new Error("Agent not found");
+        }
+
+        bean.suppress_offline_alerts = suppressed ? 1 : 0;
+        await R.store(bean);
+    }
+
     async updateCredentials(url: string, username: string, password: string): Promise<void> {
         const bean = await R.findOne("agent", " url = ? ", [ url ]) as Agent | null;
 
@@ -324,7 +354,12 @@ export class AgentManager {
 
         const endpoint = new URL(url).host;
         this.disconnect(endpoint);
-        this.connect(url, username, password);
+        this.connect(
+            url,
+            username,
+            password,
+            Boolean(Number(bean.suppress_offline_alerts)),
+        );
     }
 
     async remove(url : string) {
@@ -339,7 +374,12 @@ export class AgentManager {
         }
     }
 
-    connect(url : string, username : string, password : string): void {
+    connect(
+        url : string,
+        username : string,
+        password : string,
+        suppressOfflineAlerts = false,
+    ): void {
         const endpoint = new URL(url).host;
 
         if (!endpoint) {
@@ -351,6 +391,7 @@ export class AgentManager {
             url,
             username,
             password,
+            suppressOfflineAlerts,
         };
         const previous = AgentManager.sharedConfigs[endpoint];
 
@@ -403,6 +444,7 @@ export class AgentManager {
                 if (res.ok) {
                     AgentManager.sharedReconnectFailureList[endpoint] = 0;
                     AgentManager.sharedAgentLoggedInList[endpoint] = true;
+                    AgentManager.sharedAvailabilityAlerts.markOnline(endpoint);
                     this.broadcastStatus(endpoint, "online");
                     return;
                 }
@@ -507,6 +549,7 @@ export class AgentManager {
         delete AgentManager.sharedAgentLoggedInList[endpoint];
         delete AgentManager.sharedReconnectFailureList[endpoint];
         delete AgentManager.sharedConfigs[endpoint];
+        AgentManager.sharedAvailabilityAlerts.forget(endpoint);
 
         client?.disconnect();
         this.broadcastStatus(endpoint, "offline");

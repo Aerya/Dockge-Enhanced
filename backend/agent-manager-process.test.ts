@@ -10,6 +10,8 @@ test("process-wide federation is independent from WebUI lifetime", () => {
     assert.match(agent, /static async bootstrap\(\)/);
     assert.match(agent, /private static readonly sharedAgentSocketList/);
     assert.match(agent, /private static readonly subscribers/);
+    assert.match(agent, /sharedAvailabilityAlerts/);
+    assert.match(agent, /suppressOfflineAlerts/);
     assert.match(agent, /AgentManager\.subscribers\.delete\(this\.socket\)/);
     assert.doesNotMatch(agent, /if\s*\(\s*!this\.socket\.connected\s*\)/);
 

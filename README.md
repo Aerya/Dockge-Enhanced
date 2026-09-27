@@ -62,6 +62,11 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 September 2026
 
+**Federation availability alerts without overnight spam**
+
+Circuit-breaker availability notifications are now tied to a continuous outage episode: each linked instance sends at most one alert while a peer remains offline, and the alert is re-armed only after that peer successfully authenticates online again. Each remote instance can also be marked locally as **Intermittent machine — do not alert when unavailable**. This is intended for desktops, laptops and other peers that are routinely powered off or suspended; automatic reconnects, backoff and circuit-breaker protection remain active. Because the preference is local, mark the intermittent peer on every always-on Dockge instance from which you do not want availability alerts.
+
+
 **Process-wide federation transport**
 
 Federation now uses one shared outbound transport per Dockge-Enhanced process instead of one connection set per WebUI socket. Linked instances are loaded from SQLite and connected automatically when the server starts listening. Opening several WebUIs no longer multiplies remote sockets, closing the last browser no longer disconnects linked instances, and the circuit-breaker retry continues after about 5 minutes even with no WebUI open. Credential changes, mesh repair and peer removal immediately resynchronize the shared transport.

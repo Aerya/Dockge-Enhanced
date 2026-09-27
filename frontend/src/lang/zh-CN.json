@@ -1521,6 +1521,10 @@
     "externalStacks.cleanup.succeeded": "外部 Stack 及其资源已删除。",
     "externalStacks.cleanup.partial": "部分清理：{count} 个资源仍在使用或受保护，无法删除。",
     "releaseNews.item.federationStormHardening": "联邦连接现在可防止重连风暴：联邦登录不再触发 WebUI 的 Stack/代理初始化，Socket.IO 重试采用有界指数退避、随机抖动和 5 分钟断路器，过量入站握手会在认证前被阻止；当保护机制触发或检测到 SQLite/Knex 争用时，Discord/Apprise 会发送限频告警。",
-    "releaseNews.item.processWideFederation": "联邦连接现在在进程级共享，而不再由浏览器会话拥有。服务器启动后会自动连接关联实例，多个 WebUI 共享同一组出站 socket，关闭最后一个浏览器也不会断开 mesh，并且即使没有打开 WebUI，断路器重试仍会自动继续。"
+    "releaseNews.item.processWideFederation": "联邦连接现在在进程级共享，而不再由浏览器会话拥有。服务器启动后会自动连接关联实例，多个 WebUI 共享同一组出站 socket，关闭最后一个浏览器也不会断开 mesh，并且即使没有打开 WebUI，断路器重试仍会自动继续。",
+    "agentOfflineAlerts.suppress": "间歇性机器 — 不可用时不发送告警",
+    "agentOfflineAlerts.localHint": "此设置仅应用于当前 Dockge 实例。自动重连和断路器保护仍保持启用。",
+    "agentOfflineAlertPreferenceUpdated": "不可用告警偏好已更新",
+    "releaseNews.item.federationAvailabilityAlerts": "联邦可用性告警现在按一次连续故障周期管理：同一次持续离线期间只发送一次断路器通知，只有在对端真正恢复在线后才会重新启用告警。关联实例还可以在本机标记为间歇性机器，在保留自动重连和断路器保护的同时静默不可用告警。"
 
 }

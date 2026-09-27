@@ -28,6 +28,10 @@ export type FederationIncidentKind =
     | "inbound-storm"
     | "database-contention";
 
+export function federationIncidentUsesCooldown(kind: FederationIncidentKind): boolean {
+    return kind !== "reconnect-circuit-open";
+}
+
 export interface FederationIncident {
     kind: FederationIncidentKind;
     endpoint: string;
@@ -45,6 +49,30 @@ export interface IngressDecision {
     tripped: boolean;
     attempts: number;
     retryAfterMs: number;
+}
+
+export class FederationAvailabilityAlertTracker {
+    private readonly activeIncidents = new Set<string>();
+
+    shouldNotify(endpoint: string, suppressed = false): boolean {
+        if (suppressed || this.activeIncidents.has(endpoint)) {
+            return false;
+        }
+        this.activeIncidents.add(endpoint);
+        return true;
+    }
+
+    markOnline(endpoint: string): void {
+        this.activeIncidents.delete(endpoint);
+    }
+
+    forget(endpoint: string): void {
+        this.activeIncidents.delete(endpoint);
+    }
+
+    hasActiveIncident(endpoint: string): boolean {
+        return this.activeIncidents.has(endpoint);
+    }
 }
 
 export class FederationIngressGuard {
@@ -246,10 +274,13 @@ export async function notifyFederationIncident(incident: FederationIncident): Pr
 
         const key = `${incident.kind}:${incident.endpoint || "local"}`;
         const now = Date.now();
-        if (now - (lastNotifications.get(key) ?? 0) < NOTIFICATION_COOLDOWN_MS) {
+        const usesCooldown = federationIncidentUsesCooldown(incident.kind);
+        if (usesCooldown && now - (lastNotifications.get(key) ?? 0) < NOTIFICATION_COOLDOWN_MS) {
             return;
         }
-        lastNotifications.set(key, now);
+        if (usesCooldown) {
+            lastNotifications.set(key, now);
+        }
 
         const title = incidentTitle(config.lang, incident.kind);
         const body = incidentBody(config.lang, incident);
