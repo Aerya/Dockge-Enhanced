@@ -1525,6 +1525,9 @@
     "agentOfflineAlerts.suppress": "间歇性机器 — 不可用时不发送告警",
     "agentOfflineAlerts.localHint": "此设置仅应用于当前 Dockge 实例。自动重连和断路器保护仍保持启用。",
     "agentOfflineAlertPreferenceUpdated": "不可用告警偏好已更新",
+    "agentOfflineAlerts.badge": "间歇性",
+    "agentOfflineAlerts.markIntermittentTooltip": "不可用告警已启用 — 点击将此机器标记为间歇性",
+    "agentOfflineAlerts.restoreAlertsTooltip": "间歇性机器 — 不可用告警已禁用。点击重新启用告警",
     "releaseNews.item.federationAvailabilityAlerts": "联邦可用性告警现在按一次连续故障周期管理：同一次持续离线期间只发送一次断路器通知，只有在对端真正恢复在线后才会重新启用告警。关联实例还可以在本机标记为间歇性机器，在保留自动重连和断路器保护的同时静默不可用告警。"
 
 }

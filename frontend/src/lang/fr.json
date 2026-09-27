@@ -1584,6 +1584,9 @@
     "agentOfflineAlerts.suppress": "Machine intermittente — ne pas alerter si indisponible",
     "agentOfflineAlerts.localHint": "Réglage local à cette instance Dockge. Les reconnexions et le coupe-circuit restent actifs.",
     "agentOfflineAlertPreferenceUpdated": "Préférence d’alerte d’indisponibilité mise à jour",
+    "agentOfflineAlerts.badge": "Intermittente",
+    "agentOfflineAlerts.markIntermittentTooltip": "Alertes d’indisponibilité activées — cliquer pour marquer cette machine comme intermittente",
+    "agentOfflineAlerts.restoreAlertsTooltip": "Machine intermittente — alertes d’indisponibilité désactivées. Cliquer pour réactiver les alertes",
     "releaseNews.item.federationAvailabilityAlerts": "Les alertes de disponibilité de fédération sont désormais gérées par épisode : une seule notification de coupe-circuit est envoyée pendant une indisponibilité continue, puis l’alerte n’est réarmée qu’après un vrai retour en ligne du pair. Une instance liée peut aussi être marquée localement comme machine intermittente afin de supprimer ces alertes tout en conservant les reconnexions automatiques et la protection du coupe-circuit."
 
 }

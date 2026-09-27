@@ -141,7 +141,13 @@
                                         <span class="badge bg-info text-dark ms-2" :title="$t('localInstanceHint')">{{ $t("localInstance") }}</span>
                                     </template>
                                     <template v-else>
-                                        <a :href="agent.url" target="_blank">{{ agent.displayName || endpoint }}</a>
+                                        <span class="agent-name-line">
+                                            <a :href="agent.url" target="_blank">{{ agent.displayName || endpoint }}</a>
+                                            <span
+                                                v-if="agent.suppressOfflineAlerts"
+                                                class="badge rounded-pill agent-intermittent-badge"
+                                            >{{ $t("agentOfflineAlerts.badge") }}</span>
+                                        </span>
                                         <small v-if="agent.displayName" class="text-muted d-block">{{ endpoint }}</small>
                                     </template>
                                 </span>
@@ -161,15 +167,21 @@
                                 <font-awesome-icon icon="key" />
                             </button>
 
-                            <div v-if="endpoint !== ''" class="form-check form-switch mt-2 mb-2 agent-offline-alert-setting">
-                                <input
-                                    class="form-check-input" type="checkbox" role="switch"
-                                    :checked="Boolean(agent.suppressOfflineAlerts)"
-                                    @change="setAgentOfflineAlertSuppressed(agent, $event.target.checked)"
-                                >
-                                <span class="form-check-label">{{ $t("agentOfflineAlerts.suppress") }}</span>
-                                <small class="text-muted d-block">{{ $t("agentOfflineAlerts.localHint") }}</small>
-                            </div>
+                            <button
+                                v-if="endpoint !== ''"
+                                type="button"
+                                class="btn btn-sm btn-link p-1 ms-1 agent-offline-alert-toggle"
+                                :class="{ active: Boolean(agent.suppressOfflineAlerts) }"
+                                :title="$t(agent.suppressOfflineAlerts
+                                    ? 'agentOfflineAlerts.restoreAlertsTooltip'
+                                    : 'agentOfflineAlerts.markIntermittentTooltip')"
+                                :aria-label="$t(agent.suppressOfflineAlerts
+                                    ? 'agentOfflineAlerts.restoreAlertsTooltip'
+                                    : 'agentOfflineAlerts.markIntermittentTooltip')"
+                                @click="setAgentOfflineAlertSuppressed(agent, !Boolean(agent.suppressOfflineAlerts))"
+                            >
+                                <font-awesome-icon :icon="agent.suppressOfflineAlerts ? 'bell-slash' : 'bell'" />
+                            </button>
 
                             <!-- Remove Button -->
                             <font-awesome-icon v-if="endpoint !== ''" class="ms-2 remove-agent" icon="trash" @click="showRemoveAgentDialog[agent.url] = !showRemoveAgentDialog[agent.url]" />
@@ -923,6 +935,22 @@ table {
     flex: 1;
 }
 
+.agent-name-line {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    min-width: 0;
+}
+
+.agent-intermittent-badge {
+    padding: .2em .5em;
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+}
+
 .agent-name-input {
     width: min(220px, 100%);
 }
@@ -933,6 +961,23 @@ table {
 
 .reauthenticate-agent {
     color: var(--warning);
+}
+
+.agent-offline-alert-toggle {
+    color: var(--text-muted);
+    opacity: .72;
+    transition: color .15s ease, opacity .15s ease;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--text-color);
+        opacity: 1;
+    }
+
+    &.active {
+        color: var(--warning);
+        opacity: 1;
+    }
 }
 
 .summary-card {
