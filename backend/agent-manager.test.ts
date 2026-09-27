@@ -49,3 +49,24 @@ test("replaces stale agent credentials and reconnects the existing endpoint", as
         mock.restoreAll();
     }
 });
+
+test("persists the local offline-alert suppression preference", async () => {
+    const bean = {
+        suppress_offline_alerts: 0,
+    };
+    const calls: unknown[][] = [];
+    mock.method(R, "findOne", async () => bean);
+    mock.method(R, "store", async (value: unknown) => {
+        calls.push([ "store", value ]);
+    });
+
+    try {
+        const manager = Object.create(AgentManager.prototype) as AgentManager;
+        await manager.setOfflineAlertSuppressed("http://garuda:5001", true);
+        assert.equal(bean.suppress_offline_alerts, 1);
+        assert.equal(calls.length, 1);
+    } finally {
+        mock.restoreAll();
+    }
+});
+

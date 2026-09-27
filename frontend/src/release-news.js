@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-27-federation-availability-alerts",
+        items: [ "releaseNews.item.federationAvailabilityAlerts" ],
+    },
+    {
         id: "2026-09-26-process-wide-federation",
         items: [ "releaseNews.item.processWideFederation" ],
     },

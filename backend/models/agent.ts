@@ -24,6 +24,7 @@ export class Agent extends BeanModel {
             username: this.username,
             endpoint: this.endpoint,
             displayName: this.display_name || "",
+            suppressOfflineAlerts: Boolean(Number(this.suppress_offline_alerts)),
         };
     }
 

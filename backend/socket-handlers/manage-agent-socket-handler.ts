@@ -27,6 +27,13 @@ async function federationSelfForSocket(socket: DockgeSocket, server: DockgeServe
     });
 }
 
+export function normalizeAgentOfflineAlertSuppressed(value: unknown): boolean {
+    if (typeof value !== "boolean") {
+        throw new Error("Offline alert suppression must be a boolean");
+    }
+    return value;
+}
+
 export function normalizeAgentDisplayName(value: unknown): string {
     if (value === undefined || value === null) {
         return "";
@@ -162,6 +169,30 @@ export class ManageAgentSocketHandler extends SocketHandler {
                     msgi18n: true,
                 }, callback);
 
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        socket.on("setAgentOfflineAlertSuppressed", async (requestData : unknown, callback : unknown) => {
+            try {
+                checkLogin(socket);
+                if (!requestData || typeof requestData !== "object") {
+                    throw new Error("Data must be an object");
+                }
+                const data = requestData as LooseObject;
+                if (typeof data.url !== "string") {
+                    throw new Error("URL must be a string");
+                }
+                const suppressed = normalizeAgentOfflineAlertSuppressed(data.suppressOfflineAlerts);
+                await socket.instanceManager.setOfflineAlertSuppressed(data.url, suppressed);
+                await AgentManager.refreshFromDatabase();
+                await socket.instanceManager.sendAgentList();
+                callbackResult({
+                    ok: true,
+                    msg: "agentOfflineAlertPreferenceUpdated",
+                    msgi18n: true,
+                }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }

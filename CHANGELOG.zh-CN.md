@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-09-27 — 联邦可用性告警在同一次故障期间不再重复发送** — 断路器通知现在每次连续离线事件只发送一次，并且只有在对端成功重新认证并恢复在线后才会重新启用。关联实例可在本机标记为间歇性机器，使经常关机或休眠的台式机、笔记本等节点继续使用有界重连、退避和断路器保护，同时不再产生 Discord/Apprise 不可用告警。该偏好通过 `agent` 表的显式迁移持久化，并刻意保持为每个 Dockge 实例的本地设置，以避免 mesh 同步覆盖监控策略。
+
 **2026-09-21 — 自定义 hostname 下可靠识别当前容器** — Dockge-Enhanced 不再假定 `HOSTNAME` 始终等于 Docker 短容器 ID。共享解析器支持 Compose `hostname:`，拒绝不明确的匹配，并可使用 `DOCKGE_CONTAINER_ID` 显式指定容器。自更新检查与执行、外部 Stack 访问、托管根目录检测以及活动项目清理保护现在都使用解析后的不可变 ID。若无法识别已安装镜像，检查器会记录警告，Updates 页面会显示降级状态，而不再误报实例已是最新。修复 #399。
 
 **2026-09-17 — 网络命名空间安全的定向更新与回滚** — 在定向镜像更新、服务重新创建或镜像回滚前，Dockge-Enhanced 现在会通过 `docker compose config --format json` 读取已解析的模型。选定的提供者会与所有使用 `network_mode: service:<service>` 或本地 `network_mode: container:<container_name>` 的直接和间接消费者一起强制重新创建，而无关服务保持不变。因此，VPN、Gluetun 和 sidecar Stack 在自动、计划或手动更新以及回滚后都会保持连接到当前容器命名空间。

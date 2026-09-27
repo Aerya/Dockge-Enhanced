@@ -62,6 +62,11 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Septembre 2026
 
+**Alertes de disponibilité de fédération sans spam nocturne**
+
+Les notifications du coupe-circuit sont désormais liées à un épisode continu d’indisponibilité : chaque instance liée envoie au maximum une alerte tant que le pair reste hors ligne, et l’alerte n’est réarmée qu’après une authentification réellement réussie du pair. Chaque instance distante peut aussi être marquée localement **Machine intermittente — ne pas alerter si indisponible**. Ce mode est prévu pour les PC, portables et autres pairs régulièrement éteints ou en veille ; les reconnexions automatiques, le backoff et le coupe-circuit restent actifs. La préférence étant locale, il faut marquer le pair intermittent sur chaque instance Dockge toujours allumée depuis laquelle on ne souhaite pas recevoir ces alertes.
+
+
 **Transport de fédération partagé au niveau du processus**
 
 La fédération utilise désormais un seul transport sortant partagé par processus Dockge-Enhanced, au lieu d’un jeu de connexions par socket WebUI. Les instances liées sont chargées depuis SQLite et connectées automatiquement dès que le serveur écoute. Ouvrir plusieurs WebUI ne multiplie plus les sockets distantes, fermer le dernier navigateur ne déconnecte plus les instances liées et la reprise du coupe-circuit continue après environ 5 minutes même sans WebUI ouverte. Un changement d’identifiants, une réparation du mesh ou la suppression d’un pair resynchronise immédiatement le transport partagé.
