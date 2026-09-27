@@ -489,6 +489,9 @@
     "agentOfflineAlerts.suppress": "Máquina intermitente — no alertar si no está disponible",
     "agentOfflineAlerts.localHint": "Ajuste local para esta instancia de Dockge. Las reconexiones y el disyuntor siguen activos.",
     "agentOfflineAlertPreferenceUpdated": "Preferencia de alerta de indisponibilidad actualizada",
+    "agentOfflineAlerts.badge": "Intermitente",
+    "agentOfflineAlerts.markIntermittentTooltip": "Alertas de indisponibilidad activadas — haz clic para marcar esta máquina como intermitente",
+    "agentOfflineAlerts.restoreAlertsTooltip": "Máquina intermitente — alertas de indisponibilidad desactivadas. Haz clic para reactivarlas",
     "releaseNews.item.federationAvailabilityAlerts": "Las alertas de disponibilidad de la federación ahora se gestionan por episodio: se envía una sola notificación del disyuntor durante una caída continua y solo se rearma después de que el peer vuelva realmente a estar en línea. Una instancia vinculada también puede marcarse localmente como máquina intermitente para silenciar estas alertas sin desactivar las reconexiones automáticas ni la protección del disyuntor."
 
 }
