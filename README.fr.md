@@ -293,7 +293,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Cartes de santé
 - Détection des crash loops
 - Auto-heal des healthchecks
-- Logs live et plein écran
+- Logs live et plein écran, avec période **depuis le dernier redémarrage** et copie en un clic des **50 / 100 / 150** dernières lignes ou de toutes les lignes chargées
 - Pause de l'autoscroll et gestion des longues lignes
 - Intégrations Kula et Dozzle
 - Statistiques CPU/RAM par stack pour les instances locales et liées

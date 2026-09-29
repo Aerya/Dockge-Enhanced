@@ -492,6 +492,14 @@
     "agentOfflineAlerts.badge": "Intermitente",
     "agentOfflineAlerts.markIntermittentTooltip": "Alertas de indisponibilidad activadas — haz clic para marcar esta máquina como intermitente",
     "agentOfflineAlerts.restoreAlertsTooltip": "Máquina intermitente — alertas de indisponibilidad desactivadas. Haz clic para reactivarlas",
-    "releaseNews.item.federationAvailabilityAlerts": "Las alertas de disponibilidad de la federación ahora se gestionan por episodio: se envía una sola notificación del disyuntor durante una caída continua y solo se rearma después de que el peer vuelva realmente a estar en línea. Una instancia vinculada también puede marcarse localmente como máquina intermitente para silenciar estas alertas sin desactivar las reconexiones automáticas ni la protección del disyuntor."
-
+    "releaseNews.item.federationAvailabilityAlerts": "Las alertas de disponibilidad de la federación ahora se gestionan por episodio: se envía una sola notificación del disyuntor durante una caída continua y solo se rearma después de que el peer vuelva realmente a estar en línea. Una instancia vinculada también puede marcarse localmente como máquina intermitente para silenciar estas alertas sin desactivar las reconexiones automáticas ni la protección del disyuntor.",
+    "logSinceRestart": "Desde el último reinicio",
+    "logCopy": "Copiar",
+    "logCopy50": "Últimas 50 líneas",
+    "logCopy100": "Últimas 100 líneas",
+    "logCopy150": "Últimas 150 líneas",
+    "logCopyAll": "Todas las líneas cargadas",
+    "logCopied": "Se copiaron {count} líneas de logs.",
+    "logCopyEmpty": "No hay líneas de logs para copiar.",
+    "releaseNews.item.logRestartCopy": "Los logs de una stack ahora pueden filtrarse desde el último reinicio de Docker y copiarse al instante en bloques de 50, 100, 150 líneas o todas las líneas cargadas, respetando el servicio, el periodo y los timestamps seleccionados."
 }

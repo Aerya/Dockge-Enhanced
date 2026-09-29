@@ -592,6 +592,20 @@ export default {
             return null;
         },
 
+        getCapturedLogLines(limit = null) {
+            const lines = [ ...this.searchLines ];
+            if (this.partialSearchLine) {
+                lines.push(this.partialSearchLine);
+            }
+            while (lines.length > 0 && lines[lines.length - 1] === "") {
+                lines.pop();
+            }
+            if (Number.isInteger(limit) && limit > 0) {
+                return lines.slice(-limit);
+            }
+            return lines;
+        },
+
         normalizeSearchText(value) {
             return this.stripAnsi(String(value ?? ""))
                 .replace(/\s+/g, " ")

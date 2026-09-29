@@ -272,7 +272,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Estadísticas del sistema, stacks y contenedores
 - Barra de estado y tarjetas de salud
 - Crash loops y auto-heal
-- Logs live/pantalla completa
+- Logs live/pantalla completa, con periodo **desde el último reinicio** y copia en un clic de las últimas **50 / 100 / 150** líneas o de todas las líneas cargadas
 - Kula y Dozzle
 - Estadísticas CPU/RAM por stack de instancias locales y vinculadas
 
