@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { preserveTmpfsModeLiterals } from "./compose-yaml-preserve";
+import { preserveQuotedScalarStyles, preserveTmpfsModeLiterals } from "./compose-yaml-preserve";
 
 test("preserves leading-zero tmpfs mode after visual YAML regeneration", () => {
     const original = `services:
@@ -76,4 +76,36 @@ test("leaves generated YAML unchanged when tmpfs structure no longer matches", (
 `;
 
     assert.equal(preserveTmpfsModeLiterals(original, regenerated), regenerated);
+});
+
+
+test("preserves quoted bind mount with spaces and keeps it on one line", () => {
+    const original = `services:
+  codex-web:
+    volumes:
+      - /home/aerya/docker/codex-chatgpt-web/data/core:/home/aerya/.codex-chatgpt-web
+      - "/home/aerya/docker/codex-chatgpt-web/data/config:/home/aerya/.config/Codex Web GPT"
+      - /home/aerya/docker/codex-chatgpt-web/data/codex:/home/aerya/.codex
+`;
+
+    const regenerated = `services:
+  codex-web:
+    volumes:
+      - /home/aerya/docker/codex-chatgpt-web/data/core:/home/aerya/.codex-chatgpt-web
+      - /home/aerya/docker/codex-chatgpt-web/data/config:/home/aerya/.config/Codex Web GPT
+      - /home/aerya/docker/codex-chatgpt-web/data/codex:/home/aerya/.codex
+`;
+
+    const result = preserveQuotedScalarStyles(original, regenerated);
+    assert.match(result, /- "\/home\/aerya\/docker\/codex-chatgpt-web\/data\/config:\/home\/aerya\/\.config\/Codex Web GPT"/);
+    assert.doesNotMatch(result, /Codex\n\s+Web GPT/);
+});
+
+test("does not restore quotes when the scalar value was actually edited", () => {
+    const original = `services:\n  app:\n    command: "echo old value"\n`;
+    const regenerated = `services:\n  app:\n    command: echo new value\n`;
+
+    const result = preserveQuotedScalarStyles(original, regenerated);
+    assert.match(result, /command: echo new value/);
+    assert.doesNotMatch(result, /"echo new value"/);
 });

@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-29 — Preserve quoted YAML scalars** — The visual editor no longer drops single or double quotes from unchanged Compose values when regenerating YAML. Bind mounts and other scalars containing spaces or sensitive characters stay on one line through no-wrap serialization (`lineWidth: 0`). Quote style is restored by YAML path only when the value is unchanged, so genuine edits are never overwritten.
+
 **2026-09-29 — Compose YAML repair and formatter** — The **Fix / format YAML** action can now recover common Compose indentation mistakes before normalizing the document to **2 spaces**. Common service keys and lists (`environment`, `ports`, `volumes`, `healthcheck.test`, etc.) are realigned and the repaired YAML is validated before it is applied. If repair remains ambiguous or invalid, the original content is left untouched. Comments and leading-zero `tmpfs.mode` permissions remain preserved.
 
 **2026-09-29 — Faster stack-log diagnostics** — Stack logs now offer a **Since last restart** range based on Docker container `StartedAt` timestamps. The range follows the selected service and handles full-stack restarts without replaying unrelated old logs. A compact **Copy** menu can copy the latest 50, 100, 150 or all currently loaded log lines; copied text follows the active service/range/timestamp view and strips terminal ANSI sequences.
