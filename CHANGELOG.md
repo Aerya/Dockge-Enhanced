@@ -1,6 +1,6 @@
 # Dockge Enhanced Changelog
 
-**2026-09-29 — Compose YAML formatter** — The stack editor now includes a **Format YAML** action for `compose.yaml`. It validates the document before changing anything, normalizes indentation to **2 spaces**, preserves comments and leading-zero `tmpfs.mode` permissions, and leaves invalid YAML untouched while displaying the parser error.
+**2026-09-29 — Compose YAML repair and formatter** — The **Fix / format YAML** action can now recover common Compose indentation mistakes before normalizing the document to **2 spaces**. Common service keys and lists (`environment`, `ports`, `volumes`, `healthcheck.test`, etc.) are realigned and the repaired YAML is validated before it is applied. If repair remains ambiguous or invalid, the original content is left untouched. Comments and leading-zero `tmpfs.mode` permissions remain preserved.
 
 **2026-09-29 — Faster stack-log diagnostics** — Stack logs now offer a **Since last restart** range based on Docker container `StartedAt` timestamps. The range follows the selected service and handles full-stack restarts without replaying unrelated old logs. A compact **Copy** menu can copy the latest 50, 100, 150 or all currently loaded log lines; copied text follows the active service/range/timestamp view and strips terminal ANSI sequences.
 

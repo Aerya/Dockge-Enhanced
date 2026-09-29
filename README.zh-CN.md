@@ -121,9 +121,9 @@ Dockge-Enhanced 在受保护的自动更新前创建的强制 Restic 快照现�
 
 容器卡片现在同时支持 Compose 的短格式和长格式端口定义。使用 `published`、`target`、`protocol`、`mode` 或 `host_ip` 的配置不再触发 `split is not a function`，也不会再导致容器卡片消失。IPv6 `host_ip` 也会在生成的链接中正确格式化。
 
-**Compose YAML 格式化**
+**Compose YAML 修复与格式化**
 
-Stack 编辑器现在为 `compose.yaml` 提供 **格式化 YAML** 操作。它会先验证文档，再统一为 **2 个空格**缩进，同时保留注释以及带前导零的 `tmpfs.mode` 权限值。YAML 无效时不会改写内容，而会显示解析错误。
+Stack 编辑器现在为 `compose.yaml` 提供 **修复 / 格式化 YAML** 操作。有效文档会统一为 **2 个空格**缩进；若 YAML 因常见的 Compose 缩进错误而无效，Dockge-Enhanced 会尝试重新对齐服务键与列表（`services`、服务选项、`environment`、`ports`、`volumes`、`healthcheck.test` 等），验证修复结果后再格式化。注释以及带前导零的 `tmpfs.mode` 权限值会被保留。若无法安全修复，则保持原内容不变并显示错误。
 
 **Compose 编辑器保留 tmpfs 权限模式**
 

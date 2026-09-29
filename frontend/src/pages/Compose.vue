@@ -754,7 +754,7 @@ import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { parseDocument, Document } from "yaml";
 import { preserveTmpfsModeLiterals } from "../compose-yaml-preserve";
-import { formatComposeYAML } from "../compose-yaml-format";
+import { repairAndFormatComposeYAML } from "../compose-yaml-format";
 import { yamlVariableHighlight, setDefinedVars } from "../composables/codemirrorVariables";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -2323,18 +2323,18 @@ export default {
             const original = this.stack.composeYAML;
 
             try {
-                const formatted = formatComposeYAML(original);
-                if (formatted === original) {
+                const { yaml, repaired } = repairAndFormatComposeYAML(original);
+                if (yaml === original) {
                     this.$root.toastSuccess(this.$t("composeYamlAlreadyFormatted"));
                     return;
                 }
 
-                this.stack.composeYAML = formatted;
+                this.stack.composeYAML = yaml;
                 this.yamlCodeChange();
                 this.$nextTick(() => this.applyDefinedVars());
-                this.$root.toastSuccess(this.$t("composeYamlFormatted"));
+                this.$root.toastSuccess(this.$t(repaired ? "composeYamlIndentationRepaired" : "composeYamlFormatted"));
             } catch (e) {
-                this.$root.toastError(this.$t("composeYamlFormatError", { error: e?.message || String(e) }));
+                this.$root.toastError(this.$t("composeYamlRepairError", { error: e?.message || String(e) }));
             }
         },
 
