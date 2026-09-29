@@ -67,6 +67,10 @@
     "stackListResize": "Resize the stack list column",
     "copyRawCompose": "Copy raw Compose YAML",
     "rawComposeCopied": "Raw Compose YAML copied",
+    "formatComposeYaml": "Format Compose YAML",
+    "composeYamlFormatted": "Compose YAML formatted with two-space indentation.",
+    "composeYamlAlreadyFormatted": "Compose YAML is already correctly formatted.",
+    "composeYamlFormatError": "Unable to format YAML: {error}",
     "composeOverrideHint": "Optional override file (compose.override.yaml). Docker Compose automatically merges it on top of the main compose file.",
     "deleteStackRemoveFiles": "Delete stack files from disk",
     "deleteStackRemoveFilesHint": "If unchecked, containers are stopped and removed but the files are kept on disk (the stack stays editable).",
@@ -1600,5 +1604,6 @@
     "agentOfflineAlerts.markIntermittentTooltip": "Availability alerts enabled — click to mark this machine as intermittent",
     "agentOfflineAlerts.restoreAlertsTooltip": "Intermittent machine — availability alerts disabled. Click to re-enable alerts",
     "releaseNews.item.federationAvailabilityAlerts": "Federation availability alerts are now episode-based: one circuit-breaker notification is sent per continuous outage and is re-armed only after the peer is genuinely online again. Linked instances can also be marked as intermittent locally, suppressing availability alerts while keeping automatic reconnects and circuit-breaker protection active.",
-    "releaseNews.item.logRestartCopy": "Stack logs can now be filtered from the last Docker restart and copied instantly as the last 50, 100, 150 or all loaded lines, while respecting the current service, range and timestamp filters."
+    "releaseNews.item.logRestartCopy": "Stack logs can now be filtered from the last Docker restart and copied instantly as the last 50, 100, 150 or all loaded lines, while respecting the current service, range and timestamp filters.",
+    "releaseNews.item.composeYamlFormatter": "The compose.yaml editor now includes a Format YAML action that normalizes indentation to two spaces while preserving comments and tmpfs permissions; invalid YAML is never rewritten and the parsing error is shown instead."
 }

@@ -103,6 +103,7 @@ import {
     faThumbtack,
     faSun,
     faMoon,
+    faIndent,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -207,6 +208,7 @@ library.add(
     faThumbtack,
     faSun,
     faMoon,
+    faIndent,
 );
 
 export { FontAwesomeIcon };

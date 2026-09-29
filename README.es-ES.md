@@ -143,6 +143,10 @@ Las stacks gestionadas cuyo directorio contiene puntos o mayúsculas se relacion
 
 Las tarjetas de contenedores admiten ahora tanto la sintaxis corta como la larga de puertos Compose. Las definiciones con `published`, `target`, `protocol`, `mode` o `host_ip` ya no provocan `split is not a function` ni hacen desaparecer la tarjeta del contenedor. Los valores IPv6 de `host_ip` también se formatean correctamente en los enlaces generados.
 
+**Formateador YAML de Compose**
+
+El editor de la stack incluye una acción **Formatear YAML** para `compose.yaml`. Primero valida el documento y después normaliza la sangría a **2 espacios**, conservando los comentarios y los permisos `tmpfs.mode` con cero inicial. Si el YAML no es válido, no se modifica y se muestra el error de análisis.
+
 **Conservación de permisos tmpfs en el editor Compose**
 
 El editor visual de Compose conserva ahora los valores octales con cero inicial, como `tmpfs.mode: 01777`, cuando regenera el YAML. Modificar otro campo ya no reescribe silenciosamente ese permiso como `1777`.

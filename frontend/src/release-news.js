@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-29-compose-yaml-formatter",
+        items: [ "releaseNews.item.composeYamlFormatter" ],
+    },
+    {
         id: "2026-09-29-log-restart-copy",
         items: [ "releaseNews.item.logRestartCopy" ],
     },
