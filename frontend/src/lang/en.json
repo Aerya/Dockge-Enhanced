@@ -416,6 +416,14 @@
     "logTimestampsToggle": "Show/hide timestamps in logs",
     "logSince": "Range",
     "logSinceTail": "Latest lines",
+    "logSinceRestart": "Since last restart",
+    "logCopy": "Copy",
+    "logCopy50": "Last 50 lines",
+    "logCopy100": "Last 100 lines",
+    "logCopy150": "Last 150 lines",
+    "logCopyAll": "All loaded lines",
+    "logCopied": "{count} log lines copied.",
+    "logCopyEmpty": "No log lines to copy.",
     "logSince24h": "24 h",
     "logSince3d": "3 days",
     "logSince7d": "7 days",
@@ -1591,6 +1599,6 @@
     "agentOfflineAlerts.badge": "Intermittent",
     "agentOfflineAlerts.markIntermittentTooltip": "Availability alerts enabled — click to mark this machine as intermittent",
     "agentOfflineAlerts.restoreAlertsTooltip": "Intermittent machine — availability alerts disabled. Click to re-enable alerts",
-    "releaseNews.item.federationAvailabilityAlerts": "Federation availability alerts are now episode-based: one circuit-breaker notification is sent per continuous outage and is re-armed only after the peer is genuinely online again. Linked instances can also be marked as intermittent locally, suppressing availability alerts while keeping automatic reconnects and circuit-breaker protection active."
-
+    "releaseNews.item.federationAvailabilityAlerts": "Federation availability alerts are now episode-based: one circuit-breaker notification is sent per continuous outage and is re-armed only after the peer is genuinely online again. Linked instances can also be marked as intermittent locally, suppressing availability alerts while keeping automatic reconnects and circuit-breaker protection active.",
+    "releaseNews.item.logRestartCopy": "Stack logs can now be filtered from the last Docker restart and copied instantly as the last 50, 100, 150 or all loaded lines, while respecting the current service, range and timestamp filters."
 }

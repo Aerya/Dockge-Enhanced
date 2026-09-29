@@ -381,6 +381,7 @@
                                         @change="joinSelectedLogTerminal"
                                     >
                                         <option value="">{{ $t("logSinceTail") }}</option>
+                                        <option value="restart">{{ $t("logSinceRestart") }}</option>
                                         <option value="24h">{{ $t("logSince24h") }}</option>
                                         <option value="72h">{{ $t("logSince3d") }}</option>
                                         <option value="168h">{{ $t("logSince7d") }}</option>
@@ -452,6 +453,24 @@
                                     <font-awesome-icon :icon="logFollowOutput ? 'pause' : 'play'" class="me-1" />
                                     {{ $t(logFollowOutput ? 'logFollowPause' : 'logFollowResume') }}
                                 </button>
+                                <div class="dropdown">
+                                    <button
+                                        class="btn btn-sm btn-normal dropdown-toggle"
+                                        type="button"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                        :title="$t('logCopy')"
+                                    >
+                                        <font-awesome-icon icon="copy" class="me-1" />{{ $t('logCopy') }}
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><button class="dropdown-item" type="button" @click="copyLogLines(50)">{{ $t('logCopy50') }}</button></li>
+                                        <li><button class="dropdown-item" type="button" @click="copyLogLines(100)">{{ $t('logCopy100') }}</button></li>
+                                        <li><button class="dropdown-item" type="button" @click="copyLogLines(150)">{{ $t('logCopy150') }}</button></li>
+                                        <li><hr class="dropdown-divider" /></li>
+                                        <li><button class="dropdown-item" type="button" @click="copyLogLines(null)">{{ $t('logCopyAll') }}</button></li>
+                                    </ul>
+                                </div>
                                 <button
                                     class="btn btn-sm btn-normal"
                                     :title="$t(logsFullscreen ? 'logsExitFullscreen' : 'logsFullscreen')"
@@ -1028,12 +1047,43 @@ export default {
             return getCombinedTerminalName(this.endpoint, this.stack.name);
         },
 
+        effectiveSelectedLogSince() {
+            if (this.selectedLogSince !== "restart") {
+                return this.selectedLogSince;
+            }
+
+            const serviceStartedAt = this.selectedLogService
+                ? this.serviceStatusList[this.selectedLogService]?.startedAt
+                : null;
+            if (serviceStartedAt) {
+                const parsed = Date.parse(serviceStartedAt);
+                return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
+            }
+
+            const startedTimes = Object.values(this.serviceStatusList ?? {})
+                .map((service) => Date.parse(service?.startedAt ?? ""))
+                .filter((value) => Number.isFinite(value));
+            if (startedTimes.length > 0) {
+                const earliest = Math.min(...startedTimes);
+                const latest = Math.max(...startedTimes);
+                // A full compose restart normally starts every service close together.
+                // If starts are spread over more than five minutes, prefer the most
+                // recent service restart instead of replaying logs from an old service.
+                const selected = latest - earliest <= 5 * 60 * 1000 ? earliest : latest;
+                return new Date(selected).toISOString();
+            }
+
+            const fallback = Date.parse(this.lastStartedAt ?? "");
+            return Number.isFinite(fallback) ? new Date(fallback).toISOString() : "";
+        },
+
         selectedLogTerminalName() {
             if (!this.stack.name) {
                 return "";
             }
             const base = getStackLogsTerminalName(this.endpoint, this.stack.name, this.selectedLogService);
-            const since = this.selectedLogSince ? "-since-" + this.selectedLogSince.replace(/[^a-zA-Z0-9_-]/g, "") : "";
+            const effectiveSince = this.effectiveSelectedLogSince;
+            const since = effectiveSince ? "-since-" + effectiveSince.replace(/[^a-zA-Z0-9_-]/g, "") : "";
             return this.logTimestamps ? base + since + "_ts" : base + since;
         },
 
@@ -1102,6 +1152,11 @@ export default {
         },
     },
     watch: {
+        effectiveSelectedLogSince(value, previousValue) {
+            if (this.selectedLogSince === "restart" && previousValue && value && value !== previousValue) {
+                this.joinSelectedLogTerminal();
+            }
+        },
         stackActionLabels(value) {
             localStorage.setItem("stackActionLabels", value ? "1" : "0");
         },
@@ -1595,7 +1650,7 @@ export default {
             const previousSince = this.joinedLogSince;
             const previousTimestamps = this.joinedLogTimestamps;
             const nextService = this.selectedLogService;
-            const nextSince = this.selectedLogSince;
+            const nextSince = this.effectiveSelectedLogSince;
             const nextTimestamps = this.logTimestamps;
             const nextTerminalName = this.selectedLogTerminalName;
 
@@ -1655,6 +1710,29 @@ export default {
 
         toggleLogFollow() {
             this.logFollowOutput = !this.logFollowOutput;
+        },
+
+        async copyLogLines(limit) {
+            const lines = this.$refs.combinedTerminal?.getCapturedLogLines(limit) ?? [];
+            if (lines.length === 0) {
+                this.$root.toastError(this.$t("logCopyEmpty"));
+                return;
+            }
+
+            const content = lines.join("\n");
+            try {
+                await navigator.clipboard.writeText(content);
+            } catch {
+                const textarea = document.createElement("textarea");
+                textarea.value = content;
+                textarea.style.position = "fixed";
+                textarea.style.opacity = "0";
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                textarea.remove();
+            }
+            this.$root.toastSuccess(this.$t("logCopied", { count: lines.length }));
         },
 
         searchLogs(previous) {

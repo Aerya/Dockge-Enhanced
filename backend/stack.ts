@@ -1410,7 +1410,20 @@ export class Stack {
 
     normalizeLogSince(since: string): string {
         const allowed = new Set([ "24h", "72h", "168h", "336h" ]);
-        return allowed.has(since) ? since : "";
+        if (allowed.has(since)) {
+            return since;
+        }
+
+        // The Logs UI can request an exact Docker StartedAt timestamp for the
+        // "since last restart" range. Only accept a strict RFC3339/ISO value.
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(since)) {
+            const parsed = Date.parse(since);
+            if (Number.isFinite(parsed)) {
+                return new Date(parsed).toISOString();
+            }
+        }
+
+        return "";
     }
 
     async getVolumeUsage(): Promise<StackContainerVolumeUsage[]> {

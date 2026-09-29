@@ -293,7 +293,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Dashboard health cards
 - Crash-loop detection
 - Healthcheck auto-heal
-- Live and fullscreen logs
+- Live and fullscreen logs, including a **since last restart** range and one-click copy of the latest **50 / 100 / 150** or all loaded lines
 - Autoscroll pause and long-line handling
 - Kula and Dozzle integrations
 - Per-stack CPU/RAM statistics from local and linked instances

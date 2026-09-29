@@ -235,6 +235,14 @@
     "logSince3d": "3天",
     "logSince7d": "7天",
     "logSinceTail": "最新行",
+    "logSinceRestart": "自上次重启以来",
+    "logCopy": "复制",
+    "logCopy50": "最近 50 行",
+    "logCopy100": "最近 100 行",
+    "logCopy150": "最近 150 行",
+    "logCopyAll": "全部已加载行",
+    "logCopied": "已复制 {count} 行日志。",
+    "logCopyEmpty": "没有可复制的日志行。",
     "logTimestamps": "时间戳",
     "logTimestampsToggle": "在日志中显示/隐藏时间戳",
     "logsExitFullscreen": "退出日志全屏",
@@ -1528,6 +1536,6 @@
     "agentOfflineAlerts.badge": "间歇性",
     "agentOfflineAlerts.markIntermittentTooltip": "不可用告警已启用 — 点击将此机器标记为间歇性",
     "agentOfflineAlerts.restoreAlertsTooltip": "间歇性机器 — 不可用告警已禁用。点击重新启用告警",
-    "releaseNews.item.federationAvailabilityAlerts": "联邦可用性告警现在按一次连续故障周期管理：同一次持续离线期间只发送一次断路器通知，只有在对端真正恢复在线后才会重新启用告警。关联实例还可以在本机标记为间歇性机器，在保留自动重连和断路器保护的同时静默不可用告警。"
-
+    "releaseNews.item.federationAvailabilityAlerts": "联邦可用性告警现在按一次连续故障周期管理：同一次持续离线期间只发送一次断路器通知，只有在对端真正恢复在线后才会重新启用告警。关联实例还可以在本机标记为间歇性机器，在保留自动重连和断路器保护的同时静默不可用告警。",
+    "releaseNews.item.logRestartCopy": "堆栈日志现在可以从 Docker 上次重启时间开始筛选，并可一键复制最近 50、100、150 行或全部已加载日志，同时保留当前的服务、时间范围和时间戳筛选。"
 }

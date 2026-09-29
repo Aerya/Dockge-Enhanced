@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-29-log-restart-copy",
+        items: [ "releaseNews.item.logRestartCopy" ],
+    },
+    {
         id: "2026-09-27-federation-availability-alerts",
         items: [ "releaseNews.item.federationAvailabilityAlerts" ],
     },

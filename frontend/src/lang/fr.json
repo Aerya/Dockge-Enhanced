@@ -411,6 +411,14 @@
     "logTimestampsToggle": "Afficher/masquer les horodatages dans les logs",
     "logSince": "Période",
     "logSinceTail": "Dernières lignes",
+    "logSinceRestart": "Depuis le dernier redémarrage",
+    "logCopy": "Copier",
+    "logCopy50": "50 dernières lignes",
+    "logCopy100": "100 dernières lignes",
+    "logCopy150": "150 dernières lignes",
+    "logCopyAll": "Toutes les lignes chargées",
+    "logCopied": "{count} lignes de logs copiées.",
+    "logCopyEmpty": "Aucune ligne de log à copier.",
     "logSince24h": "24 h",
     "logSince3d": "3 jours",
     "logSince7d": "7 jours",
@@ -1587,6 +1595,6 @@
     "agentOfflineAlerts.badge": "Intermittente",
     "agentOfflineAlerts.markIntermittentTooltip": "Alertes d’indisponibilité activées — cliquer pour marquer cette machine comme intermittente",
     "agentOfflineAlerts.restoreAlertsTooltip": "Machine intermittente — alertes d’indisponibilité désactivées. Cliquer pour réactiver les alertes",
-    "releaseNews.item.federationAvailabilityAlerts": "Les alertes de disponibilité de fédération sont désormais gérées par épisode : une seule notification de coupe-circuit est envoyée pendant une indisponibilité continue, puis l’alerte n’est réarmée qu’après un vrai retour en ligne du pair. Une instance liée peut aussi être marquée localement comme machine intermittente afin de supprimer ces alertes tout en conservant les reconnexions automatiques et la protection du coupe-circuit."
-
+    "releaseNews.item.federationAvailabilityAlerts": "Les alertes de disponibilité de fédération sont désormais gérées par épisode : une seule notification de coupe-circuit est envoyée pendant une indisponibilité continue, puis l’alerte n’est réarmée qu’après un vrai retour en ligne du pair. Une instance liée peut aussi être marquée localement comme machine intermittente afin de supprimer ces alertes tout en conservant les reconnexions automatiques et la protection du coupe-circuit.",
+    "releaseNews.item.logRestartCopy": "Les logs d’une stack peuvent désormais être filtrés depuis le dernier redémarrage Docker et copiés instantanément par 50, 100, 150 lignes ou en totalité, en respectant le service, la période et l’horodatage sélectionnés."
 }
