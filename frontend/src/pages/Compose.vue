@@ -753,7 +753,7 @@ import { foldGutter, foldKeymap } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { parseDocument, Document } from "yaml";
-import { preserveTmpfsModeLiterals } from "../compose-yaml-preserve";
+import { preserveQuotedScalarStyles, preserveTmpfsModeLiterals } from "../compose-yaml-preserve";
 import { repairAndFormatComposeYAML } from "../compose-yaml-format";
 import { yamlVariableHighlight, setDefinedVars } from "../composables/codemirrorVariables";
 
@@ -1213,7 +1213,9 @@ export default {
                         copyYAMLComments(doc, this.yamlDoc);
                     }
 
-                    this.stack.composeYAML = preserveTmpfsModeLiterals(this.stack.composeYAML, doc.toString());
+                    const originalComposeYAML = this.stack.composeYAML;
+                    const regeneratedYAML = preserveQuotedScalarStyles(originalComposeYAML, doc.toString({ lineWidth: 0 }));
+                    this.stack.composeYAML = preserveTmpfsModeLiterals(originalComposeYAML, regeneratedYAML);
                     this.yamlDoc = doc;
                 }
             },
