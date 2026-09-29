@@ -142,9 +142,9 @@ Managed stacks whose directory name contains dots or uppercase characters are no
 Container cards now support both short and long Compose port syntax. Definitions using `published`, `target`, `protocol`, `mode` or `host_ip` no longer trigger `split is not a function` and no longer make the container card disappear. IPv6 `host_ip` values are also formatted correctly in generated links.
 
 
-**Compose YAML formatter**
+**Compose YAML repair and formatter**
 
-The stack editor includes a **Format YAML** action for `compose.yaml`. It validates the document first, then normalizes indentation to **2 spaces** while preserving comments and leading-zero `tmpfs.mode` permissions. Invalid YAML is left untouched and the parser error is shown instead.
+The stack editor includes a **Fix / format YAML** action for `compose.yaml`. Valid documents are normalized to **2-space** indentation. When YAML is invalid because of common Compose indentation mistakes, Dockge-Enhanced attempts to realign service keys and lists (`services`, service options, `environment`, `ports`, `volumes`, `healthcheck.test`, etc.), validates the repaired document, then formats it. Comments and leading-zero `tmpfs.mode` permissions are preserved. If a safe repair cannot be produced, the original content is left untouched and the error is shown.
 
 **tmpfs permission modes preserved by the Compose editor**
 

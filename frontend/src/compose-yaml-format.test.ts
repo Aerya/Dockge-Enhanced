@@ -53,3 +53,46 @@ test("throws on invalid YAML instead of rewriting it", () => {
 
     assert.throws(() => formatComposeYAML(source));
 });
+
+test("repairs common Docker Compose indentation mistakes before formatting", async () => {
+    const { repairAndFormatComposeYAML } = await import("./compose-yaml-format");
+    const source = `services:
+  freebox-dashboard:
+    image: ghcr.io/hghugo/freeboxos-ultra-dashboard:latest
+       container_name: freebox-dashboard
+   restart: always
+    ports:
+      - \${DASHBOARD_PORT:-7505}:6787
+    environment:
+      - NODE_ENV=production
+      -  PORT=6787
+      - FREEBOX_HOST=mafreebox.freebox.fr
+         - FREEBOX_TOKEN_FILE=/app/data/freebox_token.json
+    volumes:
+      - /volume1/docker/freebox_data:/app/data
+    healthcheck:
+      test:
+       - CMD
+       - wget
+       - --no-verbose
+       - --tries=1
+        - --spider
+        - http://127.0.0.1:6787/api/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+networks: {}
+`;
+
+    const result = repairAndFormatComposeYAML(source);
+
+    assert.equal(result.repaired, true);
+    assert.match(result.yaml, /  freebox-dashboard:\n    image:/);
+    assert.match(result.yaml, /    container_name: freebox-dashboard/);
+    assert.match(result.yaml, /    restart: always/);
+    assert.match(result.yaml, /    environment:\n      - NODE_ENV=production/);
+    assert.match(result.yaml, /      - FREEBOX_TOKEN_FILE=\/app\/data\/freebox_token\.json/);
+    assert.match(result.yaml, /      test:\n        - CMD\n        - wget/);
+    assert.match(result.yaml, /        - --spider/);
+});

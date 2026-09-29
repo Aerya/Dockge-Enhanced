@@ -141,9 +141,9 @@ Les stacks gérées dont le dossier contient des points ou des majuscules sont d
 
 Les cartes des conteneurs prennent désormais en charge les syntaxes courte et longue des ports Compose. Les définitions utilisant `published`, `target`, `protocol`, `mode` ou `host_ip` ne provoquent plus l'erreur `split is not a function` et ne font plus disparaître la carte du conteneur. Les valeurs IPv6 de `host_ip` sont également correctement formatées dans les liens générés.
 
-**Formateur YAML Compose**
+**Correction et formatage YAML Compose**
 
-L’éditeur de stack propose une action **Formater YAML** pour `compose.yaml`. Le document est d’abord validé, puis l’indentation est normalisée à **2 espaces** en conservant les commentaires et les permissions `tmpfs.mode` avec zéro initial. Si le YAML est invalide, son contenu reste intact et l’erreur d’analyse est affichée.
+L’éditeur de stack propose une action **Corriger / formater YAML** pour `compose.yaml`. Si le document est déjà valide, son indentation est simplement normalisée à **2 espaces**. S’il est invalide à cause d’erreurs d’indentation Compose courantes, Dockge-Enhanced tente de réaligner les clés et listes (`services`, options de service, `environment`, `ports`, `volumes`, `healthcheck.test`, etc.), valide le résultat, puis le formate. Les commentaires et permissions `tmpfs.mode` avec zéro initial sont conservés. Si une correction sûre ne peut pas être produite, le contenu original reste intact et l’erreur est affichée.
 
 **Préservation des permissions tmpfs dans l'éditeur Compose**
 

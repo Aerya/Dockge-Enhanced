@@ -67,8 +67,10 @@
     "stackListResize": "Redimensionner la colonne des stacks",
     "copyRawCompose": "Copier le YAML Compose brut",
     "rawComposeCopied": "YAML Compose brut copié",
-    "formatComposeYaml": "Formater le YAML Compose",
+    "formatComposeYaml": "Corriger / formater le YAML Compose",
     "composeYamlFormatted": "YAML Compose formaté avec une indentation de 2 espaces.",
+    "composeYamlIndentationRepaired": "Indentation du YAML Compose corrigée et formatée.",
+    "composeYamlRepairError": "Impossible de corriger automatiquement l’indentation : {error}",
     "composeYamlAlreadyFormatted": "Le YAML Compose est déjà correctement formaté.",
     "composeYamlFormatError": "Impossible de formater le YAML : {error}",
     "composeOverrideHint": "Fichier d'override optionnel (compose.override.yaml). Docker Compose le fusionne automatiquement par-dessus le fichier compose principal.",
@@ -1601,5 +1603,5 @@
     "agentOfflineAlerts.restoreAlertsTooltip": "Machine intermittente — alertes d’indisponibilité désactivées. Cliquer pour réactiver les alertes",
     "releaseNews.item.federationAvailabilityAlerts": "Les alertes de disponibilité de fédération sont désormais gérées par épisode : une seule notification de coupe-circuit est envoyée pendant une indisponibilité continue, puis l’alerte n’est réarmée qu’après un vrai retour en ligne du pair. Une instance liée peut aussi être marquée localement comme machine intermittente afin de supprimer ces alertes tout en conservant les reconnexions automatiques et la protection du coupe-circuit.",
     "releaseNews.item.logRestartCopy": "Les logs d’une stack peuvent désormais être filtrés depuis le dernier redémarrage Docker et copiés instantanément par 50, 100, 150 lignes ou en totalité, en respectant le service, la période et l’horodatage sélectionnés.",
-    "releaseNews.item.composeYamlFormatter": "L’éditeur compose.yaml dispose désormais d’une action Formater YAML qui normalise l’indentation à 2 espaces tout en conservant les commentaires et les permissions tmpfs ; un YAML invalide n’est jamais réécrit et l’erreur est affichée."
+    "releaseNews.item.composeYamlFormatter": "L’éditeur compose.yaml dispose désormais d’une action Corriger / formater YAML : elle répare les erreurs d’indentation Compose courantes, valide le résultat, puis normalise à 2 espaces en conservant commentaires et permissions tmpfs. Si la réparation reste ambiguë, le contenu original n’est pas réécrit."
 }

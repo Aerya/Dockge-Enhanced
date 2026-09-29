@@ -198,8 +198,10 @@
     "stackListResize": "Redimensionar la columna de stacks",
     "copyRawCompose": "Copiar el YAML Compose sin formato",
     "rawComposeCopied": "YAML Compose copiado sin formato",
-    "formatComposeYaml": "Formatear YAML de Compose",
+    "formatComposeYaml": "Corregir / formatear YAML de Compose",
     "composeYamlFormatted": "YAML de Compose formateado con sangría de 2 espacios.",
+    "composeYamlIndentationRepaired": "Sangría del YAML de Compose corregida y formateada.",
+    "composeYamlRepairError": "No se pudo corregir automáticamente la sangría: {error}",
     "composeYamlAlreadyFormatted": "El YAML de Compose ya está correctamente formateado.",
     "composeYamlFormatError": "No se puede formatear el YAML: {error}",
     "disableAuth": "desactivar la autenticación",
@@ -506,5 +508,5 @@
     "logCopied": "Se copiaron {count} líneas de logs.",
     "logCopyEmpty": "No hay líneas de logs para copiar.",
     "releaseNews.item.logRestartCopy": "Los logs de una stack ahora pueden filtrarse desde el último reinicio de Docker y copiarse al instante en bloques de 50, 100, 150 líneas o todas las líneas cargadas, respetando el servicio, el periodo y los timestamps seleccionados.",
-    "releaseNews.item.composeYamlFormatter": "El editor de compose.yaml incluye ahora una acción Formatear YAML que normaliza la sangría a 2 espacios conservando comentarios y permisos tmpfs; si el YAML no es válido, no se reescribe y se muestra el error de análisis."
+    "releaseNews.item.composeYamlFormatter": "El editor de compose.yaml incluye ahora una acción Corregir / formatear YAML: repara errores comunes de sangría de Compose, valida el resultado y después normaliza a 2 espacios conservando comentarios y permisos tmpfs. Si la reparación sigue siendo ambigua, el contenido original no se modifica."
 }
