@@ -526,6 +526,9 @@
                             <button type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('copyRawCompose')" @click="copyRawCompose">
                                 <font-awesome-icon icon="copy" />
                             </button>
+                            <button v-if="isEditMode" type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('formatComposeYaml')" @click="formatComposeYaml">
+                                <font-awesome-icon icon="indent" />
+                            </button>
                             <button v-if="!isEditMode" type="button" class="btn btn-sm btn-normal editor-fullscreen-btn" :title="$t('composeCollapse')" @click="toggleComposeCollapsed">
                                 <font-awesome-icon icon="chevron-right" />
                             </button>
@@ -751,6 +754,7 @@ import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { parseDocument, Document } from "yaml";
 import { preserveTmpfsModeLiterals } from "../compose-yaml-preserve";
+import { formatComposeYAML } from "../compose-yaml-format";
 import { yamlVariableHighlight, setDefinedVars } from "../composables/codemirrorVariables";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -2313,6 +2317,25 @@ export default {
                 config,
                 doc,
             };
+        },
+
+        formatComposeYaml() {
+            const original = this.stack.composeYAML;
+
+            try {
+                const formatted = formatComposeYAML(original);
+                if (formatted === original) {
+                    this.$root.toastSuccess(this.$t("composeYamlAlreadyFormatted"));
+                    return;
+                }
+
+                this.stack.composeYAML = formatted;
+                this.yamlCodeChange();
+                this.$nextTick(() => this.applyDefinedVars());
+                this.$root.toastSuccess(this.$t("composeYamlFormatted"));
+            } catch (e) {
+                this.$root.toastError(this.$t("composeYamlFormatError", { error: e?.message || String(e) }));
+            }
         },
 
         yamlCodeChange() {

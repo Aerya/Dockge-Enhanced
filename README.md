@@ -141,6 +141,11 @@ Managed stacks whose directory name contains dots or uppercase characters are no
 
 Container cards now support both short and long Compose port syntax. Definitions using `published`, `target`, `protocol`, `mode` or `host_ip` no longer trigger `split is not a function` and no longer make the container card disappear. IPv6 `host_ip` values are also formatted correctly in generated links.
 
+
+**Compose YAML formatter**
+
+The stack editor includes a **Format YAML** action for `compose.yaml`. It validates the document first, then normalizes indentation to **2 spaces** while preserving comments and leading-zero `tmpfs.mode` permissions. Invalid YAML is left untouched and the parser error is shown instead.
+
 **tmpfs permission modes preserved by the Compose editor**
 
 The visual Compose editor now preserves leading-zero octal values such as `tmpfs.mode: 01777` when it regenerates YAML. Editing another field no longer silently rewrites that permission value as `1777`.

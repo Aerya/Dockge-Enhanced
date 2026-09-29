@@ -141,6 +141,10 @@ Les stacks gérées dont le dossier contient des points ou des majuscules sont d
 
 Les cartes des conteneurs prennent désormais en charge les syntaxes courte et longue des ports Compose. Les définitions utilisant `published`, `target`, `protocol`, `mode` ou `host_ip` ne provoquent plus l'erreur `split is not a function` et ne font plus disparaître la carte du conteneur. Les valeurs IPv6 de `host_ip` sont également correctement formatées dans les liens générés.
 
+**Formateur YAML Compose**
+
+L’éditeur de stack propose une action **Formater YAML** pour `compose.yaml`. Le document est d’abord validé, puis l’indentation est normalisée à **2 espaces** en conservant les commentaires et les permissions `tmpfs.mode` avec zéro initial. Si le YAML est invalide, son contenu reste intact et l’erreur d’analyse est affichée.
+
 **Préservation des permissions tmpfs dans l'éditeur Compose**
 
 L'éditeur visuel Compose conserve désormais les valeurs octales avec zéro initial telles que `tmpfs.mode: 01777` lorsqu'il régénère le YAML. Modifier un autre champ ne réécrit donc plus silencieusement cette permission en `1777`.

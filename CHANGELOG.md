@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-09-29 — Compose YAML formatter** — The stack editor now includes a **Format YAML** action for `compose.yaml`. It validates the document before changing anything, normalizes indentation to **2 spaces**, preserves comments and leading-zero `tmpfs.mode` permissions, and leaves invalid YAML untouched while displaying the parser error.
+
 **2026-09-29 — Faster stack-log diagnostics** — Stack logs now offer a **Since last restart** range based on Docker container `StartedAt` timestamps. The range follows the selected service and handles full-stack restarts without replaying unrelated old logs. A compact **Copy** menu can copy the latest 50, 100, 150 or all currently loaded log lines; copied text follows the active service/range/timestamp view and strips terminal ANSI sequences.
 
 **2026-09-27 — Federation availability alerts without repeated outage spam** — Circuit-breaker notifications are now emitted once per continuous peer outage and are re-armed only after a successful online authentication. A linked instance can be marked locally as intermittent so desktops, laptops and other routinely powered-off peers keep reconnecting with bounded backoff and circuit-breaker protection without generating Discord/Apprise availability alerts. The preference is persisted in the `agent` table through an explicit migration and is intentionally local to each Dockge instance so monitoring policy is not overwritten by mesh synchronization.
