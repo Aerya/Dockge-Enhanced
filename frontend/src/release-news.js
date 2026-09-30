@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-09-30-auto-prune-reliability",
+        items: [ "releaseNews.item.autoPruneReliability" ],
+    },
+    {
         id: "2026-09-29-compose-yaml-formatter",
         items: [ "releaseNews.item.composeYamlFormatter" ],
     },

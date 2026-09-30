@@ -12,8 +12,8 @@ test("formats Compose YAML with two-space indentation", () => {
 
     const result = formatComposeYAML(source);
 
-    assert.match(result, /^services:\n  app:\n    image: example\/app/m);
-    assert.match(result, /    environment:\n      FOO: bar/);
+    assert.match(result, /^services:\n {2}app:\n {4}image: example\/app/m);
+    assert.match(result, / {4}environment:\n {6}FOO: bar/);
 });
 
 test("preserves comments while formatting", () => {
@@ -88,11 +88,11 @@ networks: {}
     const result = repairAndFormatComposeYAML(source);
 
     assert.equal(result.repaired, true);
-    assert.match(result.yaml, /  freebox-dashboard:\n    image:/);
-    assert.match(result.yaml, /    container_name: freebox-dashboard/);
-    assert.match(result.yaml, /    restart: always/);
-    assert.match(result.yaml, /    environment:\n      - NODE_ENV=production/);
-    assert.match(result.yaml, /      - FREEBOX_TOKEN_FILE=\/app\/data\/freebox_token\.json/);
-    assert.match(result.yaml, /      test:\n        - CMD\n        - wget/);
-    assert.match(result.yaml, /        - --spider/);
+    assert.match(result.yaml, / {2}freebox-dashboard:\n {4}image:/);
+    assert.match(result.yaml, / {4}container_name: freebox-dashboard/);
+    assert.match(result.yaml, / {4}restart: always/);
+    assert.match(result.yaml, / {4}environment:\n {6}- NODE_ENV=production/);
+    assert.match(result.yaml, / {6}- FREEBOX_TOKEN_FILE=\/app\/data\/freebox_token\.json/);
+    assert.match(result.yaml, / {6}test:\n {8}- CMD\n {8}- wget/);
+    assert.match(result.yaml, / {8}- --spider/);
 });

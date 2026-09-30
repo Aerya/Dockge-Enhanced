@@ -112,7 +112,7 @@ interface QuotedScalarStyle {
     type: "QUOTE_DOUBLE" | "QUOTE_SINGLE";
 }
 
-type YamlNode = any;
+type YamlNode = unknown;
 
 function scalarPathKey(path: Array<string | number>): string {
     return JSON.stringify(path);
@@ -121,7 +121,10 @@ function scalarPathKey(path: Array<string | number>): string {
 function collectQuotedScalarStyles(node: YamlNode, path: Array<string | number>, styles: Map<string, QuotedScalarStyle>) {
     if (isScalar(node)) {
         if ((node.type === "QUOTE_DOUBLE" || node.type === "QUOTE_SINGLE") && typeof node.value === "string") {
-            styles.set(scalarPathKey(path), { value: node.value, type: node.type });
+            styles.set(scalarPathKey(path), {
+                value: node.value,
+                type: node.type,
+            });
         }
         return;
     }

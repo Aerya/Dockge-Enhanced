@@ -1182,7 +1182,7 @@
     "dockerResources.networks.disconnectConfirm": "將「{container}」從網路「{network}」中斷連線？此操作可能中斷服務。",
     "dockerResources.autoPrune.heading": "自動清理",
     "dockerResources.autoPrune.danglingHeading": "懸空（無標籤）",
-    "dockerResources.autoPrune.unusedHeading": "未使用（有標籤）",
+    "dockerResources.autoPrune.unusedHeading": "未使用的映像檔",
     "dockerResources.autoPrune.enable": "啟用",
     "dockerResources.autoPrune.interval": "頻率",
     "dockerResources.autoPrune.intervals.24": "每 24 小時",

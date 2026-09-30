@@ -102,8 +102,8 @@ test("preserves quoted bind mount with spaces and keeps it on one line", () => {
 });
 
 test("does not restore quotes when the scalar value was actually edited", () => {
-    const original = `services:\n  app:\n    command: "echo old value"\n`;
-    const regenerated = `services:\n  app:\n    command: echo new value\n`;
+    const original = "services:\n  app:\n    command: \"echo old value\"\n";
+    const regenerated = "services:\n  app:\n    command: echo new value\n";
 
     const result = preserveQuotedScalarStyles(original, regenerated);
     assert.match(result, /command: echo new value/);

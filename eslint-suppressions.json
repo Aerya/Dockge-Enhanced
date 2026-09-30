@@ -449,22 +449,19 @@
   },
   "backend/watchers/auto-prune-manager.ts": {
     "@stylistic/brace-style": {
-      "count": 12
+      "count": 4
     },
     "@stylistic/max-statements-per-line": {
-      "count": 3
+      "count": 2
     },
     "@stylistic/no-multi-spaces": {
       "count": 20
     },
     "@stylistic/object-property-newline": {
-      "count": 12
-    },
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
+      "count": 1
     },
     "curly": {
-      "count": 8
+      "count": 3
     }
   },
   "backend/watchers/backup-manager.test.ts": {
@@ -979,9 +976,6 @@
     },
     "@stylistic/max-statements-per-line": {
       "count": 5
-    },
-    "@stylistic/no-multi-spaces": {
-      "count": 17
     },
     "@stylistic/object-property-newline": {
       "count": 21
