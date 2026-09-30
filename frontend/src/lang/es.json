@@ -508,5 +508,7 @@
     "logCopied": "Se copiaron {count} líneas de logs.",
     "logCopyEmpty": "No hay líneas de logs para copiar.",
     "releaseNews.item.logRestartCopy": "Los logs de una stack ahora pueden filtrarse desde el último reinicio de Docker y copiarse al instante en bloques de 50, 100, 150 líneas o todas las líneas cargadas, respetando el servicio, el periodo y los timestamps seleccionados.",
-    "releaseNews.item.composeYamlFormatter": "El editor de compose.yaml incluye ahora una acción Corregir / formatear YAML: repara errores comunes de sangría de Compose, valida el resultado y después normaliza a 2 espacios conservando comentarios y permisos tmpfs. Si la reparación sigue siendo ambigua, el contenido original no se modifica."
+    "releaseNews.item.composeYamlFormatter": "El editor de compose.yaml incluye ahora una acción Corregir / formatear YAML: repara errores comunes de sangría de Compose, valida el resultado y después normaliza a 2 espacios conservando comentarios y permisos tmpfs. Si la reparación sigue siendo ambigua, el contenido original no se modifica.",
+    "releaseNews.item.autoPruneReliability": "La limpieza programada ya no salta la siguiente ejecución por unos segundos de diferencia. Las imágenes antiguas de Enhanced pueden eliminarse en la siguiente limpieza al menos 48 horas después de una autoactualización correcta; las imágenes activas y de recuperación permanecen protegidas.",
+    "dockerResources.autoPrune.unusedHeading": "Imágenes sin uso"
 }

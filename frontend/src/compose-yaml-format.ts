@@ -32,7 +32,10 @@ const SERVICE_MAPPING_KEYS = new Set([
     "blkio_config", "build", "credential_spec", "deploy", "develop", "healthcheck", "logging", "storage_opt",
 ]);
 
-function mappingKey(content: string): { key: string; emptyValue: boolean } | null {
+function mappingKey(content: string): {
+    key: string;
+    emptyValue: boolean;
+} | null {
     if (content.startsWith("- ") || content.startsWith("-") || content.startsWith("#")) {
         return null;
     }
@@ -44,7 +47,10 @@ function mappingKey(content: string): { key: string; emptyValue: boolean } | nul
 
     const key = match[1].trim().replace(/^['"]|['"]$/g, "");
     const value = (match[2] ?? "").trim();
-    return { key, emptyValue: value === "" || value.startsWith("#") };
+    return {
+        key,
+        emptyValue: value === "" || value.startsWith("#"),
+    };
 }
 
 function nextMeaningfulLine(lines: string[], start: number): string | null {
@@ -202,11 +208,17 @@ export function formatComposeYAML(source: string): string {
     return preserveTmpfsModeLiterals(source, formatted);
 }
 
-export function repairAndFormatComposeYAML(source: string): { yaml: string; repaired: boolean } {
+export function repairAndFormatComposeYAML(source: string): {
+    yaml: string;
+    repaired: boolean;
+} {
     const originalDoc = parseDocument(source);
 
     if (originalDoc.errors.length === 0) {
-        return { yaml: formatComposeYAML(source), repaired: false };
+        return {
+            yaml: formatComposeYAML(source),
+            repaired: false,
+        };
     }
 
     const repairedSource = repairComposeIndentationCandidate(source);

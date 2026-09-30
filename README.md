@@ -62,6 +62,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 September 2026
 
+**Reliable automatic image cleanup**
+
+Automatic cleanup no longer skips the next scheduled slot when a previous run finished a few seconds late. Tagged images referenced by any container, including stopped containers, and rollback images are preserved. Old Dockge-Enhanced images pulled by digest become eligible at the next cleanup at least 48 hours after a successful self-update; the active image and recovery images are kept. Docker errors from the most recent cleanup are shown in Docker Resources.
+
 **Federation availability alerts without overnight spam**
 
 Circuit-breaker availability notifications are now tied to a continuous outage episode: each linked instance sends at most one alert while a peer remains offline, and the alert is re-armed only after that peer successfully authenticates online again. Each remote instance can also be marked locally as **Intermittent machine — do not alert when unavailable**. This is intended for desktops, laptops and other peers that are routinely powered off or suspended; automatic reconnects, backoff and circuit-breaker protection remain active. Because the preference is local, mark the intermittent peer on every always-on Dockge instance from which you do not want availability alerts.

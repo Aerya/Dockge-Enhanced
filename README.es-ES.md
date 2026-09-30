@@ -64,6 +64,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Septiembre de 2026
 
+**Limpieza automática de imágenes más fiable**
+
+La limpieza ya no salta la siguiente ejecución programada si la anterior terminó unos segundos después de la hora prevista. Se conservan las imágenes usadas por cualquier contenedor, incluso detenido, y las imágenes de rollback. Las imágenes antiguas de Dockge-Enhanced descargadas por digest pueden eliminarse en la siguiente limpieza al menos 48 horas después de una autoactualización correcta; se conservan la imagen activa y las de recuperación. Los errores Docker de la última limpieza aparecen en Recursos Docker.
+
 **Alertas de disponibilidad de federación sin spam nocturno**
 
 Las notificaciones del disyuntor ahora están ligadas a un episodio continuo de indisponibilidad: cada instancia vinculada envía como máximo una alerta mientras el peer siga fuera de línea y la alerta solo se rearma después de que el peer vuelva a autenticarse correctamente. Cada instancia remota también puede marcarse localmente como **Máquina intermitente — no alertar si no está disponible**. Este modo está pensado para PC, portátiles y otros peers que se apagan o suspenden habitualmente; las reconexiones automáticas, el backoff y la protección del disyuntor siguen activos. Como la preferencia es local, hay que marcar el peer intermitente en cada instancia Dockge siempre encendida desde la que no se quieran recibir alertas.

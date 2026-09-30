@@ -186,6 +186,9 @@
                                     <div>{{ $t("dockerResources.autoPrune.nextRun") }} :
                                         <strong>{{ fmtDate(autoPrune.nextUnusedRun) }}</strong>
                                     </div>
+                                    <div v-for="error in autoPrune.lastUnusedErrors" :key="error" class="text-danger small">
+                                        {{ error }}
+                                    </div>
                                 </div>
 
                                 <!-- Exclusions -->
@@ -780,32 +783,33 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 interface AutoPruneSettings {
     // Mode orphelines (dangling)
-    danglingEnabled:       boolean;
+    danglingEnabled: boolean;
     danglingIntervalHours: 24 | 48 | 168;
-    lastDanglingRun?:      string;
-    lastDanglingResult?:   string;
-    nextDanglingRun?:      string | null;
+    lastDanglingRun?: string;
+    lastDanglingResult?: string;
+    nextDanglingRun?: string | null;
     // Mode inutilisées (unused tagged)
-    unusedEnabled:         boolean;
-    unusedIntervalHours:   24 | 48 | 168;
-    unusedExclusions:      string[];
-    lastUnusedRun?:        string;
-    lastUnusedResult?:     string;
-    nextUnusedRun?:        string | null;
+    unusedEnabled: boolean;
+    unusedIntervalHours: 24 | 48 | 168;
+    unusedExclusions: string[];
+    lastUnusedRun?: string;
+    lastUnusedResult?: string;
+    lastUnusedErrors?: string[];
+    nextUnusedRun?: string | null;
 }
 
 const autoPrune = ref<AutoPruneSettings>({
-    danglingEnabled:       false,
+    danglingEnabled: false,
     danglingIntervalHours: 24,
-    unusedEnabled:         false,
-    unusedIntervalHours:   168,
-    unusedExclusions:      [],
+    unusedEnabled: false,
+    unusedIntervalHours: 168,
+    unusedExclusions: [],
 });
-const autoPruneOpen        = ref(false);
-const autoPruneLoaded      = ref(false);
-const savingPrune          = ref(false);
+const autoPruneOpen = ref(false);
+const autoPruneLoaded = ref(false);
+const savingPrune = ref(false);
 const runningDanglingPrune = ref(false);
-const runningUnusedPrune   = ref(false);
+const runningUnusedPrune = ref(false);
 
 // ─── Computed ─────────────────────────────────────────────────────
 
@@ -915,7 +919,7 @@ const sortedImages = computed(() => {
 });
 
 function toggleImgSizeSort() {
-    if (imgSizeSort.value === null)   imgSizeSort.value = "desc";
+    if (imgSizeSort.value === null) imgSizeSort.value = "desc";
     else if (imgSizeSort.value === "desc") imgSizeSort.value = "asc";
     else imgSizeSort.value = null;
 }
@@ -950,8 +954,8 @@ function token(): string {
 async function api(method: string, path: string, body?: unknown) {
     const t = token();
     const base = `/api/docker/${path}`;
-    const sep  = base.includes("?") ? "&" : "?";
-    const url  = t ? `${base}${sep}token=${encodeURIComponent(t)}` : base;
+    const sep = base.includes("?") ? "&" : "?";
+    const url = t ? `${base}${sep}token=${encodeURIComponent(t)}` : base;
     const res = await fetch(url, {
         method,
         headers: {

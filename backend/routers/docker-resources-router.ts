@@ -124,9 +124,9 @@ function volContainersFromInspect(
 }
 
 function computeStatus(containers: ContainerRef[], dangling = false): string {
-    if (dangling) return "dangling";
     if (containers.some(c => c.state === "running" || c.state === "restarting")) return "running";
     if (containers.length > 0) return "stopped";
+    if (dangling) return "dangling";
     return "unused";
 }
 
@@ -175,12 +175,13 @@ export class DockerResourcesRouter extends Router {
 
                 // Merge : on ajoute les dangling intermédiaires absents de la liste principale
                 const seenIds = new Set(rawImgs.map(img => img["ID"]));
+                const danglingIds = new Set(allDangling.map(img => img["ID"]));
                 const extraDangling = allDangling.filter(img => !seenIds.has(img["ID"]));
                 const mergedImgs = [...rawImgs, ...extraDangling];
 
                 const images = mergedImgs.map(img => {
-                    const isDangling = img["Repository"] === "<none>" && img["Tag"] === "<none>";
-                    const name = isDangling ? img["ID"]! : `${img["Repository"]}:${img["Tag"]}`;
+                    const isDangling = danglingIds.has(img["ID"]);
+                    const name = img["Repository"] === "<none>" ? img["ID"]! : `${img["Repository"]}:${img["Tag"]}`;
                     const containers = imgContainers(rawCtrs, name, img["ID"] ?? "");
                     const status = computeStatus(containers, isDangling);
                     const dockgeStacks = [...new Set(containers.map(c => c.stackName).filter(Boolean))];

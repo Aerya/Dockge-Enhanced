@@ -1213,7 +1213,7 @@
     "dockerResources.networks.disconnectConfirm": "将“{container}”从网络“{network}”断开？此操作可能中断服务。",
     "dockerResources.autoPrune.heading": "自动清理",
     "dockerResources.autoPrune.danglingHeading": "悬空（无标签）",
-    "dockerResources.autoPrune.unusedHeading": "未使用（有标签）",
+    "dockerResources.autoPrune.unusedHeading": "未使用的镜像",
     "dockerResources.autoPrune.enable": "启用",
     "dockerResources.autoPrune.interval": "频率",
     "dockerResources.autoPrune.intervals.24": "每 24 小时",
@@ -1544,5 +1544,6 @@
     "agentOfflineAlerts.restoreAlertsTooltip": "间歇性机器 — 不可用告警已禁用。点击重新启用告警",
     "releaseNews.item.federationAvailabilityAlerts": "联邦可用性告警现在按一次连续故障周期管理：同一次持续离线期间只发送一次断路器通知，只有在对端真正恢复在线后才会重新启用告警。关联实例还可以在本机标记为间歇性机器，在保留自动重连和断路器保护的同时静默不可用告警。",
     "releaseNews.item.logRestartCopy": "堆栈日志现在可以从 Docker 上次重启时间开始筛选，并可一键复制最近 50、100、150 行或全部已加载日志，同时保留当前的服务、时间范围和时间戳筛选。",
-    "releaseNews.item.composeYamlFormatter": "compose.yaml 编辑器现在提供“修复 / 格式化 YAML”操作：可修复常见的 Compose 缩进错误，验证结果后统一为 2 个空格缩进，并保留注释与 tmpfs 权限；若无法安全判断修复方式，则保持原内容不变。"
+    "releaseNews.item.composeYamlFormatter": "compose.yaml 编辑器现在提供“修复 / 格式化 YAML”操作：可修复常见的 Compose 缩进错误，验证结果后统一为 2 个空格缩进，并保留注释与 tmpfs 权限；若无法安全判断修复方式，则保持原内容不变。",
+    "releaseNews.item.autoPruneReliability": "定时清理不会再因几秒钟的偏差而跳过下一个计划时段。成功自更新至少 48 小时后，可在下一次清理中删除旧版 Enhanced 镜像，当前镜像和恢复镜像仍受保护。"
 }

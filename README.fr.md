@@ -62,6 +62,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Septembre 2026
 
+**Purge automatique des images fiabilisée**
+
+La purge ne saute plus le créneau suivant lorsque la précédente exécution s'est terminée quelques secondes après l'heure prévue. Les images utilisées par un conteneur, même arrêté, ainsi que les images de rollback sont conservées. Les anciennes images de Dockge-Enhanced tirées par digest deviennent éligibles au prochain nettoyage au moins 48 h après un self-update réussi ; l'image active et celles de récupération restent disponibles. Les erreurs Docker de la dernière purge sont visibles dans Ressources Docker.
+
 **Alertes de disponibilité de fédération sans spam nocturne**
 
 Les notifications du coupe-circuit sont désormais liées à un épisode continu d’indisponibilité : chaque instance liée envoie au maximum une alerte tant que le pair reste hors ligne, et l’alerte n’est réarmée qu’après une authentification réellement réussie du pair. Chaque instance distante peut aussi être marquée localement **Machine intermittente — ne pas alerter si indisponible**. Ce mode est prévu pour les PC, portables et autres pairs régulièrement éteints ou en veille ; les reconnexions automatiques, le backoff et le coupe-circuit restent actifs. La préférence étant locale, il faut marquer le pair intermittent sur chaque instance Dockge toujours allumée depuis laquelle on ne souhaite pas recevoir ces alertes.

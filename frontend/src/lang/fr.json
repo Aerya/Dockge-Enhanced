@@ -1262,7 +1262,7 @@
     "dockerResources.networks.disconnectConfirm": "Déconnecter « {container} » du réseau « {network} » ? Cette action peut interrompre le service.",
     "dockerResources.autoPrune.heading": "Purge automatique",
     "dockerResources.autoPrune.danglingHeading": "Orphelines (sans tag)",
-    "dockerResources.autoPrune.unusedHeading": "Inutilisées (avec tag)",
+    "dockerResources.autoPrune.unusedHeading": "Images inutilisées",
     "dockerResources.autoPrune.enable": "Activer",
     "dockerResources.autoPrune.interval": "Fréquence",
     "dockerResources.autoPrune.intervals.24": "Toutes les 24h",
@@ -1603,5 +1603,6 @@
     "agentOfflineAlerts.restoreAlertsTooltip": "Machine intermittente — alertes d’indisponibilité désactivées. Cliquer pour réactiver les alertes",
     "releaseNews.item.federationAvailabilityAlerts": "Les alertes de disponibilité de fédération sont désormais gérées par épisode : une seule notification de coupe-circuit est envoyée pendant une indisponibilité continue, puis l’alerte n’est réarmée qu’après un vrai retour en ligne du pair. Une instance liée peut aussi être marquée localement comme machine intermittente afin de supprimer ces alertes tout en conservant les reconnexions automatiques et la protection du coupe-circuit.",
     "releaseNews.item.logRestartCopy": "Les logs d’une stack peuvent désormais être filtrés depuis le dernier redémarrage Docker et copiés instantanément par 50, 100, 150 lignes ou en totalité, en respectant le service, la période et l’horodatage sélectionnés.",
-    "releaseNews.item.composeYamlFormatter": "L’éditeur compose.yaml dispose désormais d’une action Corriger / formater YAML : elle répare les erreurs d’indentation Compose courantes, valide le résultat, puis normalise à 2 espaces en conservant commentaires et permissions tmpfs. Si la réparation reste ambiguë, le contenu original n’est pas réécrit."
+    "releaseNews.item.composeYamlFormatter": "L’éditeur compose.yaml dispose désormais d’une action Corriger / formater YAML : elle répare les erreurs d’indentation Compose courantes, valide le résultat, puis normalise à 2 espaces en conservant commentaires et permissions tmpfs. Si la réparation reste ambiguë, le contenu original n’est pas réécrit.",
+    "releaseNews.item.autoPruneReliability": "La purge planifiée ne saute plus le créneau suivant à cause de quelques secondes de décalage. Les anciennes images Enhanced peuvent être supprimées au prochain nettoyage au moins 48 h après un self-update réussi ; les images actives et de récupération restent protégées."
 }
