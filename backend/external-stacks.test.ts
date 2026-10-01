@@ -5,6 +5,7 @@ import path from "node:path";
 import { promises as fs } from "node:fs";
 import { DiscoveredExternalStack, ExternalStackCleanupPreview, ExternalStackManager, isManagedComposeProject, isSafeExternalDataPath, selectAllowedMounts, selectManagedStackRoots } from "./external-stacks";
 import { Stack } from "./stack";
+import { selectExistingComposeFiles } from "./external-stack-access";
 
 async function fixture() {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-external-stacks-"));
@@ -45,6 +46,20 @@ function discovered(value: Awaited<ReturnType<typeof fixture>>, project = "demo"
 function stubDiscovery(value: Awaited<ReturnType<typeof fixture>>, entry: DiscoveredExternalStack): void {
     value.manager.discover = async () => [ entry ];
 }
+
+test("ignore les fichiers Compose temporaires disparus présents dans les labels Docker", async () => {
+    const value = await fixture();
+    try {
+        const staleOverride = path.join(value.root, "self-update", "obsolete.override.yaml");
+        assert.deepEqual(
+            await selectExistingComposeFiles([ value.composeFile, staleOverride ]),
+            [ value.composeFile ]
+        );
+    } finally {
+        await fs.rm(value.root, { recursive: true,
+            force: true });
+    }
+});
 
 test("importe une stack externe autorisée sans déplacer son Compose", async () => {
     const value = await fixture();

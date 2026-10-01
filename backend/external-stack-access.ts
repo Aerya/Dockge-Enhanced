@@ -114,6 +114,26 @@ function collapseAccessPaths(values: string[]): string[] {
     return result;
 }
 
+/**
+ * Docker Compose keeps the complete `-f` command line in container labels.
+ * A protected self-update can legitimately have used a short-lived override
+ * which no longer exists once the container is running. Such a stale label
+ * must not prevent a later protected Compose operation from using the real
+ * Compose files that are still present.
+ */
+export async function selectExistingComposeFiles(files: string[]): Promise<string[]> {
+    const existing: string[] = [];
+    for (const file of files) {
+        try {
+            await fs.access(file);
+            existing.push(file);
+        } catch {
+            // Ignore obsolete transient Compose files recorded in Docker labels.
+        }
+    }
+    return existing;
+}
+
 export class ExternalStackAccessManager {
     private readonly stateDir: string;
     private readonly statusPath: string;
@@ -200,16 +220,18 @@ export class ExternalStackAccessManager {
         const labels = inspected.Config?.Labels ?? {};
         const targetContainerName = (inspected.Name ?? "").replace(/^\//, "");
         const workingDir = labels["com.docker.compose.project.working_dir"] ?? "";
-        const configFiles = [ ...new Set((labels["com.docker.compose.project.config_files"] ?? "")
+        const labelledConfigFiles = [ ...new Set((labels["com.docker.compose.project.config_files"] ?? "")
             .split(",")
             .map((file) => file.trim())
             .filter((file) => file.length > 0 && path.isAbsolute(file))
             .map((file) => path.resolve(file))) ].slice(0, 16);
-        const envFiles = [ ...new Set((labels["com.docker.compose.project.environment_file"] ?? "")
+        const configFiles = await selectExistingComposeFiles(labelledConfigFiles);
+        const labelledEnvFiles = [ ...new Set((labels["com.docker.compose.project.environment_file"] ?? "")
             .split(",")
             .map((file) => file.trim())
             .filter((file) => file.length > 0 && path.isAbsolute(file))
             .map((file) => path.resolve(file))) ].slice(0, 8);
+        const envFiles = await selectExistingComposeFiles(labelledEnvFiles);
         const composeProject = labels["com.docker.compose.project"] ?? "";
         const composeService = labels["com.docker.compose.service"] ?? "";
         if (!inspected.Id || !inspected.Image || !inspected.Config?.Image || !targetContainerName) {
@@ -345,8 +367,10 @@ export class ExternalStackAccessManager {
         const labels = inspected.Config?.Labels ?? {};
         const targetContainerName = (inspected.Name ?? "").replace(/^\//, "");
         const workingDir = labels["com.docker.compose.project.working_dir"] ?? "";
-        const configFiles = [ ...new Set((labels["com.docker.compose.project.config_files"] ?? "").split(",").map((file) => file.trim()).filter((file) => file.length > 0 && path.isAbsolute(file)).map((file) => path.resolve(file))) ].slice(0, 16);
-        const envFiles = [ ...new Set((labels["com.docker.compose.project.environment_file"] ?? "").split(",").map((file) => file.trim()).filter((file) => file.length > 0 && path.isAbsolute(file)).map((file) => path.resolve(file))) ].slice(0, 8);
+        const labelledConfigFiles = [ ...new Set((labels["com.docker.compose.project.config_files"] ?? "").split(",").map((file) => file.trim()).filter((file) => file.length > 0 && path.isAbsolute(file)).map((file) => path.resolve(file))) ].slice(0, 16);
+        const configFiles = await selectExistingComposeFiles(labelledConfigFiles);
+        const labelledEnvFiles = [ ...new Set((labels["com.docker.compose.project.environment_file"] ?? "").split(",").map((file) => file.trim()).filter((file) => file.length > 0 && path.isAbsolute(file)).map((file) => path.resolve(file))) ].slice(0, 8);
+        const envFiles = await selectExistingComposeFiles(labelledEnvFiles);
         const composeProject = labels["com.docker.compose.project"] ?? "";
         const composeService = labels["com.docker.compose.service"] ?? "";
         if (!inspected.Id || !inspected.Image || !inspected.Config?.Image || !targetContainerName) {
