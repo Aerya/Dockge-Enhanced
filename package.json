@@ -90,7 +90,7 @@
         "@xterm/addon-search": "^0.16.0",
         "@xterm/xterm": "beta",
         "bootstrap": "5.3.8",
-        "bootstrap-vue-next": "~1.2.1",
+        "bootstrap-vue-next": "~1.2.2",
         "codemirror": "^6.0.1",
         "concurrently": "^10.0.5",
         "cross-env": "~10.1.0",
