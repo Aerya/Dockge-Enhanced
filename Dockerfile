@@ -10,7 +10,7 @@ RUN wget -qO- "https://github.com/restic/restic/archive/refs/tags/v${RESTIC_VERS
     && go run build.go
 
 # ─── Stage 2 : build de l'application ─────────────────────────────────
-FROM node:26-alpine@sha256:ef24c5053d50fdc3e4e56eb4e7ddb7861874ab0fdc797046ba897581deb8e868 AS builder
+FROM node:26-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS builder
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ RUN npm run build:frontend
 RUN npm prune --omit=dev
 
 # ─── Stage 2 : image de production ───────────────────────────────
-FROM node:26-alpine@sha256:ef24c5053d50fdc3e4e56eb4e7ddb7861874ab0fdc797046ba897581deb8e868
+FROM node:26-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80
 
 WORKDIR /app
 
