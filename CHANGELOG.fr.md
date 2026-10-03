@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-03 — Gestionnaire facultatif de fichiers hôte restreint** — Une page Fichiers dédiée permet de parcourir un dossier hôte explicitement configuré par instance, de transférer des fichiers par morceaux, de modifier de petits fichiers UTF-8 et de suivre des journaux en fichiers. Elle est distincte du navigateur de volumes, désactivée par défaut et refuse les opérations si l’authentification est désactivée. Adapté de [Lorwell/dockge](https://github.com/Lorwell/dockge).
+
 **2026-10-03 — Presse-papiers du terminal des conteneurs** — Le clic droit utilise de nouveau le menu Copier/Coller natif d’xterm. Les événements de collage du navigateur sont transmis au terminal, y compris sur les adresses HTTP locales où l’API presse-papiers est indisponible.
 
 **2026-10-03 — README.md des stacks gérées** — La page d’une stack permet d’afficher et de modifier un README Markdown à côté du fichier Compose. Il suit les copies, déplacements et réplications entre instances Enhanced. Les stacks externes restent inchangées.

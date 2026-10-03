@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-03 — Gestor opcional de archivos del host restringido** — Una página Archivos permite explorar un directorio del host configurado expresamente por instancia, transferir archivos por bloques, editar pequeños archivos UTF-8 y seguir registros escritos en archivos. Es independiente del navegador de volúmenes, está desactivada por defecto y rechaza operaciones si la autenticación está desactivada. Adaptado de [Lorwell/dockge](https://github.com/Lorwell/dockge).
+
 **2026-10-03 — Portapapeles del terminal de contenedores** — El clic derecho vuelve a usar el menú nativo Copiar/Pegar de xterm. Los eventos de pegado del navegador se envían al terminal incluso en direcciones HTTP locales sin API de portapapeles.
 
 **2026-10-03 — README.md de las pilas gestionadas** — La página de una pila permite mostrar y editar un README Markdown junto al archivo Compose. Se transfiere con las copias, migraciones y réplicas entre instancias Enhanced. Las pilas externas no cambian.

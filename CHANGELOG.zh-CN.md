@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-03 — 可选的受限主机文件管理器** — 独立“文件”页面可浏览每个实例明确配置的主机目录，支持分块传输、编辑小型 UTF-8 文件及跟踪文件日志。它与 Stack 卷浏览器分离，默认关闭，并在关闭身份验证时拒绝文件操作。改编自 [Lorwell/dockge](https://github.com/Lorwell/dockge)。
+
 **2026-10-03 — 容器终端剪贴板** — 右键重新使用 xterm 的原生复制/粘贴菜单。浏览器粘贴事件会传递到终端；即使在剪贴板 API 不可用的本地 HTTP 地址上也能使用。
 
 **2026-10-03 — 受管理 Stack 的 README.md** — Stack 页面现在可以查看和编辑 Compose 文件旁的 Markdown README。复制、迁移或复制同步到其他 Enhanced 实例时，该文件会一同传输。外部 Stack 不受影响。

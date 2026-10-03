@@ -8,6 +8,7 @@ import Console from "./pages/Console.vue";
 import Compose from "./pages/Compose.vue";
 import ContainerTerminal from "./pages/ContainerTerminal.vue";
 const ExternalStacks = () => import("./pages/ExternalStacks.vue");
+const Files = () => import("./pages/Files.vue");
 import WatcherSettings from "./components/WatcherSettings.vue";
 import { i18n } from "./i18n";
 
@@ -162,6 +163,18 @@ const routes = [
                         path: "/external-stacks",
                         component: ExternalStacks,
                         meta: { title: "externalStacks.heading" },
+                    },
+                    {
+                        path: "/files",
+                        component: Files,
+                        name: "files",
+                        meta: { title: "files" },
+                    },
+                    {
+                        path: "/files/:endpoint",
+                        component: Files,
+                        name: "filesEndpoint",
+                        meta: { title: "files" },
                     },
                     {
                         path: "/settings",

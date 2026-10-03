@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-03 — Optional restricted host file manager** — A dedicated Files page can browse one explicitly configured host directory per instance, transfer files in chunks, edit small UTF-8 files and follow file-based logs. It is separate from stack volume browsing, disabled by default, and refuses file operations when authentication is disabled. Adapted from [Lorwell/dockge](https://github.com/Lorwell/dockge).
+
 **2026-10-03 — Container terminal clipboard** — Right-click uses xterm’s native Copy/Paste menu again. Browser paste events are forwarded to the terminal, including on local HTTP origins where the Clipboard API is unavailable.
 
 **2026-10-03 — README.md for managed stacks** — Stack pages can display and edit a Markdown README stored beside the Compose file. The README follows copy, move and replication transfers between Enhanced instances. External stacks remain unchanged.

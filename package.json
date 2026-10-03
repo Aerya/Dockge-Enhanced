@@ -17,6 +17,7 @@
         "reset-password": "tsx ./extra/reset-password.ts"
     },
     "dependencies": {
+        "@codemirror/language-data": "^6.5.2",
         "@homebridge/node-pty-prebuilt-multiarch": "0.14.1",
         "@inventage/envsubst": "^0.17.0",
         "@louislam/sqlite3": "~15.1.6",

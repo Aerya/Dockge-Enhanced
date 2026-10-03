@@ -62,6 +62,12 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Optional host file manager**
+
+An opt-in Files page can browse a dedicated host directory, edit small UTF-8 files, transfer files and follow file-based logs, locally or through a linked Enhanced instance. It is separate from the per-stack volume browser and cannot access paths outside its configured root.
+
+Mount only the directory you intend to expose at the same path inside Enhanced and set `DOCKGE_FILE_MANAGER_ROOT` to that container path. For example, add `- /srv/shared:/managed-files` under `volumes:` and `DOCKGE_FILE_MANAGER_ROOT: /managed-files` under `environment:`. Without this setting, the manager stays disabled; **do not mount `/` or a broad host directory**. It also refuses operations when authentication is disabled. The optional `DOCKGE_FILE_MANAGER_MAX_FILE_SIZE` limits transfers (default: 100 MiB); online text editing is limited to 1 MiB. Each linked instance needs its own explicit mount and setting.
+
 **Copy and paste in container terminals**
 
 Right-click now opens the terminal’s native Copy/Paste menu. Pasting also works with keyboard shortcuts on local HTTP addresses, without requiring access to the browser Clipboard API.
@@ -239,6 +245,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Version-aware capability negotiation between mixed Dockge-Enhanced releases
 
 ### Stack management
+- Optional root-restricted host file manager, distinct from the per-stack volume browser, with chunked transfers and a file-log viewer
 - Create, edit, start, stop and recreate Compose stacks
 - Server-persisted pinned stacks shared across linked WebUIs
 - External Compose stack discovery and adoption without moving files or data
@@ -709,6 +716,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 ## Credits
 
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — the original project (MIT licence)
+- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — original restricted host file manager adapted for Enhanced (MIT licence)
 - [**Trivy**](https://github.com/aquasecurity/trivy) — vulnerability scanner
 - [**Restic**](https://restic.net/) — encrypted backup tool
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway

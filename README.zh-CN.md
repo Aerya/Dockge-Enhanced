@@ -42,6 +42,12 @@
 
 ### 🆕 2026 年 10 月
 
+**可选的主机文件管理器**
+
+启用后，“文件”页面可浏览指定的主机目录、编辑小型 UTF-8 文件、传输文件并查看文件日志，也支持关联的 Enhanced 实例。它与各 Stack 的卷浏览器不同，不能访问授权根目录之外的路径。
+
+仅将需要开放的目录挂载到 Enhanced，并把 `DOCKGE_FILE_MANAGER_ROOT` 设为**容器内路径**。例如在 `volumes:` 下添加 `- /srv/shared:/managed-files`，在 `environment:` 下添加 `DOCKGE_FILE_MANAGER_ROOT: /managed-files`。未配置时此功能保持关闭；**不要挂载 `/` 或范围过大的主机目录**。关闭身份验证时也会拒绝文件操作。可选的 `DOCKGE_FILE_MANAGER_MAX_FILE_SIZE` 限制传输大小（默认 100 MiB），在线文本编辑限制为 1 MiB。每个关联实例都需要单独配置挂载和路径。
+
 **容器终端中的复制与粘贴**
 
 右键现在会打开终端的原生复制/粘贴菜单。在本地 HTTP 地址上也可使用键盘快捷键粘贴，无需依赖浏览器剪贴板 API。
@@ -216,6 +222,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 不同 Dockge-Enhanced 版本之间的能力协商
 
 ### Stack 管理
+- 可选的受限主机文件管理器：与 Stack 卷浏览器分离，支持分块传输与文件日志查看
 - 创建、编辑、启动、停止和重新创建 Compose Stack
 - 服务端持久化并在关联 WebUI 间共享的固定 Stack 与排序
 - 无需移动文件或数据即可发现并接管外部 Compose Stack
@@ -531,6 +538,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 ## 致谢
 
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — 原始项目（MIT）
+- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 经适配的受限主机文件管理器（MIT）
 - [**Trivy**](https://github.com/aquasecurity/trivy) — 漏洞扫描
 - [**Restic**](https://restic.net/) — 加密备份
 - [**Apprise**](https://github.com/caronc/apprise-api) — 多平台通知网关
