@@ -82,7 +82,7 @@
         </div>
 
         <!-- Desktop header -->
-        <header v-if="! $root.isMobile" class="desktop-header py-3 mb-3 border-bottom" :class="{ 'has-stats': showHeaderStats }">
+        <header v-if="! $root.isMobile" class="desktop-header py-3 mb-3 border-bottom" :class="{ 'has-stats': showHeaderStats, 'has-update': selfUpdateBannerVisible || hasNewVersion }">
             <div class="desktop-brand d-flex align-items-center">
                 <router-link to="/" class="d-flex align-items-center text-dark text-decoration-none">
                     <object class="bi me-2 ms-4" width="40" height="40" data="/icon.svg" />
@@ -708,17 +708,58 @@ export default {
 
 .desktop-header {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
-        "brand updates navigation";
+        "brand navigation";
     align-items: center;
     gap: 0.75rem 1.25rem;
     padding-inline: 1.5rem;
 
+    &.has-update {
+        grid-template-areas:
+            "brand navigation"
+            "updates updates";
+    }
+
     &.has-stats {
         grid-template-areas:
-            "brand updates navigation"
-            "stats stats stats";
+            "brand navigation"
+            "stats stats";
+    }
+
+    &.has-update.has-stats {
+        grid-template-areas:
+            "brand navigation"
+            "updates updates"
+            "stats stats";
+    }
+
+    @media (max-width: 1500px) {
+        grid-template-areas:
+            "brand brand"
+            "navigation navigation";
+
+        &.has-update {
+            grid-template-areas:
+                "brand brand"
+                "navigation navigation"
+                "updates updates";
+        }
+
+        &.has-stats {
+            grid-template-areas:
+                "brand brand"
+                "navigation navigation"
+                "stats stats";
+        }
+
+        &.has-update.has-stats {
+            grid-template-areas:
+                "brand brand"
+                "navigation navigation"
+                "updates updates"
+                "stats stats";
+        }
     }
 }
 
@@ -732,11 +773,20 @@ export default {
     display: flex;
     justify-content: center;
     min-width: 0;
+
+    &:empty {
+        display: none;
+    }
 }
 
 .desktop-nav {
     grid-area: navigation;
     justify-self: end;
+
+    @media (max-width: 1500px) {
+        justify-self: start;
+        flex-wrap: wrap;
+    }
 }
 
 .theme-toggle {
@@ -748,12 +798,17 @@ export default {
 .self-update-banner {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+    max-width: 100%;
     background: var(--warning-soft);
     border: 1px solid var(--warning);
     border-radius: var(--radius-sm);
     padding: 5px 12px;
     font-size: var(--fs-md);
     color: var(--warning);
+    overflow-wrap: anywhere;
 
     code {
         background: var(--bg-raised);
@@ -761,6 +816,8 @@ export default {
         padding: 1px 6px;
         font-size: var(--fs-md);
         color: inherit;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     .btn-copy, .btn-dismiss {
