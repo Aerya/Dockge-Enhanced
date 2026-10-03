@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-03 — 受管理 Stack 的 README.md** — Stack 页面现在可以查看和编辑 Compose 文件旁的 Markdown README。复制、迁移或复制同步到其他 Enhanced 实例时，该文件会一同传输。外部 Stack 不受影响。
+
 **2026-09-29 — 保留 YAML 引号字符串** — 可视化编辑器重新生成 YAML 时，不再移除未更改 Compose 值原有的单引号或双引号。包含空格或敏感字符的 bind mount 与其他标量通过禁用自动换行（`lineWidth: 0`）保持在单行。仅当同一路径上的值未发生变化时才恢复原有引号样式，因此不会覆盖真实编辑。
 
 **2026-09-29 — Compose YAML 修复与格式化** — **修复 / 格式化 YAML** 操作现在可先修复常见的 Compose 缩进错误，再统一为 **2 个空格**缩进。常见服务键与列表（`environment`、`ports`、`volumes`、`healthcheck.test` 等）会被重新对齐，且修复后的 YAML 必须通过验证后才会应用。若修复仍存在歧义或无效，则保持原内容不变。注释及带前导零的 `tmpfs.mode` 权限值继续保留。
