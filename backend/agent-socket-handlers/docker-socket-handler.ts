@@ -728,6 +728,31 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("saveStackReadme", async (stackName: unknown, readme: unknown, callback) => {
+            const startedAt = Date.now();
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof readme !== "string") {
+                    throw new ValidationError("Stack name and README must be strings");
+                }
+                const stack = await Stack.getStack(server, stackName);
+                const savedReadme = await stack.saveReadme(readme);
+                await this.auditStack(socket, "stack.readme.save", stackName, "success", null, {
+                    durationMs: Date.now() - startedAt,
+                    length: savedReadme.length,
+                    origin: "manual",
+                });
+                callbackResult({ ok: true,
+                    readme: savedReadme }, callback);
+            } catch (e) {
+                await this.auditStack(socket, "stack.readme.save", String(stackName), "failure", String(e), {
+                    durationMs: Date.now() - startedAt,
+                    origin: "manual",
+                });
+                callbackError(e, callback);
+            }
+        });
+
         agentSocket.on("getStackStartGuardStatus", async (stackName : unknown, startGuard : unknown, callback) => {
             if (typeof startGuard === "function") {
                 callback = startGuard;

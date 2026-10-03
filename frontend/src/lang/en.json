@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.stackReadme": "Managed stacks can now display and edit a README.md beside their Compose file. It follows the stack when copied or moved to another Enhanced instance.",
     "languageName": "English",
     "stackLogs": "Logs",
     "agentFederation.hint": "Adding or removing an agent is automatically propagated to every linked Enhanced instance.",
@@ -411,6 +412,10 @@
     "PulledAndRecreated": "Pulled and recreated",
     "BuiltAndRecreated": "Built and recreated",
     "stackNote.heading": "Stack note",
+    "stackReadme.heading": "Stack README.md",
+    "stackReadme.empty": "No README.md in this stack yet.",
+    "stackReadme.unavailable": "README.md cannot be edited: it is unreadable, too large (over 1 MiB), or not a regular file.",
+    "stackReadme.cancel": "Cancel",
     "stackNote.placeholder": "Administration URL, service role, maintenance reminder…",
     "stackNote.secretWarning": "Do not store passwords, tokens, API keys, or other secrets in this note.",
     "Downed": "Downed",

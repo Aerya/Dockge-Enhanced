@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-03-stack-readme",
+        items: [ "releaseNews.item.stackReadme" ],
+    },
+    {
         id: "2026-09-30-auto-prune-reliability",
         items: [ "releaseNews.item.autoPruneReliability" ],
     },

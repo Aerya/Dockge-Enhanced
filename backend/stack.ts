@@ -4,6 +4,7 @@ import { log } from "./log";
 import yaml from "yaml";
 import { DockgeSocket, fileExists, ValidationError } from "./util-server";
 import path from "path";
+import { randomUUID } from "node:crypto";
 import {
     acceptedComposeFileNames,
     COMBINED_TERMINAL_COLS,
@@ -247,12 +248,23 @@ export class Stack {
 
         const obj = this.toSimpleJSON(endpoint);
         const metadata = await this.readMeta();
+        let readme = "";
+        let readmeUnavailable = false;
+        if (!this.isExternal) {
+            try {
+                readme = await this.readReadme();
+            } catch {
+                readmeUnavailable = true;
+            }
+        }
         return {
             ...obj,
             composeYAML: this.composeYAML,
             composeENV: this.composeENV,
             composeOverrideYAML: this.composeOverrideYAML,
             note: metadata.note,
+            readme,
+            readmeUnavailable,
             startGuard: metadata.startGuard,
             primaryHostname,
         };
@@ -645,6 +657,55 @@ export class Stack {
             if (this.isExternal) await fsAsync.mkdir(path.dirname(this.metaPath), { recursive: true, mode: 0o700 });
             await fsAsync.writeFile(this.metaPath, JSON.stringify(updated), { encoding: "utf8", mode: 0o600 });
         } catch { /* non bloquant */ }
+    }
+
+    async readReadme(): Promise<string> {
+        if (this.isExternal) {
+            return "";
+        }
+        const readmePath = path.join(this.path, "README.md");
+        try {
+            const entry = await fsAsync.lstat(readmePath);
+            // Never follow a symlink outside the stack directory.
+            if (!entry.isFile() || entry.size > 1_048_576) {
+                throw new ValidationError("Stack README is not a regular file under 1 MiB");
+            }
+            return await fsAsync.readFile(readmePath, "utf8");
+        } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+                return "";
+            }
+            throw error;
+        }
+    }
+
+    async saveReadme(readme: string): Promise<string> {
+        if (this.isExternal) {
+            throw new ValidationError("External stack README editing is not supported");
+        }
+        if (Buffer.byteLength(readme, "utf8") > 1_048_576) {
+            throw new ValidationError("Stack README must not exceed 1 MiB");
+        }
+        const readmePath = path.join(this.path, "README.md");
+        const existing = await fsAsync.lstat(readmePath).catch((error: NodeJS.ErrnoException) => {
+            if (error.code === "ENOENT") {
+                return null;
+            }
+            throw error;
+        });
+        if (existing && !existing.isFile()) {
+            throw new ValidationError("Stack README is not a regular file");
+        }
+        const temporaryPath = path.join(this.path, `.README.md.${randomUUID()}.tmp`);
+        try {
+            await fsAsync.writeFile(temporaryPath, readme, { encoding: "utf8",
+                flag: "wx",
+                mode: existing ? existing.mode & 0o777 : 0o600 });
+            await fsAsync.rename(temporaryPath, readmePath);
+        } finally {
+            await fsAsync.rm(temporaryPath, { force: true });
+        }
+        return readme;
     }
 
     async saveNote(note: string): Promise<string> {

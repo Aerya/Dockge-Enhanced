@@ -75,6 +75,28 @@ test("stack notes preserve existing metadata and enforce their size limit", asyn
     }
 });
 
+test("stack README is stored beside Compose without following symlinks", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-readme-test-"));
+    const stackDir = path.join(root, "demo");
+    await fs.mkdir(stackDir);
+    const stack = new Stack({ stacksDir: root } as DockgeServer, "demo", "", "", true);
+    try {
+        assert.equal(await stack.readReadme(), "");
+        assert.equal(await stack.saveReadme("# Demo\n"), "# Demo\n");
+        assert.equal(await fs.readFile(path.join(stackDir, "README.md"), "utf8"), "# Demo\n");
+        assert.equal(await stack.readReadme(), "# Demo\n");
+        await assert.rejects(stack.saveReadme("x".repeat(1_048_577)), /1 MiB/);
+        await fs.rm(path.join(stackDir, "README.md"));
+        await fs.symlink(path.join(root, "outside.md"), path.join(stackDir, "README.md"));
+        await assert.rejects(stack.readReadme(), /regular file/);
+        await assert.rejects(stack.saveReadme("unsafe"), /regular file/);
+        assert.equal(await fs.stat(path.join(root, "outside.md")).catch(() => null), null);
+    } finally {
+        await fs.rm(root, { recursive: true,
+            force: true });
+    }
+});
+
 test("automation permissions enforce both action and stack scope", () => {
     const manager = new AutomationManager();
     const identity: AutomationIdentity = {

@@ -38,6 +38,7 @@ export interface StackTransferInventory {
     composeYAML: string;
     composeENV: string;
     composeOverrideYAML: string;
+    readme: string;
     mounts: StackTransferMount[];
     runningServices: string[];
     images: Array<{ name: string; available: boolean; size: number | null }>;
@@ -65,6 +66,7 @@ export interface StackTransferRequest {
     composeYAML: string;
     composeENV: string;
     composeOverrideYAML: string;
+    readme?: string;
     mappings: StackTransferMount[];
     deploy: boolean;
     dataTransfer?: boolean;
@@ -362,6 +364,7 @@ export async function analyzeStackTransfer(server: DockgeServer, stackName: stri
     const composeYAML = stack.composeYAML;
     const composeENV = stack.composeENV;
     const composeOverrideYAML = stack.composeOverrideYAML;
+    const readme = await stack.readReadme();
     const warnings: string[] = [];
     let runningServices: string[] = [];
     const images: StackTransferInventory["images"] = [];
@@ -432,6 +435,7 @@ export async function analyzeStackTransfer(server: DockgeServer, stackName: stri
         composeYAML,
         composeENV,
         composeOverrideYAML,
+        readme,
         mounts,
         runningServices,
         images,
@@ -503,9 +507,12 @@ export function applyStackTransferMappings(overrideYAML: string, mappings: Stack
     return yaml.stringify(config);
 }
 
-async function writeTransferFiles(dir: string, request: Pick<StackTransferRequest, "composeYAML" | "composeENV" | "composeOverrideYAML" | "mappings">): Promise<string> {
+async function writeTransferFiles(dir: string, request: Pick<StackTransferRequest, "composeYAML" | "composeENV" | "composeOverrideYAML" | "readme" | "mappings">): Promise<string> {
     await fsAsync.mkdir(dir, { recursive: false });
     await fsAsync.writeFile(path.join(dir, "compose.yaml"), request.composeYAML, "utf8");
+    if (request.readme !== undefined) {
+        await fsAsync.writeFile(path.join(dir, "README.md"), request.readme, "utf8");
+    }
     if (request.composeENV.trim()) {
         await fsAsync.writeFile(path.join(dir, ".env"), request.composeENV, "utf8");
     }
@@ -516,13 +523,13 @@ async function writeTransferFiles(dir: string, request: Pick<StackTransferReques
     return mappedOverride;
 }
 
-export async function refreshImportedStackConfiguration(server: DockgeServer, targetName: string, request: Pick<StackTransferRequest, "composeYAML" | "composeENV" | "composeOverrideYAML" | "mappings">): Promise<string> {
+export async function refreshImportedStackConfiguration(server: DockgeServer, targetName: string, request: Pick<StackTransferRequest, "composeYAML" | "composeENV" | "composeOverrideYAML" | "readme" | "mappings">): Promise<string> {
     const targetDir = path.join(server.stacksDir, targetName);
     if (!(await fileExists(targetDir))) {
         throw new ValidationError("Target replica stack does not exist");
     }
     const tempDir = path.join(server.stacksDir, `.dockge-replication-config-${Date.now()}-${Math.random().toString(16).slice(2)}`);
-    const names = [ "compose.yaml", ".env", "compose.override.yaml" ];
+    const names = [ "compose.yaml", ".env", "compose.override.yaml", ...(request.readme !== undefined ? [ "README.md" ] : []) ];
     const previous = new Map<string, Buffer | null>();
     try {
         const mappedOverride = await writeTransferFiles(tempDir, request);

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.stackReadme": "受管理的堆疊現在可以檢視及編輯 Compose 檔案旁的 README.md。複製或移至其他 Enhanced 執行個體時，該檔案會一併傳送。",
     "languageName": "繁體中文 (台灣)",
     "stackLogs": "Logs",
     "Create your admin account": "建立您的管理員帳號",
@@ -373,6 +374,10 @@
     "PulledAndRecreated": "已拉取並重新建立",
     "BuiltAndRecreated": "已構建並重新建立",
     "stackNote.heading": "堆疊備註",
+    "stackReadme.heading": "堆疊 README.md",
+    "stackReadme.empty": "此堆疊尚無 README.md。",
+    "stackReadme.unavailable": "無法編輯 README.md：檔案無法讀取、超過 1 MiB，或不是一般檔案。",
+    "stackReadme.cancel": "取消",
     "stackNote.placeholder": "管理地址、服務用途、維護提醒…",
     "stackNote.secretWarning": "請勿在此備註中儲存密碼、權杖、API 金鑰或其他機密資訊。",
     "updatedAt": "更新於",

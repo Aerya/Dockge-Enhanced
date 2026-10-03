@@ -190,6 +190,30 @@
                 </div>
             </div>
 
+            <div v-if="!isAdd && stack.isManagedByDockge && !stack.isExternal" class="shadow-box stack-note-panel mb-3 compose-tight">
+                <button class="stack-note-toggle" type="button" :aria-expanded="readmeExpanded" @click="readmeExpanded = !readmeExpanded">
+                    <span class="settings-subheading mb-0"><font-awesome-icon icon="book" class="me-2" />{{ $t("stackReadme.heading") }}</span>
+                    <font-awesome-icon icon="chevron-down" class="stack-note-chevron" :class="{ 'is-expanded': readmeExpanded }" />
+                </button>
+                <div v-show="readmeExpanded" class="stack-note-content">
+                    <p v-if="stack.readmeUnavailable" class="text-warning mb-0">{{ $t("stackReadme.unavailable") }}</p>
+                    <template v-if="readmeEditing">
+                        <textarea v-model="readmeDraft" class="form-control stack-readme-input" :aria-label="$t('stackReadme.heading')" />
+                        <div class="d-flex justify-content-end gap-2 mt-2">
+                            <button class="btn btn-sm btn-normal" type="button" :disabled="readmeSaving" @click="readmeEditing = false">{{ $t("stackReadme.cancel") }}</button>
+                            <button class="btn btn-sm btn-primary" type="button" :disabled="readmeSaving" @click="saveStackReadme">{{ $t("Save") }}</button>
+                        </div>
+                    </template>
+                    <template v-else-if="!stack.readmeUnavailable">
+                        <!-- Raw HTML is disabled in the Markdown renderer. -->
+                        <!-- eslint-disable-next-line vue/no-v-html -->
+                        <div v-if="stack.readme" class="stack-readme-preview" v-html="renderedReadme"></div>
+                        <p v-else class="text-muted mb-2">{{ $t("stackReadme.empty") }}</p>
+                        <button class="btn btn-sm btn-normal mt-2" type="button" @click="editStackReadme">{{ $t("Edit") }}</button>
+                    </template>
+                </div>
+            </div>
+
             <div v-if="showStartGuard && !isAdd && stack.isManagedByDockge" class="shadow-box start-guard-panel mb-3">
                 <div class="settings-subheading mb-2"><font-awesome-icon icon="shield-alt" class="me-2" />{{ $t("startGuard.heading") }}</div>
                 <label class="form-check form-switch mb-3">
@@ -771,6 +795,7 @@ import {
 import { BModal } from "bootstrap-vue-next";
 import NetworkInput from "../components/NetworkInput.vue";
 import dotenv from "dotenv";
+import { renderStackReadme } from "../stack-readme";
 import { computed, getCurrentInstance, ref } from "vue";
 import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
 import { useImageStatus } from "../composables/useImageStatus";
@@ -924,6 +949,10 @@ export default {
             plugNPiNEnabled: false,
             noteSaving: false,
             noteExpanded: false,
+            readmeSaving: false,
+            readmeExpanded: false,
+            readmeEditing: false,
+            readmeDraft: "",
             showStartGuard: false,
             startGuard: { enabled: false, conditions: [], watch: false, onFailure: "stop", onRecovery: "start", failureDelaySeconds: 10, recoveryDelaySeconds: 5 },
             startGuardStatus: null,
@@ -945,6 +974,9 @@ export default {
         };
     },
     computed: {
+        renderedReadme() {
+            return renderStackReadme(this.stack.readme || "");
+        },
         composeWorkspaceStyle() {
             if (this.composeEffectivelyCollapsed) {
                 return { gridTemplateColumns: "minmax(0, 1fr)" };
@@ -2127,6 +2159,23 @@ export default {
             });
         },
 
+        editStackReadme() {
+            this.readmeDraft = this.stack.readme || "";
+            this.readmeEditing = true;
+        },
+
+        saveStackReadme() {
+            this.readmeSaving = true;
+            this.$root.emitAgent(this.endpoint, "saveStackReadme", this.stack.name, this.readmeDraft, (res) => {
+                this.readmeSaving = false;
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.stack.readme = res.readme;
+                    this.readmeEditing = false;
+                }
+            });
+        },
+
         addStartGuardCondition() {
             if (this.startGuard.conditions.length < 20) {
                 this.startGuard.conditions.push({ type: "mount", target: "" });
@@ -2528,6 +2577,26 @@ export default {
 .stack-note-input::placeholder {
     color: var(--text-muted);
     opacity: 1;
+}
+
+.stack-readme-input {
+    min-height: 220px;
+    font-family: monospace;
+}
+
+.stack-readme-preview {
+    overflow-wrap: anywhere;
+}
+
+.stack-readme-preview :deep(pre) {
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    background: var(--bs-tertiary-bg);
+    overflow-x: auto;
+}
+
+.stack-readme-preview :deep(img) {
+    max-width: 100%;
 }
 
 .start-guard-panel {

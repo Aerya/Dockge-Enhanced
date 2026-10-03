@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.stackReadme": "Las pilas gestionadas pueden mostrar y editar un README.md junto a su archivo Compose. El archivo acompaña a la pila al copiarla o moverla a otra instancia Enhanced.",
     "agentFederation.hint": "Añadir o eliminar un agente se propaga automáticamente a todas las instancias Enhanced vinculadas.",
     "agentAddedAndFederated": "Agente añadido y compartido con todas las instancias vinculadas",
     "agentRemovedFromFederation": "Agente eliminado de todas las instancias vinculadas",
@@ -114,6 +115,10 @@
     "createExternalNetwork": "Crear",
     "addInternalNetwork": "Agregar",
     "Save": "Guardar",
+    "stackReadme.heading": "README.md de la pila",
+    "stackReadme.empty": "Esta pila todavía no tiene README.md.",
+    "stackReadme.unavailable": "No se puede editar README.md: es ilegible, demasiado grande (más de 1 MiB) o no es un archivo normal.",
+    "stackReadme.cancel": "Cancelar",
     "Language": "Idioma",
     "Current User": "Usuario Actual",
     "Change Password": "Cambiar Contraseña",

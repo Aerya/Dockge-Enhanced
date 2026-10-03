@@ -379,6 +379,7 @@ export default {
             sourceComposeYAML: "",
             sourceComposeENV: "",
             sourceComposeOverrideYAML: "",
+            sourceReadme: "",
             targetComposeYAML: "",
             targetComposeENV: "",
             targetComposeOverrideYAML: "",
@@ -615,6 +616,7 @@ export default {
                 this.sourceComposeYAML = analysis.data.composeYAML;
                 this.sourceComposeENV = analysis.data.composeENV || "";
                 this.sourceComposeOverrideYAML = analysis.data.composeOverrideYAML || "";
+                this.sourceReadme = analysis.data.readme || "";
                 this.targetComposeYAML = existingPolicy?.targetComposeYAML ?? this.sourceComposeYAML;
                 this.targetComposeENV = existingPolicy?.targetComposeENV ?? this.sourceComposeENV;
                 this.targetComposeOverrideYAML = existingPolicy?.targetComposeOverrideYAML ?? this.sourceComposeOverrideYAML;
@@ -695,6 +697,7 @@ export default {
             this.sourceComposeYAML = "";
             this.sourceComposeENV = "";
             this.sourceComposeOverrideYAML = "";
+            this.sourceReadme = "";
             this.targetComposeYAML = "";
             this.targetComposeENV = "";
             this.targetComposeOverrideYAML = "";
@@ -961,6 +964,7 @@ export default {
                 composeYAML: this.targetComposeYAML,
                 composeENV: this.targetComposeENV,
                 composeOverrideYAML: this.targetComposeOverrideYAML,
+                readme: this.sourceReadme,
                 mappings: this.mappings,
                 deploy: this.deploy,
                 dataTransfer: this.includeData,
