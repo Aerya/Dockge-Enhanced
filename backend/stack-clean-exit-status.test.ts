@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { EXITED, RUNNING, UNKNOWN } from "../common/util-common";
+import { EXITED, PAUSED, RUNNING, UNKNOWN } from "../common/util-common";
 import { resolveMixedComposeStatus, Stack } from "./stack";
 
 test("clean-exit init container does not mark a running stack as stopped", () => {
@@ -19,15 +19,20 @@ test("an intentionally stopped service preserves the existing active-stack behav
     ]), RUNNING);
 });
 
-test("failed, paused and restarting containers cannot appear as a healthy stack", () => {
+test("failed and restarting containers cannot appear as a healthy stack", () => {
     for (const state of [
         { status: "exited",
             exitCode: 1 },
-        { status: "paused" },
         { status: "restarting" },
     ]) {
         assert.equal(resolveMixedComposeStatus([ { status: "running" }, state ]), EXITED);
     }
+});
+
+test("paused containers are reported as paused, never running", async () => {
+    assert.equal(resolveMixedComposeStatus([ { status: "paused" } ]), PAUSED);
+    assert.equal(resolveMixedComposeStatus([ { status: "running" }, { status: "paused" } ]), PAUSED);
+    assert.equal(await Stack.resolveComposeStatus("test-project", "paused(2)"), PAUSED);
 });
 
 test("incomplete state is unknown and a fully exited project remains stopped", () => {

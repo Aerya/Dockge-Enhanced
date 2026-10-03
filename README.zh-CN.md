@@ -38,6 +38,10 @@
 
 ### 🆕 2026 年 10 月
 
+**Stack 操作与 Compose 创建**
+
+暂停／恢复 Stack 不会删除容器卷。Stack 暂停期间自动镜像更新会等待恢复；Restic 备份或还原运行时禁止暂停／恢复，Enhanced 自身及使用停止服务或钩子备份策略的 Stack 不能暂停。常规设置新增仅适用于新 Stack 的默认 Compose 模板。Stack 的 README.md 改由操作按钮打开，容器操作图标提供说明提示。现有的 `tmpfs` 八进制模式保护和 Compose 变量高亮保持不变。
+
 **更清晰的 Stack 操作**
 
 Stack 按钮现在说明实际执行的命令。帮助面板展示所选 Stack 的 Docker Compose 命令，包括项目和 Compose 文件参数，并提供 Docker 官方文档链接。原“停止并置于非活动状态”按钮改为“移除 Stack 容器”：确认后执行 `docker compose down`，删除容器和 Compose 网络，但不会删除命名卷、绑定挂载数据、Compose 文件或镜像。匿名卷可能不会在下一次 `up` 时重新挂载。

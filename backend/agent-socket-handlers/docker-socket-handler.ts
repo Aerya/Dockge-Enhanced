@@ -17,6 +17,8 @@ import { ComposeEditLeaseManager } from "../self-update/editor-lease";
 import { SelfUpdateManager } from "../self-update/manager";
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { runGlobalSearch, runGlobalSearchV2 } from "../global-search";
+import { assertNotSelfStack, assertStackPauseAllowed } from "../stack-pause-policy";
+import { resolveCurrentContainer } from "../current-container";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -563,6 +565,36 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 server.sendStackList();
 
                 stack.leaveCombinedTerminal(socket);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        // Pause/unpause a stack without removing containers or volumes.
+        agentSocket.on("setStackPaused", async (stackName: unknown, paused: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof paused !== "boolean") {
+                    throw new ValidationError("Invalid stack pause request");
+                }
+                const backup = BackupManager.getInstance();
+                assertStackPauseAllowed(backup, stackName, paused);
+                if (paused && ImageWatcher.getInstance().getAutoUpdateState().updatingImages.some((key: string) => key.startsWith(`${stackName}::`))) {
+                    throw new ValidationError("An image update is running for this stack; retry after it completes.");
+                }
+                const stack = await Stack.getStack(server, stackName);
+                if (paused) {
+                    const self = await resolveCurrentContainer();
+                    assertNotSelfStack(self.Id, await stack.getContainerIds());
+                }
+                await stack.setPaused(socket, paused);
+                await this.auditStack(socket, paused ? "stack.pause" : "stack.unpause", stackName);
+                server.sendStackList();
+                callbackResult({
+                    ok: true,
+                    msg: paused ? "Paused" : "Resumed",
+                    msgi18n: true,
+                }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }

@@ -57,6 +57,13 @@
                 <div class="form-text"></div>
             </div>
 
+            <div class="mb-4">
+                <label class="form-label" for="default-compose-template">{{ $t("composeTemplate.heading") }}</label>
+                <textarea id="default-compose-template" v-model="composeTemplateDraft" class="form-control font-monospace" rows="10" maxlength="65536" spellcheck="false" />
+                <div class="form-text">{{ $t("composeTemplate.help") }}</div>
+                <div v-if="templateError" class="text-danger mt-1" role="alert">{{ templateError }}</div>
+            </div>
+
             <!-- Save Button -->
             <div>
                 <button class="btn btn-primary" type="submit">
@@ -70,6 +77,9 @@
 <script>
 
 import dayjs from "dayjs";
+import { parseDocument } from "yaml";
+
+const defaultComposeTemplate = "services:\n  nginx:\n    image: nginx:latest\n    restart: unless-stopped\n    ports:\n      - \"8080:80\"\n";
 
 export default {
     components: {
@@ -83,7 +93,20 @@ export default {
     data() {
         return {
             timezoneList: [],
+            composeTemplateDraft: defaultComposeTemplate,
+            templateError: "",
         };
+    },
+
+    watch: {
+        settingsLoaded: {
+            immediate: true,
+            handler(loaded) {
+                if (loaded) {
+                    this.composeTemplateDraft = this.settings.composeTemplate || defaultComposeTemplate;
+                }
+            },
+        },
     },
 
     computed: {
@@ -104,6 +127,13 @@ export default {
     methods: {
         /** Save the settings */
         saveGeneral() {
+            const doc = parseDocument(this.composeTemplateDraft);
+            if (doc.errors.length || !doc.has("services") || this.composeTemplateDraft.length > 65536) {
+                this.templateError = this.$t("composeTemplate.invalid");
+                return;
+            }
+            this.templateError = "";
+            this.settings.composeTemplate = this.composeTemplateDraft;
             localStorage.timezone = this.$root.userTimezone;
             this.saveSettings();
         },
@@ -114,4 +144,3 @@ export default {
     },
 };
 </script>
-

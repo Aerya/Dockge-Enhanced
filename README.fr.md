@@ -36,7 +36,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
 | **Multi-serveurs** | Fédération en maillage complet entre instances Dockge-Enhanced, administration depuis n'importe quel serveur lié, sélection et regroupement des serveurs, état des mises à jour distantes, copie/migration transactionnelle des stacks, transferts reprenables et réplication froide planifiée |
-| **Gestion des stacks** | Stacks épinglées, indicateurs compacts d'état et de ressources, navigation repliable/redimensionnable, espace Logs/Compose flexible, copie du YAML brut, actions expliquées avec aperçu des commandes exactes et liens Docker, planification par stack et conteneur, Build + Recreate, notes, outils Git, prérequis de démarrage hôte et recréation automatique des services partageant un namespace réseau VPN |
+| **Gestion des stacks** | Stacks épinglées, indicateurs compacts d'état et de ressources, navigation repliable/redimensionnable, espace Logs/Compose flexible, copie du YAML brut, actions de stack/conteneur expliquées, pause/reprise des stacks, modèle Compose par défaut configurable, planification par conteneur, Build + Recreate, notes, outils Git, prérequis de démarrage hôte et recréation automatique des services partageant un namespace réseau VPN |
 | **Sauvegarde & reprise** | Sauvegardes Restic multi-destination des bind mounts et volumes, cohérence par stack, restauration sélective, vérification des dépôts, contrôle et diff des snapshots, ainsi que les mécanismes de récupération utilisés par les mises à jour protégées |
 | **Mises à jour** | Détection des mises à jour d'images, mises à jour manuelles ou automatiques des conteneurs avec rollback, créneau de maintenance commun, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
 | **Migration & réplication** | Transferts transactionnels entre instances, migration du Compose et des données persistantes, jobs reprenables, finalisation explicite des déplacements, répliques froides planifiées, snapshots de récupération et workflows de reprise |
@@ -57,6 +57,10 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
 ### 🆕 Octobre 2026
+
+**Contrôles des stacks et création Compose**
+
+La pause/reprise fige les conteneurs sans supprimer les volumes. Les mises à jour automatiques d’images attendent la reprise ; l’action est bloquée pendant un backup ou une restauration Restic, et la pause est indisponible pour la stack d’Enhanced lui-même ou celles dont la politique de sauvegarde arrête les services ou utilise des hooks. Les paramètres généraux proposent un modèle Compose par défaut validé, réservé aux nouvelles stacks. Le README.md d’une stack s’ouvre désormais par un bouton d’action au lieu d’une barre pleine largeur ; les icônes des actions conteneur disposent d’infobulles explicatives. La protection des modes octaux `tmpfs` et le surlignage des variables Compose déjà présents restent inchangés.
 
 **Actions de stack plus claires**
 

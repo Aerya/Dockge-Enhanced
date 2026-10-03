@@ -38,7 +38,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | Área | Lo que agrega Dockge Enhanced |
 | --- | --- |
 | **Multiservidor** | Federación en malla completa entre instancias Dockge-Enhanced, administración desde cualquier servidor vinculado, selección y agrupación de servidores, estado de actualizaciones remotas, copia/migración transaccional de stacks, transferencias reanudables y replicación en frío programada |
-| **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones explicadas con vista previa de los comandos exactos y enlaces Docker, programación por stack y contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y recreación automática de servicios que comparten namespaces de red VPN |
+| **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones de stack/contenedor explicadas, pausa/reanudación de stacks, plantilla Compose predeterminada configurable, programación por contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y recreación automática de servicios que comparten namespaces de red VPN |
 | **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, además de los mecanismos de recuperación usados por las actualizaciones protegidas |
 | **Actualizaciones** | Detección de actualizaciones de imágenes, actualizaciones manuales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
 | **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
@@ -59,6 +59,10 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
 ### 🆕 Octubre de 2026
+
+**Controles de stacks y creación Compose**
+
+La pausa/reanudación congela los contenedores sin eliminar volúmenes. Las actualizaciones automáticas de imágenes esperan hasta reanudar; la acción se bloquea durante copias o restauraciones Restic y la pausa no está disponible para la propia stack de Enhanced ni para stacks con políticas de copia que detienen servicios o usan hooks. Los ajustes generales incluyen una plantilla Compose predeterminada validada solo para nuevas stacks. El README.md de cada stack se abre desde un botón en lugar de una barra de ancho completo; los iconos de acciones de contenedor muestran ayuda contextual. La protección ya existente para modos octales `tmpfs` y el resaltado de variables Compose no cambian.
 
 **Acciones de stack más claras**
 

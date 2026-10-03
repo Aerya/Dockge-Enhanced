@@ -15,6 +15,8 @@ test("previews the same Compose commands used by managed stack actions", () => {
         "docker compose up -d --force-recreate --remove-orphans",
     ]);
     assert.deepEqual(preview.commands.down, [ "docker compose down" ]);
+    assert.deepEqual(preview.commands.pause, [ "docker compose pause" ]);
+    assert.deepEqual(preview.commands.unpause, [ "docker compose unpause" ]);
     assert.deepEqual(preview.commands.build, []);
 });
 

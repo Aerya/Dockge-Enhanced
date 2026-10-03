@@ -57,7 +57,7 @@
 </template>
 
 <script>
-import { EXITED, RUNNING, statusNameShort } from "../../../common/util-common";
+import { EXITED, PAUSED, RUNNING, statusNameShort } from "../../../common/util-common";
 import StackUpdateBadge from "./StackUpdateBadge.vue";
 import StackStatsBadge from "./StackStatsBadge.vue";
 import { externalStackDisplayName } from "../util-external-stack-name";
@@ -132,6 +132,8 @@ export default {
                 case RUNNING:
                     return "status-dot--running";
                 case EXITED:
+                    return "status-dot--stopped";
+                case PAUSED:
                     return "status-dot--stopped";
                 default:
                     return "status-dot--inactive";

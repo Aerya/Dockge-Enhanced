@@ -1358,6 +1358,23 @@ export class ImageWatcher {
   ): Promise<boolean> {
     const key = `${status.stack}::${status.image}`;
     const { composePath, project, configFiles, workingDir, envFiles } = watched;
+/* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
+    if (mode !== "manual") {
+      const pausedCommand = composeExecInvocation(composePath, [ "ps", "--status", "paused", "--services" ], project, configFiles, workingDir, envFiles);
+      try {
+        const pausedServices = await docker(pausedCommand.args, {
+          cwd: pausedCommand.cwd,
+          timeout: 15000,
+        });
+        if (pausedServices.trim()) {
+          console.log(`[ImageWatcher] Auto-update postponed for paused stack ${status.stack}`);
+          return false;
+        }
+      } catch (error) {
+        console.warn(`[ImageWatcher] Could not check paused state for ${status.stack}; postponing update:`, error);
+        return false;
+      }
+    } /* eslint-enable @stylistic/indent */
     if (this._updatingImages.has(key)) {
       console.log(`[ImageWatcher] Auto-update ${key} déjà en cours, ignorée.`);
       return false;

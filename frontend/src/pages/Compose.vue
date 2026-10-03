@@ -78,7 +78,7 @@
                         <span class="stack-action-label">{{ $t("editStack") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode && !active" class="btn btn-primary stack-action" :title="$t('stackActionHelp.start')" :aria-label="$t('startStack')" :disabled="processing" @click="startStack">
+                    <button v-if="!isEditMode && !active && !isPaused" class="btn btn-primary stack-action" :title="$t('stackActionHelp.start')" :aria-label="$t('startStack')" :disabled="processing" @click="startStack">
                         <font-awesome-icon icon="play" />
                         <span class="stack-action-label">{{ $t("startStack") }}</span>
                     </button>
@@ -103,6 +103,14 @@
                         <span class="stack-action-label">{{ $t("buildAndRecreateStack") }}</span>
                     </button>
 
+                    <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('stackActionHelp.pause')" :aria-label="$t('stackActionHelp.pauseAction')" :disabled="processing" @click="setStackPaused(true)">
+                        <font-awesome-icon icon="pause" />
+                        <span class="stack-action-label">{{ $t("stackActionHelp.pauseAction") }}</span>
+                    </button>
+                    <button v-if="!isEditMode && isPaused" class="btn btn-primary stack-action" :title="$t('stackActionHelp.unpause')" :aria-label="$t('stackActionHelp.unpauseAction')" :disabled="processing" @click="setStackPaused(false)">
+                        <font-awesome-icon icon="play" />
+                        <span class="stack-action-label">{{ $t("stackActionHelp.unpauseAction") }}</span>
+                    </button>
                     <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('stackActionHelp.stop')" :aria-label="$t('stopStack')" :disabled="processing" @click="stopStack">
                         <font-awesome-icon icon="stop" />
                         <span class="stack-action-label">{{ $t("stopStack") }}</span>
@@ -145,6 +153,10 @@
                     <button type="button" class="btn btn-normal stack-action" :title="$t('stackActionHelp.title')" :aria-label="$t('stackActionHelp.title')" @click="openStackActionHelp">
                         <font-awesome-icon icon="info-circle" />
                         <span class="stack-action-label">{{ $t('stackActionHelp.title') }}</span>
+                    </button>
+                    <button v-if="!isAdd && !stack.isExternal" type="button" class="btn stack-action" :class="showStackReadme ? 'btn-primary' : 'btn-normal'" :title="$t('stackReadme.heading')" :aria-label="$t('stackReadme.heading')" :aria-expanded="showStackReadme" @click="showStackReadme = !showStackReadme">
+                        <font-awesome-icon icon="book" />
+                        <span class="stack-action-label">{{ $t('stackReadme.heading') }}</span>
                     </button>
                     <button type="button" class="btn stack-action" :class="showStackNote ? 'btn-primary' : 'btn-normal'" :title="$t('showStackNote')" :aria-label="$t('showStackNote')" @click="showStackNote = !showStackNote">
                         <font-awesome-icon icon="note-sticky" />
@@ -203,12 +215,8 @@
                 </div>
             </div>
 
-            <div v-if="!isAdd && stack.isManagedByDockge && !stack.isExternal" class="shadow-box stack-note-panel mb-3 compose-tight">
-                <button class="stack-note-toggle" type="button" :aria-expanded="readmeExpanded" @click="readmeExpanded = !readmeExpanded">
-                    <span class="settings-subheading mb-0"><font-awesome-icon icon="book" class="me-2" />{{ $t("stackReadme.heading") }}</span>
-                    <font-awesome-icon icon="chevron-down" class="stack-note-chevron" :class="{ 'is-expanded': readmeExpanded }" />
-                </button>
-                <div v-show="readmeExpanded" class="stack-note-content">
+            <div v-if="showStackReadme && !isAdd && stack.isManagedByDockge && !stack.isExternal" class="shadow-box stack-note-panel mb-3 compose-tight">
+                <div class="stack-note-content">
                     <p v-if="stack.readmeUnavailable" class="text-warning mb-0">{{ $t("stackReadme.unavailable") }}</p>
                     <template v-if="readmeEditing">
                         <textarea v-model="readmeDraft" class="form-control stack-readme-input" :aria-label="$t('stackReadme.heading')" />
@@ -845,6 +853,7 @@ import {
     getComposeTerminalName,
     getStackLogsTerminalName,
     PROGRESS_TERMINAL_ROWS,
+    PAUSED,
     RUNNING
 } from "../../../common/util-common";
 import { BModal } from "bootstrap-vue-next";
@@ -1020,7 +1029,7 @@ export default {
             noteSaving: false,
             noteExpanded: false,
             readmeSaving: false,
-            readmeExpanded: false,
+            showStackReadme: false,
             readmeEditing: false,
             readmeDraft: "",
             showStartGuard: false,
@@ -1068,6 +1077,12 @@ export default {
                 { id: "stop",
                     label: "stopStack",
                     docs: `${base}stop/` },
+                { id: "pause",
+                    label: "stackActionHelp.pauseAction",
+                    docs: `${base}pause/` },
+                { id: "unpause",
+                    label: "stackActionHelp.unpauseAction",
+                    docs: `${base}unpause/` },
                 { id: "down",
                     label: "downStack",
                     docs: `${base}down/` },
@@ -1162,6 +1177,9 @@ export default {
 
         active() {
             return this.status === RUNNING;
+        },
+        isPaused() {
+            return this.status === PAUSED;
         },
 
         buildServices() {
@@ -1377,7 +1395,8 @@ export default {
             let composeYAML;
             let composeENV;
 
-            if (this.$root.composeTemplate) {
+            const useConfiguredTemplate = !this.$root.composeTemplate;
+            if (!useConfiguredTemplate) {
                 composeYAML = this.$root.composeTemplate;
                 this.$root.composeTemplate = "";
             } else {
@@ -1403,6 +1422,18 @@ export default {
             this.captureComposeEditBaseline();
 
             this.yamlCodeChange();
+
+            if (useConfiguredTemplate) {
+                this.$root.getSocket().emit("getSettings", (res) => {
+                    const configured = res?.ok && typeof res.data?.composeTemplate === "string" ? res.data.composeTemplate : "";
+                    // Do not replace a draft that the user has already started editing.
+                    if (configured && this.isAdd && this.stack.composeYAML === template) {
+                        this.stack.composeYAML = configured;
+                        this.yamlCodeChange();
+                        this.captureComposeEditBaseline();
+                    }
+                });
+            }
 
         } else {
             this.stack.name = this.$route.params.stackName;
@@ -2306,6 +2337,14 @@ export default {
                 if (res.ok) {
                     this.refreshSelectedLogTerminal();
                 }
+            });
+        },
+
+        setStackPaused(paused) {
+            this.processing = true;
+            this.$root.emitAgent(this.endpoint, "setStackPaused", this.stack.name, paused, (res) => {
+                this.processing = false;
+                this.$root.toastRes(res);
             });
         },
 
