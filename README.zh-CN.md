@@ -27,10 +27,6 @@
 
 ---
 
-<p align="center">
-  <img src="screens/D-E.vs.Others.EN.09.26.png" alt="Dockge Enhanced comparison" width="100%">
-</p>
-
 ## 功能
 
 ## 最新动态
