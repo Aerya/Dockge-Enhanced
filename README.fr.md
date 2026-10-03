@@ -60,6 +60,12 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 
 Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
+### 🆕 Octobre 2026
+
+**README.md pour les stacks gérées**
+
+La page d’une stack permet d’afficher et de modifier un `README.md` en Markdown, enregistré à côté du fichier Compose. Ce fichier est distinct de la note courte et suit la stack lors d’une copie ou d’un déplacement vers une autre instance Dockge-Enhanced. Cette fonction ne modifie pas les stacks externes.
+
 ### 🆕 Septembre 2026
 
 **Purge automatique des images fiabilisée**
@@ -236,6 +242,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Nettoyage définitif par labels des stacks externes cassées, avec inventaire figé et confirmations renforcées avant suppression des conteneurs, volumes, réseaux, images et sources Compose
 - Tri par date de création ou dernière mise à jour
 - Notes par stack
+- Affichage et édition du `README.md` des stacks gérées, y compris lors d’une copie ou d’un déplacement
 - Outils Git
 - Build + Recreate
 - Actions par service et par conteneur

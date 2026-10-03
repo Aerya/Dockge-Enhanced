@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-03 — README.md des stacks gérées** — La page d’une stack permet d’afficher et de modifier un README Markdown à côté du fichier Compose. Il suit les copies, déplacements et réplications entre instances Enhanced. Les stacks externes restent inchangées.
+
 **2026-09-29 — Préservation des chaînes YAML quotées** — L’éditeur visuel ne supprime plus les guillemets simples ou doubles des valeurs Compose inchangées lors de la régénération du YAML. Les bind mounts et autres scalaires contenant des espaces ou des caractères sensibles restent sur une seule ligne grâce à une sérialisation sans wrapping (`lineWidth: 0`). Le style de citation est restauré par chemin YAML uniquement lorsque la valeur est identique, afin de ne pas écraser une modification réelle.
 
 **2026-09-29 — Correction et formatage YAML Compose** — L’action **Corriger / formater YAML** sait désormais récupérer les erreurs d’indentation Compose courantes avant de normaliser le document à **2 espaces**. Les clés de service et listes usuelles (`environment`, `ports`, `volumes`, `healthcheck.test`, etc.) sont réalignées, puis le YAML réparé est validé avant toute application. Si la réparation reste ambiguë ou invalide, le contenu original n’est pas modifié. Les commentaires et permissions `tmpfs.mode` avec zéro initial restent conservés.

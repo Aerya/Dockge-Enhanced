@@ -13,6 +13,8 @@ import { DockgeServer } from "../dockge-server";
 import { DockgeSocket } from "../util-server";
 
 const execFileAsync = promisify(execFile);
+const fakeServer = (root: string) => ({ stacksDir: root,
+    externalStacks: { get: async () => null } }) as unknown as DockgeServer;
 const dockerAvailable = (() => {
     try {
         execFileSync("docker", [ "info" ], { stdio: "ignore" });
@@ -75,13 +77,14 @@ test("copies, atomically deploys and verifies a stack in an isolated target inst
         }
     });
 
-    const server = { stacksDir: root } as DockgeServer;
+    const server = fakeServer(root);
     const socket = { endpoint: "",
         id: "integration",
         connected: true,
         emitAgent() {} } as unknown as DockgeSocket;
     try {
         const transferRequest = request(targetName);
+        transferRequest.readme = "# Transferred stack\n";
         const targetBind = path.join(root, "new-target-bind");
         transferRequest.mappings[0].targetSource = targetBind;
         const preflight = await preflightStackTransfer(server, transferRequest);
@@ -90,6 +93,7 @@ test("copies, atomically deploys and verifies a stack in an isolated target inst
         const targetDir = path.join(root, targetName);
         assert.equal(result.job.status, "succeeded");
         assert.equal(fs.existsSync(path.join(targetDir, "compose.yaml")), true);
+        assert.equal(await fsAsync.readFile(path.join(targetDir, "README.md"), "utf8"), transferRequest.readme);
         assert.equal(fs.existsSync(path.join(targetDir, ".env")), true);
         assert.equal(fs.existsSync(path.join(targetDir, "compose.override.yaml")), true);
         const rendered = JSON.parse(String((await execFileAsync("docker", [ "compose", "-p", targetName, "config", "--format", "json" ], { cwd: targetDir })).stdout));
@@ -112,7 +116,7 @@ test("blocks deployment when a Compose device is missing on the target", { skip:
     timeout: 30_000 }, async () => {
     const root = await fsAsync.mkdtemp(path.join(os.tmpdir(), "dockge-transfer-device-check-"));
     const targetName = `transfer-device-${Date.now()}`;
-    const server = { stacksDir: root } as DockgeServer;
+    const server = fakeServer(root);
     try {
         const transferRequest = request(targetName);
         transferRequest.composeYAML += "    devices:\n      - /dev/dockge-definitely-missing-device:/dev/test-device\n";
@@ -136,7 +140,7 @@ test("blocks deployment when an explicit container name belongs to another proje
     const root = await fsAsync.mkdtemp(path.join(os.tmpdir(), "dockge-transfer-container-name-"));
     const targetName = `transfer-name-${Date.now()}`;
     const containerName = `dockge-transfer-occupied-${Date.now()}`;
-    const server = { stacksDir: root } as DockgeServer;
+    const server = fakeServer(root);
     try {
         await execFileAsync("docker", [ "create", "--name", containerName, "docker:29.6.1-cli", "sleep", "300" ]);
         const transferRequest = request(targetName);
@@ -171,7 +175,7 @@ test("rolls configuration and containers back when target verification fails", {
         }
     });
 
-    const server = { stacksDir: root } as DockgeServer;
+    const server = fakeServer(root);
     const socket = { endpoint: "",
         id: "integration",
         connected: true,
@@ -201,7 +205,7 @@ test("surfaces Docker Compose output and rolls back when target deployment fails
         onOutput?.("\u001b[31mError response from daemon: port is already allocated\u001b[0m\r\n");
         return 1;
     });
-    const server = { stacksDir: root } as DockgeServer;
+    const server = fakeServer(root);
     const socket = { endpoint: "",
         id: "integration",
         connected: true,
@@ -238,7 +242,7 @@ test("restores an existing stopped target when a transactional overwrite fails",
     const original = "services:\n  original:\n    image: busybox:stable\n    command: [\"true\"]\n";
     await fsAsync.mkdir(targetDir);
     await fsAsync.writeFile(path.join(targetDir, "compose.yaml"), original);
-    const server = { stacksDir: root } as DockgeServer;
+    const server = fakeServer(root);
     const socket = { endpoint: "",
         id: "integration",
         connected: true,

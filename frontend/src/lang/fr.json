@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.stackReadme": "Les stacks gérées peuvent désormais afficher et modifier un README.md à côté de leur fichier Compose. Il suit la stack lors d’une copie ou d’un déplacement vers une autre instance Enhanced.",
     "languageName": "Français",
     "stackLogs": "Logs",
     "agentFederation.hint": "L'ajout ou la suppression d'un agent est automatiquement répercuté sur toutes les instances Enhanced liées.",
@@ -407,6 +408,10 @@
     "PulledAndRecreated": "Pull et recréation effectués",
     "BuiltAndRecreated": "Build et recréation effectués",
     "stackNote.heading": "Note de la stack",
+    "stackReadme.heading": "README.md de la stack",
+    "stackReadme.empty": "Cette stack n’a pas encore de README.md.",
+    "stackReadme.unavailable": "README.md ne peut pas être modifié : il est illisible, trop volumineux (plus de 1 Mio) ou n’est pas un fichier ordinaire.",
+    "stackReadme.cancel": "Annuler",
     "stackNote.placeholder": "URL d’administration, rôle du service, rappel de maintenance…",
     "stackNote.secretWarning": "Ne stocke aucun mot de passe, token, clé API ou autre secret dans cette note.",
     "Switch to sh": "Passer à sh",

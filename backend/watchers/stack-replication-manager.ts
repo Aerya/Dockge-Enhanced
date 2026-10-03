@@ -104,6 +104,7 @@ interface TransferAnalysis {
     composeYAML: string;
     composeENV: string;
     composeOverrideYAML: string;
+    readme?: string;
     mounts: StackTransferMount[];
 }
 
@@ -394,6 +395,7 @@ export class StackReplicationManager {
                 composeYAML: policy.targetComposeYAML ?? analysis.composeYAML,
                 composeENV: policy.targetComposeENV ?? analysis.composeENV,
                 composeOverrideYAML: policy.targetComposeOverrideYAML ?? analysis.composeOverrideYAML,
+                readme: analysis.readme,
                 mappings,
                 deploy: false,
                 dataTransfer: true,

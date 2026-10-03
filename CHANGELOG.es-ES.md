@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-03 — README.md de las pilas gestionadas** — La página de una pila permite mostrar y editar un README Markdown junto al archivo Compose. Se transfiere con las copias, migraciones y réplicas entre instancias Enhanced. Las pilas externas no cambian.
+
 **2026-09-29 — Conservación de cadenas YAML entrecomilladas** — El editor visual ya no elimina las comillas simples o dobles de valores Compose sin cambios al regenerar el YAML. Los bind mounts y otros escalares con espacios o caracteres sensibles permanecen en una sola línea mediante serialización sin ajuste (`lineWidth: 0`). El estilo de comillas se restaura por ruta YAML solo cuando el valor no ha cambiado, sin sobrescribir modificaciones reales.
 
 **2026-09-29 — Corrección y formato YAML de Compose** — La acción **Corregir / formatear YAML** ahora puede recuperar errores comunes de sangría de Compose antes de normalizar el documento a **2 espacios**. Se realinean claves de servicio y listas habituales (`environment`, `ports`, `volumes`, `healthcheck.test`, etc.) y el YAML reparado se valida antes de aplicarse. Si la reparación sigue siendo ambigua o inválida, el contenido original permanece intacto. Se conservan los comentarios y los permisos `tmpfs.mode` con cero inicial.

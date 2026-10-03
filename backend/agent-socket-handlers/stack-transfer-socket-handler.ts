@@ -65,6 +65,9 @@ function requireTransferRequest(value: unknown): StackTransferRequest {
             throw new ValidationError(`${field} must be a string`);
         }
     }
+    if (request.readme !== undefined && (typeof request.readme !== "string" || Buffer.byteLength(request.readme, "utf8") > 1_048_576)) {
+        throw new ValidationError("README must be a string under 1 MiB");
+    }
     if (!Array.isArray(request.mappings)) {
         throw new ValidationError("mappings must be an array");
     }

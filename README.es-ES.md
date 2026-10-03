@@ -62,6 +62,12 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
+### 🆕 Octubre de 2026
+
+**README.md para las pilas gestionadas**
+
+La página de una pila permite mostrar y editar un `README.md` en Markdown, guardado junto al archivo Compose. Es distinto de la nota breve y se transfiere al copiarla o moverla a otra instancia Dockge-Enhanced. Esta función no modifica las pilas externas.
+
 ### 🆕 Septiembre de 2026
 
 **Limpieza automática de imágenes más fiable**
@@ -235,6 +241,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Eliminación completa opcional de stacks externas integradas, incluida la carpeta de origen y el montaje de acceso de Enhanced
 - Limpieza permanente por etiquetas para stacks externas rotas, con inventario fijado y confirmaciones reforzadas antes de eliminar contenedores, volúmenes, redes, imágenes y fuentes Compose
 - Notas y herramientas Git
+- Visualización y edición del `README.md` de pilas gestionadas, también al copiarlas o moverlas
 - Build + Recreate
 - Acciones por servicio/contenedor
 - Operaciones programadas

@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-03 — README.md for managed stacks** — Stack pages can display and edit a Markdown README stored beside the Compose file. The README follows copy, move and replication transfers between Enhanced instances. External stacks remain unchanged.
+
 **2026-09-29 — Preserve quoted YAML scalars** — The visual editor no longer drops single or double quotes from unchanged Compose values when regenerating YAML. Bind mounts and other scalars containing spaces or sensitive characters stay on one line through no-wrap serialization (`lineWidth: 0`). Quote style is restored by YAML path only when the value is unchanged, so genuine edits are never overwritten.
 
 **2026-09-29 — Compose YAML repair and formatter** — The **Fix / format YAML** action can now recover common Compose indentation mistakes before normalizing the document to **2 spaces**. Common service keys and lists (`environment`, `ports`, `volumes`, `healthcheck.test`, etc.) are realigned and the repaired YAML is validated before it is applied. If repair remains ambiguous or invalid, the original content is left untouched. Comments and leading-zero `tmpfs.mode` permissions remain preserved.

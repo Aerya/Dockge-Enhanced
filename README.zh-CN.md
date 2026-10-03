@@ -40,6 +40,12 @@
 
 本节汇总近期最重要的变化，方便快速了解 Dockge-Enhanced 最近新增了什么。
 
+### 🆕 2026 年 10 月
+
+**受管理 Stack 的 README.md**
+
+现在可以在 Stack 页面查看和编辑与 Compose 文件同目录的 Markdown `README.md`。它与简短的 Stack 备注相互独立，并会在复制或迁移到其他 Dockge-Enhanced 实例时一同传输。此功能不会修改外部 Stack。
+
 ### 🆕 2026 年 9 月
 
 **更可靠的自动镜像清理**
@@ -213,6 +219,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 可选完整删除已接管的外部 Stack，包括源目录和 Enhanced 访问挂载
 - 基于标签永久清理损坏的外部 Stack，并在删除容器、卷、网络、镜像和 Compose 源文件前锁定资源清单并要求强化确认
 - 备注和 Git 工具
+- 受管理 Stack 的 Markdown `README.md` 查看与编辑，复制或迁移时一同传输
 - Build + Recreate
 - 服务/容器级操作和计划任务
 - 自动重新创建通过 `service:` 或 `container:` 直接或间接共享 VPN/网络命名空间的服务
