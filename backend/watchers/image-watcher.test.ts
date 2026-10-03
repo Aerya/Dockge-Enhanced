@@ -2,12 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import {
+    ImageWatcher,
+    imageStatusStore,
   assertRegistryHost,
   buildImageUpdateComposePlan,
   buildManifestUrl,
   buildRollbackComposeRecreateArgs,
   composeExecInvocation,
   isMandatoryManagedUpdate,
+    isManualBatchCandidate,
   isRetryableRegistryStatus,
   pendingAutomaticImageUpdateMayRun,
   registryRetryDelayMs,
@@ -23,6 +26,84 @@ const sharedNamespaceCompose = JSON.stringify({
     solver: { image: "example/solver:latest", network_mode: "service:provider" },
   },
 });
+
+/* eslint-disable @stylistic/indent -- this watcher test uses two-space indentation */
+test("le lot manuel exclut l'auto-mise à jour et les images non applicables", () => {
+  const status = {
+    image: "nginx:latest",
+    stack: "web",
+    localDigest: "",
+    remoteDigest: "",
+    hasUpdate: true,
+    lastChecked: "",
+  };
+  assert.equal(isManualBatchCandidate(status), true);
+  assert.equal(isManualBatchCandidate({
+    ...status,
+    hasUpdate: false,
+  }), false);
+  assert.equal(isManualBatchCandidate({
+    ...status,
+    error: "registry unavailable",
+  }), false);
+  assert.equal(isManualBatchCandidate({
+    ...status,
+    image: "ghcr.io/aerya/dockge-enhanced:latest",
+  }), false);
+});
+
+test("le lot manuel traite les images en série et s'arrête au premier échec", async () => {
+  const watcher = ImageWatcher.getInstance();
+  const originalUpdate = watcher.manualUpdate;
+  const previous = new Map(imageStatusStore);
+  const calls: string[] = [];
+  const base = {
+    localDigest: "",
+    remoteDigest: "",
+    hasUpdate: true,
+    lastChecked: "",
+  };
+  imageStatusStore.clear();
+  imageStatusStore.set("a::one:latest", {
+    ...base,
+    stack: "a",
+    image: "one:latest",
+  });
+  imageStatusStore.set("b::two:latest", {
+    ...base,
+    stack: "b",
+    image: "two:latest",
+  });
+  imageStatusStore.set("c::three:latest", {
+    ...base,
+    stack: "c",
+    image: "three:latest",
+  });
+  watcher.manualUpdate = async (key, respectPaused) => {
+    assert.equal(respectPaused, true);
+    calls.push(key);
+    return key !== "b::two:latest";
+  };
+  try {
+    assert.equal(watcher.startManualUpdateBatch().total, 3);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(calls, [ "a::one:latest", "b::two:latest" ]);
+    assert.deepEqual(watcher.getManualUpdateBatch().batch, {
+      running: false,
+      total: 3,
+      completed: 1,
+      current: null,
+      error: "Update failed, stack paused, or already in progress: b::two:latest",
+    });
+  } finally {
+    watcher.manualUpdate = originalUpdate;
+    imageStatusStore.clear();
+    for (const [key, status] of previous) {
+      imageStatusStore.set(key, status);
+    }
+  }
+});
+/* eslint-enable @stylistic/indent */
 
 test("construit Compose avec des arguments séparés", () => {
   const composePath = path.join("/opt/stacks", "demo", "compose file.yaml");

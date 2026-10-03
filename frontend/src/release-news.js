@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-03-image-update-all",
+        items: [ "releaseNews.item.imageUpdateAll" ],
+    },
+    {
         id: "2026-10-03-setup-password-manager",
         items: [ "releaseNews.item.setupPasswordManager" ],
     },
