@@ -65,6 +65,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/auth.test.ts
 
+      - name: Tests du gestionnaire de fichiers restreint
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/file-manager.test.ts
+
       - name: Tests des garde-fous de fédération
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/federation-health.test.ts backend/agent-manager-process.test.ts backend/agent-manager.test.ts backend/socket-handlers/manage-agent-socket-handler.test.ts

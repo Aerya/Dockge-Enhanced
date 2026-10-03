@@ -62,6 +62,12 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Gestionnaire de fichiers hôte facultatif**
+
+La page Fichiers, activée sur demande, permet de parcourir un dossier hôte dédié, de modifier de petits fichiers UTF-8, de transférer des fichiers et de suivre des journaux écrits dans des fichiers, localement ou sur une instance Enhanced liée. Elle est distincte du navigateur de volumes par stack et ne donne pas accès aux chemins hors de sa racine autorisée.
+
+Montez uniquement le dossier à exposer dans Enhanced et définissez `DOCKGE_FILE_MANAGER_ROOT` avec son chemin **dans le conteneur**. Par exemple, ajoutez `- /srv/partage:/managed-files` aux `volumes:` et `DOCKGE_FILE_MANAGER_ROOT: /managed-files` à `environment:`. Sans ce réglage, le gestionnaire reste désactivé ; **ne montez pas `/` ni un vaste dossier hôte**. Il refuse également les opérations si l’authentification est désactivée. `DOCKGE_FILE_MANAGER_MAX_FILE_SIZE` limite facultativement les transferts (100 Mio par défaut) ; l’édition de texte en ligne est limitée à 1 Mio. Chaque instance liée exige son propre montage et son propre réglage.
+
 **Copier-coller dans les terminaux des conteneurs**
 
 Le clic droit ouvre désormais le menu natif Copier/Coller du terminal. Le collage au clavier fonctionne aussi sur les adresses HTTP locales, sans dépendre de l’API presse-papiers du navigateur.
@@ -238,6 +244,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Négociation des capacités entre différentes versions de Dockge-Enhanced
 
 ### Gestion des stacks
+- Gestionnaire facultatif de fichiers hôte limité à un dossier autorisé, distinct du navigateur de volumes par stack, avec transferts par morceaux et suivi des journaux en fichiers
 - Création, édition, démarrage, arrêt et recréation des stacks Compose
 - Stacks épinglées côté serveur et partagées entre les WebUI liées
 - Détection et intégration de stacks Compose externes sans déplacer leurs fichiers ni leurs données
@@ -708,6 +715,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 ## Crédits
 
 - [**Dockge**](https://github.com/louislam/dockge) par louislam — le projet d'origine (licence MIT)
+- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) par Lorwell — gestionnaire de fichiers hôte restreint adapté à Enhanced (licence MIT)
 - [**Trivy**](https://github.com/aquasecurity/trivy) — scanner de vulnérabilités
 - [**Restic**](https://restic.net/) — outil de backup chiffré
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
