@@ -97,10 +97,47 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/i18n-compat.test.ts
 
-      - name: Audit npm HIGH/CRITICAL
-        if: steps.docs.outputs.docs_only != 'true'
-        run: npm audit --audit-level=high
-
       - name: Build frontend (Vite)
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run build:frontend
+
+      - name: Tester la comparaison des audits npm
+        if: steps.docs.outputs.docs_only != 'true' && github.event_name == 'pull_request'
+        run: python3 -m unittest discover -s .github/scripts -p npm_audit_compare_test.py
+
+      - name: Audit npm — refuser les nouvelles alertes HIGH/CRITICAL
+        if: steps.docs.outputs.docs_only != 'true' && github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          base_dir="$RUNNER_TEMP/npm-audit-base"
+          git worktree add --detach "$base_dir" "$BASE_SHA"
+          trap 'git worktree remove --force "$base_dir"' EXIT
+
+          audit() {
+            local directory="$1" report="$2" status=0
+            (cd "$directory" && npm audit --json > "$report") || status=$?
+            if [ "$status" -gt 1 ]; then
+              echo "npm audit a échoué (code $status) pour $directory" >&2
+              return 1
+            fi
+          }
+
+          audit "$base_dir" "$RUNNER_TEMP/npm-audit-base.json"
+          audit "$PWD" "$RUNNER_TEMP/npm-audit-head.json"
+          python3 .github/scripts/npm_audit_compare.py \
+            "$RUNNER_TEMP/npm-audit-base.json" "$RUNNER_TEMP/npm-audit-head.json"
+
+      - name: Audit npm HIGH/CRITICAL (exécution manuelle)
+        if: steps.docs.outputs.docs_only != 'true' && github.event_name != 'pull_request'
+        run: npm audit --audit-level=high
+
+      - name: Conserver les rapports d'audit npm
+        if: always() && github.event_name == 'pull_request' && steps.docs.outputs.docs_only != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-audit-${{ github.sha }}
+          path: ${{ runner.temp }}/npm-audit-*.json
+          if-no-files-found: ignore
+          retention-days: 14
