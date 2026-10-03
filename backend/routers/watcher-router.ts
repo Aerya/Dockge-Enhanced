@@ -87,6 +87,36 @@ export class WatcherRouter extends Router {
             res.json({ ok: true, data: entries });
         });
 
+        router.get("/image/update-all", (_req: Request, res: Response) => {
+            res.json({
+                ok: true,
+                data: ImageWatcher.getInstance().getManualUpdateBatch(),
+            });
+        });
+
+        router.post("/image/update-all", async (req: Request, res: Response) => {
+            try {
+                const selfState = SelfUpdateManager.getInstance().getOperation().state;
+                if ([ "backing-up", "verifying-backup", "updating", "waiting-health", "rolling-back" ].includes(selfState)) {
+                    return res.status(409).json({
+                        ok: false,
+                        message: "Dockge-Enhanced self-update is already running",
+                    });
+                }
+                const batch = ImageWatcher.getInstance().startManualUpdateBatch();
+                await auditWatcherAction(req, "image.manual_update_all", "image", null, "success", null, { total: batch.total });
+                return res.status(202).json({
+                    ok: true,
+                    data: batch,
+                });
+            } catch (error) {
+                return res.status(409).json({
+                    ok: false,
+                    message: String(error),
+                });
+            }
+        });
+
         // ════════════════════════════════════════════════════════════════
         // IMAGE WATCHER — Rollback
         // ════════════════════════════════════════════════════════════════

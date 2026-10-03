@@ -52,6 +52,23 @@
             <p v-if="updatePause.enabled" class="form-text mb-0">{{ pauseLabel }}</p>
         </div>
 
+        <div class="shadow-box big-padding mb-3">
+            <h3 class="h6">{{ $t("updates.images.heading") }}</h3>
+            <p class="form-text">{{ $t("updates.images.description") }}</p>
+            <button class="btn btn-sm btn-primary" :disabled="imageBatch.running || !availableImages" @click="updateAllImages">
+                {{ $t("updates.images.start", { count: availableImages }) }}
+            </button>
+            <p v-if="imageBatch.running" class="form-text mt-2 mb-0">
+                {{ $t("updates.images.progress", { completed: imageBatch.completed, total: imageBatch.total, image: imageBatch.current || '…' }) }}
+            </p>
+            <p v-else-if="imageBatch.error" class="alert alert-danger py-2 mt-2 mb-0">
+                {{ $t("updates.images.failed", { completed: imageBatch.completed, total: imageBatch.total, error: imageBatch.error }) }}
+            </p>
+            <p v-else-if="imageBatch.total && imageBatch.completed === imageBatch.total" class="alert alert-success py-2 mt-2 mb-0">
+                {{ $t("updates.images.done", { count: imageBatch.completed }) }}
+            </p>
+        </div>
+
         <div class="shadow-box big-padding">
             <h3 class="h6 mb-3">{{ $t("updates.status.heading") }}</h3>
 
@@ -140,6 +157,14 @@ const status = ref({ updateAvailable: false, repo: "", localDigest: "", remoteDi
 const operation = ref<Operation>({ state: "idle", message: "", startedAt: null, finishedAt: null, targetImage: "" });
 const progress = ref<null | { phase: "backup" | "verification"; label: string; completed?: number; total?: number; destinationIndex?: number; destinationCount?: number }>(null);
 const updating = ref(false);
+const availableImages = ref(0);
+const imageBatch = ref({
+    running: false,
+    total: 0,
+    completed: 0,
+    current: null as string | null,
+    error: null as string | null,
+});
 const pausePreset = ref("7");
 const pauseDate = ref("");
 const now = ref(Date.now());
@@ -197,8 +222,8 @@ const lastOperationLabel = computed(() => {
 const pauseLabel = computed(() => updatePause.value.until ? t("updates.pause.until", { date: new Date(updatePause.value.until).toLocaleString() }) : t("updates.pause.indefinite"));
 
 async function load() {
-    const [ settingsResult, statusResult, pauseResult ] = await Promise.all([
-        watcherApi("GET", "/self/settings"), watcherApi("GET", "/self/status"), watcherApi("GET", "/image/auto-update"),
+    const [ settingsResult, statusResult, pauseResult, imageResult ] = await Promise.all([
+        watcherApi("GET", "/self/settings"), watcherApi("GET", "/self/status"), watcherApi("GET", "/image/auto-update"), watcherApi("GET", "/image/update-all"),
     ]);
     if (settingsResult.ok) settings.value = settingsResult.data;
     if (statusResult.ok) {
@@ -210,6 +235,29 @@ async function load() {
     const globalPause = pauseResult.ok ? pauseResult.data.globalUpdatePause : null;
     const activePause = [ selfPause, globalPause ].find((pause) => pause?.enabled && (!pause.until || Date.parse(pause.until) > Date.now()));
     updatePause.value = activePause ?? globalPause ?? selfPause ?? updatePause.value;
+    if (imageResult.ok) {
+        availableImages.value = imageResult.data.available;
+        imageBatch.value = imageResult.data.batch;
+    }
+}
+
+async function updateAllImages() {
+    if (!window.confirm(t("updates.images.confirm", { count: availableImages.value }))) {
+        return;
+    }
+    const result = await watcherApi("POST", "/image/update-all");
+    if (result.ok) {
+        imageBatch.value = result.data;
+        await load();
+    } else {
+        imageBatch.value = {
+            running: false,
+            total: 0,
+            completed: 0,
+            current: null,
+            error: result.message || t("updates.images.unknownError"),
+        };
+    }
 }
 
 async function save() { await watcherApi("POST", "/self/settings", settings.value); }

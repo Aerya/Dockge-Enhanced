@@ -40,7 +40,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | **Multiservidor** | Federación en malla completa entre instancias Dockge-Enhanced, administración desde cualquier servidor vinculado, selección y agrupación de servidores, estado de actualizaciones remotas, copia/migración transaccional de stacks, transferencias reanudables y replicación en frío programada |
 | **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones de stack/contenedor explicadas, pausa/reanudación de stacks, plantilla Compose predeterminada configurable, programación por contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y recreación automática de servicios que comparten namespaces de red VPN |
 | **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, además de los mecanismos de recuperación usados por las actualizaciones protegidas |
-| **Actualizaciones** | Detección de actualizaciones de imágenes, actualizaciones manuales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
+| **Actualizaciones** | Detección de actualizaciones de imágenes, actualizaciones manuales, masivas secuenciales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
 | **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
 | **Automatización y auditoría** | API REST limitada por permisos, webhooks por stack, ejemplos para Home Assistant, operaciones programadas e historial centralizado con origen, estado y duración |
 | **Recursos Docker** | Gestión de imágenes, volúmenes, redes y contenedores no gestionados, operaciones masivas, auto-prune y protecciones frente a acciones destructivas |
@@ -59,6 +59,10 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
 ### 🆕 Octubre de 2026
+
+**Actualizar todas las imágenes Docker disponibles**
+
+La página Actualizaciones procesa las imágenes detectadas una por una mediante el flujo Compose y de reversión existente. Muestra el progreso, se detiene ante el primer error y mantiene separada la autoactualización de Enhanced.
 
 **Gestores de contraseñas**
 
@@ -297,6 +301,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 ### Actualizaciones
 - Monitorización y detección remota
 - Actualización manual y automática
+- Actualización secuencial de todas las imágenes disponibles, con progreso y parada ante el primer error
 - Rollback, programación y pausas
 - Autoactualización protegida de Dockge-Enhanced
 - Detección fiable del contenedor actual con un `hostname:` personalizado en Compose y estado degradado visible si la verificación no está disponible

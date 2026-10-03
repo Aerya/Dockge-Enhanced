@@ -22,6 +22,7 @@ import { getNotificationLang, getNotificationLocale, notificationText, Notificat
 import { Settings } from "../settings";
 import { log } from "../log";
 import { ExternalStackManager } from "../external-stacks";
+import { BackupManager } from "./backup-manager";
 import {
   acceptedComposeFileNames,
   envsubstYAML,
@@ -205,6 +206,20 @@ export interface UpdateHistoryEntry {
   success: boolean;
   error?: string;
 }
+
+/* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
+export interface ManualUpdateBatch {
+  running: boolean;
+  total: number;
+  completed: number;
+  current: string | null;
+  error: string | null;
+}
+
+export function isManualBatchCandidate(status: ImageStatus): boolean {
+  return status.hasUpdate && !status.error && !/(^|\/)dockge-enhanced(?=[:@]|$)/i.test(status.image);
+}
+/* eslint-enable @stylistic/indent */
 
 // Stores partagés — lus par le router pour le polling frontend
 export const imageStatusStore = new Map<string, ImageStatus>();
@@ -889,6 +904,15 @@ export class ImageWatcher {
   private baseUrl: string = "";
   private _checkRunning = false;
   private _updatingImages = new Set<string>();
+/* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
+  private manualBatch: ManualUpdateBatch = {
+    running: false,
+    total: 0,
+    completed: 0,
+    current: null,
+    error: null,
+  };
+    /* eslint-enable @stylistic/indent */
   private externalStacks = new ExternalStackManager(DATA_DIR, STACKS_DIR);
 
   setBaseUrl(url: string): void {
@@ -1015,8 +1039,68 @@ export class ImageWatcher {
   }
 
   isBusy(): boolean {
-    return this._checkRunning || this._updatingImages.size > 0;
+    return this._checkRunning || this._updatingImages.size > 0 || this.manualBatch.running;
   }
+
+/* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
+  getManualUpdateBatch(): {
+    available: number;
+    batch: ManualUpdateBatch;
+  } {
+    return {
+      available: [...imageStatusStore.values()].filter(isManualBatchCandidate).length,
+      batch: { ...this.manualBatch },
+    };
+  }
+
+  startManualUpdateBatch(): ManualUpdateBatch {
+    if (this.manualBatch.running) {
+      throw new Error("A batch update is already running");
+    }
+    if (this._checkRunning || this._updatingImages.size > 0) {
+      throw new Error("An image check or update is already running");
+    }
+    if (BackupManager.getInstance().isBackupRunActive() || BackupManager.getInstance().isRestoreRunActive()) {
+      throw new Error("A Restic backup or restore is already running");
+    }
+    const keys = [...imageStatusStore.entries()]
+      .filter(([, status]) => isManualBatchCandidate(status))
+      .map(([key]) => key);
+    if (keys.length === 0) {
+      throw new Error("No applicable image update is available");
+    }
+    this.manualBatch = {
+      running: true,
+      total: keys.length,
+      completed: 0,
+      current: null,
+      error: null,
+    };
+    void this.runManualUpdateBatch(keys);
+    return { ...this.manualBatch };
+  }
+
+  private async runManualUpdateBatch(keys: string[]): Promise<void> {
+    try {
+      for (const key of keys) {
+        this.manualBatch.current = key;
+        if (BackupManager.getInstance().isBackupRunActive() || BackupManager.getInstance().isRestoreRunActive()) {
+          throw new Error("A Restic backup or restore started during the batch");
+        }
+        const success = await this.manualUpdate(key, true);
+        if (!success) {
+          throw new Error(`Update failed, stack paused, or already in progress: ${key}`);
+        }
+        this.manualBatch.completed++;
+      }
+    } catch (error) {
+      this.manualBatch.error = error instanceof Error ? error.message : String(error);
+    } finally {
+      this.manualBatch.current = null;
+      this.manualBatch.running = false;
+    }
+  }
+    /* eslint-enable @stylistic/indent */
 
   // ── Cycle de vie ──────────────────────────────────────────────
 
@@ -1089,7 +1173,7 @@ export class ImageWatcher {
   // ── Check principal ───────────────────────────────────────────
 
   async runCheck(): Promise<ImageStatus[]> {
-    if (this._checkRunning) {
+    if (this._checkRunning || this.manualBatch.running) {
       console.log("[ImageWatcher] Check déjà en cours, ignoré.");
       return [];
     }
@@ -1249,6 +1333,11 @@ export class ImageWatcher {
 
   /** Applique les màj planifiées dont l'heure correspond à l'heure courante (appelé chaque minute) */
   private async applyPendingUpdates(): Promise<void> {
+/* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
+    if (this.manualBatch.running) {
+      return;
+    }
+        /* eslint-enable @stylistic/indent */
     const pending = this.settings.pendingAutoUpdates ?? [];
     if (pending.length === 0) return;
 
@@ -1355,11 +1444,12 @@ export class ImageWatcher {
     status: ImageStatus,
     watched: WatchedComposeStack,
     mode: "immediate" | "scheduled" | "manual" = "immediate",
+        respectPaused = false,
   ): Promise<boolean> {
     const key = `${status.stack}::${status.image}`;
     const { composePath, project, configFiles, workingDir, envFiles } = watched;
 /* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
-    if (mode !== "manual") {
+    if (mode !== "manual" || respectPaused) {
       const pausedCommand = composeExecInvocation(composePath, [ "ps", "--status", "paused", "--services" ], project, configFiles, workingDir, envFiles);
       try {
         const pausedServices = await docker(pausedCommand.args, {
@@ -1532,7 +1622,7 @@ export class ImageWatcher {
 
   // ── Manual update (on-demand from UI) ─────────────────────────────
 
-  async manualUpdate(key: string): Promise<boolean> {
+  async manualUpdate(key: string, respectPaused = false): Promise<boolean> {
     const sepIdx = key.indexOf("::");
     if (sepIdx === -1) throw new Error("Invalid key format — expected 'stack::image'");
     const stack = key.slice(0, sepIdx);
@@ -1550,7 +1640,7 @@ export class ImageWatcher {
     const watched = watchedStacks.get(stack);
     if (!watched) throw new Error(`Stack "${stack}" not found`);
 
-    return this.performAutoUpdate(status, watched, "manual");
+    return this.performAutoUpdate(status, watched, "manual", respectPaused);
   }
 
   // ── Rollback ──────────────────────────────────────────────────────

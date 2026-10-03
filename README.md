@@ -38,7 +38,7 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers, and scheduled cold replication |
 | **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, explained stack/container actions, stack pause/resume, a configurable default Compose template, per-container scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces |
 | **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates |
-| **Updates** | Image update detection, manual or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
+| **Updates** | Image update detection, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
 | **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant examples, scheduled operations, and centralized history including operation origin, status and duration |
 | **Docker resources** | Management of images, volumes, networks and unmanaged containers, bulk operations, auto-prune and safeguards around destructive actions |
@@ -57,6 +57,10 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 October 2026
+
+**Update all available container images**
+
+The Updates page can update detected images one at a time using the existing Compose update and rollback path. It shows progress, stops on the first failure and leaves Dockge-Enhanced self-update separate.
 
 **Password managers**
 
@@ -311,6 +315,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Docker image update monitoring
 - Remote update detection
 - Manual and automatic image updates
+- Sequential "update all" for available container images, with progress and stop-on-failure
 - Rollback to the previous image
 - Scheduled updates
 - Global and per-image pause
