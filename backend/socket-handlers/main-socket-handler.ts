@@ -22,6 +22,7 @@ import fs, { promises as fsAsync } from "fs";
 import path from "path";
 import axios from "axios";
 import { getAuthMode, isSetupCompleted, markSetupCompleted } from "../auth";
+import { parseDocument } from "yaml";
 
 /**
  * Vérifie un token Cloudflare Turnstile côté serveur via l'API siteverify.
@@ -351,6 +352,16 @@ export class MainSocketHandler extends SocketHandler {
         socket.on("setSettings", async (data, currentPassword, callback) => {
             try {
                 checkLogin(socket);
+
+                if (data.composeTemplate !== undefined) {
+                    if (typeof data.composeTemplate !== "string" || Buffer.byteLength(data.composeTemplate, "utf8") > 65536) {
+                        throw new ValidationError("Invalid Compose template");
+                    }
+                    const templateDocument = parseDocument(data.composeTemplate);
+                    if (templateDocument.errors.length || !templateDocument.has("services")) {
+                        throw new ValidationError("Invalid Compose template");
+                    }
+                }
 
                 // If currently is disabled auth, don't need to check
                 // Disabled Auth + Want to Disable Auth => No Check

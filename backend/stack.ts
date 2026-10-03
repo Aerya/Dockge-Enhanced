@@ -12,6 +12,7 @@ import {
     CREATED_FILE,
     CREATED_STACK,
     EXITED,
+    PAUSED,
     getComposeTerminalName, getContainerExecTerminalName,
     getStackLogsTerminalName,
     PROGRESS_TERMINAL_ROWS,
@@ -53,9 +54,12 @@ export function resolveMixedComposeStatus(states: ComposeProjectContainerState[]
     }
 
     let running = false;
+    let paused = false;
     for (const state of states) {
         if (state.status === "running") {
             running = true;
+        } else if (state.status === "paused") {
+            paused = true;
         } else if (state.status === "exited") {
             if (state.exitCode === undefined) {
                 return UNKNOWN;
@@ -67,7 +71,7 @@ export function resolveMixedComposeStatus(states: ComposeProjectContainerState[]
             return EXITED;
         }
     }
-    return running ? RUNNING : EXITED;
+    return paused ? PAUSED : running ? RUNNING : EXITED;
 }
 const serviceStatusCache = new Map<string, { at: number; result: ServiceStatusResult }>();
 
@@ -1100,7 +1104,9 @@ export class Stack {
      */
     static statusConvert(status : string) : number {
         const normalizedStatus = status.toLowerCase();
-        if (normalizedStatus.includes("running")) {
+        if (normalizedStatus.includes("paused")) {
+            return PAUSED;
+        } else if (normalizedStatus.includes("running")) {
             // Une stack reste active tant qu'au moins un service tourne.
             // Exemple : "exited(1), running(2)" après l'arrêt ciblé d'un service.
             return RUNNING;
@@ -1115,7 +1121,7 @@ export class Stack {
 
     static async resolveComposeStatus(project: string, status: string): Promise<number> {
         const converted = this.statusConvert(status);
-        if (converted !== RUNNING || !status.toLowerCase().includes("exited")) {
+        if ((converted !== RUNNING && converted !== PAUSED) || !status.toLowerCase().includes("exited")) {
             return converted;
         }
 
@@ -1249,6 +1255,8 @@ export class Stack {
                 recreate: [ command("up", "-d", "--force-recreate", "--remove-orphans") ],
                 build: buildServices.length > 0 ? [ command("build", "--pull", ...buildServices), command("up", "-d", "--remove-orphans") ] : [],
                 stop: [ command("stop") ],
+                pause: [ command("pause") ],
+                unpause: [ command("unpause") ],
                 down: [ command("down") ],
             },
         };
@@ -1272,6 +1280,27 @@ export class Stack {
             throw new Error("Failed to stop, please check the terminal output for more information.");
         }
         return exitCode;
+    }
+
+    async setPaused(socket: DockgeSocket, paused: boolean): Promise<void> {
+        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
+        const action = paused ? "pause" : "unpause";
+        const exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions(action), this.path);
+        if (exitCode !== 0) {
+            throw new Error(`Failed to ${action} stack; check the terminal for details.`);
+        }
+        serviceStatusCache.delete(this.name);
+    }
+
+    async getContainerIds(): Promise<string[]> {
+        const result = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "-aq"), {
+            cwd: this.path,
+            encoding: "utf-8",
+        });
+        if ((result.code ?? 0) !== 0) {
+            throw new ValidationError("Cannot identify the stack containers; stack pause is unavailable.");
+        }
+        return result.stdout?.toString().split(/\s+/).filter(Boolean) ?? [];
     }
 
     async startScheduled(): Promise<number> {

@@ -36,7 +36,7 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | Area | Dockge Enhanced adds |
 | --- | --- |
 | **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers, and scheduled cold replication |
-| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, explained per-stack actions with exact command previews and Docker documentation, per-container actions and scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces |
+| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, explained stack/container actions, stack pause/resume, a configurable default Compose template, per-container scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces |
 | **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates |
 | **Updates** | Image update detection, manual or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
@@ -57,6 +57,10 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 October 2026
+
+**Stack controls and Compose creation**
+
+Stack pause/resume freezes containers without removing volumes. Automatic image updates wait while a stack is paused; pause/resume is blocked during Restic backup or restore, and pause is unavailable for Enhanced's own stack or stacks using stop/hook backup policies. General settings now provide a validated default Compose template for new stacks only. The stack README.md opens from an action button instead of a full-width bar, and container action icons have explanatory tooltips. Existing tmpfs octal-value protection and Compose variable highlighting remain unchanged.
 
 **Clearer stack actions**
 

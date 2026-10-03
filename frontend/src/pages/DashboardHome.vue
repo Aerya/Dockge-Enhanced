@@ -23,6 +23,10 @@
                                 <h3>{{ $tc("home.stackState.inactive", inactiveNum) }}</h3>
                                 <span class="num inactive">{{ inactiveNum }}</span>
                             </div>
+                            <div v-if="pausedNum > 0" class="col">
+                                <h3>{{ $t("paused") }}</h3>
+                                <span class="num exited">{{ pausedNum }}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -198,6 +202,7 @@
                                     <span class="instance-state active"><strong>{{ instanceOverview(endpoint).active }}</strong> {{ $tc("linkedInstances.active", instanceOverview(endpoint).active) }}</span>
                                     <span class="instance-state stopped"><strong>{{ instanceOverview(endpoint).stopped }}</strong> {{ $tc("linkedInstances.stopped", instanceOverview(endpoint).stopped) }}</span>
                                     <span class="instance-state inactive"><strong>{{ instanceOverview(endpoint).inactive }}</strong> {{ $tc("linkedInstances.inactive", instanceOverview(endpoint).inactive) }}</span>
+                                    <span v-if="instanceOverview(endpoint).paused > 0" class="instance-state stopped"><strong>{{ instanceOverview(endpoint).paused }}</strong> {{ $t("paused") }}</span>
                                 </div>
                                 <div class="instance-resource-summary">
                                     <span><font-awesome-icon icon="microchip" /> {{ instanceSystemStats[endpoint]?.data ? `${instanceSystemStats[endpoint].data.cpu}%` : "—" }}</span>
@@ -345,6 +350,9 @@ export default {
         exitedNum() {
             return this.getStatusNum("exited");
         },
+        pausedNum() {
+            return this.getStatusNum("paused");
+        },
         hasSummaryCards() {
             return this.summary.images !== null
                 || this.summary.backup !== null
@@ -401,11 +409,16 @@ export default {
     methods: {
 
         instanceOverview(endpoint) {
-            const overview = { total: 0, active: 0, stopped: 0, inactive: 0 };
+            const overview = { total: 0, active: 0, stopped: 0, inactive: 0,
+                paused: 0 };
             for (const stack of Object.values(this.$root.completeStackList || {})) {
                 if ((stack.endpoint || "") !== endpoint) continue;
                 overview.total += 1;
                 const status = statusNameShort(stack.status);
+                if (status === "paused") {
+                    overview.paused += 1;
+                    continue;
+                }
                 if (status === "active") overview.active += 1;
                 else if (status === "exited") overview.stopped += 1;
                 else overview.inactive += 1;

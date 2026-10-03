@@ -32,6 +32,16 @@
                         <strong>{{ stackSummary.stopped }}</strong>
                     </button>
                     <button
+                        v-if="stackSummary.paused > 0"
+                        class="stack-summary-pill stack-summary-pill--stopped"
+                        :class="{ selected: stackStatusFilter === 'paused' }"
+                        type="button"
+                        @click="setStackStatusFilter('paused')"
+                    >
+                        <span>{{ $t("paused") }}</span>
+                        <strong>{{ stackSummary.paused }}</strong>
+                    </button>
+                    <button
                         class="stack-summary-pill stack-summary-pill--inactive"
                         :class="{ selected: stackStatusFilter === 'inactive' }"
                         :title="$t('stackSummaryInactiveTooltip')"
@@ -153,7 +163,7 @@
 
 <script>
 import StackListItem from "../components/StackListItem.vue";
-import { CREATED_FILE, CREATED_STACK, EXITED, RUNNING, UNKNOWN } from "../../../common/util-common";
+import { CREATED_FILE, CREATED_STACK, EXITED, PAUSED, RUNNING, UNKNOWN } from "../../../common/util-common";
 import { useStackSchedules } from "../composables/useStackSchedules";
 
 export default {
@@ -375,6 +385,7 @@ export default {
                 total: 0,
                 active: 0,
                 stopped: 0,
+                paused: 0,
                 inactive: 0,
                 scheduled: 0,
             };
@@ -387,6 +398,8 @@ export default {
                     summary.active += 1;
                 } else if (status === "stopped") {
                     summary.stopped += 1;
+                } else if (status === "paused") {
+                    summary.paused += 1;
                 } else {
                     summary.inactive += 1;
                 }
@@ -713,6 +726,10 @@ export default {
 
             if (stack.status === EXITED) {
                 return "stopped";
+            }
+
+            if (stack.status === PAUSED) {
+                return "paused";
             }
 
             return "inactive";
