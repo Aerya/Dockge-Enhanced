@@ -1367,11 +1367,11 @@ export class ImageWatcher {
           timeout: 15000,
         });
         if (pausedServices.trim()) {
-          console.log(`[ImageWatcher] Auto-update postponed for paused stack ${status.stack}`);
+          console.log("[ImageWatcher] Auto-update postponed for paused stack", status.stack);
           return false;
         }
       } catch (error) {
-        console.warn(`[ImageWatcher] Could not check paused state for ${status.stack}; postponing update:`, error);
+        console.warn("[ImageWatcher] Could not check paused state; postponing update:", status.stack, error);
         return false;
       }
     } /* eslint-enable @stylistic/indent */
