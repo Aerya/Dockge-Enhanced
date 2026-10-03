@@ -62,6 +62,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Copy and paste in container terminals**
+
+Right-click now opens the terminal’s native Copy/Paste menu. Pasting also works with keyboard shortcuts on local HTTP addresses, without requiring access to the browser Clipboard API.
+
 **README.md for managed stacks**
 
 The stack page can display and edit a Markdown `README.md` stored beside its Compose file. This file is distinct from the short stack note and follows a stack copied or moved to another Dockge-Enhanced instance. External stacks are not edited by this feature.

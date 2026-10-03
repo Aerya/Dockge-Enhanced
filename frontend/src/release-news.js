@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-03-terminal-clipboard",
+        items: [ "releaseNews.item.terminalClipboard" ],
+    },
+    {
         id: "2026-10-03-stack-readme",
         items: [ "releaseNews.item.stackReadme" ],
     },

@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-03 — Presse-papiers du terminal des conteneurs** — Le clic droit utilise de nouveau le menu Copier/Coller natif d’xterm. Les événements de collage du navigateur sont transmis au terminal, y compris sur les adresses HTTP locales où l’API presse-papiers est indisponible.
+
 **2026-10-03 — README.md des stacks gérées** — La page d’une stack permet d’afficher et de modifier un README Markdown à côté du fichier Compose. Il suit les copies, déplacements et réplications entre instances Enhanced. Les stacks externes restent inchangées.
 
 **2026-09-29 — Préservation des chaînes YAML quotées** — L’éditeur visuel ne supprime plus les guillemets simples ou doubles des valeurs Compose inchangées lors de la régénération du YAML. Les bind mounts et autres scalaires contenant des espaces ou des caractères sensibles restent sur une seule ligne grâce à une sérialisation sans wrapping (`lineWidth: 0`). Le style de citation est restauré par chemin YAML uniquement lorsque la valeur est identique, afin de ne pas écraser une modification réelle.

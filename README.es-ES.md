@@ -64,6 +64,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Copiar y pegar en los terminales de contenedores**
+
+El clic derecho abre el menú nativo Copiar/Pegar del terminal. El pegado con teclado también funciona en direcciones HTTP locales sin depender de la API del portapapeles del navegador.
+
 **README.md para las pilas gestionadas**
 
 La página de una pila permite mostrar y editar un `README.md` en Markdown, guardado junto al archivo Compose. Es distinto de la nota breve y se transfiere al copiarla o moverla a otra instancia Dockge-Enhanced. Esta función no modifica las pilas externas.
