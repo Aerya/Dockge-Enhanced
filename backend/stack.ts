@@ -40,6 +40,35 @@ interface ServiceStatusResult {
     lastUpdated: string | null;
     lastStartedAt: string | null;
 }
+
+interface ComposeProjectContainerState {
+    status: string;
+    exitCode?: number;
+}
+
+/** Ignore one-off Compose containers when resolving the health of a stack. */
+export function resolveMixedComposeStatus(states: ComposeProjectContainerState[]): number {
+    if (states.length === 0) {
+        return UNKNOWN;
+    }
+
+    let running = false;
+    for (const state of states) {
+        if (state.status === "running") {
+            running = true;
+        } else if (state.status === "exited") {
+            if (state.exitCode === undefined) {
+                return UNKNOWN;
+            }
+            if (state.exitCode !== 0) {
+                return EXITED;
+            }
+        } else {
+            return EXITED;
+        }
+    }
+    return running ? RUNNING : EXITED;
+}
 const serviceStatusCache = new Map<string, { at: number; result: ServiceStatusResult }>();
 
 interface StackVolumeMountUsage {
@@ -1019,7 +1048,7 @@ export class Stack {
                 stackList.set(composeStack.Name, stack);
             }
 
-            stack._status = this.statusConvert(composeStack.Status);
+            stack._status = await this.resolveComposeStatus(composeStack.Name, composeStack.Status);
             if (!stack.isExternal) stack._configFilePath = composeStack.ConfigFiles;
         }
 
@@ -1051,7 +1080,7 @@ export class Stack {
         }
 
         for (let composeStack of composeList) {
-            const converted = this.statusConvert(composeStack.Status);
+            const converted = await this.resolveComposeStatus(composeStack.Name, composeStack.Status);
             statusList.set(composeStack.Name, converted);
             if (server) {
                 const managedName = getManagedStackNameFromConfigFiles(composeStack.ConfigFiles, server.stacksDir);
@@ -1080,6 +1109,48 @@ export class Stack {
         } else if (normalizedStatus.includes("created")) {
             return CREATED_STACK;
         } else {
+            return UNKNOWN;
+        }
+    }
+
+    static async resolveComposeStatus(project: string, status: string): Promise<number> {
+        const converted = this.statusConvert(status);
+        if (converted !== RUNNING || !status.toLowerCase().includes("exited")) {
+            return converted;
+        }
+
+        try {
+            const idsResult = await childProcessAsync.spawn("docker", [
+                "ps", "-aq", "--filter", `label=com.docker.compose.project=${project}`,
+            ], { encoding: "utf-8" });
+            const ids = idsResult.stdout?.toString().trim().split("\n").filter(Boolean) ?? [];
+            if (ids.length === 0) {
+                return UNKNOWN;
+            }
+
+            const inspected = await childProcessAsync.spawn("docker", [ "inspect", ...ids ], { encoding: "utf-8" });
+            const containers: unknown = JSON.parse(inspected.stdout?.toString() ?? "null");
+            if (!Array.isArray(containers)) {
+                return UNKNOWN;
+            }
+
+            const states: ComposeProjectContainerState[] = [];
+            for (const container of containers) {
+                if (container?.Config?.Labels?.["com.docker.compose.oneoff"] === "True") {
+                    continue;
+                }
+                const state = container?.State;
+                if (typeof state?.Status !== "string") {
+                    return UNKNOWN;
+                }
+                states.push({
+                    status: state.Status.toLowerCase(),
+                    exitCode: state.ExitCode,
+                });
+            }
+            return resolveMixedComposeStatus(states);
+        } catch (error) {
+            log.warn("resolveComposeStatus", `Could not inspect Compose project ${project}: ${error instanceof Error ? error.message : String(error)}`);
             return UNKNOWN;
         }
     }
