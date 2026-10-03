@@ -58,7 +58,7 @@
 
             <div v-if="stack.isManagedByDockge" class="mb-3 compose-tight">
                 <div class="stack-action-bar" :class="{ 'stack-action-bar--labeled': stackActionLabels }" role="toolbar" :aria-label="$t('stackActions')">
-                    <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('deployStack')" :aria-label="$t('deployStack')" :disabled="processing" @click="deployStack">
+                    <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('stackActionHelp.deploy')" :aria-label="$t('deployStack')" :disabled="processing" @click="deployStack">
                         <font-awesome-icon icon="rocket" />
                         <span class="stack-action-label">{{ $t("deployStack") }}</span>
                     </button>
@@ -78,32 +78,32 @@
                         <span class="stack-action-label">{{ $t("editStack") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode && !active" class="btn btn-primary stack-action" :title="$t('startStack')" :aria-label="$t('startStack')" :disabled="processing" @click="startStack">
+                    <button v-if="!isEditMode && !active" class="btn btn-primary stack-action" :title="$t('stackActionHelp.start')" :aria-label="$t('startStack')" :disabled="processing" @click="startStack">
                         <font-awesome-icon icon="play" />
                         <span class="stack-action-label">{{ $t("startStack") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('restartStack')" :aria-label="$t('restartStack')" :disabled="processing" @click="restartStack">
+                    <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('stackActionHelp.restart')" :aria-label="$t('restartStack')" :disabled="processing" @click="restartStack">
                         <font-awesome-icon icon="arrows-rotate" />
                         <span class="stack-action-label">{{ $t("restartStack") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('updateStack')" :aria-label="$t('updateStack')" :disabled="processing" @click="updateStack">
+                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('stackActionHelp.update')" :aria-label="$t('updateStack')" :disabled="processing" @click="updateStack">
                         <font-awesome-icon icon="cloud-arrow-down" />
                         <span class="stack-action-label">{{ $t("updateStack") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('recreateStack')" :aria-label="$t('recreateStack')" :disabled="processing" @click="recreateStack">
+                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('stackActionHelp.recreate')" :aria-label="$t('recreateStack')" :disabled="processing" @click="recreateStack">
                         <font-awesome-icon icon="recycle" />
                         <span class="stack-action-label">{{ $t("recreateStack") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode && buildServices.length > 0" class="btn btn-normal stack-action" :title="$t('buildAndRecreateStack')" :aria-label="$t('buildAndRecreateStack')" :disabled="processing" @click="buildAndRecreateStack">
+                    <button v-if="!isEditMode && buildServices.length > 0" class="btn btn-normal stack-action" :title="$t('stackActionHelp.build')" :aria-label="$t('buildAndRecreateStack')" :disabled="processing" @click="buildAndRecreateStack">
                         <font-awesome-icon icon="hammer" />
                         <span class="stack-action-label">{{ $t("buildAndRecreateStack") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('stopStack')" :aria-label="$t('stopStack')" :disabled="processing" @click="stopStack">
+                    <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('stackActionHelp.stop')" :aria-label="$t('stopStack')" :disabled="processing" @click="stopStack">
                         <font-awesome-icon icon="stop" />
                         <span class="stack-action-label">{{ $t("stopStack") }}</span>
                     </button>
@@ -128,7 +128,7 @@
                         <span class="stack-action-label">{{ $t("stackReplication.configure") }}</span>
                     </button>
 
-                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('downStack')" :aria-label="$t('downStack')" :disabled="processing" @click="downStack">
+                    <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('stackActionHelp.down')" :aria-label="$t('downStack')" :disabled="processing" @click="downStack">
                         <font-awesome-icon icon="ban" />
                         <span class="stack-action-label">{{ $t("downStack") }}</span>
                     </button>
@@ -141,6 +141,10 @@
                     <button type="button" class="btn stack-action" :class="stackActionLabels ? 'btn-primary' : 'btn-normal'" :title="$t('stackActionLabels')" :aria-label="$t('stackActionLabels')" @click="stackActionLabels = !stackActionLabels">
                         <font-awesome-icon icon="list" />
                         <span class="stack-action-label">{{ $t("stackActionLabels") }}</span>
+                    </button>
+                    <button type="button" class="btn btn-normal stack-action" :title="$t('stackActionHelp.title')" :aria-label="$t('stackActionHelp.title')" @click="openStackActionHelp">
+                        <font-awesome-icon icon="info-circle" />
+                        <span class="stack-action-label">{{ $t('stackActionHelp.title') }}</span>
                     </button>
                     <button type="button" class="btn stack-action" :class="showStackNote ? 'btn-primary' : 'btn-normal'" :title="$t('showStackNote')" :aria-label="$t('showStackNote')" @click="showStackNote = !showStackNote">
                         <font-awesome-icon icon="note-sticky" />
@@ -724,6 +728,23 @@
                 </form>
             </BModal>
 
+            <BModal v-model="showStackActionHelp" :title="$t('stackActionHelp.title')" no-footer size="lg">
+                <p class="text-muted">{{ $t('stackActionHelp.intro') }}</p>
+                <p v-if="isAdd" class="text-muted">{{ $t('stackActionHelp.newStack') }}</p>
+                <p v-else-if="stackActionHelpLoading" class="text-muted">{{ $t('stackActionHelp.loading') }}</p>
+                <p v-else-if="stackActionHelpError" class="text-warning">{{ stackActionHelpError }}</p>
+                <p v-else class="text-muted"><strong>{{ $t('stackActionHelp.cwd') }}:</strong> <code>{{ stackActionHelpCwd }}</code></p>
+                <div v-for="action in stackActionHelpItems" :key="action.id" class="stack-action-help-item">
+                    <strong>{{ $t(action.label) }}</strong>
+                    <p class="mb-1">{{ $t(`stackActionHelp.${action.id}`) }}</p>
+                    <template v-if="stackActionHelpCommands[action.id]?.length">
+                        <pre v-for="command in stackActionHelpCommands[action.id]" :key="command"><code>{{ command }}</code></pre>
+                    </template>
+                    <a :href="action.docs" target="_blank" rel="noopener noreferrer">{{ $t('stackActionHelp.docs') }}</a>
+                </div>
+                <p class="text-muted mb-0">{{ $t('stackActionHelp.dataNotice') }}</p>
+            </BModal>
+
             <!-- Protection des modifications non enregistrées pendant un self-update automatique -->
             <BModal
                 v-model="showSelfUpdateEditDialog"
@@ -953,6 +974,13 @@ export default {
             submitted: false,
             showDeleteDialog: false,
             showDisplayNameDialog: false,
+            showStackActionHelp: false,
+            stackActionHelpLoading: false,
+            stackActionHelpError: "",
+            stackActionHelpCwd: "",
+            stackActionHelpCommands: {},
+            stackActionHelpTimeout: null,
+            stackActionHelpRequestId: 0,
             displayNameDraft: "",
             displayNameSaving: false,
             displayNameSaveTimeout: null,
@@ -1016,6 +1044,35 @@ export default {
         };
     },
     computed: {
+        stackActionHelpItems() {
+            const base = "https://docs.docker.com/reference/cli/docker/compose/";
+            return [
+                { id: "deploy",
+                    label: "deployStack",
+                    docs: `${base}up/` },
+                { id: "start",
+                    label: "startStack",
+                    docs: `${base}up/` },
+                { id: "restart",
+                    label: "restartStack",
+                    docs: `${base}restart/` },
+                { id: "update",
+                    label: "updateStack",
+                    docs: `${base}pull/` },
+                { id: "recreate",
+                    label: "recreateStack",
+                    docs: `${base}up/` },
+                ...(this.buildServices.length > 0 ? [ { id: "build",
+                    label: "buildAndRecreateStack",
+                    docs: `${base}build/` } ] : []),
+                { id: "stop",
+                    label: "stopStack",
+                    docs: `${base}stop/` },
+                { id: "down",
+                    label: "downStack",
+                    docs: `${base}down/` },
+            ];
+        },
         stackDisplayName() {
             return this.stack.displayName || this.stack.name;
         },
@@ -1357,6 +1414,7 @@ export default {
         window.addEventListener("keydown", this.handleWorkspaceEscape);
     },
     unmounted() {
+        clearTimeout(this.stackActionHelpTimeout);
         clearTimeout(this.displayNameSaveTimeout);
         clearTimeout(this.containerInstancesRequestTimeout);
         this.stopComposeEditLeaseHeartbeat();
@@ -1370,6 +1428,40 @@ export default {
         }
     },
     methods: {
+        openStackActionHelp() {
+            clearTimeout(this.stackActionHelpTimeout);
+            const requestId = ++this.stackActionHelpRequestId;
+            this.showStackActionHelp = true;
+            this.stackActionHelpCommands = {};
+            this.stackActionHelpCwd = "";
+            this.stackActionHelpError = "";
+            if (this.isAdd) {
+                this.stackActionHelpLoading = false;
+                return;
+            }
+
+            this.stackActionHelpLoading = true;
+            this.stackActionHelpTimeout = setTimeout(() => {
+                if (requestId !== this.stackActionHelpRequestId) {
+                    return;
+                }
+                this.stackActionHelpLoading = false;
+                this.stackActionHelpError = this.$t("stackActionHelp.unavailable");
+            }, 12000);
+            this.$root.emitAgent(this.endpoint, "stackActionCommandPreview", this.stack.name, (res) => {
+                if (requestId !== this.stackActionHelpRequestId) {
+                    return;
+                }
+                clearTimeout(this.stackActionHelpTimeout);
+                this.stackActionHelpLoading = false;
+                if (res.ok) {
+                    this.stackActionHelpCommands = res.commands;
+                    this.stackActionHelpCwd = res.cwd;
+                } else {
+                    this.stackActionHelpError = res.msg || this.$t("stackActionHelp.unavailable");
+                }
+            });
+        },
         openDisplayNameDialog() {
             this.displayNameDraft = this.stack.displayName || "";
             this.showDisplayNameDialog = true;
@@ -2203,6 +2295,9 @@ export default {
         },
 
         downStack() {
+            if (!confirm(this.$t("stackActionHelp.downConfirm"))) {
+                return;
+            }
             this.processing = true;
 
             this.$root.emitAgent(this.endpoint, "downStack", this.stack.name, (res) => {
@@ -2582,6 +2677,23 @@ export default {
 </script>
 
 <style scoped lang="scss">
+
+.stack-action-help-item {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-raised);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.stack-action-help-item pre {
+    overflow-x: auto;
+    background: var(--bg-input);
+    color: var(--text-color);
+    padding: 0.5rem;
+    border-radius: 6px;
+    margin: 0.4rem 0;
+}
 
 .back-link {
     display: inline-block;
