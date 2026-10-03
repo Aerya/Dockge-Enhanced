@@ -62,6 +62,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Nom d’affichage des stacks**
+
+Vous pouvez définir un nom d’affichage depuis la page d’une stack. Son nom technique, son projet Compose, sa sélection de sauvegarde et son chemin de restauration ne changent pas ; le nom technique reste visible à côté de l’alias.
+
 **Gestionnaire de fichiers hôte facultatif**
 
 La page Fichiers, activée sur demande, permet de parcourir un dossier hôte dédié, de modifier de petits fichiers UTF-8, de transférer des fichiers et de suivre des journaux écrits dans des fichiers, localement ou sur une instance Enhanced liée. Elle est distincte du navigateur de volumes par stack et ne donne pas accès aux chemins hors de sa racine autorisée.
@@ -244,6 +248,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Négociation des capacités entre différentes versions de Dockge-Enhanced
 
 ### Gestion des stacks
+- Nom d’affichage facultatif dans la WebUI, sans changer l’identité Compose ou Restic
 - Gestionnaire facultatif de fichiers hôte limité à un dossier autorisé, distinct du navigateur de volumes par stack, avec transferts par morceaux et suivi des journaux en fichiers
 - Création, édition, démarrage, arrêt et recréation des stacks Compose
 - Stacks épinglées côté serveur et partagées entre les WebUI liées

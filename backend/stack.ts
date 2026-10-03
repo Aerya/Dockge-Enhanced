@@ -97,6 +97,7 @@ interface StackMetadata {
     lastUpdated: string | null;
     lastStartedAt: string | null;
     note: string;
+    displayName: string;
     startGuard: StartGuard;
 }
 
@@ -282,6 +283,7 @@ export class Stack {
 
         return {
             name: this.name,
+            displayName: metadata.displayName,
             status: this._status,
             tags: [],
             isManagedByDockge: this.isManagedByDockge,
@@ -513,6 +515,7 @@ export class Stack {
             lastUpdated: null,
             lastStartedAt: null,
             note: "",
+            displayName: "",
             startGuard: Stack.defaultStartGuard(),
         };
     }
@@ -524,6 +527,9 @@ export class Stack {
             lastUpdated: typeof parsed.lastUpdated === "string" ? parsed.lastUpdated : null,
             lastStartedAt: typeof parsed.lastStartedAt === "string" ? parsed.lastStartedAt : null,
             note: typeof parsed.note === "string" ? parsed.note : "",
+            displayName: typeof parsed.displayName === "string" && parsed.displayName.length <= 80 && !/[\u0000-\u001f\u007f]/.test(parsed.displayName)
+                ? parsed.displayName.trim()
+                : "",
             startGuard: Stack.normalizeStartGuard(parsed.startGuard),
         };
     }
@@ -648,7 +654,7 @@ export class Stack {
     }
 
     /** Met à jour un ou les deux champs dans .dockge-meta.json */
-    private async writeMeta(fields: Partial<StackMetadata>): Promise<void> {
+    private async writeMeta(fields: Partial<StackMetadata>, required = false): Promise<void> {
         // L'état de la stack vient de changer : on invalide le cache de statut
         serviceStatusCache.delete(this.name);
         try {
@@ -656,7 +662,12 @@ export class Stack {
             const updated = { ...existing, ...fields };
             if (this.isExternal) await fsAsync.mkdir(path.dirname(this.metaPath), { recursive: true, mode: 0o700 });
             await fsAsync.writeFile(this.metaPath, JSON.stringify(updated), { encoding: "utf8", mode: 0o600 });
-        } catch { /* non bloquant */ }
+        } catch (error) {
+            if (required) {
+                throw error;
+            }
+            // Les mises à jour historiques de métadonnées restent non bloquantes.
+        }
     }
 
     async readReadme(): Promise<string> {
@@ -715,6 +726,18 @@ export class Stack {
         }
         await this.writeMeta({ note: normalized });
         return normalized;
+    }
+
+    async saveDisplayName(value: unknown): Promise<string> {
+        if (typeof value !== "string") {
+            throw new ValidationError("Display name must be a string");
+        }
+        const displayName = value.trim();
+        if (displayName.length > 80 || /[\u0000-\u001f\u007f]/.test(displayName)) {
+            throw new ValidationError("Display name must be at most 80 characters on one line");
+        }
+        await this.writeMeta({ displayName: displayName === this.name ? "" : displayName }, true);
+        return displayName === this.name ? "" : displayName;
     }
 
     async saveStartGuard(startGuard: unknown): Promise<StartGuard> {

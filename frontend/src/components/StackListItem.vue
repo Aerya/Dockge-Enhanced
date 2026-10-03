@@ -17,7 +17,7 @@
         ></span>
         <div class="title">
             <div class="name-row">
-                <span class="name">{{ displayName }}</span>
+                <span class="name" :title="stack.displayName ? stack.name : ''">{{ displayName }}</span>
                 <span v-if="stack.isExternal" class="external-badge"><font-awesome-icon icon="external-link-square-alt" />{{ $t("externalStacks.external") }}</span>
                 <font-awesome-icon v-if="scheduled" icon="calendar-days" class="scheduled-indicator" :title="$t('stackScheduler.scheduledTooltip')" />
             </div>
@@ -119,7 +119,7 @@ export default {
             return this.stack.name;
         },
         displayName() {
-            return this.stack.isExternal ? externalStackDisplayName(this.stackName) : this.stackName;
+            return this.stack.displayName || (this.stack.isExternal ? externalStackDisplayName(this.stackName) : this.stackName);
         },
         active() {
             return this.$route.path === this.url;

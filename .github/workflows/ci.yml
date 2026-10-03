@@ -77,6 +77,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/start-guard.test.ts
 
+      - name: Tests des noms affichés des stacks et de leur identité Compose
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/stack-display-name.test.ts
+
       - name: Tests du garde des auto-mises à jour
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/self-update/operation-guard.test.ts

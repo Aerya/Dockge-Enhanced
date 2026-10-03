@@ -62,6 +62,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Display names for stacks**
+
+Give a stack a WebUI display name from its stack page. Its technical name, Compose project, backup selection and restore path remain unchanged; the technical name stays visible beside the alias.
+
 **Optional host file manager**
 
 An opt-in Files page can browse a dedicated host directory, edit small UTF-8 files, transfer files and follow file-based logs, locally or through a linked Enhanced instance. It is separate from the per-stack volume browser and cannot access paths outside its configured root.
@@ -245,6 +249,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Version-aware capability negotiation between mixed Dockge-Enhanced releases
 
 ### Stack management
+- Optional WebUI display name for a stack, without changing its Compose or Restic identity
 - Optional root-restricted host file manager, distinct from the per-stack volume browser, with chunked transfers and a file-log viewer
 - Create, edit, start, stop and recreate Compose stacks
 - Server-persisted pinned stacks shared across linked WebUIs

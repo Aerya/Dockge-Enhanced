@@ -6,7 +6,16 @@
             </router-link>
             <h1 v-if="isAdd" class="mb-3 compose-tight">{{ $t("compose") }}</h1>
             <h1 v-else class="mb-3 compose-tight">
-                <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }}
+                <Uptime :stack="globalStack" :pill="true" /> {{ stackDisplayName }}
+                <small v-if="stack.displayName" class="stack-technical-name">({{ stack.name }})</small>
+                <button
+                    v-if="stack.isManagedByDockge"
+                    type="button"
+                    class="btn btn-sm btn-link stack-display-name-edit"
+                    :title="$t('stackDisplayName.edit')"
+                    :aria-label="$t('stackDisplayName.edit')"
+                    @click="openDisplayNameDialog"
+                ><font-awesome-icon icon="pen" /></button>
                 <span v-if="stack.isExternal" class="external-stack-badge ms-2"><font-awesome-icon icon="external-link-square-alt" class="me-1" />{{ $t("externalStacks.external") }}</span>
                 <span v-if="$root.agentCount > 1" class="agent-name">
                     (<a
@@ -690,6 +699,18 @@
                 @completed="stackTransferCompleted"
             />
 
+            <BModal v-model="showDisplayNameDialog" :title="$t('stackDisplayName.edit')" no-footer>
+                <form @submit.prevent="saveStackDisplayName">
+                    <label for="stack-display-name" class="form-label">{{ $t('stackDisplayName.label') }}</label>
+                    <input id="stack-display-name" v-model="displayNameDraft" type="text" class="form-control" maxlength="80" :disabled="displayNameSaving">
+                    <div class="form-text">{{ $t('stackDisplayName.hint', { name: stack.name }) }}</div>
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-normal" :disabled="displayNameSaving" @click="showDisplayNameDialog = false">{{ $t('cancel') }}</button>
+                        <button type="submit" class="btn btn-primary" :disabled="displayNameSaving">{{ $t('Save') }}</button>
+                    </div>
+                </form>
+            </BModal>
+
             <!-- Protection des modifications non enregistrées pendant un self-update automatique -->
             <BModal
                 v-model="showSelfUpdateEditDialog"
@@ -914,6 +935,10 @@ export default {
             isEditMode: false,
             submitted: false,
             showDeleteDialog: false,
+            showDisplayNameDialog: false,
+            displayNameDraft: "",
+            displayNameSaving: false,
+            displayNameSaveTimeout: null,
             deleteRemoveFiles: true,
             deleteForce: false,
             deleteExternalConfirmed: false,
@@ -974,6 +999,9 @@ export default {
         };
     },
     computed: {
+        stackDisplayName() {
+            return this.stack.displayName || this.stack.name;
+        },
         renderedReadme() {
             return renderStackReadme(this.stack.readme || "");
         },
@@ -1308,6 +1336,7 @@ export default {
         window.addEventListener("keydown", this.handleWorkspaceEscape);
     },
     unmounted() {
+        clearTimeout(this.displayNameSaveTimeout);
         this.stopComposeEditLeaseHeartbeat();
         this.releaseComposeEditLease({ clearHold: false, resume: false });
         document.removeEventListener("visibilitychange", this.onVisibilityServiceStatus);
@@ -1319,6 +1348,42 @@ export default {
         }
     },
     methods: {
+        openDisplayNameDialog() {
+            this.displayNameDraft = this.stack.displayName || "";
+            this.showDisplayNameDialog = true;
+        },
+        saveStackDisplayName() {
+            if (this.displayNameSaving) {
+                return;
+            }
+            this.displayNameSaving = true;
+            let settled = false;
+            this.displayNameSaveTimeout = setTimeout(() => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                this.displayNameSaving = false;
+                this.$root.toastRes({
+                    ok: false,
+                    msg: "stackDisplayName.unavailable",
+                    msgi18n: true,
+                });
+            }, 15000);
+            this.$root.emitAgent(this.endpoint, "saveStackDisplayName", this.stack.name, this.displayNameDraft, (res) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                clearTimeout(this.displayNameSaveTimeout);
+                this.displayNameSaving = false;
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.stack.displayName = res.displayName;
+                    this.showDisplayNameDialog = false;
+                }
+            });
+        },
         toggleLogsFullscreen() {
             this.logsFullscreen = !this.logsFullscreen;
             this.$nextTick(this.resizeCombinedTerminal);
@@ -2936,6 +3001,18 @@ export default {
     flex-wrap: wrap;
     gap: 16px;
     margin-top: 4px;
+}
+
+.stack-technical-name {
+    color: var(--text-muted);
+    font-size: 0.55em;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.stack-display-name-edit {
+    color: var(--text-muted);
+    vertical-align: middle;
 }
 
 .stack-meta-item {

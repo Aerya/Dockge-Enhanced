@@ -1,4 +1,10 @@
 {
+    "stackDisplayName.edit": "Cambiar el nombre mostrado de la pila",
+    "stackDisplayName.label": "Nombre mostrado",
+    "stackDisplayName.hint": "Déjelo vacío para mostrar el nombre técnico ({name}). Compose, las copias de seguridad y las restauraciones siguen usando ese nombre.",
+    "stackDisplayName.saved": "Nombre mostrado guardado.",
+    "stackDisplayName.unavailable": "Esta instancia no responde. Actualícela antes de cambiar el nombre mostrado.",
+    "releaseNews.item.stackDisplayName": "Las pilas pueden tener un nombre mostrado personalizado sin cambiar su identidad en Compose, copias de seguridad o restauraciones.",
     "files": "Archivos",
     "loading": "Cargando…",
     "refresh": "Actualizar",
