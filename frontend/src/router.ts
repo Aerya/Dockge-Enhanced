@@ -7,6 +7,7 @@ import DashboardHome from "./pages/DashboardHome.vue";
 import Console from "./pages/Console.vue";
 import Compose from "./pages/Compose.vue";
 import ContainerTerminal from "./pages/ContainerTerminal.vue";
+const ContainerDetails = () => import("./pages/ContainerDetails.vue");
 const ExternalStacks = () => import("./pages/ExternalStacks.vue");
 const Files = () => import("./pages/Files.vue");
 import WatcherSettings from "./components/WatcherSettings.vue";
@@ -78,6 +79,18 @@ const routes = [
                                 component: ContainerTerminal,
                                 name: "containerTerminalEndpoint",
                                 meta: { title: "terminal" },
+                            },
+                            {
+                                path: "/container/:stackName/:containerId",
+                                component: ContainerDetails,
+                                name: "containerDetails",
+                                meta: { title: "containerInstance.title" },
+                            },
+                            {
+                                path: "/container/:stackName/:containerId/:endpoint",
+                                component: ContainerDetails,
+                                name: "containerDetailsEndpoint",
+                                meta: { title: "containerInstance.title" },
                             },
                         ]
                     },

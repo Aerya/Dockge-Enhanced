@@ -362,6 +362,7 @@
                                 :is-edit-mode="isEditMode"
                                 :first="name === Object.keys(jsonConfig.services)[0]"
                                 :status="serviceStatusList[name]?.state"
+                                :instances="containerInstances.filter((instance) => instance.service === name)"
                                 :ports="serviceStatusList[name]?.ports"
                                 :started-at="serviceStatusList[name]?.startedAt ?? null"
                                 :image-update="imageUpdateForService(name)"
@@ -381,6 +382,18 @@
                                 @refresh-volume-usage="loadVolumeUsage"
                                 @service-action="runServiceAction(name, $event)"
                             />
+                            <div v-if="unmatchedContainerInstances.length && !isEditMode" class="shadow-box big-padding mb-3">
+                                <h4>{{ $t("containerInstance.includedServices") }}</h4>
+                                <router-link
+                                    v-for="instance in unmatchedContainerInstances"
+                                    :key="instance.id"
+                                    :to="instanceDetailsRoute(instance.id)"
+                                    class="d-flex flex-wrap align-items-center gap-2 py-1"
+                                >
+                                    <span>{{ instance.service }} / {{ instance.name }}</span>
+                                    <span class="badge" :class="instance.health === 'unhealthy' ? 'bg-danger' : instance.state === 'running' ? 'bg-primary' : 'bg-secondary'">{{ instance.health || instance.state }}</span>
+                                </router-link>
+                            </div>
                         </div>
                     </div>
 
@@ -927,6 +940,10 @@ export default {
 
             },
             serviceStatusList: {},
+            containerInstances: [],
+            lastContainerInstancesFetchAt: 0,
+            containerInstancesLoading: false,
+            containerInstancesRequestTimeout: null,
             lastUpdated: null,
             lastStartedAt: null,
             logTimestamps: false,
@@ -1001,6 +1018,10 @@ export default {
     computed: {
         stackDisplayName() {
             return this.stack.displayName || this.stack.name;
+        },
+        unmatchedContainerInstances() {
+            const services = this.jsonConfig.services || {};
+            return this.containerInstances.filter((instance) => !Object.prototype.hasOwnProperty.call(services, instance.service));
         },
         renderedReadme() {
             return renderStackReadme(this.stack.readme || "");
@@ -1337,6 +1358,7 @@ export default {
     },
     unmounted() {
         clearTimeout(this.displayNameSaveTimeout);
+        clearTimeout(this.containerInstancesRequestTimeout);
         this.stopComposeEditLeaseHeartbeat();
         this.releaseComposeEditLease({ clearHold: false, resume: false });
         document.removeEventListener("visibilitychange", this.onVisibilityServiceStatus);
@@ -1383,6 +1405,16 @@ export default {
                     this.showDisplayNameDialog = false;
                 }
             });
+        },
+        instanceDetailsRoute(containerId) {
+            return {
+                name: this.endpoint ? "containerDetailsEndpoint" : "containerDetails",
+                params: {
+                    stackName: this.stack.name,
+                    containerId,
+                    ...(this.endpoint ? { endpoint: this.endpoint } : {}),
+                },
+            };
         },
         toggleLogsFullscreen() {
             this.logsFullscreen = !this.logsFullscreen;
@@ -1564,6 +1596,28 @@ export default {
                 }
                 if (!this.stopServiceStatusTimeout) {
                     this.startServiceStatusTimeout();
+                }
+            });
+            if (!this.isEditMode && Date.now() - this.lastContainerInstancesFetchAt >= 15000) {
+                this.loadContainerInstances();
+            }
+        },
+
+        loadContainerInstances() {
+            if (this.containerInstancesLoading || !this.stack.name) {
+                return;
+            }
+            this.containerInstancesLoading = true;
+            this.lastContainerInstancesFetchAt = Date.now();
+            const stackName = this.stack.name;
+            this.containerInstancesRequestTimeout = setTimeout(() => {
+                this.containerInstancesLoading = false;
+            }, 10000);
+            this.$root.emitAgent(this.endpoint, "containerInstances", stackName, (res) => {
+                clearTimeout(this.containerInstancesRequestTimeout);
+                this.containerInstancesLoading = false;
+                if (res.ok && this.stack.name === stackName) {
+                    this.containerInstances = res.instances;
                 }
             });
         },

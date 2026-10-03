@@ -68,6 +68,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 Puede definir un nombre visible desde la página de cada stack. Su nombre técnico, proyecto Compose, selección de copias de seguridad y ruta de restauración no cambian; el nombre técnico sigue visible junto al alias.
 
+**Vista por contenedor real**
+
+Cada servicio Compose muestra sus contenedores por separado, incluidas las réplicas. Puede abrir uno para ver su estado, salud, imagen, puertos, recursos y registros recientes, o iniciar, detener y reiniciar solo ese contenedor. Las acciones sobre el servicio completo no cambian. Función inspirada en [Lorwell/dockge](https://github.com/Lorwell/dockge).
+
 **Gestor de archivos del host opcional**
 
 La página Archivos, activada expresamente, permite explorar un directorio dedicado del host, editar pequeños archivos UTF-8, transferir archivos y seguir registros escritos en archivos, tanto localmente como en una instancia Enhanced vinculada. Es independiente del navegador de volúmenes por pila y no permite acceder a rutas fuera de la raíz autorizada.
@@ -249,6 +253,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Gestión de stacks
 - Nombre visible opcional en la WebUI, sin cambiar la identidad de Compose o Restic
+- Detalles y acciones individuales para contenedores reales y réplicas, separados de las acciones del servicio Compose
 - Gestor opcional de archivos del host limitado a un directorio autorizado, distinto del navegador de volúmenes por pila, con transferencias por bloques y seguimiento de registros en archivos
 - Crear, editar, iniciar, detener y recrear stacks Compose
 - Stacks fijadas en el servidor, compartidas entre las WebUI vinculadas, y ordenación avanzada
@@ -698,7 +703,7 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 ## Créditos
 
 - [**Dockge**](https://github.com/louislam/dockge) por louislam — el proyecto original (licencia MIT)
-- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — gestor de archivos del host restringido adaptado a Enhanced (licencia MIT)
+- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — inspiración para el gestor de archivos del host restringido y la vista por contenedor real adaptados a Enhanced (licencia MIT)
 - [**Trivy**](https://github.com/aquasecurity/trivy) — escáner de vulnerabilidades
 - [**Restic**](https://restic.net/) — herramienta de copia de seguridad encriptada
 - [**Apprise**](https://github.com/caronc/apprise-api) — gateway de notificación multiplataforma
