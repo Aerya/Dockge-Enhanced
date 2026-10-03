@@ -1,4 +1,10 @@
 {
+    "stackDisplayName.edit": "Change displayed stack name",
+    "stackDisplayName.label": "Displayed name",
+    "stackDisplayName.hint": "Leave empty to show the technical name ({name}). Compose, backups and restores keep using that technical name.",
+    "stackDisplayName.saved": "Displayed name saved.",
+    "stackDisplayName.unavailable": "This instance did not answer. Update it before changing the displayed name.",
+    "releaseNews.item.stackDisplayName": "Stacks can have a custom displayed name without changing their Compose project, backup or restore identity.",
     "fileManagerAuthRequired": "The host file manager requires authentication; it is unavailable while authentication is disabled.",
     "fileManagerUnavailable": "The file manager is unavailable on this instance. Check its connection and update it if needed.",
     "releaseNews.item.restrictedHostFiles": "An optional Files page now manages one explicitly mounted host directory per instance, with chunked transfers, UTF-8 editing and file-log viewing. It stays disabled until DOCKGE_FILE_MANAGER_ROOT is configured.",

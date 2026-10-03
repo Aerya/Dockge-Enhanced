@@ -1,4 +1,10 @@
 {
+    "stackDisplayName.edit": "修改堆栈显示名称",
+    "stackDisplayName.label": "显示名称",
+    "stackDisplayName.hint": "留空则显示技术名称（{name}）。Compose、备份和恢复仍使用该技术名称。",
+    "stackDisplayName.saved": "显示名称已保存。",
+    "stackDisplayName.unavailable": "此实例未响应。请先更新实例，再修改显示名称。",
+    "releaseNews.item.stackDisplayName": "堆栈现在可以使用自定义显示名称，而不会更改其 Compose、备份或恢复标识。",
     "fileManagerAuthRequired": "主机文件管理器需要身份验证；关闭身份验证时不可使用。",
     "fileManagerUnavailable": "此实例的文件管理器不可用。请检查连接，并在需要时更新该实例。",
     "releaseNews.item.restrictedHostFiles": "可选的“文件”页面可管理每个实例明确挂载的主机目录，支持分块传输、UTF-8 编辑和文件日志查看。未配置 DOCKGE_FILE_MANAGER_ROOT 时默认关闭。",

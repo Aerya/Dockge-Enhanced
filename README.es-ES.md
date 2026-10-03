@@ -64,6 +64,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Nombre visible de las stacks**
+
+Puede definir un nombre visible desde la página de cada stack. Su nombre técnico, proyecto Compose, selección de copias de seguridad y ruta de restauración no cambian; el nombre técnico sigue visible junto al alias.
+
 **Gestor de archivos del host opcional**
 
 La página Archivos, activada expresamente, permite explorar un directorio dedicado del host, editar pequeños archivos UTF-8, transferir archivos y seguir registros escritos en archivos, tanto localmente como en una instancia Enhanced vinculada. Es independiente del navegador de volúmenes por pila y no permite acceder a rutas fuera de la raíz autorizada.
@@ -244,6 +248,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Negociación de capacidades entre distintas versiones de Dockge-Enhanced
 
 ### Gestión de stacks
+- Nombre visible opcional en la WebUI, sin cambiar la identidad de Compose o Restic
 - Gestor opcional de archivos del host limitado a un directorio autorizado, distinto del navegador de volúmenes por pila, con transferencias por bloques y seguimiento de registros en archivos
 - Crear, editar, iniciar, detener y recrear stacks Compose
 - Stacks fijadas en el servidor, compartidas entre las WebUI vinculadas, y ordenación avanzada

@@ -202,6 +202,7 @@ export default {
                     const loweredSearchText = this.searchText.toLowerCase();
                     searchTextMatch =
                         stack.name.toLowerCase().includes(loweredSearchText)
+                        || (stack.displayName || "").toLowerCase().includes(loweredSearchText)
                         || stack.tags.find(tag => tag.name.toLowerCase().includes(loweredSearchText)
                             || tag.value?.toLowerCase().includes(loweredSearchText));
                 }
@@ -237,7 +238,7 @@ export default {
                 }
 
                 if (this.stackSort === "name") {
-                    return m1.name.localeCompare(m2.name, undefined, { sensitivity: "base" });
+                    return (m1.displayName || m1.name).localeCompare(m2.displayName || m2.name, undefined, { sensitivity: "base" });
                 }
 
                 if (this.stackSort === "agent") {
@@ -252,7 +253,7 @@ export default {
                     if (endpointOrder !== 0) {
                         return endpointOrder;
                     }
-                    return m1.name.localeCompare(m2.name);
+                    return (m1.displayName || m1.name).localeCompare(m2.displayName || m2.name);
                 }
 
                 if (this.stackSort === "created" || this.stackSort === "updated") {

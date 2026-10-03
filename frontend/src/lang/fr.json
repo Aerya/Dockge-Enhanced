@@ -1,4 +1,10 @@
 {
+    "stackDisplayName.edit": "Changer le nom affiché de la stack",
+    "stackDisplayName.label": "Nom affiché",
+    "stackDisplayName.hint": "Laissez vide pour afficher le nom technique ({name}). Compose, les sauvegardes et les restaurations conservent ce nom technique.",
+    "stackDisplayName.saved": "Nom affiché enregistré.",
+    "stackDisplayName.unavailable": "Cette instance ne répond pas. Mettez-la à jour avant de modifier le nom affiché.",
+    "releaseNews.item.stackDisplayName": "Les stacks peuvent avoir un nom affiché personnalisé sans changer leur identité Compose, sauvegarde ou restauration.",
     "fileManagerAuthRequired": "Le gestionnaire de fichiers hôte nécessite une authentification ; il est indisponible lorsque celle-ci est désactivée.",
     "fileManagerUnavailable": "Le gestionnaire de fichiers est indisponible sur cette instance. Vérifiez sa connexion et mettez-la à jour si nécessaire.",
     "releaseNews.item.restrictedHostFiles": "Une page Fichiers facultative gère un dossier hôte explicitement monté par instance : transferts par morceaux, édition UTF-8 et suivi de journaux en fichiers. Elle reste désactivée sans DOCKGE_FILE_MANAGER_ROOT.",

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-03-stack-display-name",
+        items: [ "releaseNews.item.stackDisplayName" ],
+    },
+    {
         id: "2026-10-03-restricted-host-files",
         items: [ "releaseNews.item.restrictedHostFiles" ],
     },

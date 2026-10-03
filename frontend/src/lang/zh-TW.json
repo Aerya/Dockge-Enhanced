@@ -1,4 +1,10 @@
 {
+    "stackDisplayName.edit": "變更堆疊顯示名稱",
+    "stackDisplayName.label": "顯示名稱",
+    "stackDisplayName.hint": "留空則顯示技術名稱（{name}）。Compose、備份與還原仍使用該技術名稱。",
+    "stackDisplayName.saved": "顯示名稱已儲存。",
+    "stackDisplayName.unavailable": "此執行個體沒有回應。請先更新執行個體，再變更顯示名稱。",
+    "releaseNews.item.stackDisplayName": "堆疊現在可以使用自訂顯示名稱，而不會變更其 Compose、備份或還原識別資訊。",
     "fileManagerAuthRequired": "主機檔案管理器需要身分驗證；關閉身分驗證時無法使用。",
     "fileManagerUnavailable": "此執行個體的檔案管理器不可用。請檢查連線，並在需要時更新該執行個體。",
     "releaseNews.item.restrictedHostFiles": "可選的「檔案」頁面可管理每個執行個體明確掛載的主機目錄，支援分塊傳輸、UTF-8 編輯和檔案日誌查看。未設定 DOCKGE_FILE_MANAGER_ROOT 時預設關閉。",
