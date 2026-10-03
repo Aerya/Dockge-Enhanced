@@ -102,7 +102,7 @@
                     <!-- Agent List -->
                     <div class="shadow-box big-padding">
                         <div class="linked-instances-heading mb-3">
-                            <h4 class="mb-0">{{ $t("linkedInstances.title") }} <span class="badge bg-warning beta-badge">beta</span></h4>
+                            <h4 class="mb-0">{{ $t("linkedInstances.title") }}</h4>
                             <small class="text-muted">{{ onlineAgentCount }} / {{ agentOverviewList.length }} {{ $t("linkedInstances.online") }}</small>
                         </div>
 
@@ -851,10 +851,6 @@ table {
 
 .first-row .shadow-box {
 
-}
-
-.beta-badge {
-    font-size: var(--fs-xs);
 }
 
 .remove-agent {

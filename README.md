@@ -29,10 +29,6 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 
 ---
 
-<p align="center">
-  <img src="screens/D-E.vs.Others.EN.09.26.png" alt="Dockge Enhanced comparison" width="100%">
-</p>
-
 ## Features
 
 ### What sets Dockge Enhanced apart
