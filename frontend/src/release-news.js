@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-03-stack-action-help",
+        items: [ "releaseNews.item.stackActionHelp" ],
+    },
+    {
         id: "2026-10-03-stack-display-name",
         items: [ "releaseNews.item.stackDisplayName" ],
     },

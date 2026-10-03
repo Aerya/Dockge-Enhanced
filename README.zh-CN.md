@@ -38,6 +38,10 @@
 
 ### 🆕 2026 年 10 月
 
+**更清晰的 Stack 操作**
+
+Stack 按钮现在说明实际执行的命令。帮助面板展示所选 Stack 的 Docker Compose 命令，包括项目和 Compose 文件参数，并提供 Docker 官方文档链接。原“停止并置于非活动状态”按钮改为“移除 Stack 容器”：确认后执行 `docker compose down`，删除容器和 Compose 网络，但不会删除命名卷、绑定挂载数据、Compose 文件或镜像。匿名卷可能不会在下一次 `up` 时重新挂载。
+
 **Stack 显示名称**
 
 现在可以在 Stack 页面设置 Web UI 显示名称。技术名称、Compose 项目、备份选择和恢复路径均不改变；技术名称仍显示在别名旁边。

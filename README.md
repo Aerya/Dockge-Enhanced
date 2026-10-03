@@ -36,7 +36,7 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | Area | Dockge Enhanced adds |
 | --- | --- |
 | **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers, and scheduled cold replication |
-| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, per-stack and per-container actions and scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces |
+| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, explained per-stack actions with exact command previews and Docker documentation, per-container actions and scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces |
 | **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates |
 | **Updates** | Image update detection, manual or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
@@ -57,6 +57,10 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 October 2026
+
+**Clearer stack actions**
+
+Stack buttons now explain what they run. A help panel shows the actual Docker Compose commands for the selected stack, including its project and Compose-file options, with links to Docker's documentation. The former “Stop & Inactive” button is now “Take down stack”: it runs `docker compose down` after confirmation, removing containers and Compose networks but not named volumes, bind-mounted data, Compose files or images. Anonymous volumes may not be reattached on the next `up`.
 
 **Display names for stacks**
 

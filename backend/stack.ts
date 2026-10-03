@@ -1231,6 +1231,29 @@ export class Stack {
         return options;
     }
 
+    /** Read-only preview of the commands used by the stack action buttons. */
+    getActionCommandPreview() {
+        const quote = (value: string) => /^[a-zA-Z0-9_./:=,+@%-]+$/.test(value)
+            ? value
+            : `'${value.replace(/'/g, "'\\''")}'`;
+        const command = (action: string, ...options: string[]) => [ "docker", ...this.getComposeOptions(action, ...options) ].map(quote).join(" ");
+        const buildServices = this.getBuildServices();
+
+        return {
+            cwd: this.path,
+            commands: {
+                deploy: [ command("up", "-d", "--remove-orphans") ],
+                start: [ command("up", "-d", "--remove-orphans") ],
+                restart: [ command("restart") ],
+                update: [ command("pull"), command("up", "-d", "--force-recreate", "--remove-orphans") ],
+                recreate: [ command("up", "-d", "--force-recreate", "--remove-orphans") ],
+                build: buildServices.length > 0 ? [ command("build", "--pull", ...buildServices), command("up", "-d", "--remove-orphans") ] : [],
+                stop: [ command("stop") ],
+                down: [ command("down") ],
+            },
+        };
+    }
+
     async start(socket: DockgeSocket) {
         await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);

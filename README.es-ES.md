@@ -38,7 +38,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | Área | Lo que agrega Dockge Enhanced |
 | --- | --- |
 | **Multiservidor** | Federación en malla completa entre instancias Dockge-Enhanced, administración desde cualquier servidor vinculado, selección y agrupación de servidores, estado de actualizaciones remotas, copia/migración transaccional de stacks, transferencias reanudables y replicación en frío programada |
-| **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones y programación por stack y contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y recreación automática de servicios que comparten namespaces de red VPN |
+| **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones explicadas con vista previa de los comandos exactos y enlaces Docker, programación por stack y contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y recreación automática de servicios que comparten namespaces de red VPN |
 | **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, además de los mecanismos de recuperación usados por las actualizaciones protegidas |
 | **Actualizaciones** | Detección de actualizaciones de imágenes, actualizaciones manuales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
 | **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
@@ -59,6 +59,10 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
 ### 🆕 Octubre de 2026
+
+**Acciones de stack más claras**
+
+Los botones explican ahora qué ejecutan. Un panel de ayuda muestra los comandos Docker Compose reales de la stack seleccionada, incluidas sus opciones de proyecto y archivos Compose, con enlaces a la documentación Docker. El antiguo botón « Detener y desactivar » se llama ahora « Desmontar la stack »: ejecuta `docker compose down` tras una confirmación y elimina contenedores y redes Compose, pero no volúmenes con nombre, datos bind, archivos Compose ni imágenes. Los volúmenes anónimos pueden no volver a montarse con el siguiente `up`.
 
 **Nombre visible de las stacks**
 
