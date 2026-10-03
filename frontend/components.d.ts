@@ -28,6 +28,7 @@ declare module 'vue' {
     DockerStat: typeof import('./src/components/DockerStat.vue')['default']
     General: typeof import('./src/components/settings/General.vue')['default']
     GlobalEnv: typeof import('./src/components/settings/GlobalEnv.vue')['default']
+    GlobalSearch: typeof import('./src/components/GlobalSearch.vue')['default']
     HiddenInput: typeof import('./src/components/HiddenInput.vue')['default']
     Integrations: typeof import('./src/components/settings/Integrations.vue')['default']
     Login: typeof import('./src/components/Login.vue')['default']
