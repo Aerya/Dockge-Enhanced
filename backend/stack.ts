@@ -29,6 +29,7 @@ import {
     resolveNetworkNamespaceRecreateTargets,
     targetedComposeRecreateArgsForTargets,
 } from "./compose-network-namespace";
+import { ContainerInstance, parseContainerInstances, requireContainerInstance } from "./container-instances";
 
 // ─── Cache court de getServiceStatusList (point #9 : éviter `docker inspect`
 // de TOUS les containers à chaque refresh / chaque onglet ouvert). TTL piloté
@@ -1591,6 +1592,55 @@ export class Stack {
 
         terminal.join(socket);
         terminal.start();
+    }
+
+    async getContainerInstances(): Promise<ContainerInstance[]> {
+        const result = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--all", "--format", "json"), {
+            cwd: this.path,
+            encoding: "utf-8",
+            timeout: 15000,
+            maxBuffer: 2 * 1024 * 1024,
+        });
+        if (result.code !== 0) {
+            throw new Error("Unable to list the containers of this Compose stack");
+        }
+        return parseContainerInstances(result.stdout?.toString() ?? "");
+    }
+
+    async getContainerInstance(id: unknown): Promise<ContainerInstance> {
+        return requireContainerInstance(await this.getContainerInstances(), id);
+    }
+
+    async runContainerInstanceAction(id: unknown, action: "start" | "stop" | "restart"): Promise<void> {
+        const instance = await this.getContainerInstance(id);
+        if (action !== "stop") {
+            await this.assertStartGuard();
+        }
+        const targets = await this.getServiceActionTargets(instance.service);
+        if (targets.length > 1) {
+            throw new ValidationError("This container shares a network namespace with other services; use the service action instead");
+        }
+        const result = await childProcessAsync.spawn("docker", [ action, instance.id ], {
+            encoding: "utf-8",
+            timeout: 30000,
+        });
+        if (result.code !== 0) {
+            throw new Error(`Unable to ${action} container ${instance.name}`);
+        }
+        serviceStatusCache.delete(this.name);
+    }
+
+    async getContainerInstanceLogs(id: unknown): Promise<string> {
+        const instance = await this.getContainerInstance(id);
+        const result = await childProcessAsync.spawn("docker", [ "logs", "--tail", "200", "--timestamps", instance.id ], {
+            encoding: "utf-8",
+            timeout: 15000,
+            maxBuffer: 1024 * 1024,
+        });
+        if (result.code !== 0) {
+            throw new Error(`Unable to read logs for container ${instance.name}`);
+        }
+        return `${result.stdout?.toString() ?? ""}${result.stderr?.toString() ?? ""}`.slice(-512 * 1024);
     }
 
     async getServiceStatusList() : Promise<{

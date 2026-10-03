@@ -858,6 +858,58 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("containerInstances", async (stackName: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string") {
+                    throw new ValidationError("Stack name must be a string");
+                }
+                const stack = await Stack.getStack(server, stackName);
+                callbackResult({
+                    ok: true,
+                    instances: await stack.getContainerInstances(),
+                }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("containerInstanceAction", async (stackName: unknown, containerId: unknown, action: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof containerId !== "string") {
+                    throw new ValidationError("Stack name and container ID must be strings");
+                }
+                if (action !== "start" && action !== "stop" && action !== "restart") {
+                    throw new ValidationError("Unsupported container action");
+                }
+                const stack = await Stack.getStack(server, stackName);
+                const instance = await stack.getContainerInstance(containerId);
+                await stack.runContainerInstanceAction(instance.id, action);
+                await this.auditStack(socket, `container.${action}`, `${stackName}/${instance.name}`);
+                server.sendStackList();
+                callbackResult({ ok: true }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("containerInstanceLogs", async (stackName: unknown, containerId: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof stackName !== "string" || typeof containerId !== "string") {
+                    throw new ValidationError("Stack name and container ID must be strings");
+                }
+                const stack = await Stack.getStack(server, stackName);
+                callbackResult({
+                    ok: true,
+                    logs: await stack.getContainerInstanceLogs(containerId),
+                }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
         // Services status
         agentSocket.on("serviceStatusList", async (stackName : unknown, callback) => {
             try {

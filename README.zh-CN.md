@@ -46,6 +46,10 @@
 
 现在可以在 Stack 页面设置 Web UI 显示名称。技术名称、Compose 项目、备份选择和恢复路径均不改变；技术名称仍显示在别名旁边。
 
+**实际容器视图**
+
+每个 Compose 服务现在会分别列出实际容器，包括副本。打开容器后可查看状态、健康检查、镜像、端口、资源使用和最近的日志，也可仅对该容器执行启动、停止或重启；服务级操作保持不变。此功能受到 [Lorwell/dockge](https://github.com/Lorwell/dockge) 启发。
+
 **可选的主机文件管理器**
 
 启用后，“文件”页面可浏览指定的主机目录、编辑小型 UTF-8 文件、传输文件并查看文件日志，也支持关联的 Enhanced 实例。它与各 Stack 的卷浏览器不同，不能访问授权根目录之外的路径。
@@ -227,6 +231,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ### Stack 管理
 - 可选的 Web UI 显示名称，不改变 Compose 或 Restic 标识
+- 实际容器与副本的详情及单容器启动、停止、重启操作，与 Compose 服务级操作分离
 - 可选的受限主机文件管理器：与 Stack 卷浏览器分离，支持分块传输与文件日志查看
 - 创建、编辑、启动、停止和重新创建 Compose Stack
 - 服务端持久化并在关联 WebUI 间共享的固定 Stack 与排序
@@ -543,7 +548,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 ## 致谢
 
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — 原始项目（MIT）
-- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 经适配的受限主机文件管理器（MIT）
+- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
 - [**Trivy**](https://github.com/aquasecurity/trivy) — 漏洞扫描
 - [**Restic**](https://restic.net/) — 加密备份
 - [**Apprise**](https://github.com/caronc/apprise-api) — 多平台通知网关

@@ -106,6 +106,20 @@
                     <router-link class="btn btn-sm btn-normal container-action" :to="terminalRouteLink" :aria-label="$t('terminal')" disabled=""><font-awesome-icon icon="terminal" /><span>{{ $t("terminal") }}</span></router-link>
                     <a v-if="dozzleUrl" class="btn btn-sm btn-normal container-action" :href="dozzleContainerUrl" target="_blank" rel="noopener noreferrer" aria-label="Dozzle"><font-awesome-icon icon="stream" /><span>Dozzle</span></a>
                 </div>
+                <div v-if="!isEditMode && instances.length" class="container-instances mt-3">
+                    <div class="container-instances-heading">{{ $t("containerInstance.heading") }}</div>
+                    <router-link
+                        v-for="instance in instances"
+                        :key="instance.id"
+                        :to="instanceDetailsRoute(instance.id)"
+                        class="container-instance-row"
+                    >
+                        <span class="container-instance-name">{{ instance.name }}</span>
+                        <span class="badge" :class="instance.health === 'unhealthy' ? 'bg-danger' : instance.state === 'running' ? 'bg-primary' : 'bg-secondary'">{{ instance.health || instance.state }}</span>
+                        <code>{{ instance.id.slice(0, 12) }}</code>
+                        <font-awesome-icon icon="chevron-right" />
+                    </router-link>
+                </div>
                 <div v-if="!isEditMode && showSchedule" class="container-schedule mt-3">
                     <StackScheduleEditor :stack-name="`${stackName}::${name}`" compact :show-heading="false" />
                 </div>
@@ -261,6 +275,10 @@ export default defineComponent({
         status: {
             type: String,
             default: "N/A",
+        },
+        instances: {
+            type: Array,
+            default: () => [],
         },
         ports: {
             type: Array,
@@ -443,6 +461,16 @@ export default defineComponent({
         }
     },
     methods: {
+        instanceDetailsRoute(containerId) {
+            return {
+                name: this.endpoint ? "containerDetailsEndpoint" : "containerDetails",
+                params: {
+                    stackName: this.stackName,
+                    containerId,
+                    ...(this.endpoint ? { endpoint: this.endpoint } : {}),
+                },
+            };
+        },
         changeAutoUpdateMode(event) {
             const mode = event.target.value;
             this.$emit("auto-update-change", {
@@ -506,6 +534,40 @@ export default defineComponent({
 
 <style scoped lang="scss">
 .container {
+    .container-instances-heading {
+        margin-bottom: .4rem;
+        color: var(--text-muted);
+        font-size: var(--fs-sm);
+    }
+
+    .container-instance-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .5rem;
+        padding: .4rem .55rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: var(--text-color);
+        text-decoration: none;
+        margin-top: .3rem;
+
+        &:hover {
+            border-color: var(--primary-strong);
+        }
+
+        code {
+            color: var(--text-muted);
+            font-size: var(--fs-xs);
+        }
+    }
+
+    .container-instance-name {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        font-weight: 600;
+    }
+
     .container-action-bar {
         display: flex;
         align-items: center;

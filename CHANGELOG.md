@@ -2,6 +2,8 @@
 
 **2026-10-03 — Stack display names** — Managed and adopted stacks can have a WebUI alias without changing their technical stack name, Compose project, backup selection or restore path. The technical name remains visible on the stack page, and the alias is kept in metadata backed up by Restic.
 
+**2026-10-03 — Real container view** — Compose services now list actual containers separately, including replicas. A dedicated view shows each container’s details, resource usage and recent logs, with start/stop/restart actions verified against the selected Compose project. Service-wide actions remain unchanged. Inspired by [Lorwell/dockge](https://github.com/Lorwell/dockge).
+
 **2026-10-03 — Optional restricted host file manager** — A dedicated Files page can browse one explicitly configured host directory per instance, transfer files in chunks, edit small UTF-8 files and follow file-based logs. It is separate from stack volume browsing, disabled by default, and refuses file operations when authentication is disabled. Adapted from [Lorwell/dockge](https://github.com/Lorwell/dockge).
 
 **2026-10-03 — Container terminal clipboard** — Right-click uses xterm’s native Copy/Paste menu again. Browser paste events are forwarded to the terminal, including on local HTTP origins where the Clipboard API is unavailable.
