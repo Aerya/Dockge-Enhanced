@@ -62,6 +62,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Copier-coller dans les terminaux des conteneurs**
+
+Le clic droit ouvre désormais le menu natif Copier/Coller du terminal. Le collage au clavier fonctionne aussi sur les adresses HTTP locales, sans dépendre de l’API presse-papiers du navigateur.
+
 **README.md pour les stacks gérées**
 
 La page d’une stack permet d’afficher et de modifier un `README.md` en Markdown, enregistré à côté du fichier Compose. Ce fichier est distinct de la note courte et suit la stack lors d’une copie ou d’un déplacement vers une autre instance Dockge-Enhanced. Cette fonction ne modifie pas les stacks externes.

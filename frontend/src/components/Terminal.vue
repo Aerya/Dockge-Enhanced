@@ -142,8 +142,10 @@ export default {
         this.terminal.open(this.$refs.terminal);
         this.terminal.focus();
 
-        // Add right-click context menu handler for paste
-        this.$refs.terminal.addEventListener('contextmenu', this.handleContextMenu);
+        // Let xterm position its textarea and expose the native Copy/Paste menu.
+        // Capture browser paste before xterm handles it so both terminal modes
+        // work on HTTP origins where navigator.clipboard is unavailable.
+        this.$refs.terminal.addEventListener("paste", this.handleBrowserPaste, true);
 
         // Add selection handler for copy to clipboard
         this.terminal.onSelectionChange(() => {
@@ -197,7 +199,7 @@ export default {
         this.$root.unbindTerminal(this.name);
         this.terminalScrollDisposable?.dispose();
         this.terminal.dispose();
-        this.$refs.terminal?.removeEventListener('contextmenu', this.handleContextMenu);
+        this.$refs.terminal?.removeEventListener("paste", this.handleBrowserPaste, true);
     },
 
     methods: {
@@ -315,8 +317,8 @@ export default {
                     console.debug("Ctrl + C");
                     this.$root.emitAgent(this.endpoint, "terminalInput", this.name, e.key);
                     this.removeInput();
-                } else if (e.key === "\u0016" || (e.domEvent?.ctrlKey && e.key.toLowerCase() === "v")) {      // Ctrl + V
-                    this.handlePaste();
+                } else if (e.key === "\u0016" || ((e.domEvent?.ctrlKey || e.domEvent?.metaKey) && e.domEvent.key?.toLowerCase() === "v")) {      // Paste shortcut
+                    // The browser's paste event supplies the clipboard content.
                 } else if (e.key === "\u0009" || e.key.startsWith("\u001B")) {      // TAB or other special keys
                     // Do nothing
                 } else {
@@ -332,8 +334,8 @@ export default {
         interactiveTerminalConfig() {
             this.terminal.onKey(e => {
                 // Handle Ctrl+V for paste
-                if (e.key === "\u0016" || (e.domEvent?.ctrlKey && e.key.toLowerCase() === "v")) {
-                    this.handlePaste();
+                if (e.key === "\u0016" || ((e.domEvent?.ctrlKey || e.domEvent?.metaKey) && e.domEvent.key?.toLowerCase() === "v")) {
+                    // Avoid sending Ctrl+V as shell input before the paste event.
                     return;
                 }
 
@@ -635,18 +637,17 @@ export default {
             this.$root.emitAgent(this.endpoint, "terminalResize", this.name, rows, cols);
         },
 
-        /**
-         * Handle clipboard paste operation
-         */
-        async handlePaste() {
-            try {
-                const text = await navigator.clipboard.readText();
-                if (text) {
-                    this.pasteText(text);
-                }
-            } catch (error) {
-                console.error("Failed to read from clipboard:", error);
+        handleBrowserPaste(event) {
+            if (this.mode === "displayOnly") {
+                return;
             }
+            const text = event.clipboardData?.getData("text/plain");
+            if (!text) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            this.pasteText(text);
         },
 
         /**
@@ -681,34 +682,6 @@ export default {
         },
 
         /**
-         * Handle the native context menu and right-click paste.
-         *
-         * In display-only terminals (container logs), keep the browser context
-         * menu available so selected text can be copied. In interactive modes,
-         * a right-click pastes only when no text is currently selected.
-         */
-        handleContextMenu(event) {
-            const selectedText = this.terminal?.getSelection();
-
-            // Always keep the native context menu when text is selected.
-            if (selectedText) {
-                return;
-            }
-
-            // Logs are read-only: keep the browser context menu available.
-            if (this.mode === "displayOnly") {
-                return;
-            }
-
-            // In terminals accepting input, right-click without a selection
-            // keeps the existing paste behaviour.
-            if (this.mode === "mainTerminal" || this.mode === "interactive") {
-                event.preventDefault();
-                this.handlePaste();
-            }
-        },
-
-        /**
          * Handle text selection in terminal - copy to clipboard
          */
         handleSelection() {
@@ -725,6 +698,9 @@ export default {
          * Copy text to clipboard
          */
         async copyToClipboard(text) {
+            if (!navigator.clipboard?.writeText) {
+                return;
+            }
             try {
                 await navigator.clipboard.writeText(text);
                 console.debug("Text copied to clipboard:", text);

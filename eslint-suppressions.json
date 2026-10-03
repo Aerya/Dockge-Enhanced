@@ -769,9 +769,6 @@
     },
     "@stylistic/object-property-newline": {
       "count": 1
-    },
-    "@stylistic/quotes": {
-      "count": 2
     }
   },
   "frontend/src/components/backup/BackupDestinations.vue": {

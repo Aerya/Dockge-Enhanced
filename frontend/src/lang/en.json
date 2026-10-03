@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.terminalClipboard": "Right-click Copy/Paste works again in container terminals, including on local HTTP addresses where the browser Clipboard API is unavailable.",
     "releaseNews.item.stackReadme": "Managed stacks can now display and edit a README.md beside their Compose file. It follows the stack when copied or moved to another Enhanced instance.",
     "languageName": "English",
     "stackLogs": "Logs",

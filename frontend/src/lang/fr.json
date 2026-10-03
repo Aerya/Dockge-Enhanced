@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.terminalClipboard": "Le clic droit Copier/Coller refonctionne dans les terminaux des conteneurs, y compris sur les adresses HTTP locales où l’API presse-papiers du navigateur est indisponible.",
     "releaseNews.item.stackReadme": "Les stacks gérées peuvent désormais afficher et modifier un README.md à côté de leur fichier Compose. Il suit la stack lors d’une copie ou d’un déplacement vers une autre instance Enhanced.",
     "languageName": "Français",
     "stackLogs": "Logs",

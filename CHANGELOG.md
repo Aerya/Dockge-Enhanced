@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-03 — Container terminal clipboard** — Right-click uses xterm’s native Copy/Paste menu again. Browser paste events are forwarded to the terminal, including on local HTTP origins where the Clipboard API is unavailable.
+
 **2026-10-03 — README.md for managed stacks** — Stack pages can display and edit a Markdown README stored beside the Compose file. The README follows copy, move and replication transfers between Enhanced instances. External stacks remain unchanged.
 
 **2026-09-29 — Preserve quoted YAML scalars** — The visual editor no longer drops single or double quotes from unchanged Compose values when regenerating YAML. Bind mounts and other scalars containing spaces or sensitive characters stay on one line through no-wrap serialization (`lineWidth: 0`). Quote style is restored by YAML path only when the value is unchanged, so genuine edits are never overwritten.

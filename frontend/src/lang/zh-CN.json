@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.terminalClipboard": "容器终端的右键复制/粘贴现已恢复，包括浏览器剪贴板 API 不可用的本地 HTTP 地址。",
     "releaseNews.item.stackReadme": "受管理的堆栈现在可以查看和编辑 Compose 文件旁的 README.md。复制或迁移到其他 Enhanced 实例时，该文件会随堆栈一起传输。",
     "languageName": "简体中文",
     "stackLogs": "Logs",

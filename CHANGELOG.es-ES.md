@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-03 — Portapapeles del terminal de contenedores** — El clic derecho vuelve a usar el menú nativo Copiar/Pegar de xterm. Los eventos de pegado del navegador se envían al terminal incluso en direcciones HTTP locales sin API de portapapeles.
+
 **2026-10-03 — README.md de las pilas gestionadas** — La página de una pila permite mostrar y editar un README Markdown junto al archivo Compose. Se transfiere con las copias, migraciones y réplicas entre instancias Enhanced. Las pilas externas no cambian.
 
 **2026-09-29 — Conservación de cadenas YAML entrecomilladas** — El editor visual ya no elimina las comillas simples o dobles de valores Compose sin cambios al regenerar el YAML. Los bind mounts y otros escalares con espacios o caracteres sensibles permanecen en una sola línea mediante serialización sin ajuste (`lineWidth: 0`). El estilo de comillas se restaura por ruta YAML solo cuando el valor no ha cambiado, sin sobrescribir modificaciones reales.

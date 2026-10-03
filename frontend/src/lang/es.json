@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.terminalClipboard": "El clic derecho Copiar/Pegar vuelve a funcionar en los terminales de contenedores, incluso en direcciones HTTP locales sin API de portapapeles del navegador.",
     "releaseNews.item.stackReadme": "Las pilas gestionadas pueden mostrar y editar un README.md junto a su archivo Compose. El archivo acompaña a la pila al copiarla o moverla a otra instancia Enhanced.",
     "agentFederation.hint": "Añadir o eliminar un agente se propaga automáticamente a todas las instancias Enhanced vinculadas.",
     "agentAddedAndFederated": "Agente añadido y compartido con todas las instancias vinculadas",
