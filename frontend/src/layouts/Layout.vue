@@ -57,7 +57,7 @@
             </section>
         </div>
 
-        <div v-if="showReleaseNews && !activeRemoteAnnouncement" class="release-news-backdrop" role="presentation" @click.self="closeReleaseNews">
+        <div v-if="$root.loggedIn && showReleaseNews && !activeRemoteAnnouncement" class="release-news-backdrop" role="presentation" @click.self="closeReleaseNews">
             <section class="release-news-dialog" role="dialog" aria-modal="true" :aria-labelledby="'release-news-title'">
                 <div class="release-news-header">
                     <div>
@@ -394,6 +394,9 @@ export default {
         },
 
         hasNewVersion() {
+            if (!this.$root.loggedIn) {
+                return false;
+            }
             if (this.$root.info.latestVersion && this.$root.info.version) {
                 return compareVersions(this.$root.info.latestVersion, this.$root.info.version) >= 1;
             } else {
@@ -437,7 +440,7 @@ export default {
         },
 
         selfUpdateBannerVisible() {
-            return !this.selfUpdate.dismissed && (this.selfUpdate.available || this.selfUpdateDeferred || this.selfUpdateActive || this.selfUpdateFailed);
+            return this.$root.loggedIn && !this.selfUpdate.dismissed && (this.selfUpdate.available || this.selfUpdateDeferred || this.selfUpdateActive || this.selfUpdateFailed);
         },
 
         selfUpdateCmd() {
@@ -584,6 +587,9 @@ export default {
             }
         },
         async checkSelfUpdate() {
+            if (!this.$root.loggedIn) {
+                return;
+            }
             try {
                 const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
                 const res = await fetch("/api/watcher/self/status", {
