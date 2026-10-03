@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-03-setup-password-manager",
+        items: [ "releaseNews.item.setupPasswordManager" ],
+    },
+    {
         id: "2026-10-03-stack-pause-template-controls",
         items: [ "releaseNews.item.stackPauseTemplateControls" ],
     },

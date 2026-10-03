@@ -60,6 +60,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Gestores de contraseñas**
+
+La creación de la cuenta identifica ahora los campos de usuario y nueva contraseña para los gestores de contraseñas del navegador.
+
 **Controles de stacks y creación Compose**
 
 La pausa/reanudación congela los contenedores sin eliminar volúmenes. Las actualizaciones automáticas de imágenes esperan hasta reanudar; la acción se bloquea durante copias o restauraciones Restic y la pausa no está disponible para la propia stack de Enhanced ni para stacks con políticas de copia que detienen servicios o usan hooks. Los ajustes generales incluyen una plantilla Compose predeterminada validada solo para nuevas stacks. El README.md de cada stack se abre desde un botón en lugar de una barra de ancho completo; los iconos de acciones de contenedor muestran ayuda contextual. La protección ya existente para modos octales `tmpfs` y el resaltado de variables Compose no cambian.

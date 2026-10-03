@@ -500,6 +500,7 @@
     "composeTemplate.help": "仅用于在此创建的新堆栈；现有堆栈和 Docker 命令转换不受影响。",
     "composeTemplate.invalid": "请输入包含 services 部分的有效 YAML（最大 64 KiB）。",
     "releaseNews.item.stackPauseTemplateControls": "新增 Stack 暂停／恢复、新 Stack 默认 Compose 模板、README.md 操作按钮及容器操作提示；Restic 备份和自动更新继续受到保护。",
+    "releaseNews.item.setupPasswordManager": "创建账户时，用户名和新密码字段现在可被密码管理器正确识别。",
     "containerActionHelp.stop": "停止此服务及共享其网络命名空间的服务，不删除容器或数据。",
     "containerActionHelp.restart": "重启此服务及其网络依赖服务，不应用 Compose 配置变更。",
     "containerActionHelp.update": "拉取此服务镜像，然后重建服务及其网络依赖服务。",

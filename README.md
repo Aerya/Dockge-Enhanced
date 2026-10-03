@@ -58,6 +58,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Password managers**
+
+Account setup now labels the username and new-password fields for browser password managers.
+
 **Stack controls and Compose creation**
 
 Stack pause/resume freezes containers without removing volumes. Automatic image updates wait while a stack is paused; pause/resume is blocked during Restic backup or restore, and pause is unavailable for Enhanced's own stack or stacks using stop/hook backup policies. General settings now provide a validated default Compose template for new stacks only. The stack README.md opens from an action button instead of a full-width bar, and container action icons have explanatory tooltips. Existing tmpfs octal-value protection and Compose variable highlighting remain unchanged.

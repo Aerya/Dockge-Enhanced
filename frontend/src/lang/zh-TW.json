@@ -486,6 +486,7 @@
     "composeTemplate.help": "僅用於在此建立的新堆疊；現有堆疊和 Docker 命令轉換不受影響。",
     "composeTemplate.invalid": "請輸入包含 services 區段的有效 YAML（最大 64 KiB）。",
     "releaseNews.item.stackPauseTemplateControls": "新增堆疊暫停／恢復、新堆疊預設 Compose 範本、README.md 操作按鈕及容器操作提示；Restic 備份和自動更新持續受到保護。",
+    "releaseNews.item.setupPasswordManager": "建立帳號時，使用者名稱和新密碼欄位現在可由密碼管理器正確識別。",
     "containerActionHelp.stop": "停止此服務及共用其網路命名空間的服務，不刪除容器或資料。",
     "containerActionHelp.restart": "重新啟動此服務及其網路相依服務，不套用 Compose 設定變更。",
     "containerActionHelp.update": "拉取此服務映像，然後重建服務及其網路相依服務。",

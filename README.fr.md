@@ -58,6 +58,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Gestionnaires de mots de passe**
+
+La création du compte identifie désormais les champs nom d’utilisateur et nouveau mot de passe pour les gestionnaires de mots de passe du navigateur.
+
 **Contrôles des stacks et création Compose**
 
 La pause/reprise fige les conteneurs sans supprimer les volumes. Les mises à jour automatiques d’images attendent la reprise ; l’action est bloquée pendant un backup ou une restauration Restic, et la pause est indisponible pour la stack d’Enhanced lui-même ou celles dont la politique de sauvegarde arrête les services ou utilise des hooks. Les paramètres généraux proposent un modèle Compose par défaut validé, réservé aux nouvelles stacks. Le README.md d’une stack s’ouvre désormais par un bouton d’action au lieu d’une barre pleine largeur ; les icônes des actions conteneur disposent d’infobulles explicatives. La protection des modes octaux `tmpfs` et le surlignage des variables Compose déjà présents restent inchangés.

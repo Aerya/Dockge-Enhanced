@@ -526,6 +526,7 @@
     "composeTemplate.help": "Used only for new stacks created here. Existing stacks and converted Docker commands are unchanged.",
     "composeTemplate.invalid": "Enter valid YAML with a services section (maximum 64 KiB).",
     "releaseNews.item.stackPauseTemplateControls": "Pause/resume for stacks, a default Compose template for new stacks, stack README.md as an action button, and explanatory tooltips for container actions. Restic backups and automatic updates remain protected.",
+    "releaseNews.item.setupPasswordManager": "Account setup now identifies username and new-password fields for password managers.",
     "containerActionHelp.stop": "Stop this service and any services sharing its network namespace; keep their containers and data.",
     "containerActionHelp.restart": "Restart this service and its network namespace dependants without applying Compose changes.",
     "containerActionHelp.update": "Pull this service image, then recreate it and its network namespace dependants.",
