@@ -58,6 +58,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Cleaner Compose volumes and logs**
+
+Mounted volumes and actual containers use compact rows instead of full-width clickable bars. The Logs panel stacks its three filters, groups its actions and places search last; filter names remain available to assistive technology. Appearance settings can enable log timestamps by default for this browser.
+
 **Day and night color palettes**
 
 Appearance settings now offer separate palettes for light and dark mode: four day choices and eight night choices, including the original themes. Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night and Rosé Pine recolor the page, header, panels and controls; the selected palettes are remembered in the browser, and Auto still follows the system theme.
@@ -275,7 +279,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Stack management
 - Optional WebUI display name for a stack, without changing its Compose or Restic identity
-- Real container details and individual start/stop/restart actions for Compose replicas, separate from service actions
+- Compact actual-container links, with details and individual start/stop/restart actions for Compose replicas, separate from service actions
+- Compact mounted-volume rows with a separate Browse button, destination, host path and size
 - Optional root-restricted host file manager, distinct from the per-stack volume browser, with chunked transfers and a file-log viewer
 - Create, edit, start, stop and recreate Compose stacks
 - Server-persisted pinned stacks shared across linked WebUIs
@@ -352,7 +357,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Dashboard health cards
 - Crash-loop detection
 - Healthcheck auto-heal
-- Live and fullscreen logs, including a **since last restart** range and one-click copy of the latest **50 / 100 / 150** or all loaded lines
+- Responsive live and fullscreen logs with vertically stacked filters, grouped actions and search, including a **since last restart** range and one-click copy of the latest **50 / 100 / 150** or all loaded lines
+- Optional browser-persisted default for log timestamps in Appearance settings
 - Autoscroll pause and long-line handling
 - Kula and Dozzle integrations
 - Per-stack CPU/RAM statistics from local and linked instances

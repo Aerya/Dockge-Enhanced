@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-04-compose-log-controls",
+        items: [ "releaseNews.item.composeLogControls" ],
+    },
+    {
         id: "2026-10-04-day-night-palettes",
         items: [ "releaseNews.item.dayNightPalettes" ],
     },
