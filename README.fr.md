@@ -58,6 +58,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Palettes de couleurs jour et nuit**
+
+Les paramètres d’apparence proposent désormais des palettes distinctes pour les modes clair et sombre : quatre choix de jour et huit de nuit, thèmes d’origine compris. Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night et Rosé Pine recolorent la page, l’en-tête, les panneaux et les contrôles. Les choix sont conservés dans le navigateur ; le mode Auto suit toujours le thème du système.
+
 **Connexions fiables entre instances liées**
 
 L’ajout ou la modification d’une instance liée rafraîchit désormais les navigateurs sans déconnecter les sockets de fédération. Les deux instances restent connectées après la synchronisation du maillage et après un redémarrage.
@@ -370,6 +374,11 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Assistants de labels Nginx Proxy Manager, Pi-hole et AdGuard Home
 - Dozzle
 - Kula
+
+### Apparence
+- Palettes distinctes pour le jour et la nuit, avec les thèmes Dockge-Enhanced d’origine
+- Choix Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night et Rosé Pine
+- Préférences conservées dans le navigateur et mode Auto adapté au système
 
 ### Notifications & accès
 - Discord et Apprise
