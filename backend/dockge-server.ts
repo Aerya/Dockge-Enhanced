@@ -944,6 +944,22 @@ export class DockgeServer {
         }
     }
 
+    /** Refresh WebUI clients without severing the process-wide agent transports. */
+    refreshBrowserSocketClients(currentSocketID? : string) {
+        for (const rawSocket of this.io.sockets.sockets.values()) {
+            const socket = rawSocket as DockgeSocket;
+            if (socket.endpoint || socket.id === currentSocketID) {
+                continue;
+            }
+            try {
+                socket.emit("refresh");
+                socket.disconnect();
+            } catch (e) {
+                log.warn("server", "Could not refresh a browser socket: " + String(e));
+            }
+        }
+    }
+
     isSSL() {
         return this.config.sslKey && this.config.sslCert;
     }

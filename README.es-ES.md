@@ -60,6 +60,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Conexiones fiables entre instancias vinculadas**
+
+Añadir o modificar una instancia vinculada ahora actualiza las sesiones del navegador sin desconectar las conexiones de federación. Ambas instancias permanecen conectadas tras sincronizar la malla y después de un reinicio.
+
 **Actualizar todas las imágenes Docker disponibles**
 
 La página Actualizaciones procesa las imágenes detectadas una por una mediante el flujo Compose y de reversión existente. Muestra el progreso, se detiene ante el primer error y mantiene separada la autoactualización de Enhanced.
@@ -259,6 +263,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Selección y agrupación de servidores
 - Estado remoto de stacks y actualizaciones
 - Tokens de federación dedicados y recuperación de enlaces
+- Actualización de sesiones del navegador sin cortar la federación al cambiar agentes
 - Vista general de las instancias vinculadas con disponibilidad y acceso directo a su WebUI
 - Búsqueda global multiinstancia en stacks, archivos Compose/.env, recursos Docker y snapshots Restic recientes
 - Negociación de capacidades entre distintas versiones de Dockge-Enhanced

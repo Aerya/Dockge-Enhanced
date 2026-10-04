@@ -58,6 +58,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Connexions fiables entre instances liées**
+
+L’ajout ou la modification d’une instance liée rafraîchit désormais les navigateurs sans déconnecter les sockets de fédération. Les deux instances restent connectées après la synchronisation du maillage et après un redémarrage.
+
 **Tout mettre à jour pour les images Docker**
 
 La page Mises à jour peut traiter les images détectées une par une via le mécanisme Compose et de rollback existant. Elle affiche la progression, s'arrête au premier échec et garde l'auto-mise à jour d'Enhanced séparée.
@@ -258,6 +262,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - État distant des stacks et des mises à jour d'images
 - Jetons de fédération dédiés
 - Récupération d'une liaison de fédération cassée
+- Rafraîchissement des navigateurs sans coupure de fédération lors des changements d'agents
 - Gestion multi-instance unifiée
 - Vue d’ensemble des instances liées avec accessibilité et accès direct à leur WebUI
 - Recherche globale multi-instance dans les stacks, fichiers Compose/.env, ressources Docker et snapshots Restic récents

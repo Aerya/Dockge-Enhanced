@@ -58,6 +58,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Reliable linked-instance connections**
+
+Adding or changing a linked instance now refreshes browser sessions without disconnecting federation sockets. Both instances remain connected after mesh synchronization and after a restart.
+
 **Update all available container images**
 
 The Updates page can update detected images one at a time using the existing Compose update and rollback path. It shows progress, stops on the first failure and leaves Dockge-Enhanced self-update separate.
@@ -259,6 +263,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Remote stack and image-update status
 - Dedicated federation tokens
 - Recovery of broken federation links
+- Browser refreshes during agent changes preserve federation connections
 - Unified multi-instance management
 - Linked-instance overview with reachability and direct WebUI access
 - Global multi-instance search across stacks, Compose/.env files, Docker resources and recent Restic snapshots
