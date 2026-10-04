@@ -1,0 +1,364 @@
+// Optional palettes override the existing semantic tokens. The default themes
+// remain untouched, and a palette can be changed without rebuilding the CSS.
+body.light[data-palette="cat-latte"] {
+    --primary: #1e66f5;
+    --primary-hover: #2a70f7;
+    --primary-strong: #1e66f5;
+    --primary-text: #ffffff;
+    --primary-soft: #dce6fb;
+    --hover-soft: #e0e7f4;
+    --success: #40a02b;
+    --success-soft: #e4f1df;
+    --warning: #9a5a00;
+    --warning-soft: #fff0d4;
+    --danger: #d20f39;
+    --danger-soft: #f9dfe5;
+    --bg-body: #eff1f5;
+    --bg-surface: #ffffff;
+    --bg-raised: #e6e9ef;
+    --bg-input: #ffffff;
+    --border-color: #bcc3d1;
+    --border-strong: #9ca4b6;
+    --text-color: #34364b;
+    --text-muted: #60647b;
+}
+
+body.dark[data-palette="cat-mocha"] {
+    --primary: #89b4fa;
+    --primary-hover: #b4befe;
+    --primary-strong: #89b4fa;
+    --primary-text: #11111b;
+    --primary-soft: #313653;
+    --hover-soft: #343951;
+    --success: #a6e3a1;
+    --success-soft: #253c35;
+    --warning: #f9e2af;
+    --warning-soft: #44382b;
+    --danger: #f38ba8;
+    --danger-soft: #462b3d;
+    --bg-body: #1e1e2e;
+    --bg-surface: #242437;
+    --bg-raised: #313244;
+    --bg-input: #181825;
+    --border-color: #45475a;
+    --border-strong: #585b70;
+    --text-color: #cdd6f4;
+    --text-muted: #bac2de;
+}
+
+body.dark[data-palette="nord"] {
+    --primary: #88c0d0;
+    --primary-hover: #a3d4df;
+    --primary-strong: #88c0d0;
+    --primary-text: #202936;
+    --primary-soft: #384f60;
+    --hover-soft: #3b4e5f;
+    --success: #a3be8c;
+    --success-soft: #34473d;
+    --warning: #ebcb8b;
+    --warning-soft: #4a4031;
+    --danger: #e07a84;
+    --danger-soft: #4d343c;
+    --bg-body: #2e3440;
+    --bg-surface: #353d4b;
+    --bg-raised: #3b4252;
+    --bg-input: #252b36;
+    --border-color: #566272;
+    --border-strong: #6b7a8e;
+    --text-color: #eceff4;
+    --text-muted: #c0cad8;
+}
+
+body.dark[data-palette="dracula"] {
+    --primary: #bd93f9;
+    --primary-hover: #d4b5ff;
+    --primary-strong: #bd93f9;
+    --primary-text: #211b2e;
+    --primary-soft: #413550;
+    --hover-soft: #42364d;
+    --success: #50fa7b;
+    --success-soft: #244333;
+    --warning: #f1fa8c;
+    --warning-soft: #494632;
+    --danger: #ff6e76;
+    --danger-soft: #4e303a;
+    --bg-body: #282a36;
+    --bg-surface: #303241;
+    --bg-raised: #44475a;
+    --bg-input: #222430;
+    --border-color: #5d6076;
+    --border-strong: #74778e;
+    --text-color: #f8f8f2;
+    --text-muted: #d2d2d8;
+}
+
+body.light[data-palette="nord-snow"] {
+    --primary: #5e81ac;
+    --primary-hover: #4c709b;
+    --primary-strong: #3b608e;
+    --primary-text: #ffffff;
+    --primary-soft: #dce8f2;
+    --hover-soft: #e5edf4;
+    --success: #4d7541;
+    --success-soft: #e1eddf;
+    --warning: #986b24;
+    --warning-soft: #f5ead5;
+    --danger: #b54b53;
+    --danger-soft: #f5e1e3;
+    --bg-body: #e5e9f0;
+    --bg-surface: #f8f9fb;
+    --bg-raised: #d8dee9;
+    --bg-input: #ffffff;
+    --border-color: #b7c2d1;
+    --border-strong: #929fb0;
+    --text-color: #2e3440;
+    --text-muted: #526174;
+}
+
+body.light[data-palette="solarized-light"] {
+    --primary: #268bd2;
+    --primary-hover: #1679be;
+    --primary-strong: #176a9e;
+    --primary-text: #ffffff;
+    --primary-soft: #d8eaf1;
+    --hover-soft: #e2ece9;
+    --success: #5b7800;
+    --success-soft: #e6eed5;
+    --warning: #9b6b00;
+    --warning-soft: #f7ebcc;
+    --danger: #cf4b42;
+    --danger-soft: #f7dfdc;
+    --bg-body: #eee8d5;
+    --bg-surface: #fdf6e3;
+    --bg-raised: #e7dfc9;
+    --bg-input: #fffaf0;
+    --border-color: #cec6ae;
+    --border-strong: #a9a18f;
+    --text-color: #3e5053;
+    --text-muted: #65777a;
+}
+
+body.dark[data-palette="gruvbox"] {
+    --primary: #fabd2f;
+    --primary-hover: #fbd56b;
+    --primary-strong: #fabd2f;
+    --primary-text: #282828;
+    --primary-soft: #51472b;
+    --hover-soft: #454038;
+    --success: #b8bb26;
+    --success-soft: #3d422c;
+    --warning: #fabd2f;
+    --warning-soft: #51432a;
+    --danger: #fb7b6c;
+    --danger-soft: #513533;
+    --bg-body: #1d2021;
+    --bg-surface: #282828;
+    --bg-raised: #3c3836;
+    --bg-input: #1b1b1b;
+    --border-color: #504945;
+    --border-strong: #665c54;
+    --text-color: #ebdbb2;
+    --text-muted: #c0b090;
+}
+
+body.dark[data-palette="tokyo-night"] {
+    --primary: #7aa2f7;
+    --primary-hover: #a1baff;
+    --primary-strong: #7aa2f7;
+    --primary-text: #16161e;
+    --primary-soft: #283452;
+    --hover-soft: #293249;
+    --success: #9ece6a;
+    --success-soft: #2b4036;
+    --warning: #e0af68;
+    --warning-soft: #463c32;
+    --danger: #f7768e;
+    --danger-soft: #49303c;
+    --bg-body: #16161e;
+    --bg-surface: #1a1b26;
+    --bg-raised: #24283b;
+    --bg-input: #13141c;
+    --border-color: #3b4261;
+    --border-strong: #565f89;
+    --text-color: #c0caf5;
+    --text-muted: #a9b1d6;
+}
+
+body.dark[data-palette="solarized-dark"] {
+    --primary: #58b6e8;
+    --primary-hover: #7dc8ef;
+    --primary-strong: #58b6e8;
+    --primary-text: #002b36;
+    --primary-soft: #164552;
+    --hover-soft: #17434a;
+    --success: #a4b92a;
+    --success-soft: #34452e;
+    --warning: #d9a51c;
+    --warning-soft: #493f29;
+    --danger: #e47471;
+    --danger-soft: #49363a;
+    --bg-body: #00232c;
+    --bg-surface: #002b36;
+    --bg-raised: #073642;
+    --bg-input: #001d25;
+    --border-color: #24515b;
+    --border-strong: #416873;
+    --text-color: #d5e0dc;
+    --text-muted: #a8bdbb;
+}
+
+body.dark[data-palette="rose-pine"] {
+    --primary: #c4a7e7;
+    --primary-hover: #dac1f1;
+    --primary-strong: #c4a7e7;
+    --primary-text: #191724;
+    --primary-soft: #3b344c;
+    --hover-soft: #353044;
+    --success: #9ccfba;
+    --success-soft: #2e403e;
+    --warning: #f6c177;
+    --warning-soft: #473a36;
+    --danger: #eb8b91;
+    --danger-soft: #49323d;
+    --bg-body: #191724;
+    --bg-surface: #1f1d2e;
+    --bg-raised: #26233a;
+    --bg-input: #161420;
+    --border-color: #403d52;
+    --border-strong: #56526e;
+    --text-color: #e0def4;
+    --text-muted: #bcb8d2;
+}
+
+body[data-palette]:not([data-palette="default"]) {
+    --bs-body-bg: var(--bg-body);
+    --bs-body-color: var(--text-color);
+    --bs-secondary-color: var(--text-muted);
+    --bs-tertiary-color: var(--text-muted);
+    --bs-border-color: var(--border-color);
+    --bs-secondary-bg: var(--bg-raised);
+    --bs-tertiary-bg: var(--bg-surface);
+    --bs-emphasis-color: var(--text-color);
+    --bs-card-bg: var(--bg-surface);
+    --bs-modal-bg: var(--bg-surface);
+    --bs-dropdown-bg: var(--bg-surface);
+    --bs-dropdown-color: var(--text-color);
+    --bs-dropdown-link-color: var(--text-color);
+    --bs-dropdown-link-hover-bg: var(--hover-soft);
+    --bs-dropdown-link-hover-color: var(--text-color);
+    --bs-list-group-bg: var(--bg-surface);
+    --bs-list-group-color: var(--text-color);
+    --bs-list-group-border-color: var(--border-color);
+    --bs-table-bg: var(--bg-surface);
+    --bs-table-color: var(--text-color);
+
+    .card,
+    .modal-content,
+    .dropdown-menu,
+    .offcanvas,
+    .list-group-item,
+    .shadow-box,
+    .toast {
+        background-color: var(--bg-surface);
+        color: var(--text-color);
+        border-color: var(--border-color);
+    }
+
+    .table,
+    .table > :not(caption) > * > * {
+        color: var(--text-color);
+        background-color: var(--bg-surface);
+        border-color: var(--border-color);
+    }
+
+    .input-group-text,
+    .page-link,
+    .btn-normal,
+    .btn-outline-normal,
+    .code-editor,
+    .css-editor {
+        background-color: var(--bg-raised);
+        color: var(--text-color);
+        border-color: var(--border-color);
+    }
+
+    .form-check-input,
+    .form-switch .form-check-input {
+        background-color: var(--bg-input);
+        border-color: var(--border-strong);
+    }
+
+    .form-check-input:checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .table-hover > tbody > tr:hover > * {
+        --bs-table-accent-bg: var(--hover-soft);
+    }
+
+    .fixed-bottom-bar {
+        background-color: color-mix(in srgb, var(--bg-raised) 92%, transparent);
+    }
+
+    a:not(.btn), .nav-link {
+        color: var(--primary-strong);
+    }
+
+    .btn-secondary, .btn-dark {
+        background-color: var(--bg-raised);
+        color: var(--text-color);
+        border-color: var(--border-strong);
+    }
+
+    .btn-primary,
+    .nav-pills .nav-link.active,
+    .nav-pills .show > .nav-link,
+    .bg-primary {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-text);
+    }
+
+    .btn-primary:hover,
+    .btn-primary:focus,
+    .btn-primary:active,
+    .nav-pills .nav-link.active:hover {
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
+        color: var(--primary-text);
+    }
+}
+
+// Layout.vue also wraps the application in a .light/.dark element. Its
+// token declarations would otherwise shadow the palette inherited from body.
+body.light[data-palette]:not([data-palette="default"]) .light,
+body.dark[data-palette]:not([data-palette="default"]) .dark {
+    --primary: inherit;
+    --primary-hover: inherit;
+    --primary-strong: inherit;
+    --primary-text: inherit;
+    --primary-soft: inherit;
+    --hover-soft: inherit;
+    --success: inherit;
+    --success-soft: inherit;
+    --warning: inherit;
+    --warning-soft: inherit;
+    --danger: inherit;
+    --danger-soft: inherit;
+    --bg-body: inherit;
+    --bg-surface: inherit;
+    --bg-raised: inherit;
+    --bg-input: inherit;
+    --border-color: inherit;
+    --border-strong: inherit;
+    --text-color: inherit;
+    --text-muted: inherit;
+    --bs-body-bg: inherit;
+    --bs-body-color: inherit;
+    --bs-secondary-color: inherit;
+    --bs-tertiary-color: inherit;
+    --bs-border-color: inherit;
+    --bs-secondary-bg: inherit;
+    --bs-tertiary-bg: inherit;
+}

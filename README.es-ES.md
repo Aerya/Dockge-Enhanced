@@ -60,6 +60,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Paletas de colores para el día y la noche**
+
+Los ajustes de apariencia ofrecen ahora paletas distintas para los modos claro y oscuro: cuatro opciones de día y ocho de noche, incluidos los temas originales. Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night y Rosé Pine cambian los colores de la página, la cabecera, los paneles y los controles. Las preferencias se guardan en el navegador y el modo Auto sigue el tema del sistema.
+
 **Conexiones fiables entre instancias vinculadas**
 
 Añadir o modificar una instancia vinculada ahora actualiza las sesiones del navegador sin desconectar las conexiones de federación. Ambas instancias permanecen conectadas tras sincronizar la malla y después de un reinicio.
@@ -348,6 +352,11 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Pi-hole
 - AdGuard Home
 - Dozzle y Kula
+
+### Apariencia
+- Paletas distintas para el día y la noche, incluidos los temas originales de Dockge-Enhanced
+- Opciones Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night y Rosé Pine
+- Preferencias guardadas en el navegador y modo Auto adaptado al sistema
 
 ### Notificaciones y acceso
 - Discord y Apprise

@@ -58,6 +58,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Day and night color palettes**
+
+Appearance settings now offer separate palettes for light and dark mode: four day choices and eight night choices, including the original themes. Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night and Rosé Pine recolor the page, header, panels and controls; the selected palettes are remembered in the browser, and Auto still follows the system theme.
+
 **Reliable linked-instance connections**
 
 Adding or changing a linked instance now refreshes browser sessions without disconnecting federation sockets. Both instances remain connected after mesh synchronization and after a restart.
@@ -371,6 +375,11 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Nginx Proxy Manager, Pi-hole and AdGuard Home label assistants
 - Dozzle
 - Kula
+
+### Appearance
+- Separate day and night palettes, including the original Dockge-Enhanced themes
+- Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night and Rosé Pine options
+- Browser-persisted selection with system-aware Auto mode
 
 ### Notifications & access
 - Discord and Apprise

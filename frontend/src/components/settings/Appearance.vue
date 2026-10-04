@@ -63,12 +63,36 @@
                 </div>
             </div>
         </div>
+        <div class="my-4">
+            <label for="day-palette" class="form-label">{{ $t("themePalette.day") }}</label>
+            <select id="day-palette" v-model="$root.dayPalette" class="form-select">
+                <option v-for="palette in lightPalettes" :key="palette" :value="palette">
+                    {{ $t(`themePalette.${palette}`) }}
+                </option>
+            </select>
+        </div>
+        <div class="my-4">
+            <label for="night-palette" class="form-label">{{ $t("themePalette.night") }}</label>
+            <select id="night-palette" v-model="$root.nightPalette" class="form-select">
+                <option v-for="palette in darkPalettes" :key="palette" :value="palette">
+                    {{ $t(`themePalette.${palette}`) }}
+                </option>
+            </select>
+            <div class="form-text">{{ $t("themePalette.help") }}</div>
+        </div>
     </div>
 </template>
 
 <script>
-export default {
+import { LIGHT_PALETTES, DARK_PALETTES } from "../../theme-palettes";
 
+export default {
+    data() {
+        return {
+            lightPalettes: LIGHT_PALETTES,
+            darkPalettes: DARK_PALETTES,
+        };
+    },
 };
 </script>
 
