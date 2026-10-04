@@ -79,21 +79,22 @@
                             <font-awesome-icon icon="sync" />
                         </button>
                     </div>
-                    <button
+                    <div
                         v-for="volume in volumeUsage"
                         :key="volume.source + volume.destination"
-                        type="button"
                         class="container-volume-row"
                         :title="volume.source"
-                        @click="openVolumeBrowser(volume.destination)"
                     >
+                        <button type="button" class="btn btn-sm btn-normal container-volume-browse" :aria-label="$t('volumeBrowseMount', { path: volume.destination })" @click="openVolumeBrowser(volume.destination)">
+                            <font-awesome-icon icon="folder-open" class="me-1" />{{ $t('volumeBrowse') }}
+                        </button>
                         <code>{{ volume.destination }}</code>
                         <span class="container-volume-name">{{ volume.type === "volume" ? (volume.name || volume.source) : volume.source }}</span>
                         <strong>
                             <template v-if="volume.size !== null">{{ formatBytes(volume.size) }}</template>
                             <template v-else>{{ $t("notAvailableShort") }}</template>
                         </strong>
-                    </button>
+                    </div>
                 </div>
                 <div v-if="!isEditMode" class="container-action-bar mt-3" :class="{ 'container-action-bar--labeled': containerActionLabels }">
                     <button v-if="status !== 'running' && status !== 'healthy'" class="btn btn-sm btn-primary container-action" :title="$t('containerActionHelp.start')" :aria-label="$t('startStack')" :disabled="actionProcessing" @click="runAction('start')"><font-awesome-icon icon="play" /><span>{{ $t("startStack") }}</span></button>
@@ -542,6 +543,8 @@ export default defineComponent({
 
     .container-instance-row {
         display: flex;
+        width: fit-content;
+        max-width: 100%;
         align-items: center;
         flex-wrap: wrap;
         gap: .5rem;
@@ -704,29 +707,36 @@ export default defineComponent({
     }
 
     .container-volume-row {
-        display: grid;
-        grid-template-columns: minmax(72px, auto) minmax(0, 1fr) auto;
+        display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 8px;
-        width: 100%;
+        width: fit-content;
         max-width: 100%;
         padding: 4px 8px;
         border: 1px solid var(--border-color);
         border-radius: var(--radius-sm);
         background: var(--bg-raised);
         color: inherit;
-        text-align: left;
         font-size: var(--fs-xs);
 
-        &:hover {
-            border-color: var(--primary-strong);
-            background: var(--primary-soft);
+        .container-volume-browse {
+            flex: 0 0 auto;
+            padding: 2px 8px;
+            font-size: var(--fs-xs);
         }
 
-        code,
+        code {
+            flex: 0 0 auto;
+        }
+
         .container-volume-name {
-            overflow: hidden;
-            text-overflow: ellipsis;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        strong {
+            flex: 0 0 auto;
             white-space: nowrap;
         }
     }

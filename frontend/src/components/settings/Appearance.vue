@@ -80,6 +80,11 @@
             </select>
             <div class="form-text">{{ $t("themePalette.help") }}</div>
         </div>
+        <div class="form-check my-4">
+            <input id="log-timestamps-default" v-model="logTimestampsDefault" type="checkbox" class="form-check-input" />
+            <label for="log-timestamps-default" class="form-check-label">{{ $t("logTimestampsDefault") }}</label>
+            <div class="form-text">{{ $t("logTimestampsDefaultHelp") }}</div>
+        </div>
     </div>
 </template>
 
@@ -91,7 +96,13 @@ export default {
         return {
             lightPalettes: LIGHT_PALETTES,
             darkPalettes: DARK_PALETTES,
+            logTimestampsDefault: localStorage.getItem("logTimestampsDefault") === "true",
         };
+    },
+    watch: {
+        logTimestampsDefault(value) {
+            localStorage.setItem("logTimestampsDefault", String(value));
+        },
     },
 };
 </script>

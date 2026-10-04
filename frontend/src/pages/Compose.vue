@@ -430,43 +430,104 @@
                         <div class="terminal-toolbar mb-3 compose-tight">
                             <h4 class="mb-0">{{ $t("stackLogs") }}</h4>
                             <div class="terminal-toolbar-right">
-                                <div class="terminal-log-since">
-                                    <label class="form-label mb-0 small text-muted" for="log-since-select">{{ $t("logSince") }}</label>
-                                    <select
-                                        id="log-since-select"
-                                        v-model="selectedLogSince"
-                                        class="form-select form-select-sm"
-                                        @change="joinSelectedLogTerminal"
-                                    >
-                                        <option value="">{{ $t("logSinceTail") }}</option>
-                                        <option value="restart">{{ $t("logSinceRestart") }}</option>
-                                        <option value="24h">{{ $t("logSince24h") }}</option>
-                                        <option value="72h">{{ $t("logSince3d") }}</option>
-                                        <option value="168h">{{ $t("logSince7d") }}</option>
-                                        <option value="336h">{{ $t("logSince14d") }}</option>
-                                    </select>
+                                <div class="terminal-log-filters">
+                                    <div class="terminal-log-since">
+                                        <select
+                                            id="log-since-select"
+                                            v-model="selectedLogSince"
+                                            class="form-select form-select-sm"
+                                            :aria-label="$t('logSince')"
+                                            @change="joinSelectedLogTerminal"
+                                        >
+                                            <option value="">{{ $t("logSinceTail") }}</option>
+                                            <option value="restart">{{ $t("logSinceRestart") }}</option>
+                                            <option value="24h">{{ $t("logSince24h") }}</option>
+                                            <option value="72h">{{ $t("logSince3d") }}</option>
+                                            <option value="168h">{{ $t("logSince7d") }}</option>
+                                            <option value="336h">{{ $t("logSince14d") }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="terminal-log-since">
+                                        <select id="terminal-scale-select" v-model="terminalScale" class="form-select form-select-sm" :aria-label="$t('logPanelSize')" @change="resizeCombinedTerminal">
+                                            <option value="1">x1</option>
+                                            <option value="1.5">x1,5</option>
+                                            <option value="2">x2</option>
+                                        </select>
+                                    </div>
+                                    <div v-if="logServiceOptions.length > 0" class="terminal-service-filter">
+                                        <select
+                                            id="log-service-select"
+                                            v-model="selectedLogService"
+                                            class="form-select form-select-sm"
+                                            :aria-label="$t('logService')"
+                                            @change="joinSelectedLogTerminal"
+                                        >
+                                            <option value="">{{ $t("logServiceAll") }}</option>
+                                            <option v-for="service in logServiceOptions" :key="service" :value="service">
+                                                {{ service }}
+                                            </option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="terminal-log-since">
-                                    <label class="form-label mb-0 small text-muted" for="terminal-scale-select">{{ $t("logPanelSize") }}</label>
-                                    <select id="terminal-scale-select" v-model="terminalScale" class="form-select form-select-sm" @change="resizeCombinedTerminal">
-                                        <option value="1">x1</option>
-                                        <option value="1.5">x1,5</option>
-                                        <option value="2">x2</option>
-                                    </select>
-                                </div>
-                                <div v-if="logServiceOptions.length > 0" class="terminal-service-filter">
-                                    <label class="form-label mb-0 small text-muted" for="log-service-select">{{ $t("logService") }}</label>
-                                    <select
-                                        id="log-service-select"
-                                        v-model="selectedLogService"
-                                        class="form-select form-select-sm"
-                                        @change="joinSelectedLogTerminal"
+                                <div class="terminal-log-actions" role="toolbar" :aria-label="$t('logActions')">
+                                    <button
+                                        class="btn btn-sm log-toggle-btn"
+                                        :class="logTimestamps ? 'btn-primary' : 'btn-normal'"
+                                        :title="$t('logTimestampsToggle')"
+                                        @click="toggleLogTimestamps"
                                     >
-                                        <option value="">{{ $t("logServiceAll") }}</option>
-                                        <option v-for="service in logServiceOptions" :key="service" :value="service">
-                                            {{ service }}
-                                        </option>
-                                    </select>
+                                        <font-awesome-icon icon="clock" class="me-1" />{{ $t('logTimestamps') }}
+                                    </button>
+                                    <button
+                                        class="btn btn-sm log-toggle-btn"
+                                        :class="logLineWrap ? 'btn-primary' : 'btn-normal'"
+                                        :title="$t('logLineWrapToggle')"
+                                        @click="toggleLogLineWrap"
+                                    >
+                                        <font-awesome-icon icon="stream" class="me-1" />{{ $t(logLineWrap ? 'logLineWrapOn' : 'logLineWrapOff') }}
+                                    </button>
+                                    <button
+                                        class="btn btn-sm"
+                                        :class="logFollowOutput ? 'btn-primary' : 'btn-normal'"
+                                        :title="$t(logFollowOutput ? 'logFollowPauseTitle' : 'logFollowResumeTitle')"
+                                        style="font-size:0.78rem; padding: 2px 8px;"
+                                        @click="toggleLogFollow"
+                                    >
+                                        <font-awesome-icon :icon="logFollowOutput ? 'pause' : 'play'" class="me-1" />
+                                        {{ $t(logFollowOutput ? 'logFollowPause' : 'logFollowResume') }}
+                                    </button>
+                                    <div class="dropdown">
+                                        <button
+                                            class="btn btn-sm btn-normal dropdown-toggle"
+                                            type="button"
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false"
+                                            :title="$t('logCopy')"
+                                        >
+                                            <font-awesome-icon icon="copy" class="me-1" />{{ $t('logCopy') }}
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><button class="dropdown-item" type="button" @click="copyLogLines(50)">{{ $t('logCopy50') }}</button></li>
+                                            <li><button class="dropdown-item" type="button" @click="copyLogLines(100)">{{ $t('logCopy100') }}</button></li>
+                                            <li><button class="dropdown-item" type="button" @click="copyLogLines(150)">{{ $t('logCopy150') }}</button></li>
+                                            <li><hr class="dropdown-divider" /></li>
+                                            <li><button class="dropdown-item" type="button" @click="copyLogLines(null)">{{ $t('logCopyAll') }}</button></li>
+                                        </ul>
+                                    </div>
+                                    <button
+                                        class="btn btn-sm btn-normal"
+                                        :title="$t(logsFullscreen ? 'logsExitFullscreen' : 'logsFullscreen')"
+                                        @click="toggleLogsFullscreen"
+                                    >
+                                        <font-awesome-icon :icon="logsFullscreen ? 'compress' : 'expand'" />
+                                    </button>
+                                    <button
+                                        class="btn btn-sm btn-normal"
+                                        :title="$t(composeCollapsed ? 'composeRestore' : 'composeCollapse')"
+                                        @click="toggleComposeCollapsed"
+                                    >
+                                        <font-awesome-icon :icon="composeCollapsed ? 'chevron-left' : 'chevron-right'" />
+                                    </button>
                                 </div>
                                 <div class="terminal-log-search input-group input-group-sm">
                                     <span class="input-group-text"><font-awesome-icon icon="search" /></span>
@@ -474,75 +535,18 @@
                                         v-model="logSearch"
                                         type="search"
                                         class="form-control"
+                                        :aria-label="$t('logSearchPlaceholder')"
                                         :placeholder="$t('logSearchPlaceholder')"
                                         @input="scheduleLogSearch"
                                         @keyup.enter="searchLogs(false)"
                                     />
-                                    <button class="btn btn-normal" :title="$t('logSearchPrevious')" @click="searchLogs(true)">
+                                    <button class="btn btn-normal" :title="$t('logSearchPrevious')" :aria-label="$t('logSearchPrevious')" @click="searchLogs(true)">
                                         <font-awesome-icon icon="chevron-up" />
                                     </button>
-                                    <button class="btn btn-normal" :title="$t('logSearchNext')" @click="searchLogs(false)">
+                                    <button class="btn btn-normal" :title="$t('logSearchNext')" :aria-label="$t('logSearchNext')" @click="searchLogs(false)">
                                         <font-awesome-icon icon="chevron-down" />
                                     </button>
                                 </div>
-                                <button
-                                    class="btn btn-sm log-toggle-btn"
-                                    :class="logTimestamps ? 'btn-primary' : 'btn-normal'"
-                                    :title="$t('logTimestampsToggle')"
-                                    @click="toggleLogTimestamps"
-                                >
-                                    <font-awesome-icon icon="clock" class="me-1" />{{ $t('logTimestamps') }}
-                                </button>
-                                <button
-                                    class="btn btn-sm log-toggle-btn"
-                                    :class="logLineWrap ? 'btn-primary' : 'btn-normal'"
-                                    :title="$t('logLineWrapToggle')"
-                                    @click="toggleLogLineWrap"
-                                >
-                                    <font-awesome-icon icon="stream" class="me-1" />{{ $t(logLineWrap ? 'logLineWrapOn' : 'logLineWrapOff') }}
-                                </button>
-                                <button
-                                    class="btn btn-sm"
-                                    :class="logFollowOutput ? 'btn-primary' : 'btn-normal'"
-                                    :title="$t(logFollowOutput ? 'logFollowPauseTitle' : 'logFollowResumeTitle')"
-                                    style="font-size:0.78rem; padding: 2px 8px;"
-                                    @click="toggleLogFollow"
-                                >
-                                    <font-awesome-icon :icon="logFollowOutput ? 'pause' : 'play'" class="me-1" />
-                                    {{ $t(logFollowOutput ? 'logFollowPause' : 'logFollowResume') }}
-                                </button>
-                                <div class="dropdown">
-                                    <button
-                                        class="btn btn-sm btn-normal dropdown-toggle"
-                                        type="button"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                        :title="$t('logCopy')"
-                                    >
-                                        <font-awesome-icon icon="copy" class="me-1" />{{ $t('logCopy') }}
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><button class="dropdown-item" type="button" @click="copyLogLines(50)">{{ $t('logCopy50') }}</button></li>
-                                        <li><button class="dropdown-item" type="button" @click="copyLogLines(100)">{{ $t('logCopy100') }}</button></li>
-                                        <li><button class="dropdown-item" type="button" @click="copyLogLines(150)">{{ $t('logCopy150') }}</button></li>
-                                        <li><hr class="dropdown-divider" /></li>
-                                        <li><button class="dropdown-item" type="button" @click="copyLogLines(null)">{{ $t('logCopyAll') }}</button></li>
-                                    </ul>
-                                </div>
-                                <button
-                                    class="btn btn-sm btn-normal"
-                                    :title="$t(logsFullscreen ? 'logsExitFullscreen' : 'logsFullscreen')"
-                                    @click="toggleLogsFullscreen"
-                                >
-                                    <font-awesome-icon :icon="logsFullscreen ? 'compress' : 'expand'" />
-                                </button>
-                                <button
-                                    class="btn btn-sm btn-normal"
-                                    :title="$t(composeCollapsed ? 'composeRestore' : 'composeCollapse')"
-                                    @click="toggleComposeCollapsed"
-                                >
-                                    <font-awesome-icon :icon="composeCollapsed ? 'chevron-left' : 'chevron-right'" />
-                                </button>
                             </div>
                         </div>
                         <Terminal
@@ -976,7 +980,7 @@ export default {
             containerInstancesRequestTimeout: null,
             lastUpdated: null,
             lastStartedAt: null,
-            logTimestamps: false,
+            logTimestamps: localStorage.getItem("logTimestampsDefault") === "true",
             logLineWrap: localStorage.getItem("logLineWrap") !== "false",
             logFollowOutput: true,
             isEditMode: false,
@@ -2998,11 +3002,8 @@ export default {
 }
 
 .terminal-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
+    display: grid;
+    gap: 10px;
 }
 
 .log-toggle-btn {
@@ -3101,9 +3102,13 @@ export default {
     padding: 12px;
     overflow: hidden;
     background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
 
     .combined-terminal {
-        height: calc(100vh - 102px) !important;
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto !important;
         margin-bottom: 0 !important;
     }
 }
@@ -3127,11 +3132,19 @@ export default {
 }
 
 .terminal-toolbar-right {
-    display: grid;
-    grid-template-columns: minmax(180px, 1.2fr) minmax(110px, .7fr) minmax(150px, 1fr);
-    align-items: end;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     gap: 8px;
     width: 100%;
+}
+
+.terminal-log-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 48rem;
 }
 
 .terminal-service-filter,
@@ -3139,11 +3152,6 @@ export default {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 4px;
-
-    .form-label {
-        color: var(--text-muted) !important;
-    }
 
     .form-select {
         width: 100%;
@@ -3151,53 +3159,20 @@ export default {
 }
 
 .terminal-log-search {
-    grid-column: 1 / span 2;
     width: 100%;
 }
 
-.terminal-toolbar-right > .btn {
-    justify-self: start;
-}
-
-@media (max-width: $bp-tablet) {
-    .terminal-toolbar {
-        align-items: stretch;
-    }
-
-    .terminal-toolbar > h4 {
-        width: 100%;
-    }
-
-    .terminal-toolbar-right {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
-
-    .terminal-service-filter {
-        grid-column: 1 / -1;
-    }
-
-    .terminal-log-search {
-        grid-column: 1 / -1;
-        width: 100%;
-    }
-
-    .terminal-toolbar-right > .btn {
-        justify-self: start;
-    }
-
+.terminal-log-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
 }
 
 @media (max-width: $bp-phone) {
-    .terminal-toolbar-right {
-        grid-template-columns: 1fr;
-    }
-
-    .terminal-log-search {
-        grid-column: 1;
-    }
-
-    .terminal-service-filter {
-        grid-column: 1;
+    .terminal-log-actions .btn,
+    .terminal-log-actions .dropdown .btn {
+        max-width: 100%;
     }
 }
 

@@ -60,6 +60,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Volúmenes y registros más claros en las stacks**
+
+Los volúmenes montados y los contenedores reales usan filas compactas en lugar de botones de ancho completo. En los registros, los tres filtros aparecen uno debajo de otro, las acciones se agrupan y la búsqueda queda al final; los nombres de los filtros siguen disponibles para las tecnologías de asistencia. Los ajustes de apariencia permiten activar las marcas de tiempo por defecto en este navegador.
+
 **Paletas de colores para el día y la noche**
 
 Los ajustes de apariencia ofrecen ahora paletas distintas para los modos claro y oscuro: cuatro opciones de día y ocho de noche, incluidos los temas originales. Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night y Rosé Pine cambian los colores de la página, la cabecera, los paneles y los controles. Las preferencias se guardan en el navegador y el modo Auto sigue el tema del sistema.
@@ -274,7 +278,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Gestión de stacks
 - Nombre visible opcional en la WebUI, sin cambiar la identidad de Compose o Restic
-- Detalles y acciones individuales para contenedores reales y réplicas, separados de las acciones del servicio Compose
+- Enlaces compactos a contenedores reales y réplicas, con detalles y acciones individuales separadas de las acciones del servicio Compose
+- Filas compactas de volúmenes montados con botón Explorar independiente, destino, ruta del host y tamaño
 - Gestor opcional de archivos del host limitado a un directorio autorizado, distinto del navegador de volúmenes por pila, con transferencias por bloques y seguimiento de registros en archivos
 - Crear, editar, iniciar, detener y recrear stacks Compose
 - Stacks fijadas en el servidor, compartidas entre las WebUI vinculadas, y ordenación avanzada
@@ -330,7 +335,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Estadísticas del sistema, stacks y contenedores
 - Barra de estado y tarjetas de salud
 - Crash loops y auto-heal
-- Logs live/pantalla completa, con periodo **desde el último reinicio** y copia en un clic de las últimas **50 / 100 / 150** líneas o de todas las líneas cargadas
+- Logs live/a pantalla completa adaptables, con filtros verticales, acciones agrupadas y búsqueda al final, periodo **desde el último reinicio** y copia en un clic de las últimas **50 / 100 / 150** líneas o de todas las líneas cargadas
+- Marcas de tiempo por defecto configurables en los ajustes de apariencia de este navegador
 - Kula y Dozzle
 - Estadísticas CPU/RAM por stack de instancias locales y vinculadas
 

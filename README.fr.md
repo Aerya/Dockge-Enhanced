@@ -58,6 +58,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Volumes et logs plus lisibles dans les stacks**
+
+Les volumes montés et les conteneurs réels utilisent des lignes compactes au lieu de boutons sur toute la largeur. Dans les logs, les trois filtres sont empilés, les actions regroupées et la recherche placée à la fin ; les noms des filtres restent accessibles aux technologies d’assistance. Les paramètres d’apparence peuvent activer l’horodatage des logs par défaut pour ce navigateur.
+
 **Palettes de couleurs jour et nuit**
 
 Les paramètres d’apparence proposent désormais des palettes distinctes pour les modes clair et sombre : quatre choix de jour et huit de nuit, thèmes d’origine compris. Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night et Rosé Pine recolorent la page, l’en-tête, les panneaux et les contrôles. Les choix sont conservés dans le navigateur ; le mode Auto suit toujours le thème du système.
@@ -274,7 +278,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Gestion des stacks
 - Nom d’affichage facultatif dans la WebUI, sans changer l’identité Compose ou Restic
-- Détails et actions démarrer/arrêter/redémarrer par conteneur réel, distincts des actions par service Compose
+- Liens compacts vers les conteneurs réels, avec détails et actions démarrer/arrêter/redémarrer distinctes des actions par service Compose
+- Lignes compactes pour les volumes montés : bouton Parcourir séparé, destination, chemin hôte et taille
 - Gestionnaire facultatif de fichiers hôte limité à un dossier autorisé, distinct du navigateur de volumes par stack, avec transferts par morceaux et suivi des journaux en fichiers
 - Création, édition, démarrage, arrêt et recréation des stacks Compose
 - Stacks épinglées côté serveur et partagées entre les WebUI liées
@@ -351,7 +356,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Cartes de santé
 - Détection des crash loops
 - Auto-heal des healthchecks
-- Logs live et plein écran, avec période **depuis le dernier redémarrage** et copie en un clic des **50 / 100 / 150** dernières lignes ou de toutes les lignes chargées
+- Logs live et plein écran responsives, avec filtres empilés, actions regroupées et recherche en dernier, période **depuis le dernier redémarrage** et copie en un clic des **50 / 100 / 150** dernières lignes ou de toutes les lignes chargées
+- Horodatage des logs activable par défaut dans les paramètres d’apparence de ce navigateur
 - Pause de l'autoscroll et gestion des longues lignes
 - Intégrations Kula et Dozzle
 - Statistiques CPU/RAM par stack pour les instances locales et liées
