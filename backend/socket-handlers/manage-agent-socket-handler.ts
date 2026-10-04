@@ -89,7 +89,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                 callbackResult({ ok: true,
                     count: peers.length }, callback);
-                setTimeout(() => server.disconnectAllSocketClients(undefined, socket.id), 100);
+                setTimeout(() => server.refreshBrowserSocketClients(socket.id), 100);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -122,7 +122,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                     count: endpoints.length,
                     repaired: true,
                 }, callback);
-                server.disconnectAllSocketClients(undefined, socket.id);
+                server.refreshBrowserSocketClients(socket.id);
                 await socket.instanceManager.sendAgentList();
             } catch (e) {
                 callbackError(e, callback);
@@ -155,12 +155,9 @@ export class ManageAgentSocketHandler extends SocketHandler {
                     throw error;
                 }
 
-                // connect to the agent
-                manager.connect(data.url, data.username, data.password);
-
                 // Refresh another sockets
                 // It is a bit difficult to control another browser sessions to connect/disconnect agents, so force them to refresh the page will be easier.
-                server.disconnectAllSocketClients(undefined, socket.id);
+                server.refreshBrowserSocketClients(socket.id);
                 manager.sendAgentList();
 
                 callbackResult({
@@ -212,7 +209,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 const displayName = normalizeAgentDisplayName(data.displayName);
                 await socket.instanceManager.rename(data.url, displayName);
 
-                server.disconnectAllSocketClients(undefined, socket.id);
+                server.refreshBrowserSocketClients(socket.id);
                 await socket.instanceManager.sendAgentList();
                 callbackResult({
                     ok: true,
@@ -250,7 +247,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                     log.warn("manage-agent-socket-handler", `Agent credentials updated; mesh synchronization is still pending: ${error instanceof Error ? error.message : String(error)}`);
                 }
 
-                server.disconnectAllSocketClients(undefined, socket.id);
+                server.refreshBrowserSocketClients(socket.id);
                 await manager.sendAgentList();
                 callbackResult({
                     ok: true,
@@ -287,7 +284,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 await manager.remove(data.url);
                 await AgentManager.refreshFromDatabase();
 
-                server.disconnectAllSocketClients(undefined, socket.id);
+                server.refreshBrowserSocketClients(socket.id);
                 manager.sendAgentList();
 
                 callbackResult({

@@ -527,6 +527,7 @@
     "composeTemplate.invalid": "Enter valid YAML with a services section (maximum 64 KiB).",
     "releaseNews.item.stackPauseTemplateControls": "Pause/resume for stacks, a default Compose template for new stacks, stack README.md as an action button, and explanatory tooltips for container actions. Restic backups and automatic updates remain protected.",
     "releaseNews.item.setupPasswordManager": "Account setup now identifies username and new-password fields for password managers.",
+    "releaseNews.item.agentMeshConnection": "Adding or changing a linked instance no longer disconnects federation sockets when browser sessions refresh. Both instances stay connected.",
     "releaseNews.item.imageUpdateAll": "The Updates page can now update all available container images sequentially, with progress and a stop on the first failure. Dockge-Enhanced updates remain separate.",
     "containerActionHelp.stop": "Stop this service and any services sharing its network namespace; keep their containers and data.",
     "containerActionHelp.restart": "Restart this service and its network namespace dependants without applying Compose changes.",

@@ -523,6 +523,7 @@
     "composeTemplate.invalid": "Saisissez un YAML valide avec une section services (64 Kio maximum).",
     "releaseNews.item.stackPauseTemplateControls": "Pause/reprise des stacks, modèle Compose par défaut pour les nouvelles stacks, README.md accessible par bouton et infobulles pour les actions conteneur. Sauvegardes Restic et mises à jour automatiques restent protégées.",
     "releaseNews.item.setupPasswordManager": "La création du compte indique désormais les champs identifiant et nouveau mot de passe aux gestionnaires de mots de passe.",
+    "releaseNews.item.agentMeshConnection": "L’ajout ou la modification d’une instance liée ne coupe plus les connexions de fédération lors du rafraîchissement des navigateurs. Les deux instances restent connectées.",
     "releaseNews.item.imageUpdateAll": "La page Mises à jour peut désormais mettre à jour toutes les images Docker disponibles, une par une, avec progression et arrêt au premier échec. La mise à jour d’Enhanced reste séparée.",
     "containerActionHelp.stop": "Arrête ce service et ceux qui partagent son espace réseau, sans supprimer leurs conteneurs ni leurs données.",
     "containerActionHelp.restart": "Redémarre ce service et ses dépendants réseau sans appliquer les changements du Compose.",
