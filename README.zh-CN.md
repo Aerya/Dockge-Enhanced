@@ -38,6 +38,10 @@
 
 ### 🆕 2026 年 10 月
 
+**按服务排除状态与镜像更新**
+
+可视化 Compose 编辑器可添加 `dockge.status.ignore: "true"`，使可选服务在部署后不再影响应用栈整体状态，同时仍显示该服务自身状态。还可添加 `dockge.imageupdates.check: "false"`，将服务排除在 ImageWatcher 检测以及自动或批量镜像更新之外；仍可明确手动更新该服务。现有服务标签及其 YAML 语法会被保留。功能灵感来自 [hamphh/dockge](https://github.com/hamphh/dockge)。
+
 **更稳定的关联实例连接**
 
 添加或修改关联实例时，浏览器会话刷新不再断开联邦连接。同步网状网络及重启后，两个实例仍保持在线。
@@ -247,6 +251,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 不同 Dockge-Enhanced 版本之间的能力协商
 
 ### Stack 管理
+- 可按服务忽略其对应用栈整体状态的影响，同时保留服务自身状态
 - 可选的 Web UI 显示名称，不改变 Compose 或 Restic 标识
 - 实际容器与副本的详情及单容器启动、停止、重启操作，与 Compose 服务级操作分离
 - 可选的受限主机文件管理器：与 Stack 卷浏览器分离，支持分块传输与文件日志查看
@@ -281,6 +286,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 历史记录与恢复流程集成
 
 ### 更新
+- 使用 `dockge.imageupdates.check: "false"` 按服务排除 ImageWatcher 检查及自动/批量更新
 - 镜像更新监控与远程检测
 - 手动和自动更新
 - 可用镜像的顺序批量更新，显示进度并在首次失败时停止
@@ -567,6 +573,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — 原始项目（MIT）
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
+- [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — 按服务排除整体状态和镜像更新功能的灵感及兼容标签来源
 - [**Trivy**](https://github.com/aquasecurity/trivy) — 漏洞扫描
 - [**Restic**](https://restic.net/) — 加密备份
 - [**Apprise**](https://github.com/caronc/apprise-api) — 多平台通知网关

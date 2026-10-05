@@ -1,4 +1,10 @@
 {
+    "serviceBehaviour.title": "Comportamiento del servicio",
+    "serviceBehaviour.ignoreStatus": "Ignorar este servicio en el estado global del stack",
+    "serviceBehaviour.ignoreStatusHelp": "Añade dockge.status.ignore=true. El estado propio del servicio sigue visible.",
+    "serviceBehaviour.checkImageUpdates": "Comprobar actualizaciones de imagen para este servicio",
+    "serviceBehaviour.checkImageUpdatesHelp": "Desactívelo para excluir este servicio de las comprobaciones de ImageWatcher y actualizaciones automáticas o por lotes. La actualización explícita sigue disponible.",
+    "releaseNews.item.serviceStatusImageLabels": "Ahora cada servicio Compose puede excluirse del estado global del stack o de las comprobaciones y actualizaciones automáticas de imágenes. Enhanced utiliza las etiquetas compatibles dockge.status.ignore y dockge.imageupdates.check sin sobrescribir las etiquetas existentes.",
     "volumeBrowse": "Explorar",
     "volumeBrowseMount": "Explorar la ruta montada {path}",
     "logActions": "Acciones de los registros",

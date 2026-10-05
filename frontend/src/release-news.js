@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-05-service-status-image-labels",
+        items: [ "releaseNews.item.serviceStatusImageLabels" ],
+    },
+    {
         id: "2026-10-04-compose-log-controls",
         items: [ "releaseNews.item.composeLogControls" ],
     },

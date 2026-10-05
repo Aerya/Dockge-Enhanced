@@ -169,6 +169,24 @@
                     <div class="form-text"></div>
                 </div>
 
+                <div class="service-behaviour mb-4">
+                    <h5>{{ $t("serviceBehaviour.title") }}</h5>
+                    <div class="form-check mb-3">
+                        <input :id="`ignore-status-${name}`" v-model="ignoreServiceStatus" class="form-check-input" type="checkbox" />
+                        <label class="form-check-label" :for="`ignore-status-${name}`">
+                            {{ $t("serviceBehaviour.ignoreStatus") }}
+                        </label>
+                        <div class="form-text">{{ $t("serviceBehaviour.ignoreStatusHelp") }}</div>
+                    </div>
+                    <div class="form-check">
+                        <input :id="`check-image-updates-${name}`" v-model="checkServiceImageUpdates" class="form-check-input" type="checkbox" />
+                        <label class="form-check-label" :for="`check-image-updates-${name}`">
+                            {{ $t("serviceBehaviour.checkImageUpdates") }}
+                        </label>
+                        <div class="form-text">{{ $t("serviceBehaviour.checkImageUpdatesHelp") }}</div>
+                    </div>
+                </div>
+
                 <!-- Ports -->
                 <div class="mb-4">
                     <label class="form-label">
@@ -249,6 +267,13 @@
 import { defineComponent } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { parseDockerPort, imageRegistryUrl, resolveEndpointHostname } from "../../../common/util-common";
+import {
+    composeLabelIsFalse,
+    composeLabelIsTrue,
+    LABEL_IMAGEUPDATES_CHECK,
+    LABEL_STATUS_IGNORE,
+    setComposeLabel,
+} from "../../../common/compose-labels";
 import VolumeBrowser from "./VolumeBrowser.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
@@ -403,6 +428,24 @@ export default defineComponent({
                 return {};
             }
             return this.jsonObject.services[this.name];
+        },
+
+        ignoreServiceStatus: {
+            get() {
+                return composeLabelIsTrue(this.service.labels, LABEL_STATUS_IGNORE);
+            },
+            set(enabled) {
+                setComposeLabel(this.service, LABEL_STATUS_IGNORE, enabled ? "true" : null);
+            },
+        },
+
+        checkServiceImageUpdates: {
+            get() {
+                return !composeLabelIsFalse(this.service.labels, LABEL_IMAGEUPDATES_CHECK);
+            },
+            set(enabled) {
+                setComposeLabel(this.service, LABEL_IMAGEUPDATES_CHECK, enabled ? null : "false");
+            },
         },
 
         jsonObject() {

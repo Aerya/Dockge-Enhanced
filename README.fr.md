@@ -58,6 +58,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Exclusions du statut et des mises à jour par service**
+
+L’éditeur Compose visuel peut ajouter `dockge.status.ignore: "true"` afin qu’un service optionnel ne dégrade plus le statut global de la stack après déploiement, tout en gardant son propre état visible. Il peut également ajouter `dockge.imageupdates.check: "false"` pour exclure un service des contrôles ImageWatcher et des mises à jour d’image automatiques ou groupées. La mise à jour explicite du service reste disponible. Les labels existants et leur syntaxe YAML sont préservés. Fonctionnalités inspirées de [hamphh/dockge](https://github.com/hamphh/dockge).
+
 **Volumes et logs plus lisibles dans les stacks**
 
 Les volumes montés et les conteneurs réels utilisent des lignes compactes au lieu de boutons sur toute la largeur. Dans les logs, les trois filtres sont empilés, les actions regroupées et la recherche placée à la fin ; les noms des filtres restent accessibles aux technologies d’assistance. Les paramètres d’apparence peuvent activer l’horodatage des logs par défaut pour ce navigateur.
@@ -277,6 +281,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Négociation des capacités entre différentes versions de Dockge-Enhanced
 
 ### Gestion des stacks
+- Réglage par service pour ignorer un service optionnel dans le statut global tout en conservant son propre statut visible
 - Nom d’affichage facultatif dans la WebUI, sans changer l’identité Compose ou Restic
 - Liens compacts vers les conteneurs réels, avec détails et actions démarrer/arrêter/redémarrer distinctes des actions par service Compose
 - Lignes compactes pour les volumes montés : bouton Parcourir séparé, destination, chemin hôte et taille
@@ -325,6 +330,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Intégration aux workflows de récupération et de mise à jour
 
 ### Mises à jour
+- Exclusion par service des contrôles ImageWatcher et mises à jour automatiques/groupées avec `dockge.imageupdates.check: "false"`
 - Surveillance des mises à jour d'images Docker
 - Détection des mises à jour distantes
 - Mises à jour manuelles et automatiques
@@ -759,6 +765,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 
 - [**Dockge**](https://github.com/louislam/dockge) par louislam — le projet d'origine (licence MIT)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) par Lorwell — inspiration pour le gestionnaire de fichiers hôte restreint et la vue par conteneur réel adaptés à Enhanced (licence MIT)
+- [**hamphh/dockge**](https://github.com/hamphh/dockge) par hamphh — inspiration et labels compatibles pour les exclusions par service du statut global et des mises à jour d’image
 - [**Trivy**](https://github.com/aquasecurity/trivy) — scanner de vulnérabilités
 - [**Restic**](https://restic.net/) — outil de backup chiffré
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes

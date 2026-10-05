@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-05 — Exclusions du statut et des mises à jour par service** — L’éditeur Compose visuel peut ajouter `dockge.status.ignore: "true"` pour empêcher un service optionnel de dégrader le statut global de la stack après déploiement, tout en gardant son état visible. `dockge.imageupdates.check: "false"` exclut un service de la détection ImageWatcher et des mises à jour automatiques ou groupées, y compris lors d’une recréation ciblée si plusieurs services partagent une image. La mise à jour explicite du service reste disponible. Les labels existants en mapping ou en liste sont préservés. Fonctionnalités inspirées de [hamphh/dockge](https://github.com/hamphh/dockge).
+
 **2026-10-03 — Gestionnaire facultatif de fichiers hôte restreint** — Une page Fichiers dédiée permet de parcourir un dossier hôte explicitement configuré par instance, de transférer des fichiers par morceaux, de modifier de petits fichiers UTF-8 et de suivre des journaux en fichiers. Elle est distincte du navigateur de volumes, désactivée par défaut et refuse les opérations si l’authentification est désactivée. Adapté de [Lorwell/dockge](https://github.com/Lorwell/dockge).
 
 **2026-10-03 — Presse-papiers du terminal des conteneurs** — Le clic droit utilise de nouveau le menu Copier/Coller natif d’xterm. Les événements de collage du navigateur sont transmis au terminal, y compris sur les adresses HTTP locales où l’API presse-papiers est indisponible.

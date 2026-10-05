@@ -58,6 +58,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Per-service status and image-update exclusions**
+
+The visual Compose editor can add `dockge.status.ignore: "true"` so an optional service no longer degrades the overall stack status after deployment, while its own state remains visible. It can also add `dockge.imageupdates.check: "false"` to exclude a service from ImageWatcher checks and automatic or batch image updates. An explicit service update remains available. Existing service labels and YAML label syntax are preserved. Inspired by [hamphh/dockge](https://github.com/hamphh/dockge).
+
 **Cleaner Compose volumes and logs**
 
 Mounted volumes and actual containers use compact rows instead of full-width clickable bars. The Logs panel stacks its three filters, groups its actions and places search last; filter names remain available to assistive technology. Appearance settings can enable log timestamps by default for this browser.
@@ -278,6 +282,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Version-aware capability negotiation between mixed Dockge-Enhanced releases
 
 ### Stack management
+- Per-service controls to ignore an optional service in the overall stack status while keeping its own status visible
 - Optional WebUI display name for a stack, without changing its Compose or Restic identity
 - Compact actual-container links, with details and individual start/stop/restart actions for Compose replicas, separate from service actions
 - Compact mounted-volume rows with a separate Browse button, destination, host path and size
@@ -326,6 +331,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Integration with protected update and recovery workflows
 
 ### Updates
+- Per-service exclusion from ImageWatcher checks and automatic/batch image updates with `dockge.imageupdates.check: "false"`
 - Docker image update monitoring
 - Remote update detection
 - Manual and automatic image updates
@@ -760,6 +766,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — the original project (MIT licence)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — inspiration for the restricted host file manager and real-container view adapted for Enhanced (MIT licence)
+- [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — inspiration and compatible labels for per-service stack-status and image-update exclusions
 - [**Trivy**](https://github.com/aquasecurity/trivy) — vulnerability scanner
 - [**Restic**](https://restic.net/) — encrypted backup tool
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway

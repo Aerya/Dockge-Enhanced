@@ -42,6 +42,25 @@ test("incomplete state is unknown and a fully exited project remains stopped", (
         exitCode: 0 } ]), EXITED);
 });
 
+test("ignored services do not degrade the global stack status", () => {
+    assert.equal(resolveMixedComposeStatus([
+        { status: "running" },
+        { status: "exited",
+            exitCode: 1,
+            ignored: true },
+        { status: "paused",
+            ignored: true },
+    ]), RUNNING);
+});
+
+test("an all-ignored stack still reports a meaningful status", () => {
+    assert.equal(resolveMixedComposeStatus([
+        { status: "exited",
+            exitCode: 0,
+            ignored: true },
+    ]), EXITED);
+});
+
 test("non-mixed Compose statuses do not need container inspection", async () => {
     assert.equal(await Stack.resolveComposeStatus("test-project", "running(2)"), RUNNING);
     assert.equal(await Stack.resolveComposeStatus("test-project", "exited(2)"), EXITED);
