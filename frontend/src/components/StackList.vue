@@ -440,6 +440,7 @@ export default {
             deep: true,
             handler(value) {
                 localStorage.setItem("stackAgentFilters", JSON.stringify(value));
+                window.dispatchEvent(new CustomEvent("dockge-stack-agent-filters-changed", { detail: { endpoints: [ ...value ] } }));
             },
         },
         stackGroupByAgent(value) {
