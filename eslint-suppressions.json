@@ -139,7 +139,7 @@
       "count": 1
     },
     "@stylistic/object-property-newline": {
-      "count": 29
+      "count": 24
     },
     "@typescript-eslint/no-explicit-any": {
       "count": 23
@@ -159,7 +159,7 @@
       "count": 6
     },
     "@stylistic/object-property-newline": {
-      "count": 18
+      "count": 16
     }
   },
   "backend/routers/system-stats-router.ts": {
@@ -437,23 +437,6 @@
   "backend/volume-usage.ts": {
     "@stylistic/object-property-newline": {
       "count": 1
-    }
-  },
-  "backend/watchers/auto-prune-manager.ts": {
-    "@stylistic/brace-style": {
-      "count": 4
-    },
-    "@stylistic/max-statements-per-line": {
-      "count": 2
-    },
-    "@stylistic/no-multi-spaces": {
-      "count": 20
-    },
-    "@stylistic/object-property-newline": {
-      "count": 1
-    },
-    "curly": {
-      "count": 3
     }
   },
   "backend/watchers/backup-manager.test.ts": {
@@ -964,13 +947,13 @@
       "count": 1
     },
     "curly": {
-      "count": 40
+      "count": 37
     },
     "one-var": {
       "count": 1
     },
     "vue/html-indent": {
-      "count": 48
+      "count": 47
     }
   },
   "frontend/src/pages/ExternalStacks.vue": {

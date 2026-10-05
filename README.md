@@ -41,9 +41,9 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | **Updates** | Image update detection, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
 | **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant examples, scheduled operations, and centralized history including operation origin, status and duration |
-| **Docker resources** | Management of images, volumes, networks and unmanaged containers, bulk operations, auto-prune and safeguards around destructive actions |
+| **Docker resources** | Protected unified cleanup for images, volumes, networks and build cache, exact catch-up scheduling, previews, exclusions, history and safeguards around destructive actions |
 | **Security** | Trivy vulnerability scanning, CVE exceptions, protected update workflows, 2FA, trusted-proxy authentication and Cloudflare Turnstile |
-| **Monitoring** | System, stack and container statistics, configurable system status bar, dashboard health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula and managed Dozzle integrations |
+| **Monitoring** | System, stack and container statistics, optional 5-minute CPU/RAM history, configurable status bar, health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula and managed Dozzle integrations |
 | **Integrations** | PlugNPiN plus per-service label assistance for Nginx Proxy Manager, Pi-hole and AdGuard Home |
 | **Notifications & access** | Discord and Apprise notifications localized in EN/FR/ES/zh-CN, multi-instance awareness, 2FA, trusted proxy support, Turnstile and third-party mobile clients |
 
@@ -57,6 +57,14 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 October 2026
+
+**Unified Docker cleanup and exact catch-up scheduling**
+
+Docker Resources now shares one Image-ID inventory between the Images page, cleanup preview and automatic pruning. Stopped-container images, rollback/recovery assets, exclusions and grace periods remain protected. Images, networks, volumes and build cache can be selected independently, results are recorded per category, and due jobs are checked every 15 minutes with one catch-up after sleep or restart. Enabling unified cleanup suspends the legacy image schedules without erasing them.
+
+**Optional host CPU/RAM history**
+
+Monitoring can record one lightweight host CPU/RAM sample every 5 minutes, independently of browser sessions. The responsive SVG graph offers 24-hour, 7-day, monthly and custom ranges; the selected display range can be saved and restored on the next visit. Long ranges are downsampled server-side and downtime remains visible as gaps. Recording is disabled by default and low-power mode does not stop it when explicitly enabled.
 
 **Per-service status and image-update exclusions**
 
@@ -359,6 +367,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Monitoring
 - System, stack and container statistics
+- Optional 5-minute CPU/RAM history with 24-hour, 7-day, monthly and custom ranges, server-side downsampling and visible downtime gaps
 - Configurable system status bar
 - Dashboard health cards
 - Crash-loop detection
@@ -371,8 +380,9 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Docker resources
 - Images, volumes, networks and unmanaged containers
-- Bulk actions
-- Auto-prune
+- Unified manual/automatic cleanup for images, networks, volumes and build cache, with per-category results and 30-run history
+- Exact `lastRun + interval` scheduling checked every 15 minutes, including one catch-up after host sleep or restart
+- Full Image-ID classification across running and stopped containers; multiple tags sharing one image are counted once
 - Risky-deletion safeguards
 
 ### Automation & audit

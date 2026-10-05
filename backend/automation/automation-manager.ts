@@ -8,6 +8,7 @@ import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
 import { ValidationError } from "../util-server";
 import { BackupManager } from "../watchers/backup-manager";
+import { trackDockerBuild } from "../docker-operation-state";
 
 export const STACK_ACTIONS = [
     "start",
@@ -496,8 +497,10 @@ export class AutomationManager {
             if (buildServices.length === 0) {
                 throw new ValidationError("This stack has no service with a build configuration");
             }
-            await run("build", "--pull", ...buildServices);
-            await run("up", "-d", "--remove-orphans");
+            await trackDockerBuild(async () => {
+                await run("build", "--pull", ...buildServices);
+                await run("up", "-d", "--remove-orphans");
+            });
         } else {
             await stack.updateStatus();
             const wasRunning = stack.status === RUNNING;

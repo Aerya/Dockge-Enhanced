@@ -18,6 +18,7 @@ import { KulaManager } from "./watchers/kula-manager";
 import { DozzleManager } from "./watchers/dozzle-manager";
 import { PlugNPiNManager } from "./integrations/plugnpin-manager";
 import { AutoPruneManager } from "./watchers/auto-prune-manager";
+import { DockerCleanupManager } from "./docker-prune-service";
 import { SelfUpdateChecker } from "./watchers/self-update-checker";
 import { SelfUpdateManager } from "./self-update/manager";
 import { StackScheduler } from "./watchers/stack-scheduler";
@@ -616,6 +617,7 @@ export class DockgeServer {
             KulaManager.getInstance().startIfEnabled().catch(e => log.error("server", "KulaManager start error: " + e));
             PlugNPiNManager.getInstance().startIfEnabled().catch(e => log.error("server", "PlugNPiN start error: " + e));
             AutoPruneManager.getInstance().startIfEnabled().catch(e => log.error("server", "AutoPruneManager start error: " + e));
+            DockerCleanupManager.getInstance().start().catch(e => log.error("server", "DockerCleanupManager start error: " + e));
             StackScheduler.getInstance().start(this).catch(e => log.error("server", "StackScheduler start error: " + e));
             StackReplicationManager.getInstance().start(this).catch(e => log.error("server", "StackReplication start error: " + e));
             StartGuardWatcher.getInstance().start(this).catch(e => log.error("server", "StartGuardWatcher start error: " + e));
