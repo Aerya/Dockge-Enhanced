@@ -88,11 +88,17 @@ export class MonitoringRouter extends Router {
                     return;
                 }
                 if (partial.historyPreset !== undefined && ![ "24h", "7d", "1m", "custom" ].includes(partial.historyPreset)) {
-                    res.status(400).json({ ok: false, message: "historyPreset invalide" });
+                    res.status(400).json({
+                        ok: false,
+                        message: "historyPreset invalide",
+                    });
                     return;
                 }
                 if (partial.historyUnit !== undefined && ![ "days", "weeks", "months", "years" ].includes(partial.historyUnit)) {
-                    res.status(400).json({ ok: false, message: "historyUnit invalide" });
+                    res.status(400).json({
+                        ok: false,
+                        message: "historyUnit invalide",
+                    });
                     return;
                 }
                 if (partial.historyAmount !== undefined) {
@@ -105,7 +111,10 @@ export class MonitoringRouter extends Router {
                         years: 10,
                     };
                     if (!Number.isSafeInteger(amount) || amount < 1 || amount > maximums[unit]) {
-                        res.status(400).json({ ok: false, message: "historyAmount invalide" });
+                        res.status(400).json({
+                            ok: false,
+                            message: "historyAmount invalide",
+                        });
                         return;
                     }
                 }

@@ -131,9 +131,7 @@
                 </div>
                 <div class="history-controls mb-3">
                     <div class="history-preset-group" role="group" :aria-label="$t('watcher.monitoring.historyPeriod')">
-                        <button v-for="preset in historyPresetOptions" :key="preset.value" type="button"
-                            class="btn btn-sm history-preset-btn" :class="{ active: historyPreset === preset.value }"
-                            @click="selectHistoryPreset(preset.value)">
+                        <button v-for="preset in historyPresetOptions" :key="preset.value" type="button" class="btn btn-sm history-preset-btn" :class="{ active: historyPreset === preset.value }" @click="selectHistoryPreset(preset.value)">
                             {{ $t(preset.label) }}
                         </button>
                     </div>
@@ -141,10 +139,10 @@
                         <div class="history-custom-range">
                             <input v-model.number="historyAmount" class="form-control form-control-sm" type="number" min="1" @change="loadHistory" />
                             <select v-model="historyUnit" class="form-select form-select-sm" @change="loadHistory">
-                            <option value="days">{{ $t('watcher.monitoring.historyDays') }}</option>
-                            <option value="weeks">{{ $t('watcher.monitoring.historyWeeks') }}</option>
-                            <option value="months">{{ $t('watcher.monitoring.historyMonths') }}</option>
-                            <option value="years">{{ $t('watcher.monitoring.historyYears') }}</option>
+                                <option value="days">{{ $t('watcher.monitoring.historyDays') }}</option>
+                                <option value="weeks">{{ $t('watcher.monitoring.historyWeeks') }}</option>
+                                <option value="months">{{ $t('watcher.monitoring.historyMonths') }}</option>
+                                <option value="years">{{ $t('watcher.monitoring.historyYears') }}</option>
                             </select>
                         </div>
                     </template>
@@ -812,6 +810,12 @@ interface MonitoringHistoryPoint {
     ramTotal: number;
 }
 
+interface HistoryTimeTick {
+    timestamp: number;
+    x: number;
+    label: string;
+}
+
 interface Overview {
     backup: { lastTimestamp: string | null; ageMinutes: number | null; success: boolean | null };
     images: { pendingCount: number; pendingImages: { image: string; stack: string }[] };
@@ -901,19 +905,33 @@ const historyUnit = ref<"days" | "weeks" | "months" | "years">("days");
 const historyLoading = ref(false);
 const savingHistoryPrefs = ref(false);
 const historyPoints = ref<MonitoringHistoryPoint[]>([]);
-const historyStats = ref({ cpuAverage: 0,
+const historyStats = ref({
+    cpuAverage: 0,
     cpuMax: 0,
     ramAverage: 0,
-    ramMax: 0 });
+    ramMax: 0,
+});
 const historyFrom = ref(0);
 const historyTo = ref(1);
 const historyBucketSeconds = ref(300);
 
 const historyPresetOptions = [
-    { value: "24h" as const, label: "watcher.monitoring.history24h" },
-    { value: "7d" as const, label: "watcher.monitoring.history7d" },
-    { value: "1m" as const, label: "watcher.monitoring.history1m" },
-    { value: "custom" as const, label: "watcher.monitoring.historyCustom" },
+    {
+        value: "24h" as const,
+        label: "watcher.monitoring.history24h",
+    },
+    {
+        value: "7d" as const,
+        label: "watcher.monitoring.history7d",
+    },
+    {
+        value: "1m" as const,
+        label: "watcher.monitoring.history1m",
+    },
+    {
+        value: "custom" as const,
+        label: "watcher.monitoring.historyCustom",
+    },
 ];
 
 const historyChart = {
@@ -943,15 +961,24 @@ const historyTimeTicks = computed(() => {
     const from = historyFrom.value;
     const to = historyTo.value;
     if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) {
-        return [] as Array<{ timestamp: number; x: number; label: string }>;
+        return [] as HistoryTimeTick[];
     }
     const duration = to - from;
     const formatter = duration <= 48 * 3_600_000
-        ? new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" })
+        ? new Intl.DateTimeFormat(undefined, {
+            hour: "2-digit",
+            minute: "2-digit",
+        })
         : duration <= 45 * 86_400_000
-            ? new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short" })
+            ? new Intl.DateTimeFormat(undefined, {
+                day: "2-digit",
+                month: "short",
+            })
             : duration <= 400 * 86_400_000
-                ? new Intl.DateTimeFormat(undefined, { month: "short", year: "2-digit" })
+                ? new Intl.DateTimeFormat(undefined, {
+                    month: "short",
+                    year: "2-digit",
+                })
                 : new Intl.DateTimeFormat(undefined, { year: "numeric" });
     return [ 0, 0.25, 0.5, 0.75, 1 ].map(ratio => {
         const timestamp = from + duration * ratio;
