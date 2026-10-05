@@ -10,6 +10,7 @@
                 <div class="col-md-7">
                     <!-- Stats -->
                     <div class="shadow-box big-padding text-center mb-4">
+                        <h2 class="overview-title">{{ $t("home.overview.stacks") }}</h2>
                         <div class="row">
                             <div class="col">
                                 <h3>{{ $tc("home.stackState.active", activeNum) }}</h3>
@@ -30,13 +31,34 @@
                         </div>
                     </div>
 
+                    <div class="shadow-box big-padding text-center mb-4">
+                        <h2 class="overview-title">{{ $t("home.overview.containers") }}</h2>
+                        <div v-if="containerCountsKnown" class="row">
+                            <div class="col">
+                                <h3>{{ $t("home.containerState.running") }}</h3>
+                                <span class="num active">{{ containerCounts.running }}</span>
+                            </div>
+                            <div class="col">
+                                <h3>{{ $t("home.containerState.stopped") }}</h3>
+                                <span class="num exited">{{ containerCounts.stopped }}</span>
+                            </div>
+                            <div v-if="containerCounts.paused > 0" class="col">
+                                <h3>{{ $t("home.containerState.paused") }}</h3>
+                                <span class="num inactive">{{ containerCounts.paused }}</span>
+                            </div>
+                        </div>
+                        <div v-else class="text-muted">{{ $t("home.containerState.unavailable") }}</div>
+                    </div>
+
                     <!-- Summary Cards -->
                     <div v-if="hasSummaryCards" class="row g-3 mb-4">
                         <!-- Image Updates -->
                         <div v-if="summary.images !== null" class="col-6">
-                            <div class="shadow-box summary-card" :class="summary.images.state" role="button" tabindex="0"
-                                 @click="$router.push('/watcher?tab=images')"
-                                 @keyup.enter="$router.push('/watcher?tab=images')">
+                            <div
+                                class="shadow-box summary-card" :class="summary.images.state" role="button" tabindex="0"
+                                @click="$router.push('/watcher?tab=images')"
+                                @keyup.enter="$router.push('/watcher?tab=images')"
+                            >
                                 <font-awesome-icon icon="sync-alt" class="summary-icon" />
                                 <div class="summary-value" :class="{ text: summary.images.state !== 'warn' }">
                                     <template v-if="summary.images.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
@@ -49,9 +71,11 @@
 
                         <!-- Backup Status -->
                         <div v-if="summary.backup !== null" class="col-6">
-                            <div class="shadow-box summary-card" :class="summary.backup.state" role="button" tabindex="0"
-                                 @click="$router.push('/watcher?tab=backup')"
-                                 @keyup.enter="$router.push('/watcher?tab=backup')">
+                            <div
+                                class="shadow-box summary-card" :class="summary.backup.state" role="button" tabindex="0"
+                                @click="$router.push('/watcher?tab=backup')"
+                                @keyup.enter="$router.push('/watcher?tab=backup')"
+                            >
                                 <font-awesome-icon icon="database" class="summary-icon" />
                                 <div class="summary-value text">
                                     <template v-if="summary.backup.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
@@ -64,9 +88,11 @@
 
                         <!-- Crash-loop / Unhealthy Containers -->
                         <div v-if="summary.containers !== null" class="col-6">
-                            <div class="shadow-box summary-card" :class="summary.containers.state" role="button" tabindex="0"
-                                 @click="$router.push('/watcher?tab=monitoring')"
-                                 @keyup.enter="$router.push('/watcher?tab=monitoring')">
+                            <div
+                                class="shadow-box summary-card" :class="summary.containers.state" role="button" tabindex="0"
+                                @click="$router.push('/watcher?tab=monitoring')"
+                                @keyup.enter="$router.push('/watcher?tab=monitoring')"
+                            >
                                 <font-awesome-icon icon="heartbeat" class="summary-icon" />
                                 <div class="summary-value" :class="{ text: summary.containers.state !== 'danger' }">
                                     <template v-if="summary.containers.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
@@ -79,9 +105,11 @@
 
                         <!-- Trivy Security Scan -->
                         <div v-if="summary.trivy !== null" class="col-6">
-                            <div class="shadow-box summary-card" :class="summary.trivy.state" role="button" tabindex="0"
-                                 @click="$router.push('/watcher?tab=trivy')"
-                                 @keyup.enter="$router.push('/watcher?tab=trivy')">
+                            <div
+                                class="shadow-box summary-card" :class="summary.trivy.state" role="button" tabindex="0"
+                                @click="$router.push('/watcher?tab=trivy')"
+                                @keyup.enter="$router.push('/watcher?tab=trivy')"
+                            >
                                 <font-awesome-icon icon="shield-alt" class="summary-icon" />
                                 <div class="summary-value" :class="{ text: summary.trivy.state !== 'danger' }">
                                     <template v-if="summary.trivy.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
@@ -325,6 +353,7 @@ export default {
             instancePins: {},
             selectedOverviewEndpoint: null,
             instanceOverviewTimer: null,
+            instanceContainerCounts: {},
             summary: {
                 images: null,
                 backup: null,
@@ -359,11 +388,30 @@ export default {
                 || this.summary.containers !== null
                 || this.summary.trivy !== null;
         },
+        containerCounts() {
+            const counts = {
+                running: 0,
+                stopped: 0,
+                paused: 0,
+            };
+            for (const [ endpoint, value ] of Object.entries(this.instanceContainerCounts)) {
+                if (this.$root.agentStatusList?.[endpoint] !== "online" || !value) {
+                    continue;
+                }
+                for (const state of Object.keys(counts)) {
+                    counts[state] += value[state] || 0;
+                }
+            }
+            return counts;
+        },
+        containerCountsKnown() {
+            return Object.entries(this.instanceContainerCounts).some(([ endpoint, value ]) => this.$root.agentStatusList?.[endpoint] === "online" && value);
+        },
         agentOverviewList() {
             return Object.entries(this.$root.agentList || {});
         },
         onlineAgentCount() {
-            return this.agentOverviewList.filter(([endpoint]) => this.$root.agentStatusList?.[endpoint] === "online").length;
+            return this.agentOverviewList.filter(([ endpoint ]) => this.$root.agentStatusList?.[endpoint] === "online").length;
         },
     },
 
@@ -409,19 +457,28 @@ export default {
     methods: {
 
         instanceOverview(endpoint) {
-            const overview = { total: 0, active: 0, stopped: 0, inactive: 0,
+            const overview = { total: 0,
+                active: 0,
+                stopped: 0,
+                inactive: 0,
                 paused: 0 };
             for (const stack of Object.values(this.$root.completeStackList || {})) {
-                if ((stack.endpoint || "") !== endpoint) continue;
+                if ((stack.endpoint || "") !== endpoint) {
+                    continue;
+                }
                 overview.total += 1;
                 const status = statusNameShort(stack.status);
                 if (status === "paused") {
                     overview.paused += 1;
                     continue;
                 }
-                if (status === "active") overview.active += 1;
-                else if (status === "exited") overview.stopped += 1;
-                else overview.inactive += 1;
+                if (status === "active") {
+                    overview.active += 1;
+                } else if (status === "exited") {
+                    overview.stopped += 1;
+                } else {
+                    overview.inactive += 1;
+                }
             }
             return overview;
         },
@@ -431,7 +488,8 @@ export default {
             const index = Math.max(0, endpoints.indexOf(endpoint)) % 8;
             const light = [ "#1d4ed8", "#047857", "#b45309", "#7e22ce", "#be123c", "#0e7490", "#4d7c0f", "#c2410c" ];
             const dark = [ "#60a5fa", "#34d399", "#fbbf24", "#c084fc", "#fb7185", "#22d3ee", "#a3e635", "#fb923c" ];
-            return { "--instance-color": light[index], "--instance-color-dark": dark[index] };
+            return { "--instance-color": light[index],
+                "--instance-color-dark": dark[index] };
         },
 
         selectInstanceStacks(endpoint) {
@@ -444,10 +502,14 @@ export default {
             return new Promise((resolve) => {
                 let settled = false;
                 const timer = window.setTimeout(() => {
-                    if (!settled) { settled = true; resolve(null); }
+                    if (!settled) {
+                        settled = true; resolve(null);
+                    }
                 }, 8000);
                 this.$root.emitAgent(endpoint, eventName, (response) => {
-                    if (settled) return;
+                    if (settled) {
+                        return;
+                    }
                     settled = true;
                     window.clearTimeout(timer);
                     resolve(response?.ok ? response : null);
@@ -458,20 +520,39 @@ export default {
         async refreshInstanceOverviews() {
             const endpoints = Object.keys(this.$root.agentList || {});
             const results = await Promise.all(endpoints.map(async (endpoint) => {
-                const [stats, pins] = await Promise.all([
+                const [ stats, pins, containers ] = await Promise.all([
                     this.requestInstanceAgent(endpoint, "instanceSystemStatsGet"),
                     this.requestInstanceAgent(endpoint, "stackPinsGet"),
+                    this.requestInstanceAgent(endpoint, "instanceContainerCountsGet"),
                 ]);
-                return { endpoint, stats, pins };
+                return { endpoint,
+                    stats,
+                    pins,
+                    containers };
             }));
-            for (const { endpoint, stats, pins } of results) {
-                if (stats) this.instanceSystemStats = { ...this.instanceSystemStats, [endpoint]: stats };
-                if (pins && Array.isArray(pins.pinnedStacks)) this.instancePins = { ...this.instancePins, [endpoint]: pins.pinnedStacks };
+            for (const { endpoint, stats, pins, containers } of results) {
+                if (stats) {
+                    this.instanceSystemStats = { ...this.instanceSystemStats,
+                        [endpoint]: stats };
+                }
+                if (pins && Array.isArray(pins.pinnedStacks)) {
+                    this.instancePins = { ...this.instancePins,
+                        [endpoint]: pins.pinnedStacks };
+                }
+                if (containers?.data && Number.isFinite(containers.data.total)) {
+                    this.instanceContainerCounts = { ...this.instanceContainerCounts,
+                        [endpoint]: containers.data };
+                } else {
+                    this.instanceContainerCounts = { ...this.instanceContainerCounts,
+                        [endpoint]: null };
+                }
             }
         },
 
         formatInstanceRam(ram) {
-            if (!ram || !Number.isFinite(ram.used) || !Number.isFinite(ram.total) || ram.total <= 0) return "—";
+            if (!ram || !Number.isFinite(ram.used) || !Number.isFinite(ram.total) || ram.total <= 0) {
+                return "—";
+            }
             const gib = 1024 ** 3;
             const used = (ram.used / gib).toFixed(ram.used >= 10 * gib ? 0 : 1);
             const total = (ram.total / gib).toFixed(ram.total >= 10 * gib ? 0 : 1);
@@ -479,10 +560,14 @@ export default {
         },
 
         formatInstanceUptime(seconds) {
-            if (!Number.isFinite(seconds) || seconds < 0) return "—";
+            if (!Number.isFinite(seconds) || seconds < 0) {
+                return "—";
+            }
             const days = Math.floor(seconds / 86400);
             const hours = Math.floor((seconds % 86400) / 3600);
-            if (days > 0) return `${days} j ${hours} h`;
+            if (days > 0) {
+                return `${days} j ${hours} h`;
+            }
             const minutes = Math.floor((seconds % 3600) / 60);
             return `${hours} h ${minutes} min`;
         },
@@ -837,6 +922,14 @@ export default {
     &.exited {
         color: var(--danger);
     }
+}
+
+.overview-title {
+    margin-bottom: var(--space-3);
+    color: var(--text-muted);
+    font-size: var(--fs-base);
+    font-weight: 600;
+    text-align: left;
 }
 
 .shadow-box {

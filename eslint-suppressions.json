@@ -4,14 +4,6 @@
       "count": 2
     }
   },
-  "backend/agent-socket-handlers/docker-socket-handler.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 38
-    },
-    "curly": {
-      "count": 1
-    }
-  },
   "backend/agent-socket-handlers/stack-transfer-socket-handler.test.ts": {
     "@stylistic/object-property-newline": {
       "count": 5
@@ -954,17 +946,8 @@
     }
   },
   "frontend/src/pages/DashboardHome.vue": {
-    "@stylistic/brace-style": {
-      "count": 2
-    },
     "@stylistic/max-statements-per-line": {
       "count": 1
-    },
-    "@stylistic/object-property-newline": {
-      "count": 8
-    },
-    "curly": {
-      "count": 10
     }
   },
   "frontend/src/pages/DockerResources.vue": {
