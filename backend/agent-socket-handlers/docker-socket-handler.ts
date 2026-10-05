@@ -19,6 +19,7 @@ import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { runGlobalSearch, runGlobalSearchV2 } from "../global-search";
 import { assertNotSelfStack, assertStackPauseAllowed } from "../stack-pause-policy";
 import { resolveCurrentContainer } from "../current-container";
+import { getContainerCounts } from "../container-counts";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -27,7 +28,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
         agentSocket.on("globalSearch", async (query : unknown, limit : unknown, callback) => {
             try {
                 checkLogin(socket);
-                callbackResult({ ok: true, data: await runGlobalSearch(server, query, limit) }, callback);
+                callbackResult({ ok: true,
+                    data: await runGlobalSearch(server, query, limit) }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -42,12 +44,13 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     includeEnvValues?: unknown;
                     searchSnapshots?: unknown;
                 } : { query: payload };
-                callbackResult({ ok: true, data: await runGlobalSearchV2(server, {
-                    query: request.query,
-                    limit: request.limit,
-                    includeEnvValues: request.includeEnvValues,
-                    searchSnapshots: request.searchSnapshots,
-                }) }, callback);
+                callbackResult({ ok: true,
+                    data: await runGlobalSearchV2(server, {
+                        query: request.query,
+                        limit: request.limit,
+                        includeEnvValues: request.includeEnvValues,
+                        searchSnapshots: request.searchSnapshots,
+                    }) }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -56,7 +59,18 @@ export class DockerSocketHandler extends AgentSocketHandler {
         agentSocket.on("instanceSystemStatsGet", async (callback) => {
             try {
                 checkLogin(socket);
-                callbackResult({ ok: true, ...(await getSystemStatsSnapshot()) }, callback);
+                callbackResult({ ok: true,
+                    ...(await getSystemStatsSnapshot()) }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("instanceContainerCountsGet", async (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true,
+                    data: await getContainerCounts() }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -65,7 +79,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
         agentSocket.on("stackStatsGet", async (callback) => {
             try {
                 checkLogin(socket);
-                callbackResult({ ok: true, ...(await getStackStatsSnapshot()) }, callback);
+                callbackResult({ ok: true,
+                    ...(await getStackStatsSnapshot()) }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -143,7 +158,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
             try {
                 checkLogin(socket);
                 const stored = await Settings.get(STACK_PINS_SETTING_KEY);
-                callbackResult({ ok: true, pinnedStacks: normalizePinnedStacks(stored) }, callback);
+                callbackResult({ ok: true,
+                    pinnedStacks: normalizePinnedStacks(stored) }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -155,7 +171,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 const current = await Settings.get(STACK_PINS_SETTING_KEY);
                 const next = applyStackPin(current, name, pinned);
                 await Settings.set(STACK_PINS_SETTING_KEY, JSON.stringify(next), "general");
-                callbackResult({ ok: true, pinnedStacks: next }, callback);
+                callbackResult({ ok: true,
+                    pinnedStacks: next }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -218,7 +235,10 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 if (typeof(name) !== "string") {
                     throw new ValidationError("Name must be a string");
                 }
-                const opts = (options && typeof options === "object") ? options as { removeFiles?: boolean; force?: boolean; confirmExternalSourceDelete?: boolean; confirmExternalSourcePath?: string } : {};
+                const opts = (options && typeof options === "object") ? options as { removeFiles?: boolean;
+                    force?: boolean;
+                    confirmExternalSourceDelete?: boolean;
+                    confirmExternalSourcePath?: string } : {};
                 const stack = await Stack.getStack(server, name);
                 StartGuardWatcher.getInstance().cancelForManualAction(name);
 
@@ -248,7 +268,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 checkLogin(socket);
                 callbackResult({
                     ok: true,
-                    data: [...imageStatusStore.values()],
+                    data: [ ...imageStatusStore.values() ],
                 }, callback);
             } catch (e) {
                 callbackError(e, callback);
@@ -298,7 +318,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 if (mode === "off") {
                     delete autoUpdateConfig[key];
                     pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
-                    await watcher.saveSettings({ autoUpdateConfig, pendingAutoUpdates });
+                    await watcher.saveSettings({ autoUpdateConfig,
+                        pendingAutoUpdates });
                 } else {
                     pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
                     const existingPause = autoUpdateConfig[key]?.pause;
@@ -307,10 +328,14 @@ export class DockerSocketHandler extends AgentSocketHandler {
                         : normalizeUpdatePause(data.pause);
 
                     autoUpdateConfig[key] = mode === "scheduled"
-                        ? { mode, time: time ?? "02:00", pause: effectivePause }
-                        : { mode: mode as "immediate" | "ignored", pause: effectivePause };
+                        ? { mode,
+                            time: time ?? "02:00",
+                            pause: effectivePause }
+                        : { mode: mode as "immediate" | "ignored",
+                            pause: effectivePause };
 
-                    const patch: Partial<WatcherSettings> = { autoUpdateConfig, pendingAutoUpdates };
+                    const patch: Partial<WatcherSettings> = { autoUpdateConfig,
+                        pendingAutoUpdates };
                     if (!watcher.settings.enabled && mode !== "ignored") {
                         patch.enabled = true;
                     }
@@ -473,15 +498,21 @@ export class DockerSocketHandler extends AgentSocketHandler {
         agentSocket.on("importExternalStack", async (input: unknown, callback) => {
             try {
                 checkLogin(socket);
-                if (!input || typeof input !== "object") throw new ValidationError("Invalid external stack import");
-                const value = input as { name?: unknown; project?: unknown; composeFile?: unknown };
+                if (!input || typeof input !== "object") {
+                    throw new ValidationError("Invalid external stack import");
+                }
+                const value = input as { name?: unknown;
+                    project?: unknown;
+                    composeFile?: unknown };
                 if (typeof value.name !== "string" || typeof value.project !== "string" || typeof value.composeFile !== "string") {
                     throw new ValidationError("Invalid external stack import");
                 }
                 const stack = await server.externalStacks.import(value.name, value.project, value.composeFile);
-                await this.auditStack(socket, "stack.external-import", stack.name, "success", null, { project: stack.project, workingDir: stack.workingDir });
+                await this.auditStack(socket, "stack.external-import", stack.name, "success", null, { project: stack.project,
+                    workingDir: stack.workingDir });
                 server.sendStackList();
-                callbackResult({ ok: true, stack }, callback);
+                callbackResult({ ok: true,
+                    stack }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -490,7 +521,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
         agentSocket.on("getExternalStackAccessStatus", async (callback) => {
             try {
                 checkLogin(socket);
-                callbackResult({ ok: true, operation: await server.externalStackAccess.getOperation() }, callback);
+                callbackResult({ ok: true,
+                    operation: await server.externalStackAccess.getOperation() }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -512,7 +544,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     status: "success",
                     metadata: { requestedPath: operation.requestedPath },
                 });
-                callbackResult({ ok: true, operation }, callback);
+                callbackResult({ ok: true,
+                    operation }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -841,7 +874,10 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 const savedStartGuard = await stack.saveStartGuard(startGuard);
                 await this.auditStack(socket, "stack.start_guard.save", stackName, "success", null, { conditions: savedStartGuard.conditions.length });
                 server.sendStackList();
-                callbackResult({ ok: true, msg: "Saved", msgi18n: true, startGuard: savedStartGuard }, callback);
+                callbackResult({ ok: true,
+                    msg: "Saved",
+                    msgi18n: true,
+                    startGuard: savedStartGuard }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -884,7 +920,9 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 const affectedServices = await stack.serviceAction(socket, serviceName, action as "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate");
                 await this.auditStack(socket, `service.${action}`, `${stackName}/${serviceName}`, "success", null, { affectedServices });
                 server.sendStackList();
-                callbackResult({ ok: true, msg: "Service action completed", affectedServices }, callback);
+                callbackResult({ ok: true,
+                    msg: "Service action completed",
+                    affectedServices }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -1004,7 +1042,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     throw new ValidationError("Stack and service must be strings");
                 }
                 const mounts = await getVolumeMounts(server, stackName, service);
-                callbackResult({ ok: true, mounts }, callback);
+                callbackResult({ ok: true,
+                    mounts }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -1017,7 +1056,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     throw new ValidationError("Invalid parameters");
                 }
                 const entries = await listDir(server, stackName, service, dirPath);
-                callbackResult({ ok: true, entries }, callback);
+                callbackResult({ ok: true,
+                    entries }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -1030,7 +1070,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     throw new ValidationError("Invalid parameters");
                 }
                 const content = await readFile(server, stackName, service, filePath);
-                callbackResult({ ok: true, content }, callback);
+                callbackResult({ ok: true,
+                    content }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -1050,7 +1091,9 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     target: `${stackName}/${service}:${filePath}`,
                     status: "success",
                 });
-                callbackResult({ ok: true, msg: "Saved", msgi18n: true }, callback);
+                callbackResult({ ok: true,
+                    msg: "Saved",
+                    msgi18n: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -1071,7 +1114,9 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     target: `${stackName}/${service}:${dirPath}/${name}`,
                     status: "success",
                 });
-                callbackResult({ ok: true, msg: "Created", msgi18n: true }, callback);
+                callbackResult({ ok: true,
+                    msg: "Created",
+                    msgi18n: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -1091,7 +1136,9 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     target: `${stackName}/${service}:${targetPath} → ${newName}`,
                     status: "success",
                 });
-                callbackResult({ ok: true, msg: "Renamed", msgi18n: true }, callback);
+                callbackResult({ ok: true,
+                    msg: "Renamed",
+                    msgi18n: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -1111,7 +1158,9 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     target: `${stackName}/${service}:${targetPath}`,
                     status: "success",
                 });
-                callbackResult({ ok: true, msg: "Deleted", msgi18n: true }, callback);
+                callbackResult({ ok: true,
+                    msg: "Deleted",
+                    msgi18n: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -1131,7 +1180,9 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     target: `${stackName}/${service}:${dirPath}/${name}`,
                     status: "success",
                 });
-                callbackResult({ ok: true, msg: "Uploaded", msgi18n: true }, callback);
+                callbackResult({ ok: true,
+                    msg: "Uploaded",
+                    msgi18n: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
