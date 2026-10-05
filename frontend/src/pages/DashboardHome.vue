@@ -10,7 +10,7 @@
                 <div class="col-md-7">
                     <!-- Stats -->
                     <div class="shadow-box big-padding text-center mb-4">
-                        <h2 class="overview-title">{{ $t("home.overview.stacks") }}</h2>
+                        <h2 class="overview-title">{{ $t("home.overview.stacks") }}<span v-if="overviewAgentScope" class="ms-2">· {{ overviewAgentScope }}</span></h2>
                         <div class="row">
                             <div class="col">
                                 <h3>{{ $tc("home.stackState.active", activeNum) }}</h3>
@@ -32,7 +32,7 @@
                     </div>
 
                     <div class="shadow-box big-padding text-center mb-4">
-                        <h2 class="overview-title">{{ $t("home.overview.containers") }}</h2>
+                        <h2 class="overview-title">{{ $t("home.overview.containers") }}<span v-if="overviewAgentScope" class="ms-2">· {{ overviewAgentScope }}</span></h2>
                         <div v-if="containerCountsKnown" class="row">
                             <div class="col">
                                 <h3>{{ $t("home.containerState.running") }}</h3>
@@ -354,6 +354,7 @@ export default {
             selectedOverviewEndpoint: null,
             instanceOverviewTimer: null,
             instanceContainerCounts: {},
+            selectedAgentFilters: [],
             summary: {
                 images: null,
                 backup: null,
@@ -388,6 +389,15 @@ export default {
                 || this.summary.containers !== null
                 || this.summary.trivy !== null;
         },
+        overviewAgentScope() {
+            if (this.selectedAgentFilters.length === 0 || this.selectedAgentFilters.length === Object.keys(this.$root.agentList || {}).length) {
+                return "";
+            }
+            if (this.selectedAgentFilters.length === 1) {
+                return this.$root.endpointDisplayFunction(this.selectedAgentFilters[0]);
+            }
+            return this.$t("stackFilterSelectedInstances", [ this.selectedAgentFilters.length ]);
+        },
         containerCounts() {
             const counts = {
                 running: 0,
@@ -395,7 +405,7 @@ export default {
                 paused: 0,
             };
             for (const [ endpoint, value ] of Object.entries(this.instanceContainerCounts)) {
-                if (this.$root.agentStatusList?.[endpoint] !== "online" || !value) {
+                if (!this.isOverviewEndpointSelected(endpoint) || this.$root.agentStatusList?.[endpoint] !== "online" || !value) {
                     continue;
                 }
                 for (const state of Object.keys(counts)) {
@@ -405,7 +415,7 @@ export default {
             return counts;
         },
         containerCountsKnown() {
-            return Object.entries(this.instanceContainerCounts).some(([ endpoint, value ]) => this.$root.agentStatusList?.[endpoint] === "online" && value);
+            return Object.entries(this.instanceContainerCounts).some(([ endpoint, value ]) => this.isOverviewEndpointSelected(endpoint) && this.$root.agentStatusList?.[endpoint] === "online" && value);
         },
         agentOverviewList() {
             return Object.entries(this.$root.agentList || {});
@@ -428,6 +438,20 @@ export default {
     },
 
     mounted() {
+        try {
+            const saved = localStorage.getItem("stackAgentFilters");
+            const stored = saved === null ? null : JSON.parse(saved);
+            if (Array.isArray(stored)) {
+                this.selectedAgentFilters = stored.filter(endpoint => typeof endpoint === "string");
+            } else {
+                const legacy = localStorage.getItem("stackAgentFilter");
+                this.selectedAgentFilters = legacy && legacy !== "__all__" ? [ legacy ] : [];
+            }
+        } catch {
+            const legacy = localStorage.getItem("stackAgentFilter");
+            this.selectedAgentFilters = legacy && legacy !== "__all__" ? [ legacy ] : [];
+        }
+        window.addEventListener("dockge-stack-agent-filters-changed", this.updateOverviewAgentFilters);
         this.initialPerPage = this.perPage;
 
         this.$watch(() => this.$root.agentCount, (count) => {
@@ -447,6 +471,7 @@ export default {
     },
 
     beforeUnmount() {
+        window.removeEventListener("dockge-stack-agent-filters-changed", this.updateOverviewAgentFilters);
         window.removeEventListener("resize", this.updatePerPage);
         if (this.instanceOverviewTimer) {
             window.clearInterval(this.instanceOverviewTimer);
@@ -455,6 +480,17 @@ export default {
     },
 
     methods: {
+
+        updateOverviewAgentFilters(event) {
+            const endpoints = event?.detail?.endpoints;
+            this.selectedAgentFilters = Array.isArray(endpoints) ? endpoints.filter(endpoint => typeof endpoint === "string") : [];
+        },
+
+        isOverviewEndpointSelected(endpoint) {
+            return this.selectedAgentFilters.length === 0
+                || this.selectedAgentFilters.length === Object.keys(this.$root.agentList || {}).length
+                || this.selectedAgentFilters.includes(endpoint);
+        },
 
         instanceOverview(endpoint) {
             const overview = { total: 0,
@@ -821,6 +857,9 @@ export default {
 
             for (let stackName in this.$root.completeStackList) {
                 const stack = this.$root.completeStackList[stackName];
+                if (!this.isOverviewEndpointSelected(stack.endpoint || "")) {
+                    continue;
+                }
                 if (statusNameShort(stack.status) === statusName) {
                     num += 1;
                 }
