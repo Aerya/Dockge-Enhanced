@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-05 — 按服务排除状态与镜像更新** — 可视化 Compose 编辑器可添加 `dockge.status.ignore: "true"`，防止可选服务在部署后影响应用栈整体状态，同时保留其自身状态显示。`dockge.imageupdates.check: "false"` 可将服务排除在 ImageWatcher 检测以及自动或批量更新之外；多个服务共享镜像时，定向重建也会遵循该设置。仍可明确手动更新该服务。现有 mapping 或列表格式标签均会保留。功能灵感来自 [hamphh/dockge](https://github.com/hamphh/dockge)。
+
 **2026-10-03 — 可选的受限主机文件管理器** — 独立“文件”页面可浏览每个实例明确配置的主机目录，支持分块传输、编辑小型 UTF-8 文件及跟踪文件日志。它与 Stack 卷浏览器分离，默认关闭，并在关闭身份验证时拒绝文件操作。改编自 [Lorwell/dockge](https://github.com/Lorwell/dockge)。
 
 **2026-10-03 — 容器终端剪贴板** — 右键重新使用 xterm 的原生复制/粘贴菜单。浏览器粘贴事件会传递到终端；即使在剪贴板 API 不可用的本地 HTTP 地址上也能使用。

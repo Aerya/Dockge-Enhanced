@@ -19,6 +19,7 @@ import {
     RUNNING, TERMINAL_ROWS,
     UNKNOWN
 } from "../common/util-common";
+import { composeLabelIsTrue, LABEL_STATUS_IGNORE } from "../common/compose-labels";
 import { InteractiveTerminal, Terminal } from "./terminal";
 import childProcessAsync from "promisify-child-process";
 import { Settings } from "./settings";
@@ -45,6 +46,7 @@ interface ServiceStatusResult {
 interface ComposeProjectContainerState {
     status: string;
     exitCode?: number;
+    ignored?: boolean;
 }
 
 /** Ignore one-off Compose containers when resolving the health of a stack. */
@@ -53,9 +55,12 @@ export function resolveMixedComposeStatus(states: ComposeProjectContainerState[]
         return UNKNOWN;
     }
 
+    const includedStates = states.filter(state => !state.ignored);
+    const effectiveStates = includedStates.length > 0 ? includedStates : states;
+
     let running = false;
     let paused = false;
-    for (const state of states) {
+    for (const state of effectiveStates) {
         if (state.status === "running") {
             running = true;
         } else if (state.status === "paused") {
@@ -1083,8 +1088,31 @@ export class Stack {
             }
         }
 
+        let ignoredStatusProjects = new Set<string>();
+        try {
+            const ignoredResult = await childProcessAsync.spawn("docker", [
+                "ps", "-aq", "--filter", `label=${LABEL_STATUS_IGNORE}=true`,
+            ], { encoding: "utf-8" });
+            const ignoredIds = ignoredResult.stdout?.toString().trim().split("\n").filter(Boolean) ?? [];
+            if (ignoredIds.length > 0) {
+                const inspected = await childProcessAsync.spawn("docker", [ "inspect", ...ignoredIds ], { encoding: "utf-8" });
+                const containers: unknown = JSON.parse(inspected.stdout?.toString() ?? "null");
+                if (Array.isArray(containers)) {
+                    ignoredStatusProjects = new Set(containers
+                        .map(container => container?.Config?.Labels?.["com.docker.compose.project"])
+                        .filter((project): project is string => typeof project === "string" && Boolean(project)));
+                }
+            }
+        } catch (error) {
+            log.warn("getStatusList", `Could not discover ignored Compose services: ${error instanceof Error ? error.message : String(error)}`);
+        }
+
         for (let composeStack of composeList) {
-            const converted = await this.resolveComposeStatus(composeStack.Name, composeStack.Status);
+            const converted = await this.resolveComposeStatus(
+                composeStack.Name,
+                composeStack.Status,
+                ignoredStatusProjects.has(composeStack.Name),
+            );
             statusList.set(composeStack.Name, converted);
             if (server) {
                 const managedName = getManagedStackNameFromConfigFiles(composeStack.ConfigFiles, server.stacksDir);
@@ -1119,9 +1147,9 @@ export class Stack {
         }
     }
 
-    static async resolveComposeStatus(project: string, status: string): Promise<number> {
+    static async resolveComposeStatus(project: string, status: string, hasIgnoredServices = false): Promise<number> {
         const converted = this.statusConvert(status);
-        if ((converted !== RUNNING && converted !== PAUSED) || !status.toLowerCase().includes("exited")) {
+        if (!hasIgnoredServices && ((converted !== RUNNING && converted !== PAUSED) || !status.toLowerCase().includes("exited"))) {
             return converted;
         }
 
@@ -1152,6 +1180,7 @@ export class Stack {
                 states.push({
                     status: state.Status.toLowerCase(),
                     exitCode: state.ExitCode,
+                    ignored: composeLabelIsTrue(container?.Config?.Labels, LABEL_STATUS_IGNORE),
                 });
             }
             return resolveMixedComposeStatus(states);

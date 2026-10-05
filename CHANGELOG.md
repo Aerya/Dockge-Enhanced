@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-05 — Per-service status and image-update exclusions** — The visual Compose editor can add `dockge.status.ignore: "true"` to keep an optional service from degrading the overall stack status after deployment while retaining its own visible state. `dockge.imageupdates.check: "false"` excludes a service from ImageWatcher detection and automatic or batch updates, including targeted recreation when multiple services share an image. An explicit service update remains available. Existing mapping or list labels are preserved. Inspired by [hamphh/dockge](https://github.com/hamphh/dockge).
+
 **2026-10-03 — Stack display names** — Managed and adopted stacks can have a WebUI alias without changing their technical stack name, Compose project, backup selection or restore path. The technical name remains visible on the stack page, and the alias is kept in metadata backed up by Restic.
 
 **2026-10-03 — Real container view** — Compose services now list actual containers separately, including replicas. A dedicated view shows each container’s details, resource usage and recent logs, with start/stop/restart actions verified against the selected Compose project. Service-wide actions remain unchanged. Inspired by [Lorwell/dockge](https://github.com/Lorwell/dockge).

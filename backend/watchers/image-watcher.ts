@@ -46,6 +46,7 @@ import {
   parseResolvedComposeModel,
   targetedComposeRecreateArgs,
 } from "../compose-network-namespace";
+import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/compose-labels";
 
 const execFileAsync = promisify(execFile);
 
@@ -69,11 +70,18 @@ export function buildImageUpdateComposePlan(
   image: string,
 ): { services: string[]; recreateArgs: string[] } {
   const model = parseResolvedComposeModel(resolvedComposeOutput);
-  const services = findComposeServicesByImage(model, image);
+  const services = findComposeServicesByImage(
+    model,
+    image,
+    service => !composeLabelIsFalse(service.labels as Record<string, unknown> | unknown[] | undefined, LABEL_IMAGEUPDATES_CHECK),
+  );
   if (services.length === 0) {
     throw composeModelReadError(new Error(`image "${image}" is not used by a service in the resolved model`));
   }
-  return { services, recreateArgs: targetedComposeRecreateArgs(model, services) };
+  return {
+    services,
+    recreateArgs: targetedComposeRecreateArgs(model, services),
+  };
 }
 
 export function buildRollbackComposeRecreateArgs(
@@ -773,6 +781,30 @@ async function getLocalImageInfo(image: string): Promise<LocalImageInfo> {
 }
 
 /** Lit le YAML brut en repli lorsque Docker Compose ne peut pas résoudre la stack. */
+export function extractWatchableImagesFromComposeModel(model: { services?: unknown }): string[] {
+  if (!model?.services || typeof model.services !== "object" || Array.isArray(model.services)) {
+    return [];
+  }
+  const images: string[] = [];
+  for (const rawService of Object.values(model.services as Record<string, unknown>)) {
+    if (!rawService || typeof rawService !== "object" || Array.isArray(rawService)) {
+      continue;
+    }
+    const sourceService = rawService as Record<string, unknown>;
+    const merged = sourceService["<<"];
+    const service = merged && typeof merged === "object" && !Array.isArray(merged)
+      ? { ...(merged as Record<string, unknown>), ...sourceService }
+      : sourceService;
+    if (composeLabelIsFalse(service.labels as Record<string, unknown> | unknown[] | undefined, LABEL_IMAGEUPDATES_CHECK)) {
+      continue;
+    }
+    if (typeof service.image === "string" && service.image.trim()) {
+      images.push(service.image.trim());
+    }
+  }
+  return [ ...new Set(images) ];
+}
+
 function extractImagesFromComposeYaml(composePath: string): string[] {
   try {
     let raw = fsSync.readFileSync(composePath, "utf8");
@@ -791,27 +823,7 @@ function extractImagesFromComposeYaml(composePath: string): string[] {
     }
     raw = envsubstYAML(raw, { ...fileEnv, ...shellEnv });
     const doc = yaml.load(raw) as Record<string, unknown>;
-    if (!doc?.services) return [];
-    const images: string[] = [];
-    for (const svc of Object.values(doc.services as Record<string, unknown>)) {
-      if (!svc || typeof svc !== "object") continue;
-      const service = svc as Record<string, unknown>;
-      // Champ image direct
-      if (typeof service.image === "string" && service.image) {
-        images.push(service.image.trim());
-        continue;
-      }
-      // js-yaml v4 ne résout pas les ancres <<: (YAML merge keys) — elles apparaissent
-      // comme une clé littérale "<<" pointant vers l'objet fusionné. On inspecte ce niveau.
-      const mergeVal = service["<<"];
-      if (mergeVal && typeof mergeVal === "object") {
-        const merged = mergeVal as Record<string, unknown>;
-        if (typeof merged.image === "string" && merged.image) {
-          images.push(merged.image.trim());
-        }
-      }
-    }
-    return [...new Set(images)];
+    return extractWatchableImagesFromComposeModel(doc);
   } catch (err) {
     console.warn(
       `[ImageWatcher] extractImagesFromCompose: erreur lecture ${composePath}:`,
@@ -823,23 +835,17 @@ function extractImagesFromComposeYaml(composePath: string): string[] {
 
 /**
  * Retourne toutes les images du modèle Compose résolu, même si la stack est arrêtée.
- * `config --images` prend en charge les variables, ancres, extends et includes.
+ * `config --format json` prend en charge les variables, ancres, extends et includes,
+ * tout en conservant les labels nécessaires au filtrage par service.
  */
 async function extractImagesFromCompose(composePath: string, project?: string, configFiles?: string[], workingDir?: string, envFiles?: string[]): Promise<string[]> {
-  const configCommand = composeExecInvocation(composePath, [ "config", "--images" ], project, configFiles, workingDir, envFiles);
+  const configCommand = composeExecInvocation(composePath, [ "config", "--format", "json" ], project, configFiles, workingDir, envFiles);
   try {
     const stdout = await docker(configCommand.args, {
       cwd: configCommand.cwd,
       timeout: 30000,
     });
-    return [
-      ...new Set(
-        stdout
-          .split(/\r?\n/)
-          .map((image) => image.trim())
-          .filter(Boolean),
-      ),
-    ];
+    return extractWatchableImagesFromComposeModel(JSON.parse(stdout) as { services?: unknown });
   } catch (err) {
     console.warn(
       `[ImageWatcher] docker compose config --images a échoué pour ${composePath}, lecture YAML de repli:`,

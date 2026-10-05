@@ -516,15 +516,15 @@
   },
   "backend/watchers/image-watcher.test.ts": {
     "@stylistic/indent": {
-      "count": 138
+      "count": 139
     },
     "@stylistic/object-property-newline": {
-      "count": 11
+      "count": 13
     }
   },
   "backend/watchers/image-watcher.ts": {
     "@stylistic/indent": {
-      "count": 1456
+      "count": 1457
     },
     "@stylistic/object-property-newline": {
       "count": 38
@@ -536,7 +536,7 @@
       "count": 1
     },
     "curly": {
-      "count": 58
+      "count": 56
     }
   },
   "backend/watchers/kula-manager.ts": {

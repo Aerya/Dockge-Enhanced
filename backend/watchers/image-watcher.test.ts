@@ -16,6 +16,7 @@ import {
   registryRetryDelayMs,
   requestRegistryWithRetry,
   resolveAutomaticImageUpdateAction,
+  extractWatchableImagesFromComposeModel,
 } from "./image-watcher";
 import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
 
@@ -28,6 +29,42 @@ const sharedNamespaceCompose = JSON.stringify({
 });
 
 /* eslint-disable @stylistic/indent -- this watcher test uses two-space indentation */
+test("exclut du contrôle les services marqués dockge.imageupdates.check=false", () => {
+  const model = {
+    services: {
+      included: { image: "example/shared:latest" },
+      excluded: {
+        image: "example/shared:latest",
+        labels: { "dockge.imageupdates.check": "false" },
+      },
+      excludedList: {
+        image: "example/other:latest",
+        labels: [ "dockge.imageupdates.check=false", "custom=kept" ],
+      },
+    },
+  };
+  assert.deepEqual(extractWatchableImagesFromComposeModel(model), [ "example/shared:latest" ]);
+  assert.deepEqual(buildImageUpdateComposePlan(JSON.stringify(model), "example/shared:latest").services, [ "included" ]);
+  assert.throws(
+    () => buildImageUpdateComposePlan(JSON.stringify(model), "example/other:latest"),
+    /is not used by a service/,
+  );
+});
+
+test("respecte les labels hérités par ancre YAML lors du repli", () => {
+  assert.deepEqual(extractWatchableImagesFromComposeModel({
+    services: {
+      excluded: {
+        "<<": { image: "example/inherited:latest", labels: { "dockge.imageupdates.check": "false" } },
+      },
+      included: {
+        "<<": { image: "example/inherited:latest", labels: { "dockge.imageupdates.check": "false" } },
+        labels: { "dockge.imageupdates.check": "true" },
+      },
+    },
+  }), [ "example/inherited:latest" ]);
+});
+
 test("le lot manuel exclut l'auto-mise à jour et les images non applicables", () => {
   const status = {
     image: "nginx:latest",

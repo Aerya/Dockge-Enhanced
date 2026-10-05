@@ -1,5 +1,6 @@
 export interface ResolvedComposeService {
     image?: unknown;
+    labels?: unknown;
     network_mode?: unknown;
     container_name?: unknown;
 }
@@ -30,10 +31,14 @@ export function parseResolvedComposeModel(output: string): ResolvedComposeModel 
     }
 }
 
-export function findComposeServicesByImage(model: ResolvedComposeModel, image: string): string[] {
+export function findComposeServicesByImage(
+    model: ResolvedComposeModel,
+    image: string,
+    predicate: (service: ResolvedComposeService) => boolean = () => true,
+): string[] {
     const expected = image.trim();
     return Object.entries(model.services)
-        .filter(([ , service ]) => typeof service.image === "string" && service.image.trim() === expected)
+        .filter(([ , service ]) => typeof service.image === "string" && service.image.trim() === expected && predicate(service))
         .map(([ name ]) => name)
         .sort();
 }
