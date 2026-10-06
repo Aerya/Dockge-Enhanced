@@ -21,7 +21,12 @@
     "fileManagerAuthRequired": "Le gestionnaire de fichiers hôte nécessite une authentification ; il est indisponible lorsque celle-ci est désactivée.",
     "fileManagerUnavailable": "Le gestionnaire de fichiers est indisponible sur cette instance. Vérifiez sa connexion et mettez-la à jour si nécessaire.",
     "releaseNews.item.restrictedHostFiles": "Une page Fichiers facultative gère un dossier hôte explicitement monté par instance : transferts par morceaux, édition UTF-8 et suivi de journaux en fichiers. Elle reste désactivée sans DOCKGE_FILE_MANAGER_ROOT.",
-    "fileType": {"directory":"Dossier","file":"Fichier","symlink":"Lien symbolique","other":"Autre"},
+    "fileType": {
+        "directory": "Dossier",
+        "file": "Fichier",
+        "symlink": "Lien symbolique",
+        "other": "Autre"
+    },
     "fileManagerRestrictedHint": "Seuls les fichiers du dossier autorisé sur cette instance sont accessibles.",
     "fileManagerDisabled": "Le gestionnaire de fichiers n’est pas configuré sur cette instance",
     "fileManagerDisabledHint": "Montez un dossier et définissez DOCKGE_FILE_MANAGER_ROOT pour l’activer.",
@@ -832,6 +837,7 @@
     "watcher.status.autoUpdate": "Màj auto",
     "watcher.status.autoUpdateHint": "Choisissez si la mise à jour doit être appliquée immédiatement ou à une heure planifiée.",
     "watcher.status.autoUpdateSaved": "✅ Màj automatique configurée",
+    "watcher.status.autoUpdateImmediateStarted": "✅ Màj automatique configurée · vérification de cette image maintenant…",
     "watcher.status.auOff": "Manuelle",
     "watcher.status.auIgnored": "Ignorer",
     "watcher.rollback.col": "Rollback (24h)",
@@ -1866,5 +1872,6 @@
     "releaseNews.item.composeYamlFormatter": "L’éditeur compose.yaml dispose désormais d’une action Corriger / formater YAML : elle répare les erreurs d’indentation Compose courantes, valide le résultat, puis normalise à 2 espaces en conservant commentaires et permissions tmpfs. Si la réparation reste ambiguë, le contenu original n’est pas réécrit.",
     "releaseNews.item.autoPruneReliability": "La purge planifiée ne saute plus le créneau suivant à cause de quelques secondes de décalage. Les anciennes images Enhanced peuvent être supprimées au prochain nettoyage au moins 48 h après un self-update réussi ; les images actives et de récupération restent protégées.",
     "releaseNews.item.unifiedDockerCleanup": "Le nettoyage Docker utilise un inventaire commun par Image ID pour Images, l’aperçu Nettoyage et les purges. Le délai de grâce s’applique aussi au nettoyage manuel, les tags d’une même image ne comptent qu’une fois et une image déjà disparue pendant la purge n’est plus considérée comme une erreur. Les images de rollback/récupération restent protégées dans tous les modes de suppression.",
-    "releaseNews.item.monitoringHistory": "Monitoring peut enregistrer en option un échantillon léger du CPU et de la RAM hôte toutes les 5 minutes. Le graphique responsive sur 24 h, 7 jours, 1 mois ou une plage personnalisée est agrégé côté serveur, mémorise la période d’affichage enregistrée et laisse les arrêts visibles sous forme de trous."
+    "releaseNews.item.monitoringHistory": "Monitoring peut enregistrer en option un échantillon léger du CPU et de la RAM hôte toutes les 5 minutes. Le graphique responsive sur 24 h, 7 jours, 1 mois ou une plage personnalisée est agrégé côté serveur, mémorise la période d’affichage enregistrée et laisse les arrêts visibles sous forme de trous.",
+    "releaseNews.item.stackDailyOpsPolish": "Les opérations de stack sont plus fluides : les bind mounts de dossiers manquants peuvent être préparés sur l’hôte, le mode Immédiat lance aussitôt un contrôle ciblé, les redémarrages réussis rechargent leur état réel et l’historique CPU/RAM adopte un graphique plus compact inspiré de PowerWatch."
 }

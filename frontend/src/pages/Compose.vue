@@ -2175,7 +2175,9 @@ export default {
             this.autoUpdateSaving[serviceName] = false;
             this.$root.toastRes({
                 ok: result.ok,
-                msg: result.ok ? this.$t("watcher.status.autoUpdateSaved") : result.message,
+                msg: result.ok
+                    ? this.$t(mode === "immediate" ? "watcher.status.autoUpdateImmediateStarted" : "watcher.status.autoUpdateSaved")
+                    : result.message,
             });
         },
 
@@ -2359,7 +2361,8 @@ export default {
                 this.processing = false;
                 this.$root.toastRes(res);
                 if (res.ok) {
-                    this.refreshSelectedLogTerminal();
+                    this.showProgressTerminal = false;
+                    this.loadStack();
                 }
             });
         },

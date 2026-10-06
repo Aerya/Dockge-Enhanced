@@ -599,3 +599,9 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 ## 许可证
 
 MIT — 参见 [LICENSE](LICENSE)。
+
+**日常 Stack 操作**
+
+在启动、部署或重建前，如果绝对 bind mount 明确指向目录，Enhanced 现在会自动准备缺失的主机目录。这对 Synology NAS 尤其有用，因为 Docker 会拒绝尚不存在的 bind 源。疑似文件的 bind 源不会被自动创建为目录。镜像的 **立即** 自动更新模式在保存后会立刻执行针对该镜像的检查。Stack 重启成功后，Enhanced 还会重新读取真实状态并隐藏已经过期的 Compose 进度输出。
+
+CPU/RAM 历史仍会保留真实采样空档，但图表更紧凑，采用 PowerWatch 风格的轻量网格和柔和填充。

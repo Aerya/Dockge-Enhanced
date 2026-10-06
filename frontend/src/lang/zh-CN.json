@@ -37,7 +37,12 @@
     "size": "大小",
     "modifiedAt": "修改时间",
     "actions": "操作",
-    "fileType": {"directory":"文件夹","file":"文件","symlink":"符号链接","other":"其他"},
+    "fileType": {
+        "directory": "文件夹",
+        "file": "文件",
+        "symlink": "符号链接",
+        "other": "其他"
+    },
     "download": "下载",
     "move": "移动",
     "destinationDirectory": "目标目录",
@@ -1167,6 +1172,7 @@
     "watcher.status.autoUpdate": "自动更新",
     "watcher.status.autoUpdateHint": "选择更新是立即应用还是在计划的时间应用。",
     "watcher.status.autoUpdateSaved": "✅ 自动更新已配置",
+    "watcher.status.autoUpdateImmediateStarted": "✅ 自动更新已配置 · 正在立即检查此镜像…",
     "watcher.status.checkedAt": "检查时间",
     "watcher.status.clearIgnored": "恢复跟踪",
     "watcher.status.clearIgnoredDone": "✅ 已恢复跟踪",
@@ -1807,5 +1813,6 @@
     "releaseNews.item.composeYamlFormatter": "compose.yaml 编辑器现在提供“修复 / 格式化 YAML”操作：可修复常见的 Compose 缩进错误，验证结果后统一为 2 个空格缩进，并保留注释与 tmpfs 权限；若无法安全判断修复方式，则保持原内容不变。",
     "releaseNews.item.autoPruneReliability": "定时清理不会再因几秒钟的偏差而跳过下一个计划时段。成功自更新至少 48 小时后，可在下一次清理中删除旧版 Enhanced 镜像，当前镜像和恢复镜像仍受保护。",
     "releaseNews.item.unifiedDockerCleanup": "Docker 清理在镜像页、清理预览和清理任务中统一按 Image ID 统计。宽限期现在同样适用于手动清理，同一物理镜像的多个标签只计一次；清理过程中已经消失的镜像不再被视为错误。回滚/恢复镜像在所有删除模式下仍始终受到保护。",
-    "releaseNews.item.monitoringHistory": "Monitoring 可选择每 5 分钟记录一次轻量级主机 CPU 和 RAM 样本。24 小时、7 天、1 个月或自定义范围的响应式图表会在服务端降采样，记住所保存的显示周期，并以空档显示停机时间。"
+    "releaseNews.item.monitoringHistory": "Monitoring 可选择每 5 分钟记录一次轻量级主机 CPU 和 RAM 样本。24 小时、7 天、1 个月或自定义范围的响应式图表会在服务端降采样，记住所保存的显示周期，并以空档显示停机时间。",
+    "releaseNews.item.stackDailyOpsPolish": "Stack 日常操作更加顺畅：可在主机上自动准备缺失的目录 bind mount，“立即”模式会立刻执行针对性镜像检查，重启成功后会刷新真实状态，CPU/RAM 历史图也采用更紧凑的 PowerWatch 风格。"
 }

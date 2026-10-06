@@ -33,7 +33,12 @@
     "size": "大小",
     "modifiedAt": "修改時間",
     "actions": "操作",
-    "fileType": {"directory":"資料夾","file":"檔案","symlink":"符號連結","other":"其他"},
+    "fileType": {
+        "directory": "資料夾",
+        "file": "檔案",
+        "symlink": "符號連結",
+        "other": "其他"
+    },
     "download": "下載",
     "move": "移動",
     "destinationDirectory": "目標目錄",
@@ -787,6 +792,7 @@
     "watcher.status.autoUpdate": "自動更新",
     "watcher.status.autoUpdateHint": "選擇更新是立即應用還是在排程的時間應用。",
     "watcher.status.autoUpdateSaved": "✅ 自動更新已設定",
+    "watcher.status.autoUpdateImmediateStarted": "✅ 自動更新已設定 · 正在立即檢查此映像…",
     "watcher.status.auOff": "手動",
     "watcher.status.auIgnored": "忽略",
     "watcher.rollback.col": "復原（24 小時）",
@@ -1746,5 +1752,6 @@
     "externalStacks.cleanup.succeeded": "外部 Stack 及其資源已刪除。",
     "externalStacks.cleanup.partial": "部分清理：{count} 個資源仍在使用或受保護，無法刪除。",
     "releaseNews.item.unifiedDockerCleanup": "Docker 清理在映像頁、清理預覽與清理工作中統一依 Image ID 計算。寬限期現在也套用到手動清理，同一個實體映像的多個標籤只計一次；清理過程中已經消失的映像不再視為錯誤。回滾/復原映像在所有刪除模式下仍持續受到保護。",
-    "releaseNews.item.monitoringHistory": "Monitoring 可選擇每 5 分鐘記錄一次輕量級主機 CPU 與 RAM 樣本。24 小時、7 天、1 個月或自訂範圍的響應式圖表會在伺服器端降採樣，記住所儲存的顯示期間，並以空白顯示停機時間。"
+    "releaseNews.item.monitoringHistory": "Monitoring 可選擇每 5 分鐘記錄一次輕量級主機 CPU 與 RAM 樣本。24 小時、7 天、1 個月或自訂範圍的響應式圖表會在伺服器端降採樣，記住所儲存的顯示期間，並以空白顯示停機時間。",
+    "releaseNews.item.stackDailyOpsPolish": "Stack 日常操作更加順暢：可在主機上自動準備缺少的目錄 bind mount，「立即」模式會立刻執行針對性映像檢查，重啟成功後會刷新真實狀態，CPU/RAM 歷史圖也採用更緊湊的 PowerWatch 風格。"
 }

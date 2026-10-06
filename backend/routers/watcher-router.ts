@@ -210,10 +210,16 @@ export class WatcherRouter extends Router {
                 // Active automatiquement le watcher si ce n'est pas déjà le cas
                 const patch: Partial<WatcherSettings> = { autoUpdateConfig, pendingAutoUpdates };
                 if (!watcher.settings.enabled && mode !== "ignored") patch.enabled = true;
-                await watcher.saveSettings(patch);
+                await watcher.saveSettings(patch, mode !== "immediate");
+                if (mode === "immediate") {
+                    watcher.runImmediateCheck(key).catch(error => console.error("[ImageWatcher] Contrôle immédiat ciblé échoué:", error));
+                }
             }
             await auditWatcherAction(req, "image.auto_update.configure", "image", key, "success", null, { mode, time: mode === "scheduled" ? time ?? "02:00" : undefined });
-            return res.json({ ok: true });
+            return res.json({
+                ok: true,
+                data: { immediateCheckStarted: mode === "immediate" },
+            });
         });
 
         router.post("/image/update-pause", async (req: Request, res: Response) => {

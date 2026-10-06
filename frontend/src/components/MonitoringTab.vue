@@ -156,14 +156,16 @@
                     <span class="history-stat-card"><i class="history-legend history-legend--ram"></i><strong>RAM</strong><span>{{ $t('watcher.monitoring.historyAverage') }} {{ historyStats.ramAverage.toFixed(1) }}%</span><span>{{ $t('watcher.monitoring.historyMaximum') }} {{ historyStats.ramMax.toFixed(1) }}%</span></span>
                 </div>
                 <div v-if="historyPoints.length" class="history-chart-wrap">
-                    <svg class="history-chart" viewBox="0 0 960 300" preserveAspectRatio="xMidYMid meet" role="img" :aria-label="$t('watcher.monitoring.historyChart')">
+                    <svg class="history-chart" viewBox="0 0 960 220" preserveAspectRatio="xMidYMid meet" role="img" :aria-label="$t('watcher.monitoring.historyChart')">
                         <rect :x="historyChart.left" :y="historyChart.top" :width="historyPlotWidth" :height="historyPlotHeight" class="history-plot-bg" />
                         <line v-for="value in historyYTicks" :key="value" :x1="historyChart.left" :x2="historyChart.width - historyChart.right" :y1="historyY(value)" :y2="historyY(value)" class="history-grid-line" />
                         <text v-for="value in historyYTicks" :key="`label-${value}`" :x="historyChart.left - 10" :y="historyY(value) + 4" text-anchor="end" class="history-axis-label">{{ value }}%</text>
                         <g v-for="tick in historyTimeTicks" :key="tick.timestamp">
                             <line :x1="tick.x" :x2="tick.x" :y1="historyChart.top" :y2="historyChart.height - historyChart.bottom" class="history-grid-line history-grid-line--vertical" />
-                            <text :x="tick.x" :y="historyChart.height - 10" text-anchor="middle" class="history-axis-label history-time-label">{{ tick.label }}</text>
+                            <text :x="tick.x" :y="historyChart.height - 8" text-anchor="middle" class="history-axis-label history-time-label">{{ tick.label }}</text>
                         </g>
+                        <polygon v-for="(segment, index) in cpuHistoryAreas" :key="`cpu-area-${index}`" :points="segment" class="history-area history-area--cpu" />
+                        <polygon v-for="(segment, index) in ramHistoryAreas" :key="`ram-area-${index}`" :points="segment" class="history-area history-area--ram" />
                         <polyline v-for="(segment, index) in cpuHistorySegments" :key="`cpu-${index}`" :points="segment" class="history-line history-line--cpu" />
                         <polyline v-for="(segment, index) in ramHistorySegments" :key="`ram-${index}`" :points="segment" class="history-line history-line--ram" />
                         <circle v-for="point in historyPoints" :key="`tip-${point.sampledAt}`" :cx="historyX(point.sampledAt)" :cy="historyY(point.cpuPercent)" r="7" class="history-hitpoint">
@@ -936,11 +938,11 @@ const historyPresetOptions = [
 
 const historyChart = {
     width: 960,
-    height: 300,
-    left: 54,
-    right: 20,
-    top: 18,
-    bottom: 42,
+    height: 220,
+    left: 52,
+    right: 16,
+    top: 12,
+    bottom: 32,
 } as const;
 const historyYTicks = [ 0, 25, 50, 75, 100 ];
 const historyPlotWidth = historyChart.width - historyChart.left - historyChart.right;
@@ -1011,8 +1013,23 @@ function historySegments(metric: "cpuPercent" | "ramPercent"): string[] {
     return segments.map(segment => segment.join(" "));
 }
 
+function historyAreas(segments: string[]): string[] {
+    const baseline = historyY(0);
+    return segments.map((segment) => {
+        const points = segment.split(" ").filter(Boolean);
+        if (points.length < 2) {
+            return segment;
+        }
+        const firstX = points[0].split(",")[0];
+        const lastX = points[points.length - 1].split(",")[0];
+        return `${firstX},${baseline} ${segment} ${lastX},${baseline}`;
+    });
+}
+
 const cpuHistorySegments = computed(() => historySegments("cpuPercent"));
 const ramHistorySegments = computed(() => historySegments("ramPercent"));
+const cpuHistoryAreas = computed(() => historyAreas(cpuHistorySegments.value));
+const ramHistoryAreas = computed(() => historyAreas(ramHistorySegments.value));
 
 function historyTooltip(point: MonitoringHistoryPoint): string {
     return `${new Date(point.sampledAt).toLocaleString()} · CPU ${point.cpuPercent.toFixed(1)}% · RAM ${point.ramPercent.toFixed(1)}%`;
@@ -1596,33 +1613,32 @@ onUnmounted(() => {
 .history-legend--ram { background: var(--success); }
 .history-chart-wrap {
     width: 100%;
-    min-height: 260px;
+    min-height: 190px;
     overflow: hidden;
-    border: 1px solid var(--border-color);
+    border: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent);
     border-radius: var(--radius-md);
-    background: color-mix(in srgb, var(--bg-raised) 92%, var(--bg-surface));
-    padding: .5rem;
+    background: color-mix(in srgb, var(--bg-raised) 96%, var(--bg-surface));
+    padding: .35rem .5rem .2rem;
 }
 .history-chart {
     display: block;
     width: 100%;
-    height: auto;
-    min-height: 260px;
-    aspect-ratio: 16 / 5;
+    height: clamp(190px, 18vw, 225px);
 }
 .history-plot-bg {
-    fill: color-mix(in srgb, var(--bg-surface) 48%, transparent);
-    stroke: var(--border-color);
-    stroke-width: 1;
-    vector-effect: non-scaling-stroke;
+    fill: color-mix(in srgb, var(--bg-surface) 34%, transparent);
+    stroke: none;
 }
-.history-grid-line { stroke: var(--border-color); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.history-grid-line--vertical { stroke-opacity: .55; }
-.history-axis-label { fill: var(--text-muted); font-size: 11px; }
-.history-time-label { font-size: 10px; }
+.history-grid-line { stroke: var(--border-color); stroke-width: 1; stroke-opacity: .45; vector-effect: non-scaling-stroke; }
+.history-grid-line--vertical { stroke-opacity: .16; }
+.history-axis-label { fill: var(--text-muted); font-size: 10px; }
+.history-time-label { font-size: 9.5px; }
+.history-area { stroke: none; pointer-events: none; }
+.history-area--cpu { fill: color-mix(in srgb, var(--primary) 12%, transparent); }
+.history-area--ram { fill: color-mix(in srgb, var(--success) 10%, transparent); }
 .history-line {
     fill: none;
-    stroke-width: 2.4;
+    stroke-width: 2.2;
     stroke-linecap: round;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
@@ -1640,7 +1656,7 @@ onUnmounted(() => {
     .history-custom-range .form-select { flex: 1 1 0; width: auto; min-width: 0; }
     .history-controls .btn-primary { width: 100%; margin-left: 0 !important; }
     .history-stat-card { width: 100%; }
-    .history-chart { min-height: 220px; }
+    .history-chart { height: 190px; }
 }
 
 .mc-icon { font-size: var(--fs-2xl); line-height: 1; flex-shrink: 0; padding-top: 2px; }
