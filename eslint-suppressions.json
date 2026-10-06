@@ -234,17 +234,11 @@
     }
   },
   "backend/self-update/manager.ts": {
-    "@stylistic/brace-style": {
-      "count": 16
-    },
     "@stylistic/indent": {
-      "count": 187
-    },
-    "@stylistic/max-statements-per-line": {
-      "count": 2
+      "count": 168
     },
     "@stylistic/object-property-newline": {
-      "count": 36
+      "count": 27
     },
     "curly": {
       "count": 34
@@ -470,7 +464,7 @@
       "count": 1
     },
     "curly": {
-      "count": 109
+      "count": 108
     },
     "no-async-promise-executor": {
       "count": 1
@@ -856,10 +850,10 @@
       "count": 2
     },
     "@stylistic/object-property-newline": {
-      "count": 33
+      "count": 25
     },
     "curly": {
-      "count": 21
+      "count": 20
     }
   },
   "frontend/src/components/watcher/shared.ts": {

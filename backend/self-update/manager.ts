@@ -9,14 +9,13 @@ import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { Settings } from "../settings";
 import { getNotificationLang, notificationText, type NotificationLang } from "../notification/notification-lang";
-import { SelfUpdateBlockerCode, SelfUpdateOperation, SelfUpdatePlan, SelfUpdateProgress, SelfUpdateSettings } from "./types";
+import { SelfUpdateBlockerCode, SelfUpdateOperation, SelfUpdatePlan, SelfUpdateProgress, SelfUpdateSettings, SelfUpdateStage, SelfUpdateStageTiming } from "./types";
 import { DEFAULT_SELF_UPDATE_SETTINGS, normalizeSelfUpdateSettings, selfUpdateMayRun, selfUpdateSettingsPath } from "./settings";
 import { isAllowedTargetImage, isPathInside, isSafeComposeName, isSelfUpdateActive, normalizeSelfRepository } from "./policy";
 import { atomicWriteFile, atomicWriteJson } from "./state-file";
 import { getSelfUpdateBlocker } from "./operation-guard";
 import { BLOCKER_MESSAGES, type SelfUpdateBlocker } from "./operation-guard-policy";
 import { classifySelfUpdateFailure } from "./failure-detail";
-import packageJSON from "../../package.json";
 import { log } from "../log";
 import { resolveCurrentContainer } from "../current-container";
 
@@ -96,9 +95,85 @@ export class SelfUpdateManager {
         this.startTerminalStatusWatch();
     }
 
-    getSettings(): SelfUpdateSettings { return JSON.parse(JSON.stringify(this.settings)); }
-    getOperation(): SelfUpdateOperation { return { ...this.operation }; }
-    getProgress(): SelfUpdateProgress | null { return this.progress ? { ...this.progress } : null; }
+    getSettings(): SelfUpdateSettings {
+        return JSON.parse(JSON.stringify(this.settings));
+    }
+    getOperation(): SelfUpdateOperation {
+        return { ...this.operation };
+    }
+    getProgress(): SelfUpdateProgress | null {
+        return this.progress ? { ...this.progress } : null;
+    }
+
+    private transitionStageHistory(stage: SelfUpdateStage, now: string): { history: SelfUpdateStageTiming[]; startedAt: string } {
+        const history = (this.operation.stageHistory ?? []).map(entry => ({ ...entry }));
+        let startedAt = this.operation.stageStartedAt ?? now;
+        if (this.operation.stage !== stage) {
+            const current = history[history.length - 1];
+            if (current && !current.finishedAt) {
+                current.finishedAt = now;
+            }
+            history.push({
+                stage,
+                startedAt: now,
+                finishedAt: null,
+            });
+            startedAt = now;
+        } else if (history.length === 0) {
+            history.push({
+                stage,
+                startedAt,
+                finishedAt: null,
+            });
+        }
+        return {
+            history,
+            startedAt,
+        };
+    }
+
+    private async setStage(
+        stage: SelfUpdateStage,
+        message: string,
+        state: SelfUpdateOperation["state"] = this.operation.state,
+    ): Promise<void> {
+        const now = new Date().toISOString();
+        const transition = this.transitionStageHistory(stage, now);
+        this.operation = {
+            ...this.operation,
+            state,
+            message,
+            stage,
+            stageStartedAt: transition.startedAt,
+            stageHistory: transition.history,
+        };
+        await this.saveOperation();
+    }
+
+    private completedStageHistory(finishedAt: string): SelfUpdateStageTiming[] {
+        const history = (this.operation.stageHistory ?? []).map(entry => ({ ...entry }));
+        const current = history[history.length - 1];
+        if (current && !current.finishedAt) {
+            current.finishedAt = finishedAt;
+        }
+        return history;
+    }
+
+    private async failCurrentOperation(message: string): Promise<SelfUpdateOperation> {
+        const finishedAt = new Date().toISOString();
+        this.progress = null;
+        this.operation = {
+            ...this.operation,
+            state: "failed",
+            message,
+            finishedAt,
+            stageHistory: this.completedStageHistory(finishedAt),
+            notificationPending: true,
+            notificationSentAt: null,
+        };
+        await this.saveOperation();
+        return this.getOperation();
+    }
 
     async refreshOperation(): Promise<SelfUpdateOperation> {
         try {
@@ -113,7 +188,8 @@ export class SelfUpdateManager {
         // forever on "Updater sidecar started" in that case.
         if (
             this.operation.state === "updating"
-            && this.operation.message === "Updater sidecar started"
+            && !this.requestInFlight
+            && [ "Updater sidecar started", "Updater sidecar launching" ].includes(this.operation.message)
             && this.operation.id
             && this.operation.startedAt
             && Date.now() - Date.parse(this.operation.startedAt) > 15_000
@@ -143,9 +219,13 @@ export class SelfUpdateManager {
         return this.getSettings();
     }
 
-    canAutoUpdate(now = new Date()): boolean { return selfUpdateMayRun(this.settings, now); }
+    canAutoUpdate(now = new Date()): boolean {
+        return selfUpdateMayRun(this.settings, now);
+    }
 
-    isAutomaticMode(): boolean { return this.settings.mode === "sidecar"; }
+    isAutomaticMode(): boolean {
+        return this.settings.mode === "sidecar";
+    }
 
     isUpdateExecutionInProgress(): boolean {
         return this.requestInFlight || (
@@ -206,99 +286,90 @@ export class SelfUpdateManager {
         const plan = await this.buildPlan(inspected, safePlanId(), targetImage, previousImage, repository, targetRevision);
         const recoveryPath = path.join(RECOVERY_DIR, plan.recoveryFile);
         const startedMs = Date.now();
+        const startedAt = new Date(startedMs).toISOString();
+        this.operation = {
+            id: plan.id,
+            state: "backing-up",
+            message: "Preparing signed self-update recovery state",
+            startedAt,
+            finishedAt: null,
+            targetImage,
+            rollbackAttempted: false,
+            stage: "preparing",
+            stageStartedAt: startedAt,
+            stageHistory: [{
+                stage: "preparing",
+                startedAt,
+                finishedAt: null,
+            }],
+        };
+        this.progress = null;
+        await this.saveOperation();
         log.info(
             "self-update",
-            `Opération créée — id=${plan.id} automatic=${automatic} container=${containerName} current=${inspected.Image} target=${targetImage} repository=${repository}`,
+            `Étape 1/8 — préparation sécurisée — id=${plan.id} automatic=${automatic} container=${containerName} current=${inspected.Image} target=${targetImage} repository=${repository}`,
         );
         await atomicWriteJson(recoveryPath, this.buildRecoverySnapshot(inspected, plan));
 
         const secret = await this.getOrCreateSecret();
         const selfUpdateRetentionTag = `self-update-instance-${crypto.createHash("sha256").update(secret).digest("hex").slice(0, 16)}`;
 
-        this.operation = { id: plan.id, state: "backing-up", message: "Mandatory backup in progress", startedAt: new Date().toISOString(), finishedAt: null, targetImage, rollbackAttempted: false };
-        this.progress = null;
-        await this.saveOperation();
-        log.info("self-update", `Étape 1/4 — backup Restic minimal démarré — id=${plan.id} data=${DATA_DIR} recovery=${recoveryPath}`);
+        await this.setStage("backup", "Mandatory Restic backup in progress", "backing-up");
+        log.info("self-update", `Étape 2/8 — backup Restic minimal démarré — id=${plan.id} data=${DATA_DIR} recovery=${recoveryPath}`);
         let backup;
         try {
             backup = await BackupManager.getInstance().runBackup({
                 tag: "self-update",
                 trigger: "manual",
-                onProgress: (progress) => { this.progress = progress; },
+                onProgress: (progress) => {
+                    this.progress = progress;
+                },
                 additionalPaths: [ DATA_DIR, recoveryPath ],
                 selfUpdateOnly: true,
                 suppressNotification: true,
                 additionalTags: [ selfUpdateRetentionTag ],
             });
         } catch (error) {
-            this.operation = {
-                ...this.operation,
-                state: "failed",
-                message: `Backup failed: ${error instanceof Error ? error.message : String(error)}`,
-                finishedAt: new Date().toISOString(),
-                notificationPending: true,
-                notificationSentAt: null,
-            };
-            await this.saveOperation();
-            return this.getOperation();
+            return this.failCurrentOperation(`Backup failed: ${error instanceof Error ? error.message : String(error)}`);
         }
         if (!backup.success) {
             log.error("self-update", `Backup Restic échoué — id=${plan.id} error=${backup.error ?? "unknown error"}`);
-            this.operation = {
-                ...this.operation,
-                state: "failed",
-                message: `Backup failed: ${backup.error ?? "unknown error"}`,
-                finishedAt: new Date().toISOString(),
-                notificationPending: true,
-                notificationSentAt: null,
-            };
-            await this.saveOperation();
-            return this.getOperation();
+            return this.failCurrentOperation(`Backup failed: ${backup.error ?? "unknown error"}`);
         }
 
         log.info("self-update", `Backup Restic terminé — id=${plan.id} duration=${Date.now() - startedMs}ms`);
-        this.operation = { ...this.operation, state: "verifying-backup", message: "Self-update snapshot verification in progress" };
-        log.info("self-update", `Étape 2/4 — validation ciblée du snapshot Restic — id=${plan.id}`);
         this.progress = null;
-        await this.saveOperation();
+        await this.setStage("verify-backup", "Self-update snapshot verification in progress", "verifying-backup");
+        log.info("self-update", `Étape 3/8 — validation ciblée du snapshot Restic — id=${plan.id}`);
         try {
             const verification = await BackupManager.getInstance().verifyFreshBackup(
                 backup,
                 recoveryPath,
                 plan.id,
+                (progress) => {
+                    this.progress = progress;
+                },
             );
             const failed = verification.find((result) => !result.ok);
             if (failed) {
-                this.operation = {
-                    ...this.operation,
-                    state: "failed",
-                    message: `Backup verification failed for ${failed.label}: ${failed.output}`,
-                    finishedAt: new Date().toISOString(),
-                    notificationPending: true,
-                    notificationSentAt: null,
-                };
-                await this.saveOperation();
-                return this.getOperation();
+                return this.failCurrentOperation(`Backup verification failed for ${failed.label}: ${failed.output}`);
             }
         } catch (error) {
-            this.operation = {
-                ...this.operation,
-                state: "failed",
-                message: `Backup verification failed: ${error instanceof Error ? error.message : String(error)}`,
-                finishedAt: new Date().toISOString(),
-                notificationPending: true,
-                notificationSentAt: null,
-            };
-            await this.saveOperation();
-            return this.getOperation();
+            return this.failCurrentOperation(`Backup verification failed: ${error instanceof Error ? error.message : String(error)}`);
         }
         this.progress = null;
 
+        await this.setStage("prune-backup", "Pruning old self-update Restic snapshots", "verifying-backup");
+        log.info("self-update", `Étape 4/8 — rétention Restic self-update — id=${plan.id}`);
         const retentionResults = await BackupManager.getInstance().pruneSelfUpdateSnapshots(
             backup,
             selfUpdateRetentionTag,
             2,
+            (progress) => {
+                this.progress = progress;
+            },
         );
+        this.progress = null;
         for (const retention of retentionResults) {
             if (retention.error) {
                 log.warn(
@@ -311,6 +382,8 @@ export class SelfUpdateManager {
         const deferredBeforePreparation = await this.recheckAutomaticBlocker(targetImage, automatic, "la préparation du sidecar");
         if (deferredBeforePreparation) return deferredBeforePreparation;
 
+        await this.setStage("prepare-updater", "Preparing isolated self-update sidecar", "verifying-backup");
+        log.info("self-update", `Étape 5/8 — préparation du sidecar isolé — id=${plan.id}`);
         const stateMount = (inspected.Mounts ?? []).find((mount) => mount.Destination === DATA_DIR);
         if (!stateMount?.Source) throw new Error(`The ${DATA_DIR} volume is required for self-update state`);
         plan.issuedAt = new Date().toISOString();
@@ -329,16 +402,7 @@ export class SelfUpdateManager {
         try {
             await docker([ "image", "pull", sidecarImage ], 10 * 60_000);
         } catch (error) {
-            this.operation = {
-                ...this.operation,
-                state: "failed",
-                message: `Updater sidecar pull failed: ${error instanceof Error ? error.message : String(error)}`,
-                finishedAt: new Date().toISOString(),
-                notificationPending: true,
-                notificationSentAt: null,
-            };
-            await this.saveOperation();
-            return this.getOperation();
+            return this.failCurrentOperation(`Updater sidecar pull failed: ${error instanceof Error ? error.message : String(error)}`);
         }
 
         const deferredBeforeLaunch = await this.recheckAutomaticBlocker(targetImage, automatic, "le lancement du sidecar");
@@ -369,25 +433,27 @@ export class SelfUpdateManager {
         if (plan.compose) {
             args.splice(args.length - 1, 0, "-v", `${plan.compose.workingDir}:${plan.compose.workingDir}:ro`, "-e", `SELF_UPDATE_COMPOSE_DIR=${plan.compose.workingDir}`);
         }
-        log.info("self-update", `Étape 3/4 — lancement sidecar — id=${plan.id} image=${sidecarImage}`);
+        this.operation = {
+            ...this.operation,
+            state: "updating",
+            message: "Updater sidecar launching",
+        };
+        await this.saveOperation();
+        log.info("self-update", `Étape 5/8 — lancement sidecar — id=${plan.id} image=${sidecarImage}`);
         try {
             await docker(args, 10 * 60_000);
         } catch (error) {
-            this.operation = {
-                ...this.operation,
-                state: "failed",
-                message: `Updater sidecar launch failed: ${error instanceof Error ? error.message : String(error)}`,
-                finishedAt: new Date().toISOString(),
-                notificationPending: true,
-                notificationSentAt: null,
-            };
-            await this.saveOperation();
-            return this.getOperation();
+            return this.failCurrentOperation(`Updater sidecar launch failed: ${error instanceof Error ? error.message : String(error)}`);
         }
         log.info("self-update", `Sidecar lancé — id=${plan.id} container=dockge-enhanced-updater-${plan.id}`);
-        this.operation = { ...this.operation, state: "updating", message: "Updater sidecar started" };
-        await this.saveOperation();
+        // Do not write STATUS_PATH after the detached updater starts: it may already
+        // have persisted a more precise pull/replace stage. Avoid clobbering it.
         return this.getOperation();
+        } catch (error) {
+            if (this.operation.id && isSelfUpdateActive(this.operation.state) && this.operation.state !== "scheduled") {
+                return this.failCurrentOperation(`Self-update preparation failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+            throw error;
         } finally {
             this.requestInFlight = false;
         }
@@ -789,7 +855,11 @@ export class SelfUpdateManager {
 
     private async getOrCreateSecret(): Promise<Buffer> {
         await fs.mkdir(STATE_DIR, { recursive: true, mode: 0o700 });
-        try { return await fs.readFile(SECRET_PATH); } catch { /* create below */ }
+        try {
+            return await fs.readFile(SECRET_PATH);
+        } catch {
+            // create below
+        }
         const secret = crypto.randomBytes(32);
         await atomicWriteFile(SECRET_PATH, secret);
         return secret;
@@ -841,7 +911,9 @@ export class SelfUpdateManager {
             }
         };
 
-        this.terminalStatusWatchTimer = setInterval(() => { void poll(); }, 2_000);
+        this.terminalStatusWatchTimer = setInterval(() => {
+            void poll();
+        }, 2_000);
         this.terminalStatusWatchTimer.unref?.();
         void poll();
     }

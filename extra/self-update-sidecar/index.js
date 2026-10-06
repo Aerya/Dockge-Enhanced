@@ -18,12 +18,45 @@ function atomicWriteJson(file, value) {
     fs.renameSync(temporary, file);
     fs.chmodSync(file, 0o600);
 }
-function writeStatus(state, message, rollbackAttempted, plan) {
-    atomicWriteJson(path.join(stateDir, "status.json"), {
-        id: plan?.id || "", state, message, startedAt: plan?.issuedAt || null,
-        finishedAt: terminalStates.has(state) ? new Date().toISOString() : null,
-        targetImage: plan?.targetImage || "", rollbackAttempted: rollbackAttempted === true,
-        notificationPending: terminalStates.has(state), notificationSentAt: null,
+function writeStatus(state, message, rollbackAttempted, plan, stage) {
+    const statusPath = path.join(stateDir, "status.json");
+    let previous = {};
+    try { previous = JSON.parse(fs.readFileSync(statusPath, "utf8")); } catch { /* first status write */ }
+
+    const now = new Date().toISOString();
+    const history = Array.isArray(previous.stageHistory)
+        ? previous.stageHistory.map(entry => ({ ...entry }))
+        : [];
+    const currentStage = stage || previous.stage;
+    let stageStartedAt = previous.stageStartedAt || now;
+
+    if (currentStage && previous.stage !== currentStage) {
+        const active = history[history.length - 1];
+        if (active && !active.finishedAt) active.finishedAt = now;
+        history.push({ stage: currentStage, startedAt: now, finishedAt: null });
+        stageStartedAt = now;
+    } else if (currentStage && history.length === 0) {
+        history.push({ stage: currentStage, startedAt: stageStartedAt, finishedAt: null });
+    }
+
+    if (terminalStates.has(state)) {
+        const active = history[history.length - 1];
+        if (active && !active.finishedAt) active.finishedAt = now;
+    }
+
+    atomicWriteJson(statusPath, {
+        id: plan?.id || previous.id || "",
+        state,
+        message,
+        startedAt: previous.startedAt || plan?.issuedAt || null,
+        finishedAt: terminalStates.has(state) ? now : null,
+        targetImage: plan?.targetImage || previous.targetImage || "",
+        rollbackAttempted: rollbackAttempted === true,
+        stage: currentStage,
+        stageStartedAt,
+        stageHistory: history,
+        notificationPending: terminalStates.has(state),
+        notificationSentAt: null,
     });
 }
 function safeName(value) { return typeof value === "string" && /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(value); }
@@ -116,7 +149,11 @@ function composeUpdate(plan, image, deps = {}) {
     for (const file of plan.compose.configFiles) base.push("-f", file);
     base.push("-f", override);
     const allowedTests = (process.env.SELF_UPDATE_ALLOW_TEST_IMAGES || "").split(",").filter(Boolean);
-    if (!allowedTests.includes(image) && /^ghcr\.io\//i.test(image)) (deps.docker || docker)([ ...base, "pull", plan.compose.service ], { timeout: 600_000 });
+    if (!allowedTests.includes(image) && /^ghcr\.io\//i.test(image)) {
+        deps.onStage?.("pull-target");
+        (deps.docker || docker)([ ...base, "pull", plan.compose.service ], { timeout: 600_000 });
+    }
+    deps.onStage?.("replace-container");
     (deps.docker || docker)([ ...base, "up", "-d", "--no-deps", plan.compose.service ], { timeout: 180_000 });
     return override;
 }
@@ -159,29 +196,39 @@ async function run(deps = {}) {
         requireRegularFile(recoveryPath, "Recovery snapshot");
         const recovery = JSON.parse(fs.readFileSync(recoveryPath, "utf8"));
         if (recovery.id !== plan.id || recovery.targetContainerId !== plan.targetContainerId || recovery.targetContainerName !== plan.targetContainerName || recovery.previousImage !== plan.previousImage || recovery.previousImageId !== plan.previousImageId || !/^sha256:[a-f0-9]{64}$/i.test(plan.previousImageId)) throw new Error("Recovery snapshot does not match the signed plan");
-        writeStatus("updating", plan.compose ? "Updating through Docker Compose" : "Updating from Docker recovery snapshot", false, plan);
         let updateError;
         try {
             if (plan.compose) {
                 console.log(`[SelfUpdateUpdater] Mise à jour via Docker Compose — project=${plan.compose.project} service=${plan.compose.service}`);
-                override = composeUpdate(plan, plan.targetImage, deps);
+                override = composeUpdate(plan, plan.targetImage, {
+                    ...deps,
+                    onStage: stage => writeStatus(
+                        "updating",
+                        stage === "pull-target" ? "Downloading target Dockge-Enhanced image" : "Replacing Dockge-Enhanced container",
+                        false,
+                        plan,
+                        stage,
+                    ),
+                });
             } else {
                 console.log("[SelfUpdateUpdater] Contexte Compose indisponible — utilisation du fallback Docker API");
+                writeStatus("updating", "Downloading target Dockge-Enhanced image", false, plan, "pull-target");
                 ensureTargetImage(plan.targetImage, deps);
+                writeStatus("updating", "Replacing Dockge-Enhanced container from recovery snapshot", false, plan, "replace-container");
                 await snapshotCreate(recovery, inspected.Id, plan.targetImage, deps);
             }
-            writeStatus("waiting-health", "Waiting for stable Dockge-Enhanced application readiness", false, plan);
-            if (waitReady(plan.targetContainerName, deps)) { writeStatus("succeeded", "Dockge-Enhanced updated and remained ready", false, plan); return "succeeded"; }
+            writeStatus("waiting-health", "Waiting for stable Dockge-Enhanced application readiness", false, plan, "health-check");
+            if (waitReady(plan.targetContainerName, deps)) { writeStatus("succeeded", "Dockge-Enhanced updated and remained ready", false, plan, "health-check"); return "succeeded"; }
             updateError = new Error("Dockge-Enhanced did not remain ready");
         } catch (error) { updateError = error; }
-        writeStatus("rolling-back", `Update failed; restoring the previous image: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan);
+        writeStatus("rolling-back", `Update failed; restoring the previous image: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan, "rollback");
         try {
             let composeRollbackError;
             if (plan.compose) {
                 try {
                     override = composeUpdate(plan, plan.previousImageId, deps);
                     if (waitReady(plan.targetContainerName, deps)) {
-                        writeStatus("rolled-back", `Update failed and the previous container was restored through Compose: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan);
+                        writeStatus("rolled-back", `Update failed and the previous container was restored through Compose: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan, "rollback");
                         return "rolled-back";
                     }
                     composeRollbackError = new Error("Compose restored the previous image but it did not become ready");
@@ -194,7 +241,7 @@ async function run(deps = {}) {
                 // not inspect the missing replacement first.
                 await snapshotCreate(recovery, null, plan.previousImageId, deps);
                 if (waitReady(plan.targetContainerName, deps)) {
-                    writeStatus("rolled-back", `Update failed and Compose rollback failed (${composeRollbackError instanceof Error ? composeRollbackError.message : String(composeRollbackError)}); the previous container was restored from the recovery snapshot`, true, plan);
+                    writeStatus("rolled-back", `Update failed and Compose rollback failed (${composeRollbackError instanceof Error ? composeRollbackError.message : String(composeRollbackError)}); the previous container was restored from the recovery snapshot`, true, plan, "rollback");
                     return "rolled-back";
                 }
                 throw new Error(`Compose rollback failed (${composeRollbackError instanceof Error ? composeRollbackError.message : String(composeRollbackError)}) and snapshot recovery did not become ready`);
@@ -202,12 +249,12 @@ async function run(deps = {}) {
             let currentId = null;
             try { currentId = inspect(plan.targetContainerName, deps).Id; } catch { /* replacement may not exist */ }
             await snapshotCreate(recovery, currentId, plan.previousImageId, deps);
-            if (waitReady(plan.targetContainerName, deps)) { writeStatus("rolled-back", `Update failed and the previous container was restored: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan); return "rolled-back"; }
+            if (waitReady(plan.targetContainerName, deps)) { writeStatus("rolled-back", `Update failed and the previous container was restored: ${updateError instanceof Error ? updateError.message : String(updateError)}`, true, plan, "rollback"); return "rolled-back"; }
             throw new Error("Previous container did not become ready");
         } catch (rollbackError) {
             const updateMessage = updateError instanceof Error ? updateError.message : String(updateError);
             const rollbackMessage = rollbackError instanceof Error ? rollbackError.message : String(rollbackError);
-            writeStatus("rollback-failed", `Update failed (${updateMessage}) and rollback failed: ${rollbackMessage}`, true, plan);
+            writeStatus("rollback-failed", `Update failed (${updateMessage}) and rollback failed: ${rollbackMessage}`, true, plan, "rollback");
             return "rollback-failed";
         }
     } catch (error) { writeStatus("failed", error instanceof Error ? error.message : String(error), false, plan); return "failed"; }

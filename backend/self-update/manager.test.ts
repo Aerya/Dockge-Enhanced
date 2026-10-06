@@ -132,7 +132,7 @@ test("post-restart terminal status no longer depends on a WebUI refresh", async 
     const source = await fs.readFile(new URL("./manager.ts", import.meta.url), "utf8");
     assert.match(source, /await this\.processTerminalNotification\(\);\s*this\.startTerminalStatusWatch\(\);/);
     assert.match(source, /\[ "updating", "waiting-health", "rolling-back" \]\.includes\(this\.operation\.state\)/);
-    assert.match(source, /setInterval\(\(\) => \{ void poll\(\); \}, 2_000\)/);
+    assert.match(source, /setInterval\(\(\) => \{\s*void poll\(\);\s*\},\s*2_000\)/);
 });
 
 test("only post-restart sidecar states or pending terminal notifications arm the watcher", async () => {
@@ -200,15 +200,19 @@ test("self-update Restic retention runs only after fresh backup verification", a
     const verifyPos = managerSource.indexOf("verifyFreshBackup(");
     const prunePos = managerSource.indexOf("pruneSelfUpdateSnapshots(");
     const sidecarArgsPos = managerSource.indexOf('const args = [');
-    const sidecarLaunchPos = managerSource.indexOf('Étape 3/4 — lancement sidecar');
+    const sidecarLaunchPos = managerSource.indexOf('Étape 5/8 — lancement sidecar');
 
     assert.ok(verifyPos >= 0);
     assert.ok(prunePos > verifyPos);
     assert.ok(sidecarArgsPos > prunePos);
     assert.ok(sidecarLaunchPos > sidecarArgsPos);
     assert.match(managerSource, /pruneSelfUpdateSnapshots\(\s*backup,\s*selfUpdateRetentionTag,\s*2,/s);
-    assert.match(managerSource, /verifyFreshBackup\(\s*backup,\s*recoveryPath,\s*plan\.id,?\s*\)/s);
+    assert.match(managerSource, /verifyFreshBackup\(\s*backup,\s*recoveryPath,\s*plan\.id,/s);
     assert.match(managerSource, /additionalTags: \[ selfUpdateRetentionTag \]/);
+    assert.match(managerSource, /setStage\("backup"/);
+    assert.match(managerSource, /setStage\("verify-backup"/);
+    assert.match(managerSource, /setStage\("prune-backup"/);
+    assert.match(managerSource, /setStage\("prepare-updater"/);
 
     const verifyStart = backupSource.indexOf("async verifyFreshBackup(");
     const dumpStart = backupSource.indexOf("private async resticDump", verifyStart);

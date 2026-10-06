@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-06 — Detailed self-update progress and live host load** — The Updates tab now tracks 8 persisted self-update stages: secure preparation, Restic backup, targeted verification, old-snapshot cleanup, updater preparation, target-image download, container replacement and health check. Per-stage timing survives the container replacement. During backup the WebUI shows bytes, files, throughput and ETA when Restic provides them, while live host CPU, RAM and 1-minute load remain visible. Phases without reliable progress expose activity and elapsed time rather than a fake percentage.
+
 **2026-10-05 — Per-service status and image-update exclusions** — The visual Compose editor can add `dockge.status.ignore: "true"` to keep an optional service from degrading the overall stack status after deployment while retaining its own visible state. `dockge.imageupdates.check: "false"` excludes a service from ImageWatcher detection and automatic or batch updates, including targeted recreation when multiple services share an image. An explicit service update remains available. Existing mapping or list labels are preserved. Inspired by [hamphh/dockge](https://github.com/hamphh/dockge).
 
 **2026-10-03 — Stack display names** — Managed and adopted stacks can have a WebUI alias without changing their technical stack name, Compose project, backup selection or restore path. The technical name remains visible on the stack page, and the alias is kept in metadata backed up by Restic.

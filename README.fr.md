@@ -347,6 +347,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Planification
 - Pause globale et par image
 - Auto-mise à jour protégée de Dockge-Enhanced
+- Progression détaillée persistante en 8 étapes réelles, avec durée par étape, fichiers/octets/débit Restic quand disponibles et CPU/RAM + charge 1 min de l’hôte en direct
 - Détection fiable du conteneur courant avec un `hostname:` Compose personnalisé et état dégradé visible si la vérification est indisponible
 - Backup Restic et contrôle d'intégrité obligatoires
 - Vérification de disponibilité et récupération automatique
@@ -420,7 +421,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 <details>
 <summary>Afficher le fonctionnement de la mise à jour protégée</summary>
 
-Dockge-Enhanced gère automatiquement le workflow complet : backup Restic obligatoire, vérification d’intégrité, remplacement contrôlé du conteneur, healthcheck puis confirmation finale. Les notifications Discord/Apprise permettent aussi de suivre l’opération sans rester devant la WebUI.
+Dockge-Enhanced gère automatiquement le workflow complet. La WebUI détaille désormais les 8 phases réelles — préparation sécurisée, backup Restic, vérification ciblée, nettoyage des anciens snapshots, préparation de l’updater, téléchargement de l’image cible, remplacement du conteneur et healthcheck — et conserve leur durée même à travers le redémarrage du conteneur. Pendant l’opération, les compteurs Restic disponibles (octets, fichiers, débit) ainsi que CPU/RAM et la charge 1 minute de l’hôte sont affichés en direct. Les phases non mesurables utilisent un état actif et le temps écoulé plutôt qu’un faux pourcentage. Les notifications Discord/Apprise permettent aussi de suivre le résultat sans rester devant la WebUI.
 
 Avant de démarrer une auto-mise à jour, Enhanced vérifie aussi qu’aucune opération sensible n’est en cours : backup ou restauration Restic, copie/déplacement/transfert de données ou réplication de stack, vérification/mise à jour d’images Docker, scan Trivy et intégration protégée d’une stack externe. Si une opération bloque la mise à jour, celle-ci passe en attente, la raison est visible dans la WebUI et envoyée via Discord/Apprise, puis le watcher la retente automatiquement.
 

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-06-detailed-self-update-progress",
+        items: [ "releaseNews.item.detailedSelfUpdateProgress" ],
+    },
+    {
         id: "2026-10-05-unified-docker-cleanup",
         items: [ "releaseNews.item.unifiedDockerCleanup" ],
     },
