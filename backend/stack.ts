@@ -901,7 +901,7 @@ export class Stack {
                 "run", "--rm", "--network", "none",
                 "--mount", "type=bind,src=/,dst=/host",
                 HOST_HELPER_IMAGE, "sh", "-c",
-                'for path do if [ ! -e "$path" ]; then mkdir -p "$path"; fi; done',
+                "for path do if [ ! -e \"$path\" ]; then mkdir -p \"$path\"; fi; done",
                 "sh", ...hostPaths,
             ], {
                 encoding: "utf-8",
@@ -909,7 +909,7 @@ export class Stack {
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            throw new Error(`Unable to prepare host bind directories: ${message}`);
+            throw new Error(`Unable to prepare host bind directories: ${message}`, { cause: error });
         }
     }
 
