@@ -65,6 +65,10 @@ export function imageIsUsed(imageId: string, usedImageIds: Set<string>): boolean
     return [ ...usedImageIds ].some(id => sameImageId(id, imageId));
 }
 
+export function isDanglingImageRow(row: Record<string, string>): boolean {
+    return row["Repository"] === "<none>" && row["Tag"] === "<none>";
+}
+
 function containerReference(container: InspectedImageContainer): ImageContainerReference {
     const labels = container.Config?.Labels ?? {};
     const state = container.State?.Status ?? "";
@@ -115,7 +119,7 @@ export function classifyImageReferences(inventory: ImageInventory): ClassifiedIm
         const id = normalizeImageId(row.ID ?? "");
         const containers = referencesForImage(id, inventory.containersByImageId);
         const running = containers.some(container => [ "running", "restarting" ].includes(container.state));
-        const dangling = containers.length === 0 && (row.Repository === "<none>" || row.Tag === "<none>");
+        const dangling = containers.length === 0 && isDanglingImageRow(row);
         return {
             id,
             repository: row.Repository ?? "<none>",

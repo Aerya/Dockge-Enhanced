@@ -60,7 +60,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Unified Docker cleanup and exact catch-up scheduling**
 
-Docker Resources now shares one Image-ID inventory between the Images page, cleanup preview and automatic pruning. Stopped-container images, rollback/recovery assets, exclusions and grace periods remain protected. Images, networks, volumes and build cache can be selected independently, results are recorded per category, and due jobs are checked every 15 minutes with one catch-up after sleep or restart. Enabling unified cleanup suspends the legacy image schedules without erasing them.
+Docker Resources shares one Image-ID inventory between the Images page, cleanup preview and pruning. The same grace period applies to manual and automatic cleanup, multiple tags for one physical image count only once, and images that disappear concurrently are treated as already absent rather than as cleanup failures. Stopped-container images and rollback/recovery assets remain protected. Images, networks, volumes and build cache can be selected independently, results are recorded per category, and due jobs are checked every 15 minutes with one catch-up after sleep or restart. Enabling unified cleanup suspends the legacy image schedules without erasing them.
 
 **Optional host CPU/RAM history**
 

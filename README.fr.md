@@ -60,7 +60,7 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Nettoyage Docker unifié et rattrapage exact**
 
-Ressources Docker partage désormais un même inventaire par Image ID entre la page Images, l'aperçu Nettoyage et la purge automatique. Les images de conteneurs arrêtés, les ressources de rollback/récupération, les exclusions et les délais de grâce restent protégés. Images, réseaux, volumes et cache de build se sélectionnent séparément, les résultats sont historisés par catégorie et les échéances sont contrôlées toutes les 15 minutes avec un seul rattrapage après une veille ou un redémarrage. Activer le nettoyage unifié suspend les anciens réglages d'auto-purge sans les effacer.
+Ressources Docker partage un même inventaire par Image ID entre la page Images, l'aperçu Nettoyage et les purges. Le même délai de grâce s'applique désormais au nettoyage manuel et automatique, les différents tags d'une même image physique ne comptent qu'une fois et une image disparue pendant la purge est considérée comme déjà absente plutôt que comme une erreur. Les images de conteneurs arrêtés et les ressources de rollback/récupération restent protégées. Images, réseaux, volumes et cache de build se sélectionnent séparément, les résultats sont historisés par catégorie et les échéances sont contrôlées toutes les 15 minutes avec un seul rattrapage après une veille ou un redémarrage. Activer le nettoyage unifié suspend les anciens réglages d'auto-purge sans les effacer.
 
 **Historique CPU/RAM hôte facultatif**
 
@@ -379,7 +379,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Ressources Docker
 - Images, volumes, réseaux et conteneurs non gérés
-- Nettoyage manuel/automatique unifié des images, réseaux, volumes et caches de build, avec résultat par catégorie et historique des 30 dernières exécutions
+- Nettoyage manuel/automatique unifié des images, réseaux, volumes et caches de build, avec le même délai de grâce en manuel et en automatique, comptage des images par Image ID unique, résultat par catégorie et historique des 30 dernières exécutions
 - Échéances exactes `lastRun + interval` contrôlées toutes les 15 minutes, avec un seul rattrapage après veille ou redémarrage
 - Classification par Image ID complet pour les conteneurs actifs et arrêtés ; les tags d'une même image ne sont comptés qu'une fois
 - Protections contre les suppressions à risque

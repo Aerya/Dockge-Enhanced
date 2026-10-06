@@ -1314,6 +1314,8 @@
     "dockerResources.cleanup.volumeConfirmationRequired": "必须明确确认自动清理卷。",
     "dockerResources.cleanup.volumeSaveConfirmOne": "第一次确认：启用真正孤立卷的自动删除？",
     "dockerResources.cleanup.volumeSaveConfirmTwo": "最终确认：Enhanced 无法恢复已删除的数据。是否继续？",
+    "dockerResources.cleanup.save": "保存",
+    "dockerResources.cleanup.tooRecent": "过新",
     "dockerResources.cleanup.settingsSaved": "清理设置已保存。",
     "dockerResources.cleanup.legacyPaused": "此计划已暂停：镜像现在由统一自动清理管理。",
     "dockerResources.cleanup.warning": "已停止的 Compose 容器和未使用的命名卷仍可能包含重要数据。请逐项检查；默认永不选择卷。",
@@ -1779,6 +1781,6 @@
     "releaseNews.item.logRestartCopy": "堆栈日志现在可以从 Docker 上次重启时间开始筛选，并可一键复制最近 50、100、150 行或全部已加载日志，同时保留当前的服务、时间范围和时间戳筛选。",
     "releaseNews.item.composeYamlFormatter": "compose.yaml 编辑器现在提供“修复 / 格式化 YAML”操作：可修复常见的 Compose 缩进错误，验证结果后统一为 2 个空格缩进，并保留注释与 tmpfs 权限；若无法安全判断修复方式，则保持原内容不变。",
     "releaseNews.item.autoPruneReliability": "定时清理不会再因几秒钟的偏差而跳过下一个计划时段。成功自更新至少 48 小时后，可在下一次清理中删除旧版 Enhanced 镜像，当前镜像和恢复镜像仍受保护。",
-    "releaseNews.item.unifiedDockerCleanup": "Docker 清理现在为镜像页、清理预览和自动清理共用同一受保护清单。系统每 15 分钟检查精确到期时间，并在休眠或重启后只补跑一次；回滚/恢复镜像在所有删除模式下始终受到保护，与宽限期无关。",
+    "releaseNews.item.unifiedDockerCleanup": "Docker 清理在镜像页、清理预览和清理任务中统一按 Image ID 统计。宽限期现在同样适用于手动清理，同一物理镜像的多个标签只计一次；清理过程中已经消失的镜像不再被视为错误。回滚/恢复镜像在所有删除模式下仍始终受到保护。",
     "releaseNews.item.monitoringHistory": "Monitoring 可选择每 5 分钟记录一次轻量级主机 CPU 和 RAM 样本。24 小时、7 天、1 个月或自定义范围的响应式图表会在服务端降采样，记住所保存的显示周期，并以空档显示停机时间。"
 }

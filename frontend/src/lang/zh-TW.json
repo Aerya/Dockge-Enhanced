@@ -1281,6 +1281,8 @@
     "dockerResources.cleanup.volumeConfirmationRequired": "必須明確確認自動清理資料卷。",
     "dockerResources.cleanup.volumeSaveConfirmOne": "第一次確認：啟用真正孤立資料卷的自動刪除？",
     "dockerResources.cleanup.volumeSaveConfirmTwo": "最終確認：Enhanced 無法還原已刪除的資料。是否繼續？",
+    "dockerResources.cleanup.save": "儲存",
+    "dockerResources.cleanup.tooRecent": "過新",
     "dockerResources.cleanup.settingsSaved": "清理設定已儲存。",
     "dockerResources.cleanup.legacyPaused": "此排程已暫停：映像現在由統一自動清理管理。",
     "dockerResources.cleanup.warning": "已停止的 Compose 容器和未使用的命名磁碟區仍可能包含重要資料。請逐項檢查；預設永不選取磁碟區。",
@@ -1718,6 +1720,6 @@
     "externalStacks.cleanup.confirmIrreversible": "我明白此刪除操作不可逆，Volume 中的資料將遺失。",
     "externalStacks.cleanup.succeeded": "外部 Stack 及其資源已刪除。",
     "externalStacks.cleanup.partial": "部分清理：{count} 個資源仍在使用或受保護，無法刪除。",
-    "releaseNews.item.unifiedDockerCleanup": "Docker 清理現在為映像頁、清理預覽與自動清理共用同一份受保護清單。系統每 15 分鐘檢查精確到期時間，並在休眠或重新啟動後只補跑一次；回滾/復原映像在所有刪除模式下都會持續受到保護，且不受寬限期影響。",
+    "releaseNews.item.unifiedDockerCleanup": "Docker 清理在映像頁、清理預覽與清理工作中統一依 Image ID 計算。寬限期現在也套用到手動清理，同一個實體映像的多個標籤只計一次；清理過程中已經消失的映像不再視為錯誤。回滾/復原映像在所有刪除模式下仍持續受到保護。",
     "releaseNews.item.monitoringHistory": "Monitoring 可選擇每 5 分鐘記錄一次輕量級主機 CPU 與 RAM 樣本。24 小時、7 天、1 個月或自訂範圍的響應式圖表會在伺服器端降採樣，記住所儲存的顯示期間，並以空白顯示停機時間。"
 }

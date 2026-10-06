@@ -4,6 +4,7 @@ import {
     buildContainerImageIndex,
     classifyImageReferences,
     ImageInventory,
+    isDanglingImageRow,
 } from "./docker-image-inventory";
 
 const sharedId = `sha256:${"a".repeat(64)}`;
@@ -56,6 +57,18 @@ test("un conteneur arrêté protège toutes les références du même Image ID",
         ...containers,
     });
     assert.deepEqual(classified.map(image => image.status), [ "stopped", "stopped" ]);
+});
+
+
+test("une image Enhanced tirée par digest avec Tag <none> n'est pas une dangling Docker", () => {
+    assert.equal(isDanglingImageRow({
+        Repository: "ghcr.io/aerya/dockge-enhanced",
+        Tag: "<none>",
+    }), false);
+    assert.equal(isDanglingImageRow({
+        Repository: "<none>",
+        Tag: "<none>",
+    }), true);
 });
 
 test("dangling et unused restent deux états exclusifs", () => {

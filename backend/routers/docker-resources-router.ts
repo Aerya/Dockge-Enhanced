@@ -196,8 +196,8 @@ export class DockerResourcesRouter extends Router {
             const force = req.query["force"] === "true";
             try {
                 const message = await withCleanupExecutionLock(async () => {
-                    await AutoPruneManager.getInstance().removeImageSafely(id, force);
-                    return "Supprimé";
+                    const removed = await AutoPruneManager.getInstance().removeImageSafely(id, force);
+                    return removed ? "Supprimé" : "Déjà absente";
                 });
                 await auditDockerAction(req, "docker.image.delete", "image", id, "success", message, { force });
                 res.json({ ok: true, message });

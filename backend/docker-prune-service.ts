@@ -3,6 +3,7 @@ import path from "node:path";
 import childProcessAsync from "promisify-child-process";
 import {
     AutoPruneManager,
+    groupImageRowsById,
     imageIsUsed,
     protectedImageIds,
     sameImageId,
@@ -36,6 +37,7 @@ export interface PruneCandidate {
     protected?: boolean;
     protectionReason?: string;
     excluded?: boolean;
+    tooRecent?: boolean;
 }
 
 export interface PrunePreview {
@@ -215,21 +217,28 @@ export async function buildPrunePreview(): Promise<PrunePreview> {
                 detail: `${container.Image} · ${container.Status}`,
                 composeProject: dockerLabel(container.Labels, "com.docker.compose.project"),
             })),
-            images: images.map(image => {
-                const id = image.ID ?? "";
-                const name = image.Repository === "<none>" ? id : `${image.Repository}:${image.Tag}`;
-                const excluded = imageExclusions.some(value => value === name || sameImageId(value, id));
-                const used = imageIsUsed(id, usedImageIds);
-                const protectedImage = [ ...protectedImages ].some(protectedId => sameImageId(protectedId, id));
+            images: groupImageRowsById(images).map(group => {
+                const primary = group.references[0] ?? group.id;
+                const excluded = imageExclusions.some(value =>
+                    sameImageId(value, group.id) || group.references.includes(value));
+                const used = imageIsUsed(group.id, usedImageIds);
+                const protectedImage = [ ...protectedImages ].some(protectedId => sameImageId(protectedId, group.id));
+                const createdAt = inspectedImagesById.get(group.id)?.Created;
+                const aliases = group.references.length > 1 ? group.references.join(", ") : "";
                 return {
-                    id,
-                    name,
-                    detail: image.CreatedSince,
-                    size: image.Size,
-                    createdAt: inspectedImagesById.get(id)?.Created,
+                    id: group.id,
+                    name: primary,
+                    detail: [ aliases, group.rows[0]?.CreatedSince ].filter(Boolean).join(" · "),
+                    size: group.rows[0]?.Size,
+                    createdAt,
                     protected: protectedImage,
                     protectionReason: protectedImage ? (used ? "used-by-container" : "rollback-or-recovery") : undefined,
                     excluded,
+                    tooRecent: !candidateOldEnough({
+                        id: group.id,
+                        name: primary,
+                        createdAt,
+                    }, settings.graceHours),
                 };
             }),
             networks: inspectedNetworks.filter(pruneableNetwork).map(network => ({
@@ -239,6 +248,11 @@ export async function buildPrunePreview(): Promise<PrunePreview> {
                 composeProject: network.Labels?.["com.docker.compose.project"],
                 createdAt: network.Created,
                 excluded: (exclusions.networks ?? []).includes(network.Name) || (exclusions.networks ?? []).includes(network.Id ?? ""),
+                tooRecent: !candidateOldEnough({
+                    id: network.Id ?? network.Name,
+                    name: network.Name,
+                    createdAt: network.Created,
+                }, settings.graceHours),
             })),
             volumes: inspectedVolumes.filter(volume => !usedVolumes.has(volume.Name)).map(volume => {
                 const composeProject = volume.Labels?.["com.docker.compose.project"];
@@ -252,6 +266,11 @@ export async function buildPrunePreview(): Promise<PrunePreview> {
                     protected: [ "trivy-cache", "trivy-security-cache" ].includes(volume.Name),
                     protectionReason: [ "trivy-cache", "trivy-security-cache" ].includes(volume.Name) ? "trivy-cache" : undefined,
                     excluded: (exclusions.volumes ?? []).includes(volume.Name),
+                    tooRecent: !candidateOldEnough({
+                        id: volume.Name,
+                        name: volume.Name,
+                        createdAt: volume.CreatedAt,
+                    }, settings.graceHours),
                     stackPresent: composeProject
                         ? fs.existsSync(path.join(process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks", composeProject, "compose.yaml"))
                         : undefined,
@@ -288,9 +307,10 @@ async function runPruneUnlocked(categories: PruneCategory[]): Promise<PruneHisto
                 throw new Error(`Nettoyage interrompu avant ${category} : ${blockedReason}`);
             }
             if (category === "images") {
-                const imageExclusions = cleanupSettings().exclusions.images ?? [];
-                const dangling = await AutoPruneManager.getInstance().runDanglingPrune(false, undefined, imageExclusions, true);
-                const unused = await AutoPruneManager.getInstance().runUnusedPrune(false, undefined, imageExclusions, true);
+                const settings = cleanupSettings();
+                const imageExclusions = settings.exclusions.images ?? [];
+                const dangling = await AutoPruneManager.getInstance().runDanglingPrune(false, settings.graceHours, imageExclusions, true);
+                const unused = await AutoPruneManager.getInstance().runUnusedPrune(false, settings.graceHours, imageExclusions, true);
                 const outcome = summarizeImagePruneResults(dangling, unused);
                 results[category] = outcome.message;
                 if (!outcome.success) {
@@ -300,8 +320,11 @@ async function runPruneUnlocked(categories: PruneCategory[]): Promise<PruneHisto
                 const settings = cleanupSettings();
                 results.buildCache = await docker([ "builder", "prune", "-a", "-f", "--filter", `until=${settings.graceHours}h` ]);
             } else if (category === "volumes" || category === "networks") {
+                const settings = cleanupSettings();
                 const preview = await buildPrunePreview();
-                const candidates = preview.candidates[category].filter(candidate => !candidate.protected && !candidate.excluded);
+                const exclusions = settings.exclusions[category] ?? [];
+                const candidates = preview.candidates[category].filter(candidate =>
+                    automaticCandidateAllowed(candidate, exclusions, settings.graceHours));
                 const resource = category === "volumes" ? "volume" : "network";
                 const removed: string[] = [];
                 for (const candidate of candidates) {

@@ -1373,6 +1373,8 @@
     "dockerResources.cleanup.volumeConfirmationRequired": "Explicit volume confirmation is required.",
     "dockerResources.cleanup.volumeSaveConfirmOne": "First confirmation: enable automatic deletion of truly orphaned volumes?",
     "dockerResources.cleanup.volumeSaveConfirmTwo": "Final confirmation: Enhanced cannot restore deleted data. Continue?",
+    "dockerResources.cleanup.save": "Save",
+    "dockerResources.cleanup.tooRecent": "Too recent",
     "dockerResources.cleanup.settingsSaved": "Cleanup settings saved.",
     "dockerResources.cleanup.legacyPaused": "This schedule is paused: images are now managed by unified automatic cleanup.",
     "dockerResources.cleanup.warning": "Stopped Compose containers and unused named volumes may still contain important state. Review every item before cleanup; volumes are never selected by default.",
@@ -1842,6 +1844,6 @@
     "releaseNews.item.logRestartCopy": "Stack logs can now be filtered from the last Docker restart and copied instantly as the last 50, 100, 150 or all loaded lines, while respecting the current service, range and timestamp filters.",
     "releaseNews.item.composeYamlFormatter": "The compose.yaml editor now includes a Fix / format YAML action: it repairs common Compose indentation mistakes, validates the result, then normalizes it to two spaces while preserving comments and tmpfs permissions. If repair remains ambiguous, the original content is left untouched.",
     "releaseNews.item.autoPruneReliability": "Scheduled image cleanup no longer skips the next slot because of a few seconds of timing difference. Old Enhanced images can be removed at the next cleanup at least 48 hours after a successful self-update; active and recovery images remain protected.",
-    "releaseNews.item.unifiedDockerCleanup": "Docker cleanup now uses one protected inventory for Images, Cleanup preview and automatic pruning. Exact deadlines are checked every 15 minutes and caught up once after sleep or restart; rollback/recovery images remain protected across every deletion mode, independently of the grace period.",
+    "releaseNews.item.unifiedDockerCleanup": "Docker cleanup uses one Image-ID inventory across Images, Cleanup preview and pruning. The grace period now also applies to manual cleanup, multiple tags for one physical image count only once, and an image that already disappeared during cleanup is no longer treated as an error. Rollback/recovery images remain protected in every deletion mode.",
     "releaseNews.item.monitoringHistory": "Monitoring can optionally record lightweight host CPU and RAM samples every 5 minutes. The responsive 24-hour, 7-day, monthly or custom graph is downsampled server-side, remembers the saved display range and leaves downtime visible as gaps."
 }

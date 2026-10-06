@@ -62,7 +62,7 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Limpieza Docker unificada y recuperación exacta**
 
-Recursos Docker comparte ahora un inventario por Image ID entre la página Imágenes, la vista previa de Limpieza y la purga automática. Las imágenes de contenedores detenidos, rollback/recuperación, exclusiones y periodos de gracia siguen protegidos. Imágenes, redes, volúmenes y caché de build se seleccionan por separado, los resultados se guardan por categoría y los vencimientos se comprueban cada 15 minutos con una sola recuperación tras una suspensión o reinicio. Al activar la limpieza unificada se suspenden los ajustes antiguos sin borrarlos.
+Recursos Docker comparte un único inventario por Image ID entre la página Imágenes, la vista previa de Limpieza y las purgas. El mismo periodo de gracia se aplica ahora a la limpieza manual y automática, las distintas etiquetas de una misma imagen física cuentan una sola vez y una imagen que desaparece durante la limpieza se considera ya ausente en lugar de un error. Las imágenes de contenedores detenidos y los recursos de rollback/recuperación siguen protegidos. Imágenes, redes, volúmenes y caché de build se seleccionan por separado, los resultados se guardan por categoría y los vencimientos se comprueban cada 15 minutos con una sola recuperación tras una suspensión o reinicio. Al activar la limpieza unificada se suspenden los ajustes antiguos sin borrarlos.
 
 **Historial opcional de CPU/RAM del host**
 
@@ -357,7 +357,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Recursos Docker
 - Imágenes, volúmenes, redes y contenedores no gestionados
-- Limpieza manual/automática unificada de imágenes, redes, volúmenes y caché de build, con resultado por categoría e historial de 30 ejecuciones
+- Limpieza manual/automática unificada de imágenes, redes, volúmenes y caché de build, con el mismo periodo de gracia en modo manual y automático, conteo de imágenes por Image ID único, resultado por categoría e historial de 30 ejecuciones
 - Vencimientos exactos `lastRun + interval` comprobados cada 15 minutos, con una sola recuperación tras suspensión o reinicio
 - Clasificación por Image ID completo para contenedores activos y detenidos; las etiquetas de una misma imagen cuentan una sola vez
 - Protecciones de borrado
