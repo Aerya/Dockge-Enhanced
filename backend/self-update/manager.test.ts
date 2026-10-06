@@ -132,7 +132,7 @@ test("post-restart terminal status no longer depends on a WebUI refresh", async 
     const source = await fs.readFile(new URL("./manager.ts", import.meta.url), "utf8");
     assert.match(source, /await this\.processTerminalNotification\(\);\s*this\.startTerminalStatusWatch\(\);/);
     assert.match(source, /\[ "updating", "waiting-health", "rolling-back" \]\.includes\(this\.operation\.state\)/);
-    assert.match(source, /setInterval\(\(\) => \{ void poll\(\); \}, 2_000\)/);
+    assert.match(source, /setInterval\(\(\) => \{\s*void poll\(\);\s*\},\s*2_000\)/);
 });
 
 test("only post-restart sidecar states or pending terminal notifications arm the watcher", async () => {
