@@ -130,6 +130,7 @@
                     </button>
                 </div>
                 <div class="history-controls mb-3">
+                    <span class="history-period-label">{{ $t('watcher.monitoring.historyPeriod') }}</span>
                     <div class="history-preset-group" role="group" :aria-label="$t('watcher.monitoring.historyPeriod')">
                         <button v-for="preset in historyPresetOptions" :key="preset.value" type="button" class="btn btn-sm history-preset-btn" :class="{ active: historyPreset === preset.value }" @click="selectHistoryPreset(preset.value)">
                             {{ $t(preset.label) }}
@@ -155,15 +156,17 @@
                     <span class="history-stat-card"><i class="history-legend history-legend--cpu"></i><strong>CPU</strong><span>{{ $t('watcher.monitoring.historyAverage') }} {{ historyStats.cpuAverage.toFixed(1) }}%</span><span>{{ $t('watcher.monitoring.historyMaximum') }} {{ historyStats.cpuMax.toFixed(1) }}%</span></span>
                     <span class="history-stat-card"><i class="history-legend history-legend--ram"></i><strong>RAM</strong><span>{{ $t('watcher.monitoring.historyAverage') }} {{ historyStats.ramAverage.toFixed(1) }}%</span><span>{{ $t('watcher.monitoring.historyMaximum') }} {{ historyStats.ramMax.toFixed(1) }}%</span></span>
                 </div>
-                <div v-if="historyPoints.length" class="history-chart-wrap">
-                    <svg class="history-chart" viewBox="0 0 960 300" preserveAspectRatio="xMidYMid meet" role="img" :aria-label="$t('watcher.monitoring.historyChart')">
+                <div v-if="historyPoints.length" ref="historyChartWrap" class="history-chart-wrap">
+                    <svg class="history-chart" :viewBox="`0 0 ${historyChart.width} ${historyChart.height}`" preserveAspectRatio="xMinYMin meet" role="img" :aria-label="$t('watcher.monitoring.historyChart')">
                         <rect :x="historyChart.left" :y="historyChart.top" :width="historyPlotWidth" :height="historyPlotHeight" class="history-plot-bg" />
                         <line v-for="value in historyYTicks" :key="value" :x1="historyChart.left" :x2="historyChart.width - historyChart.right" :y1="historyY(value)" :y2="historyY(value)" class="history-grid-line" />
                         <text v-for="value in historyYTicks" :key="`label-${value}`" :x="historyChart.left - 10" :y="historyY(value) + 4" text-anchor="end" class="history-axis-label">{{ value }}%</text>
                         <g v-for="tick in historyTimeTicks" :key="tick.timestamp">
                             <line :x1="tick.x" :x2="tick.x" :y1="historyChart.top" :y2="historyChart.height - historyChart.bottom" class="history-grid-line history-grid-line--vertical" />
-                            <text :x="tick.x" :y="historyChart.height - 10" text-anchor="middle" class="history-axis-label history-time-label">{{ tick.label }}</text>
+                            <text :x="tick.x" :y="historyChart.height - 8" text-anchor="middle" class="history-axis-label history-time-label">{{ tick.label }}</text>
                         </g>
+                        <polygon v-for="(segment, index) in cpuHistoryAreas" :key="`cpu-area-${index}`" :points="segment" class="history-area history-area--cpu" />
+                        <polygon v-for="(segment, index) in ramHistoryAreas" :key="`ram-area-${index}`" :points="segment" class="history-area history-area--ram" />
                         <polyline v-for="(segment, index) in cpuHistorySegments" :key="`cpu-${index}`" :points="segment" class="history-line history-line--cpu" />
                         <polyline v-for="(segment, index) in ramHistorySegments" :key="`ram-${index}`" :points="segment" class="history-line history-line--ram" />
                         <circle v-for="point in historyPoints" :key="`tip-${point.sampledAt}`" :cx="historyX(point.sampledAt)" :cy="historyY(point.cpuPercent)" r="7" class="history-hitpoint">
@@ -757,7 +760,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 import { stackStatsEnabled } from "../composables/useStackStats";
@@ -934,27 +937,68 @@ const historyPresetOptions = [
     },
 ];
 
-const historyChart = {
-    width: 960,
-    height: 300,
-    left: 54,
-    right: 20,
-    top: 18,
-    bottom: 42,
-} as const;
+const historyChartWrap = ref<HTMLElement | null>(null);
+const historyChartWidth = ref(960);
+const historyChart = computed(() => ({
+    width: historyChartWidth.value,
+    height: 220,
+    left: 52,
+    right: 16,
+    top: 12,
+    bottom: 32,
+}));
 const historyYTicks = [ 0, 25, 50, 75, 100 ];
-const historyPlotWidth = historyChart.width - historyChart.left - historyChart.right;
-const historyPlotHeight = historyChart.height - historyChart.top - historyChart.bottom;
+const historyPlotWidth = computed(() =>
+    Math.max(1, historyChart.value.width - historyChart.value.left - historyChart.value.right)
+);
+const historyPlotHeight = computed(() =>
+    historyChart.value.height - historyChart.value.top - historyChart.value.bottom
+);
+
+let historyChartResizeObserver: ResizeObserver | null = null;
+
+function syncHistoryChartWidth(): void {
+    const el = historyChartWrap.value;
+    if (!el) {
+        return;
+    }
+
+    const styles = window.getComputedStyle(el);
+    const horizontalPadding =
+        (Number.parseFloat(styles.paddingLeft) || 0) +
+        (Number.parseFloat(styles.paddingRight) || 0);
+
+    const width = Math.floor(el.clientWidth - horizontalPadding);
+    if (width > 0) {
+        historyChartWidth.value = Math.max(240, width);
+    }
+}
+
+function observeHistoryChart(): void {
+    historyChartResizeObserver?.disconnect();
+    historyChartResizeObserver = null;
+
+    if (!historyChartWrap.value) {
+        return;
+    }
+
+    syncHistoryChartWidth();
+
+    historyChartResizeObserver = new ResizeObserver(() => {
+        syncHistoryChartWidth();
+    });
+    historyChartResizeObserver.observe(historyChartWrap.value);
+}
 
 function historyX(sampledAt: string): number {
     const value = Date.parse(sampledAt);
     const ratio = (value - historyFrom.value) / Math.max(1, historyTo.value - historyFrom.value);
-    return historyChart.left + Math.max(0, Math.min(1, ratio)) * historyPlotWidth;
+    return historyChart.value.left + Math.max(0, Math.min(1, ratio)) * historyPlotWidth.value;
 }
 
 function historyY(percent: number): number {
     const ratio = Math.max(0, Math.min(100, percent)) / 100;
-    return historyChart.top + (1 - ratio) * historyPlotHeight;
+    return historyChart.value.top + (1 - ratio) * historyPlotHeight.value;
 }
 
 const historyTimeTicks = computed(() => {
@@ -984,7 +1028,7 @@ const historyTimeTicks = computed(() => {
         const timestamp = from + duration * ratio;
         return {
             timestamp,
-            x: historyChart.left + historyPlotWidth * ratio,
+            x: historyChart.value.left + historyPlotWidth.value * ratio,
             label: formatter.format(new Date(timestamp)),
         };
     });
@@ -1011,8 +1055,23 @@ function historySegments(metric: "cpuPercent" | "ramPercent"): string[] {
     return segments.map(segment => segment.join(" "));
 }
 
+function historyAreas(segments: string[]): string[] {
+    const baseline = historyY(0);
+    return segments.map((segment) => {
+        const points = segment.split(" ").filter(Boolean);
+        if (points.length < 2) {
+            return segment;
+        }
+        const firstX = points[0].split(",")[0];
+        const lastX = points[points.length - 1].split(",")[0];
+        return `${firstX},${baseline} ${segment} ${lastX},${baseline}`;
+    });
+}
+
 const cpuHistorySegments = computed(() => historySegments("cpuPercent"));
 const ramHistorySegments = computed(() => historySegments("ramPercent"));
+const cpuHistoryAreas = computed(() => historyAreas(cpuHistorySegments.value));
+const ramHistoryAreas = computed(() => historyAreas(ramHistorySegments.value));
 
 function historyTooltip(point: MonitoringHistoryPoint): string {
     return `${new Date(point.sampledAt).toLocaleString()} · CPU ${point.cpuPercent.toFixed(1)}% · RAM ${point.ramPercent.toFixed(1)}%`;
@@ -1067,28 +1126,40 @@ const localStackStatsEnabled = ref(false);
 // ─── Computed ─────────────────────────────────────────────────────
 
 const backupCardClass = computed(() => {
-    if (!overview.value.backup.lastTimestamp) return "mc-neutral";
+    if (!overview.value.backup.lastTimestamp) {
+        return "mc-neutral";
+    }
     return overview.value.backup.success ? "mc-ok" : "mc-danger";
 });
 
 const nextTrivyMinutes = computed<number | null>(() => {
     const s = overview.value.trivy.nextScanAt;
-    if (!s) return null;
+    if (!s) {
+        return null;
+    }
     return Math.max(0, Math.floor((new Date(s).getTime() - Date.now()) / 60_000));
 });
 
 const lastTrivyMinutes = computed<number | null>(() => {
     const s = overview.value.trivy.lastScanAt;
-    if (!s) return null;
+    if (!s) {
+        return null;
+    }
     return Math.floor((Date.now() - new Date(s).getTime()) / 60_000);
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
 function formatAge(minutes: number | null): string {
-    if (minutes === null) return "—";
-    if (minutes < 1) return t("watcher.monitoring.ageJustNow");
-    if (minutes < 60) return t("timeUnit.minute", [ minutes ]);
+    if (minutes === null) {
+        return "—";
+    }
+    if (minutes < 1) {
+        return t("watcher.monitoring.ageJustNow");
+    }
+    if (minutes < 60) {
+        return t("timeUnit.minute", [ minutes ]);
+    }
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
     return m > 0
@@ -1101,8 +1172,12 @@ function formatUptime(seconds: number): string {
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const parts = [];
-    if (days > 0) parts.push(t("timeUnit.day", [ days ]));
-    if (hours > 0) parts.push(t("timeUnit.hour", [ hours ]));
+    if (days > 0) {
+        parts.push(t("timeUnit.day", [ days ]));
+    }
+    if (hours > 0) {
+        parts.push(t("timeUnit.hour", [ hours ]));
+    }
     parts.push(t("timeUnit.minute", [ minutes ]));
     return parts.join(" ");
 }
@@ -1139,15 +1214,21 @@ function healthStatusLabel(status: HealthActionStatus): string {
 }
 
 function healthStatusBadge(status: HealthActionStatus): string {
-    if (status === "success") return "badge bg-success";
-    if (status === "failed") return "badge bg-danger";
+    if (status === "success") {
+        return "badge bg-success";
+    }
+    if (status === "failed") {
+        return "badge bg-danger";
+    }
     return "badge bg-secondary";
 }
 
 // ─── Webhook helpers ──────────────────────────────────────────────
 
 function addWebhook() {
-    if (!newWebhook.value.trim()) return;
+    if (!newWebhook.value.trim()) {
+        return;
+    }
     monSettings.value.discordWebhooks.push(newWebhook.value.trim());
     newWebhook.value = "";
 }
@@ -1159,7 +1240,9 @@ function removeWebhook(idx: number) {
 
 function addAppriseUrl() {
     const url = newAppriseUrl.value.trim();
-    if (!url || monSettings.value.appriseUrls.includes(url)) return;
+    if (!url || monSettings.value.appriseUrls.includes(url)) {
+        return;
+    }
     monSettings.value.appriseUrls.push(url);
     newAppriseUrl.value = "";
 }
@@ -1167,7 +1250,9 @@ function removeAppriseUrl(idx: number) {
     monSettings.value.appriseUrls.splice(idx, 1);
 }
 async function testAppriseMonitoring() {
-    if (!monSettings.value.appriseUrls.length) return;
+    if (!monSettings.value.appriseUrls.length) {
+        return;
+    }
     testingApprise.value = true;
     try {
         // Le serverUrl est partagé — stocké dans les settings image (watcher-router)
@@ -1187,7 +1272,9 @@ async function testAppriseMonitoring() {
 
 async function loadExclusions() {
     const res = await api("GET", "/monitoring/crash-exclusions");
-    if (res.ok) exclusions.value = res.data as CrashExclusion[];
+    if (res.ok) {
+        exclusions.value = res.data as CrashExclusion[];
+    }
 }
 
 async function excludeContainer(containerName: string, durationHours: number | null) {
@@ -1253,7 +1340,9 @@ async function loadOverview() {
     overviewLoading.value = true;
     try {
         const res = await api("GET", "/monitoring/overview");
-        if (res.ok) overview.value = res.data as Overview;
+        if (res.ok) {
+            overview.value = res.data as Overview;
+        }
     } finally {
         overviewLoading.value = false;
     }
@@ -1325,6 +1414,8 @@ async function loadHistory() {
         historyFrom.value = Date.parse(data.from);
         historyTo.value = Date.parse(data.to);
         historyBucketSeconds.value = data.bucketSeconds;
+        await nextTick();
+        observeHistoryChart();
     } catch {
         showToast(`❌ ${t("watcher.monitoring.historyLoadError")}`, false);
     } finally {
@@ -1388,7 +1479,9 @@ function removePartition(idx: number) {
 async function saveStackStatsSetting() {
     stackStatsEnabled.value = localStackStatsEnabled.value;
     const res = await api("POST", "/monitoring/display-settings", { stackStatsEnabled: localStackStatsEnabled.value });
-    if (!res.ok) showToast(`❌ ${res.message}`, false);
+    if (!res.ok) {
+        showToast(`❌ ${res.message}`, false);
+    }
 }
 
 async function saveDisplaySettings() {
@@ -1408,12 +1501,16 @@ async function saveDisplaySettings() {
 
 async function loadKulaSettings() {
     const res = await api("GET", "/watcher/kula/settings");
-    if (res.ok) kulaSettings.value = res.data as KulaSettings;
+    if (res.ok) {
+        kulaSettings.value = res.data as KulaSettings;
+    }
 }
 
 async function loadKulaStatus() {
     const res = await api("GET", "/watcher/kula/status") as { ok: boolean; status?: string };
-    if (res.ok && res.status) kulaStatus.value = res.status as "running" | "stopped" | "error";
+    if (res.ok && res.status) {
+        kulaStatus.value = res.status as "running" | "stopped" | "error";
+    }
 }
 
 async function saveKulaSettings() {
@@ -1457,11 +1554,15 @@ async function stopKula() {
 
 async function loadDozzleSettings() {
     const res = await api("GET", "/watcher/dozzle/settings");
-    if (res.ok) dozzleSettings.value = res.data as DozzleSettings;
+    if (res.ok) {
+        dozzleSettings.value = res.data as DozzleSettings;
+    }
 }
 async function loadDozzleStatus() {
     const res = await api("GET", "/watcher/dozzle/status") as { ok: boolean; status?: string };
-    if (res.ok && res.status) dozzleStatus.value = res.status as "running" | "stopped" | "error";
+    if (res.ok && res.status) {
+        dozzleStatus.value = res.status as "running" | "stopped" | "error";
+    }
 }
 async function saveDozzleSettings() {
     savingDozzle.value = true;
@@ -1501,7 +1602,11 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-    if (overviewPoller) overviewPoller.stop();
+    if (overviewPoller) {
+        overviewPoller.stop();
+    }
+    historyChartResizeObserver?.disconnect();
+    historyChartResizeObserver = null;
 });
 </script>
 
@@ -1544,6 +1649,13 @@ onUnmounted(() => {
     align-items: center;
     gap: .5rem;
     .form-select, .form-control { width: auto; min-width: 8rem; }
+}
+.history-period-label {
+    flex: 0 0 auto;
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    white-space: nowrap;
 }
 .history-preset-group {
     display: inline-flex;
@@ -1596,33 +1708,33 @@ onUnmounted(() => {
 .history-legend--ram { background: var(--success); }
 .history-chart-wrap {
     width: 100%;
-    min-height: 260px;
+    min-height: 190px;
     overflow: hidden;
-    border: 1px solid var(--border-color);
+    border: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent);
     border-radius: var(--radius-md);
-    background: color-mix(in srgb, var(--bg-raised) 92%, var(--bg-surface));
-    padding: .5rem;
+    background: color-mix(in srgb, var(--bg-raised) 96%, var(--bg-surface));
+    padding: .35rem .5rem .2rem;
 }
 .history-chart {
     display: block;
     width: 100%;
-    height: auto;
-    min-height: 260px;
-    aspect-ratio: 16 / 5;
+    max-width: 100%;
+    height: 220px;
 }
 .history-plot-bg {
-    fill: color-mix(in srgb, var(--bg-surface) 48%, transparent);
-    stroke: var(--border-color);
-    stroke-width: 1;
-    vector-effect: non-scaling-stroke;
+    fill: color-mix(in srgb, var(--bg-surface) 34%, transparent);
+    stroke: none;
 }
-.history-grid-line { stroke: var(--border-color); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.history-grid-line--vertical { stroke-opacity: .55; }
-.history-axis-label { fill: var(--text-muted); font-size: 11px; }
-.history-time-label { font-size: 10px; }
+.history-grid-line { stroke: var(--border-color); stroke-width: 1; stroke-opacity: .45; vector-effect: non-scaling-stroke; }
+.history-grid-line--vertical { stroke-opacity: .16; }
+.history-axis-label { fill: var(--text-muted); font-size: 10px; }
+.history-time-label { font-size: 9.5px; }
+.history-area { stroke: none; pointer-events: none; }
+.history-area--cpu { fill: color-mix(in srgb, var(--primary) 12%, transparent); }
+.history-area--ram { fill: color-mix(in srgb, var(--success) 10%, transparent); }
 .history-line {
     fill: none;
-    stroke-width: 2.4;
+    stroke-width: 2.2;
     stroke-linecap: round;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
@@ -1640,7 +1752,7 @@ onUnmounted(() => {
     .history-custom-range .form-select { flex: 1 1 0; width: auto; min-width: 0; }
     .history-controls .btn-primary { width: 100%; margin-left: 0 !important; }
     .history-stat-card { width: 100%; }
-    .history-chart { min-height: 220px; }
+    .history-chart { height: 220px; }
 }
 
 .mc-icon { font-size: var(--fs-2xl); line-height: 1; flex-shrink: 0; padding-top: 2px; }

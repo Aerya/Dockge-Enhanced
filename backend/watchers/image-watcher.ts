@@ -982,7 +982,7 @@ export class ImageWatcher {
     }
   }
 
-  async saveSettings(partial: Partial<WatcherSettings>): Promise<void> {
+  async saveSettings(partial: Partial<WatcherSettings>, runInitialCheck = true): Promise<void> {
     this.settings = { ...this.settings, ...partial };
     this.settings.credentials = this.settings.credentials.map((credential) => ({
       ...credential,
@@ -990,7 +990,7 @@ export class ImageWatcher {
     }));
     await this.persistToFile();
     await syncDockerRegistryCredentials(this.settings.credentials);
-    this.restart();
+    this.restart(runInitialCheck);
   }
 
   /** Écrit les settings sur disque SANS redémarrer le watcher (usage interne) */
@@ -1142,7 +1142,7 @@ export class ImageWatcher {
     }
   }
 
-  start(): void {
+  start(runInitialCheck = true): void {
     this.stop();
     const intervalHours = sanitizeIntervalHours(this.settings.intervalHours);
     this.settings.intervalHours = intervalHours;
@@ -1159,8 +1159,10 @@ export class ImageWatcher {
     this.cleanupCron = cron.schedule("0 * * * *", () =>
       this.cleanExpiredRollbacks().catch(console.error),
     );
-    // Check immédiat au démarrage
-    this.runCheck().catch(console.error);
+    // Check immédiat au démarrage, sauf quand l'appelant lance un contrôle ciblé.
+    if (runInitialCheck) {
+      this.runCheck().catch(console.error);
+    }
   }
 
   stop(): void {
@@ -1172,12 +1174,71 @@ export class ImageWatcher {
     this.cleanupCron = null;
   }
 
-  restart(): void {
-    this.settings.enabled ? this.start() : this.stop();
+  restart(runInitialCheck = true): void {
+    this.settings.enabled ? this.start(runInitialCheck) : this.stop();
   }
 
   // ── Check principal ───────────────────────────────────────────
 
+/* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
+  async runImmediateCheck(key: string): Promise<"up-to-date" | "updated" | "pending" | "skipped"> {
+    const sepIdx = key.indexOf("::");
+    if (sepIdx <= 0) {
+      throw new Error("Clé image invalide");
+    }
+    const stack = key.slice(0, sepIdx);
+    const image = key.slice(sepIdx + 2);
+    const cfg = this.settings.autoUpdateConfig?.[key];
+    if (!cfg || cfg.mode !== "immediate") {
+      return "skipped";
+    }
+
+    const watchedStacks = await collectWatchedComposeStacks(STACKS_DIR, this.externalStacks);
+    const watched = watchedStacks.get(stack);
+    if (!watched) {
+      throw new Error(`Stack introuvable: ${stack}`);
+    }
+
+    const images = await extractImagesFromCompose(
+      watched.composePath,
+      watched.project,
+      watched.configFiles,
+      watched.workingDir,
+      watched.envFiles,
+    );
+    if (!images.includes(image)) {
+      throw new Error(`Image introuvable dans la stack: ${image}`);
+    }
+
+    const status = await this.checkOneImage(image, stack);
+    const skippedDigests = this.settings.ignoredDigests?.[key] ?? [];
+    if (status.remoteDigest && skippedDigests.includes(status.remoteDigest)) {
+      status.hasUpdate = false;
+      status.ignoredDigest = status.remoteDigest;
+    }
+    imageStatusStore.set(key, status);
+    if (!status.hasUpdate || status.error) {
+      return "up-to-date";
+    }
+
+    if (isUpdatePaused(this.settings.globalUpdatePause) || isUpdatePaused(cfg.pause)) {
+      return "pending";
+    }
+    const globalWindowPolicy = await automaticImageUpdateWindowPolicy();
+    if (globalWindowPolicy.window && !globalWindowPolicy.open) {
+      this.settings.pendingAutoUpdates = [ ...new Set([ ...(this.settings.pendingAutoUpdates ?? []), key ]) ];
+      await this.persistToFile();
+      return "pending";
+    }
+
+    const updated = await this.performAutoUpdate(status, watched, "immediate");
+    if (updated && (this.settings.discordWebhooks.length > 0 || this.settings.appriseServerUrl)) {
+      await this.notify([ status ], 1, [ status ], this.settings.autoUpdateConfig, globalWindowPolicy.window);
+    }
+    return updated ? "updated" : "pending";
+  }
+
+/* eslint-enable @stylistic/indent */
   async runCheck(): Promise<ImageStatus[]> {
     if (this._checkRunning || this.manualBatch.running) {
       console.log("[ImageWatcher] Check déjà en cours, ignoré.");

@@ -769,3 +769,9 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 ## Licencia
 
 MIT — ver [LICENSE](LICENSE).
+
+**Operaciones diarias de las stacks**
+
+Enhanced prepara ahora los directorios host que falten para bind mounts absolutos antes de iniciar, desplegar o recrear cuando el montaje sea claramente un directorio. Resulta especialmente útil en NAS Synology, donde Docker rechaza una fuente bind que todavía no existe. Las fuentes que parezcan archivos nunca se crean automáticamente como carpetas. El modo **Inmediato** de una imagen lanza su comprobación dirigida al guardar la política. Tras un reinicio correcto, Enhanced recarga además el estado real de la stack y oculta la salida de progreso Compose obsoleta.
+
+El historial CPU/RAM conserva los huecos reales de muestreo, pero usa un gráfico más compacto inspirado en PowerWatch, con rejilla más ligera y áreas de relleno sutiles.

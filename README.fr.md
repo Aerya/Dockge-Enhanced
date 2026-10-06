@@ -572,6 +572,12 @@ Avant de démarrer une auto-mise à jour, Enhanced vérifie aussi qu’aucune op
 
 ---
 
+**Opérations quotidiennes sur les stacks**
+
+Enhanced prépare désormais les répertoires hôte manquants des bind mounts absolus avant un démarrage, déploiement ou une recréation lorsque le montage est clairement de type dossier. C’est particulièrement utile sur les NAS Synology où Docker refuse une source de bind inexistante. Les sources ressemblant à des fichiers ne sont jamais créées automatiquement comme dossiers. Le mode **Immédiat** d’une image lance maintenant son contrôle ciblé dès l’enregistrement. Après un redémarrage réussi, Enhanced recharge aussi l’état réel de la stack et masque l’ancienne sortie de progression Compose.
+
+L’historique CPU/RAM conserve les vrais trous de collecte, mais adopte un graphique plus compact inspiré de PowerWatch, avec grille allégée et remplissage discret.
+
 ## Installation
 
 ```yaml

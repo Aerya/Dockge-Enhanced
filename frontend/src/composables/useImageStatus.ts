@@ -213,7 +213,10 @@ export function useImageStatus() {
                     }
                     : { mode };
             }
-            return { ok: true };
+            return {
+                ok: true,
+                immediateCheckStarted: json.data?.immediateCheckStarted === true,
+            };
         } catch (error) {
             return {
                 ok: false,

@@ -131,6 +131,71 @@ export interface StartGuardStatus {
     conditions: StartGuardConditionStatus[];
 }
 
+export interface HostBindDirectoryCandidate {
+    source: string;
+    target: string;
+}
+
+function bindLooksLikeFile(source: string, target: string): boolean {
+    const fileLike = (value: string) => {
+        const base = path.posix.basename(value.replace(/\\/g, "/"));
+        return base.startsWith(".") || /\.[A-Za-z0-9][A-Za-z0-9._-]{0,15}$/.test(base);
+    };
+    return fileLike(source) || fileLike(target);
+}
+
+export function collectHostBindDirectoryCandidates(composeTexts: string[]): HostBindDirectoryCandidate[] {
+    const candidates = new Map<string, HostBindDirectoryCandidate>();
+    for (const composeText of composeTexts) {
+        let document: { services?: Record<string, { volumes?: unknown[] }> };
+        try {
+            document = yaml.parse(composeText) as { services?: Record<string, { volumes?: unknown[] }> };
+        } catch {
+            continue;
+        }
+        for (const service of Object.values(document?.services ?? {})) {
+            for (const rawVolume of service?.volumes ?? []) {
+                let source = "";
+                let target = "";
+                if (typeof rawVolume === "string") {
+                    const match = rawVolume.match(/^(\/[^:]+):(\/[^:]+)(?::[^:]*)?$/);
+                    if (!match) {
+                        continue;
+                    }
+                    source = match[1];
+                    target = match[2];
+                } else if (rawVolume && typeof rawVolume === "object") {
+                    const volume = rawVolume as {
+                        type?: unknown;
+                        source?: unknown;
+                        target?: unknown;
+                    };
+                    if (volume.type !== "bind" || typeof volume.source !== "string" || typeof volume.target !== "string") {
+                        continue;
+                    }
+                    source = volume.source;
+                    target = volume.target;
+                }
+                if (!source.startsWith("/") || !target.startsWith("/") || bindLooksLikeFile(source, target)) {
+                    continue;
+                }
+                if (source.split("/").includes("..")) {
+                    continue;
+                }
+                const normalized = path.posix.normalize(source);
+                if (normalized === "/") {
+                    continue;
+                }
+                candidates.set(normalized, {
+                    source: normalized,
+                    target,
+                });
+            }
+        }
+    }
+    return [ ...candidates.values() ];
+}
+
 interface StackMetadata {
     createdAt: string | null;
     createdAtEstimated: boolean;
@@ -825,12 +890,36 @@ export class Stack {
         return { ok: conditions.every((condition) => condition.ok), enabled: true, ready: conditions.every((condition) => condition.ok), conditions };
     }
 
+    private async ensureHostBindDirectories(): Promise<void> {
+        const candidates = collectHostBindDirectoryCandidates(this.getComposeConfigTexts());
+        if (candidates.length === 0) {
+            return;
+        }
+        const hostPaths = candidates.map(candidate => `/host${candidate.source}`);
+        try {
+            await childProcessAsync.spawn("docker", [
+                "run", "--rm", "--network", "none",
+                "--mount", "type=bind,src=/,dst=/host",
+                HOST_HELPER_IMAGE, "sh", "-c",
+                "for path do if [ ! -e \"$path\" ]; then mkdir -p \"$path\"; fi; done",
+                "sh", ...hostPaths,
+            ], {
+                encoding: "utf-8",
+                timeout: 30_000,
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Unable to prepare host bind directories: ${message}`, { cause: error });
+        }
+    }
+
     private async assertStartGuard(): Promise<void> {
         const status = await this.getStartGuardStatus();
         if (!status.ready) {
             const failed = status.conditions.find((condition) => !condition.ok);
             throw new Error(`Start prerequisite failed: ${failed?.type === "mount" ? "host mount" : "systemd service"} ${failed?.target ?? "unknown"} — ${failed?.message ?? "not ready"}`);
         }
+        await this.ensureHostBindDirectories();
     }
 
     private async checkStartGuardCondition(condition: StartGuardCondition): Promise<StartGuardConditionStatus> {

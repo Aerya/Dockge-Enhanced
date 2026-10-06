@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-06-stack-daily-ops-polish",
+        items: [ "releaseNews.item.stackDailyOpsPolish" ],
+    },
+    {
         id: "2026-10-06-detailed-self-update-progress",
         items: [ "releaseNews.item.detailedSelfUpdateProgress" ],
     },

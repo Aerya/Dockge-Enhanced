@@ -37,7 +37,12 @@
     "size": "Size",
     "modifiedAt": "Modified",
     "actions": "Actions",
-    "fileType": {"directory":"Folder","file":"File","symlink":"Symbolic link","other":"Other"},
+    "fileType": {
+        "directory": "Folder",
+        "file": "File",
+        "symlink": "Symbolic link",
+        "other": "Other"
+    },
     "download": "Download",
     "move": "Move",
     "destinationDirectory": "Destination directory",
@@ -692,7 +697,7 @@
     "watcher.monitoring.lowPower": "Synology / low-power mode",
     "watcher.monitoring.lowPowerHint": "Slows down refreshes (system stats 30 s, container stats 60 s) and pauses browser-driven collection when no tab is visible. If CPU/RAM history is explicitly enabled, its lightweight 5-minute background sample continues.",
     "watcher.monitoring.historyTitle": "CPU / RAM history",
-    "watcher.monitoring.historyPeriod": "Displayed period",
+    "watcher.monitoring.historyPeriod": "View",
     "watcher.monitoring.historySave": "Save",
     "watcher.monitoring.historyEnabled": "Record CPU / RAM history",
     "watcher.monitoring.historyHint": "Stores one lightweight host sample every 5 minutes. Disabled by default; downtime remains visible as gaps.",
@@ -844,6 +849,7 @@
     "watcher.status.autoUpdate": "Auto-update",
     "watcher.status.autoUpdateHint": "Choose whether the update should be applied immediately or at a scheduled time.",
     "watcher.status.autoUpdateSaved": "✅ Auto-update configured",
+    "watcher.status.autoUpdateImmediateStarted": "✅ Auto-update configured · checking this image now…",
     "watcher.status.auOff": "Manual",
     "watcher.status.auIgnored": "Ignore",
     "watcher.rollback.col": "Rollback (24h)",
@@ -1870,5 +1876,6 @@
     "releaseNews.item.composeYamlFormatter": "The compose.yaml editor now includes a Fix / format YAML action: it repairs common Compose indentation mistakes, validates the result, then normalizes it to two spaces while preserving comments and tmpfs permissions. If repair remains ambiguous, the original content is left untouched.",
     "releaseNews.item.autoPruneReliability": "Scheduled image cleanup no longer skips the next slot because of a few seconds of timing difference. Old Enhanced images can be removed at the next cleanup at least 48 hours after a successful self-update; active and recovery images remain protected.",
     "releaseNews.item.unifiedDockerCleanup": "Docker cleanup uses one Image-ID inventory across Images, Cleanup preview and pruning. The grace period now also applies to manual cleanup, multiple tags for one physical image count only once, and an image that already disappeared during cleanup is no longer treated as an error. Rollback/recovery images remain protected in every deletion mode.",
-    "releaseNews.item.monitoringHistory": "Monitoring can optionally record lightweight host CPU and RAM samples every 5 minutes. The responsive 24-hour, 7-day, monthly or custom graph is downsampled server-side, remembers the saved display range and leaves downtime visible as gaps."
+    "releaseNews.item.monitoringHistory": "Monitoring can optionally record lightweight host CPU and RAM samples every 5 minutes. The responsive 24-hour, 7-day, monthly or custom graph is downsampled server-side, remembers the saved display range and leaves downtime visible as gaps.",
+    "releaseNews.item.stackDailyOpsPolish": "Stack operations are smoother: missing directory bind mounts can be prepared on the host, Immediate image policies trigger a targeted check right away, successful restarts refresh their real state, and CPU/RAM history uses a more compact PowerWatch-inspired chart."
 }

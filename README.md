@@ -573,6 +573,12 @@ Before an automatic self-update starts, Enhanced also checks that no sensitive o
 
 ---
 
+**Daily stack operations**
+
+Enhanced prepares missing absolute host bind directories before start/deploy/recreate operations when the mount is clearly directory-like. This is especially useful on NAS hosts such as Synology where Docker refuses a bind source that does not exist yet. File-like bind sources are never auto-created as directories. Per-image **Immediate** auto-update now starts a targeted image check as soon as the policy is saved. Successful stack restarts also refresh the real stack state and hide stale Compose progress output.
+
+The optional CPU/RAM history keeps its real sampling gaps but uses a more compact PowerWatch-inspired chart with lighter grid lines and subtle filled areas.
+
 ## Installation
 
 ```yaml

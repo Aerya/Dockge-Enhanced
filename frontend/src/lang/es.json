@@ -97,7 +97,12 @@
     "fileManagerAuthRequired": "El gestor de archivos del host requiere autenticación; no está disponible cuando esta está desactivada.",
     "fileManagerUnavailable": "El gestor de archivos no está disponible en esta instancia. Compruebe su conexión y actualícela si es necesario.",
     "releaseNews.item.restrictedHostFiles": "Una página Archivos opcional gestiona un directorio del host montado expresamente por instancia, con transferencias por bloques, edición UTF-8 y lectura de registros en archivos. Sigue desactivada sin DOCKGE_FILE_MANAGER_ROOT.",
-    "fileType": {"directory":"Carpeta","file":"Archivo","symlink":"Enlace simbólico","other":"Otro"},
+    "fileType": {
+        "directory": "Carpeta",
+        "file": "Archivo",
+        "symlink": "Enlace simbólico",
+        "other": "Otro"
+    },
     "fileManagerRestrictedHint": "Solo se puede acceder a los archivos del directorio autorizado en esta instancia.",
     "fileManagerDisabled": "El gestor de archivos no está configurado en esta instancia",
     "fileManagerDisabledHint": "Monte un directorio y configure DOCKGE_FILE_MANAGER_ROOT para activarlo.",
@@ -762,7 +767,7 @@
     "dockerResources.autoPrune.unusedHeading": "Imágenes sin uso",
     "dockerResources.images.references": "referencias / etiquetas",
     "watcher.monitoring.historyTitle": "Historial de CPU / RAM",
-    "watcher.monitoring.historyPeriod": "Periodo mostrado",
+    "watcher.monitoring.historyPeriod": "Visualización",
     "watcher.monitoring.historySave": "Guardar",
     "watcher.monitoring.historyEnabled": "Guardar historial de CPU / RAM",
     "watcher.monitoring.historyHint": "Guarda una muestra ligera del host cada 5 minutos. Desactivado por defecto; los periodos apagados aparecen como huecos.",
@@ -779,5 +784,7 @@
     "watcher.monitoring.historyChart": "Historial de uso de CPU y RAM",
     "watcher.monitoring.historyEmpty": "No hay muestras disponibles para este periodo.",
     "watcher.monitoring.historyLoadError": "No se pudo cargar el historial de CPU/RAM.",
-    "watcher.monitoring.lowPowerHint": "Reduce la frecuencia de actualización y pausa la recopilación del navegador cuando no hay ninguna pestaña visible. Si se activa el historial CPU/RAM, su muestra ligera cada 5 minutos continúa en segundo plano."
+    "watcher.monitoring.lowPowerHint": "Reduce la frecuencia de actualización y pausa la recopilación del navegador cuando no hay ninguna pestaña visible. Si se activa el historial CPU/RAM, su muestra ligera cada 5 minutos continúa en segundo plano.",
+    "watcher.status.autoUpdateImmediateStarted": "✅ Actualización automática configurada · comprobando esta imagen ahora…",
+    "releaseNews.item.stackDailyOpsPolish": "Las operaciones de stacks son más fluidas: los bind mounts de directorios que falten pueden prepararse en el host, el modo Inmediato lanza una comprobación dirigida al instante, los reinicios correctos recargan su estado real y el historial CPU/RAM usa un gráfico más compacto inspirado en PowerWatch."
 }

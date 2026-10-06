@@ -339,12 +339,18 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     if (!watcher.settings.enabled && mode !== "ignored") {
                         patch.enabled = true;
                     }
-                    await watcher.saveSettings(patch);
+                    await watcher.saveSettings(patch, mode !== "immediate");
+                    if (mode === "immediate") {
+                        watcher.runImmediateCheck(key).catch(error => console.error("[ImageWatcher] Contrôle immédiat ciblé distant échoué:", error));
+                    }
                 }
 
                 callbackResult({
                     ok: true,
-                    data: watcher.getAutoUpdateState(),
+                    data: {
+                        ...watcher.getAutoUpdateState(),
+                        immediateCheckStarted: mode === "immediate",
+                    },
                 }, callback);
             } catch (e) {
                 callbackError(e, callback);

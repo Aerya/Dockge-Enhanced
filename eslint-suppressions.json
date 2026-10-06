@@ -501,7 +501,7 @@
   },
   "backend/watchers/image-watcher.ts": {
     "@stylistic/indent": {
-      "count": 1457
+      "count": 1460
     },
     "@stylistic/object-property-newline": {
       "count": 38
@@ -690,9 +690,6 @@
     },
     "@stylistic/object-property-newline": {
       "count": 40
-    },
-    "curly": {
-      "count": 21
     },
     "vue/html-indent": {
       "count": 37
