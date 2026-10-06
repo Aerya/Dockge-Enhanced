@@ -41,9 +41,9 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 | **Mises à jour** | Détection des mises à jour d'images, mises à jour manuelles, groupées séquentielles ou automatiques des conteneurs avec rollback, créneau de maintenance commun, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
 | **Migration & réplication** | Transferts transactionnels entre instances, migration du Compose et des données persistantes, jobs reprenables, finalisation explicite des déplacements, répliques froides planifiées, snapshots de récupération et workflows de reprise |
 | **Automatisation & audit** | API REST limitée par permissions, webhooks par stack, exemples Home Assistant, opérations planifiées et historique centralisé avec origine, statut et durée |
-| **Ressources Docker** | Gestion des images, volumes, réseaux et conteneurs hors Dockge, opérations groupées, auto-prune et protections autour des actions destructives |
+| **Ressources Docker** | Nettoyage unifié protégé des images, volumes, réseaux et caches de build, rattrapage exact, aperçu, exclusions, historique et protections destructives |
 | **Sécurité** | Scan de vulnérabilités Trivy, exceptions CVE, workflows de mise à jour protégés, 2FA, trusted proxy et Cloudflare Turnstile |
-| **Supervision** | Statistiques système, stacks et conteneurs, barre d'état système configurable, cartes de santé du tableau de bord, détection des crash loops, auto-heal des healthchecks, logs responsives/plein écran, Kula optionnel et Dozzle géré |
+| **Supervision** | Statistiques système, stacks et conteneurs, historique CPU/RAM facultatif toutes les 5 minutes, barre d'état configurable, cartes de santé, crash loops, auto-heal, logs responsives/plein écran, Kula et Dozzle |
 | **Intégrations** | PlugNPiN et assistant de labels par service pour Nginx Proxy Manager, Pi-hole et AdGuard Home |
 | **Notifications & accès** | Notifications Discord et Apprise localisées en EN/FR/ES/zh-CN, prise en compte du multi-instance, 2FA, trusted proxy, Turnstile et clients mobiles tiers |
 
@@ -57,6 +57,14 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
 ### 🆕 Octobre 2026
+
+**Nettoyage Docker unifié et rattrapage exact**
+
+Ressources Docker partage désormais un même inventaire par Image ID entre la page Images, l'aperçu Nettoyage et la purge automatique. Les images de conteneurs arrêtés, les ressources de rollback/récupération, les exclusions et les délais de grâce restent protégés. Images, réseaux, volumes et cache de build se sélectionnent séparément, les résultats sont historisés par catégorie et les échéances sont contrôlées toutes les 15 minutes avec un seul rattrapage après une veille ou un redémarrage. Activer le nettoyage unifié suspend les anciens réglages d'auto-purge sans les effacer.
+
+**Historique CPU/RAM hôte facultatif**
+
+Monitoring peut enregistrer un échantillon léger du CPU et de la RAM hôte toutes les 5 minutes, sans navigateur ouvert. Le graphique SVG responsive propose 24 h, 7 jours, 1 mois ou une plage personnalisée ; la période d'affichage choisie peut être enregistrée et retrouvée à la prochaine ouverture. Les longues périodes sont agrégées côté serveur et les arrêts restent visibles sous forme de trous. L'enregistrement est désactivé par défaut et continue en mode faible consommation s'il est explicitement activé.
 
 **Exclusions du statut et des mises à jour par service**
 
@@ -358,6 +366,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Supervision
 - Statistiques système, stacks et conteneurs
+- Historique CPU/RAM facultatif toutes les 5 minutes, plages 24 h, 7 jours, 1 mois ou personnalisées, agrégation serveur et trous d'arrêt visibles
 - Barre d'état système configurable
 - Cartes de santé
 - Détection des crash loops
@@ -370,8 +379,9 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Ressources Docker
 - Images, volumes, réseaux et conteneurs non gérés
-- Actions groupées
-- Auto-prune
+- Nettoyage manuel/automatique unifié des images, réseaux, volumes et caches de build, avec résultat par catégorie et historique des 30 dernières exécutions
+- Échéances exactes `lastRun + interval` contrôlées toutes les 15 minutes, avec un seul rattrapage après veille ou redémarrage
+- Classification par Image ID complet pour les conteneurs actifs et arrêtés ; les tags d'une même image ne sont comptés qu'une fois
 - Protections contre les suppressions à risque
 
 ### Automatisation & audit

@@ -6,12 +6,54 @@
 import { DockgeServer } from "../dockge-server";
 import { Router } from "../router";
 import express, { Express, Request, Response, NextFunction } from "express";
-import { MonitoringWatcher, MonitoringSettings, CrashExclusion } from "../watchers/monitoring-watcher";
+import { MonitoringWatcher, MonitoringSettings } from "../watchers/monitoring-watcher";
 import { BackupManager } from "../watchers/backup-manager";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { imageStatusStore } from "../watchers/image-watcher";
 import { Settings } from "../settings";
 import { requireHttpAuth } from "../auth";
+import { historyStartDate, MonitoringHistoryCollector, MonitoringHistoryRange } from "../monitoring-history";
+
+export function parseMonitoringHistoryRange(query: Request["query"], now = new Date()): MonitoringHistoryRange {
+    const preset = typeof query.preset === "string" ? query.preset : undefined;
+    let amount: number;
+    let unit: MonitoringHistoryRange["unit"];
+    if (preset) {
+        const presets: Record<string, [number, MonitoringHistoryRange["unit"]]> = {
+            "24h": [ 1, "days" ],
+            "7d": [ 7, "days" ],
+            "1m": [ 1, "months" ],
+        };
+        const selected = presets[preset];
+        if (!selected) {
+            throw new Error("preset invalide");
+        }
+        [ amount, unit ] = selected;
+    } else {
+        const rawAmount = typeof query.amount === "string" ? query.amount : "";
+        const rawUnit = typeof query.unit === "string" ? query.unit : "";
+        if (!/^[1-9]\d*$/.test(rawAmount) || ![ "days", "weeks", "months", "years" ].includes(rawUnit)) {
+            throw new Error("amount et unit sont requis");
+        }
+        amount = Number(rawAmount);
+        unit = rawUnit as MonitoringHistoryRange["unit"];
+        const maximums: Record<MonitoringHistoryRange["unit"], number> = {
+            days: 3650,
+            weeks: 520,
+            months: 120,
+            years: 10,
+        };
+        if (!Number.isSafeInteger(amount) || amount > maximums[unit]) {
+            throw new Error("plage historique trop grande");
+        }
+    }
+    return {
+        amount,
+        unit,
+        from: historyStartDate(amount, unit, now),
+        to: new Date(now),
+    };
+}
 
 // ─── Router ───────────────────────────────────────────────────────
 
@@ -29,16 +71,91 @@ export class MonitoringRouter extends Router {
         // ── Settings ──────────────────────────────────────────────
 
         router.get("/monitoring/settings", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: MonitoringWatcher.getInstance().getSettingsSafe() });
+            res.json({
+                ok: true,
+                data: MonitoringWatcher.getInstance().getSettingsSafe(),
+            });
         });
 
         router.post("/monitoring/settings", async (req: Request, res: Response) => {
             try {
                 const partial = req.body as Partial<MonitoringSettings>;
+                if (partial.historyEnabled !== undefined && typeof partial.historyEnabled !== "boolean") {
+                    res.status(400).json({
+                        ok: false,
+                        message: "historyEnabled doit être un booléen",
+                    });
+                    return;
+                }
+                if (partial.historyPreset !== undefined && ![ "24h", "7d", "1m", "custom" ].includes(partial.historyPreset)) {
+                    res.status(400).json({
+                        ok: false,
+                        message: "historyPreset invalide",
+                    });
+                    return;
+                }
+                if (partial.historyUnit !== undefined && ![ "days", "weeks", "months", "years" ].includes(partial.historyUnit)) {
+                    res.status(400).json({
+                        ok: false,
+                        message: "historyUnit invalide",
+                    });
+                    return;
+                }
+                if (partial.historyAmount !== undefined) {
+                    const amount = Number(partial.historyAmount);
+                    const unit = partial.historyUnit ?? MonitoringWatcher.getInstance().getSettingsSafe().historyUnit;
+                    const maximums: Record<NonNullable<MonitoringSettings["historyUnit"]>, number> = {
+                        days: 3650,
+                        weeks: 520,
+                        months: 120,
+                        years: 10,
+                    };
+                    if (!Number.isSafeInteger(amount) || amount < 1 || amount > maximums[unit]) {
+                        res.status(400).json({
+                            ok: false,
+                            message: "historyAmount invalide",
+                        });
+                        return;
+                    }
+                }
                 await MonitoringWatcher.getInstance().saveSettings(partial);
-                res.json({ ok: true });
+                res.json({
+                    ok: true,
+                });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({
+                    ok: false,
+                    message: String(e),
+                });
+            }
+        });
+
+        router.get("/monitoring/history", async (req: Request, res: Response) => {
+            try {
+                const range = parseMonitoringHistoryRange(req.query);
+                res.json({
+                    ok: true,
+                    data: await MonitoringHistoryCollector.getInstance().read(range),
+                });
+            } catch (error) {
+                res.status(400).json({
+                    ok: false,
+                    message: error instanceof Error ? error.message : String(error),
+                });
+            }
+        });
+
+        router.delete("/monitoring/history", async (_req: Request, res: Response) => {
+            try {
+                await MonitoringHistoryCollector.getInstance().clear();
+                res.json({
+                    ok: true,
+                });
+            } catch (error) {
+                res.status(500).json({
+                    ok: false,
+                    message: error instanceof Error ? error.message : String(error),
+                });
             }
         });
 

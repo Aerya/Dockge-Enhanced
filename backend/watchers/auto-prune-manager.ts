@@ -2,79 +2,139 @@
  * AutoPruneManager — purge planifiée des images Docker.
  *
  * Deux modes indépendants :
- *  - Orphelines (dangling)  : images sans tag — `docker image prune -f`, sans exclusion.
+ *  - Orphelines (dangling)  : images sans tag, supprimées individuellement après protections.
  *  - Inutilisées (unused)   : images taguées sans conteneur, plus anciennes images
  *                             Enhanced tirées par digest après protection du rollback.
  *
- * Vérification quotidienne à 3h (heure locale du processus) pour chaque mode activé.
+ * Vérification au démarrage puis toutes les 15 minutes, selon lastRun + intervalHours.
  * Persistance : DATA_DIR/auto-prune-settings.json
  */
 
 import path from "path";
 import * as fs from "node:fs";
-import { exec, execFile } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
-import { Cron } from "croner";
 import { log } from "../log";
+import { DiscordNotifier } from "../notification/discord";
+import { AppriseNotifier } from "../notification/apprise";
+import {
+    dockerDaemonAvailable,
+    finishDockerCleanup,
+    isDockerBuildActive,
+    tryStartDockerCleanup,
+    withDockerCleanupLock,
+} from "../docker-operation-state";
+import { getSelfUpdateBlocker } from "../self-update/operation-guard";
+import {
+    imageIsUsed,
+    ImageInventory as SharedImageInventory,
+    InspectedImage,
+    loadDockerImageInventory,
+    normalizeImageId,
+    sameImageId,
+} from "../docker-image-inventory";
 
-const execAsync   = promisify(exec);
+export { imageIsUsed, normalizeImageId, sameImageId } from "../docker-image-inventory";
+export type { InspectedImage } from "../docker-image-inventory";
+
 const execFileAsync = promisify(execFile);
-const DATA_DIR    = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH = path.join(DATA_DIR, "auto-prune-settings.json");
 const SELF_UPDATE_DIR = path.join(DATA_DIR, "self-update");
 const SELF_IMAGE_REPOSITORY = "ghcr.io/aerya/dockge-enhanced";
 const SELF_IMAGE_GRACE_MS = 48 * 3_600_000;
+const PRUNE_HEARTBEAT_MS = 15 * 60_000;
+const DOCKER_STARTUP_RETRY_MS = 30_000;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AutoPruneSettings {
     // Mode orphelines (dangling)
-    danglingEnabled:       boolean;
+    danglingEnabled: boolean;
     danglingIntervalHours: 24 | 48 | 168;
-    lastDanglingRun?:      string;
-    lastDanglingResult?:   string;
+    lastDanglingRun?: string;
+    lastDanglingResult?: string;
 
     // Mode inutilisées (unused tagged)
-    unusedEnabled:         boolean;
-    unusedIntervalHours:   24 | 48 | 168;
-    unusedExclusions:      string[];  // repo:tag (ex: "nginx:latest")
-    lastUnusedRun?:        string;
-    lastUnusedResult?:     string;
-    lastUnusedErrors?:     string[];
+    unusedEnabled: boolean;
+    unusedIntervalHours: 24 | 48 | 168;
+    unusedExclusions: string[];  // repo:tag (ex: "nginx:latest")
+    lastUnusedRun?: string;
+    lastUnusedResult?: string;
+    lastUnusedErrors?: string[];
 }
 
 export interface PruneResult {
     removed: string[];
     skipped: string[];
-    errors:  string[];
+    protected: string[];
+    excluded: string[];
+    tooRecent: string[];
+    errors: string[];
     summary: string;
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
 
 const DEFAULTS: AutoPruneSettings = {
-    danglingEnabled:       false,
+    danglingEnabled: false,
     danglingIntervalHours: 24,
-    unusedEnabled:         false,
-    unusedIntervalHours:   168,
-    unusedExclusions:      [],
+    unusedEnabled: false,
+    unusedIntervalHours: 168,
+    unusedExclusions: [],
 };
 
 // ─── Helpers Docker ───────────────────────────────────────────────────────────
 
-async function dockerJsonLines(args: string[]): Promise<Record<string, string>[]> {
-    const { stdout } = await execFileAsync("docker", args, { maxBuffer: 10 * 1024 * 1024 });
-    return (stdout || "").trim().split("\n").filter(l => l.trim())
-        .map(l => JSON.parse(l) as Record<string, string>);
-}
-
 export function isPruneDue(lastRun: string | undefined, intervalHours: number, now = Date.now()): boolean {
     if (!lastRun) {
-        return false;
+        return true;
     }
     const previous = new Date(lastRun).getTime();
-    // Le cron passe à 03:00:00, tandis qu'une exécution précédente finit quelques secondes après.
-    return Number.isFinite(previous) && now - previous + 60_000 >= intervalHours * 3_600_000;
+    return !Number.isFinite(previous) || now >= previous + intervalHours * 3_600_000;
+}
+
+export function nextPruneRun(lastRun: string | undefined, intervalHours: number, now = Date.now()): string {
+    const previous = lastRun ? Date.parse(lastRun) : NaN;
+    return new Date(Number.isFinite(previous) ? previous + intervalHours * 3_600_000 : now).toISOString();
+}
+
+function setHasImageId(ids: Set<string>, candidate: string): boolean {
+    return [ ...ids ].some(id => sameImageId(id, candidate));
+}
+
+export type AutoPruneTask = "dangling" | "unused";
+
+export function dueAutoPruneTasks(settings: AutoPruneSettings, now = Date.now()): AutoPruneTask[] {
+    const due: AutoPruneTask[] = [];
+    if (settings.danglingEnabled && isPruneDue(settings.lastDanglingRun, settings.danglingIntervalHours, now)) {
+        due.push("dangling");
+    }
+    if (settings.unusedEnabled && isPruneDue(settings.lastUnusedRun, settings.unusedIntervalHours, now)) {
+        due.push("unused");
+    }
+    return due;
+}
+
+export async function executeDueAutoPruneTasks(
+    settings: AutoPruneSettings,
+    now: number,
+    blockerReason: string | undefined,
+    runner: (task: AutoPruneTask) => Promise<void>,
+): Promise<{ executed: AutoPruneTask[];
+    deferred: AutoPruneTask[] }> {
+    const due = dueAutoPruneTasks(settings, now);
+    if (blockerReason) {
+        return { executed: [],
+            deferred: due };
+    }
+    const executed: AutoPruneTask[] = [];
+    for (const task of due) {
+        await runner(task);
+        executed.push(task);
+    }
+    return { executed,
+        deferred: [] };
 }
 
 export function shouldPruneTaggedImage(image: Record<string, string>, protectedImageIds: Set<string>, exclusions: string[]): boolean {
@@ -87,24 +147,62 @@ export function shouldPruneTaggedImage(image: Record<string, string>, protectedI
     if (repo.startsWith("dockge-rollback-")) {
         return false;
     }
-    if (protectedImageIds.has(id)) {
+    if (setHasImageId(protectedImageIds, id)) {
         return false;
     }
-    return !exclusions.includes(`${repo}:${tag}`);
+    return !exclusions.some(exclusion => exclusion === `${repo}:${tag}` || sameImageId(exclusion, id));
 }
 
-interface InspectedImage {
-    Id: string;
-    RepoTags?: string[];
-    RepoDigests?: string[];
+export function imageCreatedOldEnough(created: string | undefined, minimumAgeHours?: number, now = Date.now()): boolean {
+    if (!minimumAgeHours) {
+        return true;
+    }
+    const timestamp = Date.parse(created ?? "");
+    return Number.isFinite(timestamp) && now - timestamp >= minimumAgeHours * 3_600_000;
 }
 
 export function isObsoleteSelfImage(image: InspectedImage, protectedImageIds: Set<string>): boolean {
-    if (!/^sha256:[a-f0-9]{64}$/i.test(image.Id) || protectedImageIds.has(image.Id)) {
+    if (!/^sha256:[a-f0-9]{64}$/i.test(image.Id) || setHasImageId(protectedImageIds, image.Id)) {
         return false;
     }
-    const refs = [ ...(image.RepoTags ?? []), ...(image.RepoDigests ?? []) ];
-    return refs.length > 0 && refs.every(ref => ref === `${SELF_IMAGE_REPOSITORY}@${image.Id}`);
+    const tags = (image.RepoTags ?? []).filter(tag => tag && !tag.endsWith(":<none>"));
+    const digests = image.RepoDigests ?? [];
+    return tags.length === 0
+        && digests.length > 0
+        && digests.every(ref => ref.startsWith(`${SELF_IMAGE_REPOSITORY}@sha256:`));
+}
+
+export function recoveryImageIds(stateDir = SELF_UPDATE_DIR): Set<string> {
+    const ids = new Set<string>();
+    try {
+        const recoveryDir = path.join(stateDir, "recovery");
+        for (const name of fs.readdirSync(recoveryDir).filter(file => /^[a-f0-9]{32}\.json$/.test(file))) {
+            const snapshot = JSON.parse(fs.readFileSync(path.join(recoveryDir, name), "utf8")) as { previousImageId?: string };
+            if (snapshot.previousImageId && /^sha256:[a-f0-9]{64}$/i.test(snapshot.previousImageId)) {
+                ids.add(normalizeImageId(snapshot.previousImageId));
+            }
+        }
+    } catch {
+        // Aucun snapshot de récupération disponible.
+    }
+    return ids;
+}
+
+export function protectedImageIds(
+    imageRows: Record<string, string>[],
+    usedImageIds: Set<string>,
+    stateDir = SELF_UPDATE_DIR,
+): Set<string> {
+    const protectedIds = new Set([ ...usedImageIds ].map(normalizeImageId));
+    for (const image of imageRows) {
+        if ((image["Repository"] ?? "").startsWith("dockge-rollback-")) {
+            protectedIds.add(normalizeImageId(image["ID"] ?? ""));
+        }
+    }
+    for (const id of recoveryImageIds(stateDir)) {
+        protectedIds.add(id);
+    }
+    return protectedIds;
 }
 
 function dockerError(error: unknown): string {
@@ -118,7 +216,12 @@ function dockerError(error: unknown): string {
     return String(error);
 }
 
-export function selfUpdateProtectedImages(usedImageIds: Set<string>, stateDir = SELF_UPDATE_DIR, now = Date.now()): Set<string> | null {
+export function selfUpdateProtectedImages(
+    usedImageIds: Set<string>,
+    inspectedImages: InspectedImage[] = [],
+    stateDir = SELF_UPDATE_DIR,
+    now = Date.now(),
+): Set<string> | null {
     try {
         const status = JSON.parse(fs.readFileSync(path.join(stateDir, "status.json"), "utf8")) as {
             state?: string;
@@ -129,28 +232,27 @@ export function selfUpdateProtectedImages(usedImageIds: Set<string>, stateDir = 
         if (status.state !== "succeeded" || !Number.isFinite(finished) || now - finished < SELF_IMAGE_GRACE_MS) {
             return null;
         }
-        const target = status.targetImage?.match(/^ghcr\.io\/aerya\/dockge-enhanced@(sha256:[a-f0-9]{64})$/i)?.[1];
-        if (!target || !usedImageIds.has(target)) {
+        const targetDigest = status.targetImage?.match(/^ghcr\.io\/aerya\/dockge-enhanced@(sha256:[a-f0-9]{64})$/i)?.[1]?.toLowerCase();
+        const currentMatchesTarget = inspectedImages.some(image =>
+            setHasImageId(usedImageIds, image.Id)
+            && (image.RepoDigests ?? []).some(ref => ref.toLowerCase() === `${SELF_IMAGE_REPOSITORY}@${targetDigest}`));
+        if (!targetDigest || !currentMatchesTarget) {
             return null;
         }
-        const protectedIds = new Set(usedImageIds);
-        const recoveryDir = path.join(stateDir, "recovery");
-        const recoveryFiles = fs.readdirSync(recoveryDir).filter(name => /^[a-f0-9]{32}\.json$/.test(name));
-        if (recoveryFiles.length === 0) {
+        const recoveryIds = recoveryImageIds(stateDir);
+        if (recoveryIds.size === 0) {
             return null;
         }
-        for (const name of recoveryFiles) {
-            const snapshot = JSON.parse(fs.readFileSync(path.join(recoveryDir, name), "utf8")) as { previousImageId?: string };
-            const previousImageId = snapshot.previousImageId;
-            if (!previousImageId || !/^sha256:[a-f0-9]{64}$/i.test(previousImageId)) {
-                return null;
-            }
-            protectedIds.add(previousImageId);
-        }
+        const protectedIds = new Set([ ...usedImageIds ].map(normalizeImageId));
+        recoveryIds.forEach(id => protectedIds.add(id));
         return protectedIds;
     } catch {
         return null;
     }
+}
+
+export interface ImageInventory extends SharedImageInventory {
+    protectedImageIds: Set<string>;
 }
 
 // ─── Manager ──────────────────────────────────────────────────────────────────
@@ -158,8 +260,10 @@ export function selfUpdateProtectedImages(usedImageIds: Set<string>, stateDir = 
 export class AutoPruneManager {
     private static _instance: AutoPruneManager;
     private settings: AutoPruneSettings = { ...DEFAULTS };
-    private danglingCron: Cron | null = null;
-    private unusedCron:   Cron | null = null;
+    private heartbeatTimer: NodeJS.Timeout | null = null;
+    private startupTimer: NodeJS.Timeout | null = null;
+    private heartbeatRunning = false;
+    private schedulingSuspended = false;
 
     static getInstance(): AutoPruneManager {
         if (!AutoPruneManager._instance) {
@@ -201,101 +305,221 @@ export class AutoPruneManager {
     // ── Scheduling ────────────────────────────────────────────────────────────
 
     private reschedule(): void {
-        // Dangling
-        if (this.danglingCron) { this.danglingCron.stop(); this.danglingCron = null; }
-        if (this.settings.danglingEnabled) {
-            this.danglingCron = new Cron("0 3 * * *", async () => {
-                if (!this.settings.danglingEnabled) return;
-                if (this.settings.lastDanglingRun && !isPruneDue(this.settings.lastDanglingRun, this.settings.danglingIntervalHours)) {
-                    return;
-                }
-                await this.runDanglingPrune();
-            });
-            log.info("AutoPruneManager", `Orphelines actif — intervalle ${this.settings.danglingIntervalHours}h`);
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer);
         }
+        if (this.startupTimer) {
+            clearTimeout(this.startupTimer);
+        }
+        this.heartbeatTimer = null;
+        this.startupTimer = null;
+        if (this.schedulingSuspended || (!this.settings.danglingEnabled && !this.settings.unusedEnabled)) {
+            return;
+        }
+        this.scheduleStartupCheck();
+        this.heartbeatTimer = setInterval(() => this.heartbeat().catch(error => {
+            log.error("AutoPruneManager", `Heartbeat : ${String(error)}`);
+        }), PRUNE_HEARTBEAT_MS);
+        this.heartbeatTimer.unref?.();
+        log.info("AutoPruneManager", "Échéances contrôlées au démarrage puis toutes les 15 minutes");
+    }
 
-        // Unused
-        if (this.unusedCron) { this.unusedCron.stop(); this.unusedCron = null; }
-        if (this.settings.unusedEnabled) {
-            this.unusedCron = new Cron("0 3 * * *", async () => {
-                if (!this.settings.unusedEnabled) return;
-                if (this.settings.lastUnusedRun && !isPruneDue(this.settings.lastUnusedRun, this.settings.unusedIntervalHours)) {
-                    return;
-                }
-                await this.runUnusedPrune();
+    private scheduleStartupCheck(delay = 5_000): void {
+        this.startupTimer = setTimeout(async () => {
+            if (this.schedulingSuspended) {
+                return;
+            }
+            if (!await dockerDaemonAvailable()) {
+                log.info("AutoPruneManager", "Docker indisponible, nouveau contrôle initial dans 30 secondes");
+                this.scheduleStartupCheck(DOCKER_STARTUP_RETRY_MS);
+                return;
+            }
+            await this.heartbeat(Date.now(), true).catch(error => {
+                log.warn("AutoPruneManager", `Contrôle initial reporté : ${String(error)}`);
+                this.scheduleStartupCheck(DOCKER_STARTUP_RETRY_MS);
             });
-            log.info("AutoPruneManager", `Inutilisées actif — intervalle ${this.settings.unusedIntervalHours}h`);
+        }, delay);
+        this.startupTimer.unref?.();
+    }
+
+    async heartbeat(now = Date.now(), dockerReady = false): Promise<void> {
+        if (this.schedulingSuspended || this.heartbeatRunning || dueAutoPruneTasks(this.settings, now).length === 0) {
+            return;
+        }
+        if (!dockerReady && !await dockerDaemonAvailable()) {
+            return;
+        }
+        if (!tryStartDockerCleanup()) {
+            return;
+        }
+        this.heartbeatRunning = true;
+        try {
+            const blocker = isDockerBuildActive()
+                ? "un build Docker est en cours"
+                : (await getSelfUpdateBlocker())?.message;
+            await executeDueAutoPruneTasks(this.settings, now, blocker, async task => {
+                if (task === "dangling") {
+                    await this.runDanglingPrune(true, undefined, [], true);
+                } else {
+                    await this.runUnusedPrune(true, undefined, [], true);
+                }
+            });
+        } finally {
+            this.heartbeatRunning = false;
+            finishDockerCleanup();
         }
     }
 
     // ── Purge orphelines (dangling) ───────────────────────────────────────────
 
-    async runDanglingPrune(): Promise<PruneResult> {
-        try {
-            const { stdout } = await execAsync("docker image prune -f", { maxBuffer: 2 * 1024 * 1024 });
-            const summary = (stdout || "Aucune image supprimée").trim().split("\n").pop() ?? "OK";
-            this.settings.lastDanglingRun    = new Date().toISOString();
-            this.settings.lastDanglingResult = summary;
-            this.saveSettings();
-            log.info("AutoPruneManager", `Orphelines : ${summary}`);
-            return {
-                removed: [],
-                skipped: [],
-                errors: [],
-                summary,
-            };
-        } catch (e: unknown) {
-            const summary = dockerError(e);
-            this.settings.lastDanglingRun    = new Date().toISOString();
-            this.settings.lastDanglingResult = `Erreur : ${summary}`;
-            this.saveSettings();
-            return {
-                removed: [],
-                skipped: [],
-                errors: [ summary ],
-                summary,
-            };
+    async loadImageInventory(): Promise<ImageInventory> {
+        const inventory = await loadDockerImageInventory();
+        return {
+            ...inventory,
+            protectedImageIds: protectedImageIds(inventory.rows, inventory.usedImageIds),
+        };
+    }
+
+    async assertImageRemovalAllowed(target: string): Promise<void> {
+        const inventory = await this.loadImageInventory();
+        const normalizedTarget = normalizeImageId(target);
+        const row = inventory.rows.find(image =>
+            sameImageId(image["ID"] ?? "", normalizedTarget)
+            || `${image["Repository"]}:${image["Tag"]}` === target
+            || `${image["Repository"]}@${image["Digest"]}` === target);
+        let imageId = row?.["ID"] ?? normalizedTarget;
+        if (!/^sha256:[a-f0-9]{12,64}$/i.test(imageId)) {
+            try {
+                const { stdout } = await execFileAsync("docker", [ "image", "inspect", target ], { maxBuffer: 20 * 1024 * 1024 });
+                const inspected = JSON.parse(stdout) as InspectedImage[];
+                imageId = normalizeImageId(inspected[0]?.Id ?? "");
+            } catch {
+                // Docker renverra ensuite son erreur habituelle si la référence est inconnue.
+            }
         }
+        if (setHasImageId(inventory.protectedImageIds, imageId)) {
+            throw new Error("Cette image est utilisée ou protégée pour un rollback/récupération");
+        }
+    }
+
+    /**
+     * Point de passage unique pour toute suppression d'image déclenchée par
+     * Ressources Docker / auto-prune / nettoyage unifié.
+     *
+     * La protection est recalculée immédiatement avant `docker rmi`. Cela
+     * ferme la fenêtre entre le scan initial et la suppression si une image
+     * devient entre-temps une image de rollback/récupération.
+     */
+    async removeImageSafely(target: string, force = false): Promise<void> {
+        await this.assertImageRemovalAllowed(target);
+        await execFileAsync("docker", [ "rmi", ...(force ? [ "--force" ] : []), target ]);
+    }
+
+    async runDanglingPrune(notify = true, minimumAgeHours?: number, exclusions: string[] = [], lockAlreadyHeld = false): Promise<PruneResult> {
+        if (!lockAlreadyHeld) {
+            return withDockerCleanupLock(() => this.runDanglingPrune(notify, minimumAgeHours, exclusions, true));
+        }
+        const removed: string[] = [];
+        const skipped: string[] = [];
+        const protectedImages: string[] = [];
+        const excluded: string[] = [];
+        const tooRecent: string[] = [];
+        const errors: string[] = [];
+        try {
+            const inventory = await this.loadImageInventory();
+            const candidates = [ ...new Set(inventory.rows
+                .filter(row => row["Repository"] === "<none>" || row["Tag"] === "<none>")
+                .map(row => normalizeImageId(row["ID"] ?? ""))
+                .filter(id => /^sha256:[a-f0-9]{64}$/.test(id))) ];
+            for (const id of candidates) {
+                const image = inventory.inspectedById.get(id);
+                if (setHasImageId(inventory.protectedImageIds, id)) {
+                    protectedImages.push(id);
+                    skipped.push(id);
+                    continue;
+                }
+                if (exclusions.some(exclusion => sameImageId(exclusion, id))) {
+                    excluded.push(id);
+                    skipped.push(id);
+                    continue;
+                }
+                if (!imageCreatedOldEnough(image?.Created, minimumAgeHours)) {
+                    tooRecent.push(id);
+                    skipped.push(id);
+                    continue;
+                }
+                try {
+                    await this.removeImageSafely(id);
+                    removed.push(id);
+                } catch (error) {
+                    errors.push(`${id}: ${dockerError(error)}`);
+                }
+            }
+        } catch (error) {
+            errors.push(dockerError(error));
+        }
+        const summary = `${removed.length} supprimée(s), ${protectedImages.length} utilisée(s)/protégée(s), `
+            + `${excluded.length} exclue(s), ${tooRecent.length} trop récente(s), ${errors.length} erreur(s)`;
+        if (errors.length === 0) {
+            this.settings.lastDanglingRun = new Date().toISOString();
+        }
+        this.settings.lastDanglingResult = summary;
+        this.saveSettings();
+        log.info("AutoPruneManager", `Orphelines : ${summary}`);
+        if (notify) {
+            await this.notifyPrune("Images orphelines", [ summary, ...errors ].join("\n"), errors.length ? "failure" : "success");
+        }
+        return { removed,
+            skipped,
+            protected: protectedImages,
+            excluded,
+            tooRecent,
+            errors,
+            summary };
     }
 
     // ── Purge inutilisées (unused tagged) ────────────────────────────────────
 
-    async runUnusedPrune(): Promise<PruneResult> {
+    async runUnusedPrune(notify = true, minimumAgeHours?: number, additionalExclusions: string[] = [], lockAlreadyHeld = false): Promise<PruneResult> {
+        if (!lockAlreadyHeld) {
+            return withDockerCleanupLock(() => this.runUnusedPrune(notify, minimumAgeHours, additionalExclusions, true));
+        }
         const removed: string[] = [];
         const skipped: string[] = [];
-        const errors:  string[] = [];
+        const protectedImages: string[] = [];
+        const excluded: string[] = [];
+        const tooRecent: string[] = [];
+        const errors: string[] = [];
 
         try {
-            const allImgs = await dockerJsonLines([ "images", "--no-trunc", "--format", "{{json .}}" ]);
-            const { stdout: containerIds } = await execFileAsync("docker", [ "ps", "-aq" ]);
-            const ids = containerIds.trim().split("\n").filter(Boolean);
-            const usedImageIds = new Set<string>();
-            if (ids.length > 0) {
-                const { stdout } = await execFileAsync("docker", [ "inspect", ...ids ], { maxBuffer: 20 * 1024 * 1024 });
-                for (const container of JSON.parse(stdout) as { Image: string }[]) {
-                    usedImageIds.add(container.Image);
-                }
-            }
-            // Un second tag sur la même image ne doit pas contourner la protection rollback.
-            const protectedImageIds = new Set(usedImageIds);
-            for (const image of allImgs) {
-                if ((image["Repository"] ?? "").startsWith("dockge-rollback-")) {
-                    protectedImageIds.add(image["ID"]);
-                }
-            }
+            const inventory = await this.loadImageInventory();
+            const allImgs = inventory.rows;
+            const exclusions = [ ...new Set([ ...this.settings.unusedExclusions, ...additionalExclusions ]) ];
 
             for (const img of allImgs) {
                 const repo = img["Repository"] ?? "";
-                const tag  = img["Tag"] ?? "";
+                const tag = img["Tag"] ?? "";
                 const nameTag = `${repo}:${tag}`;
-                if (!shouldPruneTaggedImage(img, protectedImageIds, this.settings.unusedExclusions)) {
-                    if (this.settings.unusedExclusions.includes(nameTag)) {
+                if (!shouldPruneTaggedImage(img, inventory.protectedImageIds, exclusions)) {
+                    const id = img["ID"] ?? "";
+                    if (exclusions.some(value => value === nameTag || sameImageId(value, id))) {
+                        excluded.push(nameTag);
+                    } else if (setHasImageId(inventory.protectedImageIds, id)) {
+                        protectedImages.push(nameTag);
+                    }
+                    if (excluded.includes(nameTag) || protectedImages.includes(nameTag)) {
                         skipped.push(nameTag);
                     }
                     continue;
                 }
+                const inspected = inventory.inspectedById.get(normalizeImageId(img["ID"] ?? ""));
+                if (!imageCreatedOldEnough(inspected?.Created, minimumAgeHours)) {
+                    tooRecent.push(nameTag);
+                    skipped.push(nameTag);
+                    continue;
+                }
                 try {
-                    await execFileAsync("docker", [ "rmi", nameTag ]);
+                    await this.removeImageSafely(nameTag);
                     removed.push(nameTag);
                 } catch (e: unknown) {
                     errors.push(`${nameTag}: ${dockerError(e)}`);
@@ -304,19 +528,26 @@ export class AutoPruneManager {
 
             // Les anciennes images Enhanced tirées par digest ont Tag=<none> mais ne sont
             // pas dangling pour Docker. Ne les retirer qu'après confirmation du self-update.
-            const selfProtectedIds = selfUpdateProtectedImages(protectedImageIds);
+            const selfProtectedIds = selfUpdateProtectedImages(inventory.usedImageIds, inventory.inspected);
             if (selfProtectedIds) {
                 const candidateIds = [ ...new Set(allImgs
                     .filter(img => img["Repository"] === SELF_IMAGE_REPOSITORY && img["Tag"] === "<none>")
-                    .map(img => img["ID"])) ].filter(id => !selfProtectedIds.has(id));
+                    .map(img => img["ID"])) ].filter(id => !imageIsUsed(id, selfProtectedIds));
                 if (candidateIds.length > 0) {
                     const { stdout } = await execFileAsync("docker", [ "image", "inspect", ...candidateIds ], { maxBuffer: 20 * 1024 * 1024 });
                     for (const image of JSON.parse(stdout) as InspectedImage[]) {
                         if (!isObsoleteSelfImage(image, selfProtectedIds)) {
+                            protectedImages.push(image.Id);
+                            skipped.push(image.Id);
+                            continue;
+                        }
+                        if (!imageCreatedOldEnough(image.Created, minimumAgeHours)) {
+                            tooRecent.push(image.Id);
+                            skipped.push(image.Id);
                             continue;
                         }
                         try {
-                            await execFileAsync("docker", [ "rmi", image.Id ]);
+                            await this.removeImageSafely(image.Id);
                             removed.push(`${SELF_IMAGE_REPOSITORY}@${image.Id}`);
                         } catch (e: unknown) {
                             errors.push(`${image.Id}: ${dockerError(e)}`);
@@ -328,29 +559,67 @@ export class AutoPruneManager {
             errors.push(dockerError(e));
         }
 
-        const summary = `${removed.length} supprimée(s), ${skipped.length} exclue(s)` +
-            (errors.length > 0 ? `, ${errors.length} erreur(s)` : "");
+        const summary = `${removed.length} supprimée(s), ${protectedImages.length} utilisée(s)/protégée(s), `
+            + `${excluded.length} exclue(s), ${tooRecent.length} trop récente(s), ${errors.length} erreur(s)`;
 
-        this.settings.lastUnusedRun    = new Date().toISOString();
+        if (errors.length === 0) {
+            this.settings.lastUnusedRun = new Date().toISOString();
+        }
         this.settings.lastUnusedResult = summary;
         this.settings.lastUnusedErrors = errors;
         this.saveSettings();
         log.info("AutoPruneManager", `Inutilisées : ${summary}`);
+        if (notify) {
+            await this.notifyPrune("Images inutilisées", [ summary, ...errors ].join("\n"), errors.length > 0 ? "failure" : "success");
+        }
         return {
             removed,
             skipped,
+            protected: protectedImages,
+            excluded,
+            tooRecent,
             errors,
             summary,
         };
     }
 
+    private async notifyPrune(title: string, body: string, type: "success" | "warning" | "failure"): Promise<void> {
+        try {
+            const settings = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "watcher-settings.json"), "utf8")) as {
+                discordWebhooks?: string[];
+                appriseServerUrl?: string;
+                appriseUrls?: string[];
+            };
+            const fullTitle = `Dockge-Enhanced — ${title}`;
+            await Promise.all([
+                settings.discordWebhooks?.length
+                    ? new DiscordNotifier(settings.discordWebhooks).sendEmbed({
+                        title: fullTitle,
+                        description: body,
+                        color: type === "failure" ? 0xef4444 : type === "warning" ? 0xf59e0b : 0x22c55e,
+                    })
+                    : Promise.resolve(),
+                settings.appriseServerUrl
+                    ? new AppriseNotifier(settings.appriseServerUrl, settings.appriseUrls ?? []).send({ title: fullTitle,
+                        body,
+                        type })
+                    : Promise.resolve(false),
+            ]);
+        } catch (error) {
+            if ((error as NodeJS.ErrnoException)?.code !== "ENOENT") {
+                log.warn("AutoPruneManager", `Notification impossible : ${String(error)}`);
+            }
+        }
+    }
+
     // ── API publique ──────────────────────────────────────────────────────────
 
-    getSettings(): AutoPruneSettings & { nextDanglingRun: string | null; nextUnusedRun: string | null } {
+    getSettings(): AutoPruneSettings & { nextDanglingRun: string | null;
+        nextUnusedRun: string | null } {
         return {
             ...this.settings,
             nextDanglingRun: this.nextRun(this.settings.lastDanglingRun, this.settings.danglingIntervalHours, this.settings.danglingEnabled),
-            nextUnusedRun:   this.nextRun(this.settings.lastUnusedRun,   this.settings.unusedIntervalHours,   this.settings.unusedEnabled),
+            nextUnusedRun: this.nextRun(this.settings.lastUnusedRun, this.settings.unusedIntervalHours, this.settings.unusedEnabled),
         };
     }
 
@@ -360,6 +629,11 @@ export class AutoPruneManager {
             ...partial,
         };
         this.saveSettings();
+        this.reschedule();
+    }
+
+    setSchedulingSuspended(suspended: boolean): void {
+        this.schedulingSuspended = suspended;
         this.reschedule();
     }
 
@@ -376,12 +650,9 @@ export class AutoPruneManager {
     }
 
     private nextRun(lastRun: string | undefined, intervalHours: number, enabled: boolean): string | null {
-        if (!enabled) return null;
-        const schedule = new Cron("0 3 * * *", { paused: true });
-        const previous = lastRun ? new Date(lastRun).getTime() : NaN;
-        const earliest = Number.isFinite(previous)
-            ? new Date(previous + intervalHours * 3_600_000 - 60_001)
-            : new Date();
-        return schedule.nextRun(earliest)?.toISOString() ?? null;
+        if (!enabled) {
+            return null;
+        }
+        return nextPruneRun(lastRun, intervalHours);
     }
 }

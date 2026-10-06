@@ -17,6 +17,16 @@ import { AutoPruneManager } from "../watchers/auto-prune-manager";
 import { AuditLogger, setAuditUser } from "../audit-log";
 import { requireHttpAuth } from "../auth";
 import childProcessAsync from "promisify-child-process";
+import {
+    buildPrunePreview,
+    DockerCleanupManager,
+    getPruneHistory,
+    PruneCategory,
+    runPrune,
+    withCleanupExecutionLock,
+} from "../docker-prune-service";
+import { listNamedVolumeDir } from "../volume-files";
+import { classifyImageReferences, loadDockerImageInventory } from "../docker-image-inventory";
 
 // ─── Types internes ───────────────────────────────────────────────
 
@@ -27,6 +37,10 @@ interface ContainerRef {
     status: string;
     stackName?: string;
     service?: string;
+}
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }
 
 // ─── Helpers CLI ──────────────────────────────────────────────────
@@ -75,26 +89,6 @@ function label(labels: string, key: string): string | undefined {
         }
     }
     return undefined;
-}
-
-/** Conteneurs utilisant une image (par repo:tag ou par ID) */
-function imgContainers(containers: Record<string, string>[], imgName: string, imgId: string): ContainerRef[] {
-    return containers
-        .filter(c => {
-            const img = c["Image"] ?? "";
-            return img === imgName
-                || img === imgId
-                || imgId.replace("sha256:", "").startsWith(img.replace("sha256:", ""))
-                || img.replace("sha256:", "").startsWith(imgId.replace("sha256:", ""));
-        })
-        .map(c => ({
-            id: c["ID"] ?? "",
-            name: (c["Names"] ?? "").replace(/^\//, ""),
-            state: c["State"] ?? "",
-            status: c["Status"] ?? "",
-            stackName: label(c["Labels"] ?? "", "com.docker.compose.project"),
-            service: label(c["Labels"] ?? "", "com.docker.compose.service"),
-        }));
 }
 
 /**
@@ -165,40 +159,33 @@ export class DockerResourcesRouter extends Router {
 
         router.get("/images", auth, async (_req: Request, res: Response) => {
             try {
-                const [rawImgs, allDangling, rawCtrs] = await Promise.all([
-                    dockerJsonLines([ "images", "--format", "{{json .}}" ]),
-                    // -a --filter dangling=true capture les couches intermédiaires orphelines
-                    // que docker images (sans -a) ne montre pas, mais que docker image prune supprime
-                    dockerJsonLines([ "images", "-a", "--filter", "dangling=true", "--format", "{{json .}}" ]),
-                    dockerJsonLines([ "ps", "-a", "--format", "{{json .}}" ]),
-                ]);
-
-                // Merge : on ajoute les dangling intermédiaires absents de la liste principale
-                const seenIds = new Set(rawImgs.map(img => img["ID"]));
-                const danglingIds = new Set(allDangling.map(img => img["ID"]));
-                const extraDangling = allDangling.filter(img => !seenIds.has(img["ID"]));
-                const mergedImgs = [...rawImgs, ...extraDangling];
-
-                const images = mergedImgs.map(img => {
-                    const isDangling = danglingIds.has(img["ID"]);
-                    const name = img["Repository"] === "<none>" ? img["ID"]! : `${img["Repository"]}:${img["Tag"]}`;
-                    const containers = imgContainers(rawCtrs, name, img["ID"] ?? "");
-                    const status = computeStatus(containers, isDangling);
-                    const dockgeStacks = [...new Set(containers.map(c => c.stackName).filter(Boolean))];
+                const inventory = await loadDockerImageInventory();
+                const images = classifyImageReferences(inventory).map(image => {
+                    const dockgeStacks = [ ...new Set(image.containers.map(container => container.stackName).filter(Boolean)) ];
                     return {
-                        id: img["ID"],
-                        repository: img["Repository"],
-                        tag: img["Tag"],
-                        size: img["Size"],
-                        createdSince: img["CreatedSince"],
-                        createdAt: img["CreatedAt"],
-                        status,
-                        containers,
+                        ...image,
                         dockgeStacks,
                     };
                 });
-
-                res.json({ ok: true, images });
+                const uniqueById = new Map<string, typeof images[number]>();
+                for (const image of images) {
+                    const previous = uniqueById.get(image.id);
+                    if (!previous || previous.status === "unused" || previous.status === "dangling") {
+                        uniqueById.set(image.id, image);
+                    }
+                }
+                const uniqueImages = [ ...uniqueById.values() ];
+                res.json({
+                    ok: true,
+                    images,
+                    stats: {
+                        uniqueImages: uniqueImages.length,
+                        references: images.length,
+                        unused: uniqueImages.filter(image => image.status === "unused").length,
+                        dangling: uniqueImages.filter(image => image.status === "dangling").length,
+                        used: uniqueImages.filter(image => image.status === "running" || image.status === "stopped").length,
+                    },
+                });
             } catch (e: any) {
                 res.status(500).json({ ok: false, message: e.message });
             }
@@ -208,7 +195,10 @@ export class DockerResourcesRouter extends Router {
             const id = req.params["imageId"];
             const force = req.query["force"] === "true";
             try {
-                const message = (await dockerArgs([ "rmi", ...(force ? [ "--force" ] : []), id ])) || "Supprimé";
+                const message = await withCleanupExecutionLock(async () => {
+                    await AutoPruneManager.getInstance().removeImageSafely(id, force);
+                    return "Supprimé";
+                });
                 await auditDockerAction(req, "docker.image.delete", "image", id, "success", message, { force });
                 res.json({ ok: true, message });
             } catch (e: any) {
@@ -220,9 +210,15 @@ export class DockerResourcesRouter extends Router {
 
         router.post("/images/prune", auth, async (req: Request, res: Response) => {
             try {
-                const message = (await dockerArgs([ "image", "prune", "-f" ])) || "Terminé";
-                await auditDockerAction(req, "docker.image.prune_dangling", "image", "dangling", "success", message);
-                res.json({ ok: true, message });
+                const result = await AutoPruneManager.getInstance().runDanglingPrune();
+                const ok = result.errors.length === 0;
+                const message = [ result.summary, ...result.errors ].join("\n");
+                await auditDockerAction(req, "docker.image.prune_dangling", "image", "dangling", ok ? "success" : "failure", message, result);
+                res.status(ok ? 200 : 500).json({
+                    ok,
+                    message,
+                    ...result,
+                });
             } catch (e: any) {
                 await auditDockerAction(req, "docker.image.prune_dangling", "image", "dangling", "failure", e.message);
                 res.status(500).json({ ok: false, message: e.message });
@@ -232,9 +228,22 @@ export class DockerResourcesRouter extends Router {
         // Supprime toutes les images non utilisées par un conteneur (orphelines + inutilisées taguées)
         router.post("/images/prune-unused", auth, async (req: Request, res: Response) => {
             try {
-                const message = (await dockerArgs([ "image", "prune", "-a", "-f" ])) || "Terminé";
-                await auditDockerAction(req, "docker.image.prune_unused", "image", "unused", "success", message);
-                res.json({ ok: true, message });
+                const { dangling, unused } = await withCleanupExecutionLock(async () => ({
+                    dangling: await AutoPruneManager.getInstance().runDanglingPrune(false, undefined, [], true),
+                    unused: await AutoPruneManager.getInstance().runUnusedPrune(false, undefined, [], true),
+                }));
+                const errors = [ ...dangling.errors, ...unused.errors ];
+                const ok = errors.length === 0;
+                const message = [ dangling.summary, unused.summary, ...errors ].join("\n");
+                await auditDockerAction(req, "docker.image.prune_unused", "image", "unused", ok ? "success" : "failure", message, {
+                    dangling,
+                    unused,
+                });
+                res.status(ok ? 200 : 500).json({
+                    ok,
+                    message,
+                    errors,
+                });
             } catch (e: any) {
                 await auditDockerAction(req, "docker.image.prune_unused", "image", "unused", "failure", e.message);
                 res.status(500).json({ ok: false, message: e.message });
@@ -511,6 +520,13 @@ export class DockerResourcesRouter extends Router {
         router.post("/auto-prune/settings", auth, async (req: Request, res: Response) => {
             try {
                 const { danglingEnabled, danglingIntervalHours, unusedEnabled, unusedIntervalHours } = req.body ?? {};
+                if (DockerCleanupManager.getInstance().getSettings().enabled && (danglingEnabled || unusedEnabled)) {
+                    res.status(409).json({
+                        ok: false,
+                        message: "La purge automatique d’images est pilotée par le nettoyage unifié",
+                    });
+                    return;
+                }
                 await AutoPruneManager.getInstance().updateSettings({
                     danglingEnabled, danglingIntervalHours,
                     unusedEnabled,   unusedIntervalHours,
@@ -551,8 +567,14 @@ export class DockerResourcesRouter extends Router {
         router.post("/auto-prune/run/dangling", auth, async (req: Request, res: Response) => {
             try {
                 const result = await AutoPruneManager.getInstance().runDanglingPrune();
-                await auditDockerAction(req, "docker.auto_prune.run_dangling", "image", "dangling", "success", result.summary, result);
-                res.json({ ok: true, ...result });
+                const ok = result.errors.length === 0;
+                const message = [ result.summary, ...result.errors ].join("\n");
+                await auditDockerAction(req, "docker.auto_prune.run_dangling", "image", "dangling", ok ? "success" : "failure", message, result);
+                res.status(ok ? 200 : 500).json({
+                    ok,
+                    message,
+                    ...result,
+                });
             } catch (e: any) {
                 await auditDockerAction(req, "docker.auto_prune.run_dangling", "image", "dangling", "failure", e.message);
                 res.status(500).json({ ok: false, message: e.message });
@@ -562,11 +584,123 @@ export class DockerResourcesRouter extends Router {
         router.post("/auto-prune/run/unused", auth, async (req: Request, res: Response) => {
             try {
                 const result = await AutoPruneManager.getInstance().runUnusedPrune();
-                await auditDockerAction(req, "docker.auto_prune.run_unused", "image", "unused", "success", result.summary, result);
-                res.json({ ok: true, ...result });
+                const ok = result.errors.length === 0;
+                const message = [ result.summary, ...result.errors ].join("\n");
+                await auditDockerAction(req, "docker.auto_prune.run_unused", "image", "unused", ok ? "success" : "failure", message, result);
+                res.status(ok ? 200 : 500).json({
+                    ok,
+                    message,
+                    ...result,
+                });
             } catch (e: any) {
                 await auditDockerAction(req, "docker.auto_prune.run_unused", "image", "unused", "failure", e.message);
                 res.status(500).json({ ok: false, message: e.message });
+            }
+        });
+
+        // ── Unified manual cleanup preview ────────────────────────
+
+        router.get("/prune/preview", auth, async (_req: Request, res: Response) => {
+            try {
+                res.json({
+                    ok: true,
+                    data: await buildPrunePreview(),
+                });
+            } catch (error: unknown) {
+                res.status(500).json({
+                    ok: false,
+                    message: errorMessage(error),
+                });
+            }
+        });
+
+        router.get("/prune/history", auth, (_req: Request, res: Response) => {
+            res.json({
+                ok: true,
+                data: getPruneHistory(),
+            });
+        });
+
+        router.get("/prune/settings", auth, (_req: Request, res: Response) => {
+            res.json({
+                ok: true,
+                data: DockerCleanupManager.getInstance().getSettings(),
+            });
+        });
+
+        router.post("/prune/settings", auth, async (req: Request, res: Response) => {
+            try {
+                await DockerCleanupManager.getInstance().updateSettings(req.body ?? {});
+                await auditDockerAction(req, "docker.cleanup.settings", "setting", "cleanup", "success", null, req.body ?? {});
+                res.json({
+                    ok: true,
+                    data: DockerCleanupManager.getInstance().getSettings(),
+                });
+            } catch (error: unknown) {
+                const message = errorMessage(error);
+                await auditDockerAction(req, "docker.cleanup.settings", "setting", "cleanup", "failure", message);
+                res.status(400).json({
+                    ok: false,
+                    message,
+                });
+            }
+        });
+
+        router.post("/prune/run-automatic", auth, async (req: Request, res: Response) => {
+            try {
+                const result = await DockerCleanupManager.getInstance().runAutomatic();
+                res.json({
+                    ok: true,
+                    data: result,
+                });
+            } catch (error: unknown) {
+                res.status(400).json({
+                    ok: false,
+                    message: errorMessage(error),
+                });
+            }
+        });
+
+        router.get("/prune/volumes/:name/browse", auth, async (req: Request, res: Response) => {
+            try {
+                const name = safeDockerName(req.params.name, "Nom de volume");
+                const relativePath = String(req.query.path ?? "");
+                const entries = await listNamedVolumeDir(name, relativePath);
+                res.json({
+                    ok: true,
+                    entries,
+                });
+            } catch (error: unknown) {
+                res.status(400).json({
+                    ok: false,
+                    message: errorMessage(error),
+                });
+            }
+        });
+
+        router.post("/prune/run", auth, async (req: Request, res: Response) => {
+            const categories = Array.isArray(req.body?.categories) ? req.body.categories as PruneCategory[] : [];
+            if (req.body?.confirmed !== true) {
+                res.status(400).json({
+                    ok: false,
+                    message: "Confirmation explicite requise",
+                });
+                return;
+            }
+            try {
+                const result = await runPrune(categories);
+                await auditDockerAction(req, "docker.prune.run", "docker", "resources", result.success ? "success" : "failure", null, result);
+                res.status(result.success ? 200 : 500).json({
+                    ok: result.success,
+                    data: result,
+                });
+            } catch (error: unknown) {
+                const message = errorMessage(error);
+                await auditDockerAction(req, "docker.prune.run", "docker", "resources", "failure", message, { categories });
+                res.status(400).json({
+                    ok: false,
+                    message,
+                });
             }
         });
 

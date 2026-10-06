@@ -32,6 +32,7 @@ import {
     targetedComposeRecreateArgsForTargets,
 } from "./compose-network-namespace";
 import { ContainerInstance, parseContainerInstances, requireContainerInstance } from "./container-instances";
+import { trackDockerBuild } from "./docker-operation-state";
 
 // ─── Cache court de getServiceStatusList (point #9 : éviter `docker inspect`
 // de TOUS les containers à chaque refresh / chaque onglet ouvert). TTL piloté
@@ -1564,34 +1565,36 @@ export class Stack {
         }
         await this.assertStartGuard();
 
-        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(
-            this.server,
-            socket,
-            terminalName,
-            "docker",
-            this.getComposeOptions("build", "--pull", ...buildServices),
-            this.path,
-        );
-        if (exitCode !== 0) {
-            throw new Error("Failed to build, please check the terminal output for more information.");
-        }
+        return trackDockerBuild(async () => {
+            const terminalName = getComposeTerminalName(socket.endpoint, this.name);
+            let exitCode = await Terminal.exec(
+                this.server,
+                socket,
+                terminalName,
+                "docker",
+                this.getComposeOptions("build", "--pull", ...buildServices),
+                this.path,
+            );
+            if (exitCode !== 0) {
+                throw new Error("Failed to build, please check the terminal output for more information.");
+            }
 
-        exitCode = await Terminal.exec(
-            this.server,
-            socket,
-            terminalName,
-            "docker",
-            this.getComposeOptions("up", "-d", "--remove-orphans"),
-            this.path,
-        );
-        if (exitCode !== 0) {
-            throw new Error("Build succeeded but recreate failed, please check the terminal output for more information.");
-        }
-        const now = new Date().toISOString();
-        await this.writeMeta({ lastUpdated: now,
-            lastStartedAt: now });
-        return exitCode;
+            exitCode = await Terminal.exec(
+                this.server,
+                socket,
+                terminalName,
+                "docker",
+                this.getComposeOptions("up", "-d", "--remove-orphans"),
+                this.path,
+            );
+            if (exitCode !== 0) {
+                throw new Error("Build succeeded but recreate failed, please check the terminal output for more information.");
+            }
+            const now = new Date().toISOString();
+            await this.writeMeta({ lastUpdated: now,
+                lastStartedAt: now });
+            return exitCode;
+        });
     }
 
     async joinCombinedTerminal(socket: DockgeSocket) {

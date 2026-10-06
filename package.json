@@ -56,6 +56,7 @@
     "overrides": {
         "form-data": "^4.0.4",
         "lodash": "^4.18.1",
+        "proxy-addr": "^2.0.8",
         "tar": "^7.5.21",
         "@tootallnate/once": "^2.0.1",
         "minimatch@^9.0.0": "^9.0.7",

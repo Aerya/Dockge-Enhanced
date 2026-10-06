@@ -224,6 +224,35 @@ export async function getVolumeMounts(server: DockgeServer, stackName: string, s
     return prepare(server, stackName, service);
 }
 
+/** Liste en lecture seule un volume nommé qui n'est plus rattaché à un conteneur. */
+export async function listNamedVolumeDir(volumeName: string, relativePath = ""): Promise<DirEntry[]> {
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,255}$/.test(volumeName)) {
+        throw new Error("Nom de volume invalide");
+    }
+    await childProcessAsync.spawn("docker", [ "volume", "inspect", volumeName ], { encoding: "utf-8" });
+    const normalized = path.posix.normalize(`/${relativePath || ""}`).replace(/^\/+/, "");
+    if (normalized === ".." || normalized.startsWith("../")) {
+        throw new Error("Chemin invalide");
+    }
+    const mount: VolumeMount = {
+        type: "volume",
+        source: volumeName,
+        name: volumeName,
+        destination: "/",
+        rw: false,
+    };
+    const out = await helperRun(mount, [ "ls", "-1Ap", "--", mntJoin(normalized) ], {});
+    return out.toString("utf-8")
+        .split("\n")
+        .map(line => line.replace(/\r$/, ""))
+        .filter(Boolean)
+        .slice(0, MAX_ENTRIES)
+        .map(line => ({
+            name: line.endsWith("/") ? line.slice(0, -1) : line,
+            type: line.endsWith("/") ? "dir" : "file",
+        }));
+}
+
 /** Liste le contenu d'un répertoire (dossiers d'abord, puis fichiers). */
 export async function listDir(server: DockgeServer, stackName: string, service: string, dirPath: string): Promise<DirEntry[]> {
     const mounts = await prepare(server, stackName, service);

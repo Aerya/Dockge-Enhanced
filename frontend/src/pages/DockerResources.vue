@@ -15,7 +15,7 @@
                     <button class="nav-link" :class="{ active: tab === 'images' }" @click="tab = 'images'">
                         <font-awesome-icon icon="images" class="me-1" />{{ $t("dockerResources.tab.images") }}
                         <span v-if="!loadingImages" class="ms-1 badge rounded-pill"
-                            :class="imgBadgeClass">{{ images.length }}</span>
+                            :class="imgBadgeClass">{{ uniqueImagesCount }}</span>
                     </button>
                 </li>
                 <li class="nav-item">
@@ -38,9 +38,14 @@
                         <span v-if="!loadingNetworks" class="ms-1 badge rounded-pill bg-success">{{ networks.length }}</span>
                     </button>
                 </li>
+                <li class="nav-item">
+                    <button class="nav-link" :class="{ active: tab === 'cleanup' }" @click="tab = 'cleanup'">
+                        <font-awesome-icon icon="trash" class="me-1" />{{ $t("dockerResources.tab.cleanup") }}
+                    </button>
+                </li>
             </ul>
 
-            <div class="input-group input-group-sm mb-4 resource-search">
+            <div v-if="tab !== 'cleanup'" class="input-group input-group-sm mb-4 resource-search">
                 <span class="input-group-text">
                     <font-awesome-icon icon="search" />
                 </span>
@@ -59,6 +64,134 @@
                 >
                     <font-awesome-icon icon="times" />
                 </button>
+            </div>
+
+            <!-- ═══ TAB: SAFE CLEANUP PREVIEW ═══ -->
+            <div v-show="tab === 'cleanup'">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <button class="btn btn-normal btn-sm" :disabled="loadingPrunePreview || runningPrune" @click="loadPrunePreview">
+                        <span v-if="loadingPrunePreview" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="search" class="me-1" />{{ $t("dockerResources.cleanup.scan") }}
+                    </button>
+                    <span class="text-muted small">{{ $t("dockerResources.cleanup.scanHint") }}</span>
+                </div>
+
+                <section v-if="cleanupSettingsLoaded" class="cleanup-settings mb-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <div>
+                            <strong>{{ $t("dockerResources.cleanup.automationTitle") }}</strong>
+                            <div class="text-muted small">{{ $t("dockerResources.cleanup.automationHint") }}</div>
+                        </div>
+                        <label class="form-check form-switch mb-0">
+                            <input v-model="cleanupSettings.enabled" class="form-check-input" type="checkbox" />
+                            <span class="form-check-label">{{ $t("dockerResources.cleanup.automationEnabled") }}</span>
+                        </label>
+                    </div>
+                    <div class="cleanup-settings__grid">
+                        <label v-for="category in automaticPruneCategories" :key="`auto-${category}`" class="form-check">
+                            <input v-model="cleanupSettings.categories[category]" class="form-check-input" type="checkbox" />
+                            <span class="form-check-label">{{ $t(`dockerResources.cleanup.category.${category}`) }}</span>
+                        </label>
+                        <label>
+                            <span class="small text-muted">{{ $t("dockerResources.cleanup.interval") }}</span>
+                            <select v-model.number="cleanupSettings.intervalHours" class="form-select form-select-sm">
+                                <option :value="24">24 h</option><option :value="48">48 h</option><option :value="168">7 j</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span class="small text-muted">{{ $t("dockerResources.cleanup.grace") }}</span>
+                            <input v-model.number="cleanupSettings.graceHours" class="form-control form-control-sm" type="number" min="24" max="720" />
+                        </label>
+                    </div>
+                    <div v-if="cleanupSettings.categories.volumes" class="alert alert-danger py-2 mt-3 mb-2">
+                        <strong>{{ $t("dockerResources.cleanup.volumeRuleTitle") }}</strong>
+                        <div>{{ $t("dockerResources.cleanup.volumeRule") }}</div>
+                        <label class="form-check mt-2 mb-0">
+                            <input v-model="cleanupSettings.volumeAutomationConfirmed" class="form-check-input" type="checkbox" />
+                            <span class="form-check-label">{{ $t("dockerResources.cleanup.volumeAutomationConfirm") }}</span>
+                        </label>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
+                        <button class="btn btn-primary btn-sm" :disabled="savingCleanupSettings" @click="saveCleanupSettings">
+                            <span v-if="savingCleanupSettings" class="spinner-border spinner-border-sm me-1" />{{ $t("save") }}
+                        </button>
+                        <span v-if="cleanupSettings.nextRun" class="text-muted small">{{ $t("dockerResources.cleanup.nextRun") }} {{ fmtDate(cleanupSettings.nextRun) }}</span>
+                        <span v-if="cleanupSettings.lastResult" class="text-muted small">{{ cleanupSettings.lastResult }}</span>
+                    </div>
+                </section>
+
+                <div class="alert alert-warning py-2">
+                    <font-awesome-icon icon="exclamation-triangle" class="me-1" />
+                    {{ $t("dockerResources.cleanup.warning") }}
+                </div>
+
+                <div v-if="prunePreviewError" class="alert alert-danger py-2">{{ prunePreviewError }}</div>
+                <div v-else-if="prunePreview" class="cleanup-grid mb-3">
+                    <label v-for="category in pruneCategories" :key="category" class="cleanup-card" :class="{ 'cleanup-card--danger': category === 'volumes' }">
+                        <input v-model="selectedPruneCategories" class="form-check-input" type="checkbox" :value="category" :disabled="categoryCandidateCount(category) === 0" />
+                        <span class="cleanup-card__content">
+                            <strong>{{ $t(`dockerResources.cleanup.category.${category}`) }}</strong>
+                            <span>{{ categoryCandidateCount(category) }} {{ $t("dockerResources.cleanup.candidates") }}</span>
+                            <span v-if="categoryProtectedCount(category)" class="text-info small">{{ categoryProtectedCount(category) }} {{ $t("dockerResources.cleanup.protectedCount") }}</span>
+                            <span v-if="categoryExcludedCount(category)" class="text-muted small">{{ categoryExcludedCount(category) }} {{ $t("dockerResources.cleanup.excludedCount") }}</span>
+                            <span v-if="categoryReclaimable(category)" class="text-success">{{ categoryReclaimable(category) }}</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div v-if="prunePreview" class="accordion cleanup-details mb-3">
+                    <details v-for="category in pruneCategories" :key="`details-${category}`" :open="prunePreview.candidates[category].length > 0 && category !== 'volumes'">
+                        <summary>
+                            {{ $t(`dockerResources.cleanup.category.${category}`) }}
+                            <span class="badge bg-secondary ms-1">{{ prunePreview.candidates[category].length }}</span>
+                        </summary>
+                        <div v-if="prunePreview.candidates[category].length === 0" class="text-muted small p-2">{{ $t("dockerResources.cleanup.none") }}</div>
+                        <div v-else class="cleanup-items">
+                            <div v-for="item in prunePreview.candidates[category]" :key="`${category}-${item.id}-${item.name}`" class="cleanup-item">
+                                <code>{{ item.name }}</code>
+                                <span v-if="item.composeProject" class="badge badge-stack">{{ item.composeProject }}</span>
+                                <span v-if="item.composeVolume" class="badge bg-secondary">{{ item.composeVolume }}</span>
+                                <span v-if="item.composeProject" class="small" :class="item.stackPresent ? 'text-success' : 'text-warning'">
+                                    {{ $t(item.stackPresent ? "dockerResources.cleanup.stackPresent" : "dockerResources.cleanup.stackMissing") }}
+                                </span>
+                                <span class="text-muted small">{{ item.detail || item.size || '' }}</span>
+                                <span v-if="item.protected" class="badge bg-info text-dark">{{ $t("dockerResources.cleanup.protected") }}</span>
+                                <span v-if="item.excluded" class="badge bg-secondary">{{ $t("dockerResources.cleanup.excluded") }}</span>
+                                <button v-if="category === 'volumes'" type="button" class="btn btn-sm btn-normal ms-auto" @click.prevent="openPruneVolume(item)">
+                                    <font-awesome-icon icon="folder-open" class="me-1" />{{ $t("dockerResources.cleanup.browse") }}
+                                </button>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <button
+                    v-if="prunePreview"
+                    class="btn btn-danger btn-sm mb-4"
+                    :disabled="runningPrune || selectedPruneCategories.length === 0"
+                    @click="executePrune"
+                >
+                    <span v-if="runningPrune" class="spinner-border spinner-border-sm me-1" />
+                    <font-awesome-icon v-else icon="trash" class="me-1" />{{ $t("dockerResources.cleanup.execute") }}
+                </button>
+
+                <h3 class="h5">{{ $t("dockerResources.cleanup.history") }}</h3>
+                <div v-if="pruneHistory.length === 0" class="text-muted small">{{ $t("dockerResources.cleanup.noHistory") }}</div>
+                <div v-else class="cleanup-history">
+                    <details v-for="entry in pruneHistory" :key="entry.id" class="cleanup-history__entry">
+                        <summary>
+                            <span class="badge" :class="entry.success ? 'bg-success' : 'bg-danger'">{{ entry.success ? 'OK' : $t("dockerResources.cleanup.failed") }}</span>
+                            <strong>{{ new Date(entry.finishedAt).toLocaleString() }}</strong>
+                            <span class="text-muted">{{ entry.categories.map(category => $t(`dockerResources.cleanup.category.${category}`)).join(' · ') }}</span>
+                        </summary>
+                        <div class="cleanup-history__results">
+                            <div v-for="category in entry.categories" :key="`${entry.id}-${category}`">
+                                <strong>{{ $t(`dockerResources.cleanup.category.${category}`) }}</strong>
+                                <pre>{{ entry.results[category] || '—' }}</pre>
+                            </div>
+                        </div>
+                    </details>
+                </div>
             </div>
 
             <!-- ═══ TAB: IMAGES ═══ -->
@@ -84,7 +217,8 @@
                         <span class="badge bg-white text-danger ms-1">{{ selectedImages.size }}</span>
                     </button>
                     <div v-if="!loadingImages" class="ms-auto text-muted small">
-                        <span class="me-3">{{ images.length }} {{ $t("dockerResources.images.total") }}</span>
+                        <span class="me-3">{{ uniqueImagesCount }} {{ $t("dockerResources.images.total") }}</span>
+                        <span v-if="imageReferenceCount !== uniqueImagesCount" class="me-3">{{ imageReferenceCount }} {{ $t("dockerResources.images.references") }}</span>
                         <span v-if="unusedImagesCount > 0" class="me-2 text-secondary">
                             {{ unusedImagesCount }} {{ $t("dockerResources.images.unused") }}
                         </span>
@@ -109,6 +243,9 @@
                     </button>
 
                     <div v-show="autoPruneOpen" class="auto-prune-body mt-2 p-3">
+                        <div v-if="cleanupSettings.enabled" class="alert alert-info py-2">
+                            {{ $t("dockerResources.cleanup.legacyPaused") }}
+                        </div>
                         <div class="auto-prune-sections">
 
                             <!-- ── Section 1 : Orphelines (dangling) ──────── -->
@@ -117,7 +254,7 @@
 
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="danglingToggle"
-                                        v-model="autoPrune.danglingEnabled" @change="saveAutoPrune">
+                                        v-model="autoPrune.danglingEnabled" :disabled="cleanupSettings.enabled" @change="saveAutoPrune">
                                     <label class="form-check-label ap-label" for="danglingToggle">
                                         {{ $t("dockerResources.autoPrune.enable") }}
                                     </label>
@@ -126,7 +263,7 @@
                                 <div v-if="autoPrune.danglingEnabled" class="d-flex flex-wrap align-items-center gap-2 mb-2">
                                     <select class="form-select form-select-sm ap-select"
                                         v-model.number="autoPrune.danglingIntervalHours" @change="saveAutoPrune"
-                                        :disabled="savingPrune">
+                                        :disabled="savingPrune || cleanupSettings.enabled">
                                         <option :value="24">{{ $t("dockerResources.autoPrune.intervals.24") }}</option>
                                         <option :value="48">{{ $t("dockerResources.autoPrune.intervals.48") }}</option>
                                         <option :value="168">{{ $t("dockerResources.autoPrune.intervals.168") }}</option>
@@ -156,7 +293,7 @@
 
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="unusedToggle"
-                                        v-model="autoPrune.unusedEnabled" @change="saveAutoPrune">
+                                        v-model="autoPrune.unusedEnabled" :disabled="cleanupSettings.enabled" @change="saveAutoPrune">
                                     <label class="form-check-label ap-label" for="unusedToggle">
                                         {{ $t("dockerResources.autoPrune.enable") }}
                                     </label>
@@ -165,7 +302,7 @@
                                 <div v-if="autoPrune.unusedEnabled" class="d-flex flex-wrap align-items-center gap-2 mb-2">
                                     <select class="form-select form-select-sm ap-select"
                                         v-model.number="autoPrune.unusedIntervalHours" @change="saveAutoPrune"
-                                        :disabled="savingPrune">
+                                        :disabled="savingPrune || cleanupSettings.enabled">
                                         <option :value="24">{{ $t("dockerResources.autoPrune.intervals.24") }}</option>
                                         <option :value="48">{{ $t("dockerResources.autoPrune.intervals.48") }}</option>
                                         <option :value="168">{{ $t("dockerResources.autoPrune.intervals.168") }}</option>
@@ -258,10 +395,10 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="img in sortedImages" :key="img.id"
+                            <tr v-for="img in sortedImages" :key="`${img.id}-${img.repository}-${img.tag}`"
                                 :class="rowClass(img.status, img.dockgeStacks)">
                                 <td>
-                                    <input v-if="img.status !== 'running'"
+                                    <input v-if="img.status === 'unused' || img.status === 'dangling'"
                                         type="checkbox"
                                         class="form-check-input"
                                         :checked="selectedImages.has(imgKey(img))"
@@ -313,9 +450,8 @@
                                             <font-awesome-icon :icon="isExcludedFromUnusedPrune(img) ? 'eye' : 'ban'" />
                                         </button>
                                         <!-- Bouton supprimer -->
-                                        <button v-if="img.status !== 'running'"
-                                            class="btn btn-sm"
-                                            :class="img.status === 'stopped' ? 'btn-warning' : 'btn-outline-danger'"
+                                        <button v-if="img.status === 'unused' || img.status === 'dangling'"
+                                            class="btn btn-sm btn-outline-danger"
                                             @click="askDeleteImage(img)">
                                             <font-awesome-icon icon="trash" />
                                         </button>
@@ -611,6 +747,38 @@
 
         </div><!-- /shadow-box -->
 
+        <div v-if="browsedPruneVolume" class="modal-overlay" @click.self="closePruneVolume">
+            <div class="modal-card modal-card--wide shadow-box">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <h5 class="mb-0">{{ $t("dockerResources.cleanup.volumeContents") }} — <code>{{ browsedPruneVolume.name }}</code></h5>
+                    <button class="btn-close ms-auto" type="button" @click="closePruneVolume" />
+                </div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <button class="btn btn-sm btn-normal" :disabled="!pruneVolumePath" @click="browsePruneVolumeParent">
+                        <font-awesome-icon icon="chevron-up" />
+                    </button>
+                    <code>/{{ pruneVolumePath }}</code>
+                </div>
+                <div v-if="loadingPruneVolume" class="text-center py-4"><span class="spinner-border spinner-border-sm" /></div>
+                <div v-else-if="pruneVolumeBrowseError" class="alert alert-danger py-2">{{ pruneVolumeBrowseError }}</div>
+                <div v-else-if="pruneVolumeEntries.length === 0" class="text-muted py-3">{{ $t("dockerResources.cleanup.emptyVolume") }}</div>
+                <div v-else class="cleanup-volume-list">
+                    <button
+                        v-for="entry in pruneVolumeEntries"
+                        :key="entry.name"
+                        type="button"
+                        class="cleanup-volume-entry"
+                        :disabled="entry.type !== 'dir'"
+                        @click="entry.type === 'dir' && browsePruneVolumeDirectory(entry.name)"
+                    >
+                        <font-awesome-icon :icon="entry.type === 'dir' ? 'folder' : 'file'" />
+                        <span>{{ entry.name }}</span>
+                    </button>
+                </div>
+                <p class="form-text mt-3 mb-0">{{ $t("dockerResources.cleanup.readOnlyBrowse") }}</p>
+            </div>
+        </div>
+
         <!-- ═══ MODALE CONFIRM 1 ═══ -->
         <div v-if="confirmStep >= 1" class="modal-overlay" @click.self="cancelDelete">
             <div class="modal-card shadow-box">
@@ -731,6 +899,41 @@ interface PendingItem {
     name?: string; // volume name
 }
 
+type PruneCategory = "containers" | "images" | "networks" | "volumes" | "buildCache";
+
+interface PruneCandidate {
+    id: string;
+    name: string;
+    detail?: string;
+    size?: string;
+    composeProject?: string;
+    composeVolume?: string;
+    stackPresent?: boolean;
+    createdAt?: string;
+    protected?: boolean;
+    protectionReason?: string;
+    excluded?: boolean;
+}
+
+interface PrunePreview {
+    generatedAt: string;
+    reclaimable: Record<string, string>;
+    candidates: Record<PruneCategory, PruneCandidate[]>;
+}
+
+interface PruneHistoryEntry {
+    id: string;
+    finishedAt: string;
+    categories: PruneCategory[];
+    results: Partial<Record<PruneCategory, string>>;
+    success: boolean;
+}
+
+interface PruneVolumeEntry {
+    name: string;
+    type: "dir" | "file";
+}
+
 // ─── State ────────────────────────────────────────────────────────
 
 const { t, te } = useI18n();
@@ -740,7 +943,7 @@ function tr(key: string, fallback: string): string {
     return te(key) ? t(key) : fallback;
 }
 
-const tab = ref<"images" | "volumes" | "containers" | "networks">("images");
+const tab = ref<"images" | "volumes" | "containers" | "networks" | "cleanup">("images");
 
 const images = ref<DockerImage[]>([]);
 const volumes = ref<DockerVolume[]>([]);
@@ -770,6 +973,46 @@ const networkForm = ref({
     parent: "",
     internal: false,
 });
+const pruneCategories: PruneCategory[] = [ "containers", "images", "networks", "volumes", "buildCache" ];
+const automaticPruneCategories = [ "images", "networks", "volumes", "buildCache" ] as const;
+type AutomaticPruneCategory = typeof automaticPruneCategories[number];
+interface CleanupSettings {
+    enabled: boolean;
+    intervalHours: 24 | 48 | 168;
+    categories: Record<AutomaticPruneCategory, boolean>;
+    graceHours: number;
+    volumeAutomationConfirmed: boolean;
+    exclusions: Partial<Record<AutomaticPruneCategory, string[]>>;
+    lastRun?: string;
+    lastResult?: string;
+    nextRun?: string | null;
+}
+const cleanupSettings = ref<CleanupSettings>({
+    enabled: false,
+    intervalHours: 168,
+    categories: {
+        images: true,
+        networks: false,
+        volumes: false,
+        buildCache: false,
+    },
+    graceHours: 168,
+    volumeAutomationConfirmed: false,
+    exclusions: { volumes: [ "trivy-cache", "trivy-security-cache" ] },
+});
+const cleanupSettingsLoaded = ref(false);
+const savingCleanupSettings = ref(false);
+const prunePreview = ref<PrunePreview | null>(null);
+const pruneHistory = ref<PruneHistoryEntry[]>([]);
+const selectedPruneCategories = ref<PruneCategory[]>([]);
+const loadingPrunePreview = ref(false);
+const runningPrune = ref(false);
+const prunePreviewError = ref("");
+const browsedPruneVolume = ref<PruneCandidate | null>(null);
+const pruneVolumePath = ref("");
+const pruneVolumeEntries = ref<PruneVolumeEntry[]>([]);
+const pruneVolumeBrowseError = ref("");
+const loadingPruneVolume = ref(false);
 
 const confirmStep = ref(0); // 0 = rien, 1 = première modale, 2 = deuxième modale
 const pendingItem = ref<PendingItem | null>(null);
@@ -870,8 +1113,10 @@ const filteredNetworks = computed(() => {
     ].some(value => value.toLowerCase().includes(q)));
 });
 
-const unusedImagesCount = computed(() =>
-    images.value.filter(i => i.status === "unused" || i.status === "dangling").length);
+const uniqueImages = computed(() => [ ...new Map(images.value.map(image => [ image.id, image ])).values() ]);
+const uniqueImagesCount = computed(() => uniqueImages.value.length);
+const imageReferenceCount = computed(() => images.value.length);
+const unusedImagesCount = computed(() => uniqueImages.value.filter(i => i.status === "unused").length);
 
 // ─── Sélection multiple images ────────────────────────────────────
 
@@ -879,7 +1124,7 @@ function imgKey(img: DockerImage): string {
     return img.repository !== "<none>" ? `${img.repository}:${img.tag}` : img.id;
 }
 
-const deletableImages = computed(() => filteredImages.value.filter(i => i.status !== "running"));
+const deletableImages = computed(() => filteredImages.value.filter(i => i.status === "unused" || i.status === "dangling"));
 
 const allDeletableSelected = computed(() =>
     deletableImages.value.length > 0 &&
@@ -888,7 +1133,7 @@ const allDeletableSelected = computed(() =>
 
 const someImagesSelected = computed(() => selectedImages.value.size > 0);
 const danglingCount = computed(() =>
-    images.value.filter(i => i.status === "dangling").length);
+    uniqueImages.value.filter(i => i.status === "dangling").length);
 const unusedVolumesCount = computed(() =>
     volumes.value.filter(v => v.status === "unused").length);
 
@@ -943,6 +1188,10 @@ watch(tab, (selected) => {
     if (selected === "networks" && networks.value.length === 0 && !loadingNetworks.value) {
         loadNetworks();
     }
+    if (selected === "cleanup" && !prunePreview.value && !loadingPrunePreview.value) {
+        loadPrunePreview();
+        loadPruneHistory();
+    }
 });
 
 // ─── API ──────────────────────────────────────────────────────────
@@ -985,6 +1234,163 @@ async function loadImages() {
     }
 }
 
+function categoryReclaimable(category: PruneCategory): string {
+    if (!prunePreview.value) {
+        return "";
+    }
+    const key: Partial<Record<PruneCategory, string>> = {
+        images: "Images",
+        containers: "Containers",
+        volumes: "Local Volumes",
+        buildCache: "Build Cache",
+    };
+    return key[category] ? prunePreview.value.reclaimable[key[category]!] || "" : "";
+}
+
+function categoryCandidateCount(category: PruneCategory): number {
+    return prunePreview.value?.candidates[category].filter(item => !item.protected && !item.excluded).length ?? 0;
+}
+
+function categoryProtectedCount(category: PruneCategory): number {
+    return prunePreview.value?.candidates[category].filter(item => item.protected).length ?? 0;
+}
+
+function categoryExcludedCount(category: PruneCategory): number {
+    return prunePreview.value?.candidates[category].filter(item => item.excluded).length ?? 0;
+}
+
+async function loadCleanupSettings() {
+    try {
+        const data = await api("GET", "prune/settings");
+        if (data.ok) {
+            cleanupSettings.value = data.data;
+            cleanupSettingsLoaded.value = true;
+        }
+    } catch { /* affichage facultatif */ }
+}
+
+async function saveCleanupSettings() {
+    if (cleanupSettings.value.categories.volumes) {
+        if (!cleanupSettings.value.volumeAutomationConfirmed) {
+            showToast(false, t("dockerResources.cleanup.volumeConfirmationRequired"));
+            return;
+        }
+        if (!confirm(t("dockerResources.cleanup.volumeSaveConfirmOne"))) {
+            return;
+        }
+        if (!confirm(t("dockerResources.cleanup.volumeSaveConfirmTwo"))) {
+            return;
+        }
+    }
+    savingCleanupSettings.value = true;
+    try {
+        const data = await api("POST", "prune/settings", cleanupSettings.value);
+        if (!data.ok) {
+            showToast(false, data.message || t("dockerResources.errorLoad"));
+            return;
+        }
+        cleanupSettings.value = data.data;
+        showToast(true, t("dockerResources.cleanup.settingsSaved"));
+        await loadAutoPrune();
+    } finally {
+        savingCleanupSettings.value = false;
+    }
+}
+
+async function loadPrunePreview() {
+    loadingPrunePreview.value = true;
+    prunePreviewError.value = "";
+    try {
+        const data = await api("GET", "prune/preview");
+        if (!data.ok) {
+            prunePreviewError.value = data.message || t("dockerResources.errorLoad");
+            return;
+        }
+        prunePreview.value = data.data;
+        selectedPruneCategories.value = [ "containers", "images", "networks", "buildCache" ]
+            .filter(category => data.data.candidates[category].some((item: PruneCandidate) => !item.protected && !item.excluded)) as PruneCategory[];
+    } catch {
+        prunePreviewError.value = t("dockerResources.errorLoad");
+    } finally {
+        loadingPrunePreview.value = false;
+    }
+}
+
+async function loadPruneHistory() {
+    const data = await api("GET", "prune/history");
+    if (data.ok) {
+        pruneHistory.value = data.data;
+    }
+}
+
+async function executePrune() {
+    if (selectedPruneCategories.value.length === 0) {
+        return;
+    }
+    const names = selectedPruneCategories.value.map(category => t(`dockerResources.cleanup.category.${category}`)).join(", ");
+    if (!confirm(t("dockerResources.cleanup.confirm", {
+        categories: names,
+    }))) {
+        return;
+    }
+    if (selectedPruneCategories.value.includes("volumes") && !confirm(t("dockerResources.cleanup.confirmVolumes"))) {
+        return;
+    }
+    runningPrune.value = true;
+    try {
+        const data = await api("POST", "prune/run", {
+            categories: selectedPruneCategories.value,
+            confirmed: true,
+        });
+        showToast(data.ok, data.ok ? t("dockerResources.cleanup.succeeded") : data.message || t("dockerResources.cleanup.failed"));
+    } finally {
+        await Promise.all([ loadPrunePreview(), loadPruneHistory(), loadImages(), loadVolumes(), loadContainers(), loadNetworks(), loadAutoPrune(), loadCleanupSettings() ]);
+        runningPrune.value = false;
+    }
+}
+
+async function loadPruneVolumeDirectory() {
+    if (!browsedPruneVolume.value) {
+        return;
+    }
+    loadingPruneVolume.value = true;
+    pruneVolumeBrowseError.value = "";
+    try {
+        const data = await api("GET", `prune/volumes/${encodeURIComponent(browsedPruneVolume.value.name)}/browse?path=${encodeURIComponent(pruneVolumePath.value)}`);
+        if (data.ok) {
+            pruneVolumeEntries.value = data.entries;
+        } else {
+            pruneVolumeBrowseError.value = data.message || t("dockerResources.errorLoad");
+        }
+    } catch {
+        pruneVolumeBrowseError.value = t("dockerResources.errorLoad");
+    } finally {
+        loadingPruneVolume.value = false;
+    }
+}
+
+function openPruneVolume(volume: PruneCandidate) {
+    browsedPruneVolume.value = volume;
+    pruneVolumePath.value = "";
+    pruneVolumeEntries.value = [];
+    loadPruneVolumeDirectory();
+}
+
+function closePruneVolume() {
+    browsedPruneVolume.value = null;
+    pruneVolumeEntries.value = [];
+}
+
+function browsePruneVolumeDirectory(name: string) {
+    pruneVolumePath.value = [ pruneVolumePath.value, name ].filter(Boolean).join("/");
+    loadPruneVolumeDirectory();
+}
+
+function browsePruneVolumeParent() {
+    pruneVolumePath.value = pruneVolumePath.value.split("/").slice(0, -1).join("/");
+    loadPruneVolumeDirectory();
+}
+
 function toggleSelectImage(img: DockerImage) {
     const key = imgKey(img);
     const next = new Set(selectedImages.value);
@@ -1008,15 +1414,13 @@ async function deleteSelectedImages() {
 
     let ok = 0, fail = 0;
     for (const key of keys) {
-        const img = images.value.find(i => imgKey(i) === key);
-        const force = img?.status === "stopped";
         try {
-            const data = await api("DELETE", `images/${encodeURIComponent(key)}${force ? "?force=true" : ""}`);
+            const data = await api("DELETE", `images/${encodeURIComponent(key)}`);
             if (data.ok) ok++; else fail++;
         } catch { fail++; }
     }
     selectedImages.value = new Set();
-    await loadImages();
+    await Promise.all([ loadImages(), loadAutoPrune(), loadCleanupSettings(), loadPrunePreview(), loadPruneHistory() ]);
     showToast(fail === 0, fail === 0
         ? `${ok} image(s) supprimée(s)`
         : `${ok} supprimée(s), ${fail} échec(s)`
@@ -1046,8 +1450,8 @@ async function pruneImages() {
     try {
         const data = await api("POST", "images/prune");
         showToast(data.ok, data.message ?? "");
-        if (data.ok) await loadImages();
     } finally {
+        await Promise.all([ loadImages(), loadAutoPrune(), loadCleanupSettings(), loadPrunePreview(), loadPruneHistory() ]);
         pruningImages.value = false;
     }
 }
@@ -1058,8 +1462,8 @@ async function pruneUnusedImages() {
     try {
         const data = await api("POST", "images/prune-unused");
         showToast(data.ok, data.message ?? "");
-        if (data.ok) await loadImages();
     } finally {
+        await Promise.all([ loadImages(), loadAutoPrune(), loadCleanupSettings(), loadPrunePreview(), loadPruneHistory() ]);
         pruningUnusedImages.value = false;
     }
 }
@@ -1217,10 +1621,9 @@ async function executeDelete() {
     try {
         let data: any;
         if (item.type === "image") {
-            const force = item.status === "stopped";
             // Use repo:tag when available to avoid "referenced in multiple repositories" error
             const deleteTarget = item.label !== item.id ? (item.label ?? item.id ?? "") : (item.id ?? "");
-            data = await api("DELETE", `images/${encodeURIComponent(deleteTarget)}${force ? "?force=true" : ""}`);
+            data = await api("DELETE", `images/${encodeURIComponent(deleteTarget)}`);
         } else if (item.type === "volume") {
             data = await api("DELETE", `volumes/${encodeURIComponent(item.name ?? "")}`);
         } else {
@@ -1228,13 +1631,15 @@ async function executeDelete() {
         }
         showToast(data.ok, data.message ?? "");
         if (data.ok) {
-            if (item.type === "image") await loadImages();
-            else if (item.type === "volume") await loadVolumes();
-            else await loadContainers();
+            if (item.type === "volume") await loadVolumes();
+            else if (item.type === "container") await loadContainers();
         }
     } catch {
         showToast(false, t("dockerResources.errorLoad"));
     } finally {
+        if (item.type === "image") {
+            await Promise.all([ loadImages(), loadAutoPrune(), loadCleanupSettings(), loadPrunePreview(), loadPruneHistory() ]);
+        }
         pendingItem.value = null;
     }
 }
@@ -1343,10 +1748,121 @@ onMounted(() => {
     loadVolumes();
     loadContainers();
     loadAutoPrune();
+    loadCleanupSettings();
+    loadPruneHistory();
 });
 </script>
 
 <style lang="scss" scoped>
+
+.cleanup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: .75rem;
+}
+
+.cleanup-settings {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: .65rem;
+    background: var(--bg-surface);
+}
+
+.cleanup-settings__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: .75rem 1rem;
+    align-items: end;
+}
+
+.cleanup-card {
+    display: flex;
+    align-items: flex-start;
+    gap: .65rem;
+    padding: .85rem;
+    border: 1px solid var(--border-color);
+    border-radius: .65rem;
+    background: var(--bg-raised);
+    cursor: pointer;
+
+    &--danger { border-color: color-mix(in srgb, var(--danger) 45%, var(--border-color)); }
+    &__content { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
+}
+
+.cleanup-details details {
+    border: 1px solid var(--border-color);
+    border-radius: .5rem;
+    margin-bottom: .5rem;
+    overflow: hidden;
+}
+
+.cleanup-details summary {
+    cursor: pointer;
+    padding: .65rem .8rem;
+    background: var(--bg-raised);
+}
+
+.cleanup-items { max-height: 240px; overflow: auto; }
+.cleanup-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    padding: .45rem .8rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.cleanup-history { display: grid; gap: .5rem; }
+.cleanup-history__entry {
+    padding: .65rem .8rem;
+    border: 1px solid var(--border-color);
+    border-radius: .5rem;
+
+    summary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .6rem;
+        cursor: pointer;
+    }
+}
+.cleanup-history__results {
+    display: grid;
+    gap: .5rem;
+    margin-top: .75rem;
+    padding-top: .75rem;
+    border-top: 1px solid var(--border-color);
+
+    pre {
+        margin: .2rem 0 0;
+        white-space: pre-wrap;
+        color: var(--text-muted);
+        font: inherit;
+        font-size: var(--fs-sm);
+    }
+}
+.modal-card--wide { width: min(900px, calc(100vw - 2rem)); }
+.cleanup-volume-list {
+    display: grid;
+    max-height: 55vh;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    border-radius: .5rem;
+}
+.cleanup-volume-entry {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .55rem .7rem;
+    color: var(--text-color);
+    background: var(--bg-surface);
+    border: 0;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+
+    &:enabled:hover { background: var(--bg-raised); }
+    &:disabled { opacity: 1; }
+}
 
 // ── Table ────────────────────────────────────────────────────────
 .th-sortable:hover {

@@ -115,6 +115,64 @@
                     <span v-for="temp in hostStats.temperatures.disks" :key="temp.label" class="temp-chip">{{ temp.label }}: {{ temp.celsius }} °C</span>
                 </div>
             </div>
+
+            <section class="host-history mt-4">
+                <h6 class="settings-subheading mb-3">{{ $t('watcher.monitoring.historyTitle') }}</h6>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <div class="form-check form-switch mb-0">
+                        <input id="monHistory" v-model="monSettings.historyEnabled" class="form-check-input" type="checkbox" role="switch" @change="toggleHistory" />
+                        <label class="form-check-label fw-semibold" for="monHistory">{{ $t('watcher.monitoring.historyEnabled') }}</label>
+                        <div class="form-text">{{ $t('watcher.monitoring.historyHint') }}</div>
+                    </div>
+                    <button class="btn btn-sm btn-normal" :disabled="historyLoading" @click="loadHistory">
+                        <span v-if="historyLoading" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="sync" class="me-1" />{{ $t('refresh') }}
+                    </button>
+                </div>
+                <div class="history-controls mb-3">
+                    <div class="history-preset-group" role="group" :aria-label="$t('watcher.monitoring.historyPeriod')">
+                        <button v-for="preset in historyPresetOptions" :key="preset.value" type="button" class="btn btn-sm history-preset-btn" :class="{ active: historyPreset === preset.value }" @click="selectHistoryPreset(preset.value)">
+                            {{ $t(preset.label) }}
+                        </button>
+                    </div>
+                    <template v-if="historyPreset === 'custom'">
+                        <div class="history-custom-range">
+                            <input v-model.number="historyAmount" class="form-control form-control-sm" type="number" min="1" @change="loadHistory" />
+                            <select v-model="historyUnit" class="form-select form-select-sm" @change="loadHistory">
+                                <option value="days">{{ $t('watcher.monitoring.historyDays') }}</option>
+                                <option value="weeks">{{ $t('watcher.monitoring.historyWeeks') }}</option>
+                                <option value="months">{{ $t('watcher.monitoring.historyMonths') }}</option>
+                                <option value="years">{{ $t('watcher.monitoring.historyYears') }}</option>
+                            </select>
+                        </div>
+                    </template>
+                    <button type="button" class="btn btn-primary btn-sm ms-auto" :disabled="savingHistoryPrefs" @click="saveHistoryPreferences">
+                        <span v-if="savingHistoryPrefs" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.monitoring.historySave') }}
+                    </button>
+                </div>
+                <div v-if="historyPoints.length" class="history-stats mb-2">
+                    <span class="history-stat-card"><i class="history-legend history-legend--cpu"></i><strong>CPU</strong><span>{{ $t('watcher.monitoring.historyAverage') }} {{ historyStats.cpuAverage.toFixed(1) }}%</span><span>{{ $t('watcher.monitoring.historyMaximum') }} {{ historyStats.cpuMax.toFixed(1) }}%</span></span>
+                    <span class="history-stat-card"><i class="history-legend history-legend--ram"></i><strong>RAM</strong><span>{{ $t('watcher.monitoring.historyAverage') }} {{ historyStats.ramAverage.toFixed(1) }}%</span><span>{{ $t('watcher.monitoring.historyMaximum') }} {{ historyStats.ramMax.toFixed(1) }}%</span></span>
+                </div>
+                <div v-if="historyPoints.length" class="history-chart-wrap">
+                    <svg class="history-chart" viewBox="0 0 960 300" preserveAspectRatio="xMidYMid meet" role="img" :aria-label="$t('watcher.monitoring.historyChart')">
+                        <rect :x="historyChart.left" :y="historyChart.top" :width="historyPlotWidth" :height="historyPlotHeight" class="history-plot-bg" />
+                        <line v-for="value in historyYTicks" :key="value" :x1="historyChart.left" :x2="historyChart.width - historyChart.right" :y1="historyY(value)" :y2="historyY(value)" class="history-grid-line" />
+                        <text v-for="value in historyYTicks" :key="`label-${value}`" :x="historyChart.left - 10" :y="historyY(value) + 4" text-anchor="end" class="history-axis-label">{{ value }}%</text>
+                        <g v-for="tick in historyTimeTicks" :key="tick.timestamp">
+                            <line :x1="tick.x" :x2="tick.x" :y1="historyChart.top" :y2="historyChart.height - historyChart.bottom" class="history-grid-line history-grid-line--vertical" />
+                            <text :x="tick.x" :y="historyChart.height - 10" text-anchor="middle" class="history-axis-label history-time-label">{{ tick.label }}</text>
+                        </g>
+                        <polyline v-for="(segment, index) in cpuHistorySegments" :key="`cpu-${index}`" :points="segment" class="history-line history-line--cpu" />
+                        <polyline v-for="(segment, index) in ramHistorySegments" :key="`ram-${index}`" :points="segment" class="history-line history-line--ram" />
+                        <circle v-for="point in historyPoints" :key="`tip-${point.sampledAt}`" :cx="historyX(point.sampledAt)" :cy="historyY(point.cpuPercent)" r="7" class="history-hitpoint">
+                            <title>{{ historyTooltip(point) }}</title>
+                        </circle>
+                    </svg>
+                </div>
+                <div v-else-if="!historyLoading" class="text-muted small">{{ $t('watcher.monitoring.historyEmpty') }}</div>
+            </section>
         </div>
 
         <div class="shadow-box big-padding mb-4">
@@ -699,7 +757,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 import { stackStatsEnabled } from "../composables/useStackStats";
@@ -738,6 +796,24 @@ interface MonitoringSettings {
     discordWebhooks: string[];
     appriseUrls: string[];
     lowPowerMode: boolean;
+    historyEnabled: boolean;
+    historyPreset: "24h" | "7d" | "1m" | "custom";
+    historyAmount: number;
+    historyUnit: "days" | "weeks" | "months" | "years";
+}
+
+interface MonitoringHistoryPoint {
+    sampledAt: string;
+    cpuPercent: number;
+    ramPercent: number;
+    ramUsed: number;
+    ramTotal: number;
+}
+
+interface HistoryTimeTick {
+    timestamp: number;
+    x: number;
+    label: string;
 }
 
 interface Overview {
@@ -817,7 +893,130 @@ const monSettings = ref<MonitoringSettings>({
     discordWebhooks: [],
     appriseUrls: [],
     lowPowerMode: false,
+    historyEnabled: false,
+    historyPreset: "24h",
+    historyAmount: 7,
+    historyUnit: "days",
 });
+
+const historyPreset = ref<"24h" | "7d" | "1m" | "custom">("24h");
+const historyAmount = ref(7);
+const historyUnit = ref<"days" | "weeks" | "months" | "years">("days");
+const historyLoading = ref(false);
+const savingHistoryPrefs = ref(false);
+const historyPoints = ref<MonitoringHistoryPoint[]>([]);
+const historyStats = ref({
+    cpuAverage: 0,
+    cpuMax: 0,
+    ramAverage: 0,
+    ramMax: 0,
+});
+const historyFrom = ref(0);
+const historyTo = ref(1);
+const historyBucketSeconds = ref(300);
+
+const historyPresetOptions = [
+    {
+        value: "24h" as const,
+        label: "watcher.monitoring.history24h",
+    },
+    {
+        value: "7d" as const,
+        label: "watcher.monitoring.history7d",
+    },
+    {
+        value: "1m" as const,
+        label: "watcher.monitoring.history1m",
+    },
+    {
+        value: "custom" as const,
+        label: "watcher.monitoring.historyCustom",
+    },
+];
+
+const historyChart = {
+    width: 960,
+    height: 300,
+    left: 54,
+    right: 20,
+    top: 18,
+    bottom: 42,
+} as const;
+const historyYTicks = [ 0, 25, 50, 75, 100 ];
+const historyPlotWidth = historyChart.width - historyChart.left - historyChart.right;
+const historyPlotHeight = historyChart.height - historyChart.top - historyChart.bottom;
+
+function historyX(sampledAt: string): number {
+    const value = Date.parse(sampledAt);
+    const ratio = (value - historyFrom.value) / Math.max(1, historyTo.value - historyFrom.value);
+    return historyChart.left + Math.max(0, Math.min(1, ratio)) * historyPlotWidth;
+}
+
+function historyY(percent: number): number {
+    const ratio = Math.max(0, Math.min(100, percent)) / 100;
+    return historyChart.top + (1 - ratio) * historyPlotHeight;
+}
+
+const historyTimeTicks = computed(() => {
+    const from = historyFrom.value;
+    const to = historyTo.value;
+    if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) {
+        return [] as HistoryTimeTick[];
+    }
+    const duration = to - from;
+    const formatter = duration <= 48 * 3_600_000
+        ? new Intl.DateTimeFormat(undefined, {
+            hour: "2-digit",
+            minute: "2-digit",
+        })
+        : duration <= 45 * 86_400_000
+            ? new Intl.DateTimeFormat(undefined, {
+                day: "2-digit",
+                month: "short",
+            })
+            : duration <= 400 * 86_400_000
+                ? new Intl.DateTimeFormat(undefined, {
+                    month: "short",
+                    year: "2-digit",
+                })
+                : new Intl.DateTimeFormat(undefined, { year: "numeric" });
+    return [ 0, 0.25, 0.5, 0.75, 1 ].map(ratio => {
+        const timestamp = from + duration * ratio;
+        return {
+            timestamp,
+            x: historyChart.left + historyPlotWidth * ratio,
+            label: formatter.format(new Date(timestamp)),
+        };
+    });
+});
+
+function historySegments(metric: "cpuPercent" | "ramPercent"): string[] {
+    const segments: string[][] = [];
+    let current: string[] = [];
+    let previous = 0;
+    for (const point of historyPoints.value) {
+        const timestamp = Date.parse(point.sampledAt);
+        if (previous && timestamp - previous > historyBucketSeconds.value * 2_500) {
+            if (current.length > 1) {
+                segments.push(current);
+            }
+            current = [];
+        }
+        current.push(`${historyX(point.sampledAt)},${historyY(point[metric])}`);
+        previous = timestamp;
+    }
+    if (current.length > 1) {
+        segments.push(current);
+    }
+    return segments.map(segment => segment.join(" "));
+}
+
+const cpuHistorySegments = computed(() => historySegments("cpuPercent"));
+const ramHistorySegments = computed(() => historySegments("ramPercent"));
+
+function historyTooltip(point: MonitoringHistoryPoint): string {
+    return `${new Date(point.sampledAt).toLocaleString()} · CPU ${point.cpuPercent.toFixed(1)}% · RAM ${point.ramPercent.toFixed(1)}%`;
+}
 
 const diskPartitions = ref<string[]>(["/"]);
 const diskDisplayMode = ref<"compact" | "bar">("compact");
@@ -1076,6 +1275,9 @@ async function loadSettings() {
     if (settingsRes.ok) {
         const d = settingsRes.data as MonitoringSettings;
         monSettings.value = { ...monSettings.value, ...d, appriseUrls: Array.isArray(d.appriseUrls) ? d.appriseUrls : [] };
+        historyPreset.value = d.historyPreset ?? "24h";
+        historyAmount.value = Number.isSafeInteger(d.historyAmount) && d.historyAmount > 0 ? d.historyAmount : 7;
+        historyUnit.value = d.historyUnit ?? "days";
         // Propage le mode low-power à toute l'app dès le chargement
         setLowPower(monSettings.value.lowPowerMode);
     }
@@ -1098,6 +1300,71 @@ async function saveMonSettings() {
         const res = await api("POST", "/monitoring/settings", monSettings.value);
         showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
     } finally { savingMon.value = false; }
+}
+
+async function loadHistory() {
+    historyLoading.value = true;
+    try {
+        const query = historyPreset.value === "custom"
+            ? `amount=${encodeURIComponent(String(Math.max(1, historyAmount.value)))}&unit=${encodeURIComponent(historyUnit.value)}`
+            : `preset=${encodeURIComponent(historyPreset.value)}`;
+        const res = await api("GET", `/monitoring/history?${query}`);
+        if (!res.ok || !res.data) {
+            showToast(`❌ ${res.message ?? t("watcher.monitoring.historyLoadError")}`, false);
+            return;
+        }
+        const data = res.data as {
+            points: MonitoringHistoryPoint[];
+            stats: typeof historyStats.value;
+            from: string;
+            to: string;
+            bucketSeconds: number;
+        };
+        historyPoints.value = data.points;
+        historyStats.value = data.stats;
+        historyFrom.value = Date.parse(data.from);
+        historyTo.value = Date.parse(data.to);
+        historyBucketSeconds.value = data.bucketSeconds;
+    } catch {
+        showToast(`❌ ${t("watcher.monitoring.historyLoadError")}`, false);
+    } finally {
+        historyLoading.value = false;
+    }
+}
+
+async function toggleHistory() {
+    const res = await api("POST", "/monitoring/settings", { historyEnabled: monSettings.value.historyEnabled });
+    showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
+    await loadHistory();
+}
+
+async function selectHistoryPreset(preset: "24h" | "7d" | "1m" | "custom") {
+    historyPreset.value = preset;
+    await loadHistory();
+}
+
+async function saveHistoryPreferences() {
+    savingHistoryPrefs.value = true;
+    try {
+        const amount = Math.max(1, Math.floor(Number(historyAmount.value) || 1));
+        historyAmount.value = amount;
+        const res = await api("POST", "/monitoring/settings", {
+            historyPreset: historyPreset.value,
+            historyAmount: amount,
+            historyUnit: historyUnit.value,
+        });
+        if (res.ok) {
+            monSettings.value.historyPreset = historyPreset.value;
+            monSettings.value.historyAmount = amount;
+            monSettings.value.historyUnit = historyUnit.value;
+        }
+        showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
+        if (res.ok) {
+            await loadHistory();
+        }
+    } finally {
+        savingHistoryPrefs.value = false;
+    }
 }
 
 /** Bascule le mode low-power : effet immédiat dans l'app + persistance. */
@@ -1227,6 +1494,7 @@ let overviewPoller: Poller | null = null;
 
 onMounted(async () => {
     await Promise.all([loadOverview(), loadHostStats(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadDozzleSettings(), loadDozzleStatus(), loadExclusions()]);
+    await loadHistory();
     // Overview : cadence selon le mode + pause si onglet caché
     overviewPoller = makePoller({ fetch: loadOverview, interval: POLL.overview });
     overviewPoller.start();
@@ -1265,6 +1533,115 @@ onUnmounted(() => {
 .monitoring-card.mc-warn   { border-color: color-mix(in srgb, var(--warning) 35%, transparent); }
 .monitoring-card.mc-danger { border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
 .monitoring-card.mc-neutral{ border-color: var(--border-strong); }
+
+.host-history {
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+.history-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    .form-select, .form-control { width: auto; min-width: 8rem; }
+}
+.history-preset-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+}
+.history-preset-btn {
+    border: 1px solid var(--border-strong);
+    background: var(--bg-raised);
+    color: var(--text-muted);
+}
+.history-preset-btn:hover,
+.history-preset-btn.active {
+    border-color: var(--primary);
+    color: var(--text-color);
+    background: color-mix(in srgb, var(--primary) 14%, var(--bg-raised));
+}
+.history-custom-range {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+}
+.history-custom-range .form-control { width: 6rem; min-width: 6rem; }
+.history-custom-range .form-select { min-width: 8.5rem; }
+.history-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
+}
+.history-stat-card {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .4rem .65rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+}
+.history-stat-card strong { color: var(--text-color); }
+.history-legend {
+    display: inline-block;
+    width: .7rem;
+    height: .7rem;
+    margin-right: .35rem;
+    border-radius: 50%;
+}
+.history-legend--cpu { background: var(--primary); }
+.history-legend--ram { background: var(--success); }
+.history-chart-wrap {
+    width: 100%;
+    min-height: 260px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--bg-raised) 92%, var(--bg-surface));
+    padding: .5rem;
+}
+.history-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 260px;
+    aspect-ratio: 16 / 5;
+}
+.history-plot-bg {
+    fill: color-mix(in srgb, var(--bg-surface) 48%, transparent);
+    stroke: var(--border-color);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+}
+.history-grid-line { stroke: var(--border-color); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.history-grid-line--vertical { stroke-opacity: .55; }
+.history-axis-label { fill: var(--text-muted); font-size: 11px; }
+.history-time-label { font-size: 10px; }
+.history-line {
+    fill: none;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+}
+.history-line--cpu { stroke: var(--primary); }
+.history-line--ram { stroke: var(--success); }
+.history-hitpoint { fill: transparent; stroke: transparent; cursor: crosshair; }
+
+@media (max-width: $bp-phone) {
+    .history-controls { align-items: stretch; }
+    .history-preset-group { width: 100%; }
+    .history-preset-btn { flex: 1 1 auto; }
+    .history-custom-range { width: 100%; }
+    .history-custom-range .form-control,
+    .history-custom-range .form-select { flex: 1 1 0; width: auto; min-width: 0; }
+    .history-controls .btn-primary { width: 100%; margin-left: 0 !important; }
+    .history-stat-card { width: 100%; }
+    .history-chart { min-height: 220px; }
+}
 
 .mc-icon { font-size: var(--fs-2xl); line-height: 1; flex-shrink: 0; padding-top: 2px; }
 

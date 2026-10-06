@@ -8,6 +8,7 @@ import childProcessAsync from "promisify-child-process";
 import * as path from "path";
 import * as fs from "fs/promises";
 import { R } from "redbean-node";
+import { MonitoringHistoryCollector } from "../monitoring-history";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
@@ -42,6 +43,10 @@ export interface MonitoringSettings {
     appriseUrls: string[];
     notificationLang: NotificationLang;
     lowPowerMode: boolean;
+    historyEnabled: boolean;
+    historyPreset: "24h" | "7d" | "1m" | "custom";
+    historyAmount: number;
+    historyUnit: "days" | "weeks" | "months" | "years";
 }
 
 export interface CrashEvent {
@@ -84,6 +89,10 @@ const DEFAULT_SETTINGS: MonitoringSettings = {
     appriseUrls: [],
     notificationLang: "fr",
     lowPowerMode: false,
+    historyEnabled: false,
+    historyPreset: "24h",
+    historyAmount: 7,
+    historyUnit: "days",
 };
 
 export class MonitoringWatcher {
@@ -119,6 +128,15 @@ export class MonitoringWatcher {
             if (!["notify", "restart_container", "restart_service", "stack_aware"].includes(this.settings.healthcheckAutoHealMode)) {
                 this.settings.healthcheckAutoHealMode = "notify";
             }
+            if (![ "24h", "7d", "1m", "custom" ].includes(this.settings.historyPreset)) {
+                this.settings.historyPreset = "24h";
+            }
+            if (![ "days", "weeks", "months", "years" ].includes(this.settings.historyUnit)) {
+                this.settings.historyUnit = "days";
+            }
+            if (!Number.isSafeInteger(this.settings.historyAmount) || this.settings.historyAmount < 1) {
+                this.settings.historyAmount = 7;
+            }
         } catch {
             this.settings = { ...DEFAULT_SETTINGS };
         }
@@ -126,14 +144,30 @@ export class MonitoringWatcher {
 
     async saveSettings(partial: Partial<MonitoringSettings>): Promise<void> {
         const safePartial = { ...partial };
+        const changedKeys = Object.keys(partial) as Array<keyof MonitoringSettings>;
         if (
             safePartial.healthcheckAutoHealMode !== undefined &&
             !["notify", "restart_container", "restart_service", "stack_aware"].includes(safePartial.healthcheckAutoHealMode)
         ) {
             safePartial.healthcheckAutoHealMode = "notify";
         }
+        if (safePartial.historyPreset !== undefined && ![ "24h", "7d", "1m", "custom" ].includes(safePartial.historyPreset)) {
+            safePartial.historyPreset = "24h";
+        }
+        if (safePartial.historyUnit !== undefined && ![ "days", "weeks", "months", "years" ].includes(safePartial.historyUnit)) {
+            safePartial.historyUnit = "days";
+        }
+        if (safePartial.historyAmount !== undefined) {
+            const amount = Number(safePartial.historyAmount);
+            safePartial.historyAmount = Number.isSafeInteger(amount) && amount > 0 ? amount : 7;
+        }
         this.settings = { ...this.settings, ...safePartial };
         await this.persistSettings();
+        if (changedKeys.length > 0 && changedKeys.every(key => [ "historyPreset", "historyAmount", "historyUnit" ].includes(key))) {
+            // Préférences d'affichage uniquement : ne pas redémarrer le watcher
+            // ni réinitialiser le compteur CPU de l'échantillonneur.
+            return;
+        }
         await this.startIfEnabled();
     }
 
@@ -148,6 +182,7 @@ export class MonitoringWatcher {
         await this.loadHealthEvents();
         await this.loadExclusionsFromDb();
         this.stop();
+        await MonitoringHistoryCollector.getInstance().setEnabled(this.settings.historyEnabled);
         if (this.settings.crashLoopEnabled || this.settings.healthcheckEnabled) {
             this.startDockerEvents();
         }

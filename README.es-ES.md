@@ -43,9 +43,9 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | **Actualizaciones** | Detección de actualizaciones de imágenes, actualizaciones manuales, masivas secuenciales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
 | **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
 | **Automatización y auditoría** | API REST limitada por permisos, webhooks por stack, ejemplos para Home Assistant, operaciones programadas e historial centralizado con origen, estado y duración |
-| **Recursos Docker** | Gestión de imágenes, volúmenes, redes y contenedores no gestionados, operaciones masivas, auto-prune y protecciones frente a acciones destructivas |
+| **Recursos Docker** | Limpieza unificada protegida de imágenes, volúmenes, redes y caché de build, recuperación exacta, vista previa, exclusiones e historial |
 | **Seguridad** | Escaneo de vulnerabilidades con Trivy, excepciones CVE, flujos de actualización protegidos, 2FA, trusted proxy y Cloudflare Turnstile |
-| **Monitorización** | Estadísticas del sistema, stacks y contenedores, barra de estado configurable, tarjetas de salud del panel, detección de crash loops, auto-heal de healthchecks, logs responsivos/a pantalla completa e integraciones opcionales con Kula y Dozzle gestionado |
+| **Monitorización** | Estadísticas del sistema, stacks y contenedores, historial CPU/RAM opcional cada 5 minutos, barra de estado, tarjetas de salud, crash loops, auto-heal, logs adaptables, Kula y Dozzle |
 | **Integraciones** | PlugNPiN y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
 | **Notificaciones y acceso** | Notificaciones Discord y Apprise localizadas en EN/FR/ES/zh-CN, soporte multiinstancia, 2FA, trusted proxy, Turnstile y clientes móviles de terceros |
 
@@ -59,6 +59,14 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
 ### 🆕 Octubre de 2026
+
+**Limpieza Docker unificada y recuperación exacta**
+
+Recursos Docker comparte ahora un inventario por Image ID entre la página Imágenes, la vista previa de Limpieza y la purga automática. Las imágenes de contenedores detenidos, rollback/recuperación, exclusiones y periodos de gracia siguen protegidos. Imágenes, redes, volúmenes y caché de build se seleccionan por separado, los resultados se guardan por categoría y los vencimientos se comprueban cada 15 minutos con una sola recuperación tras una suspensión o reinicio. Al activar la limpieza unificada se suspenden los ajustes antiguos sin borrarlos.
+
+**Historial opcional de CPU/RAM del host**
+
+Monitoring puede guardar una muestra ligera de CPU y RAM cada 5 minutos sin navegador abierto. El gráfico SVG adaptable ofrece 24 horas, 7 días, 1 mes o un rango personalizado; el periodo mostrado puede guardarse y restaurarse en la siguiente visita. Los periodos largos se agregan en el servidor y los apagados quedan visibles como huecos. El registro está desactivado por defecto y continúa en modo de bajo consumo si se activa expresamente.
 
 **Exclusiones de estado y actualizaciones por servicio**
 
@@ -339,6 +347,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Monitorización
 - Estadísticas del sistema, stacks y contenedores
+- Historial CPU/RAM opcional cada 5 minutos, rangos de 24 horas, 7 días, 1 mes o personalizados, agregación del servidor y huecos de apagado visibles
 - Barra de estado y tarjetas de salud
 - Crash loops y auto-heal
 - Logs live/a pantalla completa adaptables, con filtros verticales, acciones agrupadas y búsqueda al final, periodo **desde el último reinicio** y copia en un clic de las últimas **50 / 100 / 150** líneas o de todas las líneas cargadas
@@ -348,7 +357,9 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Recursos Docker
 - Imágenes, volúmenes, redes y contenedores no gestionados
-- Acciones masivas y auto-prune
+- Limpieza manual/automática unificada de imágenes, redes, volúmenes y caché de build, con resultado por categoría e historial de 30 ejecuciones
+- Vencimientos exactos `lastRun + interval` comprobados cada 15 minutos, con una sola recuperación tras suspensión o reinicio
+- Clasificación por Image ID completo para contenedores activos y detenidos; las etiquetas de una misma imagen cuentan una sola vez
 - Protecciones de borrado
 
 ### Automatización y auditoría

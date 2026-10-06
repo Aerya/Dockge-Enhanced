@@ -1,5 +1,13 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-05-unified-docker-cleanup",
+        items: [ "releaseNews.item.unifiedDockerCleanup" ],
+    },
+    {
+        id: "2026-10-05-monitoring-history",
+        items: [ "releaseNews.item.monitoringHistory" ],
+    },
+    {
         id: "2026-10-05-service-status-image-labels",
         items: [ "releaseNews.item.serviceStatusImageLabels" ],
     },
