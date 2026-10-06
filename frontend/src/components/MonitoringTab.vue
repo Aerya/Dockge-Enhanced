@@ -959,7 +959,9 @@ let historyChartResizeObserver: ResizeObserver | null = null;
 
 function syncHistoryChartWidth(): void {
     const el = historyChartWrap.value;
-    if (!el) return;
+    if (!el) {
+        return;
+    }
 
     const styles = window.getComputedStyle(el);
     const horizontalPadding =
@@ -976,7 +978,9 @@ function observeHistoryChart(): void {
     historyChartResizeObserver?.disconnect();
     historyChartResizeObserver = null;
 
-    if (!historyChartWrap.value) return;
+    if (!historyChartWrap.value) {
+        return;
+    }
 
     syncHistoryChartWidth();
 
@@ -1122,28 +1126,40 @@ const localStackStatsEnabled = ref(false);
 // ─── Computed ─────────────────────────────────────────────────────
 
 const backupCardClass = computed(() => {
-    if (!overview.value.backup.lastTimestamp) return "mc-neutral";
+    if (!overview.value.backup.lastTimestamp) {
+        return "mc-neutral";
+    }
     return overview.value.backup.success ? "mc-ok" : "mc-danger";
 });
 
 const nextTrivyMinutes = computed<number | null>(() => {
     const s = overview.value.trivy.nextScanAt;
-    if (!s) return null;
+    if (!s) {
+        return null;
+    }
     return Math.max(0, Math.floor((new Date(s).getTime() - Date.now()) / 60_000));
 });
 
 const lastTrivyMinutes = computed<number | null>(() => {
     const s = overview.value.trivy.lastScanAt;
-    if (!s) return null;
+    if (!s) {
+        return null;
+    }
     return Math.floor((Date.now() - new Date(s).getTime()) / 60_000);
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
 function formatAge(minutes: number | null): string {
-    if (minutes === null) return "—";
-    if (minutes < 1) return t("watcher.monitoring.ageJustNow");
-    if (minutes < 60) return t("timeUnit.minute", [ minutes ]);
+    if (minutes === null) {
+        return "—";
+    }
+    if (minutes < 1) {
+        return t("watcher.monitoring.ageJustNow");
+    }
+    if (minutes < 60) {
+        return t("timeUnit.minute", [ minutes ]);
+    }
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
     return m > 0
@@ -1156,8 +1172,12 @@ function formatUptime(seconds: number): string {
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const parts = [];
-    if (days > 0) parts.push(t("timeUnit.day", [ days ]));
-    if (hours > 0) parts.push(t("timeUnit.hour", [ hours ]));
+    if (days > 0) {
+        parts.push(t("timeUnit.day", [ days ]));
+    }
+    if (hours > 0) {
+        parts.push(t("timeUnit.hour", [ hours ]));
+    }
     parts.push(t("timeUnit.minute", [ minutes ]));
     return parts.join(" ");
 }
@@ -1194,15 +1214,21 @@ function healthStatusLabel(status: HealthActionStatus): string {
 }
 
 function healthStatusBadge(status: HealthActionStatus): string {
-    if (status === "success") return "badge bg-success";
-    if (status === "failed") return "badge bg-danger";
+    if (status === "success") {
+        return "badge bg-success";
+    }
+    if (status === "failed") {
+        return "badge bg-danger";
+    }
     return "badge bg-secondary";
 }
 
 // ─── Webhook helpers ──────────────────────────────────────────────
 
 function addWebhook() {
-    if (!newWebhook.value.trim()) return;
+    if (!newWebhook.value.trim()) {
+        return;
+    }
     monSettings.value.discordWebhooks.push(newWebhook.value.trim());
     newWebhook.value = "";
 }
@@ -1214,7 +1240,9 @@ function removeWebhook(idx: number) {
 
 function addAppriseUrl() {
     const url = newAppriseUrl.value.trim();
-    if (!url || monSettings.value.appriseUrls.includes(url)) return;
+    if (!url || monSettings.value.appriseUrls.includes(url)) {
+        return;
+    }
     monSettings.value.appriseUrls.push(url);
     newAppriseUrl.value = "";
 }
@@ -1222,7 +1250,9 @@ function removeAppriseUrl(idx: number) {
     monSettings.value.appriseUrls.splice(idx, 1);
 }
 async function testAppriseMonitoring() {
-    if (!monSettings.value.appriseUrls.length) return;
+    if (!monSettings.value.appriseUrls.length) {
+        return;
+    }
     testingApprise.value = true;
     try {
         // Le serverUrl est partagé — stocké dans les settings image (watcher-router)
@@ -1242,7 +1272,9 @@ async function testAppriseMonitoring() {
 
 async function loadExclusions() {
     const res = await api("GET", "/monitoring/crash-exclusions");
-    if (res.ok) exclusions.value = res.data as CrashExclusion[];
+    if (res.ok) {
+        exclusions.value = res.data as CrashExclusion[];
+    }
 }
 
 async function excludeContainer(containerName: string, durationHours: number | null) {
@@ -1308,7 +1340,9 @@ async function loadOverview() {
     overviewLoading.value = true;
     try {
         const res = await api("GET", "/monitoring/overview");
-        if (res.ok) overview.value = res.data as Overview;
+        if (res.ok) {
+            overview.value = res.data as Overview;
+        }
     } finally {
         overviewLoading.value = false;
     }
@@ -1445,7 +1479,9 @@ function removePartition(idx: number) {
 async function saveStackStatsSetting() {
     stackStatsEnabled.value = localStackStatsEnabled.value;
     const res = await api("POST", "/monitoring/display-settings", { stackStatsEnabled: localStackStatsEnabled.value });
-    if (!res.ok) showToast(`❌ ${res.message}`, false);
+    if (!res.ok) {
+        showToast(`❌ ${res.message}`, false);
+    }
 }
 
 async function saveDisplaySettings() {
@@ -1465,12 +1501,16 @@ async function saveDisplaySettings() {
 
 async function loadKulaSettings() {
     const res = await api("GET", "/watcher/kula/settings");
-    if (res.ok) kulaSettings.value = res.data as KulaSettings;
+    if (res.ok) {
+        kulaSettings.value = res.data as KulaSettings;
+    }
 }
 
 async function loadKulaStatus() {
     const res = await api("GET", "/watcher/kula/status") as { ok: boolean; status?: string };
-    if (res.ok && res.status) kulaStatus.value = res.status as "running" | "stopped" | "error";
+    if (res.ok && res.status) {
+        kulaStatus.value = res.status as "running" | "stopped" | "error";
+    }
 }
 
 async function saveKulaSettings() {
@@ -1514,11 +1554,15 @@ async function stopKula() {
 
 async function loadDozzleSettings() {
     const res = await api("GET", "/watcher/dozzle/settings");
-    if (res.ok) dozzleSettings.value = res.data as DozzleSettings;
+    if (res.ok) {
+        dozzleSettings.value = res.data as DozzleSettings;
+    }
 }
 async function loadDozzleStatus() {
     const res = await api("GET", "/watcher/dozzle/status") as { ok: boolean; status?: string };
-    if (res.ok && res.status) dozzleStatus.value = res.status as "running" | "stopped" | "error";
+    if (res.ok && res.status) {
+        dozzleStatus.value = res.status as "running" | "stopped" | "error";
+    }
 }
 async function saveDozzleSettings() {
     savingDozzle.value = true;
@@ -1558,7 +1602,9 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-    if (overviewPoller) overviewPoller.stop();
+    if (overviewPoller) {
+        overviewPoller.stop();
+    }
     historyChartResizeObserver?.disconnect();
     historyChartResizeObserver = null;
 });
