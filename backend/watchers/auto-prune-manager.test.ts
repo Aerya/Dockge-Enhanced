@@ -37,9 +37,21 @@ test("normalise et rapproche un ID Docker tronqué de son SHA complet", () => {
 
 test("regroupe les tags d'une même image physique par Image ID", () => {
     const groups = groupImageRowsById([
-        { Repository: "example/app", Tag: "latest", ID: activeId },
-        { Repository: "example/app", Tag: "stable", ID: activeId },
-        { Repository: "example/other", Tag: "latest", ID: oldId },
+        {
+            Repository: "example/app",
+            Tag: "latest",
+            ID: activeId,
+        },
+        {
+            Repository: "example/app",
+            Tag: "stable",
+            ID: activeId,
+        },
+        {
+            Repository: "example/other",
+            Tag: "latest",
+            ID: oldId,
+        },
     ]);
     assert.equal(groups.length, 2);
     assert.deepEqual(groups[0]?.references, [ "example/app:latest", "example/app:stable" ]);
