@@ -240,9 +240,6 @@
     "@stylistic/indent": {
       "count": 187
     },
-    "@stylistic/max-statements-per-line": {
-      "count": 2
-    },
     "@stylistic/object-property-newline": {
       "count": 36
     },
