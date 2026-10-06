@@ -16,7 +16,6 @@ import { atomicWriteFile, atomicWriteJson } from "./state-file";
 import { getSelfUpdateBlocker } from "./operation-guard";
 import { BLOCKER_MESSAGES, type SelfUpdateBlocker } from "./operation-guard-policy";
 import { classifySelfUpdateFailure } from "./failure-detail";
-import packageJSON from "../../package.json";
 import { log } from "../log";
 import { resolveCurrentContainer } from "../current-container";
 
@@ -96,9 +95,15 @@ export class SelfUpdateManager {
         this.startTerminalStatusWatch();
     }
 
-    getSettings(): SelfUpdateSettings { return JSON.parse(JSON.stringify(this.settings)); }
-    getOperation(): SelfUpdateOperation { return { ...this.operation }; }
-    getProgress(): SelfUpdateProgress | null { return this.progress ? { ...this.progress } : null; }
+    getSettings(): SelfUpdateSettings {
+        return JSON.parse(JSON.stringify(this.settings));
+    }
+    getOperation(): SelfUpdateOperation {
+        return { ...this.operation };
+    }
+    getProgress(): SelfUpdateProgress | null {
+        return this.progress ? { ...this.progress } : null;
+    }
 
     private transitionStageHistory(stage: SelfUpdateStage, now: string): { history: SelfUpdateStageTiming[]; startedAt: string } {
         const history = (this.operation.stageHistory ?? []).map(entry => ({ ...entry }));
@@ -214,9 +219,13 @@ export class SelfUpdateManager {
         return this.getSettings();
     }
 
-    canAutoUpdate(now = new Date()): boolean { return selfUpdateMayRun(this.settings, now); }
+    canAutoUpdate(now = new Date()): boolean {
+        return selfUpdateMayRun(this.settings, now);
+    }
 
-    isAutomaticMode(): boolean { return this.settings.mode === "sidecar"; }
+    isAutomaticMode(): boolean {
+        return this.settings.mode === "sidecar";
+    }
 
     isUpdateExecutionInProgress(): boolean {
         return this.requestInFlight || (
@@ -312,7 +321,9 @@ export class SelfUpdateManager {
             backup = await BackupManager.getInstance().runBackup({
                 tag: "self-update",
                 trigger: "manual",
-                onProgress: (progress) => { this.progress = progress; },
+                onProgress: (progress) => {
+                    this.progress = progress;
+                },
                 additionalPaths: [ DATA_DIR, recoveryPath ],
                 selfUpdateOnly: true,
                 suppressNotification: true,
@@ -335,7 +346,9 @@ export class SelfUpdateManager {
                 backup,
                 recoveryPath,
                 plan.id,
-                (progress) => { this.progress = progress; },
+                (progress) => {
+                    this.progress = progress;
+                },
             );
             const failed = verification.find((result) => !result.ok);
             if (failed) {
@@ -352,7 +365,9 @@ export class SelfUpdateManager {
             backup,
             selfUpdateRetentionTag,
             2,
-            (progress) => { this.progress = progress; },
+            (progress) => {
+                this.progress = progress;
+            },
         );
         this.progress = null;
         for (const retention of retentionResults) {
@@ -840,7 +855,11 @@ export class SelfUpdateManager {
 
     private async getOrCreateSecret(): Promise<Buffer> {
         await fs.mkdir(STATE_DIR, { recursive: true, mode: 0o700 });
-        try { return await fs.readFile(SECRET_PATH); } catch { /* create below */ }
+        try {
+            return await fs.readFile(SECRET_PATH);
+        } catch {
+            // create below
+        }
         const secret = crypto.randomBytes(32);
         await atomicWriteFile(SECRET_PATH, secret);
         return secret;
@@ -892,7 +911,9 @@ export class SelfUpdateManager {
             }
         };
 
-        this.terminalStatusWatchTimer = setInterval(() => { void poll(); }, 2_000);
+        this.terminalStatusWatchTimer = setInterval(() => {
+            void poll();
+        }, 2_000);
         this.terminalStatusWatchTimer.unref?.();
         void poll();
     }
