@@ -332,6 +332,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Actualización secuencial de todas las imágenes disponibles, con progreso y parada ante el primer error
 - Rollback, programación y pausas
 - Autoactualización protegida de Dockge-Enhanced
+- Progreso persistente en 8 etapas reales, con duración por etapa, archivos/bytes/velocidad Restic cuando están disponibles y CPU/RAM + carga de 1 minuto del host en tiempo real
 - Detección fiable del contenedor actual con un `hostname:` personalizado en Compose y estado degradado visible si la verificación no está disponible
 - Copia Restic, integridad, readiness y recuperación automática
 - Bloqueo de la autoactualización mientras haya cambios Compose o `.env` sin guardar

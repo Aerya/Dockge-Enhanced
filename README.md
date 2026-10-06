@@ -348,6 +348,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Scheduled updates
 - Global and per-image pause
 - Protected Dockge-Enhanced self-update
+- Persisted 8-stage self-update timeline with per-stage duration, Restic files/bytes/throughput when available, and live host CPU/RAM + 1-minute load
 - Reliable current-container discovery with custom Compose `hostname:` values and a visible degraded state when update verification is unavailable
 - Mandatory Restic backup and integrity verification
 - Readiness validation and automatic recovery

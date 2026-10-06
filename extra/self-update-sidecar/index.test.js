@@ -198,3 +198,55 @@ test("snapshot recovery tolerates an already deleted container and removes any r
     assert.ok(calls.some(call => call.requestPath === "/containers/dockge-test?force=1" && call.options.allow404 === true));
     assert.ok(calls.some(call => call.requestPath === "/containers/create?name=dockge-test"));
 });
+
+test("self-update stages survive the sidecar handoff and keep per-stage timings", () => {
+    const statusPath = path.join(root, "status.json");
+    fs.rmSync(statusPath, { force: true });
+    const startedAt = "2026-10-06T05:00:00.000Z";
+    fs.writeFileSync(statusPath, JSON.stringify({
+        id: "a".repeat(32),
+        state: "updating",
+        message: "Updater sidecar launching",
+        startedAt,
+        finishedAt: null,
+        targetImage: "dockge-enhanced:test-v2",
+        rollbackAttempted: false,
+        stage: "prepare-updater",
+        stageStartedAt: "2026-10-06T05:00:10.000Z",
+        stageHistory: [{ stage: "prepare-updater", startedAt: "2026-10-06T05:00:10.000Z", finishedAt: null }],
+    }));
+    const plan = { id: "a".repeat(32), issuedAt: "2026-10-06T05:00:20.000Z", targetImage: "dockge-enhanced:test-v2" };
+
+    sidecar.writeStatus("updating", "Downloading target image", false, plan, "pull-target");
+    sidecar.writeStatus("waiting-health", "Waiting for readiness", false, plan, "health-check");
+    sidecar.writeStatus("succeeded", "Ready", false, plan, "health-check");
+
+    const status = JSON.parse(fs.readFileSync(statusPath, "utf8"));
+    assert.equal(status.startedAt, startedAt);
+    assert.equal(status.stage, "health-check");
+    assert.equal(status.stageHistory.length, 3);
+    assert.ok(status.stageHistory[0].finishedAt);
+    assert.ok(status.stageHistory[1].finishedAt);
+    assert.ok(status.stageHistory[2].finishedAt);
+});
+
+test("Compose reports target download before container replacement", () => {
+    const work = path.join(root, "staged-compose");
+    fs.mkdirSync(work, { recursive: true });
+    const composeFile = path.join(work, "compose.yaml");
+    fs.writeFileSync(composeFile, "services:\n  dockge:\n    image: ghcr.io/aerya/dockge-enhanced:latest\n");
+    process.env.SELF_UPDATE_COMPOSE_DIR = work;
+    process.env.SELF_UPDATE_ALLOW_TEST_IMAGES = "";
+    const stages = [];
+    const calls = [];
+    sidecar.composeUpdate({
+        id: "b".repeat(32),
+        compose: { workingDir: work, configFiles: [ composeFile ], project: "test", service: "dockge" },
+    }, `ghcr.io/aerya/dockge-enhanced@sha256:${"a".repeat(64)}`, {
+        docker: args => { calls.push(args); return ""; },
+        onStage: stage => stages.push(stage),
+    });
+    assert.deepEqual(stages, [ "pull-target", "replace-container" ]);
+    assert.ok(calls.some(args => args.includes("pull")));
+    assert.ok(calls.some(args => args.includes("up")));
+});

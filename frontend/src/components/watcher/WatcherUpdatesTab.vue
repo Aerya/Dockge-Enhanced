@@ -87,27 +87,76 @@
 
             <div class="current-state mb-3" :class="currentStateClass">
                 <strong>{{ currentStateLabel }}</strong>
-                <span v-if="activeStep" class="ms-2">{{ $t("updates.status.step", { current: activeStep, total: 4 }) }}</span>
+                <span v-if="activeStep" class="ms-2">{{ $t("updates.status.step", { current: activeStep, total: updateStageDefinitions.length }) }}</span>
             </div>
             <p v-if="status.error && !operationActive" class="alert alert-danger py-2 mb-3">
                 {{ $t("updates.status.checkUnavailable") }}
             </p>
 
-            <template v-if="operationActive">
-                <div v-if="progressPercent !== null" class="progress mb-2" role="progressbar" :aria-valuenow="progressPercent" aria-valuemin="0" aria-valuemax="100">
+            <template v-if="operationActive || showStageTimeline">
+                <div v-if="operationExecuting && hostStats" class="machine-load mb-3">
+                    <strong>{{ $t("updates.status.machineLoad") }}</strong>
+                    <span>CPU {{ hostStats.cpu }}%</span>
+                    <span>RAM {{ hostStats.ram.percent }}%</span>
+                    <span v-if="loadAverageLabel">{{ $t("updates.status.loadAverage", { value: loadAverageLabel }) }}</span>
+                </div>
+
+                <div v-if="operationExecuting && progressPercent !== null" class="progress mb-2" role="progressbar" :aria-valuenow="progressPercent" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar" :style="{ width: `${progressPercent}%` }">{{ progressPercent }}%</div>
                 </div>
-                <div v-if="progress" class="form-text mb-2">
+                <div v-if="operationExecuting && progress" class="progress-details form-text mb-3">
                     <template v-if="progress.phase === 'backup'">
-                        {{ $t("updates.status.backupProgress", { label: progress.label, completed: formatBytes(progress.completed), total: formatBytes(progress.total) }) }}
+                        <span>{{ $t("updates.status.backupProgress", { label: progress.label, completed: formatBytes(progress.completed), total: formatBytes(progress.total) }) }}</span>
+                        <span v-if="progress.totalFiles">{{ $t("updates.status.backupFilesProgress", {
+                            completed: progress.filesDone ?? 0,
+                            total: progress.totalFiles,
+                        }) }}</span>
+                        <span v-if="throughputLabel">{{ $t("updates.status.throughput", { rate: throughputLabel }) }}</span>
+                    </template>
+                    <template v-else-if="progress.phase === 'verification'">
+                        <span>{{ $t("updates.status.verificationProgress", { label: progress.label, current: progress.destinationIndex, total: progress.destinationCount }) }}</span>
                     </template>
                     <template v-else>
-                        {{ $t("updates.status.verificationProgress", { label: progress.label, current: progress.destinationIndex, total: progress.destinationCount }) }}
+                        <span>{{ $t("updates.status.retentionProgress", {
+                            label: progress.label,
+                            current: progress.destinationIndex,
+                            total: progress.destinationCount,
+                            count: progress.snapshotsToRemove ?? 0,
+                        }) }}</span>
                     </template>
                 </div>
-                <div class="timing-grid form-text mb-2">
+                <div v-if="operationExecuting" class="timing-grid form-text mb-3">
                     <span v-if="elapsedLabel">{{ $t("updates.status.elapsed", { time: elapsedLabel }) }}</span>
+                    <span v-if="stageElapsedLabel">{{ $t("updates.status.stageElapsed", { time: stageElapsedLabel }) }}</span>
                     <span v-if="remainingLabel">{{ $t("updates.status.remaining", { time: remainingLabel }) }}</span>
+                </div>
+
+                <div v-if="showStageTimeline" class="update-stages mb-3">
+                    <div
+                        v-for="(step, index) in updateStageDefinitions"
+                        :key="step.stage"
+                        class="update-stage"
+                        :class="stepStatusClass(step.stage)"
+                    >
+                        <span class="stage-marker">{{ stepMarker(step.stage) }}</span>
+                        <div class="stage-body">
+                            <div class="stage-heading">
+                                <strong>{{ index + 1 }}. {{ $t(step.titleKey) }}</strong>
+                                <span v-if="stepDurationLabel(step.stage)" class="stage-duration">{{ stepDurationLabel(step.stage) }}</span>
+                            </div>
+                            <div class="form-text">{{ $t(step.descriptionKey) }}</div>
+                        </div>
+                    </div>
+                    <div v-if="operation.stage === 'rollback'" class="update-stage" :class="stepStatusClass('rollback')">
+                        <span class="stage-marker">{{ stepMarker("rollback") }}</span>
+                        <div class="stage-body">
+                            <div class="stage-heading">
+                                <strong>{{ $t("updates.stage.rollback.title") }}</strong>
+                                <span v-if="stepDurationLabel('rollback')" class="stage-duration">{{ stepDurationLabel("rollback") }}</span>
+                            </div>
+                            <div class="form-text">{{ $t("updates.stage.rollback.description") }}</div>
+                        </div>
+                    </div>
                 </div>
             </template>
 
@@ -140,6 +189,12 @@ import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { watcherApi } from "./shared";
 
 interface BuildMetadata { revision: string; created: string; }
+type SelfUpdateStage = "preparing" | "backup" | "verify-backup" | "prune-backup" | "prepare-updater" | "pull-target" | "replace-container" | "health-check" | "rollback";
+interface StageTiming {
+    stage: SelfUpdateStage;
+    startedAt: string;
+    finishedAt?: string | null;
+}
 interface Operation {
     state: string;
     message: string;
@@ -147,6 +202,18 @@ interface Operation {
     finishedAt?: string | null;
     targetImage?: string;
     deferredBy?: string;
+    stage?: SelfUpdateStage;
+    stageStartedAt?: string | null;
+    stageHistory?: StageTiming[];
+}
+interface HostStats {
+    cpu: number;
+    ram: {
+        percent: number;
+    };
+    host?: {
+        loadAverage?: number[];
+    };
 }
 
 const { t } = useI18n();
@@ -155,7 +222,18 @@ const updatePause = ref({ enabled: false, until: null as string | null });
 const emptyBuild = (): BuildMetadata => ({ revision: "", created: "" });
 const status = ref({ updateAvailable: false, repo: "", localDigest: "", remoteDigest: "", localBuild: emptyBuild(), remoteBuild: emptyBuild(), error: null as string | null });
 const operation = ref<Operation>({ state: "idle", message: "", startedAt: null, finishedAt: null, targetImage: "" });
-const progress = ref<null | { phase: "backup" | "verification"; label: string; completed?: number; total?: number; destinationIndex?: number; destinationCount?: number }>(null);
+const progress = ref<null | {
+    phase: "backup" | "verification" | "retention";
+    label: string;
+    completed?: number;
+    total?: number;
+    filesDone?: number;
+    totalFiles?: number;
+    destinationIndex?: number;
+    destinationCount?: number;
+    snapshotsToRemove?: number;
+}>(null);
+const hostStats = ref<HostStats | null>(null);
 const updating = ref(false);
 const availableImages = ref(0);
 const imageBatch = ref({
@@ -174,10 +252,62 @@ let clockTimer: ReturnType<typeof setInterval> | undefined;
 
 const activeStates = new Set([ "scheduled", "backing-up", "verifying-backup", "updating", "waiting-health", "rolling-back" ]);
 const terminalStates = new Set([ "succeeded", "failed", "rolled-back", "rollback-failed" ]);
+const failedStates = new Set([ "failed", "rolled-back", "rollback-failed" ]);
 const operationActive = computed(() => activeStates.has(operation.value.state));
-const updateSteps: Record<string, number> = { "backing-up": 1, "verifying-backup": 2, "updating": 3, "waiting-health": 4 };
-const activeStep = computed(() => updateSteps[operation.value.state] ?? null);
+const operationExecuting = computed(() => operationActive.value && operation.value.state !== "scheduled");
+const updateStageDefinitions: Array<{
+    stage: Exclude<SelfUpdateStage, "rollback">;
+    titleKey: string;
+    descriptionKey: string;
+}> = [
+    {
+        stage: "preparing",
+        titleKey: "updates.stage.preparing.title",
+        descriptionKey: "updates.stage.preparing.description",
+    },
+    {
+        stage: "backup",
+        titleKey: "updates.stage.backup.title",
+        descriptionKey: "updates.stage.backup.description",
+    },
+    {
+        stage: "verify-backup",
+        titleKey: "updates.stage.verify-backup.title",
+        descriptionKey: "updates.stage.verify-backup.description",
+    },
+    {
+        stage: "prune-backup",
+        titleKey: "updates.stage.prune-backup.title",
+        descriptionKey: "updates.stage.prune-backup.description",
+    },
+    {
+        stage: "prepare-updater",
+        titleKey: "updates.stage.prepare-updater.title",
+        descriptionKey: "updates.stage.prepare-updater.description",
+    },
+    {
+        stage: "pull-target",
+        titleKey: "updates.stage.pull-target.title",
+        descriptionKey: "updates.stage.pull-target.description",
+    },
+    {
+        stage: "replace-container",
+        titleKey: "updates.stage.replace-container.title",
+        descriptionKey: "updates.stage.replace-container.description",
+    },
+    {
+        stage: "health-check",
+        titleKey: "updates.stage.health-check.title",
+        descriptionKey: "updates.stage.health-check.description",
+    },
+];
+const regularStageIndex = new Map<SelfUpdateStage, number>(updateStageDefinitions.map((step, index) => [ step.stage, index + 1 ] as const));
+const activeStep = computed(() => operation.value.stage ? (regularStageIndex.get(operation.value.stage) ?? null) : null);
+const showStageTimeline = computed(() => Boolean(operation.value.stage || operation.value.stageHistory?.length));
 const currentStateLabel = computed(() => {
+    if (operationActive.value && operation.value.stage) {
+        return t(`updates.stage.${operation.value.stage}.title`);
+    }
     if (operationActive.value) return t(`updates.status.${operation.value.state}`);
     if ([ "failed", "rolled-back", "rollback-failed" ].includes(operation.value.state)) return t(`updates.status.${operation.value.state}`);
     if (status.value.error) return t("updates.status.checkUnavailableTitle");
@@ -206,11 +336,25 @@ const progressPercent = computed(() => {
 });
 const elapsedMs = computed(() => operation.value.startedAt ? Math.max(0, now.value - Date.parse(operation.value.startedAt)) : 0);
 const elapsedLabel = computed(() => elapsedMs.value ? formatDuration(elapsedMs.value) : "");
+const stageElapsedMs = computed(() => operation.value.stageStartedAt ? Math.max(0, now.value - Date.parse(operation.value.stageStartedAt)) : 0);
+const stageElapsedLabel = computed(() => stageElapsedMs.value ? formatDuration(stageElapsedMs.value) : "");
 const remainingLabel = computed(() => {
-    if (progress.value?.phase !== "backup" || !progress.value.total || !progress.value.completed || elapsedMs.value < 5_000) return "";
+    if (progress.value?.phase !== "backup" || !progress.value.total || !progress.value.completed || stageElapsedMs.value < 5_000) {
+        return "";
+    }
     const remaining = progress.value.total - progress.value.completed;
     if (remaining <= 0) return "";
-    return formatDuration(elapsedMs.value * remaining / progress.value.completed);
+    return formatDuration(stageElapsedMs.value * remaining / progress.value.completed);
+});
+const throughputLabel = computed(() => {
+    if (progress.value?.phase !== "backup" || !progress.value.completed || stageElapsedMs.value < 2_000) {
+        return "";
+    }
+    return `${formatBytes(progress.value.completed / (stageElapsedMs.value / 1000))}/s`;
+});
+const loadAverageLabel = computed(() => {
+    const value = hostStats.value?.host?.loadAverage?.[0];
+    return Number.isFinite(value) ? Number(value).toFixed(2) : "";
 });
 const lastOperationLabel = computed(() => {
     if (!terminalStates.has(operation.value.state) || !operation.value.finishedAt) return "";
@@ -221,6 +365,86 @@ const lastOperationLabel = computed(() => {
 });
 const pauseLabel = computed(() => updatePause.value.until ? t("updates.pause.until", { date: new Date(updatePause.value.until).toLocaleString() }) : t("updates.pause.indefinite"));
 
+function stageTiming(stage: SelfUpdateStage): StageTiming | undefined {
+    return [...(operation.value.stageHistory ?? [])].reverse().find(entry => entry.stage === stage);
+}
+
+function stepStatusClass(stage: SelfUpdateStage): string {
+    if (stage === "rollback") {
+        if (operation.value.state === "rolling-back") {
+            return "stage-current";
+        }
+        if (operation.value.state === "rolled-back") {
+            return "stage-done";
+        }
+        if (operation.value.state === "rollback-failed") {
+            return "stage-failed";
+        }
+    }
+
+    if ([ "rolling-back", "rolled-back", "rollback-failed" ].includes(operation.value.state)) {
+        const history = operation.value.stageHistory ?? [];
+        const rollbackIndex = history.map(entry => entry.stage).lastIndexOf("rollback");
+        const failedStage = rollbackIndex > 0 ? history[rollbackIndex - 1]?.stage : undefined;
+        if (failedStage === stage) {
+            return "stage-failed";
+        }
+    }
+
+    if (failedStates.has(operation.value.state) && operation.value.stage === stage) {
+        return "stage-failed";
+    }
+    if (operationExecuting.value && operation.value.stage === stage) {
+        return "stage-current";
+    }
+    if (stageTiming(stage)?.finishedAt) {
+        return "stage-done";
+    }
+    return "stage-pending";
+}
+
+function stepMarker(stage: SelfUpdateStage): string {
+    const statusClass = stepStatusClass(stage);
+    if (statusClass === "stage-done") {
+        return "✓";
+    }
+    if (statusClass === "stage-failed") {
+        return "×";
+    }
+    if (statusClass === "stage-current") {
+        return "●";
+    }
+    return "○";
+}
+
+function stepDurationLabel(stage: SelfUpdateStage): string {
+    const timing = stageTiming(stage);
+    if (!timing) {
+        return "";
+    }
+    const startedAt = Date.parse(timing.startedAt);
+    const finishedAt = timing.finishedAt ? Date.parse(timing.finishedAt) : (operation.value.stage === stage ? now.value : NaN);
+    if (!Number.isFinite(startedAt) || !Number.isFinite(finishedAt) || finishedAt < startedAt) {
+        return "";
+    }
+    return formatDuration(finishedAt - startedAt);
+}
+
+async function loadHostStats() {
+    try {
+        const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
+        const res = await fetch("/api/system/stats", {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = await res.json();
+        if (data.ok) {
+            hostStats.value = data.data as HostStats;
+        }
+    } catch {
+        // La progression self-update reste utilisable même si les stats hôte sont indisponibles.
+    }
+}
+
 async function load() {
     const [ settingsResult, statusResult, pauseResult, imageResult ] = await Promise.all([
         watcherApi("GET", "/self/settings"), watcherApi("GET", "/self/status"), watcherApi("GET", "/image/auto-update"), watcherApi("GET", "/image/update-all"),
@@ -230,6 +454,11 @@ async function load() {
         status.value = { ...status.value, ...statusResult };
         operation.value = statusResult.operation ?? operation.value;
         progress.value = statusResult.progress ?? null;
+    }
+    if (operationExecuting.value) {
+        await loadHostStats();
+    } else {
+        hostStats.value = null;
     }
     const selfPause = settingsResult.ok ? settingsResult.data.pause : null;
     const globalPause = pauseResult.ok ? pauseResult.data.globalUpdatePause : null;
@@ -347,5 +576,20 @@ onBeforeUnmount(() => {
 .state-warning, .state-active { background: rgba(245, 158, 11, .10); color: #f59e0b; }
 .state-error { background: rgba(239, 68, 68, .10); color: #ef4444; }
 .timing-grid { display: flex; flex-wrap: wrap; gap: 1rem; }
+.machine-load { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; border: 1px solid var(--bs-border-color); border-radius: .5rem; padding: .55rem .7rem; font-size: .86rem; }
+.progress-details { display: flex; flex-wrap: wrap; gap: .35rem 1rem; }
+.update-stages { display: flex; flex-direction: column; gap: .35rem; }
+.update-stage { display: flex; gap: .65rem; border-left: 3px solid var(--bs-border-color); padding: .55rem .7rem; background: rgba(var(--bs-secondary-rgb), .035); }
+.stage-marker { width: 1.1rem; flex: 0 0 1.1rem; text-align: center; font-weight: 700; }
+.stage-body { min-width: 0; flex: 1; }
+.stage-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; }
+.stage-duration { color: var(--bs-secondary-color); font-size: .82rem; }
+.stage-current { border-left-color: #f59e0b; background: rgba(245, 158, 11, .08); }
+.stage-current .stage-marker { color: #f59e0b; }
+.stage-done { border-left-color: #22c55e; }
+.stage-done .stage-marker { color: #22c55e; }
+.stage-failed { border-left-color: #ef4444; background: rgba(239, 68, 68, .08); }
+.stage-failed .stage-marker { color: #ef4444; }
+.stage-pending { opacity: .7; }
 .last-operation { font-size: .9rem; }
 </style>

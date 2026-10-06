@@ -4,6 +4,23 @@ export type SelfUpdateMode = "manual" | "sidecar" | "agent";
 export type SelfUpdateScheduleType = "immediate" | "window";
 export type SelfUpdateBlockerCode = "active-editor" | "image-work" | "restic-backup" | "restic-restore" | "stack-transfer" | "stack-replication" | "trivy-scan" | "external-stack-integration" | "state-check-error";
 
+export type SelfUpdateStage =
+    | "preparing"
+    | "backup"
+    | "verify-backup"
+    | "prune-backup"
+    | "prepare-updater"
+    | "pull-target"
+    | "replace-container"
+    | "health-check"
+    | "rollback";
+
+export interface SelfUpdateStageTiming {
+    stage: SelfUpdateStage;
+    startedAt: string;
+    finishedAt?: string | null;
+}
+
 export interface SelfUpdateSettings {
     mode: SelfUpdateMode;
     schedule: {
@@ -44,13 +61,16 @@ export interface SelfUpdateOperation {
     finishedAt: string | null;
     targetImage: string;
     rollbackAttempted: boolean;
+    stage?: SelfUpdateStage;
+    stageStartedAt?: string | null;
+    stageHistory?: SelfUpdateStageTiming[];
     deferredBy?: SelfUpdateBlockerCode;
     notificationPending?: boolean;
     notificationSentAt?: string | null;
 }
 
 export interface SelfUpdateProgress {
-    phase: "backup" | "verification";
+    phase: "backup" | "verification" | "retention";
     label: string;
     completed?: number;
     total?: number;
@@ -58,4 +78,5 @@ export interface SelfUpdateProgress {
     totalFiles?: number;
     destinationIndex?: number;
     destinationCount?: number;
+    snapshotsToRemove?: number;
 }

@@ -251,7 +251,7 @@ export interface BackupResult {
 }
 
 export interface BackupProgress {
-    phase: "backup" | "verification";
+    phase: "backup" | "verification" | "retention";
     label: string;
     completed?: number;
     total?: number;
@@ -259,6 +259,7 @@ export interface BackupProgress {
     totalFiles?: number;
     destinationIndex?: number;
     destinationCount?: number;
+    snapshotsToRemove?: number;
     ok?: boolean;
 }
 
@@ -1153,15 +1154,24 @@ export class BackupManager {
         backup: BackupResult,
         instanceTag: string,
         keepLast = 2,
+        onProgress?: (progress: BackupProgress) => void,
     ): Promise<Array<{ label: string; removed: number; error?: string }>> {
         if (!/^self-update-instance-[a-f0-9]{16}$/.test(instanceTag)) {
             throw new ValidationError("Tag de rétention self-update invalide");
         }
         const keep = Math.max(1, Math.floor(keepLast));
         const results: Array<{ label: string; removed: number; error?: string }> = [];
+        const successfulDestinations = (backup.destinations ?? []).filter(destination => destination.success);
+        let destinationIndex = 0;
 
-        for (const backedUp of backup.destinations ?? []) {
-            if (!backedUp.success) continue;
+        for (const backedUp of successfulDestinations) {
+            destinationIndex += 1;
+            onProgress?.({
+                phase: "retention",
+                label: backedUp.label,
+                destinationIndex,
+                destinationCount: successfulDestinations.length,
+            });
             const dest = this.settings.destinations.find(candidate => candidate.enabled && candidate.label === backedUp.label);
             if (!dest) {
                 results.push({ label: backedUp.label, removed: 0, error: "Destination de backup introuvable" });
@@ -1178,6 +1188,13 @@ export class BackupManager {
                     .sort((a, b) => Date.parse(b.time) - Date.parse(a.time));
 
                 const expired = ordered.slice(keep);
+                onProgress?.({
+                    phase: "retention",
+                    label: dest.label,
+                    destinationIndex,
+                    destinationCount: successfulDestinations.length,
+                    snapshotsToRemove: expired.length,
+                });
                 if (expired.length === 0) {
                     results.push({ label: dest.label, removed: 0 });
                     continue;
@@ -2318,6 +2335,7 @@ export class BackupManager {
         result: BackupResult,
         expectedFilePath: string,
         expectedRecoveryId?: string,
+        onProgress?: (progress: BackupProgress) => void,
     ): Promise<Array<{ label: string; ok: boolean; output: string }>> {
         const destinations = result.destinations ?? [];
         const enabled = this.settings.destinations.filter(dest => dest.enabled);
@@ -2330,6 +2348,12 @@ export class BackupManager {
         for (let i = 0; i < destinations.length; i++) {
             const destResult = destinations[i];
             const dest = enabled[i];
+            onProgress?.({
+                phase: "verification",
+                label: destResult?.label ?? dest?.label ?? `destination-${i + 1}`,
+                destinationIndex: i + 1,
+                destinationCount: destinations.length,
+            });
             if (!dest || !destResult?.success || !destResult.snapshotId) {
                 checks.push({ label: destResult?.label ?? dest?.label ?? `destination-${i + 1}`, ok: false, output: "Snapshot fraîchement créé introuvable" });
                 continue;
