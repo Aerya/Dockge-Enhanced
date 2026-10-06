@@ -691,9 +691,6 @@
     "@stylistic/object-property-newline": {
       "count": 40
     },
-    "curly": {
-      "count": 21
-    },
     "vue/html-indent": {
       "count": 37
     }
