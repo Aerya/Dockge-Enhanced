@@ -685,7 +685,7 @@
     "watcher.monitoring.lowPower": "Mode Synology / faible consommation",
     "watcher.monitoring.lowPowerHint": "Ralentit les rafraîchissements (stats système 30 s, stats conteneurs 60 s) et met en pause la collecte liée au navigateur quand aucun onglet n'est visible. Si l'historique CPU/RAM est activé explicitement, son échantillon léger toutes les 5 minutes continue en arrière-plan.",
     "watcher.monitoring.historyTitle": "Historique CPU / RAM",
-    "watcher.monitoring.historyPeriod": "Période affichée",
+    "watcher.monitoring.historyPeriod": "Visualisation",
     "watcher.monitoring.historySave": "Enregistrer",
     "watcher.monitoring.historyEnabled": "Enregistrer l'historique CPU / RAM",
     "watcher.monitoring.historyHint": "Enregistre un échantillon hôte léger toutes les 5 minutes. Désactivé par défaut ; les arrêts restent visibles sous forme de trous.",

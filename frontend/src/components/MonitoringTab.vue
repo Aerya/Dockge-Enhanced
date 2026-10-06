@@ -130,6 +130,7 @@
                     </button>
                 </div>
                 <div class="history-controls mb-3">
+                    <span class="history-period-label">{{ $t('watcher.monitoring.historyPeriod') }}</span>
                     <div class="history-preset-group" role="group" :aria-label="$t('watcher.monitoring.historyPeriod')">
                         <button v-for="preset in historyPresetOptions" :key="preset.value" type="button" class="btn btn-sm history-preset-btn" :class="{ active: historyPreset === preset.value }" @click="selectHistoryPreset(preset.value)">
                             {{ $t(preset.label) }}
@@ -155,8 +156,8 @@
                     <span class="history-stat-card"><i class="history-legend history-legend--cpu"></i><strong>CPU</strong><span>{{ $t('watcher.monitoring.historyAverage') }} {{ historyStats.cpuAverage.toFixed(1) }}%</span><span>{{ $t('watcher.monitoring.historyMaximum') }} {{ historyStats.cpuMax.toFixed(1) }}%</span></span>
                     <span class="history-stat-card"><i class="history-legend history-legend--ram"></i><strong>RAM</strong><span>{{ $t('watcher.monitoring.historyAverage') }} {{ historyStats.ramAverage.toFixed(1) }}%</span><span>{{ $t('watcher.monitoring.historyMaximum') }} {{ historyStats.ramMax.toFixed(1) }}%</span></span>
                 </div>
-                <div v-if="historyPoints.length" class="history-chart-wrap">
-                    <svg class="history-chart" viewBox="0 0 960 220" preserveAspectRatio="xMidYMid meet" role="img" :aria-label="$t('watcher.monitoring.historyChart')">
+                <div v-if="historyPoints.length" ref="historyChartWrap" class="history-chart-wrap">
+                    <svg class="history-chart" :viewBox="`0 0 ${historyChart.width} ${historyChart.height}`" preserveAspectRatio="xMinYMin meet" role="img" :aria-label="$t('watcher.monitoring.historyChart')">
                         <rect :x="historyChart.left" :y="historyChart.top" :width="historyPlotWidth" :height="historyPlotHeight" class="history-plot-bg" />
                         <line v-for="value in historyYTicks" :key="value" :x1="historyChart.left" :x2="historyChart.width - historyChart.right" :y1="historyY(value)" :y2="historyY(value)" class="history-grid-line" />
                         <text v-for="value in historyYTicks" :key="`label-${value}`" :x="historyChart.left - 10" :y="historyY(value) + 4" text-anchor="end" class="history-axis-label">{{ value }}%</text>
@@ -759,7 +760,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 import { stackStatsEnabled } from "../composables/useStackStats";
@@ -936,27 +937,64 @@ const historyPresetOptions = [
     },
 ];
 
-const historyChart = {
-    width: 960,
+const historyChartWrap = ref<HTMLElement | null>(null);
+const historyChartWidth = ref(960);
+const historyChart = computed(() => ({
+    width: historyChartWidth.value,
     height: 220,
     left: 52,
     right: 16,
     top: 12,
     bottom: 32,
-} as const;
+}));
 const historyYTicks = [ 0, 25, 50, 75, 100 ];
-const historyPlotWidth = historyChart.width - historyChart.left - historyChart.right;
-const historyPlotHeight = historyChart.height - historyChart.top - historyChart.bottom;
+const historyPlotWidth = computed(() =>
+    Math.max(1, historyChart.value.width - historyChart.value.left - historyChart.value.right)
+);
+const historyPlotHeight = computed(() =>
+    historyChart.value.height - historyChart.value.top - historyChart.value.bottom
+);
+
+let historyChartResizeObserver: ResizeObserver | null = null;
+
+function syncHistoryChartWidth(): void {
+    const el = historyChartWrap.value;
+    if (!el) return;
+
+    const styles = window.getComputedStyle(el);
+    const horizontalPadding =
+        (Number.parseFloat(styles.paddingLeft) || 0) +
+        (Number.parseFloat(styles.paddingRight) || 0);
+
+    const width = Math.floor(el.clientWidth - horizontalPadding);
+    if (width > 0) {
+        historyChartWidth.value = Math.max(240, width);
+    }
+}
+
+function observeHistoryChart(): void {
+    historyChartResizeObserver?.disconnect();
+    historyChartResizeObserver = null;
+
+    if (!historyChartWrap.value) return;
+
+    syncHistoryChartWidth();
+
+    historyChartResizeObserver = new ResizeObserver(() => {
+        syncHistoryChartWidth();
+    });
+    historyChartResizeObserver.observe(historyChartWrap.value);
+}
 
 function historyX(sampledAt: string): number {
     const value = Date.parse(sampledAt);
     const ratio = (value - historyFrom.value) / Math.max(1, historyTo.value - historyFrom.value);
-    return historyChart.left + Math.max(0, Math.min(1, ratio)) * historyPlotWidth;
+    return historyChart.value.left + Math.max(0, Math.min(1, ratio)) * historyPlotWidth.value;
 }
 
 function historyY(percent: number): number {
     const ratio = Math.max(0, Math.min(100, percent)) / 100;
-    return historyChart.top + (1 - ratio) * historyPlotHeight;
+    return historyChart.value.top + (1 - ratio) * historyPlotHeight.value;
 }
 
 const historyTimeTicks = computed(() => {
@@ -986,7 +1024,7 @@ const historyTimeTicks = computed(() => {
         const timestamp = from + duration * ratio;
         return {
             timestamp,
-            x: historyChart.left + historyPlotWidth * ratio,
+            x: historyChart.value.left + historyPlotWidth.value * ratio,
             label: formatter.format(new Date(timestamp)),
         };
     });
@@ -1342,6 +1380,8 @@ async function loadHistory() {
         historyFrom.value = Date.parse(data.from);
         historyTo.value = Date.parse(data.to);
         historyBucketSeconds.value = data.bucketSeconds;
+        await nextTick();
+        observeHistoryChart();
     } catch {
         showToast(`❌ ${t("watcher.monitoring.historyLoadError")}`, false);
     } finally {
@@ -1519,6 +1559,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
     if (overviewPoller) overviewPoller.stop();
+    historyChartResizeObserver?.disconnect();
+    historyChartResizeObserver = null;
 });
 </script>
 
@@ -1561,6 +1603,13 @@ onUnmounted(() => {
     align-items: center;
     gap: .5rem;
     .form-select, .form-control { width: auto; min-width: 8rem; }
+}
+.history-period-label {
+    flex: 0 0 auto;
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    white-space: nowrap;
 }
 .history-preset-group {
     display: inline-flex;
@@ -1623,7 +1672,8 @@ onUnmounted(() => {
 .history-chart {
     display: block;
     width: 100%;
-    height: clamp(190px, 18vw, 225px);
+    max-width: 100%;
+    height: 220px;
 }
 .history-plot-bg {
     fill: color-mix(in srgb, var(--bg-surface) 34%, transparent);
@@ -1656,7 +1706,7 @@ onUnmounted(() => {
     .history-custom-range .form-select { flex: 1 1 0; width: auto; min-width: 0; }
     .history-controls .btn-primary { width: 100%; margin-left: 0 !important; }
     .history-stat-card { width: 100%; }
-    .history-chart { height: 190px; }
+    .history-chart { height: 220px; }
 }
 
 .mc-icon { font-size: var(--fs-2xl); line-height: 1; flex-shrink: 0; padding-top: 2px; }

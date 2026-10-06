@@ -767,7 +767,7 @@
     "dockerResources.autoPrune.unusedHeading": "Imágenes sin uso",
     "dockerResources.images.references": "referencias / etiquetas",
     "watcher.monitoring.historyTitle": "Historial de CPU / RAM",
-    "watcher.monitoring.historyPeriod": "Periodo mostrado",
+    "watcher.monitoring.historyPeriod": "Visualización",
     "watcher.monitoring.historySave": "Guardar",
     "watcher.monitoring.historyEnabled": "Guardar historial de CPU / RAM",
     "watcher.monitoring.historyHint": "Guarda una muestra ligera del host cada 5 minutos. Desactivado por defecto; los periodos apagados aparecen como huecos.",

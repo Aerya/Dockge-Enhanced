@@ -640,7 +640,7 @@
     "watcher.monitoring.lowPower": "Synology / 低功耗模式",
     "watcher.monitoring.lowPowerHint": "降低更新頻率（系統統計 30 秒、容器統計 60 秒），並在沒有可見分頁時暫停瀏覽器驅動的收集。若明確啟用 CPU/RAM 歷史記錄，輕量級的 5 分鐘背景取樣會繼續執行。",
     "watcher.monitoring.historyTitle": "CPU / RAM 歷史",
-    "watcher.monitoring.historyPeriod": "顯示期間",
+    "watcher.monitoring.historyPeriod": "顯示範圍",
     "watcher.monitoring.historySave": "儲存",
     "watcher.monitoring.historyEnabled": "記錄 CPU / RAM 歷史",
     "watcher.monitoring.historyHint": "每 5 分鐘儲存一次輕量級主機取樣。預設關閉；停機時間會顯示為空白。",

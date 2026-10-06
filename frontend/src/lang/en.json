@@ -697,7 +697,7 @@
     "watcher.monitoring.lowPower": "Synology / low-power mode",
     "watcher.monitoring.lowPowerHint": "Slows down refreshes (system stats 30 s, container stats 60 s) and pauses browser-driven collection when no tab is visible. If CPU/RAM history is explicitly enabled, its lightweight 5-minute background sample continues.",
     "watcher.monitoring.historyTitle": "CPU / RAM history",
-    "watcher.monitoring.historyPeriod": "Displayed period",
+    "watcher.monitoring.historyPeriod": "View",
     "watcher.monitoring.historySave": "Save",
     "watcher.monitoring.historyEnabled": "Record CPU / RAM history",
     "watcher.monitoring.historyHint": "Stores one lightweight host sample every 5 minutes. Disabled by default; downtime remains visible as gaps.",
