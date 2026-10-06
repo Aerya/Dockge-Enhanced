@@ -113,7 +113,7 @@
                     </div>
                     <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
                         <button class="btn btn-primary btn-sm" :disabled="savingCleanupSettings" @click="saveCleanupSettings">
-                            <span v-if="savingCleanupSettings" class="spinner-border spinner-border-sm me-1" />{{ $t("save") }}
+                            <span v-if="savingCleanupSettings" class="spinner-border spinner-border-sm me-1" />{{ $t("dockerResources.cleanup.save") }}
                         </button>
                         <span v-if="cleanupSettings.nextRun" class="text-muted small">{{ $t("dockerResources.cleanup.nextRun") }} {{ fmtDate(cleanupSettings.nextRun) }}</span>
                         <span v-if="cleanupSettings.lastResult" class="text-muted small">{{ cleanupSettings.lastResult }}</span>
@@ -157,6 +157,7 @@
                                 <span class="text-muted small">{{ item.detail || item.size || '' }}</span>
                                 <span v-if="item.protected" class="badge bg-info text-dark">{{ $t("dockerResources.cleanup.protected") }}</span>
                                 <span v-if="item.excluded" class="badge bg-secondary">{{ $t("dockerResources.cleanup.excluded") }}</span>
+                                <span v-if="item.tooRecent && !item.protected && !item.excluded" class="badge bg-secondary">{{ $t("dockerResources.cleanup.tooRecent") }}</span>
                                 <button v-if="category === 'volumes'" type="button" class="btn btn-sm btn-normal ms-auto" @click.prevent="openPruneVolume(item)">
                                     <font-awesome-icon icon="folder-open" class="me-1" />{{ $t("dockerResources.cleanup.browse") }}
                                 </button>
@@ -913,6 +914,7 @@ interface PruneCandidate {
     protected?: boolean;
     protectionReason?: string;
     excluded?: boolean;
+    tooRecent?: boolean;
 }
 
 interface PrunePreview {
@@ -1248,7 +1250,8 @@ function categoryReclaimable(category: PruneCategory): string {
 }
 
 function categoryCandidateCount(category: PruneCategory): number {
-    return prunePreview.value?.candidates[category].filter(item => !item.protected && !item.excluded).length ?? 0;
+    return prunePreview.value?.candidates[category].filter(item =>
+        !item.protected && !item.excluded && !item.tooRecent).length ?? 0;
 }
 
 function categoryProtectedCount(category: PruneCategory): number {
@@ -1308,7 +1311,8 @@ async function loadPrunePreview() {
         }
         prunePreview.value = data.data;
         selectedPruneCategories.value = [ "containers", "images", "networks", "buildCache" ]
-            .filter(category => data.data.candidates[category].some((item: PruneCandidate) => !item.protected && !item.excluded)) as PruneCategory[];
+            .filter(category => data.data.candidates[category].some((item: PruneCandidate) =>
+                !item.protected && !item.excluded && !item.tooRecent)) as PruneCategory[];
     } catch {
         prunePreviewError.value = t("dockerResources.errorLoad");
     } finally {

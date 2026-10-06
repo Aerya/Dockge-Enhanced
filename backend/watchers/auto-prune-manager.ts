@@ -29,6 +29,7 @@ import {
     imageIsUsed,
     ImageInventory as SharedImageInventory,
     InspectedImage,
+    isDanglingImageRow,
     loadDockerImageInventory,
     normalizeImageId,
     sameImageId,
@@ -70,6 +71,7 @@ export interface PruneResult {
     protected: string[];
     excluded: string[];
     tooRecent: string[];
+    alreadyAbsent: string[];
     errors: string[];
     summary: string;
 }
@@ -161,6 +163,38 @@ export function imageCreatedOldEnough(created: string | undefined, minimumAgeHou
     return Number.isFinite(timestamp) && now - timestamp >= minimumAgeHours * 3_600_000;
 }
 
+export interface ImageRowGroup {
+    id: string;
+    rows: Record<string, string>[];
+    references: string[];
+}
+
+export function groupImageRowsById(rows: Record<string, string>[]): ImageRowGroup[] {
+    const groups = new Map<string, ImageRowGroup>();
+    for (const row of rows) {
+        const id = normalizeImageId(row["ID"] ?? "");
+        if (!/^sha256:[a-f0-9]{64}$/.test(id)) {
+            continue;
+        }
+        const group = groups.get(id) ?? {
+            id,
+            rows: [],
+            references: [],
+        };
+        group.rows.push(row);
+        const repo = row["Repository"] ?? "";
+        const tag = row["Tag"] ?? "";
+        if (repo && tag && repo !== "<none>" && tag !== "<none>") {
+            const reference = `${repo}:${tag}`;
+            if (!group.references.includes(reference)) {
+                group.references.push(reference);
+            }
+        }
+        groups.set(id, group);
+    }
+    return [ ...groups.values() ];
+}
+
 export function isObsoleteSelfImage(image: InspectedImage, protectedImageIds: Set<string>): boolean {
     if (!/^sha256:[a-f0-9]{64}$/i.test(image.Id) || setHasImageId(protectedImageIds, image.Id)) {
         return false;
@@ -214,6 +248,10 @@ function dockerError(error: unknown): string {
         return (detail.stderr || detail.message || "Erreur").trim().split("\n")[0];
     }
     return String(error);
+}
+
+export function isMissingDockerImageError(error: unknown): boolean {
+    return /\bno such image\b/i.test(dockerError(error));
 }
 
 export function selfUpdateProtectedImages(
@@ -410,9 +448,17 @@ export class AutoPruneManager {
      * ferme la fenêtre entre le scan initial et la suppression si une image
      * devient entre-temps une image de rollback/récupération.
      */
-    async removeImageSafely(target: string, force = false): Promise<void> {
-        await this.assertImageRemovalAllowed(target);
-        await execFileAsync("docker", [ "rmi", ...(force ? [ "--force" ] : []), target ]);
+    async removeImageSafely(target: string, force = false): Promise<boolean> {
+        try {
+            await this.assertImageRemovalAllowed(target);
+            await execFileAsync("docker", [ "rmi", ...(force ? [ "--force" ] : []), target ]);
+            return true;
+        } catch (error) {
+            if (isMissingDockerImageError(error)) {
+                return false;
+            }
+            throw error;
+        }
     }
 
     async runDanglingPrune(notify = true, minimumAgeHours?: number, exclusions: string[] = [], lockAlreadyHeld = false): Promise<PruneResult> {
@@ -424,11 +470,12 @@ export class AutoPruneManager {
         const protectedImages: string[] = [];
         const excluded: string[] = [];
         const tooRecent: string[] = [];
+        const alreadyAbsent: string[] = [];
         const errors: string[] = [];
         try {
             const inventory = await this.loadImageInventory();
             const candidates = [ ...new Set(inventory.rows
-                .filter(row => row["Repository"] === "<none>" || row["Tag"] === "<none>")
+                .filter(isDanglingImageRow)
                 .map(row => normalizeImageId(row["ID"] ?? ""))
                 .filter(id => /^sha256:[a-f0-9]{64}$/.test(id))) ];
             for (const id of candidates) {
@@ -449,8 +496,12 @@ export class AutoPruneManager {
                     continue;
                 }
                 try {
-                    await this.removeImageSafely(id);
-                    removed.push(id);
+                    if (await this.removeImageSafely(id)) {
+                        removed.push(id);
+                    } else {
+                        alreadyAbsent.push(id);
+                        skipped.push(id);
+                    }
                 } catch (error) {
                     errors.push(`${id}: ${dockerError(error)}`);
                 }
@@ -459,7 +510,8 @@ export class AutoPruneManager {
             errors.push(dockerError(error));
         }
         const summary = `${removed.length} supprimée(s), ${protectedImages.length} utilisée(s)/protégée(s), `
-            + `${excluded.length} exclue(s), ${tooRecent.length} trop récente(s), ${errors.length} erreur(s)`;
+            + `${excluded.length} exclue(s), ${tooRecent.length} trop récente(s), ${alreadyAbsent.length} déjà absente(s), `
+            + `${errors.length} erreur(s)`;
         if (errors.length === 0) {
             this.settings.lastDanglingRun = new Date().toISOString();
         }
@@ -474,6 +526,7 @@ export class AutoPruneManager {
             protected: protectedImages,
             excluded,
             tooRecent,
+            alreadyAbsent,
             errors,
             summary };
     }
@@ -489,6 +542,7 @@ export class AutoPruneManager {
         const protectedImages: string[] = [];
         const excluded: string[] = [];
         const tooRecent: string[] = [];
+        const alreadyAbsent: string[] = [];
         const errors: string[] = [];
 
         try {
@@ -496,33 +550,46 @@ export class AutoPruneManager {
             const allImgs = inventory.rows;
             const exclusions = [ ...new Set([ ...this.settings.unusedExclusions, ...additionalExclusions ]) ];
 
-            for (const img of allImgs) {
-                const repo = img["Repository"] ?? "";
-                const tag = img["Tag"] ?? "";
-                const nameTag = `${repo}:${tag}`;
-                if (!shouldPruneTaggedImage(img, inventory.protectedImageIds, exclusions)) {
-                    const id = img["ID"] ?? "";
-                    if (exclusions.some(value => value === nameTag || sameImageId(value, id))) {
-                        excluded.push(nameTag);
-                    } else if (setHasImageId(inventory.protectedImageIds, id)) {
-                        protectedImages.push(nameTag);
-                    }
-                    if (excluded.includes(nameTag) || protectedImages.includes(nameTag)) {
-                        skipped.push(nameTag);
-                    }
+            for (const group of groupImageRowsById(allImgs).filter(item => item.references.length > 0)) {
+                const displayName = group.references.join(", ");
+                const excludedGroup = exclusions.some(value =>
+                    sameImageId(value, group.id) || group.references.includes(value));
+                if (excludedGroup) {
+                    excluded.push(displayName);
+                    skipped.push(displayName);
                     continue;
                 }
-                const inspected = inventory.inspectedById.get(normalizeImageId(img["ID"] ?? ""));
+                if (setHasImageId(inventory.protectedImageIds, group.id)) {
+                    protectedImages.push(displayName);
+                    skipped.push(displayName);
+                    continue;
+                }
+                const inspected = inventory.inspectedById.get(group.id);
                 if (!imageCreatedOldEnough(inspected?.Created, minimumAgeHours)) {
-                    tooRecent.push(nameTag);
-                    skipped.push(nameTag);
+                    tooRecent.push(displayName);
+                    skipped.push(displayName);
                     continue;
                 }
-                try {
-                    await this.removeImageSafely(nameTag);
-                    removed.push(nameTag);
-                } catch (e: unknown) {
-                    errors.push(`${nameTag}: ${dockerError(e)}`);
+
+                let removedReference = false;
+                let disappeared = false;
+                for (const nameTag of group.references) {
+                    try {
+                        if (await this.removeImageSafely(nameTag)) {
+                            removedReference = true;
+                        } else {
+                            disappeared = true;
+                        }
+                    } catch (e: unknown) {
+                        errors.push(`${nameTag}: ${dockerError(e)}`);
+                        break;
+                    }
+                }
+                if (removedReference) {
+                    removed.push(displayName);
+                } else if (disappeared) {
+                    alreadyAbsent.push(displayName);
+                    skipped.push(displayName);
                 }
             }
 
@@ -547,8 +614,12 @@ export class AutoPruneManager {
                             continue;
                         }
                         try {
-                            await this.removeImageSafely(image.Id);
-                            removed.push(`${SELF_IMAGE_REPOSITORY}@${image.Id}`);
+                            if (await this.removeImageSafely(image.Id)) {
+                                removed.push(`${SELF_IMAGE_REPOSITORY}@${image.Id}`);
+                            } else {
+                                alreadyAbsent.push(image.Id);
+                                skipped.push(image.Id);
+                            }
                         } catch (e: unknown) {
                             errors.push(`${image.Id}: ${dockerError(e)}`);
                         }
@@ -560,7 +631,8 @@ export class AutoPruneManager {
         }
 
         const summary = `${removed.length} supprimée(s), ${protectedImages.length} utilisée(s)/protégée(s), `
-            + `${excluded.length} exclue(s), ${tooRecent.length} trop récente(s), ${errors.length} erreur(s)`;
+            + `${excluded.length} exclue(s), ${tooRecent.length} trop récente(s), ${alreadyAbsent.length} déjà absente(s), `
+            + `${errors.length} erreur(s)`;
 
         if (errors.length === 0) {
             this.settings.lastUnusedRun = new Date().toISOString();
@@ -578,6 +650,7 @@ export class AutoPruneManager {
             protected: protectedImages,
             excluded,
             tooRecent,
+            alreadyAbsent,
             errors,
             summary,
         };

@@ -107,6 +107,7 @@ test("toutes les suppressions d'images du moteur revalident la protection juste 
     assert.equal((source.match(/execFileAsync\("docker", \[ "rmi"/g) ?? []).length, 1);
     assert.match(source, /runDanglingPrune[\s\S]*removeImageSafely\(id\)/);
     assert.match(source, /runUnusedPrune[\s\S]*removeImageSafely\(nameTag\)/);
+    assert.match(source, /isMissingDockerImageError[\s\S]*return false/);
 });
 
 test("le preview demande les Image IDs complets", () => {
@@ -127,6 +128,13 @@ test("les notifications de report sont limitées sauf changement de raison", () 
     assert.equal(shouldNotifyCleanupDeferral("backup en cours", "2026-10-05T11:30:00.000Z", "backup en cours", now), false);
     assert.equal(shouldNotifyCleanupDeferral("backup en cours", "2026-10-05T10:59:59.000Z", "backup en cours", now), true);
     assert.equal(shouldNotifyCleanupDeferral("backup en cours", "2026-10-05T11:55:00.000Z", "scan Trivy en cours", now), true);
+});
+
+test("le nettoyage manuel applique le même délai de grâce que l'automatique", () => {
+    const source = fs.readFileSync(path.join(process.cwd(), "backend/docker-prune-service.ts"), "utf8");
+    assert.match(source, /runDanglingPrune\(false, settings\.graceHours, imageExclusions, true\)/);
+    assert.match(source, /runUnusedPrune\(false, settings\.graceHours, imageExclusions, true\)/);
+    assert.match(source, /automaticCandidateAllowed\(candidate, exclusions, settings\.graceHours\)/);
 });
 
 test("le cache de build respecte toujours le délai de grâce", () => {

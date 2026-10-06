@@ -8,8 +8,10 @@ import {
     AutoPruneSettings,
     dueAutoPruneTasks,
     executeDueAutoPruneTasks,
+    groupImageRowsById,
     imageCreatedOldEnough,
     imageIsUsed,
+    isMissingDockerImageError,
     isObsoleteSelfImage,
     isPruneDue,
     normalizeImageId,
@@ -31,6 +33,22 @@ test("normalise et rapproche un ID Docker tronqué de son SHA complet", () => {
     assert.equal(sameImageId(shortId, activeId), true);
     assert.equal(imageIsUsed(shortId, new Set([ activeId ])), true);
     assert.equal(imageIsUsed(oldId, new Set([ activeId ])), false);
+});
+
+test("regroupe les tags d'une même image physique par Image ID", () => {
+    const groups = groupImageRowsById([
+        { Repository: "example/app", Tag: "latest", ID: activeId },
+        { Repository: "example/app", Tag: "stable", ID: activeId },
+        { Repository: "example/other", Tag: "latest", ID: oldId },
+    ]);
+    assert.equal(groups.length, 2);
+    assert.deepEqual(groups[0]?.references, [ "example/app:latest", "example/app:stable" ]);
+    assert.equal(groups[0]?.id, activeId);
+});
+
+test("No such image est reconnu comme une disparition concurrente et non une erreur de purge", () => {
+    assert.equal(isMissingDockerImageError({ stderr: `Error response from daemon: No such image: ${oldId}` }), true);
+    assert.equal(isMissingDockerImageError(new Error("permission denied")), false);
 });
 
 test("le délai de grâce utilise la date ISO inspectée et refuse CreatedAt CET/CEST", () => {
