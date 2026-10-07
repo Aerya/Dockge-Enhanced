@@ -48,6 +48,7 @@ import {
 } from "../compose-network-namespace";
 import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/compose-labels";
 import { finishDockerCleanup, tryStartDockerCleanup } from "../docker-operation-state";
+import { reconcileRollbackKeepTags, rollbackTagFromKey as rollbackTag } from "./auto-prune-manager";
 
 const execFileAsync = promisify(execFile);
 
@@ -137,15 +138,6 @@ async function automaticImageUpdateWindowPolicy(now = new Date()): Promise<{
     console.warn("[ImageWatcher] Impossible de lire le créneau global de maintenance:", error);
     return { window: null, open: true };
   }
-}
-
-// Génère un tag Docker local qui protège l'ancienne image des `docker image prune`
-function rollbackTag(key: string): string {
-  const safe = key
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]/g, "-")
-    .slice(0, 80);
-  return `dockge-rollback-${safe}:keep`;
 }
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -1160,6 +1152,8 @@ export class ImageWatcher {
     this.cleanupCron = cron.schedule("0 * * * *", () =>
       this.cleanExpiredRollbacks().catch(console.error),
     );
+        // Réconciliation immédiate des tags rollback expirés/orphelins au démarrage.
+        this.cleanExpiredRollbacks().catch(console.error);
     // Check immédiat au démarrage, sauf quand l'appelant lance un contrôle ciblé.
     if (runInitialCheck) {
       this.runCheck().catch(console.error);
@@ -1771,22 +1765,17 @@ export class ImageWatcher {
             let changed = false;
             for (const [key, entry] of rollbackStore) {
                 if (new Date(entry.expiresAt) <= now) {
-                    console.log(
-                        `[ImageWatcher] Expiration rollback — suppression image ${entry.oldImageId.slice(0, 19)}`,
-                    );
-                    try {
-                        await docker([ "rmi", rollbackTag(key) ], { timeout: 10000 });
-                    } catch {}
-                    try {
-                        await docker([ "rmi", entry.oldImageId ], { timeout: 30000 });
-                    } catch {
-                        /* peut déjà être supprimée ou utilisée ailleurs */
-                    }
                     rollbackStore.delete(key);
                     changed = true;
                 }
             }
-            if (changed) await this.saveRollbackRegistry();
+            if (changed) {
+              await this.saveRollbackRegistry();
+            }
+            const retired = await reconcileRollbackKeepTags(DATA_DIR, now.getTime());
+            if (retired.length) {
+              console.log(`[ImageWatcher] ${retired.length} tag(s) keep expiré(s)/orphelin(s) retiré(s)`);
+            }
         } finally {
             finishDockerCleanup();
         }

@@ -229,6 +229,35 @@
                     </div>
                 </div>
 
+                <section v-if="imagePruneReports.length" class="cleanup-history mb-3" aria-live="polite">
+                    <h2 class="h6 mb-2">{{ $t("dockerResources.images.pruneReports") }}</h2>
+                    <details v-for="report in imagePruneReports" :key="report.id" class="cleanup-history__entry"
+                             :open="report.id === imagePruneReports[0]?.id">
+                        <summary>
+                            <strong>{{ $t(`dockerResources.images.pruneOrigin.${report.origin}`) }}</strong>
+                            <span class="text-muted">{{ fmtDate(report.finishedAt) }}</span>
+                            <span>{{ report.examined.length }} {{ $t("dockerResources.images.examined") }}</span>
+                            <span v-if="report.errors.length" class="text-danger">{{ report.errors.length }} {{ $t("dockerResources.images.pruneOutcome.error") }}</span>
+                        </summary>
+                        <div class="cleanup-history__results">
+                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                <span v-for="outcome in pruneReportOutcomes" :key="`${report.id}-${outcome}`"
+                                      class="badge bg-secondary">
+                                    {{ pruneReportOutcomeCount(report, outcome) }}
+                                    {{ $t(`dockerResources.images.pruneOutcome.${outcome}`) }}
+                                </span>
+                            </div>
+                            <div v-for="item in report.examined" :key="`${report.id}-${item.id}`" class="small mb-2">
+                                <code>{{ item.id }}</code>
+                                <span class="ms-2">{{ item.references.join(", ") }}</span>
+                                <span class="badge bg-secondary ms-2">{{ $t(`dockerResources.images.pruneOutcome.${item.outcome}`) }}</span>
+                                <span v-if="item.detail" class="text-danger ms-2">{{ item.detail }}</span>
+                            </div>
+                            <div v-for="error in report.errors" :key="error" class="text-danger small">{{ error }}</div>
+                        </div>
+                    </details>
+                </section>
+
                 <!-- ── Panneau auto-prune ─────────────────────────── -->
                 <div v-if="autoPruneLoaded" class="auto-prune-panel mb-3">
                     <button class="btn btn-link btn-sm p-0 text-decoration-none ap-toggle-btn"
@@ -931,6 +960,19 @@ interface PruneHistoryEntry {
     success: boolean;
 }
 
+interface ImagePruneReport {
+    id: string;
+    origin: "manual" | "automatic";
+    finishedAt: string;
+    examined: Array<{
+        id: string;
+        references: string[];
+        outcome: string;
+        detail?: string;
+    }>;
+    errors: string[];
+}
+
 interface PruneVolumeEntry {
     name: string;
     type: "dir" | "file";
@@ -1006,6 +1048,18 @@ const cleanupSettingsLoaded = ref(false);
 const savingCleanupSettings = ref(false);
 const prunePreview = ref<PrunePreview | null>(null);
 const pruneHistory = ref<PruneHistoryEntry[]>([]);
+const imagePruneReports = ref<ImagePruneReport[]>([]);
+const pruneReportOutcomes = [
+    "removed",
+    "used",
+    "active",
+    "rollback",
+    "recovery",
+    "tooRecent",
+    "excluded",
+    "alreadyAbsent",
+    "error",
+] as const;
 const selectedPruneCategories = ref<PruneCategory[]>([]);
 const loadingPrunePreview = ref(false);
 const runningPrune = ref(false);
@@ -1327,6 +1381,17 @@ async function loadPruneHistory() {
     }
 }
 
+async function loadImagePruneReports() {
+    const data = await api("GET", "images/prune-reports");
+    if (data.ok) {
+        imagePruneReports.value = data.reports;
+    }
+}
+
+function pruneReportOutcomeCount(report: ImagePruneReport, outcome: string): number {
+    return report.examined.filter(item => item.outcome === outcome).length;
+}
+
 async function executePrune() {
     if (selectedPruneCategories.value.length === 0) {
         return;
@@ -1455,7 +1520,7 @@ async function pruneImages() {
         const data = await api("POST", "images/prune");
         showToast(data.ok, data.message ?? "");
     } finally {
-        await Promise.all([ loadImages(), loadAutoPrune(), loadCleanupSettings(), loadPrunePreview(), loadPruneHistory() ]);
+        await Promise.all([ loadImages(), loadAutoPrune(), loadCleanupSettings(), loadPrunePreview(), loadPruneHistory(), loadImagePruneReports() ]);
         pruningImages.value = false;
     }
 }
@@ -1467,7 +1532,7 @@ async function pruneUnusedImages() {
         const data = await api("POST", "images/prune-unused");
         showToast(data.ok, data.message ?? "");
     } finally {
-        await Promise.all([ loadImages(), loadAutoPrune(), loadCleanupSettings(), loadPrunePreview(), loadPruneHistory() ]);
+        await Promise.all([ loadImages(), loadAutoPrune(), loadCleanupSettings(), loadPrunePreview(), loadPruneHistory(), loadImagePruneReports() ]);
         pruningUnusedImages.value = false;
     }
 }
@@ -1716,7 +1781,7 @@ async function runDanglingPruneNow() {
     try {
         const data = await api("POST", "auto-prune/run/dangling");
         showToast(data.ok, data.summary ?? data.message ?? "");
-        if (data.ok) { await loadImages(); await loadAutoPrune(); }
+        await Promise.all([ loadImages(), loadAutoPrune(), loadImagePruneReports() ]);
     } finally {
         runningDanglingPrune.value = false;
     }
@@ -1727,7 +1792,7 @@ async function runUnusedPruneNow() {
     try {
         const data = await api("POST", "auto-prune/run/unused");
         showToast(data.ok, data.summary ?? data.message ?? "");
-        if (data.ok) { await loadImages(); await loadAutoPrune(); }
+        await Promise.all([ loadImages(), loadAutoPrune(), loadImagePruneReports() ]);
     } finally {
         runningUnusedPrune.value = false;
     }
@@ -1754,6 +1819,7 @@ onMounted(() => {
     loadAutoPrune();
     loadCleanupSettings();
     loadPruneHistory();
+    loadImagePruneReports();
 });
 </script>
 

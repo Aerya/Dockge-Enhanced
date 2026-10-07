@@ -104,9 +104,10 @@ test("l'ancienne route de purge ne peut plus appeler docker image prune -a", () 
 test("toutes les suppressions d'images du moteur revalident la protection juste avant rmi", () => {
     const source = fs.readFileSync(path.join(process.cwd(), "backend/watchers/auto-prune-manager.ts"), "utf8");
     assert.match(source, /async removeImageSafely[\s\S]*assertImageRemovalAllowed\(target\)[\s\S]*execFileAsync\("docker", \[ "rmi"/);
-    assert.equal((source.match(/execFileAsync\("docker", \[ "rmi"/g) ?? []).length, 1);
+    assert.equal((source.slice(source.indexOf("async removeImageSafely"), source.indexOf("async runDanglingPrune"))
+        .match(/execFileAsync\("docker", \[ "rmi"/g) ?? []).length, 1);
     assert.match(source, /runDanglingPrune[\s\S]*removeImageSafely\(id\)/);
-    assert.match(source, /runUnusedPrune[\s\S]*removeImageSafely\(nameTag\)/);
+    assert.match(source, /runUnusedPrune[\s\S]*removeImageSafely\(target\)/);
     assert.match(source, /isMissingDockerImageError[\s\S]*return false/);
 });
 
@@ -132,8 +133,8 @@ test("les notifications de report sont limitées sauf changement de raison", () 
 
 test("le nettoyage manuel applique le même délai de grâce que l'automatique", () => {
     const source = fs.readFileSync(path.join(process.cwd(), "backend/docker-prune-service.ts"), "utf8");
-    assert.match(source, /runDanglingPrune\(false, settings\.graceHours, imageExclusions, true\)/);
-    assert.match(source, /runUnusedPrune\(false, settings\.graceHours, imageExclusions, true\)/);
+    assert.match(source, /runDanglingPrune\(false, settings\.graceHours, imageExclusions, true, "manual", false\)/);
+    assert.match(source, /runUnusedPrune\(false, settings\.graceHours, imageExclusions, true, "manual", false\)/);
     assert.match(source, /automaticCandidateAllowed\(candidate, exclusions, settings\.graceHours\)/);
 });
 

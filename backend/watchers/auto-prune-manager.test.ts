@@ -331,7 +331,7 @@ test("une image de rollback dangling reste protégée", () => {
         const rollbackTagged = protectedImageIds([{ Repository: "dockge-rollback-20261005",
             Tag: "keep",
             ID: oldId }], new Set(), stateDir);
-        assert.equal(imageIsUsed(oldId, rollbackTagged), true);
+        assert.equal(imageIsUsed(oldId, rollbackTagged), false, "un keep orphelin ne protège pas indéfiniment");
     } finally {
         fs.rmSync(stateDir, { recursive: true,
             force: true });
@@ -366,9 +366,9 @@ test("la revalidation avant rmi reste ciblée et ne recharge pas l'inventaire co
 
 test("les anciennes images Enhanced réutilisent l'inventaire initial", () => {
     const source = fs.readFileSync(path.join(process.cwd(), "backend/watchers/auto-prune-manager.ts"), "utf8");
-    const start = source.indexOf("const selfProtectedIds = selfUpdateProtectedImages");
-    const end = source.indexOf("const summary =", start);
+    const start = source.indexOf("async runUnusedPrune");
+    const end = source.indexOf("private async notifyPrune", start);
     const body = source.slice(start, end);
     assert.match(body, /inventory\.inspectedById/);
-    assert.doesNotMatch(body, /execFileAsync\("docker", \[ "image", "inspect", \.\.\.candidateIds/);
+    assert.doesNotMatch(body, /execFileAsync\("docker", \[ "image", "inspect"/);
 });
