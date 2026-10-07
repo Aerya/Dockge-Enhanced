@@ -203,6 +203,22 @@ export function groupImageRowsById(rows: Record<string, string>[]): ImageRowGrou
     return [ ...groups.values() ];
 }
 
+export function untaggedRepositoryReferences(group: ImageRowGroup): string[] {
+    const references: string[] = [];
+    for (const row of group.rows) {
+        const repo = row["Repository"] ?? "";
+        const tag = row["Tag"] ?? "";
+        if (!repo || repo === "<none>" || tag !== "<none>") {
+            continue;
+        }
+        const reference = `${repo}:<none>`;
+        if (!references.includes(reference)) {
+            references.push(reference);
+        }
+    }
+    return references;
+}
+
 export function isObsoleteSelfImage(image: InspectedImage, protectedImageIds: Set<string>): boolean {
     if (!/^sha256:[a-f0-9]{64}$/i.test(image.Id) || setHasImageId(protectedImageIds, image.Id)) {
         return false;
@@ -605,6 +621,48 @@ export class AutoPruneManager {
             // pas dangling pour Docker. Après validation du self-update, leur délai de grâce
             // est évalué image par image afin qu’un nouveau self-update ne remette pas à zéro
             // l’âge de toutes les anciennes images.
+            // Docker peut conserver un nom de repository tout en remplaçant le tag par <none>.
+            // Ces lignes ne sont ni des dangling <none>:<none>, ni des images taguées : elles
+            // doivent néanmoins suivre la purge des images inutilisées. Les anciennes images
+            // Dockge-Enhanced restent traitées séparément ci-dessous pour conserver leur garde
+            // spécifique de 48 h et les protections de self-update/recovery.
+            for (const group of groupImageRowsById(allImgs).filter(item => item.references.length === 0)) {
+                const untaggedReferences = untaggedRepositoryReferences(group);
+                if (untaggedReferences.length === 0
+                    || untaggedReferences.includes(`${SELF_IMAGE_REPOSITORY}:<none>`)) {
+                    continue;
+                }
+                const displayName = untaggedReferences.join(", ");
+                const excludedGroup = exclusions.some(value =>
+                    sameImageId(value, group.id) || untaggedReferences.includes(value));
+                if (excludedGroup) {
+                    excluded.push(displayName);
+                    skipped.push(displayName);
+                    continue;
+                }
+                if (setHasImageId(inventory.protectedImageIds, group.id)) {
+                    protectedImages.push(displayName);
+                    skipped.push(displayName);
+                    continue;
+                }
+                const inspected = inventory.inspectedById.get(group.id);
+                if (!imageCreatedOldEnough(inspected?.Created, minimumAgeHours)) {
+                    tooRecent.push(displayName);
+                    skipped.push(displayName);
+                    continue;
+                }
+                try {
+                    if (await this.removeImageSafely(group.id)) {
+                        removed.push(displayName);
+                    } else {
+                        alreadyAbsent.push(displayName);
+                        skipped.push(displayName);
+                    }
+                } catch (e: unknown) {
+                    errors.push(`${displayName}: ${dockerError(e)}`);
+                }
+            }
+
             const selfProtectedIds = selfUpdateProtectedImages(inventory.usedImageIds, inventory.inspected);
             if (selfProtectedIds) {
                 const candidateIds = [ ...new Set(allImgs

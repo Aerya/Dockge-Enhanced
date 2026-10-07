@@ -58,6 +58,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Unused `repository:<none>` images are now actually pruned**
+
+Docker may keep an image repository name while its tag becomes `<none>`. Those images previously fell between the dangling (`<none>:<none>`) and tagged-unused cleanup paths, so buttons and scheduled cleanup could leave them behind indefinitely. They are now handled as unused images by Image ID, while container use, exclusions, rollback/recovery protection and cleanup grace periods are still enforced. Old Dockge-Enhanced images keep their additional 48-hour self-update safety floor.
+
 **Per-image cleanup age for old Dockge-Enhanced builds**
 
 Old `ghcr.io/aerya/dockge-enhanced:<none>` images pulled by digest now age out independently. A new successful self-update no longer resets the 48-hour cleanup clock for every older Enhanced image: each stale image is evaluated from its own creation time, while the active image and recovery snapshots remain protected. If unified Docker cleanup uses a longer grace period, that larger value still takes precedence.

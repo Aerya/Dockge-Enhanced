@@ -60,6 +60,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Las imágenes sin uso `repository:<none>` ahora se eliminan realmente**
+
+Docker puede conservar el nombre del repositorio de una imagen aunque su etiqueta pase a `<none>`. Hasta ahora esas imágenes quedaban entre la limpieza de huérfanas (`<none>:<none>`) y la de imágenes sin uso con etiqueta, por lo que los botones y la limpieza programada podían dejarlas acumulándose. Ahora se tratan como imágenes sin uso por Image ID, respetando contenedores, exclusiones, protecciones de rollback/recuperación y periodos de gracia. Las imágenes antiguas de Dockge-Enhanced mantienen además su protección especial de 48 h para self-update.
+
 **Edad de limpieza por imagen para versiones antiguas de Dockge-Enhanced**
 
 Las imágenes antiguas `ghcr.io/aerya/dockge-enhanced:<none>` obtenidas por digest ahora caducan de forma independiente. Una nueva autoactualización correcta ya no reinicia el plazo de 48 h de todas las imágenes Enhanced anteriores: cada imagen obsoleta se evalúa según su propia fecha de creación, mientras la imagen activa y los snapshots de recuperación siguen protegidos. Si la limpieza Docker unificada usa un periodo de gracia mayor, ese valor más alto sigue teniendo prioridad.

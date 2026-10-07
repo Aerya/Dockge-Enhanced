@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-07-unused-none-images-prune",
+        items: [ "releaseNews.item.unusedNoneImagesPrune" ],
+    },
+    {
         id: "2026-10-07-self-image-prune-age",
         items: [ "releaseNews.item.selfImagePrunePerImageAge" ],
     },

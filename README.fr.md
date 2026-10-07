@@ -58,6 +58,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Les images inutilisées `repository:<none>` sont désormais réellement purgées**
+
+Docker peut conserver le nom du repository d’une image alors que son tag devient `<none>`. Ces images passaient jusque-là entre la purge des orphelines (`<none>:<none>`) et celle des images inutilisées taguées, si bien que les boutons et la purge planifiée pouvaient les laisser s’accumuler. Elles sont maintenant traitées comme des images inutilisées par Image ID, tout en respectant l’utilisation par des conteneurs, les exclusions, les protections rollback/récupération et les délais de grâce. Les anciennes images Dockge-Enhanced conservent en plus leur garde de sécurité de 48 h liée au self-update.
+
 **Âge de purge par image pour les anciennes versions de Dockge-Enhanced**
 
 Les anciennes images `ghcr.io/aerya/dockge-enhanced:<none>` tirées par digest vieillissent désormais indépendamment. Un nouveau self-update réussi ne remet plus à zéro le délai de 48 h de toutes les anciennes images Enhanced : chaque image obsolète est évaluée selon sa propre date de création, tandis que l’image active et les snapshots de récupération restent protégés. Si le nettoyage Docker unifié utilise un délai de grâce supérieur, ce délai plus long reste prioritaire.

@@ -21,6 +21,7 @@ import {
     selfImageCreatedOldEnough,
     selfUpdateProtectedImages,
     shouldPruneTaggedImage,
+    untaggedRepositoryReferences,
 } from "./auto-prune-manager";
 
 const activeId = `sha256:${"a".repeat(64)}`;
@@ -57,6 +58,23 @@ test("regroupe les tags d'une même image physique par Image ID", () => {
     assert.equal(groups.length, 2);
     assert.deepEqual(groups[0]?.references, [ "example/app:latest", "example/app:stable" ]);
     assert.equal(groups[0]?.id, activeId);
+});
+
+test("repère repository:<none> comme image inutilisée sans confondre les vraies dangling", () => {
+    const groups = groupImageRowsById([
+        {
+            Repository: "ghcr.io/example/app",
+            Tag: "<none>",
+            ID: oldId,
+        },
+        {
+            Repository: "<none>",
+            Tag: "<none>",
+            ID: previousId,
+        },
+    ]);
+    assert.deepEqual(untaggedRepositoryReferences(groups.find(group => group.id === oldId)!), [ "ghcr.io/example/app:<none>" ]);
+    assert.deepEqual(untaggedRepositoryReferences(groups.find(group => group.id === previousId)!), []);
 });
 
 test("No such image est reconnu comme une disparition concurrente et non une erreur de purge", () => {
