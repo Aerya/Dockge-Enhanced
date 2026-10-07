@@ -501,7 +501,7 @@
   },
   "backend/watchers/image-watcher.ts": {
     "@stylistic/indent": {
-      "count": 1439
+      "count": 1436
     },
     "@stylistic/object-property-newline": {
       "count": 38
@@ -513,7 +513,7 @@
       "count": 1
     },
     "curly": {
-      "count": 55
+      "count": 54
     }
   },
   "backend/watchers/kula-manager.ts": {
@@ -926,10 +926,10 @@
   },
   "frontend/src/pages/DockerResources.vue": {
     "@stylistic/brace-style": {
-      "count": 10
+      "count": 6
     },
     "@stylistic/max-statements-per-line": {
-      "count": 5
+      "count": 3
     },
     "@stylistic/object-property-newline": {
       "count": 21

@@ -9,6 +9,7 @@ import {
     sameImageId,
 } from "./watchers/auto-prune-manager";
 import { loadDockerImageInventory } from "./docker-image-inventory";
+import { recordImagePruneReport } from "./image-prune-report";
 import { getSelfUpdateBlocker } from "./self-update/operation-guard";
 import { DiscordNotifier } from "./notification/discord";
 import { AppriseNotifier } from "./notification/apprise";
@@ -309,8 +310,9 @@ async function runPruneUnlocked(categories: PruneCategory[]): Promise<PruneHisto
             if (category === "images") {
                 const settings = cleanupSettings();
                 const imageExclusions = settings.exclusions.images ?? [];
-                const dangling = await AutoPruneManager.getInstance().runDanglingPrune(false, settings.graceHours, imageExclusions, true);
-                const unused = await AutoPruneManager.getInstance().runUnusedPrune(false, settings.graceHours, imageExclusions, true);
+                const dangling = await AutoPruneManager.getInstance().runDanglingPrune(false, settings.graceHours, imageExclusions, true, "manual", false);
+                const unused = await AutoPruneManager.getInstance().runUnusedPrune(false, settings.graceHours, imageExclusions, true, "manual", false);
+                recordImagePruneReport("manual", "all", [ ...dangling.examined, ...unused.examined ], [ ...dangling.errors, ...unused.errors ]);
                 const outcome = summarizeImagePruneResults(dangling, unused);
                 results[category] = outcome.message;
                 if (!outcome.success) {
@@ -616,8 +618,9 @@ export class DockerCleanupManager {
                 }
                 if (category === "images") {
                     const exclusions = this.settings.exclusions.images ?? [];
-                    const dangling = await AutoPruneManager.getInstance().runDanglingPrune(false, this.settings.graceHours, exclusions, true);
-                    const unused = await AutoPruneManager.getInstance().runUnusedPrune(false, this.settings.graceHours, exclusions, true);
+                    const dangling = await AutoPruneManager.getInstance().runDanglingPrune(false, this.settings.graceHours, exclusions, true, "automatic", false);
+                    const unused = await AutoPruneManager.getInstance().runUnusedPrune(false, this.settings.graceHours, exclusions, true, "automatic", false);
+                    recordImagePruneReport("automatic", "all", [ ...dangling.examined, ...unused.examined ], [ ...dangling.errors, ...unused.errors ]);
                     const outcome = summarizeImagePruneResults(dangling, unused);
                     results.images = outcome.message;
                     if (!outcome.success) {

@@ -25,6 +25,7 @@ import {
     withDockerCleanupLock,
 } from "../docker-operation-state";
 import { getSelfUpdateBlocker } from "../self-update/operation-guard";
+import { recordImagePruneReport } from "../image-prune-report";
 import {
     imageIsUsed,
     ImageInventory as SharedImageInventory,
@@ -74,6 +75,25 @@ export interface PruneResult {
     alreadyAbsent: string[];
     errors: string[];
     summary: string;
+    examined: PruneImageDecision[];
+}
+
+export type PruneImageOutcome = "removed" | "used" | "active" | "rollback" | "recovery"
+    | "tooRecent" | "excluded" | "alreadyAbsent" | "error";
+
+export interface PruneImageDecision {
+    id: string;
+    references: string[];
+    outcome: PruneImageOutcome;
+    detail?: string;
+}
+
+export function summarizePruneDecisions(examined: PruneImageDecision[]): string {
+    const count = (outcome: PruneImageOutcome) => examined.filter(item => item.outcome === outcome).length;
+    return `${examined.length} examinée(s) : ${count("removed")} supprimée(s), ${count("used")} utilisée(s), `
+        + `${count("active")} active(s), ${count("rollback")} rollback, ${count("recovery")} recovery, `
+        + `${count("tooRecent")} trop récente(s), ${count("excluded")} exclue(s), `
+        + `${count("alreadyAbsent")} déjà absente(s), ${count("error")} erreur(s)`;
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -246,10 +266,12 @@ export function recoveryImageIds(stateDir = SELF_UPDATE_DIR): Set<string> {
     try {
         const recoveryDir = path.join(stateDir, "recovery");
         for (const name of fs.readdirSync(recoveryDir).filter(file => /^[a-f0-9]{32}\.json$/.test(file))) {
-            const snapshot = JSON.parse(fs.readFileSync(path.join(recoveryDir, name), "utf8")) as { previousImageId?: string };
-            if (snapshot.previousImageId && /^sha256:[a-f0-9]{64}$/i.test(snapshot.previousImageId)) {
-                ids.add(normalizeImageId(snapshot.previousImageId));
-            }
+            try {
+                const snapshot = JSON.parse(fs.readFileSync(path.join(recoveryDir, name), "utf8")) as { previousImageId?: string };
+                if (snapshot.previousImageId && /^sha256:[a-f0-9]{64}$/i.test(snapshot.previousImageId)) {
+                    ids.add(normalizeImageId(snapshot.previousImageId));
+                }
+            } catch { /* Un snapshot corrompu ne doit pas masquer les autres. */ }
         }
     } catch {
         // Aucun snapshot de récupération disponible.
@@ -277,14 +299,74 @@ export function activeRollbackImageIds(dataDir = DATA_DIR, now = Date.now()): Se
     return ids;
 }
 
+export function rollbackTagFromKey(key: string): string {
+    const safe = key.toLowerCase().replace(/[^a-z0-9._-]/g, "-").slice(0, 80);
+    return `dockge-rollback-${safe}:keep`;
+}
+
+export function activeRollbackTags(dataDir = DATA_DIR, now = Date.now()): Set<string> {
+    const tags = new Set<string>();
+    try {
+        const entries = JSON.parse(fs.readFileSync(path.join(dataDir, "rollback-registry.json"), "utf8")) as Array<{
+            key?: string;
+            expiresAt?: string;
+        }>;
+        if (!Array.isArray(entries)) {
+            return tags;
+        }
+        for (const entry of entries) {
+            if (entry.key && Date.parse(entry.expiresAt ?? "") > now) {
+                tags.add(rollbackTagFromKey(entry.key));
+            }
+        }
+    } catch { /* Aucun registre valide. */ }
+    return tags;
+}
+
+/** Retire les tags keep expirés ou orphelins sous le verrou de nettoyage du watcher. */
+export async function reconcileRollbackKeepTags(dataDir = DATA_DIR, now = Date.now()): Promise<string[]> {
+    const activeTags = activeRollbackTags(dataDir, now);
+    const activeIds = activeRollbackImageIds(dataDir, now);
+    const recoveryIds = recoveryImageIds(path.join(dataDir, "self-update"));
+    const { stdout } = await execFileAsync("docker", [ "images", "-a", "--no-trunc", "--format", "{{json .}}" ], {
+        maxBuffer: 20 * 1024 * 1024,
+    });
+    const rows = stdout.trim().split("\n").filter(Boolean).map(line => JSON.parse(line) as Record<string, string>);
+    const groups = groupImageRowsById(rows);
+    const removed: string[] = [];
+    for (const group of groups) {
+        for (const tag of group.references.filter(ref => ref.startsWith("dockge-rollback-") && ref.endsWith(":keep") && !activeTags.has(ref))) {
+            const { stdout: containers } = await execFileAsync("docker", [ "ps", "-aq", "--filter", `ancestor=${group.id}` ]);
+            const protectedElsewhere = Boolean(containers.trim()) || setHasImageId(recoveryIds, group.id)
+                || setHasImageId(activeIds, group.id);
+            if (protectedElsewhere && group.references.length === 1) {
+                // Un tag de remplacement évite que `rmi tag` détruise l'unique référence
+                // d'une image encore nécessaire au recovery ou à un conteneur.
+                await execFileAsync("docker", [ "tag", group.id, `dockge-retained-${group.id.slice(7)}:keep` ]);
+            }
+            try {
+                await execFileAsync("docker", [ "rmi", tag ]);
+                removed.push(tag);
+            } catch (error) {
+                if (!isMissingDockerImageError(error)) {
+                    throw error;
+                }
+                removed.push(tag);
+            }
+        }
+    }
+    return removed;
+}
+
 export function protectedImageIds(
     imageRows: Record<string, string>[],
     usedImageIds: Set<string>,
     stateDir = SELF_UPDATE_DIR,
 ): Set<string> {
     const protectedIds = new Set([ ...usedImageIds ].map(normalizeImageId));
+    const activeTags = activeRollbackTags(path.dirname(stateDir));
     for (const image of imageRows) {
-        if ((image["Repository"] ?? "").startsWith("dockge-rollback-")) {
+        if (activeTags.has(`${image["Repository"]}:${image["Tag"]}`)) {
             protectedIds.add(normalizeImageId(image["ID"] ?? ""));
         }
     }
@@ -455,9 +537,9 @@ export class AutoPruneManager {
                 : (await getSelfUpdateBlocker())?.message;
             await executeDueAutoPruneTasks(this.settings, now, blocker, async task => {
                 if (task === "dangling") {
-                    await this.runDanglingPrune(true, undefined, [], true);
+                    await this.runDanglingPrune(true, undefined, [], true, "automatic");
                 } else {
-                    await this.runUnusedPrune(true, undefined, [], true);
+                    await this.runUnusedPrune(true, undefined, [], true, "automatic");
                 }
             });
         } finally {
@@ -502,7 +584,7 @@ export class AutoPruneManager {
             throw new Error("Cette image est utilisée par un conteneur");
         }
 
-        if ((inspected.RepoTags ?? []).some(tag => tag.startsWith("dockge-rollback-"))) {
+        if ((inspected.RepoTags ?? []).some(tag => activeRollbackTags().has(tag))) {
             throw new Error("Cette image est protégée pour un rollback");
         }
 
@@ -537,9 +619,10 @@ export class AutoPruneManager {
         }
     }
 
-    async runDanglingPrune(notify = true, minimumAgeHours?: number, exclusions: string[] = [], lockAlreadyHeld = false): Promise<PruneResult> {
+    async runDanglingPrune(notify = true, minimumAgeHours?: number, exclusions: string[] = [], lockAlreadyHeld = false,
+        origin: "manual" | "automatic" = "manual", record = true): Promise<PruneResult> {
         if (!lockAlreadyHeld) {
-            return withDockerCleanupLock(() => this.runDanglingPrune(notify, minimumAgeHours, exclusions, true));
+            return withDockerCleanupLock(() => this.runDanglingPrune(notify, minimumAgeHours, exclusions, true, origin, record));
         }
         const removed: string[] = [];
         const skipped: string[] = [];
@@ -548,51 +631,76 @@ export class AutoPruneManager {
         const tooRecent: string[] = [];
         const alreadyAbsent: string[] = [];
         const errors: string[] = [];
+        const examined: PruneImageDecision[] = [];
         try {
             const inventory = await this.loadImageInventory();
+            for (const row of inventory.rows.filter(isDanglingImageRow)) {
+                if (!/^sha256:[a-f0-9]{64}$/.test(normalizeImageId(row.ID ?? ""))) {
+                    const id = row.ID ?? "<ID manquant>";
+                    examined.push({ id,
+                        references: [ "<none>:<none>" ],
+                        outcome: "error",
+                        detail: "Image ID invalide" });
+                    errors.push(`${id}: Image ID invalide`);
+                }
+            }
             const candidates = [ ...new Set(inventory.rows
                 .filter(isDanglingImageRow)
                 .map(row => normalizeImageId(row["ID"] ?? ""))
                 .filter(id => /^sha256:[a-f0-9]{64}$/.test(id))) ];
             for (const id of candidates) {
                 const image = inventory.inspectedById.get(id);
+                const decision: PruneImageDecision = { id,
+                    references: [ "<none>:<none>" ],
+                    outcome: "error" };
+                examined.push(decision);
                 if (setHasImageId(inventory.protectedImageIds, id)) {
+                    decision.outcome = imageIsUsed(id, inventory.usedImageIds) ? "used"
+                        : setHasImageId(recoveryImageIds(), id) ? "recovery" : "rollback";
                     protectedImages.push(id);
                     skipped.push(id);
                     continue;
                 }
                 if (exclusions.some(exclusion => sameImageId(exclusion, id))) {
+                    decision.outcome = "excluded";
                     excluded.push(id);
                     skipped.push(id);
                     continue;
                 }
                 if (!imageCreatedOldEnough(image?.Created, minimumAgeHours)) {
+                    decision.outcome = "tooRecent";
                     tooRecent.push(id);
                     skipped.push(id);
                     continue;
                 }
                 try {
                     if (await this.removeImageSafely(id)) {
+                        decision.outcome = "removed";
                         removed.push(id);
                     } else {
+                        decision.outcome = "alreadyAbsent";
                         alreadyAbsent.push(id);
                         skipped.push(id);
                     }
                 } catch (error) {
-                    errors.push(`${id}: ${dockerError(error)}`);
+                    decision.detail = dockerError(error);
+                    errors.push(`${id}: ${decision.detail}`);
                 }
             }
         } catch (error) {
             errors.push(dockerError(error));
         }
-        const summary = `${removed.length} supprimée(s), ${protectedImages.length} utilisée(s)/protégée(s), `
-            + `${excluded.length} exclue(s), ${tooRecent.length} trop récente(s), ${alreadyAbsent.length} déjà absente(s), `
-            + `${errors.length} erreur(s)`;
-        if (errors.length === 0) {
-            this.settings.lastDanglingRun = new Date().toISOString();
+        const summary = summarizePruneDecisions(examined);
+        if (origin === "automatic") {
+            if (errors.length === 0) {
+                this.settings.lastDanglingRun = new Date().toISOString();
+            }
+            this.settings.lastDanglingResult = summary;
+            this.saveSettings();
         }
-        this.settings.lastDanglingResult = summary;
-        this.saveSettings();
+        if (record) {
+            recordImagePruneReport(origin, "dangling", examined, errors);
+        }
         log.info("AutoPruneManager", `Orphelines : ${summary}`);
         if (notify) {
             await this.notifyPrune("Images orphelines", [ summary, ...errors ].join("\n"), errors.length ? "failure" : "success");
@@ -604,14 +712,16 @@ export class AutoPruneManager {
             tooRecent,
             alreadyAbsent,
             errors,
-            summary };
+            summary,
+            examined };
     }
 
     // ── Purge inutilisées (unused tagged) ────────────────────────────────────
 
-    async runUnusedPrune(notify = true, minimumAgeHours?: number, additionalExclusions: string[] = [], lockAlreadyHeld = false): Promise<PruneResult> {
+    async runUnusedPrune(notify = true, minimumAgeHours?: number, additionalExclusions: string[] = [], lockAlreadyHeld = false,
+        origin: "manual" | "automatic" = "manual", record = true): Promise<PruneResult> {
         if (!lockAlreadyHeld) {
-            return withDockerCleanupLock(() => this.runUnusedPrune(notify, minimumAgeHours, additionalExclusions, true));
+            return withDockerCleanupLock(() => this.runUnusedPrune(notify, minimumAgeHours, additionalExclusions, true, origin, record));
         }
         const removed: string[] = [];
         const skipped: string[] = [];
@@ -620,148 +730,99 @@ export class AutoPruneManager {
         const tooRecent: string[] = [];
         const alreadyAbsent: string[] = [];
         const errors: string[] = [];
+        const examined: PruneImageDecision[] = [];
 
         try {
             const inventory = await this.loadImageInventory();
-            const allImgs = inventory.rows;
             const exclusions = [ ...new Set([ ...this.settings.unusedExclusions, ...additionalExclusions ]) ];
-
-            for (const group of groupImageRowsById(allImgs).filter(item => item.references.length > 0)) {
-                const displayName = group.references.join(", ");
-                if (imageIsUsed(group.id, inventory.usedImageIds)) {
-                    continue;
-                }
-                const excludedGroup = exclusions.some(value =>
-                    sameImageId(value, group.id) || group.references.includes(value));
-                if (excludedGroup) {
-                    excluded.push(displayName);
-                    skipped.push(displayName);
-                    continue;
-                }
-                if (setHasImageId(inventory.protectedImageIds, group.id)) {
-                    protectedImages.push(displayName);
-                    skipped.push(displayName);
-                    continue;
-                }
-                const inspected = inventory.inspectedById.get(group.id);
-                if (!imageCreatedOldEnough(inspected?.Created, minimumAgeHours)) {
-                    tooRecent.push(displayName);
-                    skipped.push(displayName);
-                    continue;
-                }
-
-                let removedReference = false;
-                let disappeared = false;
-                for (const nameTag of group.references) {
-                    try {
-                        if (await this.removeImageSafely(nameTag)) {
-                            removedReference = true;
-                        } else {
-                            disappeared = true;
-                        }
-                    } catch (e: unknown) {
-                        errors.push(`${nameTag}: ${dockerError(e)}`);
-                        break;
-                    }
-                }
-                if (removedReference) {
-                    removed.push(displayName);
-                } else if (disappeared) {
-                    alreadyAbsent.push(displayName);
-                    skipped.push(displayName);
+            for (const row of inventory.rows) {
+                if (!isDanglingImageRow(row) && !/^sha256:[a-f0-9]{64}$/.test(normalizeImageId(row.ID ?? ""))) {
+                    const id = row.ID ?? "<ID manquant>";
+                    examined.push({ id,
+                        references: [ `${row.Repository ?? "<none>"}:${row.Tag ?? "<none>"}` ],
+                        outcome: "error",
+                        detail: "Image ID invalide" });
+                    errors.push(`${id}: Image ID invalide`);
                 }
             }
-
-            // Les anciennes images Enhanced tirées par digest ont Tag=<none> mais ne sont
-            // pas dangling pour Docker. Après validation du self-update, leur délai de grâce
-            // est évalué image par image afin qu’un nouveau self-update ne remette pas à zéro
-            // l’âge de toutes les anciennes images.
-            // Docker peut conserver un nom de repository tout en remplaçant le tag par <none>.
-            // Ces lignes ne sont ni des dangling <none>:<none>, ni des images taguées : elles
-            // doivent néanmoins suivre la purge des images inutilisées. Les anciennes images
-            // Dockge-Enhanced restent traitées séparément ci-dessous pour conserver leur garde
-            // spécifique de 48 h et les protections de self-update/recovery.
-            for (const group of groupImageRowsById(allImgs).filter(item => item.references.length === 0)) {
-                const untaggedReferences = untaggedRepositoryReferences(group);
-                if (untaggedReferences.length === 0
-                    || untaggedReferences.includes(`${SELF_IMAGE_REPOSITORY}:<none>`)) {
+            const recoveryIds = recoveryImageIds();
+            const rollbackIds = activeRollbackImageIds();
+            const rollbackTags = activeRollbackTags();
+            for (const group of groupImageRowsById(inventory.rows)) {
+                const untagged = untaggedRepositoryReferences(group);
+                if (group.references.length === 0 && untagged.length === 0) {
                     continue;
-                }
-                const displayName = untaggedReferences.join(", ");
+                } // mode dangling
+                const references = [ ...group.references, ...untagged ];
+                const displayName = references.join(", ");
+                const selfImage = group.rows.some(row => row.Repository === SELF_IMAGE_REPOSITORY);
+                const decision: PruneImageDecision = { id: group.id,
+                    references,
+                    outcome: "error" };
+                examined.push(decision);
                 if (imageIsUsed(group.id, inventory.usedImageIds)) {
-                    continue;
-                }
-                const excludedGroup = exclusions.some(value =>
-                    sameImageId(value, group.id) || untaggedReferences.includes(value));
-                if (excludedGroup) {
+                    decision.outcome = selfImage ? "active" : "used";
+                } else if (setHasImageId(recoveryIds, group.id)) {
+                    decision.outcome = "recovery";
+                } else if (setHasImageId(rollbackIds, group.id)
+                    || group.references.some(ref => rollbackTags.has(ref))) {
+                    decision.outcome = "rollback";
+                } else if (exclusions.some(value => sameImageId(value, group.id) || references.includes(value))) {
+                    decision.outcome = "excluded";
                     excluded.push(displayName);
-                    skipped.push(displayName);
-                    continue;
-                }
-                if (setHasImageId(inventory.protectedImageIds, group.id)) {
-                    protectedImages.push(displayName);
-                    skipped.push(displayName);
-                    continue;
-                }
-                const inspected = inventory.inspectedById.get(group.id);
-                if (!imageCreatedOldEnough(inspected?.Created, minimumAgeHours)) {
-                    tooRecent.push(displayName);
-                    skipped.push(displayName);
-                    continue;
-                }
-                try {
-                    if (await this.removeImageSafely(group.id)) {
-                        removed.push(displayName);
-                    } else {
+                } else {
+                    const inspected = inventory.inspectedById.get(group.id);
+                    if (!inspected) {
+                        decision.outcome = "alreadyAbsent";
                         alreadyAbsent.push(displayName);
-                        skipped.push(displayName);
-                    }
-                } catch (e: unknown) {
-                    errors.push(`${displayName}: ${dockerError(e)}`);
-                }
-            }
-
-            const selfProtectedIds = selfUpdateProtectedImages(inventory.usedImageIds, inventory.inspected);
-            if (selfProtectedIds) {
-                const candidateIds = selfUntaggedCandidateIds(allImgs, selfProtectedIds);
-                for (const imageId of candidateIds) {
-                    const image = inventory.inspectedById.get(normalizeImageId(imageId));
-                    if (!image) {
-                        alreadyAbsent.push(imageId);
-                        skipped.push(imageId);
-                        continue;
-                    }
-                    if (!selfImageCreatedOldEnough(image.Created, minimumAgeHours)) {
-                        tooRecent.push(image.Id);
-                        skipped.push(image.Id);
-                        continue;
-                    }
-                    try {
-                        if (await this.removeImageSafely(image.Id)) {
-                            removed.push(`${SELF_IMAGE_REPOSITORY}@${image.Id}`);
-                        } else {
-                            alreadyAbsent.push(image.Id);
-                            skipped.push(image.Id);
+                    } else if (!imageCreatedOldEnough(inspected.Created,
+                        selfImage ? Math.max(SELF_IMAGE_GRACE_HOURS, minimumAgeHours ?? 0) : minimumAgeHours)) {
+                        decision.outcome = "tooRecent";
+                        tooRecent.push(displayName);
+                    } else {
+                        const targets = group.references.length ? group.references : [ group.id ];
+                        let deleted = 0;
+                        for (const target of targets) {
+                            try {
+                                if (await this.removeImageSafely(target)) {
+                                    deleted++;
+                                }
+                            } catch (error) {
+                                decision.detail = `${target}: ${dockerError(error)} (${deleted}/${targets.length} référence(s) retirée(s))`;
+                                errors.push(`${group.id}: ${decision.detail}`);
+                                break;
+                            }
                         }
-                    } catch (e: unknown) {
-                        errors.push(`${image.Id}: ${dockerError(e)}`);
+                        if (!decision.detail) {
+                            decision.outcome = deleted ? "removed" : "alreadyAbsent";
+                            (deleted ? removed : alreadyAbsent).push(displayName);
+                        }
                     }
+                }
+                if ([ "active", "used", "rollback", "recovery" ].includes(decision.outcome)) {
+                    protectedImages.push(displayName);
+                }
+                if (decision.outcome !== "removed") {
+                    skipped.push(displayName);
                 }
             }
         } catch (e: unknown) {
             errors.push(dockerError(e));
         }
 
-        const summary = `${removed.length} supprimée(s), ${protectedImages.length} utilisée(s)/protégée(s), `
-            + `${excluded.length} exclue(s), ${tooRecent.length} trop récente(s), ${alreadyAbsent.length} déjà absente(s), `
-            + `${errors.length} erreur(s)`;
+        const summary = summarizePruneDecisions(examined);
 
-        if (errors.length === 0) {
-            this.settings.lastUnusedRun = new Date().toISOString();
+        if (origin === "automatic") {
+            if (errors.length === 0) {
+                this.settings.lastUnusedRun = new Date().toISOString();
+            }
+            this.settings.lastUnusedResult = summary;
+            this.settings.lastUnusedErrors = errors;
+            this.saveSettings();
         }
-        this.settings.lastUnusedResult = summary;
-        this.settings.lastUnusedErrors = errors;
-        this.saveSettings();
+        if (record) {
+            recordImagePruneReport(origin, "unused", examined, errors);
+        }
         log.info("AutoPruneManager", `Inutilisées : ${summary}`);
         if (notify) {
             await this.notifyPrune("Images inutilisées", [ summary, ...errors ].join("\n"), errors.length > 0 ? "failure" : "success");
@@ -775,6 +836,7 @@ export class AutoPruneManager {
             alreadyAbsent,
             errors,
             summary,
+            examined,
         };
     }
 

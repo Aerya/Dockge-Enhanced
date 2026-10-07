@@ -27,6 +27,7 @@ import {
 } from "../docker-prune-service";
 import { listNamedVolumeDir } from "../volume-files";
 import { classifyImageReferences, loadDockerImageInventory } from "../docker-image-inventory";
+import { readImagePruneReports, recordImagePruneReport } from "../image-prune-report";
 
 // ─── Types internes ───────────────────────────────────────────────
 
@@ -191,6 +192,10 @@ export class DockerResourcesRouter extends Router {
             }
         });
 
+        router.get("/images/prune-reports", auth, (_req: Request, res: Response) => {
+            res.json({ ok: true, reports: readImagePruneReports() });
+        });
+
         router.delete("/images/:imageId", auth, async (req: Request, res: Response) => {
             const id = req.params["imageId"];
             const force = req.query["force"] === "true";
@@ -229,10 +234,11 @@ export class DockerResourcesRouter extends Router {
         router.post("/images/prune-unused", auth, async (req: Request, res: Response) => {
             try {
                 const { dangling, unused } = await withCleanupExecutionLock(async () => ({
-                    dangling: await AutoPruneManager.getInstance().runDanglingPrune(false, undefined, [], true),
-                    unused: await AutoPruneManager.getInstance().runUnusedPrune(false, undefined, [], true),
+                    dangling: await AutoPruneManager.getInstance().runDanglingPrune(false, undefined, [], true, "manual", false),
+                    unused: await AutoPruneManager.getInstance().runUnusedPrune(false, undefined, [], true, "manual", false),
                 }));
                 const errors = [ ...dangling.errors, ...unused.errors ];
+                const report = recordImagePruneReport("manual", "all", [ ...dangling.examined, ...unused.examined ], errors);
                 const ok = errors.length === 0;
                 const message = [ dangling.summary, unused.summary, ...errors ].join("\n");
                 await auditDockerAction(req, "docker.image.prune_unused", "image", "unused", ok ? "success" : "failure", message, {
@@ -243,6 +249,7 @@ export class DockerResourcesRouter extends Router {
                     ok,
                     message,
                     errors,
+                    report,
                 });
             } catch (e: any) {
                 await auditDockerAction(req, "docker.image.prune_unused", "image", "unused", "failure", e.message);
