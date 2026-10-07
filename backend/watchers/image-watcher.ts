@@ -1152,6 +1152,8 @@ export class ImageWatcher {
     this.cleanupCron = cron.schedule("0 * * * *", () =>
       this.cleanExpiredRollbacks().catch(console.error),
     );
+        // Réconciliation immédiate des tags rollback expirés/orphelins au démarrage.
+        this.cleanExpiredRollbacks().catch(console.error);
     // Check immédiat au démarrage, sauf quand l'appelant lance un contrôle ciblé.
     if (runInitialCheck) {
       this.runCheck().catch(console.error);

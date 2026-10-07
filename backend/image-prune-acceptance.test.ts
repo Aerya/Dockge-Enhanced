@@ -125,3 +125,15 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
             force: true });
     }
 });
+
+test("les boutons du panneau Purge auto restent des exécutions auto-prune", () => {
+    const source = fs.readFileSync(path.join(process.cwd(), "backend/routers/docker-resources-router.ts"), "utf8");
+    assert.match(source, /auto-prune\/run\/dangling[\s\S]*runDanglingPrune\(\s*true,\s*undefined,\s*\[\],\s*false,\s*"automatic"/);
+    assert.match(source, /auto-prune\/run\/unused[\s\S]*runUnusedPrune\(\s*true,\s*undefined,\s*\[\],\s*false,\s*"automatic"/);
+});
+
+test("l'ImageWatcher réconcilie les keep dès son démarrage", () => {
+    const source = fs.readFileSync(path.join(process.cwd(), "backend/watchers/image-watcher.ts"), "utf8");
+    assert.match(source, /cleanupCron = cron\.schedule\("0 \* \* \* \*"/);
+    assert.match(source, /Réconciliation immédiate des tags rollback expirés\/orphelins au démarrage\.[\s\S]*this\.cleanExpiredRollbacks\(\)\.catch\(console\.error\)/);
+});

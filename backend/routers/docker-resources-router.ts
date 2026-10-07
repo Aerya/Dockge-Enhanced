@@ -576,7 +576,9 @@ export class DockerResourcesRouter extends Router {
         // Exécution manuelle — un endpoint par mode
         router.post("/auto-prune/run/dangling", auth, async (req: Request, res: Response) => {
             try {
-                const result = await AutoPruneManager.getInstance().runDanglingPrune();
+                const result = await AutoPruneManager.getInstance().runDanglingPrune(
+                    true, undefined, [], false, "automatic",
+                );
                 const ok = result.errors.length === 0;
                 const message = [ result.summary, ...result.errors ].join("\n");
                 await auditDockerAction(req, "docker.auto_prune.run_dangling", "image", "dangling", ok ? "success" : "failure", message, result);
@@ -593,7 +595,9 @@ export class DockerResourcesRouter extends Router {
 
         router.post("/auto-prune/run/unused", auth, async (req: Request, res: Response) => {
             try {
-                const result = await AutoPruneManager.getInstance().runUnusedPrune();
+                const result = await AutoPruneManager.getInstance().runUnusedPrune(
+                    true, undefined, [], false, "automatic",
+                );
                 const ok = result.errors.length === 0;
                 const message = [ result.summary, ...result.errors ].join("\n");
                 await auditDockerAction(req, "docker.auto_prune.run_unused", "image", "unused", ok ? "success" : "failure", message, result);

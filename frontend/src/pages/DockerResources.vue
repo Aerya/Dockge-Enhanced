@@ -240,6 +240,13 @@
                             <span v-if="report.errors.length" class="text-danger">{{ report.errors.length }} {{ $t("dockerResources.images.pruneOutcome.error") }}</span>
                         </summary>
                         <div class="cleanup-history__results">
+                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                <span v-for="outcome in pruneReportOutcomes" :key="`${report.id}-${outcome}`"
+                                      class="badge bg-secondary">
+                                    {{ pruneReportOutcomeCount(report, outcome) }}
+                                    {{ $t(`dockerResources.images.pruneOutcome.${outcome}`) }}
+                                </span>
+                            </div>
                             <div v-for="item in report.examined" :key="`${report.id}-${item.id}`" class="small mb-2">
                                 <code>{{ item.id }}</code>
                                 <span class="ms-2">{{ item.references.join(", ") }}</span>
@@ -1042,6 +1049,17 @@ const savingCleanupSettings = ref(false);
 const prunePreview = ref<PrunePreview | null>(null);
 const pruneHistory = ref<PruneHistoryEntry[]>([]);
 const imagePruneReports = ref<ImagePruneReport[]>([]);
+const pruneReportOutcomes = [
+    "removed",
+    "used",
+    "active",
+    "rollback",
+    "recovery",
+    "tooRecent",
+    "excluded",
+    "alreadyAbsent",
+    "error",
+] as const;
 const selectedPruneCategories = ref<PruneCategory[]>([]);
 const loadingPrunePreview = ref(false);
 const runningPrune = ref(false);
@@ -1368,6 +1386,10 @@ async function loadImagePruneReports() {
     if (data.ok) {
         imagePruneReports.value = data.reports;
     }
+}
+
+function pruneReportOutcomeCount(report: ImagePruneReport, outcome: string): number {
+    return report.examined.filter(item => item.outcome === outcome).length;
 }
 
 async function executePrune() {

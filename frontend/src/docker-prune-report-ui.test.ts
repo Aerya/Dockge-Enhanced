@@ -11,4 +11,6 @@ test("la page Images conserve et distingue les rapports manuels et automatiques"
     assert.match(source, /report\.examined/);
     assert.match(source, /item\.references\.join/);
     assert.match(source, /pruneOutcome\.\$\{item\.outcome\}/);
+    assert.match(source, /pruneReportOutcomes/);
+    assert.match(source, /pruneReportOutcomeCount\(report, outcome\)/);
 });
