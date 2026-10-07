@@ -20,7 +20,7 @@ function git(cwd, ...args) {
     return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 }
 
-function verifyCase(name, baseline, update, expectedPass, extra = {}) {
+function verifyCase(name, baseline, update, expectedPass, extra = {}, baseFiles = {}, expectedFullLintExit = null) {
     test(name, () => {
         const directory = fs.mkdtempSync(path.join(os.tmpdir(), "dockge-lint-diff-"));
         try {
@@ -29,6 +29,9 @@ function verifyCase(name, baseline, update, expectedPass, extra = {}) {
                 scripts: { lint: "eslint '**/*.ts'" } }));
             fs.writeFileSync(path.join(directory, "eslint.config.js"), config);
             fs.writeFileSync(path.join(directory, "legacy.ts"), baseline);
+            for (const [ file, source ] of Object.entries(baseFiles)) {
+                fs.writeFileSync(path.join(directory, file), source);
+            }
             git(directory, "init", "-q");
             git(directory, "config", "user.name", "Lint fixture");
             git(directory, "config", "user.email", "lint-fixture@example.invalid");
@@ -44,6 +47,11 @@ function verifyCase(name, baseline, update, expectedPass, extra = {}) {
             const result = spawnSync(process.execPath, [ script, base ], { cwd: directory,
                 encoding: "utf8" });
             assert.equal(result.status === 0, expectedPass, `${result.stdout}\n${result.stderr}`);
+            if (expectedFullLintExit !== null) {
+                const fullLint = spawnSync("npm", [ "run", "lint" ], { cwd: directory,
+                    encoding: "utf8" });
+                assert.equal(fullLint.status, expectedFullLintExit, `${fullLint.stdout}\n${fullLint.stderr}`);
+            }
         } finally {
             fs.rmSync(directory, { recursive: true, force: true });
         }
@@ -58,3 +66,8 @@ verifyCase("D : suppression d'une ancienne erreur", debt, "function legacy() {\n
 verifyCase("E : déplacement de lignes sans erreur ajoutée", "function one() {\n  return 1;\n}\nfunction two() {\n  return 2;\n}\n", "function two() {\n  return 2;\n}\nfunction one() {\n  return 1;\n}\n", true);
 verifyCase("F : modification de la configuration force le lint complet", debt, debt, false,
     { "eslint.config.js": `${config}\n// configuration modifiée\n` });
+verifyCase("G : une suppression devenue inutile ne bloque pas une amélioration", debt,
+    "function legacy() {\n    return 1;\n}\n", true, {},
+    { "eslint-suppressions.json": JSON.stringify({ "legacy.ts": {
+        "@stylistic/indent": { count: 1 },
+    } }) }, 2);
