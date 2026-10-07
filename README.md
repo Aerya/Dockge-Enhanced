@@ -4,6 +4,11 @@
 
 # Dockge Enhanced
 
+### Faster, race-safe Docker image cleanup
+
+Bulk image cleanup now scans the Docker inventory once, then revalidates only the target image immediately before each `docker rmi`. The Resources page no longer runs a giant `docker image inspect` just to display the image list, image inspection is bounded in batches and tolerates an image disappearing during a concurrent cleanup, and expired rollback cleanup uses the same Docker-cleanup lock. Existing container, rollback/recovery and grace-period protections remain in place.
+
+
 A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turns its simple Compose management experience into a broader Docker management platform — with multi-server federation, stack migration and replication, Restic backups, image and self-updates with rollback, security scanning, monitoring, automation, notifications, and Docker resource management, all from the web UI.
 
 <p align="center">

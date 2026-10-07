@@ -336,3 +336,22 @@ test("une image de rollback dangling reste protégée", () => {
             force: true });
     }
 });
+
+test("la revalidation avant rmi reste ciblée et ne recharge pas l'inventaire complet", () => {
+    const source = fs.readFileSync(path.join(process.cwd(), "backend/watchers/auto-prune-manager.ts"), "utf8");
+    const start = source.indexOf("async assertImageRemovalAllowed");
+    const end = source.indexOf("async removeImageSafely", start);
+    const body = source.slice(start, end);
+    assert.doesNotMatch(body, /loadImageInventory\(/);
+    assert.match(body, /docker[\s\S]*image[\s\S]*inspect[\s\S]*target/);
+    assert.match(body, /ancestor=/);
+});
+
+test("les anciennes images Enhanced réutilisent l'inventaire initial", () => {
+    const source = fs.readFileSync(path.join(process.cwd(), "backend/watchers/auto-prune-manager.ts"), "utf8");
+    const start = source.indexOf("const selfProtectedIds = selfUpdateProtectedImages");
+    const end = source.indexOf("const summary =", start);
+    const body = source.slice(start, end);
+    assert.match(body, /inventory\.inspectedById/);
+    assert.doesNotMatch(body, /execFileAsync\("docker", \[ "image", "inspect", \.\.\.candidateIds/);
+});

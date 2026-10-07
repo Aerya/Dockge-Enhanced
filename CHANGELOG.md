@@ -1,5 +1,8 @@
 # Dockge Enhanced Changelog
 
+**2026-10-07 — Docker image cleanup is bounded and race-safe** — Bulk image pruning now loads the full inventory once and revalidates only the target immediately before removal instead of rescanning every image and container for each `docker rmi`. The Resources image list avoids full image inspection, image inspection runs in bounded batches and tolerates concurrent image disappearance, old Enhanced `<none>` candidates reuse the initial inventory, and expired rollback cleanup shares the Docker cleanup lock.
+
+
 **2026-10-07 — Old Enhanced `<none>` images are pruned reliably** — Cleanup now identifies `ghcr.io/aerya/dockge-enhanced:<none>` candidates from Docker's image inventory instead of requiring `RepoDigests` metadata that can disappear after retagging. Images older than the 48-hour self-update safety floor can be removed while the active and recovery-protected images remain safe. Unused-image summaries also stop counting ordinary container-used images as protected cleanup candidates.
 
 **2026-10-07 — Unused `repository:<none>` images are included in cleanup** — Docker images that retain a repository name but have `Tag=<none>` no longer fall between dangling and tagged-unused pruning. Manual and scheduled unused-image cleanup now remove them by Image ID while preserving container-use checks, exclusions, rollback/recovery protection and grace periods. Old Dockge-Enhanced images still keep their dedicated 48-hour self-update safety floor.

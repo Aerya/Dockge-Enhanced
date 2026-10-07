@@ -1753,6 +1753,7 @@
     "externalStacks.cleanup.partial": "部分清理：{count} 個資源仍在使用或受保護，無法刪除。",
     "releaseNews.item.unifiedDockerCleanup": "Docker 清理在映像頁、清理預覽與清理工作中統一依 Image ID 計算。寬限期現在也套用到手動清理，同一個實體映像的多個標籤只計一次；清理過程中已經消失的映像不再視為錯誤。回滾/復原映像在所有刪除模式下仍持續受到保護。",
     "releaseNews.item.selfImagePrunePerImageAge": "透過 digest 拉取的舊 Dockge-Enhanced 映像現在會獨立計算年齡：每個舊映像本身至少達到 48 小時才可清理，而新的成功自動更新不會再重設所有舊映像的等待時間。目前映像與復原快照仍受保護；統一清理設定的較長寬限期仍優先。",
+    "releaseNews.item.dockerPrunePerformance": "Docker 映像清理現在採用有界且可抵抗並行競爭的流程：批次清理只掃描一次清單，每次刪除前僅重新驗證目標映像；資源頁不再為了列表顯示而檢查全部映像；並行消失的映像不會再導致整份清單失敗；過期 rollback 清理也共用 Docker 清理鎖。",
     "releaseNews.item.unusedNoneImagesPrune": "保留 repository 名稱但 Tag=<none> 的未使用 Docker 映像現在會進入未使用映像清理流程，並依 Image ID 刪除；容器引用、排除項、回滾/復原保護和寬限期仍會生效，舊 Dockge-Enhanced 映像也會繼續保留 48 小時 self-update 安全保護。",
     "releaseNews.item.selfNonePruneRuntime": "舊的 ghcr.io/aerya/dockge-enhanced:<none> 映像現在直接從 Docker 映像清單中識別，不再依賴重新標記後可能缺失的 RepoDigests 中繼資料。超過 48 小時的舊映像可以可靠清理，同時持續保護目前使用中的映像與復原映像；清理摘要也不再把正常使用中的映像計入受保護候選。",
     "releaseNews.item.monitoringHistory": "Monitoring 可選擇每 5 分鐘記錄一次輕量級主機 CPU 與 RAM 樣本。24 小時、7 天、1 個月或自訂範圍的響應式圖表會在伺服器端降採樣，記住所儲存的顯示期間，並以空白顯示停機時間。",

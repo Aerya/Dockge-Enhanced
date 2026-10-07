@@ -3,6 +3,11 @@
 </p>
 
 # Dockge Enhanced
+
+### 更快且可抵抗并发竞争的 Docker 镜像清理
+
+批量清理现在只加载一次 Docker 清单，并在每次 `docker rmi` 前仅重新验证目标镜像。资源页不再为了显示列表而执行包含全部镜像的大型 `docker image inspect`；镜像检查改为有界批次，并允许镜像在并发清理期间消失；过期回滚清理也使用同一个 Docker 清理锁。容器、回滚/恢复以及宽限期保护保持不变。
+
 [Dockge](https://github.com/louislam/dockge) 的功能增强分支，在保留简洁 Docker Compose 管理体验的基础上，将其扩展为更完整的 Docker 管理平台 —— 提供多服务器联邦、Stack 迁移与复制、Restic 备份、镜像与 Dockge-Enhanced 自更新及回滚、安全扫描、监控、自动化、通知和 Docker 资源管理，并全部集成于 Web UI。
 
 <p align="center">

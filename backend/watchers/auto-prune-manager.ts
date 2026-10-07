@@ -454,24 +454,37 @@ export class AutoPruneManager {
     }
 
     async assertImageRemovalAllowed(target: string): Promise<void> {
-        const inventory = await this.loadImageInventory();
-        const normalizedTarget = normalizeImageId(target);
-        const row = inventory.rows.find(image =>
-            sameImageId(image["ID"] ?? "", normalizedTarget)
-            || `${image["Repository"]}:${image["Tag"]}` === target
-            || `${image["Repository"]}@${image["Digest"]}` === target);
-        let imageId = row?.["ID"] ?? normalizedTarget;
-        if (!/^sha256:[a-f0-9]{12,64}$/i.test(imageId)) {
-            try {
-                const { stdout } = await execFileAsync("docker", [ "image", "inspect", target ], { maxBuffer: 20 * 1024 * 1024 });
-                const inspected = JSON.parse(stdout) as InspectedImage[];
-                imageId = normalizeImageId(inspected[0]?.Id ?? "");
-            } catch {
-                // Docker renverra ensuite son erreur habituelle si la référence est inconnue.
+        let inspected: InspectedImage;
+        try {
+            const { stdout } = await execFileAsync("docker", [ "image", "inspect", target ], {
+                maxBuffer: 20 * 1024 * 1024,
+            });
+            const images = JSON.parse(stdout || "[]") as InspectedImage[];
+            if (!images[0]) {
+                return;
             }
+            inspected = images[0];
+        } catch (error) {
+            if (isMissingDockerImageError(error)) {
+                return;
+            }
+            throw error;
         }
-        if (setHasImageId(inventory.protectedImageIds, imageId)) {
-            throw new Error("Cette image est utilisée ou protégée pour un rollback/récupération");
+
+        const imageId = normalizeImageId(inspected.Id);
+        const { stdout: containerIds } = await execFileAsync("docker", [
+            "ps", "-aq", "--filter", `ancestor=${imageId}`,
+        ], { maxBuffer: 20 * 1024 * 1024 });
+        if (containerIds.trim()) {
+            throw new Error("Cette image est utilisée par un conteneur");
+        }
+
+        if ((inspected.RepoTags ?? []).some(tag => tag.startsWith("dockge-rollback-"))) {
+            throw new Error("Cette image est protégée pour un rollback");
+        }
+
+        if (setHasImageId(recoveryImageIds(), imageId)) {
+            throw new Error("Cette image est protégée pour une récupération");
         }
     }
 
@@ -479,9 +492,10 @@ export class AutoPruneManager {
      * Point de passage unique pour toute suppression d'image déclenchée par
      * Ressources Docker / auto-prune / nettoyage unifié.
      *
-     * La protection est recalculée immédiatement avant `docker rmi`. Cela
-     * ferme la fenêtre entre le scan initial et la suppression si une image
-     * devient entre-temps une image de rollback/récupération.
+     * La protection est revalidée immédiatement avant `docker rmi`, mais de
+     * façon ciblée sur l'image concernée : conteneurs, tag rollback et recovery.
+     * Une purge en lot ne recharge donc plus tout l'inventaire Docker avant
+     * chaque suppression.
      */
     async removeImageSafely(target: string, force = false): Promise<boolean> {
         try {
@@ -683,24 +697,27 @@ export class AutoPruneManager {
             const selfProtectedIds = selfUpdateProtectedImages(inventory.usedImageIds, inventory.inspected);
             if (selfProtectedIds) {
                 const candidateIds = selfUntaggedCandidateIds(allImgs, selfProtectedIds);
-                if (candidateIds.length > 0) {
-                    const { stdout } = await execFileAsync("docker", [ "image", "inspect", ...candidateIds ], { maxBuffer: 20 * 1024 * 1024 });
-                    for (const image of JSON.parse(stdout) as InspectedImage[]) {
-                        if (!selfImageCreatedOldEnough(image.Created, minimumAgeHours)) {
-                            tooRecent.push(image.Id);
+                for (const imageId of candidateIds) {
+                    const image = inventory.inspectedById.get(normalizeImageId(imageId));
+                    if (!image) {
+                        alreadyAbsent.push(imageId);
+                        skipped.push(imageId);
+                        continue;
+                    }
+                    if (!selfImageCreatedOldEnough(image.Created, minimumAgeHours)) {
+                        tooRecent.push(image.Id);
+                        skipped.push(image.Id);
+                        continue;
+                    }
+                    try {
+                        if (await this.removeImageSafely(image.Id)) {
+                            removed.push(`${SELF_IMAGE_REPOSITORY}@${image.Id}`);
+                        } else {
+                            alreadyAbsent.push(image.Id);
                             skipped.push(image.Id);
-                            continue;
                         }
-                        try {
-                            if (await this.removeImageSafely(image.Id)) {
-                                removed.push(`${SELF_IMAGE_REPOSITORY}@${image.Id}`);
-                            } else {
-                                alreadyAbsent.push(image.Id);
-                                skipped.push(image.Id);
-                            }
-                        } catch (e: unknown) {
-                            errors.push(`${image.Id}: ${dockerError(e)}`);
-                        }
+                    } catch (e: unknown) {
+                        errors.push(`${image.Id}: ${dockerError(e)}`);
                     }
                 }
             }
