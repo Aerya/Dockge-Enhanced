@@ -1718,9 +1718,10 @@ export class ImageWatcher {
       const raw = await fs.readFile(ROLLBACK_PATH, "utf8");
       const entries = JSON.parse(raw) as RollbackEntry[];
       rollbackStore.clear();
-      const now = new Date();
       for (const e of entries) {
-        if (new Date(e.expiresAt) > now) rollbackStore.set(e.key, e);
+                // Les entrées expirées doivent rester visibles jusqu'au passage du
+                // nettoyeur, sinon leurs tags Docker subsistent indéfiniment.
+                rollbackStore.set(e.key, e);
       }
       console.log(
         `[ImageWatcher] Registre rollback chargé — ${rollbackStore.size} entrée(s) active(s)`,
@@ -1761,34 +1762,34 @@ export class ImageWatcher {
   }
 
   async cleanExpiredRollbacks(): Promise<void> {
-    if (!tryStartDockerCleanup()) {
-      console.log("[ImageWatcher] Expiration rollback reportée — nettoyage Docker déjà en cours");
-      return;
-    }
-    try {
-      const now = new Date();
-      let changed = false;
-      for (const [key, entry] of rollbackStore) {
-        if (new Date(entry.expiresAt) <= now) {
-          console.log(
-            `[ImageWatcher] Expiration rollback — suppression image ${entry.oldImageId.slice(0, 19)}`,
-          );
-          try {
-            await docker([ "rmi", rollbackTag(key) ], { timeout: 10000 });
-          } catch {}
-          try {
-            await docker([ "rmi", entry.oldImageId ], { timeout: 30000 });
-          } catch {
-            /* peut déjà être supprimée ou utilisée ailleurs */
-          }
-          rollbackStore.delete(key);
-          changed = true;
+        if (!tryStartDockerCleanup()) {
+            console.log("[ImageWatcher] Expiration rollback reportée — nettoyage Docker déjà en cours");
+            return;
         }
-      }
-      if (changed) await this.saveRollbackRegistry();
-    } finally {
-      finishDockerCleanup();
-    }
+        try {
+            const now = new Date();
+            let changed = false;
+            for (const [key, entry] of rollbackStore) {
+                if (new Date(entry.expiresAt) <= now) {
+                    console.log(
+                        `[ImageWatcher] Expiration rollback — suppression image ${entry.oldImageId.slice(0, 19)}`,
+                    );
+                    try {
+                        await docker([ "rmi", rollbackTag(key) ], { timeout: 10000 });
+                    } catch {}
+                    try {
+                        await docker([ "rmi", entry.oldImageId ], { timeout: 30000 });
+                    } catch {
+                        /* peut déjà être supprimée ou utilisée ailleurs */
+                    }
+                    rollbackStore.delete(key);
+                    changed = true;
+                }
+            }
+            if (changed) await this.saveRollbackRegistry();
+        } finally {
+            finishDockerCleanup();
+        }
   }
 
   async performRollback(key: string): Promise<void> {

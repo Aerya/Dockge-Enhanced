@@ -4,6 +4,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import {
+    activeRollbackImageIds,
     AutoPruneManager,
     AutoPruneSettings,
     dueAutoPruneTasks,
@@ -333,6 +334,22 @@ test("une image de rollback dangling reste protégée", () => {
         assert.equal(imageIsUsed(oldId, rollbackTagged), true);
     } finally {
         fs.rmSync(stateDir, { recursive: true,
+            force: true });
+    }
+});
+
+test("le registre protège une image de rollback même si son tag Docker manque", () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "dockge-rollback-registry-test-"));
+    try {
+        fs.writeFileSync(path.join(dataDir, "rollback-registry.json"), JSON.stringify([
+            { oldImageId: previousId,
+                expiresAt: "2099-01-01T00:00:00Z" },
+            { oldImageId: oldId,
+                expiresAt: "2020-01-01T00:00:00Z" },
+        ]));
+        assert.deepEqual(activeRollbackImageIds(dataDir), new Set([ previousId ]));
+    } finally {
+        fs.rmSync(dataDir, { recursive: true,
             force: true });
     }
 });

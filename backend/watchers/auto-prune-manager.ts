@@ -257,6 +257,26 @@ export function recoveryImageIds(stateDir = SELF_UPDATE_DIR): Set<string> {
     return ids;
 }
 
+export function activeRollbackImageIds(dataDir = DATA_DIR, now = Date.now()): Set<string> {
+    const ids = new Set<string>();
+    try {
+        const entries = JSON.parse(fs.readFileSync(path.join(dataDir, "rollback-registry.json"), "utf8")) as Array<{
+            oldImageId?: string;
+            expiresAt?: string;
+        }>;
+        for (const entry of entries) {
+            const expiresAt = Date.parse(entry.expiresAt ?? "");
+            if (Number.isFinite(expiresAt) && expiresAt > now
+                && /^sha256:[a-f0-9]{64}$/i.test(entry.oldImageId ?? "")) {
+                ids.add(normalizeImageId(entry.oldImageId!));
+            }
+        }
+    } catch {
+        // Aucun registre de rollback utilisable : les tags restent une protection indépendante.
+    }
+    return ids;
+}
+
 export function protectedImageIds(
     imageRows: Record<string, string>[],
     usedImageIds: Set<string>,
@@ -269,6 +289,9 @@ export function protectedImageIds(
         }
     }
     for (const id of recoveryImageIds(stateDir)) {
+        protectedIds.add(id);
+    }
+    for (const id of activeRollbackImageIds(path.dirname(stateDir))) {
         protectedIds.add(id);
     }
     return protectedIds;
@@ -480,6 +503,10 @@ export class AutoPruneManager {
         }
 
         if ((inspected.RepoTags ?? []).some(tag => tag.startsWith("dockge-rollback-"))) {
+            throw new Error("Cette image est protégée pour un rollback");
+        }
+
+        if (setHasImageId(activeRollbackImageIds(), imageId)) {
             throw new Error("Cette image est protégée pour un rollback");
         }
 

@@ -147,7 +147,8 @@ export function isMissingDockerImageInspectError(error: unknown): boolean {
     if (typeof error !== "object" || error === null) {
         return /no such image/i.test(String(error));
     }
-    const detail = error as { stderr?: string | Buffer; message?: string };
+    const detail = error as { stderr?: string | Buffer;
+        message?: string };
     return /no such image/i.test(`${detail.stderr?.toString() ?? ""} ${detail.message ?? ""}`);
 }
 
