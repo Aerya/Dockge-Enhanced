@@ -43,7 +43,7 @@ const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH = path.join(DATA_DIR, "auto-prune-settings.json");
 const SELF_UPDATE_DIR = path.join(DATA_DIR, "self-update");
 const SELF_IMAGE_REPOSITORY = "ghcr.io/aerya/dockge-enhanced";
-const SELF_IMAGE_GRACE_MS = 48 * 3_600_000;
+const SELF_IMAGE_GRACE_HOURS = 48;
 const PRUNE_HEARTBEAT_MS = 15 * 60_000;
 const DOCKER_STARTUP_RETRY_MS = 30_000;
 
@@ -163,6 +163,14 @@ export function imageCreatedOldEnough(created: string | undefined, minimumAgeHou
     return Number.isFinite(timestamp) && now - timestamp >= minimumAgeHours * 3_600_000;
 }
 
+export function selfImageCreatedOldEnough(created: string | undefined, minimumAgeHours?: number, now = Date.now()): boolean {
+    return imageCreatedOldEnough(
+        created,
+        Math.max(SELF_IMAGE_GRACE_HOURS, minimumAgeHours ?? 0),
+        now,
+    );
+}
+
 export interface ImageRowGroup {
     id: string;
     rows: Record<string, string>[];
@@ -267,7 +275,7 @@ export function selfUpdateProtectedImages(
             targetImage?: string;
         };
         const finished = Date.parse(status.finishedAt ?? "");
-        if (status.state !== "succeeded" || !Number.isFinite(finished) || now - finished < SELF_IMAGE_GRACE_MS) {
+        if (status.state !== "succeeded" || !Number.isFinite(finished) || finished > now) {
             return null;
         }
         const targetDigest = status.targetImage?.match(/^ghcr\.io\/aerya\/dockge-enhanced@(sha256:[a-f0-9]{64})$/i)?.[1]?.toLowerCase();
@@ -594,7 +602,9 @@ export class AutoPruneManager {
             }
 
             // Les anciennes images Enhanced tirées par digest ont Tag=<none> mais ne sont
-            // pas dangling pour Docker. Ne les retirer qu'après confirmation du self-update.
+            // pas dangling pour Docker. Après validation du self-update, leur délai de grâce
+            // est évalué image par image afin qu’un nouveau self-update ne remette pas à zéro
+            // l’âge de toutes les anciennes images.
             const selfProtectedIds = selfUpdateProtectedImages(inventory.usedImageIds, inventory.inspected);
             if (selfProtectedIds) {
                 const candidateIds = [ ...new Set(allImgs
@@ -608,7 +618,7 @@ export class AutoPruneManager {
                             skipped.push(image.Id);
                             continue;
                         }
-                        if (!imageCreatedOldEnough(image.Created, minimumAgeHours)) {
+                        if (!selfImageCreatedOldEnough(image.Created, minimumAgeHours)) {
                             tooRecent.push(image.Id);
                             skipped.push(image.Id);
                             continue;

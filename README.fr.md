@@ -58,6 +58,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Âge de purge par image pour les anciennes versions de Dockge-Enhanced**
+
+Les anciennes images `ghcr.io/aerya/dockge-enhanced:<none>` tirées par digest vieillissent désormais indépendamment. Un nouveau self-update réussi ne remet plus à zéro le délai de 48 h de toutes les anciennes images Enhanced : chaque image obsolète est évaluée selon sa propre date de création, tandis que l’image active et les snapshots de récupération restent protégés. Si le nettoyage Docker unifié utilise un délai de grâce supérieur, ce délai plus long reste prioritaire.
+
 **Nettoyage Docker unifié et rattrapage exact**
 
 Ressources Docker partage un même inventaire par Image ID entre la page Images, l'aperçu Nettoyage et les purges. Le même délai de grâce s'applique désormais au nettoyage manuel et automatique, les différents tags d'une même image physique ne comptent qu'une fois et une image disparue pendant la purge est considérée comme déjà absente plutôt que comme une erreur. Les images de conteneurs arrêtés et les ressources de rollback/récupération restent protégées. Images, réseaux, volumes et cache de build se sélectionnent séparément, les résultats sont historisés par catégorie et les échéances sont contrôlées toutes les 15 minutes avec un seul rattrapage après une veille ou un redémarrage. Activer le nettoyage unifié suspend les anciens réglages d'auto-purge sans les effacer.
