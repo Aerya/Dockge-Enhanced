@@ -232,7 +232,7 @@
                 <section v-if="imagePruneReports.length" class="cleanup-history mb-3" aria-live="polite">
                     <h2 class="h6 mb-2">{{ $t("dockerResources.images.pruneReports") }}</h2>
                     <details v-for="report in imagePruneReports" :key="report.id" class="cleanup-history__entry"
-                        :open="report.id === imagePruneReports[0]?.id">
+                             :open="report.id === imagePruneReports[0]?.id">
                         <summary>
                             <strong>{{ $t(`dockerResources.images.pruneOrigin.${report.origin}`) }}</strong>
                             <span class="text-muted">{{ fmtDate(report.finishedAt) }}</span>
@@ -957,7 +957,12 @@ interface ImagePruneReport {
     id: string;
     origin: "manual" | "automatic";
     finishedAt: string;
-    examined: Array<{ id: string; references: string[]; outcome: string; detail?: string }>;
+    examined: Array<{
+        id: string;
+        references: string[];
+        outcome: string;
+        detail?: string;
+    }>;
     errors: string[];
 }
 
@@ -1360,7 +1365,9 @@ async function loadPruneHistory() {
 
 async function loadImagePruneReports() {
     const data = await api("GET", "images/prune-reports");
-    if (data.ok) imagePruneReports.value = data.reports;
+    if (data.ok) {
+        imagePruneReports.value = data.reports;
+    }
 }
 
 async function executePrune() {

@@ -193,7 +193,10 @@ export class DockerResourcesRouter extends Router {
         });
 
         router.get("/images/prune-reports", auth, (_req: Request, res: Response) => {
-            res.json({ ok: true, reports: readImagePruneReports() });
+            res.json({
+                ok: true,
+                reports: readImagePruneReports(),
+            });
         });
 
         router.delete("/images/:imageId", auth, async (req: Request, res: Response) => {
