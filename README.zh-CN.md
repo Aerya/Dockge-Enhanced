@@ -38,6 +38,10 @@
 
 ### 🆕 2026 年 10 月
 
+**可靠清理旧版 Dockge-Enhanced `<none>` 镜像**
+
+旧的 `ghcr.io/aerya/dockge-enhanced:<none>` 镜像现在直接从 Docker 镜像清单中识别，不再依赖重新标记后可能缺失的 `RepoDigests` 元数据。超过 self-update 48 小时安全保护期的旧镜像因此可以可靠清理，同时继续保护当前活动镜像和恢复所需镜像。清理摘要也不再把正常被容器使用的镜像计入“受保护的清理候选”。
+
 **未使用的 `repository:<none>` 镜像现在会被真正清理**
 
 Docker 可能会保留镜像的 repository 名称，但把 tag 变成 `<none>`。此前这类镜像既不属于真正的 dangling（`<none>:<none>`），也不会进入带标签的未使用镜像清理流程，因此按钮和定时清理都可能长期留下它们。现在系统会按 Image ID 将其作为未使用镜像处理，同时继续遵守容器引用、排除项、回滚/恢复保护和宽限期。旧 Dockge-Enhanced 镜像仍额外保留 self-update 的 48 小时安全保护。
