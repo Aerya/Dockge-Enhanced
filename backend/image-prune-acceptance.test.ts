@@ -23,7 +23,7 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
         process.env.DOCKGE_PRUNE_FIXTURE_LOG = callsPath;
         process.env.DOCKGE_PRUNE_FIXTURE_SCENARIO = scenarioPath;
         const { AutoPruneManager, reconcileRollbackKeepTags, rollbackTagFromKey } = await import("./watchers/auto-prune-manager");
-        const { readImagePruneReports } = await import("./image-prune-report");
+        const { readImagePruneReports, recordImagePruneReport } = await import("./image-prune-report");
         fs.mkdirSync(path.join(directory, "self-update", "recovery"), { recursive: true });
         fs.writeFileSync(path.join(directory, "self-update", "status.json"), "{invalide");
         fs.writeFileSync(path.join(directory, "self-update", "recovery", `${"a".repeat(32)}.json`),
@@ -74,6 +74,8 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
         assert.equal(result.errors.length, 1);
         assert.equal(readImagePruneReports()[0]?.origin, "manual");
         assert.equal(readImagePruneReports()[0]?.examined.length, 10);
+        recordImagePruneReport("automatic", "unused", result.examined, result.errors);
+        assert.deepEqual(readImagePruneReports().slice(0, 2).map(report => report.origin), [ "automatic", "manual" ]);
         const calls = fs.readFileSync(callsPath, "utf8").trim().split("\n").map(line => JSON.parse(line) as string[]);
         assert.ok(calls.some(args => args[0] === "rmi" && args[1] === id(5)));
         assert.ok(!calls.some(args => args[0] === "rmi" && [ id(1), id(2), id(3), id(4) ].includes(args[1])));
@@ -94,16 +96,22 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
         ]));
         fs.writeFileSync(scenarioPath, JSON.stringify({
             rows: [ keepRow(11, "orphan::keep"), keepRow(12, "expired::three-months"),
-                keepRow(13, "recovery::keep"), keepRow(14, "active::keep") ],
-            containers: [],
+                keepRow(13, "recovery::keep"), keepRow(14, "active::keep"), keepRow(15, "used::keep") ],
+            containers: [ {
+                Id: "used-keep",
+                Image: id(15),
+                State: { Status: "exited" },
+            } ],
         }));
         fs.writeFileSync(callsPath, "");
         const retired = await reconcileRollbackKeepTags(directory);
-        assert.deepEqual(retired.sort(), [ "orphan::keep", "expired::three-months", "recovery::keep" ]
+        assert.deepEqual(retired.sort(), [ "orphan::keep", "expired::three-months", "recovery::keep", "used::keep" ]
             .map(rollbackTagFromKey).sort());
         const keepCalls = fs.readFileSync(callsPath, "utf8").trim().split("\n").map(line => JSON.parse(line) as string[]);
         assert.ok(keepCalls.some(args => args[0] === "tag" && args[1] === id(13)));
+        assert.ok(keepCalls.some(args => args[0] === "tag" && args[1] === id(15)));
         assert.ok(!keepCalls.some(args => args[0] === "rmi" && args[1] === id(13)));
+        assert.ok(!keepCalls.some(args => args[0] === "rmi" && args[1] === id(15)));
         assert.ok(!keepCalls.some(args => args[0] === "rmi" && args[1] === rollbackTagFromKey("active::keep")));
     } finally {
         for (const [ key, value ] of Object.entries(previous)) {
