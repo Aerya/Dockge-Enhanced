@@ -219,6 +219,17 @@ export function untaggedRepositoryReferences(group: ImageRowGroup): string[] {
     return references;
 }
 
+export function selfUntaggedCandidateIds(
+    rows: Record<string, string>[],
+    protectedImageIds: Set<string>,
+): string[] {
+    return [ ...new Set(rows
+        .filter(row => row["Repository"] === SELF_IMAGE_REPOSITORY && row["Tag"] === "<none>")
+        .map(row => normalizeImageId(row["ID"] ?? ""))
+        .filter(id => /^sha256:[a-f0-9]{64}$/.test(id))) ]
+        .filter(id => !setHasImageId(protectedImageIds, id));
+}
+
 export function isObsoleteSelfImage(image: InspectedImage, protectedImageIds: Set<string>): boolean {
     if (!/^sha256:[a-f0-9]{64}$/i.test(image.Id) || setHasImageId(protectedImageIds, image.Id)) {
         return false;
@@ -576,6 +587,9 @@ export class AutoPruneManager {
 
             for (const group of groupImageRowsById(allImgs).filter(item => item.references.length > 0)) {
                 const displayName = group.references.join(", ");
+                if (imageIsUsed(group.id, inventory.usedImageIds)) {
+                    continue;
+                }
                 const excludedGroup = exclusions.some(value =>
                     sameImageId(value, group.id) || group.references.includes(value));
                 if (excludedGroup) {
@@ -633,6 +647,9 @@ export class AutoPruneManager {
                     continue;
                 }
                 const displayName = untaggedReferences.join(", ");
+                if (imageIsUsed(group.id, inventory.usedImageIds)) {
+                    continue;
+                }
                 const excludedGroup = exclusions.some(value =>
                     sameImageId(value, group.id) || untaggedReferences.includes(value));
                 if (excludedGroup) {
@@ -665,17 +682,10 @@ export class AutoPruneManager {
 
             const selfProtectedIds = selfUpdateProtectedImages(inventory.usedImageIds, inventory.inspected);
             if (selfProtectedIds) {
-                const candidateIds = [ ...new Set(allImgs
-                    .filter(img => img["Repository"] === SELF_IMAGE_REPOSITORY && img["Tag"] === "<none>")
-                    .map(img => img["ID"])) ].filter(id => !imageIsUsed(id, selfProtectedIds));
+                const candidateIds = selfUntaggedCandidateIds(allImgs, selfProtectedIds);
                 if (candidateIds.length > 0) {
                     const { stdout } = await execFileAsync("docker", [ "image", "inspect", ...candidateIds ], { maxBuffer: 20 * 1024 * 1024 });
                     for (const image of JSON.parse(stdout) as InspectedImage[]) {
-                        if (!isObsoleteSelfImage(image, selfProtectedIds)) {
-                            protectedImages.push(image.Id);
-                            skipped.push(image.Id);
-                            continue;
-                        }
                         if (!selfImageCreatedOldEnough(image.Created, minimumAgeHours)) {
                             tooRecent.push(image.Id);
                             skipped.push(image.Id);

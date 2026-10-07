@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-07 — 可靠清理旧版 Enhanced `<none>` 镜像** — 清理流程现在从 Docker 镜像清单中识别 `ghcr.io/aerya/dockge-enhanced:<none>` 候选，不再要求重新标记后可能缺失的 `RepoDigests` 元数据。超过 self-update 48 小时安全保护期的旧镜像可以被删除，同时继续保护当前活动镜像和恢复镜像。未使用镜像摘要也不再把正常被容器使用的镜像计入受保护候选。
+
 **2026-10-07 — 未使用的 `repository:<none>` 镜像纳入清理流程** — 保留 repository 名称但 `Tag=<none>` 的 Docker 镜像不再遗漏在 dangling 清理与带标签未使用镜像清理之间。手动和定时的未使用镜像清理现在会按 Image ID 删除这些镜像，同时继续遵守容器引用、排除项、回滚/恢复保护和宽限期。旧 Dockge-Enhanced 镜像仍保留 self-update 专用的 48 小时安全保护。
 
 **2026-10-07 — 旧版 Enhanced 镜像按自身年龄过期** — 通过 digest 拉取留下的 `ghcr.io/aerya/dockge-enhanced:<none>` 镜像不再共用一个由最近成功自更新决定的 48 小时全局等待期。每个旧 Enhanced 镜像现在按自身创建时间变为可清理状态，频繁自更新不会再无限推迟旧镜像清理。当前镜像与恢复快照仍受保护；若统一清理设置了更长宽限期，则仍以更长时间为准。

@@ -19,6 +19,7 @@ import {
     protectedImageIds,
     sameImageId,
     selfImageCreatedOldEnough,
+    selfUntaggedCandidateIds,
     selfUpdateProtectedImages,
     shouldPruneTaggedImage,
     untaggedRepositoryReferences,
@@ -76,6 +77,31 @@ test("repère repository:<none> comme image inutilisée sans confondre les vraie
     assert.deepEqual(untaggedRepositoryReferences(groups.find(group => group.id === oldId)!), [ "ghcr.io/example/app:<none>" ]);
     assert.deepEqual(untaggedRepositoryReferences(groups.find(group => group.id === previousId)!), []);
 });
+
+test("sélectionne les anciennes images Enhanced repository:<none> sans dépendre de RepoDigests", () => {
+    const rows = [
+        {
+            Repository: "ghcr.io/aerya/dockge-enhanced",
+            Tag: "<none>",
+            ID: oldId,
+        },
+        {
+            Repository: "ghcr.io/aerya/dockge-enhanced",
+            Tag: "<none>",
+            ID: previousId,
+        },
+        {
+            Repository: "ghcr.io/example/app",
+            Tag: "<none>",
+            ID: activeId,
+        },
+    ];
+    assert.deepEqual(
+        selfUntaggedCandidateIds(rows, new Set([ previousId ])),
+        [ oldId ],
+    );
+});
+
 
 test("No such image est reconnu comme une disparition concurrente et non une erreur de purge", () => {
     assert.equal(isMissingDockerImageError({ stderr: `Error response from daemon: No such image: ${oldId}` }), true);

@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-07 — Old Enhanced `<none>` images are pruned reliably** — Cleanup now identifies `ghcr.io/aerya/dockge-enhanced:<none>` candidates from Docker's image inventory instead of requiring `RepoDigests` metadata that can disappear after retagging. Images older than the 48-hour self-update safety floor can be removed while the active and recovery-protected images remain safe. Unused-image summaries also stop counting ordinary container-used images as protected cleanup candidates.
+
 **2026-10-07 — Unused `repository:<none>` images are included in cleanup** — Docker images that retain a repository name but have `Tag=<none>` no longer fall between dangling and tagged-unused pruning. Manual and scheduled unused-image cleanup now remove them by Image ID while preserving container-use checks, exclusions, rollback/recovery protection and grace periods. Old Dockge-Enhanced images still keep their dedicated 48-hour self-update safety floor.
 
 **2026-10-07 — Old Enhanced images expire by their own age** — Digest-pulled `ghcr.io/aerya/dockge-enhanced:<none>` images no longer share a global 48-hour gate tied to the latest successful self-update. Each stale Enhanced image now becomes eligible from its own creation time, so frequent self-updates cannot postpone old-image cleanup indefinitely. The active image and recovery snapshots remain protected, and a longer unified-cleanup grace period still wins.
