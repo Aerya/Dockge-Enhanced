@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-07-self-image-prune-age",
+        items: [ "releaseNews.item.selfImagePrunePerImageAge" ],
+    },
+    {
         id: "2026-10-06-stack-daily-ops-polish",
         items: [ "releaseNews.item.stackDailyOpsPolish" ],
     },

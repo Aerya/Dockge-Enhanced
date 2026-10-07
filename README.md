@@ -58,6 +58,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Per-image cleanup age for old Dockge-Enhanced builds**
+
+Old `ghcr.io/aerya/dockge-enhanced:<none>` images pulled by digest now age out independently. A new successful self-update no longer resets the 48-hour cleanup clock for every older Enhanced image: each stale image is evaluated from its own creation time, while the active image and recovery snapshots remain protected. If unified Docker cleanup uses a longer grace period, that larger value still takes precedence.
+
 **Unified Docker cleanup and exact catch-up scheduling**
 
 Docker Resources shares one Image-ID inventory between the Images page, cleanup preview and pruning. The same grace period applies to manual and automatic cleanup, multiple tags for one physical image count only once, and images that disappear concurrently are treated as already absent rather than as cleanup failures. Stopped-container images and rollback/recovery assets remain protected. Images, networks, volumes and build cache can be selected independently, results are recorded per category, and due jobs are checked every 15 minutes with one catch-up after sleep or restart. Enabling unified cleanup suspends the legacy image schedules without erasing them.

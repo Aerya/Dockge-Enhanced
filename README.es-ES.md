@@ -60,6 +60,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Edad de limpieza por imagen para versiones antiguas de Dockge-Enhanced**
+
+Las imágenes antiguas `ghcr.io/aerya/dockge-enhanced:<none>` obtenidas por digest ahora caducan de forma independiente. Una nueva autoactualización correcta ya no reinicia el plazo de 48 h de todas las imágenes Enhanced anteriores: cada imagen obsoleta se evalúa según su propia fecha de creación, mientras la imagen activa y los snapshots de recuperación siguen protegidos. Si la limpieza Docker unificada usa un periodo de gracia mayor, ese valor más alto sigue teniendo prioridad.
+
 **Limpieza Docker unificada y recuperación exacta**
 
 Recursos Docker comparte un único inventario por Image ID entre la página Imágenes, la vista previa de Limpieza y las purgas. El mismo periodo de gracia se aplica ahora a la limpieza manual y automática, las distintas etiquetas de una misma imagen física cuentan una sola vez y una imagen que desaparece durante la limpieza se considera ya ausente en lugar de un error. Las imágenes de contenedores detenidos y los recursos de rollback/recuperación siguen protegidos. Imágenes, redes, volúmenes y caché de build se seleccionan por separado, los resultados se guardan por categoría y los vencimientos se comprueban cada 15 minutos con una sola recuperación tras una suspensión o reinicio. Al activar la limpieza unificada se suspenden los ajustes antiguos sin borrarlos.

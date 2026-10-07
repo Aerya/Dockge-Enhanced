@@ -18,6 +18,7 @@ import {
     nextPruneRun,
     protectedImageIds,
     sameImageId,
+    selfImageCreatedOldEnough,
     selfUpdateProtectedImages,
     shouldPruneTaggedImage,
 } from "./auto-prune-manager";
@@ -186,12 +187,12 @@ test("la purge des images avec tag respecte conteneurs, exclusions et rollbacks"
     }, new Set(), []), false);
 });
 
-test("les anciennes images Enhanced par digest attendent la validation du self-update", () => {
+test("les anciennes images Enhanced par digest ne dépendent plus de l’âge du dernier self-update", () => {
     const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "dockge-prune-test-"));
     const now = Date.parse("2026-09-30T12:00:00Z");
     const status = {
         state: "succeeded",
-        finishedAt: new Date(now - 49 * 3_600_000).toISOString(),
+        finishedAt: new Date(now - 1 * 3_600_000).toISOString(),
         targetImage: `ghcr.io/aerya/dockge-enhanced@${targetDigest}`,
     };
     try {
@@ -206,6 +207,7 @@ test("les anciennes images Enhanced par digest attendent la validation du self-u
         }];
         const protectedIds = selfUpdateProtectedImages(new Set([ activeId ]), inspected, stateDir, now);
         assert.deepEqual(protectedIds, new Set([ activeId, previousId ]));
+
         const image = {
             Id: oldId,
             RepoTags: [],
@@ -223,12 +225,14 @@ test("les anciennes images Enhanced par digest attendent la validation du self-u
 
         fs.writeFileSync(path.join(stateDir, "status.json"), JSON.stringify({
             ...status,
-            finishedAt: new Date(now - 47 * 3_600_000).toISOString(),
+            state: "updating",
         }));
         assert.equal(selfUpdateProtectedImages(new Set([ activeId ]), inspected, stateDir, now), null);
+
         fs.writeFileSync(path.join(stateDir, "status.json"), JSON.stringify({
             ...status,
-            state: "updating",
+            state: "succeeded",
+            finishedAt: new Date(now + 3_600_000).toISOString(),
         }));
         assert.equal(selfUpdateProtectedImages(new Set([ activeId ]), inspected, stateDir, now), null);
     } finally {
@@ -237,6 +241,14 @@ test("les anciennes images Enhanced par digest attendent la validation du self-u
             force: true,
         });
     }
+});
+
+test("le délai de 48 h est évalué par ancienne image Enhanced", () => {
+    const now = Date.parse("2026-10-07T05:00:00Z");
+    assert.equal(selfImageCreatedOldEnough(new Date(now - 49 * 3_600_000).toISOString(), undefined, now), true);
+    assert.equal(selfImageCreatedOldEnough(new Date(now - 47 * 3_600_000).toISOString(), undefined, now), false);
+    assert.equal(selfImageCreatedOldEnough(new Date(now - 169 * 3_600_000).toISOString(), 168, now), true);
+    assert.equal(selfImageCreatedOldEnough(new Date(now - 100 * 3_600_000).toISOString(), 168, now), false);
 });
 
 test("un digest de manifeste ne peut pas être confondu avec l'Image ID", () => {
