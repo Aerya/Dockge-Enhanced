@@ -5,6 +5,11 @@
 </p>
 
 # Dockge Enhanced
+
+### Limpieza de imágenes Docker más rápida y resistente a carreras
+
+La limpieza por lotes ahora carga el inventario Docker una sola vez y después revalida únicamente la imagen objetivo justo antes de cada `docker rmi`. La página Recursos ya no ejecuta un enorme `docker image inspect` solo para mostrar la lista, la inspección se limita por lotes y tolera que una imagen desaparezca durante una limpieza concurrente, y la expiración de rollbacks utiliza el mismo bloqueo de limpieza Docker. Se mantienen las protecciones de contenedores, rollback/recuperación y periodos de gracia.
+
 Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus funcionalidades, que convierte su sencilla experiencia de gestión de Docker Compose en una plataforma Docker más completa — con federación multiservidor, migración y replicación de stacks, copias Restic, actualizaciones de imágenes y de Dockge-Enhanced con rollback, análisis de seguridad, monitorización, automatización, notificaciones y gestión de recursos Docker, todo desde la interfaz web.
 Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus funcionalidades, que convierte su sencilla experiencia de gestión de Docker Compose en una plataforma Docker más completa — con federación multiservidor, migración y replicación de stacks, copias Restic, actualizaciones de imágenes y de Dockge-Enhanced con rollback, análisis de seguridad, monitorización, automatización, notificaciones y gestión de recursos Docker, todo desde la interfaz web.
 

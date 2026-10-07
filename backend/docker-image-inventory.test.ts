@@ -5,6 +5,7 @@ import {
     classifyImageReferences,
     ImageInventory,
     isDanglingImageRow,
+    isMissingDockerImageInspectError,
 } from "./docker-image-inventory";
 
 const sharedId = `sha256:${"a".repeat(64)}`;
@@ -69,6 +70,11 @@ test("une image Enhanced tirée par digest avec Tag <none> n'est pas une danglin
         Repository: "<none>",
         Tag: "<none>",
     }), true);
+});
+
+test("une disparition concurrente d'image est distinguée d'une vraie erreur Docker", () => {
+    assert.equal(isMissingDockerImageInspectError({ stderr: "Error response from daemon: No such image: sha256:deadbeef" }), true);
+    assert.equal(isMissingDockerImageInspectError(new Error("permission denied")), false);
 });
 
 test("dangling et unused restent deux états exclusifs", () => {

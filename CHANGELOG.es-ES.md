@@ -1,5 +1,8 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-07 — La limpieza de imágenes Docker está acotada y resiste condiciones de carrera** — Una limpieza por lotes carga ahora el inventario completo una sola vez y solo revalida el objetivo justo antes de eliminarlo, en lugar de volver a escanear todas las imágenes y contenedores antes de cada `docker rmi`. La lista de Recursos evita la inspección completa de imágenes, las inspecciones se realizan en lotes acotados y toleran la desaparición concurrente de una imagen, las imágenes Enhanced antiguas `<none>` reutilizan el inventario inicial y la expiración de rollbacks comparte el bloqueo de limpieza Docker.
+
+
 **2026-10-07 — Limpieza fiable de imágenes Enhanced antiguas `<none>`** — La limpieza identifica ahora las candidatas `ghcr.io/aerya/dockge-enhanced:<none>` desde el inventario Docker en vez de exigir metadatos `RepoDigests` que pueden desaparecer tras un retag. Las imágenes que superan la protección self-update de 48 h pueden eliminarse manteniendo seguras la imagen activa y las de recuperación. El resumen de imágenes sin uso tampoco cuenta ya las imágenes normales realmente utilizadas como candidatas protegidas.
 
 **2026-10-07 — Las imágenes sin uso `repository:<none>` se incluyen en la limpieza** — Las imágenes Docker que conservan un nombre de repositorio con `Tag=<none>` ya no quedan entre la limpieza de huérfanas y la de imágenes sin uso con etiqueta. La limpieza manual o programada las elimina ahora por Image ID respetando uso por contenedores, exclusiones, protecciones de rollback/recuperación y periodos de gracia. Las imágenes antiguas de Dockge-Enhanced conservan su protección específica de 48 h para self-update.

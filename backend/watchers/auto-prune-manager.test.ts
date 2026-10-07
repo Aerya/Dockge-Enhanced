@@ -4,6 +4,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import {
+    activeRollbackImageIds,
     AutoPruneManager,
     AutoPruneSettings,
     dueAutoPruneTasks,
@@ -335,4 +336,39 @@ test("une image de rollback dangling reste protégée", () => {
         fs.rmSync(stateDir, { recursive: true,
             force: true });
     }
+});
+
+test("le registre protège une image de rollback même si son tag Docker manque", () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "dockge-rollback-registry-test-"));
+    try {
+        fs.writeFileSync(path.join(dataDir, "rollback-registry.json"), JSON.stringify([
+            { oldImageId: previousId,
+                expiresAt: "2099-01-01T00:00:00Z" },
+            { oldImageId: oldId,
+                expiresAt: "2020-01-01T00:00:00Z" },
+        ]));
+        assert.deepEqual(activeRollbackImageIds(dataDir), new Set([ previousId ]));
+    } finally {
+        fs.rmSync(dataDir, { recursive: true,
+            force: true });
+    }
+});
+
+test("la revalidation avant rmi reste ciblée et ne recharge pas l'inventaire complet", () => {
+    const source = fs.readFileSync(path.join(process.cwd(), "backend/watchers/auto-prune-manager.ts"), "utf8");
+    const start = source.indexOf("async assertImageRemovalAllowed");
+    const end = source.indexOf("async removeImageSafely", start);
+    const body = source.slice(start, end);
+    assert.doesNotMatch(body, /loadImageInventory\(/);
+    assert.match(body, /docker[\s\S]*image[\s\S]*inspect[\s\S]*target/);
+    assert.match(body, /ancestor=/);
+});
+
+test("les anciennes images Enhanced réutilisent l'inventaire initial", () => {
+    const source = fs.readFileSync(path.join(process.cwd(), "backend/watchers/auto-prune-manager.ts"), "utf8");
+    const start = source.indexOf("const selfProtectedIds = selfUpdateProtectedImages");
+    const end = source.indexOf("const summary =", start);
+    const body = source.slice(start, end);
+    assert.match(body, /inventory\.inspectedById/);
+    assert.doesNotMatch(body, /execFileAsync\("docker", \[ "image", "inspect", \.\.\.candidateIds/);
 });

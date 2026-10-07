@@ -159,7 +159,7 @@ export class DockerResourcesRouter extends Router {
 
         router.get("/images", auth, async (_req: Request, res: Response) => {
             try {
-                const inventory = await loadDockerImageInventory();
+                const inventory = await loadDockerImageInventory({ inspectImages: false });
                 const images = classifyImageReferences(inventory).map(image => {
                     const dockgeStacks = [ ...new Set(image.containers.map(container => container.stackName).filter(Boolean)) ];
                     return {

@@ -1,5 +1,8 @@
 # Changelog Dockge Enhanced
 
+**2026-10-07 — La purge des images Docker est bornée et résistante aux courses** — Une purge en lot charge désormais l’inventaire complet une seule fois et ne revalide que la cible juste avant sa suppression, au lieu de rescanner toutes les images et tous les conteneurs avant chaque `docker rmi`. La liste Ressources évite l’inspection complète des images, les inspections sont effectuées par lots bornés et tolèrent la disparition concurrente d’une image, les anciennes images Enhanced `<none>` réutilisent l’inventaire initial et l’expiration des rollbacks partage le verrou de nettoyage Docker.
+
+
 **2026-10-07 — Purge fiable des anciennes images Enhanced `<none>`** — La purge identifie désormais les candidates `ghcr.io/aerya/dockge-enhanced:<none>` depuis l’inventaire Docker au lieu d’exiger des métadonnées `RepoDigests` susceptibles de disparaître après un retag. Les images dépassant la garde self-update de 48 h peuvent être supprimées tout en protégeant l’image active et les images de récupération. Le résumé des images inutilisées ne compte plus non plus les images ordinaires réellement utilisées comme candidates protégées.
 
 **2026-10-07 — Les images inutilisées `repository:<none>` sont incluses dans la purge** — Les images Docker qui conservent un nom de repository avec `Tag=<none>` ne passent plus entre la purge des orphelines et celle des images inutilisées taguées. La purge manuelle ou planifiée des images inutilisées les supprime maintenant par Image ID tout en conservant les vérifications d’utilisation, exclusions, protections rollback/récupération et délais de grâce. Les anciennes images Dockge-Enhanced gardent leur protection spécifique de 48 h liée au self-update.
