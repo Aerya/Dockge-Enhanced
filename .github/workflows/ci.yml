@@ -45,9 +45,20 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npm ci
 
+      - name: Tester le lint différentiel
+        if: steps.docs.outputs.docs_only != 'true'
+        run: node --test .github/scripts/lint-diff.test.mjs
+
       - name: Vérification ESLint
         if: steps.docs.outputs.docs_only != 'true'
-        run: npm run lint
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            npm run lint:ci -- "$BASE_SHA"
+          else
+            npm run lint
+          fi
 
       - name: Vérification TypeScript (tsc --noEmit)
         if: steps.docs.outputs.docs_only != 'true'

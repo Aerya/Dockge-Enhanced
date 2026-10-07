@@ -8,6 +8,7 @@
     "scripts": {
         "fmt": "eslint \"**/*.{ts,vue}\" --fix",
         "lint": "eslint \"**/*.{ts,vue}\"",
+        "lint:ci": "node .github/scripts/lint-diff.mjs",
         "check-ts": "tsc --noEmit",
         "start": "tsx ./backend/index.ts",
         "dev": "concurrently -k -r \"wait-on tcp:5000 && npm run dev:backend \" \"npm run dev:frontend\"",
