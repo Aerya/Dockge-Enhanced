@@ -1814,6 +1814,7 @@
     "releaseNews.item.autoPruneReliability": "定时清理不会再因几秒钟的偏差而跳过下一个计划时段。成功自更新至少 48 小时后，可在下一次清理中删除旧版 Enhanced 镜像，当前镜像和恢复镜像仍受保护。",
     "releaseNews.item.unifiedDockerCleanup": "Docker 清理在镜像页、清理预览和清理任务中统一按 Image ID 统计。宽限期现在同样适用于手动清理，同一物理镜像的多个标签只计一次；清理过程中已经消失的镜像不再被视为错误。回滚/恢复镜像在所有删除模式下仍始终受到保护。",
     "releaseNews.item.selfImagePrunePerImageAge": "通过 digest 拉取的旧 Dockge-Enhanced 镜像现在会独立计算年龄：每个旧镜像自身至少达到 48 小时才可清理，而新的成功自更新不会再重置所有旧镜像的等待时间。当前镜像和恢复快照仍受保护；统一清理设置的更长宽限期仍具有优先级。",
+    "releaseNews.item.unusedNoneImagesPrune": "保留 repository 名称但 Tag=<none> 的未使用 Docker 镜像现在会进入未使用镜像清理流程，并按 Image ID 删除；容器引用、排除项、回滚/恢复保护和宽限期仍会生效，旧 Dockge-Enhanced 镜像还会继续保留 48 小时 self-update 安全保护。",
     "releaseNews.item.monitoringHistory": "Monitoring 可选择每 5 分钟记录一次轻量级主机 CPU 和 RAM 样本。24 小时、7 天、1 个月或自定义范围的响应式图表会在服务端降采样，记住所保存的显示周期，并以空档显示停机时间。",
     "releaseNews.item.stackDailyOpsPolish": "Stack 日常操作更加顺畅：可在主机上自动准备缺失的目录 bind mount，“立即”模式会立刻执行针对性镜像检查，重启成功后会刷新真实状态，CPU/RAM 历史图也采用更紧凑的 PowerWatch 风格。"
 }
