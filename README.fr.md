@@ -63,6 +63,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Les rapports de purge correspondent désormais à l’état Docker observé**
+
+Lorsqu’une inspection par lot ne retourne pas une image, la purge vérifie maintenant directement son Image ID avant de la déclarer absente. Chaque suppression est contrôlée, puis un inventaire Docker final léger confirme le résultat rapporté. Ressources affiche séparément l’utilisation Docker et l’état de purge : une image `inutilisée` peut encore être Active Enhanced, protégée pour la récupération ou le rollback, trop récente ou exclue. Les images sans tag sont décrites de façon neutre comme **Image sans tag**, et non comme anciennes images. Le workflow reste borné à un inventaire initial, des contrôles ciblés et une vérification finale légère.
+
 **Purge fiable des anciennes images Dockge-Enhanced `<none>`**
 
 Les anciennes images `ghcr.io/aerya/dockge-enhanced:<none>` sont désormais sélectionnées depuis l’inventaire Docker au lieu de dépendre de métadonnées `RepoDigests` qui peuvent disparaître après un retag. Les images dépassant la garde de sécurité self-update de 48 h peuvent donc enfin être purgées de façon fiable, tandis que l’image active et les images protégées par la récupération restent intactes. Le résumé de purge ne compte plus non plus les images ordinaires réellement utilisées comme candidates protégées.

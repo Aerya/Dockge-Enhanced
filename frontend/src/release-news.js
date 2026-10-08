@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-08-docker-prune-report-reconciliation",
+        items: [ "releaseNews.item.dockerPruneReportReconciliation" ],
+    },
+    {
         id: "2026-10-07-docker-prune-performance",
         items: [ "releaseNews.item.dockerPrunePerformance" ],
     },

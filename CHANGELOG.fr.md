@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-08 — Réconciliation finale fiable des rapports de purge Docker** — Une image absente d’une inspection par lot n’est plus confondue avec une absence confirmée par Docker : la purge bascule vers une inspection ciblée par Image ID, contrôle la postcondition de chaque suppression et effectue une réconciliation finale légère. Ressources sépare désormais l’utilisation Docker de l’état de purge, afin d’expliquer les images Enhanced actives, de récupération, de rollback, trop récentes ou exclues même lorsque Docker les indique inutilisées. Les protections Enhanced active, rollback et récupération restent intactes, avec un inventaire initial, des contrôles ciblés et un inventaire final léger.
+
 **2026-10-07 — La purge des images Docker est bornée et résistante aux courses** — Une purge en lot charge désormais l’inventaire complet une seule fois et ne revalide que la cible juste avant sa suppression, au lieu de rescanner toutes les images et tous les conteneurs avant chaque `docker rmi`. La liste Ressources évite l’inspection complète des images, les inspections sont effectuées par lots bornés et tolèrent la disparition concurrente d’une image, les anciennes images Enhanced `<none>` réutilisent l’inventaire initial et l’expiration des rollbacks partage le verrou de nettoyage Docker.
 
 

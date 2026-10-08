@@ -45,7 +45,9 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
                 row(4, "ghcr.io/aerya/dockge-enhanced", "<none>", 24),
                 row(5, "ghcr.io/aerya/dockge-enhanced", "<none>"),
                 row(6, "fixture/excluded"), row(7, "fixture/used"),
-                row(8, "fixture/old"), row(9, "fixture/gone"), row(10, "fixture/error"),
+                row(8, "node", "26-alpine", 336), row(9, "fixture/gone"), row(10, "fixture/ambiguous"),
+                row(11, "fixture/stubborn"), row(12, "fixture/gone-during-rmi"),
+                row(13, "fixture/final-stubborn"),
             ],
             containers: [{ Id: "active-self",
                 Image: id(1),
@@ -54,10 +56,34 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
                 Image: id(7),
                 State: { Status: "exited" } }],
             missingIds: [ id(9) ],
-            rmiErrors: { "fixture/error:latest": "permission denied" },
+            batchOmittedIds: [ id(8) ],
+            rmiErrors: {
+                "fixture/ambiguous:latest": "Error response from daemon: No such image",
+                "fixture/gone-during-rmi:latest": "Error response from daemon: No such image",
+            },
+            rmiMissingAndAbsent: [ "fixture/gone-during-rmi:latest" ],
+            rmiLeavesPresent: [ "fixture/stubborn:latest", "fixture/final-stubborn:latest" ],
+            postInspectMissingButFinalPresent: [ "fixture/final-stubborn:latest" ],
         }));
-        const result = await AutoPruneManager.getInstance().runUnusedPrune(false, undefined, [ "fixture/excluded:latest" ]);
-        assert.equal(result.examined.length, 10);
+        const manager = AutoPruneManager.getInstance();
+        await manager.updateSettings({ unusedExclusions: [ "fixture/excluded:latest" ] });
+        const uiInventory = await manager.loadImageInventory(false);
+        const uiStates = await manager.getImagePurgeStates(uiInventory);
+        assert.equal(uiStates.get(id(1))?.state, "active");
+        assert.equal(uiStates.get(id(2))?.state, "recovery");
+        assert.equal(uiStates.get(id(3))?.state, "rollback");
+        assert.equal(uiStates.get(id(4))?.state, "tooRecent");
+        assert.equal(uiStates.get(id(6))?.state, "excluded");
+        assert.equal(uiStates.get(id(7))?.state, "used");
+        assert.equal(uiStates.get(id(8))?.state, "purgeable");
+        const uiCalls = fs.readFileSync(callsPath, "utf8").trim().split("\n").map(line => JSON.parse(line) as string[]);
+        assert.equal(uiCalls.filter(args => args[0] === "images" && args[1] === "-a").length, 1);
+        assert.equal(uiCalls.filter(args => args[0] === "image" && args[1] === "inspect" && args.length > 3).length, 0);
+        assert.equal(uiCalls.filter(args => args[0] === "image" && args[1] === "inspect" && args.length === 3).length, 5);
+        fs.writeFileSync(callsPath, "");
+
+        const result = await manager.runUnusedPrune(false);
+        assert.equal(result.examined.length, 13);
         assert.deepEqual(Object.fromEntries(result.examined.map(item => [ item.id, item.outcome ])), {
             [id(1)]: "active",
             [id(2)]: "recovery",
@@ -69,15 +95,24 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
             [id(8)]: "removed",
             [id(9)]: "alreadyAbsent",
             [id(10)]: "error",
+            [id(11)]: "error",
+            [id(12)]: "alreadyAbsent",
+            [id(13)]: "error",
         });
-        assert.equal(result.examined.reduce((sum, item) => sum + Number(Boolean(item.outcome)), 0), 10);
-        assert.equal(result.errors.length, 1);
+        assert.equal(result.examined.reduce((sum, item) => sum + Number(Boolean(item.outcome)), 0), 13);
+        assert.equal(result.errors.length, 3);
         assert.equal(readImagePruneReports()[0]?.origin, "manual");
-        assert.equal(readImagePruneReports()[0]?.examined.length, 10);
+        assert.equal(readImagePruneReports()[0]?.examined.length, 13);
         recordImagePruneReport("automatic", "unused", result.examined, result.errors);
         assert.deepEqual(readImagePruneReports().slice(0, 2).map(report => report.origin), [ "automatic", "manual" ]);
         const calls = fs.readFileSync(callsPath, "utf8").trim().split("\n").map(line => JSON.parse(line) as string[]);
         assert.ok(calls.some(args => args[0] === "rmi" && args[1] === id(5)));
+        assert.ok(calls.some(args => args[0] === "image" && args[1] === "inspect"
+            && args.length === 3 && args[2] === id(8)));
+        assert.equal(result.examined.find(item => item.id === id(8))?.outcome, "removed");
+        assert.match(result.examined.find(item => item.id === id(10))?.detail ?? "", /encore présente/);
+        assert.match(result.examined.find(item => item.id === id(11))?.detail ?? "", /encore présente/);
+        assert.match(result.examined.find(item => item.id === id(13))?.detail ?? "", /résultat précédent : removed/);
         assert.ok(!calls.some(args => args[0] === "rmi" && [ id(1), id(2), id(3), id(4) ].includes(args[1])));
 
         const keepRow = (number: number, key: string) => {

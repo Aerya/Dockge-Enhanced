@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-08 — Reconciliación final fiable de los informes de limpieza Docker** — Una imagen ausente de una inspección por lotes ya no se confunde con una ausencia confirmada por Docker: la limpieza usa una inspección dirigida por Image ID, comprueba la postcondición de cada eliminación y realiza una reconciliación final ligera. Recursos separa ahora el uso Docker del estado de limpieza, para explicar imágenes Enhanced activas, de recuperación, rollback, demasiado recientes o excluidas incluso cuando Docker las marca como sin uso. Las protecciones de Enhanced activa, rollback y recuperación se conservan, con un inventario inicial, controles dirigidos y un inventario final ligero.
+
 **2026-10-07 — La limpieza de imágenes Docker está acotada y resiste condiciones de carrera** — Una limpieza por lotes carga ahora el inventario completo una sola vez y solo revalida el objetivo justo antes de eliminarlo, en lugar de volver a escanear todas las imágenes y contenedores antes de cada `docker rmi`. La lista de Recursos evita la inspección completa de imágenes, las inspecciones se realizan en lotes acotados y toleran la desaparición concurrente de una imagen, las imágenes Enhanced antiguas `<none>` reutilizan el inventario inicial y la expiración de rollbacks comparte el bloqueo de limpieza Docker.
 
 

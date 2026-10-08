@@ -28,10 +28,10 @@ test("une purge de quinze images ne refait pas quinze inventaires Docker", async
 
         assert.deepEqual(result.errors, []);
         assert.equal(result.removed.length, 15);
-        assert.equal(calls.filter(isCall("images", "-a")).length, 1);
+        assert.equal(calls.filter(isCall("images", "-a")).length, 2);
         assert.equal(calls.filter(isCall("inspect", "fixture-active-container")).length, 1);
         assert.equal(calls.filter(isCall("image", "inspect")).filter(args => args.length > 3).length, 1);
-        assert.equal(calls.filter(isCall("image", "inspect")).filter(args => args.length === 3).length, 15);
+        assert.equal(calls.filter(isCall("image", "inspect")).filter(args => args.length === 3).length, 30);
         assert.equal(calls.filter(isCall("ps", "-aq", "--filter")).length, 15);
         assert.equal(calls.filter(isCall("rmi")).length, 15);
         assert.ok(!calls.some(args => args.includes("fixture/active:latest") || args.includes("fixture/rollback:latest")));
