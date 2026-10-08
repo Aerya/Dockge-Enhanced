@@ -2,8 +2,9 @@ import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
 import { isIP } from "node:net";
 import * as path from "node:path";
+import { resolveDataDir } from "../data-dir";
 
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const STACKS_DIR = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 
 export const PLUGNPIN_STACK_NAME = "plugnpin-dockge-enhanced";

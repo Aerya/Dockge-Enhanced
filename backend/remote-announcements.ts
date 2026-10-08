@@ -3,10 +3,11 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { compareVersions } from "compare-versions";
 import packageJSON from "../package.json";
+import { resolveDataDir } from "./data-dir";
 
 const DEFAULT_ANNOUNCEMENTS_URL = "https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/remote-announcements.json";
 const ANNOUNCEMENTS_URL = process.env.DOCKGE_REMOTE_ANNOUNCEMENTS_URL?.trim() || DEFAULT_ANNOUNCEMENTS_URL;
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const STATE_PATH = path.join(DATA_DIR, "remote-announcements-state.json");
 const CACHE_MS = 15 * 60 * 1000;
 const FAILURE_CACHE_MS = 60 * 1000;
@@ -297,4 +298,3 @@ export class RemoteAnnouncementManager {
         await this.saveAcknowledged();
     }
 }
-

@@ -5,6 +5,7 @@ import { BackupManager } from "../watchers/backup-manager";
 import { ImageWatcher } from "../watchers/image-watcher";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { ComposeEditLeaseManager } from "./editor-lease";
+import { resolveDataDir } from "../data-dir";
 import {
     BLOCKER_MESSAGES,
     isExternalStackIntegrationStateActive,
@@ -12,7 +13,7 @@ import {
     SelfUpdateBlocker,
 } from "./operation-guard-policy";
 
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const EXTERNAL_STACK_ACCESS_STATUS = path.join(DATA_DIR, "external-stack-access", "status.json");
 
 function records(value: unknown): Array<Record<string, unknown>> {

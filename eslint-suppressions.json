@@ -433,11 +433,6 @@
       "count": 1
     }
   },
-  "backend/watchers/backup-manager.test.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 10
-    }
-  },
   "backend/watchers/backup-manager.ts": {
     "@stylistic/brace-style": {
       "count": 46
@@ -449,7 +444,7 @@
       "count": 17
     },
     "@stylistic/no-multi-spaces": {
-      "count": 63
+      "count": 62
     },
     "@stylistic/object-property-newline": {
       "count": 154
@@ -491,34 +486,17 @@
       "count": 1
     }
   },
-  "backend/watchers/image-watcher.test.ts": {
-    "@stylistic/indent": {
-      "count": 139
-    },
-    "@stylistic/object-property-newline": {
-      "count": 13
-    }
-  },
   "backend/watchers/image-watcher.ts": {
-    "@stylistic/indent": {
-      "count": 1436
-    },
-    "@stylistic/object-property-newline": {
-      "count": 38
-    },
     "@typescript-eslint/no-explicit-any": {
       "count": 4
     },
     "@typescript-eslint/no-unused-expressions": {
       "count": 1
-    },
-    "curly": {
-      "count": 54
     }
   },
   "backend/watchers/kula-manager.ts": {
     "@stylistic/no-multi-spaces": {
-      "count": 8
+      "count": 7
     },
     "@stylistic/object-property-newline": {
       "count": 3

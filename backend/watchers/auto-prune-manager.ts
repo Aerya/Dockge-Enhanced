@@ -15,6 +15,7 @@ import * as fs from "node:fs";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { log } from "../log";
+import { resolveDataDir } from "../data-dir";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import {
@@ -42,7 +43,7 @@ export { imageIsUsed, normalizeImageId, sameImageId } from "../docker-image-inve
 export type { InspectedImage } from "../docker-image-inventory";
 
 const execFileAsync = promisify(execFile);
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const SETTINGS_PATH = path.join(DATA_DIR, "auto-prune-settings.json");
 const SELF_UPDATE_DIR = path.join(DATA_DIR, "self-update");
 const SELF_IMAGE_REPOSITORY = "ghcr.io/aerya/dockge-enhanced";
@@ -148,10 +149,10 @@ export function evaluateImagePurgeState(group: ImageRowGroup, context: ImagePurg
 
 export function summarizePruneDecisions(examined: PruneImageDecision[]): string {
     const count = (outcome: PruneImageOutcome) => examined.filter(item => item.outcome === outcome).length;
-    return `${examined.length} examinée(s) : ${count("removed")} supprimée(s), ${count("used")} utilisée(s), `
-        + `${count("active")} active(s), ${count("rollback")} rollback, ${count("recovery")} recovery, `
-        + `${count("tooRecent")} trop récente(s), ${count("excluded")} exclue(s), `
-        + `${count("alreadyAbsent")} déjà absente(s), ${count("error")} erreur(s)`;
+    return `${examined.length} examined: ${count("removed")} removed, ${count("used")} in use/protected, `
+        + `${count("active")} active, ${count("rollback")} rollback, ${count("recovery")} recovery, `
+        + `${count("tooRecent")} too recent, ${count("excluded")} excluded, `
+        + `${count("alreadyAbsent")} already absent, ${count("error")} errors`;
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────

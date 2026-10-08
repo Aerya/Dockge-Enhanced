@@ -17,5 +17,5 @@ test("automatic checker does not re-request an update while self-update is execu
     const requestPos = source.indexOf("requestSidecarUpdate(", busyPos);
     assert.ok(busyPos >= 0);
     assert.ok(requestPos > busyPos);
-    assert.match(source, /Auto-update déjà en cours — nouvelle demande ignorée/);
+    assert.match(source, /Auto-update already in progress — ignoring new request/);
 });

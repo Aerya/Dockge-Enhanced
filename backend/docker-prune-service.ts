@@ -14,6 +14,7 @@ import { getSelfUpdateBlocker } from "./self-update/operation-guard";
 import { DiscordNotifier } from "./notification/discord";
 import { AppriseNotifier } from "./notification/apprise";
 import { log } from "./log";
+import { resolveDataDir } from "./data-dir";
 import {
     dockerDaemonAvailable,
     finishDockerCleanup,
@@ -56,7 +57,7 @@ export interface PruneHistoryEntry {
     success: boolean;
 }
 
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const HISTORY_PATH = path.join(DATA_DIR, "docker-prune-history.json");
 const SETTINGS_PATH = path.join(DATA_DIR, "docker-cleanup-settings.json");
 const DOCKER_STARTUP_RETRY_MS = 30_000;

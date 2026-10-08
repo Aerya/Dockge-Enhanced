@@ -18,13 +18,14 @@ import { Settings } from "../settings";
 import { SelfUpdateManager } from "../self-update/manager";
 import { atomicWriteJson } from "../self-update/state-file";
 import { log } from "../log";
+import { resolveDataDir } from "../data-dir";
 import { resolveCurrentContainer } from "../current-container";
 
 const SELF_REPO = "aerya/dockge-enhanced";
 const SELF_TAG = "latest";
 // Surcharge explicite du dépôt suivi (ex. un fork : "owner/dockge-enhanced")
 const SELF_REPO_OVERRIDE = process.env.DOCKGE_SELF_REPO?.trim() ?? "";
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 const DIGEST_CACHE = path.join(DATA_DIR, "self-update-digest.json");
 const CHECK_INTERVAL = 10 * 60 * 1000; // 10 min
@@ -248,7 +249,7 @@ async function fetchRemoteDigest(
   }
 
   if (!platformDigest) {
-    throw new Error("Header docker-content-digest absent dans la réponse GHCR");
+    throw new Error("docker-content-digest header is missing from the GHCR response");
   }
 
   let build = emptyBuildMetadata();
@@ -402,7 +403,7 @@ export class SelfUpdateChecker {
   }
 
   start(): void {
-    log.info("self-update-checker", `Démarrage — premier check dans ${STARTUP_DELAY / 1000}s puis toutes les ~${CHECK_INTERVAL / 60000} min (jitter ±${CHECK_JITTER / 60000} min)`);
+    log.info("self-update-checker", `Starting — first check in ${STARTUP_DELAY / 1000}s, then every ~${CHECK_INTERVAL / 60000} min (jitter ±${CHECK_JITTER / 60000} min)`);
     this._loadDigestCache().then(() => {
       this._startupTimer = setTimeout(async () => {
         await this.check();
@@ -505,7 +506,7 @@ export class SelfUpdateChecker {
       if (!localInfo.comparable) {
         log.warn(
           "self-update-checker",
-          "Vérification dégradée — digest local indisponible, aucune conclusion de mise à jour ne peut être établie",
+          "Degraded check — local digest unavailable, update availability cannot be determined",
         );
       }
 
@@ -552,29 +553,29 @@ export class SelfUpdateChecker {
 
       const targetImage = `ghcr.io/${repo}@${remoteDigest}`;
       if (updateAvailable && selfUpdateManager.isUpdateExecutionInProgress()) {
-        log.debug("self-update-checker", `Auto-update déjà en cours — nouvelle demande ignorée pour target=${targetImage}`);
+        log.debug("self-update-checker", `Auto-update already in progress — ignoring new request for target=${targetImage}`);
       } else if (
         updateAvailable
         && selfUpdateManager.canAutoUpdate()
         && !selfUpdateManager.shouldBlockAutomaticRetry(targetImage)
       ) {
-        log.info("self-update-checker", `Auto-update demandée — target=${targetImage}`);
+        log.info("self-update-checker", `Automatic update requested — target=${targetImage}`);
         await selfUpdateManager.requestSidecarUpdate(
           targetImage,
           true,
           remoteInfo.build.revision || undefined,
         );
       } else if (updateAvailable && selfUpdateManager.shouldBlockAutomaticRetry(targetImage)) {
-        log.warn("self-update-checker", `Retry automatique bloqué pour ce digest après échec/rollback — target=${targetImage}`);
+        log.warn("self-update-checker", `Automatic retry blocked for this digest after failure/rollback — target=${targetImage}`);
       } else if (updateAvailable) {
-        log.info("self-update-checker", "Mise à jour détectée mais auto-update non exécutable actuellement");
+        log.info("self-update-checker", "Update detected but automatic update cannot run at this time");
       }
     } catch (e: any) {
-      log.error("self-update-checker", `Check échoué — ${e?.message ?? String(e)}`);
+      log.error("self-update-checker", `Check failed — ${e?.message ?? String(e)}`);
       this._status = {
         ...this._status,
         checkedAt: new Date().toISOString(),
-        error: e?.message ?? "Erreur inconnue",
+        error: e?.message ?? "Unknown error",
       };
     }
   }

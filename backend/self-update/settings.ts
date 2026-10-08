@@ -2,6 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { isWithinMaintenanceWindow, normalizeUpdatePause } from "../watchers/update-policy";
 import { SelfUpdateSettings } from "./types";
+import { resolveDataDir } from "../data-dir";
 
 export interface AutomaticImageUpdateWindow {
     start: string;
@@ -60,7 +61,7 @@ export function automaticImageUpdatesMayRun(settings: SelfUpdateSettings, now = 
     return !window || (window.days.includes(now.getDay()) && isWithinMaintenanceWindow(window.start, window.end, now));
 }
 
-export function selfUpdateSettingsPath(dataDir = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data"): string {
+export function selfUpdateSettingsPath(dataDir = resolveDataDir()): string {
     return path.join(dataDir, "self-update", "settings.json");
 }
 
