@@ -4,8 +4,9 @@ import { DiscordNotifier } from "./notification/discord";
 import { AppriseNotifier } from "./notification/apprise";
 import { notificationText, type NotificationLang } from "./notification/notification-lang";
 import { log } from "./log";
+import { resolveDataDir } from "./data-dir";
 
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const WATCHER_SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 
 export const FEDERATION_RECONNECT_ATTEMPTS = 5;

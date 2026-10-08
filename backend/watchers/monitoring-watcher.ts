@@ -16,8 +16,9 @@ import { Settings } from "../settings";
 import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
 import { log } from "../log";
+import { resolveDataDir } from "../data-dir";
 
-const DATA_DIR              = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR              = resolveDataDir();
 const SETTINGS_PATH         = path.join(DATA_DIR, "monitoring-settings.json");
 const CRASH_EVENTS_PATH     = path.join(DATA_DIR, "crash-events.json");
 const HEALTH_EVENTS_PATH    = path.join(DATA_DIR, "health-events.json");

@@ -18,13 +18,14 @@ import { Settings } from "../settings";
 import { SelfUpdateManager } from "../self-update/manager";
 import { atomicWriteJson } from "../self-update/state-file";
 import { log } from "../log";
+import { resolveDataDir } from "../data-dir";
 import { resolveCurrentContainer } from "../current-container";
 
 const SELF_REPO = "aerya/dockge-enhanced";
 const SELF_TAG = "latest";
 // Surcharge explicite du dépôt suivi (ex. un fork : "owner/dockge-enhanced")
 const SELF_REPO_OVERRIDE = process.env.DOCKGE_SELF_REPO?.trim() ?? "";
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 const DIGEST_CACHE = path.join(DATA_DIR, "self-update-digest.json");
 const CHECK_INTERVAL = 10 * 60 * 1000; // 10 min

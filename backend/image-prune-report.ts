@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { PruneImageDecision } from "./watchers/auto-prune-manager";
+import { resolveDataDir } from "./data-dir";
 
 export interface ImagePruneReport {
     id: string;
@@ -12,7 +13,7 @@ export interface ImagePruneReport {
 }
 
 function reportPath(): string {
-    return path.join(process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data", "image-prune-reports.json");
+    return path.join(resolveDataDir(), "image-prune-reports.json");
 }
 
 export function readImagePruneReports(): ImagePruneReport[] {

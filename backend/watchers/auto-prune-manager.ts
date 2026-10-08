@@ -15,6 +15,7 @@ import * as fs from "node:fs";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { log } from "../log";
+import { resolveDataDir } from "../data-dir";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import {
@@ -42,7 +43,7 @@ export { imageIsUsed, normalizeImageId, sameImageId } from "../docker-image-inve
 export type { InspectedImage } from "../docker-image-inventory";
 
 const execFileAsync = promisify(execFile);
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const SETTINGS_PATH = path.join(DATA_DIR, "auto-prune-settings.json");
 const SELF_UPDATE_DIR = path.join(DATA_DIR, "self-update");
 const SELF_IMAGE_REPOSITORY = "ghcr.io/aerya/dockge-enhanced";

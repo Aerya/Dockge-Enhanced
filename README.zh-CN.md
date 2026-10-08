@@ -526,7 +526,7 @@ Nginx Proxy Manager 凭据是必需的；Pi-hole、AdGuard Home、metrics 和 de
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Docker Compose Stack 所在目录 |
-| `DOCKGE_DATA_DIR` | `/opt/dockge/data` | Dockge 数据目录；推荐与 volume 对应设置为 `/app/data` |
+| `DOCKGE_DATA_DIR` | `/app/data` | Dockge 数据目录；仅在使用自定义持久化挂载时覆盖 |
 | `DOCKGE_PUBLIC_URL` | 无 | Discord 通知中使用的公网 URL，例如 `https://dockge.example.com` |
 | `DOCKER_API_VERSION` | 无 | 固定 Docker Client 协商的 API 版本，适合部分 NAS |
 | `TZ` | `UTC` | 容器时区；计划自动更新依赖此值 |
@@ -540,7 +540,7 @@ Nginx Proxy Manager 凭据是必需的；Pi-hole、AdGuard Home、metrics 和 de
 | `DOCKGE_BOOTSTRAP_PASSWORD` | 无 | 直接密码方式；由于会暴露在容器环境中，安全性较低 |
 | `DOCKGE_TRANSFER_RSYNC_PROFILES` | `[]` | 本地 SSH/rsync 传输配置 JSON |
 
-> ⚠️ 如果 volume 使用 `/app/data`，请始终设置 `DOCKGE_DATA_DIR=/app/data`，否则重启后设置可能无法持久化。
+> ℹ️ 未设置 `DOCKGE_DATA_DIR` 时，Dockge-Enhanced 使用持久化卷 `/app/data`。显式配置的路径始终优先。
 
 ### 身份验证与初始化
 

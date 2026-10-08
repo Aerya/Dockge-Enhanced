@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-08 — Persistent data directory resolution** — Image monitoring and all shared file-backed settings now use the persistent `/app/data` volume when `DOCKGE_DATA_DIR` is not set, so they survive container recreation and self-update. An explicit data directory remains authoritative; a non-empty legacy `/opt/dockge/data` installation is retained when the current volume is empty.
+
 **2026-10-08 — Stack README renderer updated to markdown-it 15** — The built-in TypeScript definitions replace the former v14 type package, fuzzy links remain enabled for compatibility, and automatic links now handle IPv6 and CJK punctuation more accurately while raw HTML and unsafe JavaScript links remain disabled.
 
 **2026-10-08 — Image cleanup uses real Docker references** — Unused-image pruning no longer rebuilds removal targets blindly from the `Repository` and `Tag` columns. It removes inspected `RepoTags`/`RepoDigests`, safely falls back to the Image ID when needed, and verifies physical disappearance. This fixes atypical images such as `node:26-alpine` whose displayed name was not removable while its digest-qualified reference was. Existing Enhanced, recovery, rollback, exclusion and age protections remain intact without reintroducing a full inventory scan per image.

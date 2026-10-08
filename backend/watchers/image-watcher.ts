@@ -49,14 +49,12 @@ import {
 import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/compose-labels";
 import { finishDockerCleanup, tryStartDockerCleanup } from "../docker-operation-state";
 import { reconcileRollbackKeepTags, rollbackTagFromKey as rollbackTag } from "./auto-prune-manager";
+import { resolveDataDir } from "../data-dir";
 
 const execFileAsync = promisify(execFile);
 
 const STACKS_DIR = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
-const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
-const ROLLBACK_PATH = path.join(DATA_DIR, "rollback-registry.json");
-const UPDATE_HISTORY_PATH = path.join(DATA_DIR, "update-history.json");
+const DATA_DIR = resolveDataDir();
 
 const ROLLBACK_WINDOW_MS = 24 * 3_600_000; // 24 heures
 const UPDATE_HISTORY_MAX = 100;
@@ -912,7 +910,19 @@ export class ImageWatcher {
     error: null,
   };
     /* eslint-enable @stylistic/indent */
-  private externalStacks = new ExternalStackManager(DATA_DIR, STACKS_DIR);
+  private readonly dataDir: string;
+  private readonly settingsPath: string;
+  private readonly rollbackPath: string;
+  private readonly updateHistoryPath: string;
+  private readonly externalStacks: ExternalStackManager;
+
+  constructor(dataDir = DATA_DIR) {
+    this.dataDir = dataDir;
+    this.settingsPath = path.join(dataDir, "watcher-settings.json");
+    this.rollbackPath = path.join(dataDir, "rollback-registry.json");
+    this.updateHistoryPath = path.join(dataDir, "update-history.json");
+    this.externalStacks = new ExternalStackManager(dataDir, STACKS_DIR);
+  }
 
   setBaseUrl(url: string): void {
     this.baseUrl = url;
@@ -942,7 +952,7 @@ export class ImageWatcher {
 
   async loadSettings(): Promise<void> {
     try {
-      const raw = await fs.readFile(SETTINGS_PATH, "utf8");
+      const raw = await fs.readFile(this.settingsPath, "utf8");
       const data = JSON.parse(raw) as Record<string, unknown>;
       // Migration : ancien champ discordWebhook (string) → discordWebhooks (string[])
       if (typeof data.discordWebhook === "string" && !data.discordWebhooks) {
@@ -982,15 +992,15 @@ export class ImageWatcher {
       registry: normalizeRegistryHost(credential.registry),
     }));
     await this.persistToFile();
-    await syncDockerRegistryCredentials(this.settings.credentials);
+    await syncDockerRegistryCredentials(this.settings.credentials, this.dataDir);
     this.restart(runInitialCheck);
   }
 
   /** Écrit les settings sur disque SANS redémarrer le watcher (usage interne) */
   private async persistToFile(): Promise<void> {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2), { mode: 0o600 });
-    await fs.chmod(SETTINGS_PATH, 0o600).catch(() => {});
+    await fs.mkdir(this.dataDir, { recursive: true });
+    await fs.writeFile(this.settingsPath, JSON.stringify(this.settings, null, 2), { mode: 0o600 });
+    await fs.chmod(this.settingsPath, 0o600).catch(() => {});
   }
 
   getSettingsSafe(): WatcherSettings {
@@ -1117,7 +1127,7 @@ export class ImageWatcher {
 
   private async _loadUpdateHistory(): Promise<void> {
     try {
-      const raw = await fs.readFile(UPDATE_HISTORY_PATH, "utf8");
+      const raw = await fs.readFile(this.updateHistoryPath, "utf8");
       const entries = JSON.parse(raw) as UpdateHistoryEntry[];
       updateHistoryStore.length = 0;
       updateHistoryStore.push(...entries.slice(0, UPDATE_HISTORY_MAX));
@@ -1129,7 +1139,7 @@ export class ImageWatcher {
   async clearUpdateHistory(): Promise<void> {
     updateHistoryStore.length = 0;
     try {
-      await fs.unlink(UPDATE_HISTORY_PATH);
+      await fs.unlink(this.updateHistoryPath);
     } catch {
       /* ignore */
     }
@@ -1635,9 +1645,9 @@ export class ImageWatcher {
     if (updateHistoryStore.length > UPDATE_HISTORY_MAX)
       updateHistoryStore.splice(UPDATE_HISTORY_MAX);
     try {
-      await fs.mkdir(DATA_DIR, { recursive: true });
+      await fs.mkdir(this.dataDir, { recursive: true });
       await fs.writeFile(
-        UPDATE_HISTORY_PATH,
+        this.updateHistoryPath,
         JSON.stringify(updateHistoryStore, null, 2),
       );
     } catch {
@@ -1709,7 +1719,7 @@ export class ImageWatcher {
 
   private async loadRollbackRegistry(): Promise<void> {
     try {
-      const raw = await fs.readFile(ROLLBACK_PATH, "utf8");
+      const raw = await fs.readFile(this.rollbackPath, "utf8");
       const entries = JSON.parse(raw) as RollbackEntry[];
       rollbackStore.clear();
       for (const e of entries) {
@@ -1726,9 +1736,9 @@ export class ImageWatcher {
   }
 
   private async saveRollbackRegistry(): Promise<void> {
-    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.mkdir(this.dataDir, { recursive: true });
     await fs.writeFile(
-      ROLLBACK_PATH,
+      this.rollbackPath,
       JSON.stringify([...rollbackStore.values()], null, 2),
     );
   }
@@ -1772,7 +1782,7 @@ export class ImageWatcher {
             if (changed) {
               await this.saveRollbackRegistry();
             }
-            const retired = await reconcileRollbackKeepTags(DATA_DIR, now.getTime());
+            const retired = await reconcileRollbackKeepTags(this.dataDir, now.getTime());
             if (retired.length) {
               console.log(`[ImageWatcher] ${retired.length} tag(s) keep expiré(s)/orphelin(s) retiré(s)`);
             }

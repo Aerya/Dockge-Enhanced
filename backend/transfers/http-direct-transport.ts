@@ -4,11 +4,12 @@ import path from "node:path";
 import { Readable, Transform, Writable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { Request, Response } from "express";
+import { resolveDataDir } from "../data-dir";
 
 const REPOSITORY_PREFIX = "direct-http:";
 const SNAPSHOT_PREFIX = "http-snapshot:";
 const SESSION_TTL_MS = 60 * 60_000;
-let transferRoot = path.resolve(process.env.DOCKGE_DATA_DIR || "./data", "transfers", "http-direct");
+let transferRoot = path.resolve(resolveDataDir(), "transfers", "http-direct");
 
 interface DirectRepository {
     baseUrl: string;

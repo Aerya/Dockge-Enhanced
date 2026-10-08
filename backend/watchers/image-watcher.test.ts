@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
+import os from "node:os";
+import * as fs from "node:fs/promises";
 import {
     ImageWatcher,
     imageStatusStore,
@@ -19,6 +21,33 @@ import {
   extractWatchableImagesFromComposeModel,
 } from "./image-watcher";
 import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
+import { resolveDataDir } from "../data-dir";
+
+test("#475 conserve les réglages ImageWatcher sans DOCKGE_DATA_DIR après recréation logique", async () => {
+  const persistentDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-image-settings-"));
+  const resolved = resolveDataDir({
+    standardDataDir: persistentDataDir,
+    legacyDataDir: path.join(persistentDataDir, "missing-legacy"),
+    exists: directory => directory === persistentDataDir,
+    readDirectory: () => [],
+  });
+  const first = new ImageWatcher(resolved);
+  first.restart = () => {};
+  await first.saveSettings({ enabled: true, intervalHours: 1 }, false);
+
+  const settingsPath = path.join(persistentDataDir, "watcher-settings.json");
+  assert.deepEqual(JSON.parse(await fs.readFile(settingsPath, "utf8")), {
+    ...first.settings,
+    enabled: true,
+    intervalHours: 1,
+  });
+
+  const recreated = new ImageWatcher(resolved);
+  await recreated.loadSettings();
+  assert.equal(recreated.settings.enabled, true);
+  assert.equal(recreated.settings.intervalHours, 1);
+  await fs.rm(persistentDataDir, { recursive: true, force: true });
+});
 
 const sharedNamespaceCompose = JSON.stringify({
   services: {

@@ -12,10 +12,11 @@ import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { log } from "../log";
+import { resolveDataDir } from "../data-dir";
 
 const execFileAsync = promisify(execFile);
 
-const DATA_DIR           = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR           = resolveDataDir();
 const SETTINGS_PATH      = path.join(DATA_DIR, "trivy-settings.json");
 const WATCHER_SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 const STATUS_PATH   = path.join(DATA_DIR, "trivy-status.json");

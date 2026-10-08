@@ -18,6 +18,7 @@ import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
 import { ValidationError } from "../util-server";
+import { resolveDataDir } from "../data-dir";
 import { log } from "../log";
 import { RestoreTestCandidateSelector } from "./backup-restore-test";
 import { ExternalStackManager } from "../external-stacks";
@@ -26,7 +27,7 @@ const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 
 const STACKS_DIR         = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
-const DATA_DIR           = process.env.DOCKGE_DATA_DIR   ?? "/opt/dockge/data";
+const DATA_DIR           = resolveDataDir();
 const SETTINGS_PATH      = path.join(DATA_DIR, "backup-settings.json");
 const WATCHER_SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 const HISTORY_PATH       = path.join(DATA_DIR, "backup-history.json");

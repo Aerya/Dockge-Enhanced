@@ -3,10 +3,11 @@ import { createReadStream, createWriteStream, promises as fs } from "node:fs";
 import path from "node:path";
 import { Writable } from "node:stream";
 import { finished } from "node:stream/promises";
+import { resolveDataDir } from "../data-dir";
 
 const REPOSITORY_PREFIX = "managed-replica:";
 const SNAPSHOT_PREFIX = "managed-snapshot:";
-let storageRoot = path.resolve(process.env.DOCKGE_DATA_DIR || "./data", "transfers", "managed-replication");
+let storageRoot = path.resolve(resolveDataDir(), "transfers", "managed-replication");
 
 interface ManagedSnapshot {
     id: string;
