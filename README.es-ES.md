@@ -50,8 +50,8 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | **Automatización y auditoría** | API REST limitada por permisos, webhooks por stack, ejemplos para Home Assistant, operaciones programadas e historial centralizado con origen, estado y duración |
 | **Recursos Docker** | Limpieza unificada protegida de imágenes, volúmenes, redes y caché de build, recuperación exacta, vista previa, exclusiones e historial |
 | **Seguridad** | Escaneo de vulnerabilidades con Trivy, excepciones CVE, flujos de actualización protegidos, 2FA, trusted proxy y Cloudflare Turnstile |
-| **Monitorización** | Estadísticas del sistema, stacks y contenedores, historial CPU/RAM opcional cada 5 minutos, barra de estado, tarjetas de salud, crash loops, auto-heal, logs adaptables, Kula y Dozzle |
-| **Integraciones** | PlugNPiN y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
+| **Monitorización** | Estadísticas del sistema, stacks y contenedores, historial CPU/RAM opcional cada 5 minutos, barra de estado, tarjetas de salud, crash loops, auto-heal, logs adaptables, Kula, Dozzle y PowerWatch |
+| **Integraciones** | PowerWatch, PlugNPiN y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
 | **Notificaciones y acceso** | Notificaciones Discord y Apprise localizadas en EN/FR/ES/zh-CN, soporte multiinstancia, 2FA, trusted proxy, Turnstile y clientes móviles de terceros |
 
 > **Programación de actualizaciones:** cuando se configura una ventana de mantenimiento para la autoactualización de Dockge-Enhanced, la misma ventana se aplica a todas las actualizaciones automáticas de imágenes. Las actualizaciones detectadas fuera de ella quedan pendientes hasta la siguiente ventana permitida. Los horarios por imagen siguen disponibles sin ventana global y la acción manual **Actualizar ahora** siempre es inmediata.
@@ -64,6 +64,12 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
 ### 🆕 Octubre de 2026
+
+**Monitorización eléctrica opcional con PowerWatch**
+
+[PowerWatch](https://github.com/Aerya/PowerWatch) puede conectarse en modo **Externo**, que solo lee un contenedor local o una URL HTTP(S) existente sin controlarlo nunca, o desplegarse en modo **Gestionado** como una stack Compose real. La instalación gestionada detecta las capacidades RAPL, MSR y NVIDIA del host, activa únicamente los accesos necesarios, nunca utiliza `privileged: true` y conserva el historial y los ajustes en un volumen persistente al detenerse o desactivarse.
+
+La potencia instantánea global, su nivel de confianza y un enlace directo a la WebUI aparecen en Monitoring, la barra del sistema y los resúmenes de instancias vinculadas mediante la federación existente. PowerWatch mide o estima el consumo según los sensores disponibles. Su WebUI no incluye autenticación: mantenga la escucha local predeterminada o expóngala solo en una LAN privada de confianza o tras una autenticación externa.
 
 **La limpieza usa ahora las referencias Docker reales**
 
@@ -379,6 +385,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Logs live/a pantalla completa adaptables, con filtros verticales, acciones agrupadas y búsqueda al final, periodo **desde el último reinicio** y copia en un clic de las últimas **50 / 100 / 150** líneas o de todas las líneas cargadas
 - Marcas de tiempo por defecto configurables en los ajustes de apariencia de este navegador
 - Kula y Dozzle
+- Integración opcional con PowerWatch: conexión de solo lectura a una instalación existente o despliegue Compose gestionado y adaptado al hardware, con potencia y enlaces WebUI en las instancias vinculadas
 - Estadísticas CPU/RAM por stack de instancias locales y vinculadas
 
 ### Recursos Docker
@@ -401,6 +408,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Pi-hole
 - AdGuard Home
 - Dozzle y Kula
+- PowerWatch (observación externa o despliegue gestionado)
 
 ### Apariencia
 - Paletas distintas para el día y la noche, incluidos los temas originales de Dockge-Enhanced

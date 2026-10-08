@@ -16,6 +16,7 @@ import { BackupManager } from "./watchers/backup-manager";
 import { MonitoringWatcher } from "./watchers/monitoring-watcher";
 import { KulaManager } from "./watchers/kula-manager";
 import { DozzleManager } from "./watchers/dozzle-manager";
+import { PowerWatchManager } from "./watchers/powerwatch-manager";
 import { PlugNPiNManager } from "./integrations/plugnpin-manager";
 import { AutoPruneManager } from "./watchers/auto-prune-manager";
 import { DockerCleanupManager } from "./docker-prune-service";
@@ -615,6 +616,7 @@ export class DockgeServer {
             MonitoringWatcher.getInstance().setServer(this);
             MonitoringWatcher.getInstance().startIfEnabled().catch(e => log.error("server", "MonitoringWatcher start error: " + e));
             KulaManager.getInstance().startIfEnabled().catch(e => log.error("server", "KulaManager start error: " + e));
+            PowerWatchManager.getInstance().startIfEnabled().catch(e => log.error("server", "PowerWatchManager start error: " + e));
             PlugNPiNManager.getInstance().startIfEnabled().catch(e => log.error("server", "PlugNPiN start error: " + e));
             AutoPruneManager.getInstance().startIfEnabled().catch(e => log.error("server", "AutoPruneManager start error: " + e));
             DockerCleanupManager.getInstance().start().catch(e => log.error("server", "DockerCleanupManager start error: " + e));

@@ -43,6 +43,12 @@
 
 ### 🆕 2026 年 10 月
 
+**可选的 PowerWatch 功耗监控**
+
+[PowerWatch](https://github.com/Aerya/PowerWatch) 现在支持两种模式：**外部**模式只读取现有的本地容器或 HTTP(S) 地址，绝不会控制它；**托管**模式则由 Dockge-Enhanced 部署为真实的 Compose Stack。托管安装会检测主机的 RAPL、MSR 和 NVIDIA 能力，只启用必要权限，绝不使用 `privileged: true`，并在停止或停用后继续保留持久卷中的历史与设置。
+
+整机当前功率、可信度和 WebUI 直达链接会通过现有联邦通道显示在 Monitoring、系统状态栏和关联实例摘要中。PowerWatch 会根据可用传感器进行测量或估算。其 WebUI 不包含内置身份验证：请保留默认的本机绑定，或仅在可信私有 LAN 中公开，或置于外部身份验证之后。
+
 **清理现在使用 Docker 的真实镜像引用**
 
 未使用镜像清理不再假定 `docker images` 显示的 `Repository:Tag` 一定是实际附加且可删除的引用。系统会使用检查结果中的 `RepoTags` 和 `RepoDigests`，按需移除所有真实引用；必要时再安全回退到 Image ID，并验证物理镜像确实消失。容器占用、排除项、当前 Enhanced、恢复、回滚和宽限期保护保持不变。
@@ -347,6 +353,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Crash loop 与 healthcheck 自动修复
 - 实时/全屏日志，支持**自上次重启以来**的时间范围，并可一键复制最近 **50 / 100 / 150** 行或全部已加载日志
 - Kula 与 Dozzle
+- 可选 PowerWatch 集成：只读连接现有安装，或按主机硬件部署托管 Compose，并在关联实例中显示当前功率与 WebUI 链接
 - 本地及已连接实例的每 Stack CPU/RAM 统计
 
 ### Docker 资源
@@ -369,6 +376,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Pi-hole
 - AdGuard Home
 - Dozzle 与 Kula
+- PowerWatch（外部观察或托管部署）
 
 ### 通知与访问
 - Discord 与 Apprise

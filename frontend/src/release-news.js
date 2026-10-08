@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-08-powerwatch-monitoring",
+        items: [ "releaseNews.item.powerWatchMonitoring" ],
+    },
+    {
         id: "2026-10-08-docker-prune-real-references",
         items: [ "releaseNews.item.dockerPruneRealReferences" ],
     },

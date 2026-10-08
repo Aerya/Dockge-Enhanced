@@ -236,9 +236,18 @@
                                     <span><font-awesome-icon icon="microchip" /> {{ instanceSystemStats[endpoint]?.data ? `${instanceSystemStats[endpoint].data.cpu}%` : "—" }}</span>
                                     <span><font-awesome-icon icon="memory" /> {{ formatInstanceRam(instanceSystemStats[endpoint]?.data?.ram) }}</span>
                                     <span><font-awesome-icon icon="clock" /> {{ formatInstanceUptime(instanceSystemStats[endpoint]?.data?.host?.uptimeSeconds) }}</span>
+                                    <span
+                                        v-if="instanceSystemStats[endpoint]?.powerWatch?.enabled"
+                                        :title="powerWatchTooltip(instanceSystemStats[endpoint].powerWatch)"
+                                    ><font-awesome-icon icon="bolt" /> {{ instancePower(instanceSystemStats[endpoint].powerWatch) }}</span>
                                     <span><font-awesome-icon icon="thumbtack" /> {{ instancePins[endpoint]?.length ?? 0 }}</span>
                                 </div>
                             </button>
+                            <a
+                                v-if="instancePowerWatchUrl(endpoint, agent)" class="instance-powerwatch-link"
+                                :href="instancePowerWatchUrl(endpoint, agent)" target="_blank" rel="noopener noreferrer"
+                                :title="$t('watcher.powerwatch.open')" :aria-label="$t('watcher.powerwatch.open')"
+                            ><font-awesome-icon icon="bolt" /><span>{{ $t("watcher.powerwatch.openShort") }}</span></a>
 
                             <!-- Remoe Agent Dialog -->
                             <BModal v-model="showRemoveAgentDialog[agent.url]" :okTitle="$t('removeAgent')" okVariant="danger" @ok="removeAgent(agent.url)">
@@ -313,6 +322,7 @@
 
 <script>
 import { statusNameShort } from "../../../common/util-common";
+import { formatPowerWatts, resolvePowerWatchWebUrl } from "../powerwatch";
 
 export default {
     components: {
@@ -606,6 +616,31 @@ export default {
             }
             const minutes = Math.floor((seconds % 3600) / 60);
             return `${hours} h ${minutes} min`;
+        },
+
+        instancePower(snapshot) {
+            return snapshot?.reachable ? formatPowerWatts(snapshot.totalWatts, this.$i18n.locale) : "—";
+        },
+
+        powerWatchTooltip(snapshot) {
+            if (!snapshot?.reachable) {
+                return this.$t("watcher.powerwatch.unavailable");
+            }
+            if (snapshot.confidence === "Measured") {
+                return this.$t("watcher.powerwatch.measured");
+            }
+            if (snapshot.confidence === "Estimated") {
+                return this.$t("watcher.powerwatch.estimated");
+            }
+            return "";
+        },
+
+        instancePowerWatchUrl(endpoint, agent) {
+            const snapshot = this.instanceSystemStats[endpoint]?.powerWatch;
+            if (!snapshot?.enabled) {
+                return null;
+            }
+            return resolvePowerWatchWebUrl(snapshot.webUrl, window.location.hostname, endpoint === "" ? "" : agent?.url);
         },
 
         /**
@@ -1049,6 +1084,19 @@ table {
     align-items: center;
     gap: 6px 10px;
     flex-wrap: wrap;
+}
+.instance-powerwatch-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    padding: 3px 7px;
+    color: var(--primary-strong);
+    font-size: var(--fs-xs);
+    text-decoration: none;
+}
+@media (max-width: $bp-phone) {
+    .instance-powerwatch-link span { display: none; }
 }
 .instance-stack-summary { font-size: var(--fs-xs); }
 .instance-state.active { color: var(--success); }

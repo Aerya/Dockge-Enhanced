@@ -49,10 +49,19 @@
         <a v-if="dozzleUrl" :href="dozzleUrl" target="_blank" class="status-item status-link">
             <font-awesome-icon icon="terminal" />Dozzle
         </a>
+        <a
+            v-if="powerWatchUrl" :href="powerWatchUrl" target="_blank" rel="noopener noreferrer"
+            class="status-item status-link" :title="$t('watcher.powerwatch.open')" :aria-label="$t('watcher.powerwatch.open')"
+        >
+            <font-awesome-icon icon="bolt" />
+            <span v-if="powerWatchSnapshot?.reachable">{{ formatPower(powerWatchSnapshot.totalWatts) }} · </span><span class="powerwatch-label">PowerWatch</span>
+        </a>
     </div>
 </template>
 
 <script>
+import { formatPowerWatts } from "../powerwatch";
+
 export default {
     props: {
         /** System stats payload from /api/system/stats */
@@ -73,6 +82,14 @@ export default {
             type: String,
             default: null,
         },
+        powerWatchUrl: {
+            type: String,
+            default: null,
+        },
+        powerWatchSnapshot: {
+            type: Object,
+            default: null,
+        },
     },
 
     computed: {
@@ -82,6 +99,9 @@ export default {
     },
 
     methods: {
+        formatPower(value) {
+            return formatPowerWatts(value, this.$i18n.locale);
+        },
         statClass(percent) {
             if (percent >= 85) {
                 return "stat-danger";
@@ -245,6 +265,12 @@ export default {
 
     &:hover {
         color: var(--primary-hover);
+    }
+}
+
+@media (max-width: $bp-tablet) {
+    .powerwatch-label {
+        display: none;
     }
 }
 

@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-08 — 可选的 PowerWatch 功耗监控** — Dockge-Enhanced 可以只读观察现有的本地或 HTTP(S) PowerWatch，也可以部署带持久数据以及条件式 RAPL、MSR 和 NVIDIA 支持的专用托管 Compose Stack。整机当前功率、可信度和 WebUI 链接会通过现有联邦通道显示在 Monitoring、系统状态栏和关联实例摘要中。外部容器绝不会被修改，托管资源会进行严格所有权检查，WebUI 默认仅绑定到本机回环地址。
+
 **2026-10-08 — Stack README 渲染器升级到 markdown-it 15** — 内置 TypeScript 类型替代了旧的 v14 类型包；为保持兼容，模糊链接仍然启用；自动链接现在能更准确地处理 IPv6 和 CJK 标点，同时继续禁用原始 HTML 和不安全的 JavaScript 链接。
 
 **2026-10-08 — 镜像清理使用 Docker 的真实引用** — 未使用镜像清理不再根据 `Repository` 和 `Tag` 列盲目重建删除目标。系统会删除检查结果中的 `RepoTags`/`RepoDigests`，必要时安全回退到 Image ID，并验证物理镜像确实消失。这修复了 `node:26-alpine` 等特殊镜像：显示名称无法删除，但带 digest 的真实引用可以删除。Enhanced、恢复、回滚、排除项和镜像年龄保护保持不变，也不会重新引入每个镜像一次完整清单扫描。

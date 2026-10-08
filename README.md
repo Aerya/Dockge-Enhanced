@@ -48,8 +48,8 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant examples, scheduled operations, and centralized history including operation origin, status and duration |
 | **Docker resources** | Protected unified cleanup for images, volumes, networks and build cache, exact catch-up scheduling, previews, exclusions, history and safeguards around destructive actions |
 | **Security** | Trivy vulnerability scanning, CVE exceptions, protected update workflows, 2FA, trusted-proxy authentication and Cloudflare Turnstile |
-| **Monitoring** | System, stack and container statistics, optional 5-minute CPU/RAM history, configurable status bar, health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula and managed Dozzle integrations |
-| **Integrations** | PlugNPiN plus per-service label assistance for Nginx Proxy Manager, Pi-hole and AdGuard Home |
+| **Monitoring** | System, stack and container statistics, optional 5-minute CPU/RAM history, configurable status bar, health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula, Dozzle and PowerWatch integrations |
+| **Integrations** | PowerWatch, PlugNPiN plus per-service label assistance for Nginx Proxy Manager, Pi-hole and AdGuard Home |
 | **Notifications & access** | Discord and Apprise notifications localized in EN/FR/ES/zh-CN, multi-instance awareness, 2FA, trusted proxy support, Turnstile and third-party mobile clients |
 
 > **Update schedules:** when automatic Dockge-Enhanced updates use a maintenance window, the same window applies to every automatic container image update. Updates detected outside it are queued until the next allowed window. Per-image schedules remain available when no global window is configured, while **Update now** always remains immediate.
@@ -62,6 +62,12 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 October 2026
+
+**Optional PowerWatch electrical monitoring**
+
+[PowerWatch](https://github.com/Aerya/PowerWatch) can now be connected in **External** mode, which only reads an existing local container or HTTP(S) endpoint and never controls it, or deployed in **Managed** mode as a real Compose stack. Managed installation detects the host's RAPL, MSR and NVIDIA capabilities, enables only the required access, never uses `privileged: true`, and keeps history and settings in a persistent volume when stopped or disabled.
+
+Current whole-machine power, confidence and a direct WebUI link appear in Monitoring, the system status bar and linked-instance summaries through the existing federation channel. PowerWatch measures or estimates consumption according to the available sensors. Its WebUI has no built-in authentication: bind it to loopback by default, or expose it only on a trusted private LAN or behind external authentication.
 
 **Cleanup now uses Docker's real image references**
 
@@ -402,6 +408,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Optional browser-persisted default for log timestamps in Appearance settings
 - Autoscroll pause and long-line handling
 - Kula and Dozzle integrations
+- Optional PowerWatch integration: read-only connection to an existing installation or hardware-aware managed Compose deployment, with current power and WebUI links across linked instances
 - Per-stack CPU/RAM statistics from local and linked instances
 
 ### Docker resources
@@ -423,6 +430,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Nginx Proxy Manager, Pi-hole and AdGuard Home label assistants
 - Dozzle
 - Kula
+- PowerWatch (external observation or managed deployment)
 
 ### Appearance
 - Separate day and night palettes, including the original Dockge-Enhanced themes

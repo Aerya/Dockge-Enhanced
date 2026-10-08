@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-08 — Optional PowerWatch electrical monitoring** — Dockge-Enhanced can observe an existing local or HTTP(S) PowerWatch without controlling it, or deploy a dedicated managed Compose stack with persistent data and conditional RAPL, MSR and NVIDIA support. Current whole-machine watts, confidence and WebUI links are available in Monitoring, the system bar and linked-instance summaries through the existing federation channel. External containers are never modified, managed ownership is verified strictly, and the WebUI binds to loopback by default.
+
 **2026-10-08 — Stack README renderer updated to markdown-it 15** — The built-in TypeScript definitions replace the former v14 type package, fuzzy links remain enabled for compatibility, and automatic links now handle IPv6 and CJK punctuation more accurately while raw HTML and unsafe JavaScript links remain disabled.
 
 **2026-10-08 — Image cleanup uses real Docker references** — Unused-image pruning no longer rebuilds removal targets blindly from the `Repository` and `Tag` columns. It removes inspected `RepoTags`/`RepoDigests`, safely falls back to the Image ID when needed, and verifies physical disappearance. This fixes atypical images such as `node:26-alpine` whose displayed name was not removable while its digest-qualified reference was. Existing Enhanced, recovery, rollback, exclusion and age protections remain intact without reintroducing a full inventory scan per image.

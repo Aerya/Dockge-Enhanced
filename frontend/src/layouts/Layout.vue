@@ -232,6 +232,8 @@
                 :system-stats="systemStats"
                 :kula-url="kulaUrl"
                 :dozzle-url="dozzleUrl"
+                :power-watch-url="powerWatchUrl"
+                :power-watch-snapshot="powerWatchSnapshot"
             />
         </header>
 
@@ -254,6 +256,17 @@
                 <span class="instance-identity-name">{{ localInstanceName }}</span>
             </span>
             <GlobalSearch v-if="$root.loggedIn" :mobile="true" class="ms-auto" />
+            <a
+                v-if="$root.loggedIn && powerWatchUrl"
+                :href="powerWatchUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="mobile-powerwatch-link"
+                :title="$t('watcher.powerwatch.open')"
+                :aria-label="$t('watcher.powerwatch.open')"
+            >
+                <font-awesome-icon icon="bolt" />
+            </a>
             <button type="button" class="mobile-nav-toggle" :aria-label="$t('Theme')" @click="$root.toggleTheme">
                 <font-awesome-icon :icon="$root.theme === 'dark' ? 'sun' : 'moon'" />
             </button>
@@ -333,6 +346,8 @@
             :system-stats="systemStats"
             :kula-url="kulaUrl"
             :dozzle-url="dozzleUrl"
+            :power-watch-url="powerWatchUrl"
+            :power-watch-snapshot="powerWatchSnapshot"
         />
     </div>
 </template>
@@ -344,6 +359,7 @@ import GlobalSearch from "../components/GlobalSearch.vue";
 import { compareVersions } from "compare-versions";
 import { ALL_ENDPOINTS } from "../../../common/util-common";
 import { setLowPower, POLL, makePoller } from "../composables/useLowPower";
+import { resolvePowerWatchWebUrl } from "../powerwatch";
 import {
     getInitialSeenReleaseNewsIds,
     getUnreadReleaseNews,
@@ -376,6 +392,8 @@ export default {
             statsPoller:      null,
             kulaUrl:          null,
             dozzleUrl:        null,
+            powerWatchUrl:    null,
+            powerWatchSnapshot: null,
             showReleaseNews:  false,
             releaseNewsItems: [],
             releaseNewsPendingIds: [],
@@ -481,11 +499,12 @@ export default {
         this.checkSelfUpdate();
         this.fetchKulaStatus();
         this.fetchDozzleStatus();
+        this.fetchPowerWatchStatus();
         // Informe le backend de la langue de l'interface (notifications)
         this.$root.getSocket().emit("setUILocale", localStorage.getItem("locale") ?? "en");
         // Poll system stats : cadence selon le mode + pause si onglet caché
         this.statsPoller = makePoller({
-            fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus(), this.fetchDozzleStatus(), this.checkSelfUpdate(), this.checkRemoteAnnouncements() ]),
+            fetch:    () => Promise.all([ this.fetchSystemStats(), this.fetchKulaStatus(), this.fetchDozzleStatus(), this.fetchPowerWatchStatus(), this.checkSelfUpdate(), this.checkRemoteAnnouncements() ]),
             interval: POLL.system,
         });
         this.statsPoller.start();
@@ -691,6 +710,21 @@ export default {
                     this.dozzleUrl = null;
                 }
             } catch { this.dozzleUrl = null; }
+        },
+
+        async fetchPowerWatchStatus() {
+            try {
+                const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
+                const response = await fetch("/api/watcher/powerwatch/status", { headers: { "Authorization": `Bearer ${token}` } });
+                const payload = await response.json();
+                this.powerWatchSnapshot = payload.ok ? payload.data : null;
+                this.powerWatchUrl = payload.ok && payload.data?.enabled
+                    ? resolvePowerWatchWebUrl(payload.data.webUrl, window.location.hostname)
+                    : null;
+            } catch {
+                this.powerWatchSnapshot = null;
+                this.powerWatchUrl = null;
+            }
         },
 
         scanFolder() {
@@ -908,6 +942,23 @@ export default {
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-color);
+}
+
+.mobile-powerwatch-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    color: var(--primary-strong);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+
+    &:focus-visible,
+    &:hover {
+        color: var(--primary-hover);
+        background: var(--bg-raised);
+    }
 }
 
 .mobile-brand {

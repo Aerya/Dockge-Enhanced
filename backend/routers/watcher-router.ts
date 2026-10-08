@@ -16,6 +16,7 @@ import { TrivyScanner } from "../watchers/trivy-scanner";
 import { BackupAlreadyRunningError, BackupManager } from "../watchers/backup-manager";
 import { KulaManager } from "../watchers/kula-manager";
 import { DozzleManager } from "../watchers/dozzle-manager";
+import { PowerWatchManager } from "../watchers/powerwatch-manager";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { AuditLogger, setAuditUser } from "../audit-log";
@@ -715,6 +716,60 @@ export class WatcherRouter extends Router {
                 res.json({ ok: true });
             } catch (e) { res.status(500).json({ ok: false, message: String(e) }); }
         });
+
+        // ════════════════════════════════════════════════════════════════
+        // POWERWATCH — Electrical monitoring
+        // ════════════════════════════════════════════════════════════════
+
+        router.get("/powerwatch/settings", (_req: Request, res: Response) => {
+            res.json({ ok: true,
+                data: PowerWatchManager.getInstance().getSettingsSafe() });
+        });
+        router.post("/powerwatch/settings", async (req: Request, res: Response) => {
+            try {
+                await PowerWatchManager.getInstance().saveSettings(req.body);
+                await auditWatcherAction(req, "powerwatch.settings", "integration", "powerwatch");
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(400).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
+            }
+        });
+        router.get("/powerwatch/status", async (_req: Request, res: Response) => {
+            res.json({ ok: true,
+                data: await PowerWatchManager.getInstance().getSnapshot() });
+        });
+        router.post("/powerwatch/test", async (req: Request, res: Response) => {
+            try {
+                res.json({ ok: true,
+                    data: await PowerWatchManager.getInstance().test(req.body) });
+            } catch (e) {
+                res.status(400).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
+            }
+        });
+        router.get("/powerwatch/detect", async (_req: Request, res: Response) => {
+            try {
+                res.json({ ok: true,
+                    data: await PowerWatchManager.getInstance().detect() });
+            } catch (e) {
+                res.status(500).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
+            }
+        });
+        for (const action of [ "install", "start", "stop", "restart" ] as const) {
+            router.post(`/powerwatch/${action}`, async (req: Request, res: Response) => {
+                try {
+                    await PowerWatchManager.getInstance()[action]();
+                    await auditWatcherAction(req, `powerwatch.${action}`, "integration", "powerwatch");
+                    res.json({ ok: true });
+                } catch (e) {
+                    await auditWatcherAction(req, `powerwatch.${action}`, "integration", "powerwatch", "failure", String(e));
+                    res.status(400).json({ ok: false,
+                        message: e instanceof Error ? e.message : String(e) });
+                }
+            });
+        }
 
         // ════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════
