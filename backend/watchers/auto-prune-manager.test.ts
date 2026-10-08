@@ -34,8 +34,16 @@ const targetDigest = `sha256:${"d".repeat(64)}`;
 
 test("formats audit prune summaries in English", () => {
     assert.equal(summarizePruneDecisions([
-        { id: "used", references: [], outcome: "used" },
-        { id: "removed", references: [], outcome: "removed" },
+        {
+            id: "used",
+            references: [],
+            outcome: "used",
+        },
+        {
+            id: "removed",
+            references: [],
+            outcome: "removed",
+        },
     ]), "2 examined: 1 removed, 1 in use/protected, 0 active, 0 rollback, 0 recovery, 0 too recent, 0 excluded, 0 already absent, 0 errors");
 });
 
