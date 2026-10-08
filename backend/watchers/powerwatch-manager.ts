@@ -110,7 +110,14 @@ async function defaultDocker(args: string[], options: { cwd?: string;
 }
 
 async function defaultFetchJson(url: string, timeoutMs: number): Promise<unknown> {
-    const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    // This URL is deliberately configured by an authenticated Dockge administrator and is
+    // validated as credential-free HTTP(S). Private LAN targets are a supported use case, so
+    // they cannot be blocked; redirects are refused to keep the request on the approved origin.
+    // codeql[js/request-forgery]
+    const response = await fetch(url, {
+        signal: AbortSignal.timeout(timeoutMs),
+        redirect: "error",
+    });
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
     }
