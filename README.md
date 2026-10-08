@@ -63,6 +63,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Prune reports now match Docker's observed state**
+
+When a batch inspection does not return an image, cleanup now checks that Image ID directly before calling it absent. Every deletion is checked again, then a final lightweight Docker inventory verifies the reported result. Resources now shows Docker usage separately from prune state: an `unused` image may still be active Enhanced, protected for recovery or rollback, too recent, or excluded. Untagged images are described neutrally as **Untagged image**, not as old images. The workflow remains bounded to one initial inventory, targeted checks, and one final light verification.
+
 **Reliable cleanup of old Dockge-Enhanced `<none>` images**
 
 Old `ghcr.io/aerya/dockge-enhanced:<none>` images are now selected from Docker's image inventory instead of depending on `RepoDigests` metadata that may be missing after retagging. Images older than the 48-hour self-update safety floor can therefore be pruned reliably, while the active image and recovery-protected images remain untouched. Unused-image summaries also stop counting ordinary container-used images as protected cleanup candidates.

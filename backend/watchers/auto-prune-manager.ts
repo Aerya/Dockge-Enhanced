@@ -29,8 +29,10 @@ import { recordImagePruneReport } from "../image-prune-report";
 import {
     imageIsUsed,
     ImageInventory as SharedImageInventory,
+    inspectImagePresence,
     InspectedImage,
     isDanglingImageRow,
+    listDockerImageIds,
     loadDockerImageInventory,
     normalizeImageId,
     sameImageId,
@@ -86,6 +88,55 @@ export interface PruneImageDecision {
     references: string[];
     outcome: PruneImageOutcome;
     detail?: string;
+}
+
+export type ImagePurgeState = "purgeable" | "used" | "active" | "rollback" | "recovery"
+    | "tooRecent" | "excluded" | "error";
+
+export interface ImagePurgeEvaluation {
+    state: ImagePurgeState;
+    detail?: string;
+}
+
+export interface ImagePurgeContext {
+    usedImageIds: Set<string>;
+    recoveryIds: Set<string>;
+    rollbackIds: Set<string>;
+    rollbackTags: Set<string>;
+    exclusions: string[];
+    inspected?: InspectedImage;
+    minimumAgeHours?: number;
+}
+
+export function evaluateImagePurgeState(group: ImageRowGroup, context: ImagePurgeContext): ImagePurgeEvaluation {
+    const references = [ ...group.references, ...untaggedRepositoryReferences(group) ];
+    const selfImage = group.rows.some(row => row.Repository === SELF_IMAGE_REPOSITORY);
+    if (imageIsUsed(group.id, context.usedImageIds)) {
+        return { state: selfImage ? "active" : "used" };
+    }
+    if (setHasImageId(context.recoveryIds, group.id)) {
+        return { state: "recovery" };
+    }
+    if (setHasImageId(context.rollbackIds, group.id)
+        || group.references.some(reference => context.rollbackTags.has(reference))) {
+        return { state: "rollback" };
+    }
+    if (context.exclusions.some(value => sameImageId(value, group.id) || references.includes(value))) {
+        return { state: "excluded" };
+    }
+    const minimumAge = selfImage
+        ? Math.max(SELF_IMAGE_GRACE_HOURS, context.minimumAgeHours ?? 0)
+        : context.minimumAgeHours;
+    if (minimumAge && !context.inspected) {
+        return {
+            state: "error",
+            detail: "Date de création indisponible",
+        };
+    }
+    if (!imageCreatedOldEnough(context.inspected?.Created, minimumAge)) {
+        return { state: "tooRecent" };
+    }
+    return { state: "purgeable" };
 }
 
 export function summarizePruneDecisions(examined: PruneImageDecision[]): string {
@@ -550,8 +601,8 @@ export class AutoPruneManager {
 
     // ── Purge orphelines (dangling) ───────────────────────────────────────────
 
-    async loadImageInventory(): Promise<ImageInventory> {
-        const inventory = await loadDockerImageInventory();
+    async loadImageInventory(inspectImages = true): Promise<ImageInventory> {
+        const inventory = await loadDockerImageInventory({ inspectImages });
         return {
             ...inventory,
             protectedImageIds: protectedImageIds(inventory.rows, inventory.usedImageIds),
@@ -610,13 +661,90 @@ export class AutoPruneManager {
         try {
             await this.assertImageRemovalAllowed(target);
             await execFileAsync("docker", [ "rmi", ...(force ? [ "--force" ] : []), target ]);
+            const postcondition = await inspectImagePresence(target);
+            if (postcondition.status === "present") {
+                throw new Error("Image encore présente après la purge");
+            }
+            if (postcondition.status === "error") {
+                throw new Error(`Vérification après suppression impossible : ${postcondition.error}`);
+            }
             return true;
         } catch (error) {
             if (isMissingDockerImageError(error)) {
-                return false;
+                const postcondition = await inspectImagePresence(target);
+                if (postcondition.status === "absent") {
+                    return false;
+                }
+                if (postcondition.status === "present") {
+                    throw new Error("Docker annonce l’image absente mais elle est encore présente", { cause: error });
+                }
+                throw new Error(`Vérification de l’absence impossible : ${postcondition.error}`, { cause: error });
             }
             throw error;
         }
+    }
+
+    private async reconcileFinalImageState(
+        examined: PruneImageDecision[],
+        removed: string[],
+        alreadyAbsent: string[],
+        errors: string[],
+    ): Promise<void> {
+        const finalIds = await listDockerImageIds();
+        for (const decision of examined) {
+            if (![ "removed", "alreadyAbsent" ].includes(decision.outcome)
+                || !setHasImageId(finalIds, decision.id)) {
+                continue;
+            }
+            const previous = decision.outcome;
+            decision.outcome = "error";
+            decision.detail = `Image encore présente après la purge (résultat précédent : ${previous})`;
+            errors.push(`${decision.id}: ${decision.detail}`);
+            for (const collection of [ removed, alreadyAbsent ]) {
+                for (let index = collection.length - 1; index >= 0; index--) {
+                    if (collection[index] === decision.id
+                        || decision.references.includes(collection[index])
+                        || collection[index] === decision.references.join(", ")) {
+                        collection.splice(index, 1);
+                    }
+                }
+            }
+        }
+    }
+
+    async getImagePurgeStates(inventory?: ImageInventory): Promise<Map<string, ImagePurgeEvaluation>> {
+        const source = inventory ?? await this.loadImageInventory(false);
+        const recoveryIds = recoveryImageIds();
+        const rollbackIds = activeRollbackImageIds();
+        const rollbackTags = activeRollbackTags();
+        const exclusions = this.settings.unusedExclusions;
+        const states = new Map<string, ImagePurgeEvaluation>();
+        for (const group of groupImageRowsById(source.rows)) {
+            let inspected = source.inspectedById.get(group.id);
+            const selfImage = group.rows.some(row => row.Repository === SELF_IMAGE_REPOSITORY);
+            if (selfImage && !inspected) {
+                const presence = await inspectImagePresence(group.id);
+                if (presence.status === "present") {
+                    inspected = presence.image;
+                } else if (presence.status === "error") {
+                    states.set(group.id, {
+                        state: "error",
+                        detail: presence.error,
+                    });
+                    continue;
+                }
+            }
+            states.set(group.id, evaluateImagePurgeState(group, {
+                usedImageIds: source.usedImageIds,
+                recoveryIds,
+                rollbackIds,
+                rollbackTags,
+                exclusions,
+                inspected,
+                minimumAgeHours: selfImage ? SELF_IMAGE_GRACE_HOURS : undefined,
+            }));
+        }
+        return states;
     }
 
     async runDanglingPrune(notify = true, minimumAgeHours?: number, exclusions: string[] = [], lockAlreadyHeld = false,
@@ -649,11 +777,27 @@ export class AutoPruneManager {
                 .map(row => normalizeImageId(row["ID"] ?? ""))
                 .filter(id => /^sha256:[a-f0-9]{64}$/.test(id))) ];
             for (const id of candidates) {
-                const image = inventory.inspectedById.get(id);
+                let image = inventory.inspectedById.get(id);
                 const decision: PruneImageDecision = { id,
                     references: [ "<none>:<none>" ],
                     outcome: "error" };
                 examined.push(decision);
+                if (!image) {
+                    const presence = await inspectImagePresence(id);
+                    if (presence.status === "absent") {
+                        decision.outcome = "alreadyAbsent";
+                        alreadyAbsent.push(id);
+                        skipped.push(id);
+                        continue;
+                    }
+                    if (presence.status === "error") {
+                        decision.detail = presence.error;
+                        errors.push(`${id}: ${presence.error}`);
+                        skipped.push(id);
+                        continue;
+                    }
+                    image = presence.image;
+                }
                 if (setHasImageId(inventory.protectedImageIds, id)) {
                     decision.outcome = imageIsUsed(id, inventory.usedImageIds) ? "used"
                         : setHasImageId(recoveryImageIds(), id) ? "recovery" : "rollback";
@@ -687,6 +831,7 @@ export class AutoPruneManager {
                     errors.push(`${id}: ${decision.detail}`);
                 }
             }
+            await this.reconcileFinalImageState(examined, removed, alreadyAbsent, errors);
         } catch (error) {
             errors.push(dockerError(error));
         }
@@ -755,48 +900,59 @@ export class AutoPruneManager {
                 } // mode dangling
                 const references = [ ...group.references, ...untagged ];
                 const displayName = references.join(", ");
-                const selfImage = group.rows.some(row => row.Repository === SELF_IMAGE_REPOSITORY);
                 const decision: PruneImageDecision = { id: group.id,
                     references,
                     outcome: "error" };
                 examined.push(decision);
-                if (imageIsUsed(group.id, inventory.usedImageIds)) {
-                    decision.outcome = selfImage ? "active" : "used";
-                } else if (setHasImageId(recoveryIds, group.id)) {
-                    decision.outcome = "recovery";
-                } else if (setHasImageId(rollbackIds, group.id)
-                    || group.references.some(ref => rollbackTags.has(ref))) {
-                    decision.outcome = "rollback";
-                } else if (exclusions.some(value => sameImageId(value, group.id) || references.includes(value))) {
-                    decision.outcome = "excluded";
-                    excluded.push(displayName);
-                } else {
-                    const inspected = inventory.inspectedById.get(group.id);
-                    if (!inspected) {
+                let inspected = inventory.inspectedById.get(group.id);
+                if (!inspected) {
+                    const presence = await inspectImagePresence(group.id);
+                    if (presence.status === "absent") {
                         decision.outcome = "alreadyAbsent";
                         alreadyAbsent.push(displayName);
-                    } else if (!imageCreatedOldEnough(inspected.Created,
-                        selfImage ? Math.max(SELF_IMAGE_GRACE_HOURS, minimumAgeHours ?? 0) : minimumAgeHours)) {
-                        decision.outcome = "tooRecent";
-                        tooRecent.push(displayName);
-                    } else {
-                        const targets = group.references.length ? group.references : [ group.id ];
-                        let deleted = 0;
-                        for (const target of targets) {
-                            try {
-                                if (await this.removeImageSafely(target)) {
-                                    deleted++;
-                                }
-                            } catch (error) {
-                                decision.detail = `${target}: ${dockerError(error)} (${deleted}/${targets.length} référence(s) retirée(s))`;
-                                errors.push(`${group.id}: ${decision.detail}`);
-                                break;
+                        skipped.push(displayName);
+                        continue;
+                    }
+                    if (presence.status === "error") {
+                        decision.detail = presence.error;
+                        errors.push(`${group.id}: ${presence.error}`);
+                        skipped.push(displayName);
+                        continue;
+                    }
+                    inspected = presence.image;
+                }
+                const evaluation = evaluateImagePurgeState(group, {
+                    usedImageIds: inventory.usedImageIds,
+                    recoveryIds,
+                    rollbackIds,
+                    rollbackTags,
+                    exclusions,
+                    inspected,
+                    minimumAgeHours,
+                });
+                decision.outcome = evaluation.state === "purgeable" ? "error" : evaluation.state;
+                decision.detail = evaluation.detail;
+                if (evaluation.state === "excluded") {
+                    excluded.push(displayName);
+                } else if (evaluation.state === "tooRecent") {
+                    tooRecent.push(displayName);
+                } else if (evaluation.state === "purgeable") {
+                    const targets = group.references.length ? group.references : [ group.id ];
+                    let deleted = 0;
+                    for (const target of targets) {
+                        try {
+                            if (await this.removeImageSafely(target)) {
+                                deleted++;
                             }
+                        } catch (error) {
+                            decision.detail = `${target}: ${dockerError(error)} (${deleted}/${targets.length} référence(s) retirée(s))`;
+                            errors.push(`${group.id}: ${decision.detail}`);
+                            break;
                         }
-                        if (!decision.detail) {
-                            decision.outcome = deleted ? "removed" : "alreadyAbsent";
-                            (deleted ? removed : alreadyAbsent).push(displayName);
-                        }
+                    }
+                    if (!decision.detail) {
+                        decision.outcome = deleted ? "removed" : "alreadyAbsent";
+                        (deleted ? removed : alreadyAbsent).push(displayName);
                     }
                 }
                 if ([ "active", "used", "rollback", "recovery" ].includes(decision.outcome)) {
@@ -806,6 +962,7 @@ export class AutoPruneManager {
                     skipped.push(displayName);
                 }
             }
+            await this.reconcileFinalImageState(examined, removed, alreadyAbsent, errors);
         } catch (e: unknown) {
             errors.push(dockerError(e));
         }

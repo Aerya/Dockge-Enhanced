@@ -65,6 +65,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Los informes de limpieza ahora coinciden con el estado observado de Docker**
+
+Cuando una inspección por lotes no devuelve una imagen, la limpieza comprueba ahora directamente su Image ID antes de declararla ausente. Cada eliminación se verifica de nuevo y un inventario final ligero de Docker confirma el resultado informado. Recursos muestra por separado el uso Docker y el estado de limpieza: una imagen `sin uso` todavía puede ser Enhanced activa, estar protegida para recuperación o rollback, ser demasiado reciente o estar excluida. Las imágenes sin etiqueta se describen de forma neutral como **Imagen sin etiqueta**, no como imágenes antiguas. El flujo sigue limitado a un inventario inicial, controles dirigidos y una verificación final ligera.
+
 **Limpieza fiable de imágenes antiguas Dockge-Enhanced `<none>`**
 
 Las imágenes antiguas `ghcr.io/aerya/dockge-enhanced:<none>` ahora se seleccionan desde el inventario Docker en lugar de depender de metadatos `RepoDigests` que pueden desaparecer tras un retag. Las imágenes que superan la protección de 48 h del self-update pueden limpiarse de forma fiable, mientras la imagen activa y las imágenes protegidas por recuperación permanecen intactas. El resumen de limpieza tampoco cuenta ya las imágenes normales realmente usadas como candidatas protegidas.

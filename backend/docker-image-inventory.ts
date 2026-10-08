@@ -152,6 +152,55 @@ export function isMissingDockerImageInspectError(error: unknown): boolean {
     return /no such image/i.test(`${detail.stderr?.toString() ?? ""} ${detail.message ?? ""}`);
 }
 
+export type ImagePresence =
+    | {
+        status: "present";
+        image: InspectedImage;
+    }
+    | { status: "absent" }
+    | {
+        status: "error";
+        error: string;
+    };
+
+export async function inspectImagePresence(imageId: string): Promise<ImagePresence> {
+    try {
+        const { stdout } = await execFileAsync("docker", [ "image", "inspect", imageId ], {
+            maxBuffer: 20 * 1024 * 1024,
+        });
+        const images = JSON.parse(stdout || "[]") as InspectedImage[];
+        return images[0]
+            ? {
+                status: "present",
+                image: images[0],
+            }
+            : {
+                status: "error",
+                error: "Inspection Docker vide",
+            };
+    } catch (error) {
+        if (isMissingDockerImageInspectError(error)) {
+            return { status: "absent" };
+        }
+        const detail = error as {
+            stderr?: string | Buffer;
+            message?: string;
+        };
+        return {
+            status: "error",
+            error: `${detail.stderr?.toString() ?? ""} ${detail.message ?? ""}`.trim() || String(error),
+        };
+    }
+}
+
+export async function listDockerImageIds(): Promise<Set<string>> {
+    const { stdout } = await execFileAsync("docker", [
+        "images", "-a", "--no-trunc", "--format", "{{.ID}}",
+    ], { maxBuffer: 20 * 1024 * 1024 });
+    return new Set((stdout || "").split("\n").map(normalizeImageId)
+        .filter(id => /^sha256:[a-f0-9]{64}$/.test(id)));
+}
+
 async function inspectImageBatch(imageIds: string[]): Promise<InspectedImage[]> {
     if (imageIds.length === 0) {
         return [];

@@ -161,11 +161,18 @@ export class DockerResourcesRouter extends Router {
         router.get("/images", auth, async (_req: Request, res: Response) => {
             try {
                 const inventory = await loadDockerImageInventory({ inspectImages: false });
+                const purgeStates = await AutoPruneManager.getInstance().getImagePurgeStates({
+                    ...inventory,
+                    protectedImageIds: new Set(),
+                });
                 const images = classifyImageReferences(inventory).map(image => {
                     const dockgeStacks = [ ...new Set(image.containers.map(container => container.stackName).filter(Boolean)) ];
+                    const purge = purgeStates.get(image.id);
                     return {
                         ...image,
                         dockgeStacks,
+                        purgeState: purge?.state ?? "error",
+                        purgeDetail: purge?.detail,
                     };
                 });
                 const uniqueById = new Map<string, typeof images[number]>();

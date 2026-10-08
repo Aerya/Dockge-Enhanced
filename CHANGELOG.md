@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-08 — Final Docker image-prune report reconciliation** — A missing image in a batch inspection is no longer confused with a Docker-confirmed absence: cleanup falls back to a targeted Image-ID inspection, checks the postcondition of every removal, and performs a lightweight final reconciliation. Resources now separates Docker usage from prune state, so protected Enhanced, recovery, rollback, too-recent and excluded images are explained even when Docker marks them unused. Active Enhanced, rollback and recovery protections remain intact, while cleanup still uses one initial inventory, targeted checks and one final light inventory.
+
 **2026-10-07 — Docker image cleanup is bounded and race-safe** — Bulk image pruning now loads the full inventory once and revalidates only the target immediately before removal instead of rescanning every image and container for each `docker rmi`. The Resources image list avoids full image inspection, image inspection runs in bounded batches and tolerates concurrent image disappearance, old Enhanced `<none>` candidates reuse the initial inventory, and expired rollback cleanup shares the Docker cleanup lock.
 
 

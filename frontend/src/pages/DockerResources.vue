@@ -420,6 +420,7 @@
                                 </th>
                                 <th>{{ $t("dockerResources.images.cols.created") }}</th>
                                 <th>{{ $t("dockerResources.images.cols.status") }}</th>
+                                <th>{{ $t("dockerResources.images.cols.purgeState") }}</th>
                                 <th>{{ $t("dockerResources.images.cols.containers") }}</th>
                                 <th class="text-end">{{ $t("dockerResources.images.cols.action") }}</th>
                             </tr>
@@ -442,7 +443,9 @@
                                         </span>
                                         <span v-else>
                                             <span class="text-muted fst-italic">{{ img.id }}</span>
-                                            <span class="ms-2 badge bg-secondary old-image-badge">ancienne image</span>
+                                            <span class="ms-2 badge bg-secondary old-image-badge">
+                                                {{ tr("dockerResources.images.untaggedImage") }}
+                                            </span>
                                         </span>
                                     </div>
                                 </td>
@@ -451,6 +454,12 @@
                                 <td class="align-middle">
                                     <span class="badge" :class="statusBadge(img.status)">
                                         {{ tr("dockerResources.images.status." + img.status, img.status) }}
+                                    </span>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="badge" :class="purgeStateBadge(img.purgeState)"
+                                          :title="img.purgeDetail ?? ''">
+                                        {{ tr("dockerResources.images.purgeState." + img.purgeState, img.purgeState) }}
                                     </span>
                                 </td>
                                 <td class="align-middle">
@@ -883,6 +892,8 @@ interface DockerImage {
     size: string;
     createdSince: string;
     status: string;
+    purgeState: string;
+    purgeDetail?: string;
     containers: ContainerRef[];
     dockgeStacks: string[];
 }
@@ -1726,6 +1737,19 @@ function statusBadge(status: string): string {
         case "stopped": return "bg-warning text-dark";
         case "dangling": return "bg-danger";
         default: return "bg-secondary";
+    }
+}
+
+function purgeStateBadge(state: string): string {
+    switch (state) {
+        case "purgeable": return "bg-danger";
+        case "active": return "bg-success";
+        case "recovery": return "bg-info text-dark";
+        case "rollback": return "bg-primary";
+        case "tooRecent": return "bg-warning text-dark";
+        case "excluded": return "bg-secondary";
+        case "used": return "bg-success";
+        default: return "bg-danger";
     }
 }
 
