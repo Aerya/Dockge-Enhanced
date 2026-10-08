@@ -63,6 +63,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**La purge utilise désormais les références Docker réelles**
+
+La purge des images inutilisées ne suppose plus que le `Repository:Tag` affiché par `docker images` est une référence réellement attachée et supprimable. Elle utilise les `RepoTags` et `RepoDigests` inspectés, retire toutes les références nécessaires, puis applique si besoin un fallback sécurisé par Image ID et vérifie la disparition physique de l’image. Les protections liées aux conteneurs, exclusions, Enhanced active, récupération, rollback et délais de grâce restent appliquées.
+
 **Les rapports de purge correspondent désormais à l’état Docker observé**
 
 Lorsqu’une inspection par lot ne retourne pas une image, la purge vérifie maintenant directement son Image ID avant de la déclarer absente. Chaque suppression est contrôlée, puis un inventaire Docker final léger confirme le résultat rapporté. Ressources affiche séparément l’utilisation Docker et l’état de purge : une image `inutilisée` peut encore être Active Enhanced, protégée pour la récupération ou le rollback, trop récente ou exclue. Les images sans tag sont décrites de façon neutre comme **Image sans tag**, et non comme anciennes images. Le workflow reste borné à un inventaire initial, des contrôles ciblés et une vérification finale légère.

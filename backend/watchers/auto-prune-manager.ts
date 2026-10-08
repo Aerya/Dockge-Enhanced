@@ -108,8 +108,15 @@ export interface ImagePurgeContext {
     minimumAgeHours?: number;
 }
 
+export function inspectedImageReferences(image: InspectedImage | undefined): string[] {
+    return [ ...new Set([ ...(image?.RepoTags ?? []), ...(image?.RepoDigests ?? []) ]
+        .map(reference => reference.trim())
+        .filter(reference => reference && !reference.endsWith(":<none>"))) ];
+}
+
 export function evaluateImagePurgeState(group: ImageRowGroup, context: ImagePurgeContext): ImagePurgeEvaluation {
-    const references = [ ...group.references, ...untaggedRepositoryReferences(group) ];
+    const inspectedReferences = inspectedImageReferences(context.inspected);
+    const references = [ ...group.references, ...untaggedRepositoryReferences(group), ...inspectedReferences ];
     const selfImage = group.rows.some(row => row.Repository === SELF_IMAGE_REPOSITORY);
     if (imageIsUsed(group.id, context.usedImageIds)) {
         return { state: selfImage ? "active" : "used" };
@@ -118,7 +125,7 @@ export function evaluateImagePurgeState(group: ImageRowGroup, context: ImagePurg
         return { state: "recovery" };
     }
     if (setHasImageId(context.rollbackIds, group.id)
-        || group.references.some(reference => context.rollbackTags.has(reference))) {
+        || references.some(reference => context.rollbackTags.has(reference))) {
         return { state: "rollback" };
     }
     if (context.exclusions.some(value => sameImageId(value, group.id) || references.includes(value))) {
@@ -609,7 +616,7 @@ export class AutoPruneManager {
         };
     }
 
-    async assertImageRemovalAllowed(target: string): Promise<void> {
+    async assertImageRemovalAllowed(target: string): Promise<InspectedImage | null> {
         let inspected: InspectedImage;
         try {
             const { stdout } = await execFileAsync("docker", [ "image", "inspect", target ], {
@@ -617,12 +624,12 @@ export class AutoPruneManager {
             });
             const images = JSON.parse(stdout || "[]") as InspectedImage[];
             if (!images[0]) {
-                return;
+                return null;
             }
             inspected = images[0];
         } catch (error) {
             if (isMissingDockerImageError(error)) {
-                return;
+                return null;
             }
             throw error;
         }
@@ -646,6 +653,7 @@ export class AutoPruneManager {
         if (setHasImageId(recoveryImageIds(), imageId)) {
             throw new Error("Cette image est protégée pour une récupération");
         }
+        return inspected;
     }
 
     /**
@@ -681,6 +689,98 @@ export class AutoPruneManager {
                 throw new Error(`Vérification de l’absence impossible : ${postcondition.error}`, { cause: error });
             }
             throw error;
+        }
+    }
+
+    /**
+     * Supprime une image physique à partir des références réellement renvoyées
+     * par `docker image inspect`. Les valeurs Repository/Tag du listing restent
+     * réservées à l'affichage et ne sont jamais supposées supprimables.
+     */
+    async removePhysicalImageSafely(
+        initial: InspectedImage,
+        displayReferences: string[] = [],
+        exclusions: string[] = [],
+    ): Promise<boolean> {
+        const imageId = normalizeImageId(initial.Id);
+        if (!/^sha256:[a-f0-9]{64}$/.test(imageId)) {
+            throw new Error(`Image ID invalide : ${initial.Id}`);
+        }
+
+        let current = initial;
+        const attempted = new Set<string>();
+        while (true) {
+            const currentReferences = inspectedImageReferences(current);
+            if (exclusions.some(exclusion => sameImageId(exclusion, imageId)
+                || displayReferences.includes(exclusion) || currentReferences.includes(exclusion))) {
+                throw new Error("Cette image est exclue de la purge");
+            }
+            const target = currentReferences.find(reference => !attempted.has(reference));
+            if (!target) {
+                const allowed = await this.assertImageRemovalAllowed(imageId);
+                if (!allowed) {
+                    return false;
+                }
+                const freshReferences = inspectedImageReferences(allowed);
+                if (exclusions.some(exclusion => sameImageId(exclusion, imageId)
+                    || displayReferences.includes(exclusion) || freshReferences.includes(exclusion))) {
+                    throw new Error("Cette image est exclue de la purge");
+                }
+                if (freshReferences.some(reference => !attempted.has(reference))) {
+                    current = allowed;
+                    continue;
+                }
+                let reportedMissing = false;
+                try {
+                    await execFileAsync("docker", [ "rmi", imageId ]);
+                } catch (error) {
+                    if (!isMissingDockerImageError(error)) {
+                        throw error;
+                    }
+                    reportedMissing = true;
+                }
+                const postcondition = await inspectImagePresence(imageId);
+                if (postcondition.status === "absent") {
+                    return !reportedMissing;
+                }
+                if (postcondition.status === "present") {
+                    throw new Error("Image encore présente après la suppression par Image ID");
+                }
+                throw new Error(`Vérification après suppression impossible : ${postcondition.error}`);
+            }
+
+            attempted.add(target);
+            const targetPresence = await inspectImagePresence(target);
+            if (targetPresence.status === "error") {
+                throw new Error(`Vérification de la référence ${target} impossible : ${targetPresence.error}`);
+            }
+            if (targetPresence.status === "absent") {
+                continue;
+            }
+            if (!sameImageId(targetPresence.image.Id, imageId)) {
+                throw new Error(`La référence ${target} ne correspond plus à l’image ${imageId}`);
+            }
+            const allowed = await this.assertImageRemovalAllowed(imageId);
+            if (!allowed) {
+                return false;
+            }
+            let reportedMissing = false;
+            try {
+                await execFileAsync("docker", [ "rmi", target ]);
+            } catch (error) {
+                if (!isMissingDockerImageError(error)) {
+                    throw error;
+                }
+                reportedMissing = true;
+            }
+            const postcondition = await inspectImagePresence(imageId);
+            if (postcondition.status === "absent") {
+                return !reportedMissing;
+            }
+            if (postcondition.status === "error") {
+                throw new Error(`Vérification après suppression impossible : ${postcondition.error}`);
+            }
+            current = postcondition.image;
         }
     }
 
@@ -937,22 +1037,13 @@ export class AutoPruneManager {
                 } else if (evaluation.state === "tooRecent") {
                     tooRecent.push(displayName);
                 } else if (evaluation.state === "purgeable") {
-                    const targets = group.references.length ? group.references : [ group.id ];
-                    let deleted = 0;
-                    for (const target of targets) {
-                        try {
-                            if (await this.removeImageSafely(target)) {
-                                deleted++;
-                            }
-                        } catch (error) {
-                            decision.detail = `${target}: ${dockerError(error)} (${deleted}/${targets.length} référence(s) retirée(s))`;
-                            errors.push(`${group.id}: ${decision.detail}`);
-                            break;
-                        }
-                    }
-                    if (!decision.detail) {
+                    try {
+                        const deleted = await this.removePhysicalImageSafely(inspected, references, exclusions);
                         decision.outcome = deleted ? "removed" : "alreadyAbsent";
                         (deleted ? removed : alreadyAbsent).push(displayName);
+                    } catch (error) {
+                        decision.detail = dockerError(error);
+                        errors.push(`${group.id}: ${decision.detail}`);
                     }
                 }
                 if ([ "active", "used", "rollback", "recovery" ].includes(decision.outcome)) {

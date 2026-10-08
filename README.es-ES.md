@@ -65,6 +65,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**La limpieza usa ahora las referencias Docker reales**
+
+La limpieza de imágenes sin uso ya no supone que el `Repository:Tag` mostrado por `docker images` sea una referencia realmente asociada y eliminable. Utiliza los `RepoTags` y `RepoDigests` inspeccionados, retira todas las referencias necesarias y, si hace falta, aplica un fallback seguro por Image ID antes de verificar que la imagen física desapareció. Se mantienen las protecciones de contenedores, exclusiones, Enhanced activa, recuperación, rollback y periodos de gracia.
+
 **Los informes de limpieza ahora coinciden con el estado observado de Docker**
 
 Cuando una inspección por lotes no devuelve una imagen, la limpieza comprueba ahora directamente su Image ID antes de declararla ausente. Cada eliminación se verifica de nuevo y un inventario final ligero de Docker confirma el resultado informado. Recursos muestra por separado el uso Docker y el estado de limpieza: una imagen `sin uso` todavía puede ser Enhanced activa, estar protegida para recuperación o rollback, ser demasiado reciente o estar excluida. Las imágenes sin etiqueta se describen de forma neutral como **Imagen sin etiqueta**, no como imágenes antiguas. El flujo sigue limitado a un inventario inicial, controles dirigidos y una verificación final ligera.
