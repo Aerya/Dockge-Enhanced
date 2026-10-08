@@ -39,7 +39,7 @@
         "jwt-decode": "~3.1.2",
         "knex": "~2.5.1",
         "limiter-es6-compat": "~2.1.2",
-        "markdown-it": "^14.3.2",
+        "markdown-it": "^15.0.2",
         "mysql2": "~3.24.5",
         "node-cron": "^4.6.0",
         "promisify-child-process": "~4.1.2",
