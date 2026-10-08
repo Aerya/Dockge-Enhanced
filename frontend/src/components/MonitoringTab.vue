@@ -188,7 +188,8 @@
                 </h5>
                 <a
                     v-if="powerWatchEffectiveUrl" :href="powerWatchEffectiveUrl" target="_blank" rel="noopener noreferrer"
-                    class="btn btn-sm btn-outline-secondary"
+                    class="btn btn-sm btn-outline-secondary" :title="$t('watcher.powerwatch.open')"
+                    :aria-label="$t('watcher.powerwatch.open')"
                 ><font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t("watcher.powerwatch.open") }}</a>
             </div>
 
