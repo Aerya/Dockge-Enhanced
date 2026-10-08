@@ -117,6 +117,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/i18n-compat.test.ts
 
+      - name: Tests du rendu Markdown des README de stacks
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test frontend/src/stack-readme.test.ts
+
       - name: Build frontend (Vite)
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run build:frontend

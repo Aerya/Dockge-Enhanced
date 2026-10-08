@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-08 — Stack README renderer updated to markdown-it 15** — The built-in TypeScript definitions replace the former v14 type package, fuzzy links remain enabled for compatibility, and automatic links now handle IPv6 and CJK punctuation more accurately while raw HTML and unsafe JavaScript links remain disabled.
+
 **2026-10-08 — Image cleanup uses real Docker references** — Unused-image pruning no longer rebuilds removal targets blindly from the `Repository` and `Tag` columns. It removes inspected `RepoTags`/`RepoDigests`, safely falls back to the Image ID when needed, and verifies physical disappearance. This fixes atypical images such as `node:26-alpine` whose displayed name was not removable while its digest-qualified reference was. Existing Enhanced, recovery, rollback, exclusion and age protections remain intact without reintroducing a full inventory scan per image.
 
 **2026-10-08 — Final Docker image-prune report reconciliation** — A missing image in a batch inspection is no longer confused with a Docker-confirmed absence: cleanup falls back to a targeted Image-ID inspection, checks the postcondition of every removal, and performs a lightweight final reconciliation. Resources now separates Docker usage from prune state, so protected Enhanced, recovery, rollback, too-recent and excluded images are explained even when Docker marks them unused. Active Enhanced, rollback and recovery protections remain intact, while cleanup still uses one initial inventory, targeted checks and one final light inventory.
