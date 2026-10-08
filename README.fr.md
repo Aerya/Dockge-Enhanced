@@ -67,7 +67,9 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 [PowerWatch](https://github.com/Aerya/PowerWatch) peut désormais être connecté en mode **Externe**, qui lit uniquement un conteneur local ou une URL HTTP(S) existante sans jamais le piloter, ou déployé en mode **Géré** sous forme de vraie stack Compose. L’installation gérée détecte les capacités RAPL, MSR et NVIDIA de l’hôte, n’active que les accès nécessaires, n’utilise jamais `privileged: true` et conserve l’historique et les paramètres dans un volume persistant après arrêt ou désactivation.
 
-La puissance instantanée globale, sa fiabilité et un accès direct à la WebUI apparaissent dans Monitoring, la barre système et le résumé des instances liées via la fédération existante. PowerWatch mesure ou estime la consommation selon les capteurs disponibles. Sa WebUI ne possède pas d’authentification intégrée : conservez l’écoute locale par défaut, ou exposez-la uniquement sur un LAN privé de confiance ou derrière une authentification externe.
+La puissance instantanée globale, sa fiabilité et un accès direct à la WebUI apparaissent dans Monitoring, la barre système et le résumé compact des instances liées via la fédération existante. La barre système et les cartes d’instances affichent uniquement les watts près du pictogramme électrique ; l’infobulle identifie PowerWatch et son niveau Measured ou Estimated. PowerWatch mesure ou estime la consommation selon les capteurs disponibles.
+
+Un **PowerWatch Hub** facultatif peut aussi être configuré avec une unique URL WebUI dans Monitoring. Il reste un service distinct : il agrège les API HTTP privées de PowerWatch existants dans son propre tableau de bord et ne nécessite aucun privilège matériel hôte. Dockge-Enhanced ouvre seulement ce lien Hub global ; il ne le répète pas pour chaque instance liée. Les WebUI PowerWatch et Hub ne disposent pas d’authentification intégrée : conservez l’écoute locale par défaut, ou exposez-les uniquement sur un LAN privé de confiance ou derrière une authentification externe.
 
 **La purge utilise désormais les références Docker réelles**
 

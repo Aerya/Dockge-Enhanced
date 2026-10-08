@@ -135,7 +135,13 @@
                     <div class="shadow-box big-padding">
                         <div class="linked-instances-heading mb-3">
                             <h4 class="mb-0">{{ $t("linkedInstances.title") }}</h4>
-                            <small class="text-muted">{{ onlineAgentCount }} / {{ agentOverviewList.length }} {{ $t("linkedInstances.online") }}</small>
+                            <div class="d-flex align-items-center gap-2">
+                                <a
+                                    v-if="powerWatchHubUrl" :href="powerWatchHubUrl" target="_blank" rel="noopener noreferrer"
+                                    class="instance-powerwatch-hub-link" :title="$t('watcher.powerwatch.openHub')" :aria-label="$t('watcher.powerwatch.openHub')"
+                                ><font-awesome-icon icon="bolt" /><span>{{ $t("watcher.powerwatch.hub") }}</span><font-awesome-icon icon="external-link-alt" /></a>
+                                <small class="text-muted">{{ onlineAgentCount }} / {{ agentOverviewList.length }} {{ $t("linkedInstances.online") }}</small>
+                            </div>
                         </div>
 
                         <div v-for="(agent, endpoint) in $root.agentList" :key="endpoint" class="mb-3 agent">
@@ -218,36 +224,32 @@
                             <!-- Remove Button -->
                             <font-awesome-icon v-if="endpoint !== ''" class="ms-2 remove-agent" icon="trash" @click="showRemoveAgentDialog[agent.url] = !showRemoveAgentDialog[agent.url]" />
 
-                            <button
-                                type="button"
+                            <div
                                 class="instance-overview-summary"
                                 :class="{ selected: selectedOverviewEndpoint === endpoint }"
                                 :style="instanceAgentStyle(endpoint)"
-                                @click="selectInstanceStacks(endpoint)"
                             >
-                                <div class="instance-stack-summary">
-                                    <span><strong>{{ instanceOverview(endpoint).total }}</strong> {{ $t("linkedInstances.stacks") }}</span>
-                                    <span class="instance-state active"><strong>{{ instanceOverview(endpoint).active }}</strong> {{ $tc("linkedInstances.active", instanceOverview(endpoint).active) }}</span>
-                                    <span class="instance-state stopped"><strong>{{ instanceOverview(endpoint).stopped }}</strong> {{ $tc("linkedInstances.stopped", instanceOverview(endpoint).stopped) }}</span>
-                                    <span class="instance-state inactive"><strong>{{ instanceOverview(endpoint).inactive }}</strong> {{ $tc("linkedInstances.inactive", instanceOverview(endpoint).inactive) }}</span>
-                                    <span v-if="instanceOverview(endpoint).paused > 0" class="instance-state stopped"><strong>{{ instanceOverview(endpoint).paused }}</strong> {{ $t("paused") }}</span>
-                                </div>
-                                <div class="instance-resource-summary">
-                                    <span><font-awesome-icon icon="microchip" /> {{ instanceSystemStats[endpoint]?.data ? `${instanceSystemStats[endpoint].data.cpu}%` : "—" }}</span>
-                                    <span><font-awesome-icon icon="memory" /> {{ formatInstanceRam(instanceSystemStats[endpoint]?.data?.ram) }}</span>
-                                    <span><font-awesome-icon icon="clock" /> {{ formatInstanceUptime(instanceSystemStats[endpoint]?.data?.host?.uptimeSeconds) }}</span>
-                                    <span
-                                        v-if="instanceSystemStats[endpoint]?.powerWatch?.enabled"
-                                        :title="powerWatchTooltip(instanceSystemStats[endpoint].powerWatch)"
-                                    ><font-awesome-icon icon="bolt" /> {{ instancePower(instanceSystemStats[endpoint].powerWatch) }}</span>
-                                    <span><font-awesome-icon icon="thumbtack" /> {{ instancePins[endpoint]?.length ?? 0 }}</span>
-                                </div>
-                            </button>
-                            <a
-                                v-if="instancePowerWatchUrl(endpoint, agent)" class="instance-powerwatch-link"
-                                :href="instancePowerWatchUrl(endpoint, agent)" target="_blank" rel="noopener noreferrer"
-                                :title="$t('watcher.powerwatch.open')" :aria-label="$t('watcher.powerwatch.open')"
-                            ><font-awesome-icon icon="bolt" /><span>{{ $t("watcher.powerwatch.openShort") }}</span></a>
+                                <button type="button" class="instance-overview-select" @click="selectInstanceStacks(endpoint)">
+                                    <div class="instance-stack-summary">
+                                        <span><strong>{{ instanceOverview(endpoint).total }}</strong> {{ $t("linkedInstances.stacks") }}</span>
+                                        <span class="instance-state active"><strong>{{ instanceOverview(endpoint).active }}</strong> {{ $tc("linkedInstances.active", instanceOverview(endpoint).active) }}</span>
+                                        <span class="instance-state stopped"><strong>{{ instanceOverview(endpoint).stopped }}</strong> {{ $tc("linkedInstances.stopped", instanceOverview(endpoint).stopped) }}</span>
+                                        <span class="instance-state inactive"><strong>{{ instanceOverview(endpoint).inactive }}</strong> {{ $tc("linkedInstances.inactive", instanceOverview(endpoint).inactive) }}</span>
+                                        <span v-if="instanceOverview(endpoint).paused > 0" class="instance-state stopped"><strong>{{ instanceOverview(endpoint).paused }}</strong> {{ $t("paused") }}</span>
+                                    </div>
+                                    <div class="instance-resource-summary">
+                                        <span><font-awesome-icon icon="microchip" /> {{ instanceSystemStats[endpoint]?.data ? `${instanceSystemStats[endpoint].data.cpu}%` : "—" }}</span>
+                                        <span><font-awesome-icon icon="memory" /> {{ formatInstanceRam(instanceSystemStats[endpoint]?.data?.ram) }}</span>
+                                        <span><font-awesome-icon icon="clock" /> {{ formatInstanceUptime(instanceSystemStats[endpoint]?.data?.host?.uptimeSeconds) }}</span>
+                                        <span><font-awesome-icon icon="thumbtack" /> {{ instancePins[endpoint]?.length ?? 0 }}</span>
+                                    </div>
+                                </button>
+                                <a
+                                    v-if="instancePowerWatchUrl(endpoint, agent)" class="instance-powerwatch-link"
+                                    :href="instancePowerWatchUrl(endpoint, agent)" target="_blank" rel="noopener noreferrer"
+                                    :title="powerWatchTooltip(instanceSystemStats[endpoint].powerWatch, true)" :aria-label="powerWatchTooltip(instanceSystemStats[endpoint].powerWatch, true)"
+                                ><font-awesome-icon icon="bolt" /> {{ instancePower(instanceSystemStats[endpoint].powerWatch) }}</a>
+                            </div>
 
                             <!-- Remoe Agent Dialog -->
                             <BModal v-model="showRemoveAgentDialog[agent.url]" :okTitle="$t('removeAgent')" okVariant="danger" @ok="removeAgent(agent.url)">
@@ -364,6 +366,7 @@ export default {
             selectedOverviewEndpoint: null,
             instanceOverviewTimer: null,
             instanceContainerCounts: {},
+            powerWatchHubStatus: null,
             selectedAgentFilters: [],
             summary: {
                 images: null,
@@ -433,6 +436,9 @@ export default {
         onlineAgentCount() {
             return this.agentOverviewList.filter(([ endpoint ]) => this.$root.agentStatusList?.[endpoint] === "online").length;
         },
+        powerWatchHubUrl() {
+            return resolvePowerWatchWebUrl(this.powerWatchHubStatus?.webUrl, window.location.hostname);
+        },
     },
 
     watch: {
@@ -476,8 +482,12 @@ export default {
         this.updatePerPage();
 
         this.fetchSummary();
+        this.refreshPowerWatchHub();
         this.refreshInstanceOverviews();
-        this.instanceOverviewTimer = window.setInterval(this.refreshInstanceOverviews, 15000);
+        this.instanceOverviewTimer = window.setInterval(() => {
+            this.refreshInstanceOverviews();
+            this.refreshPowerWatchHub();
+        }, 15000);
     },
 
     beforeUnmount() {
@@ -595,6 +605,11 @@ export default {
             }
         },
 
+        async refreshPowerWatchHub() {
+            const response = await this.summaryGet("/api/watcher/powerwatch/hub/status");
+            this.powerWatchHubStatus = response?.data?.enabled ? response.data : null;
+        },
+
         formatInstanceRam(ram) {
             if (!ram || !Number.isFinite(ram.used) || !Number.isFinite(ram.total) || ram.total <= 0) {
                 return "—";
@@ -622,17 +637,18 @@ export default {
             return snapshot?.reachable ? formatPowerWatts(snapshot.totalWatts, this.$i18n.locale) : "—";
         },
 
-        powerWatchTooltip(snapshot) {
+        powerWatchTooltip(snapshot, includeOpenAction = false) {
+            const open = includeOpenAction ? this.$t("watcher.powerwatch.open") : "";
             if (!snapshot?.reachable) {
-                return this.$t("watcher.powerwatch.unavailable");
+                return open || this.$t("watcher.powerwatch.unavailable");
             }
             if (snapshot.confidence === "Measured") {
-                return this.$t("watcher.powerwatch.measured");
+                return open ? `${open} — ${this.$t("watcher.powerwatch.measured")}` : this.$t("watcher.powerwatch.measured");
             }
             if (snapshot.confidence === "Estimated") {
-                return this.$t("watcher.powerwatch.estimated");
+                return open ? `${open} — ${this.$t("watcher.powerwatch.estimated")}` : this.$t("watcher.powerwatch.estimated");
             }
-            return "";
+            return open;
         },
 
         instancePowerWatchUrl(endpoint, agent) {
@@ -1045,6 +1061,25 @@ table {
     gap: 10px;
 }
 
+.instance-powerwatch-hub-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--primary-strong);
+    font-size: var(--fs-xs);
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--primary-hover);
+        text-decoration: underline;
+    }
+
+    @media (max-width: $bp-phone) {
+        span { display: none; }
+    }
+}
+
 .agent {
     flex-wrap: wrap;
     align-items: center;
@@ -1065,9 +1100,6 @@ table {
     border-left: 3px solid var(--instance-color);
     border-radius: var(--radius-sm);
     background: var(--bg-surface);
-    color: var(--text-color);
-    text-align: left;
-    cursor: pointer;
     transition: background-color .15s ease;
 
     .dark & { border-left-color: var(--instance-color-dark); }
@@ -1076,6 +1108,17 @@ table {
         box-shadow: inset 0 0 0 1px var(--instance-color);
         .dark & { box-shadow: inset 0 0 0 1px var(--instance-color-dark); }
     }
+}
+
+.instance-overview-select {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
 }
 
 .instance-stack-summary,
@@ -1088,15 +1131,17 @@ table {
 .instance-powerwatch-link {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    margin-top: 6px;
-    padding: 3px 7px;
+    gap: 4px;
+    margin-top: 5px;
+    padding: 2px 5px;
     color: var(--primary-strong);
     font-size: var(--fs-xs);
     text-decoration: none;
-}
-@media (max-width: $bp-phone) {
-    .instance-powerwatch-link span { display: none; }
+    &:hover,
+    &:focus-visible {
+        color: var(--primary-hover);
+        text-decoration: underline;
+    }
 }
 .instance-stack-summary { font-size: var(--fs-xs); }
 .instance-state.active { color: var(--success); }

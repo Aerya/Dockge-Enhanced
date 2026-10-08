@@ -17,6 +17,15 @@ export interface PowerWatchSettings {
     managedWebUrl: string;
     msrMode: PowerWatchToggleMode;
     nvidiaMode: PowerWatchToggleMode;
+    hubEnabled: boolean;
+    hubWebUrl: string;
+}
+
+export interface PowerWatchHubStatus {
+    enabled: boolean;
+    reachable: boolean;
+    webUrl: string | null;
+    lastError?: string | null;
 }
 
 export interface PowerWatchSnapshot {
@@ -92,6 +101,8 @@ export const DEFAULT_POWERWATCH_SETTINGS: PowerWatchSettings = {
     managedWebUrl: "",
     msrMode: "auto",
     nvidiaMode: "auto",
+    hubEnabled: false,
+    hubWebUrl: "",
 };
 
 async function defaultDocker(args: string[], options: { cwd?: string;
@@ -147,6 +158,14 @@ function snapshotEndpoint(apiUrl: string): string {
     return url.toString();
 }
 
+function hubSnapshotEndpoint(webUrl: string): string {
+    const url = new URL(webUrl);
+    url.pathname = `${url.pathname.replace(/\/$/, "")}/api/hub/snapshot`;
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+}
+
 function parseSnapshotJson(value: string): unknown {
     try {
         return JSON.parse(value);
@@ -193,6 +212,8 @@ function validateSettings(input: Partial<PowerWatchSettings>, current: PowerWatc
     next.apiUrl = validatePowerWatchUrl(next.apiUrl, "apiUrl");
     next.webUrl = validatePowerWatchUrl(next.webUrl, "webUrl");
     next.managedWebUrl = validatePowerWatchUrl(next.managedWebUrl, "managedWebUrl");
+    next.hubWebUrl = validatePowerWatchUrl(next.hubWebUrl, "hubWebUrl");
+    next.hubEnabled = Boolean(next.hubEnabled);
     next.externalContainer = next.externalContainer.trim();
     next.hostPort = Number(next.hostPort);
     next.bindAddress = next.bindAddress.trim();
@@ -490,6 +511,56 @@ export class PowerWatchManager {
         }
         const candidateSettings = validateSettings(candidate, this.settings);
         return this.readSnapshot(candidateSettings);
+    }
+
+    async getHubStatus(): Promise<PowerWatchHubStatus> {
+        if (!this.settings.hubEnabled) {
+            return { enabled: false,
+                reachable: false,
+                webUrl: null };
+        }
+        if (!this.settings.hubWebUrl) {
+            return { enabled: true,
+                reachable: false,
+                webUrl: null,
+                lastError: "PowerWatch Hub URL is required" };
+        }
+        try {
+            await this.dependencies.fetchJson(hubSnapshotEndpoint(this.settings.hubWebUrl), REQUEST_TIMEOUT_MS);
+            return { enabled: true,
+                reachable: true,
+                webUrl: this.settings.hubWebUrl,
+                lastError: null };
+        } catch (error) {
+            return { enabled: true,
+                reachable: false,
+                webUrl: this.settings.hubWebUrl,
+                lastError: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    async testHub(candidate?: Partial<PowerWatchSettings>): Promise<PowerWatchHubStatus> {
+        const settings = candidate ? validateSettings(candidate, this.settings) : this.settings;
+        if (!settings.hubEnabled) {
+            return { enabled: false,
+                reachable: false,
+                webUrl: null };
+        }
+        if (!settings.hubWebUrl) {
+            throw new Error("PowerWatch Hub URL is required");
+        }
+        try {
+            await this.dependencies.fetchJson(hubSnapshotEndpoint(settings.hubWebUrl), REQUEST_TIMEOUT_MS);
+            return { enabled: true,
+                reachable: true,
+                webUrl: settings.hubWebUrl,
+                lastError: null };
+        } catch (error) {
+            return { enabled: true,
+                reachable: false,
+                webUrl: settings.hubWebUrl,
+                lastError: error instanceof Error ? error.message : String(error) };
+        }
     }
 
     private async assertManagedOwnership(): Promise<DockerInspect | null> {

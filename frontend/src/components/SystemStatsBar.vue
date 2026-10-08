@@ -51,10 +51,10 @@
         </a>
         <a
             v-if="powerWatchUrl" :href="powerWatchUrl" target="_blank" rel="noopener noreferrer"
-            class="status-item status-link" :title="$t('watcher.powerwatch.open')" :aria-label="$t('watcher.powerwatch.open')"
+            class="status-item status-link" :title="powerWatchTooltip" :aria-label="powerWatchTooltip"
         >
             <font-awesome-icon icon="bolt" />
-            <span v-if="powerWatchSnapshot?.reachable">{{ formatPower(powerWatchSnapshot.totalWatts) }} · </span><span class="powerwatch-label">PowerWatch</span>
+            <span v-if="powerWatchSnapshot?.reachable">{{ formatPower(powerWatchSnapshot.totalWatts) }}</span>
         </a>
     </div>
 </template>
@@ -95,6 +95,15 @@ export default {
     computed: {
         diskList() {
             return this.systemStats.disks ?? (this.systemStats.disk ? [ this.systemStats.disk ] : []);
+        },
+        powerWatchTooltip() {
+            if (this.powerWatchSnapshot?.confidence === "Measured") {
+                return `${this.$t("watcher.powerwatch.open")} — ${this.$t("watcher.powerwatch.measured")}`;
+            }
+            if (this.powerWatchSnapshot?.confidence === "Estimated") {
+                return `${this.$t("watcher.powerwatch.open")} — ${this.$t("watcher.powerwatch.estimated")}`;
+            }
+            return this.$t("watcher.powerwatch.open");
         },
     },
 
@@ -265,12 +274,6 @@ export default {
 
     &:hover {
         color: var(--primary-hover);
-    }
-}
-
-@media (max-width: $bp-tablet) {
-    .powerwatch-label {
-        display: none;
     }
 }
 

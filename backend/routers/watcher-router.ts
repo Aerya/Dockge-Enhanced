@@ -739,10 +739,23 @@ export class WatcherRouter extends Router {
             res.json({ ok: true,
                 data: await PowerWatchManager.getInstance().getSnapshot() });
         });
+        router.get("/powerwatch/hub/status", async (_req: Request, res: Response) => {
+            res.json({ ok: true,
+                data: await PowerWatchManager.getInstance().getHubStatus() });
+        });
         router.post("/powerwatch/test", async (req: Request, res: Response) => {
             try {
                 res.json({ ok: true,
                     data: await PowerWatchManager.getInstance().test(req.body) });
+            } catch (e) {
+                res.status(400).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
+            }
+        });
+        router.post("/powerwatch/hub/test", async (req: Request, res: Response) => {
+            try {
+                res.json({ ok: true,
+                    data: await PowerWatchManager.getInstance().testHub(req.body) });
             } catch (e) {
                 res.status(400).json({ ok: false,
                     message: e instanceof Error ? e.message : String(e) });

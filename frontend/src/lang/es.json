@@ -1,5 +1,5 @@
 {
-    "releaseNews.item.powerWatchMonitoring": "PowerWatch se integra ahora en Monitoring. Enhanced puede conectarse a una instalación existente sin controlarla o desplegar automáticamente una instancia gestionada. La potencia instantánea de cada máquina puede aparecer en las instancias vinculadas con acceso directo a su WebUI.",
+    "releaseNews.item.powerWatchMonitoring": "PowerWatch se integra ahora en Monitoring. Enhanced puede conectarse a una instalación existente sin controlarla o desplegar automáticamente una instancia gestionada. Cada máquina muestra una potencia compacta con acceso directo a su WebUI, y un PowerWatch Hub opcional añade un único enlace global.",
     "dockerResources.tab.cleanup": "Limpieza",
     "dockerResources.cleanup.scan": "Analizar",
     "dockerResources.cleanup.manualOnly": "La vista previa es obligatoria; esta limpieza es solo manual.",
@@ -857,5 +857,13 @@
     "watcher.powerwatch.start": "Iniciar",
     "watcher.powerwatch.stop": "Detener",
     "watcher.powerwatch.restart": "Reiniciar",
-    "watcher.powerwatch.saved": "Configuración de PowerWatch guardada"
+    "watcher.powerwatch.saved": "Configuración de PowerWatch guardada",
+    "watcher.powerwatch.hub": "Hub",
+    "watcher.powerwatch.enableHub": "Activar PowerWatch Hub",
+    "watcher.powerwatch.hubWebUrl": "URL de la WebUI del Hub",
+    "watcher.powerwatch.hubHelp": "El Hub agrupa instancias existentes de PowerWatch en su propio panel. Es opcional y no controla las instancias individuales.",
+    "watcher.powerwatch.openHub": "Abrir PowerWatch Hub",
+    "watcher.powerwatch.testHub": "Probar conexión del Hub",
+    "watcher.powerwatch.hubOnline": "PowerWatch Hub en línea",
+    "watcher.powerwatch.hubOffline": "PowerWatch Hub no disponible"
 }

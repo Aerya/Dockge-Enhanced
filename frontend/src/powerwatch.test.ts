@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { formatPowerWatts, resolvePowerWatchWebUrl } from "./powerwatch";
 
@@ -22,4 +23,18 @@ test("resolvePowerWatchWebUrl rewrites loopback for local and remote instances",
     assert.equal(resolvePowerWatchWebUrl("http://[::1]:3064", "2001:db8::2"), "http://[2001:db8::2]:3064");
     assert.equal(resolvePowerWatchWebUrl("javascript:alert(1)", "localhost"), null);
     assert.equal(resolvePowerWatchWebUrl(null, "localhost"), null);
+});
+
+test("system statistics show only the PowerWatch watt value", () => {
+    const component = readFileSync(new URL("./components/SystemStatsBar.vue", import.meta.url), "utf8");
+    assert.match(component, /formatPower\(powerWatchSnapshot\.totalWatts\)/);
+    assert.doesNotMatch(component, /powerwatch-label/);
+    assert.match(component, /:title="powerWatchTooltip"/);
+});
+
+test("linked instances use one compact individual PowerWatch link without nesting it in the selector", () => {
+    const component = readFileSync(new URL("./pages/DashboardHome.vue", import.meta.url), "utf8");
+    assert.match(component, /class="instance-powerwatch-link"/);
+    assert.match(component, /class="instance-powerwatch-hub-link"/);
+    assert.match(component, /class="instance-overview-select"/);
 });

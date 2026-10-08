@@ -69,7 +69,9 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 [PowerWatch](https://github.com/Aerya/PowerWatch) puede conectarse en modo **Externo**, que solo lee un contenedor local o una URL HTTP(S) existente sin controlarlo nunca, o desplegarse en modo **Gestionado** como una stack Compose real. La instalación gestionada detecta las capacidades RAPL, MSR y NVIDIA del host, activa únicamente los accesos necesarios, nunca utiliza `privileged: true` y conserva el historial y los ajustes en un volumen persistente al detenerse o desactivarse.
 
-La potencia instantánea global, su nivel de confianza y un enlace directo a la WebUI aparecen en Monitoring, la barra del sistema y los resúmenes de instancias vinculadas mediante la federación existente. PowerWatch mide o estima el consumo según los sensores disponibles. Su WebUI no incluye autenticación: mantenga la escucha local predeterminada o expóngala solo en una LAN privada de confianza o tras una autenticación externa.
+La potencia instantánea global, su nivel de confianza y un enlace directo a la WebUI aparecen en Monitoring, la barra del sistema y los resúmenes compactos de instancias vinculadas mediante la federación existente. La barra del sistema y las tarjetas de instancia muestran solo los vatios junto al icono eléctrico; el tooltip identifica PowerWatch y su confianza Measured o Estimated. PowerWatch mide o estima el consumo según los sensores disponibles.
+
+También puede configurarse un **PowerWatch Hub** opcional con una única URL de WebUI en Monitoring. Sigue siendo un servicio independiente: agrupa las API HTTP privadas de instancias PowerWatch existentes en su propio panel y no necesita privilegios de hardware del host. Dockge-Enhanced solo abre este enlace global del Hub; no lo duplica para cada instancia vinculada. Las WebUI de PowerWatch y Hub no incluyen autenticación: mantenga la escucha local predeterminada o expóngalas solo en una LAN privada de confianza o tras una autenticación externa.
 
 **La limpieza usa ahora las referencias Docker reales**
 

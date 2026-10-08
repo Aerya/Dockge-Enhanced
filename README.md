@@ -67,7 +67,9 @@ The most important recent changes are grouped here so you can quickly see what h
 
 [PowerWatch](https://github.com/Aerya/PowerWatch) can now be connected in **External** mode, which only reads an existing local container or HTTP(S) endpoint and never controls it, or deployed in **Managed** mode as a real Compose stack. Managed installation detects the host's RAPL, MSR and NVIDIA capabilities, enables only the required access, never uses `privileged: true`, and keeps history and settings in a persistent volume when stopped or disabled.
 
-Current whole-machine power, confidence and a direct WebUI link appear in Monitoring, the system status bar and linked-instance summaries through the existing federation channel. PowerWatch measures or estimates consumption according to the available sensors. Its WebUI has no built-in authentication: bind it to loopback by default, or expose it only on a trusted private LAN or behind external authentication.
+Current whole-machine power, confidence and a direct WebUI link appear in Monitoring, the system status bar and compact linked-instance summaries through the existing federation channel. The status bar and instance cards display only the watts next to the electrical icon; the tooltip identifies PowerWatch and its measured or estimated confidence. PowerWatch measures or estimates consumption according to the available sensors.
+
+An optional **PowerWatch Hub** can also be configured with one WebUI URL in Monitoring. It remains a separate service: it aggregates existing private PowerWatch HTTP APIs in its own dashboard and needs no host hardware privileges. Dockge-Enhanced only opens this single global Hub link; it does not duplicate it for every linked instance. PowerWatch and Hub WebUIs have no built-in authentication: bind them to loopback by default, or expose them only on a trusted private LAN or behind external authentication.
 
 **Cleanup now uses Docker's real image references**
 

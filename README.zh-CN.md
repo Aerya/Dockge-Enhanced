@@ -47,7 +47,9 @@
 
 [PowerWatch](https://github.com/Aerya/PowerWatch) 现在支持两种模式：**外部**模式只读取现有的本地容器或 HTTP(S) 地址，绝不会控制它；**托管**模式则由 Dockge-Enhanced 部署为真实的 Compose Stack。托管安装会检测主机的 RAPL、MSR 和 NVIDIA 能力，只启用必要权限，绝不使用 `privileged: true`，并在停止或停用后继续保留持久卷中的历史与设置。
 
-整机当前功率、可信度和 WebUI 直达链接会通过现有联邦通道显示在 Monitoring、系统状态栏和关联实例摘要中。PowerWatch 会根据可用传感器进行测量或估算。其 WebUI 不包含内置身份验证：请保留默认的本机绑定，或仅在可信私有 LAN 中公开，或置于外部身份验证之后。
+整机当前功率、可信度和 WebUI 直达链接会通过现有联邦通道显示在 Monitoring、系统状态栏和紧凑的关联实例摘要中。系统状态栏和实例卡片仅在电力图标旁显示瓦数；工具提示会标明 PowerWatch 以及 Measured 或 Estimated 可信度。PowerWatch 会根据可用传感器进行测量或估算。
+
+也可以在 Monitoring 中为可选的 **PowerWatch Hub** 配置一个 WebUI URL。Hub 是独立服务：它在自己的仪表板中聚合既有 PowerWatch 的私有 HTTP API，无需主机硬件权限。Dockge-Enhanced 只提供一个全局 Hub 链接，不会为每个关联实例重复显示。PowerWatch 和 Hub WebUI 都没有内置身份验证：请保留默认本机绑定，或仅在可信私有 LAN 中公开，或置于外部身份验证之后。
 
 **清理现在使用 Docker 的真实镜像引用**
 

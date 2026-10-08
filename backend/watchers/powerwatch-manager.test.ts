@@ -93,6 +93,39 @@ test("HTTP failures are non-blocking and clear current watts", async () => {
     assert.equal(snapshot.status, "offline");
 });
 
+test("PowerWatch Hub uses its documented snapshot endpoint and remains optional", async () => {
+    let requested = "";
+    const manager = managerWith({ fetchJson: async (url) => {
+        requested = url;
+        return { nodes: [] };
+    } });
+    assert.deepEqual(await manager.getHubStatus(), { enabled: false,
+        reachable: false,
+        webUrl: null });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        hubEnabled: true,
+        hubWebUrl: "https://hub.example.test/powerwatch" };
+    const status = await manager.getHubStatus();
+    assert.equal(requested, "https://hub.example.test/powerwatch/api/hub/snapshot");
+    assert.equal(status.reachable, true);
+    assert.equal(status.webUrl, "https://hub.example.test/powerwatch");
+});
+
+test("PowerWatch Hub failures do not affect individual PowerWatch settings", async () => {
+    const manager = managerWith({ fetchJson: async () => {
+        throw new Error("request timed out");
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        enabled: true,
+        apiUrl: "http://power.example.test",
+        hubEnabled: true,
+        hubWebUrl: "http://hub.example.test" };
+    const status = await manager.getHubStatus();
+    assert.equal(status.reachable, false);
+    assert.match(status.lastError ?? "", /timed out/);
+    assert.equal(manager.settings.apiUrl, "http://power.example.test");
+});
+
 test("HTTP timeout and invalid JSON failures stay non-blocking", async (t) => {
     for (const error of [ new Error("request timed out"), new SyntaxError("Unexpected token") ]) {
         await t.test(error.message, async () => {
