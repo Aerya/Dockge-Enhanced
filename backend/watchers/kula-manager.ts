@@ -16,6 +16,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import childProcessAsync from "promisify-child-process";
+import { resolveDataDir } from "../data-dir";
 
 async function docker(args: string[]): Promise<string> {
     const result = await childProcessAsync.spawn("docker", args, { encoding: "utf8" });
@@ -25,7 +26,7 @@ async function docker(args: string[]): Promise<string> {
     return result.stdout?.toString() ?? "";
 }
 
-const DATA_DIR      = process.env.DOCKGE_DATA_DIR  ?? "/opt/dockge/data";
+const DATA_DIR      = resolveDataDir();
 const STACKS_DIR    = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 const SETTINGS_PATH = path.join(DATA_DIR, "kula-settings.json");
 

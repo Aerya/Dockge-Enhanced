@@ -73,6 +73,7 @@ import {
 import { AgentProxySocketHandler } from "./socket-handlers/agent-proxy-socket-handler";
 import { AgentSocketHandler } from "./agent-socket-handler";
 import { AgentSocket } from "../common/agent-socket";
+import { resolveDataDir } from "./data-dir";
 import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-handler";
 import { StackReplicationSocketHandler } from "./socket-handlers/stack-replication-socket-handler";
 import { StackMoveSocketHandler } from "./socket-handlers/stack-move-socket-handler";
@@ -234,7 +235,7 @@ export class DockgeServer {
         this.config.sslKeyPassphrase = args.sslKeyPassphrase || process.env.DOCKGE_SSL_KEY_PASSPHRASE || undefined;
         this.config.port = args.port || Number(process.env.DOCKGE_PORT) || 5001;
         this.config.hostname = args.hostname || process.env.DOCKGE_HOSTNAME || undefined;
-        this.config.dataDir = args.dataDir || process.env.DOCKGE_DATA_DIR || "./data/";
+        this.config.dataDir = args.dataDir || resolveDataDir();
         this.config.stacksDir = args.stacksDir || process.env.DOCKGE_STACKS_DIR || defaultStacksDir;
         this.config.enableConsole = args.enableConsole || process.env.DOCKGE_ENABLE_CONSOLE === "true" || false;
         this.config.fileManagerRoot = args.fileManagerRoot || process.env.DOCKGE_FILE_MANAGER_ROOT || undefined;

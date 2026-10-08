@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-08 — Resolución persistente del directorio de datos** — El monitoreo de imágenes y los ajustes compartidos almacenados en archivos usan ahora el volumen persistente `/app/data` cuando `DOCKGE_DATA_DIR` no está definido, por lo que sobreviven a la recreación y a la autoactualización del contenedor. Un directorio explícito mantiene prioridad; una instalación heredada no vacía en `/opt/dockge/data` se conserva si el volumen actual está vacío.
+
 **2026-10-08 — El renderizado de los README de stacks migra a markdown-it 15** — Los tipos TypeScript integrados sustituyen al antiguo paquete de tipos v14, los enlaces fuzzy siguen habilitados por compatibilidad y los enlaces automáticos gestionan ahora con mayor precisión IPv6 y la puntuación CJK, mientras que el HTML sin procesar y los enlaces JavaScript peligrosos permanecen desactivados.
 
 **2026-10-08 — La limpieza usa las referencias Docker reales** — La limpieza de imágenes sin uso ya no reconstruye a ciegas sus objetivos desde las columnas `Repository` y `Tag`. Elimina los `RepoTags`/`RepoDigests` inspeccionados, usa si hace falta un fallback seguro por Image ID y verifica la desaparición física. Esto corrige imágenes atípicas como `node:26-alpine`, cuyo nombre mostrado no se podía eliminar aunque su referencia calificada por digest sí. Las protecciones de Enhanced, recuperación, rollback, exclusiones y edad se conservan sin reintroducir un inventario completo por imagen.

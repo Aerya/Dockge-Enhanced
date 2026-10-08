@@ -18,9 +18,10 @@ import { BLOCKER_MESSAGES, type SelfUpdateBlocker } from "./operation-guard-poli
 import { classifySelfUpdateFailure } from "./failure-detail";
 import { log } from "../log";
 import { resolveCurrentContainer } from "../current-container";
+import { resolveDataDir } from "../data-dir";
 
 const execFileAsync = promisify(execFile);
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const STATE_DIR = path.join(DATA_DIR, "self-update");
 const SETTINGS_PATH = selfUpdateSettingsPath(DATA_DIR);
 const STATUS_PATH = path.join(STATE_DIR, "status.json");

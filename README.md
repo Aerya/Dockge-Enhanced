@@ -719,7 +719,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | Variable | Default | Description |
 |---|---|---|
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directory containing Docker Compose stacks |
-| `DOCKGE_DATA_DIR` | `/opt/dockge/data` | Dockge data directory (set to `/app/data`) |
+| `DOCKGE_DATA_DIR` | `/app/data` | Dockge data directory; override only for a custom persistent mount |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(none)* | Fixes the Docker API version negotiated by the client — useful on certain NAS systems (e.g. Synology DSM 7.x) |
 | `TZ` | `UTC` | Container timezone — **important** for scheduled auto-updates to fire at the right local time (e.g. `Europe/Paris`) |
@@ -733,7 +733,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKGE_BOOTSTRAP_PASSWORD` | *(none)* | Direct password alternative, less secure because it is visible in the container environment |
 | `DOCKGE_TRANSFER_RSYNC_PROFILES` | `[]` | JSON array of local SSH/rsync profiles (`label`, `host`, `port`, `user`, `path`, `keyPath`, optional `bandwidthKbps`). Configure the same destination identity on both instances; key paths never leave their instance |
 
-> ⚠️ Always set `DOCKGE_DATA_DIR=/app/data` to match the volume mount, otherwise settings won't persist after a restart.
+> ℹ️ Without `DOCKGE_DATA_DIR`, Dockge-Enhanced uses its persistent `/app/data` volume. Explicitly configured paths always take precedence.
 
 > ℹ️ `DOCKGE_PUBLIC_URL` is optional. If not set, Discord notifications are sent without a link. Works with reverse proxies and HTTPS domains.
 

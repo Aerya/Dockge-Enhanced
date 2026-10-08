@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import * as os from "node:os";
 import * as path from "path";
+import { resolveDataDir } from "./data-dir";
 
 export interface DockerRegistryCredential {
     registry: string;
@@ -13,7 +14,7 @@ interface DockerAuthConfig {
     [key: string]: unknown;
 }
 
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const MANAGED_CONFIG_DIR = path.join(DATA_DIR, "docker-config");
 const MANAGED_CONFIG_PATH = path.join(MANAGED_CONFIG_DIR, "config.json");
 
@@ -79,8 +80,8 @@ export function buildDockerAuthConfig(
     };
 }
 
-async function readBaseConfig(): Promise<DockerAuthConfig> {
-    if (path.resolve(BASE_CONFIG_PATH) === path.resolve(MANAGED_CONFIG_PATH)) {
+async function readBaseConfig(managedConfigPath = MANAGED_CONFIG_PATH): Promise<DockerAuthConfig> {
+    if (path.resolve(BASE_CONFIG_PATH) === path.resolve(managedConfigPath)) {
         return {};
     }
 
@@ -98,23 +99,26 @@ async function readBaseConfig(): Promise<DockerAuthConfig> {
  */
 export async function syncDockerRegistryCredentials(
     credentials: DockerRegistryCredential[],
+    dataDir = DATA_DIR,
 ): Promise<void> {
-    const baseConfig = await readBaseConfig();
+    const managedConfigDir = path.join(dataDir, "docker-config");
+    const managedConfigPath = path.join(managedConfigDir, "config.json");
+    const baseConfig = await readBaseConfig(managedConfigPath);
     const config = buildDockerAuthConfig(baseConfig, credentials);
-    const tempPath = `${MANAGED_CONFIG_PATH}.${process.pid}.tmp`;
+    const tempPath = `${managedConfigPath}.${process.pid}.tmp`;
 
-    await fs.mkdir(MANAGED_CONFIG_DIR, {
+    await fs.mkdir(managedConfigDir, {
         recursive: true,
         mode: 0o700,
     });
-    await fs.chmod(MANAGED_CONFIG_DIR, 0o700).catch(() => {});
+    await fs.chmod(managedConfigDir, 0o700).catch(() => {});
     await fs.writeFile(tempPath, JSON.stringify(config, null, 2), {
         mode: 0o600,
     });
-    await fs.rename(tempPath, MANAGED_CONFIG_PATH);
-    await fs.chmod(MANAGED_CONFIG_PATH, 0o600).catch(() => {});
+    await fs.rename(tempPath, managedConfigPath);
+    await fs.chmod(managedConfigPath, 0o600).catch(() => {});
 
-    process.env.DOCKER_CONFIG = MANAGED_CONFIG_DIR;
+    process.env.DOCKER_CONFIG = managedConfigDir;
 }
 
 export function getManagedDockerConfigDir(): string {

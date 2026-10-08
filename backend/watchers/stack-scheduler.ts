@@ -6,8 +6,9 @@ import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
 import { Stack } from "../stack";
 import { Settings } from "../settings";
+import { resolveDataDir } from "../data-dir";
 
-const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
+const DATA_DIR = resolveDataDir();
 const SETTINGS_PATH = path.join(DATA_DIR, "stack-schedules.json");
 
 export type ScheduleMode = "off" | "daily" | "weekly" | "biweekly" | "monthly" | "custom";

@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-08 — 持久化数据目录解析** — 未设置 `DOCKGE_DATA_DIR` 时，镜像监控和其他基于文件的共享设置现在使用持久化卷 `/app/data`，因此在容器重建和自更新后仍会保留。显式设置的数据目录始终优先；当当前卷为空时，位于 `/opt/dockge/data` 的非空 legacy 安装会被保留。
+
 **2026-10-08 — Stack README 渲染器升级到 markdown-it 15** — 内置 TypeScript 类型替代了旧的 v14 类型包；为保持兼容，模糊链接仍然启用；自动链接现在能更准确地处理 IPv6 和 CJK 标点，同时继续禁用原始 HTML 和不安全的 JavaScript 链接。
 
 **2026-10-08 — 镜像清理使用 Docker 的真实引用** — 未使用镜像清理不再根据 `Repository` 和 `Tag` 列盲目重建删除目标。系统会删除检查结果中的 `RepoTags`/`RepoDigests`，必要时安全回退到 Image ID，并验证物理镜像确实消失。这修复了 `node:26-alpine` 等特殊镜像：显示名称无法删除，但带 digest 的真实引用可以删除。Enhanced、恢复、回滚、排除项和镜像年龄保护保持不变，也不会重新引入每个镜像一次完整清单扫描。

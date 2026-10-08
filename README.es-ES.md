@@ -691,7 +691,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | Variable | Predeterminado | Descripción |
 |---|---|---|
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directorio que contiene los stacks Docker Compose |
-| `DOCKGE_DATA_DIR` | `/opt/dockge/data` | Directorio de datos de Dockge (establece en `/app/data`) |
+| `DOCKGE_DATA_DIR` | `/app/data` | Directorio de datos de Dockge; cámbialo solo para un montaje persistente personalizado |
 | `DOCKGE_PUBLIC_URL` | *(ninguna)* | URL pública usada en enlaces de notificaciones Discord (por ejemplo `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(ninguna)* | Fija la versión de la API de Docker negociada por el cliente — útil en ciertos sistemas NAS (por ejemplo Synology DSM 7.x) |
 | `TZ` | `UTC` | Zona horaria del contenedor — **importante** para que las actualizaciones automáticas programadas se disparen en la hora local correcta (por ejemplo `Europe/Paris`) |
@@ -705,7 +705,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKGE_BOOTSTRAP_PASSWORD` | *(ninguna)* | Alternativa de contraseña directa, menos segura porque es visible en el entorno del contenedor |
 | `DOCKGE_TRANSFER_RSYNC_PROFILES` | `[]` | Array JSON de perfiles SSH/rsync locales (`label`, `host`, `port`, `user`, `path`, `keyPath`, opcional `bandwidthKbps`). Configura la misma identidad de destino en ambas instancias; las rutas de clave nunca salen de su instancia |
 
-> ⚠️ Siempre establece `DOCKGE_DATA_DIR=/app/data` para coincidir con el montaje del volumen, de lo contrario la configuración no persistirá después de un reinicio.
+> ℹ️ Sin `DOCKGE_DATA_DIR`, Dockge-Enhanced usa su volumen persistente `/app/data`. Una ruta configurada explícitamente siempre tiene prioridad.
 
 > ℹ️ `DOCKGE_PUBLIC_URL` es opcional. Si no está configurado, las notificaciones Discord se envían sin enlace. Funciona con proxies inversos y dominios HTTPS.
 
