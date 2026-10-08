@@ -32,7 +32,10 @@ test("#467 conserve le mot de passe Restic dans le répertoire persistant sans D
     manager.restart = () => {};
     const secret = "restic-test-secret-467";
     await manager.saveSettings({ destinations: [{
-        label: "Local", enabled: true, type: "local", resticPassword: secret,
+        label: "Local",
+        enabled: true,
+        type: "local",
+        resticPassword: secret,
         local: { path: path.join(persistent, "backups") },
     }] });
     const file = await fs.readFile(path.join(persistent, "backup-settings.json"), "utf8");
@@ -42,7 +45,8 @@ test("#467 conserve le mot de passe Restic dans le répertoire persistant sans D
     assert.equal(recreated.settings.destinations[0].resticPassword, secret);
     assert.equal(recreated.getSettingsSafe().destinations[0].resticPassword, "***");
     assert.ok(recreated.settings.destinations[0].resticPassword, "Restic password is configured internally");
-    await fs.rm(persistent, { recursive: true, force: true });
+    await fs.rm(persistent, { recursive: true,
+        force: true });
 });
 
 test("defaults unknown stack policies to hot mode", () => {
@@ -66,11 +70,12 @@ test("rejette un lien symbolique qui sort d’une racine autorisée", async () =
         await fs.symlink(outside, link);
         await assert.rejects(assertExistingPathWithinRoots(link, [ root ]), /hors des emplacements/);
     } finally {
-        await fs.rm(root, { recursive: true, force: true });
-        await fs.rm(outside, { recursive: true, force: true });
+        await fs.rm(root, { recursive: true,
+            force: true });
+        await fs.rm(outside, { recursive: true,
+            force: true });
     }
 });
-
 
 test("résout les chemins existants avec l’API Node", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-path-existing-"));
@@ -79,13 +84,15 @@ test("résout les chemins existants avec l’API Node", async () => {
         await fs.mkdir(child);
         assert.equal(await assertExistingPathWithinRoots(child, [ root ]), await fs.realpath(child));
     } finally {
-        await fs.rm(root, { recursive: true, force: true });
+        await fs.rm(root, { recursive: true,
+            force: true });
     }
 });
 
 test("autorise toujours /app/data dans le navigateur de volumes", () => {
     const roots = buildVolumeBrowseRoots([
-        { source: "/volume1/docker", destination: "/dockers-data" },
+        { source: "/volume1/docker",
+            destination: "/dockers-data" },
     ], "/opt/dockge/data");
     assert.deepEqual(roots, [ "/opt/dockge/data", "/app/data", "/dockers-data" ]);
     assert.deepEqual(buildVolumeBrowseRoots([], "/app/data"), [ "/app/data" ]);
@@ -142,7 +149,8 @@ test("mesure un chemin sans interpréter ses caractères comme une commande", as
         assert.match(await readDiskUsage(volume), /^\S+/);
         await assert.rejects(fs.access(marker));
     } finally {
-        await fs.rm(root, { recursive: true, force: true });
+        await fs.rm(root, { recursive: true,
+            force: true });
     }
 });
 
@@ -178,23 +186,28 @@ test("rejette les champs SFTP capables d'injecter des options SSH", () => {
     assert.deepEqual(assertSafeSftpConfig(base), base);
 
     assert.throws(
-        () => assertSafeSftpConfig({ ...base, host: "-oProxyCommand=touch /tmp/pwned" }),
+        () => assertSafeSftpConfig({ ...base,
+            host: "-oProxyCommand=touch /tmp/pwned" }),
         /Hôte SFTP invalide/,
     );
     assert.throws(
-        () => assertSafeSftpConfig({ ...base, host: "backup.example.com -oProxyCommand=id" }),
+        () => assertSafeSftpConfig({ ...base,
+            host: "backup.example.com -oProxyCommand=id" }),
         /Hôte SFTP invalide/,
     );
     assert.throws(
-        () => assertSafeSftpConfig({ ...base, user: "dockge -oProxyCommand=id" }),
+        () => assertSafeSftpConfig({ ...base,
+            user: "dockge -oProxyCommand=id" }),
         /Utilisateur SFTP invalide/,
     );
     assert.throws(
-        () => assertSafeSftpConfig({ ...base, keyPath: "/run/secrets/key -oProxyCommand=id" }),
+        () => assertSafeSftpConfig({ ...base,
+            keyPath: "/run/secrets/key -oProxyCommand=id" }),
         /Chemin de clé SSH invalide/,
     );
     assert.throws(
-        () => assertSafeSftpConfig({ ...base, keyPath: "relative/id_ed25519" }),
+        () => assertSafeSftpConfig({ ...base,
+            keyPath: "relative/id_ed25519" }),
         /Chemin de clé SSH invalide/,
     );
 });
