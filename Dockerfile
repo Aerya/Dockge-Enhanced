@@ -73,6 +73,7 @@ VOLUME ["/app/data"]
 EXPOSE 5001
 
 HEALTHCHECK --interval=60s --timeout=30s --start-period=180s --retries=5 \
-    CMD wget -qO- http://localhost:5001/status || exit 1
+    CMD env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
+        wget -qO- http://127.0.0.1:5001/status || exit 1
 
 CMD ["./node_modules/.bin/tsx", "./backend/index.ts"]
