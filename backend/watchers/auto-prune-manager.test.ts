@@ -20,6 +20,7 @@ import {
     protectedImageIds,
     sameImageId,
     selfImageCreatedOldEnough,
+    summarizePruneDecisions,
     selfUntaggedCandidateIds,
     selfUpdateProtectedImages,
     shouldPruneTaggedImage,
@@ -30,6 +31,13 @@ const activeId = `sha256:${"a".repeat(64)}`;
 const previousId = `sha256:${"b".repeat(64)}`;
 const oldId = `sha256:${"c".repeat(64)}`;
 const targetDigest = `sha256:${"d".repeat(64)}`;
+
+test("formats audit prune summaries in English", () => {
+    assert.equal(summarizePruneDecisions([
+        { id: "used", references: [], outcome: "used" },
+        { id: "removed", references: [], outcome: "removed" },
+    ]), "2 examined: 1 removed, 1 in use/protected, 0 active, 0 rollback, 0 recovery, 0 too recent, 0 excluded, 0 already absent, 0 errors");
+});
 
 test("normalise et rapproche un ID Docker tronqué de son SHA complet", () => {
     const shortId = activeId.slice("sha256:".length, "sha256:".length + 12);

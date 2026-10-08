@@ -1360,7 +1360,7 @@ export class BackupManager {
 
             try {
                 if (!dest.resticPassword) {
-                    throw new Error(`Mot de passe Restic non configuré pour "${dest.label}"`);
+                    throw new Error(`Restic password is not configured for "${dest.label}"`);
                 }
 
                 // Libère un éventuel verrou obsolète avant toute opération restic

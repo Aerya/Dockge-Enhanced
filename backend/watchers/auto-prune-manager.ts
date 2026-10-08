@@ -148,10 +148,10 @@ export function evaluateImagePurgeState(group: ImageRowGroup, context: ImagePurg
 
 export function summarizePruneDecisions(examined: PruneImageDecision[]): string {
     const count = (outcome: PruneImageOutcome) => examined.filter(item => item.outcome === outcome).length;
-    return `${examined.length} examinée(s) : ${count("removed")} supprimée(s), ${count("used")} utilisée(s), `
-        + `${count("active")} active(s), ${count("rollback")} rollback, ${count("recovery")} recovery, `
-        + `${count("tooRecent")} trop récente(s), ${count("excluded")} exclue(s), `
-        + `${count("alreadyAbsent")} déjà absente(s), ${count("error")} erreur(s)`;
+    return `${examined.length} examined: ${count("removed")} removed, ${count("used")} in use/protected, `
+        + `${count("active")} active, ${count("rollback")} rollback, ${count("recovery")} recovery, `
+        + `${count("tooRecent")} too recent, ${count("excluded")} excluded, `
+        + `${count("alreadyAbsent")} already absent, ${count("error")} errors`;
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
