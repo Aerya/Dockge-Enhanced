@@ -549,16 +549,16 @@
   },
   "backend/watchers/self-update-checker.ts": {
     "@stylistic/indent": {
-      "count": 544
+      "count": 535
     },
     "@stylistic/object-property-newline": {
-      "count": 23
+      "count": 21
     },
     "@stylistic/quotes": {
       "count": 1
     },
     "@typescript-eslint/no-explicit-any": {
-      "count": 6
+      "count": 5
     },
     "curly": {
       "count": 18

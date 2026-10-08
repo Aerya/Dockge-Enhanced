@@ -6,9 +6,10 @@
  * Notification Discord : une seule fois par digest distant (pas de spam).
  */
 
-import * as http from "http";
+import { execFile } from "node:child_process";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { promisify } from "node:util";
 import axios from "axios";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
@@ -26,8 +27,6 @@ const SELF_REPO_OVERRIDE = process.env.DOCKGE_SELF_REPO?.trim() ?? "";
 const DATA_DIR = process.env.DOCKGE_DATA_DIR ?? "/opt/dockge/data";
 const SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
 const DIGEST_CACHE = path.join(DATA_DIR, "self-update-digest.json");
-const DOCKER_SOCKET =
-  process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock";
 const CHECK_INTERVAL = 10 * 60 * 1000; // 10 min
 const CHECK_JITTER = 2 * 60 * 1000; // ±2 min pour étaler les requêtes GHCR
 const STARTUP_DELAY = 30_000; // 30s après démarrage
@@ -48,6 +47,32 @@ interface RemoteDigestInfo {
   indexDigest: string;
   platform: ImagePlatform;
   build: BuildMetadata;
+}
+
+const execFileAsync = promisify(execFile);
+
+export interface LocalImageInfo {
+  digest: string;
+  comparable: boolean;
+  source: "repoDigest" | "none";
+  repo: string;
+  build: BuildMetadata;
+  platform?: ImagePlatform;
+}
+
+type CurrentContainerResolver = typeof resolveCurrentContainer;
+type ImageInspectRunner = (imageId: string) => Promise<Record<string, unknown> | null>;
+
+async function inspectDockerImage(imageId: string): Promise<Record<string, unknown> | null> {
+  const { stdout } = await execFileAsync("docker", [ "image", "inspect", imageId ], {
+    timeout: 30_000,
+    maxBuffer: 20 * 1024 * 1024,
+  });
+  const inspected = JSON.parse(stdout) as unknown;
+  if (!Array.isArray(inspected) || typeof inspected[0] !== "object" || inspected[0] === null) {
+    return null;
+  }
+  return inspected[0] as Record<string, unknown>;
 }
 
 function emptyBuildMetadata(): BuildMetadata {
@@ -248,43 +273,16 @@ async function fetchRemoteDigest(
   };
 }
 
-/** Appel HTTP via le socket Docker (sans CLI). */
-function dockerSocketGet(apiPath: string): Promise<any> {
-  return new Promise((resolve) => {
-    const req = http.request(
-      { socketPath: DOCKER_SOCKET, path: apiPath, method: "GET" },
-      (res) => {
-        let data = "";
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch {
-            resolve(null);
-          }
-        });
-      },
-    );
-    req.on("error", () => resolve(null));
-    req.end();
-  });
-}
-
-async function fetchLocalImageInfo(): Promise<{
-  digest: string;
-  comparable: boolean;
-  source: "repoDigest" | "none";
-  repo: string;
-  build: BuildMetadata;
-  platform?: ImagePlatform;
-}> {
+export async function fetchLocalImageInfo(
+  resolveContainer: CurrentContainerResolver = resolveCurrentContainer,
+  inspectImage: ImageInspectRunner = inspectDockerImage,
+): Promise<LocalImageInfo> {
   try {
-    const current = await resolveCurrentContainer();
-    const container = await dockerSocketGet(`/containers/${current.Id}/json`);
-    const imageId: string = container?.Image ?? "";
+    const current = await resolveContainer();
+    const imageId = current.Image ?? "";
     if (!imageId)
       return { digest: "", comparable: false, source: "none", repo: "", build: emptyBuildMetadata() };
-    const image = await dockerSocketGet(`/images/${imageId}/json`);
+    const image = await inspectImage(imageId);
     const repoDigests: string[] = Array.isArray(image?.RepoDigests)
       ? image.RepoDigests
       : [];
