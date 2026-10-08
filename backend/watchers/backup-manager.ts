@@ -729,9 +729,13 @@ export class BackupManager {
     private resticHostIdPromise: Promise<string> | null = null;
     private lastBlockedBackup: { trigger: "scheduled" | "manual" | "on-save"; timestamp: number } | null = null;
     private readonly externalStackManager: ExternalStackManager;
+    private readonly dataDir: string;
+    private readonly settingsPath: string;
 
-    constructor(externalStackManager = new ExternalStackManager(DATA_DIR, STACKS_DIR)) {
+    constructor(externalStackManager = new ExternalStackManager(DATA_DIR, STACKS_DIR), dataDir = DATA_DIR) {
         this.externalStackManager = externalStackManager;
+        this.dataDir = dataDir;
+        this.settingsPath = path.join(dataDir, "backup-settings.json");
     }
 
     // Destinations dont le backup est actuellement en cours { label → timestamp démarrage }
@@ -817,7 +821,7 @@ export class BackupManager {
 
     async loadSettings(): Promise<void> {
         try {
-            const raw  = await fs.readFile(SETTINGS_PATH, "utf8");
+            const raw  = await fs.readFile(this.settingsPath, "utf8");
             const data = JSON.parse(raw) as Record<string, unknown>;
 
             // Migration : ancien champ discordWebhook (string) → discordWebhooks (string[])
@@ -866,8 +870,8 @@ export class BackupManager {
             });
         }
         this.settings = { ...this.settings, ...partial };
-        await fs.mkdir(DATA_DIR, { recursive: true });
-        await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
+        await fs.mkdir(this.dataDir, { recursive: true });
+        await fs.writeFile(this.settingsPath, JSON.stringify(this.settings, null, 2));
         this.restart();
     }
 

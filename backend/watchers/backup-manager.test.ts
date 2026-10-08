@@ -4,6 +4,7 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
+    BackupManager,
     BackupRunLock,
     assertExistingPathWithinRoots,
     assertPathWithinRoots,
@@ -17,6 +18,32 @@ import {
     normalizeStackBackupPolicy,
     readDiskUsage,
 } from "./backup-manager";
+import { resolveDataDir } from "../data-dir";
+
+test("#467 conserve le mot de passe Restic dans le répertoire persistant sans DOCKGE_DATA_DIR", async () => {
+    const persistent = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-backup-settings-"));
+    const dataDir = resolveDataDir({
+        standardDataDir: persistent,
+        legacyDataDir: path.join(persistent, "missing-legacy"),
+        exists: directory => directory === persistent,
+        readDirectory: () => [],
+    });
+    const manager = new BackupManager(undefined, dataDir);
+    manager.restart = () => {};
+    const secret = "restic-test-secret-467";
+    await manager.saveSettings({ destinations: [{
+        label: "Local", enabled: true, type: "local", resticPassword: secret,
+        local: { path: path.join(persistent, "backups") },
+    }] });
+    const file = await fs.readFile(path.join(persistent, "backup-settings.json"), "utf8");
+    assert.match(file, new RegExp(secret));
+    const recreated = new BackupManager(undefined, dataDir);
+    await recreated.loadSettings();
+    assert.equal(recreated.settings.destinations[0].resticPassword, secret);
+    assert.equal(recreated.getSettingsSafe().destinations[0].resticPassword, "***");
+    assert.ok(recreated.settings.destinations[0].resticPassword, "Restic password is configured internally");
+    await fs.rm(persistent, { recursive: true, force: true });
+});
 
 test("defaults unknown stack policies to hot mode", () => {
     assert.deepEqual(normalizeStackBackupPolicy(undefined), { mode: "hot" });
