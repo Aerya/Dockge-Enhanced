@@ -7,7 +7,7 @@ import path from "node:path";
 const id = (number: number) => `sha256:${number.toString(16).padStart(64, "0")}`;
 const created = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 3_600_000).toISOString();
 
-test("chaque image examinée a une raison et les anciens keeps sont réconciliés sans toucher aux images protégées", async () => {
+test("chaque image examinée a une raison et les anciens keeps sont réconciliés sans toucher aux images protégées", async (t) => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), "dockge-prune-acceptance-"));
     const previous = { PATH: process.env.PATH,
         DOCKGE_DATA_DIR: process.env.DOCKGE_DATA_DIR,
@@ -146,6 +146,69 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
         assert.match(result.examined.find(item => item.id === id(11))?.detail ?? "", /encore présente/);
         assert.match(result.examined.find(item => item.id === id(13))?.detail ?? "", /résultat précédent : removed/);
         assert.ok(!calls.some(args => args[0] === "rmi" && [ id(1), id(2), id(3), id(4) ].includes(args[1])));
+
+        await t.test("une référence exclue apparue avant le fallback bloque toute suppression par Image ID", async () => {
+            const racingId = id(17);
+            const excludedReference = "fixture/new-excluded:keep";
+            fs.writeFileSync(scenarioPath, JSON.stringify({
+                rows: [ { ...row(17, "fixture/race-excluded"),
+                    InspectRepoTags: [],
+                    InspectRepoDigests: [] } ],
+                containers: [],
+                inspectReferenceTransitions: {
+                    [racingId]: {
+                        afterPreviousIdInspects: 0,
+                        RepoTags: [ excludedReference ],
+                        RepoDigests: [],
+                    },
+                },
+            }));
+            fs.writeFileSync(callsPath, "");
+
+            await assert.rejects(manager.removePhysicalImageSafely({
+                Id: racingId,
+                RepoTags: [],
+                RepoDigests: [],
+                Created: created(72),
+            }, [ "fixture/race-excluded:latest" ], [ excludedReference ]), /exclue de la purge/);
+
+            const raceCalls = fs.readFileSync(callsPath, "utf8").trim().split("\n")
+                .filter(Boolean).map(line => JSON.parse(line) as string[]);
+            assert.ok(raceCalls.some(args => args[0] === "image" && args[1] === "inspect" && args[2] === racingId));
+            assert.ok(!raceCalls.some(args => args[0] === "rmi"));
+        });
+
+        await t.test("une nouvelle référence réelle est essayée avant le fallback par Image ID", async () => {
+            const racingId = id(18);
+            const freshReference = "fixture/new-reference:latest";
+            fs.writeFileSync(scenarioPath, JSON.stringify({
+                rows: [ { ...row(18, "fixture/race-reference"),
+                    InspectRepoTags: [],
+                    InspectRepoDigests: [] } ],
+                containers: [],
+                inspectReferenceTransitions: {
+                    [racingId]: {
+                        afterPreviousIdInspects: 0,
+                        RepoTags: [ freshReference ],
+                        RepoDigests: [],
+                    },
+                },
+            }));
+            fs.writeFileSync(callsPath, "");
+
+            const deleted = await manager.removePhysicalImageSafely({
+                Id: racingId,
+                RepoTags: [],
+                RepoDigests: [],
+                Created: created(72),
+            }, [ "fixture/race-reference:latest" ]);
+
+            assert.equal(deleted, true);
+            const raceCalls = fs.readFileSync(callsPath, "utf8").trim().split("\n")
+                .filter(Boolean).map(line => JSON.parse(line) as string[]);
+            assert.ok(raceCalls.some(args => args[0] === "rmi" && args[1] === freshReference));
+            assert.ok(!raceCalls.some(args => args[0] === "rmi" && args[1] === racingId));
+        });
 
         const keepRow = (number: number, key: string) => {
             const [ repository, tag ] = rollbackTagFromKey(key).split(":");

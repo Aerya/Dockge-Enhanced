@@ -26,8 +26,13 @@ const removedTargets = new Set(previousCommands
     .map(command => command.at(-1)));
 const initialInventoryDone = previousCommands.some(command => command[0] === "images" && command[1] === "-a");
 const imageStates = rows.map(row => {
-    const repoTags = row.InspectRepoTags ?? (row.Tag === "<none>" ? [] : [ `${row.Repository}:${row.Tag}` ]);
-    const repoDigests = row.InspectRepoDigests ?? row.RepoDigests ?? [];
+    const transition = scenario.inspectReferenceTransitions?.[row.ID];
+    const previousIdInspects = previousCommands.filter(command => command[0] === "image" && command[1] === "inspect"
+        && command.slice(2).includes(row.ID)).length;
+    const transitioned = transition && previousIdInspects >= transition.afterPreviousIdInspects;
+    const repoTags = transitioned ? transition.RepoTags ?? []
+        : row.InspectRepoTags ?? (row.Tag === "<none>" ? [] : [ `${row.Repository}:${row.Tag}` ]);
+    const repoDigests = transitioned ? transition.RepoDigests ?? [] : row.InspectRepoDigests ?? row.RepoDigests ?? [];
     const references = [ ...new Set([ ...repoTags, ...repoDigests ]) ];
     const remainingReferences = references.filter(reference => !removedTargets.has(reference));
     const removedByReference = references.length > 0 && remainingReferences.length === 0

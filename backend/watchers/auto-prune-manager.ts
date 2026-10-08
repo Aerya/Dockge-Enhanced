@@ -721,6 +721,15 @@ export class AutoPruneManager {
                 if (!allowed) {
                     return false;
                 }
+                const freshReferences = inspectedImageReferences(allowed);
+                if (exclusions.some(exclusion => sameImageId(exclusion, imageId)
+                    || displayReferences.includes(exclusion) || freshReferences.includes(exclusion))) {
+                    throw new Error("Cette image est exclue de la purge");
+                }
+                if (freshReferences.some(reference => !attempted.has(reference))) {
+                    current = allowed;
+                    continue;
+                }
                 let reportedMissing = false;
                 try {
                     await execFileAsync("docker", [ "rmi", imageId ]);
