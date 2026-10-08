@@ -37,6 +37,7 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
             ID: id(number),
             Created: created(age),
         });
+        const nodeRealReference = `node:26-alpine@${id(8)}`;
         fs.writeFileSync(scenarioPath, JSON.stringify({
             rows: [
                 row(1, "ghcr.io/aerya/dockge-enhanced", "<none>"),
@@ -45,9 +46,20 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
                 row(4, "ghcr.io/aerya/dockge-enhanced", "<none>", 24),
                 row(5, "ghcr.io/aerya/dockge-enhanced", "<none>"),
                 row(6, "fixture/excluded"), row(7, "fixture/used"),
-                row(8, "node", "26-alpine", 336), row(9, "fixture/gone"), row(10, "fixture/ambiguous"),
+                { ...row(8, "node", "26-alpine", 336),
+                    InspectRepoTags: [ nodeRealReference ],
+                    InspectRepoDigests: [ nodeRealReference ] },
+                row(9, "fixture/gone"), row(10, "fixture/ambiguous"),
                 row(11, "fixture/stubborn"), row(12, "fixture/gone-during-rmi"),
                 row(13, "fixture/final-stubborn"),
+                { ...row(14, "fixture/multi"),
+                    InspectRepoTags: [ "fixture/multi:first", "fixture/multi:second" ] },
+                { ...row(15, "fixture/fallback"),
+                    InspectRepoTags: [],
+                    InspectRepoDigests: [] },
+                { ...row(16, "fixture/fallback-error"),
+                    InspectRepoTags: [],
+                    InspectRepoDigests: [] },
             ],
             containers: [{ Id: "active-self",
                 Image: id(1),
@@ -58,12 +70,15 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
             missingIds: [ id(9) ],
             batchOmittedIds: [ id(8) ],
             rmiErrors: {
+                "node:26-alpine": "Error response from daemon: No such image",
                 "fixture/ambiguous:latest": "Error response from daemon: No such image",
+                [id(10)]: "permission denied",
+                [id(16)]: "permission denied",
                 "fixture/gone-during-rmi:latest": "Error response from daemon: No such image",
             },
             rmiMissingAndAbsent: [ "fixture/gone-during-rmi:latest" ],
-            rmiLeavesPresent: [ "fixture/stubborn:latest", "fixture/final-stubborn:latest" ],
-            postInspectMissingButFinalPresent: [ "fixture/final-stubborn:latest" ],
+            rmiLeavesPresent: [ "fixture/stubborn:latest", id(11), "fixture/final-stubborn:latest" ],
+            postInspectMissingButFinalPresent: [ id(13) ],
         }));
         const manager = AutoPruneManager.getInstance();
         await manager.updateSettings({ unusedExclusions: [ "fixture/excluded:latest" ] });
@@ -83,7 +98,7 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
         fs.writeFileSync(callsPath, "");
 
         const result = await manager.runUnusedPrune(false);
-        assert.equal(result.examined.length, 13);
+        assert.equal(result.examined.length, 16);
         assert.deepEqual(Object.fromEntries(result.examined.map(item => [ item.id, item.outcome ])), {
             [id(1)]: "active",
             [id(2)]: "recovery",
@@ -98,19 +113,36 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
             [id(11)]: "error",
             [id(12)]: "alreadyAbsent",
             [id(13)]: "error",
+            [id(14)]: "removed",
+            [id(15)]: "removed",
+            [id(16)]: "error",
         });
-        assert.equal(result.examined.reduce((sum, item) => sum + Number(Boolean(item.outcome)), 0), 13);
-        assert.equal(result.errors.length, 3);
+        assert.equal(result.examined.reduce((sum, item) => sum + Number(Boolean(item.outcome)), 0), 16);
+        assert.equal(result.errors.length, 4);
         assert.equal(readImagePruneReports()[0]?.origin, "manual");
-        assert.equal(readImagePruneReports()[0]?.examined.length, 13);
+        assert.equal(readImagePruneReports()[0]?.examined.length, 16);
         recordImagePruneReport("automatic", "unused", result.examined, result.errors);
         assert.deepEqual(readImagePruneReports().slice(0, 2).map(report => report.origin), [ "automatic", "manual" ]);
         const calls = fs.readFileSync(callsPath, "utf8").trim().split("\n").map(line => JSON.parse(line) as string[]);
         assert.ok(calls.some(args => args[0] === "rmi" && args[1] === id(5)));
         assert.ok(calls.some(args => args[0] === "image" && args[1] === "inspect"
             && args.length === 3 && args[2] === id(8)));
+        assert.ok(calls.some(args => args[0] === "rmi" && args[1] === nodeRealReference));
+        assert.ok(!calls.some(args => args[0] === "rmi" && args[1] === "node:26-alpine"));
         assert.equal(result.examined.find(item => item.id === id(8))?.outcome, "removed");
-        assert.match(result.examined.find(item => item.id === id(10))?.detail ?? "", /encore présente/);
+        assert.ok(!result.errors.some(error => error.includes(id(8))));
+        assert.ok(!result.alreadyAbsent.includes("node:26-alpine"));
+        assert.deepEqual(calls.filter(args => args[0] === "rmi"
+            && [ "fixture/multi:first", "fixture/multi:second" ].includes(args[1])).map(args => args[1]),
+        [ "fixture/multi:first", "fixture/multi:second" ]);
+        assert.ok(calls.some(args => args[0] === "rmi" && args[1] === id(15)));
+        assert.ok(calls.some(args => args[0] === "rmi" && args[1] === id(16)));
+        assert.equal(calls.filter(args => args[0] === "images" && args[1] === "-a").length, 2);
+        assert.equal(calls.filter(args => args[0] === "image" && args[1] === "inspect" && args.length > 3).length, 1);
+        assert.equal(calls.filter(args => args[0] === "image" && args[1] === "inspect" && args.length === 3).length, 31);
+        assert.equal(calls.filter(args => args[0] === "rmi" && !args[1].startsWith("sha256:")).length, 7);
+        assert.equal(calls.filter(args => args[0] === "rmi" && args[1].startsWith("sha256:")).length, 5);
+        assert.match(result.examined.find(item => item.id === id(10))?.detail ?? "", /permission denied/);
         assert.match(result.examined.find(item => item.id === id(11))?.detail ?? "", /encore présente/);
         assert.match(result.examined.find(item => item.id === id(13))?.detail ?? "", /résultat précédent : removed/);
         assert.ok(!calls.some(args => args[0] === "rmi" && [ id(1), id(2), id(3), id(4) ].includes(args[1])));

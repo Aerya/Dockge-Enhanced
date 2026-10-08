@@ -25,14 +25,29 @@ const removedTargets = new Set(previousCommands
         && !scenario.rmiLeavesPresent?.includes(command.at(-1)))
     .map(command => command.at(-1)));
 const initialInventoryDone = previousCommands.some(command => command[0] === "images" && command[1] === "-a");
-const visibleRows = rows.filter(row => !removedTargets.has(row.ID)
-    && !removedTargets.has(`${row.Repository}:${row.Tag}`)
-    && !(initialInventoryDone && scenario.missingIds?.includes(row.ID)));
-const images = visibleRows.map(row => ({
-    Id: row.ID,
-    RepoTags: row.Tag === "<none>" ? [] : [ `${row.Repository}:${row.Tag}` ],
-    RepoDigests: row.RepoDigests ?? [],
-    Created: row.Created ?? "2026-09-01T00:00:00Z",
+const imageStates = rows.map(row => {
+    const repoTags = row.InspectRepoTags ?? (row.Tag === "<none>" ? [] : [ `${row.Repository}:${row.Tag}` ]);
+    const repoDigests = row.InspectRepoDigests ?? row.RepoDigests ?? [];
+    const references = [ ...new Set([ ...repoTags, ...repoDigests ]) ];
+    const remainingReferences = references.filter(reference => !removedTargets.has(reference));
+    const removedByReference = references.length > 0 && remainingReferences.length === 0
+        && references.some(reference => removedTargets.has(reference));
+    return {
+        row,
+        references,
+        repoTags: repoTags.filter(reference => remainingReferences.includes(reference)),
+        repoDigests: repoDigests.filter(reference => remainingReferences.includes(reference)),
+        removed: removedTargets.has(row.ID) || removedByReference,
+    };
+});
+const visibleStates = imageStates.filter(state => !state.removed
+    && !(initialInventoryDone && scenario.missingIds?.includes(state.row.ID)));
+const visibleRows = visibleStates.map(state => state.row);
+const images = visibleStates.map(state => ({
+    Id: state.row.ID,
+    RepoTags: state.repoTags,
+    RepoDigests: state.repoDigests,
+    Created: state.row.Created ?? "2026-09-01T00:00:00Z",
 }));
 
 if (args[0] === "images" && args[1] === "-a") {
@@ -43,11 +58,13 @@ if (args[0] === "images" && args[1] === "-a") {
     }
 } else if (args[0] === "image" && args[1] === "inspect") {
     const selected = args.slice(2).map(reference => images.find(image =>
-        image.Id === reference || image.RepoTags.includes(reference))).filter(Boolean);
+        image.Id === reference || image.RepoTags.includes(reference) || image.RepoDigests.includes(reference))).filter(Boolean);
     const omittedFromBatch = args.length > 3 && args.slice(2).some(reference => scenario.batchOmittedIds?.includes(reference));
     const forcedMissing = args.slice(2).some(reference => scenario.missingIds?.includes(reference)
         || (scenario.postInspectMissingButFinalPresent?.includes(reference)
-            && previousCommands.some(command => command[0] === "rmi" && command.at(-1) === reference)));
+            && imageStates.some(state => state.row.ID === reference
+                && previousCommands.some(command => command[0] === "rmi"
+                    && (command.at(-1) === state.row.ID || state.references.includes(command.at(-1)))))));
     const forcedError = args.slice(2).find(reference => scenario.inspectErrors?.[reference]);
     if (forcedError) {
         process.stderr.write(scenario.inspectErrors[forcedError]);

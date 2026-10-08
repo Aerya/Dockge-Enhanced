@@ -63,6 +63,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Cleanup now uses Docker's real image references**
+
+Unused-image cleanup no longer assumes that the `Repository:Tag` shown by `docker images` is an attached, removable reference. It uses the inspected `RepoTags` and `RepoDigests`, removes every required reference, then safely falls back to the Image ID when necessary and verifies that the physical image disappeared. Container use, exclusions, active Enhanced, recovery, rollback and grace-period protections remain enforced.
+
 **Prune reports now match Docker's observed state**
 
 When a batch inspection does not return an image, cleanup now checks that Image ID directly before calling it absent. Every deletion is checked again, then a final lightweight Docker inventory verifies the reported result. Resources now shows Docker usage separately from prune state: an `unused` image may still be active Enhanced, protected for recovery or rollback, too recent, or excluded. Untagged images are described neutrally as **Untagged image**, not as old images. The workflow remains bounded to one initial inventory, targeted checks, and one final light verification.

@@ -31,9 +31,11 @@ test("une purge de quinze images ne refait pas quinze inventaires Docker", async
         assert.equal(calls.filter(isCall("images", "-a")).length, 2);
         assert.equal(calls.filter(isCall("inspect", "fixture-active-container")).length, 1);
         assert.equal(calls.filter(isCall("image", "inspect")).filter(args => args.length > 3).length, 1);
-        assert.equal(calls.filter(isCall("image", "inspect")).filter(args => args.length === 3).length, 30);
+        assert.equal(calls.filter(isCall("image", "inspect")).filter(args => args.length === 3).length, 45);
         assert.equal(calls.filter(isCall("ps", "-aq", "--filter")).length, 15);
         assert.equal(calls.filter(isCall("rmi")).length, 15);
+        assert.equal(calls.filter(isCall("rmi")).filter(args => /^fixture\/unused-\d+:latest$/.test(args[1])).length, 15);
+        assert.equal(calls.filter(isCall("rmi")).filter(args => /^sha256:/.test(args[1])).length, 0);
         assert.ok(!calls.some(args => args.includes("fixture/active:latest") || args.includes("fixture/rollback:latest")));
     } finally {
         if (previousPath === undefined) {

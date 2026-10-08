@@ -104,10 +104,14 @@ test("l'ancienne route de purge ne peut plus appeler docker image prune -a", () 
 test("toutes les suppressions d'images du moteur revalident la protection juste avant rmi", () => {
     const source = fs.readFileSync(path.join(process.cwd(), "backend/watchers/auto-prune-manager.ts"), "utf8");
     assert.match(source, /async removeImageSafely[\s\S]*assertImageRemovalAllowed\(target\)[\s\S]*execFileAsync\("docker", \[ "rmi"/);
-    assert.equal((source.slice(source.indexOf("async removeImageSafely"), source.indexOf("async runDanglingPrune"))
+    assert.equal((source.slice(source.indexOf("async removeImageSafely"), source.indexOf("async removePhysicalImageSafely"))
         .match(/execFileAsync\("docker", \[ "rmi"/g) ?? []).length, 1);
+    const physicalRemoval = source.slice(source.indexOf("async removePhysicalImageSafely"), source.indexOf("private async reconcileFinalImageState"));
+    assert.match(physicalRemoval, /assertImageRemovalAllowed\(imageId\)[\s\S]*execFileAsync\("docker", \[ "rmi", target \]/);
+    assert.match(physicalRemoval, /assertImageRemovalAllowed\(imageId\)[\s\S]*execFileAsync\("docker", \[ "rmi", imageId \]/);
+    assert.doesNotMatch(physicalRemoval, /--force/);
     assert.match(source, /runDanglingPrune[\s\S]*removeImageSafely\(id\)/);
-    assert.match(source, /runUnusedPrune[\s\S]*removeImageSafely\(target\)/);
+    assert.match(source, /runUnusedPrune[\s\S]*removePhysicalImageSafely\(inspected, references, exclusions\)/);
     assert.match(source, /isMissingDockerImageError[\s\S]*return false/);
 });
 
