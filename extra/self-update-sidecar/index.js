@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const https = require("https");
 const { execFileSync } = require("child_process");
 const stateDir = process.env.SELF_UPDATE_STATE_DIR || "/state/self-update";
 const keyPath = path.join(stateDir, "plan.key");
@@ -105,6 +106,17 @@ function readAndClaimPlan(planPath = process.env.SELF_UPDATE_PLAN) {
     return { plan, claimed };
 }
 function docker(args, options = {}) { return execFileSync("docker", args, { encoding: "utf8", stdio: [ "ignore", "pipe", "pipe" ], ...options }); }
+function waitForStart(plan, timeoutMs = 60_000) {
+    const startFile = process.env.SELF_UPDATE_START_FILE;
+    if (!startFile) return;
+    if (path.dirname(startFile) !== stateDir || path.basename(startFile) !== `${plan.id}.start`) throw new Error("Invalid self-update sidecar start signal");
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        if (fs.existsSync(startFile)) return;
+        execFileSync("sleep", [ "0.1" ]);
+    }
+    throw new Error("Updater sidecar network setup did not complete");
+}
 function ensureTargetImage(image, deps = {}) {
     const allowedTests = (process.env.SELF_UPDATE_ALLOW_TEST_IMAGES || "").split(",").map(value => value.trim()).filter(Boolean);
     if (allowedTests.includes(image)) return;
@@ -143,11 +155,18 @@ function waitReady(name, options = {}) {
 }
 function composeUpdate(plan, image, deps = {}) {
     validateCompose(plan.compose);
+    // Docker Compose writes every -f path into permanent container labels. The file
+    // must therefore exist on the Docker host even after this updater exits.
     const override = path.join(stateDir, `${plan.id}.override.yaml`);
+    const hostStateDir = process.env.SELF_UPDATE_HOST_STATE_DIR;
+    if (!hostStateDir || !path.isAbsolute(hostStateDir)) {
+        throw new Error("The host-visible self-update state directory is required for Compose updates");
+    }
+    const hostOverride = path.join(hostStateDir, `${plan.id}.override.yaml`);
     atomicWriteJson(override, { services: { [plan.compose.service]: { image } } });
     const base = [ "compose", "--project-directory", plan.compose.workingDir, "-p", plan.compose.project ];
     for (const file of plan.compose.configFiles) base.push("-f", file);
-    base.push("-f", override);
+    base.push("-f", hostOverride);
     const allowedTests = (process.env.SELF_UPDATE_ALLOW_TEST_IMAGES || "").split(",").filter(Boolean);
     if (!allowedTests.includes(image) && /^ghcr\.io\//i.test(image)) {
         deps.onStage?.("pull-target");
@@ -159,7 +178,24 @@ function composeUpdate(plan, image, deps = {}) {
 }
 function dockerApi(method, requestPath, body, options = {}) {
     return new Promise((resolve, reject) => {
-        const req = http.request({ socketPath, path: requestPath, method, headers: body ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } : undefined }, res => {
+        const configuredHost = process.env.DOCKER_HOST;
+        let requestOptions = { socketPath, path: requestPath, method, headers: body ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } : undefined };
+        let client = http;
+        if (configuredHost?.startsWith("tcp://")) {
+            const endpoint = new URL(configuredHost);
+            requestOptions = { ...requestOptions, hostname: endpoint.hostname, port: endpoint.port, socketPath: undefined };
+            if (process.env.DOCKER_TLS_VERIFY) {
+                client = https;
+                const certPath = process.env.DOCKER_CERT_PATH;
+                if (!certPath) throw new Error("DOCKER_TLS_VERIFY requires DOCKER_CERT_PATH in the updater sidecar");
+                requestOptions = { ...requestOptions,
+                    ca: fs.readFileSync(path.join(certPath, "ca.pem")),
+                    cert: fs.readFileSync(path.join(certPath, "cert.pem")),
+                    key: fs.readFileSync(path.join(certPath, "key.pem")),
+                };
+            }
+        }
+        const req = client.request(requestOptions, res => {
             let raw = ""; res.on("data", chunk => { raw += chunk; });
             res.on("end", () => {
                 if (res.statusCode >= 200 && res.statusCode < 300) return resolve(raw);
@@ -190,6 +226,7 @@ async function run(deps = {}) {
     let claimed, override, plan;
     try {
         ({ plan, claimed } = readAndClaimPlan(deps.planPath));
+        waitForStart(plan, deps.startTimeoutMs);
         const inspected = inspect(plan.targetContainerId, deps);
         if (inspected.Id !== plan.targetContainerId || String(inspected.Name || "").replace(/^\//, "") !== plan.targetContainerName || inspected.Config?.Image !== plan.previousImage) throw new Error("Self-update plan does not match the current Dockge-Enhanced container");
         const recoveryPath = path.join(stateDir, "recovery", plan.recoveryFile);
@@ -258,7 +295,10 @@ async function run(deps = {}) {
             return "rollback-failed";
         }
     } catch (error) { writeStatus("failed", error instanceof Error ? error.message : String(error), false, plan); return "failed"; }
-    finally { if (override) fs.rmSync(override, { force: true }); if (claimed) fs.rmSync(claimed, { force: true }); }
+    // Do not unlink an override used by a Compose-created container: its
+    // com.docker.compose.project.config_files label still refers to that path.
+    // Stale overrides can be pruned separately after checking container labels.
+    finally { if (claimed) fs.rmSync(claimed, { force: true }); }
 }
-module.exports = { applicationReady, atomicWriteJson, composeUpdate, dockerApi, ensureTargetImage, imageRepository, inside, readAndClaimPlan, run, snapshotCreate, validateCompose, waitReady, writeStatus };
+module.exports = { applicationReady, atomicWriteJson, composeUpdate, dockerApi, ensureTargetImage, imageRepository, inside, readAndClaimPlan, run, snapshotCreate, validateCompose, waitForStart, waitReady, writeStatus };
 if (require.main === module) run().then(result => { if ([ "failed", "rollback-failed" ].includes(result)) process.exitCode = 1; }).catch(error => { console.error(error); process.exitCode = 1; });

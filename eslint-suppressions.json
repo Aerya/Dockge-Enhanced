@@ -233,17 +233,6 @@
       "count": 5
     }
   },
-  "backend/self-update/manager.ts": {
-    "@stylistic/indent": {
-      "count": 168
-    },
-    "@stylistic/object-property-newline": {
-      "count": 27
-    },
-    "curly": {
-      "count": 34
-    }
-  },
   "backend/self-update/operation-guard-policy.ts": {
     "@stylistic/object-property-newline": {
       "count": 1

@@ -427,6 +427,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 Dockge-Enhanced gestiona automáticamente todo el flujo: copia Restic obligatoria, verificación de integridad, reemplazo controlado del contenedor, healthcheck y confirmación final. Las notificaciones Discord/Apprise permiten seguir la operación sin mantener abierta la WebUI.
 
+El updater admite el socket Unix habitual (incluido `DOCKGE_DOCKER_SOCKET`) y un Docker Socket Proxy de confianza configurado con `DOCKER_HOST=tcp://proxy:2375`. En modo TCP no monta ningún socket: se une primero a las mismas redes Docker y después recibe su plan firmado usando exactamente ese endpoint. El proxy debe permitir inspeccionar, crear, iniciar, detener y eliminar contenedores, inspeccionar/descargar imágenes y conectar redes; un proxy de solo lectura no puede realizar un self-update. Un endpoint TCP sin cifrar debe permanecer únicamente en una red interna de confianza. Los parámetros TLS se conservan si el directorio de certificados está montado en Enhanced; de lo contrario la actualización se detiene de forma segura antes de reemplazar nada.
+
 Antes de iniciar una autoactualización, Enhanced comprueba también que no haya ninguna operación sensible en curso: copia o restauración Restic, copia/traslado/transferencia de datos o replicación de stacks, comprobaciones/actualizaciones de imágenes Docker, análisis Trivy e integración protegida de stacks externas. Si una operación bloquea la actualización, esta queda en espera, la razón aparece en la WebUI y se envía mediante Discord/Apprise, y el watcher la reintenta automáticamente.
 
 <table>
