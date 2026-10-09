@@ -90,6 +90,7 @@ export const POWERWATCH_VOLUME = "powerwatch_dockge_data";
 const STACK_DIR = path.join(STACKS_DIR, POWERWATCH_STACK_NAME);
 const CACHE_TTL_MS = 8_000;
 const REQUEST_TIMEOUT_MS = 4_000;
+const HOST_PROBE_TIMEOUT_MS = 180_000;
 
 export const DEFAULT_POWERWATCH_SETTINGS: PowerWatchSettings = {
     enabled: false,
@@ -316,6 +317,33 @@ function publishedPort(inspect: DockerInspect): number | null {
     return Number.isInteger(port) && port > 0 ? port : null;
 }
 
+/** A listening socket is reported in /proc/net/tcp{,6} with TCP state 0A. */
+function hostPortIsListening(probe: string, port: number): boolean {
+    const match = probe.match(/PW_TCP_BEGIN\r?\n([\s\S]*?)PW_TCP_END/);
+    if (!match) {
+        throw new Error("Unable to read Docker host TCP listeners");
+    }
+    const hexPort = port.toString(16).toUpperCase().padStart(4, "0");
+    return match[1].split(/\r?\n/).some((line) => {
+        const fields = line.trim().split(/\s+/);
+        return fields.length >= 4 && fields[3] === "0A" && fields[1]?.split(":").at(-1)?.toUpperCase() === hexPort;
+    });
+}
+
+function isOurManagedPowerWatch(item: DockerInspect): boolean {
+    const labels = item.Config?.Labels ?? {};
+    return item.Name?.replace(/^\//, "") === POWERWATCH_CONTAINER_NAME &&
+        labels["com.dockge-enhanced.managed"] === "powerwatch" &&
+        labels["com.dockge-enhanced.integration"] === "powerwatch" &&
+        labels["com.docker.compose.project"] === POWERWATCH_STACK_NAME &&
+        labels["com.docker.compose.service"] === "powerwatch";
+}
+
+function hasPublishedHostPort(item: DockerInspect, port: number): boolean {
+    return Object.values(item.HostConfig?.PortBindings ?? {}).some((bindings) =>
+        bindings?.some((binding) => Number(binding.HostPort) === port));
+}
+
 export class PowerWatchManager {
     private static instance: PowerWatchManager;
     settings: PowerWatchSettings = { ...DEFAULT_POWERWATCH_SETTINGS };
@@ -400,12 +428,20 @@ export class PowerWatchManager {
                 state: inspect.State?.Running ? "running" : "stopped",
                 hostPort: publishedPort(inspect) });
         }
+        // This probe runs on the Docker *host* (not in Enhanced's own network
+        // namespace). --pull=missing supports a first install without a cached image.
+        // A missing optional NVIDIA/MSR/RAPL sensor must never fail the shell.
         const hostProbe = await this.dependencies.docker([
-            "run", "--rm", "--read-only", "--entrypoint", "sh",
+            "run", "--rm", "--pull=missing", "--network", "host", "--read-only", "--entrypoint", "sh",
             "-v", "/sys:/host-sys:ro", "-v", "/dev:/host-dev:ro",
             POWERWATCH_IMAGE, "-c",
-            "test -d /host-sys/devices/virtual/powercap/intel-rapl && echo powercap; test -c /host-dev/cpu/0/msr && echo msr; test -c /host-dev/nvidiactl && echo nvidia-device",
-        ], { timeoutMs: REQUEST_TIMEOUT_MS * 3 });
+            "test -d /host-sys/devices/virtual/powercap/intel-rapl && echo powercap; " +
+                "test -c /host-dev/cpu/0/msr && echo msr; " +
+                "test -c /host-dev/nvidiactl && echo nvidia-device; " +
+                "printf 'PW_TCP_BEGIN\\n'; cat /proc/net/tcp || exit 30; " +
+                "if test -r /proc/net/tcp6; then cat /proc/net/tcp6 || exit 31; fi; " +
+                "printf 'PW_TCP_END\\n'; exit 0",
+        ], { timeoutMs: HOST_PROBE_TIMEOUT_MS });
         if (hostProbe.code !== 0) {
             throw new Error(`Unable to inspect Docker host sensors: ${hostProbe.stderr.trim() || "probe failed"}`);
         }
@@ -414,25 +450,32 @@ export class PowerWatchManager {
             throw new Error(`Unable to inspect Docker GPU runtimes: ${info.stderr.trim() || "docker info failed"}`);
         }
         const probe = hostProbe.stdout;
+        const hostPortBusy = hostPortIsListening(probe, this.settings.hostPort);
+        let nvidiaAvailable = false;
+        if (probe.includes("nvidia-device") && info.stdout.toLowerCase().includes("nvidia")) {
+            // A configured runtime alone is insufficient: verify the GPU can
+            // actually be accessed from a disposable PowerWatch container.
+            const gpuProbe = await this.dependencies.docker([
+                "run", "--rm", "--pull=never", "--gpus", "all", "--read-only",
+                "--env", "NVIDIA_DRIVER_CAPABILITIES=utility", "--entrypoint", "sh",
+                POWERWATCH_IMAGE, "-c",
+                "test -c /dev/nvidiactl && command -v nvidia-smi >/dev/null && nvidia-smi -L >/dev/null",
+            ], { timeoutMs: REQUEST_TIMEOUT_MS * 6 });
+            nvidiaAvailable = gpuProbe.code === 0;
+        }
         const capabilities = {
             linux: this.dependencies.platform() === "linux",
             powercap: probe.includes("powercap"),
             msr: probe.includes("msr"),
-            nvidia: probe.includes("nvidia-device") && info.stdout.toLowerCase().includes("nvidia"),
+            nvidia: nvidiaAvailable,
         };
-        const portAvailable = !inspections.some((item) => {
-            const labels = item.Config?.Labels ?? {};
-            const isOurManagedContainer = item.Name?.replace(/^\//, "") === POWERWATCH_CONTAINER_NAME &&
-                labels["com.dockge-enhanced.managed"] === "powerwatch" &&
-                labels["com.dockge-enhanced.integration"] === "powerwatch" &&
-                labels["com.docker.compose.project"] === POWERWATCH_STACK_NAME &&
-                labels["com.docker.compose.service"] === "powerwatch";
-            if (isOurManagedContainer || !item.State?.Running) {
-                return false;
-            }
-            return Object.values(item.HostConfig?.PortBindings ?? {}).some((bindings) =>
-                bindings?.some((binding) => Number(binding.HostPort) === this.settings.hostPort));
-        });
+        const otherDockerPortBusy = inspections.some((item) =>
+            item.State?.Running && !isOurManagedPowerWatch(item) && hasPublishedHostPort(item, this.settings.hostPort));
+        // Own existing managed instance is an expected listener during 'start'
+        // and a configuration refresh. Never exempt another process/container.
+        const ownManagedPort = inspections.some((item) =>
+            item.State?.Running && isOurManagedPowerWatch(item) && hasPublishedHostPort(item, this.settings.hostPort));
+        const portAvailable = !otherDockerPortBusy && (!hostPortBusy || ownManagedPort);
         return { containers,
             capabilities,
             portAvailable };

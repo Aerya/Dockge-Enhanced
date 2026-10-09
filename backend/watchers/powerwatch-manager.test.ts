@@ -259,7 +259,7 @@ test("detection lists multiple official PowerWatch containers without controllin
             return result(JSON.stringify([ inspections.get(args[1]) ]));
         }
         if (args[0] === "run") {
-            return result("powercap\nnvidia-device\n");
+            return result("powercap\nnvidia-device\nPW_TCP_BEGIN\nPW_TCP_END\n");
         }
         if (args[0] === "info") {
             return result("{\"nvidia\":{}}");
@@ -361,7 +361,10 @@ test("forced unavailable hardware blocks managed start before Compose is written
                 if (args[0] === "ps") {
                     return result("");
                 }
-                if (args[0] === "run" || args[0] === "info") {
+                if (args[0] === "run") {
+                    return result("PW_TCP_BEGIN\nPW_TCP_END\n");
+                }
+                if (args[0] === "info") {
                     return result("");
                 }
                 return result();
@@ -440,7 +443,7 @@ test("managed detection considers all published host ports, not only container p
             }]));
         }
         if (args[0] === "run") {
-            return result("powercap\n");
+            return result("powercap\nPW_TCP_BEGIN\nPW_TCP_END\n");
         }
         if (args[0] === "info") {
             return result("{}");
@@ -465,4 +468,96 @@ test("failed host probe is an error, not missing hardware", async () => {
         return result();
     } });
     await assert.rejects(() => manager.detect(), /Docker socket denied/);
+});
+
+test("missing optional sensors are not a Docker failure, but host listeners block installation", async () => {
+    const commands: string[][] = [];
+    const manager = managerWith({ docker: async (args) => {
+        commands.push(args);
+        if (args[0] === "ps") {
+            return result("");
+        }
+        if (args[0] === "run") {
+            return result("PW_TCP_BEGIN\n   sl  local_address rem_address st\n   0: 0100007F:0BB8 00000000:0000 0A\nPW_TCP_END\n");
+        }
+        if (args[0] === "info") {
+            return result("{}");
+        }
+        return result();
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        enabled: true,
+        mode: "managed",
+        hostPort: 3000 };
+    const detection = await manager.detect();
+    assert.deepEqual(detection.capabilities, { linux: true,
+        powercap: false,
+        msr: false,
+        nvidia: false });
+    assert.equal(detection.portAvailable, false);
+    assert.equal(commands.some((args) => args.includes("--network") && args.includes("host")), true);
+    assert.equal(commands.some((args) => args.includes("--pull=missing")), true);
+});
+
+test("a non-listening host socket does not block the selected port", async () => {
+    const manager = managerWith({ docker: async (args) => {
+        if (args[0] === "run") {
+            return result("PW_TCP_BEGIN\n   0: 0100007F:0BB8 00000000:0000 01\nPW_TCP_END\n");
+        }
+        if (args[0] === "info") {
+            return result("{}");
+        }
+        return result();
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        hostPort: 3000 };
+    assert.equal((await manager.detect()).portAvailable, true);
+});
+
+test("a failed real NVIDIA container probe disables NVIDIA auto mode", async () => {
+    const commands: string[][] = [];
+    const manager = managerWith({ docker: async (args) => {
+        commands.push(args);
+        if (args[0] === "run" && args.includes("--gpus")) {
+            return result("", 125, "GPU runtime not usable");
+        }
+        if (args[0] === "run") {
+            return result("nvidia-device\nPW_TCP_BEGIN\nPW_TCP_END\n");
+        }
+        if (args[0] === "info") {
+            return result("{\"nvidia\":{}}");
+        }
+        return result();
+    } });
+    const detection = await manager.detect();
+    assert.equal(detection.capabilities.nvidia, false);
+    assert.equal(commands.some((args) => args.includes("--gpus")), true);
+});
+
+test("own managed container may reuse its own listening port", async () => {
+    const manager = managerWith({ docker: async (args) => {
+        if (args[0] === "ps") {
+            return result("managed\n");
+        }
+        if (args[0] === "inspect") {
+            return result(JSON.stringify([{ Name: "/powerwatch-dockge-enhanced",
+                Config: { Image: "ghcr.io/aerya/powerwatch:latest",
+                    Labels: { "com.dockge-enhanced.managed": "powerwatch",
+                        "com.dockge-enhanced.integration": "powerwatch",
+                        "com.docker.compose.project": "powerwatch-dockge-enhanced",
+                        "com.docker.compose.service": "powerwatch" } },
+                State: { Running: true },
+                HostConfig: { PortBindings: { "3000/tcp": [{ HostPort: "3000" }] } } }]));
+        }
+        if (args[0] === "run") {
+            return result("PW_TCP_BEGIN\n   0: 0100007F:0BB8 00000000:0000 0A\nPW_TCP_END\n");
+        }
+        if (args[0] === "info") {
+            return result("{}");
+        }
+        return result();
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        hostPort: 3000 };
+    assert.equal((await manager.detect()).portAvailable, true);
 });
