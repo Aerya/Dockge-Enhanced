@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-09 — ImageWatcher Inmediato más rápido y fiable** — Control al activar la opción y cada 5 minutos para las imágenes en modo Inmediato, comparación con las imágenes ejecutadas realmente, consultas compartidas, espera tras HTTP 429 y resumen de cada comprobación en los logs. Se mantienen las pausas, las ventanas de mantenimiento y las protecciones de rollback.
+
 **2026-10-09 — Supervisión opcional unificada y Hub PowerWatch gestionado** — Kula, Dozzle, PowerWatch y Hub disponen de tarjetas coherentes con descripciones traducidas, enlaces GitHub y acciones adaptadas a su estado. El Hub se puede instalar y gestionar de forma independiente con su propio volumen persistente. Una instancia PowerWatch o Hub existente solo requiere la URL de su WebUI; Enhanced utiliza automáticamente la API integrada. Sus ajustes se guardan por separado.
 
 

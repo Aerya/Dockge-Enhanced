@@ -1,5 +1,6 @@
 {
-    "releaseNews.item.powerWatchMonitoring": "Monitoring reúne Kula, Dozzle, PowerWatch y PowerWatch Hub en tarjetas opcionales coherentes con enlaces a GitHub. Para una instancia existente solo se necesita la URL habitual de su WebUI; Enhanced descubre la API automáticamente. PowerWatch y Hub también pueden instalarse y gestionarse por separado, con volúmenes persistentes y estados claros.",
+    "releaseNews.item.imageWatcherImmediate": "El modo «Inmediato» comprueba las imágenes al activarse y, después, cada 5 minutos. Se comparten las peticiones idénticas a los registros y se respetan los límites de tráfico. Enhanced compara las imágenes realmente ejecutadas: un contenedor antiguo ya no se considera actualizado solo porque otro haya renovado la etiqueta `latest`. Se mantienen las pausas, las ventanas de mantenimiento y las protecciones de rollback.",
+    "releaseNews.item.powerWatchMonitoring": "Monitoring reúne Kula, Dozzle, {powerwatch} y PowerWatch Hub en tarjetas opcionales coherentes con enlaces a GitHub. Para una instancia existente solo se necesita la URL habitual de su WebUI; Enhanced descubre la API automáticamente. PowerWatch y Hub también pueden instalarse y gestionarse por separado, con volúmenes persistentes y estados claros.",
     "dockerResources.tab.cleanup": "Limpieza",
     "dockerResources.cleanup.scan": "Analizar",
     "dockerResources.cleanup.manualOnly": "La vista previa es obligatoria; esta limpieza es solo manual.",

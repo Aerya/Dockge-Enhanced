@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-09 — 更快速且可靠的 ImageWatcher 立即更新** — 启用立即更新时立即检查，之后每 5 分钟执行定向检查；以容器实际运行的映像为准，并复用相同 Registry 请求、处理 HTTP 429 限流，在日志中汇总每轮检查。暂停、维护时段和回滚保护保持不变。
+
 **2026-10-09 — 统一可选监控服务及托管 PowerWatch Hub** — Kula、Dozzle、PowerWatch 和 Hub 使用统一卡片、翻译后的说明、GitHub 链接及与状态相符的操作按钮。可独立安装和管理 Hub，其数据存储于专用持久卷。连接现有 PowerWatch 或 Hub 只需 WebUI 地址；Enhanced 会自动使用内建 API。两者的设置分别保存。
 
 

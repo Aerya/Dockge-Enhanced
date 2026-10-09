@@ -72,7 +72,12 @@
                 <ul class="release-news-list">
                     <li v-for="item in releaseNewsItems" :key="item">
                         <font-awesome-icon icon="check-circle" />
-                        <span>{{ $t(item) }}</span>
+                        <i18n-t v-if="item === 'releaseNews.item.powerWatchMonitoring'" keypath="releaseNews.item.powerWatchMonitoring" tag="span">
+                            <template #powerwatch>
+                                <a href="https://github.com/Aerya/PowerWatch" target="_blank" rel="noopener noreferrer">PowerWatch</a>
+                            </template>
+                        </i18n-t>
+                        <span v-else>{{ $t(item) }}</span>
                     </li>
                 </ul>
                 <div class="release-news-actions">

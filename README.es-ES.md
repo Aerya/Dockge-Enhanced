@@ -6,11 +6,6 @@
 
 # Dockge Enhanced
 
-### Limpieza de imágenes Docker más rápida y resistente a carreras
-
-La limpieza por lotes ahora carga el inventario Docker una sola vez y después revalida únicamente la imagen objetivo justo antes de cada `docker rmi`. La página Recursos ya no ejecuta un enorme `docker image inspect` solo para mostrar la lista, la inspección se limita por lotes y tolera que una imagen desaparezca durante una limpieza concurrente, y la expiración de rollbacks utiliza el mismo bloqueo de limpieza Docker. Se mantienen las protecciones de contenedores, rollback/recuperación y periodos de gracia.
-
-Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus funcionalidades, que convierte su sencilla experiencia de gestión de Docker Compose en una plataforma Docker más completa — con federación multiservidor, migración y replicación de stacks, copias Restic, actualizaciones de imágenes y de Dockge-Enhanced con rollback, análisis de seguridad, monitorización, automatización, notificaciones y gestión de recursos Docker, todo desde la interfaz web.
 Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus funcionalidades, que convierte su sencilla experiencia de gestión de Docker Compose en una plataforma Docker más completa — con federación multiservidor, migración y replicación de stacks, copias Restic, actualizaciones de imágenes y de Dockge-Enhanced con rollback, análisis de seguridad, monitorización, automatización, notificaciones y gestión de recursos Docker, todo desde la interfaz web.
 
 <p align="center">
@@ -45,13 +40,13 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | **Multiservidor** | Federación en malla completa entre instancias Dockge-Enhanced, administración desde cualquier servidor vinculado, selección y agrupación de servidores, estado de actualizaciones remotas, copia/migración transaccional de stacks, transferencias reanudables y replicación en frío programada |
 | **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones de stack/contenedor explicadas, pausa/reanudación de stacks, plantilla Compose predeterminada configurable, programación por contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y recreación automática de servicios que comparten namespaces de red VPN |
 | **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, además de los mecanismos de recuperación usados por las actualizaciones protegidas |
-| **Actualizaciones** | Detección de actualizaciones de imágenes, actualizaciones manuales, masivas secuenciales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
+| **Actualizaciones** | comprobación dirigida cada 5 minutos en modo Inmediato, Detección de actualizaciones de imágenes, actualizaciones manuales, masivas secuenciales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
 | **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
 | **Automatización y auditoría** | API REST limitada por permisos, webhooks por stack, ejemplos para Home Assistant, operaciones programadas e historial centralizado con origen, estado y duración |
 | **Recursos Docker** | Limpieza unificada protegida de imágenes, volúmenes, redes y caché de build, recuperación exacta, vista previa, exclusiones e historial |
 | **Seguridad** | Escaneo de vulnerabilidades con Trivy, excepciones CVE, flujos de actualización protegidos, 2FA, trusted proxy y Cloudflare Turnstile |
-| **Monitorización** | Estadísticas del sistema, stacks y contenedores, historial CPU/RAM opcional cada 5 minutos, barra de estado, tarjetas de salud, crash loops, auto-heal, logs adaptables, Kula, Dozzle y PowerWatch |
-| **Integraciones** | PowerWatch, PlugNPiN y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
+| **Monitorización** | Estadísticas del sistema, stacks y contenedores, historial CPU/RAM opcional cada 5 minutos, barra de estado, tarjetas de salud, crash loops, auto-heal, logs adaptables, Kula, Dozzle y PowerWatch y PowerWatch Hub |
+| **Integraciones** | PowerWatch y PowerWatch Hub, PlugNPiN y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
 | **Notificaciones y acceso** | Notificaciones Discord y Apprise localizadas en EN/FR/ES/zh-CN, soporte multiinstancia, 2FA, trusted proxy, Turnstile y clientes móviles de terceros |
 
 > **Programación de actualizaciones:** cuando se configura una ventana de mantenimiento para la autoactualización de Dockge-Enhanced, la misma ventana se aplica a todas las actualizaciones automáticas de imágenes. Las actualizaciones detectadas fuera de ella quedan pendientes hasta la siguiente ventana permitida. Los horarios por imagen siguen disponibles sin ventana global y la acción manual **Actualizar ahora** siempre es inmediata.
@@ -65,13 +60,17 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**ImageWatcher: actualizaciones inmediatas más rápidas y fiables**
+
+Para las imágenes configuradas como **Inmediato**, ImageWatcher realiza una comprobación dirigida al activar la opción y después cada **5 minutos**, sin aumentar la frecuencia del análisis global. Cuando varias stacks comparten la misma imagen `:latest`, Enhanced comprueba la imagen **realmente ejecutada por cada contenedor**, no solo la etiqueta local: un servicio que sigue utilizando una versión antigua ya no aparece incorrectamente como actualizado. Las peticiones idénticas a los registros se comparten, los límites HTTP 429 activan una espera y cada comprobación se resume en los logs. Se respetan las pausas, las ventanas de mantenimiento y las protecciones de rollback.
+
 **Monitorización eléctrica opcional con PowerWatch**
 
 [PowerWatch](https://github.com/Aerya/PowerWatch) puede conectarse en modo **Externo**, que solo lee un contenedor local o una URL HTTP(S) existente sin controlarlo nunca, o desplegarse en modo **Gestionado** como una stack Compose real. La instalación gestionada detecta las capacidades RAPL, MSR y NVIDIA del host, activa únicamente los accesos necesarios, nunca utiliza `privileged: true` y conserva el historial y los ajustes en un volumen persistente al detenerse o desactivarse.
 
 La potencia instantánea global, su nivel de confianza y un enlace directo a la WebUI aparecen en Monitoring, la barra del sistema y los resúmenes compactos de instancias vinculadas mediante la federación existente. La barra del sistema y las tarjetas de instancia muestran solo los vatios junto al icono eléctrico; el tooltip identifica PowerWatch y su confianza Measured o Estimated. PowerWatch mide o estima el consumo según los sensores disponibles.
 
-También puede instalarse y gestionarse un **PowerWatch Hub** desde Enhanced, o conectarse uno existente mediante su URL WebUI. Sigue siendo un servicio independiente: agrupa las API HTTP privadas de instancias PowerWatch existentes en su propio panel y no necesita privilegios de hardware del host. Dockge-Enhanced solo abre este enlace global del Hub; no lo duplica para cada instancia vinculada. Las WebUI de PowerWatch y Hub no incluyen autenticación: mantenga la escucha local predeterminada o expóngalas solo en una LAN privada de confianza o tras una autenticación externa.
+También puede instalarse y gestionarse un **PowerWatch Hub** desde Enhanced, o conectarse uno existente mediante su URL WebUI. Sigue siendo un servicio independiente: agrupa las API HTTP privadas de instancias PowerWatch existentes en su propio panel y no necesita privilegios de hardware del host. Dockge-Enhanced solo abre este enlace global del Hub; no lo duplica para cada instancia vinculada. PowerWatch dispone ahora de autenticación nativa opcional, **desactivada por defecto**, con tokens API Bearer de solo lectura. **Enhanced todavía no admite esos tokens**, por lo que no puede consultar directamente una instancia PowerWatch protegida. El Hub también ofrece un token opcional para proteger su administración. Nunca expongas una interfaz sin protección a Internet.
 
 
 #### Servicios opcionales: Kula, Dozzle, PowerWatch y Hub
@@ -81,6 +80,10 @@ En **Monitoring** (`/watcher/monitoring`), los cuatro servicios de terceros tien
 El Hub funciona sin un PowerWatch local. Un servicio accesible únicamente en `127.0.0.1` del host **no puede ser alcanzado directamente desde el contenedor Hub**: se necesita una dirección privada accesible y protegida. No exponga las interfaces a Internet mientras no haya autenticación nativa.
 
 Para conectar un **PowerWatch existente**, indique únicamente la dirección de su **WebUI** (por ejemplo, `http://192.168.0.64:3064`) en el campo URL de PowerWatch: Enhanced consultará automáticamente `/api/snapshot` en esa dirección. Una URL de WebUI distinta solo es necesaria en configuraciones especiales con proxy inverso y permanece en las opciones avanzadas. Para un **Hub existente**, basta con su dirección WebUI; Enhanced utiliza `/api/hub/snapshot` automáticamente.
+
+**Limpieza de imágenes Docker más rápida y resistente a carreras**
+
+La limpieza por lotes ahora carga el inventario Docker una sola vez y después revalida únicamente la imagen objetivo justo antes de cada `docker rmi`. La página Recursos ya no ejecuta un enorme `docker image inspect` solo para mostrar la lista, la inspección se limita por lotes y tolera que una imagen desaparezca durante una limpieza concurrente, y la expiración de rollbacks utiliza el mismo bloqueo de limpieza Docker. Se mantienen las protecciones de contenedores, rollback/recuperación y periodos de gracia.
 
 **La limpieza usa ahora las referencias Docker reales**
 
@@ -368,6 +371,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Historial e integración con recuperación protegida
 
 ### Actualizaciones
+- **ImageWatcher Inmediato**: control al activar la opción y cada 5 minutos, comprobación de las imágenes realmente ejecutadas, consultas compartidas y espera tras HTTP 429.
 - Exclusión por servicio de comprobaciones de ImageWatcher y actualizaciones automáticas/por lotes mediante `dockge.imageupdates.check: "false"`
 - Monitorización y detección remota
 - Actualización manual y automática
@@ -389,6 +393,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Transferencia cifrada de credenciales
 
 ### Monitorización
+- **PowerWatch Hub**: despliegue Compose gestionado o conexión a un Hub existente, con agregación de nodos añadidos desde la WebUI del Hub.
 - Estadísticas del sistema, stacks y contenedores
 - Historial CPU/RAM opcional cada 5 minutos, rangos de 24 horas, 7 días, 1 mes o personalizados, agregación del servidor y huecos de apagado visibles
 - Barra de estado y tarjetas de salud
@@ -440,6 +445,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 ---
 
 ## Flujo de actualización automática de Dockge-Enhanced
+
+> **Independiente de ImageWatcher:** el modo Inmediato comprueba las imágenes de las stacks cada 5 minutos. El flujo siguiente corresponde únicamente a la autoactualización protegida de Dockge-Enhanced.
 
 <details>
 <summary>Mostrar el proceso de actualización protegida</summary>
@@ -636,6 +643,8 @@ Abre **http://localhost:5001**, crea tu cuenta de administrador y luego haz clic
 >       - /mnt/data:/mnt/data:ro
 > ```
 
+**PowerWatch y PowerWatch Hub son opcionales**: no hace falta añadirlos al Compose de Enhanced. Tras instalarlo, abre **Monitorización** (`/watcher/monitoring`) para conectar instancias existentes o instalar los servicios gestionados por separado. La integración Enhanced todavía no admite instancias PowerWatch protegidas con token Bearer.
+
 ### Probar Dockge-Enhanced junto a Dockge
 
 Dockge y Dockge-Enhanced pueden ejecutarse en el mismo host Docker, pero sus configuraciones Compose predeterminadas no pueden utilizarse sin cambios porque ambos publican el puerto `5001`.
@@ -807,6 +816,7 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 - [**Apprise**](https://github.com/caronc/apprise-api) — gateway de notificación multiplataforma
 - [**Kula**](https://github.com/c0m4r/kula) por c0m4r — monitor de sistema ligero (AGPLv3)
 - [**Dozzle**](https://github.com/amir20/dozzle) por Amir Rajan — visor de registros Docker en tiempo real (licencia MIT)
+- [**PowerWatch**](https://github.com/Aerya/PowerWatch) — monitorización eléctrica Linux y Hub de agregación, integrados opcionalmente en Enhanced
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) por DeepSpace2 — automatización opcional de DNS y Nginx Proxy Manager (GPLv3)
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — fuente de mejoras importantes de UI/UX, temas, internacionalización y arquitectura frontend adaptadas en este proyecto
 

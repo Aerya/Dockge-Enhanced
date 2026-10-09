@@ -1,5 +1,6 @@
 {
-    "releaseNews.item.powerWatchMonitoring": "Monitoring 现在将 Kula、Dozzle、PowerWatch 和 PowerWatch Hub 分别显示为一致的可选卡片并附 GitHub 链接。连接现有实例只需 WebUI 地址，Enhanced 会自动调用内建 API。PowerWatch 和 Hub 也可独立安装与管理，具有持久卷和明确的运行状态。",
+    "releaseNews.item.imageWatcherImmediate": "“立即更新”模式现在会在启用时检查目标镜像，此后每 5 分钟检查一次。相同的 Registry 请求会合并，并遵守限流要求。Enhanced 会比较容器实际运行的镜像：即使另一个容器更新了 `latest` 标签，旧版本容器也不会再被误判为最新。暂停、维护窗口和回滚保护保持不变。",
+    "releaseNews.item.powerWatchMonitoring": "Monitoring 现在将 Kula、Dozzle、{powerwatch} 和 PowerWatch Hub 分别显示为一致的可选卡片并附 GitHub 链接。连接现有实例只需 WebUI 地址，Enhanced 会自动调用内建 API。PowerWatch 和 Hub 也可独立安装与管理，具有持久卷和明确的运行状态。",
     "stackDisplayName.edit": "修改堆栈显示名称",
     "stackDisplayName.label": "显示名称",
     "stackDisplayName.hint": "留空则显示技术名称（{name}）。Compose、备份和恢复仍使用该技术名称。",

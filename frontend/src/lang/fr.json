@@ -1,5 +1,6 @@
 {
-    "releaseNews.item.powerWatchMonitoring": "Monitoring regroupe désormais Kula, Dozzle, PowerWatch et PowerWatch Hub dans des encarts optionnels cohérents avec liens GitHub. Pour une instance existante, la simple URL WebUI suffit : Enhanced trouve l’API intégrée. PowerWatch et Hub peuvent aussi être installés et pilotés séparément, avec volumes persistants et états explicites.",
+    "releaseNews.item.imageWatcherImmediate": "Le mode « Immédiat » vérifie désormais les images concernées dès son activation, puis toutes les 5 minutes. Les requêtes identiques aux registries sont mutualisées et les limites de débit respectées. Enhanced compare les images réellement exécutées : un conteneur resté sur l'ancienne version n'est plus considéré à jour parce qu'un autre a actualisé `latest`. Les pauses, créneaux de maintenance et protections de rollback sont conservés.",
+    "releaseNews.item.powerWatchMonitoring": "Monitoring regroupe désormais Kula, Dozzle, {powerwatch} et PowerWatch Hub dans des encarts optionnels cohérents avec liens GitHub. Pour une instance existante, la simple URL WebUI suffit : Enhanced trouve l’API intégrée. PowerWatch et Hub peuvent aussi être installés et pilotés séparément, avec volumes persistants et états explicites.",
     "stackDisplayName.edit": "Changer le nom affiché de la stack",
     "stackDisplayName.label": "Nom affiché",
     "stackDisplayName.hint": "Laissez vide pour afficher le nom technique ({name}). Compose, les sauvegardes et les restaurations conservent ce nom technique.",
