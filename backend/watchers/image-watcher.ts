@@ -1826,10 +1826,10 @@ export class ImageWatcher {
                     const stdout = await docker([ "image", "inspect", "--format", "{{.Id}}", ref ], { timeout: 10000 });
                     oldImageId = stdout.trim();
                 } else {
-                    console.warn(`[ImageWatcher] Rollback non disponible : ${key} exécute plusieurs versions d'image`);
+                    console.warn("[ImageWatcher] Rollback non disponible : %s exécute plusieurs versions d'image", key);
                 }
             } catch (error) {
-                console.warn(`[ImageWatcher] Impossible de capturer l'image avant MàJ pour ${key}:`, error);
+                console.warn("[ImageWatcher] Impossible de capturer l'image avant MàJ pour %s :", key, error);
             }
 
             const pullCommand = composeExecInvocation(composePath, [ "pull", ...services ], project, configFiles, workingDir, envFiles);
