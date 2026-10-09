@@ -506,7 +506,11 @@ export class SelfUpdateManager {
                 "--security-opt", "no-new-privileges",
                 "--read-only",
                 "-v", `${stateSource}:/state`,
+                // Compose runs inside the sidecar but records its -f paths on the host.
+                // Expose the same directory at the absolute host path (read-only).
+                "-v", `${stateMount.Source}:${stateMount.Source}:ro`,
                 "-e", `SELF_UPDATE_PLAN=/state/self-update/${plan.id}.json`,
+                "-e", `SELF_UPDATE_HOST_STATE_DIR=${path.join(stateMount.Source, "self-update")}`,
                 "-e", `SELF_UPDATE_ALLOW_TEST_IMAGES=${process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? ""}`,
                 "-e", `SELF_UPDATE_ALLOWED_REPOSITORY=${plan.allowedRepository}`,
                 "-e", `SELF_UPDATE_TARGET_CONTAINER_ID=${plan.targetContainerId}`,
@@ -901,7 +905,17 @@ export class SelfUpdateManager {
     private async buildPlan(inspected: DockerInspect, id: string, targetImage: string, previousImage: string, repository: string, targetRevision?: string): Promise<SelfUpdatePlan> {
         const labels = inspected.Config?.Labels ?? {};
         const workingDir = labels["com.docker.compose.project.working_dir"];
-        const configFiles = labels["com.docker.compose.project.config_files"]?.split(",").map((file) => file.trim()).filter(Boolean) ?? [];
+        const labeledConfigFiles = labels["com.docker.compose.project.config_files"]?.split(",").map((file) => file.trim()).filter(Boolean) ?? [];
+        // Docker Compose permanently records the -f files in container labels.
+        // A previous successful self-update adds its managed override to this list.
+        // Exclude ONLY our generated overrides; they remain on disk for inspection,
+        // but must not become inputs to the following update.
+        const dataMount = (inspected.Mounts ?? []).find(mount => mount.Destination === DATA_DIR);
+        const generatedOverrideDir = dataMount?.Source ? path.join(dataMount.Source, "self-update") : "";
+        const configFiles = labeledConfigFiles.filter(file => !(
+            generatedOverrideDir && path.dirname(file) === generatedOverrideDir
+            && /^[a-f0-9]{32}\.override\.yaml$/.test(path.basename(file))
+        ));
         let compose: SelfUpdatePlan["compose"];
         const project = labels["com.docker.compose.project"] ?? "";
         const service = labels["com.docker.compose.service"] ?? "";
@@ -980,7 +994,7 @@ export class SelfUpdateManager {
             if (!entry.isFile() || entry.name.includes(currentId)) {
                 continue;
             }
-            if (!/^[a-f0-9]{32}\.(json|override\.yaml|json\.claimed)$/.test(entry.name)) {
+            if (!/^[a-f0-9]{32}\.(json|json\.claimed)$/.test(entry.name)) {
                 continue;
             }
             const file = path.join(STATE_DIR, entry.name);
