@@ -16,6 +16,7 @@ import { TrivyScanner } from "../watchers/trivy-scanner";
 import { BackupAlreadyRunningError, BackupManager } from "../watchers/backup-manager";
 import { KulaManager } from "../watchers/kula-manager";
 import { DozzleManager } from "../watchers/dozzle-manager";
+import { PowerWatchManager } from "../watchers/powerwatch-manager";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { AuditLogger, setAuditUser } from "../audit-log";
@@ -66,7 +67,8 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.get("/image/settings", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: ImageWatcher.getInstance().getSettingsSafe() });
+            res.json({ ok: true,
+                data: ImageWatcher.getInstance().getSettingsSafe() });
         });
 
         router.post("/image/settings", async (req: Request, res: Response) => {
@@ -74,7 +76,8 @@ export class WatcherRouter extends Router {
                 await ImageWatcher.getInstance().saveSettings(req.body);
                 res.json({ ok: true });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -83,8 +86,9 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.get("/image/status", (_req: Request, res: Response) => {
-            const entries = [...imageStatusStore.values()];
-            res.json({ ok: true, data: entries });
+            const entries = [ ...imageStatusStore.values() ];
+            res.json({ ok: true,
+                data: entries });
         });
 
         router.get("/image/update-all", (_req: Request, res: Response) => {
@@ -122,19 +126,24 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.get("/image/rollback", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: [...rollbackStore.values()] });
+            res.json({ ok: true,
+                data: [ ...rollbackStore.values() ] });
         });
 
         router.post("/image/rollback", async (req: Request, res: Response) => {
             const { key } = req.body as { key: string };
-            if (!key) return res.status(400).json({ ok: false, message: "key requis" });
+            if (!key) {
+                return res.status(400).json({ ok: false,
+                    message: "key requis" });
+            }
             try {
                 await ImageWatcher.getInstance().performRollback(key);
                 await auditWatcherAction(req, "image.rollback", "image", key);
                 res.json({ ok: true });
             } catch (e) {
                 await auditWatcherAction(req, "image.rollback", "image", key, "failure", String(e));
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -146,12 +155,14 @@ export class WatcherRouter extends Router {
                 res.json({ ok: true });
             } catch (e) {
                 await auditWatcherAction(req, "image.rollback.dismiss", "image", key, "failure", String(e));
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
         router.get("/image/update-history", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: updateHistoryStore });
+            res.json({ ok: true,
+                data: updateHistoryStore });
         });
 
         router.delete("/image/update-history", async (req: Request, res: Response) => {
@@ -167,7 +178,8 @@ export class WatcherRouter extends Router {
         router.post("/image/run", (req: Request, res: Response) => {
             ImageWatcher.getInstance().runCheck().catch(console.error);
             auditWatcherAction(req, "image.check.run", "image", "all").catch(() => {});
-            res.json({ ok: true, message: "Vérification lancée" });
+            res.json({ ok: true,
+                message: "Vérification lancée" });
         });
 
         // ════════════════════════════════════════════════════════════════
@@ -185,19 +197,27 @@ export class WatcherRouter extends Router {
         });
 
         router.post("/image/auto-update", async (req: Request, res: Response) => {
-            const { key, mode, time, pause } = req.body as { key: string; mode: "off" | "immediate" | "scheduled" | "ignored"; time?: string; pause?: unknown };
-            if (!key) return res.status(400).json({ ok: false, message: "key requis (format: stack::image)" });
-            if (!["off", "immediate", "scheduled", "ignored"].includes(mode)) {
-                return res.status(400).json({ ok: false, message: "mode invalide (off | immediate | scheduled | ignored)" });
+            const { key, mode, time, pause } = req.body as { key: string;
+                mode: "off" | "immediate" | "scheduled" | "ignored";
+                time?: string;
+                pause?: unknown };
+            if (!key) {
+                return res.status(400).json({ ok: false,
+                    message: "key requis (format: stack::image)" });
+            }
+            if (![ "off", "immediate", "scheduled", "ignored" ].includes(mode)) {
+                return res.status(400).json({ ok: false,
+                    message: "mode invalide (off | immediate | scheduled | ignored)" });
             }
             const watcher = ImageWatcher.getInstance();
             const autoUpdateConfig = { ...(watcher.settings.autoUpdateConfig ?? {}) };
-            let pendingAutoUpdates = [...(watcher.settings.pendingAutoUpdates ?? [])];
+            let pendingAutoUpdates = [ ...(watcher.settings.pendingAutoUpdates ?? []) ];
 
             if (mode === "off") {
                 delete autoUpdateConfig[key];
                 pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
-                await watcher.saveSettings({ autoUpdateConfig, pendingAutoUpdates });
+                await watcher.saveSettings({ autoUpdateConfig,
+                    pendingAutoUpdates });
             } else {
                 pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
                 const existingPause = autoUpdateConfig[key]?.pause;
@@ -205,17 +225,24 @@ export class WatcherRouter extends Router {
                     ? normalizeUpdatePause(existingPause)
                     : normalizeUpdatePause(pause);
                 autoUpdateConfig[key] = mode === "scheduled"
-                    ? { mode, time: time ?? "02:00", pause: effectivePause }
-                    : { mode, pause: effectivePause };
+                    ? { mode,
+                        time: time ?? "02:00",
+                        pause: effectivePause }
+                    : { mode,
+                        pause: effectivePause };
                 // Active automatiquement le watcher si ce n'est pas déjà le cas
-                const patch: Partial<WatcherSettings> = { autoUpdateConfig, pendingAutoUpdates };
-                if (!watcher.settings.enabled && mode !== "ignored") patch.enabled = true;
+                const patch: Partial<WatcherSettings> = { autoUpdateConfig,
+                    pendingAutoUpdates };
+                if (!watcher.settings.enabled && mode !== "ignored") {
+                    patch.enabled = true;
+                }
                 await watcher.saveSettings(patch, mode !== "immediate");
                 if (mode === "immediate") {
                     watcher.runImmediateCheck(key).catch(error => console.error("[ImageWatcher] Contrôle immédiat ciblé échoué:", error));
                 }
             }
-            await auditWatcherAction(req, "image.auto_update.configure", "image", key, "success", null, { mode, time: mode === "scheduled" ? time ?? "02:00" : undefined });
+            await auditWatcherAction(req, "image.auto_update.configure", "image", key, "success", null, { mode,
+                time: mode === "scheduled" ? time ?? "02:00" : undefined });
             return res.json({
                 ok: true,
                 data: { immediateCheckStarted: mode === "immediate" },
@@ -226,20 +253,30 @@ export class WatcherRouter extends Router {
             const watcher = ImageWatcher.getInstance();
             await watcher.saveSettings({ globalUpdatePause: normalizeUpdatePause(req.body) });
             await auditWatcherAction(req, "image.auto_update.pause", "updates", "global");
-            return res.json({ ok: true, data: watcher.getAutoUpdateState().globalUpdatePause });
+            return res.json({ ok: true,
+                data: watcher.getAutoUpdateState().globalUpdatePause });
         });
 
         router.post("/image/auto-update-pause", async (req: Request, res: Response) => {
-            const { key, pause } = req.body as { key?: string; pause?: unknown };
-            if (!key) return res.status(400).json({ ok: false, message: "key requis" });
+            const { key, pause } = req.body as { key?: string;
+                pause?: unknown };
+            if (!key) {
+                return res.status(400).json({ ok: false,
+                    message: "key requis" });
+            }
             const watcher = ImageWatcher.getInstance();
             const autoUpdateConfig = { ...(watcher.settings.autoUpdateConfig ?? {}) };
             const entry = autoUpdateConfig[key];
-            if (!entry) return res.status(404).json({ ok: false, message: "mise à jour automatique non configurée" });
-            autoUpdateConfig[key] = { ...entry, pause: normalizeUpdatePause(pause) };
+            if (!entry) {
+                return res.status(404).json({ ok: false,
+                    message: "mise à jour automatique non configurée" });
+            }
+            autoUpdateConfig[key] = { ...entry,
+                pause: normalizeUpdatePause(pause) };
             await watcher.saveSettings({ autoUpdateConfig });
             await auditWatcherAction(req, "image.auto_update.pause", "image", key);
-            return res.json({ ok: true, data: autoUpdateConfig[key].pause });
+            return res.json({ ok: true,
+                data: autoUpdateConfig[key].pause });
         });
 
         // ════════════════════════════════════════════════════════════════
@@ -247,9 +284,11 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.post("/image/ignore-digest", async (req: Request, res: Response) => {
-            const { key, digest } = req.body as { key?: string; digest?: string };
+            const { key, digest } = req.body as { key?: string;
+                digest?: string };
             if (!key || !digest) {
-                return res.status(400).json({ ok: false, message: "key et digest requis" });
+                return res.status(400).json({ ok: false,
+                    message: "key et digest requis" });
             }
             try {
                 await ImageWatcher.getInstance().ignoreDigest(key, digest);
@@ -257,14 +296,16 @@ export class WatcherRouter extends Router {
                 return res.json({ ok: true });
             } catch (e) {
                 await auditWatcherAction(req, "image.digest.ignore", "image", key, "failure", String(e), { digest });
-                return res.status(500).json({ ok: false, message: String(e) });
+                return res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
         router.delete("/image/ignore-digest", async (req: Request, res: Response) => {
             const { key } = req.body as { key?: string };
             if (!key) {
-                return res.status(400).json({ ok: false, message: "key requis" });
+                return res.status(400).json({ ok: false,
+                    message: "key requis" });
             }
             try {
                 await ImageWatcher.getInstance().clearIgnoredDigests(key);
@@ -272,7 +313,8 @@ export class WatcherRouter extends Router {
                 return res.json({ ok: true });
             } catch (e) {
                 await auditWatcherAction(req, "image.digest.resume", "image", key, "failure", String(e));
-                return res.status(500).json({ ok: false, message: String(e) });
+                return res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -283,7 +325,8 @@ export class WatcherRouter extends Router {
         router.post("/image/update-now", async (req: Request, res: Response) => {
             const { key } = req.body as { key?: string };
             if (!key) {
-                return res.status(400).json({ ok: false, message: "key requis" });
+                return res.status(400).json({ ok: false,
+                    message: "key requis" });
             }
             try {
                 const success = await ImageWatcher.getInstance().manualUpdate(key);
@@ -292,10 +335,12 @@ export class WatcherRouter extends Router {
                     return res.json({ ok: true });
                 }
                 await auditWatcherAction(req, "image.manual_update", "image", key, "failure", "update failed or already in progress");
-                return res.status(409).json({ ok: false, message: "Update failed or is already in progress for this image" });
+                return res.status(409).json({ ok: false,
+                    message: "Update failed or is already in progress for this image" });
             } catch (e) {
                 await auditWatcherAction(req, "image.manual_update", "image", key, "failure", String(e));
-                return res.status(500).json({ ok: false, message: String(e) });
+                return res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -306,7 +351,8 @@ export class WatcherRouter extends Router {
         router.post("/image/credentials", async (req: Request, res: Response) => {
             const cred: RegistryCredential = req.body;
             if (!cred.registry || !cred.username || !cred.token) {
-                return res.status(400).json({ ok: false, message: "registry, username et token requis" });
+                return res.status(400).json({ ok: false,
+                    message: "registry, username et token requis" });
             }
             cred.registry = normalizeRegistryHost(cred.registry);
             cred.username = cred.username.trim();
@@ -332,7 +378,8 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.get("/trivy/settings", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: TrivyScanner.getInstance().getSettings() });
+            res.json({ ok: true,
+                data: TrivyScanner.getInstance().getSettings() });
         });
 
         router.post("/trivy/settings", async (req: Request, res: Response) => {
@@ -340,7 +387,8 @@ export class WatcherRouter extends Router {
                 await TrivyScanner.getInstance().saveSettings(req.body);
                 res.json({ ok: true });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -348,11 +396,13 @@ export class WatcherRouter extends Router {
             const { image } = req.body;
             TrivyScanner.getInstance().runScan(image).catch(console.error);
             auditWatcherAction(req, "trivy.scan.run", "image", image || "all").catch(() => {});
-            res.json({ ok: true, message: "Scan lancé" });
+            res.json({ ok: true,
+                message: "Scan lancé" });
         });
 
         router.get("/trivy/status", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: TrivyScanner.getInstance().getStatus() });
+            res.json({ ok: true,
+                data: TrivyScanner.getInstance().getStatus() });
         });
 
         // ════════════════════════════════════════════════════════════════
@@ -362,7 +412,8 @@ export class WatcherRouter extends Router {
         router.post("/trivy/ignore-cve", async (req: Request, res: Response) => {
             const { cveId } = req.body as { cveId?: string };
             if (!cveId) {
-                return res.status(400).json({ ok: false, message: "cveId requis" });
+                return res.status(400).json({ ok: false,
+                    message: "cveId requis" });
             }
             try {
                 await TrivyScanner.getInstance().ignoreCVE(cveId);
@@ -370,14 +421,16 @@ export class WatcherRouter extends Router {
                 return res.json({ ok: true });
             } catch (e) {
                 await auditWatcherAction(req, "trivy.cve.ignore", "cve", cveId, "failure", String(e));
-                return res.status(500).json({ ok: false, message: String(e) });
+                return res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
         router.delete("/trivy/ignore-cve", async (req: Request, res: Response) => {
             const { cveId } = req.body as { cveId?: string };
             if (!cveId) {
-                return res.status(400).json({ ok: false, message: "cveId requis" });
+                return res.status(400).json({ ok: false,
+                    message: "cveId requis" });
             }
             try {
                 await TrivyScanner.getInstance().clearIgnoredCVE(cveId);
@@ -385,7 +438,8 @@ export class WatcherRouter extends Router {
                 return res.json({ ok: true });
             } catch (e) {
                 await auditWatcherAction(req, "trivy.cve.resume", "cve", cveId, "failure", String(e));
-                return res.status(500).json({ ok: false, message: String(e) });
+                return res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -395,11 +449,15 @@ export class WatcherRouter extends Router {
 
         router.post("/discord/test", async (req: Request, res: Response) => {
             const { webhookUrl } = req.body;
-            if (!webhookUrl) return res.status(400).json({ ok: false, message: "webhookUrl requis" });
+            if (!webhookUrl) {
+                return res.status(400).json({ ok: false,
+                    message: "webhookUrl requis" });
+            }
             // Accepte une string ou un tableau (test du premier webhook fourni)
             const url = Array.isArray(webhookUrl) ? webhookUrl[0] : webhookUrl;
-            const ok  = await new DiscordNotifier(url).testWebhook();
-            return res.json({ ok, message: ok ? "Webhook fonctionnel !" : "Échec — vérifie l'URL" });
+            const ok = await new DiscordNotifier(url).testWebhook();
+            return res.json({ ok,
+                message: ok ? "Webhook fonctionnel !" : "Échec — vérifie l'URL" });
         });
 
         // ════════════════════════════════════════════════════════════════
@@ -407,11 +465,16 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.post("/apprise/test", async (req: Request, res: Response) => {
-            const { serverUrl, urls } = req.body as { serverUrl?: string; urls?: string[] };
-            if (!serverUrl) return res.status(400).json({ ok: false, message: "serverUrl requis" });
+            const { serverUrl, urls } = req.body as { serverUrl?: string;
+                urls?: string[] };
+            if (!serverUrl) {
+                return res.status(400).json({ ok: false,
+                    message: "serverUrl requis" });
+            }
             const notifier = new AppriseNotifier(serverUrl, Array.isArray(urls) ? urls : []);
             const ok = await notifier.test();
-            return res.json({ ok, message: ok ? "Apprise fonctionnel !" : "Échec — vérifie l'URL du serveur" });
+            return res.json({ ok,
+                message: ok ? "Apprise fonctionnel !" : "Échec — vérifie l'URL du serveur" });
         });
 
         // ════════════════════════════════════════════════════════════════
@@ -419,7 +482,8 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.get("/backup/settings", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: BackupManager.getInstance().getSettingsSafe() });
+            res.json({ ok: true,
+                data: BackupManager.getInstance().getSettingsSafe() });
         });
 
         router.post("/backup/settings", async (req: Request, res: Response) => {
@@ -427,7 +491,8 @@ export class WatcherRouter extends Router {
                 await BackupManager.getInstance().saveSettings(req.body);
                 res.json({ ok: true });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -447,10 +512,13 @@ export class WatcherRouter extends Router {
                 });
             }
             manager.runBackup({ trigger: "manual" }).catch(e => {
-                if (!(e instanceof BackupAlreadyRunningError)) console.error(e);
+                if (!(e instanceof BackupAlreadyRunningError)) {
+                    console.error(e);
+                }
             });
             auditWatcherAction(req, "backup.run", "backup", "manual").catch(() => {});
-            return res.json({ ok: true, message: "Backup lancé en arrière-plan" });
+            return res.json({ ok: true,
+                message: "Backup lancé en arrière-plan" });
         });
 
         router.get("/backup/running", (_req: Request, res: Response) => {
@@ -466,10 +534,12 @@ export class WatcherRouter extends Router {
             try {
                 await BackupManager.getInstance().initRepo();
                 await auditWatcherAction(req, "backup.init", "backup", "repository");
-                res.json({ ok: true, message: "Repo initialisé" });
+                res.json({ ok: true,
+                    message: "Repo initialisé" });
             } catch (e) {
                 await auditWatcherAction(req, "backup.init", "backup", "repository", "failure", String(e));
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -480,9 +550,12 @@ export class WatcherRouter extends Router {
         router.get("/backup/snapshots", async (_req: Request, res: Response) => {
             try {
                 const snapshots = await BackupManager.getInstance().listSnapshots();
-                res.json({ ok: true, data: snapshots });
+                res.json({ ok: true,
+                    data: snapshots });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e), data: [] });
+                res.status(500).json({ ok: false,
+                    message: String(e),
+                    data: [] });
             }
         });
 
@@ -495,9 +568,12 @@ export class WatcherRouter extends Router {
                     .filter(Boolean)
                     .slice(0, 10);
                 const stats = await BackupManager.getInstance().getSnapshotStats(ids);
-                res.json({ ok: true, data: stats });
+                res.json({ ok: true,
+                    data: stats });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e), data: { snapshots: {} } });
+                res.status(500).json({ ok: false,
+                    message: String(e),
+                    data: { snapshots: {} } });
             }
         });
 
@@ -508,7 +584,8 @@ export class WatcherRouter extends Router {
                 res.json({ ok: true });
             } catch (e) {
                 await auditWatcherAction(req, "backup.snapshot.delete", "snapshot", req.params.id, "failure", String(e));
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -516,29 +593,35 @@ export class WatcherRouter extends Router {
             try {
                 const filePath = typeof req.query.path === "string" ? req.query.path : "";
                 if (!filePath) {
-                    res.status(400).json({ ok: false, message: "Paramètre path manquant" });
+                    res.status(400).json({ ok: false,
+                        message: "Paramètre path manquant" });
                     return;
                 }
                 const name = pathBasename(filePath);
                 const isText = name === ".env" || /\.(ya?ml|env|txt|conf|cfg|json|toml|ini)$/.test(name);
                 if (!isText) {
-                    res.status(400).json({ ok: false, message: "Type de fichier non supporté pour l'aperçu" });
+                    res.status(400).json({ ok: false,
+                        message: "Type de fichier non supporté pour l'aperçu" });
                     return;
                 }
                 const prevId = typeof req.query.prevId === "string" ? req.query.prevId : undefined;
                 const result = await BackupManager.getInstance().getSnapshotFileContent(req.params.id, filePath, prevId);
-                res.json({ ok: true, data: result });
+                res.json({ ok: true,
+                    data: result });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
         router.get("/backup/snapshots/:id/files", async (req: Request, res: Response) => {
             try {
                 const files = await BackupManager.getInstance().listSnapshotFiles(req.params.id);
-                res.json({ ok: true, data: files });
+                res.json({ ok: true,
+                    data: files });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -546,13 +629,16 @@ export class WatcherRouter extends Router {
             try {
                 const dirPath = typeof req.query.path === "string" ? req.query.path : "";
                 if (!dirPath.startsWith("/") || dirPath.includes("..") || dirPath.length > 1000) {
-                    res.status(400).json({ ok: false, message: "Chemin invalide" });
+                    res.status(400).json({ ok: false,
+                        message: "Chemin invalide" });
                     return;
                 }
                 const entries = await BackupManager.getInstance().browseSnapshotPath(req.params.id, dirPath);
-                res.json({ ok: true, data: entries });
+                res.json({ ok: true,
+                    data: entries });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -560,15 +646,19 @@ export class WatcherRouter extends Router {
             try {
                 const { files } = req.body as { files: string[] };
                 if (!Array.isArray(files) || files.length === 0) {
-                    res.status(400).json({ ok: false, message: "Aucun fichier sélectionné" });
+                    res.status(400).json({ ok: false,
+                        message: "Aucun fichier sélectionné" });
                     return;
                 }
                 const result = await BackupManager.getInstance().restoreFiles(req.params.id, files);
-                await auditWatcherAction(req, "backup.restore", "snapshot", req.params.id, result.errors.length === 0 ? "success" : "failure", result.errors.join("\n") || null, { filesCount: files.length, files });
-                res.json({ ok: result.errors.length === 0, ...result });
+                await auditWatcherAction(req, "backup.restore", "snapshot", req.params.id, result.errors.length === 0 ? "success" : "failure", result.errors.join("\n") || null, { filesCount: files.length,
+                    files });
+                res.json({ ok: result.errors.length === 0,
+                    ...result });
             } catch (e) {
                 await auditWatcherAction(req, "backup.restore", "snapshot", req.params.id, "failure", String(e));
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -577,15 +667,18 @@ export class WatcherRouter extends Router {
                 const destIndex = typeof req.body?.destIndex === "number" ? req.body.destIndex : undefined;
                 const results = await BackupManager.getInstance().runCheck(destIndex);
                 await auditWatcherAction(req, "backup.check", "backup", destIndex === undefined ? "all" : String(destIndex), "success", null, { destIndex });
-                res.json({ ok: true, data: results });
+                res.json({ ok: true,
+                    data: results });
             } catch (e) {
                 await auditWatcherAction(req, "backup.check", "backup", "repository", "failure", String(e));
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
         router.get("/backup/history", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: BackupManager.getInstance().getHistory() });
+            res.json({ ok: true,
+                data: BackupManager.getInstance().getHistory() });
         });
 
         router.get("/backup/dir-sizes", async (req: Request, res: Response) => {
@@ -593,27 +686,34 @@ export class WatcherRouter extends Router {
                 const raw = typeof req.query["volumes"] === "string" ? req.query["volumes"] : "";
                 const selectedVolumes = raw ? raw.split(",").map(v => v.trim()).filter(Boolean) : [];
                 const sizes = await BackupManager.getInstance().getDirSizes(selectedVolumes);
-                res.json({ ok: true, data: sizes });
+                res.json({ ok: true,
+                    data: sizes });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
         router.get("/backup/stacks", async (_req: Request, res: Response) => {
             try {
                 const stacks = await BackupManager.getInstance().listStacks();
-                res.json({ ok: true, data: stacks });
+                res.json({ ok: true,
+                    data: stacks });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e), data: [] });
+                res.status(500).json({ ok: false,
+                    message: String(e),
+                    data: [] });
             }
         });
 
         router.get("/backup/mounted-volumes", async (_req: Request, res: Response) => {
             try {
                 const vols = await BackupManager.getInstance().getMountedVolumes();
-                res.json({ ok: true, data: vols });
+                res.json({ ok: true,
+                    data: vols });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -621,11 +721,16 @@ export class WatcherRouter extends Router {
         router.get("/backup/volume-dirs", async (req: Request, res: Response) => {
             try {
                 const volPath = typeof req.query["path"] === "string" ? req.query["path"] : "";
-                if (!volPath) { res.status(400).json({ ok: false, message: "path requis" }); return; }
+                if (!volPath) {
+                    res.status(400).json({ ok: false,
+                        message: "path requis" }); return;
+                }
                 const dirs = await BackupManager.getInstance().getVolumeDirs(volPath);
-                res.json({ ok: true, data: dirs });
+                res.json({ ok: true,
+                    data: dirs });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -633,11 +738,16 @@ export class WatcherRouter extends Router {
         router.get("/backup/volume-sizes", async (req: Request, res: Response) => {
             try {
                 const volPath = typeof req.query["path"] === "string" ? req.query["path"] : "";
-                if (!volPath) { res.status(400).json({ ok: false, message: "path requis" }); return; }
+                if (!volPath) {
+                    res.status(400).json({ ok: false,
+                        message: "path requis" }); return;
+                }
                 const sizes = await BackupManager.getInstance().getVolumeSubdirSizes(volPath);
-                res.json({ ok: true, data: sizes });
+                res.json({ ok: true,
+                    data: sizes });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -646,7 +756,8 @@ export class WatcherRouter extends Router {
         // ════════════════════════════════════════════════════════════════
 
         router.get("/kula/settings", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: KulaManager.getInstance().getSettingsSafe() });
+            res.json({ ok: true,
+                data: KulaManager.getInstance().getSettingsSafe() });
         });
 
         router.post("/kula/settings", async (req: Request, res: Response) => {
@@ -654,16 +765,19 @@ export class WatcherRouter extends Router {
                 await KulaManager.getInstance().saveSettings(req.body);
                 res.json({ ok: true });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
         router.get("/kula/status", async (_req: Request, res: Response) => {
             try {
                 const status = await KulaManager.getInstance().getStatus();
-                res.json({ ok: true, status });
+                res.json({ ok: true,
+                    status });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -674,7 +788,8 @@ export class WatcherRouter extends Router {
                 res.json({ ok: true });
             } catch (e) {
                 await auditWatcherAction(req, "kula.start", "container", "kula", "failure", String(e));
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -685,36 +800,142 @@ export class WatcherRouter extends Router {
                 res.json({ ok: true });
             } catch (e) {
                 await auditWatcherAction(req, "kula.stop", "container", "kula", "failure", String(e));
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
         router.get("/dozzle/settings", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: DozzleManager.getInstance().getSettingsSafe() });
+            res.json({ ok: true,
+                data: DozzleManager.getInstance().getSettingsSafe() });
         });
         router.post("/dozzle/settings", async (req: Request, res: Response) => {
             try {
                 await DozzleManager.getInstance().saveSettings(req.body);
                 res.json({ ok: true });
-            } catch (e) { res.status(500).json({ ok: false, message: String(e) }); }
+            } catch (e) {
+                res.status(500).json({ ok: false,
+                    message: String(e) });
+            }
         });
         router.get("/dozzle/status", async (_req: Request, res: Response) => {
-            res.json({ ok: true, status: await DozzleManager.getInstance().getStatus() });
+            res.json({ ok: true,
+                status: await DozzleManager.getInstance().getStatus() });
         });
         router.post("/dozzle/start", async (req: Request, res: Response) => {
             try {
                 await DozzleManager.getInstance().start();
                 await auditWatcherAction(req, "dozzle.start", "container", "dozzle");
                 res.json({ ok: true });
-            } catch (e) { res.status(500).json({ ok: false, message: String(e) }); }
+            } catch (e) {
+                res.status(500).json({ ok: false,
+                    message: String(e) });
+            }
         });
         router.post("/dozzle/stop", async (req: Request, res: Response) => {
             try {
                 await DozzleManager.getInstance().stop();
                 await auditWatcherAction(req, "dozzle.stop", "container", "dozzle");
                 res.json({ ok: true });
-            } catch (e) { res.status(500).json({ ok: false, message: String(e) }); }
+            } catch (e) {
+                res.status(500).json({ ok: false,
+                    message: String(e) });
+            }
         });
+
+        // ════════════════════════════════════════════════════════════════
+        // POWERWATCH — Electrical monitoring
+        // ════════════════════════════════════════════════════════════════
+
+        router.get("/powerwatch/settings", (_req: Request, res: Response) => {
+            res.json({ ok: true,
+                data: PowerWatchManager.getInstance().getSettingsSafe() });
+        });
+        router.post("/powerwatch/settings", async (req: Request, res: Response) => {
+            try {
+                await PowerWatchManager.getInstance().saveSettings(req.body);
+                await auditWatcherAction(req, "powerwatch.settings", "integration", "powerwatch");
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(400).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
+            }
+        });
+        router.get("/powerwatch/status", async (_req: Request, res: Response) => {
+            res.json({ ok: true,
+                data: await PowerWatchManager.getInstance().getSnapshot() });
+        });
+        router.get("/powerwatch/managed/states", async (_req: Request, res: Response) => {
+            try {
+                res.json({ ok: true,
+                    data: await PowerWatchManager.getInstance().getManagedStates() });
+            } catch (e) {
+                res.status(409).json({ ok: false,
+                    message: String(e) });
+            }
+        });
+        router.get("/powerwatch/hub/status", async (_req: Request, res: Response) => {
+            res.json({ ok: true,
+                data: await PowerWatchManager.getInstance().getHubStatus() });
+        });
+        router.post("/powerwatch/test", async (req: Request, res: Response) => {
+            try {
+                res.json({ ok: true,
+                    data: await PowerWatchManager.getInstance().test(req.body) });
+            } catch (e) {
+                res.status(400).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
+            }
+        });
+        router.post("/powerwatch/hub/test", async (req: Request, res: Response) => {
+            try {
+                res.json({ ok: true,
+                    data: await PowerWatchManager.getInstance().testHub(req.body) });
+            } catch (e) {
+                res.status(400).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
+            }
+        });
+        router.get("/powerwatch/detect", async (_req: Request, res: Response) => {
+            try {
+                res.json({ ok: true,
+                    data: await PowerWatchManager.getInstance().detect() });
+            } catch (e) {
+                res.status(500).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
+            }
+        });
+        for (const action of [ "install", "start", "stop", "restart" ] as const) {
+            router.post(`/powerwatch/${action}`, async (req: Request, res: Response) => {
+                try {
+                    await PowerWatchManager.getInstance()[action]();
+                    await auditWatcherAction(req, `powerwatch.${action}`, "integration", "powerwatch");
+                    res.json({ ok: true });
+                } catch (e) {
+                    await auditWatcherAction(req, `powerwatch.${action}`, "integration", "powerwatch", "failure", String(e));
+                    res.status(400).json({ ok: false,
+                        message: e instanceof Error ? e.message : String(e) });
+                }
+            });
+        }
+
+        for (const action of [ "install", "start", "stop", "restart" ] as const) {
+            const method = { install: "hubInstall",
+                start: "hubStart",
+                stop: "hubStop",
+                restart: "hubRestart" } as const;
+            router.post(`/powerwatch/hub/${action}`, async (req: Request, res: Response) => {
+                try {
+                    await PowerWatchManager.getInstance()[method[action]]();
+                    await auditWatcherAction(req, `powerwatch.hub.${action}`, "integration", "powerwatch-hub");
+                    res.json({ ok: true });
+                } catch (e) {
+                    await auditWatcherAction(req, `powerwatch.hub.${action}`, "integration", "powerwatch-hub", "failure", String(e));
+                    res.status(400).json({ ok: false,
+                        message: e instanceof Error ? e.message : String(e) });
+                }
+            });
+        }
 
         // ════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════
@@ -725,7 +946,8 @@ export class WatcherRouter extends Router {
             const locale = typeof req.query.locale === "string" ? req.query.locale : "en";
             const localBuild = SelfUpdateChecker.getInstance().getStatus().localBuild;
             const data = await RemoteAnnouncementManager.getInstance().getVisibleAnnouncements(locale, localBuild);
-            res.json({ ok: true, data });
+            res.json({ ok: true,
+                data });
         });
 
         router.post("/announcements/:id/ack", async (req: Request, res: Response) => {
@@ -735,7 +957,8 @@ export class WatcherRouter extends Router {
                 await auditWatcherAction(req, "announcement.acknowledge", "announcement", id);
                 res.json({ ok: true });
             } catch (e) {
-                res.status(400).json({ ok: false, message: e instanceof Error ? e.message : String(e) });
+                res.status(400).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
             }
         });
 
@@ -770,51 +993,65 @@ export class WatcherRouter extends Router {
         });
 
         router.get("/self/settings", (_req: Request, res: Response) => {
-            res.json({ ok: true, data: SelfUpdateManager.getInstance().getSettings() });
+            res.json({ ok: true,
+                data: SelfUpdateManager.getInstance().getSettings() });
         });
 
         router.post("/self/settings", async (req: Request, res: Response) => {
             const settings = await SelfUpdateManager.getInstance().saveSettings(req.body);
-            await auditWatcherAction(req, "self_update.configure", "dockge", "self", "success", null, { mode: settings.mode, schedule: settings.schedule });
-            res.json({ ok: true, data: settings });
+            await auditWatcherAction(req, "self_update.configure", "dockge", "self", "success", null, { mode: settings.mode,
+                schedule: settings.schedule });
+            res.json({ ok: true,
+                data: settings });
         });
 
         router.post("/self/update", async (req: Request, res: Response) => {
             const targetImage = typeof req.body?.targetImage === "string" ? req.body.targetImage : "";
-            if (!targetImage) return res.status(400).json({ ok: false, message: "targetImage requis" });
+            if (!targetImage) {
+                return res.status(400).json({ ok: false,
+                    message: "targetImage requis" });
+            }
             try {
                 const operation = await SelfUpdateManager.getInstance().requestSidecarUpdate(targetImage);
                 await auditWatcherAction(req, "self_update.start", "dockge", "self", operation.state === "failed" ? "failure" : "success");
-                return res.json({ ok: true, data: operation });
+                return res.json({ ok: true,
+                    data: operation });
             } catch (e) {
                 await auditWatcherAction(req, "self_update.start", "dockge", "self", "failure", String(e));
-                return res.status(500).json({ ok: false, message: String(e) });
+                return res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
         // Fuseau horaire du serveur (utilisé par le frontend pour formater les dates)
         router.get("/server-tz", (_req: Request, res: Response) => {
-            res.json({ ok: true, tz: process.env.TZ || "UTC" });
+            res.json({ ok: true,
+                tz: process.env.TZ || "UTC" });
         });
 
         router.get("/stack-schedules", async (_req: Request, res: Response) => {
             try {
-                res.json({ ok: true, data: await StackScheduler.getInstance().list() });
+                res.json({ ok: true,
+                    data: await StackScheduler.getInstance().list() });
             } catch (e) {
-                res.status(500).json({ ok: false, message: String(e) });
+                res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
         router.put("/stack-schedules/enabled", async (req: Request, res: Response) => {
             if (typeof req.body?.enabled !== "boolean") {
-                return res.status(400).json({ ok: false, message: "enabled doit être un booléen" });
+                return res.status(400).json({ ok: false,
+                    message: "enabled doit être un booléen" });
             }
             try {
                 const enabled = await StackScheduler.getInstance().setEnabled(req.body.enabled);
                 await auditWatcherAction(req, "stack.schedule.toggle", "stack", "scheduler", "success", null, { enabled });
-                return res.json({ ok: true, data: { enabled } });
+                return res.json({ ok: true,
+                    data: { enabled } });
             } catch (e) {
-                return res.status(500).json({ ok: false, message: String(e) });
+                return res.status(500).json({ ok: false,
+                    message: String(e) });
             }
         });
 
@@ -823,10 +1060,12 @@ export class WatcherRouter extends Router {
             try {
                 const data = await StackScheduler.getInstance().save(stack, req.body);
                 await auditWatcherAction(req, "stack.schedule.configure", "stack", stack, "success", null, req.body);
-                res.json({ ok: true, data });
+                res.json({ ok: true,
+                    data });
             } catch (e) {
                 await auditWatcherAction(req, "stack.schedule.configure", "stack", stack, "failure", String(e));
-                res.status(400).json({ ok: false, message: e instanceof Error ? e.message : String(e) });
+                res.status(400).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
             }
         });
 
@@ -837,7 +1076,8 @@ export class WatcherRouter extends Router {
                 await auditWatcherAction(req, "stack.schedule.clear", "stack", stack);
                 res.json({ ok: true });
             } catch (e) {
-                res.status(400).json({ ok: false, message: e instanceof Error ? e.message : String(e) });
+                res.status(400).json({ ok: false,
+                    message: e instanceof Error ? e.message : String(e) });
             }
         });
 

@@ -1,5 +1,12 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-09 — 更快速且可靠的 ImageWatcher 立即更新** — 启用立即更新时立即检查，之后每 5 分钟执行定向检查；以容器实际运行的映像为准，并复用相同 Registry 请求、处理 HTTP 429 限流，在日志中汇总每轮检查。暂停、维护时段和回滚保护保持不变。
+
+**2026-10-09 — 统一可选监控服务及托管 PowerWatch Hub** — Kula、Dozzle、PowerWatch 和 Hub 使用统一卡片、翻译后的说明、GitHub 链接及与状态相符的操作按钮。可独立安装和管理 Hub，其数据存储于专用持久卷。连接现有 PowerWatch 或 Hub 只需 WebUI 地址；Enhanced 会自动使用内建 API。两者的设置分别保存。
+
+
+**2026-10-08 — 可选的 PowerWatch 功耗监控** — Dockge-Enhanced 可以只读观察现有的本地或 HTTP(S) PowerWatch，也可以部署带持久数据以及条件式 RAPL、MSR 和 NVIDIA 支持的专用托管 Compose Stack。整机当前功率、可信度和紧凑的 WebUI 链接会通过现有联邦通道显示在 Monitoring、系统状态栏和关联实例摘要中。单独配置的可选 PowerWatch Hub 只有一个全局链接，并通过其文档化 API 进行检查。外部容器绝不会被修改，托管资源会进行严格所有权检查，WebUI 默认仅绑定到本机回环地址。
+
 **2026-10-08 — 持久化数据目录解析** — 未设置 `DOCKGE_DATA_DIR` 时，镜像监控和其他基于文件的共享设置现在使用持久化卷 `/app/data`，因此在容器重建和自更新后仍会保留。显式设置的数据目录始终优先；当当前卷为空时，位于 `/opt/dockge/data` 的非空 legacy 安装会被保留。
 
 **2026-10-08 — Stack README 渲染器升级到 markdown-it 15** — 内置 TypeScript 类型替代了旧的 v14 类型包；为保持兼容，模糊链接仍然启用；自动链接现在能更准确地处理 IPv6 和 CJK 标点，同时继续禁用原始 HTML 和不安全的 JavaScript 链接。

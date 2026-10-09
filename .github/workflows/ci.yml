@@ -113,6 +113,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/watchers/backup-restore-test.test.ts
 
+      - name: Tests de l’intégration PowerWatch
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/watchers/powerwatch-manager.test.ts backend/agent-socket-handlers/docker-socket-handler.powerwatch.test.ts frontend/src/powerwatch.test.ts frontend/src/powerwatch-i18n.test.ts
+
       - name: Compatibilité du runtime frontend
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/i18n-compat.test.ts

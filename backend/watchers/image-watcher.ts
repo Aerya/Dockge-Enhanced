@@ -166,6 +166,29 @@ export interface AutoUpdateEntry {
     pause?: UpdatePause;
 }
 
+/** Poll only immediate-policy images between the less frequent full scans. */
+export const IMMEDIATE_IMAGE_CHECK_CRON = "*/5 * * * *";
+
+/** A single registry manifest lookup is enough for all stacks sharing the same tag and platform. */
+export function reuseCyclePromise<T>(
+    cache: Map<string, Promise<T>>,
+    key: string,
+    load: () => Promise<T>,
+): Promise<T> {
+    let pending = cache.get(key);
+    if (!pending) {
+        pending = load();
+        cache.set(key, pending);
+    }
+    return pending;
+}
+
+export function immediateUpdateKeys(entries: Record<string, AutoUpdateEntry>): string[] {
+    return Object.entries(entries)
+        .filter(([ , entry ]) => entry?.mode === "immediate")
+        .map(([ key ]) => key);
+}
+
 export interface WatcherSettings {
     enabled: boolean;
     intervalHours: number;
@@ -335,10 +358,24 @@ export function buildManifestUrl(registry: string, name: string, tag: string): s
 
 interface LocalImageInfo {
     digest: string;
+    imageId: string;
     repoDigests: string[];
     comparable: boolean;
     source: "repoDigest" | "digest" | "none";
     platform?: ImagePlatform;
+}
+
+/**
+ * A local tag can already point to the newest image while an older running
+ * container still holds a previous immutable image ID. Registry digests cannot
+ * be compared to Docker's config image IDs: compare config IDs with config IDs.
+ */
+export function hasRunningImageDrift(tagImageId: string, runningImageIds: string[]): boolean {
+    const sha256Id = /^sha256:[0-9a-f]{64}$/i;
+    if (!sha256Id.test(tagImageId)) {
+        return false;
+    }
+    return runningImageIds.some((id) => sha256Id.test(id) && id !== tagImageId);
 }
 
 function normalizeArch(arch: string): string {
@@ -616,6 +653,15 @@ export function registryRetryDelayMs(
     return Math.min(delay, maxDelayMs);
 }
 
+/** Respect rate limits across targeted cycles instead of requesting the same registry every five minutes. */
+export function registryRateLimitCooldownMs(status: number, retryAfterHeader: unknown): number {
+    if (status !== 429) {
+        return 0;
+    }
+    // If the registry supplies Retry-After, honour it up to one day; otherwise wait ten minutes.
+    return Math.max(10 * 60_000, registryRetryDelayMs(retryAfterHeader, 1, 24 * 3_600_000));
+}
+
 interface RegistryRequestRetryOptions {
     label: string;
     wait?: (delayMs: number) => Promise<unknown>;
@@ -833,6 +879,7 @@ async function getLocalImageInfo(image: string): Promise<LocalImageInfo> {
 
         return {
             digest: repoDigests[0] || looseDigest,
+            imageId: typeof data?.Id === "string" ? data.Id : "",
             repoDigests,
             comparable: repoDigests.length > 0,
             source: repoDigests.length > 0 ? "repoDigest" : looseDigest ? "digest" : "none",
@@ -845,6 +892,7 @@ async function getLocalImageInfo(image: string): Promise<LocalImageInfo> {
         };
     } catch {
         return { digest: "",
+            imageId: "",
             repoDigests: [],
             comparable: false,
             source: "none" };
@@ -949,6 +997,25 @@ export interface WatchedComposeStack {
     envFiles?: string[];
 }
 
+/** Query only the running Compose services that actually use this image. */
+async function runningComposeImageIds(image: string, watched: WatchedComposeStack): Promise<string[]> {
+    const { composePath, project, configFiles, workingDir, envFiles } = watched;
+    const invocation = (args: string[]) => composeExecInvocation(composePath, args, project, configFiles, workingDir, envFiles);
+    const configCommand = invocation([ "config", "--format", "json" ]);
+    const config = await docker(configCommand.args, { cwd: configCommand.cwd,
+        timeout: 30000 });
+    const { services } = buildImageUpdateComposePlan(config, image);
+    const psCommand = invocation([ "ps", "--status", "running", "-q", ...services ]);
+    const idsText = await docker(psCommand.args, { cwd: psCommand.cwd,
+        timeout: 15000 });
+    const ids = idsText.split(/\s+/).filter(Boolean);
+    if (ids.length === 0) {
+        return [];
+    }
+    const output = await docker([ "container", "inspect", "--format", "{{.Image}}", ...ids ], { timeout: 15000 });
+    return output.split(/\s+/).filter(Boolean);
+}
+
 export async function collectWatchedComposeStacks(
     stacksDir: string,
     externalStacks: ExternalStackManager,
@@ -989,7 +1056,11 @@ export class ImageWatcher {
     private static _instance: ImageWatcher;
     private cronJob: cron.ScheduledTask | null = null;
     private minuteCron: cron.ScheduledTask | null = null;
+    private immediateCron: cron.ScheduledTask | null = null;
     private cleanupCron: cron.ScheduledTask | null = null;
+    private _immediateCycleRunning = false;
+    private immediateRemoteCache: Map<string, Promise<RemoteDigestInfo>> | null = null;
+    private readonly registryCooldownUntil = new Map<string, number>();
     private baseUrl: string = "";
     private _checkRunning = false;
     private _updatingImages = new Set<string>();
@@ -1255,6 +1326,11 @@ export class ImageWatcher {
       `[ImageWatcher] Démarrage — vérification toutes les ${intervalHours}h`,
         );
         this.cronJob = cron.schedule(expr, () => this.runCheck());
+        // Les images en mode « Immédiat » sont surveillées séparément toutes les
+        // 5 minutes, avec cache des manifests par cycle, sans scan global.
+        this.immediateCron = cron.schedule(IMMEDIATE_IMAGE_CHECK_CRON, () =>
+            this.runImmediateChecks().catch(console.error),
+        );
         // Cron minutaire pour appliquer les màj planifiées
         this.minuteCron = cron.schedule("* * * * *", () =>
             this.applyPendingUpdates().catch(console.error),
@@ -1276,12 +1352,64 @@ export class ImageWatcher {
         this.cronJob = null;
         this.minuteCron?.stop();
         this.minuteCron = null;
+        this.immediateCron?.stop();
+        this.immediateCron = null;
         this.cleanupCron?.stop();
         this.cleanupCron = null;
     }
 
     restart(runInitialCheck = true): void {
         this.settings.enabled ? this.start(runInitialCheck) : this.stop();
+    }
+
+    /** Avoid overlapping a targeted cycle with a full scan or manual updates. */
+    private async runImmediateChecks(): Promise<void> {
+        if (!this.settings.enabled || this._checkRunning || this._immediateCycleRunning ||
+            this.manualBatch.running || this._updatingImages.size > 0) {
+            return;
+        }
+        const keys = immediateUpdateKeys(this.settings.autoUpdateConfig ?? {});
+        if (keys.length === 0) {
+            return;
+        }
+        this._immediateCycleRunning = true;
+        this.immediateRemoteCache = new Map();
+        const startedAt = Date.now();
+        let checked = 0;
+        let updated = 0;
+        let pending = 0;
+        let failures = 0;
+        try {
+            for (const key of keys) {
+                if (!this.settings.enabled || this._checkRunning || this.manualBatch.running) {
+                    break;
+                }
+                checked++;
+                try {
+                    const result = await this.runImmediateCheck(key);
+                    if (imageStatusStore.get(key)?.error) {
+                        failures++;
+                    } else if (result === "updated") {
+                        updated++;
+                    } else if (result === "pending") {
+                        pending++;
+                    }
+                } catch (error) {
+                    failures++;
+                    console.warn(`[ImageWatcher] Contrôle ciblé ${key} impossible:`, error);
+                }
+            }
+        } finally {
+            const uniqueManifests = this.immediateRemoteCache?.size ?? 0;
+            const durationSeconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+            console.log(
+                `[ImageWatcher] Contrôle ciblé (5 min) : ${checked}/${keys.length} service(s), ` +
+                `${uniqueManifests} manifest(s) unique(s), ${updated} mise(s) à jour, ` +
+                `${pending} en attente, ${failures} erreur(s), ${durationSeconds} s`,
+            );
+            this.immediateRemoteCache = null;
+            this._immediateCycleRunning = false;
+        }
     }
 
     // ── Check principal ───────────────────────────────────────────
@@ -1316,7 +1444,7 @@ export class ImageWatcher {
       throw new Error(`Image introuvable dans la stack: ${image}`);
     }
 
-    const status = await this.checkOneImage(image, stack);
+    const status = await this.checkOneImage(image, stack, watched);
     const skippedDigests = this.settings.ignoredDigests?.[key] ?? [];
     if (status.remoteDigest && skippedDigests.includes(status.remoteDigest)) {
       status.hasUpdate = false;
@@ -1346,7 +1474,7 @@ export class ImageWatcher {
 
     /* eslint-enable @stylistic/indent */
     async runCheck(): Promise<ImageStatus[]> {
-        if (this._checkRunning || this.manualBatch.running) {
+        if (this._checkRunning || this._immediateCycleRunning || this.manualBatch.running) {
             console.log("[ImageWatcher] Check déjà en cours, ignoré.");
             return [];
         }
@@ -1401,7 +1529,7 @@ export class ImageWatcher {
                         imageStatusStore.set(key, ignored);
                         continue;
                     }
-                    const status = await this.checkOneImage(image, stack);
+                    const status = await this.checkOneImage(image, stack, watched);
                     // Digest ignoré → on supprime le flag hasUpdate pour ce cycle
                     const skipped = this.settings.ignoredDigests?.[key] ?? [];
                     if (status.remoteDigest && skipped.includes(status.remoteDigest)) {
@@ -1684,14 +1812,24 @@ export class ImageWatcher {
             console.log(
         `[ImageWatcher] Auto-update: ${status.stack}/${status.image} (services: ${services.join(", ")})`,
             );
-            // ── Capture l'ID de l'image actuelle avant le pull (pour rollback) ──
+            // Capture l'image *exécutée* : le tag local peut avoir changé quand
+            // plusieurs stacks partagent :latest. Un seul rollback ID est pris
+            // en charge ; avec plusieurs versions actives, pas de faux rollback.
             let oldImageId = "";
             try {
-                const ref = withExplicitTag(status.image);
-                const stdout = await docker([ "image", "inspect", "--format", "{{.Id}}", ref ], { timeout: 10000 });
-                oldImageId = stdout.trim();
-            } catch {
-                /* image absente localement, rollback impossible */
+                const runningIds = await runningComposeImageIds(status.image, watched);
+                const distinct = [ ...new Set(runningIds) ];
+                if (distinct.length === 1) {
+                    oldImageId = distinct[0];
+                } else if (distinct.length === 0) {
+                    const ref = withExplicitTag(status.image);
+                    const stdout = await docker([ "image", "inspect", "--format", "{{.Id}}", ref ], { timeout: 10000 });
+                    oldImageId = stdout.trim();
+                } else {
+                    console.warn("[ImageWatcher] Rollback non disponible : %s exécute plusieurs versions d'image", key);
+                }
+            } catch (error) {
+                console.warn("[ImageWatcher] Impossible de capturer l'image avant MàJ pour %s :", key, error);
             }
 
             const pullCommand = composeExecInvocation(composePath, [ "pull", ...services ], project, configFiles, workingDir, envFiles);
@@ -1726,7 +1864,7 @@ export class ImageWatcher {
             }
 
             // Recheck pour mettre à jour le digest dans le store
-            const newStatus = await this.checkOneImage(status.image, status.stack);
+            const newStatus = await this.checkOneImage(status.image, status.stack, watched);
             imageStatusStore.set(key, newStatus);
             console.log(
         `[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`,
@@ -2007,6 +2145,7 @@ export class ImageWatcher {
     private async checkOneImage(
         image: string,
         stack: string,
+        watched?: WatchedComposeStack,
     ): Promise<ImageStatus> {
         const status: ImageStatus = {
             image,
@@ -2021,11 +2160,29 @@ export class ImageWatcher {
             const preferredPlatform =
                 this.settings.imagePlatform ||
         (localInfo.platform ? platformToString(localInfo.platform) : "");
-            const remoteInfo = await getRemoteDigest(
-                image,
-                this.settings.credentials,
-                preferredPlatform,
-            );
+            const registry = normalizeImage(image).registry;
+            const cooldownUntil = this._immediateCycleRunning ? (this.registryCooldownUntil.get(registry) ?? 0) : 0;
+            if (cooldownUntil > Date.now()) {
+                status.error = `Registry ${registry} en limitation de débit jusqu'à ${new Date(cooldownUntil).toISOString()}`;
+                return status;
+            }
+            let remoteInfo: RemoteDigestInfo;
+            try {
+                const fetchRemote = () => getRemoteDigest(image, this.settings.credentials, preferredPlatform);
+                const cache = this.immediateRemoteCache;
+                remoteInfo = await (cache
+                    ? reuseCyclePromise(cache, JSON.stringify([ image, preferredPlatform ]), fetchRemote)
+                    : fetchRemote());
+            } catch (error) {
+                if (this._immediateCycleRunning && axios.isAxiosError(error)) {
+                    const response = error.response;
+                    const delay = registryRateLimitCooldownMs(response?.status ?? 0, response?.headers?.["retry-after"]);
+                    if (delay > 0) {
+                        this.registryCooldownUntil.set(registry, Date.now() + delay);
+                    }
+                }
+                throw error;
+            }
 
             status.remoteDigest = remoteInfo.platformDigest || remoteInfo.digest;
 
@@ -2063,9 +2220,23 @@ export class ImageWatcher {
                 return status;
             }
 
-            // Selon Docker/Podman et le mode rootless, RepoDigests peut contenir soit le digest
-            // du manifest plateforme, soit celui de l'index multi-arch. On accepte les deux.
-            status.hasUpdate = comparableLocalDigests.length > 0 && !localMatchesRemote;
+            // Docker peut déjà avoir déplacé le tag `latest` vers la nouvelle image
+            // alors qu'une autre stack exécute toujours l'ancienne image. Comparer
+            // l'ID immuable des conteneurs au tag local, mais seulement si le digest
+            // du tag est lui-même cohérent avec la registry.
+            let runningDrift = false;
+            if (localMatchesRemote && watched && localInfo.imageId && !image.includes("@sha256:")) {
+                try {
+                    const runningIds = await runningComposeImageIds(image, watched);
+                    runningDrift = hasRunningImageDrift(localInfo.imageId, runningIds);
+                } catch (error) {
+                    // Ne pas inventer un état « à jour » si l'inspection est impossible.
+                    status.error = `Impossible de vérifier les conteneurs de ${stack}: ${error instanceof Error ? error.message : String(error)}`;
+                    return status;
+                }
+            }
+            // RepoDigests peut contenir le manifest plateforme ou l'index multi-arch.
+            status.hasUpdate = (comparableLocalDigests.length > 0 && !localMatchesRemote) || runningDrift;
         } catch (e: unknown) {
             status.error = e instanceof Error ? e.message : String(e);
             console.warn(`[ImageWatcher] ${stack}/${image}: ${status.error}`);

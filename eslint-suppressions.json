@@ -183,20 +183,8 @@
     }
   },
   "backend/routers/watcher-router.ts": {
-    "@stylistic/brace-style": {
-      "count": 10
-    },
     "@stylistic/max-statements-per-line": {
       "count": 2
-    },
-    "@stylistic/no-multi-spaces": {
-      "count": 1
-    },
-    "@stylistic/object-property-newline": {
-      "count": 117
-    },
-    "curly": {
-      "count": 9
     }
   },
   "backend/self-update/editor-lease.test.ts": {
@@ -643,23 +631,6 @@
     },
     "curly": {
       "count": 28
-    }
-  },
-  "frontend/src/components/MonitoringTab.vue": {
-    "@stylistic/brace-style": {
-      "count": 24
-    },
-    "@stylistic/max-statements-per-line": {
-      "count": 1
-    },
-    "@stylistic/no-multi-spaces": {
-      "count": 14
-    },
-    "@stylistic/object-property-newline": {
-      "count": 40
-    },
-    "vue/html-indent": {
-      "count": 37
     }
   },
   "frontend/src/components/RemoteInstanceLinks.vue": {

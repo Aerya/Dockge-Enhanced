@@ -20,6 +20,17 @@ import { runGlobalSearch, runGlobalSearchV2 } from "../global-search";
 import { assertNotSelfStack, assertStackPauseAllowed } from "../stack-pause-policy";
 import { resolveCurrentContainer } from "../current-container";
 import { getContainerCounts } from "../container-counts";
+import { PowerWatchManager, PowerWatchSnapshot } from "../watchers/powerwatch-manager";
+
+export function instanceSystemStatsResponse(
+    systemStats: Record<string, unknown>,
+    powerWatch: PowerWatchSnapshot,
+): Record<string, unknown> & { ok: true;
+    powerWatch: PowerWatchSnapshot } {
+    return { ok: true,
+        ...systemStats,
+        powerWatch };
+}
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -59,8 +70,10 @@ export class DockerSocketHandler extends AgentSocketHandler {
         agentSocket.on("instanceSystemStatsGet", async (callback) => {
             try {
                 checkLogin(socket);
-                callbackResult({ ok: true,
-                    ...(await getSystemStatsSnapshot()) }, callback);
+                callbackResult(instanceSystemStatsResponse(
+                    await getSystemStatsSnapshot(),
+                    await PowerWatchManager.getInstance().getSnapshot(),
+                ), callback);
             } catch (e) {
                 callbackError(e, callback);
             }

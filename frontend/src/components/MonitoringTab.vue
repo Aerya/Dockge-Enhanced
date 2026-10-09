@@ -1,6 +1,5 @@
 <template>
     <div>
-
         <!-- ═══ SECTION 1 : STATUT GLOBAL ═══ -->
         <div class="shadow-box big-padding mb-4">
             <div class="d-flex align-items-center justify-content-between mb-3">
@@ -15,13 +14,13 @@
                 <div class="monitoring-card" :class="backupCardClass">
                     <div class="mc-body">
                         <div class="mc-label">{{ $t('watcher.monitoring.lastBackup') }}</div>
-                        <div class="mc-value" v-if="overview.backup.lastTimestamp">
+                        <div v-if="overview.backup.lastTimestamp" class="mc-value">
                             <span :class="overview.backup.success ? 'text-success' : 'text-danger'">
                                 {{ overview.backup.success ? '✅' : '❌' }}
                             </span>
                             {{ formatAge(overview.backup.ageMinutes) }}
                         </div>
-                        <div class="mc-value text-muted" v-else>{{ $t('watcher.monitoring.lastBackupNever') }}</div>
+                        <div v-else class="mc-value text-muted">{{ $t('watcher.monitoring.lastBackupNever') }}</div>
                     </div>
                 </div>
 
@@ -59,11 +58,11 @@
                 <div class="monitoring-card mc-neutral">
                     <div class="mc-body">
                         <div class="mc-label">{{ $t('watcher.monitoring.nextTrivy') }}</div>
-                        <div class="mc-value" v-if="overview.trivy.nextScanAt">
+                        <div v-if="overview.trivy.nextScanAt" class="mc-value">
                             {{ $t('watcher.monitoring.inTime') }} {{ formatAge(nextTrivyMinutes) }}
                         </div>
-                        <div class="mc-value text-muted" v-else>{{ $t('watcher.monitoring.nextTrivyNone') }}</div>
-                        <div class="mc-detail text-muted" v-if="overview.trivy.lastScanAt">
+                        <div v-else class="mc-value text-muted">{{ $t('watcher.monitoring.nextTrivyNone') }}</div>
+                        <div v-if="overview.trivy.lastScanAt" class="mc-detail text-muted">
                             {{ $t('watcher.monitoring.lastScan') }} {{ formatAge(lastTrivyMinutes) }}
                         </div>
                     </div>
@@ -187,9 +186,11 @@
                 <!-- Toggle stats par stack -->
                 <div class="col-12">
                     <div class="form-check form-switch mb-0">
-                        <input id="monStackStats" v-model="localStackStatsEnabled"
+                        <input
+                            id="monStackStats" v-model="localStackStatsEnabled"
                             class="form-check-input" type="checkbox" role="switch"
-                            @change="saveStackStatsSetting" />
+                            @change="saveStackStatsSetting"
+                        />
                         <label class="form-check-label fw-semibold" for="monStackStats">
                             {{ $t('watcher.monitoring.stackStats') }}
                         </label>
@@ -200,9 +201,11 @@
                 <!-- Toggle mode low-power / Synology -->
                 <div class="col-12">
                     <div class="form-check form-switch mb-0">
-                        <input id="monLowPower" v-model="monSettings.lowPowerMode"
+                        <input
+                            id="monLowPower" v-model="monSettings.lowPowerMode"
                             class="form-check-input" type="checkbox" role="switch"
-                            @change="toggleLowPower" />
+                            @change="toggleLowPower"
+                        />
                         <label class="form-check-label fw-semibold" for="monLowPower">
                             {{ $t('watcher.monitoring.lowPower') }}
                         </label>
@@ -252,17 +255,21 @@
                     <label class="form-label small">
                         <font-awesome-icon icon="floppy-disk" class="me-1" />{{ $t('watcher.monitoring.diskPartition') }}
                     </label>
-                    <div v-for="(p, idx) in diskPartitions" :key="idx"
-                        class="d-flex align-items-center gap-2 mb-2">
+                    <div
+                        v-for="(p, idx) in diskPartitions" :key="idx"
+                        class="d-flex align-items-center gap-2 mb-2"
+                    >
                         <code class="form-control form-control-sm" style="max-width:220px;background:var(--bg-raised)">{{ p }}</code>
                         <button class="btn btn-sm btn-outline-danger" @click="removePartition(idx)">
                             <font-awesome-icon icon="times" />
                         </button>
                     </div>
                     <div class="input-group input-group-sm mt-1" style="max-width:320px">
-                        <input v-model="newPartition" type="text" class="form-control"
-                            placeholder="/" @keyup.enter="addPartition" />
-                        <button class="btn btn-success btn-sm" @click="addPartition" :disabled="!newPartition.trim()">
+                        <input
+                            v-model="newPartition" type="text" class="form-control"
+                            placeholder="/" @keyup.enter="addPartition"
+                        />
+                        <button class="btn btn-success btn-sm" :disabled="!newPartition.trim()" @click="addPartition">
                             <font-awesome-icon icon="plus" class="me-1" />{{ $t('Add') }}
                         </button>
                     </div>
@@ -271,15 +278,19 @@
                         <label class="form-label small">{{ $t('watcher.monitoring.diskDisplayMode') }}</label>
                         <div class="d-flex flex-wrap gap-3">
                             <div class="form-check">
-                                <input id="diskDisplayCompact" v-model="diskDisplayMode"
-                                    class="form-check-input" type="radio" value="compact" />
+                                <input
+                                    id="diskDisplayCompact" v-model="diskDisplayMode"
+                                    class="form-check-input" type="radio" value="compact"
+                                />
                                 <label class="form-check-label" for="diskDisplayCompact">
                                     {{ $t('watcher.monitoring.diskDisplayCompact') }}
                                 </label>
                             </div>
                             <div class="form-check">
-                                <input id="diskDisplayBar" v-model="diskDisplayMode"
-                                    class="form-check-input" type="radio" value="bar" />
+                                <input
+                                    id="diskDisplayBar" v-model="diskDisplayMode"
+                                    class="form-check-input" type="radio" value="bar"
+                                />
                                 <label class="form-check-label" for="diskDisplayBar">
                                     {{ $t('watcher.monitoring.diskDisplayBar') }}
                                     <span class="disk-display-example ms-1">
@@ -304,7 +315,7 @@
                         <small class="form-text">{{ $t('watcher.monitoring.diskDisplayModeHint') }}</small>
                     </div>
                     <div class="mt-2">
-                        <button class="btn btn-primary btn-sm" @click="saveDisplaySettings" :disabled="savingDisplay">
+                        <button class="btn btn-primary btn-sm" :disabled="savingDisplay" @click="saveDisplaySettings">
                             <span v-if="savingDisplay" class="spinner-border spinner-border-sm me-1" />
                             <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
                         </button>
@@ -323,8 +334,10 @@
                 <!-- Activer -->
                 <div class="col-12">
                     <div class="form-check form-switch mb-0">
-                        <input id="crashEnabled" v-model="monSettings.crashLoopEnabled"
-                            class="form-check-input" type="checkbox" role="switch" />
+                        <input
+                            id="crashEnabled" v-model="monSettings.crashLoopEnabled"
+                            class="form-check-input" type="checkbox" role="switch"
+                        />
                         <label class="form-check-label fw-semibold" for="crashEnabled">
                             {{ $t('watcher.monitoring.crashEnabled') }}
                         </label>
@@ -336,8 +349,10 @@
                     <div class="col-md-4">
                         <label class="form-label small">{{ $t('watcher.monitoring.crashThreshold') }}</label>
                         <div class="input-group input-group-sm">
-                            <input v-model.number="monSettings.crashLoopThreshold" type="number" min="2" max="50"
-                                class="form-control" style="max-width: 80px" />
+                            <input
+                                v-model.number="monSettings.crashLoopThreshold" type="number" min="2" max="50"
+                                class="form-control" style="max-width: 80px"
+                            />
                             <span class="input-group-text">{{ $t('watcher.monitoring.crashRestarts') }}</span>
                         </div>
                     </div>
@@ -346,8 +361,10 @@
                     <div class="col-md-4">
                         <label class="form-label small">{{ $t('watcher.monitoring.crashWindow') }}</label>
                         <div class="input-group input-group-sm">
-                            <input v-model.number="monSettings.crashLoopWindowMinutes" type="number" min="1" max="60"
-                                class="form-control" style="max-width: 80px" />
+                            <input
+                                v-model.number="monSettings.crashLoopWindowMinutes" type="number" min="1" max="60"
+                                class="form-control" style="max-width: 80px"
+                            />
                             <span class="input-group-text">min</span>
                         </div>
                     </div>
@@ -356,8 +373,10 @@
                     <div class="col-md-4">
                         <label class="form-label small">{{ $t('watcher.monitoring.crashCooldown') }}</label>
                         <div class="input-group input-group-sm">
-                            <input v-model.number="monSettings.crashLoopCooldownMinutes" type="number" min="5" max="1440"
-                                class="form-control" style="max-width: 80px" />
+                            <input
+                                v-model.number="monSettings.crashLoopCooldownMinutes" type="number" min="5" max="1440"
+                                class="form-control" style="max-width: 80px"
+                            />
                             <span class="input-group-text">min</span>
                         </div>
                     </div>
@@ -365,8 +384,10 @@
                     <!-- Webhooks Discord -->
                     <div class="col-12">
                         <p class="notif-provider-label">Discord</p>
-                        <div v-for="(wh, idx) in monSettings.discordWebhooks" :key="idx"
-                            class="d-flex align-items-center gap-2 mb-2">
+                        <div
+                            v-for="(wh, idx) in monSettings.discordWebhooks" :key="idx"
+                            class="d-flex align-items-center gap-2 mb-2"
+                        >
                             <span class="form-control form-control-sm text-truncate notif-url-display">{{ maskWebhook(wh) }}</span>
                             <button class="btn btn-sm btn-outline-danger" @click="removeWebhook(idx)">
                                 <font-awesome-icon icon="times" />
@@ -374,9 +395,11 @@
                         </div>
                         <p v-if="!monSettings.discordWebhooks.length" class="form-text fst-italic mb-2">{{ $t('watcher.img.noWebhook') }}</p>
                         <div class="input-group input-group-sm mt-1">
-                            <input v-model="newWebhook" type="url" class="form-control"
-                                placeholder="https://discord.com/api/webhooks/..." autocomplete="off" />
-                            <button class="btn btn-success btn-sm" @click="addWebhook" :disabled="!newWebhook">
+                            <input
+                                v-model="newWebhook" type="url" class="form-control"
+                                placeholder="https://discord.com/api/webhooks/..." autocomplete="off"
+                            />
+                            <button class="btn btn-success btn-sm" :disabled="!newWebhook" @click="addWebhook">
                                 <font-awesome-icon icon="plus" />
                             </button>
                         </div>
@@ -385,8 +408,10 @@
                     <!-- URLs Apprise -->
                     <div class="col-12">
                         <p class="notif-provider-label">Apprise</p>
-                        <div v-for="(url, idx) in monSettings.appriseUrls" :key="idx"
-                            class="d-flex align-items-center gap-2 mb-2">
+                        <div
+                            v-for="(url, idx) in monSettings.appriseUrls" :key="idx"
+                            class="d-flex align-items-center gap-2 mb-2"
+                        >
                             <span class="form-control form-control-sm text-truncate notif-url-display">{{ url }}</span>
                             <button class="btn btn-sm btn-outline-danger" @click="removeAppriseUrl(idx)">
                                 <font-awesome-icon icon="times" />
@@ -394,9 +419,11 @@
                         </div>
                         <p v-if="!monSettings.appriseUrls.length" class="form-text fst-italic mb-2">{{ $t('watcher.apprise.noUrl') }}</p>
                         <div class="input-group input-group-sm mt-1">
-                            <input v-model="newAppriseUrl" type="text" class="form-control"
-                                :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off" />
-                            <button class="btn btn-success btn-sm" @click="addAppriseUrl" :disabled="!newAppriseUrl">
+                            <input
+                                v-model="newAppriseUrl" type="text" class="form-control"
+                                :placeholder="$t('watcher.apprise.urlPlaceholder')" autocomplete="off"
+                            />
+                            <button class="btn btn-success btn-sm" :disabled="!newAppriseUrl" @click="addAppriseUrl">
                                 <font-awesome-icon icon="plus" />
                             </button>
                         </div>
@@ -405,12 +432,14 @@
             </div>
 
             <div class="d-flex align-items-center gap-3 flex-wrap mb-4">
-                <button class="btn btn-primary btn-sm" @click="saveMonSettings" :disabled="savingMon">
+                <button class="btn btn-primary btn-sm" :disabled="savingMon" @click="saveMonSettings">
                     <span v-if="savingMon" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
                 </button>
-                <button class="btn btn-normal btn-sm" @click="testAppriseMonitoring"
-                    :disabled="testingApprise || !monSettings.appriseUrls.length">
+                <button
+                    class="btn btn-normal btn-sm" :disabled="testingApprise || !monSettings.appriseUrls.length"
+                    @click="testAppriseMonitoring"
+                >
                     <span v-if="testingApprise" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="paper-plane" class="me-1" />{{ $t('watcher.apprise.test') }}
                 </button>
@@ -420,8 +449,10 @@
             <div v-if="monSettings.crashLoopEnabled">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <h6 class="form-text fw-semibold mb-0">{{ $t('watcher.monitoring.crashEventsHeading') }}</h6>
-                    <button v-if="overview.crashes.length" class="btn btn-sm btn-outline-secondary"
-                        @click="clearCrashEvents" :disabled="clearingEvents">
+                    <button
+                        v-if="overview.crashes.length" class="btn btn-sm btn-outline-secondary"
+                        :disabled="clearingEvents" @click="clearCrashEvents"
+                    >
                         <span v-if="clearingEvents" class="spinner-border spinner-border-sm me-1" />
                         <font-awesome-icon v-else icon="trash" class="me-1" />{{ $t('watcher.monitoring.crashClearList') }}
                     </button>
@@ -448,41 +479,53 @@
                             <td>
                                 <!-- Dropdown durée d'exclusion -->
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-warning dropdown-toggle py-0 px-2"
+                                    <button
+                                        class="btn btn-sm btn-outline-warning dropdown-toggle py-0 px-2"
                                         type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                                        :title="$t('watcher.monitoring.crashExcludeBtn')">
+                                        :title="$t('watcher.monitoring.crashExcludeBtn')"
+                                    >
                                         <font-awesome-icon icon="ban" />
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
                                         <li><h6 class="dropdown-header">{{ $t('watcher.monitoring.crashExcludeFor') }}</h6></li>
                                         <li>
-                                            <a class="dropdown-item" href="#"
-                                                @click.prevent="excludeContainer(ev.containerName, 1)">
+                                            <a
+                                                class="dropdown-item" href="#"
+                                                @click.prevent="excludeContainer(ev.containerName, 1)"
+                                            >
                                                 1 {{ $t('watcher.monitoring.crashExcludeHour') }}
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" href="#"
-                                                @click.prevent="excludeContainer(ev.containerName, 6)">
+                                            <a
+                                                class="dropdown-item" href="#"
+                                                @click.prevent="excludeContainer(ev.containerName, 6)"
+                                            >
                                                 6 {{ $t('watcher.monitoring.crashExcludeHours') }}
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" href="#"
-                                                @click.prevent="excludeContainer(ev.containerName, 24)">
+                                            <a
+                                                class="dropdown-item" href="#"
+                                                @click.prevent="excludeContainer(ev.containerName, 24)"
+                                            >
                                                 24 {{ $t('watcher.monitoring.crashExcludeHours') }}
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" href="#"
-                                                @click.prevent="excludeContainer(ev.containerName, 72)">
+                                            <a
+                                                class="dropdown-item" href="#"
+                                                @click.prevent="excludeContainer(ev.containerName, 72)"
+                                            >
                                                 72 {{ $t('watcher.monitoring.crashExcludeHours') }}
                                             </a>
                                         </li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <a class="dropdown-item" href="#"
-                                                @click.prevent="excludeContainer(ev.containerName, null)">
+                                            <a
+                                                class="dropdown-item" href="#"
+                                                @click.prevent="excludeContainer(ev.containerName, null)"
+                                            >
                                                 {{ $t('watcher.monitoring.crashExcludePermanent') }}
                                             </a>
                                         </li>
@@ -519,9 +562,11 @@
                                     <span v-else>{{ fmtDate(excl.expiresAt) }}</span>
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-danger py-0 px-2"
+                                    <button
+                                        class="btn btn-sm btn-outline-danger py-0 px-2"
+                                        :title="$t('watcher.monitoring.crashExcludeRemove')"
                                         @click="removeExclusion(excl.containerName)"
-                                        :title="$t('watcher.monitoring.crashExcludeRemove')">
+                                    >
                                         <font-awesome-icon icon="times" />
                                     </button>
                                 </td>
@@ -541,8 +586,10 @@
             <div class="row g-3 mb-3">
                 <div class="col-12">
                     <div class="form-check form-switch mb-0">
-                        <input id="healthEnabled" v-model="monSettings.healthcheckEnabled"
-                            class="form-check-input" type="checkbox" role="switch" />
+                        <input
+                            id="healthEnabled" v-model="monSettings.healthcheckEnabled"
+                            class="form-check-input" type="checkbox" role="switch"
+                        />
                         <label class="form-check-label fw-semibold" for="healthEnabled">
                             {{ $t('watcher.monitoring.healthEnabled') }}
                         </label>
@@ -565,8 +612,10 @@
                     <div class="col-md-4">
                         <label class="form-label small">{{ $t('watcher.monitoring.healthCooldown') }}</label>
                         <div class="input-group input-group-sm">
-                            <input v-model.number="monSettings.healthcheckCooldownMinutes" type="number" min="1" max="1440"
-                                class="form-control" style="max-width: 80px" />
+                            <input
+                                v-model.number="monSettings.healthcheckCooldownMinutes" type="number" min="1" max="1440"
+                                class="form-control" style="max-width: 80px"
+                            />
                             <span class="input-group-text">min</span>
                         </div>
                     </div>
@@ -574,7 +623,7 @@
             </div>
 
             <div class="d-flex align-items-center gap-3 flex-wrap mb-4">
-                <button class="btn btn-primary btn-sm" @click="saveMonSettings" :disabled="savingMon">
+                <button class="btn btn-primary btn-sm" :disabled="savingMon" @click="saveMonSettings">
                     <span v-if="savingMon" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
                 </button>
@@ -583,8 +632,10 @@
             <div v-if="monSettings.healthcheckEnabled">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <h6 class="form-text fw-semibold mb-0">{{ $t('watcher.monitoring.healthEventsHeading') }}</h6>
-                    <button v-if="overview.health.length" class="btn btn-sm btn-outline-secondary"
-                        @click="clearHealthEvents" :disabled="clearingHealthEvents">
+                    <button
+                        v-if="overview.health.length" class="btn btn-sm btn-outline-secondary"
+                        :disabled="clearingHealthEvents" @click="clearHealthEvents"
+                    >
                         <span v-if="clearingHealthEvents" class="spinner-border spinner-border-sm me-1" />
                         <font-awesome-icon v-else icon="trash" class="me-1" />{{ $t('watcher.monitoring.crashClearList') }}
                     </button>
@@ -633,19 +684,24 @@
                     <span v-else-if="kulaSettings.enabled" class="badge bg-warning text-dark ms-2 badge-sm">{{ $t('watcher.kula.stopped') }}</span>
                 </h5>
                 <div class="d-flex gap-2 align-items-center">
-                    <a v-if="kulaStatus === 'running'" :href="kulaEffectiveUrl" target="_blank"
-                        class="btn btn-sm btn-outline-secondary">
+                    <a
+                        v-if="kulaStatus === 'running'" :href="kulaEffectiveUrl" target="_blank"
+                        class="btn btn-sm btn-outline-secondary"
+                    >
                         <font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t('watcher.kula.openExternal') }}
                     </a>
                 </div>
             </div>
 
+            <p class="small text-muted mb-2">{{ $t("watcher.kula.description") }} <a href="https://github.com/c0m4r/kula" target="_blank" rel="noopener noreferrer" class="ms-2">GitHub <font-awesome-icon icon="external-link-alt" /></a></p>
             <!-- Toggle + config -->
             <div class="row g-3 mb-3">
                 <div class="col-12">
                     <div class="form-check form-switch mb-0">
-                        <input id="kulaEnabled" v-model="kulaSettings.enabled"
-                            class="form-check-input" type="checkbox" role="switch" />
+                        <input
+                            id="kulaEnabled" v-model="kulaSettings.enabled"
+                            class="form-check-input" type="checkbox" role="switch"
+                        />
                         <label class="form-check-label fw-semibold" for="kulaEnabled">
                             {{ $t('watcher.kula.enable') }}
                         </label>
@@ -657,8 +713,10 @@
                     <!-- Port -->
                     <div class="col-md-3">
                         <label class="form-label small">{{ $t('watcher.kula.port') }}</label>
-                        <input v-model.number="kulaSettings.port" type="number" min="1024" max="65535"
-                            class="form-control form-control-sm" style="max-width:120px" />
+                        <input
+                            v-model.number="kulaSettings.port" type="number" min="1024" max="65535"
+                            class="form-control form-control-sm" style="max-width:120px"
+                        />
                     </div>
 
                     <!-- Mode réseau -->
@@ -673,26 +731,33 @@
                     <!-- URL personnalisée -->
                     <div class="col-12">
                         <label class="form-label small">{{ $t('watcher.kula.customUrl') }}</label>
-                        <input v-model="kulaSettings.customUrl" type="url" class="form-control form-control-sm"
+                        <input
+                            v-model="kulaSettings.customUrl" type="url" class="form-control form-control-sm"
                             style="max-width:380px"
-                            :placeholder="`http://${windowHostname}:${kulaSettings.port}`" />
+                            :placeholder="`http://${windowHostname}:${kulaSettings.port}`"
+                        />
                         <small class="form-text">{{ $t('watcher.kula.customUrlHint') }} <code>{{ kulaEffectiveUrl }}</code></small>
                     </div>
                 </template>
             </div>
 
-            <div class="d-flex gap-2 mb-3">
-                <button class="btn btn-primary btn-sm" @click="saveKulaSettings" :disabled="savingKula">
+            <div class="d-flex flex-wrap gap-2 mb-3 service-actions">
+                <button class="btn btn-primary btn-sm" :disabled="savingKula" @click="saveKulaSettings">
                     <span v-if="savingKula" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('Save') }}
                 </button>
-                <button v-if="kulaSettings.enabled && kulaStatus !== 'running'" class="btn btn-success btn-sm"
-                    @click="startKula" :disabled="kulaActionLoading">
+                <button
+                    v-if="kulaSettings.enabled && kulaStatus !== 'running'" class="btn btn-primary btn-sm"
+                    :disabled="kulaActionLoading" @click="startKula"
+                >
                     <span v-if="kulaActionLoading" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="play" class="me-1" />{{ $t('watcher.kula.start') }}
                 </button>
-                <button v-if="kulaStatus === 'running'" class="btn btn-danger btn-sm"
-                    @click="stopKula" :disabled="kulaActionLoading">
+                <button v-if="kulaStatus === 'running'" class="btn btn-warning btn-sm" :disabled="kulaActionLoading" @click="startKula"><font-awesome-icon icon="rotate" class="me-1" />{{ $t("watcher.powerwatch.restart") }}</button>
+                <button
+                    v-if="kulaStatus === 'running'" class="btn btn-danger btn-sm"
+                    :disabled="kulaActionLoading" @click="stopKula"
+                >
                     <span v-if="kulaActionLoading" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="stop" class="me-1" />{{ $t('watcher.kula.stop') }}
                 </button>
@@ -723,7 +788,7 @@
                 <input id="dozzleEnabled" v-model="dozzleSettings.enabled" class="form-check-input" type="checkbox" role="switch" />
                 <label class="form-check-label fw-semibold" for="dozzleEnabled">{{ $t("watcher.dozzle.enable") }}</label>
             </div>
-            <small class="form-text">{{ $t("watcher.dozzle.hint") }}</small>
+            <small class="form-text">{{ $t("watcher.dozzle.description") }} <a href="https://github.com/amir20/dozzle" target="_blank" rel="noopener noreferrer" class="ms-2">GitHub <font-awesome-icon icon="external-link-alt" /></a></small>
             <div v-if="dozzleSettings.enabled" class="row g-3 my-1">
                 <div class="col-md-3">
                     <label class="form-label small">{{ $t("watcher.dozzle.port") }}</label>
@@ -735,17 +800,200 @@
                     <small class="form-text">{{ $t("watcher.dozzle.effectiveUrl") }} <code>{{ dozzleEffectiveUrl }}</code></small>
                 </div>
             </div>
-            <div class="d-flex gap-2 mt-3">
+            <div class="d-flex flex-wrap gap-2 mt-3 service-actions">
                 <button class="btn btn-primary btn-sm" :disabled="savingDozzle" @click="saveDozzleSettings">
                     <span v-if="savingDozzle" class="spinner-border spinner-border-sm me-1" />
                     <font-awesome-icon v-else icon="save" class="me-1" />{{ $t("Save") }}
                 </button>
-                <button v-if="dozzleSettings.enabled && dozzleStatus !== 'running'" class="btn btn-success btn-sm" :disabled="dozzleActionLoading" @click="startDozzle">
+                <button v-if="dozzleSettings.enabled && dozzleStatus !== 'running'" class="btn btn-primary btn-sm" :disabled="dozzleActionLoading" @click="startDozzle">
                     <font-awesome-icon icon="play" class="me-1" />{{ $t("watcher.dozzle.start") }}
                 </button>
+                <button v-if="dozzleStatus === 'running'" class="btn btn-warning btn-sm" :disabled="dozzleActionLoading" @click="startDozzle"><font-awesome-icon icon="rotate" class="me-1" />{{ $t("watcher.powerwatch.restart") }}</button>
                 <button v-if="dozzleStatus === 'running'" class="btn btn-danger btn-sm" :disabled="dozzleActionLoading" @click="stopDozzle">
                     <font-awesome-icon icon="stop" class="me-1" />{{ $t("watcher.dozzle.stop") }}
                 </button>
+            </div>
+        </div>
+
+        <div class="shadow-box big-padding mb-4 powerwatch-panel">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="bolt" class="me-2" />{{ $t("watcher.powerwatch.heading") }}
+                    <span v-if="powerWatchStatus?.reachable" class="badge bg-success ms-2 badge-sm">{{ $t("watcher.powerwatch.online") }}</span>
+                    <span v-else-if="powerWatchStatus?.status === 'stopped'" class="badge bg-secondary ms-2 badge-sm">{{ $t("watcher.powerwatch.stopped") }}</span>
+                    <span v-else-if="powerWatchSettings.enabled" class="badge bg-warning text-dark ms-2 badge-sm">{{ $t("watcher.powerwatch.offline") }}</span>
+                </h5>
+                <a
+                    v-if="powerWatchEffectiveUrl" :href="powerWatchEffectiveUrl" target="_blank" rel="noopener noreferrer"
+                    class="btn btn-sm btn-outline-secondary" :title="$t('watcher.powerwatch.open')"
+                    :aria-label="$t('watcher.powerwatch.open')"
+                ><font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t("watcher.powerwatch.open") }}</a>
+            </div>
+
+            <p class="small text-muted mb-2">
+                {{ $t("watcher.powerwatch.description") }}
+                <a href="https://github.com/Aerya/PowerWatch" target="_blank" rel="noopener noreferrer" class="ms-2">GitHub <font-awesome-icon icon="external-link-alt" /></a>
+            </p>
+            <div class="form-check form-switch mb-3">
+                <input id="powerWatchEnabled" v-model="powerWatchSettings.enabled" class="form-check-input" type="checkbox" role="switch" />
+                <label class="form-check-label fw-semibold" for="powerWatchEnabled">{{ $t("watcher.powerwatch.enable") }}</label>
+            </div>
+
+            <template v-if="powerWatchSettings.enabled">
+                <div class="d-flex flex-wrap gap-3 mb-3">
+                    <label class="form-check">
+                        <input v-model="powerWatchSettings.mode" class="form-check-input" type="radio" value="external" />
+                        <span class="form-check-label">{{ $t("watcher.powerwatch.external") }}</span>
+                    </label>
+                    <label class="form-check">
+                        <input v-model="powerWatchSettings.mode" class="form-check-input" type="radio" value="managed" />
+                        <span class="form-check-label">{{ $t("watcher.powerwatch.managed") }}</span>
+                    </label>
+                </div>
+
+                <template v-if="powerWatchSettings.mode === 'external'">
+                    <div v-if="powerWatchDetection?.containers?.length" class="mb-3">
+                        <div class="small fw-semibold mb-2">{{ $t("watcher.powerwatch.detected") }}</div>
+                        <div v-for="container in powerWatchDetection.containers" :key="container.name" class="powerwatch-detected mb-2">
+                            <code>{{ container.name }}</code><span>{{ container.image }}</span><span>{{ $t(container.state === "running" ? "watcher.powerwatch.online" : "watcher.powerwatch.stopped") }}</span>
+                            <span v-if="container.hostPort">{{ container.hostPort }} → 3000</span>
+                            <button class="btn btn-sm btn-normal" type="button" @click="usePowerWatchContainer(container)">{{ $t("watcher.powerwatch.useInstance") }}</button>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label small">{{ $t("watcher.powerwatch.apiUrl") }}</label>
+                            <input v-model="powerWatchSettings.apiUrl" type="url" class="form-control form-control-sm" placeholder="http://192.168.1.10:3000" :disabled="Boolean(powerWatchSettings.externalContainer)" />
+                            <small class="form-text">{{ $t("watcher.powerwatch.externalUrlHint") }}</small>
+                        </div>
+                        <div class="col-12">
+                            <details>
+                                <summary>{{ $t("watcher.powerwatch.advanced") }}</summary>
+                                <label class="form-label small mt-2">{{ $t("watcher.powerwatch.webUrl") }}</label>
+                                <input v-model="powerWatchSettings.webUrl" type="url" class="form-control form-control-sm" />
+                                <small class="form-text">{{ $t("watcher.powerwatch.externalWebUrlHint") }}</small>
+                            </details>
+                        </div>
+                        <div v-if="powerWatchSettings.externalContainer" class="col-12 small">
+                            {{ $t("watcher.powerwatch.selectedContainer") }} <code>{{ powerWatchSettings.externalContainer }}</code>
+                            <button type="button" class="btn btn-sm btn-link" @click="powerWatchSettings.externalContainer = ''">{{ $t("watcher.powerwatch.clear") }}</button>
+                        </div>
+                    </div>
+                </template>
+
+                <template v-else>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label small">{{ $t("watcher.powerwatch.port") }}</label>
+                            <input v-model.number="powerWatchSettings.hostPort" type="number" min="1" max="65535" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">{{ $t("watcher.powerwatch.bindAddress") }}</label>
+                            <input v-model="powerWatchSettings.bindAddress" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small">{{ $t("watcher.powerwatch.webUrlOptional") }}</label>
+                            <input v-model="powerWatchSettings.managedWebUrl" type="url" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div v-if="powerWatchSettings.bindAddress === '0.0.0.0'" class="alert alert-warning py-2 mt-3">{{ $t("watcher.powerwatch.lanWarning") }}</div>
+                    <details class="mt-3">
+                        <summary>{{ $t("watcher.powerwatch.advanced") }}</summary>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-4"><label class="form-label small">MSR</label><select v-model="powerWatchSettings.msrMode" class="form-select form-select-sm"><option value="auto">{{ $t("watcher.powerwatch.auto") }}</option><option value="enabled">{{ $t("watcher.powerwatch.enabled") }}</option><option value="disabled">{{ $t("watcher.powerwatch.disabled") }}</option></select></div>
+                            <div class="col-md-4"><label class="form-label small">NVIDIA</label><select v-model="powerWatchSettings.nvidiaMode" class="form-select form-select-sm"><option value="auto">{{ $t("watcher.powerwatch.auto") }}</option><option value="enabled">{{ $t("watcher.powerwatch.enabled") }}</option><option value="disabled">{{ $t("watcher.powerwatch.disabled") }}</option></select></div>
+                        </div>
+                    </details>
+                    <div v-if="powerWatchDetection" class="powerwatch-diagnostic mt-3">
+                        <span :class="powerWatchDetection.capabilities.linux ? 'text-success' : 'text-danger'">Linux: {{ capabilityLabel(powerWatchDetection.capabilities.linux) }}</span>
+                        <span>RAPL: {{ capabilityLabel(powerWatchDetection.capabilities.powercap, true) }}</span>
+                        <span>MSR: {{ capabilityLabel(powerWatchDetection.capabilities.msr, true) }}</span>
+                        <span>NVIDIA: {{ capabilityLabel(powerWatchDetection.capabilities.nvidia, true) }}</span>
+                        <span :class="powerWatchDetection.portAvailable ? 'text-success' : 'text-danger'">{{ $t("watcher.powerwatch.port") }}: {{ powerWatchDetection.portAvailable ? $t("watcher.powerwatch.available") : $t("watcher.powerwatch.portInUse") }}</span>
+                        <span class="text-success">{{ $t("watcher.powerwatch.volumeKept") }}</span>
+                    </div>
+                </template>
+
+                <div v-if="powerWatchStatus" class="powerwatch-current mt-3">
+                    <strong>{{ $t("watcher.powerwatch.current") }}:</strong>
+                    <span><font-awesome-icon icon="bolt" /> {{ powerWatchDisplayWatts }}</span>
+                    <span v-if="powerWatchStatus.confidence">{{ powerWatchConfidence }}</span>
+                    <small v-if="powerWatchStatus.lastError" class="text-warning">{{ powerWatchStatus.lastError }}</small>
+                </div>
+            </template>
+
+            <div class="d-flex flex-wrap gap-2 mt-3 align-items-center service-actions">
+                <button class="btn btn-primary btn-sm" :disabled="powerWatchLoading" @click="savePowerWatchSettings"><font-awesome-icon icon="save" class="me-1" />{{ $t("Save") }}</button>
+                <button v-if="powerWatchSettings.enabled && powerWatchSettings.mode === 'managed'" class="btn btn-normal btn-sm" :disabled="powerWatchLoading" @click="detectPowerWatch"><font-awesome-icon icon="magnifying-glass" class="me-1" />{{ $t("watcher.powerwatch.checkHost") }}</button>
+                <button v-if="powerWatchSettings.enabled" class="btn btn-normal btn-sm" :disabled="powerWatchLoading" @click="testPowerWatch"><font-awesome-icon icon="plug" class="me-1" />{{ $t("watcher.powerwatch.test") }}</button>
+                <template v-if="powerWatchSettings.enabled && powerWatchSettings.mode === 'managed'">
+                    <button v-if="!managedPowerWatch.installed" class="btn btn-primary btn-sm" :disabled="powerWatchLoading" @click="powerWatchAction('install')"><font-awesome-icon icon="download" class="me-1" />{{ $t("watcher.powerwatch.install") }}</button>
+                    <button v-else-if="!managedPowerWatch.running" class="btn btn-primary btn-sm" :disabled="powerWatchLoading" @click="powerWatchAction('start')"><font-awesome-icon icon="play" class="me-1" />{{ $t("watcher.powerwatch.start") }}</button>
+                    <template v-else>
+                        <button class="btn btn-warning btn-sm" :disabled="powerWatchLoading" @click="powerWatchAction('restart')"><font-awesome-icon icon="rotate" class="me-1" />{{ $t("watcher.powerwatch.restart") }}</button>
+                        <button class="btn btn-danger btn-sm" :disabled="powerWatchLoading" @click="powerWatchAction('stop')"><font-awesome-icon icon="stop" class="me-1" />{{ $t("watcher.powerwatch.stop") }}</button>
+                    </template>
+                    <span v-if="managedPowerWatch.running && powerWatchStatus?.reachable" class="text-success small"><font-awesome-icon icon="check-circle" /> {{ $t("watcher.powerwatch.online") }}</span>
+                </template>
+                <span v-if="powerWatchLoading" class="spinner-border spinner-border-sm" role="status" />
+            </div>
+        </div>
+
+        <div class="shadow-box big-padding mb-4 powerwatch-panel">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="network-wired" class="me-2" />{{ $t("watcher.powerwatch.hub") }}
+                    <span v-if="powerWatchHubStatus?.reachable" class="badge bg-success ms-2 badge-sm">{{ $t("watcher.powerwatch.online") }}</span>
+                    <span v-else-if="powerWatchSettings.hubEnabled" class="badge bg-warning text-dark ms-2 badge-sm">{{ managedHub.installed && !managedHub.running ? $t("watcher.powerwatch.stopped") : $t("watcher.powerwatch.offline") }}</span>
+                </h5>
+                <a
+                    v-if="powerWatchHubEffectiveUrl" :href="powerWatchHubEffectiveUrl" target="_blank" rel="noopener noreferrer"
+                    class="btn btn-sm btn-outline-secondary" :title="$t('watcher.powerwatch.openHub')"
+                    :aria-label="$t('watcher.powerwatch.openHub')"
+                ><font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t("watcher.powerwatch.openHub") }}</a>
+            </div>
+            <p class="small text-muted mb-2">
+                {{ $t("watcher.powerwatch.hubHelp") }}
+                <a href="https://github.com/Aerya/PowerWatch" target="_blank" rel="noopener noreferrer" class="ms-2">GitHub <font-awesome-icon icon="external-link-alt" /></a>
+            </p>
+            <div class="form-check form-switch mb-3">
+                <input id="powerWatchHubEnabled" v-model="powerWatchSettings.hubEnabled" class="form-check-input" type="checkbox" role="switch" />
+                <label class="form-check-label fw-semibold" for="powerWatchHubEnabled">{{ $t("watcher.powerwatch.enableHub") }}</label>
+            </div>
+            <div v-if="powerWatchSettings.hubEnabled" class="row g-3">
+                <div class="col-12 d-flex flex-wrap gap-3">
+                    <label class="form-check"><input v-model="powerWatchSettings.hubMode" class="form-check-input" type="radio" value="external" /> <span class="form-check-label">{{ $t("watcher.powerwatch.hubExternal") }}</span></label>
+                    <label class="form-check"><input v-model="powerWatchSettings.hubMode" class="form-check-input" type="radio" value="managed" /> <span class="form-check-label">{{ $t("watcher.powerwatch.hubManaged") }}</span></label>
+                </div>
+                <div v-if="powerWatchSettings.hubMode === 'external'" class="col-12">
+                    <label class="form-label small">{{ $t("watcher.powerwatch.hubWebUrl") }}</label>
+                    <input v-model="powerWatchSettings.hubWebUrl" type="url" class="form-control form-control-sm" />
+                    <small class="form-text">{{ $t("watcher.powerwatch.hubUrlHint") }}</small>
+                </div>
+                <template v-else>
+                    <div class="col-md-3"><label class="form-label small">{{ $t("watcher.powerwatch.port") }}</label><input v-model.number="powerWatchSettings.hubHostPort" type="number" min="1024" max="65535" class="form-control form-control-sm" /></div>
+                    <div class="col-md-4"><label class="form-label small">{{ $t("watcher.powerwatch.bindAddress") }}</label><input v-model="powerWatchSettings.hubBindAddress" class="form-control form-control-sm" /></div>
+                    <div class="col-12"><label class="form-label small">{{ $t("watcher.powerwatch.webUrlOptional") }}</label><input v-model="powerWatchSettings.hubManagedWebUrl" type="url" class="form-control form-control-sm" /></div>
+                    <div v-if="powerWatchSettings.hubBindAddress !== '127.0.0.1' && powerWatchSettings.hubBindAddress !== '::1'" class="col-12 alert alert-warning py-2">{{ $t("watcher.powerwatch.lanWarning") }}</div>
+                </template>
+                <div v-if="powerWatchHubStatus" class="col-12 small">
+                    <span v-if="powerWatchHubStatus.reachable" class="text-success">{{ $t("watcher.powerwatch.hubOnline") }}</span>
+                    <span v-else class="text-warning">{{ $t("watcher.powerwatch.hubOffline") }}<template v-if="powerWatchHubStatus.lastError">: {{ powerWatchHubStatus.lastError }}</template></span>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3 align-items-center service-actions">
+                <button class="btn btn-primary btn-sm" :disabled="powerWatchLoading" @click="savePowerWatchHubSettings"><font-awesome-icon icon="save" class="me-1" />{{ $t("Save") }}</button>
+                <button v-if="powerWatchSettings.hubEnabled" class="btn btn-normal btn-sm" :disabled="powerWatchLoading" @click="testPowerWatchHub"><font-awesome-icon icon="plug" class="me-1" />{{ $t("watcher.powerwatch.testHub") }}</button>
+                <template v-if="powerWatchSettings.hubEnabled && powerWatchSettings.hubMode === 'managed'">
+                    <button v-if="!managedHub.installed" class="btn btn-primary btn-sm" :disabled="powerWatchLoading" @click="powerWatchHubAction('install')"><font-awesome-icon icon="download" class="me-1" />{{ $t("watcher.powerwatch.installHub") }}</button>
+                    <button v-else-if="!managedHub.running" class="btn btn-primary btn-sm" :disabled="powerWatchLoading" @click="powerWatchHubAction('start')"><font-awesome-icon icon="play" class="me-1" />{{ $t("watcher.powerwatch.start") }}</button>
+                    <template v-else>
+                        <button class="btn btn-warning btn-sm" :disabled="powerWatchLoading" @click="powerWatchHubAction('restart')"><font-awesome-icon icon="rotate" class="me-1" />{{ $t("watcher.powerwatch.restart") }}</button>
+                        <button class="btn btn-danger btn-sm" :disabled="powerWatchLoading" @click="powerWatchHubAction('stop')"><font-awesome-icon icon="stop" class="me-1" />{{ $t("watcher.powerwatch.stop") }}</button>
+                    </template>
+                    <span v-if="managedHub.running && powerWatchHubStatus?.reachable" class="text-success small"><font-awesome-icon icon="check-circle" /> {{ $t("watcher.powerwatch.hubOnline") }}</span>
+                </template>
+                <span v-if="powerWatchLoading" class="spinner-border spinner-border-sm" role="status" />
             </div>
         </div>
 
@@ -755,7 +1003,6 @@
                 {{ toast.msg }}
             </div>
         </Transition>
-
     </div>
 </template>
 
@@ -765,6 +1012,7 @@ import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 import { stackStatsEnabled } from "../composables/useStackStats";
 import { setLowPower, POLL, makePoller, type Poller } from "../composables/useLowPower";
+import { formatPowerWatts, resolvePowerWatchWebUrl, type PowerWatchFrontendSnapshot } from "../powerwatch";
 
 const { t } = useI18n();
 initServerTz();
@@ -780,13 +1028,53 @@ type HealthAutoHealMode = "notify" | "restart_container" | "restart_service" | "
 type HealthActionStatus = "notified" | "success" | "failed" | "skipped";
 
 interface KulaSettings {
-    enabled:     boolean;
-    port:        number;
-    customUrl:   string;
+    enabled: boolean;
+    port: number;
+    customUrl: string;
     networkMode: "bridge" | "host";
 }
 
-interface DozzleSettings { enabled: boolean; port: number; customUrl: string }
+interface DozzleSettings { enabled: boolean;
+    port: number;
+    customUrl: string }
+
+interface PowerWatchSettings {
+    enabled: boolean;
+    mode: "managed" | "external";
+    apiUrl: string;
+    webUrl: string;
+    externalContainer: string;
+    hostPort: number;
+    bindAddress: string;
+    managedWebUrl: string;
+    msrMode: "auto" | "enabled" | "disabled";
+    nvidiaMode: "auto" | "enabled" | "disabled";
+    hubEnabled: boolean;
+    hubWebUrl: string;
+    hubMode: "managed" | "external";
+    hubHostPort: number;
+    hubBindAddress: string;
+    hubManagedWebUrl: string;
+}
+
+interface PowerWatchHubStatus {
+    enabled: boolean;
+    reachable: boolean;
+    webUrl: string | null;
+    lastError?: string | null;
+}
+
+interface PowerWatchDetection {
+    containers: Array<{ name: string;
+        image: string;
+        state: string;
+        hostPort: number | null }>;
+    capabilities: { linux: boolean;
+        powercap: boolean;
+        msr: boolean;
+        nvidia: boolean };
+    portAvailable: boolean;
+}
 
 interface MonitoringSettings {
     crashLoopEnabled: boolean;
@@ -820,10 +1108,22 @@ interface HistoryTimeTick {
 }
 
 interface Overview {
-    backup: { lastTimestamp: string | null; ageMinutes: number | null; success: boolean | null };
-    images: { pendingCount: number; pendingImages: { image: string; stack: string }[] };
-    trivy:  { criticalCount: number; criticalImages: { image: string; stack: string; maxSeverity: string }[]; lastScanAt: string | null; nextScanAt: string | null };
-    crashes: { containerName: string; restartCount: number; windowMinutes: number; timestamp: string }[];
+    backup: { lastTimestamp: string | null;
+        ageMinutes: number | null;
+        success: boolean | null };
+    images: { pendingCount: number;
+        pendingImages: { image: string;
+            stack: string }[] };
+    trivy: { criticalCount: number;
+        criticalImages: { image: string;
+            stack: string;
+            maxSeverity: string }[];
+        lastScanAt: string | null;
+        nextScanAt: string | null };
+    crashes: { containerName: string;
+        restartCount: number;
+        windowMinutes: number;
+        timestamp: string }[];
     health: {
         containerName: string;
         stackName: string | null;
@@ -843,8 +1143,10 @@ interface HostStats {
     processCount: number | null;
     uptimeSeconds: number;
     temperatures: {
-        cpu: { label: string; celsius: number }[];
-        disks: { label: string; celsius: number }[];
+        cpu: { label: string;
+            celsius: number }[];
+        disks: { label: string;
+            celsius: number }[];
     };
 }
 
@@ -861,7 +1163,9 @@ interface HostNavbarDisplay {
 
 const API = "/api";
 
-async function api(method: string, path: string, body?: unknown): Promise<{ ok: boolean; data?: unknown; message?: string }> {
+async function api(method: string, path: string, body?: unknown): Promise<{ ok: boolean;
+    data?: unknown;
+    message?: string }> {
     const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
     const fullPath = API + path;
     const sep = fullPath.includes("?") ? "&" : "?";
@@ -877,9 +1181,15 @@ async function api(method: string, path: string, body?: unknown): Promise<{ ok: 
 
 const overviewLoading = ref(false);
 const overview = ref<Overview>({
-    backup:  { lastTimestamp: null, ageMinutes: null, success: null },
-    images:  { pendingCount: 0, pendingImages: [] },
-    trivy:   { criticalCount: 0, criticalImages: [], lastScanAt: null, nextScanAt: null },
+    backup: { lastTimestamp: null,
+        ageMinutes: null,
+        success: null },
+    images: { pendingCount: 0,
+        pendingImages: [] },
+    trivy: { criticalCount: 0,
+        criticalImages: [],
+        lastScanAt: null,
+        nextScanAt: null },
     crashes: [],
     health: [],
 });
@@ -1077,7 +1387,7 @@ function historyTooltip(point: MonitoringHistoryPoint): string {
     return `${new Date(point.sampledAt).toLocaleString()} · CPU ${point.cpuPercent.toFixed(1)}% · RAM ${point.ramPercent.toFixed(1)}%`;
 }
 
-const diskPartitions = ref<string[]>(["/"]);
+const diskPartitions = ref<string[]>([ "/" ]);
 const diskDisplayMode = ref<"compact" | "bar">("compact");
 const hostNavbarDisplay = ref<HostNavbarDisplay>({
     cpuModel: false,
@@ -1087,38 +1397,79 @@ const hostNavbarDisplay = ref<HostNavbarDisplay>({
     diskTemperatures: false,
     navbarPosition: "bottom",
 });
-const diskDisplayExampleCells = [true, true, false, false, false, false, false, false, false, false];
-const newPartition   = ref("");
-const savingMon      = ref(false);
-const savingDisplay  = ref(false);
-const newWebhook     = ref("");
-const newAppriseUrl  = ref("");
+const diskDisplayExampleCells = [ true, true, false, false, false, false, false, false, false, false ];
+const newPartition = ref("");
+const savingMon = ref(false);
+const savingDisplay = ref(false);
+const newWebhook = ref("");
+const newAppriseUrl = ref("");
 const testingApprise = ref(false);
-const toast          = ref({ msg: "", ok: true });
+const toast = ref({ msg: "",
+    ok: true });
 
-const exclusions     = ref<CrashExclusion[]>([]);
+const exclusions = ref<CrashExclusion[]>([]);
 const clearingEvents = ref(false);
 const clearingHealthEvents = ref(false);
 
 // ── Kula ──────────────────────────────────────────────────────────
 const kulaSettings = ref<KulaSettings>({
-    enabled: false, port: 27960, customUrl: "", networkMode: "bridge",
+    enabled: false,
+    port: 27960,
+    customUrl: "",
+    networkMode: "bridge",
 });
-const kulaStatus        = ref<"running" | "stopped" | "error">("stopped");
-const savingKula        = ref(false);
+const kulaStatus = ref<"running" | "stopped" | "error">("stopped");
+const savingKula = ref(false);
 const kulaActionLoading = ref(false);
-const windowHostname    = window.location.hostname;
+const windowHostname = window.location.hostname;
 
 const kulaEffectiveUrl = computed(() =>
     kulaSettings.value.customUrl?.trim()
         ? kulaSettings.value.customUrl.trim()
         : `http://${windowHostname}:${kulaSettings.value.port}`
 );
-const dozzleSettings = ref<DozzleSettings>({ enabled: false, port: 8080, customUrl: "" });
+const dozzleSettings = ref<DozzleSettings>({ enabled: false,
+    port: 8080,
+    customUrl: "" });
 const dozzleStatus = ref<"running" | "stopped" | "error">("stopped");
 const savingDozzle = ref(false);
 const dozzleActionLoading = ref(false);
 const dozzleEffectiveUrl = computed(() => dozzleSettings.value.customUrl?.trim() || `http://${windowHostname}:${dozzleSettings.value.port}`);
+const powerWatchSettings = ref<PowerWatchSettings>({
+    enabled: false,
+    mode: "external",
+    apiUrl: "",
+    webUrl: "",
+    externalContainer: "",
+    hostPort: 3000,
+    bindAddress: "127.0.0.1",
+    managedWebUrl: "",
+    msrMode: "auto",
+    nvidiaMode: "auto",
+    hubEnabled: false,
+    hubWebUrl: "",
+    hubMode: "external",
+    hubHostPort: 3065,
+    hubBindAddress: "127.0.0.1",
+    hubManagedWebUrl: "",
+});
+const powerWatchStatus = ref<(PowerWatchFrontendSnapshot & { lastError?: string | null }) | null>(null);
+const powerWatchDetection = ref<PowerWatchDetection | null>(null);
+const powerWatchLoading = ref(false);
+const savedPowerWatchSettings = ref<PowerWatchSettings | null>(null);
+const powerWatchHubStatus = ref<PowerWatchHubStatus | null>(null);
+const managedPowerWatch = ref({ installed: false,
+    running: false });
+const managedHub = ref({ installed: false,
+    running: false });
+const powerWatchEffectiveUrl = computed(() => resolvePowerWatchWebUrl(powerWatchStatus.value?.webUrl, windowHostname));
+const powerWatchHubEffectiveUrl = computed(() => resolvePowerWatchWebUrl(powerWatchHubStatus.value?.webUrl || (powerWatchSettings.value.hubMode === "managed" ? powerWatchSettings.value.hubManagedWebUrl : powerWatchSettings.value.hubWebUrl), windowHostname));
+const powerWatchDisplayWatts = computed(() => powerWatchStatus.value?.reachable
+    ? formatPowerWatts(powerWatchStatus.value.totalWatts, navigator.language)
+    : "—");
+const powerWatchConfidence = computed(() => powerWatchStatus.value?.confidence === "Measured"
+    ? t("watcher.powerwatch.measured")
+    : powerWatchStatus.value?.confidence === "Estimated" ? t("watcher.powerwatch.estimated") : "");
 
 // L'option appartient à cette instance et est persistée côté serveur.
 const localStackStatsEnabled = ref(false);
@@ -1197,12 +1548,17 @@ function maskWebhook(url: string): string {
     try {
         const u = new URL(url);
         return u.origin + u.pathname.replace(/\/[^/]+$/, "/***");
-    } catch { return url; }
+    } catch {
+        return url;
+    }
 }
 
 function showToast(msg: string, ok = true) {
-    toast.value = { msg, ok };
-    setTimeout(() => { toast.value.msg = ""; }, 3000);
+    toast.value = { msg,
+        ok };
+    setTimeout(() => {
+        toast.value.msg = "";
+    }, 3000);
 }
 
 function healthActionLabel(action: HealthAutoHealMode): string {
@@ -1278,10 +1634,11 @@ async function loadExclusions() {
 }
 
 async function excludeContainer(containerName: string, durationHours: number | null) {
-    const res = await api("POST", "/monitoring/crash-exclusions", { containerName, durationHours });
+    const res = await api("POST", "/monitoring/crash-exclusions", { containerName,
+        durationHours });
     if (res.ok) {
         showToast("✅ " + t("watcher.monitoring.crashExcludeAdded"));
-        await Promise.all([loadExclusions(), loadOverview()]);
+        await Promise.all([ loadExclusions(), loadOverview() ]);
     } else {
         showToast(`❌ ${res.message}`, false);
     }
@@ -1292,7 +1649,7 @@ async function removeExclusion(containerName: string) {
     const res = await api("DELETE", `/monitoring/crash-exclusions/${encoded}`);
     if (res.ok) {
         showToast("✅ " + t("watcher.monitoring.crashExcludeRemoved"));
-        await Promise.all([loadExclusions(), loadOverview()]);
+        await Promise.all([ loadExclusions(), loadOverview() ]);
     } else {
         showToast(`❌ ${res.message}`, false);
     }
@@ -1302,7 +1659,7 @@ async function clearExclusions() {
     const res = await api("DELETE", "/monitoring/crash-exclusions");
     if (res.ok) {
         showToast("✅ " + t("watcher.monitoring.crashExclusionsCleared"));
-        await Promise.all([loadExclusions(), loadOverview()]);
+        await Promise.all([ loadExclusions(), loadOverview() ]);
     } else {
         showToast(`❌ ${res.message}`, false);
     }
@@ -1318,7 +1675,9 @@ async function clearCrashEvents() {
         } else {
             showToast(`❌ ${res.message}`, false);
         }
-    } finally { clearingEvents.value = false; }
+    } finally {
+        clearingEvents.value = false;
+    }
 }
 
 async function clearHealthEvents() {
@@ -1331,7 +1690,9 @@ async function clearHealthEvents() {
         } else {
             showToast(`❌ ${res.message}`, false);
         }
-    } finally { clearingHealthEvents.value = false; }
+    } finally {
+        clearingHealthEvents.value = false;
+    }
 }
 
 // ─── API calls ────────────────────────────────────────────────────
@@ -1357,13 +1718,15 @@ async function loadHostStats() {
 }
 
 async function loadSettings() {
-    const [settingsRes, displayRes] = await Promise.all([
+    const [ settingsRes, displayRes ] = await Promise.all([
         api("GET", "/monitoring/settings"),
         api("GET", "/monitoring/display-settings"),
     ]);
     if (settingsRes.ok) {
         const d = settingsRes.data as MonitoringSettings;
-        monSettings.value = { ...monSettings.value, ...d, appriseUrls: Array.isArray(d.appriseUrls) ? d.appriseUrls : [] };
+        monSettings.value = { ...monSettings.value,
+            ...d,
+            appriseUrls: Array.isArray(d.appriseUrls) ? d.appriseUrls : [] };
         historyPreset.value = d.historyPreset ?? "24h";
         historyAmount.value = Number.isSafeInteger(d.historyAmount) && d.historyAmount > 0 ? d.historyAmount : 7;
         historyUnit.value = d.historyUnit ?? "days";
@@ -1371,10 +1734,13 @@ async function loadSettings() {
         setLowPower(monSettings.value.lowPowerMode);
     }
     if (displayRes.ok) {
-        const d = displayRes.data as { diskPartitions?: string[]; diskDisplayMode?: "compact" | "bar"; hostNavbarDisplay?: Partial<HostNavbarDisplay>; stackStatsEnabled?: boolean };
+        const d = displayRes.data as { diskPartitions?: string[];
+            diskDisplayMode?: "compact" | "bar";
+            hostNavbarDisplay?: Partial<HostNavbarDisplay>;
+            stackStatsEnabled?: boolean };
         localStackStatsEnabled.value = d.stackStatsEnabled === true;
         stackStatsEnabled.value = localStackStatsEnabled.value;
-        diskPartitions.value = d.diskPartitions?.length ? d.diskPartitions : ["/"];
+        diskPartitions.value = d.diskPartitions?.length ? d.diskPartitions : [ "/" ];
         diskDisplayMode.value = d.diskDisplayMode === "bar" ? "bar" : "compact";
         hostNavbarDisplay.value = {
             ...hostNavbarDisplay.value,
@@ -1388,7 +1754,9 @@ async function saveMonSettings() {
     try {
         const res = await api("POST", "/monitoring/settings", monSettings.value);
         showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
-    } finally { savingMon.value = false; }
+    } finally {
+        savingMon.value = false;
+    }
 }
 
 async function loadHistory() {
@@ -1494,7 +1862,9 @@ async function saveDisplaySettings() {
             stackStatsEnabled: localStackStatsEnabled.value,
         });
         showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
-    } finally { savingDisplay.value = false; }
+    } finally {
+        savingDisplay.value = false;
+    }
 }
 
 // ── Kula API ──────────────────────────────────────────────────────
@@ -1507,7 +1877,8 @@ async function loadKulaSettings() {
 }
 
 async function loadKulaStatus() {
-    const res = await api("GET", "/watcher/kula/status") as { ok: boolean; status?: string };
+    const res = await api("GET", "/watcher/kula/status") as { ok: boolean;
+        status?: string };
     if (res.ok && res.status) {
         kulaStatus.value = res.status as "running" | "stopped" | "error";
     }
@@ -1523,7 +1894,9 @@ async function saveKulaSettings() {
         } else {
             showToast(`❌ ${res.message}`, false);
         }
-    } finally { savingKula.value = false; }
+    } finally {
+        savingKula.value = false;
+    }
 }
 
 async function startKula() {
@@ -1536,7 +1909,9 @@ async function startKula() {
         } else {
             showToast(`❌ ${res.message}`, false);
         }
-    } finally { kulaActionLoading.value = false; }
+    } finally {
+        kulaActionLoading.value = false;
+    }
 }
 
 async function stopKula() {
@@ -1549,7 +1924,9 @@ async function stopKula() {
         } else {
             showToast(`❌ ${res.message}`, false);
         }
-    } finally { kulaActionLoading.value = false; }
+    } finally {
+        kulaActionLoading.value = false;
+    }
 }
 
 async function loadDozzleSettings() {
@@ -1559,7 +1936,8 @@ async function loadDozzleSettings() {
     }
 }
 async function loadDozzleStatus() {
-    const res = await api("GET", "/watcher/dozzle/status") as { ok: boolean; status?: string };
+    const res = await api("GET", "/watcher/dozzle/status") as { ok: boolean;
+        status?: string };
     if (res.ok && res.status) {
         dozzleStatus.value = res.status as "running" | "stopped" | "error";
     }
@@ -1570,7 +1948,9 @@ async function saveDozzleSettings() {
         const res = await api("POST", "/watcher/dozzle/settings", dozzleSettings.value);
         showToast(res.ok ? "✅ " + t("watcher.dozzle.saved") : `❌ ${res.message}`, res.ok);
         await loadDozzleStatus();
-    } finally { savingDozzle.value = false; }
+    } finally {
+        savingDozzle.value = false;
+    }
 }
 async function startDozzle() {
     dozzleActionLoading.value = true;
@@ -1578,7 +1958,9 @@ async function startDozzle() {
         const res = await api("POST", "/watcher/dozzle/start");
         showToast(res.ok ? "✅ " + t("watcher.dozzle.started") : `❌ ${res.message}`, res.ok);
         await loadDozzleStatus();
-    } finally { dozzleActionLoading.value = false; }
+    } finally {
+        dozzleActionLoading.value = false;
+    }
 }
 async function stopDozzle() {
     dozzleActionLoading.value = true;
@@ -1586,7 +1968,188 @@ async function stopDozzle() {
         const res = await api("POST", "/watcher/dozzle/stop");
         showToast(res.ok ? "✅ " + t("watcher.dozzle.stoppedToast") : `❌ ${res.message}`, res.ok);
         await loadDozzleStatus();
-    } finally { dozzleActionLoading.value = false; }
+    } finally {
+        dozzleActionLoading.value = false;
+    }
+}
+
+function powerWatchFields(s: PowerWatchSettings): Partial<PowerWatchSettings> {
+    return { enabled: s.enabled,
+        mode: s.mode,
+        apiUrl: s.apiUrl,
+        webUrl: s.webUrl,
+        externalContainer: s.externalContainer,
+        hostPort: s.hostPort,
+        bindAddress: s.bindAddress,
+        managedWebUrl: s.managedWebUrl,
+        msrMode: s.msrMode,
+        nvidiaMode: s.nvidiaMode };
+}
+
+function powerWatchHubFields(s: PowerWatchSettings): Partial<PowerWatchSettings> {
+    return { hubEnabled: s.hubEnabled,
+        hubMode: s.hubMode,
+        hubWebUrl: s.hubWebUrl,
+        hubHostPort: s.hubHostPort,
+        hubBindAddress: s.hubBindAddress,
+        hubManagedWebUrl: s.hubManagedWebUrl };
+}
+
+/** Reload actual server state without discarding unsaved edits in the other service's card. */
+async function loadPowerWatch(preserve: "powerwatch" | "hub" | null = null) {
+    const pending = { ...powerWatchSettings.value };
+    const [ settings, status, hubStatus, managed ] = await Promise.all([
+        api("GET", "/watcher/powerwatch/settings"),
+        api("GET", "/watcher/powerwatch/status"),
+        api("GET", "/watcher/powerwatch/hub/status"),
+        api("GET", "/watcher/powerwatch/managed/states"),
+    ]);
+    if (settings.ok) {
+        powerWatchSettings.value = settings.data as PowerWatchSettings;
+        savedPowerWatchSettings.value = { ...powerWatchSettings.value };
+        if (preserve === "powerwatch") {
+            Object.assign(powerWatchSettings.value, powerWatchFields(pending));
+        } else if (preserve === "hub") {
+            Object.assign(powerWatchSettings.value, powerWatchHubFields(pending));
+        }
+    }
+    if (status.ok) {
+        powerWatchStatus.value = status.data as PowerWatchFrontendSnapshot & { lastError?: string | null };
+    }
+    if (hubStatus.ok) {
+        powerWatchHubStatus.value = hubStatus.data as PowerWatchHubStatus;
+    }
+    if (managed.ok) {
+        const states = managed.data as { powerwatch: { installed: boolean;
+            running: boolean };
+        hub: { installed: boolean;
+            running: boolean } };
+        managedPowerWatch.value = states.powerwatch;
+        managedHub.value = states.hub;
+    }
+}
+
+async function savePowerWatchSettings() {
+    const switchingFromManaged = Boolean(savedPowerWatchSettings.value?.enabled &&
+        savedPowerWatchSettings.value.mode === "managed" && (!powerWatchSettings.value.enabled || powerWatchSettings.value.mode === "external"));
+    if (switchingFromManaged && !window.confirm(t("watcher.powerwatch.confirmManagedToExternal"))) {
+        return;
+    }
+    powerWatchLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/powerwatch/settings", {
+            ...powerWatchFields(powerWatchSettings.value),
+            confirmStopManaged: Boolean(switchingFromManaged),
+        });
+        showToast(res.ok ? "✅ " + t("watcher.powerwatch.saved") : `❌ ${res.message}`, res.ok);
+        if (res.ok) {
+            await loadPowerWatch("hub");
+        }
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+async function savePowerWatchHubSettings() {
+    const switchingHub = Boolean(savedPowerWatchSettings.value?.hubEnabled &&
+        savedPowerWatchSettings.value.hubMode === "managed" &&
+        (!powerWatchSettings.value.hubEnabled || powerWatchSettings.value.hubMode === "external"));
+    if (switchingHub && !window.confirm(t("watcher.powerwatch.confirmHubManagedToExternal"))) {
+        return;
+    }
+    powerWatchLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/powerwatch/settings", {
+            ...powerWatchHubFields(powerWatchSettings.value),
+            confirmStopManaged: Boolean(switchingHub),
+        });
+        showToast(res.ok ? "✅ " + t("watcher.powerwatch.hubSaved") : `❌ ${res.message}`, res.ok);
+        if (res.ok) {
+            await loadPowerWatch("powerwatch");
+        }
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+async function detectPowerWatch() {
+    powerWatchLoading.value = true;
+    try {
+        const res = await api("GET", "/watcher/powerwatch/detect");
+        if (res.ok) {
+            powerWatchDetection.value = res.data as PowerWatchDetection;
+        }
+        showToast(res.ok ? "✅ " + t("watcher.powerwatch.hostChecked") : `❌ ${res.message}`, res.ok);
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+async function testPowerWatch() {
+    powerWatchLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/powerwatch/test", powerWatchSettings.value);
+        if (res.ok) {
+            powerWatchStatus.value = res.data as PowerWatchFrontendSnapshot & { lastError?: string | null };
+        }
+        showToast(res.ok && res.data?.reachable ? "✅ " + t("watcher.powerwatch.online") : `❌ ${res.data?.lastError || res.message}`, Boolean(res.ok && res.data?.reachable));
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+async function testPowerWatchHub() {
+    powerWatchLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/powerwatch/hub/test", powerWatchSettings.value);
+        if (res.ok) {
+            powerWatchHubStatus.value = res.data as PowerWatchHubStatus;
+        }
+        showToast(res.ok && res.data?.reachable ? "✅ " + t("watcher.powerwatch.hubOnline") : `❌ ${res.data?.lastError || res.message}`, Boolean(res.ok && res.data?.reachable));
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+async function powerWatchAction(action: "install" | "start" | "stop" | "restart") {
+    powerWatchLoading.value = true;
+    try {
+        const saved = await api("POST", "/watcher/powerwatch/settings", powerWatchFields(powerWatchSettings.value));
+        const res = saved.ok ? await api("POST", `/watcher/powerwatch/${action}`) : saved;
+        await loadPowerWatch("hub");
+        const verified = res.ok && (action === "stop" ? !managedPowerWatch.value.running : managedPowerWatch.value.running && powerWatchStatus.value?.reachable);
+        showToast(verified ? "✅ " + t("watcher.powerwatch.online") : `❌ ${res.ok ? (powerWatchStatus.value?.lastError || t("watcher.powerwatch.offline")) : res.message}`, Boolean(verified));
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+async function powerWatchHubAction(action: "install" | "start" | "stop" | "restart") {
+    powerWatchLoading.value = true;
+    try {
+        const saved = await api("POST", "/watcher/powerwatch/settings", powerWatchHubFields(powerWatchSettings.value));
+        const res = saved.ok ? await api("POST", `/watcher/powerwatch/hub/${action}`) : saved;
+        await loadPowerWatch("powerwatch");
+        const verified = res.ok && (action === "stop" ? !managedHub.value.running : managedHub.value.running && powerWatchHubStatus.value?.reachable);
+        showToast(verified ? "✅ " + t("watcher.powerwatch.hubOnline") : `❌ ${res.ok ? (powerWatchHubStatus.value?.lastError || t("watcher.powerwatch.hubOffline")) : res.message}`, Boolean(verified));
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+function usePowerWatchContainer(container: PowerWatchDetection["containers"][number]) {
+    powerWatchSettings.value.externalContainer = container.name;
+    powerWatchSettings.value.apiUrl = "";
+    if (!powerWatchSettings.value.webUrl && container.hostPort) {
+        powerWatchSettings.value.webUrl = `http://${windowHostname}:${container.hostPort}`;
+    }
+}
+
+function capabilityLabel(value: boolean, optional = false): string {
+    if (value) {
+        return t("watcher.powerwatch.available");
+    }
+    return optional ? t("watcher.powerwatch.optionalUnavailable") : t("watcher.powerwatch.notAvailable");
 }
 
 // ─── Polling ──────────────────────────────────────────────────────
@@ -1594,10 +2157,11 @@ async function stopDozzle() {
 let overviewPoller: Poller | null = null;
 
 onMounted(async () => {
-    await Promise.all([loadOverview(), loadHostStats(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadDozzleSettings(), loadDozzleStatus(), loadExclusions()]);
+    await Promise.all([ loadOverview(), loadHostStats(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadDozzleSettings(), loadDozzleStatus(), loadPowerWatch(), loadExclusions() ]);
     await loadHistory();
     // Overview : cadence selon le mode + pause si onglet caché
-    overviewPoller = makePoller({ fetch: loadOverview, interval: POLL.overview });
+    overviewPoller = makePoller({ fetch: loadOverview,
+        interval: POLL.overview });
     overviewPoller.start();
 });
 
@@ -1959,5 +2523,33 @@ onUnmounted(() => {
     color: var(--primary-strong);
     text-decoration: none;
     &:hover { text-decoration: underline; }
+}
+.powerwatch-detected,
+.powerwatch-diagnostic,
+.powerwatch-current {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .5rem 1rem;
+}
+.powerwatch-detected {
+    padding: .55rem .7rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    font-size: var(--fs-sm);
+}
+.powerwatch-current {
+    padding: .65rem .8rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+}
+.powerwatch-hub-panel {
+    border-top: 1px solid var(--border-color);
+}
+@media (max-width: $bp-phone) {
+    .powerwatch-panel .form-control,
+    .powerwatch-panel .form-select,
+    .powerwatch-panel .btn { width: 100%; }
 }
 </style>
