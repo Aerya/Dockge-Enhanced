@@ -28,12 +28,16 @@ const STATUS_PATH = path.join(STATE_DIR, "status.json");
 const SECRET_PATH = path.join(STATE_DIR, "plan.key");
 const RECOVERY_DIR = path.join(STATE_DIR, "recovery");
 
-interface DockerMount { Type?: string; Source?: string; Name?: string; Destination?: string; }
+interface DockerMount { Type?: string;
+    Source?: string;
+    Name?: string;
+    Destination?: string; }
 interface DockerInspect {
     Id?: string;
     Image?: string;
     Name?: string;
-    Config?: Record<string, unknown> & { Image?: string; Labels?: Record<string, string>; };
+    Config?: Record<string, unknown> & { Image?: string;
+        Labels?: Record<string, string>; };
     HostConfig?: Record<string, unknown>;
     NetworkSettings?: { Networks?: Record<string, unknown> };
     Mounts?: DockerMount[];
@@ -48,22 +52,40 @@ interface DockerConnection {
 
 function selfUpdateDockerConnection(inspected: DockerInspect): DockerConnection {
     const configuredHost = process.env.DOCKER_HOST?.trim();
-    if (configuredHost?.startsWith("unix://")) return { kind: "unix", socket: configuredHost.slice("unix://".length), networks: [] };
+    if (configuredHost?.startsWith("unix://")) {
+        return { kind: "unix",
+            socket: configuredHost.slice("unix://".length),
+            networks: [] };
+    }
     if (configuredHost?.startsWith("tcp://")) {
         const url = new URL(configuredHost);
-        if (!url.hostname || !url.port) throw new Error("DOCKER_HOST TCP must include a host and port for self-update");
-        if ([ "localhost", "127.0.0.1", "::1" ].includes(url.hostname)) throw new Error("DOCKER_HOST points to loopback; the isolated updater cannot reach that TCP endpoint");
+        if (!url.hostname || !url.port) {
+            throw new Error("DOCKER_HOST TCP must include a host and port for self-update");
+        }
+        if ([ "localhost", "127.0.0.1", "::1" ].includes(url.hostname)) {
+            throw new Error("DOCKER_HOST points to loopback; the isolated updater cannot reach that TCP endpoint");
+        }
         const networks = Object.keys(inspected.NetworkSettings?.Networks ?? {});
-        if (networks.length === 0) throw new Error("Docker Socket Proxy requires the current container to be attached to a Docker network");
-        return { kind: "tcp", host: configuredHost, networks };
+        if (networks.length === 0) {
+            throw new Error("Docker Socket Proxy requires the current container to be attached to a Docker network");
+        }
+        return { kind: "tcp",
+            host: configuredHost,
+            networks };
     }
-    if (configuredHost) throw new Error("Only unix:// and tcp:// DOCKER_HOST values are supported for self-update");
-    return { kind: "unix", socket: process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock", networks: [] };
+    if (configuredHost) {
+        throw new Error("Only unix:// and tcp:// DOCKER_HOST values are supported for self-update");
+    }
+    return { kind: "unix",
+        socket: process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock",
+        networks: [] };
 }
 
 function mountSourceForPath(mounts: DockerMount[], containerPath: string): string | null {
     const matching = mounts.filter((mount) => mount.Destination && (containerPath === mount.Destination || containerPath.startsWith(`${mount.Destination}/`)) && (mount.Source || mount.Name)).sort((a, b) => (b.Destination?.length ?? 0) - (a.Destination?.length ?? 0))[0];
-    if (!matching?.Destination) return null;
+    if (!matching?.Destination) {
+        return null;
+    }
     const source = matching.Type === "volume" ? (matching.Name ?? matching.Source) : matching.Source;
     return source ? `${source}${containerPath.slice(matching.Destination.length)}` : null;
 }
@@ -87,7 +109,8 @@ function signPlan(plan: SelfUpdatePlan, secret: Buffer): string {
 }
 
 async function docker(args: string[], timeout = 120_000): Promise<string> {
-    const { stdout } = await execFileAsync("docker", args, { timeout, maxBuffer: 2 * 1024 * 1024 });
+    const { stdout } = await execFileAsync("docker", args, { timeout,
+        maxBuffer: 2 * 1024 * 1024 });
     return stdout;
 }
 
@@ -104,7 +127,9 @@ export class SelfUpdateManager {
     private terminalNotificationInFlight = false;
 
     static getInstance(): SelfUpdateManager {
-        if (!SelfUpdateManager.instance) SelfUpdateManager.instance = new SelfUpdateManager();
+        if (!SelfUpdateManager.instance) {
+            SelfUpdateManager.instance = new SelfUpdateManager();
+        }
         return SelfUpdateManager.instance;
     }
 
@@ -116,7 +141,8 @@ export class SelfUpdateManager {
         }
         try {
             this.operation = this.normalizeDeferredOperation(
-                { ...idle(), ...JSON.parse(await fs.readFile(STATUS_PATH, "utf8")) } as SelfUpdateOperation,
+                { ...idle(),
+                    ...JSON.parse(await fs.readFile(STATUS_PATH, "utf8")) } as SelfUpdateOperation,
             );
         } catch {
             this.operation = idle();
@@ -128,14 +154,17 @@ export class SelfUpdateManager {
     getSettings(): SelfUpdateSettings {
         return JSON.parse(JSON.stringify(this.settings));
     }
+
     getOperation(): SelfUpdateOperation {
         return { ...this.operation };
     }
+
     getProgress(): SelfUpdateProgress | null {
         return this.progress ? { ...this.progress } : null;
     }
 
-    private transitionStageHistory(stage: SelfUpdateStage, now: string): { history: SelfUpdateStageTiming[]; startedAt: string } {
+    private transitionStageHistory(stage: SelfUpdateStage, now: string): { history: SelfUpdateStageTiming[];
+        startedAt: string } {
         const history = (this.operation.stageHistory ?? []).map(entry => ({ ...entry }));
         let startedAt = this.operation.stageStartedAt ?? now;
         if (this.operation.stage !== stage) {
@@ -207,7 +236,8 @@ export class SelfUpdateManager {
 
     async refreshOperation(): Promise<SelfUpdateOperation> {
         try {
-            const diskOperation = { ...idle(), ...JSON.parse(await fs.readFile(STATUS_PATH, "utf8")) } as SelfUpdateOperation;
+            const diskOperation = { ...idle(),
+                ...JSON.parse(await fs.readFile(STATUS_PATH, "utf8")) } as SelfUpdateOperation;
             this.operation = this.normalizeDeferredOperation(diskOperation);
         } catch {
             // Keep the in-memory state if the sidecar has not written a status yet.
@@ -286,220 +316,251 @@ export class SelfUpdateManager {
     }
 
     private async recheckAutomaticBlocker(targetImage: string, automatic: boolean, stage: string): Promise<SelfUpdateOperation | null> {
-        if (!automatic) return null;
+        if (!automatic) {
+            return null;
+        }
         const blocker = await getSelfUpdateBlocker();
-        if (!blocker) return null;
+        if (!blocker) {
+            return null;
+        }
         log.info("self-update", `Auto-update remise en attente avant ${stage} — blocker=${blocker.code}`);
         return this.deferAutomaticUpdate(targetImage, blocker);
     }
 
     async requestSidecarUpdate(targetImage: string, automatic = false, targetRevision?: string): Promise<SelfUpdateOperation> {
         const resumingScheduled = automatic && this.operation.state === "scheduled";
-        if (this.requestInFlight || (isSelfUpdateActive(this.operation.state) && !resumingScheduled)) throw new Error("A self-update is already running");
+        if (this.requestInFlight || (isSelfUpdateActive(this.operation.state) && !resumingScheduled)) {
+            throw new Error("A self-update is already running");
+        }
         this.requestInFlight = true;
         try {
-        if (automatic && !this.canAutoUpdate()) return this.getOperation();
-        if (this.settings.mode !== "sidecar" && automatic) return this.getOperation();
-        if (automatic) {
-            const blocker = await getSelfUpdateBlocker();
-            if (blocker) return this.deferAutomaticUpdate(targetImage, blocker);
-            this.lastDeferralKey = "";
-        }
-        const inspected = await resolveCurrentContainer() as DockerInspect;
-        const containerName = (inspected.Name ?? "").replace(/^\//, "");
-        const previousImage = inspected.Config?.Image ?? "";
-        if (!containerName || !previousImage) throw new Error("Current container metadata is incomplete");
-        const repository = this.getAllowedRepository(previousImage);
-        const testImages = (process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? "").split(",").map(value => value.trim()).filter(Boolean);
-        if (!isAllowedTargetImage(targetImage, repository, testImages)) throw new Error("The requested self-update image is not allowed");
-        if (!inspected.Image || !/^sha256:[a-f0-9]{64}$/i.test(inspected.Image)) throw new Error("Current immutable Docker image identifier is unavailable");
-        const plan = await this.buildPlan(inspected, safePlanId(), targetImage, previousImage, repository, targetRevision);
-        const recoveryPath = path.join(RECOVERY_DIR, plan.recoveryFile);
-        const startedMs = Date.now();
-        const startedAt = new Date(startedMs).toISOString();
-        this.operation = {
-            id: plan.id,
-            state: "backing-up",
-            message: "Preparing signed self-update recovery state",
-            startedAt,
-            finishedAt: null,
-            targetImage,
-            rollbackAttempted: false,
-            stage: "preparing",
-            stageStartedAt: startedAt,
-            stageHistory: [{
-                stage: "preparing",
+            if (automatic && !this.canAutoUpdate()) {
+                return this.getOperation();
+            }
+            if (this.settings.mode !== "sidecar" && automatic) {
+                return this.getOperation();
+            }
+            if (automatic) {
+                const blocker = await getSelfUpdateBlocker();
+                if (blocker) {
+                    return this.deferAutomaticUpdate(targetImage, blocker);
+                }
+                this.lastDeferralKey = "";
+            }
+            const inspected = await resolveCurrentContainer() as DockerInspect;
+            const containerName = (inspected.Name ?? "").replace(/^\//, "");
+            const previousImage = inspected.Config?.Image ?? "";
+            if (!containerName || !previousImage) {
+                throw new Error("Current container metadata is incomplete");
+            }
+            const repository = this.getAllowedRepository(previousImage);
+            const testImages = (process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? "").split(",").map(value => value.trim()).filter(Boolean);
+            if (!isAllowedTargetImage(targetImage, repository, testImages)) {
+                throw new Error("The requested self-update image is not allowed");
+            }
+            if (!inspected.Image || !/^sha256:[a-f0-9]{64}$/i.test(inspected.Image)) {
+                throw new Error("Current immutable Docker image identifier is unavailable");
+            }
+            const plan = await this.buildPlan(inspected, safePlanId(), targetImage, previousImage, repository, targetRevision);
+            const recoveryPath = path.join(RECOVERY_DIR, plan.recoveryFile);
+            const startedMs = Date.now();
+            const startedAt = new Date(startedMs).toISOString();
+            this.operation = {
+                id: plan.id,
+                state: "backing-up",
+                message: "Preparing signed self-update recovery state",
                 startedAt,
                 finishedAt: null,
-            }],
-        };
-        this.progress = null;
-        await this.saveOperation();
-        log.info(
-            "self-update",
+                targetImage,
+                rollbackAttempted: false,
+                stage: "preparing",
+                stageStartedAt: startedAt,
+                stageHistory: [{
+                    stage: "preparing",
+                    startedAt,
+                    finishedAt: null,
+                }],
+            };
+            this.progress = null;
+            await this.saveOperation();
+            log.info(
+                "self-update",
             `Étape 1/8 — préparation sécurisée — id=${plan.id} automatic=${automatic} container=${containerName} current=${inspected.Image} target=${targetImage} repository=${repository}`,
-        );
-        await atomicWriteJson(recoveryPath, this.buildRecoverySnapshot(inspected, plan));
+            );
+            await atomicWriteJson(recoveryPath, this.buildRecoverySnapshot(inspected, plan));
 
-        const secret = await this.getOrCreateSecret();
-        const selfUpdateRetentionTag = `self-update-instance-${crypto.createHash("sha256").update(secret).digest("hex").slice(0, 16)}`;
+            const secret = await this.getOrCreateSecret();
+            const selfUpdateRetentionTag = `self-update-instance-${crypto.createHash("sha256").update(secret).digest("hex").slice(0, 16)}`;
 
-        await this.setStage("backup", "Mandatory Restic backup in progress", "backing-up");
-        log.info("self-update", `Étape 2/8 — backup Restic minimal démarré — id=${plan.id} data=${DATA_DIR} recovery=${recoveryPath}`);
-        let backup;
-        try {
-            backup = await BackupManager.getInstance().runBackup({
-                tag: "self-update",
-                trigger: "manual",
-                onProgress: (progress) => {
-                    this.progress = progress;
-                },
-                additionalPaths: [ DATA_DIR, recoveryPath ],
-                selfUpdateOnly: true,
-                suppressNotification: true,
-                additionalTags: [ selfUpdateRetentionTag ],
-            });
-        } catch (error) {
-            return this.failCurrentOperation(`Backup failed: ${error instanceof Error ? error.message : String(error)}`);
-        }
-        if (!backup.success) {
-            log.error("self-update", `Backup Restic échoué — id=${plan.id} error=${backup.error ?? "unknown error"}`);
-            return this.failCurrentOperation(`Backup failed: ${backup.error ?? "unknown error"}`);
-        }
+            await this.setStage("backup", "Mandatory Restic backup in progress", "backing-up");
+            log.info("self-update", `Étape 2/8 — backup Restic minimal démarré — id=${plan.id} data=${DATA_DIR} recovery=${recoveryPath}`);
+            let backup;
+            try {
+                backup = await BackupManager.getInstance().runBackup({
+                    tag: "self-update",
+                    trigger: "manual",
+                    onProgress: (progress) => {
+                        this.progress = progress;
+                    },
+                    additionalPaths: [ DATA_DIR, recoveryPath ],
+                    selfUpdateOnly: true,
+                    suppressNotification: true,
+                    additionalTags: [ selfUpdateRetentionTag ],
+                });
+            } catch (error) {
+                return this.failCurrentOperation(`Backup failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+            if (!backup.success) {
+                log.error("self-update", `Backup Restic échoué — id=${plan.id} error=${backup.error ?? "unknown error"}`);
+                return this.failCurrentOperation(`Backup failed: ${backup.error ?? "unknown error"}`);
+            }
 
-        log.info("self-update", `Backup Restic terminé — id=${plan.id} duration=${Date.now() - startedMs}ms`);
-        this.progress = null;
-        await this.setStage("verify-backup", "Self-update snapshot verification in progress", "verifying-backup");
-        log.info("self-update", `Étape 3/8 — validation ciblée du snapshot Restic — id=${plan.id}`);
-        try {
-            const verification = await BackupManager.getInstance().verifyFreshBackup(
+            log.info("self-update", `Backup Restic terminé — id=${plan.id} duration=${Date.now() - startedMs}ms`);
+            this.progress = null;
+            await this.setStage("verify-backup", "Self-update snapshot verification in progress", "verifying-backup");
+            log.info("self-update", `Étape 3/8 — validation ciblée du snapshot Restic — id=${plan.id}`);
+            try {
+                const verification = await BackupManager.getInstance().verifyFreshBackup(
+                    backup,
+                    recoveryPath,
+                    plan.id,
+                    (progress) => {
+                        this.progress = progress;
+                    },
+                );
+                const failed = verification.find((result) => !result.ok);
+                if (failed) {
+                    return this.failCurrentOperation(`Backup verification failed for ${failed.label}: ${failed.output}`);
+                }
+            } catch (error) {
+                return this.failCurrentOperation(`Backup verification failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+            this.progress = null;
+
+            await this.setStage("prune-backup", "Pruning old self-update Restic snapshots", "verifying-backup");
+            log.info("self-update", `Étape 4/8 — rétention Restic self-update — id=${plan.id}`);
+            const retentionResults = await BackupManager.getInstance().pruneSelfUpdateSnapshots(
                 backup,
-                recoveryPath,
-                plan.id,
+                selfUpdateRetentionTag,
+                2,
                 (progress) => {
                     this.progress = progress;
                 },
             );
-            const failed = verification.find((result) => !result.ok);
-            if (failed) {
-                return this.failCurrentOperation(`Backup verification failed for ${failed.label}: ${failed.output}`);
-            }
-        } catch (error) {
-            return this.failCurrentOperation(`Backup verification failed: ${error instanceof Error ? error.message : String(error)}`);
-        }
-        this.progress = null;
-
-        await this.setStage("prune-backup", "Pruning old self-update Restic snapshots", "verifying-backup");
-        log.info("self-update", `Étape 4/8 — rétention Restic self-update — id=${plan.id}`);
-        const retentionResults = await BackupManager.getInstance().pruneSelfUpdateSnapshots(
-            backup,
-            selfUpdateRetentionTag,
-            2,
-            (progress) => {
-                this.progress = progress;
-            },
-        );
-        this.progress = null;
-        for (const retention of retentionResults) {
-            if (retention.error) {
-                log.warn(
-                    "self-update",
+            this.progress = null;
+            for (const retention of retentionResults) {
+                if (retention.error) {
+                    log.warn(
+                        "self-update",
                     `Nettoyage des anciens snapshots reporté — label=${retention.label} error=${retention.error}`,
-                );
-            }
-        }
-
-        const deferredBeforePreparation = await this.recheckAutomaticBlocker(targetImage, automatic, "la préparation du sidecar");
-        if (deferredBeforePreparation) return deferredBeforePreparation;
-
-        await this.setStage("prepare-updater", "Preparing isolated self-update sidecar", "verifying-backup");
-        log.info("self-update", `Étape 5/8 — préparation du sidecar isolé — id=${plan.id}`);
-        const stateMount = (inspected.Mounts ?? []).find((mount) => mount.Destination === DATA_DIR);
-        if (!stateMount?.Source) throw new Error(`The ${DATA_DIR} volume is required for self-update state`);
-        plan.issuedAt = new Date().toISOString();
-        plan.expiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
-        const payload = { plan, signature: signPlan(plan, secret) };
-        await this.cleanupArtifacts(plan.id);
-        await atomicWriteJson(path.join(STATE_DIR, `${plan.id}.json`), payload);
-
-        const stateSource = stateMount.Type === "volume" ? (stateMount.Name ?? stateMount.Source) : stateMount.Source;
-        const connection = selfUpdateDockerConnection(inspected);
-        const socketGroup = connection.kind === "unix" ? (await fs.stat(connection.socket!)).gid : undefined;
-        const sidecarImage = process.env.DOCKGE_SELF_UPDATE_SIDECAR_IMAGE?.trim()
-            || `ghcr.io/${plan.allowedRepository}-updater:latest`;
-
-        log.info("self-update", `Téléchargement du sidecar — id=${plan.id} image=${sidecarImage}`);
-        try {
-            await docker([ "image", "pull", sidecarImage ], 10 * 60_000);
-        } catch (error) {
-            return this.failCurrentOperation(`Updater sidecar pull failed: ${error instanceof Error ? error.message : String(error)}`);
-        }
-
-        const deferredBeforeLaunch = await this.recheckAutomaticBlocker(targetImage, automatic, "le lancement du sidecar");
-        if (deferredBeforeLaunch) return deferredBeforeLaunch;
-
-        const args = [
-            "run", "--pull=always", "-d", "--rm",
-            "--name", `dockge-enhanced-updater-${plan.id}`,
-            "--label", "io.dockge-enhanced.self-update=true",
-            // State files are intentionally 0600 in a 0700 directory. The updater
-            // therefore needs root inside its own container to read/write them.
-            // Drop every Linux capability and forbid privilege escalation: Docker
-            // access remains limited to the explicitly mounted socket.
-            "--user", "0:0",
-            "--cap-drop", "ALL",
-            "--security-opt", "no-new-privileges",
-            "--read-only",
-            "-v", `${stateSource}:/state`,
-            "-e", `SELF_UPDATE_PLAN=/state/self-update/${plan.id}.json`,
-            "-e", `SELF_UPDATE_ALLOW_TEST_IMAGES=${process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? ""}`,
-            "-e", `SELF_UPDATE_ALLOWED_REPOSITORY=${plan.allowedRepository}`,
-            "-e", `SELF_UPDATE_TARGET_CONTAINER_ID=${plan.targetContainerId}`,
-            "-e", `SELF_UPDATE_TARGET_CONTAINER_NAME=${plan.targetContainerName}`,
-            sidecarImage,
-        ];
-        if (connection.kind === "unix") {
-            args.splice(args.length - 1, 0, "--group-add", String(socketGroup), "-v", `${connection.socket}:/var/run/docker.sock`);
-        } else {
-            args.splice(args.length - 1, 0, "--network", "none", "-e", `DOCKER_HOST=${connection.host}`, "-e", `SELF_UPDATE_START_FILE=/state/self-update/${plan.id}.start`);
-            const tlsVerify = process.env.DOCKER_TLS_VERIFY?.trim();
-            const certPath = process.env.DOCKER_CERT_PATH?.trim();
-            if (tlsVerify) {
-                if (!certPath) throw new Error("DOCKER_TLS_VERIFY requires DOCKER_CERT_PATH for the isolated updater");
-                const certSource = mountSourceForPath(inspected.Mounts ?? [], certPath);
-                if (!certSource) throw new Error("DOCKER_CERT_PATH is not on a Docker mount and cannot be safely shared with the isolated updater");
-                args.splice(args.length - 1, 0, "-v", `${certSource}:/docker-certs:ro`, "-e", `DOCKER_TLS_VERIFY=${tlsVerify}`, "-e", "DOCKER_CERT_PATH=/docker-certs");
-            }
-        }
-        if (plan.compose) {
-            args.splice(args.length - 1, 0, "-v", `${plan.compose.workingDir}:${plan.compose.workingDir}:ro`, "-e", `SELF_UPDATE_COMPOSE_DIR=${plan.compose.workingDir}`);
-        }
-        this.operation = {
-            ...this.operation,
-            state: "updating",
-            message: "Updater sidecar launching",
-        };
-        await this.saveOperation();
-        log.info("self-update", `Étape 5/8 — lancement sidecar — id=${plan.id} image=${sidecarImage}`);
-        try {
-            await docker(args, 10 * 60_000);
-            if (connection.kind === "tcp") {
-                const updater = `dockge-enhanced-updater-${plan.id}`;
-                try {
-                    for (const network of connection.networks) await docker([ "network", "connect", network, updater ], 30_000);
-                    await atomicWriteFile(path.join(STATE_DIR, `${plan.id}.start`), "ready\n", 0o600);
-                } catch (error) {
-                    await docker([ "rm", "-f", updater ], 30_000).catch(() => {});
-                    return this.failCurrentOperation(`Docker Socket Proxy sidecar network setup failed: ${error instanceof Error ? error.message : String(error)}. Required proxy permissions include NETWORK_CONNECT and CONTAINERS.`);
+                    );
                 }
             }
-        } catch (error) {
-            return this.failCurrentOperation(`Updater sidecar launch failed: ${error instanceof Error ? error.message : String(error)}`);
-        }
-        log.info("self-update", `Sidecar lancé — id=${plan.id} container=dockge-enhanced-updater-${plan.id}`);
-        // Do not write STATUS_PATH after the detached updater starts: it may already
-        // have persisted a more precise pull/replace stage. Avoid clobbering it.
-        return this.getOperation();
+
+            const deferredBeforePreparation = await this.recheckAutomaticBlocker(targetImage, automatic, "la préparation du sidecar");
+            if (deferredBeforePreparation) {
+                return deferredBeforePreparation;
+            }
+
+            await this.setStage("prepare-updater", "Preparing isolated self-update sidecar", "verifying-backup");
+            log.info("self-update", `Étape 5/8 — préparation du sidecar isolé — id=${plan.id}`);
+            const stateMount = (inspected.Mounts ?? []).find((mount) => mount.Destination === DATA_DIR);
+            if (!stateMount?.Source) {
+                throw new Error(`The ${DATA_DIR} volume is required for self-update state`);
+            }
+            plan.issuedAt = new Date().toISOString();
+            plan.expiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
+            const payload = { plan,
+                signature: signPlan(plan, secret) };
+            await this.cleanupArtifacts(plan.id);
+            await atomicWriteJson(path.join(STATE_DIR, `${plan.id}.json`), payload);
+
+            const stateSource = stateMount.Type === "volume" ? (stateMount.Name ?? stateMount.Source) : stateMount.Source;
+            const connection = selfUpdateDockerConnection(inspected);
+            const socketGroup = connection.kind === "unix" ? (await fs.stat(connection.socket!)).gid : undefined;
+            const sidecarImage = process.env.DOCKGE_SELF_UPDATE_SIDECAR_IMAGE?.trim()
+            || `ghcr.io/${plan.allowedRepository}-updater:latest`;
+
+            log.info("self-update", `Téléchargement du sidecar — id=${plan.id} image=${sidecarImage}`);
+            try {
+                await docker([ "image", "pull", sidecarImage ], 10 * 60_000);
+            } catch (error) {
+                return this.failCurrentOperation(`Updater sidecar pull failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+
+            const deferredBeforeLaunch = await this.recheckAutomaticBlocker(targetImage, automatic, "le lancement du sidecar");
+            if (deferredBeforeLaunch) {
+                return deferredBeforeLaunch;
+            }
+
+            const args = [
+                "run", "--pull=always", "-d", "--rm",
+                "--name", `dockge-enhanced-updater-${plan.id}`,
+                "--label", "io.dockge-enhanced.self-update=true",
+                // State files are intentionally 0600 in a 0700 directory. The updater
+                // therefore needs root inside its own container to read/write them.
+                // Drop every Linux capability and forbid privilege escalation: Docker
+                // access remains limited to the explicitly mounted socket.
+                "--user", "0:0",
+                "--cap-drop", "ALL",
+                "--security-opt", "no-new-privileges",
+                "--read-only",
+                "-v", `${stateSource}:/state`,
+                "-e", `SELF_UPDATE_PLAN=/state/self-update/${plan.id}.json`,
+                "-e", `SELF_UPDATE_ALLOW_TEST_IMAGES=${process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? ""}`,
+                "-e", `SELF_UPDATE_ALLOWED_REPOSITORY=${plan.allowedRepository}`,
+                "-e", `SELF_UPDATE_TARGET_CONTAINER_ID=${plan.targetContainerId}`,
+                "-e", `SELF_UPDATE_TARGET_CONTAINER_NAME=${plan.targetContainerName}`,
+                sidecarImage,
+            ];
+            if (connection.kind === "unix") {
+                args.splice(args.length - 1, 0, "--group-add", String(socketGroup), "-v", `${connection.socket}:/var/run/docker.sock`);
+            } else {
+                args.splice(args.length - 1, 0, "--network", "none", "-e", `DOCKER_HOST=${connection.host}`, "-e", `SELF_UPDATE_START_FILE=/state/self-update/${plan.id}.start`);
+                const tlsVerify = process.env.DOCKER_TLS_VERIFY?.trim();
+                const certPath = process.env.DOCKER_CERT_PATH?.trim();
+                if (tlsVerify) {
+                    if (!certPath) {
+                        throw new Error("DOCKER_TLS_VERIFY requires DOCKER_CERT_PATH for the isolated updater");
+                    }
+                    const certSource = mountSourceForPath(inspected.Mounts ?? [], certPath);
+                    if (!certSource) {
+                        throw new Error("DOCKER_CERT_PATH is not on a Docker mount and cannot be safely shared with the isolated updater");
+                    }
+                    args.splice(args.length - 1, 0, "-v", `${certSource}:/docker-certs:ro`, "-e", `DOCKER_TLS_VERIFY=${tlsVerify}`, "-e", "DOCKER_CERT_PATH=/docker-certs");
+                }
+            }
+            if (plan.compose) {
+                args.splice(args.length - 1, 0, "-v", `${plan.compose.workingDir}:${plan.compose.workingDir}:ro`, "-e", `SELF_UPDATE_COMPOSE_DIR=${plan.compose.workingDir}`);
+            }
+            this.operation = {
+                ...this.operation,
+                state: "updating",
+                message: "Updater sidecar launching",
+            };
+            await this.saveOperation();
+            log.info("self-update", `Étape 5/8 — lancement sidecar — id=${plan.id} image=${sidecarImage}`);
+            try {
+                await docker(args, 10 * 60_000);
+                if (connection.kind === "tcp") {
+                    const updater = `dockge-enhanced-updater-${plan.id}`;
+                    try {
+                        for (const network of connection.networks) {
+                            await docker([ "network", "connect", network, updater ], 30_000);
+                        }
+                        await atomicWriteFile(path.join(STATE_DIR, `${plan.id}.start`), "ready\n", 0o600);
+                    } catch (error) {
+                        await docker([ "rm", "-f", updater ], 30_000).catch(() => {});
+                        return this.failCurrentOperation(`Docker Socket Proxy sidecar network setup failed: ${error instanceof Error ? error.message : String(error)}. Required proxy permissions include NETWORK_CONNECT and CONTAINERS.`);
+                    }
+                }
+            } catch (error) {
+                return this.failCurrentOperation(`Updater sidecar launch failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+            log.info("self-update", `Sidecar lancé — id=${plan.id} container=dockge-enhanced-updater-${plan.id}`);
+            // Do not write STATUS_PATH after the detached updater starts: it may already
+            // have persisted a more precise pull/replace stage. Avoid clobbering it.
+            return this.getOperation();
         } catch (error) {
             if (this.operation.id && isSelfUpdateActive(this.operation.state) && this.operation.state !== "scheduled") {
                 return this.failCurrentOperation(`Self-update preparation failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -513,13 +574,16 @@ export class SelfUpdateManager {
     private inferDeferredBlockerCode(message: string): SelfUpdateBlockerCode | null {
         const normalized = message.toLowerCase();
         const entries = Object.entries(BLOCKER_MESSAGES) as Array<[SelfUpdateBlockerCode, string]>;
-        return entries.find(([, blockerMessage]) => normalized.includes(blockerMessage.toLowerCase()))?.[0] ?? null;
+        return entries.find(([ , blockerMessage ]) => normalized.includes(blockerMessage.toLowerCase()))?.[0] ?? null;
     }
 
     private normalizeDeferredOperation(operation: SelfUpdateOperation): SelfUpdateOperation {
-        if (operation.state !== "scheduled" || operation.deferredBy || !operation.message) return operation;
+        if (operation.state !== "scheduled" || operation.deferredBy || !operation.message) {
+            return operation;
+        }
         const deferredBy = this.inferDeferredBlockerCode(operation.message);
-        return deferredBy ? { ...operation, deferredBy } : operation;
+        return deferredBy ? { ...operation,
+            deferredBy } : operation;
     }
 
     private localizedDeferredReason(code: SelfUpdateBlockerCode, lang: NotificationLang): string {
@@ -768,11 +832,11 @@ export class SelfUpdateManager {
                 );
             }
             const prefixedBodies: Array<[string, [string, string, string, string]]> = [
-                ["Backup failed: ", [ "Échec du backup : ", "Backup failed: ", "Error en la copia: ", "备份失败：" ]],
-                ["Backup verification failed: ", [ "Échec de la vérification du backup : ", "Backup verification failed: ", "Error en la verificación de la copia: ", "备份验证失败：" ]],
-                ["Automatic self-update deferred: ", [ "Mise à jour automatique reportée : ", "Automatic self-update deferred: ", "Actualización automática aplazada: ", "自动更新已推迟：" ]],
+                [ "Backup failed: ", [ "Échec du backup : ", "Backup failed: ", "Error en la copia: ", "备份失败：" ]],
+                [ "Backup verification failed: ", [ "Échec de la vérification du backup : ", "Backup verification failed: ", "Error en la verificación de la copia: ", "备份验证失败：" ]],
+                [ "Automatic self-update deferred: ", [ "Mise à jour automatique reportée : ", "Automatic self-update deferred: ", "Actualización automática aplazada: ", "自动更新已推迟：" ]],
             ];
-            for (const [prefix, translatedPrefixes] of prefixedBodies) {
+            for (const [ prefix, translatedPrefixes ] of prefixedBodies) {
                 if (body.startsWith(prefix)) {
                     localizedBody = `${notificationText(lang, ...translatedPrefixes)}${body.slice(prefix.length)}`;
                     break;
@@ -817,10 +881,15 @@ export class SelfUpdateManager {
             const hostname = (await Settings.get("primaryHostname")) || "";
             const fullTitle = hostname ? `[${hostname}] ${localizedTitle}` : localizedTitle;
             if (watcher.discordWebhooks.length > 0) {
-                await new DiscordNotifier(watcher.discordWebhooks).sendEmbed({ title: fullTitle, description: localizedBody, color: type === "failure" ? 0xef4444 : type === "success" ? 0x22c55e : 0xf59e0b, footer: `Dockge Enhanced${hostname ? ` · ${hostname}` : ""}` });
+                await new DiscordNotifier(watcher.discordWebhooks).sendEmbed({ title: fullTitle,
+                    description: localizedBody,
+                    color: type === "failure" ? 0xef4444 : type === "success" ? 0x22c55e : 0xf59e0b,
+                    footer: `Dockge Enhanced${hostname ? ` · ${hostname}` : ""}` });
             }
             if (watcher.appriseServerUrl) {
-                await new AppriseNotifier(watcher.appriseServerUrl, watcher.appriseUrls).send({ title: fullTitle, body: localizedBody, type });
+                await new AppriseNotifier(watcher.appriseServerUrl, watcher.appriseUrls).send({ title: fullTitle,
+                    body: localizedBody,
+                    type });
             }
             return true;
         } catch (error) {
@@ -840,13 +909,24 @@ export class SelfUpdateManager {
             const realWorkingDir = await fs.realpath(workingDir).catch(() => "");
             const validFiles: string[] = [];
             for (const file of configFiles) {
-                if (!isPathInside(workingDir, file)) continue;
+                if (!isPathInside(workingDir, file)) {
+                    continue;
+                }
                 const realFile = await fs.realpath(file).catch(() => "");
-                if (!realWorkingDir || !realFile || !isPathInside(realWorkingDir, realFile)) continue;
-                if (!(await fs.stat(realFile)).isFile()) continue;
+                if (!realWorkingDir || !realFile || !isPathInside(realWorkingDir, realFile)) {
+                    continue;
+                }
+                if (!(await fs.stat(realFile)).isFile()) {
+                    continue;
+                }
                 validFiles.push(file);
             }
-            if (validFiles.length === configFiles.length) compose = { workingDir, configFiles: validFiles, project, service };
+            if (validFiles.length === configFiles.length) {
+                compose = { workingDir,
+                    configFiles: validFiles,
+                    project,
+                    service };
+            }
         }
         return {
             version: 1,
@@ -867,7 +947,9 @@ export class SelfUpdateManager {
 
     private getAllowedRepository(previousImage: string): string {
         const configured = process.env.DOCKGE_SELF_REPO?.trim();
-        if (configured) return normalizeSelfRepository(configured);
+        if (configured) {
+            return normalizeSelfRepository(configured);
+        }
         const match = previousImage.match(/^ghcr\.io\/(.+?)(?::[^/@]+|@sha256:[a-f0-9]{64})$/i);
         return normalizeSelfRepository(match?.[1] ?? "aerya/dockge-enhanced");
     }
@@ -877,27 +959,41 @@ export class SelfUpdateManager {
         delete config.Hostname;
         delete config.Domainname;
         return {
-            version: 1, id: plan.id, targetContainerId: plan.targetContainerId,
-            targetContainerName: plan.targetContainerName, previousImage: plan.previousImage, previousImageId: plan.previousImageId,
-            config, hostConfig: inspected.HostConfig ?? {}, endpointsConfig: inspected.NetworkSettings?.Networks ?? {},
+            version: 1,
+            id: plan.id,
+            targetContainerId: plan.targetContainerId,
+            targetContainerName: plan.targetContainerName,
+            previousImage: plan.previousImage,
+            previousImageId: plan.previousImageId,
+            config,
+            hostConfig: inspected.HostConfig ?? {},
+            endpointsConfig: inspected.NetworkSettings?.Networks ?? {},
         };
     }
 
     private async cleanupArtifacts(currentId: string): Promise<void> {
-        await fs.mkdir(RECOVERY_DIR, { recursive: true, mode: 0o700 });
+        await fs.mkdir(RECOVERY_DIR, { recursive: true,
+            mode: 0o700 });
         const entries = await fs.readdir(STATE_DIR, { withFileTypes: true });
         const cutoff = Date.now() - 24 * 60 * 60_000;
         for (const entry of entries) {
-            if (!entry.isFile() || entry.name.includes(currentId)) continue;
-            if (!/^[a-f0-9]{32}\.(json|override\.yaml|json\.claimed)$/.test(entry.name)) continue;
+            if (!entry.isFile() || entry.name.includes(currentId)) {
+                continue;
+            }
+            if (!/^[a-f0-9]{32}\.(json|override\.yaml|json\.claimed)$/.test(entry.name)) {
+                continue;
+            }
             const file = path.join(STATE_DIR, entry.name);
             const stat = await fs.stat(file);
-            if (stat.mtimeMs < cutoff) await fs.unlink(file).catch(() => undefined);
+            if (stat.mtimeMs < cutoff) {
+                await fs.unlink(file).catch(() => undefined);
+            }
         }
         const recovery = (await fs.readdir(RECOVERY_DIR, { withFileTypes: true }))
             .filter(entry => entry.isFile() && /^[a-f0-9]{32}\.json$/.test(entry.name))
             .map(entry => entry.name);
-        const ordered = await Promise.all(recovery.map(async name => ({ name, mtime: (await fs.stat(path.join(RECOVERY_DIR, name))).mtimeMs })));
+        const ordered = await Promise.all(recovery.map(async name => ({ name,
+            mtime: (await fs.stat(path.join(RECOVERY_DIR, name))).mtimeMs })));
         ordered.sort((a, b) => b.mtime - a.mtime);
         for (const old of ordered.slice(2)) {
             await fs.unlink(path.join(RECOVERY_DIR, old.name)).catch(() => undefined);
@@ -905,7 +1001,8 @@ export class SelfUpdateManager {
     }
 
     private async getOrCreateSecret(): Promise<Buffer> {
-        await fs.mkdir(STATE_DIR, { recursive: true, mode: 0o700 });
+        await fs.mkdir(STATE_DIR, { recursive: true,
+            mode: 0o700 });
         try {
             return await fs.readFile(SECRET_PATH);
         } catch {
@@ -926,7 +1023,9 @@ export class SelfUpdateManager {
     }
 
     private startTerminalStatusWatch(): void {
-        if (this.terminalStatusWatchTimer || !this.shouldWatchTerminalStatus()) return;
+        if (this.terminalStatusWatchTimer || !this.shouldWatchTerminalStatus()) {
+            return;
+        }
 
         this.terminalStatusWatchDeadline = Date.now() + 15 * 60_000;
         log.info(
@@ -935,7 +1034,9 @@ export class SelfUpdateManager {
         );
 
         const poll = async () => {
-            if (this.terminalStatusWatchInFlight) return;
+            if (this.terminalStatusWatchInFlight) {
+                return;
+            }
             this.terminalStatusWatchInFlight = true;
             try {
                 await this.refreshOperation();
@@ -970,22 +1071,30 @@ export class SelfUpdateManager {
     }
 
     private stopTerminalStatusWatch(): void {
-        if (!this.terminalStatusWatchTimer) return;
+        if (!this.terminalStatusWatchTimer) {
+            return;
+        }
         clearInterval(this.terminalStatusWatchTimer);
         this.terminalStatusWatchTimer = null;
         this.terminalStatusWatchDeadline = 0;
     }
 
     private async processTerminalNotification(): Promise<void> {
-        if (this.terminalNotificationInFlight) return;
-        if (!this.operation.notificationPending || this.operation.notificationSentAt || isSelfUpdateActive(this.operation.state)) return;
+        if (this.terminalNotificationInFlight) {
+            return;
+        }
+        if (!this.operation.notificationPending || this.operation.notificationSentAt || isSelfUpdateActive(this.operation.state)) {
+            return;
+        }
 
         this.terminalNotificationInFlight = true;
         try {
             // Un second chemin (watcher autonome, /self/status, load) peut arriver
             // pendant l'envoi Discord/Apprise. Le verrou est acquis avant tout
             // await pour empêcher deux envois du même résultat terminal.
-            if (!this.operation.notificationPending || this.operation.notificationSentAt || isSelfUpdateActive(this.operation.state)) return;
+            if (!this.operation.notificationPending || this.operation.notificationSentAt || isSelfUpdateActive(this.operation.state)) {
+                return;
+            }
 
             await ImageWatcher.getInstance().loadSettings();
             const messages: Partial<Record<SelfUpdateOperation["state"], [string, "success" | "failure"]>> = {
@@ -995,7 +1104,9 @@ export class SelfUpdateManager {
                 "rollback-failed": [ "🚨 Dockge-Enhanced rollback failed", "failure" ],
             };
             const notification = messages[this.operation.state];
-            if (!notification) return;
+            if (!notification) {
+                return;
+            }
 
             if (await this.notify(notification[0], this.operation.message, notification[1])) {
                 this.operation = {
@@ -1011,7 +1122,9 @@ export class SelfUpdateManager {
     }
 
     async clearObsoleteFailureState(): Promise<void> {
-        if (![ "failed", "rolled-back", "rollback-failed" ].includes(this.operation.state)) return;
+        if (![ "failed", "rolled-back", "rollback-failed" ].includes(this.operation.state)) {
+            return;
+        }
         log.info(
             "self-update",
             `Ancien état terminal effacé — state=${this.operation.state} target=${this.operation.targetImage || "indisponible"}`,
@@ -1033,12 +1146,20 @@ export class SelfUpdateManager {
     }
 
     isManagedImageTransition(now = Date.now()): boolean {
-        if (!this.operation.targetImage) return false;
-        if (isSelfUpdateActive(this.operation.state)) return true;
-        if (this.operation.state !== "succeeded" || !this.operation.finishedAt) return false;
+        if (!this.operation.targetImage) {
+            return false;
+        }
+        if (isSelfUpdateActive(this.operation.state)) {
+            return true;
+        }
+        if (this.operation.state !== "succeeded" || !this.operation.finishedAt) {
+            return false;
+        }
 
         const finishedAt = Date.parse(this.operation.finishedAt);
-        if (!Number.isFinite(finishedAt)) return false;
+        if (!Number.isFinite(finishedAt)) {
+            return false;
+        }
 
         const age = now - finishedAt;
         return age >= 0 && age <= 30 * 60_000;
