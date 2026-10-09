@@ -1,5 +1,8 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-09 — Supervisión opcional unificada y Hub PowerWatch gestionado** — Kula, Dozzle, PowerWatch y Hub disponen de tarjetas coherentes con descripciones traducidas, enlaces GitHub y acciones adaptadas a su estado. El Hub se puede instalar y gestionar de forma independiente con su propio volumen persistente. Una instancia PowerWatch o Hub existente solo requiere la URL de su WebUI; Enhanced utiliza automáticamente la API integrada. Sus ajustes se guardan por separado.
+
+
 **2026-10-08 — Monitorización eléctrica opcional con PowerWatch** — Dockge-Enhanced puede observar un PowerWatch local o HTTP(S) existente sin controlarlo, o desplegar una stack Compose gestionada con datos persistentes y soporte condicional para RAPL, MSR y NVIDIA. La potencia instantánea global, su nivel de confianza y enlaces WebUI compactos aparecen en Monitoring, la barra del sistema y los resúmenes de instancias vinculadas mediante el canal de federación existente. Un PowerWatch Hub opcional configurado por separado dispone de un único enlace global y se comprueba mediante su API documentada. Los contenedores externos nunca se modifican, la propiedad gestionada se comprueba estrictamente y la WebUI escucha en loopback por defecto.
 
 **2026-10-08 — Resolución persistente del directorio de datos** — El monitoreo de imágenes y los ajustes compartidos almacenados en archivos usan ahora el volumen persistente `/app/data` cuando `DOCKGE_DATA_DIR` no está definido, por lo que sobreviven a la recreación y a la autoactualización del contenedor. Un directorio explícito mantiene prioridad; una instalación heredada no vacía en `/opt/dockge/data` se conserva si el volumen actual está vacío.

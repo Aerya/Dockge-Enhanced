@@ -49,7 +49,16 @@
 
 整机当前功率、可信度和 WebUI 直达链接会通过现有联邦通道显示在 Monitoring、系统状态栏和紧凑的关联实例摘要中。系统状态栏和实例卡片仅在电力图标旁显示瓦数；工具提示会标明 PowerWatch 以及 Measured 或 Estimated 可信度。PowerWatch 会根据可用传感器进行测量或估算。
 
-也可以在 Monitoring 中为可选的 **PowerWatch Hub** 配置一个 WebUI URL。Hub 是独立服务：它在自己的仪表板中聚合既有 PowerWatch 的私有 HTTP API，无需主机硬件权限。Dockge-Enhanced 只提供一个全局 Hub 链接，不会为每个关联实例重复显示。PowerWatch 和 Hub WebUI 都没有内置身份验证：请保留默认本机绑定，或仅在可信私有 LAN 中公开，或置于外部身份验证之后。
+也可以直接通过 Enhanced 安装和管理可选的 **PowerWatch Hub**，或通过现有 Hub 的 WebUI 地址连接。Hub 是独立服务：它在自己的仪表板中聚合既有 PowerWatch 的私有 HTTP API，无需主机硬件权限。Dockge-Enhanced 只提供一个全局 Hub 链接，不会为每个关联实例重复显示。PowerWatch 和 Hub WebUI 都没有内置身份验证：请保留默认本机绑定，或仅在可信私有 LAN 中公开，或置于外部身份验证之后。
+
+
+#### 可选监控服务：Kula、Dozzle、PowerWatch 和 Hub
+
+在 **Monitoring** (`/watcher/monitoring`) 页面中，四项第三方服务以独立且统一的卡片呈现，包含说明及 GitHub 链接。PowerWatch 和 Hub 均可连接外部实例或由 Enhanced 管理安装，并支持安装、启动、重启、停止及连接测试。托管 Hub 使用 PowerWatch 镜像中的 `powerwatch-hub` 程序，默认监听 `127.0.0.1:3065`，数据保存在独立 Docker 卷中。
+
+Hub 可以独立于本地 PowerWatch 运行。仅在主机 `127.0.0.1` 上开放的实例**无法从 Hub 容器直接访问**，请使用安全且可达的私有网络地址。启用原生身份验证之前不要将界面暴露于公网。
+
+连接**现有 PowerWatch** 时，只需在 PowerWatch 地址中填写其常用 **WebUI 地址**（例如 `http://192.168.0.64:3064`）；Enhanced 会自动访问同一地址下的 `/api/snapshot`。只有特殊反向代理配置才需要在高级选项中填写独立 WebUI 地址。连接**现有 Hub** 也只需填写其 WebUI 地址；Enhanced 会自动访问 `/api/hub/snapshot`。
 
 **清理现在使用 Docker 的真实镜像引用**
 

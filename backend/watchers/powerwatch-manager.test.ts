@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
     buildPowerWatchCompose,
+    buildPowerWatchHubCompose,
     DEFAULT_POWERWATCH_SETTINGS,
     PowerWatchManager,
     validatePowerWatchUrl,
@@ -48,6 +49,23 @@ test("external HTTP normalizes snapshots and rejects unsafe URLs", async () => {
     assert.equal(snapshot.webUrl, "https://power.example.test");
     assert.throws(() => validatePowerWatchUrl("file:///tmp/data", "apiUrl"));
     assert.throws(() => validatePowerWatchUrl("http://user:secret@example.test", "apiUrl"));
+});
+
+test("an existing PowerWatch needs only its WebUI URL, never a separate API URL", async () => {
+    let requested = "";
+    const manager = managerWith({ fetchJson: async (url) => {
+        requested = url;
+        return { total: { watts: 18.5,
+            confidence: "Estimated" } };
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        enabled: true,
+        apiUrl: "",
+        webUrl: "http://192.168.0.64:3064" };
+    const snapshot = await manager.getSnapshot();
+    assert.equal(requested, "http://192.168.0.64:3064/api/snapshot");
+    assert.equal(snapshot.webUrl, "http://192.168.0.64:3064");
+    assert.equal(snapshot.totalWatts, 18.5);
 });
 
 test("disabled mode makes no request and invalid watts become null", async () => {
@@ -346,7 +364,7 @@ test("managed ownership collision blocks lifecycle operations", async () => {
         enabled: true,
         mode: "managed" };
     await assert.rejects(() => manager.stop(), /not owned/);
-    assert.equal(commands.some((args) => args.includes("down")), false);
+    assert.equal(commands.some((args) => args.includes("stop") || args.includes("down")), false);
 });
 
 test("forced unavailable hardware blocks managed start before Compose is written", async (t) => {
@@ -408,7 +426,7 @@ test("managed stop keeps the persistent volume and requires full Compose ownersh
     await manager.stop();
     const down = commands.find((args) => args[0] === "compose");
     assert.ok(down);
-    assert.equal(down.includes("down"), true);
+    assert.equal(down.includes("stop"), true);
     assert.equal(down.includes("-v"), false);
 });
 
@@ -560,4 +578,103 @@ test("own managed container may reuse its own listening port", async () => {
     manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
         hostPort: 3000 };
     assert.equal((await manager.detect()).portAvailable, true);
+});
+
+test("Hub Compose is independently managed, persistent and unprivileged", () => {
+    const yaml = buildPowerWatchHubCompose({ ...DEFAULT_POWERWATCH_SETTINGS,
+        hubEnabled: true,
+        hubMode: "managed",
+        hubBindAddress: "127.0.0.1",
+        hubHostPort: 3065 });
+    assert.match(yaml, /image: ghcr.io\/aerya\/powerwatch:latest/);
+    assert.match(yaml, /entrypoint: \[\/usr\/local\/bin\/powerwatch-hub\]/);
+    assert.match(yaml, /127\.0\.0\.1:3065:3000/);
+    assert.match(yaml, /powerwatch_hub_dockge_data:\n {4}name:/);
+    assert.match(yaml, /no-new-privileges:true/);
+    assert.doesNotMatch(yaml, /SYS_RAWIO|\/dev\/cpu|pid: host|privileged:/);
+});
+
+test("Hub managed status reads its own container and never requests external HTTP", async () => {
+    const commands: string[][] = [];
+    const manager = managerWith({ docker: async (args) => {
+        commands.push(args);
+        if (args[0] === "inspect") {
+            if (args[1] === "powerwatch-hub-dockge-enhanced") {
+                return result(JSON.stringify([{ Name: "/powerwatch-hub-dockge-enhanced",
+                    Config: { Labels: { "com.dockge-enhanced.managed": "powerwatch-hub",
+                        "com.dockge-enhanced.integration": "powerwatch-hub",
+                        "com.docker.compose.project": "powerwatch-hub-dockge-enhanced",
+                        "com.docker.compose.service": "powerwatch-hub" } },
+                    State: { Running: true } }]));
+            }
+            return result("", 1, "not found");
+        }
+        if (args[0] === "exec") {
+            return result("{\"nodes\":[]}");
+        }
+        return result();
+    },
+    fetchJson: async () => {
+        throw new Error("Must not fetch managed Hub over HTTP");
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        hubEnabled: true,
+        hubMode: "managed" };
+    const status = await manager.getHubStatus();
+    assert.equal(status.reachable, true);
+    assert.equal(status.webUrl, "http://127.0.0.1:3065");
+    const states = await manager.getManagedStates();
+    assert.equal(states.hub.running, true);
+    assert.equal(states.powerwatch.installed, false);
+    assert.equal(commands.some(args => args[0] === "exec" && args[1] === "powerwatch-hub-dockge-enhanced"), true);
+});
+
+test("Hub cannot take over an unrelated existing container", async () => {
+    const manager = managerWith({ docker: async (args) => {
+        if (args[0] === "inspect") {
+            return result(JSON.stringify([{ Name: "/powerwatch-hub-dockge-enhanced",
+                Config: { Labels: { "com.docker.compose.project": "someone-else" } },
+                State: { Running: true } }]));
+        }
+        return result();
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        hubEnabled: true,
+        hubMode: "managed" };
+    await assert.rejects(() => manager.hubStart(), /not owned/);
+});
+
+test("Hub requires an available host port and does not need GPU detection", async () => {
+    const commands: string[][] = [];
+    const manager = managerWith({ docker: async (args) => {
+        commands.push(args);
+        if (args[0] === "inspect") {
+            return result("", 1, "not found");
+        }
+        if (args[0] === "run") {
+            return result("PW_TCP_BEGIN\n   0: 0100007F:0BF9 00000000:0000 0A\nPW_TCP_END\n");
+        }
+        return result();
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        hubEnabled: true,
+        hubMode: "managed",
+        hubHostPort: 3065 };
+    await assert.rejects(() => manager.hubStart(), /already in use/);
+    assert.equal(commands.some(args => args.includes("--gpus")), false);
+    assert.equal(commands.some(args => args[0] === "compose"), false);
+});
+
+test("MSR plus NVIDIA compose keeps both environment variables under environment", () => {
+    const yaml = buildPowerWatchCompose({ ...DEFAULT_POWERWATCH_SETTINGS,
+        msrMode: "enabled",
+        nvidiaMode: "enabled" },
+    { linux: true,
+        msr: true,
+        nvidia: true,
+        powercap: false });
+    const environment = yaml.split("    environment:\n")[1]?.split("    cap_add:\n")[0];
+    assert.match(environment ?? "", /NVIDIA_VISIBLE_DEVICES: all/);
+    assert.match(environment ?? "", /NVIDIA_DRIVER_CAPABILITIES: utility/);
+    assert.match(yaml, / {4}cap_add:\n {6}- SYS_RAWIO/);
 });

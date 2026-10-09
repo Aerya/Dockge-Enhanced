@@ -69,7 +69,16 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 La puissance instantanée globale, sa fiabilité et un accès direct à la WebUI apparaissent dans Monitoring, la barre système et le résumé compact des instances liées via la fédération existante. La barre système et les cartes d’instances affichent uniquement les watts près du pictogramme électrique ; l’infobulle identifie PowerWatch et son niveau Measured ou Estimated. PowerWatch mesure ou estime la consommation selon les capteurs disponibles.
 
-Un **PowerWatch Hub** facultatif peut aussi être configuré avec une unique URL WebUI dans Monitoring. Il reste un service distinct : il agrège les API HTTP privées de PowerWatch existants dans son propre tableau de bord et ne nécessite aucun privilège matériel hôte. Dockge-Enhanced ouvre seulement ce lien Hub global ; il ne le répète pas pour chaque instance liée. Les WebUI PowerWatch et Hub ne disposent pas d’authentification intégrée : conservez l’écoute locale par défaut, ou exposez-les uniquement sur un LAN privé de confiance ou derrière une authentification externe.
+Un **PowerWatch Hub** facultatif peut être installé et géré directement par Enhanced ou relié à un Hub existant avec sa seule URL WebUI. Il reste un service distinct : il agrège les API HTTP privées de PowerWatch existants dans son propre tableau de bord et ne nécessite aucun privilège matériel hôte. Dockge-Enhanced ouvre seulement ce lien Hub global ; il ne le répète pas pour chaque instance liée. Les WebUI PowerWatch et Hub ne disposent pas d’authentification intégrée : conservez l’écoute locale par défaut, ou exposez-les uniquement sur un LAN privé de confiance ou derrière une authentification externe.
+
+
+#### Services de supervision facultatifs : Kula, Dozzle, PowerWatch et Hub
+
+Dans **Monitoring** (`/watcher/monitoring`), les quatre services tiers facultatifs disposent d'encarts homogènes et indépendants, avec description et lien GitHub. PowerWatch et son Hub disposent chacun d'un mode externe ou géré, des actions installer/démarrer/redémarrer/arrêter et d'un test de connexion. Le Hub géré utilise l'exécutable `powerwatch-hub` de l'image PowerWatch, écoute par défaut sur `127.0.0.1:3065` et conserve ses données dans un volume Docker distinct.
+
+Le Hub peut fonctionner indépendamment de PowerWatch local. Une instance accessible uniquement sur `127.0.0.1` de son hôte **n'est pas directement accessible depuis le conteneur Docker du Hub** : utiliser une adresse réseau joignable et protégée pour la fédération. Tant que l'authentification native n'est pas disponible, ne pas exposer les interfaces sur Internet.
+
+Pour relier un **PowerWatch existant**, saisissez simplement l’adresse habituelle de sa **WebUI** (par exemple `http://192.168.0.64:3064`) dans « URL de PowerWatch » : Enhanced appelle automatiquement `/api/snapshot` à la même adresse. Une seconde URL WebUI n’est utile qu’avec une configuration réseau particulière et reste dans les options avancées. Pour un **Hub existant**, saisissez de même son URL WebUI : `/api/hub/snapshot` est utilisé automatiquement.
 
 **La purge utilise désormais les références Docker réelles**
 
