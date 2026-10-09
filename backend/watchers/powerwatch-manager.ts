@@ -647,8 +647,8 @@ export class PowerWatchManager {
                 }
             } catch (error) {
                 if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-                throw error;
-            }
+                    throw error;
+                }
             }
         }
         await fs.mkdir(STACK_DIR, { recursive: true });
