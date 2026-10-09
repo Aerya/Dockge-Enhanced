@@ -49,10 +49,19 @@
         <a v-if="dozzleUrl" :href="dozzleUrl" target="_blank" class="status-item status-link">
             <font-awesome-icon icon="terminal" />Dozzle
         </a>
+        <a
+            v-if="powerWatchUrl" :href="powerWatchUrl" target="_blank" rel="noopener noreferrer"
+            class="status-item status-link" :title="powerWatchTooltip" :aria-label="powerWatchTooltip"
+        >
+            <font-awesome-icon icon="bolt" />
+            <span v-if="powerWatchSnapshot?.reachable">{{ formatPower(powerWatchSnapshot.totalWatts) }}</span>
+        </a>
     </div>
 </template>
 
 <script>
+import { formatPowerWatts } from "../powerwatch";
+
 export default {
     props: {
         /** System stats payload from /api/system/stats */
@@ -73,15 +82,35 @@ export default {
             type: String,
             default: null,
         },
+        powerWatchUrl: {
+            type: String,
+            default: null,
+        },
+        powerWatchSnapshot: {
+            type: Object,
+            default: null,
+        },
     },
 
     computed: {
         diskList() {
             return this.systemStats.disks ?? (this.systemStats.disk ? [ this.systemStats.disk ] : []);
         },
+        powerWatchTooltip() {
+            if (this.powerWatchSnapshot?.confidence === "Measured") {
+                return `${this.$t("watcher.powerwatch.open")} — ${this.$t("watcher.powerwatch.measured")}`;
+            }
+            if (this.powerWatchSnapshot?.confidence === "Estimated") {
+                return `${this.$t("watcher.powerwatch.open")} — ${this.$t("watcher.powerwatch.estimated")}`;
+            }
+            return this.$t("watcher.powerwatch.open");
+        },
     },
 
     methods: {
+        formatPower(value) {
+            return formatPowerWatts(value, this.$i18n.locale);
+        },
         statClass(percent) {
             if (percent >= 85) {
                 return "stat-danger";

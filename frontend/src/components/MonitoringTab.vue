@@ -178,6 +178,144 @@
             </section>
         </div>
 
+        <div class="shadow-box big-padding mb-4 powerwatch-panel">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <h5 class="settings-subheading mb-0">
+                    <font-awesome-icon icon="bolt" class="me-2" />{{ $t("watcher.powerwatch.heading") }}
+                    <span v-if="powerWatchStatus?.reachable" class="badge bg-success ms-2 badge-sm">{{ $t("watcher.powerwatch.online") }}</span>
+                    <span v-else-if="powerWatchStatus?.status === 'stopped'" class="badge bg-secondary ms-2 badge-sm">{{ $t("watcher.powerwatch.stopped") }}</span>
+                    <span v-else-if="powerWatchSettings.enabled" class="badge bg-warning text-dark ms-2 badge-sm">{{ $t("watcher.powerwatch.offline") }}</span>
+                </h5>
+                <a
+                    v-if="powerWatchEffectiveUrl" :href="powerWatchEffectiveUrl" target="_blank" rel="noopener noreferrer"
+                    class="btn btn-sm btn-outline-secondary" :title="$t('watcher.powerwatch.open')"
+                    :aria-label="$t('watcher.powerwatch.open')"
+                ><font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t("watcher.powerwatch.open") }}</a>
+            </div>
+
+            <div class="form-check form-switch mb-3">
+                <input id="powerWatchEnabled" v-model="powerWatchSettings.enabled" class="form-check-input" type="checkbox" role="switch" />
+                <label class="form-check-label fw-semibold" for="powerWatchEnabled">{{ $t("watcher.powerwatch.enable") }}</label>
+            </div>
+
+            <template v-if="powerWatchSettings.enabled">
+                <div class="d-flex flex-wrap gap-3 mb-3">
+                    <label class="form-check">
+                        <input v-model="powerWatchSettings.mode" class="form-check-input" type="radio" value="external" />
+                        <span class="form-check-label">{{ $t("watcher.powerwatch.external") }}</span>
+                    </label>
+                    <label class="form-check">
+                        <input v-model="powerWatchSettings.mode" class="form-check-input" type="radio" value="managed" />
+                        <span class="form-check-label">{{ $t("watcher.powerwatch.managed") }}</span>
+                    </label>
+                </div>
+
+                <template v-if="powerWatchSettings.mode === 'external'">
+                    <div v-if="powerWatchDetection?.containers?.length" class="mb-3">
+                        <div class="small fw-semibold mb-2">{{ $t("watcher.powerwatch.detected") }}</div>
+                        <div v-for="container in powerWatchDetection.containers" :key="container.name" class="powerwatch-detected mb-2">
+                            <code>{{ container.name }}</code><span>{{ container.image }}</span><span>{{ $t(container.state === "running" ? "watcher.powerwatch.online" : "watcher.powerwatch.stopped") }}</span>
+                            <span v-if="container.hostPort">{{ container.hostPort }} → 3000</span>
+                            <button class="btn btn-sm btn-normal" type="button" @click="usePowerWatchContainer(container)">{{ $t("watcher.powerwatch.useInstance") }}</button>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label small">{{ $t("watcher.powerwatch.apiUrl") }}</label>
+                            <input v-model="powerWatchSettings.apiUrl" type="url" class="form-control form-control-sm" :disabled="Boolean(powerWatchSettings.externalContainer)" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small">{{ $t("watcher.powerwatch.webUrl") }}</label>
+                            <input v-model="powerWatchSettings.webUrl" type="url" class="form-control form-control-sm" />
+                        </div>
+                        <div v-if="powerWatchSettings.externalContainer" class="col-12 small">
+                            {{ $t("watcher.powerwatch.selectedContainer") }} <code>{{ powerWatchSettings.externalContainer }}</code>
+                            <button type="button" class="btn btn-sm btn-link" @click="powerWatchSettings.externalContainer = ''">{{ $t("watcher.powerwatch.clear") }}</button>
+                        </div>
+                    </div>
+                </template>
+
+                <template v-else>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label small">{{ $t("watcher.powerwatch.port") }}</label>
+                            <input v-model.number="powerWatchSettings.hostPort" type="number" min="1" max="65535" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">{{ $t("watcher.powerwatch.bindAddress") }}</label>
+                            <input v-model="powerWatchSettings.bindAddress" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small">{{ $t("watcher.powerwatch.webUrlOptional") }}</label>
+                            <input v-model="powerWatchSettings.managedWebUrl" type="url" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div v-if="powerWatchSettings.bindAddress === '0.0.0.0'" class="alert alert-warning py-2 mt-3">{{ $t("watcher.powerwatch.lanWarning") }}</div>
+                    <details class="mt-3">
+                        <summary>{{ $t("watcher.powerwatch.advanced") }}</summary>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-4"><label class="form-label small">MSR</label><select v-model="powerWatchSettings.msrMode" class="form-select form-select-sm"><option value="auto">{{ $t("watcher.powerwatch.auto") }}</option><option value="enabled">{{ $t("watcher.powerwatch.enabled") }}</option><option value="disabled">{{ $t("watcher.powerwatch.disabled") }}</option></select></div>
+                            <div class="col-md-4"><label class="form-label small">NVIDIA</label><select v-model="powerWatchSettings.nvidiaMode" class="form-select form-select-sm"><option value="auto">{{ $t("watcher.powerwatch.auto") }}</option><option value="enabled">{{ $t("watcher.powerwatch.enabled") }}</option><option value="disabled">{{ $t("watcher.powerwatch.disabled") }}</option></select></div>
+                        </div>
+                    </details>
+                    <div v-if="powerWatchDetection" class="powerwatch-diagnostic mt-3">
+                        <span :class="powerWatchDetection.capabilities.linux ? 'text-success' : 'text-danger'">Linux: {{ capabilityLabel(powerWatchDetection.capabilities.linux) }}</span>
+                        <span>RAPL: {{ capabilityLabel(powerWatchDetection.capabilities.powercap, true) }}</span>
+                        <span>MSR: {{ capabilityLabel(powerWatchDetection.capabilities.msr, true) }}</span>
+                        <span>NVIDIA: {{ capabilityLabel(powerWatchDetection.capabilities.nvidia, true) }}</span>
+                        <span :class="powerWatchDetection.portAvailable ? 'text-success' : 'text-danger'">{{ $t("watcher.powerwatch.port") }}: {{ powerWatchDetection.portAvailable ? $t("watcher.powerwatch.available") : $t("watcher.powerwatch.portInUse") }}</span>
+                        <span class="text-success">{{ $t("watcher.powerwatch.volumeKept") }}</span>
+                    </div>
+                </template>
+
+                <div v-if="powerWatchStatus" class="powerwatch-current mt-3">
+                    <strong>{{ $t("watcher.powerwatch.current") }}:</strong>
+                    <span><font-awesome-icon icon="bolt" /> {{ powerWatchDisplayWatts }}</span>
+                    <span v-if="powerWatchStatus.confidence">{{ powerWatchConfidence }}</span>
+                    <small v-if="powerWatchStatus.lastError" class="text-warning">{{ powerWatchStatus.lastError }}</small>
+                </div>
+            </template>
+
+            <div class="powerwatch-hub-panel mt-4 pt-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                    <h6 class="mb-0"><font-awesome-icon icon="bolt" class="me-2" />{{ $t("watcher.powerwatch.hub") }}</h6>
+                    <a
+                        v-if="powerWatchHubEffectiveUrl" :href="powerWatchHubEffectiveUrl" target="_blank" rel="noopener noreferrer"
+                        class="btn btn-sm btn-outline-secondary" :title="$t('watcher.powerwatch.openHub')"
+                        :aria-label="$t('watcher.powerwatch.openHub')"
+                    ><font-awesome-icon icon="external-link-alt" class="me-1" />{{ $t("watcher.powerwatch.openHub") }}</a>
+                </div>
+                <p class="small text-muted mb-3">{{ $t("watcher.powerwatch.hubHelp") }}</p>
+                <div class="form-check form-switch mb-3">
+                    <input id="powerWatchHubEnabled" v-model="powerWatchSettings.hubEnabled" class="form-check-input" type="checkbox" role="switch" />
+                    <label class="form-check-label fw-semibold" for="powerWatchHubEnabled">{{ $t("watcher.powerwatch.enableHub") }}</label>
+                </div>
+                <div v-if="powerWatchSettings.hubEnabled" class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small">{{ $t("watcher.powerwatch.hubWebUrl") }}</label>
+                        <input v-model="powerWatchSettings.hubWebUrl" type="url" class="form-control form-control-sm" />
+                    </div>
+                    <div v-if="powerWatchHubStatus" class="col-12 small">
+                        <span v-if="powerWatchHubStatus.reachable" class="text-success">{{ $t("watcher.powerwatch.hubOnline") }}</span>
+                        <span v-else class="text-warning">{{ $t("watcher.powerwatch.hubOffline") }}<template v-if="powerWatchHubStatus.lastError">: {{ powerWatchHubStatus.lastError }}</template></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <button class="btn btn-primary btn-sm" :disabled="powerWatchLoading" @click="savePowerWatchSettings"><font-awesome-icon icon="save" class="me-1" />{{ $t("Save") }}</button>
+                <button class="btn btn-normal btn-sm" :disabled="powerWatchLoading" @click="detectPowerWatch"><font-awesome-icon icon="magnifying-glass" class="me-1" />{{ $t("watcher.powerwatch.checkHost") }}</button>
+                <button v-if="powerWatchSettings.enabled" class="btn btn-normal btn-sm" :disabled="powerWatchLoading" @click="testPowerWatch"><font-awesome-icon icon="plug" class="me-1" />{{ $t("watcher.powerwatch.test") }}</button>
+                <button v-if="powerWatchSettings.hubEnabled" class="btn btn-normal btn-sm" :disabled="powerWatchLoading" @click="testPowerWatchHub"><font-awesome-icon icon="plug" class="me-1" />{{ $t("watcher.powerwatch.testHub") }}</button>
+                <template v-if="powerWatchSettings.enabled && powerWatchSettings.mode === 'managed'">
+                    <button class="btn btn-success btn-sm" :disabled="powerWatchLoading" @click="powerWatchAction('install')">{{ $t("watcher.powerwatch.install") }}</button>
+                    <button class="btn btn-success btn-sm" :disabled="powerWatchLoading" @click="powerWatchAction('start')">{{ $t("watcher.powerwatch.start") }}</button>
+                    <button class="btn btn-warning btn-sm" :disabled="powerWatchLoading" @click="powerWatchAction('restart')">{{ $t("watcher.powerwatch.restart") }}</button>
+                    <button class="btn btn-danger btn-sm" :disabled="powerWatchLoading" @click="powerWatchAction('stop')">{{ $t("watcher.powerwatch.stop") }}</button>
+                </template>
+            </div>
+        </div>
+
         <div class="shadow-box big-padding mb-4">
             <h5 class="settings-subheading mb-3">
                 <font-awesome-icon icon="display" class="me-2" />{{ $t('watcher.monitoring.displayHeading') }}
@@ -765,6 +903,7 @@ import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz, fmtDate } from "../composables/useServerTz";
 import { stackStatsEnabled } from "../composables/useStackStats";
 import { setLowPower, POLL, makePoller, type Poller } from "../composables/useLowPower";
+import { formatPowerWatts, resolvePowerWatchWebUrl, type PowerWatchFrontendSnapshot } from "../powerwatch";
 
 const { t } = useI18n();
 initServerTz();
@@ -787,6 +926,40 @@ interface KulaSettings {
 }
 
 interface DozzleSettings { enabled: boolean; port: number; customUrl: string }
+
+interface PowerWatchSettings {
+    enabled: boolean;
+    mode: "managed" | "external";
+    apiUrl: string;
+    webUrl: string;
+    externalContainer: string;
+    hostPort: number;
+    bindAddress: string;
+    managedWebUrl: string;
+    msrMode: "auto" | "enabled" | "disabled";
+    nvidiaMode: "auto" | "enabled" | "disabled";
+    hubEnabled: boolean;
+    hubWebUrl: string;
+}
+
+interface PowerWatchHubStatus {
+    enabled: boolean;
+    reachable: boolean;
+    webUrl: string | null;
+    lastError?: string | null;
+}
+
+interface PowerWatchDetection {
+    containers: Array<{ name: string;
+        image: string;
+        state: string;
+        hostPort: number | null }>;
+    capabilities: { linux: boolean;
+        powercap: boolean;
+        msr: boolean;
+        nvidia: boolean };
+    portAvailable: boolean;
+}
 
 interface MonitoringSettings {
     crashLoopEnabled: boolean;
@@ -1119,6 +1292,33 @@ const dozzleStatus = ref<"running" | "stopped" | "error">("stopped");
 const savingDozzle = ref(false);
 const dozzleActionLoading = ref(false);
 const dozzleEffectiveUrl = computed(() => dozzleSettings.value.customUrl?.trim() || `http://${windowHostname}:${dozzleSettings.value.port}`);
+const powerWatchSettings = ref<PowerWatchSettings>({
+    enabled: false,
+    mode: "external",
+    apiUrl: "",
+    webUrl: "",
+    externalContainer: "",
+    hostPort: 3000,
+    bindAddress: "127.0.0.1",
+    managedWebUrl: "",
+    msrMode: "auto",
+    nvidiaMode: "auto",
+    hubEnabled: false,
+    hubWebUrl: "",
+});
+const powerWatchStatus = ref<(PowerWatchFrontendSnapshot & { lastError?: string | null }) | null>(null);
+const powerWatchDetection = ref<PowerWatchDetection | null>(null);
+const powerWatchLoading = ref(false);
+const savedPowerWatchSettings = ref<PowerWatchSettings | null>(null);
+const powerWatchHubStatus = ref<PowerWatchHubStatus | null>(null);
+const powerWatchEffectiveUrl = computed(() => resolvePowerWatchWebUrl(powerWatchStatus.value?.webUrl, windowHostname));
+const powerWatchHubEffectiveUrl = computed(() => resolvePowerWatchWebUrl(powerWatchHubStatus.value?.webUrl || powerWatchSettings.value.hubWebUrl, windowHostname));
+const powerWatchDisplayWatts = computed(() => powerWatchStatus.value?.reachable
+    ? formatPowerWatts(powerWatchStatus.value.totalWatts, navigator.language)
+    : "—");
+const powerWatchConfidence = computed(() => powerWatchStatus.value?.confidence === "Measured"
+    ? t("watcher.powerwatch.measured")
+    : powerWatchStatus.value?.confidence === "Estimated" ? t("watcher.powerwatch.estimated") : "");
 
 // L'option appartient à cette instance et est persistée côté serveur.
 const localStackStatsEnabled = ref(false);
@@ -1589,12 +1789,117 @@ async function stopDozzle() {
     } finally { dozzleActionLoading.value = false; }
 }
 
+async function loadPowerWatch() {
+    const [ settings, status, hubStatus ] = await Promise.all([
+        api("GET", "/watcher/powerwatch/settings"),
+        api("GET", "/watcher/powerwatch/status"),
+        api("GET", "/watcher/powerwatch/hub/status"),
+    ]);
+    if (settings.ok) {
+        powerWatchSettings.value = settings.data as PowerWatchSettings;
+        savedPowerWatchSettings.value = { ...powerWatchSettings.value };
+    }
+    if (status.ok) {
+        powerWatchStatus.value = status.data as PowerWatchFrontendSnapshot & { lastError?: string | null };
+    }
+    if (hubStatus.ok) {
+        powerWatchHubStatus.value = hubStatus.data as PowerWatchHubStatus;
+    }
+}
+
+async function savePowerWatchSettings() {
+    const switchingFromManaged = savedPowerWatchSettings.value?.enabled &&
+        savedPowerWatchSettings.value.mode === "managed" && powerWatchSettings.value.mode === "external";
+    if (switchingFromManaged && !window.confirm(t("watcher.powerwatch.confirmManagedToExternal"))) {
+        return;
+    }
+    powerWatchLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/powerwatch/settings", {
+            ...powerWatchSettings.value,
+            confirmStopManaged: Boolean(switchingFromManaged),
+        });
+        showToast(res.ok ? "✅ " + t("watcher.powerwatch.saved") : `❌ ${res.message}`, res.ok);
+        if (res.ok) {
+            await loadPowerWatch();
+        }
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+async function detectPowerWatch() {
+    powerWatchLoading.value = true;
+    try {
+        const res = await api("GET", "/watcher/powerwatch/detect");
+        if (res.ok) {
+            powerWatchDetection.value = res.data as PowerWatchDetection;
+        }
+        showToast(res.ok ? "✅ " + t("watcher.powerwatch.hostChecked") : `❌ ${res.message}`, res.ok);
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+async function testPowerWatch() {
+    powerWatchLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/powerwatch/test", powerWatchSettings.value);
+        if (res.ok) {
+            powerWatchStatus.value = res.data as PowerWatchFrontendSnapshot & { lastError?: string | null };
+        }
+        showToast(res.ok && res.data?.reachable ? "✅ " + t("watcher.powerwatch.online") : `❌ ${res.data?.lastError || res.message}`, Boolean(res.ok && res.data?.reachable));
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+async function testPowerWatchHub() {
+    powerWatchLoading.value = true;
+    try {
+        const res = await api("POST", "/watcher/powerwatch/hub/test", powerWatchSettings.value);
+        if (res.ok) {
+            powerWatchHubStatus.value = res.data as PowerWatchHubStatus;
+        }
+        showToast(res.ok && res.data?.reachable ? "✅ " + t("watcher.powerwatch.hubOnline") : `❌ ${res.data?.lastError || res.message}`, Boolean(res.ok && res.data?.reachable));
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+async function powerWatchAction(action: "install" | "start" | "stop" | "restart") {
+    powerWatchLoading.value = true;
+    try {
+        const saved = await api("POST", "/watcher/powerwatch/settings", powerWatchSettings.value);
+        const res = saved.ok ? await api("POST", `/watcher/powerwatch/${action}`) : saved;
+        showToast(res.ok ? "✅ PowerWatch" : `❌ ${res.message}`, res.ok);
+        await loadPowerWatch();
+    } finally {
+        powerWatchLoading.value = false;
+    }
+}
+
+function usePowerWatchContainer(container: PowerWatchDetection["containers"][number]) {
+    powerWatchSettings.value.externalContainer = container.name;
+    powerWatchSettings.value.apiUrl = "";
+    if (!powerWatchSettings.value.webUrl && container.hostPort) {
+        powerWatchSettings.value.webUrl = `http://${windowHostname}:${container.hostPort}`;
+    }
+}
+
+function capabilityLabel(value: boolean, optional = false): string {
+    if (value) {
+        return t("watcher.powerwatch.available");
+    }
+    return optional ? t("watcher.powerwatch.optionalUnavailable") : t("watcher.powerwatch.notAvailable");
+}
+
 // ─── Polling ──────────────────────────────────────────────────────
 
 let overviewPoller: Poller | null = null;
 
 onMounted(async () => {
-    await Promise.all([loadOverview(), loadHostStats(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadDozzleSettings(), loadDozzleStatus(), loadExclusions()]);
+    await Promise.all([loadOverview(), loadHostStats(), loadSettings(), loadKulaSettings(), loadKulaStatus(), loadDozzleSettings(), loadDozzleStatus(), loadPowerWatch(), loadExclusions()]);
     await loadHistory();
     // Overview : cadence selon le mode + pause si onglet caché
     overviewPoller = makePoller({ fetch: loadOverview, interval: POLL.overview });
@@ -1959,5 +2264,33 @@ onUnmounted(() => {
     color: var(--primary-strong);
     text-decoration: none;
     &:hover { text-decoration: underline; }
+}
+.powerwatch-detected,
+.powerwatch-diagnostic,
+.powerwatch-current {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .5rem 1rem;
+}
+.powerwatch-detected {
+    padding: .55rem .7rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    font-size: var(--fs-sm);
+}
+.powerwatch-current {
+    padding: .65rem .8rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+}
+.powerwatch-hub-panel {
+    border-top: 1px solid var(--border-color);
+}
+@media (max-width: $bp-phone) {
+    .powerwatch-panel .form-control,
+    .powerwatch-panel .form-select,
+    .powerwatch-panel .btn { width: 100%; }
 }
 </style>

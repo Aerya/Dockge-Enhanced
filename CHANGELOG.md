@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-08 — Optional PowerWatch electrical monitoring** — Dockge-Enhanced can observe an existing local or HTTP(S) PowerWatch without controlling it, or deploy a dedicated managed Compose stack with persistent data and conditional RAPL, MSR and NVIDIA support. Current whole-machine watts, confidence and compact WebUI links are available in Monitoring, the system bar and linked-instance summaries through the existing federation channel. A separately configured optional PowerWatch Hub has one global link and is checked through its documented API. External containers are never modified, managed ownership is verified strictly, and the WebUI binds to loopback by default.
+
 **2026-10-08 — Persistent data directory resolution** — Image monitoring and all shared file-backed settings now use the persistent `/app/data` volume when `DOCKGE_DATA_DIR` is not set, so they survive container recreation and self-update. An explicit data directory remains authoritative; a non-empty legacy `/opt/dockge/data` installation is retained when the current volume is empty.
 
 **2026-10-08 — Stack README renderer updated to markdown-it 15** — The built-in TypeScript definitions replace the former v14 type package, fuzzy links remain enabled for compatibility, and automatic links now handle IPv6 and CJK punctuation more accurately while raw HTML and unsafe JavaScript links remain disabled.
