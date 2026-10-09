@@ -32,9 +32,19 @@ test("system statistics show only the PowerWatch watt value", () => {
     assert.match(component, /:title="powerWatchTooltip"/);
 });
 
-test("linked instances use one compact individual PowerWatch link without nesting it in the selector", () => {
+test("linked instances keep the individual PowerWatch link in the resource row", () => {
     const component = readFileSync(new URL("./pages/DashboardHome.vue", import.meta.url), "utf8");
     assert.match(component, /class="instance-powerwatch-link"/);
-    assert.match(component, /class="instance-powerwatch-hub-link"/);
     assert.match(component, /class="instance-overview-select"/);
+    assert.match(component, /class="instance-resource-select"/);
+    assert.doesNotMatch(component, /instance-powerwatch-hub-link/);
+});
+
+test("PowerWatch Hub is global and follows Kula and Dozzle", () => {
+    const component = readFileSync(new URL("./components/SystemStatsBar.vue", import.meta.url), "utf8");
+    const layout = readFileSync(new URL("./layouts/Layout.vue", import.meta.url), "utf8");
+    assert.match(component, /powerWatchHubUrl/);
+    assert.ok(component.indexOf("powerWatchUrl") < component.indexOf("temperature-half"));
+    assert.ok(component.indexOf("dozzleUrl") < component.indexOf("powerWatchHubUrl"));
+    assert.match(layout, /\/api\/watcher\/powerwatch\/hub\/status/);
 });
