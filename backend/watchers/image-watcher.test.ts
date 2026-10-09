@@ -8,6 +8,11 @@ import {
     imageStatusStore,
     assertRegistryHost,
     buildImageUpdateComposePlan,
+    hasRunningImageDrift,
+    immediateUpdateKeys,
+    IMMEDIATE_IMAGE_CHECK_CRON,
+    reuseCyclePromise,
+    registryRateLimitCooldownMs,
     buildManifestUrl,
     buildRollbackComposeRecreateArgs,
     composeExecInvocation,
@@ -361,4 +366,60 @@ test("a manifest request is retried after real 429 and 503 failures", async () =
     assert.deepEqual(delays, [ 1, 2 ]);
     assert.match(warnings[0], /HTTP 429, reprise 2\/3/);
     assert.match(warnings[1], /HTTP 503, reprise 3\/3/);
+});
+
+test("une stack partageant :latest garde une mise à jour si son conteneur utilise l'ancien ID", () => {
+    const newest = `sha256:${"a".repeat(64)}`;
+    const previous = `sha256:${"b".repeat(64)}`;
+    // Deux services sur le même hôte et le même tag après MàJ du premier.
+    assert.equal(hasRunningImageDrift(newest, [ newest ]), false);
+    assert.equal(hasRunningImageDrift(newest, [ previous ]), true);
+    assert.equal(hasRunningImageDrift(newest, [ newest, previous ]), true);
+    assert.equal(hasRunningImageDrift(newest, []), false);
+    assert.equal(hasRunningImageDrift("", [ previous ]), false);
+    assert.equal(hasRunningImageDrift(newest, [ "not-a-digest" ]), false);
+});
+
+test("seules les images configurées en immédiat participent aux contrôles ciblés", () => {
+    const entries = {
+        "hub::ghcr.io/aerya/powerwatch:latest": { mode: "immediate" as const },
+        "web::nginx:latest": { mode: "scheduled" as const,
+            time: "04:00" },
+        "db::postgres:latest": { mode: "ignored" as const },
+        "powerwatch::ghcr.io/aerya/powerwatch:latest": { mode: "immediate" as const },
+    };
+    assert.deepEqual(immediateUpdateKeys(entries), [
+        "hub::ghcr.io/aerya/powerwatch:latest",
+        "powerwatch::ghcr.io/aerya/powerwatch:latest",
+    ]);
+});
+
+test("la politique immédiate vérifie les tags toutes les cinq minutes", () => {
+    assert.equal(IMMEDIATE_IMAGE_CHECK_CRON, "*/5 * * * *");
+});
+
+test("un même manifest distant est demandé une fois par cycle et plateforme", async () => {
+    const cache = new Map<string, Promise<string>>();
+    let requests = 0;
+    const load = async () => {
+        requests += 1;
+        return "sha256:new";
+    };
+    const first = reuseCyclePromise(cache, "ghcr.io/aerya/powerwatch:latest|linux/amd64", load);
+    const second = reuseCyclePromise(cache, "ghcr.io/aerya/powerwatch:latest|linux/amd64", load);
+    assert.equal(await first, "sha256:new");
+    assert.equal(await second, "sha256:new");
+    assert.equal(requests, 1);
+    await reuseCyclePromise(cache, "ghcr.io/aerya/powerwatch:latest|linux/arm64", load);
+    assert.equal(requests, 2);
+    const freshCycle = new Map<string, Promise<string>>();
+    await reuseCyclePromise(freshCycle, "ghcr.io/aerya/powerwatch:latest|linux/amd64", load);
+    assert.equal(requests, 3);
+});
+
+test("HTTP 429 suspend la surveillance ciblée selon Retry-After sans toucher aux autres erreurs", () => {
+    assert.equal(registryRateLimitCooldownMs(200, null), 0);
+    assert.equal(registryRateLimitCooldownMs(503, null), 0);
+    assert.equal(registryRateLimitCooldownMs(429, null), 600_000);
+    assert.equal(registryRateLimitCooldownMs(429, "900"), 900_000);
 });
