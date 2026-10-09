@@ -297,6 +297,8 @@ test("managed compose enables only available optional hardware", () => {
     assert.match(cpu, /127\.0\.0\.1:3456:3000/);
     assert.match(cpu, /com\.dockge-enhanced\.managed: powerwatch/);
     assert.match(cpu, /powerwatch_dockge_data/);
+    assert.match(cpu, /\/sys\/firmware:\/host-sys-firmware:ro/);
+    assert.match(cpu, /POWERWATCH_DMI_TABLE_PATH: \/host-sys-firmware\/dmi\/tables\/DMI/);
     assert.match(cpu, /no-new-privileges:true/);
     assert.match(cpu, /read_only: true/);
     assert.doesNotMatch(cpu, /privileged:/);
@@ -420,4 +422,34 @@ test("candidate tests do not replace saved settings or reuse the normal in-fligh
     assert.equal((await manager.test({ apiUrl: "http://candidate.test" })).totalWatts, 20);
     assert.equal(manager.settings.apiUrl, "http://saved.test");
     assert.deepEqual(urls, [ "http://saved.test/api/snapshot", "http://candidate.test/api/snapshot" ]);
+});
+
+
+test("managed detection considers all published host ports, not only container port 3000", async () => {
+    const manager = managerWith({ docker: async (args) => {
+        if (args[0] === "ps") return result("another\n");
+        if (args[0] === "inspect") return result(JSON.stringify([{
+            Name: "/another",
+            Config: { Image: "example/other:latest", Labels: {} },
+            State: { Running: true },
+            HostConfig: { PortBindings: { "8080/tcp": [{ HostIp: "0.0.0.0", HostPort: "3456" }] } },
+        }]));
+        if (args[0] === "run") return result("powercap\n");
+        if (args[0] === "info") return result("{}");
+        return result();
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        enabled: true,
+        mode: "managed",
+        hostPort: 3456 };
+    assert.equal((await manager.detect()).portAvailable, false);
+});
+
+test("failed host probe is an error, not missing hardware", async () => {
+    const manager = managerWith({ docker: async (args) => {
+        if (args[0] === "ps") return result("");
+        if (args[0] === "run") return result("", 125, "Docker socket denied");
+        return result();
+    } });
+    await assert.rejects(() => manager.detect(), /Docker socket denied/);
 });
