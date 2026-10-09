@@ -135,13 +135,7 @@
                     <div class="shadow-box big-padding">
                         <div class="linked-instances-heading mb-3">
                             <h4 class="mb-0">{{ $t("linkedInstances.title") }}</h4>
-                            <div class="d-flex align-items-center gap-2">
-                                <a
-                                    v-if="powerWatchHubUrl" :href="powerWatchHubUrl" target="_blank" rel="noopener noreferrer"
-                                    class="instance-powerwatch-hub-link" :title="$t('watcher.powerwatch.openHub')" :aria-label="$t('watcher.powerwatch.openHub')"
-                                ><font-awesome-icon icon="bolt" /><span>{{ $t("watcher.powerwatch.hub") }}</span><font-awesome-icon icon="external-link-alt" /></a>
-                                <small class="text-muted">{{ onlineAgentCount }} / {{ agentOverviewList.length }} {{ $t("linkedInstances.online") }}</small>
-                            </div>
+                            <small class="text-muted">{{ onlineAgentCount }} / {{ agentOverviewList.length }} {{ $t("linkedInstances.online") }}</small>
                         </div>
 
                         <div v-for="(agent, endpoint) in $root.agentList" :key="endpoint" class="mb-3 agent">
@@ -237,18 +231,22 @@
                                         <span class="instance-state inactive"><strong>{{ instanceOverview(endpoint).inactive }}</strong> {{ $tc("linkedInstances.inactive", instanceOverview(endpoint).inactive) }}</span>
                                         <span v-if="instanceOverview(endpoint).paused > 0" class="instance-state stopped"><strong>{{ instanceOverview(endpoint).paused }}</strong> {{ $t("paused") }}</span>
                                     </div>
-                                    <div class="instance-resource-summary">
+                                </button>
+                                <div class="instance-resource-summary">
+                                    <button type="button" class="instance-resource-select" @click="selectInstanceStacks(endpoint)">
                                         <span><font-awesome-icon icon="microchip" /> {{ instanceSystemStats[endpoint]?.data ? `${instanceSystemStats[endpoint].data.cpu}%` : "—" }}</span>
                                         <span><font-awesome-icon icon="memory" /> {{ formatInstanceRam(instanceSystemStats[endpoint]?.data?.ram) }}</span>
                                         <span><font-awesome-icon icon="clock" /> {{ formatInstanceUptime(instanceSystemStats[endpoint]?.data?.host?.uptimeSeconds) }}</span>
+                                    </button>
+                                    <a
+                                        v-if="instancePowerWatchUrl(endpoint, agent)" class="instance-powerwatch-link"
+                                        :href="instancePowerWatchUrl(endpoint, agent)" target="_blank" rel="noopener noreferrer"
+                                        :title="powerWatchTooltip(instanceSystemStats[endpoint].powerWatch, true)" :aria-label="powerWatchTooltip(instanceSystemStats[endpoint].powerWatch, true)"
+                                    ><font-awesome-icon icon="bolt" /> {{ instancePower(instanceSystemStats[endpoint].powerWatch) }}</a>
+                                    <button type="button" class="instance-resource-select" @click="selectInstanceStacks(endpoint)">
                                         <span><font-awesome-icon icon="thumbtack" /> {{ instancePins[endpoint]?.length ?? 0 }}</span>
-                                    </div>
-                                </button>
-                                <a
-                                    v-if="instancePowerWatchUrl(endpoint, agent)" class="instance-powerwatch-link"
-                                    :href="instancePowerWatchUrl(endpoint, agent)" target="_blank" rel="noopener noreferrer"
-                                    :title="powerWatchTooltip(instanceSystemStats[endpoint].powerWatch, true)" :aria-label="powerWatchTooltip(instanceSystemStats[endpoint].powerWatch, true)"
-                                ><font-awesome-icon icon="bolt" /> {{ instancePower(instanceSystemStats[endpoint].powerWatch) }}</a>
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Remoe Agent Dialog -->
@@ -366,7 +364,6 @@ export default {
             selectedOverviewEndpoint: null,
             instanceOverviewTimer: null,
             instanceContainerCounts: {},
-            powerWatchHubStatus: null,
             selectedAgentFilters: [],
             summary: {
                 images: null,
@@ -436,9 +433,6 @@ export default {
         onlineAgentCount() {
             return this.agentOverviewList.filter(([ endpoint ]) => this.$root.agentStatusList?.[endpoint] === "online").length;
         },
-        powerWatchHubUrl() {
-            return resolvePowerWatchWebUrl(this.powerWatchHubStatus?.webUrl, window.location.hostname);
-        },
     },
 
     watch: {
@@ -482,11 +476,9 @@ export default {
         this.updatePerPage();
 
         this.fetchSummary();
-        this.refreshPowerWatchHub();
         this.refreshInstanceOverviews();
         this.instanceOverviewTimer = window.setInterval(() => {
             this.refreshInstanceOverviews();
-            this.refreshPowerWatchHub();
         }, 15000);
     },
 
@@ -603,11 +595,6 @@ export default {
                         [endpoint]: null };
                 }
             }
-        },
-
-        async refreshPowerWatchHub() {
-            const response = await this.summaryGet("/api/watcher/powerwatch/hub/status");
-            this.powerWatchHubStatus = response?.data?.enabled ? response.data : null;
         },
 
         formatInstanceRam(ram) {
@@ -1061,25 +1048,6 @@ table {
     gap: 10px;
 }
 
-.instance-powerwatch-hub-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--primary-strong);
-    font-size: var(--fs-xs);
-    text-decoration: none;
-
-    &:hover,
-    &:focus-visible {
-        color: var(--primary-hover);
-        text-decoration: underline;
-    }
-
-    @media (max-width: $bp-phone) {
-        span { display: none; }
-    }
-}
-
 .agent {
     flex-wrap: wrap;
     align-items: center;
@@ -1121,6 +1089,20 @@ table {
     cursor: pointer;
 }
 
+.instance-resource-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px 10px;
+    flex-wrap: wrap;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
 .instance-stack-summary,
 .instance-resource-summary {
     display: flex;
@@ -1132,8 +1114,7 @@ table {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    margin-top: 5px;
-    padding: 2px 5px;
+    padding: 0;
     color: var(--primary-strong);
     font-size: var(--fs-xs);
     text-decoration: none;

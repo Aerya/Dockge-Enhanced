@@ -234,6 +234,7 @@
                 :dozzle-url="dozzleUrl"
                 :power-watch-url="powerWatchUrl"
                 :power-watch-snapshot="powerWatchSnapshot"
+                :power-watch-hub-url="powerWatchHubUrl"
             />
         </header>
 
@@ -264,6 +265,17 @@
                 class="mobile-powerwatch-link"
                 :title="$t('watcher.powerwatch.open')"
                 :aria-label="$t('watcher.powerwatch.open')"
+            >
+                <font-awesome-icon icon="bolt" />
+            </a>
+            <a
+                v-if="$root.loggedIn && powerWatchHubUrl"
+                :href="powerWatchHubUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="mobile-powerwatch-link"
+                :title="$t('watcher.powerwatch.openHub')"
+                :aria-label="$t('watcher.powerwatch.openHub')"
             >
                 <font-awesome-icon icon="bolt" />
             </a>
@@ -348,6 +360,7 @@
             :dozzle-url="dozzleUrl"
             :power-watch-url="powerWatchUrl"
             :power-watch-snapshot="powerWatchSnapshot"
+            :power-watch-hub-url="powerWatchHubUrl"
         />
     </div>
 </template>
@@ -394,6 +407,7 @@ export default {
             dozzleUrl:        null,
             powerWatchUrl:    null,
             powerWatchSnapshot: null,
+            powerWatchHubUrl: null,
             showReleaseNews:  false,
             releaseNewsItems: [],
             releaseNewsPendingIds: [],
@@ -715,15 +729,22 @@ export default {
         async fetchPowerWatchStatus() {
             try {
                 const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
-                const response = await fetch("/api/watcher/powerwatch/status", { headers: { "Authorization": `Bearer ${token}` } });
-                const payload = await response.json();
+                const [response, hubResponse] = await Promise.all([
+                    fetch("/api/watcher/powerwatch/status", { headers: { "Authorization": `Bearer ${token}` } }),
+                    fetch("/api/watcher/powerwatch/hub/status", { headers: { "Authorization": `Bearer ${token}` } }),
+                ]);
+                const [payload, hubPayload] = await Promise.all([ response.json(), hubResponse.json() ]);
                 this.powerWatchSnapshot = payload.ok ? payload.data : null;
                 this.powerWatchUrl = payload.ok && payload.data?.enabled
                     ? resolvePowerWatchWebUrl(payload.data.webUrl, window.location.hostname)
                     : null;
+                this.powerWatchHubUrl = hubPayload.ok && hubPayload.data?.enabled
+                    ? resolvePowerWatchWebUrl(hubPayload.data.webUrl, window.location.hostname)
+                    : null;
             } catch {
                 this.powerWatchSnapshot = null;
                 this.powerWatchUrl = null;
+                this.powerWatchHubUrl = null;
             }
         },
 

@@ -34,6 +34,13 @@
         <span v-if="systemStats.hostNavbarDisplay?.uptime" class="status-item stat-neutral">
             <font-awesome-icon icon="clock" />{{ formatUptime(systemStats.host?.uptimeSeconds) }}
         </span>
+        <a
+            v-if="powerWatchUrl" :href="powerWatchUrl" target="_blank" rel="noopener noreferrer"
+            class="status-item status-link" :title="powerWatchTooltip" :aria-label="powerWatchTooltip"
+        >
+            <font-awesome-icon icon="bolt" />
+            <span v-if="powerWatchSnapshot?.reachable">{{ formatPower(powerWatchSnapshot.totalWatts) }}</span>
+        </a>
         <span v-if="systemStats.hostNavbarDisplay?.cpuTemperatures && systemStats.host?.temperatures?.cpu?.length" class="status-item stat-neutral">
             <font-awesome-icon icon="temperature-half" />{{ tempSummary(systemStats.host.temperatures.cpu) }}
         </span>
@@ -50,11 +57,11 @@
             <font-awesome-icon icon="terminal" />Dozzle
         </a>
         <a
-            v-if="powerWatchUrl" :href="powerWatchUrl" target="_blank" rel="noopener noreferrer"
-            class="status-item status-link" :title="powerWatchTooltip" :aria-label="powerWatchTooltip"
+            v-if="powerWatchHubUrl" :href="powerWatchHubUrl" target="_blank" rel="noopener noreferrer"
+            class="status-item status-link" :title="$t('watcher.powerwatch.openHub')" :aria-label="$t('watcher.powerwatch.openHub')"
         >
             <font-awesome-icon icon="bolt" />
-            <span v-if="powerWatchSnapshot?.reachable">{{ formatPower(powerWatchSnapshot.totalWatts) }}</span>
+            <span>{{ $t("watcher.powerwatch.hub") }}</span>
         </a>
     </div>
 </template>
@@ -88,6 +95,10 @@ export default {
         },
         powerWatchSnapshot: {
             type: Object,
+            default: null,
+        },
+        powerWatchHubUrl: {
+            type: String,
             default: null,
         },
     },
