@@ -506,7 +506,11 @@ export class SelfUpdateManager {
                 "--security-opt", "no-new-privileges",
                 "--read-only",
                 "-v", `${stateSource}:/state`,
+                // Compose runs inside the sidecar but records its -f paths on the host.
+                // Expose the same directory at the absolute host path (read-only).
+                "-v", `${stateMount.Source}:${stateMount.Source}:ro`,
                 "-e", `SELF_UPDATE_PLAN=/state/self-update/${plan.id}.json`,
+                "-e", `SELF_UPDATE_HOST_STATE_DIR=${path.join(stateMount.Source, "self-update")}`,
                 "-e", `SELF_UPDATE_ALLOW_TEST_IMAGES=${process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? ""}`,
                 "-e", `SELF_UPDATE_ALLOWED_REPOSITORY=${plan.allowedRepository}`,
                 "-e", `SELF_UPDATE_TARGET_CONTAINER_ID=${plan.targetContainerId}`,
@@ -980,7 +984,7 @@ export class SelfUpdateManager {
             if (!entry.isFile() || entry.name.includes(currentId)) {
                 continue;
             }
-            if (!/^[a-f0-9]{32}\.(json|override\.yaml|json\.claimed)$/.test(entry.name)) {
+            if (!/^[a-f0-9]{32}\.(json|json\.claimed)$/.test(entry.name)) {
                 continue;
             }
             const file = path.join(STATE_DIR, entry.name);

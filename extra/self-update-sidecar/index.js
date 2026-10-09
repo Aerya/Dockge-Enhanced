@@ -155,11 +155,18 @@ function waitReady(name, options = {}) {
 }
 function composeUpdate(plan, image, deps = {}) {
     validateCompose(plan.compose);
+    // Docker Compose writes every -f path into permanent container labels. The file
+    // must therefore exist on the Docker host even after this updater exits.
     const override = path.join(stateDir, `${plan.id}.override.yaml`);
+    const hostStateDir = process.env.SELF_UPDATE_HOST_STATE_DIR;
+    if (!hostStateDir || !path.isAbsolute(hostStateDir)) {
+        throw new Error("The host-visible self-update state directory is required for Compose updates");
+    }
+    const hostOverride = path.join(hostStateDir, `${plan.id}.override.yaml`);
     atomicWriteJson(override, { services: { [plan.compose.service]: { image } } });
     const base = [ "compose", "--project-directory", plan.compose.workingDir, "-p", plan.compose.project ];
     for (const file of plan.compose.configFiles) base.push("-f", file);
-    base.push("-f", override);
+    base.push("-f", hostOverride);
     const allowedTests = (process.env.SELF_UPDATE_ALLOW_TEST_IMAGES || "").split(",").filter(Boolean);
     if (!allowedTests.includes(image) && /^ghcr\.io\//i.test(image)) {
         deps.onStage?.("pull-target");
@@ -288,7 +295,10 @@ async function run(deps = {}) {
             return "rollback-failed";
         }
     } catch (error) { writeStatus("failed", error instanceof Error ? error.message : String(error), false, plan); return "failed"; }
-    finally { if (override) fs.rmSync(override, { force: true }); if (claimed) fs.rmSync(claimed, { force: true }); }
+    // Do not unlink an override used by a Compose-created container: its
+    // com.docker.compose.project.config_files label still refers to that path.
+    // Stale overrides can be pruned separately after checking container labels.
+    finally { if (claimed) fs.rmSync(claimed, { force: true }); }
 }
 module.exports = { applicationReady, atomicWriteJson, composeUpdate, dockerApi, ensureTargetImage, imageRepository, inside, readAndClaimPlan, run, snapshotCreate, validateCompose, waitForStart, waitReady, writeStatus };
 if (require.main === module) run().then(result => { if ([ "failed", "rollback-failed" ].includes(result)) process.exitCode = 1; }).catch(error => { console.error(error); process.exitCode = 1; });
