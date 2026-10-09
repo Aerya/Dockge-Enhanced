@@ -39,6 +39,35 @@ interface DockerInspect {
     Mounts?: DockerMount[];
 }
 
+interface DockerConnection {
+    kind: "unix" | "tcp";
+    socket?: string;
+    host?: string;
+    networks: string[];
+}
+
+function selfUpdateDockerConnection(inspected: DockerInspect): DockerConnection {
+    const configuredHost = process.env.DOCKER_HOST?.trim();
+    if (configuredHost?.startsWith("unix://")) return { kind: "unix", socket: configuredHost.slice("unix://".length), networks: [] };
+    if (configuredHost?.startsWith("tcp://")) {
+        const url = new URL(configuredHost);
+        if (!url.hostname || !url.port) throw new Error("DOCKER_HOST TCP must include a host and port for self-update");
+        if ([ "localhost", "127.0.0.1", "::1" ].includes(url.hostname)) throw new Error("DOCKER_HOST points to loopback; the isolated updater cannot reach that TCP endpoint");
+        const networks = Object.keys(inspected.NetworkSettings?.Networks ?? {});
+        if (networks.length === 0) throw new Error("Docker Socket Proxy requires the current container to be attached to a Docker network");
+        return { kind: "tcp", host: configuredHost, networks };
+    }
+    if (configuredHost) throw new Error("Only unix:// and tcp:// DOCKER_HOST values are supported for self-update");
+    return { kind: "unix", socket: process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock", networks: [] };
+}
+
+function mountSourceForPath(mounts: DockerMount[], containerPath: string): string | null {
+    const matching = mounts.filter((mount) => mount.Destination && (containerPath === mount.Destination || containerPath.startsWith(`${mount.Destination}/`)) && (mount.Source || mount.Name)).sort((a, b) => (b.Destination?.length ?? 0) - (a.Destination?.length ?? 0))[0];
+    if (!matching?.Destination) return null;
+    const source = matching.Type === "volume" ? (matching.Name ?? matching.Source) : matching.Source;
+    return source ? `${source}${containerPath.slice(matching.Destination.length)}` : null;
+}
+
 const idle = (): SelfUpdateOperation => ({
     id: "",
     state: "idle",
@@ -394,8 +423,8 @@ export class SelfUpdateManager {
         await atomicWriteJson(path.join(STATE_DIR, `${plan.id}.json`), payload);
 
         const stateSource = stateMount.Type === "volume" ? (stateMount.Name ?? stateMount.Source) : stateMount.Source;
-        const dockerSocket = process.env.DOCKGE_DOCKER_SOCKET ?? "/var/run/docker.sock";
-        const socketGroup = (await fs.stat(dockerSocket)).gid;
+        const connection = selfUpdateDockerConnection(inspected);
+        const socketGroup = connection.kind === "unix" ? (await fs.stat(connection.socket!)).gid : undefined;
         const sidecarImage = process.env.DOCKGE_SELF_UPDATE_SIDECAR_IMAGE?.trim()
             || `ghcr.io/${plan.allowedRepository}-updater:latest`;
 
@@ -421,8 +450,6 @@ export class SelfUpdateManager {
             "--cap-drop", "ALL",
             "--security-opt", "no-new-privileges",
             "--read-only",
-            "--group-add", String(socketGroup),
-            "-v", `${dockerSocket}:/var/run/docker.sock`,
             "-v", `${stateSource}:/state`,
             "-e", `SELF_UPDATE_PLAN=/state/self-update/${plan.id}.json`,
             "-e", `SELF_UPDATE_ALLOW_TEST_IMAGES=${process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? ""}`,
@@ -431,6 +458,19 @@ export class SelfUpdateManager {
             "-e", `SELF_UPDATE_TARGET_CONTAINER_NAME=${plan.targetContainerName}`,
             sidecarImage,
         ];
+        if (connection.kind === "unix") {
+            args.splice(args.length - 1, 0, "--group-add", String(socketGroup), "-v", `${connection.socket}:/var/run/docker.sock`);
+        } else {
+            args.splice(args.length - 1, 0, "--network", "none", "-e", `DOCKER_HOST=${connection.host}`, "-e", `SELF_UPDATE_START_FILE=/state/self-update/${plan.id}.start`);
+            const tlsVerify = process.env.DOCKER_TLS_VERIFY?.trim();
+            const certPath = process.env.DOCKER_CERT_PATH?.trim();
+            if (tlsVerify) {
+                if (!certPath) throw new Error("DOCKER_TLS_VERIFY requires DOCKER_CERT_PATH for the isolated updater");
+                const certSource = mountSourceForPath(inspected.Mounts ?? [], certPath);
+                if (!certSource) throw new Error("DOCKER_CERT_PATH is not on a Docker mount and cannot be safely shared with the isolated updater");
+                args.splice(args.length - 1, 0, "-v", `${certSource}:/docker-certs:ro`, "-e", `DOCKER_TLS_VERIFY=${tlsVerify}`, "-e", "DOCKER_CERT_PATH=/docker-certs");
+            }
+        }
         if (plan.compose) {
             args.splice(args.length - 1, 0, "-v", `${plan.compose.workingDir}:${plan.compose.workingDir}:ro`, "-e", `SELF_UPDATE_COMPOSE_DIR=${plan.compose.workingDir}`);
         }
@@ -443,6 +483,16 @@ export class SelfUpdateManager {
         log.info("self-update", `Étape 5/8 — lancement sidecar — id=${plan.id} image=${sidecarImage}`);
         try {
             await docker(args, 10 * 60_000);
+            if (connection.kind === "tcp") {
+                const updater = `dockge-enhanced-updater-${plan.id}`;
+                try {
+                    for (const network of connection.networks) await docker([ "network", "connect", network, updater ], 30_000);
+                    await atomicWriteFile(path.join(STATE_DIR, `${plan.id}.start`), "ready\n", 0o600);
+                } catch (error) {
+                    await docker([ "rm", "-f", updater ], 30_000).catch(() => {});
+                    return this.failCurrentOperation(`Docker Socket Proxy sidecar network setup failed: ${error instanceof Error ? error.message : String(error)}. Required proxy permissions include NETWORK_CONNECT and CONTAINERS.`);
+                }
+            }
         } catch (error) {
             return this.failCurrentOperation(`Updater sidecar launch failed: ${error instanceof Error ? error.message : String(error)}`);
         }
