@@ -226,6 +226,8 @@ Stack 编辑器现在为 `compose.yaml` 提供 **修复 / 格式化 YAML** 操�
 
 Dockge-Enhanced 现在可以通过受严格限制的 sidecar 自动更新。替换容器前必须完成 Restic 备份和仓库完整性检查，新版本必须通过可用性检查，否则自动恢复之前的镜像。
 
+Updater 同时支持普通 Unix socket（包括 `DOCKGE_DOCKER_SOCKET`）以及使用 `DOCKER_HOST=tcp://proxy:2375` 的受信任 Docker Socket Proxy。TCP 模式不会挂载 socket：它先加入与 Enhanced 相同的 Docker 网络，再接收签名计划并使用同一端点。代理必须允许容器检查、创建、启动、停止和删除，镜像检查/拉取以及网络连接；只读代理不能执行 self-update。未加密的 TCP 端点只能位于受信任的内部网络。若证书目录已挂载到 Enhanced，会保留 TLS 设置；否则更新会在替换前安全停止。
+
 **远程服务器镜像更新状态**
 
 镜像更新信息分别从每个已连接实例获取，因此远程 Stack 可以显示自己的更新标记。

@@ -459,6 +459,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 Dockge-Enhanced handles the complete workflow automatically: mandatory Restic backup, integrity verification, controlled container replacement, health check and final confirmation. Discord/Apprise notifications also let users follow the operation without keeping the WebUI open.
 
+The updater supports the normal Unix socket (including `DOCKGE_DOCKER_SOCKET`) and a trusted Docker Socket Proxy configured with `DOCKER_HOST=tcp://proxy:2375`. In TCP mode it never mounts a socket: it joins the same Docker networks before receiving its signed plan, then uses that exact endpoint. The proxy must allow container inspection/create/start/stop/remove, image inspection/pull and network connection; a read-only proxy cannot perform a self-update. Keep an unencrypted TCP endpoint on a trusted internal network only. TLS settings are retained when the certificate directory is mounted in the Enhanced container; otherwise the update stops safely before replacement.
+
 Before an automatic self-update starts, Enhanced also checks that no sensitive operation is running: Restic backup or restore, stack copy/move/data transfer or replication, Docker image checks/updates, Trivy scans and protected external-stack integration. When an operation blocks the update, it enters a waiting state, the reason is shown in the WebUI and sent through Discord/Apprise, and the watcher retries automatically.
 
 <table>

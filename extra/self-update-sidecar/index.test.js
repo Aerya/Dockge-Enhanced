@@ -8,6 +8,7 @@ const test = require("node:test");
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "dockge-sidecar-test-"));
 process.env.SELF_UPDATE_STATE_DIR = root;
+process.env.SELF_UPDATE_HOST_STATE_DIR = root;
 const sidecar = require("./index.js");
 test.after(() => fs.rmSync(root, { recursive: true, force: true }));
 
@@ -129,7 +130,7 @@ test("failed readiness rolls back and persists a deduplicatable terminal result"
     const status = JSON.parse(fs.readFileSync(path.join(root, "status.json")));
     assert.equal(status.state, "rolled-back"); assert.equal(status.notificationPending, true); assert.equal(status.rollbackAttempted, true);
     assert.equal(fs.existsSync(`${planPath}.claimed`), false);
-    assert.equal(fs.existsSync(path.join(root, `${plan.id}.override.yaml`)), false);
+    assert.equal(fs.existsSync(path.join(root, `${plan.id}.override.yaml`)), true);
 });
 
 test("a Compose creation failure restores the previous image without inspecting a missing replacement", async () => {
@@ -249,4 +250,23 @@ test("Compose reports target download before container replacement", () => {
     assert.deepEqual(stages, [ "pull-target", "replace-container" ]);
     assert.ok(calls.some(args => args.includes("pull")));
     assert.ok(calls.some(args => args.includes("up")));
+});
+
+
+test("Compose override points to a durable host-visible path", () => {
+    const work = path.join(root, "durable-compose");
+    fs.mkdirSync(work, { recursive: true });
+    const composeFile = path.join(work, "compose.yaml");
+    fs.writeFileSync(composeFile, "services:\n  dockge:\n    image: example:test\n");
+    process.env.SELF_UPDATE_COMPOSE_DIR = work;
+    const id = "d".repeat(32);
+    const calls = [];
+    const override = sidecar.composeUpdate({
+        id,
+        compose: { workingDir: work, configFiles: [ composeFile ], project: "test", service: "dockge" },
+    }, "dockge-enhanced:test-v2", { docker: args => { calls.push(args); return ""; } });
+    const args = calls.find(args => args.includes("up"));
+    assert.ok(args);
+    assert.ok(args.includes(path.join(root, `${id}.override.yaml`)));
+    assert.equal(fs.existsSync(override), true);
 });
