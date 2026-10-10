@@ -63,6 +63,17 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**October maintenance / corrections**
+
+- **ImageWatcher diagnostics and metadata (#493–#495)** — The Images view can sort errors first. Transiently unreachable targets are preserved, manifest timeouts use bounded retries, registry/authentication/digest errors are clearer, and stack timestamps change only after a confirmed applied update.
+
+- **Stack update controls and image action buttons (#489–#490)** — The stack-wide automatic update policy now opens from the stack action bar in a modal; individual container controls remain unchanged. Image update, ignore, pause and rollback actions use compact buttons with accessible labels.
+
+- **Restic setup feedback and safer initialization (#491)** — Backup settings, run-now and maintenance actions are separated; repository state and retention help are clearer, and initialization uses safer safeguards.
+
+- **English backend messages (#477)** — Restic password errors, prune audit summaries and automatic update messages are no longer incorrectly displayed in French in an English installation.
+
+
 **Safer coordination between ImageWatcher and Self-Update**
 
 Read-only registry and DNS checks no longer delay Dockge-Enhanced self-updates. Image updates, rollbacks and rollback-tag cleanup that change Docker now share an exclusive reservation with Self-Update, so conflicting operations are deferred instead of overlapping. A scheduled self-update does not block image updates unnecessarily; persisted self-update state continues protecting the detached updater after restart. The Updates panel prioritizes an active self-update over a stale availability check.
