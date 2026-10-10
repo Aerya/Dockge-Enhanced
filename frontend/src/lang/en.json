@@ -14,6 +14,7 @@
     "watcher.backup.reset.success": "New repository ready. Previous archive: {path}",
     "watcher.backup.reset.excludedHint": "Local Restic repositories and archives are excluded from recursive backups. Remote repositories remain intact at their former addresses.",
 
+    "releaseNews.item.selfUpdateImageWatcherCoordination": "ImageWatcher registry and DNS checks no longer delay Dockge-Enhanced self-updates. Docker-changing image updates, rollbacks and cleanup now share an exclusive reservation with Self-Update; conflicting operations are deferred safely. Active update status takes priority in the Updates panel.",
     "releaseNews.item.resticSafeResetAllDestinations": "Restic: safely reset Local, SFTP, S3 and REST repositories. Preview and confirmations are required; old backup data is retained, the new repository starts without snapshots, and recent history is cleared only for that destination.",
     "releaseNews.item.stackImageBulkPolicy": "Automatic image updates can now be configured for an entire stack, with a preview and a choice to preserve or replace individual exceptions. Excluded services remain protected and linked instances are supported.",
     "stackBulk.title": "Stack automatic image updates",

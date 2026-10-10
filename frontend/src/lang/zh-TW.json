@@ -14,6 +14,7 @@
     "watcher.backup.reset.success": "新儲存庫已準備就緒，封存位置：{path}",
     "watcher.backup.reset.excludedHint": "本機 Restic 儲存庫與封存會排除於遞迴備份之外。遠端舊儲存庫仍保留在原位置。",
 
+    "releaseNews.item.selfUpdateImageWatcherCoordination": "ImageWatcher 的 Registry 與 DNS 檢查不再延遲 Dockge-Enhanced 自我更新。映像更新、回復與清理等 Docker 變更操作與自我更新共用獨占預約；衝突操作會安全延後。更新面板優先顯示正在執行的更新狀態。",
     "releaseNews.item.resticSafeResetAllDestinations": "Restic：安全重設 Local、SFTP、S3 和 REST 儲存庫。必須預覽並確認；舊備份資料會保留，新儲存庫從零快照開始，只清除該目標的近期歷史。",
     "releaseNews.item.stackImageBulkPolicy": "現在可對整個應用堆疊批次設定映像自動更新；套用前可預覽並選擇保留或覆蓋現有例外。排除的服務仍受保護，亦支援關聯實例。",
     "stackBulk.title": "應用堆疊映像自動更新",

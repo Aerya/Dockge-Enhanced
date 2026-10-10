@@ -60,6 +60,11 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Coordination plus sûre entre ImageWatcher et Self-Update**
+
+Les simples vérifications de registres et DNS ne retardent plus la mise à jour de Dockge-Enhanced. Les mises à jour d’images, rollbacks et nettoyages de tags de rollback qui modifient Docker partagent une réservation exclusive avec Self-Update : les opérations incompatibles sont reportées plutôt que lancées simultanément. L’état `scheduled` ne bloque pas inutilement ImageWatcher ; l’état persistant continue de protéger le sidecar après redémarrage. Le panneau Mises à jour donne la priorité à l’opération en cours plutôt qu’à une ancienne indication de disponibilité.
+
+
 **Mises à jour groupées des images d’une stack**
 
 La page d’une stack permet maintenant d’appliquer en une seule opération le mode **Désactivé**, **Immédiat** ou **Planifié** à ses images. Un aperçu liste les changements ; l’utilisateur choisit de **conserver les exceptions individuelles** (valeur par défaut) ou de les remplacer. Les services exclus par `dockge.imageupdates.check=false` restent protégés, les images partagées sont dédupliquées et les instances liées utilisent la même validation côté serveur. Les futures images ne sont pas automatiquement concernées.

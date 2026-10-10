@@ -59,6 +59,11 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Safer coordination between ImageWatcher and Self-Update**
+
+Read-only registry and DNS checks no longer delay Dockge-Enhanced self-updates. Image updates, rollbacks and rollback-tag cleanup that change Docker now share an exclusive reservation with Self-Update, so conflicting operations are deferred instead of overlapping. A scheduled self-update does not block image updates unnecessarily; persisted self-update state continues protecting the detached updater after restart. The Updates panel prioritizes an active self-update over a stale availability check.
+
+
 **Bulk automatic image policies for a stack**
 
 A stack page now supports applying **Off**, **Immediate**, or **Scheduled** policies to all eligible images at once. A preview lists changes; users choose to **preserve individual exceptions** (the default) or replace them. Services excluded through `dockge.imageupdates.check=false` remain protected, shared images are deduplicated, and linked instances use the same server-side validation. Future images are not automatically affected.

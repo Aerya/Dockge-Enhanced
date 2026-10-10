@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-10 — Coordination ImageWatcher / Self-Update** — Les scans de registres/DNS en lecture seule ne bloquent plus la mise à jour d’Enhanced. Les mises à jour d’images, rollbacks et nettoyages de tags partageant une mutation Docker utilisent une réservation exclusive avec Self-Update ; les opérations concurrentes sont reportées. L’état planifié ne bloque pas inutilement ImageWatcher et le panneau donne la priorité à l’opération active.
+
 **2026-10-10 — Restic : réinitialisation sécurisée des dépôts Local, SFTP, S3 et REST** — Aperçu et confirmations explicites avant la création d’un nouveau dépôt vide. En local, l’ancien dépôt est renommé en archive ; à distance, Dockge bascule vers un nouveau répertoire SFTP, préfixe S3 ou URL REST. Les anciennes sauvegardes restent conservées et seul l’Historique récent de la destination réinitialisée est nettoyé. Les protections des chemins locaux, montages et sauvegardes récursives sont maintenues.
 
 **2026-10-10 — Snapshots Restic : vue « Tous » par défaut** — Le filtre Tous est désormais en première position et sélectionné à chaque ouverture. Le bouton de configuration Backup devient « Enregistrer » ; l’aide précise que l’enregistrement des paramètres ne déclenche pas la purge de rétention.
