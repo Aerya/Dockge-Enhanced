@@ -1,6 +1,6 @@
 # Dockge Enhanced Changelog
 
-**2026-10-10 — Restic: safe local reset and repository exclusions** — Prévisualisation et confirmation renforcée ; ancien dépôt conservé sur disque ; protections des montages et sauvegardes récursives.
+**2026-10-10 — Restic: safe repository reset (Local, SFTP, S3, REST)** — Repository preview and explicit confirmations before creating a fresh, empty repository. Local repositories are archived by renaming; remote destinations switch to a new SFTP directory, S3 prefix, or REST URL. Previous backups are retained, while Recent history is cleared only for the reset destination. Local path, mount, and recursive-backup safeguards remain enforced.
 
 **2026-10-10 — Restic snapshots: All view by default** — The All filter now appears first and is selected at each opening. The Backup settings button is named Save; the retention help clarifies that saving settings does not trigger pruning.
 

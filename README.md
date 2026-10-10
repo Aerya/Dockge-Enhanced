@@ -1,6 +1,5 @@
 <p align="center">
 
-**Restic: protected local repository reset** — Maintenance offers preview, two acknowledgements, an exact confirmation phrase, and final confirmation before resetting a **local** repository. The existing repository is archived by renaming on the same filesystem, **never deleted**. Docker mount roots, symlinks, invalid passwords and concurrent operations are rejected. Local repositories and their archives are excluded from ordinary backups. SFTP, S3, and REST destinations cannot be reset.
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>
 
