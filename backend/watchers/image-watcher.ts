@@ -190,6 +190,31 @@ export function immediateUpdateKeys(entries: Record<string, AutoUpdateEntry>): s
         .map(([ key ]) => key);
 }
 
+export interface ImmediateTargetAvailability {
+    /** undefined means the stack could not be inspected; never remove its configuration. */
+    images?: ReadonlySet<string>;
+}
+
+/**
+ * Only report immediate targets that are conclusively absent. A Compose read
+ * failure intentionally leaves the configuration untouched for a later retry.
+ */
+export function confirmedMissingImmediateTargets(
+    entries: Record<string, AutoUpdateEntry>,
+    availability: ReadonlyMap<string, ImmediateTargetAvailability>,
+): string[] {
+    return immediateUpdateKeys(entries).filter((key) => {
+        const separator = key.indexOf("::");
+        if (separator <= 0 || separator === key.length - 2) {
+            return false;
+        }
+        const stack = key.slice(0, separator);
+        const image = key.slice(separator + 2);
+        const target = availability.get(stack);
+        return target?.images !== undefined && !target.images.has(image);
+    });
+}
+
 export interface WatcherSettings {
     enabled: boolean;
     intervalHours: number;
@@ -307,6 +332,18 @@ function normalizeImage(image: string): {
     return { registry,
         name,
         tag };
+}
+
+/** Keep registry failures actionable without ever exposing configured credentials. */
+export function imageCheckErrorMessage(image: string, error: unknown): string {
+    const registry = normalizeImage(image).registry;
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+        return `Accès refusé par le registre ${registry} pour l'image ${image} (HTTP 401). Vérifiez les identifiants configurés et leur autorisation de lecture.`;
+    }
+    if (axios.isAxiosError(error) && (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT" || /timeout/i.test(error.message))) {
+        return `Le registre ${registry} n'a pas répondu à temps pour l'image ${image}. Une reprise limitée a été tentée.`;
+    }
+    return error instanceof Error ? error.message : String(error);
 }
 
 const MANIFEST_ACCEPT = [
@@ -611,6 +648,9 @@ async function getInitialAuth(
 /** Nombre total de tentatives d'une requête de manifest (un envoi, deux reprises). */
 const MANIFEST_MAX_ATTEMPTS = 3;
 
+/** A timeout gets one bounded retry; rate-limit responses retain their existing retries. */
+const MANIFEST_TIMEOUT_MAX_ATTEMPTS = 2;
+
 /** Délai de base du backoff (ms) quand le registry ne fournit pas de Retry-After exploitable. */
 const MANIFEST_RETRY_BASE_DELAY_MS = 1000;
 
@@ -620,6 +660,16 @@ const MANIFEST_RETRY_MAX_DELAY_MS = 20000;
 /** Statuts HTTP transitoires d'un registry qui justifient une reprise (limite de débit, surcharge). */
 export function isRetryableRegistryStatus(status: number): boolean {
     return status === 429 || status === 503;
+}
+
+export function isRetryableRegistryError(error: unknown): boolean {
+    if (axios.isAxiosError(error)) {
+        if (error.response) {
+            return isRetryableRegistryStatus(error.response.status);
+        }
+        return error.code === "ECONNABORTED" || error.code === "ETIMEDOUT" || /timeout/i.test(error.message);
+    }
+    return error instanceof Error && /timeout/i.test(error.message);
 }
 
 /**
@@ -682,13 +732,13 @@ export async function requestRegistryWithRetry<T>(
             return await request();
         } catch (err) {
             const response = axios.isAxiosError(err) ? err.response : undefined;
-            const status = response?.status ?? 0;
-            if (!isRetryableRegistryStatus(status) || attempt === MANIFEST_MAX_ATTEMPTS) {
+            const maxAttempts = response ? MANIFEST_MAX_ATTEMPTS : MANIFEST_TIMEOUT_MAX_ATTEMPTS;
+            if (!isRetryableRegistryError(err) || attempt === maxAttempts) {
                 throw err;
             }
             const delay = registryRetryDelayMs(response?.headers?.["retry-after"], attempt);
             warn(
-        `[ImageWatcher] ${options.label} → HTTP ${status}, reprise ${attempt + 1}/${MANIFEST_MAX_ATTEMPTS} dans ${Math.round(delay / 1000)} s`,
+        `[ImageWatcher] ${options.label} → ${response ? `HTTP ${response.status}` : "délai réseau dépassé"}, reprise ${attempt + 1}/${maxAttempts} dans ${Math.round(delay / 1000)} s`,
             );
             await wait(delay);
         }
@@ -952,6 +1002,47 @@ function extractImagesFromComposeYaml(composePath: string): string[] {
       err,
         );
         return [];
+    }
+}
+
+/**
+ * Resolve an image list for removing a stale immediate target. Unlike a normal
+ * scan, an unreadable Compose file is deliberately reported as unknown.
+ */
+async function inspectImagesForImmediateTarget(watched: WatchedComposeStack): Promise<ReadonlySet<string> | undefined> {
+    const command = composeExecInvocation(
+        watched.composePath,
+        [ "config", "--format", "json" ],
+        watched.project,
+        watched.configFiles,
+        watched.workingDir,
+        watched.envFiles,
+    );
+    try {
+        const stdout = await docker(command.args, { cwd: command.cwd,
+            timeout: 30000 });
+        return new Set(extractWatchableImagesFromComposeModel(JSON.parse(stdout) as { services?: unknown }));
+    } catch {
+        try {
+            await fs.access(watched.composePath);
+            let raw = await fs.readFile(watched.composePath, "utf8");
+            let fileEnv: Record<string, string> = {};
+            try {
+                fileEnv = parseDotenv(await fs.readFile(path.join(path.dirname(watched.composePath), ".env")));
+            } catch {
+                /* .env optionnel */
+            }
+            raw = envsubstYAML(raw, { ...fileEnv,
+                ...Object.fromEntries(
+                    Object.entries(process.env).filter(
+                        (entry): entry is [string, string] => typeof entry[1] === "string",
+                    ),
+                ) });
+            const model = yaml.load(raw) as { services?: unknown };
+            return new Set(extractWatchableImagesFromComposeModel(model));
+        } catch {
+            return undefined;
+        }
     }
 }
 
@@ -1448,12 +1539,65 @@ export class ImageWatcher {
         this.settings.enabled ? this.start(runInitialCheck) : this.stop();
     }
 
+    /** Remove only immediate targets proven absent from their current Compose model. */
+    private async removeConfirmedMissingImmediateTargets(): Promise<void> {
+        const config = this.settings.autoUpdateConfig ?? {};
+        const immediate = immediateUpdateKeys(config);
+        if (immediate.length === 0) {
+            return;
+        }
+
+        let watchedStacks: Map<string, WatchedComposeStack>;
+        try {
+            watchedStacks = await collectWatchedComposeStacks(STACKS_DIR, this.externalStacks);
+        } catch (error) {
+            console.warn("[ImageWatcher] Réconciliation des contrôles ciblés reportée:", error);
+            return;
+        }
+
+        let registeredExternalStacks: Set<string>;
+        try {
+            registeredExternalStacks = new Set((await this.externalStacks.list()).map((registration) => registration.name));
+        } catch (error) {
+            console.warn("[ImageWatcher] Réconciliation des contrôles ciblés reportée:", error);
+            return;
+        }
+
+        const availability = new Map<string, ImmediateTargetAvailability>();
+        for (const stack of new Set(immediate.map((key) => key.split("::", 1)[0]))) {
+            const watched = watchedStacks.get(stack);
+            if (!watched) {
+                // An inaccessible external stack is skipped by collection; preserve it.
+                availability.set(stack, registeredExternalStacks.has(stack) ? {} : { images: new Set() });
+                continue;
+            }
+            availability.set(stack, { images: await inspectImagesForImmediateTarget(watched) });
+        }
+
+        const stale = confirmedMissingImmediateTargets(config, availability);
+        if (stale.length === 0) {
+            return;
+        }
+        const staleKeys = new Set(stale);
+        const ignoredDigests = { ...(this.settings.ignoredDigests ?? {}) };
+        for (const key of stale) {
+            delete this.settings.autoUpdateConfig[key];
+            delete ignoredDigests[key];
+            imageStatusStore.delete(key);
+        }
+        this.settings.ignoredDigests = ignoredDigests;
+        this.settings.pendingAutoUpdates = (this.settings.pendingAutoUpdates ?? []).filter((key) => !staleKeys.has(key));
+        await this.persistToFile();
+        console.info(`[ImageWatcher] ${stale.length} contrôle(s) ciblé(s) obsolète(s) retiré(s).`);
+    }
+
     /** Avoid overlapping a targeted cycle with a full scan or manual updates. */
     private async runImmediateChecks(): Promise<void> {
         if (!this.settings.enabled || this._checkRunning || this._immediateCycleRunning ||
             this.manualBatch.running || this._updatingImages.size > 0) {
             return;
         }
+        await this.removeConfirmedMissingImmediateTargets();
         const keys = immediateUpdateKeys(this.settings.autoUpdateConfig ?? {});
         if (keys.length === 0) {
             return;
@@ -2300,8 +2444,8 @@ export class ImageWatcher {
                 status.hasUpdate = false;
                 if (!localMatchesRemote) {
                     status.error = localInfo.digest
-                        ? `Digest local non comparable (${localInfo.source})`
-                        : "Digest local registry indisponible";
+                        ? `Digest local non comparable pour l'image ${image} (${localInfo.source})`
+                        : `Aucun digest local comparable pour l'image ${image}. Elle peut avoir été construite, chargée ou retaggée localement.`;
                 }
                 return status;
             }
@@ -2324,7 +2468,7 @@ export class ImageWatcher {
             // RepoDigests peut contenir le manifest plateforme ou l'index multi-arch.
             status.hasUpdate = (comparableLocalDigests.length > 0 && !localMatchesRemote) || runningDrift;
         } catch (e: unknown) {
-            status.error = e instanceof Error ? e.message : String(e);
+            status.error = imageCheckErrorMessage(image, e);
             console.warn(`[ImageWatcher] ${stack}/${image}: ${status.error}`);
         }
         return status;
