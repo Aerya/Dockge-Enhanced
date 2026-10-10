@@ -33,6 +33,7 @@ import {
 } from "./compose-network-namespace";
 import { ContainerInstance, parseContainerInstances, requireContainerInstance } from "./container-instances";
 import { trackDockerBuild } from "./docker-operation-state";
+import { withStackMetadataWriteLock } from "./stack-metadata-lock";
 
 // ─── Cache court de getServiceStatusList (point #9 : éviter `docker inspect`
 // de TOUS les containers à chaque refresh / chaque onglet ouvert). TTL piloté
@@ -763,10 +764,12 @@ export class Stack {
         // L'état de la stack vient de changer : on invalide le cache de statut
         serviceStatusCache.delete(this.name);
         try {
-            const existing = await this.readMeta();
-            const updated = { ...existing, ...fields };
-            if (this.isExternal) await fsAsync.mkdir(path.dirname(this.metaPath), { recursive: true, mode: 0o700 });
-            await fsAsync.writeFile(this.metaPath, JSON.stringify(updated), { encoding: "utf8", mode: 0o600 });
+            await withStackMetadataWriteLock(this.metaPath, async () => {
+                const existing = await this.readMeta();
+                const updated = { ...existing, ...fields };
+                if (this.isExternal) await fsAsync.mkdir(path.dirname(this.metaPath), { recursive: true, mode: 0o700 });
+                await fsAsync.writeFile(this.metaPath, JSON.stringify(updated), { encoding: "utf8", mode: 0o600 });
+            });
         } catch (error) {
             if (required) {
                 throw error;

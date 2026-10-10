@@ -121,6 +121,21 @@ test("une erreur de contrôle après recréation reste distincte d'un échec Com
     });
 });
 
+test("une image encore signalée obsolète après Compose est appliquée mais non vérifiée", () => {
+    assert.deepEqual(updateVerificationResult({
+        image: "fixture/image:latest",
+        stack: "fixture",
+        localDigest: "sha256:old",
+        remoteDigest: "sha256:new",
+        hasUpdate: true,
+        lastChecked: "",
+    }), {
+        verification: "unverified",
+        digest: "",
+        error: "Mise à jour Compose terminée, mais l'image exécutée ne correspond pas encore au digest attendu.",
+    });
+});
+
 test("#475 conserve les réglages ImageWatcher sans DOCKGE_DATA_DIR après recréation logique", async () => {
     const persistentDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-image-settings-"));
     const resolved = resolveDataDir({

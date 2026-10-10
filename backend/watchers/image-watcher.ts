@@ -51,6 +51,7 @@ import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/comp
 import { finishDockerCleanup, tryStartDockerCleanup } from "../docker-operation-state";
 import { reconcileRollbackKeepTags, rollbackTagFromKey as rollbackTag } from "./auto-prune-manager";
 import { resolveDataDir } from "../data-dir";
+import { withStackMetadataWriteLock } from "../stack-metadata-lock";
 
 const execFileAsync = promisify(execFile);
 
@@ -1169,22 +1170,24 @@ export async function touchImageUpdatedStackMetadata(
     const metaPath = watched.isExternal
         ? path.join(dataDir, "external-stack-meta", `${safeStackName}.json`)
         : path.join(stacksDir, safeStackName, ".dockge-meta.json");
-    let existing: Record<string, unknown> = {};
-    try {
-        const parsed = JSON.parse(await fs.readFile(metaPath, "utf8")) as unknown;
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-            existing = parsed as Record<string, unknown>;
+    await withStackMetadataWriteLock(metaPath, async () => {
+        let existing: Record<string, unknown> = {};
+        try {
+            const parsed = JSON.parse(await fs.readFile(metaPath, "utf8")) as unknown;
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                existing = parsed as Record<string, unknown>;
+            }
+        } catch {
+            // Old stacks may not have metadata yet. A successful update can create it.
         }
-    } catch {
-        // Old stacks may not have metadata yet. A successful update can create it.
-    }
-    await fs.mkdir(path.dirname(metaPath), { recursive: true,
-        mode: 0o700 });
-    const temporaryPath = `${metaPath}.${process.pid}.${Date.now()}.tmp`;
-    await fs.writeFile(temporaryPath, JSON.stringify({ ...existing,
-        lastUpdated: timestamp }), { encoding: "utf8",
-        mode: 0o600 });
-    await fs.rename(temporaryPath, metaPath);
+        await fs.mkdir(path.dirname(metaPath), { recursive: true,
+            mode: 0o700 });
+        const temporaryPath = `${metaPath}.${process.pid}.${Date.now()}.tmp`;
+        await fs.writeFile(temporaryPath, JSON.stringify({ ...existing,
+            lastUpdated: timestamp }), { encoding: "utf8",
+            mode: 0o600 });
+        await fs.rename(temporaryPath, metaPath);
+    });
 }
 
 export function updateVerificationResult(status: ImageStatus): {
@@ -1231,7 +1234,6 @@ export class ImageWatcher {
     private baseUrl: string = "";
     private _checkRunning = false;
     private _updatingImages = new Set<string>();
-    private readonly metadataUpdates = new Map<string, Promise<void>>();
     private _stackBulkApplying = false;
 /* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
   private manualBatch: ManualUpdateBatch = {
@@ -2075,18 +2077,7 @@ export class ImageWatcher {
     }
 
     private async touchUpdatedStackMetadata(stack: string, watched: WatchedComposeStack): Promise<void> {
-        const previous = this.metadataUpdates.get(stack) ?? Promise.resolve();
-        const current = previous.catch(() => undefined).then(() =>
-            touchImageUpdatedStackMetadata(this.dataDir, stack, watched),
-        );
-        this.metadataUpdates.set(stack, current);
-        try {
-            await current;
-        } finally {
-            if (this.metadataUpdates.get(stack) === current) {
-                this.metadataUpdates.delete(stack);
-            }
-        }
+        await touchImageUpdatedStackMetadata(this.dataDir, stack, watched);
     }
 
     /** Tire et redémarre une image via docker compose. Retourne true si succès. */
@@ -2188,9 +2179,6 @@ export class ImageWatcher {
             const newStatus = await this.checkOneImage(status.image, status.stack, watched);
             imageStatusStore.set(key, newStatus);
             const verification = updateVerificationResult(newStatus);
-            if (newStatus.hasUpdate && !newStatus.error) {
-                throw new Error(verification.error ?? "L'image exécutée ne correspond pas au digest attendu.");
-            }
             await this.touchUpdatedStackMetadata(status.stack, watched);
             console.log(
         `[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`,
