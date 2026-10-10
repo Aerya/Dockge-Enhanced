@@ -28,10 +28,12 @@ test("system resolver still handles literal loopback IPs", async () => {
     await new Promise<void>((resolve, reject) => {
         lookup("127.0.0.1", { family: 4 }, (error, address) => {
             if (error) {
-                reject(error); return;
+                reject(error);
+                return;
             }
             try {
-                assert.equal(address, "127.0.0.1"); resolve();
+                assert.equal(address, "127.0.0.1");
+                resolve();
             } catch (err) {
                 reject(err);
             }

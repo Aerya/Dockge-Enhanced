@@ -717,7 +717,8 @@ async function testDns() {
     try {
         const response = await watcherApi("POST", "/registry-dns/test", { hostname: dnsTestHost.value });
         if (response.ok) {
-            dnsTestResults.value = response.data ?? []; dnsMessage.value = "Test terminé.";
+            dnsTestResults.value = response.data ?? [];
+            dnsMessage.value = "Test terminé.";
         } else {
             dnsMessage.value = String(response.message ?? "Échec du test DNS");
         }
