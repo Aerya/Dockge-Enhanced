@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-09 — Bulk automatic image policies for a stack** — A stack page now supports applying **Off**, **Immediate**, or **Scheduled** policies to all eligible images at once. A preview lists changes; users choose to **preserve individual exceptions** (the default) or replace them. Services excluded through `dockge.imageupdates.check=false` remain protected, shared images are deduplicated, and linked instances use the same server-side validation. Future images are not automatically affected.
+
 **2026-10-09 — Faster, reliable ImageWatcher Immediate updates** — Immediate images are checked on activation and every 5 minutes, against the images actually running in containers. Duplicate registry requests are shared, HTTP 429 throttling is respected, and each targeted cycle is summarized in logs. Pauses, maintenance windows, and rollback safeguards remain in place.
 
 **2026-10-09 — Unified optional monitoring and PowerWatch Hub management** — Kula, Dozzle, PowerWatch and Hub use consistent Monitoring cards with localized descriptions, GitHub links and contextual lifecycle buttons. The Hub can now be installed and managed independently with a persistent Docker volume. Existing PowerWatch and Hub installations only need their WebUI URL; Enhanced discovers the API endpoints automatically. Hub and PowerWatch settings are saved independently.

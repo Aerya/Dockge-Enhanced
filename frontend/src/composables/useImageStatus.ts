@@ -73,7 +73,7 @@ function fetchRemoteStatus(endpoint: string): Promise<void> {
 }
 
 async function fetchRemoteStatuses() {
-    await Promise.all([...remoteEndpointSubscribers.keys()].map(fetchRemoteStatus));
+    await Promise.all([ ...remoteEndpointSubscribers.keys() ].map(fetchRemoteStatus));
 }
 
 async function fetchStatus() {
@@ -237,5 +237,6 @@ export function useImageStatus() {
         totalUpdates,
         autoUpdateFor,
         setAutoUpdateMode,
+        refreshImageStatus: fetchStatus,
     };
 }

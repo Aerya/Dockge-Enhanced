@@ -40,7 +40,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | **Multiservidor** | Federación en malla completa entre instancias Dockge-Enhanced, administración desde cualquier servidor vinculado, selección y agrupación de servidores, estado de actualizaciones remotas, copia/migración transaccional de stacks, transferencias reanudables y replicación en frío programada |
 | **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones de stack/contenedor explicadas, pausa/reanudación de stacks, plantilla Compose predeterminada configurable, programación por contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y recreación automática de servicios que comparten namespaces de red VPN |
 | **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, además de los mecanismos de recuperación usados por las actualizaciones protegidas |
-| **Actualizaciones** | comprobación dirigida cada 5 minutos en modo Inmediato, Detección de actualizaciones de imágenes, actualizaciones manuales, masivas secuenciales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
+| **Actualizaciones** | configuración agrupada por stack con conservación de excepciones, comprobación dirigida cada 5 minutos en modo Inmediato, Detección de actualizaciones de imágenes, actualizaciones manuales, masivas secuenciales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
 | **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
 | **Automatización y auditoría** | API REST limitada por permisos, webhooks por stack, ejemplos para Home Assistant, operaciones programadas e historial centralizado con origen, estado y duración |
 | **Recursos Docker** | Limpieza unificada protegida de imágenes, volúmenes, redes y caché de build, recuperación exacta, vista previa, exclusiones e historial |
@@ -59,6 +59,11 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
 ### 🆕 Octubre de 2026
+
+**Actualizaciones de imágenes agrupadas por stack**
+
+La página de un stack permite aplicar los modos **Desactivado**, **Inmediato** o **Programado** a todas las imágenes elegibles. La vista previa muestra los cambios y se puede **conservar las excepciones individuales** (opción predeterminada) o reemplazarlas. Los servicios con `dockge.imageupdates.check=false` permanecen protegidos, las imágenes compartidas se cuentan una sola vez y las instancias vinculadas usan la misma validación. Las imágenes futuras no heredan esta configuración.
+
 
 **ImageWatcher: actualizaciones inmediatas más rápidas y fiables**
 
@@ -371,6 +376,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Historial e integración con recuperación protegida
 
 ### Actualizaciones
+- Actualizaciones de imágenes agrupadas por stack: vista previa y conservación de excepciones.
 - **ImageWatcher Inmediato**: control al activar la opción y cada 5 minutos, comprobación de las imágenes realmente ejecutadas, consultas compartidas y espera tras HTTP 429.
 - Exclusión por servicio de comprobaciones de ImageWatcher y actualizaciones automáticas/por lotes mediante `dockge.imageupdates.check: "false"`
 - Monitorización y detección remota

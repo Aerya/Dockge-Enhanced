@@ -38,7 +38,7 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers, and scheduled cold replication |
 | **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, explained stack/container actions, stack pause/resume, a configurable default Compose template, per-container scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces |
 | **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates |
-| **Updates** | 5-minute targeted Immediate image checks, Image update detection, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
+| **Updates** | Stack-wide bulk policies with exception preservation, 5-minute targeted Immediate image checks, Image update detection, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
 | **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant examples, scheduled operations, and centralized history including operation origin, status and duration |
 | **Docker resources** | Protected unified cleanup for images, volumes, networks and build cache, exact catch-up scheduling, previews, exclusions, history and safeguards around destructive actions |
@@ -57,6 +57,11 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 October 2026
+
+**Bulk automatic image policies for a stack**
+
+A stack page now supports applying **Off**, **Immediate**, or **Scheduled** policies to all eligible images at once. A preview lists changes; users choose to **preserve individual exceptions** (the default) or replace them. Services excluded through `dockge.imageupdates.check=false` remain protected, shared images are deduplicated, and linked instances use the same server-side validation. Future images are not automatically affected.
+
 
 **ImageWatcher: faster and more reliable immediate updates**
 
@@ -384,6 +389,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Integration with protected update and recovery workflows
 
 ### Updates
+- Bulk automatic image policies for a stack: preview and preservation of individual exceptions.
 - **ImageWatcher Immediate**: targeted checks on activation and every 5 minutes, detection of images actually running, shared registry requests and HTTP 429 cooldowns.
 - Per-service exclusion from ImageWatcher checks and automatic/batch image updates with `dockge.imageupdates.check: "false"`
 - Docker image update monitoring

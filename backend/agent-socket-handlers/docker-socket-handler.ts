@@ -370,6 +370,33 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("watcherImageAutoUpdateBulkPreview", async (payload: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true,
+                    data: await ImageWatcher.getInstance().previewStackBulkAutoUpdate(payload) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        agentSocket.on("watcherImageAutoUpdateBulkApply", async (payload: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                const data = await ImageWatcher.getInstance().applyStackBulkAutoUpdate(payload);
+                await this.auditStack(socket, "image.auto_update.stack_bulk", data.stack, "success", null, {
+                    mode: data.mode,
+                    preserveExisting: data.preserveExisting,
+                    applied: data.applied,
+                    excludedServices: data.excludedServices,
+                });
+                callbackResult({ ok: true,
+                    data }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
         agentSocket.on("getStack", async (stackName : unknown, callback) => {
             try {
                 checkLogin(socket);

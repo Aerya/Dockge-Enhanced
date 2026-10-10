@@ -850,9 +850,6 @@
     }
   },
   "frontend/src/pages/Compose.vue": {
-    "@stylistic/object-property-newline": {
-      "count": 16
-    },
     "no-useless-assignment": {
       "count": 1
     }
