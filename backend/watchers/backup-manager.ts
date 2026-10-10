@@ -655,7 +655,13 @@ export async function assertExistingPathWithinRoots(candidate: string, roots: st
         }
     }).filter((root): root is string => root !== null);
 
-    return assertPathWithinRoots(realCandidate, realRoots);
+    for (const root of realRoots) {
+        const prefix = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
+        if (realCandidate === root || realCandidate.startsWith(prefix)) {
+            return realCandidate;
+        }
+    }
+    throw new ValidationError("Chemin hors des emplacements autorisés");
 }
 
 export function buildVolumeBrowseRoots(volumes: MountedVolume[], dataDir = DATA_DIR): string[] {
@@ -2047,7 +2053,11 @@ export class BackupManager {
     /** Liste les sous-dossiers immédiats d'un chemin (sans tailles, rapide) */
     async getVolumeDirs(volPath: string): Promise<string[]> {
         const browseRoots = buildVolumeBrowseRoots(await this.getMountedVolumes());
-        const safePath = await assertExistingPathWithinRoots(volPath, browseRoots);
+        const checkedPath = await assertExistingPathWithinRoots(volPath, browseRoots);
+        const safePath = fsSync.realpathSync(checkedPath);
+        if (safePath !== checkedPath) {
+            throw new ValidationError("Le chemin a changé pendant la vérification");
+        }
         const entries = await fs.readdir(safePath, { withFileTypes: true });
         return entries.filter(e => e.isDirectory()).map(e => e.name).sort();
     }
@@ -2941,7 +2951,11 @@ export class BackupManager {
         prev: string | null }> {
         const safeId = assertSafeResticId(snapshotId);
         const backupRoots = await this.getAuthorizedBackupRoots();
-        const safeFilePath = await assertExistingPathWithinRoots(filePath, backupRoots);
+        const checkedFilePath = await assertExistingPathWithinRoots(filePath, backupRoots);
+        const safeFilePath = fsSync.realpathSync(checkedFilePath);
+        if (safeFilePath !== checkedFilePath) {
+            throw new ValidationError("Le chemin a changé pendant la vérification");
+        }
         const snapshotContent = await this.resticDump(this.primaryDest(), safeId, safeFilePath);
         let disk: string | null = null;
         try {
