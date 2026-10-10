@@ -181,27 +181,33 @@
         <!-- Advanced registry DNS fallback: scoped to Enhanced HTTP registry checks. -->
         <div class="shadow-box big-padding mb-4">
             <details>
-                <summary class="settings-subheading">DNS de secours des registries (avancé)</summary>
-                <p class="form-text mt-2">Le DNS système reste prioritaire. En cas d’échec DNS uniquement, Enhanced utilise les serveurs ci-dessous pour ses requêtes HTTP aux registries. Ni l’hôte ni Docker Engine ne sont modifiés.</p>
+                <summary class="settings-subheading">{{ $t("watcher.registryDns.title") }}</summary>
+                <p class="form-text mt-2">{{ $t("watcher.registryDns.description") }}</p>
                 <div class="form-check form-switch mb-3">
                     <input id="registryDnsEnabled" v-model="registryDns.enabled" class="form-check-input" type="checkbox" role="switch" />
-                    <label class="form-check-label" for="registryDnsEnabled">Activer le fallback DNS (désactivé par défaut)</label>
+                    <label class="form-check-label" for="registryDnsEnabled">{{ $t("watcher.registryDns.enable") }}</label>
                 </div>
                 <div v-for="(server, index) in registryDns.servers" :key="index" class="d-flex gap-2 mb-2">
-                    <input v-model.trim="registryDns.servers[index]" class="form-control" :aria-label="`Serveur DNS ${index + 1}`" placeholder="Adresse IPv4 ou IPv6" />
-                    <button class="btn btn-outline-danger" type="button" @click="registryDns.servers.splice(index, 1)">Supprimer</button>
+                    <input v-model.trim="registryDns.servers[index]" class="form-control" :aria-label="`${$t('watcher.registryDns.server')} ${index + 1}`" placeholder="9.9.9.9 / 2620:fe::fe" />
+                    <button class="btn btn-outline-danger" type="button" @click="registryDns.servers.splice(index, 1)">{{ $t("watcher.registryDns.remove") }}</button>
                 </div>
                 <div class="d-flex gap-2 flex-wrap mb-3">
-                    <button class="btn btn-normal" type="button" @click="registryDns.servers.push('')">Ajouter un DNS</button>
-                    <button class="btn btn-primary" type="button" :disabled="dnsSaving" @click="saveRegistryDns">Enregistrer</button>
+                    <button class="btn btn-normal" type="button" @click="registryDns.servers.push('')">{{ $t("watcher.registryDns.add") }}</button>
+                    <button class="btn btn-primary" type="button" :disabled="dnsSaving" @click="saveRegistryDns">{{ $t("watcher.registryDns.save") }}</button>
                 </div>
                 <div class="d-flex gap-2 mb-2">
-                    <input v-model.trim="dnsTestHost" class="form-control" aria-label="Nom d’hôte de test DNS" placeholder="ghcr.io" />
-                    <button class="btn btn-normal" type="button" :disabled="dnsTesting" @click="testDns">Tester les DNS</button>
+                    <input v-model.trim="dnsTestHost" class="form-control" :aria-label="$t('watcher.registryDns.hostname')" placeholder="ghcr.io" />
+                    <button class="btn btn-normal" type="button" :disabled="dnsTesting" @click="testDns">{{ $t("watcher.registryDns.test") }}</button>
                 </div>
                 <p v-if="dnsMessage" class="form-text" role="status">{{ dnsMessage }}</p>
-                <div v-for="result in dnsTestResults" :key="result.server" class="small mb-1">
-                    <code>{{ result.server }}</code> — {{ result.address || result.error }}
+                <div v-for="result in dnsTestResults" :key="result.server" class="mb-2">
+                    <strong><code>{{ result.server }}</code> <small class="form-text">(DNS IPv{{ result.family }})</small></strong>
+                    <div v-for="record in result.results" :key="record.type" class="small ms-3 mb-1" :class="record.address ? 'text-success' : 'text-warning'">
+                        {{ record.address ? '✓' : '✗' }} {{ record.type }} —
+                        <code v-if="record.address">{{ record.address }}</code>
+                        <span v-else>{{ dnsErrorReason(record.errorCode, result.family) }} <code>({{ record.errorCode }})</code></span>
+                        <span class="form-text"> — {{ record.durationMs }} ms</span>
+                    </div>
                 </div>
             </details>
         </div>
@@ -690,8 +696,10 @@ import { groupImageStatuses, type ImageStatusSort } from "./image-status-sort";
 
 type RegistryDnsTestResult = { server: string;
     family: number;
-    address?: string;
-    error?: string };
+    results: Array<{ type: "A" | "AAAA";
+        durationMs: number;
+        address?: string;
+        errorCode?: string }> };
 const registryDns = ref<{ enabled: boolean;
     servers: string[] }>({ enabled: false,
     servers: [] });
@@ -704,7 +712,7 @@ async function saveRegistryDns() {
     dnsSaving.value = true;
     try {
         const response = await watcherApi("POST", "/registry-dns/settings", registryDns.value);
-        dnsMessage.value = response.ok ? "Configuration DNS enregistrée." : String(response.message ?? "Échec de l’enregistrement");
+        dnsMessage.value = response.ok ? t("watcher.registryDns.saved") : String(response.message ?? t("watcher.registryDns.failed"));
     } catch (error) {
         dnsMessage.value = String(error);
     } finally {
@@ -718,9 +726,9 @@ async function testDns() {
         const response = await watcherApi("POST", "/registry-dns/test", { hostname: dnsTestHost.value });
         if (response.ok) {
             dnsTestResults.value = response.data ?? [];
-            dnsMessage.value = "Test terminé.";
+            dnsMessage.value = t("watcher.registryDns.tested");
         } else {
-            dnsMessage.value = String(response.message ?? "Échec du test DNS");
+            dnsMessage.value = String(response.message ?? t("watcher.registryDns.failed"));
         }
     } catch (error) {
         dnsMessage.value = String(error);
@@ -736,6 +744,38 @@ const emit = defineEmits<{
 }>();
 
 const { t, locale } = useI18n();
+
+function dnsErrorReason(code: string | undefined, dnsFamily: number): string {
+    let key: string;
+    switch (code) {
+        case "ECONNREFUSED":
+        case "EREFUSED":
+            key = "refused";
+            break;
+        case "ENETUNREACH":
+        case "EHOSTUNREACH":
+            key = "unreachable";
+            break;
+        case "ETIMEOUT":
+        case "EAI_AGAIN":
+            key = "timeout";
+            break;
+        case "ENOTFOUND":
+        case "ENODATA":
+            key = "noRecord";
+            break;
+        case "ESERVFAIL":
+            key = "serverError";
+            break;
+        default:
+            key = "otherError";
+    }
+    const reason = t(`watcher.registryDns.${key}`);
+    return dnsFamily === 6 && (key === "refused" || key === "unreachable")
+        ? `${reason} ${t("watcher.registryDns.ipv6Hint")}`
+        : reason;
+}
+
 
 // ─── State ────────────────────────────────────────────────────────
 

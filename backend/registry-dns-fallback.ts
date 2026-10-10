@@ -13,7 +13,7 @@ export interface RegistryDnsSettings {
 }
 export const DEFAULT_REGISTRY_DNS: RegistryDnsSettings = {
     enabled: false,
-    servers: [ "1.1.1.1", "8.8.8.8", "2606:4700:4700::1111", "2001:4860:4860::8888" ],
+    servers: [ "9.9.9.9", "1.1.1.1", "2620:fe::fe", "2606:4700:4700::1111" ],
 };
 const KEY = "registryDnsFallback";
 const DNS_CODES = new Set([ "ENOTFOUND", "EAI_AGAIN", "ETIMEOUT", "ESERVFAIL", "EREFUSED", "ENODATA", "ENOTIMP" ]);
@@ -114,25 +114,51 @@ export async function registryDnsAxiosOptions(): Promise<Pick<AxiosRequestConfig
         httpsAgent: new https.Agent({ lookup }) };
 }
 
-export async function testRegistryDns(hostname: string): Promise<Array<{ server: string;
-    family: number;
+export interface RegistryDnsProbe {
+    type: "A" | "AAAA";
+    durationMs: number;
     address?: string;
-    error?: string }>> {
+    errorCode?: string;
+}
+
+export interface RegistryDnsTestResult {
+    server: string;
+    family: number;
+    results: RegistryDnsProbe[];
+}
+
+/** Diagnostic only: A and AAAA queries over EACH configured resolver, no host DNS changes. */
+export async function testRegistryDns(hostname: string): Promise<RegistryDnsTestResult[]> {
     if (!/^[a-z0-9.-]+$/i.test(hostname) || hostname.length > 253 || hostname.includes("..")) {
         throw new Error("Invalid test hostname");
     }
     const { servers } = await getRegistryDnsSettings();
     return Promise.all(servers.map(async server => {
-        const family = isIP(server);
-        try {
-            const address = await resolveRegistryDns(hostname, family as 4 | 6, [ server ]);
-            return { server,
-                family,
-                address };
-        } catch (error) {
-            return { server,
-                family,
-                error: (error as Error).message };
-        }
+        const resolver = new dns.promises.Resolver({ timeout: 2000,
+            tries: 1 });
+        resolver.setServers([ server ]);
+        const probe = async (type: "A" | "AAAA"): Promise<RegistryDnsProbe> => {
+            const start = performance.now();
+            try {
+                const records = type === "A" ? await resolver.resolve4(hostname) : await resolver.resolve6(hostname);
+                if (!records.length) {
+                    return { type,
+                        durationMs: Math.round(performance.now() - start),
+                        errorCode: "ENODATA" };
+                }
+                return { type,
+                    durationMs: Math.round(performance.now() - start),
+                    address: records[0] };
+            } catch (error) {
+                const code = (error as NodeJS.ErrnoException).code;
+                return { type,
+                    durationMs: Math.round(performance.now() - start),
+                    errorCode: code ?? "EUNKNOWN" };
+            }
+        };
+        const results = await Promise.all([ probe("A"), probe("AAAA") ]);
+        return { server,
+            family: isIP(server),
+            results };
     }));
 }

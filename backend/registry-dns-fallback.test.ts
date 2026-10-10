@@ -5,6 +5,12 @@ import { DEFAULT_REGISTRY_DNS, normalizeRegistryDnsSettings, registryDnsLookup }
 
 test("registry DNS fallback is disabled by default", () => {
     assert.equal(DEFAULT_REGISTRY_DNS.enabled, false);
+    assert.deepEqual(DEFAULT_REGISTRY_DNS.servers, [
+        "9.9.9.9",
+        "1.1.1.1",
+        "2620:fe::fe",
+        "2606:4700:4700::1111",
+    ]);
     assert.ok(DEFAULT_REGISTRY_DNS.servers.some(server => server.includes(":")));
     assert.ok(DEFAULT_REGISTRY_DNS.servers.some(server => server.includes(".")));
 });
