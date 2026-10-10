@@ -65,10 +65,14 @@ export async function resolveRegistryDns(hostname: string, family: 4 | 6, server
     throw lastError ?? new Error(`All DNS fallbacks failed for ${hostname}`);
 }
 
-export function registryDnsLookup(settings: RegistryDnsSettings): typeof dns.lookup {
+export function registryDnsLookup(
+    settings: RegistryDnsSettings,
+    systemLookup: typeof dns.lookup = dns.lookup,
+    fallbackResolve: typeof resolveRegistryDns = resolveRegistryDns,
+): typeof dns.lookup {
     // Node 22's HTTP Agent may request all addresses; preserve that lookup contract.
     const lookup = (hostname: string, options: dns.LookupOptions & { all?: boolean }, callback: (error: NodeJS.ErrnoException | null, address: string | dns.LookupAddress[], family?: number) => void) => {
-        dns.lookup(hostname, options, (error: NodeJS.ErrnoException | null, addresses: string | dns.LookupAddress[], family?: number) => {
+        systemLookup(hostname, options, (error: NodeJS.ErrnoException | null, addresses: string | dns.LookupAddress[], family?: number) => {
             if (!error || !settings.enabled || !DNS_CODES.has(error.code ?? "") || isIP(hostname)) {
                 callback(error, addresses, family);
                 return;
@@ -79,7 +83,7 @@ export function registryDnsLookup(settings: RegistryDnsSettings): typeof dns.loo
                 let lastError: unknown;
                 for (const requested of families) {
                     try {
-                        const address = await resolveRegistryDns(hostname, requested, settings.servers);
+                        const address = await fallbackResolve(hostname, requested, settings.servers);
                         return { address,
                             family: requested };
                     } catch (err) {
