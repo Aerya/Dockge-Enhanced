@@ -1,0 +1,35 @@
+name: PR496 temporary ESLint suppressions prune
+on:
+  push:
+    branches:
+      - feat/optional-registry-dns-fallback
+    paths:
+      - .github/workflows/pr496-prune-suppressions.yml
+permissions:
+  contents: write
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Remove obsolete suppressions without changing ESLint rules
+        run: npx eslint '**/*.{ts,vue}' --prune-suppressions
+      - name: Assert no new unsuppressed errors
+        run: npm run lint
+      - name: Commit pruned suppression file and remove temporary workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- eslint-suppressions.json
+          git rm -- .github/workflows/pr496-prune-suppressions.yml
+          git diff --cached --check
+          git commit -m 'chore: prune obsolete ESLint suppressions after DNS changes'
+          git push origin HEAD:feat/optional-registry-dns-fallback
