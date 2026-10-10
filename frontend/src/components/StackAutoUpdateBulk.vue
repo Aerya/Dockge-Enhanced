@@ -1,13 +1,7 @@
 <template>
-    <section class="shadow-box big-padding mb-3 compose-tight" aria-labelledby="stack-image-policy-title">
-        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-            <h4 id="stack-image-policy-title" class="mb-0">{{ $t("stackBulk.title") }}</h4>
-            <button class="btn btn-sm btn-normal" type="button" :aria-expanded="expanded" @click="expanded = !expanded">
-                {{ $t(expanded ? "stackBulk.close" : "stackBulk.open") }}
-            </button>
-        </div>
-        <p v-if="expanded" class="form-text">{{ $t("stackBulk.intro") }}</p>
-        <div v-if="expanded">
+    <div>
+        <p class="form-text">{{ $t("stackBulk.intro") }}</p>
+        <div>
             <label for="bulk-update-mode" class="form-label">{{ $t("stackBulk.mode") }}</label>
             <select id="bulk-update-mode" v-model="mode" class="form-select mb-2" :disabled="loading" @change="clearPreview">
                 <option value="off">{{ $t("stackBulk.off") }}</option>
@@ -48,7 +42,7 @@
                 </button>
             </div>
         </div>
-    </section>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -63,7 +57,6 @@ const ownerRoot = (getCurrentInstance()?.proxy as unknown as { $root?: { emitAge
     data?: Preview;
     msg?: string;
     message?: string }) => void) => void } })?.$root;
-const expanded = ref(false);
 const mode = ref<"off" | "immediate" | "scheduled">("scheduled");
 const time = ref("02:00");
 const preserveExisting = ref(true);
@@ -155,7 +148,6 @@ async function applyChanges() {
             preserveExisting: preserveExisting.value,
             previewToken: current.previewToken });
         clearPreview();
-        expanded.value = false;
         emit("applied");
     } catch (reason) {
         error.value = reason instanceof Error ? reason.message : String(reason);

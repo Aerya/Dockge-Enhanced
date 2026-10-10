@@ -95,6 +95,11 @@
                         <span class="stack-action-label">{{ $t("updateStack") }}</span>
                     </button>
 
+                    <button v-if="!isEditMode && !isAdd && stack.name" type="button" class="btn stack-action" :class="showStackAutoUpdate ? 'btn-primary' : 'btn-normal'" :title="$t('stackBulk.title')" :aria-label="$t('stackBulk.title')" :aria-expanded="showStackAutoUpdate" :disabled="processing" @click="showStackAutoUpdate = true">
+                        <font-awesome-icon icon="sync-alt" />
+                        <span class="stack-action-label">{{ $t("watcher.status.autoUpdate") }}</span>
+                    </button>
+
                     <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('stackActionHelp.recreate')" :aria-label="$t('recreateStack')" :disabled="processing" @click="recreateStack">
                         <font-awesome-icon icon="recycle" />
                         <span class="stack-action-label">{{ $t("recreateStack") }}</span>
@@ -327,14 +332,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <StackAutoUpdateBulk
-                        v-if="!isAdd && !isEditMode && stack.name"
-                        :key="`${endpoint || 'local'}::${stack.name}`"
-                        :stack-name="stack.name"
-                        :endpoint="endpoint || ''"
-                        @applied="onStackAutoUpdateBulkApplied"
-                    />
 
                     <!-- Containers -->
                     <button
@@ -737,6 +734,16 @@
                 @completed="stackTransferCompleted"
             />
 
+            <BModal v-if="!isAdd && stack.isManagedByDockge && stack.name" v-model="showStackAutoUpdate" :title="$t('stackBulk.title')" no-footer size="lg">
+                <StackAutoUpdateBulk
+                    v-if="showStackAutoUpdate"
+                    :key="`${endpoint || 'local'}::${stack.name}`"
+                    :stack-name="stack.name"
+                    :endpoint="endpoint || ''"
+                    @applied="onStackAutoUpdateBulkApplied"
+                />
+            </BModal>
+
             <BModal v-model="showDisplayNameDialog" :title="$t('stackDisplayName.edit')" no-footer>
                 <form @submit.prevent="saveStackDisplayName">
                     <label for="stack-display-name" class="form-label">{{ $t('stackDisplayName.label') }}</label>
@@ -1040,6 +1047,7 @@ export default {
             stackActionLabels: localStorage.getItem("stackActionLabels") === "1",
             showStackNote: localStorage.getItem("showStackNote") === "1",
             showStackGit: localStorage.getItem("showStackGit") === "1",
+            showStackAutoUpdate: false,
             showStackSchedule: false,
             dozzleUrl: "",
             plugNPiNEnabled: false,
@@ -2162,6 +2170,7 @@ export default {
         },
 
         async onStackAutoUpdateBulkApplied() {
+            this.showStackAutoUpdate = false;
             if (this.endpoint) {
                 this.loadRemoteAutoUpdateState();
             } else {
