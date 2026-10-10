@@ -37,6 +37,11 @@ test("self-update guard recognizes every supported blocker", () => {
     }
 });
 
+test("un contrôle registry seul ne bloque pas le self-update", () => {
+    assert.equal(selectSelfUpdateBlocker({ ...idle(), imageWork: false }), null);
+    assert.equal(selectSelfUpdateBlocker({ ...idle(), imageWork: true })?.code, "image-work");
+});
+
 test("self-update guard prioritizes unsaved editor work before backend operations", () => {
     assert.equal(selectSelfUpdateBlocker({
         ...idle(),

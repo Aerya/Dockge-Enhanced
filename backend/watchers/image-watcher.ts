@@ -1476,6 +1476,11 @@ export class ImageWatcher {
         return this._checkRunning || this._updatingImages.size > 0 || this.manualBatch.running;
     }
 
+    /** Registry checks are read-only; only Docker-changing work blocks self-update. */
+    hasDockerOperationInProgress(): boolean {
+        return this._updatingImages.size > 0 || (this.manualBatch.running && this.manualBatch.current !== null);
+    }
+
 /* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
   getManualUpdateBatch(): {
     available: number;
