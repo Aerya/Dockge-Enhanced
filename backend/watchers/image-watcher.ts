@@ -1158,16 +1158,17 @@ export async function touchImageUpdatedStackMetadata(
     stack: string,
     watched: WatchedComposeStack,
     timestamp = new Date().toISOString(),
+    stacksDir = STACKS_DIR,
 ): Promise<void> {
-    const metadataDirectory = path.resolve(watched.isExternal
-        ? path.join(dataDir, "external-stack-meta")
-        : path.dirname(watched.composePath));
-    const metaPath = path.resolve(metadataDirectory, watched.isExternal
-        ? `${stack}.json`
-        : ".dockge-meta.json");
-    if (path.dirname(metaPath) !== metadataDirectory) {
+    // Stack names are persisted as filenames. Encode and reject any value that
+    // would alter that stable filename rather than deriving a path from it.
+    const safeStackName = encodeURIComponent(stack);
+    if (safeStackName !== stack) {
         throw new Error("Invalid stack metadata path");
     }
+    const metaPath = watched.isExternal
+        ? path.join(dataDir, "external-stack-meta", `${safeStackName}.json`)
+        : path.join(stacksDir, safeStackName, ".dockge-meta.json");
     let existing: Record<string, unknown> = {};
     try {
         const parsed = JSON.parse(await fs.readFile(metaPath, "utf8")) as unknown;

@@ -51,7 +51,7 @@ test("une mise à jour ImageWatcher actualise uniquement lastUpdated d'une stack
     await touchImageUpdatedStackMetadata(root, "native", {
         composePath: path.join(stackDir, "compose.yaml"),
         isExternal: false,
-    }, "2026-10-10T10:00:00.000Z");
+    }, "2026-10-10T10:00:00.000Z", root);
 
     assert.deepEqual(JSON.parse(await fs.readFile(metaPath, "utf8")), {
         ...existing,
