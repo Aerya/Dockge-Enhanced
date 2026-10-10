@@ -334,6 +334,7 @@ test("removes only confirmed missing immediate targets", () => {
         "existing::removed:latest": { mode: "immediate" as const },
         "existing::kept:latest": { mode: "immediate" as const },
         "scheduled::old:latest": { mode: "scheduled" as const },
+        "malformed::": { mode: "immediate" as const },
     };
     const stale = confirmedMissingImmediateTargets(entries, new Map([
         [ "removed-stack", { images: new Set<string>() } ],

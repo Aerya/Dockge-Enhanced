@@ -205,7 +205,7 @@ export function confirmedMissingImmediateTargets(
 ): string[] {
     return immediateUpdateKeys(entries).filter((key) => {
         const separator = key.indexOf("::");
-        if (separator <= 0 || separator === key.length - 2) {
+        if (separator <= 0 || separator + "::".length >= key.length) {
             return false;
         }
         const stack = key.slice(0, separator);
