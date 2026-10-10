@@ -53,7 +53,7 @@ import { reconcileRollbackKeepTags, rollbackTagFromKey as rollbackTag } from "./
 import { resolveDataDir } from "../data-dir";
 import { withStackMetadataWriteLock } from "../stack-metadata-lock";
 import { isSelfUpdateActive } from "../self-update/policy";
-import { isSelfUpdatePreparationInProgress } from "../self-update/operation-coordinator";
+import { isDockerUpdateReservedBy, tryReserveDockerUpdate, type DockerUpdateReservation } from "../self-update/operation-coordinator";
 import type { SelfUpdateOperation } from "../self-update/types";
 
 const execFileAsync = promisify(execFile);
@@ -62,7 +62,7 @@ const STACKS_DIR = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 const DATA_DIR = resolveDataDir();
 
 export async function isSelfUpdateBlockingImageMutations(dataDir = DATA_DIR): Promise<boolean> {
-    if (isSelfUpdatePreparationInProgress()) {
+    if (isDockerUpdateReservedBy("self-update")) {
         return true;
     }
     try {
@@ -1502,6 +1502,19 @@ export class ImageWatcher {
         return this._updatingImages.size > 0 || (this.manualBatch.running && this.manualBatch.current !== null);
     }
 
+    private reserveImageMutation(key: string): DockerUpdateReservation | null {
+        const reservation = tryReserveDockerUpdate("image-update");
+        if (!reservation) {
+            return null;
+        }
+        if (this._updatingImages.has(key)) {
+            reservation.release();
+            return null;
+        }
+        this._updatingImages.add(key);
+        return reservation;
+    }
+
 /* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
   getManualUpdateBatch(): {
     available: number;
@@ -2115,10 +2128,17 @@ export class ImageWatcher {
     ): Promise<boolean> {
         const key = `${status.stack}::${status.image}`;
         const { composePath, project, configFiles, workingDir, envFiles } = watched;
-        if (await isSelfUpdateBlockingImageMutations(this.dataDir)) {
-            console.log(`[ImageWatcher] Auto-update ${key} reportée : une mise à jour de Dockge-Enhanced est en cours.`);
+        const reservation = this.reserveImageMutation(key);
+        if (!reservation) {
+            console.log(`[ImageWatcher] Auto-update ${key} reportée : une autre opération Docker de mise à jour est en cours.`);
             return false;
         }
+        const oldDigest = status.localDigest ?? "";
+        try {
+            if (await isSelfUpdateBlockingImageMutations(this.dataDir)) {
+                console.log(`[ImageWatcher] Auto-update ${key} reportée : une mise à jour de Dockge-Enhanced est en cours.`);
+                return false;
+            }
 /* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
     if (mode !== "manual" || respectPaused) {
       const pausedCommand = composeExecInvocation(composePath, [ "ps", "--status", "paused", "--services" ], project, configFiles, workingDir, envFiles);
@@ -2136,13 +2156,6 @@ export class ImageWatcher {
         return false;
       }
     } /* eslint-enable @stylistic/indent */
-        if (this._updatingImages.has(key)) {
-            console.log(`[ImageWatcher] Auto-update ${key} déjà en cours, ignorée.`);
-            return false;
-        }
-        this._updatingImages.add(key);
-        const oldDigest = status.localDigest ?? "";
-        try {
             const { services, recreateArgs } = await this.resolveImageUpdatePlan(
                 composePath,
                 status.image,
@@ -2213,8 +2226,6 @@ export class ImageWatcher {
             console.log(
         `[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`,
             );
-            this._updatingImages.delete(key);
-
             await this._recordUpdateHistory({
                 timestamp: new Date().toISOString(),
                 stack: status.stack,
@@ -2236,8 +2247,6 @@ export class ImageWatcher {
                 status.image,
                 e,
             );
-            this._updatingImages.delete(key);
-
             await this._recordUpdateHistory({
                 timestamp: new Date().toISOString(),
                 stack: status.stack,
@@ -2250,6 +2259,9 @@ export class ImageWatcher {
             });
 
             return false;
+        } finally {
+            this._updatingImages.delete(key);
+            reservation.release();
         }
     }
 
@@ -2393,7 +2405,17 @@ export class ImageWatcher {
             console.log("[ImageWatcher] Expiration rollback reportée — nettoyage Docker déjà en cours");
             return;
         }
+        const reservation = tryReserveDockerUpdate("image-update");
+        if (!reservation) {
+            finishDockerCleanup();
+            console.log("[ImageWatcher] Expiration rollback reportée — une opération Docker de mise à jour est en cours");
+            return;
+        }
         try {
+            if (await isSelfUpdateBlockingImageMutations(this.dataDir)) {
+                console.log("[ImageWatcher] Expiration rollback reportée — une mise à jour de Dockge-Enhanced est en cours");
+                return;
+            }
             const now = new Date();
             let changed = false;
             for (const [ key, entry ] of rollbackStore) {
@@ -2410,6 +2432,7 @@ export class ImageWatcher {
                 console.log(`[ImageWatcher] ${retired.length} tag(s) keep expiré(s)/orphelin(s) retiré(s)`);
             }
         } finally {
+            reservation.release();
             finishDockerCleanup();
         }
     }
@@ -2424,68 +2447,92 @@ export class ImageWatcher {
             await this.saveRollbackRegistry();
             throw new Error("Fenêtre de rollback expirée (24h dépassées)");
         }
-
-        const image = withExplicitTag(entry.image);
-        const services = entry.services?.length ? entry.services : entry.service ? [ entry.service ] : [];
-        console.log(
-      `[ImageWatcher] Rollback: ${entry.stack}/${entry.image} → ${entry.oldImageId.slice(0, 19)}`,
-        );
-
-        let recreateArgs = [ "up", "-d" ];
-        if (services.length > 0) {
-            const configCommand = composeExecInvocation(
-                entry.composePath,
-                [ "config", "--format", "json" ],
-                entry.project,
-                entry.configFiles,
-                entry.workingDir,
-                entry.envFiles,
-            );
-            try {
-                const output = await docker(configCommand.args, { cwd: configCommand.cwd,
-                    timeout: 30_000 });
-                recreateArgs = buildRollbackComposeRecreateArgs(output, services);
-            } catch (error) {
-                throw composeModelReadError(error);
-            }
+        const reservation = this.reserveImageMutation(key);
+        if (!reservation) {
+            throw new Error("Une autre opération Docker de mise à jour est en cours");
         }
-
-        // Re-tag l'ancienne image pour lui redonner son nom (détache la nouvelle)
-        await docker([ "tag", entry.oldImageId, image ], { timeout: 30000 });
-        // Retire le tag de protection — l'image est de nouveau la production active
         try {
-            await docker([ "rmi", rollbackTag(entry.key) ], { timeout: 10000 });
-        } catch {}
-        // Redémarre le container avec l'ancienne image
-        const upCommand = composeExecInvocation(entry.composePath, recreateArgs, entry.project, entry.configFiles, entry.workingDir, entry.envFiles);
-        await docker(upCommand.args, {
-            cwd: upCommand.cwd,
-            timeout: 120000,
-        });
+            if (await isSelfUpdateBlockingImageMutations(this.dataDir)) {
+                throw new Error("Une mise à jour de Dockge-Enhanced est en cours");
+            }
 
-        rollbackStore.delete(key);
-        await this.saveRollbackRegistry();
+            const image = withExplicitTag(entry.image);
+            const services = entry.services?.length ? entry.services : entry.service ? [ entry.service ] : [];
+            console.log(
+                `[ImageWatcher] Rollback: ${entry.stack}/${entry.image} → ${entry.oldImageId.slice(0, 19)}`,
+            );
 
-        // Met à jour le status dans le store
-        const newStatus = await this.checkOneImage(entry.image, entry.stack);
-        imageStatusStore.set(key, newStatus);
-        console.log(
-      `[ImageWatcher] Rollback terminé: ${entry.stack}/${entry.image}`,
-        );
+            let recreateArgs = [ "up", "-d" ];
+            if (services.length > 0) {
+                const configCommand = composeExecInvocation(
+                    entry.composePath,
+                    [ "config", "--format", "json" ],
+                    entry.project,
+                    entry.configFiles,
+                    entry.workingDir,
+                    entry.envFiles,
+                );
+                try {
+                    const output = await docker(configCommand.args, { cwd: configCommand.cwd,
+                        timeout: 30_000 });
+                    recreateArgs = buildRollbackComposeRecreateArgs(output, services);
+                } catch (error) {
+                    throw composeModelReadError(error);
+                }
+            }
+
+            // Re-tag l'ancienne image pour lui redonner son nom (détache la nouvelle)
+            await docker([ "tag", entry.oldImageId, image ], { timeout: 30000 });
+            // Retire le tag de protection — l'image est de nouveau la production active
+            try {
+                await docker([ "rmi", rollbackTag(entry.key) ], { timeout: 10000 });
+            } catch {}
+            // Redémarre le container avec l'ancienne image
+            const upCommand = composeExecInvocation(entry.composePath, recreateArgs, entry.project, entry.configFiles, entry.workingDir, entry.envFiles);
+            await docker(upCommand.args, {
+                cwd: upCommand.cwd,
+                timeout: 120000,
+            });
+
+            rollbackStore.delete(key);
+            await this.saveRollbackRegistry();
+
+            // Met à jour le status dans le store
+            const newStatus = await this.checkOneImage(entry.image, entry.stack);
+            imageStatusStore.set(key, newStatus);
+            console.log(
+                `[ImageWatcher] Rollback terminé: ${entry.stack}/${entry.image}`,
+            );
+        } finally {
+            this._updatingImages.delete(key);
+            reservation.release();
+        }
     }
 
     async deleteRollbackEntry(key: string): Promise<void> {
         if (!rollbackStore.has(key)) {
             return;
         }
-        try {
-            // Retire le tag de protection — Docker supprime l'image si plus aucun autre tag ne la référence
-            await docker([ "rmi", rollbackTag(key) ], { timeout: 30000 });
-        } catch {
-            /* déjà supprimée */
+        const reservation = this.reserveImageMutation(key);
+        if (!reservation) {
+            throw new Error("Une autre opération Docker de mise à jour est en cours");
         }
-        rollbackStore.delete(key);
-        await this.saveRollbackRegistry();
+        try {
+            if (await isSelfUpdateBlockingImageMutations(this.dataDir)) {
+                throw new Error("Une mise à jour de Dockge-Enhanced est en cours");
+            }
+            // Retire le tag de protection — Docker supprime l'image si plus aucun autre tag ne la référence
+            try {
+                await docker([ "rmi", rollbackTag(key) ], { timeout: 30000 });
+            } catch {
+                /* déjà supprimée */
+            }
+            rollbackStore.delete(key);
+            await this.saveRollbackRegistry();
+        } finally {
+            this._updatingImages.delete(key);
+            reservation.release();
+        }
     }
 
     private async checkOneImage(

@@ -32,7 +32,7 @@ import {
     touchImageUpdatedStackMetadata,
     updateVerificationResult,
 } from "./image-watcher";
-import { beginSelfUpdatePreparation, endSelfUpdatePreparation } from "../self-update/operation-coordinator";
+import { tryReserveDockerUpdate } from "../self-update/operation-coordinator";
 import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
 import { resolveDataDir } from "../data-dir";
 
@@ -192,9 +192,10 @@ test("une mise à jour d'image est reportée pendant la préparation ou l'exécu
     try {
         assert.equal(await isSelfUpdateBlockingImageMutations(root), false);
 
-        assert.equal(beginSelfUpdatePreparation(), true);
+        const reservation = tryReserveDockerUpdate("self-update");
+        assert.ok(reservation);
         assert.equal(await isSelfUpdateBlockingImageMutations(root), true);
-        endSelfUpdatePreparation();
+        reservation.release();
 
         await fs.mkdir(path.join(root, "self-update"), { recursive: true });
         await fs.writeFile(path.join(root, "self-update", "status.json"), JSON.stringify({ state: "updating" }));
@@ -206,10 +207,24 @@ test("une mise à jour d'image est reportée pendant la préparation ou l'exécu
         await fs.writeFile(path.join(root, "self-update", "status.json"), JSON.stringify({ state: "succeeded" }));
         assert.equal(await isSelfUpdateBlockingImageMutations(root), false);
     } finally {
-        endSelfUpdatePreparation();
         await fs.rm(root, { recursive: true,
             force: true });
     }
+});
+
+test("les mutations de lot manuel et de rollback utilisent la même réservation ImageWatcher", () => {
+    const watcher = new ImageWatcher() as unknown as {
+        reserveImageMutation(key: string): { release(): void } | null;
+    };
+    const selfUpdate = tryReserveDockerUpdate("self-update");
+    assert.ok(selfUpdate);
+    assert.equal(watcher.reserveImageMutation("stack::batch-image"), null);
+    assert.equal(watcher.reserveImageMutation("stack::rollback-image"), null);
+    selfUpdate.release();
+
+    const rollback = watcher.reserveImageMutation("stack::rollback-image");
+    assert.ok(rollback);
+    rollback.release();
 });
 
 const sharedNamespaceCompose = JSON.stringify({

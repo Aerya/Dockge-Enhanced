@@ -20,7 +20,7 @@ import { planSidecarNetworks, connectSidecarAdditionalNetworks } from "./sidecar
 import { log } from "../log";
 import { resolveCurrentContainer } from "../current-container";
 import { resolveDataDir } from "../data-dir";
-import { beginSelfUpdatePreparation, endSelfUpdatePreparation } from "./operation-coordinator";
+import { tryReserveDockerUpdate } from "./operation-coordinator";
 
 const execFileAsync = promisify(execFile);
 const DATA_DIR = resolveDataDir();
@@ -334,8 +334,15 @@ export class SelfUpdateManager {
         if (this.requestInFlight || (isSelfUpdateActive(this.operation.state) && !resumingScheduled)) {
             throw new Error("A self-update is already running");
         }
-        if (!beginSelfUpdatePreparation()) {
-            throw new Error("A self-update is already being prepared");
+        const reservation = tryReserveDockerUpdate("self-update");
+        if (!reservation) {
+            if (automatic) {
+                return this.deferAutomaticUpdate(targetImage, {
+                    code: "image-work",
+                    message: BLOCKER_MESSAGES["image-work"],
+                });
+            }
+            throw new Error("An image Docker operation is already running");
         }
         this.requestInFlight = true;
         try {
@@ -586,7 +593,7 @@ export class SelfUpdateManager {
             throw error;
         } finally {
             this.requestInFlight = false;
-            endSelfUpdatePreparation();
+            reservation.release();
         }
     }
 
