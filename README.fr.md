@@ -380,6 +380,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Snapshots et mécanismes de récupération
 
 ### Sauvegarde & restauration
+**Réinitialisation sécurisée Restic (Local, SFTP, S3 et REST).** Dans **Sauvegarde → Maintenance et diagnostics**, choisir une destination active puis consulter l’aperçu du dépôt et le nombre de snapshots. Deux confirmations, une phrase exacte et un jeton temporaire à usage unique sont exigés. En local, le dépôt précédent est renommé en archive avant création du nouveau. À distance, Dockge bascule vers un nouveau répertoire SFTP, préfixe S3 ou URL REST, sans supprimer l’ancien dépôt. Le nouveau dépôt actif ne contient aucun ancien snapshot ; l’« Historique récent » est nettoyé uniquement pour cette destination, en conservant celui des autres. Les anciennes sauvegardes restent stockées à leur emplacement d’origine et récupérables : il ne s’agit **pas** d’une suppression définitive. Ne réinitialisez pas un dépôt partagé avec d’autres clients sans coordination.
+
 À la première sauvegarde, le dépôt Restic est initialisé automatiquement **uniquement s’il est absent** ; erreur d’accès, réseau ou mot de passe incorrect bloquent l’initialisation. L’onglet affiche le statut de chaque destination activée.
 
 L’interface sépare clairement **Enregistrer** (paramètres uniquement), **Sauvegarder maintenant** (nouveau backup immédiat et rétention après succès) et les **outils de maintenance** (actualisation des états/snapshots et vérification d’intégrité). Le bouton de sauvegarde utilise un contraste renforcé.

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-10-restic-safe-reset-all-destinations",
+        items: [ "releaseNews.item.resticSafeResetAllDestinations" ],
+    },
+    {
         id: "2026-10-09-stack-image-bulk-policy",
         items: [ "releaseNews.item.stackImageBulkPolicy" ],
     },

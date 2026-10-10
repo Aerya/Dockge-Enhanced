@@ -14,6 +14,7 @@
     "watcher.backup.reset.success": "Repositorio nuevo creado. Archivo antiguo: {path}",
     "watcher.backup.reset.excludedHint": "Los repositorios Restic locales y sus archivos se excluyen de las copias recursivas. Los remotos permanecen intactos.",
 
+    "releaseNews.item.resticSafeResetAllDestinations": "Restic: reinicio seguro de repositorios Local, SFTP, S3 y REST. Se requieren vista previa y confirmaciones; las copias antiguas se conservan, el nuevo repositorio empieza sin instantáneas y solo se limpia el historial reciente de ese destino.",
     "releaseNews.item.stackImageBulkPolicy": "Las actualizaciones automáticas de imágenes ya se pueden configurar para todo un stack, con vista previa y elección de conservar o reemplazar excepciones individuales. Se respetan los servicios excluidos y las instancias vinculadas.",
     "stackBulk.title": "Actualizaciones automáticas del stack",
     "stackBulk.open": "Configurar",

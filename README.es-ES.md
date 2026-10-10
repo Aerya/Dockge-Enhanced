@@ -369,6 +369,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Replicación en frío programada
 
 ### Copias y recuperación
+**Reinicio seguro de repositorios Restic (Local, SFTP, S3 y REST).** En **Copias de seguridad → Mantenimiento**, seleccione un destino activo y consulte la vista previa y el número de instantáneas. La operación requiere dos confirmaciones, una frase exacta y un token temporal de un solo uso. En local, el repositorio anterior se renombra como archivo. En destinos remotos, Dockge cambia a un nuevo directorio SFTP, prefijo S3 o URL REST sin borrar el repositorio anterior. El repositorio activo comienza sin instantáneas anteriores y se limpia el historial reciente solo para ese destino, conservando el de los demás. Las copias antiguas permanecen almacenadas y recuperables; **no** se eliminan definitivamente. Coordine el cambio si otros clientes comparten el repositorio.
+
 - Restic multidestino
 - Bind mounts y volúmenes
 - Restauración selectiva
