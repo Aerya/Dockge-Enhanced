@@ -158,6 +158,7 @@
                 <div v-if="resetPreview" class="mt-3">
                     <p class="text-danger fw-bold">{{ $t('watcher.backup.reset.warning') }}</p>
                     <p><strong>{{ resetPreview.label }}</strong> — <code>{{ resetPreview.path }}</code></p>
+                    <p v-if="resetPreview.archivedPath" class="form-text">Ancien dépôt conservé : <code>{{ resetPreview.archivedPath }}</code></p>
                     <p>{{ $t('watcher.backup.reset.snapshots', { count: resetPreview.snapshots }) }}</p>
                     <div class="form-check mb-2">
                         <input id="reset-ack-loss" v-model="resetAckLoss" type="checkbox" class="form-check-input" />
@@ -492,13 +493,14 @@ const resetLabel = ref("");
 const resetBusy = ref(false);
 const resetPreview = ref<{ label: string;
     path: string;
+    archivedPath?: string;
     snapshots: number;
     token: string;
     confirmation: string } | null>(null);
 const resetAckLoss = ref(false);
 const resetAckArchive = ref(false);
 const resetTyped = ref("");
-const resettableDestinations = computed(() => settings.value.destinations.filter(d => d.enabled && d.type === "local"));
+const resettableDestinations = computed(() => settings.value.destinations.filter(d => d.enabled));
 
 async function previewRepositoryReset() {
     resetBusy.value = true;
@@ -546,6 +548,13 @@ async function confirmRepositoryReset() {
         resetAckArchive.value = false;
         showToast(t("watcher.backup.reset.success", { path: response.data.archivedPath }));
         await snapshotsPanel.value?.loadSnapshots();
+        const [ newSettings, newHistory ] = await Promise.all([ api("GET", "/backup/settings"), api("GET", "/backup/history") ]);
+        if (newSettings.ok) {
+            settings.value = mergeSettings(newSettings.data);
+        }
+        if (newHistory.ok) {
+            history.value = newHistory.data;
+        }
         await loadRepoStatuses();
     } catch (error: unknown) {
         resetPreview.value = null;

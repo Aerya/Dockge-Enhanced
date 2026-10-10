@@ -572,7 +572,7 @@ export class WatcherRouter extends Router {
         router.post("/backup/repository-reset/preview", async (req: Request, res: Response) => {
             try {
                 const label = typeof req.body?.label === "string" ? req.body.label : "";
-                const data = await BackupManager.getInstance().previewLocalRepositoryReset(label);
+                const data = await BackupManager.getInstance().previewRepositoryReset(label);
                 res.json({ ok: true,
                     data });
             } catch (error: unknown) {
@@ -583,7 +583,7 @@ export class WatcherRouter extends Router {
 
         router.post("/backup/repository-reset/confirm", async (req: Request, res: Response) => {
             try {
-                const data = await BackupManager.getInstance().confirmLocalRepositoryReset(req.body);
+                const data = await BackupManager.getInstance().confirmRepositoryReset(req.body);
                 await auditWatcherAction(req, "backup.repository.reset", "backup", data.label, "success", null, { archived: true });
                 res.json({ ok: true,
                     data });

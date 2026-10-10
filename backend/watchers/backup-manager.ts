@@ -792,6 +792,14 @@ export class BackupManager {
     private readonly dataDir: string;
     private readonly settingsPath: string;
     private repositoryResetting = false;
+    private pendingRemoteResets = new Map<string, {
+        token: string;
+        expires: number;
+        fingerprint: string;
+        oldUrl: string;
+        next: BackupDestination;
+    }>();
+
     private pendingRepositoryResets = new Map<string, {
         token: string;
         expires: number;
@@ -1440,6 +1448,200 @@ export class BackupManager {
             snapshots: snapshots.length };
     }
 
+    /** Remove only the reset destination from active history. Other destinations survive. */
+    private async clearResetDestinationHistory(label: string): Promise<void> {
+        const saved = backupHistory.map(entry => ({ ...entry,
+            destinations: entry.destinations?.map(d => ({ ...d })) }));
+        const filtered = saved.flatMap(entry => {
+            if (!entry.destinations?.some(d => d.label === label)) {
+                return [ entry ];
+            }
+            const remaining = entry.destinations.filter(d => d.label !== label);
+            if (remaining.length === 0) {
+                return [];
+            }
+            return [{ ...entry,
+                destinations: remaining,
+                success: remaining.every(d => d.success),
+                snapshotId: remaining.find(d => d.snapshotId)?.snapshotId,
+                dataAdded: remaining.reduce((n, d) => n + (d.dataAdded ?? 0), 0),
+            }];
+        });
+        const historical = backupHistory.splice(0, backupHistory.length, ...filtered);
+        try {
+            // Unlike saveHistory(), failures are fatal here: never silently claim a clean history.
+            const temp = `${HISTORY_PATH}.reset-${randomBytes(8).toString("hex")}`;
+            await fs.writeFile(temp, JSON.stringify(backupHistory, null, 2), { mode: 0o600 });
+            await fs.rename(temp, HISTORY_PATH);
+        } catch (error) {
+            backupHistory.splice(0, backupHistory.length, ...historical);
+            throw error;
+        }
+    }
+
+    private remoteResetDestination(label: string): BackupDestination {
+        const matches = this.settings.destinations.filter(d => d.enabled && d.label === label);
+        if (matches.length !== 1 || matches[0].type === "local") {
+            throw new Error("Choose exactly one enabled remote Restic destination");
+        }
+        if (!matches[0].resticPassword || matches[0].resticPassword === "***") {
+            throw new Error("The current Restic password is required");
+        }
+        return matches[0];
+    }
+
+    /** Generate a new distinct remote address: old remote bytes are never renamed or deleted. */
+    private nextRemoteResetDestination(dest: BackupDestination): BackupDestination {
+        const next = structuredClone(dest);
+        const suffix = `-dockge-reset-${randomBytes(8).toString("hex")}`;
+        const append = (p: string): string => {
+            if (!p || p === "/" || p === "." || p.includes("..") || p.includes("\\")) {
+                throw new Error("Unsafe remote repository path");
+            }
+            return p.replace(/\/+$/, "") + suffix;
+        };
+        if (next.type === "sftp" && next.sftp) {
+            next.sftp.path = append(next.sftp.path);
+        } else if (next.type === "s3" && next.s3) {
+            next.s3.path = append(next.s3.path);
+        } else if (next.type === "rest" && next.rest) {
+            const url = new URL(next.rest.url);
+            if (!url.pathname || url.pathname === "/" || url.search || url.hash || ![ "http:", "https:" ].includes(url.protocol)) {
+                throw new Error("REST repository URL must contain a dedicated path, without query or fragment");
+            }
+            url.pathname = append(url.pathname);
+            next.rest.url = url.toString();
+        } else {
+            throw new Error("Unsupported remote destination");
+        }
+        return next;
+    }
+
+    private async inspectRemoteReset(label: string, guarded = false): Promise<{
+        current: BackupDestination;
+        oldUrl: string;
+        fingerprint: string;
+        snapshots: number;
+    }> {
+        if (!guarded && (this.repositoryResetting || this.isBackupRunActive() || this.isRestoreRunActive())) {
+            throw new Error("A backup, restore or reset is in progress");
+        }
+        const current = this.remoteResetDestination(label);
+        const oldUrl = buildRepoUrl(current);
+        const output = await this.resticFor(current, [ "snapshots" ], {}, [], 60_000);
+        const snapshots = JSON.parse(output) as unknown;
+        if (!Array.isArray(snapshots)) {
+            throw new Error("Unable to inspect existing remote snapshots");
+        }
+        const fingerprint = createHash("sha256").update(JSON.stringify(current) + output).digest("hex");
+        return { current,
+            oldUrl,
+            fingerprint,
+            snapshots: snapshots.length };
+    }
+
+    async previewRepositoryReset(label: string): Promise<{
+        label: string;
+        path: string;
+        archivedPath?: string;
+        snapshots: number;
+        token: string;
+        confirmation: string;
+    }> {
+        const matches = this.settings.destinations.filter(d => d.label === label && d.enabled);
+        if (matches.length !== 1) {
+            throw new Error("Unknown or ambiguous enabled destination");
+        }
+        if (matches[0].type === "local") {
+            return this.previewLocalRepositoryReset(label);
+        }
+        const info = await this.inspectRemoteReset(label);
+        const next = this.nextRemoteResetDestination(info.current);
+        const newUrl = buildRepoUrl(next);
+        if (this.settings.destinations.some(d => buildRepoUrl(d) === newUrl)) {
+            throw new Error("New repository conflicts with an existing destination");
+        }
+        const token = randomBytes(24).toString("hex");
+        this.pendingRemoteResets.set(label, { token,
+            expires: Date.now() + 5 * 60_000,
+            fingerprint: info.fingerprint,
+            oldUrl: info.oldUrl,
+            next });
+        return { label,
+            path: next.type === "rest" ? next.rest!.url : newUrl,
+            archivedPath: info.current.type === "rest" ? info.current.rest!.url : info.oldUrl,
+            snapshots: info.snapshots,
+            token,
+            confirmation: `RÉINITIALISER ${label}` };
+    }
+
+    async confirmRepositoryReset(value: unknown): Promise<{ label: string;
+        path: string;
+        archivedPath: string }> {
+        const body = value as Record<string, unknown> | null;
+        const label = typeof body?.label === "string" ? body.label : "";
+        const matches = this.settings.destinations.filter(d => d.label === label && d.enabled);
+        if (matches.length !== 1) {
+            throw new Error("Unknown or ambiguous destination");
+        }
+        if (matches[0].type === "local") {
+            return this.confirmLocalRepositoryReset(value);
+        }
+        const pending = this.pendingRemoteResets.get(label);
+        if (!pending || Date.now() >= pending.expires || body?.token !== pending.token ||
+            body?.acknowledgeLoss !== true || body?.acknowledgeArchive !== true ||
+            body?.confirmation !== `RÉINITIALISER ${label}`) {
+            throw new Error("Fresh preview and all confirmations required");
+        }
+        this.pendingRemoteResets.delete(label);
+        if (this.repositoryResetting || this.isBackupRunActive() || this.isRestoreRunActive()) {
+            throw new Error("A backup, restore or reset is already running");
+        }
+        this.repositoryResetting = true;
+        if (!this.backupRunLock.acquire(true)) {
+            this.repositoryResetting = false;
+            throw new Error("Backup already running");
+        }
+        try {
+            const info = await this.inspectRemoteReset(label, true);
+            if (info.fingerprint !== pending.fingerprint || info.oldUrl !== pending.oldUrl) {
+                throw new Error("Remote repository changed since preview");
+            }
+            const next = pending.next;
+            // A network/auth error must NOT be mistaken for a missing repository.
+            const status = await this.repositoryStatusFor(next);
+            if (status.state !== "missing") {
+                throw new Error(`New remote repository is not provably absent: ${status.detail ?? status.state}`);
+            }
+            await this.resticFor(next, [ "init" ]);
+            const verified = await this.repositoryStatusFor(next);
+            if (verified.state !== "ready") {
+                throw new Error("New remote repository could not be verified");
+            }
+            const previous = this.settings.destinations;
+            const modified = previous.map(d => d === info.current ? next : d);
+            const temp = `${this.settingsPath}.reset-${randomBytes(8).toString("hex")}`;
+            try {
+                await fs.writeFile(temp, JSON.stringify({ ...this.settings,
+                    destinations: modified }, null, 2), { mode: 0o600 });
+                await fs.rename(temp, this.settingsPath);
+                this.settings.destinations = modified;
+            } catch (error) {
+                await fs.unlink(temp).catch(() => {});
+                throw error;
+            }
+            // Configuration has switched; old repository remains untouched at oldUrl.
+            await this.clearResetDestinationHistory(label);
+            log.info("backup", `Remote Restic repository switched: ${label}, old endpoint preserved`);
+            return { label,
+                path: next.type === "rest" ? next.rest!.url : buildRepoUrl(next),
+                archivedPath: info.current.type === "rest" ? info.current.rest!.url : info.oldUrl };
+        } finally {
+            this.backupRunLock.release();
+            this.repositoryResetting = false;
+        }
+    }
+
     /** Read-only preview: five-minute, one-time token; never deletes a repository. */
     async previewLocalRepositoryReset(label: string): Promise<{
         label: string;
@@ -1527,6 +1729,7 @@ export class BackupManager {
                 }
                 throw error;
             }
+            await this.clearResetDestinationHistory(label);
             log.info("backup", `Local Restic repository reset; previous repository archived: ${archivePath}`);
             return { label,
                 path: repoPath,
