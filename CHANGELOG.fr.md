@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-10 — Snapshots Restic : vue « Tous » par défaut** — Le filtre Tous est désormais en première position et sélectionné à chaque ouverture. Le bouton de configuration Backup devient « Enregistrer » ; l’aide précise que l’enregistrement des paramètres ne déclenche pas la purge de rétention.
+
 **2026-10-10 — Auto-mise à jour via Docker Socket Proxy avec plusieurs réseaux** — Le sidecar démarre sur un réseau Docker existant, puis rejoint uniquement les réseaux supplémentaires avant de recevoir l’autorisation d’exécuter le plan signé. Corrige le conflit du réseau `none` à l’étape 5/8 ; des tests couvrent un ou plusieurs réseaux et l’échec de connexion. Corrige #485.
 
 **2026-10-09 — Mises à jour groupées des images d’une stack** — La page d’une stack permet maintenant d’appliquer en une seule opération le mode **Désactivé**, **Immédiat** ou **Planifié** à ses images. Un aperçu liste les changements ; l’utilisateur choisit de **conserver les exceptions individuelles** (valeur par défaut) ou de les remplacer. Les services exclus par `dockge.imageupdates.check=false` restent protégés, les images partagées sont dédupliquées et les instances liées utilisent la même validation côté serveur. Les futures images ne sont pas automatiquement concernées.

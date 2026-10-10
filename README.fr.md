@@ -378,6 +378,13 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Snapshots et mécanismes de récupération
 
 ### Sauvegarde & restauration
+À la première sauvegarde, le dépôt Restic est initialisé automatiquement **uniquement s’il est absent** ; erreur d’accès, réseau ou mot de passe incorrect bloquent l’initialisation. L’onglet affiche le statut de chaque destination activée.
+
+L’interface sépare clairement **Enregistrer** (paramètres uniquement), **Sauvegarder maintenant** (nouveau backup immédiat et rétention après succès) et les **outils de maintenance** (actualisation des états/snapshots et vérification d’intégrité). Le bouton de sauvegarde utilise un contraste renforcé.
+
+
+La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouton **Enregistrer** sauvegarde les paramètres et la politique de rétention, mais ne déclenche ni sauvegarde immédiate ni purge ; la rétention ordinaire est appliquée après un backup réussi, sauf sur les backups « on-save » différés. La rétention du self-update est distincte.
+
 - Sauvegardes Restic
 - Plusieurs destinations de backup
 - Sauvegardes cohérentes par stack

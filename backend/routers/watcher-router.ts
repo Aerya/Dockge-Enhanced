@@ -558,6 +558,17 @@ export class WatcherRouter extends Router {
             });
         });
 
+        router.get("/backup/repository-status", async (_req: Request, res: Response) => {
+            try {
+                res.json({ ok: true,
+                    data: await BackupManager.getInstance().getRepositoryStatuses() });
+            } catch {
+                res.status(500).json({ ok: false,
+                    message: "État des dépôts indisponible" });
+            }
+        });
+
+        // Kept for backward compatibility, but no longer exposed in everyday UI.
         router.post("/backup/init", async (req: Request, res: Response) => {
             try {
                 await BackupManager.getInstance().initRepo();
@@ -751,7 +762,8 @@ export class WatcherRouter extends Router {
                 const volPath = typeof req.query["path"] === "string" ? req.query["path"] : "";
                 if (!volPath) {
                     res.status(400).json({ ok: false,
-                        message: "path requis" }); return;
+                        message: "path requis" });
+                    return;
                 }
                 const dirs = await BackupManager.getInstance().getVolumeDirs(volPath);
                 res.json({ ok: true,
@@ -768,7 +780,8 @@ export class WatcherRouter extends Router {
                 const volPath = typeof req.query["path"] === "string" ? req.query["path"] : "";
                 if (!volPath) {
                     res.status(400).json({ ok: false,
-                        message: "path requis" }); return;
+                        message: "path requis" });
+                    return;
                 }
                 const sizes = await BackupManager.getInstance().getVolumeSubdirSizes(volPath);
                 res.json({ ok: true,
