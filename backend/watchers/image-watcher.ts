@@ -608,7 +608,8 @@ async function resolveChallenge(
                 maxRedirects: 0,
             })
             : await axios.get(tokenUrl, {
-                ...await registryDnsAxiosOptions(), timeout: 10000,
+                ...await registryDnsAxiosOptions(),
+                timeout: 10000,
                 maxRedirects: 0 });
         const token = res.data.token ?? res.data.access_token;
         return token ? `Bearer ${token}` : "";
@@ -638,7 +639,8 @@ async function getInitialAuth(
         try {
             const res = await axios.get(
         `https://auth.docker.io/token?service=registry.docker.io&scope=repository:${name}:pull`,
-        { timeout: 10000, ...await registryDnsAxiosOptions() },
+        { timeout: 10000,
+            ...await registryDnsAxiosOptions() },
             );
             return `Bearer ${res.data.token}`;
         } catch {
@@ -803,7 +805,7 @@ async function getRemoteDigest(
                 if (challenge) {
                     auth = await resolveChallenge(challenge, credentials, registry);
                     return await axios.get(manifestUrl, {
-                ...await registryDnsAxiosOptions(),
+                        ...await registryDnsAxiosOptions(),
                         headers: makeHeaders(),
                         timeout: 15000,
                         maxRedirects: 0,

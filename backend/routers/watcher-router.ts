@@ -65,19 +65,33 @@ export class WatcherRouter extends Router {
 
         // Isolated registry DNS fallback. Authenticated like all watcher routes.
         router.get("/registry-dns/settings", async (_req: Request, res: Response) => {
-            try { res.json({ ok: true, data: await getRegistryDnsSettings() }); }
-            catch (error) { res.status(500).json({ ok: false, message: String(error) }); }
+            try {
+                res.json({ ok: true,
+                    data: await getRegistryDnsSettings() });
+            } catch (error) {
+                res.status(500).json({ ok: false,
+                    message: String(error) });
+            }
         });
         router.post("/registry-dns/settings", async (req: Request, res: Response) => {
             try {
                 const data = await saveRegistryDnsSettings(req.body);
                 await auditWatcherAction(req, "registry-dns.settings", "dns", null);
-                res.json({ ok: true, data });
-            } catch (error) { res.status(400).json({ ok: false, message: String(error) }); }
+                res.json({ ok: true,
+                    data });
+            } catch (error) {
+                res.status(400).json({ ok: false,
+                    message: String(error) });
+            }
         });
         router.post("/registry-dns/test", async (req: Request, res: Response) => {
-            try { res.json({ ok: true, data: await testRegistryDns(String(req.body?.hostname ?? "ghcr.io")) }); }
-            catch (error) { res.status(400).json({ ok: false, message: String(error) }); }
+            try {
+                res.json({ ok: true,
+                    data: await testRegistryDns(String(req.body?.hostname ?? "ghcr.io")) });
+            } catch (error) {
+                res.status(400).json({ ok: false,
+                    message: String(error) });
+            }
         });
 
         // ════════════════════════════════════════════════════════════════

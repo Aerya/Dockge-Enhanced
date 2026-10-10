@@ -29,12 +29,14 @@ export function normalizeRegistryDnsSettings(value: unknown): RegistryDnsSetting
     if (!input.servers.every(s => typeof s === "string" && isIP(s) !== 0)) {
         throw new Error("DNS servers must be IPv4 or IPv6 addresses");
     }
-    return { enabled: input.enabled, servers: [ ...new Set(input.servers) ] };
+    return { enabled: input.enabled,
+        servers: [ ...new Set(input.servers) ] };
 }
 
 export async function getRegistryDnsSettings(): Promise<RegistryDnsSettings> {
     const stored = await Settings.get(KEY);
-    return stored == null ? { ...DEFAULT_REGISTRY_DNS, servers: [ ...DEFAULT_REGISTRY_DNS.servers ] } : normalizeRegistryDnsSettings(stored);
+    return stored == null ? { ...DEFAULT_REGISTRY_DNS,
+        servers: [ ...DEFAULT_REGISTRY_DNS.servers ] } : normalizeRegistryDnsSettings(stored);
 }
 
 export async function saveRegistryDnsSettings(value: unknown): Promise<RegistryDnsSettings> {
@@ -46,7 +48,8 @@ export async function saveRegistryDnsSettings(value: unknown): Promise<RegistryD
 export async function resolveRegistryDns(hostname: string, family: 4 | 6, servers: string[]): Promise<string> {
     let lastError: unknown;
     for (const server of servers) {
-        const resolver = new dns.promises.Resolver({ timeout: 2000, tries: 1 });
+        const resolver = new dns.promises.Resolver({ timeout: 2000,
+            tries: 1 });
         resolver.setServers([ server ]);
         try {
             const result = family === 6 ? await resolver.resolve6(hostname) : await resolver.resolve4(hostname);
@@ -77,8 +80,11 @@ export function registryDnsLookup(settings: RegistryDnsSettings): typeof dns.loo
                 for (const requested of families) {
                     try {
                         const address = await resolveRegistryDns(hostname, requested, settings.servers);
-                        return { address, family: requested };
-                    } catch (err) { lastError = err; }
+                        return { address,
+                            family: requested };
+                    } catch (err) {
+                        lastError = err;
+                    }
                 }
                 throw lastError;
             })().then(
@@ -100,10 +106,14 @@ export async function registryDnsAxiosOptions(): Promise<Pick<AxiosRequestConfig
         return {};
     }
     const lookup = registryDnsLookup(settings);
-    return { httpAgent: new http.Agent({ lookup }), httpsAgent: new https.Agent({ lookup }) };
+    return { httpAgent: new http.Agent({ lookup }),
+        httpsAgent: new https.Agent({ lookup }) };
 }
 
-export async function testRegistryDns(hostname: string): Promise<Array<{ server: string; family: number; address?: string; error?: string }>> {
+export async function testRegistryDns(hostname: string): Promise<Array<{ server: string;
+    family: number;
+    address?: string;
+    error?: string }>> {
     if (!/^[a-z0-9.-]+$/i.test(hostname) || hostname.length > 253 || hostname.includes("..")) {
         throw new Error("Invalid test hostname");
     }
@@ -112,9 +122,13 @@ export async function testRegistryDns(hostname: string): Promise<Array<{ server:
         const family = isIP(server);
         try {
             const address = await resolveRegistryDns(hostname, family as 4 | 6, [ server ]);
-            return { server, family, address };
+            return { server,
+                family,
+                address };
         } catch (error) {
-            return { server, family, error: (error as Error).message };
+            return { server,
+                family,
+                error: (error as Error).message };
         }
     }));
 }

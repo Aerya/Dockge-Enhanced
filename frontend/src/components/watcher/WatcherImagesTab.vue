@@ -688,8 +688,13 @@ import { watcherApi } from "./shared";
 import type { Cred, GlobalMaintenanceWindow, ImageStatus, ImgSettings, RollbackEntry, UpdateHistoryEntry } from "./shared";
 import { groupImageStatuses, type ImageStatusSort } from "./image-status-sort";
 
-type RegistryDnsTestResult = { server: string; family: number; address?: string; error?: string };
-const registryDns = ref<{ enabled: boolean; servers: string[] }>({ enabled: false, servers: [] });
+type RegistryDnsTestResult = { server: string;
+    family: number;
+    address?: string;
+    error?: string };
+const registryDns = ref<{ enabled: boolean;
+    servers: string[] }>({ enabled: false,
+    servers: [] });
 const dnsTestHost = ref("ghcr.io");
 const dnsSaving = ref(false);
 const dnsTesting = ref(false);
@@ -700,18 +705,27 @@ async function saveRegistryDns() {
     try {
         const response = await watcherApi("POST", "/registry-dns/settings", registryDns.value);
         dnsMessage.value = response.ok ? "Configuration DNS enregistrée." : String(response.message ?? "Échec de l’enregistrement");
-    } catch (error) { dnsMessage.value = String(error); }
-    finally { dnsSaving.value = false; }
+    } catch (error) {
+        dnsMessage.value = String(error);
+    } finally {
+        dnsSaving.value = false;
+    }
 }
 async function testDns() {
     dnsTesting.value = true;
     dnsTestResults.value = [];
     try {
         const response = await watcherApi("POST", "/registry-dns/test", { hostname: dnsTestHost.value });
-        if (response.ok) { dnsTestResults.value = response.data ?? []; dnsMessage.value = "Test terminé."; }
-        else { dnsMessage.value = String(response.message ?? "Échec du test DNS"); }
-    } catch (error) { dnsMessage.value = String(error); }
-    finally { dnsTesting.value = false; }
+        if (response.ok) {
+            dnsTestResults.value = response.data ?? []; dnsMessage.value = "Test terminé.";
+        } else {
+            dnsMessage.value = String(response.message ?? "Échec du test DNS");
+        }
+    } catch (error) {
+        dnsMessage.value = String(error);
+    } finally {
+        dnsTesting.value = false;
+    }
 }
 
 const imgSettings = defineModel<ImgSettings>("imgSettings", { required: true });
@@ -760,7 +774,9 @@ const lastCheckDisplay = computed(() => {
 });
 
 const globalWindowLabel = computed(() => {
-    if (!globalMaintenanceWindow.value) return "";
+    if (!globalMaintenanceWindow.value) {
+        return "";
+    }
     const days = globalMaintenanceWindow.value.days
         .map((day) => t(`updates.self.day${day}`))
         .join(", ");
@@ -798,8 +814,12 @@ function showToast(msg: string, ok = true) {
 onMounted(async () => {
     try {
         const dnsResponse = await watcherApi("GET", "/registry-dns/settings");
-        if (dnsResponse.ok) { registryDns.value = dnsResponse.data; }
-    } catch (error) { dnsMessage.value = String(error); }
+        if (dnsResponse.ok) {
+            registryDns.value = dnsResponse.data;
+        }
+    } catch (error) {
+        dnsMessage.value = String(error);
+    }
     const [ statusRes, rollbackRes, histRes, autoUpdateRes ] = await Promise.all([
         watcherApi("GET", "/image/status"),
         watcherApi("GET", "/image/rollback"),
@@ -1006,11 +1026,15 @@ async function toggleAutoUpdatePause(s: ImageStatus) {
     const key = `${s.stack}::${s.image}`;
     const active = isAutoUpdatePaused(s);
     const pause = active
-        ? { enabled: false, until: null }
-        : { enabled: true, until: new Date(Date.now() + 7 * 86_400_000).toISOString() };
-    const res = await watcherApi("POST", "/image/auto-update-pause", { key, pause });
+        ? { enabled: false,
+            until: null }
+        : { enabled: true,
+            until: new Date(Date.now() + 7 * 86_400_000).toISOString() };
+    const res = await watcherApi("POST", "/image/auto-update-pause", { key,
+        pause });
     if (res.ok && imgSettings.value.autoUpdateConfig[key]) {
-        imgSettings.value.autoUpdateConfig[key] = { ...imgSettings.value.autoUpdateConfig[key], pause: res.data };
+        imgSettings.value.autoUpdateConfig[key] = { ...imgSettings.value.autoUpdateConfig[key],
+            pause: res.data };
         showToast(active ? t("updates.pause.resumedTarget") : t("updates.pause.pausedTarget"));
     } else if (!res.ok) {
         showToast(`❌ ${res.message}`, false);
