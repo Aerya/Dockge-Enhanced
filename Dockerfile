@@ -6,7 +6,7 @@ ARG GRPC_VERSION=1.83.2
 WORKDIR /src
 RUN wget -qO- "https://github.com/restic/restic/archive/refs/tags/v${RESTIC_VERSION}.tar.gz" \
     | tar -xz --strip-components=1 \
-    && go get "google.golang.org/grpc@v${GRPC_VERSION}" \
+    && go get "google.golang.org/grpc@v${GRPC_VERSION}" "golang.org/x/net@v0.60.0" \
     && go run build.go
 
 # ─── Stage 2 : build de l'application ─────────────────────────────────

@@ -1065,6 +1065,7 @@ export class ImageWatcher {
     private baseUrl: string = "";
     private _checkRunning = false;
     private _updatingImages = new Set<string>();
+    private _stackBulkApplying = false;
 /* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
   private manualBatch: ManualUpdateBatch = {
     running: false,
@@ -1218,69 +1219,88 @@ export class ImageWatcher {
         };
     }
 
-    /** Prepare the same server-owned, resolved Compose preview for local and linked instances. */
-    async previewStackBulkAutoUpdate(raw: unknown) {
-        const request = validateStackBulkRequest(raw);
+    /** Resolve the Compose model on the instance that owns the stack. */
+    private async resolveStackBulkComposeModel(stack: string) {
         const stacks = await collectWatchedComposeStacks(STACKS_DIR, this.externalStacks);
-        const watched = stacks.get(request.stack);
+        const watched = stacks.get(stack);
         if (!watched) {
             throw new Error("Stack absente ou non accessible sur cette instance");
         }
         const command = composeExecInvocation(watched.composePath, [ "config", "--format", "json" ], watched.project, watched.configFiles, watched.workingDir, watched.envFiles);
-        const model = parseResolvedComposeModel(await docker(command.args, { cwd: command.cwd,
+        return parseResolvedComposeModel(await docker(command.args, { cwd: command.cwd,
             timeout: 30000 }));
+    }
+
+    /** Preview and apply use the same resolved Compose model and plan builder. */
+    async previewStackBulkAutoUpdate(raw: unknown) {
+        const request = validateStackBulkRequest(raw);
+        const model = await this.resolveStackBulkComposeModel(request.stack);
         return buildStackBulkPlan(request, model, this.settings.autoUpdateConfig ?? {});
     }
 
-    /** Persist the entire policy batch once; never trust image keys supplied by a browser. */
+    /** Persist a policy batch once after rechecking Compose and settings, with a bulk-write guard. */
     async applyStackBulkAutoUpdate(raw: unknown) {
         const request: StackBulkRequest = validateStackBulkRequest(raw);
         if (!request.previewToken) {
             throw new Error("Aperçu obligatoire avant application");
         }
+        if (this._stackBulkApplying) {
+            throw new Error("Une autre configuration groupée est déjà en cours");
+        }
         if (this.isBusy()) {
             throw new Error("Une opération ImageWatcher est déjà en cours. Réessayer plus tard.");
         }
-        const plan = await this.previewStackBulkAutoUpdate(request);
-        if (request.previewToken !== plan.previewToken) {
-            throw new Error("La stack ou ses réglages ont changé : actualiser l’aperçu");
-        }
-        if (!plan.changed) {
-            return { ...plan,
-                applied: 0,
-                autoUpdateState: this.getAutoUpdateState() };
-        }
-        const config = { ...this.settings.autoUpdateConfig };
-        const changes = new Set(plan.changes.map(change => change.key));
-        for (const change of plan.changes) {
-            if (request.mode === "off") {
-                delete config[change.key];
-            } else {
-                config[change.key] = request.mode === "scheduled"
-                    ? { mode: "scheduled",
-                        time: request.time }
-                    : { mode: "immediate" };
+        this._stackBulkApplying = true;
+        try {
+            // The last awaited operation is Compose resolution. Token validation and the
+            // in-memory settings change then run in the same event-loop turn.
+            const model = await this.resolveStackBulkComposeModel(request.stack);
+            if (this.isBusy()) {
+                throw new Error("Une opération ImageWatcher a démarré : réessayer plus tard.");
             }
-        }
-        const pendingAutoUpdates = this.settings.pendingAutoUpdates.filter(key => !changes.has(key));
-        await this.saveSettings({ autoUpdateConfig: config,
-            pendingAutoUpdates,
-            ...(request.mode !== "off" && !this.settings.enabled ? { enabled: true } : {}) }, false);
-        if (request.mode === "immediate") {
-            // Sequential targeted checks avoid a large parallel pull burst.
-            void (async () => {
-                for (const { key } of plan.changes) {
-                    try {
-                        await this.runImmediateCheck(key);
-                    } catch (error) {
-                        console.warn("[ImageWatcher] Bulk immediate check failed:", key, error);
-                    }
+            const plan = buildStackBulkPlan(request, model, this.settings.autoUpdateConfig ?? {});
+            if (request.previewToken !== plan.previewToken) {
+                throw new Error("La stack ou ses réglages ont changé : actualiser l’aperçu");
+            }
+            if (!plan.changed) {
+                return { ...plan,
+                    applied: 0,
+                    autoUpdateState: this.getAutoUpdateState() };
+            }
+            const config = { ...this.settings.autoUpdateConfig };
+            const changes = new Set(plan.changes.map(change => change.key));
+            for (const change of plan.changes) {
+                if (request.mode === "off") {
+                    delete config[change.key];
+                } else {
+                    config[change.key] = request.mode === "scheduled"
+                        ? { mode: "scheduled",
+                            time: request.time }
+                        : { mode: "immediate" };
                 }
-            })();
+            }
+            const pendingAutoUpdates = this.settings.pendingAutoUpdates.filter(key => !changes.has(key));
+            await this.saveSettings({ autoUpdateConfig: config,
+                pendingAutoUpdates,
+                ...(request.mode !== "off" && !this.settings.enabled ? { enabled: true } : {}) }, false);
+            if (request.mode === "immediate") {
+                // Sequential targeted checks avoid a large parallel pull burst.
+                void (async () => {
+                    for (const { key } of plan.changes) {
+                        try {
+                            await this.runImmediateCheck(key);
+                        } catch (error) {
+                            console.warn("[ImageWatcher] Bulk immediate check failed:", key, error);
+                        }
+                    }
+                })();
+            }
+            return { ...plan,
+                applied: plan.changed,
+                autoUpdateState: this.getAutoUpdateState() };
+        } finally {
+            this._stackBulkApplying = false;
         }
-        return { ...plan,
-            applied: plan.changed,
-            autoUpdateState: this.getAutoUpdateState() };
     }
 
     isBusy(): boolean {

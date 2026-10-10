@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildStackBulkPlan, validateStackBulkRequest } from "./stack-auto-update";
+import { buildImageUpdateComposePlan } from "./image-watcher";
 import type { AutoUpdateEntry } from "./image-watcher";
 import type { ResolvedComposeModel } from "../compose-network-namespace";
 
@@ -109,4 +110,21 @@ test("excluded-only stacks are not modified", () => {
     assert.equal(r.changed, 0);
     assert.equal(r.eligible, 0);
     assert.equal(r.excludedServices, 1);
+});
+
+test("shared image with excluded service updates only eligible services", () => {
+    const mixed: ResolvedComposeModel = { services: {
+        allowed: { image: "nginx:latest" },
+        blocked: { image: "nginx:latest",
+            labels: { "dockge.imageupdates.check": "false" } },
+    } };
+    const plan = buildStackBulkPlan({ stack: "demo",
+        mode: "immediate",
+        preserveExisting: false }, mixed, {});
+    assert.equal(plan.eligible, 1);
+    assert.equal(plan.excludedServices, 1);
+    assert.deepEqual(plan.changes.map(change => change.key), [ "demo::nginx:latest" ]);
+
+    const update = buildImageUpdateComposePlan(JSON.stringify(mixed), "nginx:latest");
+    assert.deepEqual(update.services, [ "allowed" ]);
 });
