@@ -20,6 +20,7 @@ import { planSidecarNetworks, connectSidecarAdditionalNetworks } from "./sidecar
 import { log } from "../log";
 import { resolveCurrentContainer } from "../current-container";
 import { resolveDataDir } from "../data-dir";
+import { beginSelfUpdatePreparation, endSelfUpdatePreparation } from "./operation-coordinator";
 
 const execFileAsync = promisify(execFile);
 const DATA_DIR = resolveDataDir();
@@ -333,6 +334,9 @@ export class SelfUpdateManager {
         if (this.requestInFlight || (isSelfUpdateActive(this.operation.state) && !resumingScheduled)) {
             throw new Error("A self-update is already running");
         }
+        if (!beginSelfUpdatePreparation()) {
+            throw new Error("A self-update is already being prepared");
+        }
         this.requestInFlight = true;
         try {
             if (automatic && !this.canAutoUpdate()) {
@@ -582,6 +586,7 @@ export class SelfUpdateManager {
             throw error;
         } finally {
             this.requestInFlight = false;
+            endSelfUpdatePreparation();
         }
     }
 

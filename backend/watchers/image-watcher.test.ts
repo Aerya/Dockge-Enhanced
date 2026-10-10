@@ -27,10 +27,12 @@ import {
     extractWatchableImagesFromComposeModel,
     confirmedMissingImmediateTargets,
     imageCheckErrorMessage,
+    isSelfUpdateBlockingImageMutations,
     isRetryableRegistryError,
     touchImageUpdatedStackMetadata,
     updateVerificationResult,
 } from "./image-watcher";
+import { beginSelfUpdatePreparation, endSelfUpdatePreparation } from "../self-update/operation-coordinator";
 import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
 import { resolveDataDir } from "../data-dir";
 
@@ -183,6 +185,31 @@ test("un scan ImageWatcher lent ne bloque pas le self-update, contrairement à u
     assert.equal(watcher.hasDockerOperationInProgress(), true);
     await fs.rm(dataDir, { recursive: true,
         force: true });
+});
+
+test("une mise à jour d'image est reportée pendant la préparation ou l'exécution d'un self-update", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-self-update-image-lock-"));
+    try {
+        assert.equal(await isSelfUpdateBlockingImageMutations(root), false);
+
+        assert.equal(beginSelfUpdatePreparation(), true);
+        assert.equal(await isSelfUpdateBlockingImageMutations(root), true);
+        endSelfUpdatePreparation();
+
+        await fs.mkdir(path.join(root, "self-update"), { recursive: true });
+        await fs.writeFile(path.join(root, "self-update", "status.json"), JSON.stringify({ state: "updating" }));
+        assert.equal(await isSelfUpdateBlockingImageMutations(root), true);
+
+        await fs.writeFile(path.join(root, "self-update", "status.json"), JSON.stringify({ state: "scheduled" }));
+        assert.equal(await isSelfUpdateBlockingImageMutations(root), false);
+
+        await fs.writeFile(path.join(root, "self-update", "status.json"), JSON.stringify({ state: "succeeded" }));
+        assert.equal(await isSelfUpdateBlockingImageMutations(root), false);
+    } finally {
+        endSelfUpdatePreparation();
+        await fs.rm(root, { recursive: true,
+            force: true });
+    }
 });
 
 const sharedNamespaceCompose = JSON.stringify({

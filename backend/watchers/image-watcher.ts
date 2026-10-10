@@ -52,11 +52,32 @@ import { finishDockerCleanup, tryStartDockerCleanup } from "../docker-operation-
 import { reconcileRollbackKeepTags, rollbackTagFromKey as rollbackTag } from "./auto-prune-manager";
 import { resolveDataDir } from "../data-dir";
 import { withStackMetadataWriteLock } from "../stack-metadata-lock";
+import { isSelfUpdateActive } from "../self-update/policy";
+import { isSelfUpdatePreparationInProgress } from "../self-update/operation-coordinator";
+import type { SelfUpdateOperation } from "../self-update/types";
 
 const execFileAsync = promisify(execFile);
 
 const STACKS_DIR = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 const DATA_DIR = resolveDataDir();
+
+export async function isSelfUpdateBlockingImageMutations(dataDir = DATA_DIR): Promise<boolean> {
+    if (isSelfUpdatePreparationInProgress()) {
+        return true;
+    }
+    try {
+        const raw = await fs.readFile(path.join(dataDir, "self-update", "status.json"), "utf8");
+        const operation = JSON.parse(raw) as Pick<SelfUpdateOperation, "state">;
+        return operation.state !== "scheduled" && isSelfUpdateActive(operation.state);
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            return false;
+        }
+        // An unreadable state must not permit a conflicting Docker mutation.
+        console.warn("[ImageWatcher] Unable to read self-update state; postponing image update:", error);
+        return true;
+    }
+}
 
 const ROLLBACK_WINDOW_MS = 24 * 3_600_000; // 24 heures
 const UPDATE_HISTORY_MAX = 100;
@@ -2094,6 +2115,10 @@ export class ImageWatcher {
     ): Promise<boolean> {
         const key = `${status.stack}::${status.image}`;
         const { composePath, project, configFiles, workingDir, envFiles } = watched;
+        if (await isSelfUpdateBlockingImageMutations(this.dataDir)) {
+            console.log(`[ImageWatcher] Auto-update ${key} reportée : une mise à jour de Dockge-Enhanced est en cours.`);
+            return false;
+        }
 /* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
     if (mode !== "manual" || respectPaused) {
       const pausedCommand = composeExecInvocation(composePath, [ "ps", "--status", "paused", "--services" ], project, configFiles, workingDir, envFiles);
