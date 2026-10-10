@@ -164,6 +164,27 @@ test("#475 conserve les réglages ImageWatcher sans DOCKGE_DATA_DIR après recr�
         force: true });
 });
 
+test("un scan ImageWatcher lent ne bloque pas le self-update, contrairement à une recréation", async () => {
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-image-operation-"));
+    const watcher = new ImageWatcher(dataDir);
+    const internal = watcher as unknown as {
+        _checkRunning: boolean;
+        _updatingImages: Set<string>;
+        manualBatch: { running: boolean;
+            current: string | null };
+    };
+    internal._checkRunning = true;
+    assert.equal(watcher.hasDockerOperationInProgress(), false);
+    internal._updatingImages.add("stack::image");
+    assert.equal(watcher.hasDockerOperationInProgress(), true);
+    internal._updatingImages.clear();
+    internal.manualBatch = { running: true,
+        current: "stack::image" };
+    assert.equal(watcher.hasDockerOperationInProgress(), true);
+    await fs.rm(dataDir, { recursive: true,
+        force: true });
+});
+
 const sharedNamespaceCompose = JSON.stringify({
     services: {
         provider: { image: "example/provider:latest",

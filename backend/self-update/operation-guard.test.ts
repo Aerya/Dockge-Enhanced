@@ -33,13 +33,22 @@ test("self-update guard recognizes every supported blocker", () => {
         [ "externalStackIntegration", "external-stack-integration" ],
     ];
     for (const [ key, expected ] of cases) {
-        assert.equal(selectSelfUpdateBlocker({ ...idle(), [key]: true })?.code, expected);
+        assert.equal(selectSelfUpdateBlocker({
+            ...idle(),
+            [key]: true,
+        })?.code, expected);
     }
 });
 
 test("un contrôle registry seul ne bloque pas le self-update", () => {
-    assert.equal(selectSelfUpdateBlocker({ ...idle(), imageWork: false }), null);
-    assert.equal(selectSelfUpdateBlocker({ ...idle(), imageWork: true })?.code, "image-work");
+    assert.equal(selectSelfUpdateBlocker({
+        ...idle(),
+        imageWork: false,
+    }), null);
+    assert.equal(selectSelfUpdateBlocker({
+        ...idle(),
+        imageWork: true,
+    })?.code, "image-work");
 });
 
 test("self-update guard prioritizes unsaved editor work before backend operations", () => {
