@@ -49,7 +49,8 @@ function fakeSystemLookup(code: string | null, address = "192.0.2.10"): typeof d
             const failure = Object.assign(new Error("system DNS failed"), { code });
             callback(failure, options.all ? [] : "", undefined);
         } else if (options.all) {
-            callback(null, [ { address, family: 4 } ]);
+            callback(null, [ { address,
+                family: 4 } ]);
         } else {
             callback(null, address, 4);
         }
@@ -59,18 +60,24 @@ function fakeSystemLookup(code: string | null, address = "192.0.2.10"): typeof d
 function query(
     lookup: typeof dns.lookup,
     all = false,
-): Promise<{ error: NodeJS.ErrnoException | null; result: string | dns.LookupAddress[]; family?: number }> {
+): Promise<{ error: NodeJS.ErrnoException | null;
+    result: string | dns.LookupAddress[];
+    family?: number }> {
     return new Promise(resolve => {
         const invoke = lookup as (hostname: string, options: dns.LookupOptions, callback: (error: NodeJS.ErrnoException | null, result: string | dns.LookupAddress[], family?: number) => void) => void;
-        invoke("registry.example.test", { family: 0, all }, (error: NodeJS.ErrnoException | null, result: string | dns.LookupAddress[], family?: number) => {
-            resolve({ error, result, family });
+        invoke("registry.example.test", { family: 0,
+            all }, (error: NodeJS.ErrnoException | null, result: string | dns.LookupAddress[], family?: number) => {
+            resolve({ error,
+                result,
+                family });
         });
     });
 }
 
 test("system DNS success remains authoritative; fallback is not called", async () => {
     let calls = 0;
-    const lookup = registryDnsLookup({ enabled: true, servers: [ "1.1.1.1" ] }, fakeSystemLookup(null), async () => {
+    const lookup = registryDnsLookup({ enabled: true,
+        servers: [ "1.1.1.1" ] }, fakeSystemLookup(null), async () => {
         calls += 1;
         return "198.51.100.2";
     });
@@ -82,7 +89,8 @@ test("system DNS success remains authoritative; fallback is not called", async (
 
 test("disabled fallback preserves the original system DNS error", async () => {
     let calls = 0;
-    const lookup = registryDnsLookup({ enabled: false, servers: [ "1.1.1.1" ] }, fakeSystemLookup("ENOTFOUND"), async () => {
+    const lookup = registryDnsLookup({ enabled: false,
+        servers: [ "1.1.1.1" ] }, fakeSystemLookup("ENOTFOUND"), async () => {
         calls += 1;
         return "198.51.100.2";
     });
@@ -93,19 +101,22 @@ test("disabled fallback preserves the original system DNS error", async () => {
 
 test("DNS errors trigger fallback and preserve all:true lookup contract", async () => {
     const seen: Array<4 | 6> = [];
-    const lookup = registryDnsLookup({ enabled: true, servers: [ "1.1.1.1", "2606:4700:4700::1111" ] }, fakeSystemLookup("EAI_AGAIN"), async (_hostname, family) => {
+    const lookup = registryDnsLookup({ enabled: true,
+        servers: [ "1.1.1.1", "2606:4700:4700::1111" ] }, fakeSystemLookup("EAI_AGAIN"), async (_hostname, family) => {
         seen.push(family);
         return "198.51.100.9";
     });
     const result = await query(lookup, true);
     assert.equal(result.error, null);
-    assert.deepEqual(result.result, [ { address: "198.51.100.9", family: 4 } ]);
+    assert.deepEqual(result.result, [ { address: "198.51.100.9",
+        family: 4 } ]);
     assert.deepEqual(seen, [ 4 ]);
 });
 
 test("non-DNS errors never trigger fallback", async () => {
     let calls = 0;
-    const lookup = registryDnsLookup({ enabled: true, servers: [ "1.1.1.1" ] }, fakeSystemLookup("ECONNREFUSED"), async () => {
+    const lookup = registryDnsLookup({ enabled: true,
+        servers: [ "1.1.1.1" ] }, fakeSystemLookup("ECONNREFUSED"), async () => {
         calls += 1;
         return "198.51.100.2";
     });
@@ -116,7 +127,8 @@ test("non-DNS errors never trigger fallback", async () => {
 
 test("fallback tries IPv6 when IPv4 fallback fails", async () => {
     const seen: Array<4 | 6> = [];
-    const lookup = registryDnsLookup({ enabled: true, servers: [ "2001:4860:4860::8888" ] }, fakeSystemLookup("ENOTFOUND"), async (_hostname, family) => {
+    const lookup = registryDnsLookup({ enabled: true,
+        servers: [ "2001:4860:4860::8888" ] }, fakeSystemLookup("ENOTFOUND"), async (_hostname, family) => {
         seen.push(family);
         if (family === 4) {
             throw new Error("no IPv4 answer");
@@ -131,7 +143,8 @@ test("fallback tries IPv6 when IPv4 fallback fails", async () => {
 });
 
 test("when all fallback resolvers fail, original DNS failure is retained", async () => {
-    const lookup = registryDnsLookup({ enabled: true, servers: [ "1.1.1.1" ] }, fakeSystemLookup("EAI_AGAIN"), async () => {
+    const lookup = registryDnsLookup({ enabled: true,
+        servers: [ "1.1.1.1" ] }, fakeSystemLookup("EAI_AGAIN"), async () => {
         throw new Error("fallback timed out");
     });
     const result = await query(lookup);
@@ -139,5 +152,6 @@ test("when all fallback resolvers fail, original DNS failure is retained", async
 });
 
 test("rejects more than twelve DNS servers", () => {
-    assert.throws(() => normalizeRegistryDnsSettings({ enabled: true, servers: Array(13).fill("1.1.1.1") }));
+    assert.throws(() => normalizeRegistryDnsSettings({ enabled: true,
+        servers: Array(13).fill("1.1.1.1") }));
 });
