@@ -14,6 +14,7 @@
     "watcher.backup.reset.success": "Nouveau dépôt prêt. Ancien dépôt archivé ici : {path}",
     "watcher.backup.reset.excludedHint": "Les dépôts Restic locaux et leurs archives sont exclus des sauvegardes récursives. Les dépôts distants restent intacts à leur ancienne adresse.",
 
+    "releaseNews.item.selfUpdateImageWatcherCoordination": "Les contrôles de registres et DNS d’ImageWatcher ne retardent plus les mises à jour de Dockge-Enhanced. Les mises à jour d’images, rollbacks et nettoyages modifiant Docker partagent une réservation exclusive avec Self-Update : les opérations concurrentes sont reportées en sécurité. L’état de la mise à jour en cours est prioritaire dans le panneau Mises à jour.",
     "releaseNews.item.resticSafeResetAllDestinations": "Restic : réinitialisation sécurisée des dépôts Local, SFTP, S3 et REST. Aperçu et confirmations obligatoires ; l’ancien dépôt reste conservé, le nouveau repart sans snapshots et seul l’historique récent de cette destination est nettoyé.",
     "releaseNews.item.stackImageBulkPolicy": "Les mises à jour automatiques des images peuvent désormais être configurées pour toute une stack, avec aperçu avant validation et choix de conserver les exceptions individuelles ou de les remplacer. Les services exclus restent protégés et les instances liées sont prises en charge.",
     "stackBulk.title": "Mises à jour automatiques de la stack",

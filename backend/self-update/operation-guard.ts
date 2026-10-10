@@ -57,7 +57,7 @@ export async function getSelfUpdateBlocker(): Promise<SelfUpdateBlocker | null> 
         ]);
         return selectSelfUpdateBlocker({
             activeEditor: ComposeEditLeaseManager.getInstance().hasBlockingLease(),
-            imageWork: ImageWatcher.getInstance().isBusy(),
+            imageWork: ImageWatcher.getInstance().hasDockerOperationInProgress(),
             resticBackup: BackupManager.getInstance().isBackupRunActive(),
             resticRestore: BackupManager.getInstance().isRestoreRunActive(),
             stackTransfer,

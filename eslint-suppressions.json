@@ -221,11 +221,6 @@
       "count": 1
     }
   },
-  "backend/self-update/operation-guard.test.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 1
-    }
-  },
   "backend/self-update/operation-guard.ts": {
     "@stylistic/object-property-newline": {
       "count": 1

@@ -27,10 +27,12 @@ import {
     extractWatchableImagesFromComposeModel,
     confirmedMissingImmediateTargets,
     imageCheckErrorMessage,
+    isSelfUpdateBlockingImageMutations,
     isRetryableRegistryError,
     touchImageUpdatedStackMetadata,
     updateVerificationResult,
 } from "./image-watcher";
+import { tryReserveDockerUpdate } from "../self-update/operation-coordinator";
 import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
 import { resolveDataDir } from "../data-dir";
 
@@ -162,6 +164,67 @@ test("#475 conserve les réglages ImageWatcher sans DOCKGE_DATA_DIR après recr�
     assert.equal(recreated.settings.intervalHours, 1);
     await fs.rm(persistentDataDir, { recursive: true,
         force: true });
+});
+
+test("un scan ImageWatcher lent ne bloque pas le self-update, contrairement à une recréation", async () => {
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-image-operation-"));
+    const watcher = new ImageWatcher(dataDir);
+    const internal = watcher as unknown as {
+        _checkRunning: boolean;
+        _updatingImages: Set<string>;
+        manualBatch: { running: boolean;
+            current: string | null };
+    };
+    internal._checkRunning = true;
+    assert.equal(watcher.hasDockerOperationInProgress(), false);
+    internal._updatingImages.add("stack::image");
+    assert.equal(watcher.hasDockerOperationInProgress(), true);
+    internal._updatingImages.clear();
+    internal.manualBatch = { running: true,
+        current: "stack::image" };
+    assert.equal(watcher.hasDockerOperationInProgress(), true);
+    await fs.rm(dataDir, { recursive: true,
+        force: true });
+});
+
+test("une mise à jour d'image est reportée pendant la préparation ou l'exécution d'un self-update", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-self-update-image-lock-"));
+    try {
+        assert.equal(await isSelfUpdateBlockingImageMutations(root), false);
+
+        const reservation = tryReserveDockerUpdate("self-update");
+        assert.ok(reservation);
+        assert.equal(await isSelfUpdateBlockingImageMutations(root), true);
+        reservation.release();
+
+        await fs.mkdir(path.join(root, "self-update"), { recursive: true });
+        await fs.writeFile(path.join(root, "self-update", "status.json"), JSON.stringify({ state: "updating" }));
+        assert.equal(await isSelfUpdateBlockingImageMutations(root), true);
+
+        await fs.writeFile(path.join(root, "self-update", "status.json"), JSON.stringify({ state: "scheduled" }));
+        assert.equal(await isSelfUpdateBlockingImageMutations(root), false);
+
+        await fs.writeFile(path.join(root, "self-update", "status.json"), JSON.stringify({ state: "succeeded" }));
+        assert.equal(await isSelfUpdateBlockingImageMutations(root), false);
+    } finally {
+        await fs.rm(root, { recursive: true,
+            force: true });
+    }
+});
+
+test("les mutations de lot manuel et de rollback utilisent la même réservation ImageWatcher", () => {
+    const watcher = new ImageWatcher() as unknown as {
+        reserveImageMutation(key: string): { release(): void } | null;
+    };
+    const selfUpdate = tryReserveDockerUpdate("self-update");
+    assert.ok(selfUpdate);
+    assert.equal(watcher.reserveImageMutation("stack::batch-image"), null);
+    assert.equal(watcher.reserveImageMutation("stack::rollback-image"), null);
+    selfUpdate.release();
+
+    const rollback = watcher.reserveImageMutation("stack::rollback-image");
+    assert.ok(rollback);
+    rollback.release();
 });
 
 const sharedNamespaceCompose = JSON.stringify({
