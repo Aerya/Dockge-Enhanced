@@ -178,6 +178,34 @@
             </div>
         </div>
 
+        <!-- Advanced registry DNS fallback: scoped to Enhanced HTTP registry checks. -->
+        <div class="shadow-box big-padding mb-4">
+            <details>
+                <summary class="settings-subheading">DNS de secours des registries (avancé)</summary>
+                <p class="form-text mt-2">Le DNS système reste prioritaire. En cas d’échec DNS uniquement, Enhanced utilise les serveurs ci-dessous pour ses requêtes HTTP aux registries. Ni l’hôte ni Docker Engine ne sont modifiés.</p>
+                <div class="form-check form-switch mb-3">
+                    <input id="registryDnsEnabled" v-model="registryDns.enabled" class="form-check-input" type="checkbox" role="switch" />
+                    <label class="form-check-label" for="registryDnsEnabled">Activer le fallback DNS (désactivé par défaut)</label>
+                </div>
+                <div v-for="(server, index) in registryDns.servers" :key="index" class="d-flex gap-2 mb-2">
+                    <input v-model.trim="registryDns.servers[index]" class="form-control" :aria-label="`Serveur DNS ${index + 1}`" placeholder="Adresse IPv4 ou IPv6" />
+                    <button class="btn btn-outline-danger" type="button" @click="registryDns.servers.splice(index, 1)">Supprimer</button>
+                </div>
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                    <button class="btn btn-normal" type="button" @click="registryDns.servers.push('')">Ajouter un DNS</button>
+                    <button class="btn btn-primary" type="button" :disabled="dnsSaving" @click="saveRegistryDns">Enregistrer</button>
+                </div>
+                <div class="d-flex gap-2 mb-2">
+                    <input v-model.trim="dnsTestHost" class="form-control" aria-label="Nom d’hôte de test DNS" placeholder="ghcr.io" />
+                    <button class="btn btn-normal" type="button" :disabled="dnsTesting" @click="testDns">Tester les DNS</button>
+                </div>
+                <p v-if="dnsMessage" class="form-text" role="status">{{ dnsMessage }}</p>
+                <div v-for="result in dnsTestResults" :key="result.server" class="small mb-1">
+                    <code>{{ result.server }}</code> — {{ result.address || result.error }}
+                </div>
+            </details>
+        </div>
+
         <!-- STATUS TABLE -->
         <div class="shadow-box big-padding mb-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -660,6 +688,32 @@ import { watcherApi } from "./shared";
 import type { Cred, GlobalMaintenanceWindow, ImageStatus, ImgSettings, RollbackEntry, UpdateHistoryEntry } from "./shared";
 import { groupImageStatuses, type ImageStatusSort } from "./image-status-sort";
 
+type RegistryDnsTestResult = { server: string; family: number; address?: string; error?: string };
+const registryDns = ref<{ enabled: boolean; servers: string[] }>({ enabled: false, servers: [] });
+const dnsTestHost = ref("ghcr.io");
+const dnsSaving = ref(false);
+const dnsTesting = ref(false);
+const dnsMessage = ref("");
+const dnsTestResults = ref<RegistryDnsTestResult[]>([]);
+async function saveRegistryDns() {
+    dnsSaving.value = true;
+    try {
+        const response = await watcherApi("POST", "/registry-dns/settings", registryDns.value);
+        dnsMessage.value = response.ok ? "Configuration DNS enregistrée." : String(response.message ?? "Échec de l’enregistrement");
+    } catch (error) { dnsMessage.value = String(error); }
+    finally { dnsSaving.value = false; }
+}
+async function testDns() {
+    dnsTesting.value = true;
+    dnsTestResults.value = [];
+    try {
+        const response = await watcherApi("POST", "/registry-dns/test", { hostname: dnsTestHost.value });
+        if (response.ok) { dnsTestResults.value = response.data ?? []; dnsMessage.value = "Test terminé."; }
+        else { dnsMessage.value = String(response.message ?? "Échec du test DNS"); }
+    } catch (error) { dnsMessage.value = String(error); }
+    finally { dnsTesting.value = false; }
+}
+
 const imgSettings = defineModel<ImgSettings>("imgSettings", { required: true });
 const credentials = defineModel<Cred[]>("credentials", { required: true });
 const emit = defineEmits<{
@@ -742,6 +796,10 @@ function showToast(msg: string, ok = true) {
 // ─── Init & polling ───────────────────────────────────────────────
 
 onMounted(async () => {
+    try {
+        const dnsResponse = await watcherApi("GET", "/registry-dns/settings");
+        if (dnsResponse.ok) { registryDns.value = dnsResponse.data; }
+    } catch (error) { dnsMessage.value = String(error); }
     const [ statusRes, rollbackRes, histRes, autoUpdateRes ] = await Promise.all([
         watcherApi("GET", "/image/status"),
         watcherApi("GET", "/image/rollback"),
