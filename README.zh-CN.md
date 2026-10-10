@@ -43,52 +43,43 @@
 
 ### 🆕 2026 年 10 月
 
+#### 功能与备用 DNS
+
 **镜像仓库检查的备用 DNS**
 
 在 **Watcher > Images > 备用 DNS** 中，可启用备用 DNS（默认关闭）、添加/编辑/删除 IPv4 或 IPv6 服务器，并测试 A/AAAA 查询、耗时和诊断信息。始终优先使用系统 DNS；只有 ImageWatcher 对仓库和令牌服务的受支持 HTTP 请求发生 DNS 解析失败时才会使用备用服务器。默认示例为 Quad9（`9.9.9.9`、`2620:fe::fe`）和 Cloudflare（`1.1.1.1`、`2606:4700:4700::1111`），均可修改。已有配置不会被覆盖。不会修改主机或 Docker Engine 的 DNS；Docker Engine 自行执行的拉取与自动更新不受此功能影响。
 
-
-**十月维护与修复**
-
-- **ImageWatcher 错误诊断与元数据 (#493–#495)** — 镜像页面可将错误排在前面；暂时不可访问的目标不会被直接删除，清单超时采用有限次数重试，Registry/认证/Digest 错误提示更明确。仅在更新实际应用并确认后更新 Stack 时间戳。
-
-- **Stack 与镜像更新操作界面 (#489–#490)** — Stack 批量自动更新设置移至操作栏中的弹窗，容器各自的设置不变。镜像更新、忽略、暂停和回滚操作改为紧凑按钮，并保留辅助功能标签。
-
-- **Restic 初始化和界面改善 (#491)** — 保存配置、立即备份和维护操作分开呈现；仓库状态和保留策略说明更清晰，并强化初始化保护。
-
-- **英文环境下的后端消息 (#477)** — Restic 密码错误、清理审计摘要和自动更新消息不再错误地以法语显示在英文安装中。
-
+#### 更新与 ImageWatcher
 
 **ImageWatcher 与 Self-Update 更安全的协调机制**
 
 只读取 Registry 和 DNS 的检查不再延迟 Dockge-Enhanced 自更新。镜像更新、回滚和回滚标签清理等会修改 Docker 的操作，与 Self-Update 共用独占预约：冲突操作会推迟，不会并行执行。`scheduled` 状态不会无故阻止 ImageWatcher；重启后，持久化的更新状态继续保护独立 sidecar。更新面板优先显示正在执行的操作，而不是过期的更新提示。
 
-
 **应用栈镜像批量自动更新**
 
 现在可以一次性为应用栈内符合条件的镜像设置**关闭**、**立即**或**定时**更新规则。预览会列出变更；可选择**保留已有例外**（默认）或覆盖。通过 `dockge.imageupdates.check=false` 排除的服务始终受保护，共用镜像会去重，关联实例使用相同的服务端校验。新加入的镜像不会自动继承此规则。
-
 
 **ImageWatcher：更快速、更可靠的即时更新**
 
 对于设为**立即更新**的镜像，ImageWatcher 会在启用时立即执行定向检查，随后每 **5 分钟**检查一次，而无需提高全局扫描频率。当多个 Stack 共用同一个 `:latest` 镜像时，Enhanced 会检查**每个容器实际运行的镜像**，而非仅检查本地标签；仍使用旧版本的服务不会再被错误判定为最新。相同镜像的 Registry 请求会合并；遇到 HTTP 429 限流时会等待，并在日志中汇总每次定向检查。暂停、维护窗口和回滚保护继续生效。
 
-**可选的 PowerWatch 功耗监控**
+**按服务排除状态与镜像更新**
 
-[PowerWatch](https://github.com/Aerya/PowerWatch) 现在支持两种模式：**外部**模式只读取现有的本地容器或 HTTP(S) 地址，绝不会控制它；**托管**模式则由 Dockge-Enhanced 部署为真实的 Compose Stack。托管安装会检测主机的 RAPL、MSR 和 NVIDIA 能力，只启用必要权限，绝不使用 `privileged: true`，并在停止或停用后继续保留持久卷中的历史与设置。
+可视化 Compose 编辑器可添加 `dockge.status.ignore: "true"`，使可选服务在部署后不再影响应用栈整体状态，同时仍显示该服务自身状态。还可添加 `dockge.imageupdates.check: "false"`，将服务排除在 ImageWatcher 检测以及自动或批量镜像更新之外；仍可明确手动更新该服务。现有服务标签及其 YAML 语法会被保留。功能灵感来自 [hamphh/dockge](https://github.com/hamphh/dockge)。
 
-整机当前功率、可信度和 WebUI 直达链接会通过现有联邦通道显示在 Monitoring、系统状态栏和紧凑的关联实例摘要中。系统状态栏和实例卡片仅在电力图标旁显示瓦数；工具提示会标明 PowerWatch 以及 Measured 或 Estimated 可信度。PowerWatch 会根据可用传感器进行测量或估算。
+**更新所有可用的 Docker 镜像**
 
-也可以直接通过 Enhanced 安装和管理可选的 **PowerWatch Hub**，或通过现有 Hub 的 WebUI 地址连接。Hub 是独立服务：它在自己的仪表板中聚合既有 PowerWatch 的私有 HTTP API，无需主机硬件权限。Dockge-Enhanced 只提供一个全局 Hub 链接，不会为每个关联实例重复显示。PowerWatch 现已支持**可选的原生身份验证**（默认关闭）以及只读 Bearer API 令牌。**Enhanced 集成目前尚不支持这些令牌**，因此无法直接访问已启用认证的 PowerWatch 实例。Hub 另有可选的管理操作令牌保护。请勿将未受保护的界面暴露到公网。
+更新页面通过现有的 Compose 更新与回滚流程逐个处理检测到的镜像，显示进度并在首次失败时停止。Dockge-Enhanced 自身更新仍单独进行。
 
+**ImageWatcher 错误诊断与元数据 (#493–#495)**
 
-#### 可选监控服务：Kula、Dozzle、PowerWatch 和 Hub
+镜像页面可将错误排在前面；暂时不可访问的目标不会被直接删除，清单超时采用有限次数重试，Registry/认证/Digest 错误提示更明确。仅在更新实际应用并确认后更新 Stack 时间戳。
 
-在 **Monitoring** (`/watcher/monitoring`) 页面中，四项第三方服务以独立且统一的卡片呈现，包含说明及 GitHub 链接。PowerWatch 和 Hub 均可连接外部实例或由 Enhanced 管理安装，并支持安装、启动、重启、停止及连接测试。托管 Hub 使用 PowerWatch 镜像中的 `powerwatch-hub` 程序，默认监听 `127.0.0.1:3065`，数据保存在独立 Docker 卷中。
+**Stack 与镜像更新操作界面 (#489–#490)**
 
-Hub 可以独立于本地 PowerWatch 运行。仅在主机 `127.0.0.1` 上开放的实例**无法从 Hub 容器直接访问**，请使用安全且可达的私有网络地址。启用原生身份验证之前不要将界面暴露于公网。
+Stack 批量自动更新设置移至操作栏中的弹窗，容器各自的设置不变。镜像更新、忽略、暂停和回滚操作改为紧凑按钮，并保留辅助功能标签。
 
-连接**现有 PowerWatch** 时，只需在 PowerWatch 地址中填写其常用 **WebUI 地址**（例如 `http://192.168.0.64:3064`）；Enhanced 会自动访问同一地址下的 `/api/snapshot`。只有特殊反向代理配置才需要在高级选项中填写独立 WebUI 地址。连接**现有 Hub** 也只需填写其 WebUI 地址；Enhanced 会自动访问 `/api/hub/snapshot`。
+#### 备份、清理与可靠性
 
 **更快且可抵抗并发竞争的 Docker 镜像清理**
 
@@ -118,21 +109,41 @@ Docker 可能会保留镜像的 repository 名称，但把 tag 变成 `<none>`�
 
 “Docker 资源”的镜像页、清理预览和清理任务现在共用同一个 Image ID 清单。手动与自动清理使用相同宽限期，同一物理镜像的多个标签只计一次；清理过程中已经消失的镜像不会再造成失败。已停止容器的镜像以及回滚/恢复资源继续受到保护。镜像、网络、卷和构建缓存可独立选择，结果按类别写入历史；系统每 15 分钟检查精确到期时间，并在休眠或重启后只补跑一次。启用统一清理时，旧的镜像自动清理设置会暂停但不会被删除。
 
+**Restic 初始化和界面改善 (#491)**
+
+保存配置、立即备份和维护操作分开呈现；仓库状态和保留策略说明更清晰，并强化初始化保护。
+
+**英文环境下的后端消息 (#477)**
+
+Restic 密码错误、清理审计摘要和自动更新消息不再错误地以法语显示在英文安装中。
+
+#### 监控与集成
+
+**可选的 PowerWatch 功耗监控**
+
+[PowerWatch](https://github.com/Aerya/PowerWatch) 现在支持两种模式：**外部**模式只读取现有的本地容器或 HTTP(S) 地址，绝不会控制它；**托管**模式则由 Dockge-Enhanced 部署为真实的 Compose Stack。托管安装会检测主机的 RAPL、MSR 和 NVIDIA 能力，只启用必要权限，绝不使用 `privileged: true`，并在停止或停用后继续保留持久卷中的历史与设置。
+
+整机当前功率、可信度和 WebUI 直达链接会通过现有联邦通道显示在 Monitoring、系统状态栏和紧凑的关联实例摘要中。系统状态栏和实例卡片仅在电力图标旁显示瓦数；工具提示会标明 PowerWatch 以及 Measured 或 Estimated 可信度。PowerWatch 会根据可用传感器进行测量或估算。
+
+也可以直接通过 Enhanced 安装和管理可选的 **PowerWatch Hub**，或通过现有 Hub 的 WebUI 地址连接。Hub 是独立服务：它在自己的仪表板中聚合既有 PowerWatch 的私有 HTTP API，无需主机硬件权限。Dockge-Enhanced 只提供一个全局 Hub 链接，不会为每个关联实例重复显示。PowerWatch 现已支持**可选的原生身份验证**（默认关闭）以及只读 Bearer API 令牌。**Enhanced 集成目前尚不支持这些令牌**，因此无法直接访问已启用认证的 PowerWatch 实例。Hub 另有可选的管理操作令牌保护。请勿将未受保护的界面暴露到公网。
+
+
+##### 可选监控服务：Kula、Dozzle、PowerWatch 和 Hub
+
+在 **Monitoring** (`/watcher/monitoring`) 页面中，四项第三方服务以独立且统一的卡片呈现，包含说明及 GitHub 链接。PowerWatch 和 Hub 均可连接外部实例或由 Enhanced 管理安装，并支持安装、启动、重启、停止及连接测试。托管 Hub 使用 PowerWatch 镜像中的 `powerwatch-hub` 程序，默认监听 `127.0.0.1:3065`，数据保存在独立 Docker 卷中。
+
+
+连接**现有 PowerWatch** 时，只需在 PowerWatch 地址中填写其常用 **WebUI 地址**（例如 `http://192.168.0.64:3064`）；Enhanced 会自动访问同一地址下的 `/api/snapshot`。只有特殊反向代理配置才需要在高级选项中填写独立 WebUI 地址。连接**现有 Hub** 也只需填写其 WebUI 地址；Enhanced 会自动访问 `/api/hub/snapshot`。
+
 **可选的主机 CPU/RAM 历史**
 
 Monitoring 可在没有浏览器打开时每 5 分钟记录一次轻量级主机 CPU/RAM 样本。响应式 SVG 图表支持 24 小时、7 天、1 个月和自定义范围；所选显示周期可以保存，并在下次打开时恢复。长时间范围会在服务端聚合，停机时间以空档显示。记录功能默认关闭；明确启用后，即使在低功耗模式下也会继续。
 
-**按服务排除状态与镜像更新**
-
-可视化 Compose 编辑器可添加 `dockge.status.ignore: "true"`，使可选服务在部署后不再影响应用栈整体状态，同时仍显示该服务自身状态。还可添加 `dockge.imageupdates.check: "false"`，将服务排除在 ImageWatcher 检测以及自动或批量镜像更新之外；仍可明确手动更新该服务。现有服务标签及其 YAML 语法会被保留。功能灵感来自 [hamphh/dockge](https://github.com/hamphh/dockge)。
+#### Stack、界面与易用性
 
 **更稳定的关联实例连接**
 
 添加或修改关联实例时，浏览器会话刷新不再断开联邦连接。同步网状网络及重启后，两个实例仍保持在线。
-
-**更新所有可用的 Docker 镜像**
-
-更新页面通过现有的 Compose 更新与回滚流程逐个处理检测到的镜像，显示进度并在首次失败时停止。Dockge-Enhanced 自身更新仍单独进行。
 
 **密码管理器**
 

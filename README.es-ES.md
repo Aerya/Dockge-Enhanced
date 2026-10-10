@@ -60,52 +60,43 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+#### Funciones y DNS
+
 **DNS de respaldo para comprobaciones de registries**
 
 En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (desactivado por defecto), añadir, editar o eliminar servidores IPv4/IPv6 y probar consultas A y AAAA con tiempos y diagnósticos. El DNS del sistema tiene prioridad: el respaldo solo se usa ante fallos de resolución DNS en las solicitudes HTTP compatibles de ImageWatcher a registries y servicios de tokens. Quad9 (`9.9.9.9`, `2620:fe::fe`) y Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`) son ejemplos modificables. Se conservan los ajustes guardados. No cambia el DNS del host ni de Docker Engine; las descargas y autoactualizaciones realizadas por Docker Engine no están cubiertas.
 
-
-**Mantenimiento y correcciones de octubre**
-
-- **Diagnósticos y metadatos de ImageWatcher (#493–#495)** — La vista Imágenes permite ordenar primero los errores. Se conservan los objetivos temporalmente inaccesibles, los tiempos de espera de manifiestos tienen reintentos limitados, los errores de registro/autenticación/digest son más claros y la fecha del stack solo cambia tras una actualización aplicada y confirmada.
-
-- **Controles de actualización de stacks e imágenes (#489–#490)** — La política automática de todo un stack se abre desde la barra de acciones en un diálogo, sin cambiar los ajustes individuales de contenedores. Los botones de actualizar, ignorar, pausar y revertir imágenes son más compactos y mantienen etiquetas accesibles.
-
-- **Inicialización y usabilidad de Restic (#491)** — Guardar ajustes, ejecutar copias y mantener repositorios son acciones separadas; el estado del repositorio y la ayuda de retención son más claros y se refuerza la inicialización.
-
-- **Mensajes backend en inglés (#477)** — Los errores de contraseña de Restic, los informes de limpieza y los mensajes de autoactualización dejan de mostrarse en francés en instalaciones inglesas.
-
+#### Actualizaciones e ImageWatcher
 
 **Coordinación más segura entre ImageWatcher y Self-Update**
 
 Las consultas de registros y DNS ya no retrasan la actualización de Dockge-Enhanced. Las actualizaciones de imágenes, reversiones y limpiezas de etiquetas de rollback que modifican Docker comparten una reserva exclusiva con Self-Update: las operaciones incompatibles se aplazan en lugar de ejecutarse a la vez. El estado `scheduled` no bloquea innecesariamente ImageWatcher; el estado persistente protege al sidecar después de un reinicio. El panel de Actualizaciones prioriza la operación activa frente a una comprobación antigua de disponibilidad.
 
-
 **Actualizaciones de imágenes agrupadas por stack**
 
 La página de un stack permite aplicar los modos **Desactivado**, **Inmediato** o **Programado** a todas las imágenes elegibles. La vista previa muestra los cambios y se puede **conservar las excepciones individuales** (opción predeterminada) o reemplazarlas. Los servicios con `dockge.imageupdates.check=false` permanecen protegidos, las imágenes compartidas se cuentan una sola vez y las instancias vinculadas usan la misma validación. Las imágenes futuras no heredan esta configuración.
-
 
 **ImageWatcher: actualizaciones inmediatas más rápidas y fiables**
 
 Para las imágenes configuradas como **Inmediato**, ImageWatcher realiza una comprobación dirigida al activar la opción y después cada **5 minutos**, sin aumentar la frecuencia del análisis global. Cuando varias stacks comparten la misma imagen `:latest`, Enhanced comprueba la imagen **realmente ejecutada por cada contenedor**, no solo la etiqueta local: un servicio que sigue utilizando una versión antigua ya no aparece incorrectamente como actualizado. Las peticiones idénticas a los registros se comparten, los límites HTTP 429 activan una espera y cada comprobación se resume en los logs. Se respetan las pausas, las ventanas de mantenimiento y las protecciones de rollback.
 
-**Monitorización eléctrica opcional con PowerWatch**
+**Exclusiones de estado y actualizaciones por servicio**
 
-[PowerWatch](https://github.com/Aerya/PowerWatch) puede conectarse en modo **Externo**, que solo lee un contenedor local o una URL HTTP(S) existente sin controlarlo nunca, o desplegarse en modo **Gestionado** como una stack Compose real. La instalación gestionada detecta las capacidades RAPL, MSR y NVIDIA del host, activa únicamente los accesos necesarios, nunca utiliza `privileged: true` y conserva el historial y los ajustes en un volumen persistente al detenerse o desactivarse.
+El editor visual de Compose puede añadir `dockge.status.ignore: "true"` para que un servicio opcional no degrade el estado global del stack tras desplegarlo, aunque su propio estado siga visible. También puede añadir `dockge.imageupdates.check: "false"` para excluir un servicio de las comprobaciones de ImageWatcher y de las actualizaciones automáticas o por lotes. La actualización explícita del servicio sigue disponible. Se conservan las etiquetas existentes y su sintaxis YAML. Funciones inspiradas en [hamphh/dockge](https://github.com/hamphh/dockge).
 
-La potencia instantánea global, su nivel de confianza y un enlace directo a la WebUI aparecen en Monitoring, la barra del sistema y los resúmenes compactos de instancias vinculadas mediante la federación existente. La barra del sistema y las tarjetas de instancia muestran solo los vatios junto al icono eléctrico; el tooltip identifica PowerWatch y su confianza Measured o Estimated. PowerWatch mide o estima el consumo según los sensores disponibles.
+**Actualizar todas las imágenes Docker disponibles**
 
-También puede instalarse y gestionarse un **PowerWatch Hub** desde Enhanced, o conectarse uno existente mediante su URL WebUI. Sigue siendo un servicio independiente: agrupa las API HTTP privadas de instancias PowerWatch existentes en su propio panel y no necesita privilegios de hardware del host. Dockge-Enhanced solo abre este enlace global del Hub; no lo duplica para cada instancia vinculada. PowerWatch dispone ahora de autenticación nativa opcional, **desactivada por defecto**, con tokens API Bearer de solo lectura. **Enhanced todavía no admite esos tokens**, por lo que no puede consultar directamente una instancia PowerWatch protegida. El Hub también ofrece un token opcional para proteger su administración. Nunca expongas una interfaz sin protección a Internet.
+La página Actualizaciones procesa las imágenes detectadas una por una mediante el flujo Compose y de reversión existente. Muestra el progreso, se detiene ante el primer error y mantiene separada la autoactualización de Enhanced.
 
+**Diagnósticos y metadatos de ImageWatcher (#493–#495)**
 
-#### Servicios opcionales: Kula, Dozzle, PowerWatch y Hub
+La vista Imágenes permite ordenar primero los errores. Se conservan los objetivos temporalmente inaccesibles, los tiempos de espera de manifiestos tienen reintentos limitados, los errores de registro/autenticación/digest son más claros y la fecha del stack solo cambia tras una actualización aplicada y confirmada.
 
-En **Monitoring** (`/watcher/monitoring`), los cuatro servicios de terceros tienen tarjetas independientes con descripción y enlace a GitHub. PowerWatch y Hub incluyen modos externo y gestionado, instalación, inicio, reinicio, parada y prueba de conexión. El Hub gestionado utiliza el binario `powerwatch-hub` de la imagen PowerWatch, escucha de forma predeterminada en `127.0.0.1:3065` y conserva los datos en su propio volumen Docker.
+**Controles de actualización de stacks e imágenes (#489–#490)**
 
-El Hub funciona sin un PowerWatch local. Un servicio accesible únicamente en `127.0.0.1` del host **no puede ser alcanzado directamente desde el contenedor Hub**: se necesita una dirección privada accesible y protegida. No exponga las interfaces a Internet mientras no haya autenticación nativa.
+La política automática de todo un stack se abre desde la barra de acciones en un diálogo, sin cambiar los ajustes individuales de contenedores. Los botones de actualizar, ignorar, pausar y revertir imágenes son más compactos y mantienen etiquetas accesibles.
 
-Para conectar un **PowerWatch existente**, indique únicamente la dirección de su **WebUI** (por ejemplo, `http://192.168.0.64:3064`) en el campo URL de PowerWatch: Enhanced consultará automáticamente `/api/snapshot` en esa dirección. Una URL de WebUI distinta solo es necesaria en configuraciones especiales con proxy inverso y permanece en las opciones avanzadas. Para un **Hub existente**, basta con su dirección WebUI; Enhanced utiliza `/api/hub/snapshot` automáticamente.
+#### Copias de seguridad, limpieza y fiabilidad
 
 **Limpieza de imágenes Docker más rápida y resistente a carreras**
 
@@ -135,13 +126,38 @@ Las imágenes antiguas `ghcr.io/aerya/dockge-enhanced:<none>` obtenidas por dige
 
 Recursos Docker comparte un único inventario por Image ID entre la página Imágenes, la vista previa de Limpieza y las purgas. El mismo periodo de gracia se aplica ahora a la limpieza manual y automática, las distintas etiquetas de una misma imagen física cuentan una sola vez y una imagen que desaparece durante la limpieza se considera ya ausente en lugar de un error. Las imágenes de contenedores detenidos y los recursos de rollback/recuperación siguen protegidos. Imágenes, redes, volúmenes y caché de build se seleccionan por separado, los resultados se guardan por categoría y los vencimientos se comprueban cada 15 minutos con una sola recuperación tras una suspensión o reinicio. Al activar la limpieza unificada se suspenden los ajustes antiguos sin borrarlos.
 
+**Inicialización y usabilidad de Restic (#491)**
+
+Guardar ajustes, ejecutar copias y mantener repositorios son acciones separadas; el estado del repositorio y la ayuda de retención son más claros y se refuerza la inicialización.
+
+**Mensajes backend en inglés (#477)**
+
+Los errores de contraseña de Restic, los informes de limpieza y los mensajes de autoactualización dejan de mostrarse en francés en instalaciones inglesas.
+
+#### Supervisión e integraciones
+
+**Monitorización eléctrica opcional con PowerWatch**
+
+[PowerWatch](https://github.com/Aerya/PowerWatch) puede conectarse en modo **Externo**, que solo lee un contenedor local o una URL HTTP(S) existente sin controlarlo nunca, o desplegarse en modo **Gestionado** como una stack Compose real. La instalación gestionada detecta las capacidades RAPL, MSR y NVIDIA del host, activa únicamente los accesos necesarios, nunca utiliza `privileged: true` y conserva el historial y los ajustes en un volumen persistente al detenerse o desactivarse.
+
+La potencia instantánea global, su nivel de confianza y un enlace directo a la WebUI aparecen en Monitoring, la barra del sistema y los resúmenes compactos de instancias vinculadas mediante la federación existente. La barra del sistema y las tarjetas de instancia muestran solo los vatios junto al icono eléctrico; el tooltip identifica PowerWatch y su confianza Measured o Estimated. PowerWatch mide o estima el consumo según los sensores disponibles.
+
+También puede instalarse y gestionarse un **PowerWatch Hub** desde Enhanced, o conectarse uno existente mediante su URL WebUI. Sigue siendo un servicio independiente: agrupa las API HTTP privadas de instancias PowerWatch existentes en su propio panel y no necesita privilegios de hardware del host. Dockge-Enhanced solo abre este enlace global del Hub; no lo duplica para cada instancia vinculada. PowerWatch dispone ahora de autenticación nativa opcional, **desactivada por defecto**, con tokens API Bearer de solo lectura. **Enhanced todavía no admite esos tokens**, por lo que no puede consultar directamente una instancia PowerWatch protegida. El Hub también ofrece un token opcional para proteger su administración. Nunca expongas una interfaz sin protección a Internet.
+
+
+##### Servicios opcionales: Kula, Dozzle, PowerWatch y Hub
+
+En **Monitoring** (`/watcher/monitoring`), los cuatro servicios de terceros tienen tarjetas independientes con descripción y enlace a GitHub. PowerWatch y Hub incluyen modos externo y gestionado, instalación, inicio, reinicio, parada y prueba de conexión. El Hub gestionado utiliza el binario `powerwatch-hub` de la imagen PowerWatch, escucha de forma predeterminada en `127.0.0.1:3065` y conserva los datos en su propio volumen Docker.
+
+El Hub funciona sin un PowerWatch local. Un servicio accesible únicamente en `127.0.0.1` del host **no puede ser alcanzado directamente desde el contenedor Hub**: se necesita una dirección privada accesible y protegida. No exponga las interfaces a Internet mientras no haya autenticación nativa.
+
+Para conectar un **PowerWatch existente**, indique únicamente la dirección de su **WebUI** (por ejemplo, `http://192.168.0.64:3064`) en el campo URL de PowerWatch: Enhanced consultará automáticamente `/api/snapshot` en esa dirección. Una URL de WebUI distinta solo es necesaria en configuraciones especiales con proxy inverso y permanece en las opciones avanzadas. Para un **Hub existente**, basta con su dirección WebUI; Enhanced utiliza `/api/hub/snapshot` automáticamente.
+
 **Historial opcional de CPU/RAM del host**
 
 Monitoring puede guardar una muestra ligera de CPU y RAM cada 5 minutos sin navegador abierto. El gráfico SVG adaptable ofrece 24 horas, 7 días, 1 mes o un rango personalizado; el periodo mostrado puede guardarse y restaurarse en la siguiente visita. Los periodos largos se agregan en el servidor y los apagados quedan visibles como huecos. El registro está desactivado por defecto y continúa en modo de bajo consumo si se activa expresamente.
 
-**Exclusiones de estado y actualizaciones por servicio**
-
-El editor visual de Compose puede añadir `dockge.status.ignore: "true"` para que un servicio opcional no degrade el estado global del stack tras desplegarlo, aunque su propio estado siga visible. También puede añadir `dockge.imageupdates.check: "false"` para excluir un servicio de las comprobaciones de ImageWatcher y de las actualizaciones automáticas o por lotes. La actualización explícita del servicio sigue disponible. Se conservan las etiquetas existentes y su sintaxis YAML. Funciones inspiradas en [hamphh/dockge](https://github.com/hamphh/dockge).
+#### Stacks, interfaz y usabilidad
 
 **Volúmenes y registros más claros en las stacks**
 
@@ -154,10 +170,6 @@ Los ajustes de apariencia ofrecen ahora paletas distintas para los modos claro y
 **Conexiones fiables entre instancias vinculadas**
 
 Añadir o modificar una instancia vinculada ahora actualiza las sesiones del navegador sin desconectar las conexiones de federación. Ambas instancias permanecen conectadas tras sincronizar la malla y después de un reinicio.
-
-**Actualizar todas las imágenes Docker disponibles**
-
-La página Actualizaciones procesa las imágenes detectadas una por una mediante el flujo Compose y de reversión existente. Muestra el progreso, se detiene ante el primer error y mantiene separada la autoactualización de Enhanced.
 
 **Gestores de contraseñas**
 

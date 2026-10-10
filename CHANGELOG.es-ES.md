@@ -4,16 +4,13 @@
 
 **2026-10-10 — Controles de actualización de stacks e imágenes (#489–#490)** — La política automática de todo un stack se abre desde la barra de acciones en un diálogo, sin cambiar los ajustes individuales de contenedores. Los botones de actualizar, ignorar, pausar y revertir imágenes son más compactos y mantienen etiquetas accesibles.
 
-**2026-10-09 — Inicialización y usabilidad de Restic (#491)** — Guardar ajustes, ejecutar copias y mantener repositorios son acciones separadas; el estado del repositorio y la ayuda de retención son más claros y se refuerza la inicialización.
-
-**2026-10-08 — Mensajes backend en inglés (#477)** — Los errores de contraseña de Restic, los informes de limpieza y los mensajes de autoactualización dejan de mostrarse en francés en instalaciones inglesas.
-
-
 **2026-10-10 — DNS de respaldo configurables** — ImageWatcher puede usar, solo tras un fallo del DNS del sistema, Quad9/Cloudflare o servidores IPv4/IPv6 personalizados para solicitudes HTTP a registries y servicios de tokens. La WebUI ofrece pruebas A/AAAA, tiempos y diagnósticos traducidos. Desactivado por defecto; no modifica el DNS del host ni de Docker Engine, ni afecta a las descargas y autoactualizaciones gestionadas por Engine.
 
 **2026-10-10 — Coordinación ImageWatcher / Self-Update** — Las consultas de registros/DNS en modo lectura ya no bloquean la actualización de Enhanced. Las actualizaciones de imágenes, reversiones y limpiezas de etiquetas que modifican Docker comparten una reserva exclusiva con Self-Update; las operaciones en conflicto se aplazan. La planificación no bloquea innecesariamente ImageWatcher y el panel prioriza la operación activa.
 
 **2026-10-10 — Actualización automática con Docker Socket Proxy y varias redes** — El sidecar comienza en una red Docker existente y se conecta únicamente a las redes adicionales antes de ejecutar el plan firmado. Corrige el conflicto con la red `none` en el paso 5/8 e incluye pruebas para una o varias redes y errores de conexión. Corrige #485.
+
+**2026-10-09 — Inicialización y usabilidad de Restic (#491)** — Guardar ajustes, ejecutar copias y mantener repositorios son acciones separadas; el estado del repositorio y la ayuda de retención son más claros y se refuerza la inicialización.
 
 **2026-10-09 — Actualizaciones de imágenes agrupadas por stack** — La página de un stack permite aplicar los modos **Desactivado**, **Inmediato** o **Programado** a todas las imágenes elegibles. La vista previa muestra los cambios y se puede **conservar las excepciones individuales** (opción predeterminada) o reemplazarlas. Los servicios con `dockge.imageupdates.check=false` permanecen protegidos, las imágenes compartidas se cuentan una sola vez y las instancias vinculadas usan la misma validación. Las imágenes futuras no heredan esta configuración.
 
@@ -21,6 +18,7 @@
 
 **2026-10-09 — Supervisión opcional unificada y Hub PowerWatch gestionado** — Kula, Dozzle, PowerWatch y Hub disponen de tarjetas coherentes con descripciones traducidas, enlaces GitHub y acciones adaptadas a su estado. El Hub se puede instalar y gestionar de forma independiente con su propio volumen persistente. Una instancia PowerWatch o Hub existente solo requiere la URL de su WebUI; Enhanced utiliza automáticamente la API integrada. Sus ajustes se guardan por separado.
 
+**2026-10-08 — Mensajes backend en inglés (#477)** — Los errores de contraseña de Restic, los informes de limpieza y los mensajes de autoactualización dejan de mostrarse en francés en instalaciones inglesas.
 
 **2026-10-08 — Monitorización eléctrica opcional con PowerWatch** — Dockge-Enhanced puede observar un PowerWatch local o HTTP(S) existente sin controlarlo, o desplegar una stack Compose gestionada con datos persistentes y soporte condicional para RAPL, MSR y NVIDIA. La potencia instantánea global, su nivel de confianza y enlaces WebUI compactos aparecen en Monitoring, la barra del sistema y los resúmenes de instancias vinculadas mediante el canal de federación existente. Un PowerWatch Hub opcional configurado por separado dispone de un único enlace global y se comprueba mediante su API documentada. Los contenedores externos nunca se modifican, la propiedad gestionada se comprueba estrictamente y la WebUI escucha en loopback por defecto.
 
@@ -33,7 +31,6 @@
 **2026-10-08 — Reconciliación final fiable de los informes de limpieza Docker** — Una imagen ausente de una inspección por lotes ya no se confunde con una ausencia confirmada por Docker: la limpieza usa una inspección dirigida por Image ID, comprueba la postcondición de cada eliminación y realiza una reconciliación final ligera. Recursos separa ahora el uso Docker del estado de limpieza, para explicar imágenes Enhanced activas, de recuperación, rollback, demasiado recientes o excluidas incluso cuando Docker las marca como sin uso. Las protecciones de Enhanced activa, rollback y recuperación se conservan, con un inventario inicial, controles dirigidos y un inventario final ligero.
 
 **2026-10-07 — La limpieza de imágenes Docker está acotada y resiste condiciones de carrera** — Una limpieza por lotes carga ahora el inventario completo una sola vez y solo revalida el objetivo justo antes de eliminarlo, en lugar de volver a escanear todas las imágenes y contenedores antes de cada `docker rmi`. La lista de Recursos evita la inspección completa de imágenes, las inspecciones se realizan en lotes acotados y toleran la desaparición concurrente de una imagen, las imágenes Enhanced antiguas `<none>` reutilizan el inventario inicial y la expiración de rollbacks comparte el bloqueo de limpieza Docker.
-
 
 **2026-10-07 — Limpieza fiable de imágenes Enhanced antiguas `<none>`** — La limpieza identifica ahora las candidatas `ghcr.io/aerya/dockge-enhanced:<none>` desde el inventario Docker en vez de exigir metadatos `RepoDigests` que pueden desaparecer tras un retag. Las imágenes que superan la protección self-update de 48 h pueden eliminarse manteniendo seguras la imagen activa y las de recuperación. El resumen de imágenes sin uso tampoco cuenta ya las imágenes normales realmente utilizadas como candidatas protegidas.
 

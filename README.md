@@ -59,52 +59,43 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+#### Features and DNS
+
 **Optional DNS fallback for registry checks**
 
 Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS fallback (disabled by default), add/edit/remove IPv4 or IPv6 resolvers, and test A and AAAA queries with response times and diagnostics. System DNS is always tried first; fallback is used only for DNS resolution failures in supported ImageWatcher HTTP registry/token requests. The initial examples are Quad9 (`9.9.9.9`, `2620:fe::fe`) and Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`), and are fully customizable. Existing saved settings are preserved. No host or Docker Engine DNS setting is changed; Docker Engine pulls and self-updates are outside this fallback.
 
-
-**October maintenance / corrections**
-
-- **ImageWatcher diagnostics and metadata (#493–#495)** — The Images view can sort errors first. Transiently unreachable targets are preserved, manifest timeouts use bounded retries, registry/authentication/digest errors are clearer, and stack timestamps change only after a confirmed applied update.
-
-- **Stack update controls and image action buttons (#489–#490)** — The stack-wide automatic update policy now opens from the stack action bar in a modal; individual container controls remain unchanged. Image update, ignore, pause and rollback actions use compact buttons with accessible labels.
-
-- **Restic setup feedback and safer initialization (#491)** — Backup settings, run-now and maintenance actions are separated; repository state and retention help are clearer, and initialization uses safer safeguards.
-
-- **English backend messages (#477)** — Restic password errors, prune audit summaries and automatic update messages are no longer incorrectly displayed in French in an English installation.
-
+#### Updates and ImageWatcher
 
 **Safer coordination between ImageWatcher and Self-Update**
 
 Read-only registry and DNS checks no longer delay Dockge-Enhanced self-updates. Image updates, rollbacks and rollback-tag cleanup that change Docker now share an exclusive reservation with Self-Update, so conflicting operations are deferred instead of overlapping. A scheduled self-update does not block image updates unnecessarily; persisted self-update state continues protecting the detached updater after restart. The Updates panel prioritizes an active self-update over a stale availability check.
 
-
 **Bulk automatic image policies for a stack**
 
 A stack page now supports applying **Off**, **Immediate**, or **Scheduled** policies to all eligible images at once. A preview lists changes; users choose to **preserve individual exceptions** (the default) or replace them. Services excluded through `dockge.imageupdates.check=false` remain protected, shared images are deduplicated, and linked instances use the same server-side validation. Future images are not automatically affected.
-
 
 **ImageWatcher: faster and more reliable immediate updates**
 
 For images set to **Immediate**, ImageWatcher performs a targeted check when the setting is enabled and then every **5 minutes**, without increasing the global scan frequency. When several stacks share the same `:latest` image, Enhanced checks the image **actually running in each container**, rather than just the local tag: a service still running an older version is no longer incorrectly marked up to date. Registry requests for identical images are shared, HTTP 429 rate limits trigger a cooldown, and targeted checks are summarized in the logs. Pauses, maintenance windows, and rollback safeguards still apply.
 
-**Optional PowerWatch electrical monitoring**
+**Per-service status and image-update exclusions**
 
-[PowerWatch](https://github.com/Aerya/PowerWatch) can now be connected in **External** mode, which only reads an existing local container or HTTP(S) endpoint and never controls it, or deployed in **Managed** mode as a real Compose stack. Managed installation detects the host's RAPL, MSR and NVIDIA capabilities, enables only the required access, never uses `privileged: true`, and keeps history and settings in a persistent volume when stopped or disabled.
+The visual Compose editor can add `dockge.status.ignore: "true"` so an optional service no longer degrades the overall stack status after deployment, while its own state remains visible. It can also add `dockge.imageupdates.check: "false"` to exclude a service from ImageWatcher checks and automatic or batch image updates. An explicit service update remains available. Existing service labels and YAML label syntax are preserved. Inspired by [hamphh/dockge](https://github.com/hamphh/dockge).
 
-Current whole-machine power, confidence and a direct WebUI link appear in Monitoring, the system status bar and compact linked-instance summaries through the existing federation channel. The status bar and instance cards display only the watts next to the electrical icon; the tooltip identifies PowerWatch and its measured or estimated confidence. PowerWatch measures or estimates consumption according to the available sensors.
+**Update all available container images**
 
-An optional **PowerWatch Hub** can also be installed and managed directly by Enhanced, or linked through an existing Hub WebUI URL. It remains a separate service: it aggregates existing private PowerWatch HTTP APIs in its own dashboard and needs no host hardware privileges. Dockge-Enhanced only opens this single global Hub link; it does not duplicate it for every linked instance. PowerWatch and Hub WebUIs have no built-in authentication: bind them to loopback by default, or expose them only on a trusted private LAN or behind external authentication.
+The Updates page can update detected images one at a time using the existing Compose update and rollback path. It shows progress, stops on the first failure and leaves Dockge-Enhanced self-update separate.
 
+**ImageWatcher diagnostics and metadata (#493–#495)**
 
-#### Optional monitoring services: Kula, Dozzle, PowerWatch and Hub
+The Images view can sort errors first. Transiently unreachable targets are preserved, manifest timeouts use bounded retries, registry/authentication/digest errors are clearer, and stack timestamps change only after a confirmed applied update.
 
-In **Monitoring** (`/watcher/monitoring`), the four optional third-party services appear in separate, consistent cards, with brief descriptions and links to their GitHub repositories. PowerWatch and its Hub each offer independent external/managed modes, installation, start, restart, stop and connectivity test. Managed Hub uses the PowerWatch image's `powerwatch-hub` binary, defaults to `127.0.0.1:3065`, and stores its data in a dedicated persistent Docker volume.
+**Stack update controls and image action buttons (#489–#490)**
 
-A Hub can run without a locally managed PowerWatch. Instances reachable only through an individual host's `127.0.0.1` are **not automatically accessible from the Hub's Docker container**; configure a reachable, protected endpoint for federation. PowerWatch now offers optional native authentication, **disabled by default**, with read-only Bearer API tokens. **Enhanced does not yet support those tokens** for connecting to a protected PowerWatch instance. The Hub separately supports an optional token for administrative operations. Never expose an unprotected interface publicly.
+The stack-wide automatic update policy now opens from the stack action bar in a modal; individual container controls remain unchanged. Image update, ignore, pause and rollback actions use compact buttons with accessible labels.
 
-To connect an **existing PowerWatch**, enter the usual **WebUI address** (for example `http://192.168.0.64:3064`) in the PowerWatch URL field: Enhanced automatically requests `/api/snapshot` on the same origin. A separate WebUI address is only needed for unusual reverse-proxy setups and remains available in advanced settings. An **existing Hub** likewise needs only its WebUI address; Enhanced calls `/api/hub/snapshot` automatically.
+#### Backups, cleanup and reliability
 
 **Faster, race-safe Docker image cleanup**
 
@@ -134,13 +125,37 @@ Old `ghcr.io/aerya/dockge-enhanced:<none>` images pulled by digest now age out i
 
 Docker Resources shares one Image-ID inventory between the Images page, cleanup preview and pruning. The same grace period applies to manual and automatic cleanup, multiple tags for one physical image count only once, and images that disappear concurrently are treated as already absent rather than as cleanup failures. Stopped-container images and rollback/recovery assets remain protected. Images, networks, volumes and build cache can be selected independently, results are recorded per category, and due jobs are checked every 15 minutes with one catch-up after sleep or restart. Enabling unified cleanup suspends the legacy image schedules without erasing them.
 
+**Restic setup feedback and safer initialization (#491)**
+
+Backup settings, run-now and maintenance actions are separated; repository state and retention help are clearer, and initialization uses safer safeguards.
+
+**English backend messages (#477)**
+
+Restic password errors, prune audit summaries and automatic update messages are no longer incorrectly displayed in French in an English installation.
+
+#### Monitoring and integrations
+
+**Optional PowerWatch electrical monitoring**
+
+[PowerWatch](https://github.com/Aerya/PowerWatch) can now be connected in **External** mode, which only reads an existing local container or HTTP(S) endpoint and never controls it, or deployed in **Managed** mode as a real Compose stack. Managed installation detects the host's RAPL, MSR and NVIDIA capabilities, enables only the required access, never uses `privileged: true`, and keeps history and settings in a persistent volume when stopped or disabled.
+
+Current whole-machine power, confidence and a direct WebUI link appear in Monitoring, the system status bar and compact linked-instance summaries through the existing federation channel. The status bar and instance cards display only the watts next to the electrical icon; the tooltip identifies PowerWatch and its measured or estimated confidence. PowerWatch measures or estimates consumption according to the available sensors.
+
+
+
+##### Optional monitoring services: Kula, Dozzle, PowerWatch and Hub
+
+In **Monitoring** (`/watcher/monitoring`), the four optional third-party services appear in separate, consistent cards, with brief descriptions and links to their GitHub repositories. PowerWatch and its Hub each offer independent external/managed modes, installation, start, restart, stop and connectivity test. Managed Hub uses the PowerWatch image's `powerwatch-hub` binary, defaults to `127.0.0.1:3065`, and stores its data in a dedicated persistent Docker volume.
+
+A Hub can run without a locally managed PowerWatch. Instances reachable only through an individual host's `127.0.0.1` are **not automatically accessible from the Hub's Docker container**; configure a reachable, protected endpoint for federation. PowerWatch now offers optional native authentication, **disabled by default**, with read-only Bearer API tokens. **Enhanced does not yet support those tokens** for connecting to a protected PowerWatch instance. The Hub separately supports an optional token for administrative operations. Never expose an unprotected interface publicly.
+
+To connect an **existing PowerWatch**, enter the usual **WebUI address** (for example `http://192.168.0.64:3064`) in the PowerWatch URL field: Enhanced automatically requests `/api/snapshot` on the same origin. A separate WebUI address is only needed for unusual reverse-proxy setups and remains available in advanced settings. An **existing Hub** likewise needs only its WebUI address; Enhanced calls `/api/hub/snapshot` automatically.
+
 **Optional host CPU/RAM history**
 
 Monitoring can record one lightweight host CPU/RAM sample every 5 minutes, independently of browser sessions. The responsive SVG graph offers 24-hour, 7-day, monthly and custom ranges; the selected display range can be saved and restored on the next visit. Long ranges are downsampled server-side and downtime remains visible as gaps. Recording is disabled by default and low-power mode does not stop it when explicitly enabled.
 
-**Per-service status and image-update exclusions**
-
-The visual Compose editor can add `dockge.status.ignore: "true"` so an optional service no longer degrades the overall stack status after deployment, while its own state remains visible. It can also add `dockge.imageupdates.check: "false"` to exclude a service from ImageWatcher checks and automatic or batch image updates. An explicit service update remains available. Existing service labels and YAML label syntax are preserved. Inspired by [hamphh/dockge](https://github.com/hamphh/dockge).
+#### Stacks, interface and usability
 
 **Cleaner Compose volumes and logs**
 
@@ -153,10 +168,6 @@ Appearance settings now offer separate palettes for light and dark mode: four da
 **Reliable linked-instance connections**
 
 Adding or changing a linked instance now refreshes browser sessions without disconnecting federation sockets. Both instances remain connected after mesh synchronization and after a restart.
-
-**Update all available container images**
-
-The Updates page can update detected images one at a time using the existing Compose update and rollback path. It shows progress, stops on the first failure and leaves Dockge-Enhanced self-update separate.
 
 **Password managers**
 
