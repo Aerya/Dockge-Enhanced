@@ -961,6 +961,7 @@
     "watcher.updateHistory.digests": "Ancien → Nouveau digest",
     "watcher.updateHistory.mode": "Mode",
     "watcher.updateHistory.status": "Statut",
+    "watcher.updateHistory.unverified": "Appliquée, non vérifiée",
     "watcher.updateHistory.immediate": "Immédiat",
     "watcher.updateHistory.scheduled": "Planifié",
     "watcher.updateHistory.summary": "{count} entrées, {failures} échecs, dernière : {last}",
