@@ -13,6 +13,7 @@ import * as path from "path";
 import { buildStackBulkPlan, StackBulkRequest, validateStackBulkRequest } from "./stack-auto-update";
 import * as yaml from "js-yaml";
 import axios from "axios";
+import { registryDnsAxiosOptions } from "../registry-dns-fallback";
 import { EventEmitter } from "events";
 import { parse as parseDotenv } from "dotenv";
 
@@ -621,12 +622,15 @@ async function resolveChallenge(
     try {
         const res = cred
             ? await axios.get(tokenUrl, {
+                ...await registryDnsAxiosOptions(),
                 auth: { username: cred.username,
                     password: cred.token },
                 timeout: 10000,
                 maxRedirects: 0,
             })
-            : await axios.get(tokenUrl, { timeout: 10000,
+            : await axios.get(tokenUrl, {
+                ...await registryDnsAxiosOptions(),
+                timeout: 10000,
                 maxRedirects: 0 });
         const token = res.data.token ?? res.data.access_token;
         return token ? `Bearer ${token}` : "";
@@ -656,7 +660,8 @@ async function getInitialAuth(
         try {
             const res = await axios.get(
         `https://auth.docker.io/token?service=registry.docker.io&scope=repository:${name}:pull`,
-        { timeout: 10000 },
+        { timeout: 10000,
+            ...await registryDnsAxiosOptions() },
             );
             return `Bearer ${res.data.token}`;
         } catch {
@@ -809,6 +814,7 @@ async function getRemoteDigest(
     const fetchManifest = async () => {
         try {
             return await axios.get(manifestUrl, {
+                ...await registryDnsAxiosOptions(),
                 headers: makeHeaders(),
                 timeout: 15000,
                 maxRedirects: 0,
@@ -820,6 +826,7 @@ async function getRemoteDigest(
                 if (challenge) {
                     auth = await resolveChallenge(challenge, credentials, registry);
                     return await axios.get(manifestUrl, {
+                        ...await registryDnsAxiosOptions(),
                         headers: makeHeaders(),
                         timeout: 15000,
                         maxRedirects: 0,

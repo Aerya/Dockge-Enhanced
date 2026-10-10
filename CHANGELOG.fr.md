@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-10 — DNS de secours configurables** — ImageWatcher peut utiliser, uniquement après un échec DNS système, les serveurs Quad9/Cloudflare ou des DNS IPv4/IPv6 personnalisés pour ses requêtes HTTP aux registries et aux services de jetons. La WebUI propose les tests A/AAAA, les délais et les diagnostics traduits. Désactivé par défaut ; aucun changement DNS de l’hôte ou de Docker Engine, et aucune action sur les pulls/self-updates gérés par Engine.
+
 **2026-10-10 — Coordination ImageWatcher / Self-Update** — Les scans de registres/DNS en lecture seule ne bloquent plus la mise à jour d’Enhanced. Les mises à jour d’images, rollbacks et nettoyages de tags partageant une mutation Docker utilisent une réservation exclusive avec Self-Update ; les opérations concurrentes sont reportées. L’état planifié ne bloque pas inutilement ImageWatcher et le panneau donne la priorité à l’opération active.
 
 **2026-10-10 — Restic : réinitialisation sécurisée des dépôts Local, SFTP, S3 et REST** — Aperçu et confirmations explicites avant la création d’un nouveau dépôt vide. En local, l’ancien dépôt est renommé en archive ; à distance, Dockge bascule vers un nouveau répertoire SFTP, préfixe S3 ou URL REST. Les anciennes sauvegardes restent conservées et seul l’Historique récent de la destination réinitialisée est nettoyé. Les protections des chemins locaux, montages et sauvegardes récursives sont maintenues.

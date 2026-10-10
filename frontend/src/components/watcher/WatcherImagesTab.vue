@@ -178,6 +178,68 @@
             </div>
         </div>
 
+        <!-- Advanced registry DNS fallback: scoped to Enhanced HTTP registry checks. -->
+        <div class="shadow-box big-padding mb-4">
+            <details>
+                <summary class="settings-subheading">{{ $t("watcher.registryDns.title") }}</summary>
+                <p class="form-text mt-2">{{ $t("watcher.registryDns.description") }}</p>
+                <div class="form-check form-switch mb-3">
+                    <input id="registryDnsEnabled" v-model="registryDns.enabled" class="form-check-input" type="checkbox" role="switch" />
+                    <label class="form-check-label" for="registryDnsEnabled">{{ $t("watcher.registryDns.enable") }}</label>
+                </div>
+                <div v-for="(server, index) in registryDns.servers" :key="index" class="d-flex gap-2 mb-2">
+                    <input v-model.trim="registryDns.servers[index]" class="form-control" :aria-label="`${$t('watcher.registryDns.server')} ${index + 1}`" placeholder="9.9.9.9 / 2620:fe::fe" />
+                    <button class="btn btn-outline-danger" type="button" @click="registryDns.servers.splice(index, 1)">{{ $t("watcher.registryDns.remove") }}</button>
+                </div>
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                    <button class="btn btn-normal" type="button" @click="registryDns.servers.push('')">{{ $t("watcher.registryDns.add") }}</button>
+                    <button class="btn btn-primary" type="button" :disabled="dnsSaving" @click="saveRegistryDns">{{ $t("watcher.registryDns.save") }}</button>
+                </div>
+                <div class="d-flex gap-2 mb-2">
+                    <input v-model.trim="dnsTestHost" class="form-control" :aria-label="$t('watcher.registryDns.hostname')" placeholder="ghcr.io" />
+                    <button class="btn btn-normal" type="button" :disabled="dnsTesting" @click="testDns">{{ $t("watcher.registryDns.test") }}</button>
+                </div>
+                <p v-if="dnsMessage" class="form-text" role="status">{{ dnsMessage }}</p>
+                <div v-if="dnsTestResults.length" class="table-responsive mt-3">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ $t("watcher.registryDns.server") }}</th>
+                                <th scope="col">{{ $t("watcher.registryDns.recordType") }}</th>
+                                <th scope="col">{{ $t("watcher.registryDns.status") }}</th>
+                                <th scope="col">{{ $t("watcher.registryDns.duration") }}</th>
+                                <th scope="col">{{ $t("watcher.registryDns.diagnostic") }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template v-for="result in dnsTestResults" :key="result.server">
+                                <tr v-for="(record, index) in result.results" :key="record.type">
+                                    <th v-if="index === 0" scope="rowgroup" :rowspan="result.results.length">
+                                        <code>{{ result.server }}</code>
+                                        <small class="d-block text-muted">DNS IPv{{ result.family }}</small>
+                                    </th>
+                                    <td><code>{{ record.type }}</code></td>
+                                    <td class="text-nowrap">
+                                        <span v-if="record.address" class="text-success">✓ {{ $t("watcher.registryDns.resolved") }}</span>
+                                        <span v-else-if="dnsRecordAbsent(record.errorCode)" class="text-muted">— {{ $t("watcher.registryDns.noAddress") }}</span>
+                                        <span v-else class="text-warning">✗ {{ $t("watcher.registryDns.errorStatus") }}</span>
+                                    </td>
+                                    <td class="text-nowrap">{{ record.durationMs }} ms</td>
+                                    <td>
+                                        <code v-if="record.address">{{ record.address }}</code>
+                                        <span v-else :class="dnsRecordAbsent(record.errorCode) ? 'text-muted' : 'text-warning'">
+                                            {{ dnsErrorReason(record.errorCode, result.family) }}
+                                            <code v-if="record.errorCode" class="ms-1">{{ record.errorCode }}</code>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </div>
+
         <!-- STATUS TABLE -->
         <div class="shadow-box big-padding mb-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -660,6 +722,49 @@ import { watcherApi } from "./shared";
 import type { Cred, GlobalMaintenanceWindow, ImageStatus, ImgSettings, RollbackEntry, UpdateHistoryEntry } from "./shared";
 import { groupImageStatuses, type ImageStatusSort } from "./image-status-sort";
 
+type RegistryDnsTestResult = { server: string;
+    family: number;
+    results: Array<{ type: "A" | "AAAA";
+        durationMs: number;
+        address?: string;
+        errorCode?: string }> };
+const registryDns = ref<{ enabled: boolean;
+    servers: string[] }>({ enabled: false,
+    servers: [] });
+const dnsTestHost = ref("ghcr.io");
+const dnsSaving = ref(false);
+const dnsTesting = ref(false);
+const dnsMessage = ref("");
+const dnsTestResults = ref<RegistryDnsTestResult[]>([]);
+async function saveRegistryDns() {
+    dnsSaving.value = true;
+    try {
+        const response = await watcherApi("POST", "/registry-dns/settings", registryDns.value);
+        dnsMessage.value = response.ok ? t("watcher.registryDns.saved") : String(response.message ?? t("watcher.registryDns.failed"));
+    } catch (error) {
+        dnsMessage.value = String(error);
+    } finally {
+        dnsSaving.value = false;
+    }
+}
+async function testDns() {
+    dnsTesting.value = true;
+    dnsTestResults.value = [];
+    try {
+        const response = await watcherApi("POST", "/registry-dns/test", { hostname: dnsTestHost.value });
+        if (response.ok) {
+            dnsTestResults.value = response.data ?? [];
+            dnsMessage.value = t("watcher.registryDns.tested");
+        } else {
+            dnsMessage.value = String(response.message ?? t("watcher.registryDns.failed"));
+        }
+    } catch (error) {
+        dnsMessage.value = String(error);
+    } finally {
+        dnsTesting.value = false;
+    }
+}
+
 const imgSettings = defineModel<ImgSettings>("imgSettings", { required: true });
 const credentials = defineModel<Cred[]>("credentials", { required: true });
 const emit = defineEmits<{
@@ -667,6 +772,45 @@ const emit = defineEmits<{
 }>();
 
 const { t, locale } = useI18n();
+
+function dnsRecordAbsent(code: string | undefined): boolean {
+    // ENODATA means the resolver answered but has no record of the requested type.
+    return code === "ENODATA";
+}
+
+function dnsErrorReason(code: string | undefined, dnsFamily: number): string {
+    let key: string;
+    switch (code) {
+        case "ECONNREFUSED":
+        case "EREFUSED":
+            key = "refused";
+            break;
+        case "ENETUNREACH":
+        case "EHOSTUNREACH":
+            key = "unreachable";
+            break;
+        case "ETIMEOUT":
+        case "EAI_AGAIN":
+            key = "timeout";
+            break;
+        case "ENODATA":
+            key = "noRecord";
+            break;
+        case "ENOTFOUND":
+            key = "hostNotFound";
+            break;
+        case "ESERVFAIL":
+            key = "serverError";
+            break;
+        default:
+            key = "otherError";
+    }
+    const reason = t(`watcher.registryDns.${key}`);
+    return dnsFamily === 6 && (key === "refused" || key === "unreachable")
+        ? `${reason} ${t("watcher.registryDns.ipv6Hint")}`
+        : reason;
+}
+
 
 // ─── State ────────────────────────────────────────────────────────
 
@@ -706,7 +850,9 @@ const lastCheckDisplay = computed(() => {
 });
 
 const globalWindowLabel = computed(() => {
-    if (!globalMaintenanceWindow.value) return "";
+    if (!globalMaintenanceWindow.value) {
+        return "";
+    }
     const days = globalMaintenanceWindow.value.days
         .map((day) => t(`updates.self.day${day}`))
         .join(", ");
@@ -742,6 +888,14 @@ function showToast(msg: string, ok = true) {
 // ─── Init & polling ───────────────────────────────────────────────
 
 onMounted(async () => {
+    try {
+        const dnsResponse = await watcherApi("GET", "/registry-dns/settings");
+        if (dnsResponse.ok) {
+            registryDns.value = dnsResponse.data;
+        }
+    } catch (error) {
+        dnsMessage.value = String(error);
+    }
     const [ statusRes, rollbackRes, histRes, autoUpdateRes ] = await Promise.all([
         watcherApi("GET", "/image/status"),
         watcherApi("GET", "/image/rollback"),
@@ -948,11 +1102,15 @@ async function toggleAutoUpdatePause(s: ImageStatus) {
     const key = `${s.stack}::${s.image}`;
     const active = isAutoUpdatePaused(s);
     const pause = active
-        ? { enabled: false, until: null }
-        : { enabled: true, until: new Date(Date.now() + 7 * 86_400_000).toISOString() };
-    const res = await watcherApi("POST", "/image/auto-update-pause", { key, pause });
+        ? { enabled: false,
+            until: null }
+        : { enabled: true,
+            until: new Date(Date.now() + 7 * 86_400_000).toISOString() };
+    const res = await watcherApi("POST", "/image/auto-update-pause", { key,
+        pause });
     if (res.ok && imgSettings.value.autoUpdateConfig[key]) {
-        imgSettings.value.autoUpdateConfig[key] = { ...imgSettings.value.autoUpdateConfig[key], pause: res.data };
+        imgSettings.value.autoUpdateConfig[key] = { ...imgSettings.value.autoUpdateConfig[key],
+            pause: res.data };
         showToast(active ? t("updates.pause.resumedTarget") : t("updates.pause.pausedTarget"));
     } else if (!res.ok) {
         showToast(`❌ ${res.message}`, false);

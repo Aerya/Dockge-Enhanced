@@ -50,6 +50,10 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 
 > **Update schedules:** when automatic Dockge-Enhanced updates use a maintenance window, the same window applies to every automatic container image update. Updates detected outside it are queued until the next allowed window. Per-image schedules remain available when no global window is configured, while **Update now** always remains immediate.
 
+## Optional DNS fallback for registry checks
+
+Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS fallback (disabled by default), add/edit/remove IPv4 or IPv6 resolvers, and test A and AAAA queries with response times and diagnostics. System DNS is always tried first; fallback is used only for DNS resolution failures in supported ImageWatcher HTTP registry/token requests. The initial examples are Quad9 (`9.9.9.9`, `2620:fe::fe`) and Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`), and are fully customizable. Existing saved settings are preserved. No host or Docker Engine DNS setting is changed; Docker Engine pulls and self-updates are outside this fallback.
+
 ## Latest updates
 
 <details>
