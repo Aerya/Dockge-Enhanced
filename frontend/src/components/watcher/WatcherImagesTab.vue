@@ -317,9 +317,10 @@
                                         </span>
                                         <div class="d-flex gap-1 flex-wrap">
                                             <button
-                                                class="btn btn-xs btn-outline-primary"
+                                                class="btn btn-xs btn-outline-primary image-action-button"
                                                 :disabled="updatingKey === `${s.stack}::${s.image}`"
                                                 :title="$t('watcher.status.updateNow')"
+                                                :aria-label="$t('watcher.status.updateNow')"
                                                 @click="updateNow(s)"
                                             >
                                                 <span
@@ -327,14 +328,14 @@
                                                     class="spinner-border spinner-border-sm"
                                                 />
                                                 <template v-else>
-                                                    <font-awesome-icon icon="cloud-arrow-down" class="me-1" />
-                                                    {{ $t("watcher.status.updateNow") }}
+                                                    <font-awesome-icon icon="cloud-arrow-down" />
                                                 </template>
                                             </button>
                                             <button
-                                                class="btn btn-xs btn-outline-secondary btn-ignore-version"
+                                                class="btn btn-xs btn-outline-secondary image-action-button"
                                                 :disabled="ignoringKey === `${s.stack}::${s.image}`"
                                                 :title="$t('watcher.status.ignoreVersion')"
+                                                :aria-label="$t('watcher.status.ignoreVersion')"
                                                 @click="ignoreVersion(s)"
                                             >
                                                 <span
@@ -343,7 +344,6 @@
                                                 />
                                                 <template v-else>
                                                     ⏭
-                                                    {{ $t("watcher.status.ignoreVersion") }}
                                                 </template>
                                             </button>
                                         </div>
@@ -353,9 +353,10 @@
                                             ⏭ {{ $t("watcher.status.versionIgnored") }}
                                         </span>
                                         <button
-                                            class="btn btn-xs btn-outline-secondary btn-ignore-version"
+                                            class="btn btn-xs btn-outline-secondary image-action-button"
                                             :disabled="clearingKey === `${s.stack}::${s.image}`"
                                             :title="$t('watcher.status.clearIgnored')"
+                                            :aria-label="$t('watcher.status.clearIgnored')"
                                             @click="clearIgnoredDigest(s)"
                                         >
                                             <span
@@ -363,7 +364,7 @@
                                                 class="spinner-border spinner-border-sm"
                                             />
                                             <template v-else>
-                                                ✕ {{ $t("watcher.status.clearIgnored") }}
+                                                <font-awesome-icon icon="times" />
                                             </template>
                                         </button>
                                     </template>
@@ -437,8 +438,9 @@
                                         >⏳</span>
                                         <button
                                             v-if="getAutoUpdateMode(s) !== 'off' && getAutoUpdateMode(s) !== 'ignored'"
-                                            class="btn btn-xs btn-outline-secondary"
+                                            class="btn btn-xs btn-outline-secondary image-action-button"
                                             :title="isAutoUpdatePaused(s) ? $t('updates.pause.resumeTarget') : $t('updates.pause.pauseTarget')"
+                                            :aria-label="isAutoUpdatePaused(s) ? $t('updates.pause.resumeTarget') : $t('updates.pause.pauseTarget')"
                                             @click="toggleAutoUpdatePause(s)"
                                         >
                                             <font-awesome-icon :icon="isAutoUpdatePaused(s) ? 'play' : 'pause'" />
@@ -466,11 +468,12 @@
                                             </div>
                                             <div class="d-flex gap-1">
                                                 <button
-                                                    class="btn btn-xs btn-rollback"
+                                                    class="btn btn-xs btn-rollback image-action-button"
                                                     :disabled="
                                                         rollbackingKey === `${s.stack}::${s.image}`
                                                     "
                                                     :title="$t('watcher.rollback.btnTitle')"
+                                                    :aria-label="$t('watcher.rollback.btnTitle')"
                                                     @click="doRollback(s)"
                                                 >
                                                     <span
@@ -480,15 +483,16 @@
                                                         class="spinner-border spinner-border-sm"
                                                     />
                                                     <template v-else>
-                                                        ↩ {{ $t("watcher.rollback.btn") }}
+                                                        ↩
                                                     </template>
                                                 </button>
                                                 <button
-                                                    class="btn btn-xs btn-outline-secondary"
+                                                    class="btn btn-xs btn-outline-secondary image-action-button"
                                                     :title="$t('watcher.rollback.dismiss')"
+                                                    :aria-label="$t('watcher.rollback.dismiss')"
                                                     @click="dismissRollback(s)"
                                                 >
-                                                    ✕
+                                                    <font-awesome-icon icon="times" />
                                                 </button>
                                             </div>
                                         </div>
@@ -1096,7 +1100,7 @@ async function removeCred(registry: string) {
 
 // ─── Rollback ─────────────────────────────────────────────────────
 .rollback-cell {
-    min-width: 120px;
+    min-width: 88px;
 }
 
 .rollback-countdown {
@@ -1117,6 +1121,22 @@ async function removeCred(registry: string) {
 
     &:disabled {
         opacity: 0.5;
+    }
+}
+
+.image-action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    min-width: 1.85rem;
+    height: 1.65rem;
+    padding: 0;
+    line-height: 1;
+
+    .spinner-border {
+        width: 0.7rem;
+        height: 0.7rem;
     }
 }
 
@@ -1149,12 +1169,6 @@ async function removeCred(registry: string) {
 .btn-search-project {
     font-size: var(--fs-xs);
     opacity: 0.7;
-}
-
-.btn-ignore-version {
-    font-size: var(--fs-xs);
-    padding: 1px 5px;
-    white-space: nowrap;
 }
 
 .form-control::placeholder,
