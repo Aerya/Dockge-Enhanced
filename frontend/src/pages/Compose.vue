@@ -15,7 +15,9 @@
                     :title="$t('stackDisplayName.edit')"
                     :aria-label="$t('stackDisplayName.edit')"
                     @click="openDisplayNameDialog"
-                ><font-awesome-icon icon="pen" /></button>
+                >
+                    <font-awesome-icon icon="pen" />
+                </button>
                 <span v-if="stack.isExternal" class="external-stack-badge ms-2"><font-awesome-icon icon="external-link-square-alt" class="me-1" />{{ $t("externalStacks.external") }}</span>
                 <span v-if="$root.agentCount > 1" class="agent-name">
                     (<a
@@ -326,6 +328,14 @@
                         </div>
                     </div>
 
+                    <StackAutoUpdateBulk
+                        v-if="!isAdd && !isEditMode && stack.name"
+                        :key="`${endpoint || 'local'}::${stack.name}`"
+                        :stack-name="stack.name"
+                        :endpoint="endpoint || ''"
+                        @applied="onStackAutoUpdateBulkApplied"
+                    />
+
                     <!-- Containers -->
                     <button
                         type="button"
@@ -563,7 +573,6 @@
                             :style="{ height: `${(containersExpanded ? 315 : 420) * Number(terminalScale)}px` }"
                         ></Terminal>
                     </div>
-
                 </div>
                 <div
                     v-if="!composeEffectivelyCollapsed"
@@ -862,6 +871,7 @@ import {
 } from "../../../common/util-common";
 import { BModal } from "bootstrap-vue-next";
 import NetworkInput from "../components/NetworkInput.vue";
+import StackAutoUpdateBulk from "../components/StackAutoUpdateBulk.vue";
 import dotenv from "dotenv";
 import { renderStackReadme } from "../stack-readme";
 import { computed, getCurrentInstance, ref } from "vue";
@@ -894,6 +904,7 @@ let serviceStatusTimeout = null;
 export default {
     components: {
         NetworkInput,
+        StackAutoUpdateBulk,
         FontAwesomeIcon,
         CodeMirror,
         BModal,
@@ -919,6 +930,7 @@ export default {
             statusCache: imageStatuses,
             autoUpdateFor,
             setAutoUpdateMode: saveAutoUpdateMode,
+            refreshImageStatus,
         } = useImageStatus();
 
         const focusEffectHandler = (state, focusing) => {
@@ -957,6 +969,7 @@ export default {
             imageStatuses,
             autoUpdateFor,
             saveAutoUpdateMode,
+            refreshImageStatus,
             schedulerEnabled };
     },
     yamlDoc: null,  // For keeping the yaml comments
@@ -1037,7 +1050,13 @@ export default {
             readmeEditing: false,
             readmeDraft: "",
             showStartGuard: false,
-            startGuard: { enabled: false, conditions: [], watch: false, onFailure: "stop", onRecovery: "start", failureDelaySeconds: 10, recoveryDelaySeconds: 5 },
+            startGuard: { enabled: false,
+                conditions: [],
+                watch: false,
+                onFailure: "stop",
+                onRecovery: "start",
+                failureDelaySeconds: 10,
+                recoveryDelaySeconds: 5 },
             startGuardStatus: null,
             startGuardSaving: false,
             startGuardTesting: false,
@@ -1075,9 +1094,9 @@ export default {
                 { id: "recreate",
                     label: "recreateStack",
                     docs: `${base}up/` },
-                ...(this.buildServices.length > 0 ? [ { id: "build",
+                ...(this.buildServices.length > 0 ? [{ id: "build",
                     label: "buildAndRecreateStack",
-                    docs: `${base}build/` } ] : []),
+                    docs: `${base}build/` }] : []),
                 { id: "stop",
                     label: "stopStack",
                     docs: `${base}stop/` },
@@ -1192,7 +1211,7 @@ export default {
                 return this.stack.buildServices ?? [];
             }
             return Object.entries(services)
-                .filter(([, service]) => service && typeof service === "object" && Object.prototype.hasOwnProperty.call(service, "build") && service.build !== null)
+                .filter(([ , service ]) => service && typeof service === "object" && Object.prototype.hasOwnProperty.call(service, "build") && service.build !== null)
                 .map(([ name ]) => name)
                 .sort();
         },
@@ -1338,7 +1357,8 @@ export default {
                 this.startComposeEditLease();
             } else {
                 this.stopComposeEditLeaseHeartbeat();
-                this.releaseComposeEditLease({ clearHold: false, resume: false });
+                this.releaseComposeEditLease({ clearHold: false,
+                    resume: false });
             }
         },
         "stack.composeYAML": {
@@ -1453,7 +1473,8 @@ export default {
         clearTimeout(this.displayNameSaveTimeout);
         clearTimeout(this.containerInstancesRequestTimeout);
         this.stopComposeEditLeaseHeartbeat();
-        this.releaseComposeEditLease({ clearHold: false, resume: false });
+        this.releaseComposeEditLease({ clearHold: false,
+            resume: false });
         document.removeEventListener("visibilitychange", this.onVisibilityServiceStatus);
         window.removeEventListener("keydown", this.handleWorkspaceEscape);
         this.stopComposeResize();
@@ -1616,7 +1637,7 @@ export default {
         async loadDozzleStatus() {
             try {
                 const token = this.$root.getAuthToken();
-                const [settingsResponse, statusResponse] = await Promise.all([
+                const [ settingsResponse, statusResponse ] = await Promise.all([
                     fetch("/api/watcher/dozzle/settings", { headers: { "Authorization": `Bearer ${token}` } }),
                     fetch("/api/watcher/dozzle/status", { headers: { "Authorization": `Bearer ${token}` } }),
                 ]);
@@ -1906,7 +1927,8 @@ export default {
         exitAction() {
             console.log("exitAction");
             this.stopComposeEditLeaseHeartbeat();
-            this.releaseComposeEditLease({ clearHold: false, resume: false });
+            this.releaseComposeEditLease({ clearHold: false,
+                resume: false });
             this.stopServiceStatusTimeout = true;
             clearTimeout(serviceStatusTimeout);
 
@@ -2139,6 +2161,16 @@ export default {
             });
         },
 
+        async onStackAutoUpdateBulkApplied() {
+            if (this.endpoint) {
+                this.loadRemoteAutoUpdateState();
+            } else {
+                await this.refreshImageStatus();
+            }
+            this.$root.toastRes({ ok: true,
+                msg: this.$t("stackBulk.saved") });
+        },
+
         async setServiceAutoUpdate(serviceName, { mode, time }) {
             const image = this.envsubstJSONConfig?.services?.[serviceName]?.image;
             if (!image || !this.stack.name) {
@@ -2153,7 +2185,9 @@ export default {
                     this.$root.emitAgent(
                         this.endpoint,
                         "watcherImageAutoUpdateSet",
-                        { key, mode, ...(mode === "scheduled" ? { time: time ?? "02:00" } : {}) },
+                        { key,
+                            mode,
+                            ...(mode === "scheduled" ? { time: time ?? "02:00" } : {}) },
                         (res) => resolve({
                             ok: res?.ok === true,
                             message: res?.msg ?? res?.message,
@@ -2272,7 +2306,8 @@ export default {
                     const resume = this.selfUpdateEditPromptPending && Date.now() >= this.selfUpdateEditDeferUntil;
                     this.stopComposeEditLeaseHeartbeat();
                     this.captureComposeEditBaseline();
-                    this.releaseComposeEditLease({ clearHold: resume, resume });
+                    this.releaseComposeEditLease({ clearHold: resume,
+                        resume });
                     this.selfUpdateEditPromptPending = false;
                     this.showSelfUpdateEditDialog = false;
                     this.isEditMode = false;
@@ -2296,7 +2331,8 @@ export default {
                 if (res.ok) {
                     this.stopComposeEditLeaseHeartbeat();
                     this.captureComposeEditBaseline();
-                    this.releaseComposeEditLease({ clearHold: resumeAfterSave, resume: resumeAfterSave });
+                    this.releaseComposeEditLease({ clearHold: resumeAfterSave,
+                        resume: resumeAfterSave });
                     this.selfUpdateEditPromptPending = false;
                     this.selfUpdateEditDismissedTarget = "";
                     this.selfUpdateEditDeferUntil = 0;
@@ -2438,7 +2474,8 @@ export default {
 
         addStartGuardCondition() {
             if (this.startGuard.conditions.length < 20) {
-                this.startGuard.conditions.push({ type: "mount", target: "" });
+                this.startGuard.conditions.push({ type: "mount",
+                    target: "" });
             }
         },
 
@@ -2565,7 +2602,8 @@ export default {
                     const anchor = index >= 0 ? line.from + index : line.from;
                     const head = index >= 0 ? anchor + term.length : anchor;
                     view.dispatch({
-                        selection: { anchor, head },
+                        selection: { anchor,
+                            head },
                         effects: EditorView.scrollIntoView(anchor, { y: "center" }),
                     });
                     view.focus();
@@ -2599,7 +2637,8 @@ export default {
 
         discardStack() {
             this.stopComposeEditLeaseHeartbeat();
-            this.releaseComposeEditLease({ clearHold: false, resume: false });
+            this.releaseComposeEditLease({ clearHold: false,
+                resume: false });
             this.selfUpdateEditPromptPending = false;
             this.showSelfUpdateEditDialog = false;
             this.loadStack();

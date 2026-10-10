@@ -39,7 +39,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 | **Multi-serveurs** | Fédération en maillage complet entre instances Dockge-Enhanced, administration depuis n'importe quel serveur lié, sélection et regroupement des serveurs, état des mises à jour distantes, copie/migration transactionnelle des stacks, transferts reprenables et réplication froide planifiée |
 | **Gestion des stacks** | Stacks épinglées, indicateurs compacts d'état et de ressources, navigation repliable/redimensionnable, espace Logs/Compose flexible, copie du YAML brut, actions de stack/conteneur expliquées, pause/reprise des stacks, modèle Compose par défaut configurable, planification par conteneur, Build + Recreate, notes, outils Git, prérequis de démarrage hôte et recréation automatique des services partageant un namespace réseau VPN |
 | **Sauvegarde & reprise** | Sauvegardes Restic multi-destination des bind mounts et volumes, cohérence par stack, restauration sélective, vérification des dépôts, contrôle et diff des snapshots, ainsi que les mécanismes de récupération utilisés par les mises à jour protégées |
-| **Mises à jour** | contrôle ciblé toutes les 5 minutes en mode Immédiat, Détection des mises à jour d'images, mises à jour manuelles, groupées séquentielles ou automatiques des conteneurs avec rollback, créneau de maintenance commun, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
+| **Mises à jour** | réglages groupés par stack avec choix de conservation des exceptions, contrôle ciblé toutes les 5 minutes en mode Immédiat, Détection des mises à jour d'images, mises à jour manuelles, groupées séquentielles ou automatiques des conteneurs avec rollback, créneau de maintenance commun, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
 | **Migration & réplication** | Transferts transactionnels entre instances, migration du Compose et des données persistantes, jobs reprenables, finalisation explicite des déplacements, répliques froides planifiées, snapshots de récupération et workflows de reprise |
 | **Automatisation & audit** | API REST limitée par permissions, webhooks par stack, exemples Home Assistant, opérations planifiées et historique centralisé avec origine, statut et durée |
 | **Ressources Docker** | Nettoyage unifié protégé des images, volumes, réseaux et caches de build, rattrapage exact, aperçu, exclusions, historique et protections destructives |
@@ -58,6 +58,11 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
 ### 🆕 Octobre 2026
+
+**Mises à jour groupées des images d’une stack**
+
+La page d’une stack permet maintenant d’appliquer en une seule opération le mode **Désactivé**, **Immédiat** ou **Planifié** à ses images. Un aperçu liste les changements ; l’utilisateur choisit de **conserver les exceptions individuelles** (valeur par défaut) ou de les remplacer. Les services exclus par `dockge.imageupdates.check=false` restent protégés, les images partagées sont dédupliquées et les instances liées utilisent la même validation côté serveur. Les futures images ne sont pas automatiquement concernées.
+
 
 **ImageWatcher : mises à jour immédiates plus rapides et plus fiables**
 
@@ -384,6 +389,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Intégration aux workflows de récupération et de mise à jour
 
 ### Mises à jour
+- Mises à jour groupées des images d’une stack: aperçu et conservation des exceptions individuelles.
 - **ImageWatcher Immédiat** : contrôle ciblé à l’activation puis toutes les 5 minutes, détection des images réellement exécutées, mutualisation des requêtes et temporisation HTTP 429.
 - Exclusion par service des contrôles ImageWatcher et mises à jour automatiques/groupées avec `dockge.imageupdates.check: "false"`
 - Surveillance des mises à jour d'images Docker

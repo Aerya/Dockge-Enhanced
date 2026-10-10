@@ -10,6 +10,7 @@ import { promisify } from "util";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
 import * as path from "path";
+import { buildStackBulkPlan, StackBulkRequest, validateStackBulkRequest } from "./stack-auto-update";
 import * as yaml from "js-yaml";
 import axios from "axios";
 import { EventEmitter } from "events";
@@ -1215,6 +1216,71 @@ export class ImageWatcher {
             updatingImages: [ ...this._updatingImages ],
             globalUpdatePause: normalizeUpdatePause(this.settings.globalUpdatePause),
         };
+    }
+
+    /** Prepare the same server-owned, resolved Compose preview for local and linked instances. */
+    async previewStackBulkAutoUpdate(raw: unknown) {
+        const request = validateStackBulkRequest(raw);
+        const stacks = await collectWatchedComposeStacks(STACKS_DIR, this.externalStacks);
+        const watched = stacks.get(request.stack);
+        if (!watched) {
+            throw new Error("Stack absente ou non accessible sur cette instance");
+        }
+        const command = composeExecInvocation(watched.composePath, [ "config", "--format", "json" ], watched.project, watched.configFiles, watched.workingDir, watched.envFiles);
+        const model = parseResolvedComposeModel(await docker(command.args, { cwd: command.cwd,
+            timeout: 30000 }));
+        return buildStackBulkPlan(request, model, this.settings.autoUpdateConfig ?? {});
+    }
+
+    /** Persist the entire policy batch once; never trust image keys supplied by a browser. */
+    async applyStackBulkAutoUpdate(raw: unknown) {
+        const request: StackBulkRequest = validateStackBulkRequest(raw);
+        if (!request.previewToken) {
+            throw new Error("Aperçu obligatoire avant application");
+        }
+        if (this.isBusy()) {
+            throw new Error("Une opération ImageWatcher est déjà en cours. Réessayer plus tard.");
+        }
+        const plan = await this.previewStackBulkAutoUpdate(request);
+        if (request.previewToken !== plan.previewToken) {
+            throw new Error("La stack ou ses réglages ont changé : actualiser l’aperçu");
+        }
+        if (!plan.changed) {
+            return { ...plan,
+                applied: 0,
+                autoUpdateState: this.getAutoUpdateState() };
+        }
+        const config = { ...this.settings.autoUpdateConfig };
+        const changes = new Set(plan.changes.map(change => change.key));
+        for (const change of plan.changes) {
+            if (request.mode === "off") {
+                delete config[change.key];
+            } else {
+                config[change.key] = request.mode === "scheduled"
+                    ? { mode: "scheduled",
+                        time: request.time }
+                    : { mode: "immediate" };
+            }
+        }
+        const pendingAutoUpdates = this.settings.pendingAutoUpdates.filter(key => !changes.has(key));
+        await this.saveSettings({ autoUpdateConfig: config,
+            pendingAutoUpdates,
+            ...(request.mode !== "off" && !this.settings.enabled ? { enabled: true } : {}) }, false);
+        if (request.mode === "immediate") {
+            // Sequential targeted checks avoid a large parallel pull burst.
+            void (async () => {
+                for (const { key } of plan.changes) {
+                    try {
+                        await this.runImmediateCheck(key);
+                    } catch (error) {
+                        console.warn("[ImageWatcher] Bulk immediate check failed:", key, error);
+                    }
+                }
+            })();
+        }
+        return { ...plan,
+            applied: plan.changed,
+            autoUpdateState: this.getAutoUpdateState() };
     }
 
     isBusy(): boolean {

@@ -249,6 +249,34 @@ export class WatcherRouter extends Router {
             });
         });
 
+        // One server-side Compose resolution and one settings write for an entire stack.
+        router.post("/image/auto-update-bulk/preview", async (req: Request, res: Response) => {
+            try {
+                res.json({ ok: true,
+                    data: await ImageWatcher.getInstance().previewStackBulkAutoUpdate(req.body) });
+            } catch (error) {
+                res.status(400).json({ ok: false,
+                    message: error instanceof Error ? error.message : String(error) });
+            }
+        });
+
+        router.post("/image/auto-update-bulk/apply", async (req: Request, res: Response) => {
+            try {
+                const data = await ImageWatcher.getInstance().applyStackBulkAutoUpdate(req.body);
+                await auditWatcherAction(req, "image.auto_update.stack_bulk", "stack", data.stack, "success", null, {
+                    mode: data.mode,
+                    preserveExisting: data.preserveExisting,
+                    applied: data.applied,
+                    excludedServices: data.excludedServices,
+                });
+                res.json({ ok: true,
+                    data });
+            } catch (error) {
+                res.status(400).json({ ok: false,
+                    message: error instanceof Error ? error.message : String(error) });
+            }
+        });
+
         router.post("/image/update-pause", async (req: Request, res: Response) => {
             const watcher = ImageWatcher.getInstance();
             await watcher.saveSettings({ globalUpdatePause: normalizeUpdatePause(req.body) });

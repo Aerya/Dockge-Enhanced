@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-09-stack-image-bulk-policy",
+        items: [ "releaseNews.item.stackImageBulkPolicy" ],
+    },
+    {
         id: "2026-10-09-image-watcher-immediate",
         items: [ "releaseNews.item.imageWatcherImmediate" ],
     },
