@@ -51,10 +51,6 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 
 > **Programación de actualizaciones:** cuando se configura una ventana de mantenimiento para la autoactualización de Dockge-Enhanced, la misma ventana se aplica a todas las actualizaciones automáticas de imágenes. Las actualizaciones detectadas fuera de ella quedan pendientes hasta la siguiente ventana permitida. Los horarios por imagen siguen disponibles sin ventana global y la acción manual **Actualizar ahora** siempre es inmediata.
 
-## DNS de respaldo para comprobaciones de registries
-
-En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (desactivado por defecto), añadir, editar o eliminar servidores IPv4/IPv6 y probar consultas A y AAAA con tiempos y diagnósticos. El DNS del sistema tiene prioridad: el respaldo solo se usa ante fallos de resolución DNS en las solicitudes HTTP compatibles de ImageWatcher a registries y servicios de tokens. Quad9 (`9.9.9.9`, `2620:fe::fe`) y Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`) son ejemplos modificables. Se conservan los ajustes guardados. No cambia el DNS del host ni de Docker Engine; las descargas y autoactualizaciones realizadas por Docker Engine no están cubiertas.
-
 ## Últimas novedades
 
 <details>
@@ -63,6 +59,11 @@ En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
 ### 🆕 Octubre de 2026
+
+**DNS de respaldo para comprobaciones de registries**
+
+En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (desactivado por defecto), añadir, editar o eliminar servidores IPv4/IPv6 y probar consultas A y AAAA con tiempos y diagnósticos. El DNS del sistema tiene prioridad: el respaldo solo se usa ante fallos de resolución DNS en las solicitudes HTTP compatibles de ImageWatcher a registries y servicios de tokens. Quad9 (`9.9.9.9`, `2620:fe::fe`) y Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`) son ejemplos modificables. Se conservan los ajustes guardados. No cambia el DNS del host ni de Docker Engine; las descargas y autoactualizaciones realizadas por Docker Engine no están cubiertas.
+
 
 **Mantenimiento y correcciones de octubre**
 
