@@ -77,6 +77,19 @@ test("une mise à jour ImageWatcher écrit les métadonnées privées d'une stac
         force: true });
 });
 
+test("les métadonnées externes refusent un nom de stack qui sortirait de leur répertoire", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-image-external-meta-"));
+    await assert.rejects(
+        touchImageUpdatedStackMetadata(root, "../outside", {
+            composePath: path.join(root, "external-source", "compose.yaml"),
+            isExternal: true,
+        }),
+        /Invalid stack metadata path/,
+    );
+    await fs.rm(root, { recursive: true,
+        force: true });
+});
+
 test("l'historique ne remplace pas un digest local absent par un digest distant", () => {
     assert.deepEqual(updateVerificationResult({
         image: "fixture/image:latest",
