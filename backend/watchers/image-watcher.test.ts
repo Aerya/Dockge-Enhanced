@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import os from "node:os";
 import * as fs from "node:fs/promises";
+import axios from "axios";
 import {
     ImageWatcher,
     imageStatusStore,
@@ -24,6 +25,9 @@ import {
     requestRegistryWithRetry,
     resolveAutomaticImageUpdateAction,
     extractWatchableImagesFromComposeModel,
+    confirmedMissingImmediateTargets,
+    imageCheckErrorMessage,
+    isRetryableRegistryError,
 } from "./image-watcher";
 import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
 import { resolveDataDir } from "../data-dir";
@@ -295,6 +299,50 @@ test("registry rate limits and transient unavailability are retryable", () => {
     assert.equal(isRetryableRegistryStatus(401), false);
     assert.equal(isRetryableRegistryStatus(404), false);
     assert.equal(isRetryableRegistryStatus(200), false);
+});
+
+test("retries a manifest timeout once without treating authentication failures as transient", () => {
+    assert.equal(isRetryableRegistryError(new axios.AxiosError("timeout of 15000ms exceeded", "ECONNABORTED")), true);
+    assert.equal(isRetryableRegistryError(new axios.AxiosError("unauthorized", undefined, undefined, undefined, {
+        status: 401,
+        statusText: "Unauthorized",
+        headers: {},
+        config: {} as never,
+        data: {},
+    })), false);
+});
+
+test("explains 401 errors without exposing configured credentials", () => {
+    const error = new axios.AxiosError("Request failed with status code 401", undefined, undefined, undefined, {
+        status: 401,
+        statusText: "Unauthorized",
+        headers: {},
+        config: {} as never,
+        data: {},
+    });
+    const message = imageCheckErrorMessage("ghcr.io/example/private:latest", error);
+    assert.match(message, /ghcr\.io/);
+    assert.match(message, /ghcr\.io\/example\/private:latest/);
+    assert.match(message, /identifiants configurés/);
+    assert.doesNotMatch(message, /token|password|secret/i);
+});
+
+test("removes only confirmed missing immediate targets", () => {
+    const entries = {
+        "removed-stack::nginx:latest": { mode: "immediate" as const },
+        "temporary-unavailable::nginx:latest": { mode: "immediate" as const },
+        "existing::removed:latest": { mode: "immediate" as const },
+        "existing::kept:latest": { mode: "immediate" as const },
+        "scheduled::old:latest": { mode: "scheduled" as const },
+        "malformed::": { mode: "immediate" as const },
+    };
+    const stale = confirmedMissingImmediateTargets(entries, new Map([
+        [ "removed-stack", { images: new Set<string>() } ],
+        [ "temporary-unavailable", {} ],
+        [ "existing", { images: new Set([ "kept:latest" ]) } ],
+        [ "scheduled", { images: new Set<string>() } ],
+    ]));
+    assert.deepEqual(stale.sort(), [ "existing::removed:latest", "removed-stack::nginx:latest" ]);
 });
 
 test("Retry-After in seconds or milliseconds-style numbers is honored", () => {
