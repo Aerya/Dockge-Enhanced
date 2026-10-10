@@ -3,6 +3,8 @@
         <!-- ═══ DESTINATIONS ═══ -->
         <BackupDestinations v-model="settings" :is-backup-stale="isBackupStale" />
 
+        <p class="form-text mb-3">{{ $t('watcher.backup.reset.excludedHint') }}</p>
+
         <!-- ═══ VOLUMES ═══ -->
         <BackupVolumes v-model="settings" :mounted-vols="mountedVols" :loading-mounted-vols="loadingMountedVols" />
 
@@ -13,9 +15,11 @@
             </h5>
             <p class="form-text mb-3">{{ $t('watcher.backup.excludePatterns.hint') }}</p>
             <div class="d-flex gap-2 mb-2">
-                <input v-model="newExcludePattern" type="text" class="form-control form-control-sm"
-                       :placeholder="$t('watcher.backup.excludePatterns.placeholder')"
-                       @keydown.enter.prevent="addExcludePattern" />
+                <input
+                    v-model="newExcludePattern" type="text" class="form-control form-control-sm"
+                    :placeholder="$t('watcher.backup.excludePatterns.placeholder')"
+                    @keydown.enter.prevent="addExcludePattern"
+                />
                 <button class="btn btn-sm btn-outline-primary" @click="addExcludePattern">
                     <font-awesome-icon icon="plus" />
                 </button>
@@ -42,23 +46,31 @@
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">{{ $t('watcher.backup.retention.keepLast') }}</label>
-                    <input v-model.number="settings.retention.keepLast" type="number"
-                           class="form-control" min="1" max="100" />
+                    <input
+                        v-model.number="settings.retention.keepLast" type="number"
+                        class="form-control" min="1" max="100"
+                    />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ $t('watcher.backup.retention.keepDaily') }}</label>
-                    <input v-model.number="settings.retention.keepDaily" type="number"
-                           class="form-control" min="0" />
+                    <input
+                        v-model.number="settings.retention.keepDaily" type="number"
+                        class="form-control" min="0"
+                    />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ $t('watcher.backup.retention.keepWeekly') }}</label>
-                    <input v-model.number="settings.retention.keepWeekly" type="number"
-                           class="form-control" min="0" />
+                    <input
+                        v-model.number="settings.retention.keepWeekly" type="number"
+                        class="form-control" min="0"
+                    />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ $t('watcher.backup.retention.keepMonthly') }}</label>
-                    <input v-model.number="settings.retention.keepMonthly" type="number"
-                           class="form-control" min="0" />
+                    <input
+                        v-model.number="settings.retention.keepMonthly" type="number"
+                        class="form-control" min="0"
+                    />
                 </div>
             </div>
             <small class="form-text mt-2 d-block">{{ $t('watcher.backup.retention.hint') }}</small>
@@ -73,7 +85,7 @@
                     <div class="backup-action-card h-100">
                         <h6 class="fw-semibold">{{ $t('watcher.backup.actions.settingsHeading') }}</h6>
                         <p class="form-text mb-3">{{ $t('watcher.backup.actions.settingsDescription') }}</p>
-                        <button type="button" class="btn btn-primary backup-action-button" @click="save" :disabled="saving || running || checking">
+                        <button type="button" class="btn btn-primary backup-action-button" :disabled="saving || running || checking" @click="save">
                             <span v-if="saving" class="spinner-border spinner-border-sm me-1" />
                             <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.backup.saveConfig') }}
                         </button>
@@ -84,8 +96,10 @@
                     <div class="backup-action-card h-100">
                         <h6 class="fw-semibold">{{ $t('watcher.backup.actions.backupHeading') }}</h6>
                         <p class="form-text mb-3">{{ $t('watcher.backup.actions.backupDescription') }}</p>
-                        <button type="button" class="btn backup-run-now-btn backup-action-button" @click="runBackup"
-                                :disabled="saving || running || checking || !settings.destinations.some(d => d.enabled)">
+                        <button
+                            type="button" class="btn backup-run-now-btn backup-action-button" :disabled="saving || running || checking || !settings.destinations.some(d => d.enabled)"
+                            @click="runBackup"
+                        >
                             <span v-if="running" class="spinner-border spinner-border-sm me-1" />
                             <font-awesome-icon v-else icon="cloud-upload-alt" class="me-1" />{{ $t('watcher.backup.runNow') }}
                         </button>
@@ -113,17 +127,54 @@
                 <summary class="fw-semibold">{{ $t('watcher.backup.actions.maintenanceHeading') }}</summary>
                 <p class="form-text mt-2 mb-3">{{ $t('watcher.backup.actions.maintenanceDescription') }}</p>
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" class="btn btn-normal" @click="snapshotsPanel?.loadSnapshots()"
-                            :disabled="saving || running || checking || snapshotsPanel?.loadingSnaps"
-                            :title="$t('watcher.backup.actions.refreshHint')">
+                    <button
+                        type="button" class="btn btn-normal" :disabled="saving || running || checking || snapshotsPanel?.loadingSnaps"
+                        :title="$t('watcher.backup.actions.refreshHint')"
+                        @click="snapshotsPanel?.loadSnapshots()"
+                    >
                         <span v-if="snapshotsPanel?.loadingSnaps" class="spinner-border spinner-border-sm me-1" />
                         <font-awesome-icon v-else icon="sync" class="me-1" />{{ $t('watcher.backup.refreshSnapshots') }}
                     </button>
-                    <button type="button" class="btn btn-normal" @click="checkIntegrity" :disabled="saving || running || checking"
-                            :title="$t('watcher.backup.actions.integrityHint')">
+                    <button
+                        type="button" class="btn btn-normal" :disabled="saving || running || checking" :title="$t('watcher.backup.actions.integrityHint')"
+                        @click="checkIntegrity"
+                    >
                         <span v-if="checking" class="spinner-border spinner-border-sm me-1" />
                         <font-awesome-icon v-else icon="shield-alt" class="me-1" />
                         {{ checking ? $t('watcher.backup.checkRunning') : $t('watcher.backup.checkIntegrity') }}
+                    </button>
+                </div>
+            </details>
+            <details class="backup-utility-panel mt-3">
+                <summary class="text-danger fw-semibold">{{ $t('watcher.backup.reset.title') }}</summary>
+                <p class="form-text mt-2">{{ $t('watcher.backup.reset.intro') }}</p>
+                <select v-model="resetLabel" class="form-select mb-2" :disabled="resetBusy" @change="resetPreview = null">
+                    <option value="">{{ $t('watcher.backup.reset.select') }}</option>
+                    <option v-for="dest in resettableDestinations" :key="dest.label" :value="dest.label">{{ dest.label }}</option>
+                </select>
+                <button type="button" class="btn btn-normal" :disabled="!resetLabel || resetBusy || running || checking" @click="previewRepositoryReset">
+                    {{ $t('watcher.backup.reset.preview') }}
+                </button>
+                <div v-if="resetPreview" class="mt-3">
+                    <p class="text-danger fw-bold">{{ $t('watcher.backup.reset.warning') }}</p>
+                    <p><strong>{{ resetPreview.label }}</strong> — <code>{{ resetPreview.path }}</code></p>
+                    <p>{{ $t('watcher.backup.reset.snapshots', { count: resetPreview.snapshots }) }}</p>
+                    <div class="form-check mb-2">
+                        <input id="reset-ack-loss" v-model="resetAckLoss" type="checkbox" class="form-check-input" />
+                        <label for="reset-ack-loss" class="form-check-label">{{ $t('watcher.backup.reset.ackLoss') }}</label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input id="reset-ack-archive" v-model="resetAckArchive" type="checkbox" class="form-check-input" />
+                        <label for="reset-ack-archive" class="form-check-label">{{ $t('watcher.backup.reset.ackArchive') }}</label>
+                    </div>
+                    <p class="form-text">{{ $t('watcher.backup.reset.type', { phrase: resetPreview.confirmation }) }}</p>
+                    <input v-model="resetTyped" class="form-control mb-2" autocomplete="off" />
+                    <button
+                        type="button" class="btn btn-danger"
+                        :disabled="resetBusy || running || checking || !resetAckLoss || !resetAckArchive || resetTyped !== resetPreview.confirmation"
+                        @click="confirmRepositoryReset"
+                    >
+                        {{ $t('watcher.backup.reset.confirm') }}
                     </button>
                 </div>
             </details>
@@ -141,9 +192,11 @@
 
         <!-- ═══ CHECK RESULTS ═══ -->
         <div v-if="checkResults.length > 0" class="mb-4">
-            <div v-for="r in checkResults" :key="r.destIndex"
-                 class="shadow-box big-padding mb-2"
-                 :style="r.ok ? 'border-left: 3px solid var(--success)' : 'border-left: 3px solid var(--danger)'">
+            <div
+                v-for="r in checkResults" :key="r.destIndex"
+                class="shadow-box big-padding mb-2"
+                :style="r.ok ? 'border-left: 3px solid var(--success)' : 'border-left: 3px solid var(--danger)'"
+            >
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <strong>{{ r.ok ? $t('watcher.backup.checkOk') : $t('watcher.backup.checkFail') }}</strong>
                     <span class="form-text">— {{ r.label }}</span>
@@ -158,8 +211,10 @@
         <!-- ═══ SNAPSHOTS RESTIC (+ modal aperçu / diff) ═══ -->
         <BackupSnapshots ref="snapshotsPanel" @toast="showToast" />
 
-        <BModal v-model="concurrentBackupModal" :title="$t('watcher.backup.concurrentPopupTitle')"
-                ok-only :ok-title="$t('close')">
+        <BModal
+            v-model="concurrentBackupModal" :title="$t('watcher.backup.concurrentPopupTitle')"
+            ok-only :ok-title="$t('close')"
+        >
             <p class="mb-0">{{ $t('watcher.backup.concurrentPopupBody') }}</p>
         </BModal>
 
@@ -200,7 +255,7 @@ const { t } = useI18n();
 const settings = ref<Settings>({
     enabled: false,
     intervalHours: 24,
-    destinations: [defaultDestination(t)],
+    destinations: [ defaultDestination(t) ],
     retention: { keepLast: 10,
         keepDaily: 7,
         keepWeekly: 4,
@@ -224,7 +279,7 @@ function addExcludePattern() {
         return;
     }
     if (!(settings.value.excludePatterns ?? []).includes(p)) {
-        settings.value.excludePatterns = [...(settings.value.excludePatterns ?? []), p];
+        settings.value.excludePatterns = [ ...(settings.value.excludePatterns ?? []), p ];
     }
     newExcludePattern.value = "";
 }
@@ -353,13 +408,13 @@ function mergeSettings(loaded: Partial<Settings>): Settings {
     return {
         ...settings.value,
         ...loaded,
-        destinations: merged.length > 0 ? merged : [defaultDestination(t)],
+        destinations: merged.length > 0 ? merged : [ defaultDestination(t) ],
         volumeBackup: {
             // Migration : si l'ancienne config avait includeAppData=true, l'ajouter à selectedVolumes
             selectedVolumes: (() => {
                 const sel: string[] = loaded.volumeBackup?.selectedVolumes ?? [];
                 if ((loaded.volumeBackup as (VolumeBackupConfig & { includeAppData?: boolean }) | undefined)?.includeAppData && !sel.includes(APP_DATA)) {
-                    return [APP_DATA, ...sel];
+                    return [ APP_DATA, ...sel ];
                 }
                 return sel;
             })(),
@@ -403,7 +458,7 @@ async function loadMountedVols() {
 }
 
 onMounted(async () => {
-    const [settingsRes, histRes, stacksRes] = await Promise.all([
+    const [ settingsRes, histRes, stacksRes ] = await Promise.all([
         api("GET", "/backup/settings"),
         api("GET", "/backup/history"),
         api("GET", "/backup/stacks"),
@@ -431,6 +486,74 @@ onMounted(async () => {
     }
     startPolling();
 });
+
+// ─── Protected local Restic repository reset ────────────────────────
+const resetLabel = ref("");
+const resetBusy = ref(false);
+const resetPreview = ref<{ label: string;
+    path: string;
+    snapshots: number;
+    token: string;
+    confirmation: string } | null>(null);
+const resetAckLoss = ref(false);
+const resetAckArchive = ref(false);
+const resetTyped = ref("");
+const resettableDestinations = computed(() => settings.value.destinations.filter(d => d.enabled && d.type === "local"));
+
+async function previewRepositoryReset() {
+    resetBusy.value = true;
+    resetPreview.value = null;
+    resetAckLoss.value = false;
+    resetAckArchive.value = false;
+    resetTyped.value = "";
+    try {
+        const response = await api("POST", "/backup/repository-reset/preview", { label: resetLabel.value });
+        if (response.ok) {
+            resetPreview.value = response.data;
+        } else {
+            showToast(response.message ?? t("watcher.backup.reset.failed"), false);
+        }
+    } catch (error: unknown) {
+        showToast(String(error), false);
+    } finally {
+        resetBusy.value = false;
+    }
+}
+
+async function confirmRepositoryReset() {
+    const preview = resetPreview.value;
+    if (!preview || !resetAckLoss.value || !resetAckArchive.value || resetTyped.value !== preview.confirmation) {
+        return;
+    }
+    if (!window.confirm(t("watcher.backup.reset.finalConfirm"))) {
+        return;
+    }
+    resetBusy.value = true;
+    try {
+        const response = await api("POST", "/backup/repository-reset/confirm", {
+            label: preview.label,
+            token: preview.token,
+            acknowledgeLoss: resetAckLoss.value,
+            acknowledgeArchive: resetAckArchive.value,
+            confirmation: resetTyped.value,
+        });
+        if (!response.ok) {
+            throw new Error(response.message ?? t("watcher.backup.reset.failed"));
+        }
+        resetPreview.value = null;
+        resetTyped.value = "";
+        resetAckLoss.value = false;
+        resetAckArchive.value = false;
+        showToast(t("watcher.backup.reset.success", { path: response.data.archivedPath }));
+        await snapshotsPanel.value?.loadSnapshots();
+        await loadRepoStatuses();
+    } catch (error: unknown) {
+        resetPreview.value = null;
+        showToast(String(error), false);
+    } finally {
+        resetBusy.value = false;
+    }
+}
 
 // ─── Actions ──────────────────────────────────────────────────────
 

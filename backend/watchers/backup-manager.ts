@@ -11,7 +11,9 @@ import * as readline from "readline";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
 import * as path from "path";
-import { randomBytes } from "node:crypto";
+import { randomBytes, createHash } from "node:crypto";
+import { resticRepositoryExcludes, assertLocalRepositoryLocation, resolveHostRepositoryPath } from "./backup-repository-safety";
+import { resolveCurrentContainer } from "../current-container";
 import * as yaml from "js-yaml";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
@@ -133,7 +135,7 @@ const EXCLUDED_VOL_DESTINATIONS = new Set([
     "/etc/hostname",
     "/etc/resolv.conf",
 ]);
-const EXCLUDED_VOL_PREFIXES = ["/proc", "/sys", "/dev", "/run", "/tmp"];
+const EXCLUDED_VOL_PREFIXES = [ "/proc", "/sys", "/dev", "/run", "/tmp" ];
 
 export async function readDiskUsage(dir: string, timeout = 15_000): Promise<string> {
     const { stdout } = await execFileAsync("du", [ "-sh", "--", dir ], { timeout });
@@ -534,8 +536,8 @@ async function mapLimit<T, R>(
 
 function buildResticEnv(dest: BackupDestination): Record<string, string> {
     const env: Record<string, string> = {
-        RESTIC_PASSWORD:    dest.resticPassword,
-        RESTIC_REPOSITORY:  buildRepoUrl(dest),   // toujours défini
+        RESTIC_PASSWORD: dest.resticPassword,
+        RESTIC_REPOSITORY: buildRepoUrl(dest),   // toujours défini
     };
 
     if (dest.type === "s3" && dest.s3) {
@@ -588,7 +590,7 @@ function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string[] {
     if (s.authMode === "key") {
         // Même raison : pas de guillemets dans sftp.args
         const sshArgs = [
-            ...(s.keyPath ? ["-i", s.keyPath] : []),
+            ...(s.keyPath ? [ "-i", s.keyPath ] : []),
             "-p", String(port),
             "-o", "StrictHostKeyChecking=no",
         ].join(" ");
@@ -785,9 +787,17 @@ export class BackupManager {
     private resticHostIdPromise: Promise<string> | null = null;
     private lastBlockedBackup: { trigger: "scheduled" | "manual" | "on-save";
         timestamp: number } | null = null;
+
     private readonly externalStackManager: ExternalStackManager;
     private readonly dataDir: string;
     private readonly settingsPath: string;
+    private repositoryResetting = false;
+    private pendingRepositoryResets = new Map<string, {
+        token: string;
+        expires: number;
+        fingerprint: string;
+        repoPath: string;
+    }>();
 
     constructor(externalStackManager = new ExternalStackManager(DATA_DIR, STACKS_DIR), dataDir = DATA_DIR) {
         this.externalStackManager = externalStackManager;
@@ -800,7 +810,7 @@ export class BackupManager {
 
     getRunningDests(): { label: string;
         startedAt: number }[] {
-        return Array.from(this.runningDests.entries()).map(([label, startedAt]) => ({ label,
+        return Array.from(this.runningDests.entries()).map(([ label, startedAt ]) => ({ label,
             startedAt }));
     }
 
@@ -889,7 +899,7 @@ export class BackupManager {
 
             // Migration : ancien champ discordWebhook (string) → discordWebhooks (string[])
             if (typeof data.discordWebhook === "string" && !data.discordWebhooks) {
-                data.discordWebhooks = data.discordWebhook ? [data.discordWebhook] : [];
+                data.discordWebhooks = data.discordWebhook ? [ data.discordWebhook ] : [];
                 delete data.discordWebhook;
             }
 
@@ -910,6 +920,9 @@ export class BackupManager {
     }
 
     async saveSettings(partial: Partial<BackupSettings>): Promise<void> {
+        if (this.repositoryResetting) {
+            throw new Error("Local Restic repository reset in progress");
+        }
         // Deep-merge destinations[] : pour chaque destination entrante, restaure
         // les secrets masqués ("***") depuis les destinations existantes (même index).
         if (partial.destinations) {
@@ -1041,7 +1054,7 @@ export class BackupManager {
                 }
                 const { stdout } = await execFileAsync("restic", buildResticCommandArgs(repo, sftpOpts, args), {
                     maxBuffer: 20 * 1024 * 1024,
-                    timeout:   timeoutMs,
+                    timeout: timeoutMs,
                     env: {
                         PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
                         ...process.env,
@@ -1339,11 +1352,189 @@ export class BackupManager {
 
     /** Initialise la première destination activée (compat route /backup/init) */
     async initRepo(): Promise<void> {
+        if (this.repositoryResetting) {
+            throw new Error("Local Restic repository reset in progress");
+        }
         const dest = this.settings.destinations.find(d => d.enabled);
         if (!dest) {
             throw new Error("Aucune destination activée");
         }
         await this.initRepoFor(dest);
+    }
+
+    /** Full mount inventory, even mounts hidden from the backup volume selector. */
+    private async getAllHostBackupMounts(): Promise<MountedVolume[]> {
+        const inspected = await resolveCurrentContainer();
+        if (!Array.isArray(inspected.Mounts)) {
+            throw new Error("Cannot inspect Docker mounts; repository safety check failed");
+        }
+        return inspected.Mounts.filter(m =>
+            (m.Type === "bind" || m.Type === "volume") &&
+            typeof m.Source === "string" && typeof m.Destination === "string"
+        ).map(m => ({ source: m.Source!,
+            destination: m.Destination! }));
+    }
+
+    private localDestinationForReset(label: string): BackupDestination {
+        const matches = this.settings.destinations.filter(d => d.label === label);
+        if (matches.length !== 1 || !matches[0].enabled || matches[0].type !== "local") {
+            throw new Error("Choose exactly one enabled local Restic destination");
+        }
+        return matches[0];
+    }
+
+    private async inspectLocalRepositoryReset(label: string, guarded = false): Promise<{
+        repoPath: string;
+        fingerprint: string;
+        snapshots: number;
+    }> {
+        if (!guarded && (this.repositoryResetting || this.isBackupRunActive() || this.isRestoreRunActive())) {
+            throw new Error("A backup, restore or repository reset is running");
+        }
+        const destination = this.localDestinationForReset(label);
+        const raw = destination.local?.path ?? "";
+        const mounts = await this.getAllHostBackupMounts();
+        // Forbid mount roots, host filesystem roots, symlinked parents and any
+        // path outside a persistent mount. This is also repeated at confirmation.
+        const repoPath = assertLocalRepositoryLocation(raw, mounts, [
+            this.dataDir, STACKS_DIR, "/app/data", "/opt/stacks",
+        ]);
+        const mapped = resolveHostRepositoryPath(repoPath, mounts);
+        if (this.settings.destinations.some(other => {
+            if (other === destination || other.type !== "local" || !other.local?.path) {
+                return false;
+            }
+            const another = resolveHostRepositoryPath(other.local.path, mounts);
+            return another === mapped || another.startsWith(`${mapped}${path.sep}`) || mapped.startsWith(`${another}${path.sep}`);
+        })) {
+            throw new Error("Another configured local repository overlaps this repository");
+        }
+        // Canonicalize BEFORE accessing on-disk files, reject symlink aliases.
+        const canonicalRepo = fsSync.realpathSync(repoPath);
+        if (canonicalRepo !== repoPath) {
+            throw new Error("Repository path contains symbolic links");
+        }
+        const stat = await fs.lstat(canonicalRepo);
+        if (!stat.isDirectory() || stat.isSymbolicLink()) {
+            throw new Error("Repository is missing, redirected or not a real directory");
+        }
+        const configPath = path.join(canonicalRepo, "config");
+        const configStat = await fs.lstat(configPath);
+        if (!configStat.isFile() || configStat.isSymbolicLink()) {
+            throw new Error("Invalid or symlinked Restic config");
+        }
+        if (!destination.resticPassword || destination.resticPassword === "***") {
+            throw new Error("Configure the existing Restic password before resetting");
+        }
+        // Wrong passwords cannot trigger an automatic reset.
+        const output = await this.resticFor(destination, [ "snapshots" ], {}, [], 60_000);
+        const snapshots = JSON.parse(output) as unknown;
+        if (!Array.isArray(snapshots)) {
+            throw new Error("Unable to inspect Restic snapshots");
+        }
+        const fingerprint = [ stat.dev, stat.ino, stat.ctimeMs, stat.mtimeMs,
+            configStat.ctimeMs, configStat.mtimeMs,
+            createHash("sha256").update(output).digest("hex") ].join(":");
+        return { repoPath,
+            fingerprint,
+            snapshots: snapshots.length };
+    }
+
+    /** Read-only preview: five-minute, one-time token; never deletes a repository. */
+    async previewLocalRepositoryReset(label: string): Promise<{
+        label: string;
+        path: string;
+        snapshots: number;
+        token: string;
+        confirmation: string;
+    }> {
+        const info = await this.inspectLocalRepositoryReset(label);
+        const token = randomBytes(24).toString("hex");
+        this.pendingRepositoryResets.set(label, {
+            token,
+            expires: Date.now() + 5 * 60_000,
+            fingerprint: info.fingerprint,
+            repoPath: info.repoPath,
+        });
+        return { label,
+            path: info.repoPath,
+            snapshots: info.snapshots,
+            token,
+            confirmation: `RÉINITIALISER ${label}` };
+    }
+
+    /** Archive by atomic rename, create a fresh repo; never remove archived data. */
+    async confirmLocalRepositoryReset(value: unknown): Promise<{ label: string;
+        path: string;
+        archivedPath: string }> {
+        const body = value as Record<string, unknown> | null;
+        const label = typeof body?.label === "string" ? body.label : "";
+        const pending = this.pendingRepositoryResets.get(label);
+        if (!pending || Date.now() >= pending.expires || body?.token !== pending.token ||
+            body?.acknowledgeLoss !== true || body?.acknowledgeArchive !== true ||
+            body?.confirmation !== `RÉINITIALISER ${label}`) {
+            throw new Error("Fresh preview, acknowledgements and exact confirmation are required");
+        }
+        this.pendingRepositoryResets.delete(label);
+        if (this.repositoryResetting || this.isBackupRunActive() || this.isRestoreRunActive()) {
+            throw new Error("A backup, restore or repository reset is running");
+        }
+        this.repositoryResetting = true;
+        if (!this.backupRunLock.acquire(true)) {
+            this.repositoryResetting = false;
+            throw new Error("Backup already in progress");
+        }
+        try {
+            // All checks are repeated while other BackupManager backups are blocked.
+            const current = await this.inspectLocalRepositoryReset(label, true);
+            if (current.repoPath !== pending.repoPath || current.fingerprint !== pending.fingerprint) {
+                throw new Error("Repository changed since preview; create a new preview");
+            }
+            const destination = this.localDestinationForReset(label);
+            const repoPath = current.repoPath;
+            const parent = path.dirname(repoPath);
+            const base = path.basename(repoPath);
+            const archivePath = path.join(parent, `.${base}.dockge-restic-archive-${Date.now()}-${randomBytes(8).toString("hex")}`);
+            await fs.rename(repoPath, archivePath);
+            try {
+                await fs.mkdir(repoPath, { mode: 0o700 });
+                await this.resticFor(destination, [ "init" ]);
+                // Fail if we cannot verify the fresh repository after initialization.
+                const state = await this.repositoryStatusFor(destination);
+                if (state.state !== "ready") {
+                    throw new Error(`New repository not verified: ${state.detail ?? state.state}`);
+                }
+            } catch (error: unknown) {
+                // Preserve incomplete output; restore the original path if possible.
+                const failedPath = `${repoPath}.failed-init-${randomBytes(8).toString("hex")}`;
+                try {
+                    // mkdir may have failed before creating anything: ENOENT is OK.
+                    let newPathExists = false;
+                    try {
+                        await fs.lstat(repoPath);
+                        newPathExists = true;
+                    } catch (statError: unknown) {
+                        if ((statError as NodeJS.ErrnoException).code !== "ENOENT") {
+                            throw statError;
+                        }
+                    }
+                    if (newPathExists) {
+                        await fs.rename(repoPath, failedPath);
+                    }
+                    await fs.rename(archivePath, repoPath);
+                } catch (rollbackError: unknown) {
+                    throw new AggregateError([ error, rollbackError ], `Restic initialization failed; original repository retained at ${archivePath}, rollback also failed`, { cause: rollbackError });
+                }
+                throw error;
+            }
+            log.info("backup", `Local Restic repository reset; previous repository archived: ${archivePath}`);
+            return { label,
+                path: repoPath,
+                archivedPath: archivePath };
+        } finally {
+            this.backupRunLock.release();
+            this.repositoryResetting = false;
+        }
     }
 
     /**
@@ -1466,6 +1657,9 @@ export class BackupManager {
         suppressNotification?: boolean;
         additionalTags?: string[];
     } = {}): Promise<BackupResult> {
+        if (this.repositoryResetting) {
+            throw new Error("Local Restic repository reset in progress");
+        }
         if (!this.backupRunLock.acquire(this.settings.preventConcurrentBackups)) {
             this.recordBlockedBackup(opts.trigger ?? (opts.tag === "on-save" ? "on-save" : "manual"));
             throw new BackupAlreadyRunningError();
@@ -1527,7 +1721,7 @@ export class BackupManager {
             return result;
         }
 
-        const tags = ["dockge-enhanced", new Date().toISOString().slice(0, 10), trigger];
+        const tags = [ "dockge-enhanced", new Date().toISOString().slice(0, 10), trigger ];
         if (opts.tag && !tags.includes(opts.tag)) {
             tags.push(opts.tag);
         }
@@ -1540,13 +1734,20 @@ export class BackupManager {
                 tags.push(tag);
             }
         }
-        const builtinExcludes = ["*.log", "__pycache__", "node_modules"];
+        const builtinExcludes = [ "*.log", "__pycache__", "node_modules" ];
         const userExcludes = this.settings.excludePatterns ?? [];
         const installationHost = await this.getResticHostId();
+        // Exclude Restic repositories *and* archived versions, including aliases
+        // of the same Docker bind mount. If discovery fails, abort this backup.
+        const repoExcludes = resticRepositoryExcludes(
+            paths,
+            this.settings.destinations.filter(d => d.type === "local" && d.local?.path).map(d => d.local!.path),
+            await this.getAllHostBackupMounts(),
+        );
         const resticArgs = buildBackupArgs({
             paths,
             tags,
-            excludes: [ ...builtinExcludes, ...userExcludes ],
+            excludes: [ ...builtinExcludes, ...userExcludes, ...repoExcludes ],
             // Les backups minimaux de self-update forment une chaîne distincte : ils ne
             // deviennent ni parents ni candidats à la rétention des backups ordinaires.
             host: opts.selfUpdateOnly ? `${installationHost}-self-update` : installationHost,
@@ -1579,7 +1780,7 @@ export class BackupManager {
             for (const dest of activeDests) {
                 const destResult: DestinationResult = {
                     label: dest.label,
-                    type:  dest.type,
+                    type: dest.type,
                     success: false,
                     warnings,
                 };
@@ -1600,7 +1801,7 @@ export class BackupManager {
 
                     await this.initRepoFor(dest);
 
-                    const stdout = await this.resticFor(dest, resticArgs, {}, [3], undefined, (progress) => {
+                    const stdout = await this.resticFor(dest, resticArgs, {}, [ 3 ], undefined, (progress) => {
                         opts.onProgress?.({ phase: "backup",
                             label: dest.label,
                             ...progress });
@@ -1622,7 +1823,7 @@ export class BackupManager {
                             const obj = JSON.parse(line) as Record<string, unknown>;
                             if (obj.message_type === "error") {
                                 const msg = (obj.error as Record<string, unknown>)?.message ?? obj.item ?? line;
-                                return [String(msg)];
+                                return [ String(msg) ];
                             }
                         } catch { /* ignore */ }
                         return [];
@@ -1680,7 +1881,7 @@ export class BackupManager {
             const cleanupErrors = await this.restorePreparedStacks(preparedStacks);
             if (cleanupErrors.length > 0) {
                 allSuccess = false;
-                result.warnings = [...(result.warnings ?? []), ...cleanupErrors];
+                result.warnings = [ ...(result.warnings ?? []), ...cleanupErrors ];
                 if (!result.error) {
                     result.error = cleanupErrors[0];
                 }
@@ -1701,7 +1902,7 @@ export class BackupManager {
                         destResult.restoreTest = await this.runRestoreTest(dest, destResult.snapshotId);
                         if (!destResult.restoreTest.ok && !destResult.restoreTest.skipped) {
                             const msg = destResult.restoreTest.error ?? "Lecture du snapshot impossible";
-                            result.warnings = [...(result.warnings ?? []), `[${dest.label}] Restore test échoué : ${msg}`];
+                            result.warnings = [ ...(result.warnings ?? []), `[${dest.label}] Restore test échoué : ${msg}` ];
                         }
                     }
                 } catch (e: unknown) {
@@ -1717,7 +1918,6 @@ export class BackupManager {
         }
 
         console.log(`[BackupManager] ✓ Backup terminé en ${formatDuration(Date.now() - start)} — ${allSuccess ? "succès" : "échec(s)"}`);
-
 
         result.success = allSuccess;
         result.dataAdded = totalDataAdded;
@@ -1766,7 +1966,7 @@ export class BackupManager {
         if (stackDir === stacksRoot || !stackDir.startsWith(stacksRoot + path.sep)) {
             throw new Error(`Nom de stack invalide : "${stack}"`);
         }
-        for (const name of ["compose.yaml", "compose.yml", "docker-compose.yml", "docker-compose.yaml"]) {
+        for (const name of [ "compose.yaml", "compose.yml", "docker-compose.yml", "docker-compose.yaml" ]) {
             const candidate = path.join(stackDir, name);
             try {
                 await fs.access(candidate);
@@ -1856,7 +2056,7 @@ export class BackupManager {
 
     private async restorePreparedStacks(prepared: PreparedStack[]): Promise<string[]> {
         const errors: string[] = [];
-        for (const entry of [...prepared].reverse()) {
+        for (const entry of [ ...prepared ].reverse()) {
             try {
                 const cwd = entry.workingDir;
                 if (entry.policy.mode === "stop" && entry.runningServices.length > 0) {
@@ -2190,6 +2390,9 @@ export class BackupManager {
     }
 
     async deleteSnapshot(id: string): Promise<void> {
+        if (this.repositoryResetting) {
+            throw new Error("Local Restic repository reset in progress");
+        }
         const dest = this.primaryDest();
         try {
             await this.resticFor(dest, [ "unlock", "--remove-all" ]);
@@ -2229,7 +2432,7 @@ export class BackupManager {
                 mountedVols = await this.getMountedVolumes();
             } catch {}
             // Plus long en premier → on prend toujours le mount le plus spécifique
-            const sortedVols = [...mountedVols].sort((a, b) => b.destination.length - a.destination.length);
+            const sortedVols = [ ...mountedVols ].sort((a, b) => b.destination.length - a.destination.length);
 
             // ── 2. Liste les fichiers du snapshot en deux passes ─────────────
             // restic ls /chemin est NON-RÉCURSIF (enfants directs seulement).
@@ -2406,8 +2609,8 @@ export class BackupManager {
             };
 
             const allGroups = [
-                ...[...groups.values()],
-                ...standalones.map(r => [r]),
+                ...[ ...groups.values() ],
+                ...standalones.map(r => [ r ]),
             ];
             console.log(`[BackupManager] listSnapshotFiles: ${allGroups.length} fichiers, construction des métadonnées…`);
             const files = await Promise.all(allGroups.map(makeFile));
@@ -2435,7 +2638,7 @@ export class BackupManager {
                     const timeoutPromise = new Promise<never>((_, rej) =>
                         setTimeout(() => rej(new Error("restic diff timeout")), DIFF_TIMEOUT_MS)
                     );
-                    const diffOut = await Promise.race([diffPromise, timeoutPromise]);
+                    const diffOut = await Promise.race([ diffPromise, timeoutPromise ]);
                     for (const line of diffOut.split("\n").filter(Boolean)) {
                         let change: Record<string, unknown>;
                         try {
@@ -2542,10 +2745,10 @@ export class BackupManager {
                 const e = JSON.parse(line) as Record<string, unknown>;
                 if ((e.type === "file" || e.type === "dir") && typeof e.path === "string" && e.path !== dirPath) {
                     results.push({
-                        name:  e.name as string ?? "",
-                        path:  e.path as string,
-                        type:  e.type as "file" | "dir",
-                        size:  (e.size as number) ?? 0,
+                        name: e.name as string ?? "",
+                        path: e.path as string,
+                        type: e.type as "file" | "dir",
+                        size: (e.size as number) ?? 0,
                         mtime: (e.mtime as string) ?? "",
                     });
                 }
@@ -2557,6 +2760,9 @@ export class BackupManager {
     /** Restaure une liste de fichiers depuis un snapshot à leur emplacement d'origine */
     async restoreFiles(snapshotId: string, filePaths: string[]): Promise<{ restored: number;
         errors: string[] }> {
+        if (this.repositoryResetting) {
+            throw new Error("Local Restic repository reset in progress");
+        }
         if (filePaths.length === 0) {
             return { restored: 0,
                 errors: [] };
@@ -2576,7 +2782,7 @@ export class BackupManager {
             } catch (e: unknown) {
                 const msg = e instanceof Error ? e.message : String(e);
                 return { restored: 0,
-                    errors: [msg] };
+                    errors: [ msg ] };
             }
         } finally {
             this.restoreRunLock.release();

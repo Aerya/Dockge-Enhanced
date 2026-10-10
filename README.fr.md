@@ -1,4 +1,6 @@
 <p align="center">
+
+**Restic : réinitialisation locale protégée** — La maintenance propose un aperçu, deux confirmations, une phrase exacte et une confirmation finale avant de réinitialiser un dépôt **local**. Le dépôt existant est archivé par renommage sur le même volume, **jamais effacé**. Les racines de montages Docker, liens symboliques, mots de passe invalides et tâches concurrentes sont refusés. Les dépôts locaux et archives sont exclus des sauvegardes ordinaires. Les dépôts SFTP, S3 et REST ne sont pas concernés.
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>
 

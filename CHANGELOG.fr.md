@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-10 — Restic : réinitialisation locale archivée et exclusion des dépôts** — Prévisualisation et confirmation renforcée ; ancien dépôt conservé sur disque ; protections des montages et sauvegardes récursives.
+
 **2026-10-10 — Snapshots Restic : vue « Tous » par défaut** — Le filtre Tous est désormais en première position et sélectionné à chaque ouverture. Le bouton de configuration Backup devient « Enregistrer » ; l’aide précise que l’enregistrement des paramètres ne déclenche pas la purge de rétention.
 
 **2026-10-10 — Auto-mise à jour via Docker Socket Proxy avec plusieurs réseaux** — Le sidecar démarre sur un réseau Docker existant, puis rejoint uniquement les réseaux supplémentaires avant de recevoir l’autorisation d’exécuter le plan signé. Corrige le conflit du réseau `none` à l’étape 5/8 ; des tests couvrent un ou plusieurs réseaux et l’échec de connexion. Corrige #485.

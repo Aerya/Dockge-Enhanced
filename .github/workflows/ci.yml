@@ -111,7 +111,7 @@ jobs:
 
       - name: Tests du restore-test Restic
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/watchers/backup-restore-test.test.ts backend/watchers/restic-repository-init.test.ts
+        run: npx tsx --test backend/watchers/backup-restore-test.test.ts backend/watchers/restic-repository-init.test.ts backend/watchers/backup-repository-safety.test.ts
 
       - name: Tests de l’intégration PowerWatch
         if: steps.docs.outputs.docs_only != 'true'
