@@ -568,6 +568,32 @@ export class WatcherRouter extends Router {
             }
         });
 
+        // Local-only Restic reset. Archive the old repository: never delete it.
+        router.post("/backup/repository-reset/preview", async (req: Request, res: Response) => {
+            try {
+                const label = typeof req.body?.label === "string" ? req.body.label : "";
+                const data = await BackupManager.getInstance().previewRepositoryReset(label);
+                res.json({ ok: true,
+                    data });
+            } catch (error: unknown) {
+                res.status(400).json({ ok: false,
+                    message: error instanceof Error ? error.message : String(error) });
+            }
+        });
+
+        router.post("/backup/repository-reset/confirm", async (req: Request, res: Response) => {
+            try {
+                const data = await BackupManager.getInstance().confirmRepositoryReset(req.body);
+                await auditWatcherAction(req, "backup.repository.reset", "backup", data.label, "success", null, { archived: true });
+                res.json({ ok: true,
+                    data });
+            } catch (error: unknown) {
+                await auditWatcherAction(req, "backup.repository.reset", "backup", null, "failure", "Repository reset rejected or failed");
+                res.status(400).json({ ok: false,
+                    message: error instanceof Error ? error.message : String(error) });
+            }
+        });
+
         // Kept for backward compatibility, but no longer exposed in everyday UI.
         router.post("/backup/init", async (req: Request, res: Response) => {
             try {

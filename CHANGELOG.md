@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-10 — Restic: safe repository reset (Local, SFTP, S3, REST)** — Repository preview and explicit confirmations before creating a fresh, empty repository. Local repositories are archived by renaming; remote destinations switch to a new SFTP directory, S3 prefix, or REST URL. Previous backups are retained, while Recent history is cleared only for the reset destination. Local path, mount, and recursive-backup safeguards remain enforced.
+
 **2026-10-10 — Restic snapshots: All view by default** — The All filter now appears first and is selected at each opening. The Backup settings button is named Save; the retention help clarifies that saving settings does not trigger pruning.
 
 **2026-10-10 — Docker Socket Proxy self-update with multiple networks** — The updater sidecar now starts attached to an existing Docker network and connects only the remaining networks before releasing the signed update plan. Fixes the Docker `none` network conflict at step 5/8; one-network, multi-network, and failed-connection scenarios are covered by tests. Fixes #485.

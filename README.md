@@ -1,4 +1,5 @@
 <p align="center">
+
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>
 
@@ -378,6 +379,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Recovery snapshots and workflows
 
 ### Backup & recovery
+**Safe Restic repository reset (Local, SFTP, S3 and REST).** In **Backup → Maintenance and diagnostics**, choose an enabled destination and preview its repository and snapshot count. The reset requires two explicit acknowledgements, the exact confirmation phrase and a short-lived one-use token. A local repository is renamed into a retained archive before creating a fresh one; a remote repository switches to a new SFTP directory, S3 prefix or REST URL without deleting the old repository. The new active repository has no old snapshots; Recent history entries for that destination are removed while other destinations’ history is retained. The previous repository remains stored at its old location for recovery. This is **not** permanent deletion of backup data. Do not reset a repository shared by other clients without coordinating them.
+
 On the first backup, Restic automatically initializes **only demonstrably missing** repositories; access, network and password errors block initialization. The UI shows repository status for each enabled destination.
 
 The interface separates **Save** (settings only), **Back up now** (immediate backup, then ordinary retention on success), and **maintenance tools** (repository/snapshot status refresh and integrity check). The backup button has stronger contrast.

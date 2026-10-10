@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-10 — Restic : réinitialisation sécurisée des dépôts Local, SFTP, S3 et REST** — Aperçu et confirmations explicites avant la création d’un nouveau dépôt vide. En local, l’ancien dépôt est renommé en archive ; à distance, Dockge bascule vers un nouveau répertoire SFTP, préfixe S3 ou URL REST. Les anciennes sauvegardes restent conservées et seul l’Historique récent de la destination réinitialisée est nettoyé. Les protections des chemins locaux, montages et sauvegardes récursives sont maintenues.
+
 **2026-10-10 — Snapshots Restic : vue « Tous » par défaut** — Le filtre Tous est désormais en première position et sélectionné à chaque ouverture. Le bouton de configuration Backup devient « Enregistrer » ; l’aide précise que l’enregistrement des paramètres ne déclenche pas la purge de rétention.
 
 **2026-10-10 — Auto-mise à jour via Docker Socket Proxy avec plusieurs réseaux** — Le sidecar démarre sur un réseau Docker existant, puis rejoint uniquement les réseaux supplémentaires avant de recevoir l’autorisation d’exécuter le plan signé. Corrige le conflit du réseau `none` à l’étape 5/8 ; des tests couvrent un ou plusieurs réseaux et l’échec de connexion. Corrige #485.
