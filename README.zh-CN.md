@@ -34,10 +34,6 @@
 - **监控集成**：可选 Kula、Dozzle、PowerWatch 与 PowerWatch Hub，支持既有实例或托管部署。
 - **数据安全**：镜像回滚、受保护的 Dockge-Enhanced 自更新以及 Restic 恢复流程。
 
-## 镜像仓库检查的备用 DNS
-
-在 **Watcher > Images > 备用 DNS** 中，可启用备用 DNS（默认关闭）、添加/编辑/删除 IPv4 或 IPv6 服务器，并测试 A/AAAA 查询、耗时和诊断信息。始终优先使用系统 DNS；只有 ImageWatcher 对仓库和令牌服务的受支持 HTTP 请求发生 DNS 解析失败时才会使用备用服务器。默认示例为 Quad9（`9.9.9.9`、`2620:fe::fe`）和 Cloudflare（`1.1.1.1`、`2606:4700:4700::1111`），均可修改。已有配置不会被覆盖。不会修改主机或 Docker Engine 的 DNS；Docker Engine 自行执行的拉取与自动更新不受此功能影响。
-
 ## 最新动态
 
 <details>
@@ -46,6 +42,11 @@
 本节汇总近期最重要的变化，方便快速了解 Dockge-Enhanced 最近新增了什么。
 
 ### 🆕 2026 年 10 月
+
+**镜像仓库检查的备用 DNS**
+
+在 **Watcher > Images > 备用 DNS** 中，可启用备用 DNS（默认关闭）、添加/编辑/删除 IPv4 或 IPv6 服务器，并测试 A/AAAA 查询、耗时和诊断信息。始终优先使用系统 DNS；只有 ImageWatcher 对仓库和令牌服务的受支持 HTTP 请求发生 DNS 解析失败时才会使用备用服务器。默认示例为 Quad9（`9.9.9.9`、`2620:fe::fe`）和 Cloudflare（`1.1.1.1`、`2606:4700:4700::1111`），均可修改。已有配置不会被覆盖。不会修改主机或 Docker Engine 的 DNS；Docker Engine 自行执行的拉取与自动更新不受此功能影响。
+
 
 **十月维护与修复**
 

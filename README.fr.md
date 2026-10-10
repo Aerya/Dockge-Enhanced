@@ -51,10 +51,6 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 
 > **Planification des mises à jour :** lorsqu’un créneau de maintenance est configuré pour l’auto-mise à jour de Dockge-Enhanced, ce même créneau s’applique à toutes les mises à jour automatiques d’images. Celles détectées hors créneau restent en attente jusqu’à la prochaine période autorisée. Les horaires par image restent disponibles sans créneau global et l’action manuelle **Mettre à jour** reste toujours immédiate.
 
-## DNS de secours pour les contrôles des registries
-
-Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli DNS (désactivé par défaut), d'ajouter, modifier ou supprimer des serveurs IPv4/IPv6 et de tester les requêtes A et AAAA avec délais et diagnostics. Le DNS système reste prioritaire ; le repli intervient uniquement en cas d'échec de résolution DNS lors des requêtes HTTP aux registries et aux services de jetons prises en charge par ImageWatcher. Quad9 (`9.9.9.9`, `2620:fe::fe`) et Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`) servent d'exemples modifiables. Les paramètres déjà enregistrés sont conservés. Aucun DNS de l'hôte ou de Docker Engine n'est modifié ; les pulls et les auto-mises à jour pilotés par Docker Engine ne sont pas couverts.
-
 ## Dernières nouveautés
 
 <details>
@@ -63,6 +59,11 @@ Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli D
 Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
 ### 🆕 Octobre 2026
+
+**DNS de secours pour les contrôles des registries**
+
+Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli DNS (désactivé par défaut), d'ajouter, modifier ou supprimer des serveurs IPv4/IPv6 et de tester les requêtes A et AAAA avec délais et diagnostics. Le DNS système reste prioritaire ; le repli intervient uniquement en cas d'échec de résolution DNS lors des requêtes HTTP aux registries et aux services de jetons prises en charge par ImageWatcher. Quad9 (`9.9.9.9`, `2620:fe::fe`) et Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`) servent d'exemples modifiables. Les paramètres déjà enregistrés sont conservés. Aucun DNS de l'hôte ou de Docker Engine n'est modifié ; les pulls et les auto-mises à jour pilotés par Docker Engine ne sont pas couverts.
+
 
 **Maintenance et corrections d’octobre**
 
