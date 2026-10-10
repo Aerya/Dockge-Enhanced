@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-10 — Auto-mise à jour via Docker Socket Proxy avec plusieurs réseaux** — Le sidecar démarre sur un réseau Docker existant, puis rejoint uniquement les réseaux supplémentaires avant de recevoir l’autorisation d’exécuter le plan signé. Corrige le conflit du réseau `none` à l’étape 5/8 ; des tests couvrent un ou plusieurs réseaux et l’échec de connexion. Corrige #485.
+
 **2026-10-09 — Mises à jour groupées des images d’une stack** — La page d’une stack permet maintenant d’appliquer en une seule opération le mode **Désactivé**, **Immédiat** ou **Planifié** à ses images. Un aperçu liste les changements ; l’utilisateur choisit de **conserver les exceptions individuelles** (valeur par défaut) ou de les remplacer. Les services exclus par `dockge.imageupdates.check=false` restent protégés, les images partagées sont dédupliquées et les instances liées utilisent la même validation côté serveur. Les futures images ne sont pas automatiquement concernées.
 
 **2026-10-09 — ImageWatcher immédiat plus rapide et fiable** — Contrôle ciblé à l’activation puis toutes les 5 minutes pour les images en mode Immédiat, comparaison avec les images réellement exécutées, mutualisation des requêtes identiques, temporisation HTTP 429 et bilan des cycles dans les logs. Les pauses, fenêtres de maintenance et sauvegardes de rollback restent respectées.
