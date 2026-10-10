@@ -860,6 +860,8 @@
     "watcher.powerwatch.clear": "Clear",
     "watcher.powerwatch.apiUrl": "PowerWatch URL",
     "watcher.powerwatch.externalUrlHint": "Enter your existing PowerWatch Web UI address. Enhanced queries its built-in API automatically.",
+    "watcher.powerwatch.apiToken": "Read-only API token (optional)",
+    "watcher.powerwatch.apiTokenHint": "Required only when native PowerWatch authentication is enabled. Create a read-only Bearer token in PowerWatch Security. The saved token stays hidden.",
     "watcher.powerwatch.webUrl": "Web UI URL override (optional)",
     "watcher.powerwatch.externalWebUrlHint": "Only needed if the Web UI uses a different address from the API (e.g. a reverse proxy).",
     "watcher.powerwatch.webUrlOptional": "Custom Web UI URL (optional)",

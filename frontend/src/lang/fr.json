@@ -848,6 +848,8 @@
     "watcher.powerwatch.clear": "Effacer",
     "watcher.powerwatch.apiUrl": "URL de PowerWatch",
     "watcher.powerwatch.externalUrlHint": "Indiquez simplement l’adresse de votre WebUI PowerWatch. Enhanced utilise automatiquement son API intégrée.",
+    "watcher.powerwatch.apiToken": "Jeton API en lecture seule (facultatif)",
+    "watcher.powerwatch.apiTokenHint": "Nécessaire uniquement si l’authentification native de PowerWatch est activée. Créez un jeton Bearer en lecture seule dans Sécurité. Le jeton enregistré reste masqué.",
     "watcher.powerwatch.webUrl": "Autre URL de WebUI (facultatif)",
     "watcher.powerwatch.externalWebUrlHint": "Uniquement si la WebUI a une autre adresse que l’API (par exemple derrière un reverse proxy).",
     "watcher.powerwatch.webUrlOptional": "URL WebUI personnalisée facultative",

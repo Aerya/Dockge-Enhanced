@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-10 — PowerWatch read-only Bearer integration** — Monitoring can query protected PowerWatch instances using optional read-only API Bearer tokens. Secrets remain masked in the UI, stay bound to the selected PowerWatch target, are stored with `0600` permissions, and are never forwarded to the Hub. Unprotected instances work without a token.
+
 **2026-10-10 — ImageWatcher diagnostics and metadata (#493–#495)** — The Images view can sort errors first. Transiently unreachable targets are preserved, manifest timeouts use bounded retries, registry/authentication/digest errors are clearer, and stack timestamps change only after a confirmed applied update.
 
 **2026-10-10 — Stack update controls and image action buttons (#489–#490)** — The stack-wide automatic update policy now opens from the stack action bar in a modal; individual container controls remain unchanged. Image update, ignore, pause and rollback actions use compact buttons with accessible labels.

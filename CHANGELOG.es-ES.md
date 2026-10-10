@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-10 — Integración PowerWatch Bearer de solo lectura** — Monitorización admite instancias PowerWatch protegidas con un token API Bearer opcional. El secreto permanece oculto en la WebUI, vinculado a la instancia seleccionada, guardado con permisos `0600` y nunca enviado al Hub. Las instancias no protegidas siguen funcionando sin token.
+
 **2026-10-10 — Diagnósticos y metadatos de ImageWatcher (#493–#495)** — La vista Imágenes permite ordenar primero los errores. Se conservan los objetivos temporalmente inaccesibles, los tiempos de espera de manifiestos tienen reintentos limitados, los errores de registro/autenticación/digest son más claros y la fecha del stack solo cambia tras una actualización aplicada y confirmada.
 
 **2026-10-10 — Controles de actualización de stacks e imágenes (#489–#490)** — La política automática de todo un stack se abre desde la barra de acciones en un diálogo, sin cambiar los ajustes individuales de contenedores. Los botones de actualizar, ignorar, pausar y revertir imágenes son más compactos y mantienen etiquetas accesibles.

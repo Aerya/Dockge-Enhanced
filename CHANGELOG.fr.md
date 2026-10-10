@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-10 — Intégration PowerWatch Bearer en lecture seule** — Monitoring peut interroger des instances PowerWatch protégées avec un jeton API Bearer facultatif. Le secret reste masqué dans la WebUI, associé à la cible sélectionnée, conservé avec les permissions `0600` et jamais transmis au Hub. Les instances non protégées n’ont toujours pas besoin de jeton.
+
 **2026-10-10 — Diagnostics et métadonnées ImageWatcher (#493–#495)** — La page Images permet de trier les erreurs en premier. Les cibles temporairement inaccessibles sont conservées, les timeouts de manifestes bénéficient de reprises bornées, les erreurs de registre/authentification/digest sont plus explicites et la date d'une stack évolue uniquement après une mise à jour réellement confirmée.
 
 **2026-10-10 — Commandes de mises à jour des stacks et images (#489–#490)** — La politique de mise à jour automatique d'une stack s'ouvre depuis sa barre d'actions dans une fenêtre dédiée, sans changer les réglages individuels des conteneurs. Les actions de mise à jour, ignorance, pause et rollback des images utilisent des boutons compacts avec libellés accessibles.

@@ -5,6 +5,7 @@ import {
     buildPowerWatchHubCompose,
     DEFAULT_POWERWATCH_SETTINGS,
     PowerWatchManager,
+    POWERWATCH_TOKEN_MASK,
     validatePowerWatchUrl,
 } from "./powerwatch-manager";
 
@@ -16,7 +17,7 @@ function result(stdout = "", code = 0, stderr = "") {
 
 function managerWith(overrides: {
     docker?: (args: string[]) => Promise<ReturnType<typeof result>>;
-    fetchJson?: (url: string, timeout: number) => Promise<unknown>;
+    fetchJson?: (url: string, timeout: number, options?: { bearerToken?: string }) => Promise<unknown>;
     now?: () => number;
 } = {}) {
     return new PowerWatchManager({
@@ -66,6 +67,61 @@ test("an existing PowerWatch needs only its WebUI URL, never a separate API URL"
     assert.equal(requested, "http://192.168.0.64:3064/api/snapshot");
     assert.equal(snapshot.webUrl, "http://192.168.0.64:3064");
     assert.equal(snapshot.totalWatts, 18.5);
+});
+
+test("protected PowerWatch snapshots use a read-only Bearer token without exposing it in settings", async () => {
+    let requested = "";
+    let bearerToken: string | undefined;
+    const manager = managerWith({ fetchJson: async (url, _timeout, options) => {
+        requested = url;
+        bearerToken = options?.bearerToken;
+        return { total: { watts: 9.1,
+            confidence: "Measured" } };
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        enabled: true,
+        apiUrl: "https://power.example.test",
+        apiToken: "pw_readonly-token" };
+
+    assert.equal((await manager.getSnapshot()).reachable, true);
+    assert.equal(requested, "https://power.example.test/api/snapshot");
+    assert.equal(bearerToken, "pw_readonly-token");
+    assert.equal(manager.getSettingsSafe().apiToken, POWERWATCH_TOKEN_MASK);
+    assert.equal((await manager.test({ apiToken: POWERWATCH_TOKEN_MASK })).reachable, true);
+    await assert.rejects(() => manager.test({ apiToken: "pw_token\r\nX-Injected: value" }), /Invalid PowerWatch API token/);
+});
+
+test("a saved read-only token never follows an instance URL change", async () => {
+    const calls: Array<{ url: string;
+        token?: string }> = [];
+    const manager = managerWith({ fetchJson: async (url, _timeout, opts) => {
+        calls.push({ url,
+            token: opts?.bearerToken });
+        return { total: { watts: 12.3,
+            confidence: "Measured" } };
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        enabled: true,
+        apiUrl: "https://first.test",
+        apiToken: "pw_first-only" };
+
+    // Reusing the masked value on the same endpoint remains supported.
+    assert.equal((await manager.test({ apiToken: POWERWATCH_TOKEN_MASK })).reachable, true);
+    assert.equal(calls.at(-1)?.token, "pw_first-only");
+
+    // Updating the endpoint must drop the old secret even if the form still has its mask.
+    assert.equal((await manager.test({ apiUrl: "https://second.test",
+        apiToken: POWERWATCH_TOKEN_MASK })).reachable, true);
+    assert.deepEqual(calls.at(-1), { url: "https://second.test/api/snapshot",
+        token: undefined });
+    assert.equal((await manager.test({ apiUrl: "https://third.test" })).reachable, true);
+    assert.equal(calls.at(-1)?.token, undefined);
+
+    // A newly entered token may be explicitly associated with the new endpoint.
+    assert.equal((await manager.test({ apiUrl: "https://fourth.test",
+        apiToken: "pw_explicit-new" })).reachable, true);
+    assert.equal(calls.at(-1)?.token, "pw_explicit-new");
+    assert.equal(manager.settings.apiToken, "pw_first-only");
 });
 
 test("disabled mode makes no request and invalid watts become null", async () => {
@@ -142,6 +198,21 @@ test("PowerWatch Hub failures do not affect individual PowerWatch settings", asy
     assert.equal(status.reachable, false);
     assert.match(status.lastError ?? "", /timed out/);
     assert.equal(manager.settings.apiUrl, "http://power.example.test");
+});
+
+test("PowerWatch API tokens are never sent to the Hub snapshot endpoint", async () => {
+    let options: { bearerToken?: string } | undefined;
+    const manager = managerWith({ fetchJson: async (_url, _timeout, requestOptions) => {
+        options = requestOptions;
+        return { nodes: [] };
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        apiToken: "pw_readonly-token",
+        hubEnabled: true,
+        hubWebUrl: "https://hub.example.test" };
+
+    assert.equal((await manager.getHubStatus()).reachable, true);
+    assert.equal(options, undefined);
 });
 
 test("HTTP timeout and invalid JSON failures stay non-blocking", async (t) => {
@@ -250,6 +321,29 @@ test("external local containers report stopped, curl and JSON errors without lif
             assert.equal(commands.some((args) => [ "stop", "rm", "start" ].includes(args[0])), false);
         });
     }
+});
+
+test("protected local containers receive the Bearer token only on their snapshot request", async () => {
+    const commands: string[][] = [];
+    const manager = managerWith({ docker: async (args) => {
+        commands.push(args);
+        if (args[0] === "inspect") {
+            return result(JSON.stringify([{ Config: { Image: "ghcr.io/aerya/powerwatch:latest" },
+                State: { Running: true },
+                HostConfig: { PortBindings: {} } }]));
+        }
+        if (args[0] === "exec") {
+            return result(JSON.stringify({ total: { watts: 18.4 } }));
+        }
+        return result();
+    } });
+    manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
+        enabled: true,
+        externalContainer: "powerwatch-existing",
+        apiToken: "pw_readonly-token" };
+
+    assert.equal((await manager.getSnapshot()).reachable, true);
+    assert.deepEqual(commands.at(-1), [ "exec", "powerwatch-existing", "curl", "--fail", "--silent", "--show-error", "--max-time", "4", "--header", "Authorization: Bearer pw_readonly-token", "http://127.0.0.1:3000/api/snapshot" ]);
 });
 
 test("detection lists multiple official PowerWatch containers without controlling them", async () => {
