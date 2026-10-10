@@ -700,14 +700,6 @@
       "count": 1
     }
   },
-  "frontend/src/components/watcher/WatcherImagesTab.vue": {
-    "@stylistic/object-property-newline": {
-      "count": 4
-    },
-    "curly": {
-      "count": 1
-    }
-  },
   "frontend/src/components/watcher/WatcherUpdatesTab.vue": {
     "@stylistic/brace-style": {
       "count": 4
