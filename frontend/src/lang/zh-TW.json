@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "ImageWatcher 現支援選用的備援 DNS：優先使用系統 DNS，僅在解析失敗時嘗試 Quad9、Cloudflare 或自訂 IPv4/IPv6 伺服器。可在 Watcher > 映像中檢查 A/AAAA、耗時及診斷；不修改主機或 Docker Engine 的 DNS。",
     "watcher.backup.reset.title": "重設 Restic 儲存庫",
     "watcher.backup.reset.intro": "本機：封存舊儲存庫。SFTP、S3 與 REST：切換到新路徑或前綴，保留原有儲存庫。",
     "watcher.backup.reset.select": "選擇目標",

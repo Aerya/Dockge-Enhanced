@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "خوادم DNS احتياطية اختيارية لفحوص ImageWatcher: تُستخدم خوادم النظام أولاً، ثم Quad9 أو Cloudflare أو خوادم IPv4/IPv6 مخصصة عند فشل DNS فقط. تتوفر اختبارات A/AAAA وزمن الاستجابة والتشخيص في Watcher > Images، دون تغيير DNS المضيف أو Docker Engine.",
     "languageName": "العربية",
     "stackLogs": "Logs",
     "Create your admin account": "إنشاء حساب المشرف",

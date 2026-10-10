@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-10 — 可配置备用 DNS** — ImageWatcher 在系统 DNS 解析失败后，可选用 Quad9、Cloudflare 或自定义 IPv4/IPv6 DNS 完成受支持的仓库及令牌 HTTP 请求。WebUI 提供多语言 A/AAAA 测试、耗时和诊断。默认关闭；不修改主机或 Docker Engine 的 DNS，也不影响由 Docker Engine 执行的拉取与自动更新。
+
 **2026-10-10 — ImageWatcher / Self-Update 协调改进** — 只读 Registry/DNS 扫描不再阻止 Enhanced 自更新。镜像更新、回滚和回滚标签清理等 Docker 修改操作与 Self-Update 共用独占预约；冲突操作将安全推迟。计划状态不会无故阻止 ImageWatcher，更新面板优先显示正在执行的操作。
 
 **2026-10-10 — 修复 Docker Socket Proxy 多网络自动更新** — updater sidecar 启动时接入一个现有 Docker 网络，连接其余网络后才允许执行已签名的更新计划。修复第 5/8 步的 `none` 网络冲突，并加入单网络、多网络及连接失败测试。修复 #485。

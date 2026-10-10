@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "DNS de secours facultatifs pour les contrôles des registries par ImageWatcher : DNS système prioritaire, puis Quad9/Cloudflare ou serveurs IPv4/IPv6 personnalisés uniquement en cas d’échec DNS. Tests A/AAAA, délais et diagnostics dans Watcher > Images. Aucun changement DNS de l’hôte ni de Docker Engine.",
     "watcher.backup.reset.title": "Réinitialiser un dépôt Restic",
     "watcher.backup.reset.intro": "Local : ancien dépôt archivé. SFTP, S3 et REST : nouveau chemin ou préfixe, ancien dépôt conservé sans déplacement ni suppression.",
     "watcher.backup.reset.select": "Choisir une destination",

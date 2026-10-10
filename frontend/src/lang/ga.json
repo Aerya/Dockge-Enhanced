@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "DNS cúltaca roghnach do ImageWatcher: úsáidtear DNS an chórais ar dtús, agus ní bhaintear triail as Quad9, Cloudflare ná freastalaithe saincheaptha IPv4/IPv6 ach má theipeann ar DNS. Tástálacha A/AAAA, amanna agus diagnóisí faoi Watcher > Images; ní athraítear DNS an óstaigh ná Docker Engine.",
     "Create your admin account": "Cruthaigh do chuntas riaracháin",
     "authIncorrectCreds": "Ainm úsáideora nó pasfhocal mícheart.",
     "PasswordsDoNotMatch": "Níl na pasfhocail comhthráthacha.",

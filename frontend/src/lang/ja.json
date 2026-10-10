@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "ImageWatcher に任意の予備 DNS を追加しました。まずシステム DNS を使い、DNS 障害時のみ Quad9、Cloudflare、または独自の IPv4/IPv6 サーバーを試します。Watcher > Images で A/AAAA、応答時間、診断を確認でき、ホストや Docker Engine の DNS 設定は変更しません。",
     "authIncorrectCreds": "ユーザーネームまたはパスワードが正しくありません。",
     "PasswordsDoNotMatch": "パスワードが一致しません。",
     "Repeat Password": "パスワードを再度入力してください",

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Valfri reserv-DNS för ImageWatcher: systemets DNS används först och endast vid DNS-fel provas Quad9, Cloudflare eller egna IPv4-/IPv6-servrar. A-/AAAA-test, svarstider och diagnostik under Watcher > Bilder, utan ändringar av värdens eller Docker Engines DNS.",
     "languageName": "Svenska",
     "stackLogs": "Logs",
     "Create your admin account": "Skapa ditt Admin-konto",

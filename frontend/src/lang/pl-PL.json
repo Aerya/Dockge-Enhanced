@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Opcjonalny zapasowy DNS dla ImageWatcher: najpierw systemowy DNS, a dopiero po błędzie Quad9, Cloudflare lub własne serwery IPv4/IPv6. Testy A/AAAA, czasy i diagnostyka w Watcher > Obrazy, bez zmian DNS hosta ani Docker Engine.",
     "languageName": "Polski",
     "stackLogs": "Logs",
     "Create your admin account": "Utwórz konto administratora",

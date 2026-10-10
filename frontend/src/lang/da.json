@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Valgfri DNS-reserve til ImageWatcher: systemets DNS bruges først, og kun ved DNS-fejl prøves Quad9, Cloudflare eller egne IPv4-/IPv6-servere. A-/AAAA-tests, svartider og diagnostik under Watcher > Images uden DNS-ændringer på værten eller Docker Engine.",
     "languageName": "Dansk",
     "stackLogs": "Logs",
     "authIncorrectCreds": "Forkert brugernavn eller adgangskode.",

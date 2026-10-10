@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Valgfri reserve-DNS for ImageWatcher: systemets DNS brukes først, og bare ved DNS-feil prøves Quad9, Cloudflare eller egne IPv4-/IPv6-servere. A-/AAAA-tester, svartider og diagnostikk under Watcher > Images, uten DNS-endringer på verten eller i Docker Engine.",
     "Create your admin account": "Lag din administrator konto",
     "authIncorrectCreds": "Brukernavn eller passord stemmer ikke.",
     "PasswordsDoNotMatch": "Passord stemmer ikke.",

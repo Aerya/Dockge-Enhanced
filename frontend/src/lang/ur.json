@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "ImageWatcher کے لیے اختیاری متبادل DNS: پہلے سسٹم DNS استعمال ہوتا ہے، اور صرف DNS ناکامی پر Quad9، Cloudflare یا حسب ضرورت IPv4/IPv6 سرور آزمائے جاتے ہیں۔ Watcher > Images میں A/AAAA ٹیسٹ، وقت اور تشخیص؛ میزبان یا Docker Engine DNS میں کوئی تبدیلی نہیں۔",
     "languageName": "اردو",
     "stackLogs": "Logs",
     "Create your admin account": "اپنا ایڈمن اکاؤنٹ بنائیں",

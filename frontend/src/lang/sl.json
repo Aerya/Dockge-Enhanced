@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Izbirni rezervni DNS za ImageWatcher: najprej sistemski DNS, ob napaki pa Quad9, Cloudflare ali lastni strežniki IPv4/IPv6. Preizkusi A/AAAA, odzivni časi in diagnostika v Watcher > Images, brez spreminjanja DNS gostitelja ali Docker Engine.",
     "languageName": "Slovenščina",
     "stackLogs": "Logs",
     "Create your admin account": "Ustvarite svoj skrbniški račun",

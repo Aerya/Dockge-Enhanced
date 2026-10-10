@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-10 — DNS de respaldo configurables** — ImageWatcher puede usar, solo tras un fallo del DNS del sistema, Quad9/Cloudflare o servidores IPv4/IPv6 personalizados para solicitudes HTTP a registries y servicios de tokens. La WebUI ofrece pruebas A/AAAA, tiempos y diagnósticos traducidos. Desactivado por defecto; no modifica el DNS del host ni de Docker Engine, ni afecta a las descargas y autoactualizaciones gestionadas por Engine.
+
 **2026-10-10 — Coordinación ImageWatcher / Self-Update** — Las consultas de registros/DNS en modo lectura ya no bloquean la actualización de Enhanced. Las actualizaciones de imágenes, reversiones y limpiezas de etiquetas que modifican Docker comparten una reserva exclusiva con Self-Update; las operaciones en conflicto se aplazan. La planificación no bloquea innecesariamente ImageWatcher y el panel prioriza la operación activa.
 
 **2026-10-10 — Actualización automática con Docker Socket Proxy y varias redes** — El sidecar comienza en una red Docker existente y se conecta únicamente a las redes adicionales antes de ejecutar el plan firmado. Corrige el conflicto con la red `none` en el paso 5/8 e incluye pruebas para una o varias redes y errores de conexión. Corrige #485.

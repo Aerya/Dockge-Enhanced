@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Volitelný záložní DNS pro ImageWatcher: nejprve systémový DNS, při chybě pak Quad9, Cloudflare nebo vlastní servery IPv4/IPv6. Testy A/AAAA, odezvy a diagnostika ve Watcher > Images, bez změn DNS hostitele či Docker Engine.",
     "languageName": "Čeština",
     "stackLogs": "Logs",
     "Create your admin account": "Vytvořit účet administrátora",

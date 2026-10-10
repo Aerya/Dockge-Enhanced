@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Optionaler DNS-Fallback für ImageWatcher: zuerst System-DNS, bei DNS-Fehlern konfigurierbare Quad9-/Cloudflare- oder eigene IPv4-/IPv6-Server. A-/AAAA-Tests, Laufzeiten und Diagnosen unter Watcher > Images. Keine DNS-Änderungen am Host oder an Docker Engine.",
     "languageName": "Deutsch",
     "stackLogs": "Logs",
     "Create your admin account": "Erstelle dein Admin-Konto",

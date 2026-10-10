@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Незадължителен резервен DNS за ImageWatcher: първо системният DNS, а при грешка — Quad9, Cloudflare или собствени IPv4/IPv6 сървъри. A/AAAA тестове, време и диагностика в Watcher > Images, без промени по DNS на хоста или Docker Engine.",
     "languageName": "Български",
     "stackLogs": "Logs",
     "Create your admin account": "Създайте администраторски профил",

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "ImageWatcher için isteğe bağlı yedek DNS: önce sistem DNS’i, yalnızca DNS hatasında Quad9, Cloudflare veya özel IPv4/IPv6 sunucuları kullanılır. Watcher > Images bölümünde A/AAAA testleri, süreler ve tanılar; ana makine veya Docker Engine DNS ayarları değişmez.",
     "languageName": "Türkçe",
     "stackLogs": "Logs",
     "Create your admin account": "Yönetici hesabınızı oluşturun",

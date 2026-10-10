@@ -38,3 +38,14 @@ test("DNS lookup results use a table and treat ENODATA as neutral", () => {
     assert.match(componentSource, /dnsRecordAbsent\(record\.errorCode\)/);
     assert.match(componentSource, /watcher\.registryDns\.noAddress/);
 });
+
+
+test("DNS fallback release news and documentation cover every shipped locale", () => {
+    const news = readFileSync(new URL("./release-news.js", import.meta.url), "utf8");
+    assert.match(news, /id: "2026-10-10-registry-dns-fallback"/);
+    assert.match(news, /"releaseNews\.item\.registryDnsFallback"/);
+    for (const file of readdirSync(localeDirectory).filter(name => name.endsWith(".json"))) {
+        const strings = JSON.parse(readFileSync(new URL(`./lang/${file}`, import.meta.url), "utf8")) as Record<string, string>;
+        assert.ok(strings["releaseNews.item.registryDnsFallback"]?.trim(), `${file}: release-news translation missing`);
+    }
+});

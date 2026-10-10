@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "DNS de rezervă opțional pentru ImageWatcher: mai întâi DNS-ul sistemului, apoi numai la erori DNS Quad9, Cloudflare sau servere IPv4/IPv6 personalizate. Teste A/AAAA, timpi și diagnostice în Watcher > Images, fără modificarea DNS-ului gazdei sau Docker Engine.",
     "Create your admin account": "Creați-vă contul de administrator",
     "PasswordsDoNotMatch": "Parolele nu se potrivesc.",
     "Repeat Password": "Repetați parola",

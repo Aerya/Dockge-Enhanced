@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "DNS di riserva facoltativi per ImageWatcher: prima il DNS di sistema e solo in caso di errore i server Quad9, Cloudflare o IPv4/IPv6 personalizzati. Test A/AAAA, tempi e diagnostica in Watcher > Immagini, senza modificare il DNS dell’host o di Docker Engine.",
     "languageName": "Italiano",
     "stackLogs": "Logs",
     "Create your admin account": "Crea il tuo account amministratore",

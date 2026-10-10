@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "DNS cadangan opsional untuk ImageWatcher: gunakan DNS sistem terlebih dahulu, lalu hanya jika gagal gunakan Quad9, Cloudflare, atau server IPv4/IPv6 khusus. Uji A/AAAA, waktu respons, dan diagnostik di Watcher > Images tanpa mengubah DNS host atau Docker Engine.",
     "Create your admin account": "Buat akun admin Anda",
     "PasswordsDoNotMatch": "Kata sandi tidak sama.",
     "Repeat Password": "Ulangi Kata Sandi",

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "DNS dự phòng tùy chọn cho ImageWatcher: ưu tiên DNS hệ thống, chỉ khi DNS lỗi mới thử Quad9, Cloudflare hoặc máy chủ IPv4/IPv6 tùy chỉnh. Kiểm tra A/AAAA, thời gian phản hồi và chẩn đoán tại Watcher > Images mà không đổi DNS của máy chủ hay Docker Engine.",
     "authIncorrectCreds": "Sai tên người dùng hoặc mật khẩu.",
     "PasswordsDoNotMatch": "Mật khẩu không khớp.",
     "Repeat Password": "Lặp Lại Mật Khẩu",

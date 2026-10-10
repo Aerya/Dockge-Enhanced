@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Opcionális tartalék DNS az ImageWatcherhez: először a rendszer DNS-e, hiba esetén Quad9, Cloudflare vagy saját IPv4/IPv6 kiszolgálók. A/AAAA-tesztek, válaszidők és diagnosztika a Watcher > Images alatt, a gazdagép és a Docker Engine DNS-ének módosítása nélkül.",
     "languageName": "Angol",
     "stackLogs": "Logs",
     "Repeat Password": "Jelszó Ismétlése",

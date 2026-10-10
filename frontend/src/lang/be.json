@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Рэзервовы DNS для ImageWatcher: спачатку сістэмны DNS, а пры памылцы — Quad9, Cloudflare або ўласныя серверы IPv4/IPv6. Праверкі A/AAAA, затрымка і дыягностыка ў Watcher > Images; DNS хоста і Docker Engine не змяняецца.",
     "active": "акт.",
     "LongSyntaxNotSupported": "Доўгі сінтаксіс тут не падтрымліваецца. Выкарыстоўвайце рэдактар YAML.",
     "removeAgentMsg": "Вы ўпэўнены, што хочаце выдаліць гэтага агента?",

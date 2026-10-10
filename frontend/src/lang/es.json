@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "DNS de respaldo opcional para ImageWatcher: primero el DNS del sistema y, solo si falla, servidores Quad9/Cloudflare o IPv4/IPv6 personalizados. Pruebas A/AAAA, tiempos y diagnósticos en Watcher > Imágenes, sin cambiar el DNS del host ni de Docker Engine.",
     "watcher.backup.reset.title": "Restablecer un repositorio Restic",
     "watcher.backup.reset.intro": "Local: se archiva el repositorio anterior. SFTP, S3 y REST: se usa una nueva ruta o prefijo y se conserva intacto el anterior.",
     "watcher.backup.reset.select": "Elegir destino",

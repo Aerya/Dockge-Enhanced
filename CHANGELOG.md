@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-10 — Configurable registry DNS fallback** — ImageWatcher can optionally retry registry and token HTTP resolutions via configurable Quad9/Cloudflare or custom IPv4/IPv6 DNS servers after system DNS fails. The WebUI offers A/AAAA tests, response times and diagnostics in all interface languages. Disabled by default; no host or Docker Engine DNS change, and Engine-managed pulls/self-updates are not affected.
+
 **2026-10-10 — ImageWatcher / Self-Update coordination** — Read-only registry/DNS scans no longer block self-updates. Docker-mutating image updates, rollbacks and rollback-tag cleanup share an exclusive reservation with Self-Update; conflicting operations are deferred safely. Scheduled updates do not unnecessarily block ImageWatcher, and the Updates panel prioritizes the active operation.
 
 **2026-10-10 — Restic: safe repository reset (Local, SFTP, S3, REST)** — Repository preview and explicit confirmations before creating a fresh, empty repository. Local repositories are archived by renaming; remote destinations switch to a new SFTP directory, S3 prefix, or REST URL. Previous backups are retained, while Recent history is cleared only for the reset destination. Local path, mount, and recursive-backup safeguards remain enforced.

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Дополнительные DNS для ImageWatcher: сначала системный DNS, и только при его ошибке — Quad9, Cloudflare или собственные серверы IPv4/IPv6. Проверки A/AAAA, задержка и диагностика в Watcher > Images; настройки DNS хоста и Docker Engine не изменяются.",
     "languageName": "Русский",
     "stackLogs": "Logs",
     "Create your admin account": "Создайте учетную запись администратора",

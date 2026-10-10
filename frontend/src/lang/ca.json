@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "DNS de reserva opcional per a ImageWatcher: primer el DNS del sistema i, només si falla, Quad9, Cloudflare o servidors IPv4/IPv6 personalitzats. Proves A/AAAA, temps i diagnòstics a Watcher > Images, sense modificar el DNS de l’amfitrió ni de Docker Engine.",
     "Create your admin account": "Crea el teu compte d'administrador",
     "Repeat Password": "Repeteix la contrasenya",
     "Create": "Crea",

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Optional DNS fallback for ImageWatcher registry checks: system DNS stays first, then configurable Quad9/Cloudflare or custom IPv4/IPv6 servers are tried only after DNS failures. Test A/AAAA responses, response times and diagnostics in Watcher > Images. No host or Docker Engine DNS changes.",
     "watcher.backup.reset.title": "Reset a Restic repository",
     "watcher.backup.reset.intro": "Local: archive the old repository. SFTP, S3 and REST: switch to a new path or prefix, leaving the old repository untouched.",
     "watcher.backup.reset.select": "Select a destination",

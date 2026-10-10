@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-10-registry-dns-fallback",
+        items: [ "releaseNews.item.registryDnsFallback" ],
+    },
+    {
         id: "2026-10-10-self-update-imagewatcher-coordination",
         items: [ "releaseNews.item.selfUpdateImageWatcherCoordination" ],
     },

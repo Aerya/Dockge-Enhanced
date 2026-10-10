@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "DNS de contingência opcional para o ImageWatcher: o DNS do sistema tem prioridade; apenas em falhas DNS são usados Quad9, Cloudflare ou servidores IPv4/IPv6 personalizados. Testes A/AAAA, tempos e diagnósticos em Watcher > Imagens, sem alterar o DNS do host nem do Docker Engine.",
     "languageName": "Português-Brasil",
     "stackLogs": "Logs",
     "Create your admin account": "Crie sua conta de administrador",

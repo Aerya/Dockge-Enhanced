@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "DNS สำรองสำหรับ ImageWatcher: ใช้ DNS ของระบบก่อน และใช้ Quad9, Cloudflare หรือเซิร์ฟเวอร์ IPv4/IPv6 ที่กำหนดเองเฉพาะเมื่อ DNS ล้มเหลว ทดสอบ A/AAAA พร้อมเวลาและการวินิจฉัยได้ที่ Watcher > Images โดยไม่เปลี่ยน DNS ของโฮสต์หรือ Docker Engine",
     "languageName": "อังกฤษ",
     "stackLogs": "Logs",
     "Create your admin account": "สร้างบัญชีผู้ดูแลระบบของคุณ",

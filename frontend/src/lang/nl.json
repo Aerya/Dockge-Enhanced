@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.registryDnsFallback": "Optionele DNS-terugval voor ImageWatcher: eerst systeem-DNS, daarna alleen bij DNS-fouten Quad9, Cloudflare of eigen IPv4-/IPv6-servers. A-/AAAA-tests, responstijden en diagnoses onder Watcher > Images, zonder DNS-wijzigingen op de host of in Docker Engine.",
     "languageName": "Nederlands",
     "stackLogs": "Logs",
     "authIncorrectCreds": "Onjuiste gebruikersnaam of wachtwoord.",
