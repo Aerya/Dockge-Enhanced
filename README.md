@@ -378,6 +378,13 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Recovery snapshots and workflows
 
 ### Backup & recovery
+On the first backup, Restic automatically initializes **only demonstrably missing** repositories; access, network and password errors block initialization. The UI shows repository status for each enabled destination.
+
+The interface separates **Save** (settings only), **Back up now** (immediate backup, then ordinary retention on success), and **maintenance tools** (repository/snapshot status refresh and integrity check). The backup button has stronger contrast.
+
+
+The Restic snapshot list defaults to **All**. **Save** stores settings and retention policy without immediately running a backup or prune; ordinary retention runs after successful backups, except deferred on-save backups. Self-update backups have their own retention.
+
 - Restic backups
 - Multiple backup destinations
 - Stack-consistent backups

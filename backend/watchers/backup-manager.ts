@@ -26,11 +26,11 @@ import { ExternalStackManager } from "../external-stacks";
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 
-const STACKS_DIR         = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
-const DATA_DIR           = resolveDataDir();
-const SETTINGS_PATH      = path.join(DATA_DIR, "backup-settings.json");
+const STACKS_DIR = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
+const DATA_DIR = resolveDataDir();
+const SETTINGS_PATH = path.join(DATA_DIR, "backup-settings.json");
 const WATCHER_SETTINGS_PATH = path.join(DATA_DIR, "watcher-settings.json");
-const HISTORY_PATH       = path.join(DATA_DIR, "backup-history.json");
+const HISTORY_PATH = path.join(DATA_DIR, "backup-history.json");
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -275,7 +275,9 @@ export class BackupRunLock {
     private activeRuns = 0;
 
     acquire(preventConcurrent: boolean): boolean {
-        if (preventConcurrent && this.activeRuns > 0) return false;
+        if (preventConcurrent && this.activeRuns > 0) {
+            return false;
+        }
         this.activeRuns++;
         return true;
     }
@@ -323,26 +325,38 @@ function shellQuote(value: string): string {
 
 function sanitizeIntervalHours(value: unknown, fallback = 24): number {
     const interval = Number(value);
-    if (!Number.isFinite(interval)) return fallback;
+    if (!Number.isFinite(interval)) {
+        return fallback;
+    }
     return Math.min(168, Math.max(1, Math.floor(interval)));
 }
 
 function cronExpressionForIntervalHours(intervalHours: number): string {
-    if (intervalHours >= 168) return "0 0 * * 0";      // une fois par semaine
-    if (intervalHours >= 48) return "0 0 */2 * *";      // tous les 2 jours
-    if (intervalHours === 24) return "0 0 * * *";       // une fois par jour
+    if (intervalHours >= 168) {
+        return "0 0 * * 0";
+    }      // une fois par semaine
+    if (intervalHours >= 48) {
+        return "0 0 */2 * *";
+    }      // tous les 2 jours
+    if (intervalHours === 24) {
+        return "0 0 * * *";
+    }       // une fois par jour
     return `0 */${Math.max(1, Math.min(23, intervalHours))} * * *`;
 }
 
 function sanitizePort(value: unknown, fallback = 22): number {
     const port = Number(value);
-    if (!Number.isFinite(port)) return fallback;
+    if (!Number.isFinite(port)) {
+        return fallback;
+    }
     return Math.min(65535, Math.max(1, Math.floor(port)));
 }
 
 function sanitizeRetention(value: unknown): number {
     const n = Number(value);
-    if (!Number.isFinite(n)) return 0;
+    if (!Number.isFinite(n)) {
+        return 0;
+    }
     return Math.max(0, Math.floor(n));
 }
 
@@ -456,7 +470,8 @@ function assertSafeResticId(id: string): string {
     return id;
 }
 
-function parseResticStats(stdout: string): { size?: number; fileCount?: number } {
+function parseResticStats(stdout: string): { size?: number;
+    fileCount?: number } {
     const lines = stdout.split("\n").map(line => line.trim()).filter(Boolean).reverse();
     for (const line of lines) {
         try {
@@ -473,14 +488,18 @@ function parseResticStats(stdout: string): { size?: number; fileCount?: number }
 }
 
 export function normalizeStackBackupPolicy(value: unknown): StackBackupPolicy {
-    if (!value || typeof value !== "object") return { mode: "hot" };
+    if (!value || typeof value !== "object") {
+        return { mode: "hot" };
+    }
     const raw = value as Record<string, unknown>;
     if (raw.applicationProfile === "sqlite" && raw.mode !== "hooks") {
         throw new ValidationError("SQLite requires hooks mode with a WAL checkpoint and a coherent .backup command");
     }
     const mode: StackBackupMode = raw.mode === "stop" || raw.mode === "hooks" ? raw.mode : "hot";
     const clean = (field: unknown): string | undefined => {
-        if (typeof field !== "string") return undefined;
+        if (typeof field !== "string") {
+            return undefined;
+        }
         const trimmed = field.trim();
         return trimmed || undefined;
     };
@@ -520,9 +539,11 @@ function buildResticEnv(dest: BackupDestination): Record<string, string> {
     };
 
     if (dest.type === "s3" && dest.s3) {
-        env.AWS_ACCESS_KEY_ID     = dest.s3.accessKeyId;
+        env.AWS_ACCESS_KEY_ID = dest.s3.accessKeyId;
         env.AWS_SECRET_ACCESS_KEY = dest.s3.secretAccessKey;
-        if (dest.s3.region) env.AWS_DEFAULT_REGION = dest.s3.region;
+        if (dest.s3.region) {
+            env.AWS_DEFAULT_REGION = dest.s3.region;
+        }
     }
 
     // REST : les credentials sont déjà encodés dans l'URL par buildRepoUrl()
@@ -538,7 +559,9 @@ function buildResticEnv(dest: BackupDestination): Record<string, string> {
  *   (le chemin du fichier temporaire est créé par resticFor() avant l'appel)
  */
 function buildSftpOptions(dest: BackupDestination, tmpFile?: string): string[] {
-    if (dest.type !== "sftp" || !dest.sftp) return [];
+    if (dest.type !== "sftp" || !dest.sftp) {
+        return [];
+    }
     const s = assertSafeSftpConfig(dest.sftp);
     const port = s.port;
 
@@ -606,7 +629,9 @@ export function assertPathWithinRoots(candidate: string, roots: string[]): strin
     for (const root of roots) {
         const resolvedRoot = path.resolve(root);
         const relative = path.relative(resolvedRoot, resolved);
-        if (relative === "") return resolvedRoot;
+        if (relative === "") {
+            return resolvedRoot;
+        }
         const segments = relative.split(path.sep);
         if (!path.isAbsolute(relative) && segments.every(segment => /^[a-zA-Z0-9][a-zA-Z0-9_. -]*$/.test(segment))) {
             return path.join(resolvedRoot, ...segments);
@@ -630,7 +655,13 @@ export async function assertExistingPathWithinRoots(candidate: string, roots: st
         }
     }).filter((root): root is string => root !== null);
 
-    return assertPathWithinRoots(realCandidate, realRoots);
+    for (const root of realRoots) {
+        const prefix = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
+        if (realCandidate === root || realCandidate.startsWith(prefix)) {
+            return realCandidate;
+        }
+    }
+    throw new ValidationError("Chemin hors des emplacements autorisés");
 }
 
 export function buildVolumeBrowseRoots(volumes: MountedVolume[], dataDir = DATA_DIR): string[] {
@@ -677,15 +708,25 @@ function buildRepoUrl(dest: BackupDestination): string {
 }
 
 function formatBytes(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
-    if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+    if (bytes < 1024) {
+        return `${bytes} B`;
+    }
+    if (bytes < 1024 ** 2) {
+        return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+    if (bytes < 1024 ** 3) {
+        return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+    }
     return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 }
 
 function formatDuration(ms: number): string {
-    if (ms < 1000) return `${ms}ms`;
-    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    if (ms < 1000) {
+        return `${ms}ms`;
+    }
+    if (ms < 60000) {
+        return `${(ms / 1000).toFixed(1)}s`;
+    }
     return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
 }
 
@@ -700,10 +741,14 @@ function formatDuration(ms: number): string {
  * - Tableau vide → l'utilisateur a tout supprimé, on respecte ça
  */
 export function mergeWebhooks(incoming: string[], existing: string[]): string[] {
-    if (incoming.length === 0) return [];
+    if (incoming.length === 0) {
+        return [];
+    }
 
     const processed = incoming.map(url => {
-        if (!url.endsWith("/***")) return url;
+        if (!url.endsWith("/***")) {
+            return url;
+        }
         const prefix = url.slice(0, -3);
         return existing.find(e => e.startsWith(prefix)) ?? null;
     }).filter((u): u is string => !!u);
@@ -718,16 +763,28 @@ export function mergeWebhooks(incoming: string[], existing: string[]): string[] 
 
 // ─── Classe principale ────────────────────────────────────────────
 
+/** Only recognisable "missing repository" errors permit automatic initialization. */
+export function isResticRepositoryMissingError(error: unknown): boolean {
+    const e = error as { message?: string;
+        stderr?: string } | null;
+    const message = `${e?.message ?? ""} ${e?.stderr ?? ""}`.toLowerCase();
+    if (/wrong password|no key found|access denied|permission denied|unauthorized|forbidden|timed? out|connection refused|no such host|network is unreachable/.test(message)) {
+        return false;
+    }
+    return /(?:config file|repository config).*?(?:does not exist|not found|no such file|not exist)|(?:does not exist|not found|no such file).*?(?:config file|repository config)|repository does not exist|no repository found/.test(message);
+}
+
 export class BackupManager {
     private static _instance: BackupManager;
-    private cronJob:          cron.ScheduledTask | null = null;
-    private stalenessCron:    cron.ScheduledTask | null = null;
+    private cronJob: cron.ScheduledTask | null = null;
+    private stalenessCron: cron.ScheduledTask | null = null;
     private lastStalenessNotif = 0;
-    private lastOnSaveTrigger  = 0;
+    private lastOnSaveTrigger = 0;
     private backupRunLock = new BackupRunLock();
     private restoreRunLock = new BackupRunLock();
     private resticHostIdPromise: Promise<string> | null = null;
-    private lastBlockedBackup: { trigger: "scheduled" | "manual" | "on-save"; timestamp: number } | null = null;
+    private lastBlockedBackup: { trigger: "scheduled" | "manual" | "on-save";
+        timestamp: number } | null = null;
     private readonly externalStackManager: ExternalStackManager;
     private readonly dataDir: string;
     private readonly settingsPath: string;
@@ -741,8 +798,10 @@ export class BackupManager {
     // Destinations dont le backup est actuellement en cours { label → timestamp démarrage }
     private runningDests = new Map<string, number>();
 
-    getRunningDests(): { label: string; startedAt: number }[] {
-        return Array.from(this.runningDests.entries()).map(([label, startedAt]) => ({ label, startedAt }));
+    getRunningDests(): { label: string;
+        startedAt: number }[] {
+        return Array.from(this.runningDests.entries()).map(([label, startedAt]) => ({ label,
+            startedAt }));
     }
 
     isBackupRunActive(): boolean {
@@ -753,12 +812,14 @@ export class BackupManager {
         return this.restoreRunLock.isActive();
     }
 
-    getLastBlockedBackup(): { trigger: "scheduled" | "manual" | "on-save"; timestamp: number } | null {
+    getLastBlockedBackup(): { trigger: "scheduled" | "manual" | "on-save";
+        timestamp: number } | null {
         return this.lastBlockedBackup;
     }
 
     recordBlockedBackup(trigger: "scheduled" | "manual" | "on-save"): void {
-        this.lastBlockedBackup = { trigger, timestamp: Date.now() };
+        this.lastBlockedBackup = { trigger,
+            timestamp: Date.now() };
         console.warn(`[BackupManager] Backup ${trigger} bloqué : un backup Restic est déjà en cours`);
     }
 
@@ -795,7 +856,9 @@ export class BackupManager {
     };
 
     static getInstance(): BackupManager {
-        if (!BackupManager._instance) BackupManager._instance = new BackupManager();
+        if (!BackupManager._instance) {
+            BackupManager._instance = new BackupManager();
+        }
         return BackupManager._instance;
     }
 
@@ -821,7 +884,7 @@ export class BackupManager {
 
     async loadSettings(): Promise<void> {
         try {
-            const raw  = await fs.readFile(this.settingsPath, "utf8");
+            const raw = await fs.readFile(this.settingsPath, "utf8");
             const data = JSON.parse(raw) as Record<string, unknown>;
 
             // Migration : ancien champ discordWebhook (string) → discordWebhooks (string[])
@@ -841,7 +904,8 @@ export class BackupManager {
                 delete data.destination;
             }
 
-            this.settings = { ...this.settings, ...data as Partial<BackupSettings> };
+            this.settings = { ...this.settings,
+                ...data as Partial<BackupSettings> };
         } catch { /* première utilisation */ }
     }
 
@@ -851,25 +915,32 @@ export class BackupManager {
         if (partial.destinations) {
             partial.destinations = partial.destinations.map((incoming, idx) => {
                 const orig = this.settings.destinations[idx];
-                const merged: BackupDestination = orig ? { ...orig, ...incoming } : { ...incoming };
+                const merged: BackupDestination = orig ? { ...orig,
+                    ...incoming } : { ...incoming };
 
-                if (merged.resticPassword === "***")
+                if (merged.resticPassword === "***") {
                     merged.resticPassword = orig?.resticPassword ?? "";
-                if (merged.sftp?.password === "***")
+                }
+                if (merged.sftp?.password === "***") {
                     merged.sftp!.password = orig?.sftp?.password;
-                if (merged.sftp?.authMode === "key")
+                }
+                if (merged.sftp?.authMode === "key") {
                     merged.sftp!.password = undefined;
-                else if (merged.sftp?.authMode === "password")
+                } else if (merged.sftp?.authMode === "password") {
                     merged.sftp!.keyPath = undefined;
-                if (merged.s3?.secretAccessKey === "***")
+                }
+                if (merged.s3?.secretAccessKey === "***") {
                     merged.s3!.secretAccessKey = orig?.s3?.secretAccessKey ?? "";
-                if (merged.rest?.password === "***")
+                }
+                if (merged.rest?.password === "***") {
                     merged.rest!.password = orig?.rest?.password;
+                }
 
                 return merged;
             });
         }
-        this.settings = { ...this.settings, ...partial };
+        this.settings = { ...this.settings,
+            ...partial };
         await fs.mkdir(this.dataDir, { recursive: true });
         await fs.writeFile(this.settingsPath, JSON.stringify(this.settings, null, 2));
         this.restart();
@@ -879,10 +950,18 @@ export class BackupManager {
     getSettingsSafe(): BackupSettings {
         const s = JSON.parse(JSON.stringify(this.settings)) as BackupSettings;
         for (const dest of s.destinations) {
-            if (dest.resticPassword)      dest.resticPassword           = "***";
-            if (dest.sftp?.password)      dest.sftp.password            = "***";
-            if (dest.s3?.secretAccessKey) dest.s3.secretAccessKey       = "***";
-            if (dest.rest?.password)      dest.rest.password            = "***";
+            if (dest.resticPassword) {
+                dest.resticPassword = "***";
+            }
+            if (dest.sftp?.password) {
+                dest.sftp.password = "***";
+            }
+            if (dest.s3?.secretAccessKey) {
+                dest.s3.secretAccessKey = "***";
+            }
+            if (dest.rest?.password) {
+                dest.rest.password = "***";
+            }
         }
         return s;
     }
@@ -892,7 +971,9 @@ export class BackupManager {
     async startIfEnabled(): Promise<void> {
         await this.loadSettings();
         await loadHistory();
-        if (this.settings.enabled) this.start();
+        if (this.settings.enabled) {
+            this.start();
+        }
     }
 
     start(): void {
@@ -921,7 +1002,11 @@ export class BackupManager {
     }
 
     restart(): void {
-        this.settings.enabled ? this.start() : this.stop();
+        if (this.settings.enabled) {
+            this.start();
+        } else {
+            this.stop();
+        }
     }
 
     // ── Restic helpers ────────────────────────────────────────────
@@ -935,8 +1020,9 @@ export class BackupManager {
         onProgress?: (progress: Omit<BackupProgress, "phase" | "label">) => void,
     ): Promise<string> {
         const repoEnv = buildResticEnv(dest);
-        const repo    = buildRepoUrl(dest);
-        const allEnv  = { ...repoEnv, ...extraEnv };
+        const repo = buildRepoUrl(dest);
+        const allEnv = { ...repoEnv,
+            ...extraEnv };
 
         // SFTP + mot de passe → écrit dans un fichier tmp (chmod 600) pour sshpass -f
         // On ne passe PAS le mot de passe via env var car restic spawne sshpass
@@ -963,14 +1049,18 @@ export class BackupManager {
                     },
                 });
                 return stdout.trim();
-            } catch (e: any) {
-                if (toleratedExitCodes.includes(e?.code) && typeof e?.stdout === "string") {
-                    return e.stdout.trim();
+            } catch (e: unknown) {
+                const error = e as { code?: number;
+                    stdout?: string } | null;
+                if (error?.code !== undefined && toleratedExitCodes.includes(error.code) && typeof error.stdout === "string") {
+                    return error.stdout.trim();
                 }
                 throw e;
             }
         } finally {
-            if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
+            if (tmpFile) {
+                await fs.unlink(tmpFile).catch(() => {});
+            }
         }
     }
 
@@ -986,14 +1076,19 @@ export class BackupManager {
     ): Promise<string> {
         return new Promise((resolve, reject) => {
             const proc = spawn("restic", buildResticCommandArgs(repo, sftpOpts, args), {
-                env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...env },
+                env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                    ...process.env,
+                    ...env },
             });
             const lines: string[] = [];
             let stderr = "";
             const timer = setTimeout(() => proc.kill(), timeoutMs);
-            const rl = readline.createInterface({ input: proc.stdout, crlfDelay: Infinity });
+            const rl = readline.createInterface({ input: proc.stdout,
+                crlfDelay: Infinity });
             rl.on("line", (line) => {
-                if (!line) return;
+                if (!line) {
+                    return;
+                }
                 lines.push(line);
                 try {
                     const status = JSON.parse(line) as Record<string, unknown>;
@@ -1007,13 +1102,22 @@ export class BackupManager {
                     }
                 } catch { /* non-JSON output is retained for the caller */ }
             });
-            proc.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
-            proc.on("error", (error) => { clearTimeout(timer); reject(error); });
+            proc.stderr.on("data", (chunk: Buffer) => {
+                stderr += chunk.toString();
+            });
+            proc.on("error", (error) => {
+                clearTimeout(timer);
+                reject(error);
+            });
             proc.on("close", (code) => {
                 clearTimeout(timer);
                 const stdout = lines.join("\n").trim();
-                if (code === 0 || toleratedExitCodes.includes(code ?? -1)) return resolve(stdout);
-                const error = Object.assign(new Error(stderr.trim() || `restic exited with code ${code}`), { code, stdout, stderr });
+                if (code === 0 || toleratedExitCodes.includes(code ?? -1)) {
+                    return resolve(stdout);
+                }
+                const error = Object.assign(new Error(stderr.trim() || `restic exited with code ${code}`), { code,
+                    stdout,
+                    stderr });
                 reject(error);
             });
         });
@@ -1035,117 +1139,210 @@ export class BackupManager {
         timeoutMs: number = 120_000,
         onLine: (line: string) => void,
     ): Promise<void> {
-        return new Promise(async (resolve, reject) => {
-            const repoEnv = buildResticEnv(dest);
-            const repo    = buildRepoUrl(dest);
-            let tmpFile: string | null = null;
-            let settled   = false;
-            let timer: ReturnType<typeof setTimeout> | null = null;
+        return new Promise((resolve, reject) => {
+            void (async () => {
+                const repoEnv = buildResticEnv(dest);
+                const repo = buildRepoUrl(dest);
+                let tmpFile: string | null = null;
+                let settled = false;
+                let timer: ReturnType<typeof setTimeout> | null = null;
 
-            const cleanup = (tf: string | null) => {
-                if (timer) { clearTimeout(timer); timer = null; }
-                if (tf) fs.unlink(tf).catch(() => {});
-            };
-            const fail = (err: unknown, tf: string | null) => {
-                if (settled) return;
-                settled = true;
-                cleanup(tf);
-                reject(err);
-            };
-
-            try {
-                if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
-                    tmpFile = `/tmp/dockge_sshpass_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-                    await fs.writeFile(tmpFile, dest.sftp.password, { mode: 0o600 });
-                }
-
-                const sftpOpts  = buildSftpOptions(dest, tmpFile ?? undefined);
-                const safeId    = assertSafeResticId(snapshotId);
-                // Pas de restriction de chemin : restic ls /chemin ne liste que les
-                // enfants directs (non récursif). On filtre en streaming à la place.
-                const resticArgs = buildResticCommandArgs(repo, sftpOpts, [ "ls", safeId, "--json", "--long" ]);
-
-                console.log("[BackupManager] resticLsLines lancé");
-
-                const proc = spawn("restic", resticArgs, {
-                    env: {
-                        PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
-                        ...process.env,
-                        ...repoEnv,
-                    },
-                });
-
-                // Timeout watchdog
-                timer = setTimeout(() => {
-                    proc.kill();
-                    fail(new Error(`restic ls timed out after ${timeoutMs / 1000}s`), tmpFile);
-                }, timeoutMs);
-
-                const rl = readline.createInterface({ input: proc.stdout, crlfDelay: Infinity });
-                rl.on("line", (line: string) => {
-                    if (!line) return;
-                    onLine(line);
-                });
-
-                let exitCode: number | null = null;
-                let stderr = "";
-                proc.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
-
-                // Capture exit code early; resolution happens on rl 'close'
-                // (guarantees all line events have fired before we resolve)
-                proc.on("exit", (code) => { exitCode = code; });
-
-                rl.on("close", () => {
-                    if (settled) return;
-                    settled = true;
-                    cleanup(tmpFile);
-                    if (exitCode === 0 || exitCode === null) {
-                        console.log("[BackupManager] resticLsLines terminé");
-                        resolve();
-                    } else {
-                        reject(new Error(`restic ls exited with code ${exitCode}: ${stderr.slice(0, 500)}`));
+                const cleanup = (tf: string | null) => {
+                    if (timer) {
+                        clearTimeout(timer);
+                        timer = null;
                     }
-                });
+                    if (tf) {
+                        fs.unlink(tf).catch(() => {});
+                    }
+                };
+                const fail = (err: unknown, tf: string | null) => {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    cleanup(tf);
+                    reject(err);
+                };
 
-                proc.on("error", (err: Error) => fail(err, tmpFile));
+                try {
+                    if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
+                        tmpFile = `/tmp/dockge_sshpass_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                        await fs.writeFile(tmpFile, dest.sftp.password, { mode: 0o600 });
+                    }
 
-            } catch (err) {
-                fail(err, tmpFile);
-            }
+                    const sftpOpts = buildSftpOptions(dest, tmpFile ?? undefined);
+                    const safeId = assertSafeResticId(snapshotId);
+                    // Pas de restriction de chemin : restic ls /chemin ne liste que les
+                    // enfants directs (non récursif). On filtre en streaming à la place.
+                    const resticArgs = buildResticCommandArgs(repo, sftpOpts, [ "ls", safeId, "--json", "--long" ]);
+
+                    console.log("[BackupManager] resticLsLines lancé");
+
+                    const proc = spawn("restic", resticArgs, {
+                        env: {
+                            PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                            ...process.env,
+                            ...repoEnv,
+                        },
+                    });
+
+                    // Timeout watchdog
+                    timer = setTimeout(() => {
+                        proc.kill();
+                        fail(new Error(`restic ls timed out after ${timeoutMs / 1000}s`), tmpFile);
+                    }, timeoutMs);
+
+                    const rl = readline.createInterface({ input: proc.stdout,
+                        crlfDelay: Infinity });
+                    rl.on("line", (line: string) => {
+                        if (!line) {
+                            return;
+                        }
+                        onLine(line);
+                    });
+
+                    let exitCode: number | null = null;
+                    let stderr = "";
+                    proc.stderr.on("data", (chunk: Buffer) => {
+                        stderr += chunk.toString();
+                    });
+
+                    // Capture exit code early; resolution happens on rl 'close'
+                    // (guarantees all line events have fired before we resolve)
+                    proc.on("exit", (code) => {
+                        exitCode = code;
+                    });
+
+                    rl.on("close", () => {
+                        if (settled) {
+                            return;
+                        }
+                        settled = true;
+                        cleanup(tmpFile);
+                        if (exitCode === 0 || exitCode === null) {
+                            console.log("[BackupManager] resticLsLines terminé");
+                            resolve();
+                        } else {
+                            reject(new Error(`restic ls exited with code ${exitCode}: ${stderr.slice(0, 500)}`));
+                        }
+                    });
+
+                    proc.on("error", (err: Error) => fail(err, tmpFile));
+
+                } catch (err) {
+                    fail(err, tmpFile);
+                }
+            })().catch(reject);
         });
+    }
+
+    /** Read-only repository status; never attempts initialization or destructive changes. */
+    private async repositoryStatusFor(dest: BackupDestination): Promise<{ label: string;
+        state: "ready" | "missing" | "error";
+        detail?: string }> {
+        if (!dest.resticPassword) {
+            return { label: dest.label,
+                state: "error",
+                detail: "Mot de passe Restic non configuré" };
+        }
+        // A missing config alone does not prove the repository is absent.
+        // A non-empty directory may contain a damaged Restic repository.
+        if (dest.type === "local") {
+            const location = dest.local?.path;
+            if (!location) {
+                return { label: dest.label,
+                    state: "error",
+                    detail: "Chemin du dépôt manquant" };
+            }
+            try {
+                const stats = await fs.lstat(location);
+                if (!stats.isDirectory() || stats.isSymbolicLink()) {
+                    return { label: dest.label,
+                        state: "error",
+                        detail: "Emplacement du dépôt invalide" };
+                }
+                const entries = await fs.readdir(location);
+                if (!entries.includes("config")) {
+                    if (entries.length === 0) {
+                        return { label: dest.label,
+                            state: "missing" };
+                    }
+                    return { label: dest.label,
+                        state: "error",
+                        detail: "Dossier non vide sans configuration Restic" };
+                }
+            } catch (error: unknown) {
+                if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+                    // Only initialize if the parent exists and is accessible.
+                    try {
+                        const parent = await fs.stat(path.dirname(location));
+                        if (parent.isDirectory()) {
+                            return { label: dest.label,
+                                state: "missing" };
+                        }
+                    } catch { /* parent inaccessible: never initialize */ }
+                }
+                return { label: dest.label,
+                    state: "error",
+                    detail: "Dépôt inaccessible" };
+            }
+        }
+        try {
+            await this.resticFor(dest, [ "snapshots", "--quiet" ], {}, [], 20_000);
+            return { label: dest.label,
+                state: "ready" };
+        } catch (e: unknown) {
+            if (dest.type !== "local" && isResticRepositoryMissingError(e)) {
+                return { label: dest.label,
+                    state: "missing" };
+            }
+            return { label: dest.label,
+                state: "error",
+                detail: "Dépôt inaccessible ou mot de passe incorrect" };
+        }
+    }
+
+    /** State of enabled destinations, no side effects; never expose credentials. */
+    async getRepositoryStatuses(): Promise<Array<{ label: string;
+        state: "ready" | "missing" | "error";
+        detail?: string }>> {
+        return Promise.all(this.settings.destinations.filter(dest => dest.enabled).map(dest => this.repositoryStatusFor(dest)));
     }
 
     /** Initialise le repo d'une destination si pas encore fait */
     async initRepoFor(dest: BackupDestination): Promise<void> {
-        try {
-            await this.resticFor(dest, [ "snapshots", "--quiet" ]);
+        const status = await this.repositoryStatusFor(dest);
+        if (status.state === "ready") {
             log.info("backup", `Repository déjà initialisé — label=${dest.label} type=${dest.type}`);
-        } catch (e: any) {
-            const msg = e?.message ?? "";
-            if (msg.includes("wrong password") || msg.includes("no key found")) {
-                throw new Error(
-                    `"${dest.label}" — Mot de passe incorrect. ` +
-                    "Corrigez-le ou supprimez le dépôt pour repartir de zéro."
-                );
-            }
-            console.log(`[BackupManager] Initialisation du repo "${dest.label}"...`);
-            try {
-                await this.resticFor(dest, [ "init" ]);
-                console.log(`[BackupManager] "${dest.label}" initialisé.`);
-            } catch (initErr: any) {
-                if ((initErr?.message ?? "").includes("config file already exists")) {
-                    console.log(`[BackupManager] "${dest.label}" déjà initialisé (init ignoré).`);
-                    return;
-                }
-                throw initErr;
+            return;
+        }
+        if (status.state !== "missing") {
+            throw new Error(`"${dest.label}" — ${status.detail ?? "Dépôt inaccessible"}. Initialisation refusée.`);
+        }
+        // Only a demonstrably absent repository is initialized. Even an init race
+        // must be rechecked (never silently accept an existing repository).
+        try {
+            await this.resticFor(dest, [ "init" ]);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (!message.includes("config file already exists")) {
+                throw error;
             }
         }
+        const verified = await this.repositoryStatusFor(dest);
+        if (verified.state !== "ready") {
+            throw new Error(`"${dest.label}" — Initialisation non vérifiée (${verified.detail ?? verified.state})`);
+        }
+        log.info("backup", `Repository initialisé et vérifié — label=${dest.label} type=${dest.type}`);
     }
 
     /** Initialise la première destination activée (compat route /backup/init) */
     async initRepo(): Promise<void> {
         const dest = this.settings.destinations.find(d => d.enabled);
-        if (!dest) throw new Error("Aucune destination activée");
+        if (!dest) {
+            throw new Error("Aucune destination activée");
+        }
         await this.initRepoFor(dest);
     }
 
@@ -1160,12 +1357,16 @@ export class BackupManager {
         instanceTag: string,
         keepLast = 2,
         onProgress?: (progress: BackupProgress) => void,
-    ): Promise<Array<{ label: string; removed: number; error?: string }>> {
+    ): Promise<Array<{ label: string;
+        removed: number;
+        error?: string }>> {
         if (!/^self-update-instance-[a-f0-9]{16}$/.test(instanceTag)) {
             throw new ValidationError("Tag de rétention self-update invalide");
         }
         const keep = Math.max(1, Math.floor(keepLast));
-        const results: Array<{ label: string; removed: number; error?: string }> = [];
+        const results: Array<{ label: string;
+            removed: number;
+            error?: string }> = [];
         const successfulDestinations = (backup.destinations ?? []).filter(destination => destination.success);
         let destinationIndex = 0;
 
@@ -1179,12 +1380,16 @@ export class BackupManager {
             });
             const dest = this.settings.destinations.find(candidate => candidate.enabled && candidate.label === backedUp.label);
             if (!dest) {
-                results.push({ label: backedUp.label, removed: 0, error: "Destination de backup introuvable" });
+                results.push({ label: backedUp.label,
+                    removed: 0,
+                    error: "Destination de backup introuvable" });
                 continue;
             }
 
             try {
-                try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore stale lock cleanup */ }
+                try {
+                    await this.resticFor(dest, [ "unlock", "--remove-all" ]);
+                } catch { /* ignore stale lock cleanup */ }
 
                 const raw = await this.resticFor(dest, [ "snapshots", "--tag", instanceTag ]);
                 const snapshots = JSON.parse(raw) as ResticSnapshot[];
@@ -1201,20 +1406,24 @@ export class BackupManager {
                     snapshotsToRemove: expired.length,
                 });
                 if (expired.length === 0) {
-                    results.push({ label: dest.label, removed: 0 });
+                    results.push({ label: dest.label,
+                        removed: 0 });
                     continue;
                 }
 
                 const ids = expired.map(snapshot => assertSafeResticId(snapshot.id));
                 await this.resticFor(dest, [ "forget", ...ids, "--prune" ], {}, [], 20 * 60_000);
-                results.push({ label: dest.label, removed: ids.length });
+                results.push({ label: dest.label,
+                    removed: ids.length });
                 log.info(
                     "self-update",
                     `Rétention Restic self-update — label=${dest.label} supprimés=${ids.length} conservés=${Math.min(keep, ordered.length)}`,
                 );
             } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
-                results.push({ label: dest.label, removed: 0, error: message });
+                results.push({ label: dest.label,
+                    removed: 0,
+                    error: message });
                 log.warn("self-update", `Rétention Restic self-update échouée — label=${dest.label} error=${message}`);
             }
         }
@@ -1230,7 +1439,9 @@ export class BackupManager {
      * en rafale lors de sauvegardes successives rapides.
      */
     triggerBackupOnSave(stackName: string): void {
-        if (!this.settings.enabled || !this.settings.backupOnSave) return;
+        if (!this.settings.enabled || !this.settings.backupOnSave) {
+            return;
+        }
         const now = Date.now();
         if (now - this.lastOnSaveTrigger < 60_000) {
             console.log(`[BackupManager] on-save ignoré (cooldown) — stack "${stackName}"`);
@@ -1238,7 +1449,9 @@ export class BackupManager {
         }
         this.lastOnSaveTrigger = now;
         console.log(`[BackupManager] Backup déclenché par la sauvegarde de "${stackName}"`);
-        this.runBackup({ skipForget: true, tag: "on-save", trigger: "on-save" })
+        this.runBackup({ skipForget: true,
+            tag: "on-save",
+            trigger: "on-save" })
             .catch(e => console.error("[BackupManager] Backup on-save échoué:", e));
     }
 
@@ -1289,7 +1502,9 @@ export class BackupManager {
         if (activeDests.length === 0) {
             result.error = "Aucune destination de backup activée";
             backupHistory.unshift(result);
-            if (backupHistory.length > 20) backupHistory.splice(20);
+            if (backupHistory.length > 20) {
+                backupHistory.splice(20);
+            }
             await saveHistory();
             return result;
         }
@@ -1305,22 +1520,28 @@ export class BackupManager {
                 ? `Aucun fichier à sauvegarder — ${warnings.join(" ; ")}`
                 : "Aucun fichier à sauvegarder";
             backupHistory.unshift(result);
-            if (backupHistory.length > 20) backupHistory.splice(20);
+            if (backupHistory.length > 20) {
+                backupHistory.splice(20);
+            }
             await saveHistory();
             return result;
         }
 
         const tags = ["dockge-enhanced", new Date().toISOString().slice(0, 10), trigger];
-        if (opts.tag && !tags.includes(opts.tag)) tags.push(opts.tag);
+        if (opts.tag && !tags.includes(opts.tag)) {
+            tags.push(opts.tag);
+        }
         for (const additionalTag of opts.additionalTags ?? []) {
             const tag = additionalTag.trim();
             if (!/^[a-zA-Z0-9_.:-]{1,128}$/.test(tag)) {
                 throw new ValidationError("Tag Restic additionnel invalide");
             }
-            if (!tags.includes(tag)) tags.push(tag);
+            if (!tags.includes(tag)) {
+                tags.push(tag);
+            }
         }
         const builtinExcludes = ["*.log", "__pycache__", "node_modules"];
-        const userExcludes    = this.settings.excludePatterns ?? [];
+        const userExcludes = this.settings.excludePatterns ?? [];
         const installationHost = await this.getResticHostId();
         const resticArgs = buildBackupArgs({
             paths,
@@ -1333,7 +1554,7 @@ export class BackupManager {
 
         let totalDataAdded = 0;
         let allSuccess = true;
-        let preparedStacks: PreparedStack[] = [];
+        let preparedStacks: PreparedStack[];
 
         console.log(`[BackupManager] ▶ Backup démarré (${activeDests.length} destination(s))`);
 
@@ -1344,101 +1565,125 @@ export class BackupManager {
             result.error = `Préparation des stacks échouée : ${message}`;
             result.duration = Date.now() - start;
             backupHistory.unshift(result);
-            if (backupHistory.length > 20) backupHistory.splice(20);
+            if (backupHistory.length > 20) {
+                backupHistory.splice(20);
+            }
             await saveHistory();
-            if (!opts.suppressNotification) await this.sendNotification(result);
+            if (!opts.suppressNotification) {
+                await this.sendNotification(result);
+            }
             return result;
         }
 
         try {
-        for (const dest of activeDests) {
-            const destResult: DestinationResult = {
-                label: dest.label,
-                type:  dest.type,
-                success: false,
-                warnings,
-            };
+            for (const dest of activeDests) {
+                const destResult: DestinationResult = {
+                    label: dest.label,
+                    type:  dest.type,
+                    success: false,
+                    warnings,
+                };
 
-            const destStart = Date.now();
-            this.runningDests.set(dest.label, destStart);
-            log.info("backup", `Destination démarrée — label=${dest.label} type=${dest.type} trigger=${trigger}`);
+                const destStart = Date.now();
+                this.runningDests.set(dest.label, destStart);
+                log.info("backup", `Destination démarrée — label=${dest.label} type=${dest.type} trigger=${trigger}`);
 
-            try {
-                if (!dest.resticPassword) {
-                    throw new Error(`Restic password is not configured for "${dest.label}"`);
-                }
+                try {
+                    if (!dest.resticPassword) {
+                        throw new Error(`Restic password is not configured for "${dest.label}"`);
+                    }
 
-                // Libère un éventuel verrou obsolète avant toute opération restic
-                try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
-
-                await this.initRepoFor(dest);
-
-                const stdout = await this.resticFor(dest, resticArgs, {}, [3], undefined, (progress) => {
-                    opts.onProgress?.({ phase: "backup", label: dest.label, ...progress });
-                });
-
-                const lines = stdout.split("\n").filter(Boolean);
-                const summary = lines.reduce<Record<string, unknown> | null>((acc, line) => {
+                    // Libère un éventuel verrou obsolète avant toute opération restic
                     try {
-                        const obj = JSON.parse(line) as Record<string, unknown>;
-                        return obj.message_type === "summary" ? obj : acc;
-                    } catch { return acc; }
-                }, null);
-
-                // Collecte les fichiers non lisibles signalés par restic (exit 3)
-                const resticErrors = lines.flatMap(line => {
-                    try {
-                        const obj = JSON.parse(line) as Record<string, unknown>;
-                        if (obj.message_type === "error") {
-                            const msg = (obj.error as Record<string, unknown>)?.message ?? obj.item ?? line;
-                            return [String(msg)];
-                        }
+                        await this.resticFor(dest, [ "unlock", "--remove-all" ]);
                     } catch { /* ignore */ }
-                    return [];
-                });
-                if (resticErrors.length > 0) {
-                    if (!result.warnings) result.warnings = [];
-                    result.warnings.push(...resticErrors.map(m => `[${dest.label}] ${m}`));
-                    if (!destResult.warnings) destResult.warnings = [];
-                    destResult.warnings.push(...resticErrors);
-                }
 
-                destResult.success    = true;
-                destResult.snapshotId = (summary?.snapshot_id as string)?.slice(0, 8);
-                destResult.dataAdded  = summary?.data_added as number ?? 0;
-                totalDataAdded       += destResult.dataAdded;
+                    await this.initRepoFor(dest);
 
-                if (!result.snapshotId) result.snapshotId = destResult.snapshotId;
-                if (!result.filesNew)     result.filesNew     = summary?.files_new     as number ?? 0;
-                if (!result.filesChanged) result.filesChanged = summary?.files_changed as number ?? 0;
+                    const stdout = await this.resticFor(dest, resticArgs, {}, [3], undefined, (progress) => {
+                        opts.onProgress?.({ phase: "backup",
+                            label: dest.label,
+                            ...progress });
+                    });
 
-                console.log(
+                    const lines = stdout.split("\n").filter(Boolean);
+                    const summary = lines.reduce<Record<string, unknown> | null>((acc, line) => {
+                        try {
+                            const obj = JSON.parse(line) as Record<string, unknown>;
+                            return obj.message_type === "summary" ? obj : acc;
+                        } catch {
+                            return acc;
+                        }
+                    }, null);
+
+                    // Collecte les fichiers non lisibles signalés par restic (exit 3)
+                    const resticErrors = lines.flatMap(line => {
+                        try {
+                            const obj = JSON.parse(line) as Record<string, unknown>;
+                            if (obj.message_type === "error") {
+                                const msg = (obj.error as Record<string, unknown>)?.message ?? obj.item ?? line;
+                                return [String(msg)];
+                            }
+                        } catch { /* ignore */ }
+                        return [];
+                    });
+                    if (resticErrors.length > 0) {
+                        if (!result.warnings) {
+                            result.warnings = [];
+                        }
+                        result.warnings.push(...resticErrors.map(m => `[${dest.label}] ${m}`));
+                        if (!destResult.warnings) {
+                            destResult.warnings = [];
+                        }
+                        destResult.warnings.push(...resticErrors);
+                    }
+
+                    destResult.success = true;
+                    destResult.snapshotId = (summary?.snapshot_id as string)?.slice(0, 8);
+                    destResult.dataAdded = summary?.data_added as number ?? 0;
+                    totalDataAdded += destResult.dataAdded;
+
+                    if (!result.snapshotId) {
+                        result.snapshotId = destResult.snapshotId;
+                    }
+                    if (!result.filesNew) {
+                        result.filesNew = summary?.files_new as number ?? 0;
+                    }
+                    if (!result.filesChanged) {
+                        result.filesChanged = summary?.files_changed as number ?? 0;
+                    }
+
+                    console.log(
                     `[BackupManager] ✓ "${dest.label}" terminé en ${formatDuration(Date.now() - destStart)}` +
                     ` — Snapshot ${destResult.snapshotId} +${formatBytes(destResult.dataAdded)}` +
                     (opts.skipForget ? " [on-save, pruning différé]" : "")
-                );
-            } catch (e: unknown) {
-                destResult.error = e instanceof Error ? e.message : String(e);
-                allSuccess = false;
-                if (!result.error) result.error = destResult.error;
-                console.error(
-                    "[BackupManager] Échec de destination:",
-                    dest.label,
+                    );
+                } catch (e: unknown) {
+                    destResult.error = e instanceof Error ? e.message : String(e);
+                    allSuccess = false;
+                    if (!result.error) {
+                        result.error = destResult.error;
+                    }
+                    console.error(
+                        "[BackupManager] Échec de destination:",
+                        dest.label,
                     `après ${formatDuration(Date.now() - destStart)}:`,
                     destResult.error
-                );
-            } finally {
-                this.runningDests.delete(dest.label);
-            }
+                    );
+                } finally {
+                    this.runningDests.delete(dest.label);
+                }
 
-            result.destinations!.push(destResult);
-        }
+                result.destinations!.push(destResult);
+            }
         } finally {
             const cleanupErrors = await this.restorePreparedStacks(preparedStacks);
             if (cleanupErrors.length > 0) {
                 allSuccess = false;
                 result.warnings = [...(result.warnings ?? []), ...cleanupErrors];
-                if (!result.error) result.error = cleanupErrors[0];
+                if (!result.error) {
+                    result.error = cleanupErrors[0];
+                }
             }
         }
 
@@ -1447,7 +1692,9 @@ export class BackupManager {
             for (let i = 0; i < activeDests.length; i++) {
                 const dest = activeDests[i];
                 const destResult = result.destinations![i];
-                if (!destResult?.success) continue;
+                if (!destResult?.success) {
+                    continue;
+                }
                 try {
                     await this.runForgetFor(dest);
                     if (this.settings.restoreTest && destResult.snapshotId) {
@@ -1462,7 +1709,9 @@ export class BackupManager {
                     allSuccess = false;
                     destResult.success = false;
                     destResult.error = msg;
-                    if (!result.error) result.error = msg;
+                    if (!result.error) {
+                        result.error = msg;
+                    }
                 }
             }
         }
@@ -1470,20 +1719,25 @@ export class BackupManager {
         console.log(`[BackupManager] ✓ Backup terminé en ${formatDuration(Date.now() - start)} — ${allSuccess ? "succès" : "échec(s)"}`);
 
 
-        result.success   = allSuccess;
+        result.success = allSuccess;
         result.dataAdded = totalDataAdded;
-        result.duration  = Date.now() - start;
+        result.duration = Date.now() - start;
 
         backupHistory.unshift(result);
-        if (backupHistory.length > 20) backupHistory.splice(20);
+        if (backupHistory.length > 20) {
+            backupHistory.splice(20);
+        }
         await saveHistory();
 
-        if (!opts.suppressNotification) await this.sendNotification(result);
+        if (!opts.suppressNotification) {
+            await this.sendNotification(result);
+        }
 
         return result;
     }
 
-    private async getExternalStackSources(): Promise<{ sources: BackupStackSource[]; warnings: string[] }> {
+    private async getExternalStackSources(): Promise<{ sources: BackupStackSource[];
+        warnings: string[] }> {
         const sources: BackupStackSource[] = [];
         const warnings: string[] = [];
         for (const registration of await this.externalStackManager.list()) {
@@ -1502,7 +1756,8 @@ export class BackupManager {
                 warnings.push(`Stack externe "${registration.name}" ignorée : ${e instanceof Error ? e.message : String(e)}`);
             }
         }
-        return { sources, warnings };
+        return { sources,
+            warnings };
     }
 
     private async findManagedStackSource(stack: string): Promise<BackupStackSource> {
@@ -1515,7 +1770,11 @@ export class BackupManager {
             const candidate = path.join(stackDir, name);
             try {
                 await fs.access(candidate);
-                return { name: stack, composeFile: candidate, configFiles: [ candidate ], metadataFile: path.join(stackDir, ".dockge-meta.json"), workingDir: stackDir };
+                return { name: stack,
+                    composeFile: candidate,
+                    configFiles: [ candidate ],
+                    metadataFile: path.join(stackDir, ".dockge-meta.json"),
+                    workingDir: stackDir };
             } catch { /* next */ }
         }
         throw new Error(`Compose introuvable pour la stack "${stack}"`);
@@ -1526,7 +1785,9 @@ export class BackupManager {
             return await this.findManagedStackSource(stack);
         } catch (managedError) {
             const registration = await this.externalStackManager.get(stack);
-            if (!registration) throw managedError;
+            if (!registration) {
+                throw managedError;
+            }
             const verified = await this.externalStackManager.assertRegisteredPath(registration);
             return {
                 name: verified.name,
@@ -1547,21 +1808,34 @@ export class BackupManager {
             const configuredStacks = Object.keys(this.settings.stackPolicies ?? {}).sort();
             const stacks = stackName ? configuredStacks.filter(stack => stack === stackName) : configuredStacks;
             for (const stack of stacks) {
-                if (excluded.has(stack)) continue;
+                if (excluded.has(stack)) {
+                    continue;
+                }
                 const policy = normalizeStackBackupPolicy(this.settings.stackPolicies[stack]);
-                if (policy.mode === "hot") continue;
+                if (policy.mode === "hot") {
+                    continue;
+                }
                 const source = await this.findStackSource(stack);
                 const { composeFile, configFiles, envFiles, project, workingDir: cwd } = source;
-                const entry: PreparedStack = { stack, policy, composeFile, configFiles, envFiles, project, workingDir: cwd, runningServices: [] };
+                const entry: PreparedStack = { stack,
+                    policy,
+                    composeFile,
+                    configFiles,
+                    envFiles,
+                    project,
+                    workingDir: cwd,
+                    runningServices: [] };
 
                 if (policy.mode === "stop") {
                     const { stdout } = await execFileAsync("docker", buildComposeCommandArgs(composeFile, [ "ps", "--status", "running", "--services" ], project, configFiles, cwd, envFiles), {
-                        cwd, timeout: 30_000,
+                        cwd,
+                        timeout: 30_000,
                     });
                     entry.runningServices = stdout.split("\n").map(s => s.trim()).filter(Boolean);
                     prepared.push(entry);
                     if (entry.runningServices.length > 0) {
-                        await execFileAsync("docker", buildComposeCommandArgs(composeFile, [ "stop", ...entry.runningServices ], project, configFiles, cwd, envFiles), { cwd, timeout: 5 * 60_000 });
+                        await execFileAsync("docker", buildComposeCommandArgs(composeFile, [ "stop", ...entry.runningServices ], project, configFiles, cwd, envFiles), { cwd,
+                            timeout: 5 * 60_000 });
                     }
                 } else {
                     // Enregistrer avant le pre-hook : le post-hook doit pouvoir réparer
@@ -1574,7 +1848,7 @@ export class BackupManager {
         } catch (e) {
             const cleanupErrors = await this.restorePreparedStacks(prepared);
             if (cleanupErrors.length > 0) {
-                throw new Error(`${e instanceof Error ? e.message : String(e)} ; ${cleanupErrors.join(" ; ")}`);
+                throw new Error(`${e instanceof Error ? e.message : String(e)} ; ${cleanupErrors.join(" ; ")}`, { cause: e });
             }
             throw e;
         }
@@ -1586,7 +1860,8 @@ export class BackupManager {
             try {
                 const cwd = entry.workingDir;
                 if (entry.policy.mode === "stop" && entry.runningServices.length > 0) {
-                    await execFileAsync("docker", buildComposeCommandArgs(entry.composeFile, [ "start", ...entry.runningServices ], entry.project, entry.configFiles, cwd, entry.envFiles), { cwd, timeout: 5 * 60_000 });
+                    await execFileAsync("docker", buildComposeCommandArgs(entry.composeFile, [ "start", ...entry.runningServices ], entry.project, entry.configFiles, cwd, entry.envFiles), { cwd,
+                        timeout: 5 * 60_000 });
                 } else if (entry.policy.mode === "hooks") {
                     await this.runStackHook(entry.composeFile, entry.policy, "post", entry.project, entry.configFiles, cwd, entry.envFiles);
                 }
@@ -1599,11 +1874,17 @@ export class BackupManager {
 
     private async runStackHook(composeFile: string, policy: StackBackupPolicy, phase: "pre" | "post", project?: string, configFiles?: string[], workingDir?: string, envFiles?: string[]): Promise<void> {
         const command = phase === "pre" ? policy.preHook : policy.postHook;
-        if (!command?.trim()) return;
-        if (!policy.hookService?.trim()) throw new Error("Service requis pour les hooks applicatifs");
+        if (!command?.trim()) {
+            return;
+        }
+        if (!policy.hookService?.trim()) {
+            throw new Error("Service requis pour les hooks applicatifs");
+        }
         const args = buildComposeCommandArgs(composeFile, [ "exec", "-T", policy.hookService.trim(), "sh", "-c", command ], project, configFiles, workingDir, envFiles);
         await execFileAsync("docker", args, {
-            cwd: workingDir ?? path.dirname(composeFile), timeout: 5 * 60_000, maxBuffer: 2 * 1024 * 1024,
+            cwd: workingDir ?? path.dirname(composeFile),
+            timeout: 5 * 60_000,
+            maxBuffer: 2 * 1024 * 1024,
         });
     }
 
@@ -1618,7 +1899,9 @@ export class BackupManager {
 
         const addExistingPath = async (candidate: string, label: string): Promise<void> => {
             const p = candidate.trim();
-            if (!p) return;
+            if (!p) {
+                return;
+            }
             try {
                 await fs.access(p);
                 if (!seen.has(p)) {
@@ -1646,13 +1929,19 @@ export class BackupManager {
             }
 
             if (source.metadataFile) {
-                try { await fs.access(source.metadataFile); await addExistingPath(source.metadataFile, "Métadonnées"); } catch { /* optionnel */ }
+                try {
+                    await fs.access(source.metadataFile);
+                    await addExistingPath(source.metadataFile, "Métadonnées");
+                } catch { /* optionnel */ }
             }
 
             if (this.settings.includeEnvFiles) {
                 const envCandidates = source.envFiles?.length ? source.envFiles : [ path.join(source.workingDir, ".env") ];
                 for (const envPath of envCandidates) {
-                    try { await fs.access(envPath); await addExistingPath(envPath, "Fichier d'environnement"); } catch { /* optionnel */ }
+                    try {
+                        await fs.access(envPath);
+                        await addExistingPath(envPath, "Fichier d'environnement");
+                    } catch { /* optionnel */ }
                 }
             }
         };
@@ -1704,11 +1993,13 @@ export class BackupManager {
             }
         }
 
-        return { paths, warnings };
+        return { paths,
+            warnings };
     }
 
     /** Retourne la taille sur disque de DATA_DIR et des volumes sélectionnés */
-    async getDirSizes(selectedVolumes: string[] = []): Promise<{ appData: string; volumes: Record<string, string> }> {
+    async getDirSizes(selectedVolumes: string[] = []): Promise<{ appData: string;
+        volumes: Record<string, string> }> {
         const du = async (dir: string): Promise<string> => {
             try {
                 return await readDiskUsage(dir);
@@ -1723,7 +2014,8 @@ export class BackupManager {
                 volumes[v] = await du(v);
             })
         );
-        return { appData, volumes };
+        return { appData,
+            volumes };
     }
 
     /** Retourne les volumes montés dans le conteneur (filtrés) via docker inspect */
@@ -1741,11 +2033,18 @@ export class BackupManager {
                 Destination: string;
             }>;
             return raw.filter(m => {
-                if (m.Type === "tmpfs") return false;
-                if (EXCLUDED_VOL_DESTINATIONS.has(m.Destination)) return false;
-                if (EXCLUDED_VOL_PREFIXES.some(p => m.Destination.startsWith(p))) return false;
+                if (m.Type === "tmpfs") {
+                    return false;
+                }
+                if (EXCLUDED_VOL_DESTINATIONS.has(m.Destination)) {
+                    return false;
+                }
+                if (EXCLUDED_VOL_PREFIXES.some(p => m.Destination.startsWith(p))) {
+                    return false;
+                }
                 return true;
-            }).map(m => ({ source: m.Source, destination: m.Destination }));
+            }).map(m => ({ source: m.Source,
+                destination: m.Destination }));
         } catch {
             return [];
         }
@@ -1754,7 +2053,11 @@ export class BackupManager {
     /** Liste les sous-dossiers immédiats d'un chemin (sans tailles, rapide) */
     async getVolumeDirs(volPath: string): Promise<string[]> {
         const browseRoots = buildVolumeBrowseRoots(await this.getMountedVolumes());
-        const safePath = await assertExistingPathWithinRoots(volPath, browseRoots);
+        const checkedPath = await assertExistingPathWithinRoots(volPath, browseRoots);
+        const safePath = fsSync.realpathSync(checkedPath);
+        if (safePath !== checkedPath) {
+            throw new ValidationError("Le chemin a changé pendant la vérification");
+        }
         const entries = await fs.readdir(safePath, { withFileTypes: true });
         return entries.filter(e => e.isDirectory()).map(e => e.name).sort();
     }
@@ -1764,10 +2067,16 @@ export class BackupManager {
         const names = new Set<string>();
         try {
             const entries = await fs.readdir(STACKS_DIR, { withFileTypes: true });
-            for (const entry of entries) if (entry.isDirectory()) names.add(entry.name);
+            for (const entry of entries) {
+                if (entry.isDirectory()) {
+                    names.add(entry.name);
+                }
+            }
         } catch { /* STACKS_DIR indisponible */ }
         const external = await this.getExternalStackSources();
-        for (const source of external.sources) names.add(source.name);
+        for (const source of external.sources) {
+            names.add(source.name);
+        }
         return [ ...names ].sort();
     }
 
@@ -1796,14 +2105,18 @@ export class BackupManager {
             const p = await assertExistingPathWithinRoots(path.join(safePath, dir), [ safePath ]);
             try {
                 results[dir] = await readDiskUsage(p, 60_000);
-            } catch { results[dir] = "?"; }
+            } catch {
+                results[dir] = "?";
+            }
         }));
         return results;
     }
 
     private async runForgetFor(dest: BackupDestination): Promise<void> {
         // Libère un éventuel verrou laissé par le backup (ex: crash, timeout)
-        try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
+        try {
+            await this.resticFor(dest, [ "unlock", "--remove-all" ]);
+        } catch { /* ignore */ }
 
         await this.resticFor(dest, buildRetentionArgs(this.settings.retention, await this.getResticHostId()));
     }
@@ -1811,7 +2124,9 @@ export class BackupManager {
     /** Retourne la première destination activée (pour snapshots/restore) */
     private primaryDest(): BackupDestination {
         const d = this.settings.destinations.find(dest => dest.enabled);
-        if (!d) throw new Error("Aucune destination de backup activée");
+        if (!d) {
+            throw new Error("Aucune destination de backup activée");
+        }
         return d;
     }
 
@@ -1828,7 +2143,8 @@ export class BackupManager {
 
     async getSnapshotStats(ids: string[] = []): Promise<ResticSnapshotStats> {
         const dest = this.primaryDest();
-        const stats: ResticSnapshotStats = { snapshots: {}, errors: {} };
+        const stats: ResticSnapshotStats = { snapshots: {},
+            errors: {} };
 
         const snapshots = await this.listSnapshots();
         const wanted = new Set(ids.map(assertSafeResticId));
@@ -1867,13 +2183,17 @@ export class BackupManager {
             }
         });
 
-        if (Object.keys(stats.errors ?? {}).length === 0) delete stats.errors;
+        if (Object.keys(stats.errors ?? {}).length === 0) {
+            delete stats.errors;
+        }
         return stats;
     }
 
     async deleteSnapshot(id: string): Promise<void> {
         const dest = this.primaryDest();
-        try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
+        try {
+            await this.resticFor(dest, [ "unlock", "--remove-all" ]);
+        } catch { /* ignore */ }
         await this.resticFor(dest, [ "forget", assertSafeResticId(id), "--prune" ]);
     }
 
@@ -1892,8 +2212,8 @@ export class BackupManager {
             const idx = allSnaps.findIndex(
                 s => s.id.startsWith(snapshotId) || s.short_id === snapshotId
             );
-            const prevSnap    = idx > 0 ? allSnaps[idx - 1] : null;
-            const currentSnap = idx >= 0 ? allSnaps[idx]   : null;
+            const prevSnap = idx > 0 ? allSnaps[idx - 1] : null;
+            const currentSnap = idx >= 0 ? allSnaps[idx] : null;
             const external = await this.getExternalStackSources();
             const externalByDir = new Map(external.sources.map(source => [ path.resolve(source.workingDir), source ]));
             const externalByFile = new Map<string, BackupStackSource>();
@@ -1905,7 +2225,9 @@ export class BackupManager {
 
             // ── 1b. Charge les volumes montés pour identifier les fichiers de données ──
             let mountedVols: MountedVolume[] = [];
-            try { mountedVols = await this.getMountedVolumes(); } catch {}
+            try {
+                mountedVols = await this.getMountedVolumes();
+            } catch {}
             // Plus long en premier → on prend toujours le mount le plus spécifique
             const sortedVols = [...mountedVols].sort((a, b) => b.destination.length - a.destination.length);
 
@@ -1928,24 +2250,32 @@ export class BackupManager {
                     const e = JSON.parse(line) as Record<string, unknown>;
                     if (e.type === "dir" && typeof e.path === "string" && e.path !== STACKS_DIR) {
                         const parentDir = path.dirname(e.path as string);
-                        if (parentDir === STACKS_DIR) stackPaths.push(e.path as string);
+                        if (parentDir === STACKS_DIR) {
+                            stackPaths.push(e.path as string);
+                        }
                     }
                 } catch { /* ignore */ }
             }
             for (const snapshotPath of currentSnap?.paths ?? []) {
                 const candidate = path.resolve(path.dirname(snapshotPath));
-                if (externalByDir.has(candidate)) stackPaths.push(candidate);
+                if (externalByDir.has(candidate)) {
+                    stackPaths.push(candidate);
+                }
                 const resolved = path.resolve(snapshotPath);
-                if (externalByDir.has(resolved) || externalByFile.has(resolved)) stackPaths.push(resolved);
+                if (externalByDir.has(resolved) || externalByFile.has(resolved)) {
+                    stackPaths.push(resolved);
+                }
             }
             const uniqueStackPaths = [ ...new Set(stackPaths) ];
             console.log(`[BackupManager] listSnapshotFiles: ${uniqueStackPaths.length} stacks détectés`);
 
-            if (uniqueStackPaths.length === 0) return [];
+            if (uniqueStackPaths.length === 0) {
+                return [];
+            }
 
             // Passe B — fichiers dans chaque stack (compose.yaml, .env…)
             const passB = await this.resticFor(this.primaryDest(), [ "ls", safeId, ...uniqueStackPaths, "--json", "--long" ]);
-            const lsLines = passB.split("\n").filter(line => line.includes('"type":"file"'));
+            const lsLines = passB.split("\n").filter(line => line.includes("\"type\":\"file\""));
             console.log(`[BackupManager] listSnapshotFiles: ${lsLines.length} fichiers trouvés`);
 
             // ── 3. Parse et groupe par (stack, name) pour dédupliquer ────
@@ -1953,16 +2283,27 @@ export class BackupManager {
             // <stacksBase>/<stack>/<file> — compose.yaml et .env uniquement.
             // Les fichiers imbriqués plus profond (volumes) restent individuels.
             const stacksBase = path.basename(STACKS_DIR);
-            type RawEntry = { path: string; name: string; stack: string; size: number; mtime: string; volumeRelPath?: string };
+            type RawEntry = { path: string;
+                name: string;
+                stack: string;
+                size: number;
+                mtime: string;
+                volumeRelPath?: string };
             const groups = new Map<string, RawEntry[]>();
             const standalones: RawEntry[] = [];
 
             for (const line of lsLines) {
                 let entry: Record<string, unknown>;
-                try { entry = JSON.parse(line); } catch { continue; }
+                try {
+                    entry = JSON.parse(line);
+                } catch {
+                    continue;
+                }
                 // restic ls --json : les nodes ont { type: "file"|"dir" }
                 // la ligne de résumé du snapshot n'a pas de champ "type"
-                if (entry.type !== "file") continue;
+                if (entry.type !== "file") {
+                    continue;
+                }
 
                 const filePath = entry.path as string;
                 const name = path.basename(filePath);
@@ -1974,14 +2315,18 @@ export class BackupManager {
                 const stack = externalSource?.name ?? (isDirectInManagedStack ? parts[stacksIdx + 1] : "unknown");
 
                 const raw: RawEntry = {
-                    path: filePath, name, stack,
+                    path: filePath,
+                    name,
+                    stack,
                     size: (entry.size as number) ?? 0,
                     mtime: entry.mtime as string,
                 };
 
                 if (isDirectInStack) {
                     const key = `${stack}::${name}`;
-                    if (!groups.has(key)) groups.set(key, []);
+                    if (!groups.has(key)) {
+                        groups.set(key, []);
+                    }
                     groups.get(key)!.push(raw);
                 } else {
                     // Tente de rattacher à un volume monté (plus long en premier = plus spécifique)
@@ -2007,7 +2352,9 @@ export class BackupManager {
                 entries.sort((a, b) => {
                     const aCanon = a.path.startsWith(STACKS_DIR + "/") || externalByDir.has(path.resolve(path.dirname(a.path)));
                     const bCanon = b.path.startsWith(STACKS_DIR + "/") || externalByDir.has(path.resolve(path.dirname(b.path)));
-                    if (aCanon !== bCanon) return aCanon ? -1 : 1;
+                    if (aCanon !== bCanon) {
+                        return aCanon ? -1 : 1;
+                    }
                     return a.path.length - b.path.length;
                 });
                 const canon = entries[0];
@@ -2026,7 +2373,9 @@ export class BackupManager {
                     const stat = await fs.stat(canon.path);
                     diskStatus = stat.mtime.getTime() > new Date(canon.mtime).getTime() + 2000
                         ? "modified" : "unchanged";
-                } catch { diskStatus = "missing"; }
+                } catch {
+                    diskStatus = "missing";
+                }
 
                 // Noms de services depuis le compose.yaml sur disque (non-bloquant)
                 let services: string[] | undefined;
@@ -2062,12 +2411,14 @@ export class BackupManager {
             ];
             console.log(`[BackupManager] listSnapshotFiles: ${allGroups.length} fichiers, construction des métadonnées…`);
             const files = await Promise.all(allGroups.map(makeFile));
-            console.log(`[BackupManager] listSnapshotFiles: métadonnées prêtes, lancement du diff…`);
+            console.log("[BackupManager] listSnapshotFiles: métadonnées prêtes, lancement du diff…");
 
             // Enregistre canonical + aliases dans la map pour la résolution du diff
             for (const file of files) {
                 fileMap.set(file.path, file);
-                for (const alias of (file.aliases ?? [])) fileMap.set(alias, file);
+                for (const alias of (file.aliases ?? [])) {
+                    fileMap.set(alias, file);
+                }
             }
 
             // ── 5. Diff vs snapshot précédent (timeout 15 s — info cosmétique) ─
@@ -2087,15 +2438,26 @@ export class BackupManager {
                     const diffOut = await Promise.race([diffPromise, timeoutPromise]);
                     for (const line of diffOut.split("\n").filter(Boolean)) {
                         let change: Record<string, unknown>;
-                        try { change = JSON.parse(line); } catch { continue; }
-                        if (change.message_type !== "change") continue;
+                        try {
+                            change = JSON.parse(line);
+                        } catch {
+                            continue;
+                        }
+                        if (change.message_type !== "change") {
+                            continue;
+                        }
                         const f = fileMap.get(change.path as string);
-                        if (!f) continue;
+                        if (!f) {
+                            continue;
+                        }
                         const mod = change.modifier as string;
-                        if (mod === "+")      f.snapDiff = "added";
-                        else if (mod === "M") f.snapDiff = "modified";
+                        if (mod === "+") {
+                            f.snapDiff = "added";
+                        } else if (mod === "M") {
+                            f.snapDiff = "modified";
+                        }
                     }
-                    console.log(`[BackupManager] listSnapshotFiles: diff terminé`);
+                    console.log("[BackupManager] listSnapshotFiles: diff terminé");
                 } catch (e) {
                     // Timeout ou erreur → on garde "unchanged" par défaut, pas bloquant
                     console.warn(`[BackupManager] listSnapshotFiles: diff ignoré (${(e as Error).message})`);
@@ -2110,11 +2472,18 @@ export class BackupManager {
             if (currentSnap) {
                 const prevPaths = new Set(prevSnap?.paths ?? []);
                 for (const p of currentSnap.paths) {
-                    if (p.startsWith(STACKS_DIR + "/") || p === STACKS_DIR) continue;
-                    if (p === "/var/run/docker.sock" || p === "/etc/hosts" || p === "/etc/hostname") continue;
+                    if (p.startsWith(STACKS_DIR + "/") || p === STACKS_DIR) {
+                        continue;
+                    }
+                    if (p === "/var/run/docker.sock" || p === "/etc/hosts" || p === "/etc/hostname") {
+                        continue;
+                    }
                     const volName = path.basename(p);
                     let diskStatus: "unchanged" | "modified" | "missing" = "missing";
-                    try { await fs.stat(p); diskStatus = "unchanged"; } catch { /* absent */ }
+                    try {
+                        await fs.stat(p);
+                        diskStatus = "unchanged";
+                    } catch { /* absent */ }
                     files.push({
                         path: p,
                         name: volName,
@@ -2129,12 +2498,19 @@ export class BackupManager {
                 }
             }
 
-            const typeOrder: Record<string, number> = { compose: 0, env: 1, volume: 2, other: 3 };
+            const typeOrder: Record<string, number> = { compose: 0,
+                env: 1,
+                volume: 2,
+                other: 3 };
             return files.sort((a, b) => {
-                if (a.stack !== b.stack) return a.stack.localeCompare(b.stack);
+                if (a.stack !== b.stack) {
+                    return a.stack.localeCompare(b.stack);
+                }
                 const ao = typeOrder[a.type] ?? 3;
                 const bo = typeOrder[b.type] ?? 3;
-                if (ao !== bo) return ao - bo;
+                if (ao !== bo) {
+                    return ao - bo;
+                }
                 return (a.relativePath ?? a.name).localeCompare(b.relativePath ?? b.name);
             });
         } catch (e) {
@@ -2148,20 +2524,28 @@ export class BackupManager {
      * Utilisé pour le lazy-loading du navigateur de volumes.
      */
     async browseSnapshotPath(snapshotId: string, dirPath: string): Promise<Array<{
-        name: string; path: string; type: "file" | "dir"; size: number; mtime: string;
+        name: string;
+        path: string;
+        type: "file" | "dir";
+        size: number;
+        mtime: string;
     }>> {
         const safeId = assertSafeResticId(snapshotId);
         const out = await this.resticFor(this.primaryDest(), [ "ls", safeId, dirPath, "--json", "--long" ]);
-        const results: Array<{ name: string; path: string; type: "file" | "dir"; size: number; mtime: string }> = [];
+        const results: Array<{ name: string;
+            path: string;
+            type: "file" | "dir";
+            size: number;
+            mtime: string }> = [];
         for (const line of out.split("\n").filter(Boolean)) {
             try {
                 const e = JSON.parse(line) as Record<string, unknown>;
                 if ((e.type === "file" || e.type === "dir") && typeof e.path === "string" && e.path !== dirPath) {
                     results.push({
-                        name:  e.name  as string ?? "",
-                        path:  e.path  as string,
-                        type:  e.type  as "file" | "dir",
-                        size:  (e.size as number)  ?? 0,
+                        name:  e.name as string ?? "",
+                        path:  e.path as string,
+                        type:  e.type as "file" | "dir",
+                        size:  (e.size as number) ?? 0,
                         mtime: (e.mtime as string) ?? "",
                     });
                 }
@@ -2171,8 +2555,12 @@ export class BackupManager {
     }
 
     /** Restaure une liste de fichiers depuis un snapshot à leur emplacement d'origine */
-    async restoreFiles(snapshotId: string, filePaths: string[]): Promise<{ restored: number; errors: string[] }> {
-        if (filePaths.length === 0) return { restored: 0, errors: [] };
+    async restoreFiles(snapshotId: string, filePaths: string[]): Promise<{ restored: number;
+        errors: string[] }> {
+        if (filePaths.length === 0) {
+            return { restored: 0,
+                errors: [] };
+        }
         this.restoreRunLock.acquire(false);
         try {
             const safeSnapshotId = assertSafeResticId(snapshotId);
@@ -2183,10 +2571,12 @@ export class BackupManager {
                 .map(p => assertPathWithinRoots(p, roots));
             try {
                 await this.resticFor(this.primaryDest(), [ "restore", safeSnapshotId, "--target", "/", ...includes.flatMap(p => [ "--include", p ]) ]);
-                return { restored: filePaths.length, errors: [] };
+                return { restored: filePaths.length,
+                    errors: [] };
             } catch (e: unknown) {
                 const msg = e instanceof Error ? e.message : String(e);
-                return { restored: 0, errors: [msg] };
+                return { restored: 0,
+                    errors: [msg] };
             }
         } finally {
             this.restoreRunLock.release();
@@ -2211,9 +2601,16 @@ export class BackupManager {
             .slice()
             .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
         const selected = snapshots.slice(0, snapshotCap);
-        if (selected.length === 0) return { documents: [], truncated: false };
+        if (selected.length === 0) {
+            return { documents: [],
+                truncated: false };
+        }
 
-        const candidates: Array<{ snapshotId: string; timestamp: string; stackName: string; source: "compose" | "override" | "env"; path: string }> = [];
+        const candidates: Array<{ snapshotId: string;
+            timestamp: string;
+            stackName: string;
+            source: "compose" | "override" | "env";
+            path: string }> = [];
         let truncated = snapshots.length > selected.length;
         const dest = this.primaryDest();
         const perSnapshotCap = normalizedStackHint ? fileCap : Math.max(1, Math.ceil(fileCap / Math.max(1, selected.length)));
@@ -2231,11 +2628,17 @@ export class BackupManager {
                 for (const line of passA.split("\n").filter(Boolean)) {
                     try {
                         const entry = JSON.parse(line) as Record<string, unknown>;
-                        if (entry.type !== "dir" || typeof entry.path !== "string" || entry.path === STACKS_DIR) continue;
-                        if (path.dirname(entry.path) === STACKS_DIR) stackPaths.push(entry.path);
+                        if (entry.type !== "dir" || typeof entry.path !== "string" || entry.path === STACKS_DIR) {
+                            continue;
+                        }
+                        if (path.dirname(entry.path) === STACKS_DIR) {
+                            stackPaths.push(entry.path);
+                        }
                     } catch { /* entrée restic invalide : ignorée */ }
                 }
-                if (stackPaths.length === 0) continue;
+                if (stackPaths.length === 0) {
+                    continue;
+                }
 
                 const passB = await this.resticFor(dest, [ "ls", snapshotId, ...stackPaths, "--json", "--long" ], {}, [], 12_000);
                 for (const line of passB.split("\n").filter(Boolean)) {
@@ -2244,18 +2647,32 @@ export class BackupManager {
                         break;
                     }
                     let entry: Record<string, unknown>;
-                    try { entry = JSON.parse(line) as Record<string, unknown>; } catch { continue; }
-                    if (entry.type !== "file" || typeof entry.path !== "string") continue;
+                    try {
+                        entry = JSON.parse(line) as Record<string, unknown>;
+                    } catch {
+                        continue;
+                    }
+                    if (entry.type !== "file" || typeof entry.path !== "string") {
+                        continue;
+                    }
                     const filePath = entry.path;
                     const relative = path.relative(STACKS_DIR, filePath);
-                    if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) continue;
+                    if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+                        continue;
+                    }
                     const parts = relative.split(path.sep);
-                    if (parts.length !== 2) continue;
+                    if (parts.length !== 2) {
+                        continue;
+                    }
                     const [ stackName, name ] = parts;
-                    if (normalizedStackHint && !stackName.toLocaleLowerCase().includes(normalizedStackHint)) continue;
+                    if (normalizedStackHint && !stackName.toLocaleLowerCase().includes(normalizedStackHint)) {
+                        continue;
+                    }
                     const isEnv = name === ".env";
                     const isCompose = /^(?:compose|docker-compose)(?:\.override)?\.ya?ml$/i.test(name);
-                    if (!isEnv && !isCompose) continue;
+                    if (!isEnv && !isCompose) {
+                        continue;
+                    }
                     candidates.push({
                         snapshotId,
                         timestamp: snapshot.time,
@@ -2274,7 +2691,9 @@ export class BackupManager {
         const loaded = await mapLimit(candidates.slice(0, fileCap), 4, async (candidate) => {
             try {
                 const content = await this.resticDump(dest, candidate.snapshotId, candidate.path, 8_000);
-                if (content.length > 512 * 1024) return null;
+                if (content.length > 512 * 1024) {
+                    return null;
+                }
                 return {
                     snapshotId: candidate.snapshotId,
                     timestamp: candidate.timestamp,
@@ -2316,23 +2735,30 @@ export class BackupManager {
             const candidate = selector.getCandidate();
 
             if (!candidate) {
-                return { ok: false, error: "Aucun fichier trouvé dans le snapshot" };
+                return { ok: false,
+                    error: "Aucun fichier trouvé dans le snapshot" };
             }
 
             if (candidate.size === 0) {
                 console.log(`[BackupManager] Restore test "${dest.label}" — snapshot sans fichier non vide, test de contenu ignoré`);
-                return { ok: true, skipped: true, testedFile: candidate.path };
+                return { ok: true,
+                    skipped: true,
+                    testedFile: candidate.path };
             }
 
             const content = await this.resticDump(dest, safeId, candidate.path);
             if (content.length === 0) {
-                return { ok: false, testedFile: candidate.path, error: "Fichier vide retourné par le snapshot" };
+                return { ok: false,
+                    testedFile: candidate.path,
+                    error: "Fichier vide retourné par le snapshot" };
             }
 
-            return { ok: true, testedFile: candidate.path };
+            return { ok: true,
+                testedFile: candidate.path };
         } catch (e: unknown) {
             const raw = e instanceof Error ? e.message : String(e);
-            return { ok: false, error: raw.slice(0, 300) };
+            return { ok: false,
+                error: raw.slice(0, 300) };
         }
     }
 
@@ -2341,10 +2767,14 @@ export class BackupManager {
         expectedFilePath: string,
         expectedRecoveryId?: string,
         onProgress?: (progress: BackupProgress) => void,
-    ): Promise<Array<{ label: string; ok: boolean; output: string }>> {
+    ): Promise<Array<{ label: string;
+        ok: boolean;
+        output: string }>> {
         const destinations = result.destinations ?? [];
         const enabled = this.settings.destinations.filter(dest => dest.enabled);
-        const checks: Array<{ label: string; ok: boolean; output: string }> = [];
+        const checks: Array<{ label: string;
+            ok: boolean;
+            output: string }> = [];
 
         if (!path.isAbsolute(expectedFilePath)) {
             throw new ValidationError("Le fichier de vérification Restic doit utiliser un chemin absolu");
@@ -2360,14 +2790,18 @@ export class BackupManager {
                 destinationCount: destinations.length,
             });
             if (!dest || !destResult?.success || !destResult.snapshotId) {
-                checks.push({ label: destResult?.label ?? dest?.label ?? `destination-${i + 1}`, ok: false, output: "Snapshot fraîchement créé introuvable" });
+                checks.push({ label: destResult?.label ?? dest?.label ?? `destination-${i + 1}`,
+                    ok: false,
+                    output: "Snapshot fraîchement créé introuvable" });
                 continue;
             }
             try {
                 const safeId = assertSafeResticId(destResult.snapshotId);
                 const content = await this.resticDump(dest, safeId, expectedFilePath);
                 if (content.trim().length === 0) {
-                    checks.push({ label: dest.label, ok: false, output: `Fichier de recovery vide: ${expectedFilePath}` });
+                    checks.push({ label: dest.label,
+                        ok: false,
+                        output: `Fichier de recovery vide: ${expectedFilePath}` });
                     continue;
                 }
 
@@ -2375,18 +2809,26 @@ export class BackupManager {
                     try {
                         const recovery = JSON.parse(content) as Record<string, unknown>;
                         if (recovery.id !== expectedRecoveryId) {
-                            checks.push({ label: dest.label, ok: false, output: `Fichier de recovery incohérent: ${expectedFilePath}` });
+                            checks.push({ label: dest.label,
+                                ok: false,
+                                output: `Fichier de recovery incohérent: ${expectedFilePath}` });
                             continue;
                         }
                     } catch {
-                        checks.push({ label: dest.label, ok: false, output: `Fichier de recovery JSON illisible: ${expectedFilePath}` });
+                        checks.push({ label: dest.label,
+                            ok: false,
+                            output: `Fichier de recovery JSON illisible: ${expectedFilePath}` });
                         continue;
                     }
                 }
 
-                checks.push({ label: dest.label, ok: true, output: `Lecture ciblée OK: ${expectedFilePath}` });
+                checks.push({ label: dest.label,
+                    ok: true,
+                    output: `Lecture ciblée OK: ${expectedFilePath}` });
             } catch (error) {
-                checks.push({ label: dest.label, ok: false, output: error instanceof Error ? error.message : String(error) });
+                checks.push({ label: dest.label,
+                    ok: false,
+                    output: error instanceof Error ? error.message : String(error) });
             }
         }
         return checks;
@@ -2395,7 +2837,7 @@ export class BackupManager {
     /** Exécute `restic dump` sans `--json` pour récupérer le contenu brut d'un fichier */
     private async resticDump(dest: BackupDestination, snapshotId: string, filePath: string, timeoutMs = 30_000): Promise<string> {
         const repoEnv = buildResticEnv(dest);
-        const repo    = buildRepoUrl(dest);
+        const repo = buildRepoUrl(dest);
         let tmpFile: string | null = null;
         try {
             if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
@@ -2406,21 +2848,27 @@ export class BackupManager {
             const { stdout } = await execFileAsync("restic", buildResticCommandArgs(repo, sftpOpts, [ "dump", snapshotId, filePath ], false), {
                 maxBuffer: 10 * 1024 * 1024,
                 timeout: timeoutMs,
-                env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...repoEnv },
+                env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                    ...process.env,
+                    ...repoEnv },
             });
             return stdout;
         } finally {
-            if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
+            if (tmpFile) {
+                await fs.unlink(tmpFile).catch(() => {});
+            }
         }
     }
 
     /** Exécute `restic check` sans `--json` pour vérifier l'intégrité d'un repo */
     private async resticCheck(dest: BackupDestination): Promise<string> {
         // Libère un éventuel verrou obsolète avant le check (comme pour backup/forget)
-        try { await this.resticFor(dest, [ "unlock", "--remove-all" ]); } catch { /* ignore */ }
+        try {
+            await this.resticFor(dest, [ "unlock", "--remove-all" ]);
+        } catch { /* ignore */ }
 
         const repoEnv = buildResticEnv(dest);
-        const repo    = buildRepoUrl(dest);
+        const repo = buildRepoUrl(dest);
         let tmpFile: string | null = null;
         try {
             if (dest.type === "sftp" && dest.sftp?.authMode === "password" && dest.sftp.password) {
@@ -2432,23 +2880,34 @@ export class BackupManager {
                 const { stdout } = await execFileAsync("restic", buildResticCommandArgs(repo, sftpOpts, [ "check" ], false), {
                     maxBuffer: 2 * 1024 * 1024,
                     timeout: 5 * 60_000,
-                    env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", ...process.env, ...repoEnv },
+                    env: { PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                        ...process.env,
+                        ...repoEnv },
                 });
                 return stdout;
-            } catch (e: any) {
+            } catch (e: unknown) {
                 // execAsync échoue avec exit code non-zéro → on retourne le stdout réel (2>&1 le contient)
-                const output = (e?.stdout || e?.stderr || e?.message || String(e)).trim();
-                throw new Error(output);
+                const failure = e as { stdout?: string;
+                    stderr?: string;
+                    message?: string } | null;
+                const output = (failure?.stdout || failure?.stderr || failure?.message || String(e)).trim();
+                throw new Error(output, { cause: e });
             }
         } finally {
-            if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
+            if (tmpFile) {
+                await fs.unlink(tmpFile).catch(() => {});
+            }
         }
     }
 
     /** Vérifie l'intégrité de chaque destination activée */
-    async runCheck(destIndex?: number, onProgress?: (progress: BackupProgress) => void): Promise<Array<{ destIndex: number; label: string; ok: boolean; output: string }>> {
+    async runCheck(destIndex?: number, onProgress?: (progress: BackupProgress) => void): Promise<Array<{ destIndex: number;
+        label: string;
+        ok: boolean;
+        output: string }>> {
         const activeDests = this.settings.destinations
-            .map((d, i) => ({ dest: d, idx: i }))
+            .map((d, i) => ({ dest: d,
+                idx: i }))
             .filter(({ dest, idx }) => dest.enabled && (destIndex === undefined || idx === destIndex));
 
         if (activeDests.length === 0) {
@@ -2456,24 +2915,47 @@ export class BackupManager {
         }
 
         return Promise.all(activeDests.map(async ({ dest, idx }, destinationIndex) => {
-            onProgress?.({ phase: "verification", label: dest.label, destinationIndex: destinationIndex + 1, destinationCount: activeDests.length });
+            onProgress?.({ phase: "verification",
+                label: dest.label,
+                destinationIndex: destinationIndex + 1,
+                destinationCount: activeDests.length });
             try {
                 const output = await this.resticCheck(dest);
-                onProgress?.({ phase: "verification", label: dest.label, destinationIndex: destinationIndex + 1, destinationCount: activeDests.length, ok: true });
-                return { destIndex: idx, label: dest.label, ok: true, output };
+                onProgress?.({ phase: "verification",
+                    label: dest.label,
+                    destinationIndex: destinationIndex + 1,
+                    destinationCount: activeDests.length,
+                    ok: true });
+                return { destIndex: idx,
+                    label: dest.label,
+                    ok: true,
+                    output };
             } catch (e: unknown) {
                 const raw = e instanceof Error ? e.message : String(e);
-                onProgress?.({ phase: "verification", label: dest.label, destinationIndex: destinationIndex + 1, destinationCount: activeDests.length, ok: false });
-                return { destIndex: idx, label: dest.label, ok: false, output: raw };
+                onProgress?.({ phase: "verification",
+                    label: dest.label,
+                    destinationIndex: destinationIndex + 1,
+                    destinationCount: activeDests.length,
+                    ok: false });
+                return { destIndex: idx,
+                    label: dest.label,
+                    ok: false,
+                    output: raw };
             }
         }));
     }
 
     /** Retourne le contenu d'un fichier texte depuis un snapshot + sa version disque actuelle + version snapshot précédent */
-    async getSnapshotFileContent(snapshotId: string, filePath: string, prevSnapshotId?: string): Promise<{ snapshot: string; disk: string | null; prev: string | null }> {
+    async getSnapshotFileContent(snapshotId: string, filePath: string, prevSnapshotId?: string): Promise<{ snapshot: string;
+        disk: string | null;
+        prev: string | null }> {
         const safeId = assertSafeResticId(snapshotId);
         const backupRoots = await this.getAuthorizedBackupRoots();
-        const safeFilePath = await assertExistingPathWithinRoots(filePath, backupRoots);
+        const checkedFilePath = await assertExistingPathWithinRoots(filePath, backupRoots);
+        const safeFilePath = fsSync.realpathSync(checkedFilePath);
+        if (safeFilePath !== checkedFilePath) {
+            throw new ValidationError("Le chemin a changé pendant la vérification");
+        }
         const snapshotContent = await this.resticDump(this.primaryDest(), safeId, safeFilePath);
         let disk: string | null = null;
         try {
@@ -2489,21 +2971,31 @@ export class BackupManager {
                 prev = await this.resticDump(this.primaryDest(), safePrev, safeFilePath);
             } catch { /* fichier absent du snapshot précédent */ }
         }
-        return { snapshot: snapshotContent, disk, prev };
+        return { snapshot: snapshotContent,
+            disk,
+            prev };
     }
 
     // ── Surveillance de fraîcheur ────────────────────────────────
 
     private async checkStaleness(): Promise<void> {
-        if (!this.settings.enabled) return;
+        if (!this.settings.enabled) {
+            return;
+        }
         const intervalHours = sanitizeIntervalHours(this.settings.intervalHours);
         const maxAgeMs = 2 * intervalHours * 3_600_000;
         const lastSuccess = backupHistory.find(h => h.success);
-        if (!lastSuccess) return; // pas encore de backup — pas d'alerte
+        if (!lastSuccess) {
+            return;
+        } // pas encore de backup — pas d'alerte
         const ageMs = Date.now() - new Date(lastSuccess.timestamp).getTime();
-        if (ageMs < maxAgeMs) return;
+        if (ageMs < maxAgeMs) {
+            return;
+        }
         // En retard — n'envoyer qu'une notif par fenêtre d'intervalHours
-        if (Date.now() - this.lastStalenessNotif < intervalHours * 3_600_000) return;
+        if (Date.now() - this.lastStalenessNotif < intervalHours * 3_600_000) {
+            return;
+        }
         this.lastStalenessNotif = Date.now();
         await this.sendStalenessNotification(ageMs);
     }
@@ -2513,22 +3005,24 @@ export class BackupManager {
             ? new DiscordNotifier(this.settings.discordWebhooks)
             : null;
         const apprise = await this.loadAppriseNotifier();
-        if (!discord && !apprise) return;
+        if (!discord && !apprise) {
+            return;
+        }
 
-        const lang   = await getNotificationLang();
+        const lang = await getNotificationLang();
         const locale = getNotificationLocale(lang);
-        const t      = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
+        const t = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
         const hostname: string = await Settings.get("primaryHostname") || "";
-        const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
-        const footerHost       = hostname ? ` · ${hostname}` : "";
-        const hours  = Math.floor(ageMs / 3_600_000);
-        const title  = `${hostnamePrefix}${t(
+        const hostnamePrefix = hostname ? `[${hostname}] ` : "";
+        const footerHost = hostname ? ` · ${hostname}` : "";
+        const hours = Math.floor(ageMs / 3_600_000);
+        const title = `${hostnamePrefix}${t(
             "⚠️ Backup Dockge en retard",
             "⚠️ Dockge backup overdue",
             "⚠️ Copia de Dockge atrasada",
             "⚠️ Dockge 备份已逾期",
         )}`;
-        const descr  = t(
+        const descr = t(
             `Aucun backup réussi depuis **${hours}h**. Vérifiez votre configuration de backup.`,
             `No successful backup in the last **${hours}h**. Please check your backup configuration.`,
             `No hay ninguna copia correcta desde hace **${hours} h**. Comprueba la configuración de copias de seguridad.`,
@@ -2537,11 +3031,18 @@ export class BackupManager {
 
         if (discord) {
             await discord.sendEmbed({
-                title, color: 0xf59e0b, description: descr, fields: [],
+                title,
+                color: 0xf59e0b,
+                description: descr,
+                fields: [],
                 footer: `Dockge Enhanced — Backup${footerHost} · ${new Date().toLocaleString(locale)}`,
             });
         }
-        if (apprise) await apprise.send({ title, body: descr, type: "failure" });
+        if (apprise) {
+            await apprise.send({ title,
+                body: descr,
+                type: "failure" });
+        }
     }
 
     // ── Notifications (Discord + Apprise) ────────────────────────
@@ -2549,10 +3050,12 @@ export class BackupManager {
     /** Charge l'AppriseNotifier : serverUrl partagé (watcher-settings) + URLs propres au backup */
     private async loadAppriseNotifier(): Promise<AppriseNotifier | null> {
         try {
-            const raw  = await fs.readFile(WATCHER_SETTINGS_PATH, "utf8");
+            const raw = await fs.readFile(WATCHER_SETTINGS_PATH, "utf8");
             const data = JSON.parse(raw) as Record<string, unknown>;
             const serverUrl = typeof data.appriseServerUrl === "string" ? data.appriseServerUrl : "";
-            if (!serverUrl) return null;
+            if (!serverUrl) {
+                return null;
+            }
             // URLs spécifiques au backup (pas les URLs globales images)
             const urls = (this.settings.appriseUrls ?? []).filter(Boolean);
             return new AppriseNotifier(serverUrl, urls);
@@ -2562,40 +3065,46 @@ export class BackupManager {
     }
 
     private async sendNotification(result: BackupResult): Promise<void> {
-        const discord  = this.settings.discordWebhooks.length > 0
+        const discord = this.settings.discordWebhooks.length > 0
             ? new DiscordNotifier(this.settings.discordWebhooks)
             : null;
-        const apprise  = await this.loadAppriseNotifier();
-        if (!discord && !apprise) return;
+        const apprise = await this.loadAppriseNotifier();
+        if (!discord && !apprise) {
+            return;
+        }
 
-        const lang     = await getNotificationLang();
-        const locale   = getNotificationLocale(lang);
-        const t        = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
+        const lang = await getNotificationLang();
+        const locale = getNotificationLocale(lang);
+        const t = (fr: string, en: string, es: string, zhCN: string) => notificationText(lang, fr, en, es, zhCN);
         const hostname: string = await Settings.get("primaryHostname") || "";
-        const hostnamePrefix   = hostname ? `[${hostname}] ` : "";
-        const footerHost       = hostname ? ` · ${hostname}` : "";
+        const hostnamePrefix = hostname ? `[${hostname}] ` : "";
+        const footerHost = hostname ? ` · ${hostname}` : "";
 
         if (result.success) {
-            const title  = `${hostnamePrefix}${t("✅ Backup Dockge réussi", "✅ Dockge backup successful", "✅ Copia de Dockge correcta", "✅ Dockge 备份成功")}`;
-            const descr  = `Snapshot \`${result.snapshotId}\` ${t("créé avec succès", "created successfully", "creada correctamente", "创建成功")}`;
-            const fields: Array<{ name: string; value: string; inline: boolean }> = [
+            const title = `${hostnamePrefix}${t("✅ Backup Dockge réussi", "✅ Dockge backup successful", "✅ Copia de Dockge correcta", "✅ Dockge 备份成功")}`;
+            const descr = `Snapshot \`${result.snapshotId}\` ${t("créé avec succès", "created successfully", "creada correctamente", "创建成功")}`;
+            const fields: Array<{ name: string;
+                value: string;
+                inline: boolean }> = [
                 { name: t("Durée", "Duration", "Duración", "耗时"),
-                  value: formatDuration(result.duration),                                  inline: true },
+                    value: formatDuration(result.duration),
+                    inline: true },
                 { name: t("Données ajoutées", "Data added", "Datos añadidos", "新增数据"),
-                  value: formatBytes(result.dataAdded ?? 0),                               inline: true },
+                    value: formatBytes(result.dataAdded ?? 0),
+                    inline: true },
                 { name: t("Fichiers", "Files", "Archivos", "文件"),
-                  value: `${result.filesNew} ${t("nouveaux", "new", "nuevos", "新增")} · ${result.filesChanged} ${t("modifiés", "modified", "modificados", "已修改")}`,
-                  inline: true },
+                    value: `${result.filesNew} ${t("nouveaux", "new", "nuevos", "新增")} · ${result.filesChanged} ${t("modifiés", "modified", "modificados", "已修改")}`,
+                    inline: true },
                 { name: t("Destinations", "Destinations", "Destinos", "目标"),
-                  value: (result.destinations ?? [])
-                      .map(d => {
-                          const rt = d.restoreTest;
-                          const rtLabel = t("Test de restauration", "Restore test", "Prueba de restauración", "恢复测试");
-                          const rtIcon = rt == null ? "" : (rt.skipped ? ` · ${rtLabel} ⏭️` : (rt.ok ? ` · ${rtLabel} ✅` : ` · ${rtLabel} ❌`));
-                          return `${d.success ? "✅" : "❌"} ${d.label}${rtIcon}`;
-                      })
-                      .join("\n") || "—",
-                  inline: true },
+                    value: (result.destinations ?? [])
+                        .map(d => {
+                            const rt = d.restoreTest;
+                            const rtLabel = t("Test de restauration", "Restore test", "Prueba de restauración", "恢复测试");
+                            const rtIcon = rt == null ? "" : (rt.skipped ? ` · ${rtLabel} ⏭️` : (rt.ok ? ` · ${rtLabel} ✅` : ` · ${rtLabel} ❌`));
+                            return `${d.success ? "✅" : "❌"} ${d.label}${rtIcon}`;
+                        })
+                        .join("\n") || "—",
+                    inline: true },
             ];
 
             if ((result.warnings ?? []).length > 0) {
@@ -2608,25 +3117,33 @@ export class BackupManager {
 
             if (discord) {
                 await discord.sendEmbed({
-                    title, color: 0x22c55e, description: descr, fields,
+                    title,
+                    color: 0x22c55e,
+                    description: descr,
+                    fields,
                     footer: `Dockge Enhanced — Backup${footerHost} · ${new Date(result.timestamp).toLocaleString(locale)}`,
                 });
             }
             if (apprise) {
                 const body = `${descr}\n\n${fields.map(f => `**${f.name}**: ${f.value}`).join("\n")}`;
-                await apprise.send({ title, body, type: "success" });
+                await apprise.send({ title,
+                    body,
+                    type: "success" });
             }
         } else {
-            const title  = `${hostnamePrefix}${t("❌ Échec du backup Dockge", "❌ Dockge backup failed", "❌ Error en la copia de Dockge", "❌ Dockge 备份失败")}`;
-            const descr  = `**${t("Erreur", "Error", "Error", "错误")} :** ${result.error}`;
-            const fields: Array<{ name: string; value: string; inline: boolean }> = [
+            const title = `${hostnamePrefix}${t("❌ Échec du backup Dockge", "❌ Dockge backup failed", "❌ Error en la copia de Dockge", "❌ Dockge 备份失败")}`;
+            const descr = `**${t("Erreur", "Error", "Error", "错误")} :** ${result.error}`;
+            const fields: Array<{ name: string;
+                value: string;
+                inline: boolean }> = [
                 { name: t("Durée", "Duration", "Duración", "耗时"),
-                  value: formatDuration(result.duration),                                  inline: true },
+                    value: formatDuration(result.duration),
+                    inline: true },
                 { name: t("Destinations", "Destinations", "Destinos", "目标"),
-                  value: (result.destinations ?? [])
-                      .map(d => `${d.success ? "✅" : "❌"} ${d.label}`)
-                      .join("\n") || "—",
-                  inline: true },
+                    value: (result.destinations ?? [])
+                        .map(d => `${d.success ? "✅" : "❌"} ${d.label}`)
+                        .join("\n") || "—",
+                    inline: true },
             ];
 
             if ((result.warnings ?? []).length > 0) {
@@ -2639,13 +3156,18 @@ export class BackupManager {
 
             if (discord) {
                 await discord.sendEmbed({
-                    title, color: 0xef4444, description: descr, fields,
+                    title,
+                    color: 0xef4444,
+                    description: descr,
+                    fields,
                     footer: `Dockge Enhanced — Backup${footerHost} · ${new Date(result.timestamp).toLocaleString(locale)}`,
                 });
             }
             if (apprise) {
                 const body = `${descr}\n\n${fields.map(f => `**${f.name}**: ${f.value}`).join("\n")}`;
-                await apprise.send({ title, body, type: "failure" });
+                await apprise.send({ title,
+                    body,
+                    type: "failure" });
             }
         }
     }

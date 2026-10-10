@@ -14,8 +14,8 @@
             <p class="form-text mb-3">{{ $t('watcher.backup.excludePatterns.hint') }}</p>
             <div class="d-flex gap-2 mb-2">
                 <input v-model="newExcludePattern" type="text" class="form-control form-control-sm"
-                    :placeholder="$t('watcher.backup.excludePatterns.placeholder')"
-                    @keydown.enter.prevent="addExcludePattern" />
+                       :placeholder="$t('watcher.backup.excludePatterns.placeholder')"
+                       @keydown.enter.prevent="addExcludePattern" />
                 <button class="btn btn-sm btn-outline-primary" @click="addExcludePattern">
                     <font-awesome-icon icon="plus" />
                 </button>
@@ -43,50 +43,90 @@
                 <div class="col-md-3">
                     <label class="form-label">{{ $t('watcher.backup.retention.keepLast') }}</label>
                     <input v-model.number="settings.retention.keepLast" type="number"
-                        class="form-control" min="1" max="100" />
+                           class="form-control" min="1" max="100" />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ $t('watcher.backup.retention.keepDaily') }}</label>
                     <input v-model.number="settings.retention.keepDaily" type="number"
-                        class="form-control" min="0" />
+                           class="form-control" min="0" />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ $t('watcher.backup.retention.keepWeekly') }}</label>
                     <input v-model.number="settings.retention.keepWeekly" type="number"
-                        class="form-control" min="0" />
+                           class="form-control" min="0" />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ $t('watcher.backup.retention.keepMonthly') }}</label>
                     <input v-model.number="settings.retention.keepMonthly" type="number"
-                        class="form-control" min="0" />
+                           class="form-control" min="0" />
                 </div>
             </div>
             <small class="form-text mt-2 d-block">{{ $t('watcher.backup.retention.hint') }}</small>
         </div>
 
-        <!-- ═══ ACTIONS ═══ -->
-        <div class="d-flex gap-2 flex-wrap mb-4">
-            <button class="btn btn-primary" @click="save" :disabled="saving">
-                <span v-if="saving" class="spinner-border spinner-border-sm me-1" />
-                <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.backup.saveConfig') }}
-            </button>
-            <button class="btn btn-normal" @click="initRepo" :disabled="initing">
-                <span v-if="initing" class="spinner-border spinner-border-sm me-1" />
-                <font-awesome-icon v-else icon="database" class="me-1" />{{ $t('watcher.backup.initRepo') }}
-            </button>
-            <button class="btn btn-success" @click="runBackup" :disabled="running">
-                <span v-if="running" class="spinner-border spinner-border-sm me-1" />
-                <font-awesome-icon v-else icon="cloud-upload-alt" class="me-1" />{{ $t('watcher.backup.runNow') }}
-            </button>
-            <button class="btn btn-normal" @click="snapshotsPanel?.loadSnapshots()" :disabled="snapshotsPanel?.loadingSnaps">
-                <span v-if="snapshotsPanel?.loadingSnaps" class="spinner-border spinner-border-sm me-1" />
-                <font-awesome-icon v-else icon="sync" class="me-1" />{{ $t('watcher.backup.refreshSnapshots') }}
-            </button>
-            <button class="btn btn-normal" @click="checkIntegrity" :disabled="checking">
-                <span v-if="checking" class="spinner-border spinner-border-sm me-1" />
-                <font-awesome-icon v-else icon="shield-alt" class="me-1" />
-                {{ checking ? $t('watcher.backup.checkRunning') : $t('watcher.backup.checkIntegrity') }}
-            </button>
+        <!-- ═══ ACTIONS — configuration et sauvegarde sont bien distinctes ═══ -->
+        <div class="shadow-box big-padding mb-4">
+            <h5 class="settings-subheading mb-2">{{ $t('watcher.backup.actions.heading') }}</h5>
+            <p class="form-text mb-3">{{ $t('watcher.backup.actions.summary') }}</p>
+            <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                    <div class="backup-action-card h-100">
+                        <h6 class="fw-semibold">{{ $t('watcher.backup.actions.settingsHeading') }}</h6>
+                        <p class="form-text mb-3">{{ $t('watcher.backup.actions.settingsDescription') }}</p>
+                        <button type="button" class="btn btn-primary backup-action-button" @click="save" :disabled="saving || running || checking">
+                            <span v-if="saving" class="spinner-border spinner-border-sm me-1" />
+                            <font-awesome-icon v-else icon="save" class="me-1" />{{ $t('watcher.backup.saveConfig') }}
+                        </button>
+                        <p class="form-text mt-2 mb-0">{{ $t('watcher.backup.actions.saveEffect') }}</p>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="backup-action-card h-100">
+                        <h6 class="fw-semibold">{{ $t('watcher.backup.actions.backupHeading') }}</h6>
+                        <p class="form-text mb-3">{{ $t('watcher.backup.actions.backupDescription') }}</p>
+                        <button type="button" class="btn backup-run-now-btn backup-action-button" @click="runBackup"
+                                :disabled="saving || running || checking || !settings.destinations.some(d => d.enabled)">
+                            <span v-if="running" class="spinner-border spinner-border-sm me-1" />
+                            <font-awesome-icon v-else icon="cloud-upload-alt" class="me-1" />{{ $t('watcher.backup.runNow') }}
+                        </button>
+                        <p class="form-text mt-2 mb-0">{{ $t('watcher.backup.actions.runEffect') }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3" aria-live="polite">
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                    <strong>{{ $t('watcher.backup.repoState.title') }}</strong>
+                    <button type="button" class="btn btn-sm btn-normal" :disabled="repoStatusLoading || running" @click="loadRepoStatuses">
+                        <font-awesome-icon icon="sync" class="me-1" />{{ $t('watcher.backup.repoState.refresh') }}
+                    </button>
+                </div>
+                <p v-if="repoStatusLoading" class="form-text mb-1">{{ $t('watcher.backup.repoState.checking') }}</p>
+                <p v-else-if="repoStatuses.length === 0" class="form-text mb-1">{{ $t('watcher.backup.repoState.noDest') }}</p>
+                <p v-for="(item, idx) in repoStatuses" :key="idx" class="form-text mb-1">
+                    <strong>{{ item.label }} :</strong>
+                    {{ $t(`watcher.backup.repoState.${item.state}`) }}
+                    <span v-if="item.detail">— {{ item.detail }}</span>
+                </p>
+                <p class="form-text mt-1 mb-0">{{ $t('watcher.backup.repoState.automatic') }}</p>
+            </div>
+            <details class="backup-utility-panel mt-3">
+                <summary class="fw-semibold">{{ $t('watcher.backup.actions.maintenanceHeading') }}</summary>
+                <p class="form-text mt-2 mb-3">{{ $t('watcher.backup.actions.maintenanceDescription') }}</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-normal" @click="snapshotsPanel?.loadSnapshots()"
+                            :disabled="saving || running || checking || snapshotsPanel?.loadingSnaps"
+                            :title="$t('watcher.backup.actions.refreshHint')">
+                        <span v-if="snapshotsPanel?.loadingSnaps" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="sync" class="me-1" />{{ $t('watcher.backup.refreshSnapshots') }}
+                    </button>
+                    <button type="button" class="btn btn-normal" @click="checkIntegrity" :disabled="saving || running || checking"
+                            :title="$t('watcher.backup.actions.integrityHint')">
+                        <span v-if="checking" class="spinner-border spinner-border-sm me-1" />
+                        <font-awesome-icon v-else icon="shield-alt" class="me-1" />
+                        {{ checking ? $t('watcher.backup.checkRunning') : $t('watcher.backup.checkIntegrity') }}
+                    </button>
+                </div>
+            </details>
         </div>
 
         <!-- ═══ BACKUP EN COURS ═══ -->
@@ -102,8 +142,8 @@
         <!-- ═══ CHECK RESULTS ═══ -->
         <div v-if="checkResults.length > 0" class="mb-4">
             <div v-for="r in checkResults" :key="r.destIndex"
-                class="shadow-box big-padding mb-2"
-                :style="r.ok ? 'border-left: 3px solid var(--success)' : 'border-left: 3px solid var(--danger)'">
+                 class="shadow-box big-padding mb-2"
+                 :style="r.ok ? 'border-left: 3px solid var(--success)' : 'border-left: 3px solid var(--danger)'">
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <strong>{{ r.ok ? $t('watcher.backup.checkOk') : $t('watcher.backup.checkFail') }}</strong>
                     <span class="form-text">— {{ r.label }}</span>
@@ -119,7 +159,7 @@
         <BackupSnapshots ref="snapshotsPanel" @toast="showToast" />
 
         <BModal v-model="concurrentBackupModal" :title="$t('watcher.backup.concurrentPopupTitle')"
-            ok-only :ok-title="$t('close')">
+                ok-only :ok-title="$t('close')">
             <p class="mb-0">{{ $t('watcher.backup.concurrentPopupBody') }}</p>
         </BModal>
 
@@ -161,7 +201,10 @@ const settings = ref<Settings>({
     enabled: false,
     intervalHours: 24,
     destinations: [defaultDestination(t)],
-    retention: { keepLast: 10, keepDaily: 7, keepWeekly: 4, keepMonthly: 3 },
+    retention: { keepLast: 10,
+        keepDaily: 7,
+        keepWeekly: 4,
+        keepMonthly: 3 },
     includeEnvFiles: true,
     volumeBackup: { selectedVolumes: [] },
     extraPaths: [],
@@ -177,7 +220,9 @@ const stacksList = ref<string[]>([]);
 const newExcludePattern = ref("");
 function addExcludePattern() {
     const p = newExcludePattern.value.trim();
-    if (!p) return;
+    if (!p) {
+        return;
+    }
     if (!(settings.value.excludePatterns ?? []).includes(p)) {
         settings.value.excludePatterns = [...(settings.value.excludePatterns ?? []), p];
     }
@@ -192,20 +237,22 @@ const loadingMountedVols = ref(false);
 const history = ref<BackupResult[]>([]);
 
 const saving = ref(false);
-const initing = ref(false);
 const running = ref(false);
 const concurrentBackupModal = ref(false);
 const lastBlockedSeen = ref(0);
 
 // ── Backup en cours ──────────────────────────────────────────────
-type RunningDest = { label: string; startedAt: number };
-const runningDests   = ref<RunningDest[]>([]);
-const elapsedTick    = ref(0);  // s'incrémente toutes les secondes pour forcer le re-rendu
+type RunningDest = { label: string;
+    startedAt: number };
+const runningDests = ref<RunningDest[]>([]);
+const elapsedTick = ref(0);  // s'incrémente toutes les secondes pour forcer le re-rendu
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let tickTimer: ReturnType<typeof setInterval> | null = null;
 
 function startPolling() {
-    if (pollTimer) return;
+    if (pollTimer) {
+        return;
+    }
     pollTimer = setInterval(async () => {
         try {
             const res = await api("GET", "/backup/running");
@@ -218,19 +265,29 @@ function startPolling() {
             }
         } catch { /* silencieux */ }
     }, 3000);
-    tickTimer = setInterval(() => { elapsedTick.value++; }, 1000);
+    tickTimer = setInterval(() => {
+        elapsedTick.value++;
+    }, 1000);
 }
 
 function stopPolling() {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+    if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+    }
+    if (tickTimer) {
+        clearInterval(tickTimer);
+        tickTimer = null;
+    }
 }
 
 function formatElapsed(startedAt: number): string {
     void elapsedTick.value; // dépendance réactive
     const ms = Date.now() - startedAt;
     const s = Math.floor(ms / 1000);
-    if (s < 60) return `${s}s`;
+    if (s < 60) {
+        return `${s}s`;
+    }
     const m = Math.floor(s / 60);
     const rem = s % 60;
     return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
@@ -238,15 +295,20 @@ function formatElapsed(startedAt: number): string {
 
 onUnmounted(stopPolling);
 const checking = ref(false);
-type CheckResult = { destIndex: number; label: string; ok: boolean; output: string };
+type CheckResult = { destIndex: number;
+    label: string;
+    ok: boolean;
+    output: string };
 const checkResults = ref<CheckResult[]>([]);
-const toast = ref({ msg: "", ok: true });
+const toast = ref({ msg: "",
+    ok: true });
 
 // Panneau snapshots (expose loadSnapshots / loadingSnaps pour la barre d'actions)
 const snapshotsPanel = ref<InstanceType<typeof BackupSnapshots> | null>(null);
 
 function showToast(msg: string, ok = true) {
-    toast.value = { msg, ok };
+    toast.value = { msg,
+        ok };
     setTimeout(() => (toast.value.msg = ""), 3500);
 }
 
@@ -257,16 +319,35 @@ function mergeSettings(loaded: Partial<Settings>): Settings {
     const loadedDests: Destination[] = loaded.destinations ?? [];
     const merged = loadedDests.map((d, idx) => {
         const def = settings.value.destinations[idx] ?? defaultDestination(t);
-        const dest: Destination = { ...def, ...d };
+        const dest: Destination = { ...def,
+            ...d };
         // Migration authMode
         if (dest.sftp && !dest.sftp.authMode) {
             dest.sftp.authMode = dest.sftp.keyPath ? "key" : "password";
         }
         // Assure que les sous-objets de config existent
-        if (!dest.local) dest.local = { path: "/app/data/backups" };
-        if (!dest.sftp)  dest.sftp  = { host: "", port: 22, user: "", path: "", authMode: "key" };
-        if (!dest.s3)    dest.s3    = { endpoint: "", bucket: "", path: "dockge", accessKeyId: "", secretAccessKey: "" };
-        if (!dest.rest)  dest.rest  = { url: "", user: "", password: "" };
+        if (!dest.local) {
+            dest.local = { path: "/app/data/backups" };
+        }
+        if (!dest.sftp) {
+            dest.sftp = { host: "",
+                port: 22,
+                user: "",
+                path: "",
+                authMode: "key" };
+        }
+        if (!dest.s3) {
+            dest.s3 = { endpoint: "",
+                bucket: "",
+                path: "dockge",
+                accessKeyId: "",
+                secretAccessKey: "" };
+        }
+        if (!dest.rest) {
+            dest.rest = { url: "",
+                user: "",
+                password: "" };
+        }
         return dest;
     });
     return {
@@ -277,7 +358,7 @@ function mergeSettings(loaded: Partial<Settings>): Settings {
             // Migration : si l'ancienne config avait includeAppData=true, l'ajouter à selectedVolumes
             selectedVolumes: (() => {
                 const sel: string[] = loaded.volumeBackup?.selectedVolumes ?? [];
-                if ((loaded.volumeBackup as any)?.includeAppData && !sel.includes(APP_DATA)) {
+                if ((loaded.volumeBackup as (VolumeBackupConfig & { includeAppData?: boolean }) | undefined)?.includeAppData && !sel.includes(APP_DATA)) {
                     return [APP_DATA, ...sel];
                 }
                 return sel;
@@ -289,15 +370,21 @@ function mergeSettings(loaded: Partial<Settings>): Settings {
 // ─── Computed ─────────────────────────────────────────────────────
 
 const nextBackupDate = computed(() => {
-    if (!settings.value.enabled || history.value.length === 0) return null;
+    if (!settings.value.enabled || history.value.length === 0) {
+        return null;
+    }
     const last = new Date(history.value[0].timestamp).getTime();
     return new Date(last + settings.value.intervalHours * 3_600_000);
 });
 
 const isBackupStale = computed(() => {
-    if (!settings.value.enabled) return false;
+    if (!settings.value.enabled) {
+        return false;
+    }
     const lastSuccess = history.value.find(h => h.success);
-    if (!lastSuccess) return false;
+    if (!lastSuccess) {
+        return false;
+    }
     return Date.now() - new Date(lastSuccess.timestamp).getTime() > 2 * (settings.value.intervalHours ?? 24) * 3_600_000;
 });
 
@@ -307,7 +394,9 @@ async function loadMountedVols() {
     loadingMountedVols.value = true;
     try {
         const res = await api("GET", "/backup/mounted-volumes");
-        if (res.ok) mountedVols.value = res.data as MountedVolume[];
+        if (res.ok) {
+            mountedVols.value = res.data as MountedVolume[];
+        }
     } finally {
         loadingMountedVols.value = false;
     }
@@ -322,8 +411,13 @@ onMounted(async () => {
     if (settingsRes.ok) {
         settings.value = mergeSettings(settingsRes.data);
     }
-    if (histRes.ok) history.value = histRes.data;
-    if (stacksRes.ok) stacksList.value = stacksRes.data ?? [];
+    void loadRepoStatuses();
+    if (histRes.ok) {
+        history.value = histRes.data;
+    }
+    if (stacksRes.ok) {
+        stacksList.value = stacksRes.data ?? [];
+    }
     await initServerTz(api);
     await loadMountedVols();
     const runningRes = await api("GET", "/backup/running");
@@ -331,7 +425,9 @@ onMounted(async () => {
         runningDests.value = runningRes.data;
         const blockedAt = runningRes.blocked?.timestamp ?? 0;
         lastBlockedSeen.value = blockedAt;
-        if (blockedAt > Date.now() - 60_000) concurrentBackupModal.value = true;
+        if (blockedAt > Date.now() - 60_000) {
+            concurrentBackupModal.value = true;
+        }
     }
     startPolling();
 });
@@ -344,25 +440,41 @@ async function save() {
         const { discordWebhooks: _wh, notificationLang: _lang, ...settingsPayload } = settings.value;
         const res = await api("POST", "/backup/settings", settingsPayload);
         if (res.ok) {
-            showToast(t('watcher.backup.saved'));
+            showToast(t("watcher.backup.saved"));
             // Resync depuis le serveur pour éviter les désynchronisations
             // (notamment le champ "enabled" qui peut repartir à false sinon)
             const reloaded = await api("GET", "/backup/settings");
             if (reloaded.ok) {
                 settings.value = mergeSettings(reloaded.data);
             }
+            void loadRepoStatuses();
         } else {
             showToast(`❌ ${res.message}`, false);
         }
-    } finally { saving.value = false; }
+    } finally {
+        saving.value = false;
+    }
 }
 
-async function initRepo() {
-    initing.value = true;
+type RepoState = { label: string;
+    state: "ready" | "missing" | "error";
+    detail?: string };
+const repoStatuses = ref<RepoState[]>([]);
+const repoStatusLoading = ref(false);
+async function loadRepoStatuses() {
+    repoStatusLoading.value = true;
     try {
-        const res = await api("POST", "/backup/init");
-        showToast(res.ok ? t('watcher.backup.repoInit') : `❌ ${res.message}`, res.ok);
-    } finally { initing.value = false; }
+        const res = await api("GET", "/backup/repository-status");
+        repoStatuses.value = res.ok && Array.isArray(res.data) ? res.data as RepoState[] : [];
+        if (!res.ok) {
+            showToast(t("watcher.backup.repoState.unavailable"), false);
+        }
+    } catch {
+        repoStatuses.value = [];
+        showToast(t("watcher.backup.repoState.unavailable"), false);
+    } finally {
+        repoStatusLoading.value = false;
+    }
 }
 
 async function runBackup() {
@@ -377,15 +489,20 @@ async function runBackup() {
             showToast(`❌ ${res.message}`, false);
             return;
         }
-        showToast(t('watcher.backup.launched'));
+        showToast(t("watcher.backup.launched"));
         // Démarre le polling immédiatement (avec un léger délai pour que le backend enregistre la dest)
         setTimeout(() => startPolling(), 1500);
         // Recharge l'historique après la fin estimée (polling s'arrête tout seul)
         setTimeout(async () => {
             const res = await api("GET", "/backup/history");
-            if (res.ok) history.value = res.data;
+            if (res.ok) {
+                history.value = res.data;
+            }
+            void loadRepoStatuses();
         }, 5000);
-    } finally { running.value = false; }
+    } finally {
+        running.value = false;
+    }
 }
 
 async function checkIntegrity() {
@@ -398,7 +515,9 @@ async function checkIntegrity() {
         } else {
             showToast(`❌ ${res.message}`, false);
         }
-    } finally { checking.value = false; }
+    } finally {
+        checking.value = false;
+    }
 }
 
 </script>
@@ -477,4 +596,32 @@ async function checkIntegrity() {
 
     @media (max-width: $bp-mobile) { bottom: var(--space-4); }
 }
+
+/* Bouton de sauvegarde contrasté, quelle que soit la couleur de succès du thème. */
+.backup-run-now-btn {
+    background-color: #175e3f;
+    border-color: #175e3f;
+    color: #fff !important;
+    font-weight: 650;
+}
+.backup-run-now-btn:hover,
+.backup-run-now-btn:focus-visible {
+    background-color: #10472f;
+    border-color: #10472f;
+    color: #fff !important;
+}
+.backup-run-now-btn:disabled {
+    background-color: #516e5c;
+    border-color: #516e5c;
+    color: #fff !important;
+    opacity: 0.74;
+}
+.backup-action-card {
+    padding: 1rem;
+    border: 1px solid var(--border-color, #7776);
+    border-radius: 0.6rem;
+}
+.backup-action-button { min-height: 2.65rem; }
+.backup-utility-panel > summary { cursor: pointer; }
+
 </style>

@@ -182,11 +182,6 @@
       "count": 14
     }
   },
-  "backend/routers/watcher-router.ts": {
-    "@stylistic/max-statements-per-line": {
-      "count": 2
-    }
-  },
   "backend/self-update/editor-lease.test.ts": {
     "@stylistic/object-property-newline": {
       "count": 8
@@ -410,44 +405,6 @@
       "count": 1
     }
   },
-  "backend/watchers/backup-manager.ts": {
-    "@stylistic/brace-style": {
-      "count": 46
-    },
-    "@stylistic/indent": {
-      "count": 84
-    },
-    "@stylistic/max-statements-per-line": {
-      "count": 17
-    },
-    "@stylistic/no-multi-spaces": {
-      "count": 62
-    },
-    "@stylistic/object-property-newline": {
-      "count": 154
-    },
-    "@stylistic/quotes": {
-      "count": 3
-    },
-    "@typescript-eslint/no-explicit-any": {
-      "count": 4
-    },
-    "@typescript-eslint/no-unused-expressions": {
-      "count": 1
-    },
-    "curly": {
-      "count": 108
-    },
-    "no-async-promise-executor": {
-      "count": 1
-    },
-    "no-useless-assignment": {
-      "count": 1
-    },
-    "preserve-caught-error": {
-      "count": 3
-    }
-  },
   "backend/watchers/backup-restore-test.test.ts": {
     "@stylistic/object-property-newline": {
       "count": 8
@@ -581,32 +538,6 @@
     },
     "vue/html-indent": {
       "count": 150
-    }
-  },
-  "frontend/src/components/BackupTab.vue": {
-    "@stylistic/brace-style": {
-      "count": 14
-    },
-    "@stylistic/max-statements-per-line": {
-      "count": 3
-    },
-    "@stylistic/no-multi-spaces": {
-      "count": 8
-    },
-    "@stylistic/object-property-newline": {
-      "count": 20
-    },
-    "@stylistic/quotes": {
-      "count": 3
-    },
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "curly": {
-      "count": 15
-    },
-    "vue/html-indent": {
-      "count": 9
     }
   },
   "frontend/src/components/Container.vue": {
