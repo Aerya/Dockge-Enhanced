@@ -77,6 +77,7 @@ export interface UpdateHistoryEntry {
     newDigest: string;
     mode: "immediate" | "scheduled" | "manual";
     success: boolean;
+    verification?: "verified" | "unverified";
     error?: string;
 }
 

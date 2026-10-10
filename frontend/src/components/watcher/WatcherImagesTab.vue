@@ -608,7 +608,8 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span v-if="h.success" class="badge bg-success">✓ OK</span>
+                                    <span v-if="h.success && h.verification !== 'unverified'" class="badge bg-success">✓ OK</span>
+                                    <span v-else-if="h.success" class="badge bg-warning text-dark" :title="h.error">! {{ $t("watcher.updateHistory.unverified") }}</span>
                                     <span v-else class="badge bg-danger" :title="h.error">✗ {{ $t("watcher.status.error") }}</span>
                                 </td>
                             </tr>

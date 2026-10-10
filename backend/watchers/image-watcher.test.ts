@@ -28,9 +28,113 @@ import {
     confirmedMissingImmediateTargets,
     imageCheckErrorMessage,
     isRetryableRegistryError,
+    touchImageUpdatedStackMetadata,
+    updateVerificationResult,
 } from "./image-watcher";
 import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
 import { resolveDataDir } from "../data-dir";
+
+test("une mise à jour ImageWatcher actualise uniquement lastUpdated d'une stack native", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-image-meta-"));
+    const stackDir = path.join(root, "native");
+    await fs.mkdir(stackDir, { recursive: true });
+    await fs.writeFile(path.join(stackDir, "compose.yaml"), "services: {}\n");
+    const metaPath = path.join(stackDir, ".dockge-meta.json");
+    const existing = {
+        createdAt: "2026-01-01T00:00:00.000Z",
+        lastStartedAt: "2026-01-02T00:00:00.000Z",
+        note: "kept",
+        displayName: "Friendly",
+    };
+    await fs.writeFile(metaPath, JSON.stringify(existing));
+
+    await touchImageUpdatedStackMetadata(root, "native", {
+        composePath: path.join(stackDir, "compose.yaml"),
+        isExternal: false,
+    }, "2026-10-10T10:00:00.000Z", root);
+
+    assert.deepEqual(JSON.parse(await fs.readFile(metaPath, "utf8")), {
+        ...existing,
+        lastUpdated: "2026-10-10T10:00:00.000Z",
+    });
+    await fs.rm(root, { recursive: true,
+        force: true });
+});
+
+test("une mise à jour ImageWatcher écrit les métadonnées privées d'une stack externe", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-image-external-meta-"));
+    const composePath = path.join(root, "external-source", "compose.yaml");
+    await fs.mkdir(path.dirname(composePath), { recursive: true });
+    await fs.writeFile(composePath, "services: {}\n");
+
+    await touchImageUpdatedStackMetadata(root, "external", { composePath,
+        isExternal: true }, "2026-10-10T11:00:00.000Z");
+
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(root, "external-stack-meta", "external.json"), "utf8")), {
+        lastUpdated: "2026-10-10T11:00:00.000Z",
+    });
+    await fs.rm(root, { recursive: true,
+        force: true });
+});
+
+test("les métadonnées externes refusent un nom de stack qui sortirait de leur répertoire", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-image-external-meta-"));
+    await assert.rejects(
+        touchImageUpdatedStackMetadata(root, "../outside", {
+            composePath: path.join(root, "external-source", "compose.yaml"),
+            isExternal: true,
+        }),
+        /Invalid stack metadata path/,
+    );
+    await fs.rm(root, { recursive: true,
+        force: true });
+});
+
+test("l'historique ne remplace pas un digest local absent par un digest distant", () => {
+    assert.deepEqual(updateVerificationResult({
+        image: "fixture/image:latest",
+        stack: "fixture",
+        localDigest: "",
+        remoteDigest: "sha256:remote",
+        hasUpdate: false,
+        lastChecked: "",
+    }), {
+        verification: "unverified",
+        digest: "",
+        error: "Mise à jour appliquée, mais aucun digest local comparable n'est disponible.",
+    });
+});
+
+test("une erreur de contrôle après recréation reste distincte d'un échec Compose", () => {
+    assert.deepEqual(updateVerificationResult({
+        image: "fixture/image:latest",
+        stack: "fixture",
+        localDigest: "",
+        remoteDigest: "",
+        hasUpdate: false,
+        lastChecked: "",
+        error: "DNS unavailable",
+    }), {
+        verification: "unverified",
+        digest: "",
+        error: "Mise à jour appliquée, mais le digest exécuté n'a pas pu être vérifié : DNS unavailable",
+    });
+});
+
+test("une image encore signalée obsolète après Compose est appliquée mais non vérifiée", () => {
+    assert.deepEqual(updateVerificationResult({
+        image: "fixture/image:latest",
+        stack: "fixture",
+        localDigest: "sha256:old",
+        remoteDigest: "sha256:new",
+        hasUpdate: true,
+        lastChecked: "",
+    }), {
+        verification: "unverified",
+        digest: "",
+        error: "Mise à jour Compose terminée, mais l'image exécutée ne correspond pas encore au digest attendu.",
+    });
+});
 
 test("#475 conserve les réglages ImageWatcher sans DOCKGE_DATA_DIR après recréation logique", async () => {
     const persistentDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-image-settings-"));

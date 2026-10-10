@@ -51,6 +51,7 @@ import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/comp
 import { finishDockerCleanup, tryStartDockerCleanup } from "../docker-operation-state";
 import { reconcileRollbackKeepTags, rollbackTagFromKey as rollbackTag } from "./auto-prune-manager";
 import { resolveDataDir } from "../data-dir";
+import { withStackMetadataWriteLock } from "../stack-metadata-lock";
 
 const execFileAsync = promisify(execFile);
 
@@ -266,6 +267,8 @@ export interface UpdateHistoryEntry {
     newDigest: string;
     mode: "immediate" | "scheduled" | "manual";
     success: boolean;
+    /** Docker Compose succeeded but the running image digest could not be confirmed. */
+    verification?: "verified" | "unverified";
     error?: string;
 }
 
@@ -1083,6 +1086,7 @@ async function findComposePath(stackDir: string): Promise<string> {
 
 export interface WatchedComposeStack {
     composePath: string;
+    isExternal?: boolean;
     project?: string;
     configFiles?: string[];
     workingDir?: string;
@@ -1120,7 +1124,8 @@ export async function collectWatchedComposeStacks(
         }
         const composePath = await findComposePath(path.join(stacksDir, entry.name));
         if (composePath) {
-            watched.set(entry.name, { composePath });
+            watched.set(entry.name, { composePath,
+                isExternal: false });
         }
     }
 
@@ -1131,6 +1136,7 @@ export async function collectWatchedComposeStacks(
         try {
             const verified = await externalStacks.assertRegisteredPath(registration);
             watched.set(verified.name, { composePath: verified.composeFile,
+                isExternal: true,
                 project: verified.project,
                 configFiles: verified.configFiles,
                 workingDir: verified.workingDir,
@@ -1140,6 +1146,78 @@ export async function collectWatchedComposeStacks(
         }
     }
     return watched;
+}
+
+/**
+ * Update only `lastUpdated` after a Compose image update. Native stacks keep
+ * their metadata beside the Compose file; external stacks use Dockge's private
+ * metadata directory. Reading immediately before the atomic replacement keeps
+ * custom names, notes and lifecycle dates intact.
+ */
+export async function touchImageUpdatedStackMetadata(
+    dataDir: string,
+    stack: string,
+    watched: WatchedComposeStack,
+    timestamp = new Date().toISOString(),
+    stacksDir = STACKS_DIR,
+): Promise<void> {
+    // Stack names are persisted as filenames. Encode and reject any value that
+    // would alter that stable filename rather than deriving a path from it.
+    const safeStackName = encodeURIComponent(stack);
+    if (safeStackName !== stack) {
+        throw new Error("Invalid stack metadata path");
+    }
+    const metaPath = watched.isExternal
+        ? path.join(dataDir, "external-stack-meta", `${safeStackName}.json`)
+        : path.join(stacksDir, safeStackName, ".dockge-meta.json");
+    await withStackMetadataWriteLock(metaPath, async () => {
+        let existing: Record<string, unknown> = {};
+        try {
+            const parsed = JSON.parse(await fs.readFile(metaPath, "utf8")) as unknown;
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                existing = parsed as Record<string, unknown>;
+            }
+        } catch {
+            // Old stacks may not have metadata yet. A successful update can create it.
+        }
+        await fs.mkdir(path.dirname(metaPath), { recursive: true,
+            mode: 0o700 });
+        const temporaryPath = `${metaPath}.${process.pid}.${Date.now()}.tmp`;
+        await fs.writeFile(temporaryPath, JSON.stringify({ ...existing,
+            lastUpdated: timestamp }), { encoding: "utf8",
+            mode: 0o600 });
+        await fs.rename(temporaryPath, metaPath);
+    });
+}
+
+export function updateVerificationResult(status: ImageStatus): {
+    verification: "verified" | "unverified";
+    digest: string;
+    error?: string;
+} {
+    if (status.error) {
+        return {
+            verification: "unverified",
+            digest: "",
+            error: `Mise à jour appliquée, mais le digest exécuté n'a pas pu être vérifié : ${status.error}`,
+        };
+    }
+    if (status.hasUpdate) {
+        return {
+            verification: "unverified",
+            digest: "",
+            error: "Mise à jour Compose terminée, mais l'image exécutée ne correspond pas encore au digest attendu.",
+        };
+    }
+    if (!status.localDigest) {
+        return {
+            verification: "unverified",
+            digest: "",
+            error: "Mise à jour appliquée, mais aucun digest local comparable n'est disponible.",
+        };
+    }
+    return { verification: "verified",
+        digest: status.localDigest };
 }
 
 // ─── Classe principale ────────────────────────────────────────────
@@ -1998,6 +2076,10 @@ export class ImageWatcher {
         }
     }
 
+    private async touchUpdatedStackMetadata(stack: string, watched: WatchedComposeStack): Promise<void> {
+        await touchImageUpdatedStackMetadata(this.dataDir, stack, watched);
+    }
+
     /** Tire et redémarre une image via docker compose. Retourne true si succès. */
     private async performAutoUpdate(
         status: ImageStatus,
@@ -2096,6 +2178,8 @@ export class ImageWatcher {
             // Recheck pour mettre à jour le digest dans le store
             const newStatus = await this.checkOneImage(status.image, status.stack, watched);
             imageStatusStore.set(key, newStatus);
+            const verification = updateVerificationResult(newStatus);
+            await this.touchUpdatedStackMetadata(status.stack, watched);
             console.log(
         `[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`,
             );
@@ -2106,9 +2190,11 @@ export class ImageWatcher {
                 stack: status.stack,
                 image: status.image,
                 oldDigest,
-                newDigest: newStatus.localDigest ?? status.remoteDigest,
+                newDigest: verification.digest,
                 mode,
                 success: true,
+                verification: verification.verification,
+                error: verification.error,
             });
 
             return true;

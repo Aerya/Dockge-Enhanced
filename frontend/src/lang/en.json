@@ -973,6 +973,7 @@
     "watcher.updateHistory.digests": "Old → New digest",
     "watcher.updateHistory.mode": "Mode",
     "watcher.updateHistory.status": "Status",
+    "watcher.updateHistory.unverified": "Applied, unverified",
     "watcher.updateHistory.immediate": "Immediate",
     "watcher.updateHistory.scheduled": "Scheduled",
     "watcher.updateHistory.summary": "{count} entries, {failures} failed, last: {last}",

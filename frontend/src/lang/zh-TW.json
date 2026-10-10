@@ -916,6 +916,7 @@
     "watcher.updateHistory.digests": "舊 → 新摘要",
     "watcher.updateHistory.mode": "模式",
     "watcher.updateHistory.status": "狀態",
+    "watcher.updateHistory.unverified": "已套用，未驗證",
     "watcher.updateHistory.immediate": "立即",
     "watcher.updateHistory.scheduled": "已排程",
     "watcher.updateHistory.summary": "共 {count} 條，{failures} 條失敗，最近一次：{last}",
