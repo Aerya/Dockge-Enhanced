@@ -946,5 +946,8 @@
     "watcher.powerwatch.openHub": "Abrir PowerWatch Hub",
     "watcher.powerwatch.testHub": "Probar conexión del Hub",
     "watcher.powerwatch.hubOnline": "PowerWatch Hub en línea",
-    "watcher.powerwatch.hubOffline": "PowerWatch Hub no disponible"
+    "watcher.powerwatch.hubOffline": "PowerWatch Hub no disponible",
+    "watcher.status.sort": "Ordenar estados de imágenes",
+    "watcher.status.sortStack": "Ordenar: orden de stacks",
+    "watcher.status.sortErrors": "Ordenar: errores primero"
 }
