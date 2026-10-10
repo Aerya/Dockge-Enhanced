@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-10 — ImageWatcher / Self-Update coordination** — Read-only registry/DNS scans no longer block self-updates. Docker-mutating image updates, rollbacks and rollback-tag cleanup share an exclusive reservation with Self-Update; conflicting operations are deferred safely. Scheduled updates do not unnecessarily block ImageWatcher, and the Updates panel prioritizes the active operation.
+
 **2026-10-10 — Restic: safe repository reset (Local, SFTP, S3, REST)** — Repository preview and explicit confirmations before creating a fresh, empty repository. Local repositories are archived by renaming; remote destinations switch to a new SFTP directory, S3 prefix, or REST URL. Previous backups are retained, while Recent history is cleared only for the reset destination. Local path, mount, and recursive-backup safeguards remain enforced.
 
 **2026-10-10 — Restic snapshots: All view by default** — The All filter now appears first and is selected at each opening. The Backup settings button is named Save; the retention help clarifies that saving settings does not trigger pruning.

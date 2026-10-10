@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-10 — Coordinación ImageWatcher / Self-Update** — Las consultas de registros/DNS en modo lectura ya no bloquean la actualización de Enhanced. Las actualizaciones de imágenes, reversiones y limpiezas de etiquetas que modifican Docker comparten una reserva exclusiva con Self-Update; las operaciones en conflicto se aplazan. La planificación no bloquea innecesariamente ImageWatcher y el panel prioriza la operación activa.
+
 **2026-10-10 — Actualización automática con Docker Socket Proxy y varias redes** — El sidecar comienza en una red Docker existente y se conecta únicamente a las redes adicionales antes de ejecutar el plan firmado. Corrige el conflicto con la red `none` en el paso 5/8 e incluye pruebas para una o varias redes y errores de conexión. Corrige #485.
 
 **2026-10-09 — Actualizaciones de imágenes agrupadas por stack** — La página de un stack permite aplicar los modos **Desactivado**, **Inmediato** o **Programado** a todas las imágenes elegibles. La vista previa muestra los cambios y se puede **conservar las excepciones individuales** (opción predeterminada) o reemplazarlas. Los servicios con `dockge.imageupdates.check=false` permanecen protegidos, las imágenes compartidas se cuentan una sola vez y las instancias vinculadas usan la misma validación. Las imágenes futuras no heredan esta configuración.

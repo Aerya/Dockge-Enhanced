@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-10-self-update-imagewatcher-coordination",
+        items: [ "releaseNews.item.selfUpdateImageWatcherCoordination" ],
+    },
+    {
         id: "2026-10-10-restic-safe-reset-all-destinations",
         items: [ "releaseNews.item.resticSafeResetAllDestinations" ],
     },

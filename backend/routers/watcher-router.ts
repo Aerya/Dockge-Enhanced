@@ -1035,9 +1035,12 @@ export class WatcherRouter extends Router {
         router.get("/self/status", async (_req: Request, res: Response) => {
             const manager = SelfUpdateManager.getInstance();
             const operation = await manager.refreshOperation();
+            const selfUpdateActive = manager.isUpdateExecutionInProgress();
+            const checkerStatus = SelfUpdateChecker.getInstance().getStatus();
             res.json({
                 ok: true,
-                ...SelfUpdateChecker.getInstance().getStatus(),
+                ...checkerStatus,
+                updateAvailable: selfUpdateActive ? false : checkerStatus.updateAvailable,
                 operation,
                 progress: manager.getProgress(),
                 selfUpdateSettings: manager.getSettings(),
@@ -1050,9 +1053,12 @@ export class WatcherRouter extends Router {
 
             const manager = SelfUpdateManager.getInstance();
             const operation = await manager.refreshOperation();
+            const selfUpdateActive = manager.isUpdateExecutionInProgress();
+            const checkerStatus = checker.getStatus();
             res.json({
                 ok: true,
-                ...checker.getStatus(),
+                ...checkerStatus,
+                updateAvailable: selfUpdateActive ? false : checkerStatus.updateAvailable,
                 operation,
                 progress: manager.getProgress(),
                 selfUpdateSettings: manager.getSettings(),
