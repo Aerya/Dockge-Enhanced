@@ -238,6 +238,16 @@
                         <font-awesome-icon icon="times" />
                     </button>
                 </div>
+                <div class="d-flex justify-content-end mb-3">
+                    <select
+                        v-model="imageSort"
+                        class="form-select form-select-sm image-sort"
+                        :aria-label="$t('watcher.status.sort')"
+                    >
+                        <option value="stack">{{ $t("watcher.status.sortStack") }}</option>
+                        <option value="errors">{{ $t("watcher.status.sortErrors") }}</option>
+                    </select>
+                </div>
                 <div
                     v-if="imagesByStack.length === 0"
                     class="text-center form-text fst-italic py-3"
@@ -647,6 +657,7 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { watcherApi } from "./shared";
 import type { Cred, GlobalMaintenanceWindow, ImageStatus, ImgSettings, RollbackEntry, UpdateHistoryEntry } from "./shared";
+import { groupImageStatuses, type ImageStatusSort } from "./image-status-sort";
 
 const imgSettings = defineModel<ImgSettings>("imgSettings", { required: true });
 const credentials = defineModel<Cred[]>("credentials", { required: true });
@@ -674,6 +685,7 @@ const updatingKey = ref<string | null>(null);
 const saving = ref(false);
 const running = ref(false);
 const imageFilter = ref("");
+const imageSort = ref<ImageStatusSort>("stack");
 const showDigests = ref(false);
 const globalMaintenanceWindow = ref<GlobalMaintenanceWindow | null>(null);
 
@@ -702,19 +714,15 @@ const globalWindowLabel = computed(() => {
 
 const imagesByStack = computed(() => {
     const q = imageFilter.value.toLowerCase();
-    const map = new Map<string, ImageStatus[]>();
+    const filtered: ImageStatus[] = [];
     for (const s of imageStatuses.value) {
         // Filtre sur le nom d'image ou le nom de stack
         if (q && !s.image.toLowerCase().includes(q) && !s.stack.toLowerCase().includes(q)) {
             continue;
         }
-        if (!map.has(s.stack)) {
-            map.set(s.stack, []);
-        }
-        map.get(s.stack)!.push(s);
+        filtered.push(s);
     }
-    return [ ...map.entries() ].map(([ stack, items ]) => ({ stack,
-        items }));
+    return groupImageStatuses(filtered, imageSort.value);
 });
 
 // ─── Recherche DuckDuckGo pour une image ──────────────────────────
@@ -1301,5 +1309,10 @@ async function removeCred(registry: string) {
 // Ligne d'identifiant de registry
 .cred-row {
     background: var(--bg-raised);
+}
+
+.image-sort {
+    width: auto;
+    min-width: 190px;
 }
 </style>
