@@ -16,6 +16,7 @@ import { atomicWriteFile, atomicWriteJson } from "./state-file";
 import { getSelfUpdateBlocker } from "./operation-guard";
 import { BLOCKER_MESSAGES, type SelfUpdateBlocker } from "./operation-guard-policy";
 import { classifySelfUpdateFailure } from "./failure-detail";
+import { planSidecarNetworks, connectSidecarAdditionalNetworks } from "./sidecar-network";
 import { log } from "../log";
 import { resolveCurrentContainer } from "../current-container";
 import { resolveDataDir } from "../data-dir";
@@ -477,6 +478,7 @@ export class SelfUpdateManager {
 
             const stateSource = stateMount.Type === "volume" ? (stateMount.Name ?? stateMount.Source) : stateMount.Source;
             const connection = selfUpdateDockerConnection(inspected);
+            const tcpNetworkPlan = connection.kind === "tcp" ? planSidecarNetworks(connection.networks) : null;
             const socketGroup = connection.kind === "unix" ? (await fs.stat(connection.socket!)).gid : undefined;
             const sidecarImage = process.env.DOCKGE_SELF_UPDATE_SIDECAR_IMAGE?.trim()
             || `ghcr.io/${plan.allowedRepository}-updater:latest`;
@@ -520,7 +522,12 @@ export class SelfUpdateManager {
             if (connection.kind === "unix") {
                 args.splice(args.length - 1, 0, "--group-add", String(socketGroup), "-v", `${connection.socket}:/var/run/docker.sock`);
             } else {
-                args.splice(args.length - 1, 0, "--network", "none", "-e", `DOCKER_HOST=${connection.host}`, "-e", `SELF_UPDATE_START_FILE=/state/self-update/${plan.id}.start`);
+                // Start in a real network: Docker forbids attaching more networks to "none".
+                // The updater still waits for the start file before executing its signed plan.
+                if (!tcpNetworkPlan) {
+                    throw new Error("Docker Socket Proxy sidecar network plan is missing");
+                }
+                args.splice(args.length - 1, 0, "--network", tcpNetworkPlan.initialNetwork, "-e", `DOCKER_HOST=${connection.host}`, "-e", `SELF_UPDATE_START_FILE=/state/self-update/${plan.id}.start`);
                 const tlsVerify = process.env.DOCKER_TLS_VERIFY?.trim();
                 const certPath = process.env.DOCKER_CERT_PATH?.trim();
                 if (tlsVerify) {
@@ -546,13 +553,16 @@ export class SelfUpdateManager {
             log.info("self-update", `Étape 5/8 — lancement sidecar — id=${plan.id} image=${sidecarImage}`);
             try {
                 await docker(args, 10 * 60_000);
-                if (connection.kind === "tcp") {
+                if (tcpNetworkPlan) {
                     const updater = `dockge-enhanced-updater-${plan.id}`;
                     try {
-                        for (const network of connection.networks) {
+                        // No duplicate connect for the network already attached by docker run.
+                        // The plan is released only after every extra network is connected.
+                        await connectSidecarAdditionalNetworks(tcpNetworkPlan, async (network) => {
                             await docker([ "network", "connect", network, updater ], 30_000);
-                        }
-                        await atomicWriteFile(path.join(STATE_DIR, `${plan.id}.start`), "ready\n", 0o600);
+                        }, async () => {
+                            await atomicWriteFile(path.join(STATE_DIR, `${plan.id}.start`), "ready\n", 0o600);
+                        });
                     } catch (error) {
                         await docker([ "rm", "-f", updater ], 30_000).catch(() => {});
                         return this.failCurrentOperation(`Docker Socket Proxy sidecar network setup failed: ${error instanceof Error ? error.message : String(error)}. Required proxy permissions include NETWORK_CONNECT and CONTAINERS.`);

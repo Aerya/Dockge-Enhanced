@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-10 — Docker Socket Proxy self-update with multiple networks** — The updater sidecar now starts attached to an existing Docker network and connects only the remaining networks before releasing the signed update plan. Fixes the Docker `none` network conflict at step 5/8; one-network, multi-network, and failed-connection scenarios are covered by tests. Fixes #485.
+
 **2026-10-09 — Bulk automatic image policies for a stack** — A stack page now supports applying **Off**, **Immediate**, or **Scheduled** policies to all eligible images at once. A preview lists changes; users choose to **preserve individual exceptions** (the default) or replace them. Services excluded through `dockge.imageupdates.check=false` remain protected, shared images are deduplicated, and linked instances use the same server-side validation. Future images are not automatically affected.
 
 **2026-10-09 — Faster, reliable ImageWatcher Immediate updates** — Immediate images are checked on activation and every 5 minutes, against the images actually running in containers. Duplicate registry requests are shared, HTTP 429 throttling is respected, and each targeted cycle is summarized in logs. Pauses, maintenance windows, and rollback safeguards remain in place.
