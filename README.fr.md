@@ -45,7 +45,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 | **Automatisation & audit** | API REST limitée par permissions, webhooks par stack, exemples Home Assistant, opérations planifiées et historique centralisé avec origine, statut et durée |
 | **Ressources Docker** | Nettoyage unifié protégé des images, volumes, réseaux et caches de build, rattrapage exact, aperçu, exclusions, historique et protections destructives |
 | **Sécurité** | Scan de vulnérabilités Trivy, exceptions CVE, workflows de mise à jour protégés, 2FA, trusted proxy et Cloudflare Turnstile |
-| **Supervision** | Statistiques système, stacks et conteneurs, historique CPU/RAM facultatif toutes les 5 minutes, barre d'état configurable, cartes de santé, crash loops, auto-heal, logs responsives/plein écran, Kula, Dozzle et PowerWatch et PowerWatch Hub |
+| **Supervision** | Statistiques système, stacks et conteneurs, historique CPU/RAM facultatif toutes les 5 minutes, barre d'état configurable, cartes de santé, crash loops, auto-heal, logs responsives/plein écran, Kula, Dozzle, PowerWatch et PowerWatch Hub |
 | **Intégrations** | PowerWatch et PowerWatch Hub, PlugNPiN et assistant de labels par service pour Nginx Proxy Manager, Pi-hole et AdGuard Home |
 | **Notifications & accès** | Notifications Discord et Apprise localisées en EN/FR/ES/zh-CN, prise en compte du multi-instance, 2FA, trusted proxy, Turnstile et clients mobiles tiers |
 
@@ -63,6 +63,17 @@ Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli D
 Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
 ### 🆕 Octobre 2026
+
+**Maintenance et corrections d’octobre**
+
+- **Diagnostics et métadonnées ImageWatcher (#493–#495)** — La page Images permet de trier les erreurs en premier. Les cibles temporairement inaccessibles sont conservées, les timeouts de manifestes bénéficient de reprises bornées, les erreurs de registre/authentification/digest sont plus explicites et la date d'une stack évolue uniquement après une mise à jour réellement confirmée.
+
+- **Commandes de mises à jour des stacks et images (#489–#490)** — La politique de mise à jour automatique d'une stack s'ouvre depuis sa barre d'actions dans une fenêtre dédiée, sans changer les réglages individuels des conteneurs. Les actions de mise à jour, ignorance, pause et rollback des images utilisent des boutons compacts avec libellés accessibles.
+
+- **Initialisation et ergonomie Restic (#491)** — Les actions d'enregistrement des paramètres, de sauvegarde immédiate et de maintenance sont séparées ; l'état des dépôts et les explications de rétention sont plus clairs et l'initialisation est mieux protégée.
+
+- **Messages backend en anglais (#477)** — Les erreurs de mot de passe Restic, bilans d'audit des purges et messages d'auto-mise à jour ne restent plus en français pour les installations anglophones.
+
 
 **Coordination plus sûre entre ImageWatcher et Self-Update**
 

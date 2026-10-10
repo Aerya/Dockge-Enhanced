@@ -1,5 +1,14 @@
 # Changelog Dockge Enhanced
 
+**2026-10-10 — Diagnostics et métadonnées ImageWatcher (#493–#495)** — La page Images permet de trier les erreurs en premier. Les cibles temporairement inaccessibles sont conservées, les timeouts de manifestes bénéficient de reprises bornées, les erreurs de registre/authentification/digest sont plus explicites et la date d'une stack évolue uniquement après une mise à jour réellement confirmée.
+
+**2026-10-10 — Commandes de mises à jour des stacks et images (#489–#490)** — La politique de mise à jour automatique d'une stack s'ouvre depuis sa barre d'actions dans une fenêtre dédiée, sans changer les réglages individuels des conteneurs. Les actions de mise à jour, ignorance, pause et rollback des images utilisent des boutons compacts avec libellés accessibles.
+
+**2026-10-09 — Initialisation et ergonomie Restic (#491)** — Les actions d'enregistrement des paramètres, de sauvegarde immédiate et de maintenance sont séparées ; l'état des dépôts et les explications de rétention sont plus clairs et l'initialisation est mieux protégée.
+
+**2026-10-08 — Messages backend en anglais (#477)** — Les erreurs de mot de passe Restic, bilans d'audit des purges et messages d'auto-mise à jour ne restent plus en français pour les installations anglophones.
+
+
 **2026-10-10 — DNS de secours configurables** — ImageWatcher peut utiliser, uniquement après un échec DNS système, les serveurs Quad9/Cloudflare ou des DNS IPv4/IPv6 personnalisés pour ses requêtes HTTP aux registries et aux services de jetons. La WebUI propose les tests A/AAAA, les délais et les diagnostics traduits. Désactivé par défaut ; aucun changement DNS de l’hôte ou de Docker Engine, et aucune action sur les pulls/self-updates gérés par Engine.
 
 **2026-10-10 — Coordination ImageWatcher / Self-Update** — Les scans de registres/DNS en lecture seule ne bloquent plus la mise à jour d’Enhanced. Les mises à jour d’images, rollbacks et nettoyages de tags partageant une mutation Docker utilisent une réservation exclusive avec Self-Update ; les opérations concurrentes sont reportées. L’état planifié ne bloque pas inutilement ImageWatcher et le panneau donne la priorité à l’opération active.

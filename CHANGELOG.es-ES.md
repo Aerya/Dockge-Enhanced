@@ -1,5 +1,14 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-10 — Diagnósticos y metadatos de ImageWatcher (#493–#495)** — La vista Imágenes permite ordenar primero los errores. Se conservan los objetivos temporalmente inaccesibles, los tiempos de espera de manifiestos tienen reintentos limitados, los errores de registro/autenticación/digest son más claros y la fecha del stack solo cambia tras una actualización aplicada y confirmada.
+
+**2026-10-10 — Controles de actualización de stacks e imágenes (#489–#490)** — La política automática de todo un stack se abre desde la barra de acciones en un diálogo, sin cambiar los ajustes individuales de contenedores. Los botones de actualizar, ignorar, pausar y revertir imágenes son más compactos y mantienen etiquetas accesibles.
+
+**2026-10-09 — Inicialización y usabilidad de Restic (#491)** — Guardar ajustes, ejecutar copias y mantener repositorios son acciones separadas; el estado del repositorio y la ayuda de retención son más claros y se refuerza la inicialización.
+
+**2026-10-08 — Mensajes backend en inglés (#477)** — Los errores de contraseña de Restic, los informes de limpieza y los mensajes de autoactualización dejan de mostrarse en francés en instalaciones inglesas.
+
+
 **2026-10-10 — DNS de respaldo configurables** — ImageWatcher puede usar, solo tras un fallo del DNS del sistema, Quad9/Cloudflare o servidores IPv4/IPv6 personalizados para solicitudes HTTP a registries y servicios de tokens. La WebUI ofrece pruebas A/AAAA, tiempos y diagnósticos traducidos. Desactivado por defecto; no modifica el DNS del host ni de Docker Engine, ni afecta a las descargas y autoactualizaciones gestionadas por Engine.
 
 **2026-10-10 — Coordinación ImageWatcher / Self-Update** — Las consultas de registros/DNS en modo lectura ya no bloquean la actualización de Enhanced. Las actualizaciones de imágenes, reversiones y limpiezas de etiquetas que modifican Docker comparten una reserva exclusiva con Self-Update; las operaciones en conflicto se aplazan. La planificación no bloquea innecesariamente ImageWatcher y el panel prioriza la operación activa.
