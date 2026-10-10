@@ -116,7 +116,7 @@
     "LongSyntaxNotSupported": "لمبا نحو یہاں تعاون یافتہ نہیں ہے۔ براہ کرم YAML ایڈیٹر استعمال کریں۔",
     "disableAuth": "تصدیق کو غیر فعال",
     "scenarios": "آپ کا ارادہ ہے تیسرے فریق کی توثیق کو لاگو کرنے کا",
-    "watcher.registryDns.title": "رجسٹریز کے لیے متبادل DNS (جدید)",
+    "watcher.registryDns.title": "متبادل DNS",
     "watcher.registryDns.description": "سسٹم DNS پہلے استعمال ہوتا ہے۔ صرف DNS ناکامی پر رجسٹری HTTP درخواستوں کے لیے متبادل DNS استعمال ہوگا، میزبان یا Docker Engine بدلے بغیر۔",
     "watcher.registryDns.enable": "متبادل DNS فعال کریں (پہلے سے بند)",
     "watcher.registryDns.server": "DNS سرور",
@@ -134,5 +134,13 @@
     "watcher.registryDns.noRecord": "کوئی DNS ریکارڈ واپس نہیں آیا۔",
     "watcher.registryDns.serverError": "DNS سرور کی خرابی۔",
     "watcher.registryDns.otherError": "DNS درخواست ناکام ہوئی۔",
-    "watcher.registryDns.ipv6Hint": "کنٹینر سے IPv6 دستیاب نہ ہو؛ کنٹینر اور میزبان نیٹ ورک چیک کریں۔"
+    "watcher.registryDns.ipv6Hint": "کنٹینر سے IPv6 دستیاب نہ ہو؛ کنٹینر اور میزبان نیٹ ورک چیک کریں۔",
+    "watcher.registryDns.recordType": "قسم",
+    "watcher.registryDns.status": "حالت",
+    "watcher.registryDns.duration": "جواب کا وقت",
+    "watcher.registryDns.diagnostic": "نتیجہ / تشخیص",
+    "watcher.registryDns.resolved": "حل شدہ",
+    "watcher.registryDns.noAddress": "کوئی پتہ نہیں",
+    "watcher.registryDns.errorStatus": "خرابی",
+    "watcher.registryDns.hostNotFound": "میزبان کا نام نہیں ملا۔"
 }

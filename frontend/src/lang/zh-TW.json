@@ -1897,7 +1897,7 @@
     "releaseNews.item.selfNonePruneRuntime": "舊的 ghcr.io/aerya/dockge-enhanced:<none> 映像現在直接從 Docker 映像清單中識別，不再依賴重新標記後可能缺失的 RepoDigests 中繼資料。超過 48 小時的舊映像可以可靠清理，同時持續保護目前使用中的映像與復原映像；清理摘要也不再把正常使用中的映像計入受保護候選。",
     "releaseNews.item.monitoringHistory": "Monitoring 可選擇每 5 分鐘記錄一次輕量級主機 CPU 與 RAM 樣本。24 小時、7 天、1 個月或自訂範圍的響應式圖表會在伺服器端降採樣，記住所儲存的顯示期間，並以空白顯示停機時間。",
     "releaseNews.item.stackDailyOpsPolish": "Stack 日常操作更加順暢：可在主機上自動準備缺少的目錄 bind mount，「立即」模式會立刻執行針對性映像檢查，重啟成功後會刷新真實狀態，CPU/RAM 歷史圖也採用更緊湊的 PowerWatch 風格。",
-    "watcher.registryDns.title": "映像檔倉庫備援 DNS（進階）",
+    "watcher.registryDns.title": "備援 DNS",
     "watcher.registryDns.description": "優先使用系統 DNS。僅在 DNS 解析失敗時對倉庫 HTTP 要求啟用備援 DNS；不變更主機或 Docker Engine 設定。",
     "watcher.registryDns.enable": "啟用備援 DNS（預設關閉）",
     "watcher.registryDns.server": "DNS 伺服器",
@@ -1915,5 +1915,13 @@
     "watcher.registryDns.noRecord": "未傳回 DNS 紀錄。",
     "watcher.registryDns.serverError": "DNS 伺服器發生錯誤。",
     "watcher.registryDns.otherError": "DNS 查詢失敗。",
-    "watcher.registryDns.ipv6Hint": "容器可能沒有 IPv6 連線；請檢查容器及主機網路。"
+    "watcher.registryDns.ipv6Hint": "容器可能沒有 IPv6 連線；請檢查容器及主機網路。",
+    "watcher.registryDns.recordType": "類型",
+    "watcher.registryDns.status": "狀態",
+    "watcher.registryDns.duration": "回應時間",
+    "watcher.registryDns.diagnostic": "結果 / 診斷",
+    "watcher.registryDns.resolved": "解析成功",
+    "watcher.registryDns.noAddress": "無位址",
+    "watcher.registryDns.errorStatus": "錯誤",
+    "watcher.registryDns.hostNotFound": "找不到主機名稱。"
 }

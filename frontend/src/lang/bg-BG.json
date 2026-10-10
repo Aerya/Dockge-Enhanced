@@ -132,7 +132,7 @@
     "NoNetworksAvailable": "Няма налични мрежи. Първо трябва да добавите вътрешни мрежи или да активирате външни мрежи в дясната страна.",
     "disableAuth": "изключите удостоверяването",
     "scenarios": "когато има настроен алтернативен метод за удостоверяване",
-    "watcher.registryDns.title": "Резервен DNS за регистрите (разширено)",
+    "watcher.registryDns.title": "Резервен DNS",
     "watcher.registryDns.description": "Първо се използва системният DNS. Резервният се включва само при DNS грешки за HTTP заявки към регистрите, без промяна на хоста и Docker Engine.",
     "watcher.registryDns.enable": "Включване на резервен DNS (изключен по подразбиране)",
     "watcher.registryDns.server": "DNS сървър",
@@ -150,5 +150,13 @@
     "watcher.registryDns.noRecord": "Няма върнат DNS запис.",
     "watcher.registryDns.serverError": "Грешка на DNS сървъра.",
     "watcher.registryDns.otherError": "DNS заявката се провали.",
-    "watcher.registryDns.ipv6Hint": "IPv6 връзката в контейнера може да липсва; проверете мрежата на контейнера и хоста."
+    "watcher.registryDns.ipv6Hint": "IPv6 връзката в контейнера може да липсва; проверете мрежата на контейнера и хоста.",
+    "watcher.registryDns.recordType": "Тип",
+    "watcher.registryDns.status": "Състояние",
+    "watcher.registryDns.duration": "Време за отговор",
+    "watcher.registryDns.diagnostic": "Резултат / диагностика",
+    "watcher.registryDns.resolved": "Разрешен",
+    "watcher.registryDns.noAddress": "Няма адрес",
+    "watcher.registryDns.errorStatus": "Грешка",
+    "watcher.registryDns.hostNotFound": "Името на хоста не е намерено."
 }

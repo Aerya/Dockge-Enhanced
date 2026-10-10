@@ -952,7 +952,7 @@
     "watcher.status.sortStack": "Ordenar: orden de stacks",
     "watcher.status.sortErrors": "Ordenar: errores primero",
     "watcher.updateHistory.unverified": "Aplicada, sin verificar",
-    "watcher.registryDns.title": "DNS de respaldo de registros (avanzado)",
+    "watcher.registryDns.title": "DNS de respaldo",
     "watcher.registryDns.description": "Se usa primero el DNS del sistema. Solo los fallos DNS activan el respaldo para las solicitudes HTTP a registros, sin cambiar el host ni Docker Engine.",
     "watcher.registryDns.enable": "Activar DNS de respaldo (desactivado por defecto)",
     "watcher.registryDns.server": "Servidor DNS",
@@ -970,5 +970,13 @@
     "watcher.registryDns.noRecord": "No se devolvió ningún registro DNS.",
     "watcher.registryDns.serverError": "El servidor DNS ha fallado.",
     "watcher.registryDns.otherError": "Falló la consulta DNS.",
-    "watcher.registryDns.ipv6Hint": "Puede que el contenedor no tenga conectividad IPv6; revisa su red y la del host."
+    "watcher.registryDns.ipv6Hint": "Puede que el contenedor no tenga conectividad IPv6; revisa su red y la del host.",
+    "watcher.registryDns.recordType": "Tipo",
+    "watcher.registryDns.status": "Estado",
+    "watcher.registryDns.duration": "Tiempo de respuesta",
+    "watcher.registryDns.diagnostic": "Resultado / diagnóstico",
+    "watcher.registryDns.resolved": "Resuelto",
+    "watcher.registryDns.noAddress": "Sin dirección",
+    "watcher.registryDns.errorStatus": "Error",
+    "watcher.registryDns.hostNotFound": "Nombre de dominio no encontrado."
 }

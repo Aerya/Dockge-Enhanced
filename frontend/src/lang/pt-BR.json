@@ -132,7 +132,7 @@
     "NoNetworksAvailable": "Nenhuma rede disponível. Você precisa adicionar redes internas ou habilitar redes externas no lado direito primeiro.",
     "disableAuth": "desativar a autenticação",
     "scenarios": "onde você pretende implementar autenticação de terceiros",
-    "watcher.registryDns.title": "DNS de reserva dos registries (avançado)",
+    "watcher.registryDns.title": "DNS de reserva",
     "watcher.registryDns.description": "O DNS do sistema tem prioridade. Só falhas DNS acionam a reserva nas requisições HTTP aos registries, sem alterar host ou Docker Engine.",
     "watcher.registryDns.enable": "Ativar DNS de reserva (desativado por padrão)",
     "watcher.registryDns.server": "Servidor DNS",
@@ -150,5 +150,13 @@
     "watcher.registryDns.noRecord": "Nenhum registro DNS retornado.",
     "watcher.registryDns.serverError": "Falha do servidor DNS.",
     "watcher.registryDns.otherError": "Falha na consulta DNS.",
-    "watcher.registryDns.ipv6Hint": "A conexão IPv6 do contêiner pode estar indisponível; verifique a rede do contêiner e do host."
+    "watcher.registryDns.ipv6Hint": "A conexão IPv6 do contêiner pode estar indisponível; verifique a rede do contêiner e do host.",
+    "watcher.registryDns.recordType": "Tipo",
+    "watcher.registryDns.status": "Status",
+    "watcher.registryDns.duration": "Tempo de resposta",
+    "watcher.registryDns.diagnostic": "Resultado / diagnóstico",
+    "watcher.registryDns.resolved": "Resolvido",
+    "watcher.registryDns.noAddress": "Sem endereço",
+    "watcher.registryDns.errorStatus": "Erro",
+    "watcher.registryDns.hostNotFound": "Nome do host não encontrado."
 }

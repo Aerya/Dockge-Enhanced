@@ -116,7 +116,7 @@
     "LongSyntaxNotSupported": "Lange syntax wordt hier niet ondersteund. Gebruik de YAML editor.",
     "disableAuth": "aanmelden",
     "scenarios": " third-party autorisatie wilt gebruiken voor Dockge",
-    "watcher.registryDns.title": "DNS-fallback voor registries (geavanceerd)",
+    "watcher.registryDns.title": "Reserve-DNS",
     "watcher.registryDns.description": "Systeem-DNS heeft voorrang. Alleen bij DNS-fouten wordt voor HTTP-verzoeken naar registries een fallback gebruikt; host en Docker Engine blijven ongewijzigd.",
     "watcher.registryDns.enable": "DNS-fallback inschakelen (standaard uit)",
     "watcher.registryDns.server": "DNS-server",
@@ -134,5 +134,13 @@
     "watcher.registryDns.noRecord": "Geen DNS-record ontvangen.",
     "watcher.registryDns.serverError": "DNS-serverfout.",
     "watcher.registryDns.otherError": "DNS-query mislukt.",
-    "watcher.registryDns.ipv6Hint": "IPv6 in de container is mogelijk niet beschikbaar; controleer container- en hostnetwerk."
+    "watcher.registryDns.ipv6Hint": "IPv6 in de container is mogelijk niet beschikbaar; controleer container- en hostnetwerk.",
+    "watcher.registryDns.recordType": "Type",
+    "watcher.registryDns.status": "Status",
+    "watcher.registryDns.duration": "Responstijd",
+    "watcher.registryDns.diagnostic": "Resultaat / diagnose",
+    "watcher.registryDns.resolved": "Opgelost",
+    "watcher.registryDns.noAddress": "Geen adres",
+    "watcher.registryDns.errorStatus": "Fout",
+    "watcher.registryDns.hostNotFound": "Hostnaam niet gevonden."
 }

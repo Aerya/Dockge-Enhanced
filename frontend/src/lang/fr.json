@@ -2030,7 +2030,7 @@
     "releaseNews.item.selfNonePruneRuntime": "Les anciennes images ghcr.io/aerya/dockge-enhanced:<none> sont désormais identifiées depuis l’inventaire Docker au lieu de dépendre des métadonnées RepoDigests qui peuvent disparaître après un retag. Les images de plus de 48 h peuvent ainsi être purgées de façon fiable tout en protégeant l’image active et les images de récupération ; le résumé ne compte plus les images ordinaires utilisées comme candidates protégées.",
     "releaseNews.item.monitoringHistory": "Monitoring peut enregistrer en option un échantillon léger du CPU et de la RAM hôte toutes les 5 minutes. Le graphique responsive sur 24 h, 7 jours, 1 mois ou une plage personnalisée est agrégé côté serveur, mémorise la période d’affichage enregistrée et laisse les arrêts visibles sous forme de trous.",
     "releaseNews.item.stackDailyOpsPolish": "Les opérations de stack sont plus fluides : les bind mounts de dossiers manquants peuvent être préparés sur l’hôte, le mode Immédiat lance aussitôt un contrôle ciblé, les redémarrages réussis rechargent leur état réel et l’historique CPU/RAM adopte un graphique plus compact inspiré de PowerWatch.",
-    "watcher.registryDns.title": "DNS de secours des registries (avancé)",
+    "watcher.registryDns.title": "DNS de secours",
     "watcher.registryDns.description": "Le DNS système reste prioritaire. Seuls ses échecs déclenchent le repli pour les requêtes HTTP aux registries, sans modifier l’hôte ni Docker Engine.",
     "watcher.registryDns.enable": "Activer le fallback DNS (désactivé par défaut)",
     "watcher.registryDns.server": "Serveur DNS",
@@ -2048,5 +2048,13 @@
     "watcher.registryDns.noRecord": "Aucun enregistrement DNS renvoyé.",
     "watcher.registryDns.serverError": "Le serveur DNS a échoué.",
     "watcher.registryDns.otherError": "Échec de la requête DNS.",
-    "watcher.registryDns.ipv6Hint": "La connectivité IPv6 du conteneur peut être absente ; vérifier son réseau et celui de l’hôte."
+    "watcher.registryDns.ipv6Hint": "La connectivité IPv6 du conteneur peut être absente ; vérifier son réseau et celui de l’hôte.",
+    "watcher.registryDns.recordType": "Type",
+    "watcher.registryDns.status": "État",
+    "watcher.registryDns.duration": "Délai",
+    "watcher.registryDns.diagnostic": "Résultat / diagnostic",
+    "watcher.registryDns.resolved": "Résolu",
+    "watcher.registryDns.noAddress": "Aucune adresse",
+    "watcher.registryDns.errorStatus": "Erreur",
+    "watcher.registryDns.hostNotFound": "Nom de domaine introuvable."
 }

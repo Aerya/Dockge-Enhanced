@@ -116,7 +116,7 @@
     "LongSyntaxNotSupported": "긴 문법은 여기서 지원되지 않습니다. YAML 에디터를 사용하세요.",
     "disableAuth": "인증을 비활성화",
     "scenarios": "서드 파티 인증을 사용하려는 경우",
-    "watcher.registryDns.title": "레지스트리 대체 DNS(고급)",
+    "watcher.registryDns.title": "대체 DNS",
     "watcher.registryDns.description": "시스템 DNS를 우선 사용합니다. DNS 오류 시에만 레지스트리 HTTP 요청에 대체 DNS를 사용하며 호스트와 Docker Engine 설정은 변경하지 않습니다.",
     "watcher.registryDns.enable": "대체 DNS 활성화(기본 비활성화)",
     "watcher.registryDns.server": "DNS 서버",
@@ -134,5 +134,13 @@
     "watcher.registryDns.noRecord": "DNS 레코드가 반환되지 않았습니다.",
     "watcher.registryDns.serverError": "DNS 서버 오류입니다.",
     "watcher.registryDns.otherError": "DNS 요청에 실패했습니다.",
-    "watcher.registryDns.ipv6Hint": "컨테이너의 IPv6 연결을 사용할 수 없을 수 있습니다. 컨테이너와 호스트 네트워크를 확인하세요."
+    "watcher.registryDns.ipv6Hint": "컨테이너의 IPv6 연결을 사용할 수 없을 수 있습니다. 컨테이너와 호스트 네트워크를 확인하세요.",
+    "watcher.registryDns.recordType": "유형",
+    "watcher.registryDns.status": "상태",
+    "watcher.registryDns.duration": "응답 시간",
+    "watcher.registryDns.diagnostic": "결과 / 진단",
+    "watcher.registryDns.resolved": "확인됨",
+    "watcher.registryDns.noAddress": "주소 없음",
+    "watcher.registryDns.errorStatus": "오류",
+    "watcher.registryDns.hostNotFound": "호스트 이름을 찾을 수 없습니다."
 }

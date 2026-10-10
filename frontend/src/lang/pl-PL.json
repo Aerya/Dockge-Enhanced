@@ -132,7 +132,7 @@
     "CurrentHostname": "(Odznacze: Podążaj za aktualnym hostem)",
     "disableAuth": "wyłączyć uwierzytelnianie",
     "scenarios": "w których zamierzasz zaimplementować zewnętrzne mechanizmy uwierzytelniania",
-    "watcher.registryDns.title": "Zapasowy DNS rejestrów (zaawansowane)",
+    "watcher.registryDns.title": "Zapasowy DNS",
     "watcher.registryDns.description": "Najpierw używany jest systemowy DNS. Tylko błędy DNS uruchamiają zapasowy serwer dla żądań HTTP rejestrów, bez zmian hosta i Docker Engine.",
     "watcher.registryDns.enable": "Włącz zapasowy DNS (domyślnie wyłączony)",
     "watcher.registryDns.server": "Serwer DNS",
@@ -150,5 +150,13 @@
     "watcher.registryDns.noRecord": "Nie zwrócono rekordu DNS.",
     "watcher.registryDns.serverError": "Błąd serwera DNS.",
     "watcher.registryDns.otherError": "Błąd zapytania DNS.",
-    "watcher.registryDns.ipv6Hint": "IPv6 kontenera może być niedostępne; sprawdź sieć kontenera i hosta."
+    "watcher.registryDns.ipv6Hint": "IPv6 kontenera może być niedostępne; sprawdź sieć kontenera i hosta.",
+    "watcher.registryDns.recordType": "Typ",
+    "watcher.registryDns.status": "Stan",
+    "watcher.registryDns.duration": "Czas odpowiedzi",
+    "watcher.registryDns.diagnostic": "Wynik / diagnostyka",
+    "watcher.registryDns.resolved": "Rozwiązano",
+    "watcher.registryDns.noAddress": "Brak adresu",
+    "watcher.registryDns.errorStatus": "Błąd",
+    "watcher.registryDns.hostNotFound": "Nie znaleziono nazwy hosta."
 }

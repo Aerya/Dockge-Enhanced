@@ -116,7 +116,7 @@
     "LongSyntaxNotSupported": "La sintaxi llarga no està suportada aquí. Si us plau, fes servir l'editor YAML.",
     "disableAuth": "desactivar l'autenticació",
     "scenarios": "on voleu implementar l'autenticació de tercers",
-    "watcher.registryDns.title": "DNS alternatiu dels registres (avançat)",
+    "watcher.registryDns.title": "DNS de reserva",
     "watcher.registryDns.description": "El DNS del sistema té prioritat. Només els errors DNS activen l’alternatiu per a peticions HTTP als registres, sense canviar l’amfitrió ni Docker Engine.",
     "watcher.registryDns.enable": "Activa el DNS alternatiu (desactivat per defecte)",
     "watcher.registryDns.server": "Servidor DNS",
@@ -134,5 +134,13 @@
     "watcher.registryDns.noRecord": "No s’ha retornat cap registre DNS.",
     "watcher.registryDns.serverError": "Error del servidor DNS.",
     "watcher.registryDns.otherError": "Error de consulta DNS.",
-    "watcher.registryDns.ipv6Hint": "És possible que el contenidor no tingui connexió IPv6; revisa la xarxa del contenidor i de l’amfitrió."
+    "watcher.registryDns.ipv6Hint": "És possible que el contenidor no tingui connexió IPv6; revisa la xarxa del contenidor i de l’amfitrió.",
+    "watcher.registryDns.recordType": "Tipus",
+    "watcher.registryDns.status": "Estat",
+    "watcher.registryDns.duration": "Temps de resposta",
+    "watcher.registryDns.diagnostic": "Resultat / diagnòstic",
+    "watcher.registryDns.resolved": "Resolt",
+    "watcher.registryDns.noAddress": "Sense adreça",
+    "watcher.registryDns.errorStatus": "Error",
+    "watcher.registryDns.hostNotFound": "No s’ha trobat el nom del servidor."
 }

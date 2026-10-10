@@ -122,7 +122,7 @@
     "Restarted": "Aplikasi memuat kembali",
     "disableAuth": "mematikan otentikasi",
     "scenarios": "di mana Anda bermaksud untuk mengimplementasikan otentikasi pihak ketiga",
-    "watcher.registryDns.title": "DNS cadangan registry (lanjutan)",
+    "watcher.registryDns.title": "DNS cadangan",
     "watcher.registryDns.description": "DNS sistem tetap diprioritaskan. DNS cadangan hanya dipakai saat DNS gagal pada permintaan HTTP registry tanpa mengubah host atau Docker Engine.",
     "watcher.registryDns.enable": "Aktifkan DNS cadangan (nonaktif secara bawaan)",
     "watcher.registryDns.server": "Server DNS",
@@ -140,5 +140,13 @@
     "watcher.registryDns.noRecord": "Tidak ada catatan DNS yang dikembalikan.",
     "watcher.registryDns.serverError": "Server DNS gagal.",
     "watcher.registryDns.otherError": "Permintaan DNS gagal.",
-    "watcher.registryDns.ipv6Hint": "Koneksi IPv6 kontainer mungkin tidak tersedia; periksa jaringan kontainer dan host."
+    "watcher.registryDns.ipv6Hint": "Koneksi IPv6 kontainer mungkin tidak tersedia; periksa jaringan kontainer dan host.",
+    "watcher.registryDns.recordType": "Jenis",
+    "watcher.registryDns.status": "Status",
+    "watcher.registryDns.duration": "Waktu respons",
+    "watcher.registryDns.diagnostic": "Hasil / diagnosis",
+    "watcher.registryDns.resolved": "Berhasil",
+    "watcher.registryDns.noAddress": "Tidak ada alamat",
+    "watcher.registryDns.errorStatus": "Kesalahan",
+    "watcher.registryDns.hostNotFound": "Nama host tidak ditemukan."
 }

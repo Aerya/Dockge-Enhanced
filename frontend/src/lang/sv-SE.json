@@ -132,7 +132,7 @@
     "NoNetworksAvailable": "Inga nätverk tillgängliga. Du måste lägga till interna nätverk eller aktivera externa nätverk på högra sidan först.",
     "disableAuth": "inaktivera autentisering",
     "scenarios": "där du ska implementera tredjepartsautentisering",
-    "watcher.registryDns.title": "Reserv-DNS för register (avancerat)",
+    "watcher.registryDns.title": "Reserv-DNS",
     "watcher.registryDns.description": "Systemets DNS används först. Reserv-DNS används endast vid DNS-fel för HTTP-anrop till register; värd och Docker Engine ändras inte.",
     "watcher.registryDns.enable": "Aktivera reserv-DNS (av som standard)",
     "watcher.registryDns.server": "DNS-server",
@@ -150,5 +150,13 @@
     "watcher.registryDns.noRecord": "Ingen DNS-post returnerades.",
     "watcher.registryDns.serverError": "DNS-serverfel.",
     "watcher.registryDns.otherError": "DNS-frågan misslyckades.",
-    "watcher.registryDns.ipv6Hint": "IPv6 från behållaren kanske inte fungerar; kontrollera behållarens och värdens nätverk."
+    "watcher.registryDns.ipv6Hint": "IPv6 från behållaren kanske inte fungerar; kontrollera behållarens och värdens nätverk.",
+    "watcher.registryDns.recordType": "Typ",
+    "watcher.registryDns.status": "Status",
+    "watcher.registryDns.duration": "Svarstid",
+    "watcher.registryDns.diagnostic": "Resultat / diagnos",
+    "watcher.registryDns.resolved": "Löst",
+    "watcher.registryDns.noAddress": "Ingen adress",
+    "watcher.registryDns.errorStatus": "Fel",
+    "watcher.registryDns.hostNotFound": "Värdnamnet hittades inte."
 }

@@ -132,7 +132,7 @@
     "NoNetworksAvailable": "Níl líonraí ar fáil. Ní mór duit líonraí inmheánacha a chur leis nó líonraí seachtracha a chumasú ar an taobh deas ar dtús.",
     "disableAuth": "fíordheimhniú a dhíchumasú",
     "scenarios": "ina bhfuil sé beartaithe agat tríú páirtí athbhreithniú a chur i bhfeidhm",
-    "watcher.registryDns.title": "DNS cúltaca do chlárlanna (ardleibhéal)",
+    "watcher.registryDns.title": "DNS cúltaca",
     "watcher.registryDns.description": "Úsáidtear DNS an chórais ar dtús. Ní úsáidtear DNS cúltaca ach ar theip DNS d’iarratais HTTP ar chlárlanna; ní athraítear an t-óstach ná Docker Engine.",
     "watcher.registryDns.enable": "Cumasaigh DNS cúltaca (múchta de réir réamhshocraithe)",
     "watcher.registryDns.server": "Freastalaí DNS",
@@ -150,5 +150,13 @@
     "watcher.registryDns.noRecord": "Níor tugadh taifead DNS ar ais.",
     "watcher.registryDns.serverError": "Theip ar an bhfreastalaí DNS.",
     "watcher.registryDns.otherError": "Theip ar an iarratas DNS.",
-    "watcher.registryDns.ipv6Hint": "D’fhéadfadh nach mbeadh IPv6 ar fáil ón gcoimeádán; seiceáil líonra an choimeádáin agus an óstaigh."
+    "watcher.registryDns.ipv6Hint": "D’fhéadfadh nach mbeadh IPv6 ar fáil ón gcoimeádán; seiceáil líonra an choimeádáin agus an óstaigh.",
+    "watcher.registryDns.recordType": "Cineál",
+    "watcher.registryDns.status": "Stádas",
+    "watcher.registryDns.duration": "Am freagartha",
+    "watcher.registryDns.diagnostic": "Toradh / diagnóis",
+    "watcher.registryDns.resolved": "Réitithe",
+    "watcher.registryDns.noAddress": "Gan seoladh",
+    "watcher.registryDns.errorStatus": "Earráid",
+    "watcher.registryDns.hostNotFound": "Níor aimsíodh ainm an óstaigh."
 }

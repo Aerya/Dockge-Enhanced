@@ -116,7 +116,7 @@
     "LongSyntaxNotSupported": "La sintassi lunga non è supportata qui. Utilizzare l'editor YAML.",
     "disableAuth": "disabilitare l'autenticazione",
     "scenarios": "in cui intendi implementare un'autenticazione di terze parti",
-    "watcher.registryDns.title": "DNS di riserva dei registry (avanzato)",
+    "watcher.registryDns.title": "DNS di riserva",
     "watcher.registryDns.description": "Il DNS di sistema ha la priorità. Solo gli errori DNS attivano il fallback per le richieste HTTP ai registry, senza modificare host o Docker Engine.",
     "watcher.registryDns.enable": "Attiva il DNS di riserva (disattivato per impostazione predefinita)",
     "watcher.registryDns.server": "Server DNS",
@@ -134,5 +134,13 @@
     "watcher.registryDns.noRecord": "Nessun record DNS restituito.",
     "watcher.registryDns.serverError": "Errore del server DNS.",
     "watcher.registryDns.otherError": "Richiesta DNS non riuscita.",
-    "watcher.registryDns.ipv6Hint": "La connettività IPv6 del container potrebbe non essere disponibile; controlla rete e host."
+    "watcher.registryDns.ipv6Hint": "La connettività IPv6 del container potrebbe non essere disponibile; controlla rete e host.",
+    "watcher.registryDns.recordType": "Tipo",
+    "watcher.registryDns.status": "Stato",
+    "watcher.registryDns.duration": "Tempo di risposta",
+    "watcher.registryDns.diagnostic": "Risultato / diagnosi",
+    "watcher.registryDns.resolved": "Risolto",
+    "watcher.registryDns.noAddress": "Nessun indirizzo",
+    "watcher.registryDns.errorStatus": "Errore",
+    "watcher.registryDns.hostNotFound": "Nome host non trovato."
 }

@@ -115,7 +115,7 @@
     "restartPolicyUnlessStopped": "Trừ Khi Dừng Lại",
     "disableAuth": "tắt xác thực đăng nhập",
     "scenarios": "mà bạn dự định triển khai xác thực đăng nhập bên thứ ba",
-    "watcher.registryDns.title": "DNS dự phòng cho registry (nâng cao)",
+    "watcher.registryDns.title": "DNS dự phòng",
     "watcher.registryDns.description": "DNS hệ thống luôn được ưu tiên. Chỉ khi DNS lỗi mới dùng DNS dự phòng cho yêu cầu HTTP đến registry; không đổi host hoặc Docker Engine.",
     "watcher.registryDns.enable": "Bật DNS dự phòng (mặc định tắt)",
     "watcher.registryDns.server": "Máy chủ DNS",
@@ -133,5 +133,13 @@
     "watcher.registryDns.noRecord": "Không có bản ghi DNS trả về.",
     "watcher.registryDns.serverError": "Máy chủ DNS gặp lỗi.",
     "watcher.registryDns.otherError": "Truy vấn DNS thất bại.",
-    "watcher.registryDns.ipv6Hint": "Container có thể không có kết nối IPv6; kiểm tra mạng container và host."
+    "watcher.registryDns.ipv6Hint": "Container có thể không có kết nối IPv6; kiểm tra mạng container và host.",
+    "watcher.registryDns.recordType": "Loại",
+    "watcher.registryDns.status": "Trạng thái",
+    "watcher.registryDns.duration": "Thời gian phản hồi",
+    "watcher.registryDns.diagnostic": "Kết quả / chẩn đoán",
+    "watcher.registryDns.resolved": "Đã phân giải",
+    "watcher.registryDns.noAddress": "Không có địa chỉ",
+    "watcher.registryDns.errorStatus": "Lỗi",
+    "watcher.registryDns.hostNotFound": "Không tìm thấy tên máy chủ."
 }

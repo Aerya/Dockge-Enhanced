@@ -132,7 +132,7 @@
     "Select a network...": "Bir ağ seçin...",
     "disableAuth": "Kimlik doğrulamayı devre dışı bırakmak",
     "scenarios": "üçüncü taraf kimlik doğrulaması uygulamak",
-    "watcher.registryDns.title": "Registry yedek DNS (gelişmiş)",
+    "watcher.registryDns.title": "Yedek DNS",
     "watcher.registryDns.description": "Önce sistem DNS kullanılır. Yedek DNS yalnızca registry HTTP isteklerinde DNS hatası olursa devreye girer; ana makine ve Docker Engine değişmez.",
     "watcher.registryDns.enable": "Yedek DNS’yi etkinleştir (varsayılan kapalı)",
     "watcher.registryDns.server": "DNS sunucusu",
@@ -150,5 +150,13 @@
     "watcher.registryDns.noRecord": "DNS kaydı dönmedi.",
     "watcher.registryDns.serverError": "DNS sunucusu hatası.",
     "watcher.registryDns.otherError": "DNS sorgusu başarısız.",
-    "watcher.registryDns.ipv6Hint": "Konteynerde IPv6 bağlantısı olmayabilir; konteyner ve ana makine ağını kontrol edin."
+    "watcher.registryDns.ipv6Hint": "Konteynerde IPv6 bağlantısı olmayabilir; konteyner ve ana makine ağını kontrol edin.",
+    "watcher.registryDns.recordType": "Tür",
+    "watcher.registryDns.status": "Durum",
+    "watcher.registryDns.duration": "Yanıt süresi",
+    "watcher.registryDns.diagnostic": "Sonuç / tanı",
+    "watcher.registryDns.resolved": "Çözüldü",
+    "watcher.registryDns.noAddress": "Adres yok",
+    "watcher.registryDns.errorStatus": "Hata",
+    "watcher.registryDns.hostNotFound": "Ana makine adı bulunamadı."
 }

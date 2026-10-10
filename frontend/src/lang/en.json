@@ -2034,7 +2034,7 @@
     "releaseNews.item.selfNonePruneRuntime": "Old ghcr.io/aerya/dockge-enhanced:<none> images are now identified from Docker's inventory instead of relying on RepoDigests metadata that may disappear after retagging. Images older than 48 hours can therefore be pruned reliably while active and recovery-protected images remain safe; cleanup summaries also stop counting ordinary used images as protected candidates.",
     "releaseNews.item.monitoringHistory": "Monitoring can optionally record lightweight host CPU and RAM samples every 5 minutes. The responsive 24-hour, 7-day, monthly or custom graph is downsampled server-side, remembers the saved display range and leaves downtime visible as gaps.",
     "releaseNews.item.stackDailyOpsPolish": "Stack operations are smoother: missing directory bind mounts can be prepared on the host, Immediate image policies trigger a targeted check right away, successful restarts refresh their real state, and CPU/RAM history uses a more compact PowerWatch-inspired chart.",
-    "watcher.registryDns.title": "Registry DNS fallback (advanced)",
+    "watcher.registryDns.title": "Fallback DNS",
     "watcher.registryDns.description": "System DNS has priority. Only DNS failures trigger fallback for registry HTTP requests. Host and Docker Engine settings are not changed.",
     "watcher.registryDns.enable": "Enable DNS fallback (off by default)",
     "watcher.registryDns.server": "DNS server",
@@ -2052,5 +2052,13 @@
     "watcher.registryDns.noRecord": "No DNS record returned.",
     "watcher.registryDns.serverError": "DNS server failed to answer.",
     "watcher.registryDns.otherError": "DNS query failed.",
-    "watcher.registryDns.ipv6Hint": "IPv6 connectivity from this container may be unavailable; check the container and host network."
+    "watcher.registryDns.ipv6Hint": "IPv6 connectivity from this container may be unavailable; check the container and host network.",
+    "watcher.registryDns.recordType": "Type",
+    "watcher.registryDns.status": "Status",
+    "watcher.registryDns.duration": "Response time",
+    "watcher.registryDns.diagnostic": "Result / diagnosis",
+    "watcher.registryDns.resolved": "Resolved",
+    "watcher.registryDns.noAddress": "No address",
+    "watcher.registryDns.errorStatus": "Error",
+    "watcher.registryDns.hostNotFound": "Hostname not found."
 }

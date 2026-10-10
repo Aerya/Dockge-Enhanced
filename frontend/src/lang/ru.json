@@ -116,7 +116,7 @@
     "LongSyntaxNotSupported": "Длинный синтаксис здесь не поддерживается. Пожалуйста, используйте редактор YAML.",
     "disableAuth": "отключить аутентификацию",
     "scenarios": "когда Вы собираетесь использовать стороннюю аутентификацию",
-    "watcher.registryDns.title": "Резервный DNS реестров (дополнительно)",
+    "watcher.registryDns.title": "Резервный DNS",
     "watcher.registryDns.description": "Сначала используется системный DNS. Резервный DNS для HTTP-запросов к реестрам включается только при сбоях DNS; хост и Docker Engine не изменяются.",
     "watcher.registryDns.enable": "Включить резервный DNS (по умолчанию выключен)",
     "watcher.registryDns.server": "DNS-сервер",
@@ -134,5 +134,13 @@
     "watcher.registryDns.noRecord": "DNS-запись не возвращена.",
     "watcher.registryDns.serverError": "Ошибка DNS-сервера.",
     "watcher.registryDns.otherError": "Ошибка DNS-запроса.",
-    "watcher.registryDns.ipv6Hint": "IPv6 в контейнере может быть недоступен; проверьте сеть контейнера и хоста."
+    "watcher.registryDns.ipv6Hint": "IPv6 в контейнере может быть недоступен; проверьте сеть контейнера и хоста.",
+    "watcher.registryDns.recordType": "Тип",
+    "watcher.registryDns.status": "Статус",
+    "watcher.registryDns.duration": "Время ответа",
+    "watcher.registryDns.diagnostic": "Результат / диагностика",
+    "watcher.registryDns.resolved": "Разрешено",
+    "watcher.registryDns.noAddress": "Нет адреса",
+    "watcher.registryDns.errorStatus": "Ошибка",
+    "watcher.registryDns.hostNotFound": "Имя узла не найдено."
 }

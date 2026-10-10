@@ -65,6 +65,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/registry-dns-fallback.test.ts
 
+      - name: Tests interface et traductions DNS de secours
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test frontend/src/registry-dns-ui.test.ts
+
       - name: Tests des labels par service
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test common/compose-labels.test.ts backend/stack-clean-exit-status.test.ts backend/compose-network-namespace.test.ts

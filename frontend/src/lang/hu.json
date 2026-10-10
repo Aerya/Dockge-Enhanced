@@ -132,7 +132,7 @@
     "NoNetworksAvailable": "Nincs elérhető hálózat. Először hozzá kell adnia belső hálózatokat, vagy engedélyeznie kell a külső hálózatokat a jobb oldalon.",
     "disableAuth": "hitelesítést kikapcsolni",
     "scenarios": "harmadfél általi hitelesítést szeretne alkalmazni",
-    "watcher.registryDns.title": "Regiszterek tartalék DNS-e (haladó)",
+    "watcher.registryDns.title": "Tartalék DNS",
     "watcher.registryDns.description": "Először a rendszer DNS-e működik. Tartalék DNS csak DNS-hiba esetén használható a regiszterek HTTP-kéréseihez, a gazdagép és a Docker Engine módosítása nélkül.",
     "watcher.registryDns.enable": "Tartalék DNS bekapcsolása (alapból kikapcsolva)",
     "watcher.registryDns.server": "DNS-kiszolgáló",
@@ -150,5 +150,13 @@
     "watcher.registryDns.noRecord": "Nem érkezett DNS-rekord.",
     "watcher.registryDns.serverError": "DNS-kiszolgálóhiba.",
     "watcher.registryDns.otherError": "DNS-kérés sikertelen.",
-    "watcher.registryDns.ipv6Hint": "Lehet, hogy a konténer IPv6-kapcsolata nem működik; ellenőrizze a konténer és a gazdagép hálózatát."
+    "watcher.registryDns.ipv6Hint": "Lehet, hogy a konténer IPv6-kapcsolata nem működik; ellenőrizze a konténer és a gazdagép hálózatát.",
+    "watcher.registryDns.recordType": "Típus",
+    "watcher.registryDns.status": "Állapot",
+    "watcher.registryDns.duration": "Válaszidő",
+    "watcher.registryDns.diagnostic": "Eredmény / diagnózis",
+    "watcher.registryDns.resolved": "Feloldva",
+    "watcher.registryDns.noAddress": "Nincs cím",
+    "watcher.registryDns.errorStatus": "Hiba",
+    "watcher.registryDns.hostNotFound": "A hosztnév nem található."
 }

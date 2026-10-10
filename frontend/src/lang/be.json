@@ -116,7 +116,7 @@
     "removeAgent": "Выдаліць агента",
     "disableAuth": "адключыць аўтэнтыфікацыю",
     "scenarios": "калі вы збіраецеся выкарыстоўваць староннюю аўтэнтыфікацыю",
-    "watcher.registryDns.title": "Рэзервовы DNS рэестраў (дадаткова)",
+    "watcher.registryDns.title": "Рэзервовы DNS",
     "watcher.registryDns.description": "Спачатку выкарыстоўваецца сістэмны DNS. Рэзервовы DNS працуе толькі пры DNS-памылках HTTP-запытаў рэестраў, без зменаў хоста і Docker Engine.",
     "watcher.registryDns.enable": "Уключыць рэзервовы DNS (прадвызначана выключаны)",
     "watcher.registryDns.server": "DNS-сервер",
@@ -134,5 +134,13 @@
     "watcher.registryDns.noRecord": "DNS-запіс не атрыманы.",
     "watcher.registryDns.serverError": "Памылка DNS-сервера.",
     "watcher.registryDns.otherError": "Памылка DNS-запыту.",
-    "watcher.registryDns.ipv6Hint": "IPv6 у кантэйнеры можа быць недаступны; праверце сетку кантэйнера і хоста."
+    "watcher.registryDns.ipv6Hint": "IPv6 у кантэйнеры можа быць недаступны; праверце сетку кантэйнера і хоста.",
+    "watcher.registryDns.recordType": "Тып",
+    "watcher.registryDns.status": "Стан",
+    "watcher.registryDns.duration": "Час адказу",
+    "watcher.registryDns.diagnostic": "Вынік / дыягностыка",
+    "watcher.registryDns.resolved": "Вызначана",
+    "watcher.registryDns.noAddress": "Няма адраса",
+    "watcher.registryDns.errorStatus": "Памылка",
+    "watcher.registryDns.hostNotFound": "Імя вузла не знойдзена."
 }

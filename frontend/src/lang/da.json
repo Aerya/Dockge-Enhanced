@@ -126,7 +126,7 @@
     "Deployed": "Udrullet",
     "disableAuth": "deaktivere godkendelse",
     "scenarios": "hvor du har til hensigt at implementere tredjepartsgodkendelse",
-    "watcher.registryDns.title": "Reserve-DNS til registries (avanceret)",
+    "watcher.registryDns.title": "Reserve-DNS",
     "watcher.registryDns.description": "Systemets DNS bruges først. Reserve-DNS anvendes kun ved DNS-fejl for HTTP-anmodninger til registries; vært og Docker Engine ændres ikke.",
     "watcher.registryDns.enable": "Aktivér reserve-DNS (slået fra som standard)",
     "watcher.registryDns.server": "DNS-server",
@@ -144,5 +144,13 @@
     "watcher.registryDns.noRecord": "Ingen DNS-post returneret.",
     "watcher.registryDns.serverError": "DNS-serverfejl.",
     "watcher.registryDns.otherError": "DNS-forespørgsel mislykkedes.",
-    "watcher.registryDns.ipv6Hint": "IPv6 fra containeren kan være utilgængelig; kontrollér containerens og værtens netværk."
+    "watcher.registryDns.ipv6Hint": "IPv6 fra containeren kan være utilgængelig; kontrollér containerens og værtens netværk.",
+    "watcher.registryDns.recordType": "Type",
+    "watcher.registryDns.status": "Status",
+    "watcher.registryDns.duration": "Svartid",
+    "watcher.registryDns.diagnostic": "Resultat / diagnose",
+    "watcher.registryDns.resolved": "Opløst",
+    "watcher.registryDns.noAddress": "Ingen adresse",
+    "watcher.registryDns.errorStatus": "Fejl",
+    "watcher.registryDns.hostNotFound": "Værtsnavn blev ikke fundet."
 }

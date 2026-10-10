@@ -116,7 +116,7 @@
     "LongSyntaxNotSupported": "Long syntax-a ni podprta tukaj. Prosim uporabite YAML urejevalnik.",
     "disableAuth": "onemogočiti overjanje",
     "scenarios": "kjer nameravate izvajati avtentikacijo tretjih oseb",
-    "watcher.registryDns.title": "Nadomestni DNS registrov (napredno)",
+    "watcher.registryDns.title": "Nadomestni DNS",
     "watcher.registryDns.description": "Sistemski DNS ima prednost. Nadomestni DNS se uporablja samo ob napakah DNS pri zahtevah HTTP za registre; gostitelj in Docker Engine ostaneta nespremenjena.",
     "watcher.registryDns.enable": "Vključi nadomestni DNS (privzeto izključen)",
     "watcher.registryDns.server": "Strežnik DNS",
@@ -134,5 +134,13 @@
     "watcher.registryDns.noRecord": "Zapis DNS ni bil vrnjen.",
     "watcher.registryDns.serverError": "Napaka strežnika DNS.",
     "watcher.registryDns.otherError": "Poizvedba DNS ni uspela.",
-    "watcher.registryDns.ipv6Hint": "Povezava IPv6 iz vsebnika morda ni dosegljiva; preverite omrežje vsebnika in gostitelja."
+    "watcher.registryDns.ipv6Hint": "Povezava IPv6 iz vsebnika morda ni dosegljiva; preverite omrežje vsebnika in gostitelja.",
+    "watcher.registryDns.recordType": "Vrsta",
+    "watcher.registryDns.status": "Stanje",
+    "watcher.registryDns.duration": "Odzivni čas",
+    "watcher.registryDns.diagnostic": "Rezultat / diagnostika",
+    "watcher.registryDns.resolved": "Razrešeno",
+    "watcher.registryDns.noAddress": "Ni naslova",
+    "watcher.registryDns.errorStatus": "Napaka",
+    "watcher.registryDns.hostNotFound": "Ime gostitelja ni bilo najdeno."
 }

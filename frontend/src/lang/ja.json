@@ -129,7 +129,7 @@
     "NoNetworksAvailable": "利用可能なネットワークがありません。まず右側の内部ネットワークを追加するか、外部ネットワークを有効にする必要があります。",
     "disableAuth": "認証を無効化",
     "scenarios": "サードパーティー認証を実装することをあなたが意図している",
-    "watcher.registryDns.title": "レジストリ用代替 DNS（詳細設定）",
+    "watcher.registryDns.title": "予備 DNS",
     "watcher.registryDns.description": "システム DNS を優先します。DNS エラー時のみレジストリへの HTTP 通信に代替 DNS を使用し、ホストや Docker Engine の設定は変更しません。",
     "watcher.registryDns.enable": "代替 DNS を有効化（既定では無効）",
     "watcher.registryDns.server": "DNS サーバー",
@@ -147,5 +147,13 @@
     "watcher.registryDns.noRecord": "DNS レコードが返されませんでした。",
     "watcher.registryDns.serverError": "DNS サーバーでエラーが発生しました。",
     "watcher.registryDns.otherError": "DNS 問い合わせに失敗しました。",
-    "watcher.registryDns.ipv6Hint": "コンテナーから IPv6 に接続できない可能性があります。コンテナーとホストのネットワークを確認してください。"
+    "watcher.registryDns.ipv6Hint": "コンテナーから IPv6 に接続できない可能性があります。コンテナーとホストのネットワークを確認してください。",
+    "watcher.registryDns.recordType": "種類",
+    "watcher.registryDns.status": "状態",
+    "watcher.registryDns.duration": "応答時間",
+    "watcher.registryDns.diagnostic": "結果 / 診断",
+    "watcher.registryDns.resolved": "解決済み",
+    "watcher.registryDns.noAddress": "アドレスなし",
+    "watcher.registryDns.errorStatus": "エラー",
+    "watcher.registryDns.hostNotFound": "ホスト名が見つかりません。"
 }

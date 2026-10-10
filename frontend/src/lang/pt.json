@@ -116,7 +116,7 @@
     "LongSyntaxNotSupported": "Sintaxes longas não são suportadas aqui. Por favor, utilize um editor YAML.",
     "disableAuth": "desativar a autenticação",
     "scenarios": "onde você pretende implementar autenticação de terceiros",
-    "watcher.registryDns.title": "DNS alternativo dos registos (avançado)",
+    "watcher.registryDns.title": "DNS de reserva",
     "watcher.registryDns.description": "O DNS do sistema tem prioridade. Apenas falhas DNS ativam o alternativo nas solicitações HTTP aos registos, sem alterar o anfitrião nem o Docker Engine.",
     "watcher.registryDns.enable": "Ativar DNS alternativo (desativado por defeito)",
     "watcher.registryDns.server": "Servidor DNS",
@@ -134,5 +134,13 @@
     "watcher.registryDns.noRecord": "Nenhum registo DNS devolvido.",
     "watcher.registryDns.serverError": "Falha do servidor DNS.",
     "watcher.registryDns.otherError": "Falha na consulta DNS.",
-    "watcher.registryDns.ipv6Hint": "A ligação IPv6 do contentor pode estar indisponível; verifique a rede e o anfitrião."
+    "watcher.registryDns.ipv6Hint": "A ligação IPv6 do contentor pode estar indisponível; verifique a rede e o anfitrião.",
+    "watcher.registryDns.recordType": "Tipo",
+    "watcher.registryDns.status": "Estado",
+    "watcher.registryDns.duration": "Tempo de resposta",
+    "watcher.registryDns.diagnostic": "Resultado / diagnóstico",
+    "watcher.registryDns.resolved": "Resolvido",
+    "watcher.registryDns.noAddress": "Sem endereço",
+    "watcher.registryDns.errorStatus": "Erro",
+    "watcher.registryDns.hostNotFound": "Nome do anfitrião não encontrado."
 }

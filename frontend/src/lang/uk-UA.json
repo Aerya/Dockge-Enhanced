@@ -132,7 +132,7 @@
     "NoNetworksAvailable": "Немає доступних мереж. Спочатку потрібно додати внутрішні мережі або увімкнути зовнішні мережі в правій частині.",
     "disableAuth": "вимкнути авторизацію",
     "scenarios": "де ви збираєтесь використати сторонню авторизацію",
-    "watcher.registryDns.title": "Резервний DNS реєстрів (розширено)",
+    "watcher.registryDns.title": "Резервний DNS",
     "watcher.registryDns.description": "Спершу використовується системний DNS. Резервний DNS для HTTP-запитів реєстрів діє лише при збоях DNS; хост і Docker Engine не змінюються.",
     "watcher.registryDns.enable": "Увімкнути резервний DNS (типово вимкнено)",
     "watcher.registryDns.server": "DNS-сервер",
@@ -150,5 +150,13 @@
     "watcher.registryDns.noRecord": "DNS-запис не отримано.",
     "watcher.registryDns.serverError": "Помилка DNS-сервера.",
     "watcher.registryDns.otherError": "Помилка DNS-запиту.",
-    "watcher.registryDns.ipv6Hint": "IPv6 у контейнері може бути недоступним; перевірте мережу контейнера й хоста."
+    "watcher.registryDns.ipv6Hint": "IPv6 у контейнері може бути недоступним; перевірте мережу контейнера й хоста.",
+    "watcher.registryDns.recordType": "Тип",
+    "watcher.registryDns.status": "Стан",
+    "watcher.registryDns.duration": "Час відповіді",
+    "watcher.registryDns.diagnostic": "Результат / діагностика",
+    "watcher.registryDns.resolved": "Знайдено",
+    "watcher.registryDns.noAddress": "Немає адреси",
+    "watcher.registryDns.errorStatus": "Помилка",
+    "watcher.registryDns.hostNotFound": "Ім’я вузла не знайдено."
 }

@@ -200,14 +200,42 @@
                     <button class="btn btn-normal" type="button" :disabled="dnsTesting" @click="testDns">{{ $t("watcher.registryDns.test") }}</button>
                 </div>
                 <p v-if="dnsMessage" class="form-text" role="status">{{ dnsMessage }}</p>
-                <div v-for="result in dnsTestResults" :key="result.server" class="mb-2">
-                    <strong><code>{{ result.server }}</code> <small class="form-text">(DNS IPv{{ result.family }})</small></strong>
-                    <div v-for="record in result.results" :key="record.type" class="small ms-3 mb-1" :class="record.address ? 'text-success' : 'text-warning'">
-                        {{ record.address ? '✓' : '✗' }} {{ record.type }} —
-                        <code v-if="record.address">{{ record.address }}</code>
-                        <span v-else>{{ dnsErrorReason(record.errorCode, result.family) }} <code>({{ record.errorCode }})</code></span>
-                        <span class="form-text"> — {{ record.durationMs }} ms</span>
-                    </div>
+                <div v-if="dnsTestResults.length" class="table-responsive mt-3">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ $t("watcher.registryDns.server") }}</th>
+                                <th scope="col">{{ $t("watcher.registryDns.recordType") }}</th>
+                                <th scope="col">{{ $t("watcher.registryDns.status") }}</th>
+                                <th scope="col">{{ $t("watcher.registryDns.duration") }}</th>
+                                <th scope="col">{{ $t("watcher.registryDns.diagnostic") }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template v-for="result in dnsTestResults" :key="result.server">
+                                <tr v-for="(record, index) in result.results" :key="record.type">
+                                    <th v-if="index === 0" scope="rowgroup" :rowspan="result.results.length">
+                                        <code>{{ result.server }}</code>
+                                        <small class="d-block text-muted">DNS IPv{{ result.family }}</small>
+                                    </th>
+                                    <td><code>{{ record.type }}</code></td>
+                                    <td class="text-nowrap">
+                                        <span v-if="record.address" class="text-success">✓ {{ $t("watcher.registryDns.resolved") }}</span>
+                                        <span v-else-if="dnsRecordAbsent(record.errorCode)" class="text-muted">— {{ $t("watcher.registryDns.noAddress") }}</span>
+                                        <span v-else class="text-warning">✗ {{ $t("watcher.registryDns.errorStatus") }}</span>
+                                    </td>
+                                    <td class="text-nowrap">{{ record.durationMs }} ms</td>
+                                    <td>
+                                        <code v-if="record.address">{{ record.address }}</code>
+                                        <span v-else :class="dnsRecordAbsent(record.errorCode) ? 'text-muted' : 'text-warning'">
+                                            {{ dnsErrorReason(record.errorCode, result.family) }}
+                                            <code v-if="record.errorCode" class="ms-1">{{ record.errorCode }}</code>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
             </details>
         </div>
@@ -745,6 +773,11 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 
+function dnsRecordAbsent(code: string | undefined): boolean {
+    // ENODATA means the resolver answered but has no record of the requested type.
+    return code === "ENODATA";
+}
+
 function dnsErrorReason(code: string | undefined, dnsFamily: number): string {
     let key: string;
     switch (code) {
@@ -760,9 +793,11 @@ function dnsErrorReason(code: string | undefined, dnsFamily: number): string {
         case "EAI_AGAIN":
             key = "timeout";
             break;
-        case "ENOTFOUND":
         case "ENODATA":
             key = "noRecord";
+            break;
+        case "ENOTFOUND":
+            key = "hostNotFound";
             break;
         case "ESERVFAIL":
             key = "serverError";

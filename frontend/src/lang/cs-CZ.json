@@ -129,7 +129,7 @@
     "NoNetworksAvailable": "Žádná síť není dostupná. Musíte přidat interní síť nebo povolit externí sítě v pravé části.",
     "disableAuth": "zakázat ověřování",
     "scenarios": "plánujete implementovat ověřování třetí strany",
-    "watcher.registryDns.title": "Záložní DNS registrů (pokročilé)",
+    "watcher.registryDns.title": "Záložní DNS",
     "watcher.registryDns.description": "Přednost má systémové DNS. Záložní DNS se pro HTTP požadavky registrů používá jen při chybě DNS; hostitel a Docker Engine zůstávají beze změn.",
     "watcher.registryDns.enable": "Povolit záložní DNS (výchozí vypnuto)",
     "watcher.registryDns.server": "DNS server",
@@ -147,5 +147,13 @@
     "watcher.registryDns.noRecord": "Nebyl vrácen záznam DNS.",
     "watcher.registryDns.serverError": "Chyba DNS serveru.",
     "watcher.registryDns.otherError": "DNS dotaz selhal.",
-    "watcher.registryDns.ipv6Hint": "IPv6 v kontejneru může být nedostupné; zkontrolujte síť kontejneru a hostitele."
+    "watcher.registryDns.ipv6Hint": "IPv6 v kontejneru může být nedostupné; zkontrolujte síť kontejneru a hostitele.",
+    "watcher.registryDns.recordType": "Typ",
+    "watcher.registryDns.status": "Stav",
+    "watcher.registryDns.duration": "Doba odezvy",
+    "watcher.registryDns.diagnostic": "Výsledek / diagnostika",
+    "watcher.registryDns.resolved": "Vyřešeno",
+    "watcher.registryDns.noAddress": "Žádná adresa",
+    "watcher.registryDns.errorStatus": "Chyba",
+    "watcher.registryDns.hostNotFound": "Název hostitele nenalezen."
 }
