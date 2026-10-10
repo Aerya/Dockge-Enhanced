@@ -4,11 +4,6 @@
 
 **2026-10-10 — Stack update controls and image action buttons (#489–#490)** — The stack-wide automatic update policy now opens from the stack action bar in a modal; individual container controls remain unchanged. Image update, ignore, pause and rollback actions use compact buttons with accessible labels.
 
-**2026-10-09 — Restic setup feedback and safer initialization (#491)** — Backup settings, run-now and maintenance actions are separated; repository state and retention help are clearer, and initialization uses safer safeguards.
-
-**2026-10-08 — English backend messages (#477)** — Restic password errors, prune audit summaries and automatic update messages are no longer incorrectly displayed in French in an English installation.
-
-
 **2026-10-10 — Configurable registry DNS fallback** — ImageWatcher can optionally retry registry and token HTTP resolutions via configurable Quad9/Cloudflare or custom IPv4/IPv6 DNS servers after system DNS fails. The WebUI offers A/AAAA tests, response times and diagnostics in all interface languages. Disabled by default; no host or Docker Engine DNS change, and Engine-managed pulls/self-updates are not affected.
 
 **2026-10-10 — ImageWatcher / Self-Update coordination** — Read-only registry/DNS scans no longer block self-updates. Docker-mutating image updates, rollbacks and rollback-tag cleanup share an exclusive reservation with Self-Update; conflicting operations are deferred safely. Scheduled updates do not unnecessarily block ImageWatcher, and the Updates panel prioritizes the active operation.
@@ -19,12 +14,15 @@
 
 **2026-10-10 — Docker Socket Proxy self-update with multiple networks** — The updater sidecar now starts attached to an existing Docker network and connects only the remaining networks before releasing the signed update plan. Fixes the Docker `none` network conflict at step 5/8; one-network, multi-network, and failed-connection scenarios are covered by tests. Fixes #485.
 
+**2026-10-09 — Restic setup feedback and safer initialization (#491)** — Backup settings, run-now and maintenance actions are separated; repository state and retention help are clearer, and initialization uses safer safeguards.
+
 **2026-10-09 — Bulk automatic image policies for a stack** — A stack page now supports applying **Off**, **Immediate**, or **Scheduled** policies to all eligible images at once. A preview lists changes; users choose to **preserve individual exceptions** (the default) or replace them. Services excluded through `dockge.imageupdates.check=false` remain protected, shared images are deduplicated, and linked instances use the same server-side validation. Future images are not automatically affected.
 
 **2026-10-09 — Faster, reliable ImageWatcher Immediate updates** — Immediate images are checked on activation and every 5 minutes, against the images actually running in containers. Duplicate registry requests are shared, HTTP 429 throttling is respected, and each targeted cycle is summarized in logs. Pauses, maintenance windows, and rollback safeguards remain in place.
 
 **2026-10-09 — Unified optional monitoring and PowerWatch Hub management** — Kula, Dozzle, PowerWatch and Hub use consistent Monitoring cards with localized descriptions, GitHub links and contextual lifecycle buttons. The Hub can now be installed and managed independently with a persistent Docker volume. Existing PowerWatch and Hub installations only need their WebUI URL; Enhanced discovers the API endpoints automatically. Hub and PowerWatch settings are saved independently.
 
+**2026-10-08 — English backend messages (#477)** — Restic password errors, prune audit summaries and automatic update messages are no longer incorrectly displayed in French in an English installation.
 
 **2026-10-08 — Optional PowerWatch electrical monitoring** — Dockge-Enhanced can observe an existing local or HTTP(S) PowerWatch without controlling it, or deploy a dedicated managed Compose stack with persistent data and conditional RAPL, MSR and NVIDIA support. Current whole-machine watts, confidence and compact WebUI links are available in Monitoring, the system bar and linked-instance summaries through the existing federation channel. A separately configured optional PowerWatch Hub has one global link and is checked through its documented API. External containers are never modified, managed ownership is verified strictly, and the WebUI binds to loopback by default.
 
@@ -37,7 +35,6 @@
 **2026-10-08 — Final Docker image-prune report reconciliation** — A missing image in a batch inspection is no longer confused with a Docker-confirmed absence: cleanup falls back to a targeted Image-ID inspection, checks the postcondition of every removal, and performs a lightweight final reconciliation. Resources now separates Docker usage from prune state, so protected Enhanced, recovery, rollback, too-recent and excluded images are explained even when Docker marks them unused. Active Enhanced, rollback and recovery protections remain intact, while cleanup still uses one initial inventory, targeted checks and one final light inventory.
 
 **2026-10-07 — Docker image cleanup is bounded and race-safe** — Bulk image pruning now loads the full inventory once and revalidates only the target immediately before removal instead of rescanning every image and container for each `docker rmi`. The Resources image list avoids full image inspection, image inspection runs in bounded batches and tolerates concurrent image disappearance, old Enhanced `<none>` candidates reuse the initial inventory, and expired rollback cleanup shares the Docker cleanup lock.
-
 
 **2026-10-07 — Old Enhanced `<none>` images are pruned reliably** — Cleanup now identifies `ghcr.io/aerya/dockge-enhanced:<none>` candidates from Docker's image inventory instead of requiring `RepoDigests` metadata that can disappear after retagging. Images older than the 48-hour self-update safety floor can be removed while the active and recovery-protected images remain safe. Unused-image summaries also stop counting ordinary container-used images as protected cleanup candidates.
 

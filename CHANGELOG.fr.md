@@ -4,11 +4,6 @@
 
 **2026-10-10 — Commandes de mises à jour des stacks et images (#489–#490)** — La politique de mise à jour automatique d'une stack s'ouvre depuis sa barre d'actions dans une fenêtre dédiée, sans changer les réglages individuels des conteneurs. Les actions de mise à jour, ignorance, pause et rollback des images utilisent des boutons compacts avec libellés accessibles.
 
-**2026-10-09 — Initialisation et ergonomie Restic (#491)** — Les actions d'enregistrement des paramètres, de sauvegarde immédiate et de maintenance sont séparées ; l'état des dépôts et les explications de rétention sont plus clairs et l'initialisation est mieux protégée.
-
-**2026-10-08 — Messages backend en anglais (#477)** — Les erreurs de mot de passe Restic, bilans d'audit des purges et messages d'auto-mise à jour ne restent plus en français pour les installations anglophones.
-
-
 **2026-10-10 — DNS de secours configurables** — ImageWatcher peut utiliser, uniquement après un échec DNS système, les serveurs Quad9/Cloudflare ou des DNS IPv4/IPv6 personnalisés pour ses requêtes HTTP aux registries et aux services de jetons. La WebUI propose les tests A/AAAA, les délais et les diagnostics traduits. Désactivé par défaut ; aucun changement DNS de l’hôte ou de Docker Engine, et aucune action sur les pulls/self-updates gérés par Engine.
 
 **2026-10-10 — Coordination ImageWatcher / Self-Update** — Les scans de registres/DNS en lecture seule ne bloquent plus la mise à jour d’Enhanced. Les mises à jour d’images, rollbacks et nettoyages de tags partageant une mutation Docker utilisent une réservation exclusive avec Self-Update ; les opérations concurrentes sont reportées. L’état planifié ne bloque pas inutilement ImageWatcher et le panneau donne la priorité à l’opération active.
@@ -19,16 +14,19 @@
 
 **2026-10-10 — Auto-mise à jour via Docker Socket Proxy avec plusieurs réseaux** — Le sidecar démarre sur un réseau Docker existant, puis rejoint uniquement les réseaux supplémentaires avant de recevoir l’autorisation d’exécuter le plan signé. Corrige le conflit du réseau `none` à l’étape 5/8 ; des tests couvrent un ou plusieurs réseaux et l’échec de connexion. Corrige #485.
 
+**2026-10-09 — Initialisation et ergonomie Restic (#491)** — Les actions d'enregistrement des paramètres, de sauvegarde immédiate et de maintenance sont séparées ; l'état des dépôts et les explications de rétention sont plus clairs et l'initialisation est mieux protégée.
+
 **2026-10-09 — Mises à jour groupées des images d’une stack** — La page d’une stack permet maintenant d’appliquer en une seule opération le mode **Désactivé**, **Immédiat** ou **Planifié** à ses images. Un aperçu liste les changements ; l’utilisateur choisit de **conserver les exceptions individuelles** (valeur par défaut) ou de les remplacer. Les services exclus par `dockge.imageupdates.check=false` restent protégés, les images partagées sont dédupliquées et les instances liées utilisent la même validation côté serveur. Les futures images ne sont pas automatiquement concernées.
 
 **2026-10-09 — ImageWatcher immédiat plus rapide et fiable** — Contrôle ciblé à l’activation puis toutes les 5 minutes pour les images en mode Immédiat, comparaison avec les images réellement exécutées, mutualisation des requêtes identiques, temporisation HTTP 429 et bilan des cycles dans les logs. Les pauses, fenêtres de maintenance et sauvegardes de rollback restent respectées.
 
 **2026-10-09 — Supervision facultative harmonisée et Hub PowerWatch géré** — Kula, Dozzle, PowerWatch et Hub disposent d’encarts cohérents avec descriptions traduites, liens GitHub et commandes adaptées à leur état. Le Hub peut être installé et géré indépendamment avec son volume persistant. Une instance PowerWatch ou Hub existante nécessite seulement son URL WebUI ; Enhanced résout automatiquement l’API intégrée. Les paramètres PowerWatch et Hub sont enregistrés séparément.
 
+**2026-10-09 — Self-update compatible Docker Socket Proxy** — Le sidecar de self-update suit désormais le transport Docker réellement utilisé par Enhanced : socket Unix validé et monté, ou `DOCKER_HOST=tcp://…` sans montage fictif de `/var/run/docker.sock`. En TCP, il attend le raccordement aux réseaux Docker de l’instance avant de consommer le plan signé, utilise le même endpoint et nettoie le sidecar si ce raccordement échoue. Les plans signés, backup Restic obligatoire, healthcheck et rollback restent inchangés.
+
+**2026-10-08 — Messages backend en anglais (#477)** — Les erreurs de mot de passe Restic, bilans d'audit des purges et messages d'auto-mise à jour ne restent plus en français pour les installations anglophones.
 
 **2026-10-08 — Monitoring électrique facultatif avec PowerWatch** — Dockge-Enhanced peut observer un PowerWatch local ou HTTP(S) existant sans le piloter, ou déployer une stack Compose gérée dédiée avec données persistantes et prise en charge conditionnelle de RAPL, MSR et NVIDIA. La puissance globale instantanée, sa fiabilité et des liens WebUI compacts apparaissent dans Monitoring, la barre système et le résumé des instances liées via la fédération existante. Un PowerWatch Hub facultatif configuré séparément possède un lien global unique et est contrôlé via son API documentée. Les conteneurs externes ne sont jamais modifiés, la propriété des ressources gérées est contrôlée strictement et la WebUI écoute localement par défaut.
-
-**2026-10-09 — Self-update compatible Docker Socket Proxy** — Le sidecar de self-update suit désormais le transport Docker réellement utilisé par Enhanced : socket Unix validé et monté, ou `DOCKER_HOST=tcp://…` sans montage fictif de `/var/run/docker.sock`. En TCP, il attend le raccordement aux réseaux Docker de l’instance avant de consommer le plan signé, utilise le même endpoint et nettoie le sidecar si ce raccordement échoue. Les plans signés, backup Restic obligatoire, healthcheck et rollback restent inchangés.
 
 **2026-10-08 — Résolution persistante du répertoire de données** — Le monitoring des images et les réglages partagés stockés en fichiers utilisent maintenant le volume persistant `/app/data` lorsque `DOCKGE_DATA_DIR` n’est pas défini : ils survivent donc à la recréation et au self-update du conteneur. Un répertoire explicite reste prioritaire ; une installation legacy non vide dans `/opt/dockge/data` est conservée si le volume actuel est vide.
 
@@ -39,7 +37,6 @@
 **2026-10-08 — Réconciliation finale fiable des rapports de purge Docker** — Une image absente d’une inspection par lot n’est plus confondue avec une absence confirmée par Docker : la purge bascule vers une inspection ciblée par Image ID, contrôle la postcondition de chaque suppression et effectue une réconciliation finale légère. Ressources sépare désormais l’utilisation Docker de l’état de purge, afin d’expliquer les images Enhanced actives, de récupération, de rollback, trop récentes ou exclues même lorsque Docker les indique inutilisées. Les protections Enhanced active, rollback et récupération restent intactes, avec un inventaire initial, des contrôles ciblés et un inventaire final léger.
 
 **2026-10-07 — La purge des images Docker est bornée et résistante aux courses** — Une purge en lot charge désormais l’inventaire complet une seule fois et ne revalide que la cible juste avant sa suppression, au lieu de rescanner toutes les images et tous les conteneurs avant chaque `docker rmi`. La liste Ressources évite l’inspection complète des images, les inspections sont effectuées par lots bornés et tolèrent la disparition concurrente d’une image, les anciennes images Enhanced `<none>` réutilisent l’inventaire initial et l’expiration des rollbacks partage le verrou de nettoyage Docker.
-
 
 **2026-10-07 — Purge fiable des anciennes images Enhanced `<none>`** — La purge identifie désormais les candidates `ghcr.io/aerya/dockge-enhanced:<none>` depuis l’inventaire Docker au lieu d’exiger des métadonnées `RepoDigests` susceptibles de disparaître après un retag. Les images dépassant la garde self-update de 48 h peuvent être supprimées tout en protégeant l’image active et les images de récupération. Le résumé des images inutilisées ne compte plus non plus les images ordinaires réellement utilisées comme candidates protégées.
 
