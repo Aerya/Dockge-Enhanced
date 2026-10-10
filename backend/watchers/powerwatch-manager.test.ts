@@ -92,10 +92,13 @@ test("protected PowerWatch snapshots use a read-only Bearer token without exposi
 });
 
 test("a saved read-only token never follows an instance URL change", async () => {
-    const calls: Array<{ url: string; token?: string }> = [];
+    const calls: Array<{ url: string;
+        token?: string }> = [];
     const manager = managerWith({ fetchJson: async (url, _timeout, opts) => {
-        calls.push({ url, token: opts?.bearerToken });
-        return { total: { watts: 12.3, confidence: "Measured" } };
+        calls.push({ url,
+            token: opts?.bearerToken });
+        return { total: { watts: 12.3,
+            confidence: "Measured" } };
     } });
     manager.settings = { ...DEFAULT_POWERWATCH_SETTINGS,
         enabled: true,
@@ -107,13 +110,16 @@ test("a saved read-only token never follows an instance URL change", async () =>
     assert.equal(calls.at(-1)?.token, "pw_first-only");
 
     // Updating the endpoint must drop the old secret even if the form still has its mask.
-    assert.equal((await manager.test({ apiUrl: "https://second.test", apiToken: POWERWATCH_TOKEN_MASK })).reachable, true);
-    assert.deepEqual(calls.at(-1), { url: "https://second.test/api/snapshot", token: undefined });
+    assert.equal((await manager.test({ apiUrl: "https://second.test",
+        apiToken: POWERWATCH_TOKEN_MASK })).reachable, true);
+    assert.deepEqual(calls.at(-1), { url: "https://second.test/api/snapshot",
+        token: undefined });
     assert.equal((await manager.test({ apiUrl: "https://third.test" })).reachable, true);
     assert.equal(calls.at(-1)?.token, undefined);
 
     // A newly entered token may be explicitly associated with the new endpoint.
-    assert.equal((await manager.test({ apiUrl: "https://fourth.test", apiToken: "pw_explicit-new" })).reachable, true);
+    assert.equal((await manager.test({ apiUrl: "https://fourth.test",
+        apiToken: "pw_explicit-new" })).reachable, true);
     assert.equal(calls.at(-1)?.token, "pw_explicit-new");
     assert.equal(manager.settings.apiToken, "pw_first-only");
 });
