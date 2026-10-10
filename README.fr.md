@@ -142,7 +142,7 @@ Les erreurs de mot de passe Restic, bilans d'audit des purges et messages d'auto
 
 La puissance instantanée globale, sa fiabilité et un accès direct à la WebUI apparaissent dans Monitoring, la barre système et le résumé compact des instances liées via la fédération existante. La barre système et les cartes d’instances affichent uniquement les watts près du pictogramme électrique ; l’infobulle identifie PowerWatch et son niveau Measured ou Estimated. PowerWatch mesure ou estime la consommation selon les capteurs disponibles.
 
-Un **PowerWatch Hub** facultatif peut être installé et géré directement par Enhanced ou relié à un Hub existant avec sa seule URL WebUI. Il reste un service distinct : il agrège les API HTTP privées de PowerWatch existants dans son propre tableau de bord et ne nécessite aucun privilège matériel hôte. Dockge-Enhanced ouvre seulement ce lien Hub global ; il ne le répète pas pour chaque instance liée. PowerWatch propose désormais une authentification native facultative, **désactivée par défaut**, avec jetons API Bearer en lecture seule. **L’intégration Enhanced ne gère pas encore ces jetons** : une instance PowerWatch protégée n’est donc pas directement interrogeable dans Enhanced. Le Hub propose séparément un jeton facultatif pour protéger ses opérations d’administration. Ne publiez aucune interface non protégée sur Internet.
+Un **PowerWatch Hub** facultatif peut être installé et géré directement par Enhanced ou relié à un Hub existant avec sa seule URL WebUI. Il reste un service distinct : il agrège les API HTTP privées de PowerWatch existants dans son propre tableau de bord et ne nécessite aucun privilège matériel hôte. Dockge-Enhanced ouvre seulement ce lien Hub global ; il ne le répète pas pour chaque instance liée. PowerWatch propose désormais une authentification native facultative, **désactivée par défaut**, avec jetons API Bearer en lecture seule. **Enhanced prend désormais en charge ces jetons Bearer en lecture seule** pour interroger une instance PowerWatch protégée. Renseignez le jeton dans **Monitoring → PowerWatch → Jeton API en lecture seule**. Le jeton enregistré reste masqué et n’est jamais envoyé au Hub. Le Hub propose séparément un jeton facultatif pour protéger ses opérations d’administration. Ne publiez aucune interface non protégée sur Internet.
 
 
 ##### Services de supervision facultatifs : Kula, Dozzle, PowerWatch et Hub
@@ -719,7 +719,7 @@ Ouvrez **http://localhost:5001**, créez votre compte administrateur, puis cliqu
 >       - /mnt/data:/mnt/data:ro
 > ```
 
-**PowerWatch et PowerWatch Hub sont facultatifs** : aucun service supplémentaire n’est à ajouter au Compose ci-dessus. Après installation, ouvrez **Surveillance → Monitoring** (`/watcher/monitoring`) pour utiliser des instances existantes ou installer séparément les services gérés. Les instances PowerWatch protégées par jeton Bearer ne sont pas encore prises en charge par l’intégration Enhanced.
+**PowerWatch et PowerWatch Hub sont facultatifs** : aucun service supplémentaire n’est à ajouter au Compose ci-dessus. Après installation, ouvrez **Surveillance → Monitoring** (`/watcher/monitoring`) pour utiliser des instances existantes ou installer séparément les services gérés. Les instances protégées sont prises en charge : renseignez leur jeton API Bearer en lecture seule dans Monitoring → PowerWatch. Les instances sans authentification fonctionnent toujours sans jeton.
 
 ### Tester Dockge-Enhanced à côté de Dockge
 

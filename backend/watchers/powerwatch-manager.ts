@@ -11,6 +11,8 @@ export interface PowerWatchSettings {
     enabled: boolean;
     mode: PowerWatchMode;
     apiUrl: string;
+    /** Read-only PowerWatch API token. Never returned by getSettingsSafe(). */
+    apiToken: string;
     webUrl: string;
     externalContainer: string;
     hostPort: number;
@@ -79,7 +81,7 @@ interface CommandResult { stdout: string;
 interface PowerWatchDependencies {
     docker: (args: string[], options?: { cwd?: string;
         timeoutMs?: number }) => Promise<CommandResult>;
-    fetchJson: (url: string, timeoutMs: number) => Promise<unknown>;
+    fetchJson: (url: string, timeoutMs: number, options?: { bearerToken?: string }) => Promise<unknown>;
     platform: () => NodeJS.Platform;
     now: () => number;
 }
@@ -99,11 +101,13 @@ const HUB_STACK_DIR = path.join(STACKS_DIR, POWERWATCH_HUB_STACK_NAME);
 const CACHE_TTL_MS = 8_000;
 const REQUEST_TIMEOUT_MS = 4_000;
 const HOST_PROBE_TIMEOUT_MS = 180_000;
+export const POWERWATCH_TOKEN_MASK = "********";
 
 export const DEFAULT_POWERWATCH_SETTINGS: PowerWatchSettings = {
     enabled: false,
     mode: "external",
     apiUrl: "",
+    apiToken: "",
     webUrl: "",
     externalContainer: "",
     hostPort: 3000,
@@ -134,7 +138,7 @@ async function defaultDocker(args: string[], options: { cwd?: string;
     };
 }
 
-async function defaultFetchJson(url: string, timeoutMs: number): Promise<unknown> {
+async function defaultFetchJson(url: string, timeoutMs: number, options: { bearerToken?: string } = {}): Promise<unknown> {
     // This URL is deliberately configured by an authenticated Dockge administrator and is
     // validated as credential-free HTTP(S). Private LAN targets are a supported use case, so
     // they cannot be blocked; redirects are refused to keep the request on the approved origin.
@@ -142,6 +146,7 @@ async function defaultFetchJson(url: string, timeoutMs: number): Promise<unknown
     const response = await fetch(url, {
         signal: AbortSignal.timeout(timeoutMs),
         redirect: "error",
+        headers: options.bearerToken ? { Authorization: `Bearer ${options.bearerToken}` } : undefined,
     });
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -225,6 +230,19 @@ function validateSettings(input: Partial<PowerWatchSettings>, current: PowerWatc
     }
     next.apiUrl = validatePowerWatchUrl(next.apiUrl, "apiUrl");
     next.webUrl = validatePowerWatchUrl(next.webUrl, "webUrl");
+    // A masked/omitted token only belongs to the original PowerWatch target.
+    // Never forward it to a different URL, selected container or managed instance.
+    const target = (s: PowerWatchSettings): string => s.mode === "managed"
+        ? "managed:powerwatch-dockge-enhanced"
+        : s.externalContainer ? `container:${s.externalContainer}` : `url:${s.apiUrl || s.webUrl}`;
+    if (input.apiToken === POWERWATCH_TOKEN_MASK || input.apiToken === undefined) {
+        next.apiToken = target(next) === target(current) ? current.apiToken : "";
+    } else {
+        next.apiToken = next.apiToken.trim();
+        if (next.apiToken.length > 4096 || /[^\x21-\x7e]/.test(next.apiToken)) {
+            throw new Error("Invalid PowerWatch API token");
+        }
+    }
     next.managedWebUrl = validatePowerWatchUrl(next.managedWebUrl, "managedWebUrl");
     next.hubWebUrl = validatePowerWatchUrl(next.hubWebUrl, "hubWebUrl");
     next.hubManagedWebUrl = validatePowerWatchUrl(next.hubManagedWebUrl, "hubManagedWebUrl");
@@ -440,7 +458,8 @@ export class PowerWatchManager {
     }
 
     getSettingsSafe(): PowerWatchSettings {
-        return { ...this.settings };
+        return { ...this.settings,
+            apiToken: this.settings.apiToken ? POWERWATCH_TOKEN_MASK : "" };
     }
 
     async saveSettings(partial: Partial<PowerWatchSettings> & { confirmStopManaged?: boolean }): Promise<void> {
@@ -463,7 +482,9 @@ export class PowerWatchManager {
         this.settings = next;
         this.cache = null;
         await fs.mkdir(DATA_DIR, { recursive: true });
-        await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
+        // Settings include a Bearer secret: protect both newly created and legacy files.
+        await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2), { mode: 0o600 });
+        await fs.chmod(SETTINGS_PATH, 0o600);
     }
 
     async startIfEnabled(): Promise<void> {
@@ -586,7 +607,7 @@ export class PowerWatchManager {
                 if (!inspect?.State?.Running) {
                     throw new Error("PowerWatch is stopped");
                 }
-                const output = await this.docker([ "exec", POWERWATCH_CONTAINER_NAME, "curl", "--fail", "--silent", "--show-error", "--max-time", "4", "http://127.0.0.1:3000/api/snapshot" ], { timeoutMs: REQUEST_TIMEOUT_MS + 1_000 });
+                const output = await this.readContainerSnapshot(POWERWATCH_CONTAINER_NAME, settings.apiToken);
                 payload = parseSnapshotJson(output);
                 webUrl = this.managedWebUrlFor(settings);
             } else if (settings.externalContainer) {
@@ -594,7 +615,7 @@ export class PowerWatchManager {
                 if (!inspect.State?.Running) {
                     throw new Error("PowerWatch container is stopped");
                 }
-                const output = await this.docker([ "exec", settings.externalContainer, "curl", "--fail", "--silent", "--show-error", "--max-time", "4", "http://127.0.0.1:3000/api/snapshot" ], { timeoutMs: REQUEST_TIMEOUT_MS + 1_000 });
+                const output = await this.readContainerSnapshot(settings.externalContainer, settings.apiToken);
                 payload = parseSnapshotJson(output);
                 const port = publishedPort(inspect);
                 webUrl = settings.webUrl || (port ? `http://127.0.0.1:${port}` : null);
@@ -605,7 +626,7 @@ export class PowerWatchManager {
                 if (!baseUrl) {
                     throw new Error("PowerWatch URL is required");
                 }
-                payload = await this.dependencies.fetchJson(snapshotEndpoint(baseUrl), REQUEST_TIMEOUT_MS);
+                payload = await this.dependencies.fetchJson(snapshotEndpoint(baseUrl), REQUEST_TIMEOUT_MS, { bearerToken: settings.apiToken || undefined });
                 webUrl = this.externalWebUrl(settings);
             }
             return normalizeSnapshot(payload, settings, webUrl);
@@ -622,6 +643,15 @@ export class PowerWatchManager {
                 lastError: error instanceof Error ? error.message : String(error),
             };
         }
+    }
+
+    private async readContainerSnapshot(container: string, apiToken: string): Promise<string> {
+        const args = [ "exec", container, "curl", "--fail", "--silent", "--show-error", "--max-time", "4" ];
+        if (apiToken) {
+            args.push("--header", `Authorization: Bearer ${apiToken}`);
+        }
+        args.push("http://127.0.0.1:3000/api/snapshot");
+        return this.docker(args, { timeoutMs: REQUEST_TIMEOUT_MS + 1_000 });
     }
 
     async getSnapshot(force = false): Promise<PowerWatchSnapshot> {

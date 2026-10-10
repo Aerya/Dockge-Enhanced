@@ -803,6 +803,8 @@
     "watcher.powerwatch.clear": "清除",
     "watcher.powerwatch.apiUrl": "PowerWatch 網址",
     "watcher.powerwatch.externalUrlHint": "輸入現有 PowerWatch WebUI 的網址。Enhanced 會自動存取其內建 API。",
+    "watcher.powerwatch.apiToken": "唯讀 API 權杖（選填）",
+    "watcher.powerwatch.apiTokenHint": "僅在啟用 PowerWatch 原生驗證時需要。請在「安全性」中建立唯讀 Bearer 權杖。儲存的權杖會保持隱藏。",
     "watcher.powerwatch.webUrl": "獨立 WebUI 網址（選填）",
     "watcher.powerwatch.externalWebUrlHint": "僅當 WebUI 網址與 API 網址不同時才需填寫（例如使用反向代理）。",
     "watcher.powerwatch.webUrlOptional": "自訂 WebUI URL（選填）",

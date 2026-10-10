@@ -147,7 +147,7 @@ Current whole-machine power, confidence and a direct WebUI link appear in Monito
 
 In **Monitoring** (`/watcher/monitoring`), the four optional third-party services appear in separate, consistent cards, with brief descriptions and links to their GitHub repositories. PowerWatch and its Hub each offer independent external/managed modes, installation, start, restart, stop and connectivity test. Managed Hub uses the PowerWatch image's `powerwatch-hub` binary, defaults to `127.0.0.1:3065`, and stores its data in a dedicated persistent Docker volume.
 
-A Hub can run without a locally managed PowerWatch. Instances reachable only through an individual host's `127.0.0.1` are **not automatically accessible from the Hub's Docker container**; configure a reachable, protected endpoint for federation. PowerWatch now offers optional native authentication, **disabled by default**, with read-only Bearer API tokens. **Enhanced does not yet support those tokens** for connecting to a protected PowerWatch instance. The Hub separately supports an optional token for administrative operations. Never expose an unprotected interface publicly.
+A Hub can run without a locally managed PowerWatch. Instances reachable only through an individual host's `127.0.0.1` are **not automatically accessible from the Hub's Docker container**; configure a reachable, protected endpoint for federation. PowerWatch now offers optional native authentication, **disabled by default**, with read-only Bearer API tokens. **Enhanced now supports these read-only Bearer API tokens** for querying protected PowerWatch instances. Enter the token in **Monitoring → PowerWatch → Read-only API token**. The saved token stays masked and is never forwarded to the Hub. The Hub separately supports an optional token for administrative operations. Never expose an unprotected interface publicly.
 
 To connect an **existing PowerWatch**, enter the usual **WebUI address** (for example `http://192.168.0.64:3064`) in the PowerWatch URL field: Enhanced automatically requests `/api/snapshot` on the same origin. A separate WebUI address is only needed for unusual reverse-proxy setups and remains available in advanced settings. An **existing Hub** likewise needs only its WebUI address; Enhanced calls `/api/hub/snapshot` automatically.
 
@@ -719,7 +719,7 @@ Open **http://localhost:5001**, create your admin account, then click **Monitori
 >       - /mnt/data:/mnt/data:ro
 > ```
 
-**PowerWatch and PowerWatch Hub are optional**: neither needs to be added to the Enhanced Compose above. After installation, open **Watcher → Monitoring** (`/watcher/monitoring`) to connect existing instances or deploy the managed services independently. Bearer-token-protected PowerWatch instances are not yet supported by Enhanced’s integration.
+**PowerWatch and PowerWatch Hub are optional**: neither needs to be added to the Enhanced Compose above. After installation, open **Watcher → Monitoring** (`/watcher/monitoring`) to connect existing instances or deploy the managed services independently. Protected PowerWatch instances are supported: enter their read-only Bearer token in Monitoring → PowerWatch. Instances without authentication still require no token.
 
 ### Testing Dockge-Enhanced alongside Dockge
 

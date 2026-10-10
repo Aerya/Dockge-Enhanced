@@ -125,7 +125,7 @@ Restic 密码错误、清理审计摘要和自动更新消息不再错误地以�
 
 整机当前功率、可信度和 WebUI 直达链接会通过现有联邦通道显示在 Monitoring、系统状态栏和紧凑的关联实例摘要中。系统状态栏和实例卡片仅在电力图标旁显示瓦数；工具提示会标明 PowerWatch 以及 Measured 或 Estimated 可信度。PowerWatch 会根据可用传感器进行测量或估算。
 
-也可以直接通过 Enhanced 安装和管理可选的 **PowerWatch Hub**，或通过现有 Hub 的 WebUI 地址连接。Hub 是独立服务：它在自己的仪表板中聚合既有 PowerWatch 的私有 HTTP API，无需主机硬件权限。Dockge-Enhanced 只提供一个全局 Hub 链接，不会为每个关联实例重复显示。PowerWatch 现已支持**可选的原生身份验证**（默认关闭）以及只读 Bearer API 令牌。**Enhanced 集成目前尚不支持这些令牌**，因此无法直接访问已启用认证的 PowerWatch 实例。Hub 另有可选的管理操作令牌保护。请勿将未受保护的界面暴露到公网。
+也可以直接通过 Enhanced 安装和管理可选的 **PowerWatch Hub**，或通过现有 Hub 的 WebUI 地址连接。Hub 是独立服务：它在自己的仪表板中聚合既有 PowerWatch 的私有 HTTP API，无需主机硬件权限。Dockge-Enhanced 只提供一个全局 Hub 链接，不会为每个关联实例重复显示。PowerWatch 现已支持**可选的原生身份验证**（默认关闭）以及只读 Bearer API 令牌。**Enhanced 现在支持只读 Bearer 令牌**，可直接读取受保护的 PowerWatch 实例。在 **Monitoring → PowerWatch → 只读 API 令牌** 中输入令牌；保存后令牌保持隐藏，且不会发送给 Hub。Hub 另有可选的管理操作令牌保护。请勿将未受保护的界面暴露到公网。
 
 
 ##### 可选监控服务：Kula、Dozzle、PowerWatch 和 Hub
@@ -531,7 +531,7 @@ docker compose up -d
 
 > 如果要监控 `/` 之外的主机磁盘分区，请把目标路径只读挂载到容器，并在 **Monitoring** 页面中加入该路径。
 
-**PowerWatch 和 PowerWatch Hub 均为可选服务**，无需添加到上面的 Enhanced Compose。安装后打开 **Monitoring**（`/watcher/monitoring`），即可连接既有实例或独立部署托管服务。Enhanced 集成目前还不支持使用 Bearer 令牌保护的 PowerWatch 实例。
+**PowerWatch 和 PowerWatch Hub 均为可选服务**，无需添加到上面的 Enhanced Compose。安装后打开 **Monitoring**（`/watcher/monitoring`），即可连接既有实例或独立部署托管服务。连接受保护的 PowerWatch 实例时，请在 Monitoring → PowerWatch 中填写只读 Bearer API 令牌。未启用认证的实例仍无需令牌。
 
 ### 与 Dockge 并行测试 Dockge-Enhanced
 

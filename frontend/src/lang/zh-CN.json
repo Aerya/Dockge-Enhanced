@@ -1086,6 +1086,8 @@
     "watcher.powerwatch.clear": "清除",
     "watcher.powerwatch.apiUrl": "PowerWatch 地址",
     "watcher.powerwatch.externalUrlHint": "输入现有 PowerWatch WebUI 的地址。Enhanced 会自动访问其内置 API。",
+    "watcher.powerwatch.apiToken": "只读 API 令牌（可选）",
+    "watcher.powerwatch.apiTokenHint": "仅当启用 PowerWatch 原生身份验证时需要。在“安全”中创建只读 Bearer 令牌。已保存的令牌会保持隐藏。",
     "watcher.powerwatch.webUrl": "单独的 WebUI 地址（可选）",
     "watcher.powerwatch.externalWebUrlHint": "仅当 WebUI 地址与 API 地址不同时需要填写（例如使用反向代理）。",
     "watcher.powerwatch.webUrlOptional": "自定义 WebUI URL（可选）",

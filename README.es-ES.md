@@ -142,14 +142,14 @@ Los errores de contraseña de Restic, los informes de limpieza y los mensajes de
 
 La potencia instantánea global, su nivel de confianza y un enlace directo a la WebUI aparecen en Monitoring, la barra del sistema y los resúmenes compactos de instancias vinculadas mediante la federación existente. La barra del sistema y las tarjetas de instancia muestran solo los vatios junto al icono eléctrico; el tooltip identifica PowerWatch y su confianza Measured o Estimated. PowerWatch mide o estima el consumo según los sensores disponibles.
 
-También puede instalarse y gestionarse un **PowerWatch Hub** desde Enhanced, o conectarse uno existente mediante su URL WebUI. Sigue siendo un servicio independiente: agrupa las API HTTP privadas de instancias PowerWatch existentes en su propio panel y no necesita privilegios de hardware del host. Dockge-Enhanced solo abre este enlace global del Hub; no lo duplica para cada instancia vinculada. PowerWatch dispone ahora de autenticación nativa opcional, **desactivada por defecto**, con tokens API Bearer de solo lectura. **Enhanced todavía no admite esos tokens**, por lo que no puede consultar directamente una instancia PowerWatch protegida. El Hub también ofrece un token opcional para proteger su administración. Nunca expongas una interfaz sin protección a Internet.
+También puede instalarse y gestionarse un **PowerWatch Hub** desde Enhanced, o conectarse uno existente mediante su URL WebUI. Sigue siendo un servicio independiente: agrupa las API HTTP privadas de instancias PowerWatch existentes en su propio panel y no necesita privilegios de hardware del host. Dockge-Enhanced solo abre este enlace global del Hub; no lo duplica para cada instancia vinculada. PowerWatch dispone ahora de autenticación nativa opcional, **desactivada por defecto**, con tokens API Bearer de solo lectura. **Enhanced ya admite los tokens Bearer de solo lectura** para consultar directamente instancias PowerWatch protegidas. Introduce el token en **Monitorización → PowerWatch → Token API de solo lectura**. El token guardado permanece oculto y nunca se envía al Hub. El Hub también ofrece un token opcional para proteger su administración. Nunca expongas una interfaz sin protección a Internet.
 
 
 ##### Servicios opcionales: Kula, Dozzle, PowerWatch y Hub
 
 En **Monitoring** (`/watcher/monitoring`), los cuatro servicios de terceros tienen tarjetas independientes con descripción y enlace a GitHub. PowerWatch y Hub incluyen modos externo y gestionado, instalación, inicio, reinicio, parada y prueba de conexión. El Hub gestionado utiliza el binario `powerwatch-hub` de la imagen PowerWatch, escucha de forma predeterminada en `127.0.0.1:3065` y conserva los datos en su propio volumen Docker.
 
-El Hub funciona sin un PowerWatch local. Un servicio accesible únicamente en `127.0.0.1` del host **no puede ser alcanzado directamente desde el contenedor Hub**: se necesita una dirección privada accesible y protegida. No exponga las interfaces a Internet mientras no haya autenticación nativa.
+El Hub funciona sin un PowerWatch local. Un servicio accesible únicamente en `127.0.0.1` del host **no puede ser alcanzado directamente desde el contenedor Hub**: se necesita una dirección privada accesible y protegida. No exponga interfaces sin protección a Internet: la autenticación nativa de PowerWatch es opcional.
 
 Para conectar un **PowerWatch existente**, indique únicamente la dirección de su **WebUI** (por ejemplo, `http://192.168.0.64:3064`) en el campo URL de PowerWatch: Enhanced consultará automáticamente `/api/snapshot` en esa dirección. Una URL de WebUI distinta solo es necesaria en configuraciones especiales con proxy inverso y permanece en las opciones avanzadas. Para un **Hub existente**, basta con su dirección WebUI; Enhanced utiliza `/api/hub/snapshot` automáticamente.
 
@@ -684,7 +684,7 @@ Abre **http://localhost:5001**, crea tu cuenta de administrador y luego haz clic
 >       - /mnt/data:/mnt/data:ro
 > ```
 
-**PowerWatch y PowerWatch Hub son opcionales**: no hace falta añadirlos al Compose de Enhanced. Tras instalarlo, abre **Monitorización** (`/watcher/monitoring`) para conectar instancias existentes o instalar los servicios gestionados por separado. La integración Enhanced todavía no admite instancias PowerWatch protegidas con token Bearer.
+**PowerWatch y PowerWatch Hub son opcionales**: no hace falta añadirlos al Compose de Enhanced. Tras instalarlo, abre **Monitorización** (`/watcher/monitoring`) para conectar instancias existentes o instalar los servicios gestionados por separado. Las instancias PowerWatch protegidas se admiten: introduce su token API Bearer de solo lectura en Monitorización → PowerWatch. Las instancias sin autenticación siguen funcionando sin token.
 
 ### Probar Dockge-Enhanced junto a Dockge
 
