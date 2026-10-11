@@ -163,6 +163,7 @@
             <p v-if="operation.state === 'scheduled'" class="alert alert-warning py-2 mb-3">
                 {{ $t("updates.status.deferredReason", { reason: blockerReason }) }}
             </p>
+            <p v-if="showStalledPull" class="alert alert-warning py-2 mb-3">{{ $t("updates.status.stalledPull") }}</p>
             <p v-if="showTechnicalError" class="alert alert-danger py-2 mb-3">{{ operation.message }}</p>
 
             <button
@@ -320,6 +321,9 @@ const currentStateClass = computed(() => {
     return status.value.updateAvailable ? "state-warning" : "state-success";
 });
 const showTechnicalError = computed(() => [ "failed", "rollback-failed" ].includes(operation.value.state) && !!operation.value.message);
+const showStalledPull = computed(() => operation.value.state === "updating"
+    && operation.value.stage === "pull-target"
+    && operation.value.message.startsWith("Updater sidecar is still running,"));
 const blockerReason = computed(() => operation.value.deferredBy
     ? t(`updates.blocker.${operation.value.deferredBy}`)
     : operation.value.message);

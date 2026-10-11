@@ -68,6 +68,10 @@ En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (
 
 #### Actualizaciones e ImageWatcher
 
+**Espacio de Docker y conservación de imágenes antiguas de Enhanced**
+
+Antes de la copia de seguridad o la descarga, la autoactualización comprueba el espacio libre del almacenamiento del daemon Docker. Se aplaza si falta espacio o no puede comprobarse; una actualización manual se detiene con una explicación. Un updater desaparecido se detecta en cualquier etapa; una descarga todavía activa después de 20 minutos se señala sin declararla detenida. Después de una actualización correcta, las imágenes antiguas de Enhanced sin uso obtenidas por digest se revisan cada día y pueden eliminarse tras 48 horas. Las imágenes activas, de reversión, recuperación o explícitamente excluidas siguen protegidas; esto no activa la limpieza general de imágenes.
+
 **Coordinación más segura entre ImageWatcher y Self-Update**
 
 Las consultas de registros y DNS ya no retrasan la actualización de Dockge-Enhanced. Las actualizaciones de imágenes, reversiones y limpiezas de etiquetas de rollback que modifican Docker comparten una reserva exclusiva con Self-Update: las operaciones incompatibles se aplazan en lugar de ejecutarse a la vez. El estado `scheduled` no bloquea innecesariamente ImageWatcher; el estado persistente protege al sidecar después de un reinicio. El panel de Actualizaciones prioriza la operación activa frente a una comprobación antigua de disponibilidad.

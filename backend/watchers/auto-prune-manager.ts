@@ -26,6 +26,9 @@ import {
     withDockerCleanupLock,
 } from "../docker-operation-state";
 import { getSelfUpdateBlocker } from "../self-update/operation-guard";
+import { tryReserveDockerUpdate } from "../self-update/operation-coordinator";
+import { isSelfUpdateActive } from "../self-update/policy";
+import type { SelfUpdateOperation } from "../self-update/types";
 import { recordImagePruneReport } from "../image-prune-report";
 import {
     imageIsUsed,
@@ -51,6 +54,16 @@ const SELF_IMAGE_GRACE_HOURS = 48;
 const PRUNE_HEARTBEAT_MS = 15 * 60_000;
 const DOCKER_STARTUP_RETRY_MS = 30_000;
 
+function selfUpdateIsActive(): boolean {
+    try {
+        const status = JSON.parse(fs.readFileSync(path.join(SELF_UPDATE_DIR, "status.json"), "utf8")) as Pick<SelfUpdateOperation, "state">;
+        return status.state !== "scheduled" && isSelfUpdateActive(status.state);
+    } catch (error) {
+        // An unreadable status must not authorize destructive image cleanup.
+        return (error as NodeJS.ErrnoException).code !== "ENOENT";
+    }
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AutoPruneSettings {
@@ -67,6 +80,7 @@ export interface AutoPruneSettings {
     lastUnusedRun?: string;
     lastUnusedResult?: string;
     lastUnusedErrors?: string[];
+    lastSelfImageRun?: string;
 }
 
 export interface PruneResult {
@@ -296,6 +310,11 @@ export function untaggedRepositoryReferences(group: ImageRowGroup): string[] {
         }
     }
     return references;
+}
+
+export function isSelfImageCleanupCandidate(group: ImageRowGroup): boolean {
+    return group.references.length === 0
+        && group.rows.some(row => row.Repository === SELF_IMAGE_REPOSITORY && row.Tag === "<none>");
 }
 
 export function selfUntaggedCandidateIds(
@@ -550,7 +569,7 @@ export class AutoPruneManager {
         }
         this.heartbeatTimer = null;
         this.startupTimer = null;
-        if (this.schedulingSuspended || (!this.settings.danglingEnabled && !this.settings.unusedEnabled)) {
+        if (this.schedulingSuspended) {
             return;
         }
         this.scheduleStartupCheck();
@@ -580,7 +599,9 @@ export class AutoPruneManager {
     }
 
     async heartbeat(now = Date.now(), dockerReady = false): Promise<void> {
-        if (this.schedulingSuspended || this.heartbeatRunning || dueAutoPruneTasks(this.settings, now).length === 0) {
+        const selfImageDue = isPruneDue(this.settings.lastSelfImageRun, 24, now);
+        if (this.schedulingSuspended || this.heartbeatRunning
+            || (dueAutoPruneTasks(this.settings, now).length === 0 && !selfImageDue)) {
             return;
         }
         if (!dockerReady && !await dockerDaemonAvailable()) {
@@ -589,8 +610,16 @@ export class AutoPruneManager {
         if (!tryStartDockerCleanup()) {
             return;
         }
+        const reservation = tryReserveDockerUpdate("image-update");
+        if (!reservation) {
+            finishDockerCleanup();
+            return;
+        }
         this.heartbeatRunning = true;
         try {
+            if (selfUpdateIsActive()) {
+                return;
+            }
             const blocker = isDockerBuildActive()
                 ? "un build Docker est en cours"
                 : (await getSelfUpdateBlocker())?.message;
@@ -601,8 +630,24 @@ export class AutoPruneManager {
                     await this.runUnusedPrune(true, undefined, [], true, "automatic");
                 }
             });
+            if (selfImageDue && !blocker) {
+                // This is deliberately independent of the user's general image
+                // auto-prune setting: it only handles old Enhanced digest images.
+                let status: { state?: string } = {};
+                try {
+                    status = JSON.parse(fs.readFileSync(path.join(SELF_UPDATE_DIR, "status.json"), "utf8")) as { state?: string };
+                } catch { /* No successful self-update to maintain yet. */ }
+                if (status.state === "succeeded") {
+                    const result = await this.runUnusedPrune(false, SELF_IMAGE_GRACE_HOURS, [], true, "automatic", false, true);
+                    if (result.errors.length === 0) {
+                        this.settings.lastSelfImageRun = new Date(now).toISOString();
+                        this.saveSettings();
+                    }
+                }
+            }
         } finally {
             this.heartbeatRunning = false;
+            reservation.release();
             finishDockerCleanup();
         }
     }
@@ -965,9 +1010,9 @@ export class AutoPruneManager {
     // ── Purge inutilisées (unused tagged) ────────────────────────────────────
 
     async runUnusedPrune(notify = true, minimumAgeHours?: number, additionalExclusions: string[] = [], lockAlreadyHeld = false,
-        origin: "manual" | "automatic" = "manual", record = true): Promise<PruneResult> {
+        origin: "manual" | "automatic" = "manual", record = true, selfOnly = false): Promise<PruneResult> {
         if (!lockAlreadyHeld) {
-            return withDockerCleanupLock(() => this.runUnusedPrune(notify, minimumAgeHours, additionalExclusions, true, origin, record));
+            return withDockerCleanupLock(() => this.runUnusedPrune(notify, minimumAgeHours, additionalExclusions, true, origin, record, selfOnly));
         }
         const removed: string[] = [];
         const skipped: string[] = [];
@@ -982,6 +1027,9 @@ export class AutoPruneManager {
             const inventory = await this.loadImageInventory();
             const exclusions = [ ...new Set([ ...this.settings.unusedExclusions, ...additionalExclusions ]) ];
             for (const row of inventory.rows) {
+                if (selfOnly && row.Repository !== SELF_IMAGE_REPOSITORY) {
+                    continue;
+                }
                 if (!isDanglingImageRow(row) && !/^sha256:[a-f0-9]{64}$/.test(normalizeImageId(row.ID ?? ""))) {
                     const id = row.ID ?? "<ID manquant>";
                     examined.push({ id,
@@ -995,6 +1043,9 @@ export class AutoPruneManager {
             const rollbackIds = activeRollbackImageIds();
             const rollbackTags = activeRollbackTags();
             for (const group of groupImageRowsById(inventory.rows)) {
+                if (selfOnly && !isSelfImageCleanupCandidate(group)) {
+                    continue;
+                }
                 const untagged = untaggedRepositoryReferences(group);
                 if (group.references.length === 0 && untagged.length === 0) {
                     continue;
@@ -1061,7 +1112,7 @@ export class AutoPruneManager {
 
         const summary = summarizePruneDecisions(examined);
 
-        if (origin === "automatic") {
+        if (origin === "automatic" && !selfOnly) {
             if (errors.length === 0) {
                 this.settings.lastUnusedRun = new Date().toISOString();
             }

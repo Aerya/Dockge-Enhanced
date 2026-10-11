@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-11 — Espace Docker et surveillance de l’auto-mise à jour** — L’espace libre du stockage Docker est contrôlé avant le backup et le téléchargement ; l’auto-mise à jour est reportée si ce contrôle échoue. Un sidecar disparu est détecté à toute étape et un téléchargement anormalement long est signalé. Après une mise à jour réussie, les anciennes images Enhanced inutilisées sont entretenues quotidiennement après 48 h, sans supprimer les images actives, de rollback, de récupération ou exclues.
+
 **2026-10-10 — Intégration PowerWatch Bearer en lecture seule** — Monitoring peut interroger des instances PowerWatch protégées avec un jeton API Bearer facultatif. Le secret reste masqué dans la WebUI, associé à la cible sélectionnée, conservé avec les permissions `0600` et jamais transmis au Hub. Les instances non protégées n’ont toujours pas besoin de jeton.
 
 **2026-10-10 — Diagnostics et métadonnées ImageWatcher (#493–#495)** — La page Images permet de trier les erreurs en premier. Les cibles temporairement inaccessibles sont conservées, les timeouts de manifestes bénéficient de reprises bornées, les erreurs de registre/authentification/digest sont plus explicites et la date d'une stack évolue uniquement après une mise à jour réellement confirmée.

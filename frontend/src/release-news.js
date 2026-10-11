@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-11-self-update-disk-and-image-safety",
+        items: [ "releaseNews.item.selfUpdateDiskAndImageSafety" ],
+    },
+    {
         id: "2026-10-10-registry-dns-fallback",
         items: [ "releaseNews.item.registryDnsFallback" ],
     },

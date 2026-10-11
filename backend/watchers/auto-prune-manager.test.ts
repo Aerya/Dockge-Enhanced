@@ -14,6 +14,7 @@ import {
     imageIsUsed,
     isMissingDockerImageError,
     isObsoleteSelfImage,
+    isSelfImageCleanupCandidate,
     isPruneDue,
     normalizeImageId,
     nextPruneRun,
@@ -31,6 +32,24 @@ const activeId = `sha256:${"a".repeat(64)}`;
 const previousId = `sha256:${"b".repeat(64)}`;
 const oldId = `sha256:${"c".repeat(64)}`;
 const targetDigest = `sha256:${"d".repeat(64)}`;
+
+test("automatic self-image maintenance only selects untagged Enhanced images", () => {
+    const rows = groupImageRowsById([
+        { ID: oldId,
+            Repository: "ghcr.io/aerya/dockge-enhanced",
+            Tag: "<none>" },
+        { ID: activeId,
+            Repository: "ghcr.io/aerya/dockge-enhanced",
+            Tag: "latest" },
+        { ID: activeId,
+            Repository: "ghcr.io/aerya/dockge-enhanced",
+            Tag: "<none>" },
+        { ID: previousId,
+            Repository: "other/project",
+            Tag: "<none>" },
+    ]);
+    assert.deepEqual(rows.filter(isSelfImageCleanupCandidate).map(row => row.id), [ oldId ]);
+});
 
 test("formats audit prune summaries in English", () => {
     assert.equal(summarizePruneDecisions([

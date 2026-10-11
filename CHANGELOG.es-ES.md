@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-11 — Espacio Docker y supervisión de la autoactualización** — Se comprueba el espacio libre de Docker antes de la copia de seguridad y la descarga; la actualización automática se aplaza si la comprobación falla. Se detecta un sidecar desaparecido en cualquier etapa y se señala una descarga anormalmente larga. Después de una actualización correcta, las imágenes antiguas de Enhanced sin uso se limpian diariamente tras 48 h, conservando las activas, de reversión, recuperación y excluidas.
+
 **2026-10-10 — Integración PowerWatch Bearer de solo lectura** — Monitorización admite instancias PowerWatch protegidas con un token API Bearer opcional. El secreto permanece oculto en la WebUI, vinculado a la instancia seleccionada, guardado con permisos `0600` y nunca enviado al Hub. Las instancias no protegidas siguen funcionando sin token.
 
 **2026-10-10 — Diagnósticos y metadatos de ImageWatcher (#493–#495)** — La vista Imágenes permite ordenar primero los errores. Se conservan los objetivos temporalmente inaccesibles, los tiempos de espera de manifiestos tienen reintentos limitados, los errores de registro/autenticación/digest son más claros y la fecha del stack solo cambia tras una actualización aplicada y confirmada.
