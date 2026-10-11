@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.selfUpdateDiskAndImageSafety": "L’auto-mise à jour vérifie l’espace du stockage Docker avant le backup ou le téléchargement et se reporte si cette vérification échoue. Un updater disparu est détecté à chaque étape ; un téléchargement encore actif après 20 minutes est signalé. Les anciennes images Enhanced inutilisées sont entretenues après 48 h, sans toucher aux images actives, de rollback, de récupération ou exclues.",
     "releaseNews.item.registryDnsFallback": "DNS de secours facultatifs pour les contrôles des registries par ImageWatcher : DNS système prioritaire, puis Quad9/Cloudflare ou serveurs IPv4/IPv6 personnalisés uniquement en cas d’échec DNS. Tests A/AAAA, délais et diagnostics dans Watcher > Images. Aucun changement DNS de l’hôte ni de Docker Engine.",
     "watcher.backup.reset.title": "Réinitialiser un dépôt Restic",
     "watcher.backup.reset.intro": "Local : ancien dépôt archivé. SFTP, S3 et REST : nouveau chemin ou préfixe, ancien dépôt conservé sans déplacement ni suppression.",
@@ -1775,7 +1776,7 @@
     "updates.status.rollback-failed": "La mise à jour et le rollback automatique ont tous deux échoué.",
     "updates.status.failed": "La mise à jour a échoué.",
     "updates.status.scheduled": "La mise à jour est reportée.",
-    "updates.status.deferredReason": "Mise à jour automatique mise en attente : {reason}. Nouvelle tentative automatique dès la fin de l’opération.",
+    "updates.status.deferredReason": "Mise à jour automatique mise en attente : {reason}. Nouvelle tentative automatique dès que le blocage disparaît.",
     "selfUpdate.editor.title": "Mise à jour automatique en attente",
     "selfUpdate.editor.body": "Une mise à jour automatique de Dockge-Enhanced est prête sur {instance}, mais la stack « {stack} » contient des modifications non enregistrées.",
     "selfUpdate.editor.hint": "La mise à jour reste bloquée pour protéger votre travail. Vous pouvez enregistrer maintenant, la reporter ou continuer à travailler.",
@@ -1793,6 +1794,8 @@
     "updates.blocker.trivy-scan": "un scan de sécurité Trivy est en cours",
     "updates.blocker.external-stack-integration": "une intégration protégée de stack externe est en cours",
     "updates.blocker.state-check-error": "l’état des opérations sensibles n’a pas pu être vérifié de façon sûre",
+    "updates.blocker.disk-space": "l’espace libre du stockage Docker est insuffisant ou impossible à vérifier",
+    "updates.status.stalledPull": "L’updater tourne encore, mais le téléchargement dépasse 20 minutes. Vérifiez son conteneur avant toute nouvelle tentative ; Enhanced ne lancera pas d’autre mise à jour tant qu’il reste actif.",
     "updates.status.backupProgress": "Backup Restic {label} : {completed} / {total}",
     "updates.status.verificationProgress": "Vérification Restic {current}/{total} : {label}",
     "updates.status.machineLoad": "Charge de la machine :",

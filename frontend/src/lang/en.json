@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.selfUpdateDiskAndImageSafety": "Self-update checks Docker storage space before backup or pull and defers automatic updates when space cannot be verified. A vanished updater is detected at every stage; a pull still running after 20 minutes is flagged for inspection. Old unused Enhanced images are maintained after 48 hours while active, rollback, recovery and excluded images stay protected.",
     "releaseNews.item.registryDnsFallback": "Optional DNS fallback for ImageWatcher registry checks: system DNS stays first, then configurable Quad9/Cloudflare or custom IPv4/IPv6 servers are tried only after DNS failures. Test A/AAAA responses, response times and diagnostics in Watcher > Images. No host or Docker Engine DNS changes.",
     "watcher.backup.reset.title": "Reset a Restic repository",
     "watcher.backup.reset.intro": "Local: archive the old repository. SFTP, S3 and REST: switch to a new path or prefix, leaving the old repository untouched.",
@@ -1779,7 +1780,7 @@
     "updates.status.rollback-failed": "The update and automatic rollback both failed.",
     "updates.status.failed": "The update failed.",
     "updates.status.scheduled": "The update was deferred.",
-    "updates.status.deferredReason": "Automatic update deferred: {reason}. It will retry automatically when the operation finishes.",
+    "updates.status.deferredReason": "Automatic update deferred: {reason}. It will retry automatically when the blocker clears.",
     "selfUpdate.editor.title": "Automatic update waiting",
     "selfUpdate.editor.body": "A Dockge-Enhanced automatic update is ready on {instance}, but stack “{stack}” has unsaved changes.",
     "selfUpdate.editor.hint": "The update remains blocked to protect your work. You can save now, defer it, or keep working.",
@@ -1797,6 +1798,8 @@
     "updates.blocker.trivy-scan": "an image security scan is in progress",
     "updates.blocker.external-stack-integration": "a protected external-stack integration is in progress",
     "updates.blocker.state-check-error": "the state of sensitive operations could not be verified safely",
+    "updates.blocker.disk-space": "Docker storage free space is insufficient or cannot be checked",
+    "updates.status.stalledPull": "The updater is still running, but the image download has taken over 20 minutes. Check the updater container before retrying; Enhanced will not start another update while it remains active.",
     "updates.status.backupProgress": "Restic backup {label}: {completed} / {total}",
     "updates.status.verificationProgress": "Restic verification {current}/{total}: {label}",
     "updates.status.machineLoad": "Machine load:",

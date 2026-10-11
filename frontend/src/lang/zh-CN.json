@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.selfUpdateDiskAndImageSafety": "自更新会在备份或拉取前检查 Docker 存储空间；无法验证时自动更新将延期。任一阶段消失的 updater 都会被检测到，拉取超过 20 分钟仍在运行时会提示检查。超过 48 小时的旧版未使用 Enhanced 镜像会被清理，当前、回滚、恢复和已排除镜像仍受保护。",
     "releaseNews.item.registryDnsFallback": "ImageWatcher 现在支持可选的备用 DNS：始终优先使用系统 DNS，仅在解析失败时尝试 Quad9、Cloudflare 或自定义 IPv4/IPv6 服务器。可在 Watcher > 镜像中测试 A/AAAA、耗时及诊断；不修改主机或 Docker Engine 的 DNS。",
     "watcher.backup.reset.title": "重置 Restic 仓库",
     "watcher.backup.reset.intro": "本地：归档旧仓库。SFTP、S3 和 REST：切换到新路径或前缀，旧仓库原封不动。",
@@ -1717,7 +1718,7 @@
     "updates.status.failed": "更新失败。",
     "selfUpdate.deferred": "自动更新正在等待 — {reason}",
     "updates.status.scheduled": "更新已被推迟。",
-    "updates.status.deferredReason": "自动更新已延后：{reason}。操作完成后将自动重试。",
+    "updates.status.deferredReason": "自动更新已延后：{reason}。阻碍消失后将自动重试。",
     "selfUpdate.editor.title": "自动更新正在等待",
     "selfUpdate.editor.body": "{instance} 上的 Dockge-Enhanced 自动更新已准备就绪，但堆栈“{stack}”包含尚未保存的更改。",
     "selfUpdate.editor.hint": "为保护你的工作，更新会保持阻塞。你可以立即保存并更新、推迟更新或继续编辑。",
@@ -1735,6 +1736,8 @@
     "updates.blocker.trivy-scan": "Trivy 安全扫描正在进行",
     "updates.blocker.external-stack-integration": "受保护的外部堆栈集成正在进行",
     "updates.blocker.state-check-error": "无法安全验证敏感操作的状态",
+    "updates.blocker.disk-space": "Docker 存储空间不足或无法验证",
+    "updates.status.stalledPull": "Updater 仍在运行，但镜像拉取已超过 20 分钟。重试前请检查 updater 容器；只要它仍在运行，Enhanced 就不会启动另一轮更新。",
     "updates.status.backupProgress": "Restic 备份 {label}：{completed} / {total}",
     "updates.status.verificationProgress": "Restic 验证 {current}/{total}：{label}",
     "updates.status.machineLoad": "主机负载：",

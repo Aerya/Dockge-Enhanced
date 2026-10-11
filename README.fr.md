@@ -68,6 +68,10 @@ Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli D
 
 #### Mises à jour et ImageWatcher
 
+**Espace disque et conservation des anciennes images Enhanced**
+
+Avant le backup ou le téléchargement, l’auto-mise à jour contrôle l’espace libre du stockage du daemon Docker. Elle est reportée si l’espace manque ou ne peut être vérifié ; une mise à jour manuelle s’arrête avec une explication. Un updater disparu est détecté à toute étape ; un téléchargement encore actif après 20 minutes est signalé sans être déclaré arrêté. Après une mise à jour réussie, les anciennes images Enhanced inutilisées tirées par digest sont contrôlées chaque jour et peuvent être supprimées après 48 h. Les images actives, de rollback, de récupération ou explicitement exclues restent protégées ; cela n’active pas la purge générale des images.
+
 **Coordination plus sûre entre ImageWatcher et Self-Update**
 
 Les simples vérifications de registres et DNS ne retardent plus la mise à jour de Dockge-Enhanced. Les mises à jour d’images, rollbacks et nettoyages de tags de rollback qui modifient Docker partagent une réservation exclusive avec Self-Update : les opérations incompatibles sont reportées plutôt que lancées simultanément. L’état `scheduled` ne bloque pas inutilement ImageWatcher ; l’état persistant continue de protéger le sidecar après redémarrage. Le panneau Mises à jour donne la priorité à l’opération en cours plutôt qu’à une ancienne indication de disponibilité.

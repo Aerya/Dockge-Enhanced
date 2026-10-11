@@ -67,6 +67,10 @@ Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS
 
 #### Updates and ImageWatcher
 
+**Self-update disk space and old image retention**
+
+Before backup or pull, self-update checks free space on the Docker daemon's storage filesystem. Automatic updates are deferred if the check fails or space is insufficient; manual updates stop with an explanation. A vanished updater is detected at any stage, while a target-image pull still running after 20 minutes is flagged for inspection without pretending it has stopped. After a successful update, unused Enhanced images pulled by digest are checked daily and may be removed once they are at least 48 hours old. Active, rollback, recovery and explicitly excluded images remain protected; this does not enable general image auto-prune.
+
 **Safer coordination between ImageWatcher and Self-Update**
 
 Read-only registry and DNS checks no longer delay Dockge-Enhanced self-updates. Image updates, rollbacks and rollback-tag cleanup that change Docker now share an exclusive reservation with Self-Update, so conflicting operations are deferred instead of overlapping. A scheduled self-update does not block image updates unnecessarily; persisted self-update state continues protecting the detached updater after restart. The Updates panel prioritizes an active self-update over a stale availability check.

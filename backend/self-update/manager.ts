@@ -21,6 +21,8 @@ import { log } from "../log";
 import { resolveCurrentContainer } from "../current-container";
 import { resolveDataDir } from "../data-dir";
 import { tryReserveDockerUpdate } from "./operation-coordinator";
+import { checkSelfUpdateDiskSpace } from "./disk-space";
+import { sidecarWatchState, updaterContainerFailure } from "./sidecar-watch";
 
 const execFileAsync = promisify(execFile);
 const DATA_DIR = resolveDataDir();
@@ -245,29 +247,43 @@ export class SelfUpdateManager {
             // Keep the in-memory state if the sidecar has not written a status yet.
         }
 
-        // A detached sidecar can disappear before it has a chance to persist an
-        // error (bad permissions, runtime crash, etc.). Do not leave the UI stuck
-        // forever on "Updater sidecar started" in that case.
-        if (
-            this.operation.state === "updating"
-            && !this.requestInFlight
-            && [ "Updater sidecar started", "Updater sidecar launching" ].includes(this.operation.message)
-            && this.operation.id
-            && this.operation.startedAt
-            && Date.now() - Date.parse(this.operation.startedAt) > 15_000
-        ) {
+        // The sidecar may disappear at any stage, including after persisting
+        // "pull-target". A running sidecar must never be marked failed here.
+        const watch = !this.requestInFlight ? sidecarWatchState(this.operation) : null;
+        if (watch) {
+            let sidecarGone: boolean;
+            let failureDetail = "container no longer exists";
             try {
-                await docker([ "container", "inspect", `dockge-enhanced-updater-${this.operation.id}`, "--format", "{{.State.Running}}" ], 10_000);
-            } catch {
-                this.operation = {
-                    ...this.operation,
-                    state: "failed",
-                    message: "Updater sidecar stopped unexpectedly before reporting its status",
-                    finishedAt: new Date().toISOString(),
-                    notificationPending: true,
-                    notificationSentAt: null,
-                };
-                await this.saveOperation();
+                const state = updaterContainerFailure(await docker([ "container", "inspect", `dockge-enhanced-updater-${this.operation.id}`, "--format", "{{json .State}}" ], 10_000));
+                sidecarGone = state.stopped;
+                if (state.stopped) {
+                    failureDetail = state.detail;
+                }
+                if (!sidecarGone && watch === "stalled-pull") {
+                    this.operation = { ...this.operation,
+                        message: "Updater sidecar is still running, but the target image download exceeded 20 minutes; inspect the updater container before retrying" };
+                }
+            } catch (error) {
+                const detail = error as { stderr?: string;
+                    message?: string };
+                sidecarGone = /no such (object|container)/i.test(detail.stderr ?? detail.message ?? "");
+                if (!sidecarGone) {
+                    log.warn("self-update", `Sidecar status could not be checked: ${String(error)}`);
+                }
+            }
+            if (sidecarGone) {
+                // Re-read before writing: the sidecar could have completed while
+                // Docker inspect was in flight.
+                let latest = this.operation;
+                try {
+                    latest = { ...idle(),
+                        ...JSON.parse(await fs.readFile(STATUS_PATH, "utf8")) } as SelfUpdateOperation;
+                } catch { /* Keep the last valid status. */ }
+                if (latest.id === this.operation.id && sidecarWatchState(latest)) {
+                    this.operation = await this.failCurrentOperation(`Updater sidecar stopped before reporting its final status: ${failureDetail}`);
+                } else {
+                    this.operation = latest;
+                }
             }
         }
 
@@ -372,6 +388,29 @@ export class SelfUpdateManager {
             }
             if (!inspected.Image || !/^sha256:[a-f0-9]{64}$/i.test(inspected.Image)) {
                 throw new Error("Current immutable Docker image identifier is unavailable");
+            }
+            let diskSpace;
+            try {
+                diskSpace = await checkSelfUpdateDiskSpace(inspected.Image);
+            } catch (error) {
+                if (automatic) {
+                    log.warn("self-update", `Espace Docker non vérifiable : ${String(error)}`);
+                    return this.deferAutomaticUpdate(targetImage, {
+                        code: "disk-space",
+                        message: BLOCKER_MESSAGES["disk-space"],
+                    });
+                }
+                throw new Error(`Docker storage free space could not be checked: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+            }
+            if (diskSpace.freeBytes < diskSpace.requiredBytes) {
+                log.warn("self-update", `Espace Docker insuffisant : free=${diskSpace.freeBytes} required=${diskSpace.requiredBytes}`);
+                if (automatic) {
+                    return this.deferAutomaticUpdate(targetImage, {
+                        code: "disk-space",
+                        message: BLOCKER_MESSAGES["disk-space"],
+                    });
+                }
+                throw new Error(`Insufficient Docker storage for self-update: ${Math.floor(diskSpace.freeBytes / 1024 ** 2)} MiB free, ${Math.ceil(diskSpace.requiredBytes / 1024 ** 2)} MiB required`);
             }
             const plan = await this.buildPlan(inspected, safePlanId(), targetImage, previousImage, repository, targetRevision);
             const recoveryPath = path.join(RECOVERY_DIR, plan.recoveryFile);
@@ -623,6 +662,7 @@ export class SelfUpdateManager {
             "trivy-scan": [ "un scan de sécurité Trivy est en cours", "an image security scan is in progress", "hay un análisis de seguridad Trivy en curso", "Trivy 安全扫描正在进行" ],
             "external-stack-integration": [ "une intégration protégée de stack externe est en cours", "a protected external-stack integration is in progress", "hay una integración protegida de stack externa en curso", "受保护的外部堆栈集成正在进行" ],
             "state-check-error": [ "l’état des opérations sensibles n’a pas pu être vérifié de façon sûre", "the state of sensitive operations could not be verified safely", "no se pudo verificar de forma segura el estado de las operaciones sensibles", "无法安全验证敏感操作的状态" ],
+            "disk-space": [ "l’espace libre du stockage Docker est insuffisant ou impossible à vérifier", "Docker storage free space is insufficient or cannot be checked", "el espacio libre del almacenamiento Docker es insuficiente o no se puede comprobar", "Docker 存储空间不足或无法验证" ],
         };
         return notificationText(lang, ...reasons[code]);
     }
@@ -634,10 +674,10 @@ export class SelfUpdateManager {
             "⏳ Dockge-Enhanced update deferred",
             notificationText(
                 lang,
-                `La mise à jour automatique attend car ${reason}. Elle sera retentée automatiquement dès que l’opération sera terminée.`,
-                `The automatic self-update is waiting because ${reason}. It will retry automatically as soon as the operation finishes.`,
-                `La actualización automática está esperando porque ${reason}. Se reintentará automáticamente cuando termine la operación.`,
-                `自动更新正在等待，因为${reason}。操作完成后将自动重试。`,
+                `La mise à jour automatique attend car ${reason}. Elle sera retentée dès que le blocage disparaîtra.`,
+                `The automatic self-update is waiting because ${reason}. It will retry when the blocker clears.`,
+                `La actualización automática está esperando porque ${reason}. Se reintentará cuando desaparezca el bloqueo.`,
+                `自动更新正在等待，因为${reason}。阻碍消失后将重试。`,
             ),
             "warning",
         );

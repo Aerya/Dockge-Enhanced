@@ -27,6 +27,7 @@ export const BLOCKER_MESSAGES: Record<SelfUpdateBlockerCode, string> = {
     "stack-replication": "a stack replication or recovery test is in progress",
     "image-work": "an image update or image check is in progress",
     "trivy-scan": "an image security scan is in progress",
+    "disk-space": "Docker storage has insufficient free space for a safe self-update",
     "state-check-error": "the state of sensitive operations could not be verified safely",
 };
 
