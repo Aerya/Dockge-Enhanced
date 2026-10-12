@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-12 — Diagnostic des dossiers de montage hôte** — Si la préparation d’un dossier de montage hôte échoue lors de la mise à jour d’une stack, l’erreur indique désormais le chemin concerné et la cause renvoyée par le helper Docker, plutôt qu’un simple code de sortie.
+
 **2026-10-11 — Espace Docker et surveillance de l’auto-mise à jour** — L’espace libre du stockage Docker est contrôlé avant le backup et le téléchargement ; l’auto-mise à jour est reportée si ce contrôle échoue. Un sidecar disparu est détecté à toute étape et un téléchargement anormalement long est signalé. Après une mise à jour réussie, les anciennes images Enhanced inutilisées sont entretenues quotidiennement après 48 h, sans supprimer les images actives, de rollback, de récupération ou exclues.
 
 **2026-10-10 — Intégration PowerWatch Bearer en lecture seule** — Monitoring peut interroger des instances PowerWatch protégées avec un jeton API Bearer facultatif. Le secret reste masqué dans la WebUI, associé à la cible sélectionnée, conservé avec les permissions `0600` et jamais transmis au Hub. Les instances non protégées n’ont toujours pas besoin de jeton.

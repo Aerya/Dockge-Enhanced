@@ -137,6 +137,16 @@ export interface HostBindDirectoryCandidate {
     target: string;
 }
 
+export const HOST_BIND_DIRECTORY_SCRIPT = "for path do if [ ! -e \"$path\" ]; then mkdir -p \"$path\" || { printf 'Failed to create host bind directory: %s\\n' \"${path#/host}\" >&2; exit 1; }; fi; done";
+
+export function hostBindDirectoryError(error: unknown): Error {
+    const details = error && typeof error === "object" && "stderr" in error
+        ? String(error.stderr ?? "").trim()
+        : "";
+    const fallback = error instanceof Error ? error.message : String(error);
+    return new Error(`Unable to prepare host bind directories: ${details || fallback}`, { cause: error });
+}
+
 function bindLooksLikeFile(source: string, target: string): boolean {
     const fileLike = (value: string) => {
         const base = path.posix.basename(value.replace(/\\/g, "/"));
@@ -904,15 +914,14 @@ export class Stack {
                 "run", "--rm", "--network", "none",
                 "--mount", "type=bind,src=/,dst=/host",
                 HOST_HELPER_IMAGE, "sh", "-c",
-                "for path do if [ ! -e \"$path\" ]; then mkdir -p \"$path\"; fi; done",
+                HOST_BIND_DIRECTORY_SCRIPT,
                 "sh", ...hostPaths,
             ], {
                 encoding: "utf-8",
                 timeout: 30_000,
             });
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            throw new Error(`Unable to prepare host bind directories: ${message}`, { cause: error });
+            throw hostBindDirectoryError(error);
         }
     }
 

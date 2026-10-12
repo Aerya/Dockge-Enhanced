@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-12 — Host bind directory diagnostics** — When a stack update cannot prepare a host bind directory, the error now identifies the failing path and includes the Docker helper's actual error instead of only reporting an exit code.
+
 **2026-10-11 — Safer self-update storage and updater monitoring** — Self-update checks free Docker storage before backup and pull, defers automatic runs if the check fails, detects vanished updater sidecars at any stage, and flags long-running pulls. After a successful update, old unused Enhanced digest images are maintained daily after a 48-hour grace period; active, rollback, recovery and excluded images remain protected.
 
 **2026-10-10 — PowerWatch read-only Bearer integration** — Monitoring can query protected PowerWatch instances using optional read-only API Bearer tokens. Secrets remain masked in the UI, stay bound to the selected PowerWatch target, are stored with `0600` permissions, and are never forwarded to the Hub. Unprotected instances work without a token.
