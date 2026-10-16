@@ -200,12 +200,17 @@ export function composeModel(name: string, owner: string, url: string, port: num
             restart: "unless-stopped",
             labels: { [OWNER]: owner },
             ports: [ `127.0.0.1:${port}:4096` ],
+            healthcheck: { test: [ "CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:4096/api/healthcheck" ],
+                interval: "2s",
+                timeout: "2s",
+                retries: 15,
+                start_period: "5s" },
             environment: { BASE_URL: url,
                 APP_SECRET: "${ZEROBYTE_APP_SECRET}",
                 TZ: "Europe/Paris" },
             volumes: mounts,
             networks: { default: { aliases: [ name ] } },
-            entrypoint: [ "/bin/sh", "-ec", checks.replaceAll("$", "$$") + "\nexec bun .output/server/index.mjs" ],
+            entrypoint: [ "/bin/sh", "-ec", checks.replaceAll("$", () => "$$") + "\nexec bun .output/server/index.mjs" ],
         } },
         volumes };
 }

@@ -36,6 +36,8 @@ test("Compose preserves external volumes, source RO, destination RW and storage 
     assert.equal(service.volumes[3].read_only, false);
     assert.deepEqual(service.volumes[3].bind, { create_host_path: false });
     assert.deepEqual(service.ports, [ "127.0.0.1:14097:4096" ]);
+    assert.ok(service.healthcheck.test.includes("http://127.0.0.1:4096/api/healthcheck"));
+    assert.ok(service.entrypoint[2].includes("$$(stat"));
     assert.ok(JSON.stringify(compose).includes("\"external\":true"));
     assert.ok(service.entrypoint[2].includes("123:456"));
     assert.ok(service.entrypoint[2].includes("exit 31"));
