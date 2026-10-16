@@ -60,6 +60,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Optional stack and container CPU/RAM history：** Enable recording in **Monitoring**, then open **Resource usage** in a stack's actions. Compact charts show the stack total and each actual container, including replicas and unmanaged Compose projects, over 24 hours, 7 days, 1 month, 1 year or all recorded data. Samples are collected every 5 minutes even without an open browser; recording is disabled by default. CPU uses Docker's convention (100% = one core), and Linux RAM excludes reclaimable cache. Gaps remain visible; peaks between samples can be missed. Stack totals do not include native host processes or standalone containers outside Compose. The stack list can also sort by CPU, RAM or CPU then RAM.
+
 **Prevent Restic from backing up its own repository:** when a local repository is inside a selected backup folder, Enhanced warns you and excludes it automatically. For example, `/app/data` can remain selected with a repository at `/app/data/backups`. Selecting the repository itself or one of its subfolders as a source is refused. Existing paths, passwords and retention settings are preserved.
 
 **Optional per-service healthcheck assistant:** Click **Configure healthcheck** on a service when viewing an existing stack or creating a new one. The assistant proposes a local HTTP URL or TCP-port check based on its internal Compose ports. Review or change the target and exact command before adding it to the YAML; existing healthchecks are never replaced automatically. Docker runs the check inside the image, which must provide `/bin/sh` and `curl`/`wget` or `nc`. Verify the health status after deployment; a successful TCP connection does not prove application readiness.
@@ -489,6 +491,7 @@ The Restic snapshot list defaults to **All**. **Save** stores settings and reten
 - Encrypted private-registry credential transfer
 
 ### Monitoring
+- Optional 5-minute stack and actual-container CPU/RAM history, compact action panel, 24h/7d/1m/1y/all ranges and CPU/RAM sorting
 - **PowerWatch Hub**: managed Compose deployment or connection to an existing Hub, aggregating nodes added through the Hub WebUI.
 - System, stack and container statistics
 - Optional 5-minute CPU/RAM history with 24-hour, 7-day, monthly and custom ranges, server-side downsampling and visible downtime gaps

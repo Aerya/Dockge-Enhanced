@@ -61,6 +61,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Historial opcional de CPU/RAM de stacks y contenedores：** Active la grabación en **Monitorización** y abra **Consumo de recursos** en las acciones del stack. Los gráficos compactos muestran el total del stack y cada contenedor real, incluidas réplicas y proyectos Compose no gestionados, durante 24 horas, 7 días, 1 mes, 1 año o todos los datos registrados. Las muestras se recogen cada 5 minutos, incluso sin navegador abierto; la grabación está desactivada por defecto. CPU: 100 % equivale a un núcleo; la RAM en Linux excluye la caché recuperable. Los huecos se conservan y pueden perderse picos entre muestras. Los totales no incluyen procesos nativos del host ni contenedores fuera de Compose. La lista permite ordenar por CPU, RAM o CPU y después RAM.
+
 **Evitar que Restic guarde su propio repositorio:** si un repositorio local está dentro de una carpeta seleccionada, Enhanced le avisa y lo excluye automáticamente. Por ejemplo, puede mantener `/app/data` como origen y `/app/data/backups` como repositorio. No se permite seleccionar el propio repositorio ni sus subcarpetas como origen. Se conservan las rutas, contraseñas y opciones de retención existentes.
 
 **Asistente opcional de comprobación de salud por servicio:** pulse **Configurar comprobación de salud** en un servicio de una stack existente o al crear una nueva. El asistente propone una URL HTTP local o un puerto TCP según los puertos internos de Compose. Revise o cambie el destino y el comando exacto antes de añadirlo al YAML; las comprobaciones existentes nunca se reemplazan automáticamente. La prueba se ejecuta dentro de la imagen, que debe incluir `/bin/sh` y `curl`/`wget` o `nc`. Compruebe el estado tras el despliegue; un puerto TCP abierto no garantiza que la aplicación esté lista.
@@ -462,6 +464,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Transferencia cifrada de credenciales
 
 ### Monitorización
+- Historial opcional de CPU/RAM cada 5 minutos por stack y contenedor real, panel compacto, períodos 24 h/7 días/1 mes/1 año/todo y ordenación CPU/RAM
 - **PowerWatch Hub**: despliegue Compose gestionado o conexión a un Hub existente, con agregación de nodos añadidos desde la WebUI del Hub.
 - Estadísticas del sistema, stacks y contenedores
 - Historial CPU/RAM opcional cada 5 minutos, rangos de 24 horas, 7 días, 1 mes o personalizados, agregación del servidor y huecos de apagado visibles

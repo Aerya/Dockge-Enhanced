@@ -61,6 +61,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Historique CPU/RAM facultatif des stacks et conteneurs：** Activez l’enregistrement dans **Monitoring**, puis ouvrez **Consommation** dans les actions d’une stack. Les graphiques compacts présentent le total de la stack et chaque conteneur réel, y compris les réplicas et les projets Compose non gérés, sur 24 heures, 7 jours, 1 mois, 1 an ou toutes les données enregistrées. Les mesures sont collectées toutes les 5 minutes, même sans navigateur ouvert ; l’enregistrement est désactivé par défaut. Pour le CPU, 100 % correspond à un cœur ; sous Linux, la RAM exclut le cache récupérable. Les interruptions restent visibles et les pics entre deux mesures peuvent être manqués. Les totaux des stacks n’incluent pas les processus natifs de l’hôte ni les conteneurs hors Compose. La liste des stacks peut aussi être triée par CPU, RAM ou CPU puis RAM.
+
 **Éviter de sauvegarder les sauvegardes Restic :** lorsqu’un dépôt local se trouve dans un dossier sélectionné, Enhanced vous avertit et l’exclut automatiquement. Par exemple, vous pouvez conserver `/app/data` comme source avec un dépôt dans `/app/data/backups`. Sélectionner le dépôt lui-même ou un de ses sous-dossiers comme source est refusé. Les chemins, mots de passe et réglages de rétention existants sont conservés.
 
 **Assistant de healthcheck facultatif par service :** cliquez sur **Configurer le healthcheck** sur un service d’une stack existante ou pendant la création. L’assistant propose un contrôle par URL HTTP locale ou port TCP selon les ports internes Compose. Vérifiez ou modifiez la cible et la commande exacte avant de l’ajouter au YAML ; les healthchecks existants ne sont jamais remplacés automatiquement. Le test s’exécute dans l’image, qui doit fournir `/bin/sh` et `curl`/`wget` ou `nc`. Vérifiez l’état de santé après déploiement ; un port TCP ouvert ne garantit pas que l’application est prête.
@@ -489,6 +491,7 @@ La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouto
 - Transfert chiffré des identifiants de registries privés
 
 ### Supervision
+- Historique CPU/RAM facultatif toutes les 5 minutes par stack et conteneur réel, panneau compact dans les actions, périodes 24 h/7 j/1 mois/1 an/tout et tri CPU/RAM
 - **PowerWatch Hub** : installation Compose gérée ou connexion à un Hub existant, avec agrégation des instances configurées depuis sa WebUI.
 - Statistiques système, stacks et conteneurs
 - Historique CPU/RAM facultatif toutes les 5 minutes, plages 24 h, 7 jours, 1 mois ou personnalisées, agrégation serveur et trous d'arrêt visibles

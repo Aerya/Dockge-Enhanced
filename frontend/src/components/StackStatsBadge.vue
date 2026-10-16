@@ -1,5 +1,5 @@
 <template>
-    <span v-if="stackStatsEnabled && stat" class="stat-tags">
+    <span v-if="stackStatsEnabled && stat" class="stat-tags" :title="$t('stackHistory.metricHelp')">
         <span class="stat-tag" :class="cpuClass">
             <font-awesome-icon icon="microchip" />{{ stat.cpu.toFixed(1) }}%
         </span>

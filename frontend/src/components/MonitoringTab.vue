@@ -198,6 +198,14 @@
                     <small class="form-text">{{ $t('watcher.monitoring.stackStatsHint') }}</small>
                 </div>
 
+                <div class="col-12">
+                    <div class="form-check form-switch mb-0">
+                        <input id="monStackHistory" v-model="monSettings.stackHistoryEnabled" class="form-check-input" type="checkbox" role="switch" @change="toggleStackHistory" />
+                        <label class="form-check-label fw-semibold" for="monStackHistory">{{ $t('stackHistory.enabled') }}</label>
+                    </div>
+                    <small class="form-text">{{ $t('stackHistory.settingsHint') }}</small>
+                </div>
+
                 <!-- Toggle mode low-power / Synology -->
                 <div class="col-12">
                     <div class="form-check form-switch mb-0">
@@ -1088,6 +1096,7 @@ interface MonitoringSettings {
     appriseUrls: string[];
     lowPowerMode: boolean;
     historyEnabled: boolean;
+    stackHistoryEnabled: boolean;
     historyPreset: "24h" | "7d" | "1m" | "custom";
     historyAmount: number;
     historyUnit: "days" | "weeks" | "months" | "years";
@@ -1207,6 +1216,7 @@ const monSettings = ref<MonitoringSettings>({
     appriseUrls: [],
     lowPowerMode: false,
     historyEnabled: false,
+    stackHistoryEnabled: false,
     historyPreset: "24h",
     historyAmount: 7,
     historyUnit: "days",
@@ -1795,6 +1805,19 @@ async function toggleHistory() {
     const res = await api("POST", "/monitoring/settings", { historyEnabled: monSettings.value.historyEnabled });
     showToast(res.ok ? "✅ " + t("watcher.monitoring.saved") : `❌ ${res.message}`, res.ok);
     await loadHistory();
+}
+
+async function toggleStackHistory() {
+    try {
+        const res = await api("POST", "/monitoring/settings", { stackHistoryEnabled: monSettings.value.stackHistoryEnabled });
+        if (!res.ok) {
+            throw new Error(res.message);
+        }
+        showToast(t("watcher.monitoring.saved"));
+    } catch (error) {
+        monSettings.value.stackHistoryEnabled = !monSettings.value.stackHistoryEnabled;
+        showToast(String(error), false);
+    }
 }
 
 async function selectHistoryPreset(preset: "24h" | "7d" | "1m" | "custom") {

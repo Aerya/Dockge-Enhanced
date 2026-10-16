@@ -112,6 +112,9 @@
                         <option value="agent">{{ $t("stackSortAgent") }}</option>
                         <option value="created">{{ $t("stackSortCreated") }}</option>
                         <option value="updated">{{ $t("stackSortUpdated") }}</option>
+                        <option value="cpu">{{ $t("stackSortCpu") }}</option>
+                        <option value="ram">{{ $t("stackSortRam") }}</option>
+                        <option value="cpuRam">{{ $t("stackSortCpuRam") }}</option>
                     </select>
                     <div class="stack-search-field">
                         <a v-if="searchText == ''" class="search-icon">
@@ -165,6 +168,8 @@
 import StackListItem from "../components/StackListItem.vue";
 import { CREATED_FILE, CREATED_STACK, EXITED, PAUSED, RUNNING, UNKNOWN } from "../../../common/util-common";
 import { useStackSchedules } from "../composables/useStackSchedules";
+import { statsByEndpoint } from "../composables/useStackStats";
+import { compareStackResources } from "../stack-resource-sort";
 
 export default {
     components: {
@@ -172,7 +177,8 @@ export default {
     },
     setup() {
         const { schedules } = useStackSchedules();
-        return { schedules };
+        return { schedules,
+            resourceStats: statsByEndpoint };
     },
     props: {
         /** Should the scrollbar be shown */
@@ -245,6 +251,10 @@ export default {
                 const pinnedOrder = Number(this.isStackPinned(m2)) - Number(this.isStackPinned(m1));
                 if (pinnedOrder !== 0) {
                     return pinnedOrder;
+                }
+
+                if ([ "cpu", "ram", "cpuRam" ].includes(this.stackSort)) {
+                    return compareStackResources(m1, m2, this.stackSort, this.resourceStats);
                 }
 
                 if (this.stackSort === "name") {
@@ -575,7 +585,7 @@ export default {
                 localStorage.setItem("stackSort", "name");
                 return "name";
             }
-            return [ "name", "status", "agent" ].includes(stored) ? stored : "name";
+            return [ "name", "status", "agent", "created", "updated", "cpu", "ram", "cpuRam" ].includes(stored) ? stored : "name";
         },
         loadStackGrouping() {
             const migrationKey = "stackGroupOptionalV1";
