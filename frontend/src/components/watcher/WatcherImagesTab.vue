@@ -1423,6 +1423,14 @@ async function removeCred(registry: string) {
     overflow-x: auto;
 }
 
+.update-history-table {
+    @include data-table;
+
+    th {
+        opacity: 1;
+    }
+}
+
 .update-history-table th:first-child,
 .update-history-expand-cell {
     width: 34px;

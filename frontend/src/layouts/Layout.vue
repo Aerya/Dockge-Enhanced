@@ -90,7 +90,7 @@
         <header v-if="! $root.isMobile" class="desktop-header py-3 mb-3 border-bottom" :class="{ 'has-stats': showHeaderStats, 'has-update': selfUpdateBannerVisible || hasNewVersion }">
             <div class="desktop-brand d-flex align-items-center">
                 <router-link to="/" class="d-flex align-items-center text-dark text-decoration-none">
-                    <object class="bi me-2 ms-4" width="40" height="40" data="/icon.svg" />
+                    <img class="bi me-2 ms-4" width="40" height="40" src="/icon.svg" alt="" />
                     <span class="fs-4 title">Dockge-Enhanced</span>
                 </router-link>
                 <span class="ms-2 d-flex gap-1 align-items-center brand-badges">
@@ -249,7 +249,7 @@
                 <font-awesome-icon icon="bars" />
             </button>
             <router-link to="/" class="mobile-brand text-decoration-none">
-                <object class="bi me-2" width="28" height="28" data="/icon.svg" />
+                <img class="bi me-2" width="28" height="28" src="/icon.svg" alt="" />
                 <span class="title">Dockge-Enhanced</span>
             </router-link>
             <span
