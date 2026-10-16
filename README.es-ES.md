@@ -69,6 +69,8 @@ En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (
 
 #### Actualizaciones e ImageWatcher
 
+**Los servicios detenidos permanecen detenidos:** una actualización automática de imagen se aplaza si un servicio Compose seleccionado, incluido un compañero necesario del espacio de nombres de red, está detenido o ausente. ImageWatcher vuelve a comprobarlo después de la descarga y antes de recrearlo, y reintenta más adelante. No utiliza `compose up` para iniciar un servicio detenido.
+
 **Intervalos de comprobación:** en **Watcher > Imágenes**, el análisis general cubre todas las imágenes cada **6 horas por defecto**. Las imágenes en modo **Inmediato** también reciben comprobaciones específicas cada **5 minutos por defecto**. Este intervalo se puede ajustar en minutos u horas (entre 5 minutos y 24 horas), o desactivar solo las comprobaciones periódicas específicas; el análisis general sigue activo. Al seleccionar el modo Inmediato, todavía se puede iniciar una comprobación específica puntual.
 
 **Preparación de montajes del host en macOS**

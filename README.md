@@ -68,6 +68,8 @@ Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS
 
 #### Updates and ImageWatcher
 
+**Stopped services stay stopped:** automatic image updates are deferred when any targeted Compose service (including a required network-namespace companion) is stopped or absent. ImageWatcher checks again after pulling, before recreation, and retries on a later check. It does not use `compose up` to wake a stopped service.
+
 **Image check intervals:** In **Watcher > Images**, the full scan covers all images every **6 hours by default**. Immediate-mode images also receive separate targeted checks every **5 minutes by default**. You can set that targeted interval in minutes or hours (5 minutes to 24 hours), or disable only those periodic targeted checks; the full scan remains active. The selected Immediate policy can still trigger a one-off targeted check.
 
 **Host bind preparation on macOS**

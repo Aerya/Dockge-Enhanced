@@ -68,6 +68,8 @@ Unter **Watcher > Images > Fallback-DNS** können Sie den anwendungsbezogenen DN
 
 #### Updates und ImageWatcher
 
+**Gestoppte Dienste bleiben gestoppt:** Automatische Image-Updates werden verschoben, wenn ein betroffener Compose-Dienst oder ein erforderlicher Netzwerk-Namespace-Begleiter gestoppt ist oder fehlt. ImageWatcher prüft dies nach dem Pull vor der Neuerstellung erneut und versucht das Update bei einer späteren Prüfung nochmals. Ein gestoppter Dienst wird nicht durch `compose up` geweckt.
+
 **Prüfintervalle:** Unter **Watcher > Images** erfasst der vollständige Scan standardmäßig **alle 6 Stunden** alle Images. Images im **Sofort-Modus** werden zusätzlich standardmäßig **alle 5 Minuten** gezielt geprüft. Dieses gezielte Intervall lässt sich in Minuten oder Stunden (5 Minuten bis 24 Stunden) einstellen oder separat deaktivieren; der vollständige Scan bleibt aktiv. Das Auswählen des Sofort-Modus kann weiterhin eine einmalige gezielte Prüfung auslösen.
 
 **Vorbereitung von Host-Binds unter macOS**

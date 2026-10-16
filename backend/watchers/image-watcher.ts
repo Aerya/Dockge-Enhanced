@@ -116,6 +116,17 @@ export function buildRollbackComposeRecreateArgs(
     return targetedComposeRecreateArgs(parseResolvedComposeModel(resolvedComposeOutput), services);
 }
 
+/** A targeted Compose up must never wake a stopped or absent service. */
+export function missingRunningComposeTargets(recreateArgs: string[], runningServices: string): string[] {
+    const separator = recreateArgs.indexOf("--no-deps");
+    if (separator < 0) {
+        throw new Error("Targeted Compose services are required to preserve stopped services");
+    }
+    const targets = recreateArgs.slice(separator + 1);
+    const running = new Set(runningServices.split(/\s+/).filter(Boolean));
+    return targets.filter(service => !running.has(service));
+}
+
 type AutomaticImageUpdateAction = "immediate" | "scheduled" | "pending" | null;
 
 export function resolveAutomaticImageUpdateAction(
@@ -2186,6 +2197,14 @@ export class ImageWatcher {
                 workingDir,
                 envFiles,
             );
+            const runningCommand = composeExecInvocation(composePath, [ "ps", "--status", "running", "--services" ], project, configFiles, workingDir, envFiles);
+            const runningServices = await docker(runningCommand.args, { cwd: runningCommand.cwd,
+                timeout: 15_000 });
+            const stoppedTargets = missingRunningComposeTargets(recreateArgs, runningServices);
+            if (stoppedTargets.length > 0) {
+                console.log(`[ImageWatcher] Update deferred for ${key}: stopped or absent services: ${stoppedTargets.join(", ")}`);
+                return false;
+            }
             console.log(
         `[ImageWatcher] Auto-update: ${status.stack}/${status.image} (services: ${services.join(", ")})`,
             );
@@ -2214,6 +2233,14 @@ export class ImageWatcher {
                 cwd: pullCommand.cwd,
                 timeout: 600000,
             });
+            // Recheck immediately before up: a service may have stopped during pull.
+            const stillRunning = await docker(runningCommand.args, { cwd: runningCommand.cwd,
+                timeout: 15_000 });
+            const stoppedAfterPull = missingRunningComposeTargets(recreateArgs, stillRunning);
+            if (stoppedAfterPull.length > 0) {
+                console.log(`[ImageWatcher] Update deferred for ${key}: services stopped during pull: ${stoppedAfterPull.join(", ")}`);
+                return false;
+            }
             const upCommand = composeExecInvocation(composePath, recreateArgs, project, configFiles, workingDir, envFiles);
             await docker(upCommand.args, {
                 cwd: upCommand.cwd,

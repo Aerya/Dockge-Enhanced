@@ -4,6 +4,8 @@
 
 Les vues liées affichent aussi un résumé en lecture seule de l’état sur l’instance source, à côté d’une éventuelle ancienne politique locale, sans exposer sa configuration.
 
+**2026-10-16 — Respect des services arrêtés lors des mises à jour d’images** — ImageWatcher reporte une mise à jour si un service Compose ciblé ou son compagnon de namespace réseau est arrêté ou absent. Un nouveau contrôle a lieu après le téléchargement, juste avant la recréation ; aucune mise à jour automatique ne démarre un service arrêté.
+
 **2026-10-16 — Contrôles Immédiat configurables** — Watcher > Images distingue désormais le scan général (6 h par défaut) des contrôles ciblés des images en mode Immédiat (5 min par défaut). Leur intervalle peut être personnalisé en minutes ou en heures, ou désactivé sans arrêter le scan général. Les installations existantes conservent la valeur de 5 min.
 
 **2026-10-16 — Montages hôte sous Docker Desktop** — Les opérations de stack font directement monter chaque dossier source par Docker, sans dépendre de la racine de la VM Docker pour les chemins partagés sous macOS. Les montages de fichiers sans extension comme `/etc/localtime` ne sont plus créés comme dossiers ; les erreurs Docker restent visibles.
