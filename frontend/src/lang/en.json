@@ -1,4 +1,8 @@
 {
+    "stackActionMenu.more": "More actions",
+    "stackActionMenu.configuration": "Configuration",
+    "stackActionMenu.information": "Information",
+    "stackActionMenu.display": "Display",
     "releaseNews.item.resticRepositorySourceSafety": "A local Restic repository can remain inside a backup folder: Enhanced warns you and excludes it automatically. The repository and its subfolders cannot be selected as sources. Existing settings are preserved, and disabled repositories remain excluded.",
     "watcher.backup.volumes.repositorySeparation": "Ideally, keep local Restic repositories outside selected backup folders. If a repository is inside one, Enhanced excludes it automatically; selecting the repository itself or one of its subfolders is refused.",
     "watcher.backup.volumes.repositoryOverlapWarning": "This layout is not ideal. Enhanced will automatically exclude the local Restic repository from backups of the parent folder:",

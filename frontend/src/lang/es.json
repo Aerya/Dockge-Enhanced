@@ -1,4 +1,8 @@
 {
+    "stackActionMenu.more": "Más acciones",
+    "stackActionMenu.configuration": "Configuración",
+    "stackActionMenu.information": "Información",
+    "stackActionMenu.display": "Visualización",
     "releaseNews.item.resticRepositorySourceSafety": "Un repositorio Restic local puede permanecer dentro de una carpeta respaldada: Enhanced le avisa y lo excluye automáticamente. No se permite seleccionar el repositorio ni sus subcarpetas como origen. Se conservan los ajustes existentes y los repositorios desactivados siguen excluidos.",
     "watcher.backup.volumes.repositorySeparation": "Lo ideal es situar el repositorio Restic local fuera de las carpetas respaldadas. Si está dentro de una, Enhanced lo excluye automáticamente; seleccionar el propio repositorio o una subcarpeta sigue estando prohibido.",
     "watcher.backup.volumes.repositoryOverlapWarning": "Esta disposición no es óptima. Enhanced excluirá automáticamente el repositorio Restic local de la copia de la carpeta principal:",

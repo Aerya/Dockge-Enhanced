@@ -1,4 +1,8 @@
 {
+    "stackActionMenu.more": "更多操作",
+    "stackActionMenu.configuration": "配置",
+    "stackActionMenu.information": "信息",
+    "stackActionMenu.display": "显示",
     "releaseNews.item.resticRepositorySourceSafety": "本地 Restic 仓库可以保留在备份目录内：Enhanced 会显示警告并自动排除它。不能选择仓库本身或其子目录作为来源。现有设置保持不变，已禁用的仓库也继续排除。",
     "watcher.backup.volumes.repositorySeparation": "最好将本地 Restic 仓库放在所选备份目录之外。如果仓库位于其中，Enhanced 会自动排除它；仍不能直接选择仓库或其子目录作为备份来源。",
     "watcher.backup.volumes.repositoryOverlapWarning": "这种目录安排并不理想。Enhanced 会自动从父目录备份中排除本地 Restic 仓库：",
