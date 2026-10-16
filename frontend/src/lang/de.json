@@ -449,7 +449,7 @@
     "stackFilterSelectedInstances": "{0} Server",
     "stackGroupByInstance": "Stacks nach Server gruppieren",
     "stackActions": "Stack-Aktionen",
-    "stackActionLabels": "Text unter Symbolen",
+    "stackActionLabels": "Symbole + Text",
     "showStackNote": "Stack-Notiz anzeigen",
     "showStackGit": "Git-Tools anzeigen",
     "logPanelSize": "Größe",
