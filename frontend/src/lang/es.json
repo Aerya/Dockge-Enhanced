@@ -1,5 +1,5 @@
 {
-    "releaseNews.item.replicationSourceOwnership": "Las nuevas replicaciones se configuran en la instancia de origen para evitar programaciones independientes entre instancias vinculadas. Las políticas anteriores siguen gestionándose donde se crearon; no se elimina nada automáticamente.",
+    "releaseNews.item.replicationSourceOwnership": "Las nuevas replicaciones se configuran en la instancia de origen para evitar programaciones independientes. Las vistas vinculadas muestran su estado en modo de solo lectura; las políticas anteriores siguen gestionándose donde se crearon. No se elimina nada automáticamente.",
     "stackReplication.configureOnSource": "Abra esta stack en su instancia de origen para configurar una nueva política de replicación.",
     "stackReplication.ownerHint": "Las nuevas replicaciones pertenecen a la instancia de origen. Las políticas creadas aquí anteriormente siguen gestionándose aquí.",
     "stackReplication.sourceManaged": "Replicación gestionada por la instancia de origen (solo lectura)",
