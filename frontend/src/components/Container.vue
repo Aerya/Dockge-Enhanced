@@ -63,10 +63,6 @@
                     </span>
                     <ContainerStatsBadge v-if="showResourceStats" :stack-name="statsStackName || stackName" :service-name="name" :endpoint="endpoint || ''" />
                 </div>
-                <button v-if="!isEditMode" type="button" class="btn btn-sm btn-normal mt-2" @click="$emit('edit-healthcheck')">
-                    <font-awesome-icon icon="heartbeat" class="me-1" />{{ $t("serviceHealthcheck.configure") }}
-                    <span v-if="service.healthcheck" class="ms-1">· {{ $t("serviceHealthcheck.configured") }}</span>
-                </button>
                 <div v-if="!isEditMode && (volumeLoading || volumeUsage.length > 0)" class="container-volumes mt-2">
                     <div class="container-volumes-title">
                         <span>
@@ -107,6 +103,7 @@
                     <button class="btn btn-sm btn-normal container-action" :title="$t('containerActionHelp.update')" :aria-label="$t('updateStack')" :disabled="actionProcessing" @click="runAction('update')"><font-awesome-icon icon="cloud-arrow-down" /><span>{{ $t("updateStack") }}</span></button>
                     <button class="btn btn-sm btn-normal container-action" :title="$t('containerActionHelp.recreate')" :aria-label="$t('recreateStack')" :disabled="actionProcessing" @click="runAction('recreate')"><font-awesome-icon icon="recycle" /><span>{{ $t("recreateStack") }}</span></button>
                     <button class="btn btn-sm container-action" :class="showSchedule ? 'btn-primary' : 'btn-normal'" :title="$t('containerActionHelp.schedule')" :aria-label="$t('stackScheduler.action')" @click="showSchedule = !showSchedule"><font-awesome-icon icon="calendar-days" /><span>{{ $t("stackScheduler.action") }}</span></button>
+                    <button type="button" class="btn btn-sm btn-normal container-action" :title="$t('serviceHealthcheck.configure') + (service.healthcheck ? ` · ${$t('serviceHealthcheck.configured')}` : '')" :aria-label="$t('serviceHealthcheck.configure')" @click="$emit('edit-healthcheck')"><font-awesome-icon icon="heartbeat" /><span>{{ $t("serviceHealthcheck.action") }}</span></button>
                     <button class="btn btn-sm container-action" :class="containerActionLabels ? 'btn-primary' : 'btn-normal'" :title="$t('containerActionHelp.labels')" :aria-label="$t('stackActionLabels')" @click="$emit('container-action-labels-change', !containerActionLabels)"><font-awesome-icon icon="list" /><span>{{ $t("stackActionLabels") }}</span></button>
                     <router-link class="btn btn-sm btn-normal container-action" :to="terminalRouteLink" :title="$t('containerActionHelp.terminal')" :aria-label="$t('terminal')" disabled=""><font-awesome-icon icon="terminal" /><span>{{ $t("terminal") }}</span></router-link>
                     <a v-if="dozzleUrl" class="btn btn-sm btn-normal container-action" :href="dozzleContainerUrl" :title="$t('containerActionHelp.dozzle')" target="_blank" rel="noopener noreferrer" aria-label="Dozzle"><font-awesome-icon icon="stream" /><span>Dozzle</span></a>
