@@ -60,6 +60,10 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+**Optionaler Healthcheck-Assistent pro Dienst:** Bei einem bestehenden oder neu erstellten Stack auf **Healthcheck konfigurieren** am jeweiligen Dienst klicken. Der Assistent schlägt anhand der internen Compose-Ports eine lokale HTTP-URL oder einen TCP-Port vor. Ziel und genauen Befehl vor dem Einfügen in YAML prüfen oder ändern; vorhandene Healthchecks werden nie automatisch ersetzt. Der Test läuft im Image, das `/bin/sh` und `curl`/`wget` oder `nc` bereitstellen muss. Den Health-Status nach dem Deployment prüfen; ein offener TCP-Port beweist nicht, dass die Anwendung bereit ist.
+
+Im Compose-Bearbeitungsmodus gibt es außerdem **Healthchecks** in der Aktionsleiste des Stacks. Bei mehreren Diensten den gewünschten Dienst auswählen.
+
 #### Funktionen und DNS
 
 **Optionaler DNS-Fallback für Registry-Prüfungen**
@@ -390,6 +394,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Versionsbewusste Aushandlung von Funktionen zwischen gemischten Dockge-Enhanced-Releases
 
 ### Stack-Management
+- Optionaler Compose-Healthcheck-Assistent pro Dienst mit bearbeitbarem HTTP-/TCP-Vorschlag und Befehlsvorschau
 - Dienstspezifische Steuerungsoptionen zum Ignorieren eines optionalen Dienstes im allgemeinen Stack-Status bei gleichzeitiger Sichtbarkeit seines eigenen Status
 - Optionaler WebUI-Anzeigename für einen Stack, ohne dessen Compose- oder Restic-Identität zu verändern
 - Kompakte Links zu tatsächlichen Containern mit Details und individuellen Start-/Stopp-/Neustartaktionen für Compose-Replikate, getrennt von den Dienstaktionen

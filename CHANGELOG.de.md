@@ -1,5 +1,7 @@
 # Dockge-Enhanced-Changelog
 
+**2026-10-16 — Optionale Healthchecks pro Dienst** — Der Stack-Editor schlägt anhand interner Compose-Ports eine lokale HTTP-URL oder einen TCP-Port vor. Das Ziel ist bearbeitbar, der Docker-Befehl wird angezeigt und Hinzufügen oder Ersetzen erfordert eine ausdrückliche Aktion; bestehende Prüfungen bleiben unverändert. Das Image muss das nötige Testprogramm enthalten.
+
 **2026-10-16 — Eindeutiger Eigentümer von Replikationsrichtlinien** — Neue Richtlinien werden auf der Quellinstanz eingerichtet, damit verknüpfte Instanzen keine getrennten Zeitpläne für denselben Stack erstellen. Bestehende Richtlinien mit entfernter Quelle bleiben dort verwaltbar, wo sie erstellt wurden; Richtlinien und Replikatdaten werden nicht automatisch gelöscht.
 
 Verknüpfte Ansichten zeigen eine schreibgeschützte Statusübersicht der Quellinstanz neben einer eventuell vorhandenen älteren lokalen Richtlinie, ohne deren Konfiguration offenzulegen.

@@ -75,6 +75,11 @@
                         <span class="stack-action-label">{{ $t("discardStack") }}</span>
                     </button>
 
+                    <button v-if="isEditMode" type="button" class="btn btn-normal stack-action stack-action--healthcheck" :title="$t('serviceHealthcheck.configure')" :aria-label="$t('serviceHealthcheck.configure')" :disabled="containerCount === 0" @click="openStackHealthcheckAction">
+                        <font-awesome-icon icon="heartbeat" />
+                        <span class="stack-action-label">{{ $t("serviceHealthcheck.action") }}</span>
+                    </button>
+
                     <button v-if="!isEditMode" class="btn btn-secondary stack-action" :title="$t('editStack')" :aria-label="$t('editStack')" :disabled="processing" @click="enableEditMode">
                         <font-awesome-icon icon="pen" />
                         <span class="stack-action-label">{{ $t("editStack") }}</span>
@@ -177,6 +182,15 @@
                         <font-awesome-icon icon="code-branch" />
                         <span class="stack-action-label">{{ $t("showStackGit") }}</span>
                     </button>
+                </div>
+                <div v-if="isEditMode && showHealthcheckPicker" class="shadow-box big-padding mb-3 compose-tight">
+                    <label class="form-label" for="healthcheck-service-select">{{ $t("serviceHealthcheck.chooseService") }}</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        <select id="healthcheck-service-select" v-model="selectedHealthcheckService" class="form-select w-auto">
+                            <option v-for="serviceName in Object.keys(jsonConfig.services ?? {})" :key="serviceName" :value="serviceName">{{ serviceName }}</option>
+                        </select>
+                        <button type="button" class="btn btn-primary" :disabled="!selectedHealthcheckService" @click="openSelectedHealthcheckService">{{ $t("serviceHealthcheck.configure") }}</button>
+                    </div>
                 </div>
                 <div v-if="showStackSchedule && schedulerEnabled && !isEditMode && !isAdd && !endpoint" class="stack-scheduler-inline mt-3">
                     <div class="stack-scheduler-inline-title">
@@ -396,7 +410,9 @@
                                 :show-resource-stats="!endpoint"
                                 :dozzle-url="dozzleUrl"
                                 :container-action-labels="containerActionLabels"
+                                :healthcheck-open-request="healthcheckTargetService === name ? healthcheckEditRequest : 0"
                                 @container-action-labels-change="containerActionLabels = $event"
+                                @edit-healthcheck="editServiceHealthcheck(name)"
                                 @auto-update-change="setServiceAutoUpdate(name, $event)"
                                 @refresh-volume-usage="loadVolumeUsage"
                                 @service-action="runServiceAction(name, $event)"
@@ -1022,6 +1038,10 @@ export default {
             deleteExternalConfirmed: false,
             fullscreenEditor: null,
             newContainerName: "",
+            healthcheckTargetService: "",
+            healthcheckEditRequest: 0,
+            showHealthcheckPicker: false,
+            selectedHealthcheckService: "",
             stopServiceStatusTimeout: false,
             selectedLogService: "",
             joinedLogService: "",
@@ -2743,6 +2763,35 @@ export default {
             this.isEditMode = true;
         },
 
+        editServiceHealthcheck(serviceName) {
+            if (!this.isEditMode) {
+                this.enableEditMode();
+            }
+            this.containersExpanded = true;
+            this.healthcheckTargetService = serviceName;
+            this.$nextTick(() => {
+                this.healthcheckEditRequest += 1;
+            });
+        },
+
+        openStackHealthcheckAction() {
+            const services = Object.keys(this.jsonConfig.services ?? {});
+            if (services.length === 1) {
+                this.editServiceHealthcheck(services[0]);
+                return;
+            }
+            this.selectedHealthcheckService = services.includes(this.selectedHealthcheckService) ? this.selectedHealthcheckService : services[0] ?? "";
+            this.showHealthcheckPicker = !this.showHealthcheckPicker;
+        },
+
+        openSelectedHealthcheckService() {
+            if (!this.selectedHealthcheckService || !this.jsonConfig.services?.[this.selectedHealthcheckService]) {
+                return;
+            }
+            this.showHealthcheckPicker = false;
+            this.editServiceHealthcheck(this.selectedHealthcheckService);
+        },
+
         checkYAML() {
 
         },
@@ -2833,6 +2882,17 @@ export default {
 
 .stack-action-label {
     display: none;
+}
+
+.stack-action-bar:not(.stack-action-bar--labeled) .stack-action--healthcheck {
+    width: auto;
+    padding: 0 .7rem;
+    gap: .4rem;
+}
+
+.stack-action-bar:not(.stack-action-bar--labeled) .stack-action--healthcheck .stack-action-label {
+    display: inline;
+    font-size: var(--fs-sm);
 }
 
 .stack-action-bar--labeled .stack-action {
