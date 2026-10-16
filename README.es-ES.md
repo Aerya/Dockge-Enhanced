@@ -69,6 +69,8 @@ En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (
 
 #### Actualizaciones e ImageWatcher
 
+**Intervalos de comprobación:** en **Watcher > Imágenes**, el análisis general cubre todas las imágenes cada **6 horas por defecto**. Las imágenes en modo **Inmediato** también reciben comprobaciones específicas cada **5 minutos por defecto**. Este intervalo se puede ajustar en minutos u horas (entre 5 minutos y 24 horas), o desactivar solo las comprobaciones periódicas específicas; el análisis general sigue activo. Al seleccionar el modo Inmediato, todavía se puede iniciar una comprobación específica puntual.
+
 **Preparación de montajes del host en macOS**
 
 Antes de iniciar o actualizar una pila, Enhanced pide a Docker que prepare directamente cada directorio de origen de un montaje bind. Esto también cubre las rutas compartidas por Docker Desktop en macOS, como `/Users/...`, sin suponer que montar `/` permite acceder al sistema de archivos de macOS. Los montajes de archivos como `/etc/localtime` no se crean como directorios. Si Docker no puede acceder a una ruta de origen, la operación se detiene con el error real de Docker; compruebe que el directorio esté compartido con Docker Desktop.
@@ -421,7 +423,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Actualizaciones
 - Actualizaciones de imágenes agrupadas por stack: vista previa y conservación de excepciones.
-- **ImageWatcher Inmediato**: control al activar la opción y cada 5 minutos, comprobación de las imágenes realmente ejecutadas, consultas compartidas y espera tras HTTP 429.
+- **ImageWatcher Inmediato**: control al activar la opción y cada 5 minutos por defecto (configurable o desactivable sin afectar al análisis general de 6 horas), comprobación de las imágenes realmente ejecutadas, consultas compartidas y espera tras HTTP 429.
 - Exclusión por servicio de comprobaciones de ImageWatcher y actualizaciones automáticas/por lotes mediante `dockge.imageupdates.check: "false"`
 - Monitorización y detección remota
 - Actualización manual y automática

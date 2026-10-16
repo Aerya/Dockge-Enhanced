@@ -33,6 +33,7 @@ export interface GlobalMaintenanceWindow {
 export interface ImgSettings {
     enabled: boolean;
     intervalHours: number;
+    immediateCheckMinutes: number;
     discordWebhooks: string[];
     autoUpdateConfig: Record<string, AutoUpdateEntry>;
     pendingAutoUpdates: string[];

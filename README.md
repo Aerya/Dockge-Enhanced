@@ -68,6 +68,8 @@ Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS
 
 #### Updates and ImageWatcher
 
+**Image check intervals:** In **Watcher > Images**, the full scan covers all images every **6 hours by default**. Immediate-mode images also receive separate targeted checks every **5 minutes by default**. You can set that targeted interval in minutes or hours (5 minutes to 24 hours), or disable only those periodic targeted checks; the full scan remains active. The selected Immediate policy can still trigger a one-off targeted check.
+
 **Host bind preparation on macOS**
 
 Before starting or updating a stack, Enhanced asks Docker to prepare each directory bind source directly. This also works with paths shared by Docker Desktop on macOS, such as `/Users/...`, without assuming that the helper can see the macOS filesystem through a bind mount of `/`. File binds such as `/etc/localtime` are not created as directories. If Docker cannot access a source path, the update stops with Docker's actual error; check that the directory is shared with Docker Desktop.
@@ -441,7 +443,7 @@ The Restic snapshot list defaults to **All**. **Save** stores settings and reten
 
 ### Updates
 - Bulk automatic image policies for a stack: preview and preservation of individual exceptions.
-- **ImageWatcher Immediate**: targeted checks on activation and every 5 minutes, detection of images actually running, shared registry requests and HTTP 429 cooldowns.
+- **ImageWatcher Immediate**: targeted checks on activation and every 5 minutes by default (configurable or disabled separately from the 6-hour full scan), detection of images actually running, shared registry requests and HTTP 429 cooldowns.
 - Per-service exclusion from ImageWatcher checks and automatic/batch image updates with `dockge.imageupdates.check: "false"`
 - Docker image update monitoring
 - Remote update detection

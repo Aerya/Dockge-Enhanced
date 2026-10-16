@@ -11,7 +11,8 @@ import {
     buildImageUpdateComposePlan,
     hasRunningImageDrift,
     immediateUpdateKeys,
-    IMMEDIATE_IMAGE_CHECK_CRON,
+    DEFAULT_IMMEDIATE_CHECK_MINUTES,
+    sanitizeImmediateCheckMinutes,
     reuseCyclePromise,
     registryRateLimitCooldownMs,
     buildManifestUrl,
@@ -609,8 +610,35 @@ test("seules les images configurées en immédiat participent aux contrôles cib
     ]);
 });
 
-test("la politique immédiate vérifie les tags toutes les cinq minutes", () => {
-    assert.equal(IMMEDIATE_IMAGE_CHECK_CRON, "*/5 * * * *");
+test("les contrôles ciblés gardent 5 minutes par défaut et acceptent minutes, heures ou arrêt", () => {
+    assert.equal(DEFAULT_IMMEDIATE_CHECK_MINUTES, 5);
+    assert.equal(sanitizeImmediateCheckMinutes(undefined), 5);
+    assert.equal(sanitizeImmediateCheckMinutes(30), 30);
+    assert.equal(sanitizeImmediateCheckMinutes(360), 360);
+    assert.equal(sanitizeImmediateCheckMinutes(0), 0);
+    assert.equal(sanitizeImmediateCheckMinutes(4), 5);
+    assert.equal(sanitizeImmediateCheckMinutes(1441), 5);
+    assert.equal(sanitizeImmediateCheckMinutes("not a number"), 5);
+});
+
+test("l'intervalle ciblé est conservé après rechargement sans modifier le scan général", async () => {
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-immediate-interval-"));
+    try {
+        const watcher = new ImageWatcher(dataDir);
+        watcher.restart = () => {};
+        await watcher.saveSettings({ immediateCheckMinutes: 180 }, false);
+        const reloaded = new ImageWatcher(dataDir);
+        await reloaded.loadSettings();
+        assert.equal(reloaded.settings.immediateCheckMinutes, 180);
+        assert.equal(reloaded.settings.intervalHours, 6);
+        await watcher.saveSettings({ immediateCheckMinutes: 0 }, false);
+        await reloaded.loadSettings();
+        assert.equal(reloaded.settings.immediateCheckMinutes, 0);
+        assert.equal(reloaded.settings.intervalHours, 6);
+    } finally {
+        await fs.rm(dataDir, { recursive: true,
+            force: true });
+    }
 });
 
 test("un même manifest distant est demandé une fois par cycle et plateforme", async () => {

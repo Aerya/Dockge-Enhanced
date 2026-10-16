@@ -191,7 +191,15 @@ export interface AutoUpdateEntry {
 }
 
 /** Poll only immediate-policy images between the less frequent full scans. */
-export const IMMEDIATE_IMAGE_CHECK_CRON = "*/5 * * * *";
+export const DEFAULT_IMMEDIATE_CHECK_MINUTES = 5;
+export function sanitizeImmediateCheckMinutes(value: unknown): number {
+    if (value === 0) {
+        return 0;
+    }
+    const minutes = Number(value);
+    return Number.isInteger(minutes) && minutes >= 5 && minutes <= 1440
+        ? minutes : DEFAULT_IMMEDIATE_CHECK_MINUTES;
+}
 
 /** A single registry manifest lookup is enough for all stacks sharing the same tag and platform. */
 export function reuseCyclePromise<T>(
@@ -241,6 +249,7 @@ export function confirmedMissingImmediateTargets(
 export interface WatcherSettings {
     enabled: boolean;
     intervalHours: number;
+    immediateCheckMinutes: number; // 0 disables periodic targeted checks; full scans remain active
     discordWebhooks: string[]; // liste de webhooks (migration auto depuis discordWebhook)
     credentials: RegistryCredential[];
     notificationLang: NotificationLang;
@@ -1254,7 +1263,7 @@ export class ImageWatcher {
     private static _instance: ImageWatcher;
     private cronJob: cron.ScheduledTask | null = null;
     private minuteCron: cron.ScheduledTask | null = null;
-    private immediateCron: cron.ScheduledTask | null = null;
+    private immediateCron: ReturnType<typeof setInterval> | null = null;
     private cleanupCron: cron.ScheduledTask | null = null;
     private _immediateCycleRunning = false;
     private immediateRemoteCache: Map<string, Promise<RemoteDigestInfo>> | null = null;
@@ -1294,6 +1303,7 @@ export class ImageWatcher {
     settings: WatcherSettings = {
         enabled: false,
         intervalHours: 6,
+        immediateCheckMinutes: DEFAULT_IMMEDIATE_CHECK_MINUTES,
         discordWebhooks: [],
         credentials: [],
         notificationLang: "fr",
@@ -1355,7 +1365,8 @@ export class ImageWatcher {
 
     async saveSettings(partial: Partial<WatcherSettings>, runInitialCheck = true): Promise<void> {
         this.settings = { ...this.settings,
-            ...partial };
+            ...partial,
+            immediateCheckMinutes: sanitizeImmediateCheckMinutes(partial.immediateCheckMinutes ?? this.settings.immediateCheckMinutes) };
         this.settings.credentials = this.settings.credentials.map((credential) => ({
             ...credential,
             registry: normalizeRegistryHost(credential.registry),
@@ -1627,11 +1638,13 @@ export class ImageWatcher {
       `[ImageWatcher] Démarrage — vérification toutes les ${intervalHours}h`,
         );
         this.cronJob = cron.schedule(expr, () => this.runCheck());
-        // Les images en mode « Immédiat » sont surveillées séparément toutes les
-        // 5 minutes, avec cache des manifests par cycle, sans scan global.
-        this.immediateCron = cron.schedule(IMMEDIATE_IMAGE_CHECK_CRON, () =>
-            this.runImmediateChecks().catch(console.error),
-        );
+        // Contrôle ciblé indépendant du scan global ; un intervalle nul le désactive.
+        this.settings.immediateCheckMinutes = sanitizeImmediateCheckMinutes(this.settings.immediateCheckMinutes);
+        if (this.settings.immediateCheckMinutes > 0) {
+            this.immediateCron = setInterval(() => {
+                this.runImmediateChecks().catch(console.error);
+            }, this.settings.immediateCheckMinutes * 60_000);
+        }
         // Cron minutaire pour appliquer les màj planifiées
         this.minuteCron = cron.schedule("* * * * *", () =>
             this.applyPendingUpdates().catch(console.error),
@@ -1653,7 +1666,9 @@ export class ImageWatcher {
         this.cronJob = null;
         this.minuteCron?.stop();
         this.minuteCron = null;
-        this.immediateCron?.stop();
+        if (this.immediateCron) {
+            clearInterval(this.immediateCron);
+        }
         this.immediateCron = null;
         this.cleanupCron?.stop();
         this.cleanupCron = null;
@@ -1757,7 +1772,7 @@ export class ImageWatcher {
             const uniqueManifests = this.immediateRemoteCache?.size ?? 0;
             const durationSeconds = ((Date.now() - startedAt) / 1000).toFixed(1);
             console.log(
-                `[ImageWatcher] Contrôle ciblé (5 min) : ${checked}/${keys.length} service(s), ` +
+                `[ImageWatcher] Contrôle ciblé (${this.settings.immediateCheckMinutes} min) : ${checked}/${keys.length} service(s), ` +
                 `${uniqueManifests} manifest(s) unique(s), ${updated} mise(s) à jour, ` +
                 `${pending} en attente, ${failures} erreur(s), ${durationSeconds} s`,
             );
