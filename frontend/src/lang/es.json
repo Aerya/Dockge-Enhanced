@@ -1,4 +1,7 @@
 {
+    "releaseNews.item.replicationSourceOwnership": "Las nuevas replicaciones se configuran en la instancia de origen para evitar programaciones independientes entre instancias vinculadas. Las políticas anteriores siguen gestionándose donde se crearon; no se elimina nada automáticamente.",
+    "stackReplication.configureOnSource": "Abra esta stack en su instancia de origen para configurar una nueva política de replicación.",
+    "stackReplication.ownerHint": "Las nuevas replicaciones pertenecen a la instancia de origen. Las políticas creadas aquí anteriormente siguen gestionándose aquí.",
     "releaseNews.item.configurableImmediateChecks": "Watcher > Imágenes ahora distingue el análisis general (6 horas por defecto) de las comprobaciones específicas del modo Inmediato (5 minutos por defecto). El intervalo específico se puede ajustar en minutos u horas, o desactivar sin detener el análisis general.",
     "watcher.img.fullScanFrequency": "Análisis general de imágenes",
     "watcher.img.fullScanHint": "Todas las imágenes se comprueban cada 6 horas de forma predeterminada.",

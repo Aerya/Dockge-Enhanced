@@ -258,6 +258,11 @@ export class StackReplicationManager {
             throw new ValidationError("This source stack already has a cold replica");
         }
         const existing = input.id ? policies.find(policy => policy.id === input.id) : undefined;
+        // Policies are stored locally. Creating a policy for a linked source here
+        // would create a second, invisible scheduler on another instance.
+        if (input.sourceEndpoint && (!existing || existing.sourceEndpoint !== input.sourceEndpoint || existing.sourceStackName !== input.sourceStackName)) {
+            throw new ValidationError("stackReplication.configureOnSource");
+        }
         if (existing?.status === "active") {
             throw new ValidationError("An activated replica cannot be reconfigured");
         }

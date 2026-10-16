@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.replicationSourceOwnership": "Configure new replication policies on the source instance to avoid separate schedules across linked instances. Existing policies remain manageable where they were created; nothing is removed automatically.",
     "releaseNews.item.configurableImmediateChecks": "Watcher > Images now separates the full scan (6 hours by default) from targeted Immediate-mode checks (5 minutes by default). Set the targeted interval in minutes or hours, or disable it without stopping the full scan.",
     "releaseNews.item.hostBindDockerDesktop": "Stack updates now prepare host bind directories through their actual Docker mounts, including Docker Desktop paths on macOS. File binds such as /etc/localtime are no longer mistaken for directories.",
     "releaseNews.item.selfUpdateDiskAndImageSafety": "Self-update checks Docker storage space before backup or pull and defers automatic updates when space cannot be verified. A vanished updater is detected at every stage; a pull still running after 20 minutes is flagged for inspection. Old unused Enhanced images are maintained after 48 hours while active, rollback, recovery and excluded images stay protected.",
@@ -537,6 +538,8 @@
     "stackReplication.heading": "Cold replica",
     "stackReplication.title": "Replicate stack {0}",
     "stackReplication.configure": "Configure replication",
+    "stackReplication.configureOnSource": "Open this stack on its source instance to configure a new replication policy.",
+    "stackReplication.ownerHint": "New replication policies belong to the source instance. Existing policies created here remain manageable here.",
     "stackReplication.configureAction": "Save and start replication",
     "stackReplication.configureHint": "This action saves the configuration and starts the first synchronization.",
     "stackReplication.configured": "The cold replica is configured and synchronized.",

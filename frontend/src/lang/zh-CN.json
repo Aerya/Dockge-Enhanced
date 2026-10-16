@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.replicationSourceOwnership": "新的复制策略需在源实例上配置，以避免关联实例分别安排相同的同步。旧策略仍可在创建它们的实例上管理；不会自动删除任何内容。",
     "releaseNews.item.configurableImmediateChecks": "Watcher > Images 现在区分完整扫描（默认每 6 小时）和立即模式的定向检查（默认每 5 分钟）。可按分钟或小时设置定向间隔，或单独禁用，而不停止完整扫描。",
     "releaseNews.item.hostBindDockerDesktop": "更新 Stack 时现在通过直接的 Docker 挂载准备主机目录，包括 macOS 上的 Docker Desktop 路径。/etc/localtime 等文件挂载不再被误认为目录。",
     "releaseNews.item.selfUpdateDiskAndImageSafety": "自更新会在备份或拉取前检查 Docker 存储空间；无法验证时自动更新将延期。任一阶段消失的 updater 都会被检测到，拉取超过 20 分钟仍在运行时会提示检查。超过 48 小时的旧版未使用 Enhanced 镜像会被清理，当前、回滚、恢复和已排除镜像仍受保护。",
@@ -580,6 +581,8 @@
     "stackReplication.activate": "故障转移",
     "stackReplication.activateConfirm": "故障转移将启动目标堆栈并禁用同步。请确保源端不再接收写入，以避免脑裂。继续吗？",
     "stackReplication.configure": "配置复制",
+    "stackReplication.configureOnSource": "请在源实例上打开此堆栈以配置新的复制策略。",
+    "stackReplication.ownerHint": "新的复制策略归源实例管理。此前在此处创建的策略仍可在此管理。",
     "stackReplication.configureAction": "保存并启动复制",
     "stackReplication.configureHint": "此操作将保存配置并开始首次同步。",
     "stackReplication.configured": "冷副本已配置并完成同步。",

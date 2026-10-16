@@ -2533,7 +2533,16 @@ export default {
                 return;
             }
             this.$root.getSocket().emit("listStackReplications", this.endpoint, this.stack.name, response => {
-                this.$refs.stackTransferModal?.open("replicate", response?.ok ? response.data[0] || null : null);
+                if (!response?.ok) {
+                    this.$root.toastRes(response);
+                    return;
+                }
+                const existing = response.data[0] || null;
+                if (this.endpoint && !existing) {
+                    this.$root.toastError(this.$t("stackReplication.configureOnSource"));
+                    return;
+                }
+                this.$refs.stackTransferModal?.open("replicate", existing);
             });
         },
 

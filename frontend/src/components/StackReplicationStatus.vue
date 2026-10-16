@@ -1,4 +1,5 @@
 <template>
+    <div v-if="sourceEndpoint" class="small text-muted mb-2">{{ $t("stackReplication.ownerHint") }}</div>
     <div v-if="policy" class="stack-replication-status shadow-box mb-3">
         <div class="replication-header">
             <div>

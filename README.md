@@ -349,6 +349,8 @@ The release-news popup now tracks each release entry individually. If several au
 
 **Transactional stack migration and replication**
 
+Create new replication policies from the **source instance directly**. Policies are stored on the instance where they are created, not automatically shared between linked instances. Existing policies created from another instance remain there and can still be managed there; review and remove any duplicate old policy manually before creating a replacement. Enhanced does not delete policies or replica data during this change.
+
 Stacks can be copied or moved between Dockge-Enhanced instances together with their Compose configuration and persistent data. Transfers are resumable, validated on the destination and protected by rollback mechanisms.
 
 **Host prerequisites and automatic recovery**
