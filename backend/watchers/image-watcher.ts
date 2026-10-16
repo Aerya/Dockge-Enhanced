@@ -335,7 +335,7 @@ export const updateHistoryStore: UpdateHistoryEntry[] = [];
 
 // ─── Helpers registry ─────────────────────────────────────────────
 
-function normalizeImage(image: string): {
+export function normalizeImage(image: string): {
     registry: string;
     name: string;
     tag: string;
@@ -364,7 +364,7 @@ function normalizeImage(image: string): {
     if (firstSlash !== -1) {
         const first = name.slice(0, firstSlash);
         if (first.includes(".") || first.includes(":") || first === "localhost") {
-            registry = first;
+            registry = normalizeRegistryHost(first);
             name = name.slice(firstSlash + 1);
         }
     }
