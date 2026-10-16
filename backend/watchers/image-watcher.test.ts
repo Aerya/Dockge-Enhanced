@@ -9,6 +9,7 @@ import {
     imageStatusStore,
     assertRegistryHost,
     buildImageUpdateComposePlan,
+    missingRunningComposeTargets,
     hasRunningImageDrift,
     immediateUpdateKeys,
     DEFAULT_IMMEDIATE_CHECK_MINUTES,
@@ -62,6 +63,14 @@ test("une mise à jour ImageWatcher actualise uniquement lastUpdated d'une stack
     });
     await fs.rm(root, { recursive: true,
         force: true });
+});
+
+test("une mise à jour ciblée ne redémarre pas les services Compose arrêtés", () => {
+    const recreateArgs = [ "up", "-d", "--force-recreate", "--no-deps", "app", "vpn" ];
+    assert.deepEqual(missingRunningComposeTargets(recreateArgs, "app\nvpn\n"), []);
+    assert.deepEqual(missingRunningComposeTargets(recreateArgs, "app\n"), [ "vpn" ]);
+    assert.deepEqual(missingRunningComposeTargets(recreateArgs, ""), [ "app", "vpn" ]);
+    assert.throws(() => missingRunningComposeTargets([ "up", "-d" ], "app"), /Targeted Compose services/);
 });
 
 test("une mise à jour ImageWatcher écrit les métadonnées privées d'une stack externe", async () => {

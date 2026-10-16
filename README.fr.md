@@ -69,6 +69,8 @@ Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli D
 
 #### Mises à jour et ImageWatcher
 
+**Les services arrêtés restent arrêtés :** une mise à jour automatique d’image est reportée si un service Compose ciblé, y compris un compagnon de namespace réseau requis, est arrêté ou absent. ImageWatcher revérifie après le téléchargement, avant la recréation, puis réessaie lors d’un contrôle ultérieur. Il n’utilise pas `compose up` pour réveiller un service arrêté.
+
 **Fréquences de vérification :** dans **Watcher > Images**, le scan général couvre toutes les images toutes les **6 h par défaut**. Les images en mode **Immédiat** bénéficient en plus d’un contrôle ciblé toutes les **5 min par défaut**. Cet intervalle ciblé peut être défini en minutes ou en heures (de 5 min à 24 h), ou désactivé seul : le scan général reste actif. Sélectionner le mode Immédiat peut toujours déclencher un contrôle ciblé ponctuel.
 
 **Préparation des montages hôte sous macOS**

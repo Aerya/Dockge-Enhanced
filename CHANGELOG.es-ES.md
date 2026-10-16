@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-16 — Respeto de los servicios detenidos al actualizar imágenes** — ImageWatcher aplaza una actualización si un servicio Compose seleccionado o su compañero de espacio de nombres de red está detenido o ausente. Vuelve a comprobarlo después de la descarga, justo antes de recrear los contenedores; una actualización automática no inicia servicios detenidos.
+
 **2026-10-16 — Comprobaciones inmediatas configurables** — Watcher > Imágenes distingue el análisis general (6 h por defecto) de las comprobaciones específicas del modo Inmediato (5 min por defecto). Su intervalo puede configurarse en minutos u horas, o desactivarse sin detener el análisis general. Las instalaciones existentes conservan el valor de 5 min.
 
 **2026-10-16 — Montajes del host en Docker Desktop** — Las operaciones de pila montan directamente cada directorio de origen mediante Docker, sin depender de la raíz de la VM Docker para las rutas compartidas en macOS. Los montajes de archivos sin extensión como `/etc/localtime` ya no se crean como directorios; los errores de Docker siguen siendo visibles.

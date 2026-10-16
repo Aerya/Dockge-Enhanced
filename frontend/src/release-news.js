@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-16-image-update-stopped-services",
+        items: [ "releaseNews.item.imageUpdateStoppedServices" ],
+    },
+    {
         id: "2026-10-16-configurable-immediate-checks",
         items: [ "releaseNews.item.configurableImmediateChecks" ],
     },

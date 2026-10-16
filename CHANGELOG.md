@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-16 — Preserve stopped services during image updates** — ImageWatcher defers an image update if a targeted Compose service or network-namespace companion is stopped or absent. It checks again after the pull, immediately before recreation; no stopped service is started by an automatic update.
+
 **2026-10-16 — Configurable Immediate image checks** — Watcher > Images now distinguishes the full scan (6 hours by default) from targeted checks for Immediate-mode images (5 minutes by default). The targeted interval can be set in minutes or hours, or disabled without disabling the full scan. Existing installations retain the 5-minute default.
 
 **2026-10-16 — Host bind preparation on Docker Desktop** — Stack operations now let Docker mount each directory source directly, so macOS shared paths no longer depend on the Docker VM's root filesystem. Extensionless file binds such as `/etc/localtime` are excluded from directory creation; Docker errors remain visible.
