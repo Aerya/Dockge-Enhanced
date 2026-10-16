@@ -18,6 +18,7 @@ import { DockgeServer } from "../dockge-server";
 import { Settings } from "../settings";
 import { isLowPower, intervals } from "../low-power";
 import { requireHttpAuth } from "../auth";
+import { aggregateDockerStackResources, StackResourceStat, ContainerResourceStat } from "../stack-resource-stats";
 
 const execAsync = promisify(exec);
 
@@ -298,129 +299,47 @@ async function readTemperatures(): Promise<HostDetails["temperatures"]> {
 
 // ─── Stack stats collector ───────────────────────────────────────
 
-export interface StackStat {
-    cpu:     number; // % cumulé des conteneurs du stack
-    memUsed: number; // bytes cumulés
-}
+export type StackStat = StackResourceStat;
 
 export interface StackStatsSnapshot {
     enabled: boolean;
     data: Record<string, StackStat>;
     containerData: Record<string, StackStat>;
     lowPowerMode: boolean;
-}
-
-/** Convertit "128MiB", "1.2GiB", "500kB"… en bytes */
-function parseDockerBytes(str: string): number {
-    const s = str.trim();
-    const units: Record<string, number> = {
-        B: 1,
-        kB: 1e3, KB: 1e3,
-        MB: 1e6, MiB: 1024 ** 2,
-        GB: 1e9, GiB: 1024 ** 3,
-        TB: 1e12, TiB: 1024 ** 4,
-    };
-    const m = s.match(/^([\d.]+)\s*([A-Za-z]+)$/);
-    if (!m) return 0;
-    return Math.round(parseFloat(m[1]) * (units[m[2]] ?? 1));
+    available?: boolean;
+    sampledAt?: string | null;
+    instances?: Record<string, ContainerResourceStat>;
 }
 
 const stackStatsCache = new Map<string, StackStat>();
 const containerStatsCache = new Map<string, StackStat>();
 let lastStackCollectAt = 0;
 let stackCollectInFlight: Promise<void> | null = null;
+let stackSampledAt: string | null = null;
+let stackCollectionAvailable = false;
+let instanceStats: Record<string, ContainerResourceStat> = {};
 
 async function updateStackStats(): Promise<void> {
     try {
         const [{ stdout: statsOut }, { stdout: psOut }] = await Promise.all([
-            execAsync("docker stats --no-stream --format '{{json .}}'"),
-            execAsync("docker ps --format '{{json .}}'"),
+            execAsync("docker stats --no-stream --no-trunc --format '{{json .}}'", { timeout: 15_000, maxBuffer: 8 * 1024 * 1024 }),
+            execAsync("docker ps --all --no-trunc --format '{{json .}}'", { timeout: 15_000, maxBuffer: 8 * 1024 * 1024 }),
         ]);
-
-        // Index : short ID ET noms de container → projet/service Compose.
-        // Robuste face aux socket-proxies qui peuvent changer le format de l'ID
-        const containerToCompose = new Map<string, { stackName: string; serviceName: string }>();
-        for (const line of psOut.trim().split("\n")) {
-            if (!line.trim()) continue;
-            try {
-                const c = JSON.parse(line);
-                const labels: string = c["Labels"] ?? "";
-                const project = labels.match(/com\.docker\.compose\.project=([^,]+)/);
-                const service = labels.match(/com\.docker\.compose\.service=([^,]+)/);
-                if (!project || !service) {
-                    continue;
-                }
-                const compose = {
-                    stackName: project[1].trim(),
-                    serviceName: service[1].trim(),
-                };
-
-                // Par ID court (12 chars)
-                if (c["ID"]) containerToCompose.set((c["ID"] as string).trim(), compose);
-
-                // Par nom(s) — docker ps retourne parfois "/nom1,/nom2"
-                const names: string = c["Names"] ?? "";
-                for (const n of names.split(",")) {
-                    const clean = n.trim().replace(/^\//, "");
-                    if (clean) containerToCompose.set(clean, compose);
-                }
-            } catch { /* ligne invalide */ }
-        }
-
-        // Agrégation par stack — cherche le stackName par ID, Container ou Name
-        const aggr = new Map<string, StackStat>();
-        containerStatsCache.clear();
-        for (const line of statsOut.trim().split("\n")) {
-            if (!line.trim()) continue;
-            try {
-                const s = JSON.parse(line);
-
-                const candidates = [
-                    s["ID"],
-                    s["Container"],
-                    s["Name"],
-                ].map((v: unknown) => (typeof v === "string" ? v.replace(/^\//, "").trim() : ""))
-                    .filter(Boolean);
-
-                let compose: { stackName: string; serviceName: string } | undefined;
-                for (const key of candidates) {
-                    compose = containerToCompose.get(key);
-                    if (compose) break;
-                }
-                if (!compose) continue;
-
-                const cpu     = parseFloat((s["CPUPerc"] ?? "0").replace("%", "")) || 0;
-                const memUsed = parseDockerBytes((s["MemUsage"] ?? "0B / 0B").split("/")[0]);
-
-                const cur = aggr.get(compose.stackName);
-                if (cur) { cur.cpu += cpu; cur.memUsed += memUsed; }
-                else aggr.set(compose.stackName, { cpu, memUsed });
-
-                const containerKey = `${compose.stackName}:${compose.serviceName}`;
-                const container = containerStatsCache.get(containerKey);
-                if (container) {
-                    container.cpu += cpu;
-                    container.memUsed += memUsed;
-                } else {
-                    containerStatsCache.set(containerKey, { cpu, memUsed });
-                }
-            } catch { /* ligne invalide */ }
-        }
-
+        const aggregated = aggregateDockerStackResources(statsOut, psOut);
         stackStatsCache.clear();
-        for (const [name, stat] of aggr) {
-            stackStatsCache.set(name, {
-                cpu:     Math.round(stat.cpu * 10) / 10,
-                memUsed: stat.memUsed,
-            });
+        for (const [name, stat] of Object.entries(aggregated.data)) {
+            stackStatsCache.set(name, stat);
         }
-        for (const [key, stat] of containerStatsCache) {
-            containerStatsCache.set(key, {
-                cpu: Math.round(stat.cpu * 10) / 10,
-                memUsed: stat.memUsed,
-            });
+        containerStatsCache.clear();
+        for (const [key, stat] of Object.entries(aggregated.containerData)) {
+            containerStatsCache.set(key, stat);
         }
-    } catch { /* docker non dispo */ }
+        stackSampledAt = new Date().toISOString();
+        instanceStats = aggregated.instances;
+        stackCollectionAvailable = true;
+    } catch {
+        stackCollectionAvailable = false;
+    }
 }
 
 /** Collecte unique, dédupliquée (un seul `docker stats` global en vol à la fois). */
@@ -452,18 +371,27 @@ async function collectStackStatsIfDue(): Promise<void> {
     }
 }
 
-export async function getStackStatsSnapshot(): Promise<StackStatsSnapshot> {
+export async function getStackStatsSnapshot(forHistory = false): Promise<StackStatsSnapshot> {
     const enabled = (await Settings.get("stackStatsEnabled")) === true;
-    if (!enabled) {
+    if (!enabled && !forHistory) {
         return { enabled: false, data: {}, containerData: {}, lowPowerMode: isLowPower() };
     }
 
-    await collectStackStatsIfDue();
+    if (forHistory) {
+        await collectStackStats();
+    } else {
+        await collectStackStatsIfDue();
+    }
     const data: Record<string, StackStat> = {};
-    for (const [key, value] of stackStatsCache) data[key] = value;
+    if (stackCollectionAvailable) {
+        for (const [key, value] of stackStatsCache) data[key] = value;
+    }
     const containerData: Record<string, StackStat> = {};
-    for (const [key, value] of containerStatsCache) containerData[key] = value;
-    return { enabled: true, data, containerData, lowPowerMode: isLowPower() };
+    if (stackCollectionAvailable) {
+        for (const [key, value] of containerStatsCache) containerData[key] = value;
+    }
+    return { enabled, data, containerData, lowPowerMode: isLowPower(), available: stackCollectionAvailable, sampledAt: stackSampledAt,
+        ...(forHistory ? { instances: stackCollectionAvailable ? instanceStats : {} } : {}) };
 }
 
 export async function getSystemStatsSnapshot() {

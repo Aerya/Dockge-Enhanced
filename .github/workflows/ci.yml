@@ -125,6 +125,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/watchers/backup-restore-test.test.ts backend/watchers/restic-repository-init.test.ts backend/watchers/backup-repository-safety.test.ts backend/watchers/backup-manager.test.ts
 
+      - name: Tests des ressources et de l’historique par stack
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/stack-resource-stats.test.ts backend/stack-resource-history.test.ts backend/monitoring-history.test.ts frontend/src/stack-resource-sort.test.ts
+
       - name: Tests de l’intégration PowerWatch
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/watchers/powerwatch-manager.test.ts backend/agent-socket-handlers/docker-socket-handler.powerwatch.test.ts frontend/src/powerwatch.test.ts frontend/src/powerwatch-i18n.test.ts

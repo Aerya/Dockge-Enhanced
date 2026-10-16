@@ -13,6 +13,7 @@ import { imageStatusStore } from "../watchers/image-watcher";
 import { Settings } from "../settings";
 import { requireHttpAuth } from "../auth";
 import { historyStartDate, MonitoringHistoryCollector, MonitoringHistoryRange } from "../monitoring-history";
+import { assertHistoryStackName, stackHistoryPreset, StackResourceHistoryCollector } from "../stack-resource-history";
 
 export function parseMonitoringHistoryRange(query: Request["query"], now = new Date()): MonitoringHistoryRange {
     const preset = typeof query.preset === "string" ? query.preset : undefined;
@@ -80,6 +81,11 @@ export class MonitoringRouter extends Router {
         router.post("/monitoring/settings", async (req: Request, res: Response) => {
             try {
                 const partial = req.body as Partial<MonitoringSettings>;
+                if (partial.stackHistoryEnabled !== undefined && typeof partial.stackHistoryEnabled !== "boolean") {
+                    res.status(400).json({ ok: false,
+                        message: "stackHistoryEnabled must be a boolean" });
+                    return;
+                }
                 if (partial.historyEnabled !== undefined && typeof partial.historyEnabled !== "boolean") {
                     res.status(400).json({
                         ok: false,
@@ -127,6 +133,19 @@ export class MonitoringRouter extends Router {
                     ok: false,
                     message: String(e),
                 });
+            }
+        });
+
+        router.get("/monitoring/stack-history", async (req: Request, res: Response) => {
+            try {
+                const name = req.query.stack;
+                assertHistoryStackName(name);
+                res.json({ ok: true,
+                    enabled: MonitoringWatcher.getInstance().settings.stackHistoryEnabled,
+                    data: await StackResourceHistoryCollector.getInstance().read(name, stackHistoryPreset(req.query.preset)) });
+            } catch (error) {
+                res.status(400).json({ ok: false,
+                    message: error instanceof Error ? error.message : String(error) });
             }
         });
 

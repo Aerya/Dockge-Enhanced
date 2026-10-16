@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-16-stack-resource-history",
+        items: [ "releaseNews.item.stackResourceHistory" ],
+    },
+    {
         id: "2026-10-16-restic-repository-source-safety",
         items: [ "releaseNews.item.resticRepositorySourceSafety" ],
     },

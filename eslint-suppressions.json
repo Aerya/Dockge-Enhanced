@@ -164,22 +164,22 @@
   },
   "backend/routers/system-stats-router.ts": {
     "@stylistic/brace-style": {
-      "count": 5
-    },
-    "@stylistic/max-statements-per-line": {
       "count": 2
     },
+    "@stylistic/max-statements-per-line": {
+      "count": 1
+    },
     "@stylistic/no-multi-spaces": {
-      "count": 6
+      "count": 4
     },
     "@stylistic/object-property-newline": {
-      "count": 37
+      "count": 33
     },
     "@typescript-eslint/no-explicit-any": {
       "count": 3
     },
     "curly": {
-      "count": 14
+      "count": 6
     }
   },
   "backend/self-update/editor-lease.test.ts": {
@@ -729,17 +729,8 @@
     }
   },
   "frontend/src/composables/useStackStats.ts": {
-    "@stylistic/brace-style": {
-      "count": 9
-    },
     "@stylistic/max-statements-per-line": {
-      "count": 3
-    },
-    "@stylistic/object-property-newline": {
-      "count": 8
-    },
-    "curly": {
-      "count": 15
+      "count": 2
     }
   },
   "frontend/src/layouts/Layout.vue": {

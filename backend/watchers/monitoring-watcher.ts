@@ -9,6 +9,7 @@ import * as path from "path";
 import * as fs from "fs/promises";
 import { R } from "redbean-node";
 import { MonitoringHistoryCollector } from "../monitoring-history";
+import { StackResourceHistoryCollector } from "../stack-resource-history";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
@@ -45,6 +46,7 @@ export interface MonitoringSettings {
     notificationLang: NotificationLang;
     lowPowerMode: boolean;
     historyEnabled: boolean;
+    stackHistoryEnabled: boolean;
     historyPreset: "24h" | "7d" | "1m" | "custom";
     historyAmount: number;
     historyUnit: "days" | "weeks" | "months" | "years";
@@ -91,6 +93,7 @@ const DEFAULT_SETTINGS: MonitoringSettings = {
     notificationLang: "fr",
     lowPowerMode: false,
     historyEnabled: false,
+    stackHistoryEnabled: false,
     historyPreset: "24h",
     historyAmount: 7,
     historyUnit: "days",
@@ -126,6 +129,7 @@ export class MonitoringWatcher {
         try {
             const raw = await fs.readFile(SETTINGS_PATH, "utf8");
             this.settings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) as Partial<MonitoringSettings> };
+            this.settings.stackHistoryEnabled = this.settings.stackHistoryEnabled === true;
             if (!["notify", "restart_container", "restart_service", "stack_aware"].includes(this.settings.healthcheckAutoHealMode)) {
                 this.settings.healthcheckAutoHealMode = "notify";
             }
@@ -184,6 +188,7 @@ export class MonitoringWatcher {
         await this.loadExclusionsFromDb();
         this.stop();
         await MonitoringHistoryCollector.getInstance().setEnabled(this.settings.historyEnabled);
+        await StackResourceHistoryCollector.getInstance().setEnabled(this.settings.stackHistoryEnabled);
         if (this.settings.crashLoopEnabled || this.settings.healthcheckEnabled) {
             this.startDockerEvents();
         }
