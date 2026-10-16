@@ -133,6 +133,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/i18n-compat.test.ts
 
+      - name: Couverture de la traduction allemande
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test frontend/src/german-localization.test.ts
+
       - name: Tests du rendu Markdown des README de stacks
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/stack-readme.test.ts
