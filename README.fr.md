@@ -351,6 +351,8 @@ La popup de nouveautés conserve désormais chaque entrée de release individuel
 
 Créez les nouvelles politiques de réplication **directement sur l’instance source**. Une politique est stockée sur l’instance où elle a été créée, et non automatiquement partagée entre les instances liées. Les anciennes politiques créées depuis une autre instance y restent gérables ; vérifiez et retirez manuellement toute ancienne politique en double avant d’en créer une nouvelle. Ce changement ne supprime ni politique ni donnée de réplique.
 
+Depuis une vue liée de la stack source, Enhanced affiche l’état de réplication de l’instance source en lecture seule, séparément d’une éventuelle ancienne politique gérée par l’instance courante. La configuration de la politique n’est pas transmise à la vue liée.
+
 Les stacks peuvent être copiées ou déplacées entre instances Dockge-Enhanced avec leur configuration Compose et leurs données persistantes. Les transferts sont reprenables, validés côté cible et protégés par des mécanismes de rollback.
 
 **Prérequis hôte et récupération automatique**

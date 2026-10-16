@@ -35,6 +35,7 @@ import {
     testStackReplicaSnapshot,
 } from "../transfers/stack-replication-target";
 import { ImageWatcher } from "../watchers/image-watcher";
+import { StackReplicationManager } from "../watchers/stack-replication-manager";
 import {
     getStackTransferCompatibilitySnapshot,
     startStackTransferCompatibilityUpdate,
@@ -171,6 +172,18 @@ function requireReplicaSyncRequest(value: unknown): StackReplicaSyncRequest {
 
 export class StackTransferSocketHandler extends AgentSocketHandler {
     create(socket: DockgeSocket, server: DockgeServer, agentSocket: AgentSocket): void {
+        agentSocket.on("listSourceStackReplications", async (sourceStackName: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (typeof sourceStackName !== "string" || !/^[a-z0-9_-]+$/.test(sourceStackName)) {
+                    throw new ValidationError("Invalid replication source stack");
+                }
+                callbackResult({ ok: true,
+                    data: await StackReplicationManager.getInstance().listSourceSummaries(sourceStackName) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
         agentSocket.on("getStackTransferCompatibility", (callback: unknown) => {
             try {
                 checkLogin(socket);

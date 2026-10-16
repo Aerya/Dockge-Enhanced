@@ -351,6 +351,8 @@ Das Release-News-Popup verfolgt nun jeden Release-Eintrag einzeln. Werden mehrer
 
 Erstellen Sie neue Replikationsrichtlinien **direkt auf der Quellinstanz**. Eine Richtlinie wird auf der Instanz gespeichert, auf der sie erstellt wurde, und nicht automatisch zwischen verknüpften Instanzen geteilt. Bestehende Richtlinien, die von einer anderen Instanz aus erstellt wurden, bleiben dort verwaltbar. Prüfen und entfernen Sie doppelte alte Richtlinien manuell, bevor Sie eine neue erstellen. Diese Änderung löscht weder Richtlinien noch Replikatdaten.
 
+Beim Anzeigen eines verknüpften Quell-Stacks zeigt Enhanced den Replikationsstatus der Quellinstanz schreibgeschützt und getrennt von älteren Richtlinien der aktuellen Instanz an. Konfigurationsdetails werden nicht an verknüpfte Ansichten übertragen.
+
 Stacks können zusammen mit ihrer Compose-Konfiguration und persistenten Daten zwischen Dockge-Enhanced-Instanzen kopiert oder verschoben werden. Übertragungen können fortgesetzt werden, werden am Ziel validiert und sind durch Rollback-Mechanismen geschützt.
 
 **Host-Voraussetzungen und automatische Wiederherstellung**

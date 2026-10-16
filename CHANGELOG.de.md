@@ -2,6 +2,8 @@
 
 **2026-10-16 — Eindeutiger Eigentümer von Replikationsrichtlinien** — Neue Richtlinien werden auf der Quellinstanz eingerichtet, damit verknüpfte Instanzen keine getrennten Zeitpläne für denselben Stack erstellen. Bestehende Richtlinien mit entfernter Quelle bleiben dort verwaltbar, wo sie erstellt wurden; Richtlinien und Replikatdaten werden nicht automatisch gelöscht.
 
+Verknüpfte Ansichten zeigen eine schreibgeschützte Statusübersicht der Quellinstanz neben einer eventuell vorhandenen älteren lokalen Richtlinie, ohne deren Konfiguration offenzulegen.
+
 **2026-10-16 — Konfigurierbare Sofort-Prüfungen** — Watcher > Images unterscheidet nun zwischen dem vollständigen Scan (standardmäßig alle 6 Stunden) und gezielten Prüfungen für Images im Sofort-Modus (standardmäßig alle 5 Minuten). Das gezielte Intervall kann in Minuten oder Stunden eingestellt oder ohne Abschalten des vollständigen Scans deaktiviert werden. Bestehende Installationen behalten den 5-Minuten-Standard.
 
 **2026-10-16 — Vorbereitung von Host-Bind-Mounts unter Docker Desktop** — Stack-Operationen ermöglichen es Docker nun, jede Verzeichnisquelle direkt einzubinden, sodass gemeinsam genutzte macOS-Pfade nicht länger vom Stammdateisystem der Docker-VM abhängen. Dateibindungen ohne Endung wie `/etc/localtime` sind von der Verzeichniserstellung ausgeschlossen; Docker-Fehlermeldungen bleiben sichtbar.

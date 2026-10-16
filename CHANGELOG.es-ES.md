@@ -2,6 +2,8 @@
 
 **2026-10-16 — Propiedad clara de las políticas de replicación** — Las nuevas políticas deben configurarse en la instancia de origen para evitar programaciones independientes de una misma stack en instancias vinculadas. Las políticas anteriores siguen gestionándose donde se crearon; no se elimina automáticamente ninguna política ni dato de réplica.
 
+Las vistas vinculadas muestran un resumen de estado de solo lectura desde la instancia de origen junto a cualquier política local anterior, sin revelar su configuración.
+
 **2026-10-16 — Comprobaciones inmediatas configurables** — Watcher > Imágenes distingue el análisis general (6 h por defecto) de las comprobaciones específicas del modo Inmediato (5 min por defecto). Su intervalo puede configurarse en minutos u horas, o desactivarse sin detener el análisis general. Las instalaciones existentes conservan el valor de 5 min.
 
 **2026-10-16 — Montajes del host en Docker Desktop** — Las operaciones de pila montan directamente cada directorio de origen mediante Docker, sin depender de la raíz de la VM Docker para las rutas compartidas en macOS. Los montajes de archivos sin extensión como `/etc/localtime` ya no se crean como directorios; los errores de Docker siguen siendo visibles.

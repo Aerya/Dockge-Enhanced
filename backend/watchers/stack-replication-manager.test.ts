@@ -45,9 +45,17 @@ test("new replication policies must be owned by the source instance; legacy remo
         const local = await manager.save({ ...input,
             sourceEndpoint: "",
             targetEndpoint: "linked-target" });
+        assert.deepEqual(await manager.listSourceSummaries("source"), [{
+            id: local.id,
+            status: local.status,
+            targetName: local.targetName,
+            lastSuccessAt: undefined,
+        }]);
+        assert.equal("repositoryId" in (await manager.listSourceSummaries("source"))[0], false);
         memory.set("stackReplicationPolicies", [{ ...local,
             sourceEndpoint: input.sourceEndpoint,
             targetEndpoint: input.targetEndpoint }]);
+        assert.deepEqual(await manager.listSourceSummaries("source"), []);
         const legacy = await manager.save({ ...input,
             id: local.id });
         assert.equal(legacy.id, local.id);

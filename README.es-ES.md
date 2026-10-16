@@ -352,6 +352,8 @@ La ventana de novedades conserva ahora cada entrada de release individualmente. 
 
 Cree las nuevas políticas de replicación **directamente en la instancia de origen**. Cada política se guarda en la instancia donde se creó y no se comparte automáticamente entre instancias vinculadas. Las políticas anteriores creadas desde otra instancia siguen gestionándose allí; revise y elimine manualmente cualquier política duplicada antes de crear otra. Este cambio no elimina políticas ni datos de réplicas.
 
+Al ver una stack de origen vinculada, Enhanced muestra el estado de replicación de la instancia de origen en modo de solo lectura, separado de cualquier política anterior gestionada por la instancia actual. La configuración de la política no se envía a la vista vinculada.
+
 Las stacks pueden copiarse o moverse entre instancias junto con su configuración Compose y sus datos persistentes, con transferencias reanudables y rollback.
 
 **Requisitos del host y recuperación automática**
