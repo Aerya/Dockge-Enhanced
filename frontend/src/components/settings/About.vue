@@ -1,7 +1,7 @@
 <template>
     <div class="d-flex justify-content-center align-items-center">
         <div class="logo d-flex flex-column justify-content-center align-items-center">
-            <object class="my-4" width="200" height="200" data="/icon.svg" />
+            <img class="my-4" width="200" height="200" src="/icon.svg" alt="" />
             <div class="fs-4 fw-bold">Dockge-Enhanced</div>
 
             <div class="my-3 update-link">

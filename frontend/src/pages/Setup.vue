@@ -3,7 +3,7 @@
         <div class="form">
             <form @submit.prevent="submit">
                 <div>
-                    <object width="64" height="64" data="/icon.svg" />
+                    <img width="64" height="64" src="/icon.svg" alt="" />
                     <div class="setup-title">
                         Dockge
                     </div>
