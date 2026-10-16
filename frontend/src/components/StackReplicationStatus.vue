@@ -74,6 +74,8 @@ export default {
         return { policy: null,
             sourcePolicy: null,
             sourceReachable: null,
+            sourceRequestId: 0,
+            sourceTimeout: null,
             timer: null,
             now: Date.now(),
             busyAction: "",
@@ -144,6 +146,8 @@ export default {
     },
     beforeUnmount() {
         window.clearInterval(this.timer);
+        window.clearTimeout(this.sourceTimeout);
+        this.sourceRequestId++;
     },
     methods: {
         load() {
@@ -153,7 +157,19 @@ export default {
                 }
             });
             if (this.sourceEndpoint) {
+                window.clearTimeout(this.sourceTimeout);
+                const requestId = ++this.sourceRequestId;
+                this.sourceTimeout = window.setTimeout(() => {
+                    if (requestId === this.sourceRequestId) {
+                        this.sourceReachable = false;
+                        this.sourcePolicy = null;
+                    }
+                }, 8000);
                 this.$root.emitAgent(this.sourceEndpoint, "listSourceStackReplications", this.sourceStackName, response => {
+                    if (requestId !== this.sourceRequestId) {
+                        return;
+                    }
+                    window.clearTimeout(this.sourceTimeout);
                     this.sourceReachable = Boolean(response?.ok);
                     this.sourcePolicy = response?.ok ? response.data[0] || null : null;
                 });
