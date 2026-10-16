@@ -1,5 +1,7 @@
 # Dockge-Enhanced-Changelog
 
+**2026-10-16 — Schutz von Restic-Repositories innerhalb der Quellen** — Beim Speichern der Backup-Einstellungen erscheint eine Warnung für verschachtelte lokale Repositories; das Repository selbst und seine Unterordner werden als Quellen abgelehnt. Backups prüfen Pfade, aufgelöste symbolische Links und Docker-Mount-Aliase erneut und schließen lokale Repositories einschließlich deaktivierter Ziele und ihrer Reset-Archive automatisch aus. Bestehende Einstellungen, Geheimnisse und Aufbewahrungsrichtlinien bleiben erhalten.
+
 **2026-10-16 — Optionale Healthchecks pro Dienst** — Der Stack-Editor schlägt anhand interner Compose-Ports eine lokale HTTP-URL oder einen TCP-Port vor. Das Ziel ist bearbeitbar, der Docker-Befehl wird angezeigt und Hinzufügen oder Ersetzen erfordert eine ausdrückliche Aktion; bestehende Prüfungen bleiben unverändert. Das Image muss das nötige Testprogramm enthalten.
 
 **2026-10-16 — Eindeutiger Eigentümer von Replikationsrichtlinien** — Neue Richtlinien werden auf der Quellinstanz eingerichtet, damit verknüpfte Instanzen keine getrennten Zeitpläne für denselben Stack erstellen. Bestehende Richtlinien mit entfernter Quelle bleiben dort verwaltbar, wo sie erstellt wurden; Richtlinien und Replikatdaten werden nicht automatisch gelöscht.

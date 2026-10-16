@@ -60,6 +60,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Prevent Restic from backing up its own repository:** when a local repository is inside a selected backup folder, Enhanced warns you and excludes it automatically. For example, `/app/data` can remain selected with a repository at `/app/data/backups`. Selecting the repository itself or one of its subfolders as a source is refused. Existing paths, passwords and retention settings are preserved.
+
 **Optional per-service healthcheck assistant:** Click **Configure healthcheck** on a service when viewing an existing stack or creating a new one. The assistant proposes a local HTTP URL or TCP-port check based on its internal Compose ports. Review or change the target and exact command before adding it to the YAML; existing healthchecks are never replaced automatically. Docker runs the check inside the image, which must provide `/bin/sh` and `curl`/`wget` or `nc`. Verify the health status after deployment; a successful TCP connection does not prove application readiness.
 
 In Compose edit mode, **Healthchecks** is also available in the stack action bar. Choose a service if the stack has several.
@@ -433,6 +435,9 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Recovery snapshots and workflows
 
 ### Backup & recovery
+
+**Repository/source overlap:** preferably keep local Restic repositories outside selected backup folders. If a repository is nested below a source, saving the settings displays a warning and backups automatically exclude the repository, its reset archives and its other Docker mount paths. Resolved symbolic links are checked too. Disabled local destinations remain protected. Selecting a repository itself or one of its subfolders as a backup source is refused; paths are checked again before running a backup. No repository is moved or reset by this check.
+
 **Safe Restic repository reset (Local, SFTP, S3 and REST).** In **Backup → Maintenance and diagnostics**, choose an enabled destination and preview its repository and snapshot count. The reset requires two explicit acknowledgements, the exact confirmation phrase and a short-lived one-use token. A local repository is renamed into a retained archive before creating a fresh one; a remote repository switches to a new SFTP directory, S3 prefix or REST URL without deleting the old repository. The new active repository has no old snapshots; Recent history entries for that destination are removed while other destinations’ history is retained. The previous repository remains stored at its old location for recovery. This is **not** permanent deletion of backup data. Do not reset a repository shared by other clients without coordinating them.
 
 On the first backup, Restic automatically initializes **only demonstrably missing** repositories; access, network and password errors block initialization. The UI shows repository status for each enabled destination.
@@ -443,6 +448,7 @@ The interface separates **Save** (settings only), **Back up now** (immediate bac
 The Restic snapshot list defaults to **All**. **Save** stores settings and retention policy without immediately running a backup or prune; ordinary retention runs after successful backups, except deferred on-save backups. Self-update backups have their own retention.
 
 - Restic backups
+- Automatic exclusion of local Restic repositories, including disabled destinations, with overlap warnings
 - Multiple backup destinations
 - Stack-consistent backups
 - Bind mounts and volumes

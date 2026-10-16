@@ -15,6 +15,7 @@
         <!-- Body -->
         <div v-if="!volumesCollapsed" class="vol-section-body">
             <p class="form-text mb-3">{{ $t('watcher.backup.volumes.hint') }}</p>
+            <p class="form-text mb-3">{{ $t('watcher.backup.volumes.repositorySeparation') }}</p>
             <!-- Chargement des volumes montés -->
             <div v-if="loadingMountedVols" class="text-muted mb-2 vol-note">
                 <span class="spinner-border spinner-border-sm me-1" />{{ $t('watcher.backup.volumes.detecting') }}

@@ -1,13 +1,16 @@
-/** Check configured backup sources against actual local Restic repositories.
- * Paths are always from server-side settings, not untrusted browser input.
- */
+/** Check proposed or stored backup sources against local Restic repositories. */
 import path from "node:path";
+import fs from "node:fs/promises";
 
 export interface RepositoryMount { source: string;
     destination: string }
 
 function sameOrChild(candidate: string, root: string): boolean {
-    return candidate === root || candidate.startsWith(`${root}${path.sep}`);
+    return candidate === root || candidate.startsWith(root.endsWith(path.sep) ? root : `${root}${path.sep}`);
+}
+
+function unambiguousAbsolutePath(candidate: string): boolean {
+    return path.isAbsolute(candidate) && !candidate.split(path.sep).includes("..");
 }
 
 export function resolveHostRepositoryPath(containerPath: string, mounts: RepositoryMount[]): string {
@@ -19,6 +22,64 @@ export function resolveHostRepositoryPath(containerPath: string, mounts: Reposit
         return p;
     }
     return path.resolve(mount.source, path.relative(mount.destination, p));
+}
+
+/** Resolve symlinked existing parents while still accepting a new repository directory. */
+async function canonicalPath(candidate: string): Promise<string> {
+    const absolute = path.resolve(candidate);
+    let existing = absolute;
+    while (true) {
+        try {
+            return path.resolve(await fs.realpath(existing), path.relative(existing, absolute));
+        } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+                throw error;
+            }
+            const parent = path.dirname(existing);
+            if (parent === existing) {
+                throw error;
+            }
+            existing = parent;
+        }
+    }
+}
+
+export interface RepositoryOverlapWarning { source: string;
+    repository: string }
+
+/** A parent source is allowed only because Restic excludes the repository below it. */
+export async function checkRepositorySourceOverlap(
+    sources: readonly string[],
+    repositoryPaths: readonly string[],
+    mounts: readonly RepositoryMount[] = [],
+): Promise<RepositoryOverlapWarning[]> {
+    const warnings: RepositoryOverlapWarning[] = [];
+    for (const rawRepository of repositoryPaths) {
+        if (!unambiguousAbsolutePath(rawRepository)) {
+            throw new Error("Local Restic repository path must be absolute and contain no parent traversal");
+        }
+        const repository = await canonicalPath(rawRepository);
+        const hostRepository = resolveHostRepositoryPath(repository, [ ...mounts ]);
+        for (const rawSource of sources) {
+            if (!unambiguousAbsolutePath(rawSource)) {
+                throw new Error(`Backup source must be absolute and contain no parent traversal: ${rawSource}`);
+            }
+            const source = await canonicalPath(rawSource);
+            const hostSource = resolveHostRepositoryPath(source, [ ...mounts ]);
+            if (sameOrChild(hostSource, hostRepository)) {
+                throw new Error(`Le dossier à sauvegarder ${rawSource} est dans le dépôt Restic local ${rawRepository} : ce chemin ne peut pas être sauvegardé.`);
+            }
+            if (sameOrChild(hostRepository, hostSource)) {
+                warnings.push({ source: rawSource,
+                    repository: rawRepository });
+            }
+        }
+    }
+    return warnings;
+}
+
+export async function canonicalRepositoryPaths(repositoryPaths: readonly string[]): Promise<string[]> {
+    return Promise.all(repositoryPaths.map(canonicalPath));
 }
 
 /**
