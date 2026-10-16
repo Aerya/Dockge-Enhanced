@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.hostBindDockerDesktop": "更新 Stack 时现在通过直接的 Docker 挂载准备主机目录，包括 macOS 上的 Docker Desktop 路径。/etc/localtime 等文件挂载不再被误认为目录。",
     "releaseNews.item.selfUpdateDiskAndImageSafety": "自更新会在备份或拉取前检查 Docker 存储空间；无法验证时自动更新将延期。任一阶段消失的 updater 都会被检测到，拉取超过 20 分钟仍在运行时会提示检查。超过 48 小时的旧版未使用 Enhanced 镜像会被清理，当前、回滚、恢复和已排除镜像仍受保护。",
     "releaseNews.item.registryDnsFallback": "ImageWatcher 现在支持可选的备用 DNS：始终优先使用系统 DNS，仅在解析失败时尝试 Quad9、Cloudflare 或自定义 IPv4/IPv6 服务器。可在 Watcher > 镜像中测试 A/AAAA、耗时及诊断；不修改主机或 Docker Engine 的 DNS。",
     "watcher.backup.reset.title": "重置 Restic 仓库",

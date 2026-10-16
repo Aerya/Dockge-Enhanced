@@ -57,6 +57,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/container-counts.test.ts
 
+      - name: Tests de préparation des montages hôte
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/stack-bind-directory.test.ts
+
       - name: Tests des reprises registry de l’ImageWatcher
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/watchers/image-watcher.test.ts

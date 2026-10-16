@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-16 — Montages hôte sous Docker Desktop** — Les opérations de stack font directement monter chaque dossier source par Docker, sans dépendre de la racine de la VM Docker pour les chemins partagés sous macOS. Les montages de fichiers sans extension comme `/etc/localtime` ne sont plus créés comme dossiers ; les erreurs Docker restent visibles.
+
 **2026-10-12 — Diagnostic des dossiers de montage hôte** — Si la préparation d’un dossier de montage hôte échoue lors de la mise à jour d’une stack, l’erreur indique désormais le chemin concerné et la cause renvoyée par le helper Docker, plutôt qu’un simple code de sortie.
 
 **2026-10-11 — Espace Docker et surveillance de l’auto-mise à jour** — L’espace libre du stockage Docker est contrôlé avant le backup et le téléchargement ; l’auto-mise à jour est reportée si ce contrôle échoue. Un sidecar disparu est détecté à toute étape et un téléchargement anormalement long est signalé. Après une mise à jour réussie, les anciennes images Enhanced inutilisées sont entretenues quotidiennement après 48 h, sans supprimer les images actives, de rollback, de récupération ou exclues.

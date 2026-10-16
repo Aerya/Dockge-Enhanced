@@ -68,6 +68,10 @@ En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (
 
 #### Actualizaciones e ImageWatcher
 
+**Preparación de montajes del host en macOS**
+
+Antes de iniciar o actualizar una pila, Enhanced pide a Docker que prepare directamente cada directorio de origen de un montaje bind. Esto también cubre las rutas compartidas por Docker Desktop en macOS, como `/Users/...`, sin suponer que montar `/` permite acceder al sistema de archivos de macOS. Los montajes de archivos como `/etc/localtime` no se crean como directorios. Si Docker no puede acceder a una ruta de origen, la operación se detiene con el error real de Docker; compruebe que el directorio esté compartido con Docker Desktop.
+
 **Espacio de Docker y conservación de imágenes antiguas de Enhanced**
 
 Antes de la copia de seguridad o la descarga, la autoactualización comprueba el espacio libre del almacenamiento del daemon Docker. Se aplaza si falta espacio o no puede comprobarse; una actualización manual se detiene con una explicación. Un updater desaparecido se detecta en cualquier etapa; una descarga todavía activa después de 20 minutos se señala sin declararla detenida. Después de una actualización correcta, las imágenes antiguas de Enhanced sin uso obtenidas por digest se revisan cada día y pueden eliminarse tras 48 horas. Las imágenes activas, de reversión, recuperación o explícitamente excluidas siguen protegidas; esto no activa la limpieza general de imágenes.

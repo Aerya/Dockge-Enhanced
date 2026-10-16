@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-16-host-bind-docker-desktop",
+        items: [ "releaseNews.item.hostBindDockerDesktop" ],
+    },
+    {
         id: "2026-10-11-self-update-disk-and-image-safety",
         items: [ "releaseNews.item.selfUpdateDiskAndImageSafety" ],
     },

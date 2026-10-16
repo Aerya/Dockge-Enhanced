@@ -67,6 +67,10 @@ Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS
 
 #### Updates and ImageWatcher
 
+**Host bind preparation on macOS**
+
+Before starting or updating a stack, Enhanced asks Docker to prepare each directory bind source directly. This also works with paths shared by Docker Desktop on macOS, such as `/Users/...`, without assuming that the helper can see the macOS filesystem through a bind mount of `/`. File binds such as `/etc/localtime` are not created as directories. If Docker cannot access a source path, the update stops with Docker's actual error; check that the directory is shared with Docker Desktop.
+
 **Self-update disk space and old image retention**
 
 Before backup or pull, self-update checks free space on the Docker daemon's storage filesystem. Automatic updates are deferred if the check fails or space is insufficient; manual updates stop with an explanation. A vanished updater is detected at any stage, while a target-image pull still running after 20 minutes is flagged for inspection without pretending it has stopped. After a successful update, unused Enhanced images pulled by digest are checked daily and may be removed once they are at least 48 hours old. Active, rollback, recovery and explicitly excluded images remain protected; this does not enable general image auto-prune.

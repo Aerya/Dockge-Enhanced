@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-16 — Montajes del host en Docker Desktop** — Las operaciones de pila montan directamente cada directorio de origen mediante Docker, sin depender de la raíz de la VM Docker para las rutas compartidas en macOS. Los montajes de archivos sin extensión como `/etc/localtime` ya no se crean como directorios; los errores de Docker siguen siendo visibles.
+
 **2026-10-12 — Diagnóstico de directorios montados del host** — Si falla la preparación de un directorio montado del host al actualizar una pila, el error ahora muestra la ruta afectada y el error real del auxiliar Docker, en lugar de indicar solo un código de salida.
 
 **2026-10-11 — Espacio Docker y supervisión de la autoactualización** — Se comprueba el espacio libre de Docker antes de la copia de seguridad y la descarga; la actualización automática se aplaza si la comprobación falla. Se detecta un sidecar desaparecido en cualquier etapa y se señala una descarga anormalmente larga. Después de una actualización correcta, las imágenes antiguas de Enhanced sin uso se limpian diariamente tras 48 h, conservando las activas, de reversión, recuperación y excluidas.
