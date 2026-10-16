@@ -309,7 +309,7 @@
     "stackGroupByInstance": "Group stacks by server",
     "stackName": "Stack Name",
     "stackActions": "Stack actions",
-    "stackActionLabels": "Text under icons",
+    "stackActionLabels": "Icons + text",
     "showStackNote": "Show stack note",
     "showStackGit": "Show Git tools",
     "logPanelSize": "Size",

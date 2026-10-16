@@ -574,7 +574,7 @@
     "saveAgentName": "保存名称",
     "showStackGit": "显示 Git 工具",
     "showStackNote": "显示堆栈备注",
-    "stackActionLabels": "图标下方显示文字",
+    "stackActionLabels": "图标和文字",
     "stackActions": "堆栈操作",
     "stackCopiedSuccessfully": "堆栈复制成功。",
     "stackFilterAllInstances": "所有服务器",
