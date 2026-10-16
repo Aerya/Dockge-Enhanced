@@ -1,5 +1,15 @@
 <template>
+    <div v-if="sourceEndpoint" class="small text-muted mb-2">{{ $t("stackReplication.ownerHint") }}</div>
+    <div v-if="sourcePolicy" class="stack-replication-status shadow-box mb-3">
+        <div class="replication-header">
+            <strong><font-awesome-icon icon="database" class="me-1" />{{ $t("stackReplication.sourceManaged") }}</strong>
+            <span class="badge" :class="sourceStatusClass">{{ $t(`stackReplication.status.${sourcePolicy.status}`) }}</span>
+        </div>
+        <div class="small mt-2">{{ $t("stackReplication.target") }}: {{ sourcePolicy.targetName }} · {{ $t("stackReplication.lastSuccess") }}: {{ sourcePolicy.lastSuccessAt ? relative(sourcePolicy.lastSuccessAt) : "—" }}</div>
+    </div>
+    <div v-else-if="sourceEndpoint && sourceReachable === false" class="small text-muted mb-2">{{ $t("stackReplication.sourceUnavailable") }}</div>
     <div v-if="policy" class="stack-replication-status shadow-box mb-3">
+        <div v-if="sourceEndpoint" class="small text-muted mb-2">{{ $t("stackReplication.legacyOwner") }}</div>
         <div class="replication-header">
             <div>
                 <font-awesome-icon icon="database" class="me-1" />
@@ -62,6 +72,10 @@ export default {
     emits: [ "edit" ],
     data() {
         return { policy: null,
+            sourcePolicy: null,
+            sourceReachable: null,
+            sourceRequestId: 0,
+            sourceTimeout: null,
             timer: null,
             now: Date.now(),
             busyAction: "",
@@ -78,6 +92,14 @@ export default {
                 active: "bg-warning text-dark",
                 "waiting-compatibility": "bg-warning text-dark",
                 idle: "bg-secondary" }[this.policy?.status] || "bg-secondary";
+        },
+        sourceStatusClass() {
+            return { ready: "bg-success",
+                running: "bg-primary",
+                error: "bg-danger",
+                active: "bg-warning text-dark",
+                "waiting-compatibility": "bg-warning text-dark",
+                idle: "bg-secondary" }[this.sourcePolicy?.status] || "bg-secondary";
         },
         nextRun() {
             if (!this.policy?.enabled || this.policy.status === "active") return "—";
@@ -124,6 +146,8 @@ export default {
     },
     beforeUnmount() {
         window.clearInterval(this.timer);
+        window.clearTimeout(this.sourceTimeout);
+        this.sourceRequestId++;
     },
     methods: {
         load() {
@@ -132,6 +156,24 @@ export default {
                     this.policy = response.data[0] || null;
                 }
             });
+            if (this.sourceEndpoint) {
+                window.clearTimeout(this.sourceTimeout);
+                const requestId = ++this.sourceRequestId;
+                this.sourceTimeout = window.setTimeout(() => {
+                    if (requestId === this.sourceRequestId) {
+                        this.sourceReachable = false;
+                        this.sourcePolicy = null;
+                    }
+                }, 8000);
+                this.$root.emitAgent(this.sourceEndpoint, "listSourceStackReplications", this.sourceStackName, response => {
+                    if (requestId !== this.sourceRequestId) {
+                        return;
+                    }
+                    window.clearTimeout(this.sourceTimeout);
+                    this.sourceReachable = Boolean(response?.ok);
+                    this.sourcePolicy = response?.ok ? response.data[0] || null : null;
+                });
+            }
         },
         endpointName(endpoint) {
             return this.$root.endpointDisplayFunction(endpoint);

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-16-replication-source-ownership",
+        items: [ "releaseNews.item.replicationSourceOwnership" ],
+    },
+    {
         id: "2026-10-16-image-update-stopped-services",
         items: [ "releaseNews.item.imageUpdateStoppedServices" ],
     },

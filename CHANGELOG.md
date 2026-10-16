@@ -1,5 +1,9 @@
 # Dockge Enhanced Changelog
 
+**2026-10-16 — Clear replication policy ownership** — New replication policies must be configured on the source instance, preventing separate schedulers for the same source from being created on linked instances. Existing remote-source policies remain manageable where they were created; no policy or replica data is removed automatically.
+
+Linked views now show a read-only status summary from the source instance alongside any older locally managed policy, without exposing its replication configuration.
+
 **2026-10-16 — Preserve stopped services during image updates** — ImageWatcher defers an image update if a targeted Compose service or network-namespace companion is stopped or absent. It checks again after the pull, immediately before recreation; no stopped service is started by an automatic update.
 
 **2026-10-16 — Configurable Immediate image checks** — Watcher > Images now distinguishes the full scan (6 hours by default) from targeted checks for Immediate-mode images (5 minutes by default). The targeted interval can be set in minutes or hours, or disabled without disabling the full scan. Existing installations retain the 5-minute default.

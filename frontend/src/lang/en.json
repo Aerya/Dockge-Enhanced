@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.replicationSourceOwnership": "Configure new replication policies on the source instance to avoid separate schedules across linked instances. Linked views show its status read-only; existing policies remain manageable where they were created. Nothing is removed automatically.",
     "releaseNews.item.imageUpdateStoppedServices": "Automatic image updates no longer start stopped Compose services. ImageWatcher postpones the update if a targeted service is stopped, checks again before recreation, and retries later.",
     "releaseNews.item.configurableImmediateChecks": "Watcher > Images now separates the full scan (6 hours by default) from targeted Immediate-mode checks (5 minutes by default). Set the targeted interval in minutes or hours, or disable it without stopping the full scan.",
     "releaseNews.item.hostBindDockerDesktop": "Stack updates now prepare host bind directories through their actual Docker mounts, including Docker Desktop paths on macOS. File binds such as /etc/localtime are no longer mistaken for directories.",
@@ -538,6 +539,11 @@
     "stackReplication.heading": "Cold replica",
     "stackReplication.title": "Replicate stack {0}",
     "stackReplication.configure": "Configure replication",
+    "stackReplication.configureOnSource": "Open this stack on its source instance to configure a new replication policy.",
+    "stackReplication.ownerHint": "New replication policies belong to the source instance. Existing policies created here remain manageable here.",
+    "stackReplication.sourceManaged": "Replication managed by the source instance (read-only)",
+    "stackReplication.legacyOwner": "Legacy policy managed by this instance",
+    "stackReplication.sourceUnavailable": "The source instance's replication status is temporarily unavailable.",
     "stackReplication.configureAction": "Save and start replication",
     "stackReplication.configureHint": "This action saves the configuration and starts the first synchronization.",
     "stackReplication.configured": "The cold replica is configured and synchronized.",

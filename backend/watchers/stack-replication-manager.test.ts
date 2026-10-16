@@ -21,6 +21,53 @@ function mapping(): StackTransferMount {
     };
 }
 
+test("new replication policies must be owned by the source instance; legacy remote policies remain editable", async () => {
+    const memory = new Map<string, unknown>();
+    mock.method(Settings, "get", async (key: string) => memory.get(key));
+    mock.method(Settings, "set", async (key: string, value: unknown) => {
+        memory.set(key, value);
+    });
+    const manager = StackReplicationManager.getInstance();
+    const input = {
+        sourceEndpoint: "linked-source",
+        sourceStackName: "source",
+        targetEndpoint: "",
+        targetName: "replica",
+        repositoryId: "repository-id",
+        intervalMinutes: 60,
+        mappings: [ mapping() ],
+        consistency: { mode: "hot" as const },
+    };
+    try {
+        await assert.rejects(manager.save(input), /stackReplication.configureOnSource/);
+        assert.deepEqual(await manager.list(), []);
+
+        const local = await manager.save({ ...input,
+            sourceEndpoint: "",
+            targetEndpoint: "linked-target" });
+        assert.deepEqual(await manager.listSourceSummaries("source"), [{
+            id: local.id,
+            status: local.status,
+            targetName: local.targetName,
+            lastSuccessAt: undefined,
+        }]);
+        assert.equal("repositoryId" in (await manager.listSourceSummaries("source"))[0], false);
+        memory.set("stackReplicationPolicies", [{ ...local,
+            sourceEndpoint: input.sourceEndpoint,
+            targetEndpoint: input.targetEndpoint }]);
+        assert.deepEqual(await manager.listSourceSummaries("source"), []);
+        const legacy = await manager.save({ ...input,
+            id: local.id });
+        assert.equal(legacy.id, local.id);
+        assert.equal(legacy.sourceEndpoint, "linked-source");
+        await assert.rejects(manager.save({ ...input,
+            id: local.id,
+            sourceStackName: "different" }), /stackReplication.configureOnSource/);
+    } finally {
+        mock.restoreAll();
+    }
+});
+
 test("schedules repeat synchronizations, rotates the retained snapshot and activates the target", async () => {
     const memory = new Map<string, unknown>();
     mock.method(Settings, "get", async (key: string) => memory.get(key));
@@ -33,7 +80,18 @@ test("schedules repeat synchronizations, rotates the retained snapshot and activ
     let snapshotIndex = 0;
     const internal = manager as unknown as {
         call<T>(endpoint: string, event: string, ...args: unknown[]): Promise<T>;
+        callWithTimeout<T>(endpoint: string, event: string, timeoutMs: number, ...args: unknown[]): Promise<T>;
     };
+    mock.method(internal, "callWithTimeout", async () => ({
+        protocolVersion: 1,
+        appVersion: "test",
+        buildRevision: "a".repeat(40),
+        buildCreated: "2026-09-02T00:00:00Z",
+        selfUpdate: { updateAvailable: false,
+            remoteRevision: "",
+            operationState: "idle",
+            operationMessage: "" },
+    }));
     mock.method(internal, "call", async (endpoint: string, event: string, ...args: unknown[]) => {
         calls.push({ endpoint,
             event,
@@ -172,7 +230,18 @@ test("provisions the managed replication transport without Backup repositories",
     const calls: Array<{ endpoint: string; event: string; args: unknown[] }> = [];
     const internal = manager as unknown as {
         call<T>(endpoint: string, event: string, ...args: unknown[]): Promise<T>;
+        callWithTimeout<T>(endpoint: string, event: string, timeoutMs: number, ...args: unknown[]): Promise<T>;
     };
+    mock.method(internal, "callWithTimeout", async () => ({
+        protocolVersion: 1,
+        appVersion: "test",
+        buildRevision: "a".repeat(40),
+        buildCreated: "2026-09-02T00:00:00Z",
+        selfUpdate: { updateAvailable: false,
+            remoteRevision: "",
+            operationState: "idle",
+            operationMessage: "" },
+    }));
     mock.method(internal, "call", async (endpoint: string, event: string, ...args: unknown[]) => {
         calls.push({ endpoint,
             event,

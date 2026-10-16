@@ -72,6 +72,8 @@ export interface StackReplicationPolicy {
     lastRestoreTestError?: string;
 }
 
+export type StackReplicationSummary = Pick<StackReplicationPolicy, "id" | "status" | "targetName" | "lastSuccessAt">;
+
 export interface StackReplicationInput {
     id?: string;
     sourceEndpoint: string;
@@ -250,6 +252,16 @@ export class StackReplicationManager {
         return policies.filter(policy => sourceEndpoint === undefined || (policy.sourceEndpoint === sourceEndpoint && policy.sourceStackName === sourceStackName));
     }
 
+    async listSourceSummaries(sourceStackName: string): Promise<StackReplicationSummary[]> {
+        const policies = await this.list("", sourceStackName);
+        return policies.map(({ id, status, targetName, lastSuccessAt }) => ({
+            id,
+            status,
+            targetName,
+            lastSuccessAt,
+        }));
+    }
+
     async save(raw: StackReplicationInput): Promise<StackReplicationPolicy> {
         const input = normalizeInput(raw);
         const policies = await this.read();
@@ -258,6 +270,11 @@ export class StackReplicationManager {
             throw new ValidationError("This source stack already has a cold replica");
         }
         const existing = input.id ? policies.find(policy => policy.id === input.id) : undefined;
+        // Policies are stored locally. Creating a policy for a linked source here
+        // would create a second, invisible scheduler on another instance.
+        if (input.sourceEndpoint && (!existing || existing.sourceEndpoint !== input.sourceEndpoint || existing.sourceStackName !== input.sourceStackName)) {
+            throw new ValidationError("stackReplication.configureOnSource");
+        }
         if (existing?.status === "active") {
             throw new ValidationError("An activated replica cannot be reconfigured");
         }

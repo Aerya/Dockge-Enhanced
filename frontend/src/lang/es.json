@@ -1,4 +1,10 @@
 {
+    "releaseNews.item.replicationSourceOwnership": "Las nuevas replicaciones se configuran en la instancia de origen para evitar programaciones independientes. Las vistas vinculadas muestran su estado en modo de solo lectura; las políticas anteriores siguen gestionándose donde se crearon. No se elimina nada automáticamente.",
+    "stackReplication.configureOnSource": "Abra esta stack en su instancia de origen para configurar una nueva política de replicación.",
+    "stackReplication.ownerHint": "Las nuevas replicaciones pertenecen a la instancia de origen. Las políticas creadas aquí anteriormente siguen gestionándose aquí.",
+    "stackReplication.sourceManaged": "Replicación gestionada por la instancia de origen (solo lectura)",
+    "stackReplication.legacyOwner": "Política anterior gestionada por esta instancia",
+    "stackReplication.sourceUnavailable": "El estado de replicación de la instancia de origen no está disponible temporalmente.",
     "releaseNews.item.imageUpdateStoppedServices": "Las actualizaciones automáticas de imágenes ya no inician servicios Compose detenidos. ImageWatcher aplaza la actualización si un servicio seleccionado está detenido, comprueba de nuevo antes de recrearlo y reintenta más adelante.",
     "releaseNews.item.configurableImmediateChecks": "Watcher > Imágenes ahora distingue el análisis general (6 horas por defecto) de las comprobaciones específicas del modo Inmediato (5 minutos por defecto). El intervalo específico se puede ajustar en minutos u horas, o desactivar sin detener el análisis general.",
     "watcher.img.fullScanFrequency": "Análisis general de imágenes",

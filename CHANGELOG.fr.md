@@ -1,5 +1,9 @@
 # Changelog Dockge Enhanced
 
+**2026-10-16 — Propriété des politiques de réplication clarifiée** — Les nouvelles politiques doivent être configurées sur l’instance source, évitant la création de planifications distinctes pour une même stack depuis plusieurs instances liées. Les anciennes politiques restent gérables là où elles ont été créées ; aucune politique ni donnée de réplique n’est supprimée automatiquement.
+
+Les vues liées affichent aussi un résumé en lecture seule de l’état sur l’instance source, à côté d’une éventuelle ancienne politique locale, sans exposer sa configuration.
+
 **2026-10-16 — Respect des services arrêtés lors des mises à jour d’images** — ImageWatcher reporte une mise à jour si un service Compose ciblé ou son compagnon de namespace réseau est arrêté ou absent. Un nouveau contrôle a lieu après le téléchargement, juste avant la recréation ; aucune mise à jour automatique ne démarre un service arrêté.
 
 **2026-10-16 — Contrôles Immédiat configurables** — Watcher > Images distingue désormais le scan général (6 h par défaut) des contrôles ciblés des images en mode Immédiat (5 min par défaut). Leur intervalle peut être personnalisé en minutes ou en heures, ou désactivé sans arrêter le scan général. Les installations existantes conservent la valeur de 5 min.

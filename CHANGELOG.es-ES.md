@@ -1,5 +1,9 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-16 — Propiedad clara de las políticas de replicación** — Las nuevas políticas deben configurarse en la instancia de origen para evitar programaciones independientes de una misma stack en instancias vinculadas. Las políticas anteriores siguen gestionándose donde se crearon; no se elimina automáticamente ninguna política ni dato de réplica.
+
+Las vistas vinculadas muestran un resumen de estado de solo lectura desde la instancia de origen junto a cualquier política local anterior, sin revelar su configuración.
+
 **2026-10-16 — Respeto de los servicios detenidos al actualizar imágenes** — ImageWatcher aplaza una actualización si un servicio Compose seleccionado o su compañero de espacio de nombres de red está detenido o ausente. Vuelve a comprobarlo después de la descarga, justo antes de recrear los contenedores; una actualización automática no inicia servicios detenidos.
 
 **2026-10-16 — Comprobaciones inmediatas configurables** — Watcher > Imágenes distingue el análisis general (6 h por defecto) de las comprobaciones específicas del modo Inmediato (5 min por defecto). Su intervalo puede configurarse en minutos u horas, o desactivarse sin detener el análisis general. Las instalaciones existentes conservan el valor de 5 min.

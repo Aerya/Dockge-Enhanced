@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.replicationSourceOwnership": "Les nouvelles réplications se configurent sur l’instance source pour éviter des planifications distinctes. Les vues liées affichent son état en lecture seule ; les anciennes politiques restent gérables là où elles ont été créées. Rien n’est supprimé automatiquement.",
     "releaseNews.item.imageUpdateStoppedServices": "Les mises à jour automatiques d’images ne démarrent plus les services Compose arrêtés. ImageWatcher reporte l’opération si un service ciblé est arrêté, revérifie avant la recréation et réessaie plus tard.",
     "releaseNews.item.configurableImmediateChecks": "Watcher > Images distingue désormais le scan général (6 h par défaut) des contrôles ciblés du mode Immédiat (5 min par défaut). L’intervalle ciblé se règle en minutes ou en heures, ou peut être désactivé sans arrêter le scan général.",
     "releaseNews.item.hostBindDockerDesktop": "Les mises à jour de stacks préparent désormais les dossiers hôte via leurs montages Docker directs, y compris les chemins Docker Desktop sous macOS. Les fichiers comme /etc/localtime ne sont plus confondus avec des dossiers.",
@@ -530,6 +531,11 @@
     "stackReplication.heading": "Réplique froide",
     "stackReplication.title": "Répliquer la stack {0}",
     "stackReplication.configure": "Configurer la réplication",
+    "stackReplication.configureOnSource": "Ouvrez cette stack sur son instance source pour configurer une nouvelle réplication.",
+    "stackReplication.ownerHint": "Les nouvelles réplications appartiennent à l’instance source. Les anciennes politiques créées ici restent gérables ici.",
+    "stackReplication.sourceManaged": "Réplication gérée par l’instance source (lecture seule)",
+    "stackReplication.legacyOwner": "Ancienne politique gérée par cette instance",
+    "stackReplication.sourceUnavailable": "L’état de la réplication sur l’instance source est momentanément indisponible.",
     "stackReplication.configureAction": "Enregistrer et lancer la réplication",
     "stackReplication.configureHint": "Cette action enregistre la configuration puis lance la première synchronisation.",
     "stackReplication.configured": "La réplique froide est configurée et synchronisée.",
