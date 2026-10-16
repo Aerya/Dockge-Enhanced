@@ -17,6 +17,7 @@ import {
     reuseCyclePromise,
     registryRateLimitCooldownMs,
     buildManifestUrl,
+    normalizeImage,
     buildRollbackComposeRecreateArgs,
     composeExecInvocation,
     isMandatoryManagedUpdate,
@@ -385,6 +386,51 @@ test("conserve tous les fichiers et le nom de projet d’une stack externe multi
             "-f", "compose.yaml", "-f", "compose.prod.yaml", "config", "--images",
         ],
     });
+});
+
+test("les alias Docker Hub utilisent la même API registry et le namespace officiel", () => {
+    for (const prefix of [ "", "docker.io/", "index.docker.io/", "registry-1.docker.io/" ]) {
+        for (const name of [ "postgres", "library/postgres" ]) {
+            const parsed = normalizeImage(`${prefix}${name}:18`);
+            assert.deepEqual(parsed, {
+                registry: "registry-1.docker.io",
+                name: "library/postgres",
+                tag: "18",
+            });
+            assert.equal(buildManifestUrl(parsed.registry, parsed.name, parsed.tag),
+                "https://registry-1.docker.io/v2/library/postgres/manifests/18");
+        }
+    }
+});
+
+test("les images Docker Hub avec namespace conservent leur chemin et leur tag", () => {
+    for (const image of [ "valkey/valkey:9-alpine", "gotenberg/gotenberg:8.37", "apache/tika:latest" ]) {
+        const expected = normalizeImage(image);
+        for (const host of [ "docker.io", "index.docker.io", "registry-1.docker.io" ]) {
+            assert.deepEqual(normalizeImage(`${host}/${image}`), expected);
+        }
+    }
+    assert.deepEqual(normalizeImage("docker.io/postgres"), {
+        registry: "registry-1.docker.io",
+        name: "library/postgres",
+        tag: "latest",
+    });
+});
+
+test("les registries privés, ports et références épinglées restent inchangés", () => {
+    for (const registry of [ "ghcr.io", "registry.example:5000", "localhost:5000" ]) {
+        assert.deepEqual(normalizeImage(`${registry}/team/app:stable`), {
+            registry,
+            name: "team/app",
+            tag: "stable",
+        });
+    }
+    assert.deepEqual(normalizeImage("registry.example:5000/postgres:18"), {
+        registry: "registry.example:5000",
+        name: "postgres",
+        tag: "18",
+    });
+    assert.equal(normalizeImage("docker.io/library/postgres@sha256:abc").tag, "sha256:abc");
 });
 
 test("construit uniquement des URLs de manifest registry valides", () => {
