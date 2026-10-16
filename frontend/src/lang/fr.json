@@ -310,7 +310,7 @@
     "stackGroupByInstance": "Grouper les stacks par serveur",
     "stackName": "Nom de la pile",
     "stackActions": "Actions de la stack",
-    "stackActionLabels": "Texte sous les icônes",
+    "stackActionLabels": "Icônes + texte",
     "showStackNote": "Afficher la note",
     "showStackGit": "Afficher les outils Git",
     "logPanelSize": "Taille",
