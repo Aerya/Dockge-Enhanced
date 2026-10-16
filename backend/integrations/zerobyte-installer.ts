@@ -56,8 +56,8 @@ export function validateZerobyteInstallUrl(raw: unknown) {
     return { url: url.origin,
         port };
 }
-function overlap(a: string, b: string): boolean {
-    return a === b || a.startsWith(b + "/") || b.startsWith(a + "/") || a === "/" || b === "/";
+export function overlap(a: string, b: string): boolean {
+    return a === b || a.startsWith(b.endsWith("/") ? b : b + "/") || b.startsWith(a.endsWith("/") ? a : a + "/");
 }
 async function hostInfo(paths: string[], protectedPaths: string[] = []) {
     // Host view is read-only, no network; read/search capability only; reject every symlink component.

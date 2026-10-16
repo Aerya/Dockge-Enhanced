@@ -48,3 +48,11 @@ test("host mount identities expose bind aliases and nested aliases", async () =>
     assert.equal(hostPathIdentity("/srv/app/data", table), hostPathIdentity("/mnt/alias/data", table));
     assert.notEqual(hostPathIdentity("/srv/other", table), hostPathIdentity("/mnt/alias/data", table));
 });
+
+test("filesystem root aliases overlap every protected child", async () => {
+    const { hostPathIdentity, overlap } = await import("./zerobyte-installer");
+    const table = [ "1 0 8:1 / / rw - ext4 /dev/root rw", "2 1 8:1 / /mnt/root-alias rw - ext4 /dev/root rw" ];
+    assert.equal(overlap(hostPathIdentity("/mnt/root-alias", table), hostPathIdentity("/etc", table)), true);
+    assert.equal(overlap("/", "/srv"), true);
+    assert.equal(overlap("/srv/one", "/srv/other"), false);
+});
