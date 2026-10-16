@@ -61,6 +61,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Éviter de sauvegarder les sauvegardes Restic :** lorsqu’un dépôt local se trouve dans un dossier sélectionné, Enhanced vous avertit et l’exclut automatiquement. Par exemple, vous pouvez conserver `/app/data` comme source avec un dépôt dans `/app/data/backups`. Sélectionner le dépôt lui-même ou un de ses sous-dossiers comme source est refusé. Les chemins, mots de passe et réglages de rétention existants sont conservés.
+
 **Assistant de healthcheck facultatif par service :** cliquez sur **Configurer le healthcheck** sur un service d’une stack existante ou pendant la création. L’assistant propose un contrôle par URL HTTP locale ou port TCP selon les ports internes Compose. Vérifiez ou modifiez la cible et la commande exacte avant de l’ajouter au YAML ; les healthchecks existants ne sont jamais remplacés automatiquement. Le test s’exécute dans l’image, qui doit fournir `/bin/sh` et `curl`/`wget` ou `nc`. Vérifiez l’état de santé après déploiement ; un port TCP ouvert ne garantit pas que l’application est prête.
 
 En mode édition du Compose, l’action **Healthchecks** figure aussi dans la barre d’actions de la stack. Choisissez le service si la stack en comporte plusieurs.
@@ -433,6 +435,9 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Snapshots et mécanismes de récupération
 
 ### Sauvegarde & restauration
+
+**Dépôt imbriqué dans une source :** placez de préférence les dépôts Restic locaux hors des dossiers sauvegardés. Si un dépôt se trouve dans une source, l’enregistrement affiche un avertissement et les sauvegardes excluent automatiquement ce dépôt, ses archives de réinitialisation et ses autres chemins de montage Docker. Les liens symboliques résolus sont aussi vérifiés. Les destinations locales désactivées restent protégées. Sélectionner le dépôt lui-même ou un de ses sous-dossiers comme source est refusé ; les chemins sont revérifiés avant chaque sauvegarde. Ce contrôle ne déplace ni ne réinitialise aucun dépôt.
+
 **Réinitialisation sécurisée Restic (Local, SFTP, S3 et REST).** Dans **Sauvegarde → Maintenance et diagnostics**, choisir une destination active puis consulter l’aperçu du dépôt et le nombre de snapshots. Deux confirmations, une phrase exacte et un jeton temporaire à usage unique sont exigés. En local, le dépôt précédent est renommé en archive avant création du nouveau. À distance, Dockge bascule vers un nouveau répertoire SFTP, préfixe S3 ou URL REST, sans supprimer l’ancien dépôt. Le nouveau dépôt actif ne contient aucun ancien snapshot ; l’« Historique récent » est nettoyé uniquement pour cette destination, en conservant celui des autres. Les anciennes sauvegardes restent stockées à leur emplacement d’origine et récupérables : il ne s’agit **pas** d’une suppression définitive. Ne réinitialisez pas un dépôt partagé avec d’autres clients sans coordination.
 
 À la première sauvegarde, le dépôt Restic est initialisé automatiquement **uniquement s’il est absent** ; erreur d’accès, réseau ou mot de passe incorrect bloquent l’initialisation. L’onglet affiche le statut de chaque destination activée.
@@ -443,6 +448,7 @@ L’interface sépare clairement **Enregistrer** (paramètres uniquement), **Sau
 La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouton **Enregistrer** sauvegarde les paramètres et la politique de rétention, mais ne déclenche ni sauvegarde immédiate ni purge ; la rétention ordinaire est appliquée après un backup réussi, sauf sur les backups « on-save » différés. La rétention du self-update est distincte.
 
 - Sauvegardes Restic
+- Exclusion automatique des dépôts Restic locaux, y compris les destinations désactivées, avec avertissement en cas d’imbrication
 - Plusieurs destinations de backup
 - Sauvegardes cohérentes par stack
 - Bind mounts et volumes

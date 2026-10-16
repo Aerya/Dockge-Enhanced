@@ -60,6 +60,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+**Restic sichert sein eigenes Repository nicht mit:** Liegt ein lokales Repository in einem ausgewählten Backup-Ordner, warnt Enhanced Sie und schließt es automatisch aus. Sie können beispielsweise `/app/data` als Quelle und `/app/data/backups` als Repository beibehalten. Das Repository selbst oder seine Unterordner können nicht als Quelle ausgewählt werden. Bestehende Pfade, Passwörter und Aufbewahrungseinstellungen bleiben erhalten.
+
 **Optionaler Healthcheck-Assistent pro Dienst:** Bei einem bestehenden oder neu erstellten Stack auf **Healthcheck konfigurieren** am jeweiligen Dienst klicken. Der Assistent schlägt anhand der internen Compose-Ports eine lokale HTTP-URL oder einen TCP-Port vor. Ziel und genauen Befehl vor dem Einfügen in YAML prüfen oder ändern; vorhandene Healthchecks werden nie automatisch ersetzt. Der Test läuft im Image, das `/bin/sh` und `curl`/`wget` oder `nc` bereitstellen muss. Den Health-Status nach dem Deployment prüfen; ein offener TCP-Port beweist nicht, dass die Anwendung bereit ist.
 
 Im Compose-Bearbeitungsmodus gibt es außerdem **Healthchecks** in der Aktionsleiste des Stacks. Bei mehreren Diensten den gewünschten Dienst auswählen.
@@ -433,6 +435,9 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Wiederherstellungs-Snapshots und -Workflows
 
 ### Backup & Wiederherstellung
+
+**Repository innerhalb einer Quelle:** Legen Sie lokale Restic-Repositories möglichst außerhalb der gesicherten Ordner ab. Liegt ein Repository in einer Quelle, erscheint beim Speichern eine Warnung; Backups schließen das Repository, seine Reset-Archive und seine weiteren Docker-Mount-Pfade automatisch aus. Aufgelöste symbolische Links werden ebenfalls geprüft. Deaktivierte lokale Ziele bleiben geschützt. Das Repository selbst oder seine Unterordner können nicht als Quelle ausgewählt werden; vor jedem Backup werden die Pfade erneut geprüft. Diese Prüfung verschiebt oder setzt kein Repository zurück.
+
 **Sicherer Restic-Repository-Reset (Lokal, SFTP, S3 und REST).** Wählen Sie unter **Backup → Wartung und Diagnose** ein aktiviertes Ziel aus und zeigen Sie eine Vorschau seines Repositorys und der Snapshot-Anzahl an. Der Reset erfordert zwei ausdrückliche Bestätigungen, die exakte Bestätigungsphrase und ein kurzlebiges Einmal-Token. Ein lokales Repository wird vor dem Erstellen eines neuen in ein aufbewahrtes Archiv umbenannt; ein entferntes Repository wechselt zu einem neuen SFTP-Verzeichnis, S3-Präfix oder einer neuen REST-URL, ohne das alte Repository zu löschen. Das neue aktive Repository enthält keine alten Snapshot-Einträge; Verlaufseinträge für dieses Ziel werden entfernt, während der Verlauf anderer Ziele beibehalten wird. Das vorherige Repository verbleibt zur Wiederherstellung an seinem alten Speicherort. Dies ist **keine** dauerhafte Löschung von Backup-Daten. Setzen Sie ein Repository, das von anderen Clients gemeinsam genutzt wird, nicht ohne vorherige Absprache mit diesen zurück.
 
 **Beim ersten Backup** initialisiert Restic automatisch **nur nachweislich fehlende** Repositories; Zugriffs-, Netzwerk- und Passwortfehler blockieren die Initialisierung. Die Benutzeroberfläche zeigt den Repository-Status für jedes aktivierte Ziel an.
@@ -443,6 +448,7 @@ Die Benutzeroberfläche trennt **Speichern** (nur Einstellungen), **Jetzt sicher
 Die Restic-Snapshot-Liste ist standardmäßig auf **Alle** eingestellt. **Speichern** sichert die Einstellungen und die Aufbewahrungsrichtlinie, ohne sofort ein Backup oder Prune auszuführen; die reguläre Aufbewahrung läuft nach erfolgreichen Backups ab, mit Ausnahme von zurückgestellten Backups beim Speichern. Selbstaktualisierungs-Backups haben eine eigene Aufbewahrungsrichtlinie.
 
 - Restic-Backups
+- Automatischer Ausschluss lokaler Restic-Repositories, auch deaktivierter Ziele, mit Warnung bei verschachtelten Pfaden
 - Mehrere Backup-Ziele
 - Stack-konsistente Backups
 - Bind-Mounts und Volumes

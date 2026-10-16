@@ -541,15 +541,24 @@ export class WatcherRouter extends Router {
         // BACKUP — Settings
         // ════════════════════════════════════════════════════════════════
 
-        router.get("/backup/settings", (_req: Request, res: Response) => {
-            res.json({ ok: true,
-                data: BackupManager.getInstance().getSettingsSafe() });
+        router.get("/backup/settings", async (_req: Request, res: Response) => {
+            const manager = BackupManager.getInstance();
+            try {
+                res.json({ ok: true,
+                    data: manager.getSettingsSafe(),
+                    repositoryOverlapWarnings: await manager.getRepositoryOverlapWarnings() });
+            } catch (e) {
+                res.json({ ok: true,
+                    data: manager.getSettingsSafe(),
+                    repositorySafetyError: String(e) });
+            }
         });
 
         router.post("/backup/settings", async (req: Request, res: Response) => {
             try {
-                await BackupManager.getInstance().saveSettings(req.body);
-                res.json({ ok: true });
+                const repositoryOverlapWarnings = await BackupManager.getInstance().saveSettings(req.body);
+                res.json({ ok: true,
+                    repositoryOverlapWarnings });
             } catch (e) {
                 res.status(500).json({ ok: false,
                     message: String(e) });

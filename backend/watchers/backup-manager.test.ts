@@ -49,6 +49,179 @@ test("#467 conserve le mot de passe Restic dans le répertoire persistant sans D
         force: true });
 });
 
+test("avertit si le dépôt est sous une source et refuse de sauvegarder le dépôt lui-même", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-backup-overlap-"));
+    try {
+        const manager = new BackupManager(undefined, root);
+        manager.restart = () => {};
+        Object.defineProperty(manager, "getAllHostBackupMounts", { value: async () => [] });
+        const repository = path.join(root, "backups", "restic");
+        await manager.saveSettings({ destinations: [{
+            label: "Local",
+            enabled: true,
+            type: "local",
+            resticPassword: "test-password",
+            local: { path: repository },
+        }] });
+        assert.deepEqual(await manager.saveSettings({ extraPaths: [ root ] }), [{ source: root,
+            repository }]);
+        assert.deepEqual(await manager.getRepositoryOverlapWarnings(), [{ source: root,
+            repository }]);
+        await assert.rejects(manager.saveSettings({ volumeBackup: { selectedVolumes: [ path.join(repository, "data") ] } }), /ne peut pas être sauvegardé/);
+        assert.deepEqual(manager.settings.extraPaths, [ root ]);
+        assert.deepEqual(manager.settings.volumeBackup.selectedVolumes, []);
+        const saved = JSON.parse(await fs.readFile(path.join(root, "backup-settings.json"), "utf8"));
+        assert.deepEqual(saved.extraPaths, [ root ]);
+        assert.deepEqual(saved.volumeBackup.selectedVolumes, []);
+    } finally {
+        await fs.rm(root, { recursive: true,
+            force: true });
+    }
+});
+
+test("conserve les réglages existants et leurs secrets lors d'une sauvegarde partielle ou masquée", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-backup-compatibility-"));
+    try {
+        const manager = new BackupManager(undefined, root);
+        manager.restart = () => {};
+        Object.defineProperty(manager, "getAllHostBackupMounts", { value: async () => [] });
+        manager.settings.destinations = [
+            { label: "Local",
+                type: "local",
+                enabled: true,
+                resticPassword: "local-secret",
+                local: { path: path.join(root, "backups") } },
+            { label: "SSH",
+                type: "sftp",
+                enabled: true,
+                resticPassword: "sftp-secret",
+                sftp: { host: "backup.example.test",
+                    port: 22,
+                    user: "backup",
+                    path: "/archives",
+                    authMode: "password",
+                    password: "ssh-secret" } },
+            { label: "S3",
+                type: "s3",
+                enabled: false,
+                resticPassword: "s3-secret",
+                s3: { bucket: "backups",
+                    path: "archives",
+                    accessKeyId: "test-key",
+                    secretAccessKey: "s3-access-secret" } },
+            { label: "REST",
+                type: "rest",
+                enabled: true,
+                resticPassword: "rest-secret",
+                rest: { url: "https://backup.example.test",
+                    user: "backup",
+                    password: "http-secret" } },
+        ];
+        manager.settings.extraPaths = [ root ];
+        manager.settings.excludePatterns = [ "*.tmp" ];
+        manager.settings.excludedStacks = [ "ignored-stack" ];
+        manager.settings.stackPolicies = { database: { mode: "stop" } };
+        const expected = structuredClone(manager.settings);
+        expected.intervalHours = 12;
+        await manager.saveSettings({ intervalHours: 12 });
+        assert.deepEqual(manager.settings, expected);
+        await manager.saveSettings({ destinations: manager.getSettingsSafe().destinations });
+        assert.deepEqual(JSON.parse(await fs.readFile(path.join(root, "backup-settings.json"), "utf8")), expected);
+        const recreated = new BackupManager(undefined, root);
+        await recreated.loadSettings();
+        assert.deepEqual(recreated.settings, expected);
+    } finally {
+        await fs.rm(root, { recursive: true,
+            force: true });
+    }
+});
+
+test("protège aussi un dépôt local désactivé sous une source sauvegardée", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-disabled-repository-"));
+    try {
+        const manager = new BackupManager(undefined, root);
+        manager.restart = () => {};
+        Object.defineProperty(manager, "getAllHostBackupMounts", { value: async () => [] });
+        const repository = path.join(root, "old-repository");
+        const warnings = await manager.saveSettings({
+            extraPaths: [ root ],
+            destinations: [{ label: "Disabled",
+                type: "local",
+                enabled: false,
+                resticPassword: "test-password",
+                local: { path: repository } }],
+        });
+        assert.deepEqual(warnings, [{ source: root,
+            repository }]);
+        await assert.rejects(manager.saveSettings({ extraPaths: [ repository ] }), /ne peut pas être sauvegardé/);
+        assert.deepEqual(manager.settings.extraPaths, [ root ]);
+    } finally {
+        await fs.rm(root, { recursive: true,
+            force: true });
+    }
+});
+
+test("une destination distante seule ne dépend pas de l'inspection Docker", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-remote-repository-"));
+    try {
+        const manager = new BackupManager(undefined, root);
+        manager.restart = () => {};
+        Object.defineProperty(manager, "getAllHostBackupMounts", { value: async () => {
+            throw new Error("Docker unavailable");
+        } });
+        assert.deepEqual(await manager.saveSettings({
+            extraPaths: [ root ],
+            destinations: [{ label: "REST",
+                type: "rest",
+                enabled: true,
+                resticPassword: "test-password",
+                rest: { url: "https://backup.example.test" } }],
+        }), []);
+        assert.deepEqual(manager.settings.extraPaths, [ root ]);
+    } finally {
+        await fs.rm(root, { recursive: true,
+            force: true });
+    }
+});
+
+test("conserve la migration des anciens réglages destination sans réinitialiser le dépôt", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-legacy-repository-"));
+    try {
+        const repository = path.join(root, "backups");
+        await fs.writeFile(path.join(root, "backup-settings.json"), JSON.stringify({
+            enabled: true,
+            destination: { type: "local",
+                local: { path: repository },
+                resticPassword: "legacy-secret" },
+            extraPaths: [ root ],
+            retention: { keepLast: 3,
+                keepDaily: 2,
+                keepWeekly: 1,
+                keepMonthly: 1 },
+        }));
+        const manager = new BackupManager(undefined, root);
+        manager.restart = () => {};
+        Object.defineProperty(manager, "getAllHostBackupMounts", { value: async () => [] });
+        await manager.loadSettings();
+        assert.deepEqual(await manager.getRepositoryOverlapWarnings(), [{ source: root,
+            repository }]);
+        const expected = structuredClone(manager.settings);
+        await manager.saveSettings({ destinations: manager.getSettingsSafe().destinations });
+        const recreated = new BackupManager(undefined, root);
+        await recreated.loadSettings();
+        assert.deepEqual(recreated.settings, expected);
+        assert.equal(recreated.settings.destinations[0].resticPassword, "legacy-secret");
+        assert.equal(recreated.settings.destinations[0].local?.path, repository);
+        assert.deepEqual(recreated.settings.retention, { keepLast: 3,
+            keepDaily: 2,
+            keepWeekly: 1,
+            keepMonthly: 1 });
+    } finally {
+        await fs.rm(root, { recursive: true,
+            force: true });
+    }
+});
+
 test("defaults unknown stack policies to hot mode", () => {
     assert.deepEqual(normalizeStackBackupPolicy(undefined), { mode: "hot" });
     assert.deepEqual(normalizeStackBackupPolicy({ mode: "invalid" }), { mode: "hot" });

@@ -12,7 +12,7 @@ import * as fs from "fs/promises";
 import * as fsSync from "fs";
 import * as path from "path";
 import { randomBytes, createHash } from "node:crypto";
-import { resticRepositoryExcludes, assertLocalRepositoryLocation, resolveHostRepositoryPath } from "./backup-repository-safety";
+import { resticRepositoryExcludes, assertLocalRepositoryLocation, resolveHostRepositoryPath, checkRepositorySourceOverlap, canonicalRepositoryPaths, RepositoryOverlapWarning } from "./backup-repository-safety";
 import { resolveCurrentContainer } from "../current-container";
 import * as yaml from "js-yaml";
 import { DiscordNotifier } from "../notification/discord";
@@ -927,7 +927,23 @@ export class BackupManager {
         } catch { /* première utilisation */ }
     }
 
-    async saveSettings(partial: Partial<BackupSettings>): Promise<void> {
+    private async repositoryOverlapWarnings(settings: BackupSettings): Promise<RepositoryOverlapWarning[]> {
+        // Disabled destinations may still contain repository data to exclude.
+        const repositories = settings.destinations
+            .filter(destination => destination.type === "local" && destination.local?.path)
+            .map(destination => destination.local!.path);
+        const sources = [ ...(settings.volumeBackup?.selectedVolumes ?? []), ...(settings.extraPaths ?? []) ];
+        if (repositories.length === 0 || sources.length === 0) {
+            return [];
+        }
+        return checkRepositorySourceOverlap(sources, repositories, await this.getAllHostBackupMounts());
+    }
+
+    async getRepositoryOverlapWarnings(): Promise<RepositoryOverlapWarning[]> {
+        return this.repositoryOverlapWarnings(this.settings);
+    }
+
+    async saveSettings(partial: Partial<BackupSettings>): Promise<RepositoryOverlapWarning[]> {
         if (this.repositoryResetting) {
             throw new Error("Local Restic repository reset in progress");
         }
@@ -960,11 +976,14 @@ export class BackupManager {
                 return merged;
             });
         }
-        this.settings = { ...this.settings,
+        const candidateSettings = { ...this.settings,
             ...partial };
+        const warnings = await this.repositoryOverlapWarnings(candidateSettings);
+        this.settings = candidateSettings;
         await fs.mkdir(this.dataDir, { recursive: true });
         await fs.writeFile(this.settingsPath, JSON.stringify(this.settings, null, 2));
         this.restart();
+        return warnings;
     }
 
     /** Retourne les settings sans exposer les secrets */
@@ -1942,10 +1961,13 @@ export class BackupManager {
         const installationHost = await this.getResticHostId();
         // Exclude Restic repositories *and* archived versions, including aliases
         // of the same Docker bind mount. If discovery fails, abort this backup.
+        const localRepositories = this.settings.destinations.filter(d => d.type === "local" && d.local?.path).map(d => d.local!.path);
+        const repositoryMounts = await this.getAllHostBackupMounts();
+        await checkRepositorySourceOverlap(paths, localRepositories, repositoryMounts);
         const repoExcludes = resticRepositoryExcludes(
             paths,
-            this.settings.destinations.filter(d => d.type === "local" && d.local?.path).map(d => d.local!.path),
-            await this.getAllHostBackupMounts(),
+            [ ...new Set([ ...localRepositories, ...await canonicalRepositoryPaths(localRepositories) ]) ],
+            repositoryMounts,
         );
         const resticArgs = buildBackupArgs({
             paths,

@@ -5,6 +5,16 @@
 
         <p class="form-text mb-3">{{ $t('watcher.backup.reset.excludedHint') }}</p>
 
+        <div v-if="repositorySafetyError" class="alert alert-danger mb-3">{{ repositorySafetyError }}</div>
+        <div v-if="repositoryOverlapWarnings.length" class="alert alert-warning mb-3">
+            <p class="mb-2">{{ $t('watcher.backup.volumes.repositoryOverlapWarning') }}</p>
+            <ul class="mb-0">
+                <li v-for="warning in repositoryOverlapWarnings" :key="`${warning.source}:${warning.repository}`">
+                    <code>{{ warning.source }}</code> → <code>{{ warning.repository }}</code>
+                </li>
+            </ul>
+        </div>
+
         <!-- ═══ VOLUMES ═══ -->
         <BackupVolumes v-model="settings" :mounted-vols="mountedVols" :loading-mounted-vols="loadingMountedVols" />
 
@@ -358,6 +368,9 @@ type CheckResult = { destIndex: number;
 const checkResults = ref<CheckResult[]>([]);
 const toast = ref({ msg: "",
     ok: true });
+const repositoryOverlapWarnings = ref<Array<{ source: string;
+    repository: string }>>([]);
+const repositorySafetyError = ref("");
 
 // Panneau snapshots (expose loadSnapshots / loadingSnaps pour la barre d'actions)
 const snapshotsPanel = ref<InstanceType<typeof BackupSnapshots> | null>(null);
@@ -466,6 +479,8 @@ onMounted(async () => {
     ]);
     if (settingsRes.ok) {
         settings.value = mergeSettings(settingsRes.data);
+        repositoryOverlapWarnings.value = settingsRes.repositoryOverlapWarnings ?? [];
+        repositorySafetyError.value = settingsRes.repositorySafetyError ?? "";
     }
     void loadRepoStatuses();
     if (histRes.ok) {
@@ -573,11 +588,15 @@ async function save() {
         const res = await api("POST", "/backup/settings", settingsPayload);
         if (res.ok) {
             showToast(t("watcher.backup.saved"));
+            repositoryOverlapWarnings.value = res.repositoryOverlapWarnings ?? [];
+            repositorySafetyError.value = "";
             // Resync depuis le serveur pour éviter les désynchronisations
             // (notamment le champ "enabled" qui peut repartir à false sinon)
             const reloaded = await api("GET", "/backup/settings");
             if (reloaded.ok) {
                 settings.value = mergeSettings(reloaded.data);
+                repositoryOverlapWarnings.value = reloaded.repositoryOverlapWarnings ?? repositoryOverlapWarnings.value;
+                repositorySafetyError.value = reloaded.repositorySafetyError ?? "";
             }
             void loadRepoStatuses();
         } else {

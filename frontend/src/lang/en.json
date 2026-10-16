@@ -1,4 +1,7 @@
 {
+    "releaseNews.item.resticRepositorySourceSafety": "A local Restic repository can remain inside a backup folder: Enhanced warns you and excludes it automatically. The repository and its subfolders cannot be selected as sources. Existing settings are preserved, and disabled repositories remain excluded.",
+    "watcher.backup.volumes.repositorySeparation": "Ideally, keep local Restic repositories outside selected backup folders. If a repository is inside one, Enhanced excludes it automatically; selecting the repository itself or one of its subfolders is refused.",
+    "watcher.backup.volumes.repositoryOverlapWarning": "This layout is not ideal. Enhanced will automatically exclude the local Restic repository from backups of the parent folder:",
     "releaseNews.item.serviceHealthcheckAssistant": "Optional per-service healthcheck assistant: proposes a local HTTP URL or TCP port from Compose, shows the exact command, and changes YAML only when you apply it. Existing checks are not replaced automatically.",
     "serviceHealthcheck.title": "Service healthcheck",
     "serviceHealthcheck.configure": "Configure healthcheck",

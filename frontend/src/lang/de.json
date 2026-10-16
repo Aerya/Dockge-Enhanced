@@ -1,4 +1,7 @@
 {
+    "releaseNews.item.resticRepositorySourceSafety": "Ein lokales Restic-Repository darf in einem gesicherten Ordner bleiben: Enhanced warnt Sie und schließt es automatisch aus. Das Repository und seine Unterordner können nicht als Quellen ausgewählt werden. Bestehende Einstellungen bleiben erhalten; deaktivierte Repositories bleiben ausgeschlossen.",
+    "watcher.backup.volumes.repositorySeparation": "Lokale Restic-Repositories sollten möglichst außerhalb der ausgewählten Backup-Ordner liegen. Liegt ein Repository darin, schließt Enhanced es automatisch aus; das Repository selbst oder einen Unterordner auszuwählen bleibt unzulässig.",
+    "watcher.backup.volumes.repositoryOverlapWarning": "Diese Anordnung ist nicht optimal. Enhanced schließt das lokale Restic-Repository automatisch vom Backup des übergeordneten Ordners aus:",
     "releaseNews.item.serviceHealthcheckAssistant": "Optionaler Healthcheck-Assistent pro Dienst: schlägt anhand von Compose eine lokale HTTP-URL oder einen TCP-Port vor, zeigt den genauen Befehl und ändert YAML erst nach Bestätigung. Vorhandene Prüfungen werden nicht automatisch ersetzt.",
     "serviceHealthcheck.title": "Healthcheck des Dienstes",
     "serviceHealthcheck.configure": "Healthcheck konfigurieren",

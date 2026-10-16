@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-16 — Protection des dépôts Restic dans les sources** — L’enregistrement des paramètres avertit lorsqu’un dépôt local est imbriqué dans une source et refuse de sélectionner le dépôt lui-même ou ses sous-dossiers. Les sauvegardes revérifient les chemins, les liens symboliques résolus et les alias de montage Docker, puis excluent automatiquement les dépôts locaux, y compris les destinations désactivées et leurs archives de réinitialisation. Les réglages, secrets et politiques de rétention existants sont conservés.
+
 **2026-10-16 — Healthchecks facultatifs par service** — L’éditeur de stack propose une URL HTTP locale ou un port TCP selon les ports internes Compose. La cible reste modifiable, la commande Docker est visible et l’ajout ou le remplacement exige une action explicite ; les contrôles existants ne changent pas par défaut. L’image doit fournir le binaire nécessaire au test.
 
 **2026-10-16 — Propriété des politiques de réplication clarifiée** — Les nouvelles politiques doivent être configurées sur l’instance source, évitant la création de planifications distinctes pour une même stack depuis plusieurs instances liées. Les anciennes politiques restent gérables là où elles ont été créées ; aucune politique ni donnée de réplique n’est supprimée automatiquement.

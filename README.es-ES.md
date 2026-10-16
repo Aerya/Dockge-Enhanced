@@ -61,6 +61,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Evitar que Restic guarde su propio repositorio:** si un repositorio local está dentro de una carpeta seleccionada, Enhanced le avisa y lo excluye automáticamente. Por ejemplo, puede mantener `/app/data` como origen y `/app/data/backups` como repositorio. No se permite seleccionar el propio repositorio ni sus subcarpetas como origen. Se conservan las rutas, contraseñas y opciones de retención existentes.
+
 **Asistente opcional de comprobación de salud por servicio:** pulse **Configurar comprobación de salud** en un servicio de una stack existente o al crear una nueva. El asistente propone una URL HTTP local o un puerto TCP según los puertos internos de Compose. Revise o cambie el destino y el comando exacto antes de añadirlo al YAML; las comprobaciones existentes nunca se reemplazan automáticamente. La prueba se ejecuta dentro de la imagen, que debe incluir `/bin/sh` y `curl`/`wget` o `nc`. Compruebe el estado tras el despliegue; un puerto TCP abierto no garantiza que la aplicación esté lista.
 
 En el modo de edición de Compose, **Comprobaciones de salud** también aparece en la barra de acciones de la stack. Elija el servicio si hay varios.
@@ -424,9 +426,13 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Replicación en frío programada
 
 ### Copias y recuperación
+
+**Repositorio dentro de un origen:** sitúe preferiblemente los repositorios Restic locales fuera de las carpetas respaldadas. Si un repositorio está dentro de un origen, al guardar aparece un aviso y las copias excluyen automáticamente el repositorio, sus archivos de reinicio y sus otras rutas de montaje Docker. También se comprueban los enlaces simbólicos resueltos. Los destinos locales desactivados siguen protegidos. No se permite seleccionar el propio repositorio ni sus subcarpetas como origen; las rutas se comprueban de nuevo antes de cada copia. Esta comprobación no mueve ni reinicia ningún repositorio.
+
 **Reinicio seguro de repositorios Restic (Local, SFTP, S3 y REST).** En **Copias de seguridad → Mantenimiento**, seleccione un destino activo y consulte la vista previa y el número de instantáneas. La operación requiere dos confirmaciones, una frase exacta y un token temporal de un solo uso. En local, el repositorio anterior se renombra como archivo. En destinos remotos, Dockge cambia a un nuevo directorio SFTP, prefijo S3 o URL REST sin borrar el repositorio anterior. El repositorio activo comienza sin instantáneas anteriores y se limpia el historial reciente solo para ese destino, conservando el de los demás. Las copias antiguas permanecen almacenadas y recuperables; **no** se eliminan definitivamente. Coordine el cambio si otros clientes comparten el repositorio.
 
 - Restic multidestino
+- Exclusión automática de los repositorios Restic locales, incluidos los destinos desactivados, con aviso de rutas anidadas
 - Bind mounts y volúmenes
 - Restauración selectiva
 - Verificación de repositorios y snapshots

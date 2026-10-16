@@ -1,4 +1,7 @@
 {
+    "releaseNews.item.resticRepositorySourceSafety": "Un dépôt Restic local peut rester dans un dossier sauvegardé : Enhanced vous avertit et l’exclut automatiquement. Le dépôt et ses sous-dossiers ne peuvent pas être sélectionnés comme sources. Les réglages existants sont conservés, et les dépôts désactivés restent exclus.",
+    "watcher.backup.volumes.repositorySeparation": "Idéalement, placez le dépôt Restic local hors des dossiers sauvegardés. S’il se trouve dans l’un d’eux, Enhanced l’exclut automatiquement ; sélectionner le dépôt lui-même ou un de ses sous-dossiers reste refusé.",
+    "watcher.backup.volumes.repositoryOverlapWarning": "Cette organisation n’est pas optimale. Enhanced exclura automatiquement le dépôt Restic local de la sauvegarde du dossier parent :",
     "releaseNews.item.serviceHealthcheckAssistant": "Assistant de healthcheck facultatif par service : propose une URL HTTP locale ou un port TCP selon le Compose, affiche la commande exacte et ne modifie le YAML qu’après validation. Aucun contrôle existant n’est remplacé automatiquement.",
     "serviceHealthcheck.title": "Healthcheck du service",
     "serviceHealthcheck.configure": "Configurer le healthcheck",

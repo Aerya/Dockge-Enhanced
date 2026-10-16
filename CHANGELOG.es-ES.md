@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-16 — Protección de repositorios Restic dentro de los orígenes** — Al guardar los ajustes se avisa si un repositorio local está dentro de un origen y se rechaza seleccionar el propio repositorio o sus subcarpetas. Las copias vuelven a comprobar rutas, enlaces simbólicos resueltos y alias de montaje Docker, y excluyen automáticamente los repositorios locales, incluidos los destinos desactivados y sus archivos de reinicio. Se conservan los ajustes, secretos y políticas de retención existentes.
+
 **2026-10-16 — Comprobaciones opcionales por servicio** — El editor de stacks propone una URL HTTP local o un puerto TCP según los puertos internos de Compose. El destino es editable, el comando Docker se muestra y añadirlo o reemplazarlo requiere una acción explícita; las comprobaciones existentes no cambian por defecto. La imagen debe incluir el binario necesario.
 
 **2026-10-16 — Propiedad clara de las políticas de replicación** — Las nuevas políticas deben configurarse en la instancia de origen para evitar programaciones independientes de una misma stack en instancias vinculadas. Las políticas anteriores siguen gestionándose donde se crearon; no se elimina automáticamente ninguna política ni dato de réplica.
