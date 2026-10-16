@@ -75,7 +75,7 @@
                         <span class="stack-action-label">{{ $t("discardStack") }}</span>
                     </button>
 
-                    <button v-if="isEditMode" type="button" class="btn btn-normal stack-action" :title="$t('serviceHealthcheck.configure')" :aria-label="$t('serviceHealthcheck.configure')" :disabled="containerCount === 0" @click="openStackHealthcheckAction">
+                    <button v-if="isEditMode" type="button" class="btn btn-normal stack-action stack-action--healthcheck" :title="$t('serviceHealthcheck.configure')" :aria-label="$t('serviceHealthcheck.configure')" :disabled="containerCount === 0" @click="openStackHealthcheckAction">
                         <font-awesome-icon icon="heartbeat" />
                         <span class="stack-action-label">{{ $t("serviceHealthcheck.action") }}</span>
                     </button>
@@ -2882,6 +2882,17 @@ export default {
 
 .stack-action-label {
     display: none;
+}
+
+.stack-action-bar:not(.stack-action-bar--labeled) .stack-action--healthcheck {
+    width: auto;
+    padding: 0 .7rem;
+    gap: .4rem;
+}
+
+.stack-action-bar:not(.stack-action-bar--labeled) .stack-action--healthcheck .stack-action-label {
+    display: inline;
+    font-size: var(--fs-sm);
 }
 
 .stack-action-bar--labeled .stack-action {
