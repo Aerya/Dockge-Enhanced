@@ -60,6 +60,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Optional per-service healthcheck assistant:** In stack edit mode, each service can receive a proposed local HTTP URL or TCP-port check based on its internal Compose ports. Review or change the target and exact command before adding it to the YAML; existing healthchecks are never replaced automatically. Docker runs the check inside the image, which must provide `/bin/sh` and `curl`/`wget` or `nc`. Verify the health status after deployment; a successful TCP connection does not prove application readiness.
+
 #### Features and DNS
 
 **Optional DNS fallback for registry checks**
@@ -390,6 +392,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Version-aware capability negotiation between mixed Dockge-Enhanced releases
 
 ### Stack management
+- Optional per-service Compose healthcheck assistant with editable HTTP/TCP proposal and command preview
 - Per-service controls to ignore an optional service in the overall stack status while keeping its own status visible
 - Optional WebUI display name for a stack, without changing its Compose or Restic identity
 - Compact actual-container links, with details and individual start/stop/restart actions for Compose replicas, separate from service actions

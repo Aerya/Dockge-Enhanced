@@ -136,7 +136,7 @@
         />
 
         <div v-if="isEditMode" class="mt-2">
-            <button class="btn btn-normal me-2" @click="showConfig = !showConfig">
+            <button class="btn btn-normal me-2" @click="openServiceConfig">
                 <font-awesome-icon icon="edit" />
                 {{ $t("Edit") }}
             </button>
@@ -185,6 +185,34 @@
                         </label>
                         <div class="form-text">{{ $t("serviceBehaviour.checkImageUpdatesHelp") }}</div>
                     </div>
+                </div>
+
+                <div class="service-healthcheck mb-4">
+                    <h5>{{ $t("serviceHealthcheck.title") }}</h5>
+                    <p class="form-text mb-2">{{ $t("serviceHealthcheck.help") }}</p>
+                    <p v-if="service.healthcheck" class="form-text mb-2">{{ $t("serviceHealthcheck.existing") }}</p>
+                    <code v-if="service.healthcheck" class="service-healthcheck-preview mb-2">{{ existingHealthcheckPreview }}</code>
+                    <div v-if="healthcheckProposal" class="form-text mb-2">
+                        {{ healthcheckProposal.ambiguous ? $t("serviceHealthcheck.ambiguous", { ports: healthcheckProposal.candidates.join(", ") }) : $t("serviceHealthcheck.suggested") }}
+                        <button type="button" class="btn btn-sm btn-normal ms-2" @click="useHealthcheckSuggestion">{{ $t("serviceHealthcheck.useSuggestion") }}</button>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <select v-model="healthcheckMethod" class="form-select form-select-sm service-healthcheck-method" :aria-label="$t('serviceHealthcheck.method')">
+                            <option value="http">{{ $t("serviceHealthcheck.http") }}</option>
+                            <option value="tcp">{{ $t("serviceHealthcheck.tcp") }}</option>
+                        </select>
+                        <input v-model.trim="healthcheckTarget" type="text" class="form-control form-control-sm service-healthcheck-target" :placeholder="healthcheckMethod === 'http' ? 'http://127.0.0.1:8080/health' : '8080'" :aria-label="$t('serviceHealthcheck.target')" />
+                    </div>
+                    <p class="form-text mb-2">{{ $t("serviceHealthcheck.internalPort") }}</p>
+                    <p class="form-text text-warning mb-2">{{ $t("serviceHealthcheck.binaryWarning") }}</p>
+                    <p class="form-text mb-2">{{ $t("serviceHealthcheck.imageOverride") }}</p>
+                    <code v-if="healthcheckPreview" class="service-healthcheck-preview">{{ healthcheckPreview.test[1] }}</code>
+                    <p v-else-if="healthcheckTarget" class="form-text text-danger">{{ $t(`serviceHealthcheck.${healthcheckMethod === 'http' ? 'invalidUrl' : 'invalidPort'}`) }}</p>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        <button type="button" class="btn btn-sm btn-primary" :disabled="!healthcheckPreview" @click="applyServiceHealthcheck">{{ $t(service.healthcheck ? "serviceHealthcheck.replace" : "serviceHealthcheck.add") }}</button>
+                        <button v-if="service.healthcheck" type="button" class="btn btn-sm btn-normal" @click="removeServiceHealthcheck">{{ $t("serviceHealthcheck.remove") }}</button>
+                    </div>
+                    <p class="form-text mt-2 mb-0">{{ $t("serviceHealthcheck.saveHint") }}</p>
                 </div>
 
                 <!-- Ports -->
@@ -277,6 +305,7 @@ import {
 import VolumeBrowser from "./VolumeBrowser.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
+import { buildServiceHealthcheck, proposeServiceHealthcheck } from "../service-healthcheck";
 
 export default defineComponent({
     components: {
@@ -368,9 +397,28 @@ export default defineComponent({
         return {
             showConfig: false,
             showSchedule: false,
+            healthcheckMethod: "http",
+            healthcheckTarget: "",
         };
     },
     computed: {
+
+        healthcheckProposal() {
+            return proposeServiceHealthcheck(this.service);
+        },
+
+        existingHealthcheckPreview() {
+            const test = this.service.healthcheck?.test;
+            return Array.isArray(test) ? test.join(" ") : typeof test === "string" ? test : JSON.stringify(this.service.healthcheck);
+        },
+
+        healthcheckPreview() {
+            try {
+                return buildServiceHealthcheck(this.healthcheckMethod, this.healthcheckTarget);
+            } catch {
+                return null;
+            }
+        },
 
         dozzleContainerUrl() {
             const base = this.dozzleUrl.replace(/\/$/, "");
@@ -505,6 +553,27 @@ export default defineComponent({
         }
     },
     methods: {
+        openServiceConfig() {
+            this.showConfig = !this.showConfig;
+            if (this.showConfig && !this.healthcheckTarget) {
+                this.useHealthcheckSuggestion();
+            }
+        },
+        useHealthcheckSuggestion() {
+            if (!this.healthcheckProposal) {
+                return;
+            }
+            this.healthcheckMethod = this.healthcheckProposal.method;
+            this.healthcheckTarget = this.healthcheckProposal.target;
+        },
+        applyServiceHealthcheck() {
+            if (this.healthcheckPreview) {
+                this.service.healthcheck = this.healthcheckPreview;
+            }
+        },
+        removeServiceHealthcheck() {
+            delete this.service.healthcheck;
+        },
         instanceDetailsRoute(containerId) {
             return {
                 name: this.endpoint ? "containerDetailsEndpoint" : "containerDetails",
@@ -578,6 +647,27 @@ export default defineComponent({
 
 <style scoped lang="scss">
 .container {
+    .service-healthcheck-method {
+        flex: 0 0 9rem;
+        width: auto;
+    }
+
+    .service-healthcheck-target {
+        flex: 1 1 14rem;
+        min-width: 0;
+    }
+
+    .service-healthcheck-preview {
+        display: block;
+        max-width: 100%;
+        padding: .5rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        overflow-wrap: anywhere;
+        background: var(--bg-raised);
+        color: var(--text-color);
+    }
+
     .container-instances-heading {
         margin-bottom: .4rem;
         color: var(--text-muted);

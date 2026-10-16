@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-16 — Healthchecks facultatifs par service** — L’éditeur de stack propose une URL HTTP locale ou un port TCP selon les ports internes Compose. La cible reste modifiable, la commande Docker est visible et l’ajout ou le remplacement exige une action explicite ; les contrôles existants ne changent pas par défaut. L’image doit fournir le binaire nécessaire au test.
+
 **2026-10-16 — Propriété des politiques de réplication clarifiée** — Les nouvelles politiques doivent être configurées sur l’instance source, évitant la création de planifications distinctes pour une même stack depuis plusieurs instances liées. Les anciennes politiques restent gérables là où elles ont été créées ; aucune politique ni donnée de réplique n’est supprimée automatiquement.
 
 Les vues liées affichent aussi un résumé en lecture seule de l’état sur l’instance source, à côté d’une éventuelle ancienne politique locale, sans exposer sa configuration.

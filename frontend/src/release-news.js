@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-16-service-healthcheck-assistant",
+        items: [ "releaseNews.item.serviceHealthcheckAssistant" ],
+    },
+    {
         id: "2026-10-16-replication-source-ownership",
         items: [ "releaseNews.item.replicationSourceOwnership" ],
     },

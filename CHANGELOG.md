@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-16 — Optional per-service healthchecks** — The stack editor proposes a local HTTP URL or TCP port from each service's internal Compose ports. Users can edit the target, preview the exact Docker healthcheck command, and explicitly add or replace it; existing checks and stacks remain unchanged by default. The container image must provide the necessary test binary.
+
 **2026-10-16 — Clear replication policy ownership** — New replication policies must be configured on the source instance, preventing separate schedulers for the same source from being created on linked instances. Existing remote-source policies remain manageable where they were created; no policy or replica data is removed automatically.
 
 Linked views now show a read-only status summary from the source instance alongside any older locally managed policy, without exposing its replication configuration.

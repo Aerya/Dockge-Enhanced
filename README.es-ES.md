@@ -61,6 +61,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Asistente opcional de comprobación de salud por servicio:** al editar una stack, cada servicio puede recibir una propuesta de URL HTTP local o puerto TCP basada en sus puertos internos de Compose. Revise o cambie el destino y el comando exacto antes de añadirlo al YAML; las comprobaciones existentes nunca se reemplazan automáticamente. La prueba se ejecuta dentro de la imagen, que debe incluir `/bin/sh` y `curl`/`wget` o `nc`. Compruebe el estado tras el despliegue; un puerto TCP abierto no garantiza que la aplicación esté lista.
+
 #### Funciones y DNS
 
 **DNS de respaldo para comprobaciones de registries**
@@ -389,6 +391,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Negociación de capacidades entre distintas versiones de Dockge-Enhanced
 
 ### Gestión de stacks
+- Asistente opcional de healthcheck Compose por servicio con propuesta HTTP/TCP editable y vista previa del comando
 - Control por servicio para ignorar un servicio opcional en el estado global manteniendo visible su propio estado
 - Nombre visible opcional en la WebUI, sin cambiar la identidad de Compose o Restic
 - Enlaces compactos a contenedores reales y réplicas, con detalles y acciones individuales separadas de las acciones del servicio Compose

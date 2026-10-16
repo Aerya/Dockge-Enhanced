@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-16 — Comprobaciones opcionales por servicio** — El editor de stacks propone una URL HTTP local o un puerto TCP según los puertos internos de Compose. El destino es editable, el comando Docker se muestra y añadirlo o reemplazarlo requiere una acción explícita; las comprobaciones existentes no cambian por defecto. La imagen debe incluir el binario necesario.
+
 **2026-10-16 — Propiedad clara de las políticas de replicación** — Las nuevas políticas deben configurarse en la instancia de origen para evitar programaciones independientes de una misma stack en instancias vinculadas. Las políticas anteriores siguen gestionándose donde se crearon; no se elimina automáticamente ninguna política ni dato de réplica.
 
 Las vistas vinculadas muestran un resumen de estado de solo lectura desde la instancia de origen junto a cualquier política local anterior, sin revelar su configuración.
