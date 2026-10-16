@@ -1,3 +1,4 @@
+import { createZerobyteRouter } from "../integrations/zerobyte-router";
 /**
  * WatcherRouter — API REST pour la config et le status en temps réel.
  * Merged: image watcher + trivy scanner + backup manager routes.
@@ -63,7 +64,11 @@ export class WatcherRouter extends Router {
             }).catch(next);
         });
 
+        // Optional integration, protected by the same HTTP authentication middleware.
+        router.use("/zerobyte", createZerobyteRouter(server));
+
         // Isolated registry DNS fallback. Authenticated like all watcher routes.
+
         router.get("/registry-dns/settings", async (_req: Request, res: Response) => {
             try {
                 res.json({ ok: true,

@@ -20,6 +20,7 @@ declare module 'vue' {
     BackupStackPolicies: typeof import('./src/components/backup/BackupStackPolicies.vue')['default']
     BackupTab: typeof import('./src/components/BackupTab.vue')['default']
     BackupVolumes: typeof import('./src/components/backup/BackupVolumes.vue')['default']
+    BackupZerobyte: typeof import('./src/components/backup/BackupZerobyte.vue')['default']
     BDropdown: typeof import('bootstrap-vue-next')['BDropdown']
     BDropdownItem: typeof import('bootstrap-vue-next')['BDropdownItem']
     BModal: typeof import('bootstrap-vue-next')['BModal']

@@ -1,0 +1,22 @@
+# Zerobyte (facultatif)
+
+Dans **Sauvegardes**, activer le bloc **Zerobyte (facultatif)**. OFF replie entièrement le bloc et conserve configuration, clé API, conteneurs et données. Restic Enhanced conserve sa couverture et sa propre rétention : aucune exclusion automatique, migration ou suppression.
+
+- **Instance existante** : renseigner l’origine HTTP(S) accessible depuis le serveur Enhanced et une clé API créée dans les paramètres Zerobyte. Enregistrer puis tester. Aucun contrôle Docker de cette instance externe.
+- **Installation gérée** : Enhanced crée une stack Compose propre à son instance avec l’image officielle `ghcr.io/nicotsx/zerobyte:v0.43.2`. Les dossiers de données et de stacks Enhanced doivent être des bind mounts identifiables. Configuration/base et restauration utilisent des volumes persistants automatiques ; aucun dossier de configuration à choisir. Aucun socket Docker, SYS_ADMIN ou FUSE dans Zerobyte.
+
+Choisir au moins une **source existante** (dossier hôte ou volume Docker nommé) et une **destination distincte** (dossier hôte). Les sources sont RO sous `/sources/local-…`, les destinations RW sous `/destinations/store-…`. Déclarer les destinations distantes déjà montées sur l’hôte : un partage déclaré mais absent est refusé. L’identité de chaque système de fichiers de destination est contrôlée à chaque démarrage ; une modification empêche le démarrage et exige une revalidation. Un partage indisponible peut néanmoins bloquer ou faire échouer les E/S. Ce contrôle ne garantit pas sa disponibilité réseau.
+
+Les chemins système, liens symboliques, traversées, chevauchements parent/enfant, alias de bind mounts et recouvrements des données internes ou dépôts Restic locaux Enhanced, même désactivés, sont refusés. Pour les dépôts Restic distants, confirmer explicitement leur séparation : Enhanced ne peut pas la prouver. Le vérificateur hôte temporaire est sans réseau, monte la racine en lecture seule et ne conserve que le droit DAC_READ_SEARCH après suppression des autres capacités.
+
+Choisir un port libre avec `http://127.0.0.1:<port>` et confirmer l’installation. Accès WebUI local uniquement ; utiliser un tunnel SSH depuis une autre machine. Enhanced rejoint le réseau du projet et utilise son alias de service dédié : conserver cette connexion réseau lors du remplacement du conteneur Enhanced.
+
+Ouvrir Zerobyte, créer le compte, conserver la clé de récupération et générer une clé API. Enregistrer cette dernière dans Enhanced. **Les montages ne créent ni source logique, ni dépôt, ni job.** Créer les sources Directory et les dépôts Local aux chemins affichés dans Zerobyte, puis les jobs. Les jobs créés depuis Enhanced sont désactivés ; définir planification et rétention dans Zerobyte.
+
+Une nouvelle application identique conserve le projet et les volumes. Pour modifier les montages, configurer d’abord la connexion API, désactiver les jobs et attendre la fin des opérations ; confirmer ensuite la recréation. L’ancien Compose est réappliqué si le remplacement échoue. Revoir les chemins logiques des jobs ensuite. Aucun endpoint de désinstallation ou suppression de volumes. Garder `.env` et `.zerobyte.json` privés : ils permettent de préserver secrets et propriété de l’installation. Un échec initial conserve métadonnées et volumes pour diagnostic ou nouvelle tentative.
+
+Sauvegarde manuelle et rétention exigent une confirmation. La rétention peut supprimer des snapshots du seul job Zerobyte selon sa politique. La restauration exige que l’opérateur configure `DOCKGE_ZEROBYTE_RESTORE_ROOT` sur Enhanced vers un chemin **vérifié et dédié dans Zerobyte**, normalement `/restore-test` pour l’installation gérée. Ne jamais utiliser un dossier applicatif, source ou destination. Chaque restauration utilise un nouveau sous-dossier aléatoire, sans suppression et avec `overwrite: never`. Vérifier la fin de l’opération dans Zerobyte. Pour une instance externe, l’opérateur doit vérifier lui-même le montage dédié.
+
+Clés côté serveur, fichier 0600, réponses filtrées, erreurs distantes expurgées, redirections refusées, taille et durée des réponses bornées. Authentification HTTP Enhanced existante sur tous les endpoints. Les vues fédérées et hooks d’arrêt des stacks ne sont pas inclus.
+
+Textes EN, FR, DE, ES et chinois simplifié ; les autres langues utilisent le fallback anglais existant, sans altérer leurs traductions. Voir [la documentation technique et les références officielles](zerobyte.md).

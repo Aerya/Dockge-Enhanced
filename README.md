@@ -1,5 +1,7 @@
 <p align="center">
 
+**2026-10-16 — Optional Zerobyte integration** — Backups now offers an optional Zerobyte connection or instance-scoped Compose installation, explicit RO sources/RW destinations, path and remote-mount checks, confirmed operations and dedicated test restore. Native Restic coverage is unchanged. [Documentation](docs/zerobyte.md).
+
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>
 

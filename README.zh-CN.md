@@ -1,4 +1,6 @@
 <p align="center">
+
+**2026-10-16 — 可选 Zerobyte 集成** — 备份页面支持连接现有 Zerobyte 或为当前实例安装 Compose 项目，明确区分只读源和可写目标，检查路径与远程挂载，并为操作提供确认及独立测试恢复目录。原生 Restic 备份范围保持不变。 [Documentation](docs/zerobyte.md).
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>
 

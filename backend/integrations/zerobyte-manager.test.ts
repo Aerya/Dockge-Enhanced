@@ -1,0 +1,175 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { promises as fs } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { ZerobyteManager, normalizeZerobyteUrl } from "./zerobyte-manager";
+
+test("URL parser rejects credentials, paths and unexpected protocols", () => {
+    assert.equal(normalizeZerobyteUrl("http://zerobyte:4096/"), "http://zerobyte:4096");
+    for (const url of [ "file:///etc/passwd", "http://user:password@127.0.0.1", "https://server/api/v1", "https://server?secret=1" ]) {
+        assert.throws(() => normalizeZerobyteUrl(url));
+    }
+});
+
+test("secret persists safely and never appears in the safe settings", async () => {
+    const dir = await fs.mkdtemp(path.join(tmpdir(), "zerobyte-test-"));
+    try {
+        const manager = new ZerobyteManager(dir);
+        assert.deepEqual(await manager.getSafeConfig(), { enabled: false,
+            url: "",
+            hasApiKey: false,
+            restoreEnabled: false });
+        await manager.saveConfig({ enabled: true,
+            url: "http://zerobyte:4096",
+            apiKey: "secret-1" });
+        const safe = await manager.getSafeConfig();
+        assert.equal(safe.hasApiKey, true);
+        assert.equal(JSON.stringify(safe).includes("secret-1"), false);
+        const stat = await fs.stat(path.join(dir, "zerobyte-settings.json"));
+        assert.equal(stat.mode & 0o777, 0o600);
+        const unchanged = await manager.saveConfig({ enabled: true,
+            url: "http://zerobyte:4096" });
+        assert.equal(unchanged.hasApiKey, true);
+        await assert.rejects(manager.saveConfig({ enabled: true,
+            url: "http://other-host:4096" }), /API key/);
+        await manager.saveConfig({ enabled: false,
+            url: "" });
+        assert.equal((await manager.getSafeConfig()).enabled, false);
+        assert.equal((await manager.getSafeConfig()).url, "http://zerobyte:4096");
+        assert.equal((await manager.getSafeConfig()).hasApiKey, true);
+    } finally {
+        await fs.rm(dir, { recursive: true,
+            force: true });
+    }
+});
+
+test("list/run/create and retention use guarded routes without exposing upstream secrets", async () => {
+    const dir = await fs.mkdtemp(path.join(tmpdir(), "zerobyte-test-"));
+    const oldFetch = globalThis.fetch;
+    const calls: Array<{ url: string;
+        method: string;
+        key: string | null;
+        payload?: unknown }> = [];
+    try {
+        const manager = new ZerobyteManager(dir);
+        await manager.saveConfig({ enabled: true,
+            url: "http://zerobyte:4096",
+            apiKey: "api-key-test" });
+        globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+            const url = String(input);
+            const headers = new Headers(init?.headers);
+            calls.push({ url,
+                method: init?.method || "GET",
+                key: headers.get("x-api-key"),
+                ...(init?.body ? { payload: JSON.parse(String(init.body)) } : {}) });
+            let data: unknown = [];
+            if (url.endsWith("/backups")) {
+                data = [{ shortId: "ab12",
+                    name: "Test",
+                    enabled: true,
+                    lastBackupStatus: "success",
+                    repositoryId: "r1" }];
+            }
+            if (url.endsWith("/repositories")) {
+                data = [{ shortId: "r1",
+                    name: "Repo",
+                    config: { password: "DO_NOT_LEAK" } }];
+            }
+            if (url.endsWith("/volumes")) {
+                data = [{ id: 1,
+                    name: "Documents" }];
+            }
+            if (url.endsWith("/repositories/r1/stats")) {
+                data = { totalSize: 1000,
+                    snapshotCount: 2 };
+            }
+            if (url.endsWith("/backups/ab12/run")) {
+                data = { taskId: "task-1",
+                    status: "started" };
+            }
+            if (url.endsWith("/backups/ab12/forget")) {
+                data = { taskId: "task-2",
+                    status: "started" };
+            }
+            return new Response(JSON.stringify(data), { status: 200,
+                headers: { "Content-Type": "application/json" } });
+        };
+        const overview = await manager.overview();
+        assert.equal(overview.jobs.length, 1);
+        assert.equal(overview.repositories[0].storedBytes, 1000);
+        assert.equal(JSON.stringify(overview).includes("DO_NOT_LEAK"), false);
+        await manager.runBackup("ab12");
+        await assert.rejects(manager.runBackup("../../etc/passwd"), /identifier/);
+        await assert.rejects(manager.applyRetention("ab12", ""), /confirmation/);
+        await manager.applyRetention("ab12", "CLEANUP");
+        await manager.createJob({ name: "Safe",
+            repositoryId: "r1",
+            volumeId: 1,
+            cronExpression: "0 3 * * *" });
+        assert.equal((calls.at(-1)?.payload as { enabled: boolean }).enabled, false);
+        assert.ok(calls.every(call => call.key === "api-key-test"));
+    } finally {
+        globalThis.fetch = oldFetch;
+        await fs.rm(dir, { recursive: true,
+            force: true });
+    }
+});
+
+test("staged restoration refuses unconfigured target and any missing confirmation", async () => {
+    const dir = await fs.mkdtemp(path.join(tmpdir(), "zerobyte-test-"));
+    const old = process.env.DOCKGE_ZEROBYTE_RESTORE_ROOT;
+    try {
+        delete process.env.DOCKGE_ZEROBYTE_RESTORE_ROOT;
+        const manager = new ZerobyteManager(dir);
+        await assert.rejects(manager.stagedRestore("r1", "s1", "RESTORE"), /Configure DOCKGE/);
+        process.env.DOCKGE_ZEROBYTE_RESTORE_ROOT = "/restore-test";
+        await assert.rejects(manager.stagedRestore("r1", "s1", ""), /confirmation/);
+    } finally {
+        if (old === undefined) {
+            delete process.env.DOCKGE_ZEROBYTE_RESTORE_ROOT;
+        } else {
+            process.env.DOCKGE_ZEROBYTE_RESTORE_ROOT = old;
+        }
+        await fs.rm(dir, { recursive: true,
+            force: true });
+    }
+});
+
+test("activation can be persisted before setup and OFF retains configured credentials", async () => {
+    const dir = await fs.mkdtemp(path.join(tmpdir(), "zerobyte-activation-"));
+    try {
+        const manager = new ZerobyteManager(dir);
+        assert.equal((await manager.saveConfig({ enabled: true })).enabled, true);
+        await manager.saveConfig({ enabled: true,
+            url: "http://zerobyte:4096",
+            apiKey: "retained-secret" });
+        const off = await manager.saveConfig({ enabled: false,
+            url: "http://zerobyte:4096" });
+        assert.equal(off.hasApiKey, true);
+        await assert.rejects(manager.overview(), /not configured/);
+        const on = await manager.saveConfig({ enabled: true,
+            url: off.url });
+        assert.equal(on.hasApiKey, true);
+    } finally {
+        await fs.rm(dir, { recursive: true,
+            force: true });
+    }
+});
+
+test("upstream response size is bounded even without content-length", async () => {
+    const dir = await fs.mkdtemp(path.join(tmpdir(), "zerobyte-bound-"));
+    const oldFetch = globalThis.fetch;
+    try {
+        const manager = new ZerobyteManager(dir);
+        await manager.saveConfig({ enabled: true,
+            url: "http://zerobyte:4096",
+            apiKey: "secret" });
+        globalThis.fetch = async () => new Response("x".repeat(2 * 1024 * 1024 + 1));
+        await assert.rejects(manager.testConnection(), /size or time limits/);
+    } finally {
+        globalThis.fetch = oldFetch;
+        await fs.rm(dir, { recursive: true,
+            force: true });
+    }
+});

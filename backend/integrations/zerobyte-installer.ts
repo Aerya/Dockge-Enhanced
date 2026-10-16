@@ -1,0 +1,321 @@
+/** Instance-scoped Compose installation. No native Restic settings are modified. */
+import { execFile } from "node:child_process";
+import { createHash, randomBytes } from "node:crypto";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { promisify } from "node:util";
+import YAML from "yaml";
+import { DockgeServer } from "../dockge-server";
+import { BackupManager } from "../watchers/backup-manager";
+import { resolveHostRepositoryPath } from "../watchers/backup-repository-safety";
+import { zerobyte } from "./zerobyte-manager";
+import { normalizeManagedSources, normalizeManagedDestinations, assertDisjointManagedMounts, type LocalSourceMount, type DockerMount } from "./zerobyte-mounts";
+
+const exec = promisify(execFile);
+export const ZEROBYTE_IMAGE = "ghcr.io/nicotsx/zerobyte:v0.43.2";
+const OWNER = "net.dockge-enhanced.zerobyte-owner";
+let busy = false;
+interface Mount extends LocalSourceMount { remote?: boolean;
+    fingerprint?: string }
+interface Container { Id: string;
+    Mounts: DockerMount[];
+    Config: { Labels: Record<string, string>;
+        Env: string[] };
+    State: { Running: boolean } }
+
+async function docker(...args: string[]): Promise<string> {
+    try {
+        return (await exec("docker", args, { timeout: 180000,
+            maxBuffer: 4 * 1024 * 1024 })).stdout;
+    } catch {
+        // Never return Docker stderr: Compose can include environment secrets in it.
+        throw new Error("Zerobyte Docker operation failed; check Docker availability, paths and port conflicts");
+    }
+}
+async function context(server: DockgeServer) {
+    const self = (JSON.parse(await docker("inspect", process.env.HOSTNAME || os.hostname())) as Container[])[0];
+    const data = self.Mounts.find(m => m.Destination === server.config.dataDir);
+    const stacks = self.Mounts.find(m => m.Destination === server.stacksDir);
+    if (!data?.Source || !stacks?.Source || data.Type !== "bind" || stacks.Type !== "bind") {
+        throw new Error("Managed Zerobyte requires identifiable, separate Enhanced data and stack bind mounts");
+    }
+    const owner = createHash("sha256").update(data.Source + ":" + stacks.Source).digest("hex").slice(0, 12);
+    const name = `zerobyte-${owner}`;
+    return { self,
+        owner,
+        name,
+        directory: path.join(server.stacksDir, name) };
+}
+export function validateZerobyteInstallUrl(raw: unknown) {
+    const url = new URL(String(raw));
+    const port = Number(url.port);
+    if (url.protocol !== "http:" || url.hostname !== "127.0.0.1" || url.username || url.password || url.search || url.hash || url.pathname !== "/" || !Number.isInteger(port) || port < 1024 || port > 65535 || port === 5055 || port === 5001) {
+        throw new Error("Managed Zerobyte requires http://127.0.0.1:<free port>, excluding Enhanced ports");
+    }
+    return { url: url.origin,
+        port };
+}
+function overlap(a: string, b: string): boolean {
+    return a === b || a.startsWith(b + "/") || b.startsWith(a + "/") || a === "/" || b === "/";
+}
+async function hostInfo(paths: string[], protectedPaths: string[] = []) {
+    // Host view is read-only, no network; read/search capability only; reject every symlink component.
+    const script = `set -efu
+strict=1
+for candidate do
+ if [ "$candidate" = "__protected__" ]; then strict=0; continue; fi
+ if [ "$strict" = 1 ]; then [ -d "/host$candidate" ] || exit 20; fi
+ current=''
+ remaining=\u0024{candidate#/}
+ oldifs=$IFS
+ IFS=/
+ for segment in $remaining; do
+  current="$current/$segment"
+  [ ! -L "/host$current" ] || exit 21
+ done
+ IFS=$oldifs
+ if [ "$strict" = 1 ]; then stat -f -c '%t:%i' "/host$candidate"; fi
+done
+cat /host/proc/1/mountinfo`;
+    const out = await docker("run", "--rm", "--pull=never", "--network", "none", "--cap-drop", "ALL", "--cap-add", "DAC_READ_SEARCH", "--read-only", "--mount", "type=bind,source=/,target=/host,readonly", "--entrypoint", "/bin/sh", ZEROBYTE_IMAGE, "-c", script, "verify", ...paths, "__protected__", ...protectedPaths);
+    const lines = out.trim().split("\n");
+    return { fingerprints: lines.slice(0, paths.length),
+        mountinfo: lines.slice(paths.length) };
+}
+export function isRemoteMounted(candidate: string, lines: string[]): boolean {
+    const mounts = lines.map(line => {
+        const [ left, right ] = line.split(" - ");
+        return { target: left.split(" ")[4]?.replace(/\\040/g, " "),
+            type: right?.split(" ")[0] };
+    }).filter(m => m.target && (candidate === m.target || candidate.startsWith(m.target + "/")))
+        .sort((a, b) => b.target.length - a.target.length);
+    return /^(nfs4?|cifs|smb3|fuse[.].+|fuse|sshfs|9p|ceph|glusterfs)$/.test(mounts[0]?.type ?? "");
+}
+/** Compare bind aliases in the host mount namespace, including named-volume paths. */
+export function hostPathIdentity(candidate: string, lines: string[]): string {
+    const decode = (value: string) => value.replace(/\\([0-7]{3})/g, (_, octal) => String.fromCharCode(parseInt(octal, 8)));
+    const mounts = lines.map(line => {
+        const parts = line.split(" - ")[0].split(" ");
+        return { device: parts[2],
+            root: decode(parts[3] ?? ""),
+            target: decode(parts[4] ?? "") };
+    }).filter(m => m.target && (m.target === "/" || candidate === m.target || candidate.startsWith(m.target + "/")))
+        .sort((a, b) => b.target.length - a.target.length);
+    const mount = mounts[0];
+    if (!mount) {
+        throw new Error("Cannot resolve path in host mount table");
+    }
+    return mount.device + ":" + path.posix.join(mount.root, path.posix.relative(mount.target, candidate));
+}
+async function validate(server: DockgeServer, input: Record<string, unknown>, ctx: Awaited<ReturnType<typeof context>>) {
+    const backup = BackupManager.getInstance();
+    if (backup.settings.destinations.some(d => d.type !== "local") && input.attestNoRemoteOverlap !== true) {
+        throw new Error("Explicit confirmation required: remote Enhanced Restic repositories cannot be compared automatically");
+    }
+    const protectedPaths = ctx.self.Mounts.filter(m => [ server.config.dataDir, server.stacksDir, "/backup" ].includes(m.Destination ?? "")).map(m => m.Source!);
+    const others = (await docker("ps", "-aq", "--filter", "label=org.opencontainers.image.source=https://github.com/Aerya/Dockge-Enhanced")).trim().split(/\s+/).filter(Boolean);
+    if (others.length) {
+        for (const container of JSON.parse(await docker("inspect", ...others)) as Container[]) {
+            protectedPaths.push(...container.Mounts.filter(m => [ "/app/data", "/opt/stacks", "/backup" ].includes(m.Destination ?? "")).map(m => m.Source!));
+        }
+    }
+    const mapped = ctx.self.Mounts.map(m => ({ source: m.Source!,
+        destination: m.Destination! }));
+    protectedPaths.push(...backup.settings.destinations.filter(d => d.type === "local" && d.local?.path).map(d => resolveHostRepositoryPath(d.local!.path, mapped)));
+    const internalVolumes = (await docker("volume", "ls", "-q", "--filter", `label=${OWNER}`)).trim().split(/\s+/).filter(Boolean);
+    for (const name of internalVolumes) {
+        protectedPaths.push(JSON.parse(await docker("volume", "inspect", name))[0].Mountpoint);
+    }
+    const sources = normalizeManagedSources(input.localMounts, protectedPaths) as Mount[];
+    const destinations = normalizeManagedDestinations(input.destinationMounts, protectedPaths) as Mount[];
+    if (!sources.length || !destinations.length || destinations.some(m => m.kind !== "bind")) {
+        throw new Error("Select existing sources and at least one distinct host destination directory");
+    }
+    assertDisjointManagedMounts(sources, destinations);
+    const canonical: string[] = [];
+    for (const m of [ ...sources, ...destinations ]) {
+        canonical.push(m.kind === "bind" ? m.source : JSON.parse(await docker("volume", "inspect", m.source))[0].Mountpoint);
+    }
+    for (const [ i, p ] of canonical.entries()) {
+        if (typeof p !== "string" || !path.isAbsolute(p) || protectedPaths.some(root => overlap(p, root)) || canonical.some((q, j) => i !== j && overlap(p, q))) {
+            throw new Error("Mount overlaps another mount, application data or an Enhanced Restic repository");
+        }
+    }
+    const systemPaths = [ "/etc", "/proc", "/sys", "/dev", "/root", "/run", "/usr", "/boot", "/var/lib/docker", "/var/lib/containerd" ];
+    const info = await hostInfo(canonical, [ ...protectedPaths, ...systemPaths ]);
+    const identities = canonical.map(p => hostPathIdentity(p, info.mountinfo));
+    const protectedIdentities = protectedPaths.map(p => hostPathIdentity(p, info.mountinfo));
+    const systemIdentities = systemPaths.map(p => hostPathIdentity(p, info.mountinfo));
+    for (const [ i, identity ] of identities.entries()) {
+        if ([ ...sources, ...destinations ][i].kind === "bind" && systemIdentities.some(root => overlap(identity, root))) {
+            throw new Error("Bind mount aliases a protected system directory");
+        }
+        if (identities.some((other, j) => i !== j && overlap(identity, other)) || protectedIdentities.some(root => overlap(identity, root))) {
+            throw new Error("Mount alias overlaps another mount or protected application/Restic data");
+        }
+    }
+    for (let i = 0; i < destinations.length; i++) {
+        const raw = (input.destinationMounts as Record<string, unknown>[])[i];
+        destinations[i].remote = raw.remote === true;
+        if (destinations[i].remote && !isRemoteMounted(destinations[i].source, info.mountinfo)) {
+            throw new Error("Expected remote destination is not mounted; refusing local fallback");
+        }
+        destinations[i].fingerprint = info.fingerprints[sources.length + i];
+    }
+    return { sources,
+        destinations };
+}
+export function composeModel(name: string, owner: string, url: string, port: number, sources: Mount[], destinations: Mount[]) {
+    const volumes: Record<string, unknown> = {
+        data: { labels: { [OWNER]: owner } },
+        restores: { labels: { [OWNER]: owner } },
+    };
+    const mounts: Record<string, unknown>[] = [
+        { type: "volume",
+            source: "data",
+            target: "/var/lib/zerobyte" },
+        { type: "volume",
+            source: "restores",
+            target: "/restore-test" },
+    ];
+    for (const [ i, m ] of [ ...sources, ...destinations ].entries()) {
+        let source = m.source;
+        if (m.kind === "volume") {
+            source = `source${i}`;
+            volumes[source] = { external: true,
+                name: m.source };
+        }
+        mounts.push({ type: m.kind,
+            source,
+            target: m.target,
+            read_only: i < sources.length,
+            ...(m.kind === "bind" ? { bind: { create_host_path: false } } : {}) });
+    }
+    // Re-check the mounted filesystem on EVERY container start, including daemon restart.
+    const checks = destinations.map(m => `[ "$(stat -f -c '%t:%i' '${m.target}')" = '${m.fingerprint}' ] || exit 31`).join("\n");
+    return { name,
+        services: { zerobyte: {
+            image: ZEROBYTE_IMAGE,
+            restart: "unless-stopped",
+            labels: { [OWNER]: owner },
+            ports: [ `127.0.0.1:${port}:4096` ],
+            environment: { BASE_URL: url,
+                APP_SECRET: "${ZEROBYTE_APP_SECRET}",
+                TZ: "Europe/Paris" },
+            volumes: mounts,
+            networks: { default: { aliases: [ name ] } },
+            entrypoint: [ "/bin/sh", "-ec", checks.replaceAll("$", "$$") + "\nexec bun .output/server/index.mjs" ],
+        } },
+        volumes };
+}
+export async function managedZerobyteStatus(server: DockgeServer) {
+    const ctx = await context(server);
+    let stored;
+    try {
+        stored = JSON.parse(await fs.readFile(path.join(ctx.directory, ".zerobyte.json"), "utf8"));
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+            throw error;
+        }
+    }
+    const ids = (await docker("ps", "-aq", "--filter", `label=com.docker.compose.project=${ctx.name}`)).trim();
+    let running = false;
+    if (ids) {
+        const containers = JSON.parse(await docker("inspect", ...ids.split(/\s+/))) as Container[];
+        if (containers.some(c => c.Config.Labels[OWNER] !== ctx.owner)) {
+            throw new Error("Compose project ownership mismatch");
+        }
+        running = containers.every(c => c.State.Running);
+    }
+    return { installed: Boolean(stored),
+        running,
+        name: ctx.name,
+        url: stored?.url ?? "",
+        apiUrl: `http://${ctx.name}:4096`,
+        port: stored?.port ?? null,
+        localMounts: stored?.sources ?? [],
+        destinationMounts: stored?.destinations ?? [],
+        remoteResticDestinations: BackupManager.getInstance().settings.destinations.some(d => d.type !== "local") };
+}
+async function apply(server: DockgeServer, body: unknown, update: boolean) {
+    if (busy) {
+        throw new Error("Zerobyte installation already in progress");
+    }
+    const input = (body ?? {}) as Record<string, unknown>;
+    if (input.confirmation !== (update ? "UPDATE ZEROBYTE MOUNTS" : "INSTALL ZEROBYTE")) {
+        throw new Error("Explicit installation confirmation required");
+    }
+    busy = true;
+    try {
+        const ctx = await context(server);
+        const previous = await managedZerobyteStatus(server);
+        const { url, port } = validateZerobyteInstallUrl(update ? previous.url : input.url);
+        await docker("pull", ZEROBYTE_IMAGE);
+        const { sources, destinations } = await validate(server, input, ctx);
+        const file = path.join(ctx.directory, "compose.yaml");
+        const serialized = YAML.stringify(composeModel(ctx.name, ctx.owner, url, port, sources, destinations));
+        let oldCompose: string | undefined;
+        if (previous.installed) {
+            oldCompose = await fs.readFile(file, "utf8");
+            if (oldCompose === serialized && previous.running) {
+                return previous;
+            }
+            if (oldCompose !== serialized) {
+                if (!update) {
+                    throw new Error("Installation exists; use the explicit mount update action");
+                }
+                const overview = await zerobyte.overview();
+                if (overview.tasks.length || overview.jobs.some(job => job.enabled)) {
+                    throw new Error("Disable Zerobyte jobs and wait for operations to finish before changing mounts");
+                }
+            }
+        } else {
+            // Refuse to adopt any unrelated directory/project or existing internal volume.
+            try {
+                await fs.mkdir(ctx.directory, { mode: 0o700 });
+            } catch {
+                throw new Error("Stack directory exists or cannot be created; refusing adoption");
+            }
+            for (const suffix of [ "data", "restores" ]) {
+                const found = (await docker("volume", "ls", "-q", "--filter", `name=^${ctx.name}_${suffix}$`)).trim();
+                if (found) {
+                    throw new Error("Internal volume exists without installation metadata; manual ownership verification required");
+                }
+            }
+            await fs.writeFile(path.join(ctx.directory, ".env"), `ZEROBYTE_APP_SECRET=${randomBytes(32).toString("hex")}\n`, { mode: 0o600,
+                flag: "wx" });
+        }
+        await fs.writeFile(file, serialized, { mode: 0o600 });
+        if (!previous.installed) {
+            await fs.writeFile(path.join(ctx.directory, ".zerobyte.json"), JSON.stringify({ sources,
+                destinations,
+                url,
+                port }), { mode: 0o600 });
+        }
+        const compose = (...args: string[]) => docker("compose", "--project-directory", ctx.directory, "-p", ctx.name, "-f", file, ...args);
+        try {
+            await compose("config", "--quiet");
+            await compose("up", "-d", "--wait", "--wait-timeout", "60");
+            const network = JSON.parse(await docker("network", "inspect", `${ctx.name}_default`))[0];
+            if (!network.Containers?.[ctx.self.Id]) {
+                await docker("network", "connect", `${ctx.name}_default`, ctx.self.Id);
+            }
+            await fs.writeFile(path.join(ctx.directory, ".zerobyte.json"), JSON.stringify({ sources,
+                destinations,
+                url,
+                port }), { mode: 0o600 });
+        } catch (error) {
+            if (oldCompose) {
+                await fs.writeFile(file, oldCompose, { mode: 0o600 });
+                await compose("up", "-d", "--wait", "--wait-timeout", "60");
+            }
+            throw error;
+        }
+        return managedZerobyteStatus(server);
+    } finally {
+        busy = false;
+    }
+}
+export const installManagedZerobyte = (server: DockgeServer, body: unknown) => apply(server, body, false);
+export const updateManagedZerobyteMounts = (server: DockgeServer, body: unknown) => apply(server, body, true);

@@ -1,5 +1,7 @@
 <p align="center">
 
+**2026-10-16 — Optionale Zerobyte-Integration** — Unter Sicherungen stehen eine Zerobyte-Verbindung oder eine eigene Compose-Installation, explizite RO-Quellen/RW-Ziele, Pfad- und Mount-Prüfungen sowie bestätigte Aktionen und eine getrennte Testwiederherstellung zur Verfügung. Die native Restic-Abdeckung bleibt erhalten. [Documentation](docs/zerobyte.md).
+
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>
 
