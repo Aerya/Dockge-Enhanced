@@ -19,6 +19,14 @@
                     <label class="form-check-label" for="zerobyte-managed">{{ $t('watcher.zerobyte.installNew') }}</label>
                 </div>
             </div>
+            <div v-if="connectionMode === 'existing'" class="alert alert-warning">
+                <strong>{{ $t('watcher.zerobyte.externalWarningTitle') }}</strong>
+                <p class="mb-2">{{ $t('watcher.zerobyte.externalWarning') }}</p>
+                <label class="d-block mb-2"><input v-model="configuration.externalRisksAcknowledged" type="checkbox" class="form-check-input me-2" @change="configuration.externalRestoreRoot = configuration.externalRisksAcknowledged ? configuration.externalRestoreRoot : ''" />{{ $t('watcher.zerobyte.externalAcknowledge') }}</label>
+                <label for="external-restore-root" class="form-label">{{ $t('watcher.zerobyte.externalRestoreRoot') }}</label>
+                <input id="external-restore-root" v-model.trim="configuration.externalRestoreRoot" class="form-control" placeholder="/restore-test" :disabled="!configuration.externalRisksAcknowledged" />
+                <small>{{ $t('watcher.zerobyte.externalRestoreHelp') }}</small>
+            </div>
             <div v-if="connectionMode === 'managed'" class="border rounded p-3 mb-3">
                 <p class="form-text mb-3">{{ $t('watcher.zerobyte.managedSummary') }}</p>
                 <template v-if="installation?.installed">
@@ -83,14 +91,48 @@
                 <p class="form-text small mt-2 mb-0">{{ $t('watcher.zerobyte.configureRepository') }}</p>
                 <p class="small form-text mt-2 mb-0">{{ $t('watcher.zerobyte.installNoPrivileges') }}</p>
             </div>
+            <div v-if="connectionMode === 'managed' && installation?.installed" class="border rounded p-3 mb-3">
+                <h6>{{ $t('watcher.zerobyte.workflowTitle') }}</h6>
+                <p class="form-text">{{ $t('watcher.zerobyte.workflowHelp') }}</p>
+                <p class="alert alert-info">{{ $t('watcher.zerobyte.outagePolicy') }}</p>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6"><label class="form-label">{{ $t('watcher.zerobyte.jobName') }}</label><input v-model.trim="workflowInput.name" class="form-control" maxlength="60" /></div>
+                    <div class="col-md-3"><label class="form-label">{{ $t('watcher.zerobyte.cron') }}</label><input v-model.trim="workflowInput.cron" class="form-control" /></div>
+                    <div class="col-md-3"><label class="form-label">{{ $t('watcher.zerobyte.maxMinutes') }}</label><input v-model.number="workflowInput.maxMinutes" type="number" min="1" max="120" class="form-control" /></div>
+                    <div class="col-md-6"><label class="form-label">{{ $t('watcher.zerobyte.sourcesTitle') }}</label><select v-model="workflowInput.source" class="form-select"><option value="">—</option><option v-for="m in installation.localMounts" :key="m.target" :value="m.target">{{ m.source }} → {{ m.target }}</option></select></div>
+                    <div class="col-md-6"><label class="form-label">{{ $t('watcher.zerobyte.destinationsTitle') }}</label><select v-model="workflowInput.destination" class="form-select"><option value="">—</option><option v-for="m in installation.destinationMounts" :key="m.target" :value="m.target">{{ m.source }} → {{ m.target }}</option></select></div>
+                </div>
+                <label class="form-label">{{ $t('watcher.zerobyte.stopStacks') }}</label>
+                <p class="form-text">{{ $t('watcher.zerobyte.stopStacksHelp') }}</p>
+                <div class="d-flex flex-wrap gap-3 mb-2"><label v-for="name in workflowStacks" :key="name"><input v-model="workflowInput.stacks" :value="name" type="checkbox" class="form-check-input me-1" />{{ name }}</label></div>
+                <button type="button" class="btn btn-normal btn-sm me-2" :disabled="busy || !configuration.hasApiKey" @click="previewWorkflow">{{ $t('watcher.zerobyte.previewPlan') }}</button>
+                <div v-if="workflowPlan" class="border rounded p-2 my-2">
+                    <p class="mb-1"><strong>{{ workflowPlan.name }}</strong> : <code>{{ workflowPlan.source }}</code> → <code>{{ workflowPlan.repositoryPath }}</code></p>
+                    <p class="mb-2">{{ $t('watcher.zerobyte.stopStacks') }} : {{ workflowPlan.stacks.join(', ') || '—' }} · {{ workflowPlan.cron }} · {{ workflowPlan.maxMinutes }} min</p>
+                    <p>{{ $t('watcher.zerobyte.planEffect') }}</p>
+                    <button type="button" class="btn btn-primary btn-sm" :disabled="busy" @click="provisionWorkflow">{{ $t('watcher.zerobyte.provision') }}</button>
+                </div>
+                <div v-for="workflow in workflowStatus?.workflows.filter(w => w.blockedTasks?.length) || []" :key="workflow.id" class="alert alert-danger mt-2">
+                    {{ workflow.name }} — {{ $t('watcher.zerobyte.workflowPaused') }}
+                    <button type="button" class="btn btn-outline-danger btn-sm ms-2" :disabled="busy" @click="acknowledgeWorkflow(workflow.id)">{{ $t('watcher.zerobyte.acknowledgeWorkflow') }}</button>
+                </div>
+                <div v-if="workflowStatus?.active" class="alert alert-info mt-2">{{ $t('watcher.zerobyte.workflowActive') }} : {{ workflowStatus.active.workflow }}</div>
+                <ul v-if="workflowStatus?.events?.length" class="small mt-3 mb-0"><li v-for="event in workflowStatus.events" :key="event.at + event.workflow" :class="event.state === 'failure' ? 'text-danger' : ''">{{ date(event.at) }} · {{ event.state }} · {{ event.detail }}</li></ul>
+            </div>
+            <details class="border rounded p-3 mb-3">
+                <summary>{{ $t('watcher.zerobyte.federationTitle') }}</summary>
+                <p class="form-text mt-2">{{ $t('watcher.zerobyte.federationHelp') }}</p>
+                <button type="button" class="btn btn-normal btn-sm mb-2" :disabled="busy" @click="loadFederation">{{ $t('watcher.zerobyte.refresh') }}</button>
+                <div v-for="peer in federation" :key="peer.endpoint" class="border-top py-2 small"><strong>{{ peer.name }}</strong> — {{ !peer.online ? $t('watcher.zerobyte.peerOffline') : !peer.summary.enabled ? $t('watcher.zerobyte.peerDisabled') : !peer.summary.reachable ? $t('watcher.zerobyte.peerUnavailable') : $t('watcher.zerobyte.peerCounts', { jobs: peer.summary.jobs, failed: peer.summary.failedJobs, active: peer.summary.activeTasks }) }}</div>
+            </details>
             <div v-if="configuration.enabled" class="row g-3 mb-3">
                 <div class="col-md-6">
                     <label class="form-label" for="zerobyte-url">{{ $t('watcher.zerobyte.url') }}</label>
-                    <input id="zerobyte-url" v-model.trim="configuration.url" type="url" class="form-control" placeholder="http://zerobyte:4096" autocomplete="off" />
+                    <input id="zerobyte-url" v-model.trim="configuration.url" type="url" class="form-control" placeholder="http://zerobyte:4096" autocomplete="off" @input="clearExternalApproval" />
                 </div>
                 <div class="col-md-6">
                     <label class="form-label" for="zerobyte-key">{{ $t('watcher.zerobyte.key') }}</label>
-                    <input id="zerobyte-key" v-model="apiKey" type="password" class="form-control" :placeholder="configuration.hasApiKey ? $t('watcher.zerobyte.keySaved') : $t('watcher.zerobyte.key')" autocomplete="new-password" />
+                    <input id="zerobyte-key" v-model="apiKey" type="password" class="form-control" :placeholder="configuration.hasApiKey ? $t('watcher.zerobyte.keySaved') : $t('watcher.zerobyte.key')" autocomplete="new-password" @input="clearExternalApproval" />
                 </div>
             </div>
             <div class="d-flex flex-wrap gap-2 mb-2">
@@ -120,11 +162,12 @@
                     <div class="d-flex flex-wrap justify-content-between gap-2 align-items-center">
                         <div>
                             <strong>{{ job.name }}</strong>
+                            <small v-if="!workflowStatus?.workflows.some(w => w.jobId === job.shortId)" class="d-block text-warning">{{ $t('watcher.zerobyte.legacyJobWarning') }}</small>
                             <span class="badge ms-2" :class="job.lastBackupStatus === 'success' ? 'bg-success' : 'bg-secondary'">{{ job.lastBackupStatus || '—' }}</span>
                             <div class="form-text small">{{ $t('watcher.zerobyte.last') }}: {{ date(job.lastBackupAt) }} · {{ $t('watcher.zerobyte.next') }}: {{ date(job.nextBackupAt) }}</div>
                         </div>
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-primary btn-sm" :disabled="busy" @click="run(job.shortId)">{{ $t('watcher.zerobyte.run') }}</button>
+                            <button type="button" class="btn btn-primary btn-sm" :disabled="busy || Boolean(workflowStatus?.active) || workflowStatus?.workflows.some(w => w.jobId === job.shortId && w.blockedTasks?.length)" @click="run(job.shortId)">{{ $t('watcher.zerobyte.run') }}</button>
                             <button type="button" class="btn btn-outline-danger btn-sm" :disabled="busy" @click="cleanup(job.shortId, job.name)">{{ $t('watcher.zerobyte.cleanup') }}</button>
                         </div>
                     </div>
@@ -159,7 +202,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { api } from "./shared";
 
@@ -187,6 +230,8 @@ interface Config {
     url: string;
     hasApiKey: boolean;
     restoreEnabled: boolean;
+    externalRisksAcknowledged: boolean;
+    externalRestoreRoot: string;
 }
 
 interface Job {
@@ -231,6 +276,8 @@ const configuration = ref<Config>({
     url: "",
     hasApiKey: false,
     restoreEnabled: false,
+    externalRisksAcknowledged: false,
+    externalRestoreRoot: "",
 });
 const connectionMode = ref<"existing" | "managed">("existing");
 const installUrl = ref("http://127.0.0.1:14097");
@@ -293,6 +340,103 @@ const newJob = ref({ name: "",
     volumeId: 0,
     repositoryId: "",
     cronExpression: "0 3 * * *" });
+
+interface WorkflowPlan { id: string;
+    name: string;
+    source: string;
+    destination: string;
+    repositoryPath: string;
+    stacks: string[];
+    cron: string;
+    maxMinutes: number }
+const workflowInput = ref({ name: "",
+    source: "",
+    destination: "",
+    stacks: [] as string[],
+    cron: "0 3 * * *",
+    maxMinutes: 30 });
+const workflowPlan = ref<WorkflowPlan | null>(null);
+const workflowStacks = ref<string[]>([]);
+const workflowStatus = ref<{ workflows: { id: string;
+    name: string;
+    jobId?: string;
+    blockedTasks?: string[] }[];
+active: { workflow: string } | null;
+events: { workflow: string;
+    at: number;
+    state: string;
+    detail: string }[] } | null>(null);
+const federation = ref<{ endpoint: string;
+    name: string;
+    online: boolean;
+    summary: { enabled: boolean;
+        reachable: boolean;
+        jobs: number;
+        failedJobs: number;
+        activeTasks: number } }[]>([]);
+function clearExternalApproval() {
+    configuration.value.externalRisksAcknowledged = false;
+    configuration.value.externalRestoreRoot = "";
+}
+async function loadWorkflowStatus(refreshStacks = false) {
+    const result = await api("GET", "/zerobyte/workflows");
+    if (result.ok) {
+        workflowStatus.value = result.data;
+    }
+    if (refreshStacks && installation.value?.installed) {
+        const stacks = await api("GET", "/zerobyte/workflows/stacks");
+        if (stacks.ok) {
+            workflowStacks.value = stacks.data;
+        }
+    }
+}
+async function previewWorkflow() {
+    await action(async () => {
+        const result = await api("POST", "/zerobyte/workflows/plan", workflowInput.value);
+        if (!result.ok) {
+            throw new Error(result.message);
+        }
+        workflowPlan.value = result.data;
+    });
+}
+async function provisionWorkflow() {
+    if (!workflowPlan.value || !window.confirm(t("watcher.zerobyte.provisionConfirm"))) {
+        return;
+    }
+    const plan = workflowPlan.value;
+    await action(async () => {
+        const result = await api("POST", "/zerobyte/workflows/provision", { ...plan,
+            confirmation: "PROVISION ZEROBYTE" });
+        if (!result.ok) {
+            throw new Error(result.message);
+        }
+        notice(t("watcher.zerobyte.provisioned"));
+        workflowPlan.value = null;
+        await loadWorkflowStatus();
+    });
+    await loadOverview();
+}
+async function acknowledgeWorkflow(id: string) {
+    if (!window.confirm(t("watcher.zerobyte.acknowledgeConfirm"))) {
+        return;
+    }
+    await action(async () => {
+        const result = await api("POST", `/zerobyte/workflows/${id}/acknowledge`, { confirmation: "ACKNOWLEDGE WORKFLOW" });
+        if (!result.ok) {
+            throw new Error(result.message);
+        }
+        await loadWorkflowStatus();
+    });
+}
+async function loadFederation() {
+    await action(async () => {
+        const result = await api("GET", "/zerobyte/federation");
+        if (!result.ok) {
+            throw new Error(result.message);
+        }
+        federation.value = result.data;
+    });
+}
 
 function bytes(n: number | null): string {
     return n == null ? "—" : `${(n / 1024 ** 3).toFixed(2)} GiB`;
@@ -400,6 +544,8 @@ async function save() {
         const r = await api("POST", "/zerobyte/settings", {
             enabled: configuration.value.enabled,
             url: configuration.value.url,
+            acknowledgeExternalRisks: configuration.value.externalRisksAcknowledged,
+            externalRestoreRoot: configuration.value.externalRestoreRoot,
             ...(apiKey.value ? { apiKey: apiKey.value } : {}),
         });
         if (!r.ok) {
@@ -434,6 +580,7 @@ async function loadOverview() {
             throw new Error(r.message);
         }
         overview.value = r.data as Overview;
+        await loadWorkflowStatus();
     });
 }
 
@@ -507,6 +654,18 @@ async function restore() {
 onMounted(async () => {
     await loadInstallation();
     await load();
+    await loadWorkflowStatus(true);
+    workflowTimer = window.setInterval(() => {
+        if (configuration.value.enabled && !busy.value) {
+            void loadWorkflowStatus().catch(() => {});
+        }
+    }, 5000);
+});
+let workflowTimer: number | undefined;
+onUnmounted(() => {
+    if (workflowTimer !== undefined) {
+        window.clearInterval(workflowTimer);
+    }
 });
 </script>
 

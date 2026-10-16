@@ -4,7 +4,7 @@ In **Backups**, turn on **Zerobyte (optional)**. OFF collapses the whole section
 
 ## Existing instance
 
-Enter the HTTP(S) origin reachable **from the Enhanced server**, and an API key generated in Zerobyte settings. Credentials, query parameters and paths in the URL are refused. Save, then test the connection. Enhanced does not manage Docker resources of an external instance. Only the selected instance is shown; federation and stack stop hooks are outside this integration.
+Enter the HTTP(S) origin reachable **from the Enhanced server**, and an API key generated in Zerobyte settings. Credentials, query parameters and paths in the URL are refused. Save, then test the connection. Enhanced does not manage Docker resources of an external instance. The linked-instance summary is read-only; protected stack hooks are available for managed workflows as described below.
 
 ## Managed installation
 
@@ -25,9 +25,9 @@ Reapplying identical installation settings reuses the project and volumes. To ch
 
 Overview exposes allowlisted fields for jobs, repositories, logical sources and active tasks; unknown statistics stay unknown. Backup and retention require explicit confirmation. Retention may delete Zerobyte snapshots under that job's own policy. It never invokes Enhanced Restic maintenance.
 
-Restore is disabled until the operator sets `DOCKGE_ZEROBYTE_RESTORE_ROOT` on the Enhanced server to a **verified dedicated path inside the connected Zerobyte container**, normally `/restore-test` for a managed installation. Never point this setting at application data or a source/destination directory. Each request creates a random child path, with deletion disabled and overwrite set to `never`. Restores are asynchronous: confirm task completion in Zerobyte before using the restored files. External instances require the operator to verify their staging mount independently.
+Managed restore automatically verifies `/restore-test`; external restore requires a **verified dedicated root explicitly approved for that URL and API key**, as described below. Never point this setting at application data or a source/destination directory. Each request creates a random child path, with deletion disabled and overwrite set to `never`. Restores are asynchronous: confirm task completion in Zerobyte before using the restored files. External instances require the operator to verify their staging mount independently.
 
-Keys remain server-side in `zerobyte-settings.json` (mode 0600), are not returned to the browser, and are not placed in URLs or upstream error messages. All integration endpoints use Enhanced's existing HTTP authentication policy. As elsewhere in Enhanced, using authentication-disabled mode removes that protection. Requests have time and response-size limits and refuse redirects.
+Keys remain server-side in `zerobyte-settings.json` (mode 0600), are not returned to the browser, and are not placed in URLs or upstream error messages. UI and management endpoints use Enhanced's existing HTTP authentication policy; the narrow pre/post callback endpoints require their per-workflow secret instead. As elsewhere in Enhanced, using authentication-disabled mode removes that protection. Requests have time and response-size limits and refuse redirects.
 
 ## Development validation
 
@@ -36,3 +36,23 @@ The integration was developed against Enhanced `a99418187e3bdc17f1aa4674c031aaff
 UI text is provided in the five reference languages: English, French, German, Spanish and Simplified Chinese. Other WebUI locales use the established `fallbackLocale: "en"` mechanism for these new keys; existing translations are preserved.
 
 Official installation examples: https://github.com/nicotsx/zerobyte/tree/v0.43.2/examples
+
+## Protected workflow assistant
+
+The managed installation now offers **Protected backup assistant**: choose one mounted source, one destination, a name, cron expression and a deadline (1–120 minutes). Review the exact plan, then confirm. It creates or reuses a Directory source, a dedicated Local repository and a disabled job through Zerobyte's actual API. Zerobyte adds its own repository ID beneath the displayed repository parent. Persistent ownership records make retries idempotent; conflicting existing resources are refused and never deleted. Reusing a plan does not silently change its policies. Use a new plan name for different stop policies or deadlines.
+
+Jobs provisioned this way receive official pre/post HTTP webhooks with a per-workflow server-side secret. These apply equally to manual and scheduled runs. The generated Compose allowlist permits only the owning Enhanced callback origin. Preserve its `enhanced-<owner>` DNS alias and shared network when replacing Enhanced; reapplying the installer repairs its callback alias.
+
+Before stopping applications, the pre-hook checks host mount availability and filesystem identity, then performs a bounded write/fsync/delete probe inside the mounted destination. During the backup, a watchdog checks periodically. On lost storage or deadline expiry, Enhanced requests cancellation, restarts only services that were originally running and records a persistent failure. It never substitutes a local directory. A separately configured local backup plan is the explicit alternative; there is no hidden fallback or later automatic transfer.
+
+Interrupted workflows remain paused until explicit acknowledgement verifies the remote task is terminal. A cancellation request alone is not proof that the remote process has stopped: do not trust a snapshot from the interrupted run without checking it. The UI refreshes workflow status while open; failures also use the configured backup Discord/Apprise destinations when available. Notification delivery itself is not guaranteed.
+
+Optional stack stops are limited to managed Compose files under this Enhanced instance's stack directory, with Docker label ownership checks. Enhanced and Zerobyte cannot be stopped by these hooks. The running-service list is journaled before stopping; failed preparation, backup failure, lost post-hooks and Enhanced restarts can recover it. Failed service restarts retain the journal and block native backup/restore rather than silently claiming recovery. Native Restic settings, exclusions and retention remain unchanged; only an in-process gate prevents native operations racing application stops. This does not prevent an operator from changing containers independently, nor guarantee recovery if Docker or the host itself is unavailable.
+
+Jobs created directly in Zerobyte or with the advanced job form have no Enhanced workflow hooks unless explicitly provisioned through this assistant. They are labelled accordingly. Their native scheduling and network behavior remain Zerobyte's responsibility. The protected assistant creates jobs without automatic retention; manual retention still requires confirmation. If an operator later adds a retention policy directly in Zerobyte, Zerobyte's native automatic maintenance applies; Enhanced does not intercept third-party configuration changes.
+
+## External connections and federation
+
+External configuration now has an explicit warning and acknowledgement tied to the URL **and API key**. Changing either revokes it. Read-only status/connection tests remain available; mutations require acknowledgement when the connection is not the verified owned managed API origin. External restore is disabled until a dedicated root is explicitly saved; the former global environment variable does not enable it. Known logical sources and local repository paths are checked for lexical overlap at restore time, but Enhanced cannot prove the external filesystem layout, symlink resolution or physical separation. Managed restore instead verifies its dedicated owned writable Docker volume automatically and refuses volume aliases with other mounts.
+
+The linked-instance view aggregates read-only allowlisted counts using the existing authenticated federation transport. It never transfers Zerobyte keys and distinguishes disabled integration, unreachable Zerobyte and offline/incompatible peers. Remote operations stay on their owning instances. No live production peer is used for development validation.

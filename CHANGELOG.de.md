@@ -1,5 +1,7 @@
 # Dockge-Enhanced-Changelog
 
+**2026-10-16 — Geschützte Zerobyte-Workflows** — Bestätigte idempotente Bereitstellung, Stack-Stopp/Neustart, dauerhafte Ausfallwarnungen und Wiederherstellung, verbindungsbezogene externe Freigabe und lesende Föderationsübersicht.
+
 **2026-10-16 — Optionale Zerobyte-Integration** — Unter Sicherungen stehen eine Zerobyte-Verbindung oder eine eigene Compose-Installation, explizite RO-Quellen/RW-Ziele, Pfad- und Mount-Prüfungen sowie bestätigte Aktionen und eine getrennte Testwiederherstellung zur Verfügung. Die native Restic-Abdeckung bleibt erhalten. [Documentation](docs/zerobyte.md).
 
 **2026-10-16 — Optionaler CPU/RAM-Verlauf für Stacks und Container** — Aktivieren Sie die Aufzeichnung unter **Monitoring** und öffnen Sie **Ressourcenverbrauch** in den Stack-Aktionen. Kompakte Diagramme zeigen die Stack-Summe und jeden tatsächlichen Container einschließlich Replikaten und nicht verwalteten Compose-Projekten für 24 Stunden, 7 Tage, 1 Monat, 1 Jahr oder alle aufgezeichneten Daten. Messungen erfolgen alle 5 Minuten, auch ohne geöffneten Browser; die Aufzeichnung ist standardmäßig deaktiviert. CPU: 100 % entspricht einem Kern; unter Linux wird rückgewinnbarer Cache vom RAM abgezogen. Messlücken bleiben sichtbar; Spitzen zwischen Messungen können fehlen. Stack-Summen enthalten keine nativen Host-Prozesse oder Container außerhalb von Compose. Die Stack-Liste lässt sich nach CPU, RAM oder CPU und dann RAM sortieren.

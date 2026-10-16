@@ -1,3 +1,4 @@
+import { createZerobyteHookRouter } from "../integrations/zerobyte-workflows";
 import { createZerobyteRouter } from "../integrations/zerobyte-router";
 /**
  * WatcherRouter — API REST pour la config et le status en temps réel.
@@ -56,6 +57,9 @@ export class WatcherRouter extends Router {
 
         // JSON body parser for this router
         router.use(express.json());
+
+        // Narrow pre/post hook endpoints authenticate with per-workflow secrets.
+        router.use(createZerobyteHookRouter(server));
 
         // Middleware auth sur toutes les routes de ce router
         router.use((req: Request, res: Response, next: NextFunction) => {

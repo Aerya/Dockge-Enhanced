@@ -78,7 +78,14 @@ for candidate do
  if [ "$strict" = 1 ]; then stat -f -c '%t:%i' "/host$candidate"; fi
 done
 cat /host/proc/1/mountinfo`;
-    const out = await docker("run", "--rm", "--pull=never", "--network", "none", "--cap-drop", "ALL", "--cap-add", "DAC_READ_SEARCH", "--read-only", "--mount", "type=bind,source=/,target=/host,readonly", "--entrypoint", "/bin/sh", ZEROBYTE_IMAGE, "-c", script, "verify", ...paths, "__protected__", ...protectedPaths);
+    const args = [ "run", "--rm", "--pull=never", "--network", "none", "--cap-drop", "ALL", "--cap-add", "DAC_READ_SEARCH", "--read-only", "--mount", "type=bind,source=/,target=/host,readonly", "--entrypoint", "/bin/sh", ZEROBYTE_IMAGE, "-c", script, "verify", ...paths, "__protected__", ...protectedPaths ];
+    let out: string;
+    try {
+        out = (await exec("docker", args, { timeout: 15000,
+            maxBuffer: 4 * 1024 * 1024 })).stdout;
+    } catch {
+        throw new Error("Host path validation failed or timed out; operation blocked");
+    }
     const lines = out.trim().split("\n");
     return { fingerprints: lines.slice(0, paths.length),
         mountinfo: lines.slice(paths.length) };
@@ -166,7 +173,7 @@ async function validate(server: DockgeServer, input: Record<string, unknown>, ct
     return { sources,
         destinations };
 }
-export function composeModel(name: string, owner: string, url: string, port: number, sources: Mount[], destinations: Mount[]) {
+export function composeModel(name: string, owner: string, url: string, port: number, sources: Mount[], destinations: Mount[], callbackPort = 5001) {
     const volumes: Record<string, unknown> = {
         data: { labels: { [OWNER]: owner } },
         restores: { labels: { [OWNER]: owner } },
@@ -207,12 +214,23 @@ export function composeModel(name: string, owner: string, url: string, port: num
                 start_period: "5s" },
             environment: { BASE_URL: url,
                 APP_SECRET: "${ZEROBYTE_APP_SECRET}",
-                TZ: "Europe/Paris" },
+                TZ: "Europe/Paris",
+                WEBHOOK_ALLOWED_ORIGINS: `http://enhanced-${owner}:${callbackPort}` },
             volumes: mounts,
             networks: { default: { aliases: [ name ] } },
             entrypoint: [ "/bin/sh", "-ec", checks.replaceAll("$", () => "$$") + "\nexec bun .output/server/index.mjs" ],
         } },
         volumes };
+}
+async function ensureCallbackNetwork(ctx: Awaited<ReturnType<typeof context>>): Promise<void> {
+    const network = JSON.parse(await docker("network", "inspect", `${ctx.name}_default`))[0];
+    const selfNetworks = JSON.parse(await docker("inspect", ctx.self.Id))[0].NetworkSettings.Networks;
+    if (network.Containers?.[ctx.self.Id] && !selfNetworks[`${ctx.name}_default`]?.Aliases?.includes(`enhanced-${ctx.owner}`)) {
+        await docker("network", "disconnect", `${ctx.name}_default`, ctx.self.Id);
+        await docker("network", "connect", "--alias", `enhanced-${ctx.owner}`, `${ctx.name}_default`, ctx.self.Id);
+    } else if (!network.Containers?.[ctx.self.Id]) {
+        await docker("network", "connect", "--alias", `enhanced-${ctx.owner}`, `${ctx.name}_default`, ctx.self.Id);
+    }
 }
 export async function managedZerobyteStatus(server: DockgeServer) {
     const ctx = await context(server);
@@ -259,11 +277,12 @@ async function apply(server: DockgeServer, body: unknown, update: boolean) {
         await docker("pull", ZEROBYTE_IMAGE);
         const { sources, destinations } = await validate(server, input, ctx);
         const file = path.join(ctx.directory, "compose.yaml");
-        const serialized = YAML.stringify(composeModel(ctx.name, ctx.owner, url, port, sources, destinations));
+        const serialized = YAML.stringify(composeModel(ctx.name, ctx.owner, url, port, sources, destinations, server.config.port));
         let oldCompose: string | undefined;
         if (previous.installed) {
             oldCompose = await fs.readFile(file, "utf8");
             if (oldCompose === serialized && previous.running) {
+                await ensureCallbackNetwork(ctx);
                 return previous;
             }
             if (oldCompose !== serialized) {
@@ -302,10 +321,7 @@ async function apply(server: DockgeServer, body: unknown, update: boolean) {
         try {
             await compose("config", "--quiet");
             await compose("up", "-d", "--wait", "--wait-timeout", "60");
-            const network = JSON.parse(await docker("network", "inspect", `${ctx.name}_default`))[0];
-            if (!network.Containers?.[ctx.self.Id]) {
-                await docker("network", "connect", `${ctx.name}_default`, ctx.self.Id);
-            }
+            await ensureCallbackNetwork(ctx);
             await fs.writeFile(path.join(ctx.directory, ".zerobyte.json"), JSON.stringify({ sources,
                 destinations,
                 url,
@@ -324,3 +340,69 @@ async function apply(server: DockgeServer, body: unknown, update: boolean) {
 }
 export const installManagedZerobyte = (server: DockgeServer, body: unknown) => apply(server, body, false);
 export const updateManagedZerobyteMounts = (server: DockgeServer, body: unknown) => apply(server, body, true);
+
+/** Only the owned managed API origin can authorize Docker-backed safety checks. */
+export async function managedConnection(server: DockgeServer): Promise<boolean> {
+    const config = await zerobyte.getSafeConfig();
+    const ctx = await context(server);
+    return config.url === `http://${ctx.name}:4096`;
+}
+export async function managedRestoreRoot(server: DockgeServer): Promise<string> {
+    if (!await managedConnection(server)) {
+        throw new Error("This connection is external");
+    }
+    const ctx = await context(server);
+    const containers = JSON.parse(await docker("inspect", `${ctx.name}-zerobyte-1`)) as Container[];
+    const container = containers[0];
+    if (container?.Config.Labels[OWNER] !== ctx.owner) {
+        throw new Error("Managed ownership mismatch");
+    }
+    const mount = container.Mounts.find(m => m.Destination === "/restore-test");
+    if (!mount?.Name || mount.Type !== "volume" || mount.RW !== true) {
+        throw new Error("Dedicated restore volume is missing");
+    }
+    if (container.Mounts.some(m => m.Destination !== "/restore-test" && (m.Name === mount.Name || m.Source === mount.Source))) {
+        throw new Error("Restore volume is shared with application data or backup mounts");
+    }
+    const volume = JSON.parse(await docker("volume", "inspect", mount.Name))[0];
+    if (volume.Labels?.[OWNER] !== ctx.owner) {
+        throw new Error("Restore volume ownership mismatch");
+    }
+    return "/restore-test";
+}
+export async function managedWorkflowContext(server: DockgeServer) {
+    if (!await managedConnection(server)) {
+        throw new Error("Provisioning and stack hooks require the owned managed connection");
+    }
+    const ctx = await context(server);
+    const status = await managedZerobyteStatus(server);
+    const alias = `enhanced-${ctx.owner}`;
+    return { ...status,
+        directory: ctx.directory,
+        owner: ctx.owner,
+        selfId: ctx.self.Id,
+        container: `${ctx.name}-zerobyte-1`,
+        callbackOrigin: `http://${alias}:${server.config.port}` };
+}
+/** A bounded read/write/fsync probe uses the mounted container path, never a fallback. */
+export async function probeManagedDestination(server: DockgeServer, target: string): Promise<void> {
+    const ctx = await managedWorkflowContext(server);
+    const destination = (ctx.destinationMounts as Mount[]).find(m => m.target === target);
+    if (!destination || !/^\/destinations\/store-[a-f0-9]{12}$/.test(target)) {
+        throw new Error("Unknown managed destination");
+    }
+    const info = await hostInfo([ destination.source ]);
+    if (destination.remote && !isRemoteMounted(destination.source, info.mountinfo)) {
+        throw new Error("Remote destination is unmounted; backup deferred, no local fallback");
+    }
+    if (info.fingerprints[0] !== destination.fingerprint) {
+        throw new Error("Destination filesystem changed; backup blocked");
+    }
+    const script = "const fs=require('node:fs');const p=process.argv[1]+'/.dockge-probe-'+require('node:crypto').randomUUID();let fd;try{fd=fs.openSync(p,'wx',0o600);fs.writeSync(fd,'probe');fs.fsyncSync(fd);fs.closeSync(fd);fd=undefined;fs.unlinkSync(p)}finally{if(fd!==undefined)fs.closeSync(fd)}";
+    try {
+        await exec("docker", [ "exec", ctx.container, "timeout", "10", "bun", "-e", script, target ], { timeout: 12000,
+            maxBuffer: 4096 });
+    } catch {
+        throw new Error("Destination I/O unavailable or timed out; backup deferred, no local fallback");
+    }
+}

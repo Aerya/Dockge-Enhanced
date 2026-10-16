@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-16 — Protected Zerobyte workflows** — Confirmed, idempotent source/repository/job provisioning, application stop/restart hooks, persistent outage alerts and cancellation recovery, scoped external restore approval and read-only federation summaries.
+
 **2026-10-16 — Optional Zerobyte integration** — Backups now offers an optional Zerobyte connection or instance-scoped Compose installation, explicit RO sources/RW destinations, path and remote-mount checks, confirmed operations and dedicated test restore. Native Restic coverage is unchanged. [Documentation](docs/zerobyte.md).
 
 **2026-10-16 — Optional stack and container CPU/RAM history** — Enable recording in **Monitoring**, then open **Resource usage** in a stack's actions. Compact charts show the stack total and each actual container, including replicas and unmanaged Compose projects, over 24 hours, 7 days, 1 month, 1 year or all recorded data. Samples are collected every 5 minutes even without an open browser; recording is disabled by default. CPU uses Docker's convention (100% = one core), and Linux RAM excludes reclaimable cache. Gaps remain visible; peaks between samples can be missed. Stack totals do not include native host processes or standalone containers outside Compose. The stack list can also sort by CPU, RAM or CPU then RAM.

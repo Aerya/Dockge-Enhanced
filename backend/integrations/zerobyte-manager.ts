@@ -8,6 +8,8 @@ export interface ZerobyteConfig {
     enabled: boolean;
     url: string;
     apiKey: string;
+    externalRisksAcknowledged?: boolean;
+    externalRestoreRoot?: string;
 }
 
 export interface ZerobyteSafeConfig {
@@ -15,6 +17,8 @@ export interface ZerobyteSafeConfig {
     url: string;
     hasApiKey: boolean;
     restoreEnabled: boolean;
+    externalRisksAcknowledged: boolean;
+    externalRestoreRoot: string;
 }
 
 type JsonObject = Record<string, unknown>;
@@ -78,6 +82,22 @@ function dataArray(value: unknown): JsonObject[] {
     return Array.isArray(value) ? value.slice(0, 500).map(object) : [];
 }
 
+export function validateRestoreRoot(value: unknown): string {
+    if (value === "") {
+        return "";
+    }
+    if (typeof value !== "string" || value.length > 512 || !path.posix.isAbsolute(value) ||
+        value.split("/").some(p => p === ".." || p === ".") || /[\x00-\x1f]/.test(value)) {
+        throw new Error("Invalid dedicated restore root");
+    }
+    const root = path.posix.normalize(value).replace(/\/$/, "");
+    if ([ "/", "", "/var", "/var/lib", "/srv", "/mnt", "/tmp", "/home" ].includes(root) ||
+        [ "/sources", "/destinations", "/var/lib/zerobyte", "/app", "/opt/stacks", "/root", "/usr", "/boot", "/etc", "/proc", "/sys", "/dev", "/run" ].some(p => root === p || root.startsWith(p + "/"))) {
+        throw new Error("Restore root must be a dedicated test directory, outside application data and backup mounts");
+    }
+    return root;
+}
+
 export class ZerobyteManager {
     private readonly filePath: string;
     private operationBusy = false;
@@ -93,6 +113,8 @@ export class ZerobyteManager {
                 enabled: raw.enabled === true,
                 url: typeof raw.url === "string" ? raw.url : "",
                 apiKey: typeof raw.apiKey === "string" ? raw.apiKey : "",
+                externalRisksAcknowledged: raw.externalRisksAcknowledged === true,
+                externalRestoreRoot: typeof raw.externalRestoreRoot === "string" ? raw.externalRestoreRoot : "",
             };
         } catch (error) {
             if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -107,7 +129,9 @@ export class ZerobyteManager {
         return { enabled: settings.enabled,
             url: settings.url,
             hasApiKey: Boolean(settings.apiKey),
-            restoreEnabled: Boolean(process.env.DOCKGE_ZEROBYTE_RESTORE_ROOT) };
+            restoreEnabled: Boolean(settings.externalRisksAcknowledged && settings.externalRestoreRoot),
+            externalRisksAcknowledged: settings.externalRisksAcknowledged === true,
+            externalRestoreRoot: settings.externalRestoreRoot || "" };
     }
 
     async saveConfig(input: unknown): Promise<ZerobyteSafeConfig> {
@@ -134,12 +158,24 @@ export class ZerobyteManager {
         if (enabled && Boolean(url) && !apiKey) {
             throw new Error("Zerobyte API key is required");
         }
+        const sameIdentity = url === current.url && apiKey === current.apiKey;
+        const externalRisksAcknowledged = enabled && body.acknowledgeExternalRisks !== undefined
+            ? body.acknowledgeExternalRisks === true : sameIdentity && current.externalRisksAcknowledged === true;
+        let externalRestoreRoot = sameIdentity ? current.externalRestoreRoot || "" : "";
+        if (enabled && body.externalRestoreRoot !== undefined) {
+            externalRestoreRoot = validateRestoreRoot(body.externalRestoreRoot);
+        }
+        if (externalRestoreRoot && !externalRisksAcknowledged) {
+            throw new Error("Explicit acknowledgement of external configuration and restore risks required");
+        }
         await fs.mkdir(path.dirname(this.filePath), { recursive: true });
         const temp = `${this.filePath}.${randomUUID()}.tmp`;
         try {
             await fs.writeFile(temp, JSON.stringify({ enabled,
                 url,
-                apiKey }), { mode: 0o600,
+                apiKey,
+                externalRisksAcknowledged,
+                externalRestoreRoot }), { mode: 0o600,
                 flag: "wx" });
             await fs.rename(temp, this.filePath);
             await fs.chmod(this.filePath, 0o600);
@@ -149,7 +185,7 @@ export class ZerobyteManager {
         return this.getSafeConfig();
     }
 
-    private async request<T = unknown>(method: "GET" | "POST", route: string, body?: unknown): Promise<T> {
+    private async request<T = unknown>(method: "GET" | "POST" | "PATCH", route: string, body?: unknown): Promise<T> {
         const config = await this.read();
         if (!config.enabled || !config.url || !config.apiKey) {
             throw new Error("Zerobyte is not configured");
@@ -274,7 +310,7 @@ export class ZerobyteManager {
             repositories,
             volumes,
             tasks,
-            restoreEnabled: Boolean(process.env.DOCKGE_ZEROBYTE_RESTORE_ROOT) };
+            restoreEnabled: (await this.getSafeConfig()).restoreEnabled };
     }
 
     private async exclusive<T>(operation: () => Promise<T>): Promise<T> {
@@ -320,6 +356,47 @@ export class ZerobyteManager {
         }));
     }
 
+    async resources() {
+        const [ volumes, repositories, jobs ] = await Promise.all([
+            this.request("GET", "/api/v1/volumes"), this.request("GET", "/api/v1/repositories"), this.request("GET", "/api/v1/backups"),
+        ]);
+        if (![ volumes, repositories, jobs ].every(v => Array.isArray(v) && v.length <= 500)) {
+            throw new Error("Unsupported Zerobyte resource inventory");
+        }
+        return { volumes: volumes as JsonObject[],
+            repositories: repositories as JsonObject[],
+            jobs: jobs as JsonObject[] };
+    }
+
+    async createVolume(name: string, sourcePath: string) {
+        return object(await this.request("POST", "/api/v1/volumes", { name,
+            config: { backend: "directory",
+                path: sourcePath } }));
+    }
+
+    async createRepository(name: string, destinationPath: string) {
+        return object(object(await this.request("POST", "/api/v1/repositories", { name,
+            config: { backend: "local",
+                path: destinationPath } })).repository);
+    }
+
+    async createWorkflowJob(body: JsonObject) {
+        return object(await this.request("POST", "/api/v1/backups", { ...body,
+            enabled: false }));
+    }
+
+    async task(taskId: string) {
+        return object(await this.request("GET", `/api/v1/tasks/${id(taskId)}`));
+    }
+
+    async cancelTask(taskId: string) {
+        await this.request("POST", `/api/v1/tasks/${id(taskId)}/cancel`);
+    }
+
+    async job(jobId: string) {
+        return object(await this.request("GET", `/api/v1/backups/${id(jobId)}`));
+    }
+
     async snapshots(repoId: unknown) {
         const raw = await this.request("GET", `/api/v1/repositories/${id(repoId)}/snapshots`);
         return dataArray(raw).slice(0, 100).map(snap => ({
@@ -330,13 +407,24 @@ export class ZerobyteManager {
         })).filter(snap => ID_PATTERN.test(snap.id));
     }
 
-    async stagedRestore(repoId: unknown, snapshotId: unknown, confirmation: unknown) {
+    async stagedRestore(repoId: unknown, snapshotId: unknown, confirmation: unknown, verifiedManagedRoot?: string) {
         if (confirmation !== "RESTORE") {
             throw new Error("Explicit restore confirmation required");
         }
-        const root = process.env.DOCKGE_ZEROBYTE_RESTORE_ROOT;
-        if (!root || !path.posix.isAbsolute(root) || root === "/" || root.includes("..")) {
-            throw new Error("Configure DOCKGE_ZEROBYTE_RESTORE_ROOT with a dedicated Zerobyte-container restore directory");
+        const config = await this.read();
+        const root = verifiedManagedRoot || (config.externalRisksAcknowledged ? config.externalRestoreRoot : "");
+        if (!root) {
+            throw new Error("A dedicated restore root must be verified for this Zerobyte connection");
+        }
+        validateRestoreRoot(root);
+        if (!verifiedManagedRoot) {
+            const resources = await this.resources();
+            const paths = [ ...resources.volumes, ...resources.repositories ].map(resource => object(resource.config))
+                .filter(config => config.backend === "directory" || config.backend === "local")
+                .map(config => str(config.path, 1024)).filter(p => path.posix.isAbsolute(p));
+            if (paths.some(p => root === p || root.startsWith(p.replace(/\/$/, "") + "/") || p.startsWith(root.replace(/\/$/, "") + "/"))) {
+                throw new Error("External restore root overlaps a known source or repository");
+            }
         }
         const targetPath = path.posix.join(root, `dockge-${randomUUID()}`);
         // Separate staging directory, never restore over a live stack or request deletion.

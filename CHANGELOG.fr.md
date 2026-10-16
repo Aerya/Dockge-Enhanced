@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-16 — Workflows Zerobyte protégés** — Provisionnement confirmé et idempotent des sources/dépôts/jobs, hooks d’arrêt/redémarrage, alertes persistantes et reprise après panne, validation externe liée à la connexion et supervision fédérée en lecture seule.
+
 **2026-10-16 — Intégration Zerobyte facultative** — Sauvegardes propose une connexion Zerobyte ou une installation Compose propre à l’instance, des sources RO/destinations RW explicites, des contrôles de chemins et montages distants, des opérations confirmées et une restauration dédiée de test. La couverture Restic native est conservée. [Documentation](docs/zerobyte.fr.md).
 
 **2026-10-16 — Historique CPU/RAM facultatif des stacks et conteneurs** — Activez l’enregistrement dans **Monitoring**, puis ouvrez **Consommation** dans les actions d’une stack. Les graphiques compacts présentent le total de la stack et chaque conteneur réel, y compris les réplicas et les projets Compose non gérés, sur 24 heures, 7 jours, 1 mois, 1 an ou toutes les données enregistrées. Les mesures sont collectées toutes les 5 minutes, même sans navigateur ouvert ; l’enregistrement est désactivé par défaut. Pour le CPU, 100 % correspond à un cœur ; sous Linux, la RAM exclut le cache récupérable. Les interruptions restent visibles et les pics entre deux mesures peuvent être manqués. Les totaux des stacks n’incluent pas les processus natifs de l’hôte ni les conteneurs hors Compose. La liste des stacks peut aussi être triée par CPU, RAM ou CPU puis RAM.

@@ -19,7 +19,9 @@ test("secret persists safely and never appears in the safe settings", async () =
         assert.deepEqual(await manager.getSafeConfig(), { enabled: false,
             url: "",
             hasApiKey: false,
-            restoreEnabled: false });
+            restoreEnabled: false,
+            externalRisksAcknowledged: false,
+            externalRestoreRoot: "" });
         await manager.saveConfig({ enabled: true,
             url: "http://zerobyte:4096",
             apiKey: "secret-1" });
@@ -122,7 +124,7 @@ test("staged restoration refuses unconfigured target and any missing confirmatio
     try {
         delete process.env.DOCKGE_ZEROBYTE_RESTORE_ROOT;
         const manager = new ZerobyteManager(dir);
-        await assert.rejects(manager.stagedRestore("r1", "s1", "RESTORE"), /Configure DOCKGE/);
+        await assert.rejects(manager.stagedRestore("r1", "s1", "RESTORE"), /dedicated restore root/);
         process.env.DOCKGE_ZEROBYTE_RESTORE_ROOT = "/restore-test";
         await assert.rejects(manager.stagedRestore("r1", "s1", ""), /confirmation/);
     } finally {
@@ -187,6 +189,73 @@ test("inventory rejects incompatible schemas and incomplete job visibility", asy
             globalThis.fetch = async input => new Response(JSON.stringify(String(input).endsWith("/backups") ? jobs : []));
             await assert.rejects(manager.overview(), /Unsupported Zerobyte/);
         }
+    } finally {
+        globalThis.fetch = oldFetch;
+        await fs.rm(dir, { recursive: true,
+            force: true });
+    }
+});
+
+test("external restore approval is scoped to both URL and API key, never inherited from environment", async () => {
+    const dir = await fs.mkdtemp(path.join(tmpdir(), "zerobyte-external-"));
+    const oldFetch = globalThis.fetch;
+    try {
+        const manager = new ZerobyteManager(dir);
+        await assert.rejects(manager.saveConfig({ enabled: true,
+            url: "http://external:4096",
+            apiKey: "key1",
+            externalRestoreRoot: "/restore-test" }), /acknowledgement/);
+        await manager.saveConfig({ enabled: true,
+            url: "http://external:4096",
+            apiKey: "key1",
+            acknowledgeExternalRisks: true,
+            externalRestoreRoot: "/restore-test" });
+        assert.equal((await manager.getSafeConfig()).restoreEnabled, true);
+        globalThis.fetch = async (_input, init) => {
+            if (init?.method === "GET") {
+                return new Response("[]");
+            }
+            const payload = JSON.parse(String(init?.body));
+            assert.equal(payload.delete, false);
+            assert.equal(payload.overwrite, "never");
+            assert.ok(payload.targetPath.startsWith("/restore-test/dockge-"));
+            return new Response("{}");
+        };
+        await manager.stagedRestore("r1", "s1", "RESTORE");
+        for (const root of [ "/", "/sources/a", "/destinations/a", "/var/lib/zerobyte/data", "/tmp", "/restore/../app" ]) {
+            await assert.rejects(manager.saveConfig({ enabled: true,
+                externalRestoreRoot: root }), /restore root|Restore root/);
+        }
+        await manager.saveConfig({ enabled: true,
+            url: "http://external:4096",
+            apiKey: "key2" });
+        assert.equal((await manager.getSafeConfig()).restoreEnabled, false);
+        assert.equal((await manager.getSafeConfig()).externalRisksAcknowledged, false);
+        await assert.rejects(manager.stagedRestore("r1", "s1", "RESTORE"), /dedicated restore root/);
+        await manager.saveConfig({ enabled: true,
+            url: "http://different:4096",
+            apiKey: "key3" });
+        assert.equal((await manager.getSafeConfig()).externalRestoreRoot, "");
+    } finally {
+        globalThis.fetch = oldFetch;
+        await fs.rm(dir, { recursive: true,
+            force: true });
+    }
+});
+
+test("external restore refuses a root containing a known source even after explicit approval", async () => {
+    const dir = await fs.mkdtemp(path.join(tmpdir(), "zerobyte-overlap-"));
+    const oldFetch = globalThis.fetch;
+    try {
+        const manager = new ZerobyteManager(dir);
+        await manager.saveConfig({ enabled: true,
+            url: "http://external:4096",
+            apiKey: "key",
+            acknowledgeExternalRisks: true,
+            externalRestoreRoot: "/restore-test" });
+        globalThis.fetch = async input => new Response(JSON.stringify(String(input).endsWith("/volumes") ? [{ config: { backend: "directory",
+            path: "/restore-test/application" } }] : []));
+        await assert.rejects(manager.stagedRestore("repo", "snap", "RESTORE"), /overlaps a known source/);
     } finally {
         globalThis.fetch = oldFetch;
         await fs.rm(dir, { recursive: true,
