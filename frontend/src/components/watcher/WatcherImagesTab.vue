@@ -29,10 +29,10 @@
             </div>
 
             <div class="row g-3">
-                <!-- Intervalle -->
+                <!-- Scan global, distinct des contrôles ciblés du mode Immédiat. -->
                 <div class="col-lg-3">
                     <label class="form-label">{{
-                        $t("watcher.img.frequency")
+                        $t("watcher.img.fullScanFrequency")
                     }}</label>
                     <select
                         v-model.number="imgSettings.intervalHours"
@@ -44,6 +44,24 @@
                         <option :value="12">{{ $t("watcher.img.every12h") }}</option>
                         <option :value="24">{{ $t("watcher.img.every24h") }}</option>
                     </select>
+                    <small class="text-muted">{{ $t("watcher.img.fullScanHint") }}</small>
+                </div>
+
+                <div class="col-lg-4">
+                    <label class="form-label">{{ $t("watcher.img.immediateFrequency") }}</label>
+                    <select v-model="immediateMode" class="form-select">
+                        <option value="automatic">{{ $t("watcher.img.immediateAutomatic") }}</option>
+                        <option value="custom">{{ $t("watcher.img.immediateCustom") }}</option>
+                        <option value="disabled">{{ $t("watcher.img.immediateDisabled") }}</option>
+                    </select>
+                    <div v-if="immediateMode === 'custom'" class="input-group mt-2">
+                        <input v-model.number="customInterval" type="number" class="form-control" min="1" :max="customUnit === 'hours' ? 24 : 1440" />
+                        <select v-model="customUnit" class="form-select">
+                            <option value="minutes">{{ $t("watcher.img.minutes") }}</option>
+                            <option value="hours">{{ $t("watcher.img.hours") }}</option>
+                        </select>
+                    </div>
+                    <small class="text-muted">{{ $t("watcher.img.immediateHint") }}</small>
                 </div>
 
                 <!-- Plateforme image -->
@@ -716,7 +734,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { watcherApi } from "./shared";
 import type { Cred, GlobalMaintenanceWindow, ImageStatus, ImgSettings, RollbackEntry, UpdateHistoryEntry } from "./shared";
@@ -766,6 +784,20 @@ async function testDns() {
 }
 
 const imgSettings = defineModel<ImgSettings>("imgSettings", { required: true });
+const immediateMode = ref<"automatic" | "custom" | "disabled">("automatic");
+const customInterval = ref(30);
+const customUnit = ref<"minutes" | "hours">("minutes");
+watch(() => imgSettings.value.immediateCheckMinutes, (minutes) => {
+    if (minutes === 0) {
+        immediateMode.value = "disabled";
+    } else if (minutes === 5 || minutes == null) {
+        immediateMode.value = "automatic";
+    } else {
+        immediateMode.value = "custom";
+        customUnit.value = minutes % 60 === 0 ? "hours" : "minutes";
+        customInterval.value = customUnit.value === "hours" ? minutes / 60 : minutes;
+    }
+}, { immediate: true });
 const credentials = defineModel<Cred[]>("credentials", { required: true });
 const emit = defineEmits<{
     (e: "toast", msg: string, ok?: boolean): void;
@@ -1049,6 +1081,14 @@ async function dismissRollback(s: ImageStatus) {
 // ─── Actions ──────────────────────────────────────────────────────
 
 async function saveImgSettings() {
+    const immediateCheckMinutes = immediateMode.value === "disabled" ? 0
+        : immediateMode.value === "automatic" ? 5
+            : customInterval.value * (customUnit.value === "hours" ? 60 : 1);
+    if (!Number.isInteger(immediateCheckMinutes) || (immediateCheckMinutes !== 0 && (immediateCheckMinutes < 5 || immediateCheckMinutes > 1440))) {
+        showToast(t("watcher.img.invalidInterval"), false);
+        return;
+    }
+    imgSettings.value.immediateCheckMinutes = immediateCheckMinutes;
     saving.value = true;
     try {
         const res = await watcherApi("POST", "/image/settings", { ...imgSettings.value });

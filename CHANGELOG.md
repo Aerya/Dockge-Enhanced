@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-16 — Configurable Immediate image checks** — Watcher > Images now distinguishes the full scan (6 hours by default) from targeted checks for Immediate-mode images (5 minutes by default). The targeted interval can be set in minutes or hours, or disabled without disabling the full scan. Existing installations retain the 5-minute default.
+
 **2026-10-16 — Host bind preparation on Docker Desktop** — Stack operations now let Docker mount each directory source directly, so macOS shared paths no longer depend on the Docker VM's root filesystem. Extensionless file binds such as `/etc/localtime` are excluded from directory creation; Docker errors remain visible.
 
 **2026-10-12 — Host bind directory diagnostics** — When a stack update cannot prepare a host bind directory, the error now identifies the failing path and includes the Docker helper's actual error instead of only reporting an exit code.

@@ -155,6 +155,7 @@ const currentTab = computed(() => {
 const imgSettings = ref<ImgSettings>({
     enabled: false,
     intervalHours: 6,
+    immediateCheckMinutes: 5,
     discordWebhooks: [],
     autoUpdateConfig: {},
     pendingAutoUpdates: [],
@@ -244,6 +245,7 @@ onMounted(async () => {
         imgSettings.value = {
             enabled: imgRes.data.enabled,
             intervalHours: imgRes.data.intervalHours,
+            immediateCheckMinutes: imgRes.data.immediateCheckMinutes ?? 5,
             discordWebhooks: imgRes.data.discordWebhooks ?? [],
             autoUpdateConfig: imgRes.data.autoUpdateConfig ?? {},
             pendingAutoUpdates: imgRes.data.pendingAutoUpdates ?? [],

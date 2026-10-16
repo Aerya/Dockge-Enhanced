@@ -69,6 +69,8 @@ Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli D
 
 #### Mises à jour et ImageWatcher
 
+**Fréquences de vérification :** dans **Watcher > Images**, le scan général couvre toutes les images toutes les **6 h par défaut**. Les images en mode **Immédiat** bénéficient en plus d’un contrôle ciblé toutes les **5 min par défaut**. Cet intervalle ciblé peut être défini en minutes ou en heures (de 5 min à 24 h), ou désactivé seul : le scan général reste actif. Sélectionner le mode Immédiat peut toujours déclencher un contrôle ciblé ponctuel.
+
 **Préparation des montages hôte sous macOS**
 
 Avant de démarrer ou de mettre à jour une stack, Enhanced demande à Docker de préparer directement chaque dossier source d’un bind mount. Cela couvre aussi les chemins partagés par Docker Desktop sous macOS, comme `/Users/...`, sans supposer qu’un montage de `/` donne accès au système de fichiers macOS. Les montages de fichiers comme `/etc/localtime` ne sont pas créés comme dossiers. Si Docker ne peut pas accéder à un chemin source, l’opération s’arrête avec son erreur réelle ; vérifiez que le dossier est partagé avec Docker Desktop.
@@ -441,7 +443,7 @@ La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouto
 
 ### Mises à jour
 - Mises à jour groupées des images d’une stack: aperçu et conservation des exceptions individuelles.
-- **ImageWatcher Immédiat** : contrôle ciblé à l’activation puis toutes les 5 minutes, détection des images réellement exécutées, mutualisation des requêtes et temporisation HTTP 429.
+- **ImageWatcher Immédiat** : contrôle ciblé à l’activation puis toutes les 5 minutes par défaut (réglable ou désactivable indépendamment du scan général de 6 h), détection des images réellement exécutées, mutualisation des requêtes et temporisation HTTP 429.
 - Exclusion par service des contrôles ImageWatcher et mises à jour automatiques/groupées avec `dockge.imageupdates.check: "false"`
 - Surveillance des mises à jour d'images Docker
 - Détection des mises à jour distantes

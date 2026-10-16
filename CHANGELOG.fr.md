@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-16 — Contrôles Immédiat configurables** — Watcher > Images distingue désormais le scan général (6 h par défaut) des contrôles ciblés des images en mode Immédiat (5 min par défaut). Leur intervalle peut être personnalisé en minutes ou en heures, ou désactivé sans arrêter le scan général. Les installations existantes conservent la valeur de 5 min.
+
 **2026-10-16 — Montages hôte sous Docker Desktop** — Les opérations de stack font directement monter chaque dossier source par Docker, sans dépendre de la racine de la VM Docker pour les chemins partagés sous macOS. Les montages de fichiers sans extension comme `/etc/localtime` ne sont plus créés comme dossiers ; les erreurs Docker restent visibles.
 
 **2026-10-12 — Diagnostic des dossiers de montage hôte** — Si la préparation d’un dossier de montage hôte échoue lors de la mise à jour d’une stack, l’erreur indique désormais le chemin concerné et la cause renvoyée par le helper Docker, plutôt qu’un simple code de sortie.

@@ -68,6 +68,8 @@ Unter **Watcher > Images > Fallback-DNS** können Sie den anwendungsbezogenen DN
 
 #### Updates und ImageWatcher
 
+**Prüfintervalle:** Unter **Watcher > Images** erfasst der vollständige Scan standardmäßig **alle 6 Stunden** alle Images. Images im **Sofort-Modus** werden zusätzlich standardmäßig **alle 5 Minuten** gezielt geprüft. Dieses gezielte Intervall lässt sich in Minuten oder Stunden (5 Minuten bis 24 Stunden) einstellen oder separat deaktivieren; der vollständige Scan bleibt aktiv. Das Auswählen des Sofort-Modus kann weiterhin eine einmalige gezielte Prüfung auslösen.
+
 **Vorbereitung von Host-Binds unter macOS**
 
 Vor dem Start oder der Aktualisierung eines Stacks fordert Enhanced Docker auf, jede Verzeichnis-Bind-Quelle direkt vorzubereiten. Dies funktioniert auch mit Pfaden, die von Docker Desktop unter macOS gemeinsam genutzt werden (wie `/Users/...`), ohne anzunehmen, dass der Helper das macOS-Dateisystem über einen Bind-Mount von `/` sehen kann. Datei-Binds wie `/etc/localtime` werden nicht als Verzeichnisse erstellt. Wenn Docker nicht auf einen Quellpfad zugreifen kann, bricht das Update mit dem tatsächlichen Fehler von Docker ab; prüfen Sie, ob das Verzeichnis für Docker Desktop freigegeben ist.
@@ -441,7 +443,7 @@ Die Restic-Snapshot-Liste ist standardmäßig auf **Alle** eingestellt. **Speich
 
 ### Updates
 - Sammel-Image-Richtlinien für einen Stack: Vorschau und Beibehaltung einzelner Ausnahmen.
-- **ImageWatcher Immediate**: gezielte Prüfungen bei Aktivierung und alle 5 Minuten, Erkennung tatsächlich laufender Images, gemeinsame Registry-Anfragen und HTTP-429-Abkühlphasen.
+- **ImageWatcher Immediate**: gezielte Prüfungen bei Aktivierung und standardmäßig alle 5 Minuten (unabhängig vom vollständigen 6-Stunden-Scan einstellbar oder deaktivierbar), Erkennung tatsächlich laufender Images, gemeinsame Registry-Anfragen und HTTP-429-Abkühlphasen.
 - Dienstspezifischer Ausschluss von ImageWatcher-Prüfungen und automatischen/Batch-Image-Updates mit `dockge.imageupdates.check: "false"`
 - Überwachung von Docker-Image-Updates
 - Erkennung von Remote-Updates

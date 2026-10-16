@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-16-configurable-immediate-checks",
+        items: [ "releaseNews.item.configurableImmediateChecks" ],
+    },
+    {
         id: "2026-10-16-host-bind-docker-desktop",
         items: [ "releaseNews.item.hostBindDockerDesktop" ],
     },
