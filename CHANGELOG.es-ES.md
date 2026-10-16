@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-16 — Zerobyte** — Diagnóstico externo guiado, migración confirmada sin cambiar snapshots ni retención y estados explícitos de recuperación con registro sincronizado.
+
 **2026-10-16 — Flujos Zerobyte protegidos** — Aprovisionamiento confirmado e idempotente, parada/reinicio de stacks, alertas persistentes y recuperación, aprobación externa por conexión y resumen federado de solo lectura.
 
 **2026-10-16 — Integración opcional de Zerobyte** — Copias de seguridad ofrece conexión a Zerobyte o instalación Compose propia, fuentes RO/destinos RW explícitos, comprobaciones de rutas y montajes remotos, operaciones confirmadas y restauración de prueba separada. Se mantiene la cobertura Restic nativa. [Documentation](docs/zerobyte.md).

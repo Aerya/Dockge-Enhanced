@@ -38,3 +38,17 @@ Les jobs créés hors assistant restent signalés comme dépourvus de ces hooks.
 Avertissement et acquittement sont liés à l’URL **et à la clé API** : changer l’un des deux révoque la validation. Connexion et supervision restent accessibles ; les mutations externes exigent l’acquittement. La restauration externe reste désactivée sans racine dédiée explicitement enregistrée. L’ancienne variable globale ne suffit plus. Les chemins connus des sources et dépôts locaux sont comparés au moment de restaurer ; liens symboliques externes et séparation physique restent à vérifier par l’opérateur. En mode géré, le volume Docker de restauration dédié, propriétaire, RW et distinct des autres montages est vérifié automatiquement.
 
 La vue des instances liées agrège des compteurs filtrés via le transport fédéré authentifié existant, sans transférer de clé Zerobyte. Elle distingue intégration désactivée, Zerobyte inaccessible et pair hors ligne/incompatible. Les opérations restent sur l’instance propriétaire. Aucun pair de production n’est sollicité pour les tests de développement.
+
+### Diagnostic et migration d’un job existant
+
+Le diagnostic externe interroge uniquement l’API : configuration, inventaire, séparation des chemins connus et partage des dépôts entre jobs. Les montages physiques, liens symboliques, identité du serveur distant, permissions réelles et essai de restauration restent explicitement marqués « opérateur ». Un résultat API positif ne certifie pas ces points.
+
+Pour protéger un job existant, le désactiver dans Zerobyte, attendre la fin des tâches et choisir les stacks et la durée maximale dans l’assistant. Le bouton de migration affiche le plan avant confirmation. Seuls les hooks et le nombre de tentatives automatiques sont modifiés. Source, dépôt, snapshots, calendrier, filtres et rétention sont conservés ; le job reste désactivé. Les hooks préexistants et les dépôts partagés entre plusieurs jobs sont refusés. Après une réponse API incertaine, conserver le job désactivé et relancer le même plan pour vérifier la migration.
+
+L’état de reprise applicative est affiché indépendamment du résultat du backup. Si Docker ne permet pas le redémarrage, le journal est conservé et la récupération est retentée. Vérifier Docker et les stacks indiquées ; une application reprise ne prouve pas la réussite de la sauvegarde. Le journal est synchronisé sur disque avant chaque arrêt.
+
+### Exercices de panne
+
+Utiliser des partages et stacks fictifs dédiés. Vérifier d’abord un backup et une restauration avec comparaison du contenu. Injecter ensuite séparément : rupture TCP, serveur arrêté, permissions retirées, partage en lecture seule et espace épuisé. Vérifier le refus avant tout arrêt applicatif et l’alerte persistante. Couper aussi pendant une exécution ; vérifier la demande d’annulation, l’état réel de la tâche et la reprise des seuls services initialement actifs.
+
+Pour simuler Docker indisponible, couper un relais de socket réservé à l’instance de test ; ne pas arrêter le démon partagé avec la production. Un redémarrage brutal des seuls conteneurs de test vérifie le journal, sans constituer un essai de coupure électrique physique de l’hôte. Tester la fédération avec deux instances isolées, un refus d’authentification et une version antérieure.

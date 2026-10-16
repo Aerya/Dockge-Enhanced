@@ -56,3 +56,17 @@ Jobs created directly in Zerobyte or with the advanced job form have no Enhanced
 External configuration now has an explicit warning and acknowledgement tied to the URL **and API key**. Changing either revokes it. Read-only status/connection tests remain available; mutations require acknowledgement when the connection is not the verified owned managed API origin. External restore is disabled until a dedicated root is explicitly saved; the former global environment variable does not enable it. Known logical sources and local repository paths are checked for lexical overlap at restore time, but Enhanced cannot prove the external filesystem layout, symlink resolution or physical separation. Managed restore instead verifies its dedicated owned writable Docker volume automatically and refuses volume aliases with other mounts.
 
 The linked-instance view aggregates read-only allowlisted counts using the existing authenticated federation transport. It never transfers Zerobyte keys and distinguishes disabled integration, unreachable Zerobyte and offline/incompatible peers. Remote operations stay on their owning instances. No live production peer is used for development validation.
+
+### Diagnostics and existing-job migration
+
+External diagnostics only read the API: configuration, inventory, known-path separation and repositories shared across jobs. Physical mounts, symlinks, remote identity, actual permissions and an independent restore drill remain explicit operator checks. Passing API checks never certifies those properties.
+
+Disable an existing job in Zerobyte, wait for tasks to finish, then select stacks and deadline in the wizard. Preview and confirm its migration. Only hooks and automatic retry count change; source, repository, snapshots, schedule, filters and retention remain, and the job stays disabled. Existing custom hooks and repositories shared across jobs are refused. After an uncertain API response, keep the job disabled and retry the same plan to verify migration.
+
+Application recovery is shown separately from backup outcome. If Docker cannot restart services, the journal remains and recovery retries. Check Docker and the named stacks; recovered applications do not imply a successful backup. The journal is synced to disk before each stop.
+
+### Failure drills
+
+Use dedicated fictitious shares and stacks. First verify backup and restore contents. Inject TCP loss, a stopped server, revoked permissions, a read-only share and exhausted space separately; verify admission refusal and persistent alerts. Also disconnect storage during an execution and check cancellation, actual task termination and recovery of originally running services only.
+
+Use a Docker socket relay dedicated to the test instance for Docker outages, rather than stopping a production-shared daemon. Abruptly restarting test containers exercises persistent recovery but is not a physical host power-loss test. Exercise federation using isolated instances, authentication rejection and an older version.

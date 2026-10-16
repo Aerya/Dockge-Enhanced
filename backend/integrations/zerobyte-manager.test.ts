@@ -262,3 +262,65 @@ test("external restore refuses a root containing a known source even after expli
             force: true });
     }
 });
+
+test("external diagnostics are read-only, filter secrets, and never certify physical mounts", async () => {
+    const dir = await fs.mkdtemp(path.join(tmpdir(), "zerobyte-diagnostic-"));
+    const oldFetch = globalThis.fetch;
+    try {
+        const manager = new ZerobyteManager(dir);
+        await manager.saveConfig({ enabled: true,
+            url: "http://external:4096",
+            apiKey: "private-key",
+            acknowledgeExternalRisks: true,
+            externalRestoreRoot: "/restore-test" });
+        globalThis.fetch = async (_input, init) => {
+            assert.equal(init?.method, "GET");
+            return new Response(JSON.stringify([]));
+        };
+        const result = await manager.diagnostics();
+        assert.equal(result.readOnly, true);
+        assert.equal(result.checks.find(c => c.key === "physicalMounts")?.state, "operator");
+        assert.equal(result.checks.find(c => c.key === "restoreSeparation")?.state, "pass");
+        assert.ok(!JSON.stringify(result).includes("private-key"));
+        globalThis.fetch = async () => {
+            throw new Error("private-key");
+        };
+        assert.equal((await manager.diagnostics()).checks.find(c => c.key === "apiInventory")?.state, "fail");
+    } finally {
+        globalThis.fetch = oldFetch;
+        await fs.rm(dir, { recursive: true,
+            force: true });
+    }
+});
+
+test("migration PATCH supplies required repository and cron and preserves API retry delay in minutes", async () => {
+    const dir = await fs.mkdtemp(path.join(tmpdir(), "zerobyte-migration-api-"));
+    const oldFetch = globalThis.fetch;
+    try {
+        const manager = new ZerobyteManager(dir);
+        await manager.saveConfig({ enabled: true,
+            url: "http://fixture:4096",
+            apiKey: "key" });
+        globalThis.fetch = async (_input, init) => {
+            if (init?.method === "PATCH") {
+                assert.deepEqual(JSON.parse(String(init.body)), { repositoryId: "repo",
+                    cronExpression: "0 3 * * *",
+                    retryDelay: 15,
+                    backupWebhooks: { pre: null,
+                        post: null },
+                    maxRetries: 0 });
+                return new Response("{}");
+            }
+            return new Response(JSON.stringify({ enabled: false,
+                repositoryId: "repo",
+                cronExpression: "0 3 * * *",
+                retryDelay: 15 }));
+        };
+        await manager.updateWorkflowJob("job", { pre: null,
+            post: null });
+    } finally {
+        globalThis.fetch = oldFetch;
+        await fs.rm(dir, { recursive: true,
+            force: true });
+    }
+});

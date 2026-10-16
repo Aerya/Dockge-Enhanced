@@ -144,6 +144,20 @@ export function createZerobyteRouter(server: DockgeServer) {
         await audit(req, "workflow-acknowledge", req.params.workflow);
         res.json({ ok: true });
     }));
+    router.get("/diagnostics", handler(async (_req, res) => {
+        res.json({ ok: true,
+            data: await zerobyte.diagnostics() });
+    }));
+    router.post("/workflows/migration/plan", handler(async (req, res) => {
+        res.json({ ok: true,
+            data: await workflows.migrationPlan(req.body ?? {}) });
+    }));
+    router.post("/workflows/migration/apply", handler(async (req, res) => {
+        const data = await workflows.migrate(req.body ?? {});
+        await audit(req, "workflow-migrate", data.jobId);
+        res.json({ ok: true,
+            data });
+    }));
     router.get("/summary", handler(async (_req, res) => {
         res.json({ ok: true,
             data: await localZerobyteSummary(server) });

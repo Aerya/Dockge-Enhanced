@@ -27,7 +27,7 @@ export async function localZerobyteSummary(server: DockgeServer): Promise<Zeroby
     const status = await workflowsFor(server).status();
     result.workflowAlerts = status.events.filter(e => e.state === "failure").length;
     try {
-        const overview = await zerobyte.overview();
+        const overview = await zerobyte.overview(false);
         result.reachable = true;
         result.jobs = overview.jobs.length;
         result.failedJobs = overview.jobs.filter(j => j.lastBackupStatus === "error").length;
@@ -36,10 +36,13 @@ export async function localZerobyteSummary(server: DockgeServer): Promise<Zeroby
     return result;
 }
 export function sanitizeZerobyteSummary(value: unknown): ZerobyteSummary {
-    if (!value || typeof value !== "object") {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
         throw new Error("Unsupported peer summary");
     }
     const input = value as Record<string, unknown>;
+    if (typeof input.enabled !== "boolean" || typeof input.reachable !== "boolean") {
+        throw new Error("Unsupported peer state");
+    }
     const result = { enabled: input.enabled === true,
         reachable: input.reachable === true } as ZerobyteSummary;
     for (const key of [ "jobs", "failedJobs", "activeTasks", "workflowAlerts" ] as const) {

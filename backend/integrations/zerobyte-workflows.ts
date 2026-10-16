@@ -29,6 +29,8 @@ interface Workflow {
     jobId?: string;
     scheduleId?: number;
     blockedTasks?: string[];
+    pendingMigration?: boolean;
+    lastFailureNotificationAt?: number;
 }
 interface Lease { workflow: string;
     task: string;
@@ -103,9 +105,20 @@ export class ZerobyteWorkflows {
         await fs.mkdir(path.dirname(this.file), { recursive: true });
         const temporary = this.file + "." + randomUUID();
         try {
-            await fs.writeFile(temporary, JSON.stringify(state), { mode: 0o600,
-                flag: "wx" });
+            const handle = await fs.open(temporary, "wx", 0o600);
+            try {
+                await handle.writeFile(JSON.stringify(state));
+                await handle.sync();
+            } finally {
+                await handle.close();
+            }
             await fs.rename(temporary, this.file);
+            const directory = await fs.open(path.dirname(this.file), "r");
+            try {
+                await directory.sync();
+            } finally {
+                await directory.close();
+            }
         } finally {
             await fs.rm(temporary, { force: true });
         }
@@ -129,7 +142,7 @@ export class ZerobyteWorkflows {
 
     async assertCanRun(jobId: string): Promise<void> {
         const state = await this.read();
-        if (state.lease || state.workflows.some(w => w.jobId === jobId && w.blockedTasks?.length)) {
+        if (state.lease || state.workflows.some(w => w.jobId === jobId && (w.blockedTasks?.length || w.pendingMigration))) {
             throw new Error("An application backup is active or this workflow awaits acknowledgement");
         }
     }
@@ -150,20 +163,27 @@ export class ZerobyteWorkflows {
             cron: w.cron,
             maxMinutes: w.maxMinutes,
             jobId: w.jobId,
-            blockedTasks: w.blockedTasks ?? [] })),
+            protected: !w.pendingMigration,
+            blockedTasks: w.blockedTasks ?? [],
+            recovery: state.lease?.workflow === w.id ? ([ ...state.events ].reverse().find(e => e.workflow === w.id)?.state === "failure" ? "required" : "prepared") :
+                state.events.some(e => e.workflow === w.id && e.state !== "running") ? "restored" : "untouched" })),
         active: state.lease ? { workflow: state.lease.workflow,
             started: state.lease.started } : null,
         events: state.events.slice(-30).reverse() };
     }
 
     private async event(state: State, workflow: Workflow, event: Event["state"], detail: string) {
+        const notify = event === "failure" && Date.now() - (workflow.lastFailureNotificationAt ?? 0) >= 300000;
+        if (notify) {
+            workflow.lastFailureNotificationAt = Date.now();
+        }
         state.events.push({ workflow: workflow.id,
             at: Date.now(),
             state: event,
             detail });
         state.events = state.events.slice(-100);
         await this.write(state);
-        if (event === "failure") {
+        if (notify) {
             await this.dependencies.notify(`Zerobyte ${workflow.name}: ${detail}`).catch(() => {});
         }
     }
@@ -256,6 +276,86 @@ export class ZerobyteWorkflows {
             return { id: workflow.id,
                 jobId: workflow.jobId,
                 reused };
+        });
+    }
+
+    async migrationPlan(input: Record<string, unknown>) {
+        const ctx = await this.dependencies.context();
+        const resources = await this.manager.resources();
+        const job = resources.jobs.find(j => j.shortId === input.jobId);
+        if (!job || job.enabled !== false || typeof job.shortId !== "string" || typeof job.id !== "number") {
+            throw new Error("Migration requires an existing disabled job");
+        }
+        const hooks = job.backupWebhooks as Record<string, unknown> | undefined;
+        const existing = (await this.read()).workflows.find(w => w.jobId === job.shortId);
+        if ((existing && !existing.pendingMigration) || (!existing && hooks && Object.values(hooks).some(Boolean))) {
+            throw new Error("Job already has hooks; automatic replacement is refused");
+        }
+        if (resources.jobs.filter(j => j.repositoryId === job.repositoryId).length !== 1) {
+            throw new Error("Migration requires a repository dedicated to this job");
+        }
+        const volume = resources.volumes.find(v => v.id === job.volumeId);
+        const repository = resources.repositories.find(r => r.id === job.repositoryId);
+        const source = volume?.config as { backend?: string;
+            path?: string } | undefined;
+        const destination = repository?.config as { backend?: string;
+            path?: string } | undefined;
+        const mount = ctx.destinationMounts.find((m: { target: string }) => destination?.path?.startsWith(m.target + "/"));
+        if (source?.backend !== "directory" || destination?.backend !== "local" || !mount) {
+            throw new Error("Only sources and repositories within verified managed mounts can migrate");
+        }
+        const plan = await this.plan({ ...input,
+            name: String(job.name),
+            source: source.path,
+            destination: mount.target,
+            cron: job.cronExpression });
+        const overview = await this.manager.overview();
+        if (overview.tasks.length) {
+            throw new Error("Wait for all Zerobyte tasks to finish before migration");
+        }
+        return { ...plan,
+            id: createHash("sha256").update(ctx.owner + "migration:" + job.shortId).digest("hex").slice(0, 16),
+            jobId: job.shortId,
+            scheduleId: job.id,
+            repositoryPath: destination.path,
+            changes: [ "backupWebhooks", "maxRetries: 0" ],
+            preserves: [ "source", "repository", "snapshots", "cron", "retention", "disabled" ] };
+    }
+
+    async migrate(input: Record<string, unknown>) {
+        return this.exclusive(async () => {
+            const state = await this.read();
+            if (state.lease || this.dependencies.nativeBusy() || input.confirmation !== "MIGRATE ZEROBYTE") {
+                throw new Error("Idle workflow and explicit migration confirmation required");
+            }
+            const plan = await this.migrationPlan(input);
+            await this.dependencies.probe(plan.destination);
+            const ctx = await this.dependencies.context();
+            const previous = state.workflows.find(w => w.jobId === plan.jobId);
+            if (previous && (JSON.stringify(previous.stacks) !== JSON.stringify(plan.stacks) || previous.maxMinutes !== plan.maxMinutes)) {
+                throw new Error("Retry migration with the original stack selection and deadline");
+            }
+            const workflow: Workflow = previous ?? { ...plan,
+                token: randomBytes(32).toString("hex"),
+                pendingMigration: true };
+            if (!previous) {
+                state.workflows.push(workflow);
+            }
+            await this.write(state); // Keep callback authentication recoverable if the API response is lost.
+            const hooks = Object.fromEntries([ "pre", "post" ].map(phase => [ phase, {
+                url: `${ctx.callbackOrigin}/api/watcher/zerobyte/hooks/${plan.id}/${phase}`,
+                headers: [ `Authorization: Bearer ${workflow.token}` ],
+            }]));
+            await this.manager.updateWorkflowJob(plan.jobId, hooks);
+            const updated = await this.manager.job(plan.jobId);
+            if (updated.enabled !== false || JSON.stringify(updated.backupWebhooks) !== JSON.stringify(hooks) || updated.maxRetries !== 0) {
+                throw new Error("Migration is unverified; keep job disabled and retry");
+            }
+            workflow.pendingMigration = false;
+            await this.write(state);
+            return { id: plan.id,
+                jobId: plan.jobId,
+                enabled: false };
         });
     }
 

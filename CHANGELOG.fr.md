@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-16 — Zerobyte** — Diagnostic externe guidé, migration confirmée des jobs existants sans modifier les snapshots ni la rétention, et état explicite de reprise applicative avec journal synchronisé sur disque.
+
 **2026-10-16 — Workflows Zerobyte protégés** — Provisionnement confirmé et idempotent des sources/dépôts/jobs, hooks d’arrêt/redémarrage, alertes persistantes et reprise après panne, validation externe liée à la connexion et supervision fédérée en lecture seule.
 
 **2026-10-16 — Intégration Zerobyte facultative** — Sauvegardes propose une connexion Zerobyte ou une installation Compose propre à l’instance, des sources RO/destinations RW explicites, des contrôles de chemins et montages distants, des opérations confirmées et une restauration dédiée de test. La couverture Restic native est conservée. [Documentation](docs/zerobyte.fr.md).

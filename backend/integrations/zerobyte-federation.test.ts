@@ -24,3 +24,14 @@ test("federation is read-only, filters secrets and distinguishes offline from di
     assert.ok(!JSON.stringify(peers).includes("secret"));
     assert.throws(() => sanitizeZerobyteSummary({ jobs: -1 }));
 });
+
+test("an incompatible peer with missing or string state flags is never presented as disabled", () => {
+    const counts = { jobs: 0,
+        failedJobs: 0,
+        activeTasks: 0,
+        workflowAlerts: 0 };
+    assert.throws(() => sanitizeZerobyteSummary(counts), /Unsupported/);
+    assert.throws(() => sanitizeZerobyteSummary({ ...counts,
+        enabled: "false",
+        reachable: true }), /Unsupported/);
+});

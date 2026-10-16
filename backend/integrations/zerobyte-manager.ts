@@ -252,7 +252,7 @@ export class ZerobyteManager {
             version: str(info.currentVersion) || "unknown" };
     }
 
-    async overview() {
+    async overview(includeStats = true) {
         const [ jobsRaw, repositoriesRaw, volumesRaw, tasksRaw ] = await Promise.all([
             this.request("GET", "/api/v1/backups"),
             this.request("GET", "/api/v1/repositories"),
@@ -284,7 +284,7 @@ export class ZerobyteManager {
         })).filter(job => ID_PATTERN.test(job.shortId));
         const repoList = dataArray(repositoriesRaw).map(repo => ({ shortId: str(repo.shortId),
             name: str(repo.name) })).filter(repo => ID_PATTERN.test(repo.shortId));
-        const repositories: RepositorySummary[] = await Promise.all(repoList.slice(0, 12).map(async repo => {
+        const repositories: RepositorySummary[] = await Promise.all(repoList.slice(0, includeStats ? 12 : 0).map(async repo => {
             try {
                 const stats = object(await this.request("GET", `/api/v1/repositories/${id(repo.shortId)}/stats`));
                 // Stats schema varies across versions; never pass raw data to the UI.
@@ -303,7 +303,7 @@ export class ZerobyteManager {
             numericId: num(v.id),
             name: str(v.name),
             status: str(v.status) }));
-        const tasks = dataArray(tasksRaw).slice(0, 30).map(task => ({ id: str(task.id),
+        const tasks = dataArray(tasksRaw).map(task => ({ id: str(task.id),
             status: str(task.status),
             kind: str(task.kind) }));
         return { jobs,
@@ -366,6 +366,49 @@ export class ZerobyteManager {
         return { volumes: volumes as JsonObject[],
             repositories: repositories as JsonObject[],
             jobs: jobs as JsonObject[] };
+    }
+
+    async diagnostics() {
+        const config = await this.getSafeConfig();
+        const checks: { key: string;
+            state: "pass" | "fail" | "operator" }[] = [];
+        const check = (key: string, good: boolean) => checks.push({ key,
+            state: good ? "pass" : "fail" });
+        check("configured", config.enabled && config.hasApiKey);
+        check("acknowledged", config.externalRisksAcknowledged);
+        check("restoreRoot", Boolean(config.externalRestoreRoot));
+        try {
+            const resources = await this.resources();
+            check("apiInventory", true);
+            const roots = [ ...resources.volumes, ...resources.repositories ].map(r => object(r.config))
+                .filter(c => c.backend === "directory" || c.backend === "local").map(c => str(c.path, 1024));
+            const root = config.externalRestoreRoot;
+            check("restoreSeparation", Boolean(root) && !roots.some(p => p && (root === p || root.startsWith(p.replace(/\/$/, "") + "/") || p.startsWith(root + "/"))));
+            check("dedicatedRepositories", resources.jobs.every(j => resources.jobs.filter(other => other.repositoryId === j.repositoryId).length === 1));
+        } catch {
+            check("apiInventory", false);
+        }
+        for (const key of [ "physicalMounts", "remoteIdentity", "restorePermissions", "retentionReview" ]) {
+            checks.push({ key,
+                state: "operator" });
+        }
+        return { checks,
+            readOnly: true };
+    }
+
+    async updateWorkflowJob(jobId: string, hooks: unknown) {
+        const job = await this.job(jobId);
+        if (job.enabled !== false || typeof job.repositoryId !== "string" || typeof job.cronExpression !== "string" ||
+            typeof job.retryDelay !== "number" || job.retryDelay < 1 || job.retryDelay > 1440) {
+            throw new Error("Unsupported disabled job configuration for migration");
+        }
+        return object(await this.request("PATCH", `/api/v1/backups/${id(jobId)}`, {
+            repositoryId: job.repositoryId,
+            cronExpression: job.cronExpression,
+            retryDelay: job.retryDelay,
+            backupWebhooks: hooks,
+            maxRetries: 0,
+        }));
     }
 
     async createVolume(name: string, sourcePath: string) {

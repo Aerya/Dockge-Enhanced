@@ -280,3 +280,83 @@ test("a delayed pre-hook for a cancelled task never stops an application", async
         await f.cleanup();
     }
 });
+
+test("migration preserves repositories and history, refuses enabled/shared/custom-hook jobs, and retries an uncertain API response", async () => {
+    const f = await fixture();
+    try {
+        const original = { id: 8,
+            shortId: "legacy",
+            name: "Legacy",
+            enabled: false,
+            volumeId: 1,
+            repositoryId: "repo",
+            cronExpression: "0 3 * * *",
+            retentionPolicy: { keepLast: 7 },
+            backupWebhooks: null };
+        f.jobs.push(original);
+        // Give this legacy job its own existing repository, including historical snapshot metadata.
+        f.repositories.push({ id: "legacyRepo",
+            shortId: "legacyRepo",
+            config: { backend: "local",
+                path: "/destinations/test/history/legacyRepo" },
+            snapshotCount: 12 });
+        original.repositoryId = "legacyRepo";
+        f.manager.overview = async () => ({ tasks: [] }) as never;
+        f.manager.job = async () => original;
+        let failOnce = true;
+        f.manager.updateWorkflowJob = async (_id, hooks) => {
+            Object.assign(original, { backupWebhooks: hooks,
+                maxRetries: 0 });
+            if (failOnce) {
+                failOnce = false;
+                throw new Error("response lost");
+            }
+            return original;
+        };
+        const input = { jobId: "legacy",
+            stacks: [ "fixture" ],
+            maxMinutes: 2 };
+        original.enabled = true;
+        await assert.rejects(f.workflows.migrationPlan(input), /disabled/);
+        original.enabled = false;
+        const plan = await f.workflows.migrationPlan(input);
+        assert.equal(plan.repositoryPath, "/destinations/test/history/legacyRepo");
+        assert.deepEqual(plan.changes, [ "backupWebhooks", "maxRetries: 0" ]);
+        await assert.rejects(f.workflows.migrate({ ...input,
+            confirmation: "MIGRATE ZEROBYTE" }), /response lost/);
+        await assert.rejects(f.workflows.assertCanRun("legacy"), /active|acknowledgement/);
+        assert.equal((await f.workflows.status()).workflows.find(w => w.jobId === "legacy")?.protected, false);
+        await f.workflows.migrate({ ...input,
+            confirmation: "MIGRATE ZEROBYTE" });
+        assert.equal((await f.workflows.status()).workflows.find(w => w.jobId === "legacy")?.protected, true);
+        assert.equal(original.repositoryId, "legacyRepo");
+        assert.deepEqual(original.retentionPolicy, { keepLast: 7 });
+        assert.equal(original.enabled, false);
+        assert.equal(f.repositories.at(-1)?.snapshotCount, 12);
+        await assert.rejects(f.workflows.migrationPlan(input), /already has hooks/);
+        f.jobs.push({ ...original,
+            shortId: "shared",
+            backupWebhooks: null });
+        await assert.rejects(f.workflows.migrationPlan({ ...input,
+            jobId: "shared" }), /dedicated/);
+    } finally {
+        await f.cleanup();
+    }
+});
+
+test("repeated recovery failures retain the journal without flooding failure notifications", async () => {
+    const f = await fixture();
+    try {
+        await f.workflows.hook(f.workflow.id, "pre", "Bearer " + f.workflow.token, f.body);
+        f.failRestart();
+        await assert.rejects(f.workflows.hook(f.workflow.id, "post", "Bearer " + f.workflow.token, { ...f.body,
+            status: "failed" }), /restart failed/);
+        await assert.rejects(f.workflows.hook(f.workflow.id, "post", "Bearer " + f.workflow.token, { ...f.body,
+            status: "failed" }), /restart failed/);
+        assert.ok((await f.workflows.status()).active);
+        assert.equal((await f.workflows.status()).workflows[0].recovery, "required");
+        assert.equal(f.events.filter(e => e === "alert").length, 1);
+    } finally {
+        await f.cleanup();
+    }
+});
