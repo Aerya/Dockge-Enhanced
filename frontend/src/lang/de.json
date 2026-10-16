@@ -1,4 +1,8 @@
 {
+    "stackActionMenu.more": "Weitere Aktionen",
+    "stackActionMenu.configuration": "Konfiguration",
+    "stackActionMenu.information": "Informationen",
+    "stackActionMenu.display": "Darstellung",
     "releaseNews.item.stackResourceHistory": "Der optionale CPU/RAM-Verlauf lässt sich unter Monitoring aktivieren und über die Stack-Aktionen öffnen. Kompakte Diagramme enthalten tatsächliche Container und nicht verwaltete Compose-Projekte. Die Stack-Liste unterstützt CPU/RAM-Sortierung.",
     "stackHistory.availableSince": "Daten seit",
     "stackHistory.action": "Ressourcennutzung",

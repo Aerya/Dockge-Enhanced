@@ -1,4 +1,8 @@
 {
+    "stackActionMenu.more": "More actions",
+    "stackActionMenu.configuration": "Configuration",
+    "stackActionMenu.information": "Information",
+    "stackActionMenu.display": "Display",
     "releaseNews.item.stackResourceHistory": "Optional CPU/RAM history for stacks and actual containers is available in Monitoring. Open Resource usage in stack actions; compact charts include unmanaged Compose projects. The stack list now supports CPU/RAM sorting.",
     "stackHistory.availableSince": "Data since",
     "stackHistory.action": "Resource usage",

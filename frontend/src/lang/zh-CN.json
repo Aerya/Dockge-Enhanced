@@ -1,4 +1,8 @@
 {
+    "stackActionMenu.more": "更多操作",
+    "stackActionMenu.configuration": "配置",
+    "stackActionMenu.information": "信息",
+    "stackActionMenu.display": "显示",
     "releaseNews.item.stackResourceHistory": "在监控中启用可选的 CPU/RAM 历史，通过堆栈操作打开紧凑图表，可查看实际容器和未托管的 Compose 项目。堆栈列表新增 CPU/RAM 排序。",
     "stackHistory.availableSince": "数据起始于",
     "stackHistory.action": "资源用量",

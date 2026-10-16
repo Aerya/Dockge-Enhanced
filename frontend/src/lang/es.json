@@ -1,4 +1,8 @@
 {
+    "stackActionMenu.more": "Más acciones",
+    "stackActionMenu.configuration": "Configuración",
+    "stackActionMenu.information": "Información",
+    "stackActionMenu.display": "Visualización",
     "releaseNews.item.stackResourceHistory": "Active el historial CPU/RAM en Monitorización y ábralo desde las acciones del stack. Los gráficos compactos incluyen contenedores reales y proyectos Compose no gestionados. También puede ordenar los stacks por CPU/RAM.",
     "stackHistory.availableSince": "Datos desde",
     "stackHistory.action": "Consumo",

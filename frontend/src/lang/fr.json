@@ -1,4 +1,8 @@
 {
+    "stackActionMenu.more": "Plus d’actions",
+    "stackActionMenu.configuration": "Configuration",
+    "stackActionMenu.information": "Informations",
+    "stackActionMenu.display": "Affichage",
     "releaseNews.item.stackResourceHistory": "L’historique CPU/RAM des stacks et conteneurs réels s’active dans Monitoring. Ouvrez Consommation dans les actions de la stack : les graphiques compacts incluent les projets Compose non gérés. La liste des stacks propose aussi le tri CPU/RAM.",
     "stackHistory.availableSince": "Données depuis le",
     "stackHistory.action": "Consommation",
