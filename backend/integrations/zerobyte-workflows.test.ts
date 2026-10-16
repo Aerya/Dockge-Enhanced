@@ -20,6 +20,7 @@ async function fixture() {
     const repositories: Record<string, unknown>[] = [];
     const jobs: Record<string, unknown>[] = [];
     const manager = {
+        getSafeConfig: async () => ({ enabled: true }),
         resources: async () => ({ volumes,
             repositories,
             jobs }),
@@ -120,6 +121,9 @@ async function fixture() {
         },
         failRestart: () => {
             restartFailure = true;
+        },
+        restoreRestart: () => {
+            restartFailure = false;
         },
         cleanup: async () => {
             workflows.stop();
@@ -356,6 +360,128 @@ test("repeated recovery failures retain the journal without flooding failure not
         assert.ok((await f.workflows.status()).active);
         assert.equal((await f.workflows.status()).workflows[0].recovery, "required");
         assert.equal(f.events.filter(e => e === "alert").length, 1);
+    } finally {
+        await f.cleanup();
+    }
+});
+
+test("hook and resource drift blocks manual and scheduled launches without stopping applications or leaking tokens", async () => {
+    const f = await fixture();
+    try {
+        const original = structuredClone(f.jobs[0].backupWebhooks);
+        f.jobs[0].backupWebhooks = { post: { url: "http://elsewhere/private-token" } };
+        await f.workflows.verifyProtection();
+        assert.equal((await f.workflows.status()).workflows[0].integrity.state, "changed");
+        await assert.rejects(f.workflows.assertCanRun("job4"), /not verified/);
+        await assert.rejects(f.workflows.hook(f.workflow.id, "pre", "Bearer " + f.workflow.token, f.body), /hooks or resources/);
+        assert.ok(!f.events.includes("stop"));
+        assert.ok(!JSON.stringify(await f.workflows.status()).includes("private-token"));
+        f.jobs[0].backupWebhooks = original;
+        await f.workflows.verifyProtection();
+        assert.equal((await f.workflows.status()).workflows[0].protected, true);
+        (f.volumes[0].config as { path: string }).path = "/elsewhere";
+        await assert.rejects(f.workflows.assertCanRun("job4"), /not verified/);
+        f.jobs.length = 0;
+        await f.workflows.verifyProtection();
+        assert.equal((await f.workflows.status()).workflows[0].integrity.state, "missing");
+        f.manager.resources = async () => {
+            throw new Error("secret API error");
+        };
+        await f.workflows.verifyProtection();
+        assert.equal((await f.workflows.status()).workflows[0].integrity.state, "unavailable");
+        assert.ok(!JSON.stringify(await f.workflows.status()).includes("secret API error"));
+    } finally {
+        await f.cleanup();
+    }
+});
+
+test("manual recovery requires failed service recovery and terminal task, retries only journaled services without another backup", async () => {
+    const f = await fixture();
+    try {
+        await assert.rejects(f.workflows.retryRecovery("RETRY APPLICATION RECOVERY"), /No pending/);
+        await f.workflows.hook(f.workflow.id, "pre", "Bearer " + f.workflow.token, f.body);
+        await assert.rejects(f.workflows.retryRecovery("RETRY APPLICATION RECOVERY"), /not pending/);
+        f.failRestart();
+        await assert.rejects(f.workflows.hook(f.workflow.id, "post", "Bearer " + f.workflow.token, { ...f.body,
+            status: "failed" }), /restart failed/);
+        assert.deepEqual((await f.workflows.status()).active?.recoveryErrors, [ "failed" ]);
+        assert.deepEqual((await f.workflows.status()).active?.services, [{ stack: "fixture",
+            services: [ "app" ] }]);
+        f.restoreRestart();
+        await assert.rejects(f.workflows.retryRecovery("RETRY APPLICATION RECOVERY"), /task termination/);
+        f.failedTask();
+        await assert.rejects(f.workflows.retryRecovery("wrong"), /confirmation/);
+        await f.workflows.retryRecovery("RETRY APPLICATION RECOVERY");
+        assert.equal((await f.workflows.status()).active, null);
+        assert.equal(f.events.filter(e => e === "stop").length, 1);
+        assert.equal((await f.workflows.status()).events[0].state, "failure");
+    } finally {
+        await f.cleanup();
+    }
+});
+
+test("protection verification shares one inventory request across workflows when the upstream API fails", async () => {
+    const f = await fixture();
+    try {
+        const file = path.join(f.dir, "zerobyte-workflows.json");
+        const state = JSON.parse(await fs.readFile(file, "utf8"));
+        state.workflows.push({ ...state.workflows[0],
+            id: "other",
+            jobId: "other" });
+        await fs.writeFile(file, JSON.stringify(state));
+        let calls = 0;
+        f.manager.resources = async () => {
+            calls++;
+            throw new Error("upstream unavailable");
+        };
+        await f.workflows.verifyProtection();
+        assert.equal(calls, 1);
+        assert.ok((await f.workflows.status()).workflows.every(w => w.integrity.state === "unavailable"));
+    } finally {
+        await f.cleanup();
+    }
+});
+
+test("passive integrity verification does not reject configuration as an active application backup", async () => {
+    const f = await fixture();
+    try {
+        let release!: () => void;
+        let started!: () => void;
+        const pending = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const ready = new Promise<void>(resolve => {
+            started = resolve;
+        });
+        const resources = f.manager.resources.bind(f.manager);
+        f.manager.resources = async () => {
+            started();
+            await pending;
+            return resources();
+        };
+        const verification = f.workflows.verifyProtection();
+        await ready;
+        const idle = f.workflows.assertIdle();
+        release();
+        await verification;
+        await idle;
+        assert.equal((await f.workflows.status()).active, null);
+    } finally {
+        await f.cleanup();
+    }
+});
+
+test("a job redirected to another repository under the same destination is refused", async () => {
+    const f = await fixture();
+    try {
+        f.repositories.push({ id: "other-repository",
+            shortId: "other",
+            config: { backend: "local",
+                path: "/destinations/test/other" } });
+        f.jobs[0].repositoryId = "other-repository";
+        await assert.rejects(f.workflows.assertCanRun("job4"), /not verified/);
+        assert.equal((await f.workflows.status()).workflows[0].integrity.state, "changed");
+        assert.ok(!f.events.includes("stop"));
     } finally {
         await f.cleanup();
     }

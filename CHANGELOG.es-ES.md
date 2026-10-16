@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-17 — Zerobyte** — Verificación de hooks y recursos, bloqueo de inicios degradados, recuperación manual de servicios, revalidación confirmada tras parada protectora, diagnóstico federado y pruebas aisladas reproducibles.
+
 **2026-10-16 — Zerobyte** — Diagnóstico externo guiado, migración confirmada sin cambiar snapshots ni retención y estados explícitos de recuperación con registro sincronizado.
 
 **2026-10-16 — Flujos Zerobyte protegidos** — Aprovisionamiento confirmado e idempotente, parada/reinicio de stacks, alertas persistentes y recuperación, aprobación externa por conexión y resumen federado de solo lectura.

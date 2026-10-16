@@ -1,5 +1,7 @@
 # Dockge-Enhanced-Changelog
 
+**2026-10-17 — Zerobyte** — Hook-/Ressourcenprüfung, gesperrte unsichere Starts, manuelle Dienstwiederherstellung, bestätigte Speicher-Neuprüfung nach Schutzstopp, genauere Föderationsdiagnose und isolierter Teststarter.
+
 **2026-10-16 — Zerobyte** — Geführte externe Diagnose, bestätigte Job-Migration ohne Änderung von Snapshots oder Aufbewahrung und explizite Wiederherstellungszustände mit synchronisiertem Journal.
 
 **2026-10-16 — Geschützte Zerobyte-Workflows** — Bestätigte idempotente Bereitstellung, Stack-Stopp/Neustart, dauerhafte Ausfallwarnungen und Wiederherstellung, verbindungsbezogene externe Freigabe und lesende Föderationsübersicht.

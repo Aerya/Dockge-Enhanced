@@ -1187,5 +1187,20 @@
     "watcher.zerobyte.check.remoteIdentity": "Identidad remota y ausencia de respaldo local",
     "watcher.zerobyte.check.restorePermissions": "Permisos reales y espacio para restaurar",
     "watcher.zerobyte.check.retentionReview": "Retención y prueba independiente de restauración",
-    "watcher.zerobyte.migrationPending": "Migración no verificada: mantén la tarea desactivada y repite el mismo plan."
+    "watcher.zerobyte.migrationPending": "Migración no verificada: mantén la tarea desactivada y repite el mismo plan.",
+    "watcher.zerobyte.verifyProtection": "Verificar protección de tareas",
+    "watcher.zerobyte.integrity.ok": "Protección verificada",
+    "watcher.zerobyte.integrity.changed": "Protección modificada: inicio bloqueado",
+    "watcher.zerobyte.integrity.missing": "Tarea ausente: inicio bloqueado",
+    "watcher.zerobyte.integrity.unavailable": "Protección sin verificar: revisar conexión",
+    "watcher.zerobyte.retryRecovery": "Reintentar recuperación de aplicaciones",
+    "watcher.zerobyte.retryRecoveryHelp": "¿Reintentar solo servicios registrados sin repetir la copia? La tarea remota debe haber terminado.",
+    "watcher.zerobyte.revalidateTitle": "Revalidar almacenamiento modificado",
+    "watcher.zerobyte.revalidateHelp": "Desactiva todas las tareas y finaliza operaciones. Verifica servidor, recurso y separación de repositorios. La vista previa compara huellas; confirmar cambia la protección y redespliega solo Zerobyte. Sin respaldo local.",
+    "watcher.zerobyte.revalidateAttest": "He verificado identidad del almacenamiento y separación de repositorios.",
+    "watcher.zerobyte.revalidateApply": "Confirmar revalidación y redesplegar Zerobyte",
+    "watcher.zerobyte.peerError.authentication": "Autenticación rechazada: reautenticar agente.",
+    "watcher.zerobyte.peerError.offline": "Instancia desconectada: verificar disponibilidad.",
+    "watcher.zerobyte.peerError.timeout": "Sin respuesta: revisar conexión y compatibilidad.",
+    "watcher.zerobyte.peerError.incompatible": "Respuesta incompatible: revisar versión."
 }

@@ -93,6 +93,17 @@
             </div>
             <div v-if="connectionMode === 'managed' && installation?.installed" class="border rounded p-3 mb-3">
                 <h6>{{ $t('watcher.zerobyte.workflowTitle') }}</h6>
+                <details class="mb-3">
+                    <summary>{{ $t('watcher.zerobyte.revalidateTitle') }}</summary>
+                    <p class="form-text">{{ $t('watcher.zerobyte.revalidateHelp') }}</p>
+                    <button class="btn btn-normal btn-sm" type="button" :disabled="busy" @click="previewStorage">{{ $t('watcher.zerobyte.previewPlan') }}</button>
+                    <template v-if="storagePlan">
+                        <pre class="small text-wrap mt-2">{{ JSON.stringify(storagePlan, null, 2) }}</pre>
+                        <label class="d-block"><input v-model="storageAttested" type="checkbox" class="form-check-input me-2" />{{ $t('watcher.zerobyte.revalidateAttest') }}</label>
+                        <button type="button" class="btn btn-outline-warning btn-sm mt-2" :disabled="busy || !storageAttested || !storagePlan.changes.length" @click="applyStorage">{{ $t('watcher.zerobyte.revalidateApply') }}</button>
+                    </template>
+                </details>
+                <button class="btn btn-normal btn-sm mb-2" type="button" :disabled="busy || Boolean(workflowStatus?.active)" @click="verifyProtection">{{ $t('watcher.zerobyte.verifyProtection') }}</button>
                 <p class="form-text">{{ $t('watcher.zerobyte.workflowHelp') }}</p>
                 <p class="alert alert-info">{{ $t('watcher.zerobyte.outagePolicy') }}</p>
                 <div class="row g-2 mb-2">
@@ -121,15 +132,21 @@
             </div>
             <div v-for="workflow in workflowStatus?.workflows" :key="'recovery-' + workflow.id" class="border rounded p-2 mb-2" role="status">
                 <p v-if="!workflow.protected" class="text-warning mb-1">{{ $t('watcher.zerobyte.migrationPending') }}</p>
-                <strong>{{ workflow.name }}</strong> · {{ $t('watcher.zerobyte.recovery.' + workflow.recovery) }}
+                <strong>{{ workflow.name }}</strong> · {{ $t('watcher.zerobyte.integrity.' + workflow.integrity.state) }} · {{ $t('watcher.zerobyte.recovery.' + workflow.recovery) }}
                 <p v-if="workflow.blockedTasks?.length" class="text-warning mb-1">{{ $t('watcher.zerobyte.workflowPaused') }}</p>
                 <p v-if="workflow.recovery === 'required'" class="text-danger mb-1">{{ $t('watcher.zerobyte.recoveryAction') }}</p>
+            </div>
+            <div v-if="workflowStatus?.active?.recoveryErrors?.length" class="alert alert-danger" role="alert">
+                <strong>{{ $t('watcher.zerobyte.recovery.required') }}</strong>
+                <ul><li v-for="entry in workflowStatus.active.services" :key="entry.stack">{{ entry.stack }} : {{ entry.services.join(', ') || '—' }}<span v-if="workflowStatus.active.recoveryErrors.includes(entry.stack)"> · {{ $t('watcher.zerobyte.recovery.required') }}</span></li></ul>
+                <p>{{ $t('watcher.zerobyte.recoveryAction') }}</p>
+                <button type="button" class="btn btn-outline-danger btn-sm" :disabled="busy" @click="retryRecovery">{{ $t('watcher.zerobyte.retryRecovery') }}</button>
             </div>
             <details class="border rounded p-3 mb-3">
                 <summary>{{ $t('watcher.zerobyte.federationTitle') }}</summary>
                 <p class="form-text mt-2">{{ $t('watcher.zerobyte.federationHelp') }}</p>
                 <button type="button" class="btn btn-normal btn-sm mb-2" :disabled="busy" @click="loadFederation">{{ $t('watcher.zerobyte.refresh') }}</button>
-                <div v-for="peer in federation" :key="peer.endpoint" class="border-top py-2 small"><strong>{{ peer.name }}</strong> — {{ !peer.online ? $t('watcher.zerobyte.peerOffline') : !peer.summary.enabled ? $t('watcher.zerobyte.peerDisabled') : !peer.summary.reachable ? $t('watcher.zerobyte.peerUnavailable') : $t('watcher.zerobyte.peerCounts', { jobs: peer.summary.jobs, failed: peer.summary.failedJobs, active: peer.summary.activeTasks }) }}</div>
+                <div v-for="peer in federation" :key="peer.endpoint" class="border-top py-2 small"><strong>{{ peer.name }}</strong> — {{ !peer.online ? $t('watcher.zerobyte.peerError.' + peer.errorCode) : !peer.summary.enabled ? $t('watcher.zerobyte.peerDisabled') : !peer.summary.reachable ? $t('watcher.zerobyte.peerUnavailable') : $t('watcher.zerobyte.peerCounts', { jobs: peer.summary.jobs, failed: peer.summary.failedJobs, active: peer.summary.activeTasks }) }}</div>
             </details>
             <div v-if="configuration.enabled" class="row g-3 mb-3">
                 <div class="col-md-6">
@@ -181,12 +198,12 @@
                     <div class="d-flex flex-wrap justify-content-between gap-2 align-items-center">
                         <div>
                             <strong>{{ job.name }}</strong>
-                            <small v-if="!workflowStatus?.workflows.some(w => w.jobId === job.shortId && w.protected)" class="d-block text-warning">{{ $t('watcher.zerobyte.legacyJobWarning') }}</small>
+                            <small v-if="!workflowStatus?.workflows.some(w => w.jobId === job.shortId)" class="d-block text-warning">{{ $t('watcher.zerobyte.legacyJobWarning') }}</small>
                             <span class="badge ms-2" :class="job.lastBackupStatus === 'success' ? 'bg-success' : 'bg-secondary'">{{ job.lastBackupStatus || '—' }}</span>
                             <div class="form-text small">{{ $t('watcher.zerobyte.last') }}: {{ date(job.lastBackupAt) }} · {{ $t('watcher.zerobyte.next') }}: {{ date(job.nextBackupAt) }}</div>
                         </div>
                         <div class="d-flex flex-wrap gap-2">
-                            <button v-if="connectionMode === 'managed' && !job.enabled && !workflowStatus?.workflows.some(w => w.jobId === job.shortId && w.protected)" type="button" class="btn btn-normal btn-sm" :disabled="busy" @click="previewMigration(job.shortId)">{{ $t('watcher.zerobyte.migrationTitle') }}</button>
+                            <button v-if="connectionMode === 'managed' && !job.enabled && !workflowStatus?.workflows.some(w => w.jobId === job.shortId)" type="button" class="btn btn-normal btn-sm" :disabled="busy" @click="previewMigration(job.shortId)">{{ $t('watcher.zerobyte.migrationTitle') }}</button>
                             <button type="button" class="btn btn-primary btn-sm" :disabled="busy || Boolean(workflowStatus?.active) || workflowStatus?.workflows.some(w => w.jobId === job.shortId && (!w.protected || w.blockedTasks?.length))" @click="run(job.shortId)">{{ $t('watcher.zerobyte.run') }}</button>
                             <button type="button" class="btn btn-outline-danger btn-sm" :disabled="busy" @click="cleanup(job.shortId, job.name)">{{ $t('watcher.zerobyte.cleanup') }}</button>
                         </div>
@@ -382,12 +399,68 @@ const workflowStatus = ref<{ workflows: { id: string;
     jobId?: string;
     blockedTasks?: string[];
     recovery: string;
-    protected: boolean }[];
-active: { workflow: string } | null;
+    protected: boolean;
+    integrity: { state: string;
+        checkedAt: number } }[];
+active: { workflow: string;
+    services: { stack: string;
+        services: string[] }[];
+    recoveryErrors: string[] } | null;
 events: { workflow: string;
     at: number;
     state: string;
     detail: string }[] } | null>(null);
+const storagePlan = ref<{ revision: string;
+    changes: unknown[] } | null>(null);
+const storageAttested = ref(false);
+async function previewStorage() {
+    storagePlan.value = null;
+    storageAttested.value = false;
+    await action(async () => {
+        const result = await api("POST", "/zerobyte/managed/revalidation/preview", {});
+        if (!result.ok) {
+            throw new Error(result.message);
+        }
+        storagePlan.value = result.data;
+    });
+}
+async function applyStorage() {
+    if (!storagePlan.value || !storageAttested.value || !window.confirm(t("watcher.zerobyte.revalidateHelp"))) {
+        return;
+    }
+    await action(async () => {
+        const result = await api("POST", "/zerobyte/managed/revalidation/apply", { revision: storagePlan.value!.revision,
+            attestIdentityAndSeparation: true,
+            confirmation: "REVALIDATE ZEROBYTE STORAGE" });
+        if (!result.ok) {
+            throw new Error(result.message);
+        }
+        storagePlan.value = null;
+        storageAttested.value = false;
+        await loadInstallation();
+    });
+}
+async function verifyProtection() {
+    await action(async () => {
+        const result = await api("POST", "/zerobyte/workflows/verify", {});
+        if (!result.ok) {
+            throw new Error(result.message);
+        }
+        workflowStatus.value = result.data;
+    });
+}
+async function retryRecovery() {
+    if (!window.confirm(t("watcher.zerobyte.retryRecoveryHelp"))) {
+        return;
+    }
+    await action(async () => {
+        const result = await api("POST", "/zerobyte/workflows/recover", { confirmation: "RETRY APPLICATION RECOVERY" });
+        if (!result.ok) {
+            throw new Error(result.message);
+        }
+        await loadWorkflowStatus();
+    });
+}
 const diagnostics = ref<{ key: string;
     state: string }[]>([]);
 const migrationPlan = ref<Record<string, unknown> | null>(null);
@@ -428,6 +501,7 @@ async function applyMigration() {
 const federation = ref<{ endpoint: string;
     name: string;
     online: boolean;
+    errorCode: string | null;
     summary: { enabled: boolean;
         reachable: boolean;
         jobs: number;

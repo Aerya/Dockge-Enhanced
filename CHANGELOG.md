@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-17 — Zerobyte** — Hook/resource integrity checks, blocked degraded launches from Enhanced, manual journaled-service recovery, confirmed storage revalidation after guard shutdown, precise federation diagnostics and repeatable isolated test runner.
+
 **2026-10-16 — Zerobyte** — Guided external diagnostics, confirmed existing-job migration preserving snapshots and retention, and explicit application recovery states with a disk-synced journal.
 
 **2026-10-16 — Protected Zerobyte workflows** — Confirmed, idempotent source/repository/job provisioning, application stop/restart hooks, persistent outage alerts and cancellation recovery, scoped external restore approval and read-only federation summaries.

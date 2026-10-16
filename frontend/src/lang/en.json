@@ -2268,5 +2268,20 @@
     "watcher.zerobyte.check.remoteIdentity": "Remote server identity and absence of local fallback",
     "watcher.zerobyte.check.restorePermissions": "Actual permissions and restore capacity",
     "watcher.zerobyte.check.retentionReview": "Retention and independent restore drill",
-    "watcher.zerobyte.migrationPending": "Migration unverified: keep the job disabled and retry the same plan."
+    "watcher.zerobyte.migrationPending": "Migration unverified: keep the job disabled and retry the same plan.",
+    "watcher.zerobyte.verifyProtection": "Verify job protection",
+    "watcher.zerobyte.integrity.ok": "Protection verified",
+    "watcher.zerobyte.integrity.changed": "Protection changed: launch blocked",
+    "watcher.zerobyte.integrity.missing": "Job missing: launch blocked",
+    "watcher.zerobyte.integrity.unavailable": "Protection unverified: check connection",
+    "watcher.zerobyte.retryRecovery": "Retry application recovery",
+    "watcher.zerobyte.retryRecoveryHelp": "Retry only journaled services without rerunning the backup? The remote task must have terminated.",
+    "watcher.zerobyte.revalidateTitle": "Revalidate changed storage",
+    "watcher.zerobyte.revalidateHelp": "Disable all jobs and finish tasks. Physically verify the server, share and repository separation. Preview compares fingerprints; confirmation replaces the guard and redeploys only Zerobyte. Local fallback is never accepted.",
+    "watcher.zerobyte.revalidateAttest": "I verified the storage identity and repository separation.",
+    "watcher.zerobyte.revalidateApply": "Confirm revalidation and redeploy Zerobyte",
+    "watcher.zerobyte.peerError.authentication": "Authentication rejected: reauthenticate the agent.",
+    "watcher.zerobyte.peerError.offline": "Instance disconnected: check availability.",
+    "watcher.zerobyte.peerError.timeout": "No response: check connection and version compatibility.",
+    "watcher.zerobyte.peerError.incompatible": "Incompatible response: check instance version."
 }

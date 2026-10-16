@@ -28,14 +28,20 @@ interface Workflow {
     cron: string;
     jobId?: string;
     scheduleId?: number;
+    repositoryId?: string;
+    repositoryPath?: string;
+    volumeId?: number;
     blockedTasks?: string[];
     pendingMigration?: boolean;
     lastFailureNotificationAt?: number;
+    integrity?: { state: "ok" | "changed" | "missing" | "unavailable";
+        checkedAt: number };
 }
 interface Lease { workflow: string;
     task: string;
     started: number;
-    prepared: Prepared[] }
+    prepared: Prepared[];
+    recoveryErrors?: string[] }
 interface Event { workflow: string;
     at: number;
     state: "running" | "success" | "failure" | "recovered";
@@ -141,14 +147,24 @@ export class ZerobyteWorkflows {
     }
 
     async assertCanRun(jobId: string): Promise<void> {
-        const state = await this.read();
-        if (state.lease || state.workflows.some(w => w.jobId === jobId && (w.blockedTasks?.length || w.pendingMigration))) {
-            throw new Error("An application backup is active or this workflow awaits acknowledgement");
-        }
+        return this.exclusive(async () => {
+            const state = await this.read();
+            const workflow = state.workflows.find(w => w.jobId === jobId);
+            if (workflow) {
+                await this.checkIntegrity(state, workflow);
+                if (workflow.integrity?.state !== "ok") {
+                    throw new Error("Workflow protection is not verified; inspect the job hooks in Zerobyte");
+                }
+            }
+            if (state.lease || state.workflows.some(w => w.jobId === jobId && (w.blockedTasks?.length || w.pendingMigration))) {
+                throw new Error("An application backup is active or this workflow awaits acknowledgement");
+            }
+        });
     }
 
     async assertIdle(): Promise<void> {
-        if ((await this.read()).lease || this.busy) {
+        await this.queue;
+        if ((await this.read()).lease) {
             throw new Error("An application backup is active; configuration changes are blocked");
         }
     }
@@ -163,13 +179,107 @@ export class ZerobyteWorkflows {
             cron: w.cron,
             maxMinutes: w.maxMinutes,
             jobId: w.jobId,
-            protected: !w.pendingMigration,
+            protected: !w.pendingMigration && w.integrity?.state === "ok",
+            integrity: w.integrity ?? { state: "unavailable",
+                checkedAt: 0 },
             blockedTasks: w.blockedTasks ?? [],
             recovery: state.lease?.workflow === w.id ? ([ ...state.events ].reverse().find(e => e.workflow === w.id)?.state === "failure" ? "required" : "prepared") :
                 state.events.some(e => e.workflow === w.id && e.state !== "running") ? "restored" : "untouched" })),
         active: state.lease ? { workflow: state.lease.workflow,
-            started: state.lease.started } : null,
+            started: state.lease.started,
+            task: state.lease.task,
+            services: state.lease.prepared.map(p => ({ stack: p.stack,
+                services: p.services })),
+            recoveryErrors: state.lease.recoveryErrors ?? [] } : null,
         events: state.events.slice(-30).reverse() };
+    }
+
+    private async checkIntegrity(state: State, workflow: Workflow, snapshot?: { ctx: Awaited<ReturnType<Dependencies["context"]>>;
+        resources: Awaited<ReturnType<ZerobyteManager["resources"]>> } | null): Promise<void> {
+        let result: NonNullable<Workflow["integrity"]>["state"] = "unavailable";
+        try {
+            if (snapshot === null) {
+                throw new Error("Inventory unavailable");
+            }
+            const [ ctx, resources ] = snapshot ? [ snapshot.ctx, snapshot.resources ] : await Promise.all([ this.dependencies.context(), this.manager.resources() ]);
+            const job = resources.jobs.find(j => j.shortId === workflow.jobId);
+            if (!job) {
+                result = "missing";
+            } else {
+                const hooks = job.backupWebhooks as Record<string, { url?: string;
+                    headers?: string[] }> | undefined;
+                const volume = resources.volumes.find(v => v.id === job.volumeId);
+                const source = volume?.config as { backend?: string;
+                    path?: string } | undefined;
+                const repository = resources.repositories.find(r => r.id === job.repositoryId);
+                const target = repository?.config as { backend?: string;
+                    path?: string } | undefined;
+                const expectedPath = workflow.repositoryPath === workflow.destination + "/enhanced-" + workflow.id
+                    ? workflow.repositoryPath + "/" + repository?.shortId : workflow.repositoryPath;
+                result = typeof job.repositoryId === "string" && Number.isSafeInteger(job.volumeId) && typeof repository?.shortId === "string" &&
+                    job.maxRetries === 0 && (workflow.repositoryId === undefined || workflow.repositoryId === job.repositoryId) &&
+                    (workflow.volumeId === undefined || workflow.volumeId === job.volumeId) && source?.backend === "directory" && source.path === workflow.source &&
+                    target?.backend === "local" && Boolean(expectedPath) && target.path === expectedPath && target.path?.startsWith(workflow.destination + "/") &&
+                    [ "pre", "post" ].every(phase => hooks?.[phase]?.url === `${ctx.callbackOrigin}/api/watcher/zerobyte/hooks/${workflow.id}/${phase}` &&
+                        Array.isArray(hooks[phase].headers) && hooks[phase].headers!.length === 1 && hooks[phase].headers![0] === `Authorization: Bearer ${workflow.token}`)
+                    ? "ok" : "changed";
+                if (result === "ok") {
+                    workflow.repositoryId = String(job.repositoryId);
+                    workflow.volumeId = Number(job.volumeId);
+                }
+            }
+        } catch { /* Never relay job webhook secrets or arbitrary upstream errors. */ }
+        const previous = workflow.integrity?.state;
+        workflow.integrity = { state: result,
+            checkedAt: Date.now() };
+        if (result !== "ok" && previous !== result) {
+            await this.event(state, workflow, "failure", "Workflow protection changed or cannot be verified; Enhanced backup launch blocked. Inspect source, repository, hooks and retries in Zerobyte");
+        } else {
+            await this.write(state);
+        }
+    }
+
+    private async checkAllIntegrity(state: State): Promise<void> {
+        let snapshot = null;
+        try {
+            const [ ctx, resources ] = await Promise.all([ this.dependencies.context(), this.manager.resources() ]);
+            snapshot = { ctx,
+                resources };
+        } catch { /* One unavailable inventory must not cause one API timeout per workflow. */ }
+        for (const workflow of state.workflows.filter(w => w.jobId)) {
+            await this.checkIntegrity(state, workflow, snapshot);
+        }
+    }
+
+    async verifyProtection(): Promise<void> {
+        await this.exclusive(async () => {
+            const state = await this.read();
+            if (state.lease) {
+                throw new Error("Wait for application recovery before checking job protection");
+            }
+            await this.checkAllIntegrity(state);
+        });
+    }
+
+    async retryRecovery(confirmation: unknown): Promise<void> {
+        if (confirmation !== "RETRY APPLICATION RECOVERY") {
+            throw new Error("Explicit application recovery confirmation required");
+        }
+        await this.exclusive(async () => {
+            const state = await this.read();
+            if (!state.lease) {
+                throw new Error("No pending application recovery");
+            }
+            const workflow = state.workflows.find(w => w.id === state.lease!.workflow);
+            if (!workflow || !state.lease.recoveryErrors?.length) {
+                throw new Error("Application recovery is not pending; no forced interruption permitted");
+            }
+            const task = await this.manager.task(state.lease.task);
+            if (![ "failed", "cancelled", "stale", "succeeded" ].includes(String(task.status))) {
+                throw new Error("Wait for remote task termination before manually recovering applications");
+            }
+            await this.finish(state, workflow, false, "Operator retried application recovery; backup result remains untrusted");
+        });
     }
 
     private async event(state: State, workflow: Workflow, event: Event["state"], detail: string) {
@@ -271,7 +381,13 @@ export class ZerobyteWorkflows {
                 throw new Error("Unsupported created job schema");
             }
             workflow.jobId = job.shortId;
+            workflow.repositoryId = String(repository.id);
+            workflow.volumeId = Number(volume.id);
             workflow.scheduleId = job.id;
+            await this.checkIntegrity(state, workflow);
+            if (workflow.integrity?.state !== "ok") {
+                throw new Error("Provisioned job protection could not be verified");
+            }
             await this.write(state);
             return { id: workflow.id,
                 jobId: workflow.jobId,
@@ -316,6 +432,8 @@ export class ZerobyteWorkflows {
         return { ...plan,
             id: createHash("sha256").update(ctx.owner + "migration:" + job.shortId).digest("hex").slice(0, 16),
             jobId: job.shortId,
+            repositoryId: String(repository!.id),
+            volumeId: Number(volume!.id),
             scheduleId: job.id,
             repositoryPath: destination.path,
             changes: [ "backupWebhooks", "maxRetries: 0" ],
@@ -352,6 +470,12 @@ export class ZerobyteWorkflows {
                 throw new Error("Migration is unverified; keep job disabled and retry");
             }
             workflow.pendingMigration = false;
+            await this.checkIntegrity(state, workflow);
+            if (workflow.integrity?.state !== "ok") {
+                workflow.pendingMigration = true;
+                await this.write(state);
+                throw new Error("Migration protection could not be verified");
+            }
             await this.write(state);
             return { id: plan.id,
                 jobId: plan.jobId,
@@ -396,6 +520,10 @@ export class ZerobyteWorkflows {
                         }
                     };
                     await assertTaskActive();
+                    await this.checkIntegrity(state, workflow);
+                    if (workflow.integrity?.state !== "ok") {
+                        throw new Error("Workflow hooks or resources changed; backup refused");
+                    }
                     // Check storage before stopping applications. A lost mount never means local fallback.
                     await this.dependencies.probe(workflow.destination);
                     const plans = await this.dependencies.plan(workflow.stacks);
@@ -438,6 +566,9 @@ export class ZerobyteWorkflows {
     private async finish(state: State, workflow: Workflow, success: boolean, detail: string) {
         const errors = await this.dependencies.restore(state.lease?.prepared ?? []);
         if (errors.length) {
+            if (state.lease) {
+                state.lease.recoveryErrors = errors;
+            }
             await this.event(state, workflow, "failure", "Service restart requires operator attention");
             throw new Error("Service restart failed; recovery journal retained");
         }
@@ -453,6 +584,12 @@ export class ZerobyteWorkflows {
         await this.exclusive(async () => {
             const state = await this.read();
             if (!state.lease) {
+                if (!(await this.manager.getSafeConfig()).enabled) {
+                    return;
+                }
+                if (state.workflows.some(w => w.jobId && Date.now() - (w.integrity?.checkedAt ?? 0) >= 60000)) {
+                    await this.checkAllIntegrity(state);
+                }
                 return;
             }
             setZerobyteApplicationBackupActive(true);

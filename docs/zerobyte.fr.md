@@ -54,3 +54,17 @@ Utiliser des partages et stacks fictifs dédiés. Vérifier d’abord un backup 
 Pour simuler Docker indisponible, couper un relais de socket réservé à l’instance de test ; ne pas arrêter le démon partagé avec la production. Un redémarrage brutal des seuls conteneurs de test vérifie le journal, sans constituer un essai de coupure électrique physique de l’hôte. Tester la fédération avec deux instances isolées, un refus d’authentification et une version antérieure.
 
 Les contrôles de stockage utilisent des noms de sondes stables et un verrou local par destination pour borner les sondes bloquées par un appel NFS « hard ». Le délai côté Enhanced ne peut pas interrompre de force un appel noyau non interruptible : le rétablissement du serveur peut rester nécessaire. Les alertes répétées d’un même workflow sont limitées à une notification toutes les cinq minutes. Après un refus d’authentification fédérée, utiliser la réauthentification de l’agent ; réactiver le compte distant seul ne relance pas le transport arrêté pour raisons de sécurité.
+
+### Intégrité des jobs et reprise manuelle
+
+Les jobs enregistrés par Enhanced sont vérifiés avant chaque lancement depuis Enhanced et dans le pré-hook, ainsi qu’environ chaque minute lorsqu’aucune sauvegarde applicative n’est active. Les deux URL de callback, leur authentification, la source, le dépôt et les tentatives automatiques doivent correspondre au workflow. Un job absent, modifié ou non vérifiable est signalé ; Enhanced refuse son lancement. « Vérifier la protection des jobs » permet une vérification immédiate après correction. Aucun hook n’est remplacé silencieusement. Si les hooks sont entièrement supprimés et le job lancé directement dans Zerobyte, Enhanced ne peut pas intercepter cette exécution ; conserver la supervision et les hooks.
+
+Une reprise échouée affiche les stacks et services inscrits au journal. « Réessayer la reprise des applications » ne lance aucun backup : il retente uniquement ces services, après vérification que la tâche distante est terminée. Un backup interrompu n’est pas annoncé comme réussi parce que les applications ont redémarré.
+
+### Revalidation explicite d’un stockage
+
+Après un changement volontaire de stockage, désactiver tous les jobs, attendre la fin des tâches et vérifier physiquement l’identité du serveur, le partage et la séparation des dépôts. Prévisualiser les empreintes avant/après puis attester cette vérification et confirmer. Le consentement est lié à la révision exacte du plan ; toute modification exige une nouvelle prévisualisation.
+
+Si Zerobyte est arrêté par le garde-fou (code 31), Enhanced peut consulter en lecture seule la base du volume de données dédié dont la propriété Docker est vérifiée. Tous les jobs doivent être désactivés et les tâches terminées, même dans ce mode. Après arrêt du processus, Enhanced revérifie l’inventaire et les montages avant de remplacer le garde-fou. Le Compose et les métadonnées antérieurs sont conservés dans des fichiers `.pre-revalidation` privés. Seul Zerobyte est redéployé ; aucun dossier local de repli n’est accepté pour une destination déclarée distante.
+
+Les résumés fédérés distinguent les refus d’authentification connus, les instances déconnectées, les réponses incompatibles et les délais dépassés. Un délai ne prouve pas à lui seul qu’une version est ancienne : le message demande de vérifier connexion et compatibilité. Voir aussi [les exercices reproductibles](../extra/zerobyte-lab/README.md).

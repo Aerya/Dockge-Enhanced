@@ -2205,5 +2205,20 @@
     "watcher.zerobyte.check.remoteIdentity": "远程服务器身份及无本地回退",
     "watcher.zerobyte.check.restorePermissions": "实际权限和恢复空间",
     "watcher.zerobyte.check.retentionReview": "保留策略和独立恢复测试",
-    "watcher.zerobyte.migrationPending": "迁移未验证：请保持任务禁用并重试相同计划。"
+    "watcher.zerobyte.migrationPending": "迁移未验证：请保持任务禁用并重试相同计划。",
+    "watcher.zerobyte.verifyProtection": "验证任务保护",
+    "watcher.zerobyte.integrity.ok": "保护已验证",
+    "watcher.zerobyte.integrity.changed": "保护已变更：禁止启动",
+    "watcher.zerobyte.integrity.missing": "任务不存在：禁止启动",
+    "watcher.zerobyte.integrity.unavailable": "保护未验证：检查连接",
+    "watcher.zerobyte.retryRecovery": "重试应用恢复",
+    "watcher.zerobyte.retryRecoveryHelp": "仅重试日志中的服务而不重新备份？远程任务必须已结束。",
+    "watcher.zerobyte.revalidateTitle": "重新验证已更改的存储",
+    "watcher.zerobyte.revalidateHelp": "禁用所有任务并结束操作。实际验证服务器、共享和仓库隔离。预览比较指纹；确认后更换保护并仅重新部署 Zerobyte。禁止本地回退。",
+    "watcher.zerobyte.revalidateAttest": "我已验证存储身份和仓库隔离。",
+    "watcher.zerobyte.revalidateApply": "确认重新验证并部署 Zerobyte",
+    "watcher.zerobyte.peerError.authentication": "认证被拒绝：重新认证代理。",
+    "watcher.zerobyte.peerError.offline": "实例已断开：检查可用性。",
+    "watcher.zerobyte.peerError.timeout": "未响应：检查连接和版本兼容性。",
+    "watcher.zerobyte.peerError.incompatible": "响应不兼容：检查实例版本。"
 }

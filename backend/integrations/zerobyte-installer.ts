@@ -426,3 +426,143 @@ try{fd=fs.openSync(p,'wx',0o600);fs.writeSync(fd,'probe');fs.fsyncSync(fd)}final
         throw new Error("Destination I/O unavailable or timed out; backup deferred, no local fallback");
     }
 }
+
+async function readOwnedOfflineInventory(ctx: Awaited<ReturnType<typeof context>>, requireGuard = true): Promise<{ jobs: number;
+    tasks: number;
+    evidence: string }> {
+    let c = JSON.parse(await docker("inspect", `${ctx.name}-zerobyte-1`))[0];
+    for (let attempt = 0; requireGuard && attempt < 8 && c.State.Running && !c.State.Restarting; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 250));
+        c = JSON.parse(await docker("inspect", `${ctx.name}-zerobyte-1`))[0];
+    }
+    if (c.Config?.Labels?.[OWNER] !== ctx.owner || (c.State.Running && !c.State.Restarting) || (requireGuard && c.State.ExitCode !== 31)) {
+        throw new Error("Offline revalidation requires the owned instance stopped by the filesystem guard (31)");
+    }
+    const data = c.Mounts.find((m: DockerMount) => m.Destination === "/var/lib/zerobyte");
+    if (data?.Type !== "volume" || !data.Name || c.Mounts.some((m: DockerMount) => m.Destination !== "/var/lib/zerobyte" && m.Name === data.Name)) {
+        throw new Error("Dedicated managed data volume cannot be verified");
+    }
+    const volume = JSON.parse(await docker("volume", "inspect", data.Name))[0];
+    if (volume.Labels?.[OWNER] !== ctx.owner) {
+        throw new Error("Managed data volume ownership mismatch");
+    }
+    const script = `const {Database}=require('bun:sqlite');const db=new Database('/data/data/zerobyte.db',{readonly:true});
+const jobs=db.query('SELECT enabled FROM backup_schedules_table').all();const tasks=db.query("SELECT status FROM tasks WHERE status NOT IN ('failed','cancelled','stale','succeeded')").all();
+if(jobs.some(j=>j.enabled!==0)||tasks.length)process.exit(32);console.log(JSON.stringify({jobs:jobs.length,tasks:0,evidence:'owned-offline-db'}));`;
+    try {
+        const raw = (await exec("docker", [ "run", "--rm", "--pull=never", "--network", "none", "--cap-drop", "ALL", "--read-only",
+            "--mount", `type=volume,source=${data.Name},target=/data,readonly`, "--entrypoint", "bun", ZEROBYTE_IMAGE, "-e", script ], { timeout: 10000,
+            maxBuffer: 4096 })).stdout;
+        const inventory = JSON.parse(raw);
+        if (!Number.isSafeInteger(inventory.jobs) || inventory.tasks !== 0 || inventory.evidence !== "owned-offline-db") {
+            throw new Error("Invalid inventory");
+        }
+        return inventory as { jobs: number;
+            tasks: number;
+            evidence: string };
+    } catch {
+        throw new Error("Cannot prove all managed jobs disabled and tasks terminated; revalidation refused");
+    }
+}
+/** A preview binds operator consent to exact mounts and configuration, never to arbitrary paths. */
+async function revalidationPlan(server: DockgeServer) {
+    const ctx = await context(server);
+    const status = await managedZerobyteStatus(server);
+    if (!status.installed || !await managedConnection(server)) {
+        throw new Error("Revalidation requires the owned managed connection");
+    }
+    if (BackupManager.getInstance().isBackupRunActive() || BackupManager.getInstance().isRestoreRunActive()) {
+        throw new Error("Wait for native backup/restore completion");
+    }
+    const mounts = await validate(server, { localMounts: status.localMounts,
+        destinationMounts: status.destinationMounts,
+        attestNoRemoteOverlap: true }, ctx);
+    const composeFile = path.join(ctx.directory, "compose.yaml");
+    const oldCompose = await fs.readFile(composeFile, "utf8");
+    const metadata = await fs.readFile(path.join(ctx.directory, ".zerobyte.json"), "utf8");
+    const changes = mounts.destinations.map((m, i) => ({ target: m.target,
+        source: m.source,
+        previous: status.destinationMounts[i]?.fingerprint,
+        current: m.fingerprint })).filter(m => m.previous !== m.current);
+    // Use the API when available; offline validation only reads the owned, stopped instance DB.
+    let inventory: { jobs: number;
+        tasks: number;
+        evidence: string };
+    try {
+        const overview = await zerobyte.overview(false);
+        if (overview.jobs.some(j => j.enabled) || overview.tasks.length) {
+            throw new Error("ACTIVE_INVENTORY");
+        }
+        inventory = { jobs: overview.jobs.length,
+            tasks: 0,
+            evidence: "api" };
+    } catch (error) {
+        if (error instanceof Error && error.message === "ACTIVE_INVENTORY") {
+            throw new Error("Disable jobs and wait for all tasks before revalidating", { cause: error });
+        }
+        inventory = await readOwnedOfflineInventory(ctx);
+    }
+    const revision = createHash("sha256").update(metadata + oldCompose + JSON.stringify(mounts) + JSON.stringify(inventory)).digest("hex");
+    return { ctx,
+        status,
+        mounts,
+        oldCompose,
+        revision,
+        changes,
+        inventory };
+}
+
+export async function previewManagedRevalidation(server: DockgeServer) {
+    const p = await revalidationPlan(server);
+    return { revision: p.revision,
+        changes: p.changes,
+        inventory: p.inventory };
+}
+export async function revalidateManagedStorage(server: DockgeServer, input: Record<string, unknown>) {
+    if (busy || input.confirmation !== "REVALIDATE ZEROBYTE STORAGE" || input.attestIdentityAndSeparation !== true) {
+        throw new Error("Explicit identity/separation attestation and revalidation confirmation required");
+    }
+    busy = true;
+    try {
+        const p = await revalidationPlan(server);
+        if (input.revision !== p.revision || !p.changes.length) {
+            throw new Error("Storage preview changed or has no changes; preview again");
+        }
+        await docker("stop", `${p.ctx.name}-zerobyte-1`);
+        // Recheck after the process stops, closing the API-check/stop race.
+        const stopped = await readOwnedOfflineInventory(p.ctx, false);
+        if (stopped.jobs !== p.inventory.jobs) {
+            throw new Error("Inventory changed; preview again");
+        }
+        const fresh = await validate(server, { localMounts: p.status.localMounts,
+            destinationMounts: p.status.destinationMounts,
+            attestNoRemoteOverlap: true }, p.ctx);
+        if (JSON.stringify(fresh) !== JSON.stringify(p.mounts)) {
+            throw new Error("Mounts changed after preview; revalidation refused");
+        }
+        const file = path.join(p.ctx.directory, "compose.yaml");
+        const metadataFile = path.join(p.ctx.directory, ".zerobyte.json");
+        const previousMetadata = await fs.readFile(metadataFile, "utf8");
+        const serialized = YAML.stringify(composeModel(p.ctx.name, p.ctx.owner, p.status.url, p.status.port!, p.mounts.sources, p.mounts.destinations, server.config.port));
+        // Retain previous guard and metadata as an operator-readable recovery point, mode 0600.
+        await fs.writeFile(file + ".pre-revalidation", p.oldCompose, { mode: 0o600 });
+        await fs.writeFile(metadataFile + ".pre-revalidation", previousMetadata, { mode: 0o600 });
+        await fs.writeFile(file, serialized, { mode: 0o600 });
+        try {
+            await docker("compose", "--project-directory", p.ctx.directory, "-p", p.ctx.name, "-f", file, "up", "-d", "--wait", "--wait-timeout", "60");
+            await ensureCallbackNetwork(p.ctx);
+            await fs.writeFile(metadataFile, JSON.stringify({ sources: p.mounts.sources,
+                destinations: p.mounts.destinations,
+                url: p.status.url,
+                port: p.status.port }), { mode: 0o600 });
+        } catch {
+            await docker("stop", `${p.ctx.name}-zerobyte-1`).catch(() => {});
+            await fs.writeFile(file, p.oldCompose, { mode: 0o600 });
+            // Keep the previous guard; do not restart it into an unverified filesystem.
+            throw new Error("Revalidation deployment failed; previous guard restored. Inspect the managed stack before retrying");
+        }
+        return managedZerobyteStatus(server);
+    } finally {
+        busy = false;
+    }
+}

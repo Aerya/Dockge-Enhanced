@@ -2264,5 +2264,20 @@
     "watcher.zerobyte.check.remoteIdentity": "Identité du serveur distant et absence de repli local",
     "watcher.zerobyte.check.restorePermissions": "Permissions réelles et espace de restauration",
     "watcher.zerobyte.check.retentionReview": "Rétention et essai de restauration indépendant",
-    "watcher.zerobyte.migrationPending": "Migration non vérifiée : conserver le job désactivé et relancer le même plan."
+    "watcher.zerobyte.migrationPending": "Migration non vérifiée : conserver le job désactivé et relancer le même plan.",
+    "watcher.zerobyte.verifyProtection": "Vérifier la protection des jobs",
+    "watcher.zerobyte.integrity.ok": "Protection vérifiée",
+    "watcher.zerobyte.integrity.changed": "Protection modifiée : lancement bloqué",
+    "watcher.zerobyte.integrity.missing": "Job absent : lancement bloqué",
+    "watcher.zerobyte.integrity.unavailable": "Protection non vérifiée : vérifier la connexion",
+    "watcher.zerobyte.retryRecovery": "Réessayer la reprise des applications",
+    "watcher.zerobyte.retryRecoveryHelp": "Réessayer uniquement les services inscrits au journal, sans relancer le backup ? La tâche distante doit être terminée.",
+    "watcher.zerobyte.revalidateTitle": "Revalider un stockage dont l’empreinte a changé",
+    "watcher.zerobyte.revalidateHelp": "Désactiver tous les jobs et terminer les tâches. Vérifier physiquement le serveur, le partage et la séparation des dépôts. La prévisualisation compare les empreintes ; confirmer remplace le garde-fou et redéploie uniquement Zerobyte. Aucun repli local n’est accepté.",
+    "watcher.zerobyte.revalidateAttest": "J’atteste l’identité du stockage et la séparation des dépôts après vérification.",
+    "watcher.zerobyte.revalidateApply": "Confirmer la revalidation et redéployer Zerobyte",
+    "watcher.zerobyte.peerError.authentication": "Authentification refusée : réauthentifier l’agent.",
+    "watcher.zerobyte.peerError.offline": "Instance déconnectée : vérifier sa disponibilité.",
+    "watcher.zerobyte.peerError.timeout": "Réponse absente : vérifier connexion et compatibilité de version.",
+    "watcher.zerobyte.peerError.incompatible": "Réponse incompatible : vérifier la version de l’instance."
 }

@@ -5,7 +5,7 @@ import express, { Request, Response } from "express";
 import { AuditLogger } from "../audit-log";
 import { DockgeServer } from "../dockge-server";
 import { zerobyte } from "./zerobyte-manager";
-import { installManagedZerobyte, managedZerobyteStatus, updateManagedZerobyteMounts, managedConnection, managedRestoreRoot } from "./zerobyte-installer";
+import { installManagedZerobyte, managedZerobyteStatus, updateManagedZerobyteMounts, previewManagedRevalidation, revalidateManagedStorage, managedConnection, managedRestoreRoot } from "./zerobyte-installer";
 
 export function createZerobyteRouter(server: DockgeServer) {
     const router = express.Router();
@@ -52,6 +52,18 @@ export function createZerobyteRouter(server: DockgeServer) {
         await workflows.assertIdle();
         const data = await updateManagedZerobyteMounts(server, req.body);
         await audit(req, "managed-mounts-update", data.name);
+        res.json({ ok: true,
+            data });
+    }));
+    router.post("/managed/revalidation/preview", handler(async (_req, res) => {
+        await workflows.assertIdle();
+        res.json({ ok: true,
+            data: await previewManagedRevalidation(server) });
+    }));
+    router.post("/managed/revalidation/apply", handler(async (req, res) => {
+        await workflows.assertIdle();
+        const data = await revalidateManagedStorage(server, req.body ?? {});
+        await audit(req, "managed-storage-revalidate", data.name);
         res.json({ ok: true,
             data });
     }));
@@ -142,6 +154,17 @@ export function createZerobyteRouter(server: DockgeServer) {
     router.post("/workflows/:workflow/acknowledge", handler(async (req, res) => {
         await workflows.acknowledge(req.params.workflow, req.body?.confirmation);
         await audit(req, "workflow-acknowledge", req.params.workflow);
+        res.json({ ok: true });
+    }));
+    router.post("/workflows/verify", handler(async (req, res) => {
+        await workflows.verifyProtection();
+        await audit(req, "workflow-verify", null);
+        res.json({ ok: true,
+            data: await workflows.status() });
+    }));
+    router.post("/workflows/recover", handler(async (req, res) => {
+        await workflows.retryRecovery(req.body?.confirmation);
+        await audit(req, "workflow-recover", null);
         res.json({ ok: true });
     }));
     router.get("/diagnostics", handler(async (_req, res) => {

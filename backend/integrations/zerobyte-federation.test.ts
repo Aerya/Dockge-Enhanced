@@ -35,3 +35,15 @@ test("an incompatible peer with missing or string state flags is never presented
         enabled: "false",
         reachable: true }), /Unsupported/);
 });
+
+test("peer failure codes distinguish known authentication, offline, timeout and incompatible responses without upstream messages", async () => {
+    const { ZerobytePeerError } = await import("./zerobyte-federation");
+    for (const code of [ "authentication", "offline", "timeout", "incompatible" ] as const) {
+        const result = await collectZerobytePeers([{ endpoint: "fixture",
+            name: "fixture" }], async () => {
+            throw new ZerobytePeerError(code);
+        });
+        assert.equal(result[0].errorCode, code);
+        assert.equal(result[0].summary, null);
+    }
+});

@@ -72,3 +72,17 @@ Use dedicated fictitious shares and stacks. First verify backup and restore cont
 Use a Docker socket relay dedicated to the test instance for Docker outages, rather than stopping a production-shared daemon. Abruptly restarting test containers exercises persistent recovery but is not a physical host power-loss test. Exercise federation using isolated instances, authentication rejection and an older version.
 
 Storage checks use stable probe names and a local per-destination lock to bound probes blocked in hard NFS syscalls. An Enhanced timeout cannot forcibly interrupt an uninterruptible kernel operation; restoring the server may still be necessary. Repeated workflow alerts notify at most once every five minutes. After federation authentication rejection, explicitly reauthenticate the agent; reactivating the remote account alone does not restart the transport stopped for security.
+
+### Job integrity and manual application recovery
+
+Enhanced checks registered jobs before its manual launch and inside the pre-hook, plus roughly every minute while no application backup is active. Callback URLs/authentication, source, repository and retries must match the workflow. Missing, changed or unverifiable protection blocks launch from Enhanced; an immediate verification action is available after correction. Hooks are never silently replaced. Removing all hooks and launching directly in Zerobyte bypasses interception; keep monitoring and hooks enabled.
+
+Failed recovery lists journaled stacks and services. Manual retry only restarts those services after remote task termination; it never starts another backup or marks an interrupted backup successful.
+
+### Explicit storage revalidation
+
+Disable all jobs, finish tasks and physically verify the server, share and repository separation. Preview fingerprint changes, attest the check and confirm. Consent is bound to the exact plan revision; changes require another preview.
+
+When the filesystem guard stops Zerobyte (31), Enhanced can read its verified dedicated Docker data volume database without writes. All jobs must remain disabled and tasks terminal. After stopping the process, Enhanced rechecks inventory and mounts before replacing the guard. Previous Compose/metadata files remain in private `.pre-revalidation` copies. Only Zerobyte is redeployed; a declared remote destination cannot become a local fallback.
+
+Federation distinguishes known authentication rejection, disconnected peers, incompatible responses and timeouts. A timeout alone does not establish an old version: check connectivity and compatibility. See [repeatable laboratory drills](../extra/zerobyte-lab/README.md).

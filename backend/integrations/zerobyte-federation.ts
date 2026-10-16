@@ -53,6 +53,11 @@ export function sanitizeZerobyteSummary(value: unknown): ZerobyteSummary {
     }
     return result;
 }
+export class ZerobytePeerError extends Error {
+    constructor(public code: "authentication" | "offline" | "timeout" | "incompatible") {
+        super(code);
+    }
+}
 export async function collectZerobytePeers(
     peers: Array<{ endpoint: string;
         name: string }>,
@@ -62,11 +67,13 @@ export async function collectZerobytePeers(
         try {
             return { ...peer,
                 online: true,
-                summary: sanitizeZerobyteSummary(await request(peer.endpoint)) };
-        } catch {
+                summary: sanitizeZerobyteSummary(await request(peer.endpoint)),
+                errorCode: null };
+        } catch (error) {
             return { ...peer,
                 online: false,
-                summary: null };
+                summary: null,
+                errorCode: error instanceof ZerobytePeerError ? error.code : "incompatible" };
         }
     }));
 }
@@ -76,12 +83,16 @@ export async function federatedZerobyteOverview(server: DockgeServer) {
     const peers = Object.entries(agents).map(([ endpoint, agent ]) => ({ endpoint,
         name: String(agent.display_name || endpoint).slice(0, 100) }));
     const remote = await collectZerobytePeers(peers, async endpoint => {
+        const failure = AgentManager.connectionFailure(endpoint);
+        if (failure) {
+            throw new ZerobytePeerError(failure);
+        }
         let timeout: NodeJS.Timeout | undefined;
         const response = await Promise.race([
             transport.requestEndpoint<{ ok: boolean;
                 data?: unknown }>(endpoint, "getZerobyteSummary"),
             new Promise<never>((_resolve, reject) => {
-                timeout = setTimeout(() => reject(new Error("Peer summary timeout")), 8000);
+                timeout = setTimeout(() => reject(new ZerobytePeerError("timeout")), 8000);
             }),
         ]).finally(() => {
             if (timeout) {
@@ -89,12 +100,13 @@ export async function federatedZerobyteOverview(server: DockgeServer) {
             }
         });
         if (!response.ok) {
-            throw new Error("Remote summary unavailable");
+            throw new ZerobytePeerError("incompatible");
         }
         return response.data;
     });
     return [{ endpoint: "local",
         name: "local",
         online: true,
+        errorCode: null,
         summary: await localZerobyteSummary(server) }, ...remote ];
 }

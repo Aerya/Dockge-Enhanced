@@ -2268,5 +2268,20 @@
     "watcher.zerobyte.check.remoteIdentity": "Remote-Identität und kein lokaler Fallback",
     "watcher.zerobyte.check.restorePermissions": "Tatsächliche Rechte und Wiederherstellungskapazität",
     "watcher.zerobyte.check.retentionReview": "Aufbewahrung und unabhängiger Wiederherstellungstest",
-    "watcher.zerobyte.migrationPending": "Migration ungeprüft: Job deaktiviert lassen und denselben Plan erneut ausführen."
+    "watcher.zerobyte.migrationPending": "Migration ungeprüft: Job deaktiviert lassen und denselben Plan erneut ausführen.",
+    "watcher.zerobyte.verifyProtection": "Job-Schutz prüfen",
+    "watcher.zerobyte.integrity.ok": "Schutz geprüft",
+    "watcher.zerobyte.integrity.changed": "Schutz geändert: Start gesperrt",
+    "watcher.zerobyte.integrity.missing": "Job fehlt: Start gesperrt",
+    "watcher.zerobyte.integrity.unavailable": "Schutz ungeprüft: Verbindung prüfen",
+    "watcher.zerobyte.retryRecovery": "Anwendungen erneut starten",
+    "watcher.zerobyte.retryRecoveryHelp": "Nur protokollierte Dienste erneut starten, ohne neues Backup? Remote-Aufgabe muss beendet sein.",
+    "watcher.zerobyte.revalidateTitle": "Geänderten Speicher erneut prüfen",
+    "watcher.zerobyte.revalidateHelp": "Alle Jobs deaktivieren und Aufgaben beenden. Server, Freigabe und Repository-Trennung prüfen. Vorschau vergleicht Kennungen; Bestätigung ersetzt Schutz und startet nur Zerobyte neu. Kein lokaler Fallback.",
+    "watcher.zerobyte.revalidateAttest": "Speicheridentität und Repository-Trennung geprüft.",
+    "watcher.zerobyte.revalidateApply": "Bestätigen und Zerobyte neu bereitstellen",
+    "watcher.zerobyte.peerError.authentication": "Authentifizierung abgelehnt: Agent neu anmelden.",
+    "watcher.zerobyte.peerError.offline": "Instanz getrennt: Verfügbarkeit prüfen.",
+    "watcher.zerobyte.peerError.timeout": "Keine Antwort: Verbindung und Version prüfen.",
+    "watcher.zerobyte.peerError.incompatible": "Inkompatible Antwort: Version prüfen."
 }
