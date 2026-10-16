@@ -2,6 +2,8 @@
     "releaseNews.item.serviceHealthcheckAssistant": "Assistant de healthcheck facultatif par service : propose une URL HTTP locale ou un port TCP selon le Compose, affiche la commande exacte et ne modifie le YAML qu’après validation. Aucun contrôle existant n’est remplacé automatiquement.",
     "serviceHealthcheck.title": "Healthcheck du service",
     "serviceHealthcheck.configure": "Configurer le healthcheck",
+    "serviceHealthcheck.action": "Healthchecks",
+    "serviceHealthcheck.chooseService": "Choisissez le service à configurer",
     "serviceHealthcheck.configured": "configuré",
     "serviceHealthcheck.help": "Facultatif : proposition fondée sur les ports du Compose. Vérifiez-la avant de l'ajouter au YAML ; le chemin / proposé peut nécessiter une adaptation.",
     "serviceHealthcheck.existing": "Ce service possède déjà un healthcheck Compose. Appliquer la proposition le remplacera.",

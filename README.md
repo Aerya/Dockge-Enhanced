@@ -62,6 +62,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Optional per-service healthcheck assistant:** Click **Configure healthcheck** on a service when viewing an existing stack or creating a new one. The assistant proposes a local HTTP URL or TCP-port check based on its internal Compose ports. Review or change the target and exact command before adding it to the YAML; existing healthchecks are never replaced automatically. Docker runs the check inside the image, which must provide `/bin/sh` and `curl`/`wget` or `nc`. Verify the health status after deployment; a successful TCP connection does not prove application readiness.
 
+In Compose edit mode, **Healthchecks** is also available in the stack action bar. Choose a service if the stack has several.
+
 #### Features and DNS
 
 **Optional DNS fallback for registry checks**
