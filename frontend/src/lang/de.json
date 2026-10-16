@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.imageUpdateStoppedServices": "Automatische Image-Updates starten keine gestoppten Compose-Dienste mehr. ImageWatcher verschiebt das Update, prüft vor der Neuerstellung erneut und versucht es später nochmals.",
     "releaseNews.item.configurableImmediateChecks": "Watcher > Images unterscheidet jetzt zwischen dem vollständigen Scan (standardmäßig alle 6 Stunden) und gezielten Prüfungen im Sofort-Modus (standardmäßig alle 5 Minuten). Das gezielte Intervall ist in Minuten oder Stunden einstellbar oder separat deaktivierbar.",
     "releaseNews.item.registryDnsFallback": "Optionaler DNS-Fallback für ImageWatcher: zuerst System-DNS, bei DNS-Fehlern konfigurierbare Quad9-/Cloudflare- oder eigene IPv4-/IPv6-Server. A-/AAAA-Tests, Laufzeiten und Diagnosen unter Watcher > Images. Keine DNS-Änderungen am Host oder an Docker Engine.",
     "languageName": "Deutsch",

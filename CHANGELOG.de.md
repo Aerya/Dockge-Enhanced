@@ -1,5 +1,7 @@
 # Dockge-Enhanced-Changelog
 
+**2026-10-16 — Gestoppte Dienste bei Image-Updates beibehalten** — ImageWatcher verschiebt ein Update, wenn ein betroffener Compose-Dienst oder sein Netzwerk-Namespace-Begleiter gestoppt ist oder fehlt. Nach dem Pull wird dies unmittelbar vor der Neuerstellung erneut geprüft; automatische Updates starten keine gestoppten Dienste.
+
 **2026-10-16 — Konfigurierbare Sofort-Prüfungen** — Watcher > Images unterscheidet nun zwischen dem vollständigen Scan (standardmäßig alle 6 Stunden) und gezielten Prüfungen für Images im Sofort-Modus (standardmäßig alle 5 Minuten). Das gezielte Intervall kann in Minuten oder Stunden eingestellt oder ohne Abschalten des vollständigen Scans deaktiviert werden. Bestehende Installationen behalten den 5-Minuten-Standard.
 
 **2026-10-16 — Vorbereitung von Host-Bind-Mounts unter Docker Desktop** — Stack-Operationen ermöglichen es Docker nun, jede Verzeichnisquelle direkt einzubinden, sodass gemeinsam genutzte macOS-Pfade nicht länger vom Stammdateisystem der Docker-VM abhängen. Dateibindungen ohne Endung wie `/etc/localtime` sind von der Verzeichniserstellung ausgeschlossen; Docker-Fehlermeldungen bleiben sichtbar.
