@@ -21,6 +21,8 @@ import { assertNotSelfStack, assertStackPauseAllowed } from "../stack-pause-poli
 import { resolveCurrentContainer } from "../current-container";
 import { getContainerCounts } from "../container-counts";
 import { PowerWatchManager, PowerWatchSnapshot } from "../watchers/powerwatch-manager";
+import { MonitoringWatcher } from "../watchers/monitoring-watcher";
+import { assertHistoryStackName, stackHistoryPreset, StackResourceHistoryCollector } from "../stack-resource-history";
 
 export function instanceSystemStatsResponse(
     systemStats: Record<string, unknown>,
@@ -96,6 +98,18 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     ...(await getStackStatsSnapshot()) }, callback);
             } catch (e) {
                 callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("stackResourceHistoryGet", async (name: unknown, preset: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                assertHistoryStackName(name);
+                callbackResult({ ok: true,
+                    enabled: MonitoringWatcher.getInstance().settings.stackHistoryEnabled,
+                    data: await StackResourceHistoryCollector.getInstance().read(name, stackHistoryPreset(preset)) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
             }
         });
 

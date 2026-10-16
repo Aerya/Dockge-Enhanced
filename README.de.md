@@ -60,6 +60,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+**Optionaler CPU/RAM-Verlauf für Stacks und Container：** Aktivieren Sie die Aufzeichnung unter **Monitoring** und öffnen Sie **Ressourcenverbrauch** in den Stack-Aktionen. Kompakte Diagramme zeigen die Stack-Summe und jeden tatsächlichen Container einschließlich Replikaten und nicht verwalteten Compose-Projekten für 24 Stunden, 7 Tage, 1 Monat, 1 Jahr oder alle aufgezeichneten Daten. Messungen erfolgen alle 5 Minuten, auch ohne geöffneten Browser; die Aufzeichnung ist standardmäßig deaktiviert. CPU: 100 % entspricht einem Kern; unter Linux wird rückgewinnbarer Cache vom RAM abgezogen. Messlücken bleiben sichtbar; Spitzen zwischen Messungen können fehlen. Stack-Summen enthalten keine nativen Host-Prozesse oder Container außerhalb von Compose. Die Stack-Liste lässt sich nach CPU, RAM oder CPU und dann RAM sortieren.
+
 **Restic sichert sein eigenes Repository nicht mit:** Liegt ein lokales Repository in einem ausgewählten Backup-Ordner, warnt Enhanced Sie und schließt es automatisch aus. Sie können beispielsweise `/app/data` als Quelle und `/app/data/backups` als Repository beibehalten. Das Repository selbst oder seine Unterordner können nicht als Quelle ausgewählt werden. Bestehende Pfade, Passwörter und Aufbewahrungseinstellungen bleiben erhalten.
 
 **Optionaler Healthcheck-Assistent pro Dienst:** Bei einem bestehenden oder neu erstellten Stack auf **Healthcheck konfigurieren** am jeweiligen Dienst klicken. Der Assistent schlägt anhand der internen Compose-Ports eine lokale HTTP-URL oder einen TCP-Port vor. Ziel und genauen Befehl vor dem Einfügen in YAML prüfen oder ändern; vorhandene Healthchecks werden nie automatisch ersetzt. Der Test läuft im Image, das `/bin/sh` und `curl`/`wget` oder `nc` bereitstellen muss. Den Health-Status nach dem Deployment prüfen; ein offener TCP-Port beweist nicht, dass die Anwendung bereit ist.
@@ -489,6 +491,7 @@ Die Restic-Snapshot-Liste ist standardmäßig auf **Alle** eingestellt. **Speich
 - Verschlüsselte Anmeldeinformationen-Übertragung für private Registries
 
 ### Monitoring
+- Optionaler 5-Minuten-CPU/RAM-Verlauf je Stack und tatsächlichem Container, kompaktes Aktionspanel, 24h/7T/1M/1J/alle Zeiträume und CPU/RAM-Sortierung
 - **PowerWatch Hub**: Verwaltete Compose-Bereitstellung oder Verbindung zu einem bestehenden Hub, der über die Hub-WebUI hinzugefügte Nodes aggregiert.
 - System-, Stack- und Container-Statistiken
 - Optionaler 5-Minuten-CPU/RAM-Verlauf mit 24-Stunden-, 7-Tage-, Monats- und benutzerdefinierten Bereichen, serverseitigem Downsampling und sichtbaren Ausfallzeiten-Lücken

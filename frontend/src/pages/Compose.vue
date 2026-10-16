@@ -96,6 +96,10 @@
                         <font-awesome-icon icon="stop" />
                         <span class="stack-action-label">{{ $t("stopStack") }}</span>
                     </button>
+                    <button v-if="!isAdd && !isEditMode" type="button" class="btn stack-action" :class="showStackResourceHistory ? 'btn-primary' : 'btn-normal'" :title="$t('stackHistory.actionHint')" :aria-label="$t('stackHistory.action')" :aria-expanded="showStackResourceHistory" @click="showStackResourceHistory = !showStackResourceHistory">
+                        <font-awesome-icon icon="chart-line" />
+                        <span class="stack-action-label">{{ $t('stackHistory.action') }}</span>
+                    </button>
                     <StackActionMenu v-if="!isEditMode" :label="$t('stackActionMenu.more')">
                         <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('stackActionHelp.recreate')" :aria-label="$t('recreateStack')" :disabled="processing" @click="recreateStack">
                             <font-awesome-icon icon="recycle" />
@@ -305,6 +309,20 @@
                     @has-data="showProgressTerminal = true; submitted = true;"
                 ></Terminal>
             </transition>
+
+            <div v-if="!isAdd && !stack.isManagedByDockge" class="stack-action-bar mb-3" role="toolbar" :aria-label="$t('stackActions')">
+                <button type="button" class="btn btn-sm resource-history-action d-inline-flex align-items-center gap-2" :class="showStackResourceHistory ? 'btn-primary' : 'btn-normal'" :title="$t('stackHistory.actionHint')" :aria-label="$t('stackHistory.action')" :aria-expanded="showStackResourceHistory" @click="showStackResourceHistory = !showStackResourceHistory">
+                    <font-awesome-icon icon="chart-line" />
+                    <span>{{ $t('stackHistory.action') }}</span>
+                </button>
+            </div>
+            <StackResourceHistory
+                v-if="showStackResourceHistory && !isAdd && !isEditMode"
+                :key="`${endpoint}:${stack.name}`"
+                :stack-name="stack.externalProject || stack.name"
+                :endpoint="endpoint"
+                @close="showStackResourceHistory = false"
+            />
 
             <div
                 v-if="stack.isManagedByDockge"
@@ -897,6 +915,7 @@ import PendingStackMoveStatus from "../components/PendingStackMoveStatus.vue";
 import RemoteInstanceLinks from "../components/RemoteInstanceLinks.vue";
 import PlugNPiNLabelAssistant from "../components/PlugNPiNLabelAssistant.vue";
 import StackGitPanel from "../components/StackGitPanel.vue";
+import StackResourceHistory from "../components/StackResourceHistory.vue";
 import { applyPlugNPiNLabelsToCompose, PlugNPiNSequenceLabelsError } from "../plugnpin-labels";
 import { useStackSchedules } from "../composables/useStackSchedules";
 
@@ -928,9 +947,11 @@ export default {
         RemoteInstanceLinks,
         PlugNPiNLabelAssistant,
         StackGitPanel,
+        StackResourceHistory,
     },
     beforeRouteUpdate(to, from, next) {
         this.containersExpanded = true;
+        this.showStackResourceHistory = false;
         this.exitConfirm(next);
     },
     beforeRouteLeave(to, from, next) {
@@ -1065,6 +1086,7 @@ export default {
             noteExpanded: false,
             readmeSaving: false,
             showStackReadme: false,
+            showStackResourceHistory: false,
             readmeEditing: false,
             readmeDraft: "",
             showStartGuard: false,
@@ -2857,6 +2879,10 @@ export default {
     display: flex;
     flex-wrap: wrap;
     gap: .45rem;
+}
+
+.resource-history-action.btn-primary {
+    color: var(--primary-text);
 }
 
 .stack-action {
