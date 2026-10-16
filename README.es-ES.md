@@ -61,7 +61,7 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
-**Asistente opcional de comprobación de salud por servicio:** al editar una stack, cada servicio puede recibir una propuesta de URL HTTP local o puerto TCP basada en sus puertos internos de Compose. Revise o cambie el destino y el comando exacto antes de añadirlo al YAML; las comprobaciones existentes nunca se reemplazan automáticamente. La prueba se ejecuta dentro de la imagen, que debe incluir `/bin/sh` y `curl`/`wget` o `nc`. Compruebe el estado tras el despliegue; un puerto TCP abierto no garantiza que la aplicación esté lista.
+**Asistente opcional de comprobación de salud por servicio:** pulse **Configurar comprobación de salud** en un servicio de una stack existente o al crear una nueva. El asistente propone una URL HTTP local o un puerto TCP según los puertos internos de Compose. Revise o cambie el destino y el comando exacto antes de añadirlo al YAML; las comprobaciones existentes nunca se reemplazan automáticamente. La prueba se ejecuta dentro de la imagen, que debe incluir `/bin/sh` y `curl`/`wget` o `nc`. Compruebe el estado tras el despliegue; un puerto TCP abierto no garantiza que la aplicación esté lista.
 
 #### Funciones y DNS
 

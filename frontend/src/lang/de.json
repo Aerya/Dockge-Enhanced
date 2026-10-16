@@ -1,6 +1,8 @@
 {
     "releaseNews.item.serviceHealthcheckAssistant": "Optionaler Healthcheck-Assistent pro Dienst: schlägt anhand von Compose eine lokale HTTP-URL oder einen TCP-Port vor, zeigt den genauen Befehl und ändert YAML erst nach Bestätigung. Vorhandene Prüfungen werden nicht automatisch ersetzt.",
     "serviceHealthcheck.title": "Healthcheck des Dienstes",
+    "serviceHealthcheck.configure": "Healthcheck konfigurieren",
+    "serviceHealthcheck.configured": "konfiguriert",
     "serviceHealthcheck.help": "Optional: Vorschlag anhand der Compose-Ports. Vor dem Einfügen in YAML prüfen; der vorgeschlagene Pfad / muss eventuell angepasst werden.",
     "serviceHealthcheck.existing": "Dieser Dienst hat bereits einen Compose-Healthcheck. Der Vorschlag würde ihn ersetzen.",
     "serviceHealthcheck.suggested": "Vorschlag anhand des internen Compose-Ports:",

@@ -1,6 +1,8 @@
 {
     "releaseNews.item.serviceHealthcheckAssistant": "可选的逐服务健康检查助手：根据 Compose 建议本地 HTTP URL 或 TCP 端口，显示确切命令，仅在确认后修改 YAML。不会自动替换现有检查。",
     "serviceHealthcheck.title": "服务健康检查",
+    "serviceHealthcheck.configure": "配置健康检查",
+    "serviceHealthcheck.configured": "已配置",
     "serviceHealthcheck.help": "可选：根据 Compose 端口提供建议。写入 YAML 前请检查；默认的 / 路径可能需要调整。",
     "serviceHealthcheck.existing": "此服务已有 Compose 健康检查。应用建议将替换现有配置。",
     "serviceHealthcheck.suggested": "根据 Compose 内部端口提出的建议：",

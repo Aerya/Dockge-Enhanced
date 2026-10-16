@@ -1,6 +1,8 @@
 {
     "releaseNews.item.serviceHealthcheckAssistant": "Asistente opcional de comprobación por servicio: propone una URL HTTP local o un puerto TCP según Compose, muestra el comando exacto y solo cambia el YAML tras la confirmación. No reemplaza comprobaciones existentes automáticamente.",
     "serviceHealthcheck.title": "Comprobación de salud del servicio",
+    "serviceHealthcheck.configure": "Configurar comprobación de salud",
+    "serviceHealthcheck.configured": "configurada",
     "serviceHealthcheck.help": "Opcional: propuesta basada en los puertos del Compose. Revísela antes de añadirla al YAML; quizá deba adaptar la ruta /.",
     "serviceHealthcheck.existing": "Este servicio ya tiene una comprobación en Compose. Aplicar la propuesta la reemplazará.",
     "serviceHealthcheck.suggested": "Propuesta basada en el puerto interno de Compose:",

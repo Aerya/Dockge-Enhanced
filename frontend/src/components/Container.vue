@@ -63,6 +63,10 @@
                     </span>
                     <ContainerStatsBadge v-if="showResourceStats" :stack-name="statsStackName || stackName" :service-name="name" :endpoint="endpoint || ''" />
                 </div>
+                <button v-if="!isEditMode" type="button" class="btn btn-sm btn-normal mt-2" @click="$emit('edit-healthcheck')">
+                    <font-awesome-icon icon="heartbeat" class="me-1" />{{ $t("serviceHealthcheck.configure") }}
+                    <span v-if="service.healthcheck" class="ms-1">· {{ $t("serviceHealthcheck.configured") }}</span>
+                </button>
                 <div v-if="!isEditMode && (volumeLoading || volumeUsage.length > 0)" class="container-volumes mt-2">
                     <div class="container-volumes-title">
                         <span>
@@ -136,9 +140,13 @@
         />
 
         <div v-if="isEditMode" class="mt-2">
-            <button class="btn btn-normal me-2" @click="openServiceConfig">
+            <button type="button" class="btn btn-normal me-2" @click="openServiceConfig">
                 <font-awesome-icon icon="edit" />
                 {{ $t("Edit") }}
+            </button>
+            <button type="button" class="btn btn-normal me-2" @click="openHealthcheckConfig">
+                <font-awesome-icon icon="heartbeat" class="me-1" />{{ $t("serviceHealthcheck.configure") }}
+                <span v-if="service.healthcheck" class="ms-1">· {{ $t("serviceHealthcheck.configured") }}</span>
             </button>
             <button v-if="false" class="btn btn-normal me-2">{{ $t("rename") }}</button>
             <button class="btn btn-danger me-2" @click="remove">
@@ -187,7 +195,7 @@
                     </div>
                 </div>
 
-                <div class="service-healthcheck mb-4">
+                <div ref="healthcheckPanel" class="service-healthcheck mb-4">
                     <h5>{{ $t("serviceHealthcheck.title") }}</h5>
                     <p class="form-text mb-2">{{ $t("serviceHealthcheck.help") }}</p>
                     <p v-if="service.healthcheck" class="form-text mb-2">{{ $t("serviceHealthcheck.existing") }}</p>
@@ -383,15 +391,25 @@ export default defineComponent({
             type: Boolean,
             default: false,
         },
-        dozzleUrl: { type: String, default: "" }
-        ,
-        containerActionLabels: { type: Boolean, default: false }
+        dozzleUrl: {
+            type: String,
+            default: "",
+        },
+        containerActionLabels: {
+            type: Boolean,
+            default: false,
+        },
+        healthcheckOpenRequest: {
+            type: Number,
+            default: 0,
+        },
     },
     emits: [
         "auto-update-change",
         "refresh-volume-usage",
         "service-action",
         "container-action-labels-change",
+        "edit-healthcheck",
     ],
     data() {
         return {
@@ -547,12 +565,28 @@ export default defineComponent({
             return imageRegistryUrl(this.envsubstService.image);
         },
     },
+    watch: {
+        healthcheckOpenRequest(request) {
+            if (request > 0) {
+                this.openHealthcheckConfig();
+            }
+        },
+    },
     mounted() {
         if (this.first) {
             //this.showConfig = true;
         }
     },
     methods: {
+        openHealthcheckConfig() {
+            if (!this.showConfig) {
+                this.openServiceConfig();
+            }
+            this.$nextTick(() => this.$refs.healthcheckPanel?.scrollIntoView({
+                block: "center",
+                behavior: "smooth",
+            }));
+        },
         openServiceConfig() {
             this.showConfig = !this.showConfig;
             if (this.showConfig && !this.healthcheckTarget) {

@@ -60,7 +60,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
-**Optional per-service healthcheck assistant:** In stack edit mode, each service can receive a proposed local HTTP URL or TCP-port check based on its internal Compose ports. Review or change the target and exact command before adding it to the YAML; existing healthchecks are never replaced automatically. Docker runs the check inside the image, which must provide `/bin/sh` and `curl`/`wget` or `nc`. Verify the health status after deployment; a successful TCP connection does not prove application readiness.
+**Optional per-service healthcheck assistant:** Click **Configure healthcheck** on a service when viewing an existing stack or creating a new one. The assistant proposes a local HTTP URL or TCP-port check based on its internal Compose ports. Review or change the target and exact command before adding it to the YAML; existing healthchecks are never replaced automatically. Docker runs the check inside the image, which must provide `/bin/sh` and `curl`/`wget` or `nc`. Verify the health status after deployment; a successful TCP connection does not prove application readiness.
 
 #### Features and DNS
 

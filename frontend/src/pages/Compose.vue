@@ -396,7 +396,9 @@
                                 :show-resource-stats="!endpoint"
                                 :dozzle-url="dozzleUrl"
                                 :container-action-labels="containerActionLabels"
+                                :healthcheck-open-request="healthcheckTargetService === name ? healthcheckEditRequest : 0"
                                 @container-action-labels-change="containerActionLabels = $event"
+                                @edit-healthcheck="editServiceHealthcheck(name)"
                                 @auto-update-change="setServiceAutoUpdate(name, $event)"
                                 @refresh-volume-usage="loadVolumeUsage"
                                 @service-action="runServiceAction(name, $event)"
@@ -1022,6 +1024,8 @@ export default {
             deleteExternalConfirmed: false,
             fullscreenEditor: null,
             newContainerName: "",
+            healthcheckTargetService: "",
+            healthcheckEditRequest: 0,
             stopServiceStatusTimeout: false,
             selectedLogService: "",
             joinedLogService: "",
@@ -2741,6 +2745,14 @@ export default {
             this.containersExpanded = true;
             this.captureComposeEditBaseline();
             this.isEditMode = true;
+        },
+
+        editServiceHealthcheck(serviceName) {
+            this.enableEditMode();
+            this.healthcheckTargetService = serviceName;
+            this.$nextTick(() => {
+                this.healthcheckEditRequest += 1;
+            });
         },
 
         checkYAML() {

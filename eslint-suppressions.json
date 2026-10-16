@@ -535,11 +535,6 @@
       "count": 150
     }
   },
-  "frontend/src/components/Container.vue": {
-    "@stylistic/object-property-newline": {
-      "count": 2
-    }
-  },
   "frontend/src/components/ContainerStatsBadge.vue": {
     "@stylistic/object-property-newline": {
       "count": 2

@@ -60,7 +60,7 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
-**Optionaler Healthcheck-Assistent pro Dienst:** Beim Bearbeiten eines Stacks kann für jeden Dienst anhand seiner internen Compose-Ports eine lokale HTTP-URL oder ein TCP-Port vorgeschlagen werden. Ziel und genauen Befehl vor dem Einfügen in YAML prüfen oder ändern; vorhandene Healthchecks werden nie automatisch ersetzt. Der Test läuft im Image, das `/bin/sh` und `curl`/`wget` oder `nc` bereitstellen muss. Den Health-Status nach dem Deployment prüfen; ein offener TCP-Port beweist nicht, dass die Anwendung bereit ist.
+**Optionaler Healthcheck-Assistent pro Dienst:** Bei einem bestehenden oder neu erstellten Stack auf **Healthcheck konfigurieren** am jeweiligen Dienst klicken. Der Assistent schlägt anhand der internen Compose-Ports eine lokale HTTP-URL oder einen TCP-Port vor. Ziel und genauen Befehl vor dem Einfügen in YAML prüfen oder ändern; vorhandene Healthchecks werden nie automatisch ersetzt. Der Test läuft im Image, das `/bin/sh` und `curl`/`wget` oder `nc` bereitstellen muss. Den Health-Status nach dem Deployment prüfen; ein offener TCP-Port beweist nicht, dass die Anwendung bereit ist.
 
 #### Funktionen und DNS
 

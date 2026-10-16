@@ -61,7 +61,7 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
-**Assistant de healthcheck facultatif par service :** dans l’édition d’une stack, chaque service peut recevoir une proposition de contrôle par URL HTTP locale ou port TCP fondée sur ses ports internes Compose. Vérifiez ou modifiez la cible et la commande exacte avant de l’ajouter au YAML ; les healthchecks existants ne sont jamais remplacés automatiquement. Le test s’exécute dans l’image, qui doit fournir `/bin/sh` et `curl`/`wget` ou `nc`. Vérifiez l’état de santé après déploiement ; un port TCP ouvert ne garantit pas que l’application est prête.
+**Assistant de healthcheck facultatif par service :** cliquez sur **Configurer le healthcheck** sur un service d’une stack existante ou pendant la création. L’assistant propose un contrôle par URL HTTP locale ou port TCP selon les ports internes Compose. Vérifiez ou modifiez la cible et la commande exacte avant de l’ajouter au YAML ; les healthchecks existants ne sont jamais remplacés automatiquement. Le test s’exécute dans l’image, qui doit fournir `/bin/sh` et `curl`/`wget` ou `nc`. Vérifiez l’état de santé après déploiement ; un port TCP ouvert ne garantit pas que l’application est prête.
 
 #### Fonctionnalités et DNS
 
