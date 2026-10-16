@@ -173,3 +173,23 @@ test("upstream response size is bounded even without content-length", async () =
             force: true });
     }
 });
+
+test("inventory rejects incompatible schemas and incomplete job visibility", async () => {
+    const dir = await fs.mkdtemp(path.join(tmpdir(), "zerobyte-schema-"));
+    const oldFetch = globalThis.fetch;
+    try {
+        const manager = new ZerobyteManager(dir);
+        await manager.saveConfig({ enabled: true,
+            url: "http://zerobyte:4096",
+            apiKey: "secret" });
+        for (const jobs of [{}, [{ shortId: "j1" }], Array.from({ length: 501 }, (_, i) => ({ shortId: `j${i}`,
+            enabled: false })) ]) {
+            globalThis.fetch = async input => new Response(JSON.stringify(String(input).endsWith("/backups") ? jobs : []));
+            await assert.rejects(manager.overview(), /Unsupported Zerobyte/);
+        }
+    } finally {
+        globalThis.fetch = oldFetch;
+        await fs.rm(dir, { recursive: true,
+            force: true });
+    }
+});

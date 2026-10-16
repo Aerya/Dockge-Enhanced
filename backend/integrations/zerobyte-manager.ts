@@ -223,6 +223,19 @@ export class ZerobyteManager {
             this.request("GET", "/api/v1/volumes"),
             this.request("GET", "/api/v1/tasks"),
         ]);
+        // Mount updates rely on a complete job inventory: never treat a new/invalid
+        // upstream schema, truncated list or missing enabled flag as an empty safe state.
+        for (const collection of [ jobsRaw, repositoriesRaw, volumesRaw, tasksRaw ]) {
+            if (!Array.isArray(collection) || collection.length > 500) {
+                throw new Error("Unsupported Zerobyte inventory format or resource limit exceeded");
+            }
+        }
+        if ((jobsRaw as unknown[]).some(raw => {
+            const job = object(raw);
+            return typeof job.enabled !== "boolean" || !ID_PATTERN.test(str(job.shortId));
+        })) {
+            throw new Error("Unsupported Zerobyte job schema; cannot verify disabled jobs");
+        }
         const jobs: ZerobyteJob[] = dataArray(jobsRaw).map(job => ({
             shortId: str(job.shortId),
             name: str(job.name),
