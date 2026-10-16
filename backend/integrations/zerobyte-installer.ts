@@ -78,13 +78,27 @@ for candidate do
  if [ "$strict" = 1 ]; then stat -f -c '%t:%i' "/host$candidate"; fi
 done
 cat /host/proc/1/mountinfo`;
-    const args = [ "run", "--rm", "--pull=never", "--network", "none", "--cap-drop", "ALL", "--cap-add", "DAC_READ_SEARCH", "--read-only", "--mount", "type=bind,source=/,target=/host,readonly", "--entrypoint", "/bin/sh", ZEROBYTE_IMAGE, "-c", script, "verify", ...paths, "__protected__", ...protectedPaths ];
+    const probeName = "enhanced-zerobyte-probe-" + createHash("sha256").update(JSON.stringify(paths)).digest("hex").slice(0, 20);
+    const args = [ "create", "--rm", "--name", probeName, "--pull=never", "--network", "none", "--cap-drop", "ALL", "--cap-add", "DAC_READ_SEARCH", "--read-only", "--mount", "type=bind,source=/,target=/host,readonly", "--entrypoint", "/bin/sh", ZEROBYTE_IMAGE, "-c", script, "verify", ...paths, "__protected__", ...protectedPaths ];
     let out: string;
+    let probeId: string | undefined;
     try {
-        out = (await exec("docker", args, { timeout: 15000,
+        probeId = (await exec("docker", args, { timeout: 5000,
+            maxBuffer: 4096 })).stdout.trim();
+        if (!/^[a-f0-9]{64}$/.test(probeId)) {
+            throw new Error("Invalid probe container");
+        }
+        out = (await exec("docker", [ "start", "--attach", probeId ], { timeout: 15000,
             maxBuffer: 4 * 1024 * 1024 })).stdout;
     } catch {
         throw new Error("Host path validation failed or timed out; operation blocked");
+    } finally {
+        // A hard NFS syscall can outlive a killed Docker client. A stable name bounds
+        // outstanding probes for the same paths; cleanup is best effort and bounded.
+        if (probeId) {
+            await exec("docker", [ "rm", "-f", probeId ], { timeout: 2000,
+                maxBuffer: 4096 }).catch(() => {});
+        }
     }
     const lines = out.trim().split("\n");
     return { fingerprints: lines.slice(0, paths.length),
@@ -398,7 +412,13 @@ export async function probeManagedDestination(server: DockgeServer, target: stri
     if (info.fingerprints[0] !== destination.fingerprint) {
         throw new Error("Destination filesystem changed; backup blocked");
     }
-    const script = "const fs=require('node:fs');const p=process.argv[1]+'/.dockge-probe-'+require('node:crypto').randomUUID();let fd;try{fd=fs.openSync(p,'wx',0o600);fs.writeSync(fd,'probe');fs.fsyncSync(fd);fs.closeSync(fd);fd=undefined;fs.unlinkSync(p)}finally{if(fd!==undefined)fs.closeSync(fd)}";
+    const script = `const fs=require('node:fs');const hash=require('node:crypto').createHash('sha256').update(process.argv[1]).digest('hex');
+const lock='/tmp/enhanced-probe-'+hash;const identity=pid=>{try{return fs.readFileSync('/proc/'+pid+'/stat','utf8').split(') ')[1].split(' ')[19]}catch{return null}};
+try{const old=JSON.parse(fs.readFileSync(lock,'utf8'));if(identity(old.pid)===old.identity)throw Error('Previous probe is still blocked');fs.unlinkSync(lock)}catch(e){if(e.code!=='ENOENT')throw e}
+const own=fs.openSync(lock,'wx',0o600);fs.writeFileSync(own,JSON.stringify({pid:process.pid,identity:identity(process.pid)}));fs.closeSync(own);
+const p=process.argv[1]+'/.dockge-probe-'+require('node:crypto').randomUUID();let fd;
+try{fd=fs.openSync(p,'wx',0o600);fs.writeSync(fd,'probe');fs.fsyncSync(fd)}finally{try{if(fd!==undefined)fs.closeSync(fd);fs.rmSync(p,{force:true})}finally{fs.rmSync(lock,{force:true})}}`;
+
     try {
         await exec("docker", [ "exec", ctx.container, "timeout", "10", "bun", "-e", script, target ], { timeout: 12000,
             maxBuffer: 4096 });
