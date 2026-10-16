@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.hostBindDockerDesktop": "Stack updates now prepare host bind directories through their actual Docker mounts, including Docker Desktop paths on macOS. File binds such as /etc/localtime are no longer mistaken for directories.",
     "releaseNews.item.selfUpdateDiskAndImageSafety": "Self-update checks Docker storage space before backup or pull and defers automatic updates when space cannot be verified. A vanished updater is detected at every stage; a pull still running after 20 minutes is flagged for inspection. Old unused Enhanced images are maintained after 48 hours while active, rollback, recovery and excluded images stay protected.",
     "releaseNews.item.registryDnsFallback": "Optional DNS fallback for ImageWatcher registry checks: system DNS stays first, then configurable Quad9/Cloudflare or custom IPv4/IPv6 servers are tried only after DNS failures. Test A/AAAA responses, response times and diagnostics in Watcher > Images. No host or Docker Engine DNS changes.",
     "watcher.backup.reset.title": "Reset a Restic repository",

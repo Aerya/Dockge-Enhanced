@@ -137,8 +137,6 @@ export interface HostBindDirectoryCandidate {
     target: string;
 }
 
-export const HOST_BIND_DIRECTORY_SCRIPT = "for path do if [ ! -e \"$path\" ]; then mkdir -p \"$path\" || { printf 'Failed to create host bind directory: %s\\n' \"${path#/host}\" >&2; exit 1; }; fi; done";
-
 export function hostBindDirectoryError(error: unknown): Error {
     const details = error && typeof error === "object" && "stderr" in error
         ? String(error.stderr ?? "").trim()
@@ -148,11 +146,25 @@ export function hostBindDirectoryError(error: unknown): Error {
 }
 
 function bindLooksLikeFile(source: string, target: string): boolean {
+    // These Docker/OS configuration files do not have an extension.
+    const extensionlessFiles = new Set([ "/etc/localtime", "/etc/hosts", "/etc/hostname" ]);
+    if (extensionlessFiles.has(source) || extensionlessFiles.has(target)) {
+        return true;
+    }
     const fileLike = (value: string) => {
         const base = path.posix.basename(value.replace(/\\/g, "/"));
         return base.startsWith(".") || /\.[A-Za-z0-9][A-Za-z0-9._-]{0,15}$/.test(base);
     };
     return fileLike(source) || fileLike(target);
+}
+
+export function hostBindDirectoryHelperArgs(candidates: HostBindDirectoryCandidate[], image: string): string[] {
+    // Bind each source directly: Docker Desktop resolves shared macOS paths here,
+    // whereas a bind of the daemon VM's / does not expose /Users inside the helper.
+    const volumes = candidates.flatMap((candidate, index) => [
+        "--volume", `${candidate.source}:/dockge-host-bind/${index}:ro`,
+    ]);
+    return [ "run", "--rm", "--network", "none", ...volumes, image, "true" ];
 }
 
 export function collectHostBindDirectoryCandidates(composeTexts: string[]): HostBindDirectoryCandidate[] {
@@ -908,15 +920,8 @@ export class Stack {
         if (candidates.length === 0) {
             return;
         }
-        const hostPaths = candidates.map(candidate => `/host${candidate.source}`);
         try {
-            await childProcessAsync.spawn("docker", [
-                "run", "--rm", "--network", "none",
-                "--mount", "type=bind,src=/,dst=/host",
-                HOST_HELPER_IMAGE, "sh", "-c",
-                HOST_BIND_DIRECTORY_SCRIPT,
-                "sh", ...hostPaths,
-            ], {
+            await childProcessAsync.spawn("docker", hostBindDirectoryHelperArgs(candidates, HOST_HELPER_IMAGE), {
                 encoding: "utf-8",
                 timeout: 30_000,
             });

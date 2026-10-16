@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.hostBindDockerDesktop": "Les mises à jour de stacks préparent désormais les dossiers hôte via leurs montages Docker directs, y compris les chemins Docker Desktop sous macOS. Les fichiers comme /etc/localtime ne sont plus confondus avec des dossiers.",
     "releaseNews.item.selfUpdateDiskAndImageSafety": "L’auto-mise à jour vérifie l’espace du stockage Docker avant le backup ou le téléchargement et se reporte si cette vérification échoue. Un updater disparu est détecté à chaque étape ; un téléchargement encore actif après 20 minutes est signalé. Les anciennes images Enhanced inutilisées sont entretenues après 48 h, sans toucher aux images actives, de rollback, de récupération ou exclues.",
     "releaseNews.item.registryDnsFallback": "DNS de secours facultatifs pour les contrôles des registries par ImageWatcher : DNS système prioritaire, puis Quad9/Cloudflare ou serveurs IPv4/IPv6 personnalisés uniquement en cas d’échec DNS. Tests A/AAAA, délais et diagnostics dans Watcher > Images. Aucun changement DNS de l’hôte ni de Docker Engine.",
     "watcher.backup.reset.title": "Réinitialiser un dépôt Restic",

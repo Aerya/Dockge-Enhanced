@@ -68,6 +68,10 @@ Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli D
 
 #### Mises à jour et ImageWatcher
 
+**Préparation des montages hôte sous macOS**
+
+Avant de démarrer ou de mettre à jour une stack, Enhanced demande à Docker de préparer directement chaque dossier source d’un bind mount. Cela couvre aussi les chemins partagés par Docker Desktop sous macOS, comme `/Users/...`, sans supposer qu’un montage de `/` donne accès au système de fichiers macOS. Les montages de fichiers comme `/etc/localtime` ne sont pas créés comme dossiers. Si Docker ne peut pas accéder à un chemin source, l’opération s’arrête avec son erreur réelle ; vérifiez que le dossier est partagé avec Docker Desktop.
+
 **Espace disque et conservation des anciennes images Enhanced**
 
 Avant le backup ou le téléchargement, l’auto-mise à jour contrôle l’espace libre du stockage du daemon Docker. Elle est reportée si l’espace manque ou ne peut être vérifié ; une mise à jour manuelle s’arrête avec une explication. Un updater disparu est détecté à toute étape ; un téléchargement encore actif après 20 minutes est signalé sans être déclaré arrêté. Après une mise à jour réussie, les anciennes images Enhanced inutilisées tirées par digest sont contrôlées chaque jour et peuvent être supprimées après 48 h. Les images actives, de rollback, de récupération ou explicitement exclues restent protégées ; cela n’active pas la purge générale des images.

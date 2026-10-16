@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.hostBindDockerDesktop": "Las actualizaciones de pilas ahora preparan los directorios del host mediante montajes Docker directos, incluidas las rutas de Docker Desktop en macOS. Los archivos como /etc/localtime ya no se confunden con directorios.",
     "releaseNews.item.selfUpdateDiskAndImageSafety": "La autoactualización comprueba el espacio del almacenamiento Docker antes de la copia de seguridad o la descarga y se aplaza si no puede verificarlo. Un updater desaparecido se detecta en cualquier etapa; una descarga aún activa después de 20 minutos se señala para revisión. Las imágenes antiguas de Enhanced sin uso se limpian tras 48 h, respetando las activas, de reversión, recuperación y excluidas.",
     "releaseNews.item.registryDnsFallback": "DNS de respaldo opcional para ImageWatcher: primero el DNS del sistema y, solo si falla, servidores Quad9/Cloudflare o IPv4/IPv6 personalizados. Pruebas A/AAAA, tiempos y diagnósticos en Watcher > Imágenes, sin cambiar el DNS del host ni de Docker Engine.",
     "watcher.backup.reset.title": "Restablecer un repositorio Restic",
