@@ -1,11 +1,4 @@
 <p align="center">
-
-**2026-10-17 — Zerobyte** — Surveillance de l’intégrité des hooks et ressources, refus des lancements dégradés depuis Enhanced, reprise manuelle des services journalisés, revalidation confirmée du stockage même après arrêt par le garde-fou, diagnostics fédérés plus précis et lanceur de tests isolés.
-
-**2026-10-16 — Workflows Zerobyte protégés** — Provisionnement confirmé et idempotent des sources/dépôts/jobs, hooks d’arrêt/redémarrage, alertes persistantes et reprise après panne, validation externe liée à la connexion et supervision fédérée en lecture seule.
-
-**2026-10-16 — Intégration Zerobyte facultative** — Sauvegardes propose une connexion Zerobyte ou une installation Compose propre à l’instance, des sources RO/destinations RW explicites, des contrôles de chemins et montages distants, des opérations confirmées et une restauration dédiée de test. La couverture Restic native est conservée. [Documentation](docs/zerobyte.fr.md).
-
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>
 
@@ -46,7 +39,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 | --- | --- |
 | **Multi-serveurs** | Fédération en maillage complet entre instances Dockge-Enhanced, administration depuis n'importe quel serveur lié, sélection et regroupement des serveurs, état des mises à jour distantes, copie/migration transactionnelle des stacks, transferts reprenables et réplication froide planifiée |
 | **Gestion des stacks** | Stacks épinglées, indicateurs compacts d'état et de ressources, navigation repliable/redimensionnable, espace Logs/Compose flexible, copie du YAML brut, actions de stack/conteneur expliquées, pause/reprise des stacks, modèle Compose par défaut configurable, planification par conteneur, Build + Recreate, notes, outils Git, prérequis de démarrage hôte et recréation automatique des services partageant un namespace réseau VPN |
-| **Sauvegarde & reprise** | Sauvegardes Restic multi-destination des bind mounts et volumes, cohérence par stack, restauration sélective, vérification des dépôts, contrôle et diff des snapshots, ainsi que les mécanismes de récupération utilisés par les mises à jour protégées |
+| **Sauvegarde & reprise** | Sauvegardes Restic multi-destination des bind mounts et volumes, cohérence par stack, restauration sélective, vérification des dépôts, contrôle et diff des snapshots, ainsi que les mécanismes de récupération utilisés par les mises à jour protégées. Connexion Zerobyte facultative ou installation gérée, workflows applicatifs protégés et restaurations de test dédiées |
 | **Mises à jour** | réglages groupés par stack avec choix de conservation des exceptions, contrôle ciblé toutes les 5 minutes en mode Immédiat, Détection des mises à jour d'images, mises à jour manuelles, groupées séquentielles ou automatiques des conteneurs avec rollback, créneau de maintenance commun, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
 | **Migration & réplication** | Transferts transactionnels entre instances, migration du Compose et des données persistantes, jobs reprenables, finalisation explicite des déplacements, répliques froides planifiées, snapshots de récupération et workflows de reprise |
 | **Automatisation & audit** | API REST limitée par permissions, webhooks par stack, exemples Home Assistant, opérations planifiées et historique centralisé avec origine, statut et durée |
@@ -443,6 +436,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Snapshots et mécanismes de récupération
 
 ### Sauvegarde & restauration
+
+**Intégration Zerobyte facultative :** Dans **Sauvegardes → Zerobyte**, connectez une instance existante ou installez une instance Compose dédiée. Zerobyte peut compléter les sauvegardes Restic natives ou prendre en charge vos sauvegardes planifiées à leur place, avec des dépôts distincts. L’assistant crée les sources, un dépôt et un job désactivé à vérifier avant activation. Les workflows protégés arrêtent puis redémarrent les applications sélectionnées ; un stockage réseau indisponible bloque la sauvegarde sans repli local. Les installations externes nécessitent une vérification explicite des montages et de la séparation des dépôts. Consultez le [guide de configuration et de reprise Zerobyte](docs/zerobyte.fr.md).
 
 **Dépôt imbriqué dans une source :** placez de préférence les dépôts Restic locaux hors des dossiers sauvegardés. Si un dépôt se trouve dans une source, l’enregistrement affiche un avertissement et les sauvegardes excluent automatiquement ce dépôt, ses archives de réinitialisation et ses autres chemins de montage Docker. Les liens symboliques résolus sont aussi vérifiés. Les destinations locales désactivées restent protégées. Sélectionner le dépôt lui-même ou un de ses sous-dossiers comme source est refusé ; les chemins sont revérifiés avant chaque sauvegarde. Ce contrôle ne déplace ni ne réinitialise aucun dépôt.
 

@@ -1,11 +1,4 @@
 <p align="center">
-
-**2026-10-17 — Zerobyte** — Hook-/Ressourcenprüfung, gesperrte unsichere Starts, manuelle Dienstwiederherstellung, bestätigte Speicher-Neuprüfung nach Schutzstopp, genauere Föderationsdiagnose und isolierter Teststarter.
-
-**2026-10-16 — Geschützte Zerobyte-Workflows** — Bestätigte idempotente Bereitstellung, Stack-Stopp/Neustart, dauerhafte Ausfallwarnungen und Wiederherstellung, verbindungsbezogene externe Freigabe und lesende Föderationsübersicht.
-
-**2026-10-16 — Optionale Zerobyte-Integration** — Unter Sicherungen stehen eine Zerobyte-Verbindung oder eine eigene Compose-Installation, explizite RO-Quellen/RW-Ziele, Pfad- und Mount-Prüfungen sowie bestätigte Aktionen und eine getrennte Testwiederherstellung zur Verfügung. Die native Restic-Abdeckung bleibt erhalten. [Documentation](docs/zerobyte.md).
-
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>
 
@@ -45,7 +38,7 @@ Ein funktionsfokussierter Fork von [Dockge](https://github.com/louislam/dockge),
 | --- | --- |
 | **Multi-Server** | Full-Mesh-Föderation zwischen Dockge-Enhanced-Instanzen, Verwaltung von jedem verknüpften Server aus, Servergruppierung und -auswahl, Remote-Aktualisierungsstatus, transaktionales Kopieren/Migrieren von Stacks, fortsetzbare Übertragungen und geplante Kaltreplikation |
 | **Stack-Verwaltung** | Fixierte Stacks, kompakte Status- und Ressourcenindikatoren, einklappbare/größenveränderbare Navigation, flexibler Logs-/Compose-Arbeitsbereich, Kopieren von Raw-YAML, erläuterte Stack-/Container-Aktionen, Pausieren/Fortsetzen von Stacks, eine konfigurierbare Standard-Compose-Vorlage, containerbezogene Zeitplanung, Build + Recreate, Notizen, Git-Tools, Startvoraussetzungen auf dem Host sowie die automatische Neuerstellung von Diensten, die sich ein VPN-/Netzwerk-Namespace teilen |
-| **Backup & Wiederherstellung** | Restic-Backups an mehrere Ziele, Bind-Mounts und Volumes, Konsistenz pro Stack, selektive Wiederherstellung, Repository-Prüfungen, Snapshot-Verifizierung und Diffs sowie Wiederherstellungsworkflows, die von geschützten Updates verwendet werden |
+| **Backup & Wiederherstellung** | Restic-Backups an mehrere Ziele, Bind-Mounts und Volumes, Konsistenz pro Stack, selektive Wiederherstellung, Repository-Prüfungen, Snapshot-Verifizierung und Diffs sowie Wiederherstellungsworkflows, die von geschützten Updates verwendet werden. Optionale Zerobyte-Verbindung oder verwaltete Installation, geschützte Anwendungsworkflows und separate Testwiederherstellungen |
 | **Updates** | Stack-weite Bulk-Richtlinien unter Beibehaltung von Ausnahmen, zielgerichtete sofortige Image-Prüfungen alle 5 Minuten, Erkennung von Image-Updates, manuelles, sequenzielles Bulk- oder automatisches Container-Update mit Rollback, ein gemeinsames Wartungsfenster, Remote-Update-Badges, globale/imagebezogene Pausensteuerungen sowie geschützte Dockge-Enhanced-Selbst-Updates mit obligatorischem Backup, Integritätsprüfungen und automatischer Wiederherstellung |
 | **Migration & Replikation** | Transaktionsbasierte Stack-Übertragungen zwischen Instanzen, Migration von Compose und persistenten Daten, fortsetzbare Jobs, explizite Verschiebe-Finalisierung, geplante Kaltrepliken, Wiederherstellungs-Snapshots und Failover-Workflows |
 | **Automatisierung & Audit** | Berechtigungsgeschützte REST-API, Webhooks pro Stack, Home-Assistant-Beispiele, geplante Operationen sowie zentralisierter Verlauf einschließlich Operationsursprung, -status und -dauer |
@@ -443,6 +436,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Wiederherstellungs-Snapshots und -Workflows
 
 ### Backup & Wiederherstellung
+
+**Optionale Zerobyte-Integration:** Unter **Sicherungen → Zerobyte** lässt sich eine vorhandene Instanz verbinden oder eine eigene Compose-Instanz installieren. Zerobyte kann native Restic-Backups ergänzen oder geplante Backups übernehmen; verwenden Sie getrennte Repositories. Der Assistent erstellt Quellen, ein Repository und einen deaktivierten Job zur Prüfung vor der Aktivierung. Geschützte Workflows stoppen und starten die ausgewählten Anwendungen. Nicht verfügbarer Netzwerkspeicher blockiert das Backup ohne lokalen Ersatzspeicher. Bei externen Installationen müssen Mounts und die Trennung der Repositories ausdrücklich geprüft werden. Siehe die [Zerobyte-Anleitung zur Einrichtung und Wiederherstellung](docs/zerobyte.md) (Englisch).
 
 **Repository innerhalb einer Quelle:** Legen Sie lokale Restic-Repositories möglichst außerhalb der gesicherten Ordner ab. Liegt ein Repository in einer Quelle, erscheint beim Speichern eine Warnung; Backups schließen das Repository, seine Reset-Archive und seine weiteren Docker-Mount-Pfade automatisch aus. Aufgelöste symbolische Links werden ebenfalls geprüft. Deaktivierte lokale Ziele bleiben geschützt. Das Repository selbst oder seine Unterordner können nicht als Quelle ausgewählt werden; vor jedem Backup werden die Pfade erneut geprüft. Diese Prüfung verschiebt oder setzt kein Repository zurück.
 

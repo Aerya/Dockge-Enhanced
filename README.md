@@ -1,11 +1,4 @@
 <p align="center">
-
-**2026-10-17 — Zerobyte** — Hook/resource integrity checks, blocked degraded launches from Enhanced, manual journaled-service recovery, confirmed storage revalidation after guard shutdown, precise federation diagnostics and repeatable isolated test runner.
-
-**2026-10-16 — Protected Zerobyte workflows** — Confirmed, idempotent source/repository/job provisioning, application stop/restart hooks, persistent outage alerts and cancellation recovery, scoped external restore approval and read-only federation summaries.
-
-**2026-10-16 — Optional Zerobyte integration** — Backups now offers an optional Zerobyte connection or instance-scoped Compose installation, explicit RO sources/RW destinations, path and remote-mount checks, confirmed operations and dedicated test restore. Native Restic coverage is unchanged. [Documentation](docs/zerobyte.md).
-
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>
 
@@ -45,7 +38,7 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | --- | --- |
 | **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers, and scheduled cold replication |
 | **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, explained stack/container actions, stack pause/resume, a configurable default Compose template, per-container scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces |
-| **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates |
+| **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates. Optional Zerobyte connection or managed installation, protected application workflows and dedicated test restores |
 | **Updates** | Stack-wide bulk policies with exception preservation, 5-minute targeted Immediate image checks, Image update detection, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
 | **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant examples, scheduled operations, and centralized history including operation origin, status and duration |
@@ -443,6 +436,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Recovery snapshots and workflows
 
 ### Backup & recovery
+
+**Optional Zerobyte integration:** Use **Backups → Zerobyte** to connect an existing instance or install a dedicated Compose instance. Zerobyte can complement native Restic backups or handle your scheduled backups instead, using separate repositories. The guided setup creates sources, a repository and a disabled job for review before activation. Protected workflows stop and restart the selected applications; unavailable network storage blocks the backup without falling back to local storage. External installations require explicit checks of mounts and repository separation. See the [Zerobyte setup and recovery guide](docs/zerobyte.md).
 
 **Repository/source overlap:** preferably keep local Restic repositories outside selected backup folders. If a repository is nested below a source, saving the settings displays a warning and backups automatically exclude the repository, its reset archives and its other Docker mount paths. Resolved symbolic links are checked too. Disabled local destinations remain protected. Selecting a repository itself or one of its subfolders as a backup source is refused; paths are checked again before running a backup. No repository is moved or reset by this check.
 

@@ -1,11 +1,3 @@
-
-
-**2026-10-17 — Zerobyte** — Verificación de hooks y recursos, bloqueo de inicios degradados, recuperación manual de servicios, revalidación confirmada tras parada protectora, diagnóstico federado y pruebas aisladas reproducibles.
-
-**2026-10-16 — Flujos Zerobyte protegidos** — Aprovisionamiento confirmado e idempotente, parada/reinicio de stacks, alertas persistentes y recuperación, aprobación externa por conexión y resumen federado de solo lectura.
-
-**2026-10-16 — Integración opcional de Zerobyte** — Copias de seguridad ofrece conexión a Zerobyte o instalación Compose propia, fuentes RO/destinos RW explícitos, comprobaciones de rutas y montajes remotos, operaciones confirmadas y restauración de prueba separada. Se mantiene la cobertura Restic nativa. [Documentation](docs/zerobyte.md).
-
 <p align="center">
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>
@@ -46,7 +38,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) centrado en ampliar sus 
 | --- | --- |
 | **Multiservidor** | Federación en malla completa entre instancias Dockge-Enhanced, administración desde cualquier servidor vinculado, selección y agrupación de servidores, estado de actualizaciones remotas, copia/migración transaccional de stacks, transferencias reanudables y replicación en frío programada |
 | **Gestión de stacks** | Stacks fijadas, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, copia del YAML sin formato, acciones de stack/contenedor explicadas, pausa/reanudación de stacks, plantilla Compose predeterminada configurable, programación por contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y recreación automática de servicios que comparten namespaces de red VPN |
-| **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, además de los mecanismos de recuperación usados por las actualizaciones protegidas |
+| **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, además de los mecanismos de recuperación usados por las actualizaciones protegidas. Conexión opcional a Zerobyte o instalación gestionada, flujos de aplicaciones protegidos y restauraciones de prueba dedicadas |
 | **Actualizaciones** | configuración agrupada por stack con conservación de excepciones, comprobación dirigida cada 5 minutos en modo Inmediato, Detección de actualizaciones de imágenes, actualizaciones manuales, masivas secuenciales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
 | **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
 | **Automatización y auditoría** | API REST limitada por permisos, webhooks por stack, ejemplos para Home Assistant, operaciones programadas e historial centralizado con origen, estado y duración |
@@ -434,6 +426,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Replicación en frío programada
 
 ### Copias y recuperación
+
+**Integración opcional de Zerobyte:** En **Copias de seguridad → Zerobyte**, conecta una instancia existente o instala una instancia Compose dedicada. Zerobyte puede complementar las copias nativas de Restic o encargarse de las copias programadas en su lugar, usando repositorios separados. El asistente crea fuentes, un repositorio y una tarea desactivada para revisarlos antes de activarla. Los flujos protegidos detienen y reinician las aplicaciones seleccionadas; si el almacenamiento de red no está disponible, la copia se bloquea sin recurrir al almacenamiento local. Las instalaciones externas requieren comprobar explícitamente los montajes y la separación de repositorios. Consulta la [guía de configuración y recuperación de Zerobyte](docs/zerobyte.md) (en inglés).
 
 **Repositorio dentro de un origen:** sitúe preferiblemente los repositorios Restic locales fuera de las carpetas respaldadas. Si un repositorio está dentro de un origen, al guardar aparece un aviso y las copias excluyen automáticamente el repositorio, sus archivos de reinicio y sus otras rutas de montaje Docker. También se comprueban los enlaces simbólicos resueltos. Los destinos locales desactivados siguen protegidos. No se permite seleccionar el propio repositorio ni sus subcarpetas como origen; las rutas se comprueban de nuevo antes de cada copia. Esta comprobación no mueve ni reinicia ningún repositorio.
 
