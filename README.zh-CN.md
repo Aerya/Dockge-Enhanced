@@ -4,7 +4,7 @@
 
 # Dockge Enhanced
 
-[Dockge](https://github.com/louislam/dockge) 的功能增强分支，在保留简洁 Docker Compose 管理体验的基础上，将其扩展为更完整的 Docker 管理平台 —— 提供多服务器联邦、Stack 迁移与复制、Restic 备份、镜像与 Dockge-Enhanced 自更新及回滚、安全扫描、监控、自动化、通知和 Docker 资源管理，并全部集成于 Web UI。
+Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通过 Web 界面管理一台或多台服务器上的 Docker Compose 环境。它集成了 Stack 与容器管理、全局搜索与文件访问、迁移与复制、Restic 或 Zerobyte 备份、支持回滚的更新，以及监控、安全检查和自动化。丰富的集成与恢复工具帮助您日常跟踪和维护服务。
 
 <p align="center">
   🇨🇳 简体中文 ·
@@ -31,9 +31,21 @@
 
 ## 功能
 
-- **镜像更新**：ImageWatcher 支持按实际容器版本检测和每 5 分钟定向检查即时更新的镜像。
-- **监控集成**：可选 Kula、Dozzle、PowerWatch 与 PowerWatch Hub，支持既有实例或托管部署。
-- **数据安全**：镜像回滚、受保护的 Dockge-Enhanced 自更新以及 Restic 恢复流程。
+### Dockge Enhanced 的特色
+
+| 领域 | Dockge Enhanced 提供 |
+| --- | --- |
+| **多服务器** | 实例间网状联合、服务器分组、跨服务器管理与能力协商 |
+| **Stack 管理** | Compose 编辑、真实容器操作、健康检查向导、置顶及计划操作 |
+| **备份与恢复** | 多目标 Restic、可选 Zerobyte、应用一致性、快照检查与独立测试恢复 |
+| **更新** | ImageWatcher、批量策略、维护窗口、回滚及受保护的自身更新 |
+| **迁移与复制** | 配置与数据传输、可恢复任务、SHA-256 校验及计划冷复制 |
+| **监控与安全** | CPU/RAM 历史、健康状态、自动修复、Trivy、2FA 与代理认证 |
+| **自动化与资源** | 限权 API、Webhooks、计划操作、审计及受保护的 Docker 清理 |
+| **集成与通知** | Kula、Dozzle、PowerWatch、Hub、PlugNPiN、Discord 与 Apprise |
+| **搜索与文件** | 跨实例全局搜索、受限主机文件管理器、卷浏览、分块传输、文本编辑和文件日志查看 |
+| **外部 Stack** | 检测并集成现有 Compose 项目、授权访问路径、查看实际容器，无需移动数据 |
+| **外观** | 日夜配色、内置主题、浏览器偏好及仅图标或图标加文字的 Stack 操作 |
 
 ## 最新动态
 
@@ -43,6 +55,8 @@
 本节汇总近期最重要的变化，方便快速了解 Dockge-Enhanced 最近新增了什么。
 
 ### 🆕 2026 年 10 月
+
+**Zerobyte 备份：**在 **备份 → Zerobyte** 中连接现有实例或安装独立的 Compose 实例。可与原生 Restic 配合使用，也可接管计划备份，并使用独立仓库。支持配置向导、受保护的应用停止与重启、存储检查、独立测试恢复及只读多服务器状态。网络存储不可用时会阻止备份，不会自动使用本地备用目录。[配置与恢复指南](docs/zerobyte.md)（英文）。
 
 **可选的堆栈与容器 CPU/RAM 历史：** 在**监控**中启用记录，然后通过堆栈操作中的**资源使用情况**打开历史。紧凑图表显示堆栈总量和每个实际容器，包括副本及未托管的 Compose 项目，支持 24 小时、7 天、1 个月、1 年或全部已记录数据。每 5 分钟采样一次，无需保持浏览器打开；默认关闭记录。CPU 的 100% 表示一个核心；Linux RAM 不包含可回收缓存。采样中断保留为空缺，两次采样之间的峰值可能遗漏。堆栈总量不包含宿主机原生进程或 Compose 之外的容器。堆栈列表也可按 CPU、RAM 或先 CPU 后 RAM 排序。
 
@@ -373,6 +387,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 不同 Dockge-Enhanced 版本之间的能力协商
 
 ### Stack 管理
+
+- Stack 操作栏提供直接操作，支持仅图标或图标加文字模式
 - 可选的逐服务 Compose 健康检查助手，提供可编辑的 HTTP/TCP 建议与命令预览
 - 可按服务忽略其对应用栈整体状态的影响，同时保留服务自身状态
 - 可选的 Web UI 显示名称，不改变 Compose 或 Restic 标识
@@ -402,6 +418,11 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 计划冷复制
 
 ### 备份与恢复
+
+- 可选 Zerobyte：连接现有实例或托管独立 Compose 安装，与原生 Restic 配合或接管计划备份，使用独立仓库
+- 引导创建 Zerobyte 来源、仓库和任务，确认迁移已有任务；新任务在检查前保持禁用
+- Zerobyte 钩子与资源检查、应用停止和重启、持久恢复日志及针对服务的手动恢复
+- 网络存储检查且无本地回退、经确认的存储重新验证、独立测试恢复及只读联合 Zerobyte 状态
 
 **可选 Zerobyte 集成:** 在 **备份 → Zerobyte** 中连接现有实例，或安装独立的 Compose 实例。Zerobyte 可以补充原生 Restic 备份，也可以接管计划备份；请使用独立的仓库。向导创建来源、仓库和默认禁用的任务，供启用前检查。受保护的工作流会停止并重新启动所选应用；网络存储不可用时会阻止备份，不会自动写入本地备用目录。外部实例需要操作员明确检查挂载及仓库隔离。请参阅 [Zerobyte 配置与恢复指南](docs/zerobyte.md)（英文）。
 
@@ -467,6 +488,9 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 集中历史记录
 
 ### 集成
+
+- Zerobyte — 可选备份集成，支持托管安装或连接外部实例
+- PowerWatch Hub — 托管安装或连接已有 Hub
 - PlugNPiN
 - Nginx Proxy Manager
 - Pi-hole
@@ -723,6 +747,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — 按服务排除整体状态和镜像更新功能的灵感及兼容标签来源
 - [**Trivy**](https://github.com/aquasecurity/trivy) — 漏洞扫描
 - [**Restic**](https://restic.net/) — 加密备份
+- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — 基于 Restic 的备份应用，可选择连接到 Enhanced 或由 Enhanced 部署
 - [**Apprise**](https://github.com/caronc/apprise-api) — 多平台通知网关
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — Docker 实时日志查看器

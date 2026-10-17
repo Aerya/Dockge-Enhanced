@@ -4,7 +4,7 @@
 
 # Dockge Enhanced
 
-Ein funktionsfokussierter Fork von [Dockge](https://github.com/louislam/dockge), der dessen einfache Compose-Verwaltung in eine umfassendere Docker-Management-Plattform verwandelt – mit Serverübergreifender Föderation, Stack-Migration und -Replikation, Restic-Backups, Image- und Selbst-Updates mit Rollback, Sicherheitsprüfungen, Monitoring, Automatisierung, Benachrichtigungen und der Verwaltung von Docker-Ressourcen, alles über die Web-Benutzeroberfläche.
+Dockge Enhanced ist ein Fork von [Dockge](https://github.com/louislam/dockge) zur Verwaltung Ihrer Docker-Compose-Umgebungen über eine Weboberfläche auf einem oder mehreren Servern. Es vereint Stack- und Containerverwaltung, globale Suche und Dateizugriff, Migration und Replikation, Backups mit Restic oder Zerobyte, Updates mit Rollback sowie Monitoring, Sicherheitsprüfungen und Automatisierung. Integrationen und Wiederherstellungswerkzeuge unterstützen den täglichen Betrieb Ihrer Dienste.
 
 <p align="center">
   🇩🇪 Deutsch ·
@@ -47,6 +47,9 @@ Ein funktionsfokussierter Fork von [Dockge](https://github.com/louislam/dockge),
 | **Monitoring** | System-, Stack- und Container-Statistiken, optionaler 5-Minuten-CPU/RAM-Verlauf, konfigurierbare Statusleiste, Health-Cards, Erkennung von Crash-Loops, Healthcheck-Auto-Heal, responsive/vollbildfähige Logs sowie optionale Kula-, Dozzle- und PowerWatch- sowie PowerWatch-Hub-Integrationen |
 | **Integrationen** | PowerWatch und PowerWatch Hub, PlugNPiN sowie dienstspezifische Label-Unterstützung für Nginx Proxy Manager, Pi-hole und AdGuard Home |
 | **Benachrichtigungen & Zugriff** | Discord- und Apprise-Benachrichtigungen lokalisiert in EN/FR/ES/zh-CN, Multi-Instanz-Erkennung, 2FA, Unterstützung für Trusted Proxies, Turnstile und mobile Apps von Drittanbietern |
+| **Suche & Dateien** | Globale Suche über mehrere Instanzen, eingeschränkter Host-Dateimanager, Volume-Browser, stückweise Übertragungen, Textbearbeitung und Dateiprotokolle |
+| **Externe Stacks** | Vorhandene Compose-Projekte erkennen und integrieren, Pfade freigeben und tatsächliche Container ohne Datenverschiebung prüfen |
+| **Darstellung** | Tag-/Nachtpaletten, integrierte Themes, Browsereinstellungen und Stack-Aktionen mit Symbolen oder Symbolen und Text |
 
 > **Update-Zeitpläne:** Wenn automatische Dockge-Enhanced-Updates ein Wartungsfenster verwenden, gilt dasselbe Fenster für jedes automatische Container-Image-Update. Updates, die außerhalb dieses Fensters erkannt werden, werden bis zum nächsten erlaubten Fenster in die Warteschlange gestellt. Imagebezogene Zeitpläne bleiben verfügbar, wenn kein globales Fenster konfiguriert ist, während **Jetzt aktualisieren** stets unverzüglich ausgeführt wird.
 
@@ -58,6 +61,8 @@ Ein funktionsfokussierter Fork von [Dockge](https://github.com/louislam/dockge),
 Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell sehen können, was sich in Dockge-Enhanced geändert hat.
 
 ### 🆕 Oktober 2026
+
+**Backups mit Zerobyte:** Unter **Sicherungen → Zerobyte** eine vorhandene Instanz verbinden oder eine eigene Compose-Instanz installieren. Zerobyte ergänzt native Restic-Backups oder übernimmt geplante Backups mit getrennten Repositories. Einrichtungsassistent, geschützte Anwendungs-Stopps und -Neustarts, Speicherprüfungen, separate Testwiederherstellungen und lesende Multi-Server-Übersichten stehen zur Verfügung. Bei nicht verfügbarem Netzwerkspeicher wird das Backup ohne lokalen Ersatzspeicher blockiert. [Einrichtungs- und Wiederherstellungsanleitung](docs/zerobyte.md) (Englisch).
 
 **Optionaler CPU/RAM-Verlauf für Stacks und Container：** Aktivieren Sie die Aufzeichnung unter **Monitoring** und öffnen Sie **Ressourcenverbrauch** in den Stack-Aktionen. Kompakte Diagramme zeigen die Stack-Summe und jeden tatsächlichen Container einschließlich Replikaten und nicht verwalteten Compose-Projekten für 24 Stunden, 7 Tage, 1 Monat, 1 Jahr oder alle aufgezeichneten Daten. Messungen erfolgen alle 5 Minuten, auch ohne geöffneten Browser; die Aufzeichnung ist standardmäßig deaktiviert. CPU: 100 % entspricht einem Kern; unter Linux wird rückgewinnbarer Cache vom RAM abgezogen. Messlücken bleiben sichtbar; Spitzen zwischen Messungen können fehlen. Stack-Summen enthalten keine nativen Host-Prozesse oder Container außerhalb von Compose. Die Stack-Liste lässt sich nach CPU, RAM oder CPU und dann RAM sortieren.
 
@@ -397,6 +402,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Versionsbewusste Aushandlung von Funktionen zwischen gemischten Dockge-Enhanced-Releases
 
 ### Stack-Management
+
+- Stack-Aktionsleiste mit direkten Aktionen und Symbolen allein oder mit Text
 - Optionaler Compose-Healthcheck-Assistent pro Dienst mit bearbeitbarem HTTP-/TCP-Vorschlag und Befehlsvorschau
 - Dienstspezifische Steuerungsoptionen zum Ignorieren eines optionalen Dienstes im allgemeinen Stack-Status bei gleichzeitiger Sichtbarkeit seines eigenen Status
 - Optionaler WebUI-Anzeigename für einen Stack, ohne dessen Compose- oder Restic-Identität zu verändern
@@ -436,6 +443,11 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Wiederherstellungs-Snapshots und -Workflows
 
 ### Backup & Wiederherstellung
+
+- Optionales Zerobyte: vorhandene Instanz oder eigene verwaltete Compose-Installation, ergänzend zu Restic oder für geplante Backups mit getrennten Repositories
+- Geführte Erstellung von Zerobyte-Quellen, Repositories und Jobs sowie bestätigte Migration bestehender Jobs; neue Jobs bleiben bis zur Prüfung deaktiviert
+- Zerobyte-Hook- und Ressourcenprüfung, Anwendungs-Stopp/Neustart, dauerhaftes Wiederherstellungsjournal und gezielte manuelle Dienstwiederherstellung
+- Netzwerkspeicherprüfung ohne lokalen Ersatz, bestätigte Speicher-Neuprüfung, separate Testwiederherstellungen und lesender föderierter Zerobyte-Status
 
 **Optionale Zerobyte-Integration:** Unter **Sicherungen → Zerobyte** lässt sich eine vorhandene Instanz verbinden oder eine eigene Compose-Instanz installieren. Zerobyte kann native Restic-Backups ergänzen oder geplante Backups übernehmen; verwenden Sie getrennte Repositories. Der Assistent erstellt Quellen, ein Repository und einen deaktivierten Job zur Prüfung vor der Aktivierung. Geschützte Workflows stoppen und starten die ausgewählten Anwendungen. Nicht verfügbarer Netzwerkspeicher blockiert das Backup ohne lokalen Ersatzspeicher. Bei externen Installationen müssen Mounts und die Trennung der Repositories ausdrücklich geprüft werden. Siehe die [Zerobyte-Anleitung zur Einrichtung und Wiederherstellung](docs/zerobyte.md) (Englisch).
 
@@ -522,6 +534,9 @@ Die Restic-Snapshot-Liste ist standardmäßig auf **Alle** eingestellt. **Speich
 - Zentralisierter Verlauf mit Ursprung, Status und Dauer
 
 ### Integrationen
+
+- Zerobyte — optionale Backup-Integration mit verwalteter Installation oder externer Verbindung
+- PowerWatch Hub — verwaltete Installation oder Verbindung zu einem vorhandenen Hub
 - PlugNPiN
 - Label-Assistenten für Nginx Proxy Manager, Pi-hole und AdGuard Home
 - Dozzle
@@ -921,6 +936,7 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) von hamphh – Inspiration und kompatible Labels für den Stack-Status pro Dienst und den Ausschluss von Image-Updates
 - [**Trivy**](https://github.com/aquasecurity/trivy) – Schwachstellenscanner
 - [**Restic**](https://restic.net/) – verschlüsseltes Backup-Tool
+- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — Backup-Anwendung auf Basis von Restic, optional mit Enhanced verbunden oder von Enhanced bereitgestellt
 - [**Apprise**](https://github.com/caronc/apprise-api) – plattformübergreifendes Benachrichtigung-Gateway
 - [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)
 - [**Dozzle**](https://github.com/amir20/dozzle) von Amir Rajan – Echtzeit-Docker-Protokollviewer (MIT-Lizenz)
