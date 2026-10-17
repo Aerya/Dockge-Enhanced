@@ -1,5 +1,7 @@
 # REST API, webhooks and automation
 
+[English](AUTOMATION.md) · [Français](AUTOMATION.fr.md) · [Español](AUTOMATION.es.md) · [Deutsch](AUTOMATION.de.md) · [简体中文](AUTOMATION.zh-CN.md)
+
 Everything on this page is optional. No token or webhook is created until an administrator requests one under **Settings → Automation**.
 
 ## Security model

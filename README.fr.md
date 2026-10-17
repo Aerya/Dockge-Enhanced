@@ -527,6 +527,8 @@ La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouto
 - Protections contre les suppressions à risque
 
 ### Automatisation & audit
+
+[Guide API REST, webhooks et Home Assistant](docs/AUTOMATION.fr.md).
 - API REST limitée par permissions et stacks
 - Webhooks par stack
 - Exemples Home Assistant
@@ -931,18 +933,18 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 
 ## Crédits
 
-- [**Dockge**](https://github.com/louislam/dockge) par louislam — le projet d'origine (licence MIT)
-- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) par Lorwell — inspiration pour le gestionnaire de fichiers hôte restreint et la vue par conteneur réel adaptés à Enhanced (licence MIT)
-- [**hamphh/dockge**](https://github.com/hamphh/dockge) par hamphh — inspiration et labels compatibles pour les exclusions par service du statut global et des mises à jour d’image
-- [**Trivy**](https://github.com/aquasecurity/trivy) — scanner de vulnérabilités
-- [**Restic**](https://restic.net/) — outil de backup chiffré
-- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — application de sauvegarde fondée sur Restic, connectée ou déployée en option par Enhanced
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
-- [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
-- [**Dozzle**](https://github.com/amir20/dozzle) par Amir Rajan — visualisation en temps réel des logs Docker (licence MIT)
-- [**PowerWatch**](https://github.com/Aerya/PowerWatch) — projet de monitoring électrique Linux et Hub d’agrégation, intégrés en option à Enhanced
-- [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) par DeepSpace2 — automatisation optionnelle du DNS et de Nginx Proxy Manager (GPLv3)
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — source d’améliorations importantes de l’UI/UX, des thèmes, de l’internationalisation et de l’architecture frontend adaptées dans ce projet
+- [**Dockge**](https://github.com/louislam/dockge) par louislam — le projet d'origine (licence MIT)
+- [**Dozzle**](https://github.com/amir20/dozzle) par Amir Rajan — visualisation en temps réel des logs Docker (licence MIT)
+- [**hamphh/dockge**](https://github.com/hamphh/dockge) par hamphh — inspiration et labels compatibles pour les exclusions par service du statut global et des mises à jour d’image
+- [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
+- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) par Lorwell — inspiration pour le gestionnaire de fichiers hôte restreint et la vue par conteneur réel adaptés à Enhanced (licence MIT)
+- [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) par DeepSpace2 — automatisation optionnelle du DNS et de Nginx Proxy Manager (GPLv3)
+- [**PowerWatch**](https://github.com/Aerya/PowerWatch) — projet de monitoring électrique Linux et Hub d’agrégation, intégrés en option à Enhanced
+- [**Restic**](https://restic.net/) — outil de backup chiffré
+- [**Trivy**](https://github.com/aquasecurity/trivy) — scanner de vulnérabilités
+- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — application de sauvegarde fondée sur Restic, connectée ou déployée en option par Enhanced
 
 ---
 

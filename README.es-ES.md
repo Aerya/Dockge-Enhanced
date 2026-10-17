@@ -62,7 +62,7 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
-**Copias con Zerobyte:** conecta una instancia existente o instala una instancia Compose dedicada desde **Copias de seguridad → Zerobyte**. Úsala junto con Restic nativo o para tus copias programadas, con repositorios separados. Incluye asistente de configuración, parada y reinicio protegidos de aplicaciones, comprobaciones del almacenamiento, restauraciones de prueba dedicadas y supervisión multiservidor de solo lectura. Si el almacenamiento de red no está disponible, la copia se bloquea sin recurrir al almacenamiento local. [Guía de configuración y recuperación](docs/zerobyte.md) (en inglés).
+**Copias con Zerobyte:** conecta una instancia existente o instala una instancia Compose dedicada desde **Copias de seguridad → Zerobyte**. Úsala junto con Restic nativo o para tus copias programadas, con repositorios separados. Incluye asistente de configuración, parada y reinicio protegidos de aplicaciones, comprobaciones del almacenamiento, restauraciones de prueba dedicadas y supervisión multiservidor de solo lectura. Si el almacenamiento de red no está disponible, la copia se bloquea sin recurrir al almacenamiento local. [Guía de configuración y recuperación](docs/zerobyte.es.md).
 
 **Historial opcional de CPU/RAM de stacks y contenedores：** Active la grabación en **Monitorización** y abra **Consumo de recursos** en las acciones del stack. Los gráficos compactos muestran el total del stack y cada contenedor real, incluidas réplicas y proyectos Compose no gestionados, durante 24 horas, 7 días, 1 mes, 1 año o todos los datos registrados. Las muestras se recogen cada 5 minutos, incluso sin navegador abierto; la grabación está desactivada por defecto. CPU: 100 % equivale a un núcleo; la RAM en Linux excluye la caché recuperable. Los huecos se conservan y pueden perderse picos entre muestras. Los totales no incluyen procesos nativos del host ni contenedores fuera de Compose. La lista permite ordenar por CPU, RAM o CPU y después RAM.
 
@@ -439,7 +439,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Verificación de hooks y recursos Zerobyte, parada y reinicio de aplicaciones, registro persistente de recuperación y recuperación manual de servicios concretos
 - Comprobación del almacenamiento de red sin alternativa local, revalidación confirmada, restauraciones de prueba dedicadas y estado federado de Zerobyte de solo lectura
 
-**Integración opcional de Zerobyte:** En **Copias de seguridad → Zerobyte**, conecta una instancia existente o instala una instancia Compose dedicada. Zerobyte puede complementar las copias nativas de Restic o encargarse de las copias programadas en su lugar, usando repositorios separados. El asistente crea fuentes, un repositorio y una tarea desactivada para revisarlos antes de activarla. Los flujos protegidos detienen y reinician las aplicaciones seleccionadas; si el almacenamiento de red no está disponible, la copia se bloquea sin recurrir al almacenamiento local. Las instalaciones externas requieren comprobar explícitamente los montajes y la separación de repositorios. Consulta la [guía de configuración y recuperación de Zerobyte](docs/zerobyte.md) (en inglés).
+**Integración opcional de Zerobyte:** En **Copias de seguridad → Zerobyte**, conecta una instancia existente o instala una instancia Compose dedicada. Zerobyte puede complementar las copias nativas de Restic o encargarse de las copias programadas en su lugar, usando repositorios separados. El asistente crea fuentes, un repositorio y una tarea desactivada para revisarlos antes de activarla. Los flujos protegidos detienen y reinician las aplicaciones seleccionadas; si el almacenamiento de red no está disponible, la copia se bloquea sin recurrir al almacenamiento local. Las instalaciones externas requieren comprobar explícitamente los montajes y la separación de repositorios. Consulta la [guía de configuración y recuperación de Zerobyte](docs/zerobyte.es.md).
 
 **Repositorio dentro de un origen:** sitúe preferiblemente los repositorios Restic locales fuera de las carpetas respaldadas. Si un repositorio está dentro de un origen, al guardar aparece un aviso y las copias excluyen automáticamente el repositorio, sus archivos de reinicio y sus otras rutas de montaje Docker. También se comprueban los enlaces simbólicos resueltos. Los destinos locales desactivados siguen protegidos. No se permite seleccionar el propio repositorio ni sus subcarpetas como origen; las rutas se comprueban de nuevo antes de cada copia. Esta comprobación no mueve ni reinicia ningún repositorio.
 
@@ -496,6 +496,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Protecciones de borrado
 
 ### Automatización y auditoría
+
+[Guía de API REST, webhooks y Home Assistant](docs/AUTOMATION.es.md).
 - API REST
 - Webhooks
 - Home Assistant
@@ -895,18 +897,18 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 
 ## Créditos
 
-- [**Dockge**](https://github.com/louislam/dockge) por louislam — el proyecto original (licencia MIT)
-- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — inspiración para el gestor de archivos del host restringido y la vista por contenedor real adaptados a Enhanced (licencia MIT)
-- [**hamphh/dockge**](https://github.com/hamphh/dockge) por hamphh — inspiración y etiquetas compatibles para excluir por servicio el estado global y las actualizaciones de imágenes
-- [**Trivy**](https://github.com/aquasecurity/trivy) — escáner de vulnerabilidades
-- [**Restic**](https://restic.net/) — herramienta de copia de seguridad encriptada
-- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — aplicación de copias basada en Restic, conectada o desplegada opcionalmente por Enhanced
 - [**Apprise**](https://github.com/caronc/apprise-api) — gateway de notificación multiplataforma
-- [**Kula**](https://github.com/c0m4r/kula) por c0m4r — monitor de sistema ligero (AGPLv3)
-- [**Dozzle**](https://github.com/amir20/dozzle) por Amir Rajan — visor de registros Docker en tiempo real (licencia MIT)
-- [**PowerWatch**](https://github.com/Aerya/PowerWatch) — monitorización eléctrica Linux y Hub de agregación, integrados opcionalmente en Enhanced
-- [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) por DeepSpace2 — automatización opcional de DNS y Nginx Proxy Manager (GPLv3)
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — fuente de mejoras importantes de UI/UX, temas, internacionalización y arquitectura frontend adaptadas en este proyecto
+- [**Dockge**](https://github.com/louislam/dockge) por louislam — el proyecto original (licencia MIT)
+- [**Dozzle**](https://github.com/amir20/dozzle) por Amir Rajan — visor de registros Docker en tiempo real (licencia MIT)
+- [**hamphh/dockge**](https://github.com/hamphh/dockge) por hamphh — inspiración y etiquetas compatibles para excluir por servicio el estado global y las actualizaciones de imágenes
+- [**Kula**](https://github.com/c0m4r/kula) por c0m4r — monitor de sistema ligero (AGPLv3)
+- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — inspiración para el gestor de archivos del host restringido y la vista por contenedor real adaptados a Enhanced (licencia MIT)
+- [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) por DeepSpace2 — automatización opcional de DNS y Nginx Proxy Manager (GPLv3)
+- [**PowerWatch**](https://github.com/Aerya/PowerWatch) — monitorización eléctrica Linux y Hub de agregación, integrados opcionalmente en Enhanced
+- [**Restic**](https://restic.net/) — herramienta de copia de seguridad encriptada
+- [**Trivy**](https://github.com/aquasecurity/trivy) — escáner de vulnerabilidades
+- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — aplicación de copias basada en Restic, conectada o desplegada opcionalmente por Enhanced
 
 ---
 

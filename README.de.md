@@ -62,7 +62,7 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
-**Backups mit Zerobyte:** Unter **Sicherungen → Zerobyte** eine vorhandene Instanz verbinden oder eine eigene Compose-Instanz installieren. Zerobyte ergänzt native Restic-Backups oder übernimmt geplante Backups mit getrennten Repositories. Einrichtungsassistent, geschützte Anwendungs-Stopps und -Neustarts, Speicherprüfungen, separate Testwiederherstellungen und lesende Multi-Server-Übersichten stehen zur Verfügung. Bei nicht verfügbarem Netzwerkspeicher wird das Backup ohne lokalen Ersatzspeicher blockiert. [Einrichtungs- und Wiederherstellungsanleitung](docs/zerobyte.md) (Englisch).
+**Backups mit Zerobyte:** Unter **Sicherungen → Zerobyte** eine vorhandene Instanz verbinden oder eine eigene Compose-Instanz installieren. Zerobyte ergänzt native Restic-Backups oder übernimmt geplante Backups mit getrennten Repositories. Einrichtungsassistent, geschützte Anwendungs-Stopps und -Neustarts, Speicherprüfungen, separate Testwiederherstellungen und lesende Multi-Server-Übersichten stehen zur Verfügung. Bei nicht verfügbarem Netzwerkspeicher wird das Backup ohne lokalen Ersatzspeicher blockiert. [Einrichtungs- und Wiederherstellungsanleitung](docs/zerobyte.de.md).
 
 **Optionaler CPU/RAM-Verlauf für Stacks und Container：** Aktivieren Sie die Aufzeichnung unter **Monitoring** und öffnen Sie **Ressourcenverbrauch** in den Stack-Aktionen. Kompakte Diagramme zeigen die Stack-Summe und jeden tatsächlichen Container einschließlich Replikaten und nicht verwalteten Compose-Projekten für 24 Stunden, 7 Tage, 1 Monat, 1 Jahr oder alle aufgezeichneten Daten. Messungen erfolgen alle 5 Minuten, auch ohne geöffneten Browser; die Aufzeichnung ist standardmäßig deaktiviert. CPU: 100 % entspricht einem Kern; unter Linux wird rückgewinnbarer Cache vom RAM abgezogen. Messlücken bleiben sichtbar; Spitzen zwischen Messungen können fehlen. Stack-Summen enthalten keine nativen Host-Prozesse oder Container außerhalb von Compose. Die Stack-Liste lässt sich nach CPU, RAM oder CPU und dann RAM sortieren.
 
@@ -449,7 +449,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Zerobyte-Hook- und Ressourcenprüfung, Anwendungs-Stopp/Neustart, dauerhaftes Wiederherstellungsjournal und gezielte manuelle Dienstwiederherstellung
 - Netzwerkspeicherprüfung ohne lokalen Ersatz, bestätigte Speicher-Neuprüfung, separate Testwiederherstellungen und lesender föderierter Zerobyte-Status
 
-**Optionale Zerobyte-Integration:** Unter **Sicherungen → Zerobyte** lässt sich eine vorhandene Instanz verbinden oder eine eigene Compose-Instanz installieren. Zerobyte kann native Restic-Backups ergänzen oder geplante Backups übernehmen; verwenden Sie getrennte Repositories. Der Assistent erstellt Quellen, ein Repository und einen deaktivierten Job zur Prüfung vor der Aktivierung. Geschützte Workflows stoppen und starten die ausgewählten Anwendungen. Nicht verfügbarer Netzwerkspeicher blockiert das Backup ohne lokalen Ersatzspeicher. Bei externen Installationen müssen Mounts und die Trennung der Repositories ausdrücklich geprüft werden. Siehe die [Zerobyte-Anleitung zur Einrichtung und Wiederherstellung](docs/zerobyte.md) (Englisch).
+**Optionale Zerobyte-Integration:** Unter **Sicherungen → Zerobyte** lässt sich eine vorhandene Instanz verbinden oder eine eigene Compose-Instanz installieren. Zerobyte kann native Restic-Backups ergänzen oder geplante Backups übernehmen; verwenden Sie getrennte Repositories. Der Assistent erstellt Quellen, ein Repository und einen deaktivierten Job zur Prüfung vor der Aktivierung. Geschützte Workflows stoppen und starten die ausgewählten Anwendungen. Nicht verfügbarer Netzwerkspeicher blockiert das Backup ohne lokalen Ersatzspeicher. Bei externen Installationen müssen Mounts und die Trennung der Repositories ausdrücklich geprüft werden. Siehe die [Zerobyte-Anleitung zur Einrichtung und Wiederherstellung](docs/zerobyte.de.md).
 
 **Repository innerhalb einer Quelle:** Legen Sie lokale Restic-Repositories möglichst außerhalb der gesicherten Ordner ab. Liegt ein Repository in einer Quelle, erscheint beim Speichern eine Warnung; Backups schließen das Repository, seine Reset-Archive und seine weiteren Docker-Mount-Pfade automatisch aus. Aufgelöste symbolische Links werden ebenfalls geprüft. Deaktivierte lokale Ziele bleiben geschützt. Das Repository selbst oder seine Unterordner können nicht als Quelle ausgewählt werden; vor jedem Backup werden die Pfade erneut geprüft. Diese Prüfung verschiebt oder setzt kein Repository zurück.
 
@@ -527,6 +527,8 @@ Die Restic-Snapshot-Liste ist standardmäßig auf **Alle** eingestellt. **Speich
 - Schutz vor riskantem Löschen
 
 ### Automatisierung & Audit
+
+[Anleitung zu REST-API, Webhooks und Home Assistant](docs/AUTOMATION.de.md).
 - Berechtigungs- und Stack-bezogene REST-API
 - Stack-spezifische Webhooks
 - Home-Assistant-Beispiele
@@ -931,18 +933,18 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 
 ## Mitwirkende
 
-- [**Dockge**](https://github.com/louislam/dockge) von louislam – das ursprüngliche Projekt (MIT-Lizenz)
-- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) von Lorwell – Inspiration für den eingeschränkten Host-Dateimanager und die Ansicht echter Container, angepasst für Enhanced (MIT-Lizenz)
-- [**hamphh/dockge**](https://github.com/hamphh/dockge) von hamphh – Inspiration und kompatible Labels für den Stack-Status pro Dienst und den Ausschluss von Image-Updates
-- [**Trivy**](https://github.com/aquasecurity/trivy) – Schwachstellenscanner
-- [**Restic**](https://restic.net/) – verschlüsseltes Backup-Tool
-- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — Backup-Anwendung auf Basis von Restic, optional mit Enhanced verbunden oder von Enhanced bereitgestellt
 - [**Apprise**](https://github.com/caronc/apprise-api) – plattformübergreifendes Benachrichtigung-Gateway
-- [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)
-- [**Dozzle**](https://github.com/amir20/dozzle) von Amir Rajan – Echtzeit-Docker-Protokollviewer (MIT-Lizenz)
-- [**PowerWatch**](https://github.com/Aerya/PowerWatch) – Linux-Stromverbrauchsüberwachungs- und Aggregations-Hub, optional in Enhanced integriert
-- [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) von DeepSpace2 – optionale DNS- und Nginx-Proxy-Manager-Automatisierung (GPLv3)
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) – Quelle für bedeutende UI/UX-, Themen-, Internationalisierungs- und Frontend-Architekturverbesserungen, die in dieses Projekt übernommen wurden
+- [**Dockge**](https://github.com/louislam/dockge) von louislam – das ursprüngliche Projekt (MIT-Lizenz)
+- [**Dozzle**](https://github.com/amir20/dozzle) von Amir Rajan – Echtzeit-Docker-Protokollviewer (MIT-Lizenz)
+- [**hamphh/dockge**](https://github.com/hamphh/dockge) von hamphh – Inspiration und kompatible Labels für den Stack-Status pro Dienst und den Ausschluss von Image-Updates
+- [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)
+- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) von Lorwell – Inspiration für den eingeschränkten Host-Dateimanager und die Ansicht echter Container, angepasst für Enhanced (MIT-Lizenz)
+- [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) von DeepSpace2 – optionale DNS- und Nginx-Proxy-Manager-Automatisierung (GPLv3)
+- [**PowerWatch**](https://github.com/Aerya/PowerWatch) – Linux-Stromverbrauchsüberwachungs- und Aggregations-Hub, optional in Enhanced integriert
+- [**Restic**](https://restic.net/) – verschlüsseltes Backup-Tool
+- [**Trivy**](https://github.com/aquasecurity/trivy) – Schwachstellenscanner
+- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — Backup-Anwendung auf Basis von Restic, optional mit Enhanced verbunden oder von Enhanced bereitgestellt
 
 ---
 

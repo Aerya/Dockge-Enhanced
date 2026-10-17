@@ -1,5 +1,7 @@
 # API REST, webhooks et automatisation
 
+[English](AUTOMATION.md) · [Français](AUTOMATION.fr.md) · [Español](AUTOMATION.es.md) · [Deutsch](AUTOMATION.de.md) · [简体中文](AUTOMATION.zh-CN.md)
+
 Les fonctions de cette page sont facultatives. Elles ne créent aucun jeton ni webhook tant qu’un administrateur ne le demande dans **Paramètres → Automatisation**.
 
 ## Principes de sécurité
