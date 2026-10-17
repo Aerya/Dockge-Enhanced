@@ -1,3 +1,4 @@
+import { localZerobyteSummary } from "../integrations/zerobyte-federation";
 import { AgentSocketHandler } from "../agent-socket-handler";
 import { DockgeServer } from "../dockge-server";
 import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
@@ -37,6 +38,15 @@ export function instanceSystemStatsResponse(
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         // Do not call super.create()
+        agentSocket.on("getZerobyteSummary", async (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true,
+                    data: await localZerobyteSummary(server) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
 
         agentSocket.on("globalSearch", async (query : unknown, limit : unknown, callback) => {
             try {

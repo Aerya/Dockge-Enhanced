@@ -64,6 +64,15 @@ export class AgentManager {
     private static readonly sharedConfigs : Record<string, SharedAgentConfig> = {};
     private static readonly sharedAvailabilityAlerts = new FederationAvailabilityAlertTracker();
     private static readonly subscribers = new Set<DockgeSocket>();
+    private static readonly authenticationFailures = new Set<string>();
+
+    static connectionFailure(endpoint: string): "authentication" | "offline" | null {
+        if (AgentManager.authenticationFailures.has(endpoint)) {
+            return "authentication";
+        }
+        return AgentManager.sharedAgentSocketList[endpoint]?.connected && AgentManager.sharedAgentLoggedInList[endpoint] ? null : "offline";
+    }
+
     private static sharedFirstConnectTime : Dayjs = dayjs();
 
     protected socket? : DockgeSocket;
@@ -442,6 +451,7 @@ export class AgentManager {
                 }
 
                 if (res.ok) {
+                    AgentManager.authenticationFailures.delete(endpoint);
                     AgentManager.sharedReconnectFailureList[endpoint] = 0;
                     AgentManager.sharedAgentLoggedInList[endpoint] = true;
                     AgentManager.sharedAvailabilityAlerts.markOnline(endpoint);
@@ -449,6 +459,7 @@ export class AgentManager {
                     return;
                 }
 
+                AgentManager.authenticationFailures.add(endpoint);
                 const detail = safeFederationErrorMessage(
                     res.msg || "Federation login failed",
                 );

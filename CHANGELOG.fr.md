@@ -1,5 +1,13 @@
 # Changelog Dockge Enhanced
 
+**2026-10-17 — Zerobyte** — Surveillance de l’intégrité des hooks et ressources, refus des lancements dégradés depuis Enhanced, reprise manuelle des services journalisés, revalidation confirmée du stockage même après arrêt par le garde-fou, diagnostics fédérés plus précis et lanceur de tests isolés.
+
+**2026-10-16 — Zerobyte** — Diagnostic externe guidé, migration confirmée des jobs existants sans modifier les snapshots ni la rétention, et état explicite de reprise applicative avec journal synchronisé sur disque.
+
+**2026-10-16 — Workflows Zerobyte protégés** — Provisionnement confirmé et idempotent des sources/dépôts/jobs, hooks d’arrêt/redémarrage, alertes persistantes et reprise après panne, validation externe liée à la connexion et supervision fédérée en lecture seule.
+
+**2026-10-16 — Intégration Zerobyte facultative** — Sauvegardes propose une connexion Zerobyte ou une installation Compose propre à l’instance, des sources RO/destinations RW explicites, des contrôles de chemins et montages distants, des opérations confirmées et une restauration dédiée de test. La couverture Restic native est conservée. [Documentation](docs/zerobyte.fr.md).
+
 **2026-10-16 — Contrôle des images Docker Hub** — ImageWatcher résout désormais les préfixes explicites docker.io et index.docker.io vers registry-1.docker.io, comme les références Docker Hub implicites, et ajoute le namespace library/ aux images officielles. Corrige les erreurs HTTP 302 lors du contrôle des manifests, sans autoriser les redirections ni modifier les tags, la comparaison des digests ou les politiques de mise à jour. Corrige #524.
 
 **2026-10-16 — Historique CPU/RAM facultatif des stacks et conteneurs** — Activez l’enregistrement dans **Monitoring**, puis ouvrez **Consommation** dans les actions d’une stack. Les graphiques compacts présentent le total de la stack et chaque conteneur réel, y compris les réplicas et les projets Compose non gérés, sur 24 heures, 7 jours, 1 mois, 1 an ou toutes les données enregistrées. Les mesures sont collectées toutes les 5 minutes, même sans navigateur ouvert ; l’enregistrement est désactivé par défaut. Pour le CPU, 100 % correspond à un cœur ; sous Linux, la RAM exclut le cache récupérable. Les interruptions restent visibles et les pics entre deux mesures peuvent être manqués. Les totaux des stacks n’incluent pas les processus natifs de l’hôte ni les conteneurs hors Compose. La liste des stacks peut aussi être triée par CPU, RAM ou CPU puis RAM.

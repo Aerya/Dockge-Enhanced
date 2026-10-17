@@ -1,5 +1,11 @@
 
 
+**2026-10-17 — Zerobyte** — Verificación de hooks y recursos, bloqueo de inicios degradados, recuperación manual de servicios, revalidación confirmada tras parada protectora, diagnóstico federado y pruebas aisladas reproducibles.
+
+**2026-10-16 — Flujos Zerobyte protegidos** — Aprovisionamiento confirmado e idempotente, parada/reinicio de stacks, alertas persistentes y recuperación, aprobación externa por conexión y resumen federado de solo lectura.
+
+**2026-10-16 — Integración opcional de Zerobyte** — Copias de seguridad ofrece conexión a Zerobyte o instalación Compose propia, fuentes RO/destinos RW explícitos, comprobaciones de rutas y montajes remotos, operaciones confirmadas y restauración de prueba separada. Se mantiene la cobertura Restic nativa. [Documentation](docs/zerobyte.md).
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/main/frontend/public/icon.svg" width="120" alt="Dockge Enhanced logo">
 </p>

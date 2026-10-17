@@ -1,3 +1,4 @@
+import { isZerobyteApplicationBackupActive } from "../integrations/zerobyte-coordination";
 /**
  * BackupManager — Gère les sauvegardes Restic des compose.yaml et .env
  * Supporte : local, SFTP, S3/B2, Restic REST server
@@ -1879,6 +1880,9 @@ export class BackupManager {
         suppressNotification?: boolean;
         additionalTags?: string[];
     } = {}): Promise<BackupResult> {
+        if (isZerobyteApplicationBackupActive()) {
+            throw new Error("Zerobyte application backup in progress; native backup deferred");
+        }
         if (this.repositoryResetting) {
             throw new Error("Local Restic repository reset in progress");
         }
@@ -2985,6 +2989,9 @@ export class BackupManager {
     /** Restaure une liste de fichiers depuis un snapshot à leur emplacement d'origine */
     async restoreFiles(snapshotId: string, filePaths: string[]): Promise<{ restored: number;
         errors: string[] }> {
+        if (isZerobyteApplicationBackupActive()) {
+            throw new Error("Zerobyte application backup in progress; native restore deferred");
+        }
         if (this.repositoryResetting) {
             throw new Error("Local Restic repository reset in progress");
         }
@@ -3477,6 +3484,23 @@ export class BackupManager {
     }
 
     // ── Notifications (Discord + Apprise) ────────────────────────
+
+    /** Reuse configured backup notification channels for integration failures. */
+    async notifyIntegrationFailure(title: string, message: string): Promise<void> {
+        const tasks: Promise<unknown>[] = [];
+        if (this.settings.discordWebhooks?.length) {
+            tasks.push(new DiscordNotifier(this.settings.discordWebhooks).sendEmbed({ title,
+                description: message,
+                color: 0xe74c3c }));
+        }
+        const apprise = await this.loadAppriseNotifier();
+        if (apprise) {
+            tasks.push(apprise.send({ title,
+                body: message,
+                type: "failure" }));
+        }
+        await Promise.allSettled(tasks);
+    }
 
     /** Charge l'AppriseNotifier : serverUrl partagé (watcher-settings) + URLs propres au backup */
     private async loadAppriseNotifier(): Promise<AppriseNotifier | null> {
