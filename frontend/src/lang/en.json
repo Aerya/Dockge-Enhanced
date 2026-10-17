@@ -1,4 +1,9 @@
 {
+    "stackHistory.services": "Compose services",
+    "stackHistory.serviceHistoryHint": "One history per Compose service, preserved across updates. Simultaneous replicas are added together.",
+    "stackHistory.serviceHistoryUnavailable": "Update the selected instance to view history grouped by Compose service.",
+    "stackHistory.serviceLimit": "Showing {shown} of {total} services. Choose a shorter period to find the others.",
+    "releaseNews.item.serviceResourceHistory": "CPU/RAM history now shows one line per Compose service, preserved across updates and container recreations. Replicas are summed at each sample. The stack total and existing measurements are preserved.",
     "stackActionMenu.more": "More actions",
     "stackActionMenu.configuration": "Configuration",
     "stackActionMenu.information": "Information",
@@ -6,7 +11,7 @@
     "releaseNews.item.stackResourceHistory": "Optional CPU/RAM history for stacks and actual containers is available in Monitoring. Open Resource usage in stack actions; compact charts include unmanaged Compose projects. The stack list now supports CPU/RAM sorting.",
     "stackHistory.availableSince": "Data since",
     "stackHistory.action": "Resource usage",
-    "stackHistory.actionHint": "View CPU / RAM history for the stack and its containers",
+    "stackHistory.actionHint": "View CPU / RAM history for the stack and each Compose service",
     "stackHistory.stackTotal": "Stack total",
     "stackHistory.containers": "Containers",
     "stackHistory.close": "Close panel",

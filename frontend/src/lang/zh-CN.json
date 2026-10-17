@@ -1,4 +1,9 @@
 {
+    "stackHistory.services": "Compose 服务",
+    "stackHistory.serviceHistoryHint": "每个 Compose 服务保留一份历史，不因更新而分开；同时运行的副本用量会相加。",
+    "stackHistory.serviceHistoryUnavailable": "请更新所选实例，以查看按 Compose 服务分组的历史。",
+    "stackHistory.serviceLimit": "显示 {total} 个服务中的 {shown} 个。请选择较短时间段以查看其他服务。",
+    "releaseNews.item.serviceResourceHistory": "CPU/RAM 历史现在按 Compose 服务各显示一行，更新及重建容器后仍保留在同一历史中。每次采样会合计各副本用量。Stack 总量和已有测量数据保持不变。",
     "stackActionMenu.more": "更多操作",
     "stackActionMenu.configuration": "配置",
     "stackActionMenu.information": "信息",
@@ -6,7 +11,7 @@
     "releaseNews.item.stackResourceHistory": "在监控中启用可选的 CPU/RAM 历史，通过堆栈操作打开紧凑图表，可查看实际容器和未托管的 Compose 项目。堆栈列表新增 CPU/RAM 排序。",
     "stackHistory.availableSince": "数据起始于",
     "stackHistory.action": "资源用量",
-    "stackHistory.actionHint": "查看 Stack 及其容器的 CPU / RAM 历史",
+    "stackHistory.actionHint": "查看 Stack 及各 Compose 服务的 CPU / RAM 历史",
     "stackHistory.stackTotal": "Stack 合计",
     "stackHistory.containers": "容器",
     "stackHistory.close": "关闭面板",

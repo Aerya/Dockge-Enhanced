@@ -1,4 +1,9 @@
 {
+    "stackHistory.services": "Compose-Dienste",
+    "stackHistory.serviceHistoryHint": "Ein Verlauf pro Compose-Dienst, der bei Updates erhalten bleibt. Gleichzeitige Replikate werden addiert.",
+    "stackHistory.serviceHistoryUnavailable": "Aktualisieren Sie die ausgewählte Instanz, um den nach Compose-Diensten gruppierten Verlauf anzuzeigen.",
+    "stackHistory.serviceLimit": "{shown} von {total} Diensten werden angezeigt. Wählen Sie einen kürzeren Zeitraum, um die anderen zu finden.",
+    "releaseNews.item.serviceResourceHistory": "Der CPU/RAM-Verlauf zeigt eine Zeile pro Compose-Dienst, auch über Updates und Neuerstellungen hinweg. Replikate werden je Messung addiert. Stack-Summe und vorhandene Messwerte bleiben erhalten.",
     "stackActionMenu.more": "Weitere Aktionen",
     "stackActionMenu.configuration": "Konfiguration",
     "stackActionMenu.information": "Informationen",
@@ -6,7 +11,7 @@
     "releaseNews.item.stackResourceHistory": "Der optionale CPU/RAM-Verlauf lässt sich unter Monitoring aktivieren und über die Stack-Aktionen öffnen. Kompakte Diagramme enthalten tatsächliche Container und nicht verwaltete Compose-Projekte. Die Stack-Liste unterstützt CPU/RAM-Sortierung.",
     "stackHistory.availableSince": "Daten seit",
     "stackHistory.action": "Ressourcennutzung",
-    "stackHistory.actionHint": "CPU-/RAM-Verlauf des Stacks und seiner Container anzeigen",
+    "stackHistory.actionHint": "CPU-/RAM-Verlauf des Stacks und jedes Compose-Dienstes anzeigen",
     "stackHistory.stackTotal": "Gesamter Stack",
     "stackHistory.containers": "Container",
     "stackHistory.close": "Bereich schließen",

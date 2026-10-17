@@ -1,5 +1,7 @@
 # Dockge-Enhanced-Changelog
 
+**2026-10-17 — CPU/RAM-Verlauf pro Compose-Dienst** — Der Verlauf gruppiert vorhandene Messwerte nach Stack und Compose-Dienst statt nach Docker-ID. Neu erstellte Versionen teilen sich einen Verlauf; gleichzeitige Replikate werden vor Mittelwerten, Maxima und zeitlicher Aggregation addiert. Die Stack-Summe bleibt unverändert, keine Messwerte werden gelöscht und ältere verknüpfte Instanzen zeigen einen Aktualisierungshinweis.
+
 **2026-10-17 — Socket.IO-Verbindung der WebUI** — Die WebUI versucht zuerst WebSocket und vermeidet damit das anfängliche Upgrade von Polling, das mit den in louislam/dockge#1008 beschriebenen Wiederverbindungsschleifen zusammenhängt. Bei abgelehntem WebSocket bleibt der automatische Polling-Fallback verfügbar. Authentifizierungs- und Wiederverbindungsbehandlung sowie Verbindungen zwischen Instanzen bleiben unverändert. Lokale Tests für Transporte, Wiederverbindungen und Serverneustarts sowie kurze Chromium-Prüfungen bestanden; der genaue intermittierende Fehler des Meldenden bleibt unbestätigt.
 
 **2026-10-17 — Zerobyte** — Hook-/Ressourcenprüfung, gesperrte unsichere Starts, manuelle Dienstwiederherstellung, bestätigte Speicher-Neuprüfung nach Schutzstopp, genauere Föderationsdiagnose und isolierter Teststarter.
