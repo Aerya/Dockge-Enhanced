@@ -56,7 +56,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 10 月
 
-**Zerobyte 备份：**在 **备份 → Zerobyte** 中连接现有实例或安装独立的 Compose 实例。可与原生 Restic 配合使用，也可接管计划备份，并使用独立仓库。支持配置向导、受保护的应用停止与重启、存储检查、独立测试恢复及只读多服务器状态。网络存储不可用时会阻止备份，不会自动使用本地备用目录。[配置与恢复指南](docs/zerobyte.md)（英文）。
+**Zerobyte 备份：**在 **备份 → Zerobyte** 中连接现有实例或安装独立的 Compose 实例。可与原生 Restic 配合使用，也可接管计划备份，并使用独立仓库。支持配置向导、受保护的应用停止与重启、存储检查、独立测试恢复及只读多服务器状态。网络存储不可用时会阻止备份，不会自动使用本地备用目录。[配置与恢复指南](docs/zerobyte.zh-CN.md)。
 
 **可选的堆栈与容器 CPU/RAM 历史：** 在**监控**中启用记录，然后通过堆栈操作中的**资源使用情况**打开历史。紧凑图表显示堆栈总量和每个实际容器，包括副本及未托管的 Compose 项目，支持 24 小时、7 天、1 个月、1 年或全部已记录数据。每 5 分钟采样一次，无需保持浏览器打开；默认关闭记录。CPU 的 100% 表示一个核心；Linux RAM 不包含可回收缓存。采样中断保留为空缺，两次采样之间的峰值可能遗漏。堆栈总量不包含宿主机原生进程或 Compose 之外的容器。堆栈列表也可按 CPU、RAM 或先 CPU 后 RAM 排序。
 
@@ -424,7 +424,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Zerobyte 钩子与资源检查、应用停止和重启、持久恢复日志及针对服务的手动恢复
 - 网络存储检查且无本地回退、经确认的存储重新验证、独立测试恢复及只读联合 Zerobyte 状态
 
-**可选 Zerobyte 集成:** 在 **备份 → Zerobyte** 中连接现有实例，或安装独立的 Compose 实例。Zerobyte 可以补充原生 Restic 备份，也可以接管计划备份；请使用独立的仓库。向导创建来源、仓库和默认禁用的任务，供启用前检查。受保护的工作流会停止并重新启动所选应用；网络存储不可用时会阻止备份，不会自动写入本地备用目录。外部实例需要操作员明确检查挂载及仓库隔离。请参阅 [Zerobyte 配置与恢复指南](docs/zerobyte.md)（英文）。
+**可选 Zerobyte 集成:** 在 **备份 → Zerobyte** 中连接现有实例，或安装独立的 Compose 实例。Zerobyte 可以补充原生 Restic 备份，也可以接管计划备份；请使用独立的仓库。向导创建来源、仓库和默认禁用的任务，供启用前检查。受保护的工作流会停止并重新启动所选应用；网络存储不可用时会阻止备份，不会自动写入本地备用目录。外部实例需要操作员明确检查挂载及仓库隔离。请参阅 [Zerobyte 配置与恢复指南](docs/zerobyte.zh-CN.md)。
 
 **仓库位于备份来源内：**建议将本地 Restic 仓库放在所选目录之外。如果仓库位于来源目录内，保存设置时会显示警告，备份会自动排除仓库、重置时保留的归档及其其他 Docker 挂载路径。还会检查解析后的符号链接。已禁用的本地目标也保持受保护。不能选择仓库本身或其子目录作为来源；每次备份前都会重新检查路径。此检查不会移动或重置任何仓库。
 
@@ -481,6 +481,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 高风险删除保护
 
 ### 自动化与审计
+
+[REST API、Webhooks 与 Home Assistant 指南](docs/AUTOMATION.zh-CN.md)。
 - REST API
 - 每 Stack Webhook
 - Home Assistant 示例
@@ -742,18 +744,18 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 
 ## 致谢
 
-- [**Dockge**](https://github.com/louislam/dockge) by louislam — 原始项目（MIT）
-- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
-- [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — 按服务排除整体状态和镜像更新功能的灵感及兼容标签来源
-- [**Trivy**](https://github.com/aquasecurity/trivy) — 漏洞扫描
-- [**Restic**](https://restic.net/) — 加密备份
-- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — 基于 Restic 的备份应用，可选择连接到 Enhanced 或由 Enhanced 部署
 - [**Apprise**](https://github.com/caronc/apprise-api) — 多平台通知网关
-- [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
-- [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — Docker 实时日志查看器
-- [**PowerWatch**](https://github.com/Aerya/PowerWatch) — Linux 功耗监控与聚合 Hub，可选集成至 Enhanced
-- [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — 可选 DNS / Nginx Proxy Manager 自动化
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — 已整合的重要 UI/UX、主题、国际化和前端架构改进来源
+- [**Dockge**](https://github.com/louislam/dockge) by louislam — 原始项目（MIT）
+- [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — Docker 实时日志查看器
+- [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — 按服务排除整体状态和镜像更新功能的灵感及兼容标签来源
+- [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
+- [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
+- [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — 可选 DNS / Nginx Proxy Manager 自动化
+- [**PowerWatch**](https://github.com/Aerya/PowerWatch) — Linux 功耗监控与聚合 Hub，可选集成至 Enhanced
+- [**Restic**](https://restic.net/) — 加密备份
+- [**Trivy**](https://github.com/aquasecurity/trivy) — 漏洞扫描
+- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — 基于 Restic 的备份应用，可选择连接到 Enhanced 或由 Enhanced 部署
 
 ---
 

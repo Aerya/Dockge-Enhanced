@@ -1,5 +1,7 @@
 # Zerobyte (optional)
 
+[English](zerobyte.md) · [Français](zerobyte.fr.md) · [Español](zerobyte.es.md) · [Deutsch](zerobyte.de.md) · [简体中文](zerobyte.zh-CN.md)
+
 In **Backups**, turn on **Zerobyte (optional)**. OFF collapses the whole section and preserves its configuration, credentials, containers and backup data. Native Enhanced Restic retains its existing coverage, repositories and retention: **no automatic exclusion or migration** is performed.
 
 ## Existing instance

@@ -1,5 +1,7 @@
 # Zerobyte (facultatif)
 
+[English](zerobyte.md) · [Français](zerobyte.fr.md) · [Español](zerobyte.es.md) · [Deutsch](zerobyte.de.md) · [简体中文](zerobyte.zh-CN.md)
+
 Dans **Sauvegardes**, activer le bloc **Zerobyte (facultatif)**. OFF replie entièrement le bloc et conserve configuration, clé API, conteneurs et données. Restic Enhanced conserve sa couverture et sa propre rétention : aucune exclusion automatique, migration ou suppression.
 
 - **Instance existante** : renseigner l’origine HTTP(S) accessible depuis le serveur Enhanced et une clé API créée dans les paramètres Zerobyte. Enregistrer puis tester. Aucun contrôle Docker de cette instance externe.
