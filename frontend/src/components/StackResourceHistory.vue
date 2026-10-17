@@ -31,18 +31,20 @@
                 </article>
             </div>
         </template>
-        <details v-if="result?.containers?.length" class="resource-container-section" open>
-            <summary>{{ $t('stackHistory.containers') }} <span class="badge bg-secondary">{{ result.containerCount }}</span></summary>
+        <p v-if="result && !result.services" class="form-text">{{ $t('stackHistory.serviceHistoryUnavailable') }}</p>
+        <details v-if="result?.services?.length" class="resource-container-section" open>
+            <summary>{{ $t('stackHistory.services') }} <span class="badge bg-secondary">{{ result.serviceCount }}</span></summary>
+            <p class="form-text mb-1">{{ $t('stackHistory.serviceHistoryHint') }}</p>
             <div class="resource-container-list">
-                <article v-for="container in result.containers" :key="container.id" class="resource-container-row">
-                    <div class="resource-container-identity"><strong :title="container.name">{{ container.name }}</strong><small>{{ container.service }} · {{ container.id.slice(0, 12) }}</small></div>
+                <article v-for="container in result.services" :key="container.name" class="resource-container-row">
+                    <div class="resource-container-identity"><strong :title="container.name">{{ container.name }}</strong></div>
                     <div v-for="chart in charts" :key="chart.metric" class="resource-container-metric" :title="`${$t('watcher.monitoring.historyAverage')}: ${chart.format(chart.metric === 'cpuPercent' ? container.cpuAverage : container.memAverage)} · ${$t('watcher.monitoring.historyMaximum')}: ${chart.format(chart.metric === 'cpuPercent' ? container.cpuMax : container.memMax)}`">
-                        <ResourceSparkline :points="container.points" :metric="chart.metric" :from="chartFrom" :to="result.to" :bucket-seconds="result.containerBucketSeconds" :ceiling="Math.max(chart.metric === 'cpuPercent' ? 1 : 1024, (chart.metric === 'cpuPercent' ? container.cpuMax : container.memMax) * 1.1)" :label="`${container.name} · ${chart.label}`" :format="chart.format" :color="chart.metric === 'memUsed' ? 'var(--success)' : 'var(--primary)'" :height="28" />
+                        <ResourceSparkline :points="container.points" :metric="chart.metric" :from="chartFrom" :to="result.to" :bucket-seconds="result.serviceBucketSeconds" :ceiling="Math.max(chart.metric === 'cpuPercent' ? 1 : 1024, (chart.metric === 'cpuPercent' ? container.cpuMax : container.memMax) * 1.1)" :label="`${container.name} · ${chart.label}`" :format="chart.format" :color="chart.metric === 'memUsed' ? 'var(--success)' : 'var(--primary)'" :height="28" />
                         <span :class="chart.metric === 'memUsed' ? 'resource-ram' : 'resource-cpu'"><small>{{ chart.label }}</small> {{ chart.format(chart.metric === 'cpuPercent' ? container.cpuAverage : container.memAverage) }}</span>
                     </div>
                 </article>
             </div>
-            <p v-if="result.containerCount > result.containers.length" class="form-text mb-0">{{ $t('stackHistory.containerLimit', { shown: result.containers.length, total: result.containerCount }) }}</p>
+            <p v-if="result.serviceCount > result.services.length" class="form-text mb-0">{{ $t('stackHistory.serviceLimit', { shown: result.services.length, total: result.serviceCount }) }}</p>
         </details>
         <div class="resource-history-footnote">
             <span :title="`${$t('stackHistory.metricHelp')} ${$t('stackHistory.recordingHint')}`"><font-awesome-icon icon="info-circle" /> {{ $t('stackHistory.sampleInterval') }}</span>
@@ -79,17 +81,15 @@ const presets = [
 ];
 interface HistoryResult {
     points: ResourceHistoryPoint[];
-    containers: Array<{ id: string;
-        name: string;
-        service: string;
+    services?: Array<{ name: string;
         lastSampledAt: string;
         cpuAverage: number;
         cpuMax: number;
         memAverage: number;
         memMax: number;
         points: ResourceHistoryPoint[] }>;
-    containerCount: number;
-    containerBucketSeconds: number;
+    serviceCount: number;
+    serviceBucketSeconds: number;
     stats: { cpuAverage: number;
         cpuMax: number;
         memAverage: number;

@@ -1,4 +1,9 @@
 {
+    "stackHistory.services": "Services Compose",
+    "stackHistory.serviceHistoryHint": "Un historique par service Compose, conservé au fil des mises à jour. Les réplicas simultanés sont additionnés.",
+    "stackHistory.serviceHistoryUnavailable": "Mettez à jour l’instance sélectionnée pour afficher l’historique regroupé par service Compose.",
+    "stackHistory.serviceLimit": "{shown} services sur {total} affichés. Choisissez une période plus courte pour retrouver les autres.",
+    "releaseNews.item.serviceResourceHistory": "L’historique CPU/RAM affiche une ligne par service Compose, conservée au fil des mises à jour et recréations. Les réplicas sont additionnés à chaque mesure. Le total de la stack et les mesures existantes sont préservés.",
     "stackActionMenu.more": "Plus d’actions",
     "stackActionMenu.configuration": "Configuration",
     "stackActionMenu.information": "Informations",
@@ -6,7 +11,7 @@
     "releaseNews.item.stackResourceHistory": "L’historique CPU/RAM des stacks et conteneurs réels s’active dans Monitoring. Ouvrez Consommation dans les actions de la stack : les graphiques compacts incluent les projets Compose non gérés. La liste des stacks propose aussi le tri CPU/RAM.",
     "stackHistory.availableSince": "Données depuis le",
     "stackHistory.action": "Consommation",
-    "stackHistory.actionHint": "Consulter l’historique CPU / RAM de la stack et de ses conteneurs",
+    "stackHistory.actionHint": "Consulter l’historique CPU / RAM de la stack et de chaque service Compose",
     "stackHistory.stackTotal": "Total de la stack",
     "stackHistory.containers": "Conteneurs",
     "stackHistory.close": "Fermer le panneau",

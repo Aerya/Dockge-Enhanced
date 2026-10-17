@@ -134,7 +134,7 @@ test("annual and all-time queries are bounded and compute maxima from original s
     }
 });
 
-test("real replicas and recreated containers keep distinct histories under the same stack", async () => {
+test("replicas are summed per service and recreated IDs retain their existing readings", async () => {
     const db = database();
     let now = new Date("2026-10-16T12:00:00.000Z");
     let replaced = false;
@@ -157,22 +157,137 @@ test("real replicas and recreated containers keep distinct histories under the s
     try {
         await collector.setEnabled(true);
         const first = await collector.read("app");
-        assert.equal(first.containers.length, 2);
-        assert.equal(first.containers.reduce((sum, item) => sum + item.cpuAverage, 0), first.stats.cpuAverage);
-        assert.equal(first.containers.reduce((sum, item) => sum + item.memAverage, 0), first.stats.memAverage);
+        assert.equal(first.services.length, 1);
+        assert.equal(first.services[0].name, "web");
+        assert.equal(first.services[0].cpuAverage, first.stats.cpuAverage);
+        assert.equal(first.services[0].memAverage, first.stats.memAverage);
         replaced = true;
         now = new Date("2026-10-16T12:05:00.000Z");
         await collector.sample();
         const next = await collector.read("app");
-        assert.equal(next.containerCount, 3);
-        assert.equal(next.containers.find(item => item.id === "a".repeat(64))?.points.length, 2);
-        assert.equal(next.containers.find(item => item.id === "b".repeat(64))?.points.length, 1);
-        assert.equal(next.containers.find(item => item.id === "c".repeat(64))?.points.length, 1);
+        assert.equal(next.serviceCount, 1);
+        assert.equal(next.services[0].points.length, 2);
+        assert.deepEqual(next.services[0].points.map(point => point.cpuPercent), [ 30, 30 ]);
+        assert.deepEqual(next.services[0].points.map(point => point.memUsed), [ 3000, 3000 ]);
+        assert.equal(next.services[0].samples, 2);
+        assert.equal(db.sqlite.prepare("SELECT COUNT(DISTINCT container_id) AS total FROM container_resource_history").get()?.total, 3);
+        assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS total FROM container_resource_history").get()?.total, 4);
+        assert.equal(next.containers.length, 1, "older WebUIs retain a compatible response shape");
+        assert.equal(next.containerCount, next.serviceCount);
         now = new Date("2026-10-16T12:08:00.000Z");
         assert.equal((await collector.read("app", "1y")).points.length, 2, "recent samples keep their resolution even in a year view");
         assert.equal((await collector.read("other")).containers.length, 0);
     } finally {
         await collector.setEnabled(false);
+        db.sqlite.close();
+    }
+});
+
+test("thirteen historical container IDs become two Compose services without deleting data", async () => {
+    const db = database();
+    const now = new Date("2026-10-17T12:00:00.000Z");
+    const collector = new StackResourceHistoryCollector(async () => ({ data: {} }), db, () => now);
+    const insert = db.sqlite.prepare("INSERT INTO container_resource_history VALUES (?, ?, ?, ?, ?, ?, ?)");
+    try {
+        for (let generation = 0; generation < 10; generation++) {
+            const at = new Date(now.getTime() - (10 - generation) * 300_000).toISOString();
+            db.sqlite.prepare("INSERT INTO stack_resource_history VALUES (?, ?, ?, ?)").run("app", at, generation + 1, 100);
+            insert.run("app", generation.toString(16).padStart(64, "a"), "temporary-prefix_app", "web", at, generation + 1, 100);
+            if (generation < 3) {
+                insert.run("app", generation.toString(16).padStart(64, "b"), "app-bootstrap", "gpu-bootstrap", at, 0, 0);
+            }
+        }
+        const before = db.sqlite.prepare("SELECT * FROM container_resource_history ORDER BY container_id, sampled_at").all();
+        for (const preset of [ "24h", "7d", "1m", "1y", "all" ] as const) {
+            const result = await collector.read("app", preset);
+            assert.equal(result.serviceCount, 2);
+            assert.deepEqual(result.services.map(service => service.name), [ "gpu-bootstrap", "web" ]);
+            const web = result.services[1];
+            assert.equal(web.samples, 10);
+            assert.equal(web.cpuAverage, 5.5);
+            assert.equal(web.cpuMax, 10);
+            assert.equal(web.memAverage, 100);
+            assert.equal(web.points.length, 10);
+            assert.equal(result.services[0].cpuMax, 0);
+        }
+        assert.deepEqual(db.sqlite.prepare("SELECT * FROM container_resource_history ORDER BY container_id, sampled_at").all(), before);
+    } finally {
+        db.sqlite.close();
+    }
+});
+
+test("service averages and maxima use simultaneous replica totals, not individual rows", async () => {
+    const db = database();
+    const now = new Date("2026-10-17T12:00:00.000Z");
+    const collector = new StackResourceHistoryCollector(async () => ({ data: {} }), db, () => now);
+    try {
+        const insert = db.sqlite.prepare("INSERT INTO container_resource_history VALUES (?, ?, ?, ?, ?, ?, ?)");
+        for (const [at, a, b] of [ [ "2026-10-17T11:50:00.000Z", 10, 0 ], [ "2026-10-17T11:55:00.000Z", 0, 20 ] ] as const) {
+            insert.run("app", "a".repeat(64), "app-web-1", "web", at, a, a * 100);
+            insert.run("app", "b".repeat(64), "app-web-2", "web", at, b, b * 100);
+            insert.run("other", "c".repeat(64), "other-web-1", "web", at, 999, 999_000);
+            db.sqlite.prepare("INSERT INTO stack_resource_history VALUES (?, ?, ?, ?)").run("app", at, a + b, (a + b) * 100);
+        }
+        const service = (await collector.read("app")).services[0];
+        assert.equal(service.cpuAverage, 15);
+        assert.equal(service.cpuMax, 20, "replica peaks at different times must not be added");
+        assert.equal(service.memAverage, 1500);
+        assert.equal(service.memMax, 2000);
+        assert.deepEqual(service.points.map(point => point.cpuPercent), [ 10, 20 ]);
+        assert.equal((await collector.read("other")).services[0].cpuAverage, 999);
+    } finally {
+        db.sqlite.close();
+    }
+});
+
+test("hundreds of recreated IDs are grouped before limiting and downsampling", async () => {
+    const db = database();
+    const now = new Date("2026-10-17T12:00:00.000Z");
+    const collector = new StackResourceHistoryCollector(async () => ({ data: {} }), db, () => now);
+    try {
+        const insert = db.sqlite.prepare("INSERT INTO container_resource_history VALUES (?, ?, ?, ?, ?, ?, ?)");
+        for (let i = 0; i < 600; i++) {
+            const at = new Date(now.getTime() - i * 300_000).toISOString();
+            insert.run("app", i.toString(16).padStart(64, "0"), "app-web", "web", at, i === 599 ? 100 : 1, 100);
+            db.sqlite.prepare("INSERT INTO stack_resource_history VALUES (?, ?, ?, ?)").run("app", at, i === 599 ? 100 : 1, 100);
+        }
+        const result = await collector.read("app", "7d");
+        assert.equal(result.serviceCount, 1);
+        assert.equal(result.services[0].samples, 600);
+        assert.equal(result.services[0].cpuMax, 100, "the oldest IDs must not be lost to the display limit");
+        assert.equal(result.services[0].cpuAverage, 699 / 600);
+        assert.ok(result.services[0].points.length <= 121);
+        assert.equal(result.services[0].points[0].sampledAt, new Date(now.getTime() - 599 * 300_000).toISOString());
+    } finally {
+        db.sqlite.close();
+    }
+});
+
+test("recreated services keep gaps, stopped zeroes and time-range boundaries", async () => {
+    const db = database();
+    const now = new Date("2026-10-17T12:00:00.000Z");
+    const collector = new StackResourceHistoryCollector(async () => ({ data: {} }), db, () => now);
+    try {
+        const insert = db.sqlite.prepare("INSERT INTO container_resource_history VALUES (?, ?, ?, ?, ?, ?, ?)");
+        for (const [id, at, value] of [
+            [ "a", "2026-10-15T12:00:00.000Z", 999 ],
+            [ "b", "2026-10-17T11:00:00.000Z", 5 ],
+            [ "c", "2026-10-17T11:30:00.000Z", 0 ],
+            [ "d", "2026-10-18T12:00:00.000Z", 999 ],
+        ] as const) {
+            insert.run("app", id.repeat(64), "app-web", "web", at, value, value * 100);
+            db.sqlite.prepare("INSERT INTO stack_resource_history VALUES (?, ?, ?, ?)").run("app", at, value, value * 100);
+        }
+        const service = (await collector.read("app")).services[0];
+        assert.equal(service.samples, 2);
+        assert.equal(service.cpuAverage, 2.5);
+        assert.equal(service.cpuMax, 5);
+        assert.deepEqual(service.points.map(point => [ point.sampledAt, point.cpuPercent ]), [
+            [ "2026-10-17T11:00:00.000Z", 5 ],
+            [ "2026-10-17T11:30:00.000Z", 0 ],
+        ]);
+        assert.equal((await collector.read("missing")).serviceCount, 0);
+    } finally {
         db.sqlite.close();
     }
 });

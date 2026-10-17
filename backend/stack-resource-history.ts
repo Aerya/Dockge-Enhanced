@@ -170,59 +170,65 @@ export class StackResourceHistoryCollector {
              GROUP BY CAST((strftime('%s', sampled_at) - ?) / ? AS INTEGER) ORDER BY sampled_at ASC`,
             [ ...bindings, Math.floor(recordedFrom.getTime() / 1000), bucketSeconds ],
         );
-        const containerSummaries = await this.database.getAll(
-            `SELECT h.container_id, h.container_name, h.service_name,
-                    summary.cpu_average, summary.cpu_max, summary.mem_average, summary.mem_max,
-                    summary.last_sampled_at, summary.samples
-             FROM container_resource_history h
-             JOIN (SELECT container_id, MAX(sampled_at) AS last_sampled_at,
-                          AVG(cpu_percent) AS cpu_average, MAX(cpu_percent) AS cpu_max,
-                          AVG(mem_used) AS mem_average, MAX(mem_used) AS mem_max, COUNT(*) AS samples
-                   FROM container_resource_history WHERE stack_name = ? AND sampled_at >= ? AND sampled_at <= ?
-                   GROUP BY container_id) summary
-               ON summary.container_id = h.container_id AND summary.last_sampled_at = h.sampled_at
-             ORDER BY summary.last_sampled_at DESC, h.container_name ASC LIMIT 200`,
-            bindings,
-        );
-        const containerBucketSeconds = Math.max(bucketSeconds, Math.ceil((to.getTime() - recordedFrom.getTime()) / 1000 / 120 / 300) * 300);
-        const containerRows = containerSummaries.length ? await this.database.getAll(
-            `SELECT container_id, MIN(sampled_at) AS sampled_at,
-                    AVG(cpu_percent) AS cpu_percent, AVG(mem_used) AS mem_used
+        // Sum simultaneous replicas first, then average/downsample those service totals.
+        // Grouping raw rows directly would dilute the average or add sequential versions.
+        const serviceSamples = `SELECT service_name, sampled_at, SUM(cpu_percent) AS cpu_percent, SUM(mem_used) AS mem_used
              FROM container_resource_history WHERE stack_name = ? AND sampled_at >= ? AND sampled_at <= ?
-               AND container_id IN (${containerSummaries.map(() => "?").join(", ")})
-             GROUP BY container_id, CAST((strftime('%s', sampled_at) - ?) / ? AS INTEGER)
-             ORDER BY sampled_at ASC`,
-            [ ...bindings, ...containerSummaries.map(row => String(row.container_id)), Math.floor(from.getTime() / 1000), containerBucketSeconds ],
-        ) : [];
-        const containerCount = await this.database.getRow(
-            "SELECT COUNT(DISTINCT container_id) AS total FROM container_resource_history WHERE stack_name = ? AND sampled_at >= ? AND sampled_at <= ?",
+             GROUP BY service_name, sampled_at`;
+        const summaries = await this.database.getAll(
+            `WITH service_samples AS (${serviceSamples})
+             SELECT service_name, AVG(cpu_percent) AS cpu_average, MAX(cpu_percent) AS cpu_max,
+                    AVG(mem_used) AS mem_average, MAX(mem_used) AS mem_max,
+                    MAX(sampled_at) AS last_sampled_at, COUNT(*) AS samples
+             FROM service_samples GROUP BY service_name ORDER BY service_name ASC LIMIT 200`,
             bindings,
         );
-        const pointsByContainer = new Map<string, Array<{ sampledAt: string;
+        const serviceBucketSeconds = Math.max(bucketSeconds, Math.ceil((to.getTime() - recordedFrom.getTime()) / 1000 / 120 / 300) * 300);
+        const serviceRows = summaries.length ? await this.database.getAll(
+            `WITH service_samples AS (${serviceSamples})
+             SELECT service_name, MIN(sampled_at) AS sampled_at,
+                    AVG(cpu_percent) AS cpu_percent, AVG(mem_used) AS mem_used
+             FROM service_samples WHERE service_name IN (${summaries.map(() => "?").join(", ")})
+             GROUP BY service_name, CAST((strftime('%s', sampled_at) - ?) / ? AS INTEGER)
+             ORDER BY sampled_at ASC`,
+            [ ...bindings, ...summaries.map(row => String(row.service_name)), Math.floor(recordedFrom.getTime() / 1000), serviceBucketSeconds ],
+        ) : [];
+        const count = await this.database.getRow(
+            "SELECT COUNT(DISTINCT service_name) AS total FROM container_resource_history WHERE stack_name = ? AND sampled_at >= ? AND sampled_at <= ?",
+            bindings,
+        );
+        const pointsByService = new Map<string, Array<{ sampledAt: string;
             cpuPercent: number;
             memUsed: number }>>();
-        for (const row of containerRows) {
-            const key = String(row.container_id);
-            const points = pointsByContainer.get(key) ?? [];
+        for (const row of serviceRows) {
+            const key = String(row.service_name);
+            const points = pointsByService.get(key) ?? [];
             points.push({ sampledAt: String(row.sampled_at),
                 cpuPercent: Number(row.cpu_percent),
                 memUsed: Number(row.mem_used) });
-            pointsByContainer.set(key, points);
+            pointsByService.set(key, points);
         }
+        const services = summaries.map(row => ({
+            name: String(row.service_name),
+            lastSampledAt: String(row.last_sampled_at),
+            samples: Number(row.samples),
+            cpuAverage: Number(row.cpu_average),
+            cpuMax: Number(row.cpu_max),
+            memAverage: Number(row.mem_average),
+            memMax: Number(row.mem_max),
+            points: pointsByService.get(String(row.service_name)) ?? [],
+        }));
+        const serviceCount = Number(count?.total ?? 0);
         return {
-            containers: containerSummaries.map(row => ({
-                id: String(row.container_id),
-                name: String(row.container_name),
-                service: String(row.service_name),
-                lastSampledAt: String(row.last_sampled_at),
-                cpuAverage: Number(row.cpu_average),
-                cpuMax: Number(row.cpu_max),
-                memAverage: Number(row.mem_average),
-                memMax: Number(row.mem_max),
-                points: pointsByContainer.get(String(row.container_id)) ?? [],
-            })),
-            containerCount: Number(containerCount?.total ?? 0),
-            containerBucketSeconds,
+            services,
+            serviceCount,
+            serviceBucketSeconds,
+            // Retain the response shape for older linked WebUIs, with service totals.
+            containers: services.map(service => ({ ...service,
+                id: service.name,
+                service: service.name })),
+            containerCount: serviceCount,
+            containerBucketSeconds: serviceBucketSeconds,
             points: rows.map(row => ({ sampledAt: String(row.sampled_at),
                 cpuPercent: Number(row.cpu_percent),
                 memUsed: Number(row.mem_used),

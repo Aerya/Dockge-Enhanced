@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-17 — Historique CPU/RAM par service Compose** — L’historique regroupe les mesures existantes par stack et service Compose plutôt que par identifiant Docker. Les versions recréées partagent le même historique ; les réplicas simultanés sont additionnés avant les moyennes, maxima et regroupements temporels. Le total de la stack reste inchangé, aucune mesure n’est supprimée et un message invite à mettre à jour les instances liées trop anciennes.
+
 **2026-10-17 — Connexion Socket.IO de la WebUI** — La WebUI essaie désormais WebSocket en premier pour éviter l’upgrade initial depuis polling associé aux boucles de reconnexion décrites dans louislam/dockge#1008. Le repli automatique vers polling reste disponible si WebSocket est refusé. Les traitements existants d’authentification et de reconnexion sont conservés ; les connexions entre instances ne sont pas modifiées. Tests locaux des transports, reconnexions et redémarrages serveur, ainsi que vérifications courtes sous Chromium ; la panne intermittente exacte du déclarant reste à confirmer.
 
 **2026-10-17 — Zerobyte** — Surveillance de l’intégrité des hooks et ressources, refus des lancements dégradés depuis Enhanced, reprise manuelle des services journalisés, revalidation confirmée du stockage même après arrêt par le garde-fou, diagnostics fédérés plus précis et lanceur de tests isolés.
