@@ -59,6 +59,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Zerobyte backups:** connect an existing instance or install a dedicated Compose instance from **Backups → Zerobyte**. Use it alongside native Restic backups or for your scheduled backups, with separate repositories. Guided setup, protected application stop/restart workflows, storage checks, dedicated test restores and read-only multi-server status are available. If network storage is unavailable, backups stop without a local fallback. [Setup and recovery guide](docs/zerobyte.md).
+
 **Optional stack and container CPU/RAM history：** Enable recording in **Monitoring**, then open **Resource usage** in a stack's actions. Compact charts show the stack total and each actual container, including replicas and unmanaged Compose projects, over 24 hours, 7 days, 1 month, 1 year or all recorded data. Samples are collected every 5 minutes even without an open browser; recording is disabled by default. CPU uses Docker's convention (100% = one core), and Linux RAM excludes reclaimable cache. Gaps remain visible; peaks between samples can be missed. Stack totals do not include native host processes or standalone containers outside Compose. The stack list can also sort by CPU, RAM or CPU then RAM.
 
 **Prevent Restic from backing up its own repository:** when a local repository is inside a selected backup folder, Enhanced warns you and excludes it automatically. For example, `/app/data` can remain selected with a repository at `/app/data/backups`. Selecting the repository itself or one of its subfolders as a source is refused. Existing paths, passwords and retention settings are preserved.
