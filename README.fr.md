@@ -4,7 +4,7 @@
 
 # Dockge Enhanced
 
-Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnalités, qui transforme son expérience simple de gestion Docker Compose en une plateforme Docker plus complète — avec fédération multi-serveurs, migration et réplication de stacks, sauvegardes Restic, mises à jour des images et de Dockge-Enhanced avec rollback, scan de sécurité, supervision, automatisation, notifications et gestion des ressources Docker, le tout depuis l'interface web.
+Dockge Enhanced est un fork de [Dockge](https://github.com/louislam/dockge) pour administrer vos environnements Docker Compose depuis une interface web, sur un ou plusieurs serveurs. Il réunit la gestion des stacks et des conteneurs, la recherche globale et l’accès aux fichiers, la migration et la réplication, les sauvegardes avec Restic ou Zerobyte, les mises à jour avec rollback, ainsi que la supervision, les contrôles de sécurité et l’automatisation. Ses intégrations et ses outils de récupération permettent de suivre et de maintenir vos services au quotidien.
 
 <p align="center">
   🇫🇷 Français ·
@@ -38,7 +38,7 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 | Domaine | Dockge Enhanced ajoute |
 | --- | --- |
 | **Multi-serveurs** | Fédération en maillage complet entre instances Dockge-Enhanced, administration depuis n'importe quel serveur lié, sélection et regroupement des serveurs, état des mises à jour distantes, copie/migration transactionnelle des stacks, transferts reprenables et réplication froide planifiée |
-| **Gestion des stacks** | Stacks épinglées, indicateurs compacts d'état et de ressources, navigation repliable/redimensionnable, espace Logs/Compose flexible, copie du YAML brut, actions de stack/conteneur expliquées, pause/reprise des stacks, modèle Compose par défaut configurable, planification par conteneur, Build + Recreate, notes, outils Git, prérequis de démarrage hôte et recréation automatique des services partageant un namespace réseau VPN |
+| **Gestion des stacks** | Stacks épinglées, indicateurs compacts d'état et de ressources, navigation repliable/redimensionnable, espace Logs/Compose flexible, copie du YAML brut, actions de stack/conteneur expliquées, pause/reprise des stacks, modèle Compose par défaut configurable, planification par conteneur, Build + Recreate, notes, outils Git, prérequis de démarrage hôte et recréation automatique des services partageant un namespace réseau VPN. Barre d’actions de stack avec actions directes et modes icônes seules ou icônes avec texte |
 | **Sauvegarde & reprise** | Sauvegardes Restic multi-destination des bind mounts et volumes, cohérence par stack, restauration sélective, vérification des dépôts, contrôle et diff des snapshots, ainsi que les mécanismes de récupération utilisés par les mises à jour protégées. Connexion Zerobyte facultative ou installation gérée, workflows applicatifs protégés et restaurations de test dédiées |
 | **Mises à jour** | réglages groupés par stack avec choix de conservation des exceptions, contrôle ciblé toutes les 5 minutes en mode Immédiat, Détection des mises à jour d'images, mises à jour manuelles, groupées séquentielles ou automatiques des conteneurs avec rollback, créneau de maintenance commun, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
 | **Migration & réplication** | Transferts transactionnels entre instances, migration du Compose et des données persistantes, jobs reprenables, finalisation explicite des déplacements, répliques froides planifiées, snapshots de récupération et workflows de reprise |
@@ -48,6 +48,9 @@ Un fork de [Dockge](https://github.com/louislam/dockge) axé sur les fonctionnal
 | **Supervision** | Statistiques système, stacks et conteneurs, historique CPU/RAM facultatif toutes les 5 minutes, barre d'état configurable, cartes de santé, crash loops, auto-heal, logs responsives/plein écran, Kula, Dozzle, PowerWatch et PowerWatch Hub |
 | **Intégrations** | PowerWatch et PowerWatch Hub, PlugNPiN et assistant de labels par service pour Nginx Proxy Manager, Pi-hole et AdGuard Home |
 | **Notifications & accès** | Notifications Discord et Apprise localisées en EN/FR/ES/zh-CN, prise en compte du multi-instance, 2FA, trusted proxy, Turnstile et clients mobiles tiers |
+| **Recherche & fichiers** | Recherche globale multi-instance, gestionnaire de fichiers hôte restreint, navigation dans les volumes, transferts par morceaux, édition de texte et lecture de fichiers journaux |
+| **Stacks externes** | Détection et intégration des projets Compose existants, autorisation de leurs chemins et inspection des conteneurs réels sans déplacer les données |
+| **Apparence** | Palettes jour/nuit, thèmes intégrés, préférences par navigateur et actions de stack en icônes seules ou avec texte |
 
 > **Planification des mises à jour :** lorsqu’un créneau de maintenance est configuré pour l’auto-mise à jour de Dockge-Enhanced, ce même créneau s’applique à toutes les mises à jour automatiques d’images. Celles détectées hors créneau restent en attente jusqu’à la prochaine période autorisée. Les horaires par image restent disponibles sans créneau global et l’action manuelle **Mettre à jour** reste toujours immédiate.
 
@@ -399,6 +402,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Négociation des capacités entre différentes versions de Dockge-Enhanced
 
 ### Gestion des stacks
+
+- Barre d’actions de stack avec actions directes et modes icônes seules ou icônes avec texte
 - Assistant facultatif de healthcheck Compose par service avec proposition HTTP/TCP modifiable et aperçu de la commande
 - Réglage par service pour ignorer un service optionnel dans le statut global tout en conservant son propre statut visible
 - Nom d’affichage facultatif dans la WebUI, sans changer l’identité Compose ou Restic
@@ -438,6 +443,11 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Snapshots et mécanismes de récupération
 
 ### Sauvegarde & restauration
+
+- Zerobyte facultatif : connexion existante ou installation Compose dédiée, en complément de Restic natif ou pour les sauvegardes planifiées, avec des dépôts distincts
+- Création guidée des sources, dépôts et jobs Zerobyte et migration confirmée des jobs existants ; les nouveaux jobs restent désactivés avant vérification
+- Contrôle des hooks et ressources Zerobyte, workflows d’arrêt/redémarrage applicatif, journal de reprise persistant et reprise manuelle ciblée des services
+- Contrôles du stockage réseau sans repli local, revalidation confirmée du stockage, restaurations de test dédiées et supervision Zerobyte fédérée en lecture seule
 
 **Intégration Zerobyte facultative :** Dans **Sauvegardes → Zerobyte**, connectez une instance existante ou installez une instance Compose dédiée. Zerobyte peut compléter les sauvegardes Restic natives ou prendre en charge vos sauvegardes planifiées à leur place, avec des dépôts distincts. L’assistant crée les sources, un dépôt et un job désactivé à vérifier avant activation. Les workflows protégés arrêtent puis redémarrent les applications sélectionnées ; un stockage réseau indisponible bloque la sauvegarde sans repli local. Les installations externes nécessitent une vérification explicite des montages et de la séparation des dépôts. Consultez le [guide de configuration et de reprise Zerobyte](docs/zerobyte.fr.md).
 
@@ -524,6 +534,9 @@ La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouto
 - Historique centralisé avec origine, statut et durée
 
 ### Intégrations
+
+- Zerobyte — intégration de sauvegarde facultative, installation gérée ou connexion externe
+- PowerWatch Hub — installation gérée ou connexion à un Hub existant
 - PlugNPiN
 - Assistants de labels Nginx Proxy Manager, Pi-hole et AdGuard Home
 - Dozzle
@@ -923,6 +936,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) par hamphh — inspiration et labels compatibles pour les exclusions par service du statut global et des mises à jour d’image
 - [**Trivy**](https://github.com/aquasecurity/trivy) — scanner de vulnérabilités
 - [**Restic**](https://restic.net/) — outil de backup chiffré
+- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — application de sauvegarde fondée sur Restic, connectée ou déployée en option par Enhanced
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
 - [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
 - [**Dozzle**](https://github.com/amir20/dozzle) par Amir Rajan — visualisation en temps réel des logs Docker (licence MIT)

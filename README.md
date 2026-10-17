@@ -4,7 +4,7 @@
 
 # Dockge Enhanced
 
-A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turns its simple Compose management experience into a broader Docker management platform — with multi-server federation, stack migration and replication, Restic backups, image and self-updates with rollback, security scanning, monitoring, automation, notifications, and Docker resource management, all from the web UI.
+Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for managing your Docker Compose environments from a web interface, on one or more servers. It brings together stack and container management, global search and file access, migration and replication, backups with Restic or Zerobyte, updates with rollback, monitoring, security checks and automation. Its integrations and recovery tools help you monitor and maintain your services every day.
 
 <p align="center">
   🇬🇧 English ·
@@ -37,7 +37,7 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | Area | Dockge Enhanced adds |
 | --- | --- |
 | **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers, and scheduled cold replication |
-| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, explained stack/container actions, stack pause/resume, a configurable default Compose template, per-container scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces |
+| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, explained stack/container actions, stack pause/resume, a configurable default Compose template, per-container scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces. Stack action bar with direct actions and icons-only or icons-and-text modes |
 | **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates. Optional Zerobyte connection or managed installation, protected application workflows and dedicated test restores |
 | **Updates** | Stack-wide bulk policies with exception preservation, 5-minute targeted Immediate image checks, Image update detection, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
@@ -47,6 +47,9 @@ A feature-focused fork of [Dockge](https://github.com/louislam/dockge) that turn
 | **Monitoring** | System, stack and container statistics, optional 5-minute CPU/RAM history, configurable status bar, health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula, Dozzle and PowerWatch and PowerWatch Hub integrations |
 | **Integrations** | PowerWatch and PowerWatch Hub, PlugNPiN plus per-service label assistance for Nginx Proxy Manager, Pi-hole and AdGuard Home |
 | **Notifications & access** | Discord and Apprise notifications localized in EN/FR/ES/zh-CN, multi-instance awareness, 2FA, trusted proxy support, Turnstile and third-party mobile clients |
+| **Search & files** | Global multi-instance search, restricted host file manager, volume browsing, chunked transfers, text editing and file log viewing |
+| **External stacks** | Discover and integrate existing Compose projects, authorize their paths and inspect actual containers without moving their data |
+| **Appearance** | Day/night palettes, built-in themes, browser preferences and stack actions with icons or icons and text |
 
 > **Update schedules:** when automatic Dockge-Enhanced updates use a maintenance window, the same window applies to every automatic container image update. Updates detected outside it are queued until the next allowed window. Per-image schedules remain available when no global window is configured, while **Update now** always remains immediate.
 
@@ -399,6 +402,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Version-aware capability negotiation between mixed Dockge-Enhanced releases
 
 ### Stack management
+
+- Stack action bar with direct actions and icons-only or icons-and-text modes
 - Optional per-service Compose healthcheck assistant with editable HTTP/TCP proposal and command preview
 - Per-service controls to ignore an optional service in the overall stack status while keeping its own status visible
 - Optional WebUI display name for a stack, without changing its Compose or Restic identity
@@ -438,6 +443,11 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Recovery snapshots and workflows
 
 ### Backup & recovery
+
+- Optional Zerobyte: existing instance or dedicated managed Compose installation, alongside native Restic or for scheduled backups with separate repositories
+- Guided Zerobyte source/repository/job creation and confirmed migration of existing jobs; new jobs remain disabled until reviewed
+- Zerobyte hook/resource integrity checks, application stop/restart workflows, persistent recovery journal and targeted manual service recovery
+- Network-storage checks without local fallback, confirmed storage revalidation, dedicated test restores and read-only federated Zerobyte status
 
 **Optional Zerobyte integration:** Use **Backups → Zerobyte** to connect an existing instance or install a dedicated Compose instance. Zerobyte can complement native Restic backups or handle your scheduled backups instead, using separate repositories. The guided setup creates sources, a repository and a disabled job for review before activation. Protected workflows stop and restart the selected applications; unavailable network storage blocks the backup without falling back to local storage. External installations require explicit checks of mounts and repository separation. See the [Zerobyte setup and recovery guide](docs/zerobyte.md).
 
@@ -524,6 +534,9 @@ The Restic snapshot list defaults to **All**. **Save** stores settings and reten
 - Centralized history with origin, status and duration
 
 ### Integrations
+
+- Zerobyte — optional backup integration with managed installation or external connection
+- PowerWatch Hub — managed installation or existing Hub connection
 - PlugNPiN
 - Nginx Proxy Manager, Pi-hole and AdGuard Home label assistants
 - Dozzle
@@ -923,6 +936,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — inspiration and compatible labels for per-service stack-status and image-update exclusions
 - [**Trivy**](https://github.com/aquasecurity/trivy) — vulnerability scanner
 - [**Restic**](https://restic.net/) — encrypted backup tool
+- [**Zerobyte**](https://github.com/nicotsx/zerobyte) — backup application based on Restic, optionally connected to or deployed by Enhanced
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — real-time Docker log viewer (MIT licence)
