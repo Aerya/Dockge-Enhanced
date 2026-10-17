@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-17 — WebUI Socket.IO transport fallback** — The WebUI now tries WebSocket first to avoid the initial polling-to-WebSocket upgrade associated with reconnect loops reported in louislam/dockge#1008. Automatic polling fallback remains available when WebSocket is refused. Existing authentication and reconnect handlers are unchanged; linked-instance connections are not modified. Covered by local transport, reconnect and server-restart tests, plus short Chromium checks; the reporter’s exact intermittent failure remains unconfirmed.
+
 **2026-10-17 — Zerobyte** — Hook/resource integrity checks, blocked degraded launches from Enhanced, manual journaled-service recovery, confirmed storage revalidation after guard shutdown, precise federation diagnostics and repeatable isolated test runner.
 
 **2026-10-16 — Zerobyte** — Guided external diagnostics, confirmed existing-job migration preserving snapshots and retention, and explicit application recovery states with a disk-synced journal.

@@ -1,4 +1,4 @@
-import { io } from "socket.io-client";
+import { createWebUiSocket } from "../socket-connection";
 import { Socket } from "socket.io-client";
 import { defineComponent } from "vue";
 import jwtDecode from "jwt-decode";
@@ -158,7 +158,7 @@ export default defineComponent({
                 this.socketIO.connecting = true;
             }, 1500);
 
-            socket = io(url);
+            socket = createWebUiSocket(url);
 
             // Handling events from agents
             let agentSocket = new AgentSocket();

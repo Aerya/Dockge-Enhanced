@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-17 — Conexión Socket.IO de la WebUI** — La WebUI intenta primero WebSocket para evitar la transición inicial desde polling asociada a los bucles de reconexión descritos en louislam/dockge#1008. Se conserva el fallback automático a polling si WebSocket es rechazado. No cambian los controladores de autenticación y reconexión ni las conexiones entre instancias. Validado con pruebas locales de transportes, reconexión y reinicio del servidor, y comprobaciones breves en Chromium; el fallo intermitente exacto del informante sigue pendiente de confirmación.
+
 **2026-10-17 — Zerobyte** — Verificación de hooks y recursos, bloqueo de inicios degradados, recuperación manual de servicios, revalidación confirmada tras parada protectora, diagnóstico federado y pruebas aisladas reproducibles.
 
 **2026-10-16 — Zerobyte** — Diagnóstico externo guiado, migración confirmada sin cambiar snapshots ni retención y estados explícitos de recuperación con registro sincronizado.
