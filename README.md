@@ -1,5 +1,7 @@
 <p align="center">
 
+**2026-10-17 — Zerobyte** — Hook/resource integrity checks, blocked degraded launches from Enhanced, manual journaled-service recovery, confirmed storage revalidation after guard shutdown, precise federation diagnostics and repeatable isolated test runner.
+
 **2026-10-16 — Protected Zerobyte workflows** — Confirmed, idempotent source/repository/job provisioning, application stop/restart hooks, persistent outage alerts and cancellation recovery, scoped external restore approval and read-only federation summaries.
 
 **2026-10-16 — Optional Zerobyte integration** — Backups now offers an optional Zerobyte connection or instance-scoped Compose installation, explicit RO sources/RW destinations, path and remote-mount checks, confirmed operations and dedicated test restore. Native Restic coverage is unchanged. [Documentation](docs/zerobyte.md).

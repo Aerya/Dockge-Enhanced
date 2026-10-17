@@ -1,5 +1,7 @@
 <p align="center">
 
+**2026-10-17 — Zerobyte** — Hook-/Ressourcenprüfung, gesperrte unsichere Starts, manuelle Dienstwiederherstellung, bestätigte Speicher-Neuprüfung nach Schutzstopp, genauere Föderationsdiagnose und isolierter Teststarter.
+
 **2026-10-16 — Geschützte Zerobyte-Workflows** — Bestätigte idempotente Bereitstellung, Stack-Stopp/Neustart, dauerhafte Ausfallwarnungen und Wiederherstellung, verbindungsbezogene externe Freigabe und lesende Föderationsübersicht.
 
 **2026-10-16 — Optionale Zerobyte-Integration** — Unter Sicherungen stehen eine Zerobyte-Verbindung oder eine eigene Compose-Installation, explizite RO-Quellen/RW-Ziele, Pfad- und Mount-Prüfungen sowie bestätigte Aktionen und eine getrennte Testwiederherstellung zur Verfügung. Die native Restic-Abdeckung bleibt erhalten. [Documentation](docs/zerobyte.md).

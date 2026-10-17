@@ -1162,6 +1162,7 @@
     "watcher.zerobyte.peerDisabled": "Integración desactivada",
     "watcher.zerobyte.peerUnavailable": "Zerobyte inaccesible",
     "watcher.zerobyte.peerCounts": "{jobs} tareas · {failed} fallos · {active} operaciones activas",
+    "releaseNews.item.zerobyteProtection": "Verificación de hooks y recursos, bloqueo de inicios degradados, recuperación manual de servicios, revalidación confirmada tras parada protectora, diagnóstico federado y pruebas aisladas reproducibles.",
     "releaseNews.item.zerobyteWorkflows": "Aprovisionamiento confirmado e idempotente, parada/reinicio de stacks, alertas persistentes y recuperación, aprobación externa por conexión y resumen federado de solo lectura.",
     "watcher.zerobyte.diagnostics": "Diagnóstico de configuración externa",
     "watcher.zerobyte.diagnosticHelp": "Verificaciones API de solo lectura. Los puntos del operador requieren revisión en el servidor Zerobyte.",

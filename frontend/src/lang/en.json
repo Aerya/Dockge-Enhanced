@@ -2243,6 +2243,7 @@
     "watcher.zerobyte.peerDisabled": "Integration disabled",
     "watcher.zerobyte.peerUnavailable": "Zerobyte unreachable",
     "watcher.zerobyte.peerCounts": "{jobs} jobs · {failed} failures · {active} active tasks",
+    "releaseNews.item.zerobyteProtection": "Hook/resource integrity checks, blocked degraded launches from Enhanced, manual journaled-service recovery, confirmed storage revalidation after guard shutdown, precise federation diagnostics and repeatable isolated test runner.",
     "releaseNews.item.zerobyteWorkflows": "Confirmed, idempotent source/repository/job provisioning, application stop/restart hooks, persistent outage alerts and cancellation recovery, scoped external restore approval and read-only federation summaries.",
     "watcher.zerobyte.diagnostics": "External configuration diagnostics",
     "watcher.zerobyte.diagnosticHelp": "Read-only API checks. Operator items require verification on the Zerobyte host; they are never certified automatically.",

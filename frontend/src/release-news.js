@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-17-zerobyte-protection",
+        items: [ "releaseNews.item.zerobyteProtection" ],
+    },
+    {
         id: "2026-10-16-zerobyte-workflows",
         items: [ "releaseNews.item.zerobyteWorkflows" ],
     },

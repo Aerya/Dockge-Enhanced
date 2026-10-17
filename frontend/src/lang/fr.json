@@ -2239,6 +2239,7 @@
     "watcher.zerobyte.peerDisabled": "Intégration désactivée",
     "watcher.zerobyte.peerUnavailable": "Zerobyte inaccessible",
     "watcher.zerobyte.peerCounts": "{jobs} jobs · {failed} échecs · {active} opérations actives",
+    "releaseNews.item.zerobyteProtection": "Surveillance de l’intégrité des hooks et ressources, refus des lancements dégradés depuis Enhanced, reprise manuelle des services journalisés, revalidation confirmée du stockage même après arrêt par le garde-fou, diagnostics fédérés plus précis et lanceur de tests isolés.",
     "releaseNews.item.zerobyteWorkflows": "Provisionnement confirmé et idempotent des sources/dépôts/jobs, hooks d’arrêt/redémarrage, alertes persistantes et reprise après panne, validation externe liée à la connexion et supervision fédérée en lecture seule.",
     "watcher.zerobyte.diagnostics": "Diagnostic de configuration externe",
     "watcher.zerobyte.diagnosticHelp": "Contrôles API en lecture seule. Les points marqués « opérateur » exigent une vérification sur le serveur Zerobyte ; ils ne sont jamais certifiés automatiquement.",

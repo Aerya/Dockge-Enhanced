@@ -2243,6 +2243,7 @@
     "watcher.zerobyte.peerDisabled": "Integration deaktiviert",
     "watcher.zerobyte.peerUnavailable": "Zerobyte nicht erreichbar",
     "watcher.zerobyte.peerCounts": "{jobs} Jobs · {failed} Fehler · {active} aktive Vorgänge",
+    "releaseNews.item.zerobyteProtection": "Hook-/Ressourcenprüfung, gesperrte unsichere Starts, manuelle Dienstwiederherstellung, bestätigte Speicher-Neuprüfung nach Schutzstopp, genauere Föderationsdiagnose und isolierter Teststarter.",
     "releaseNews.item.zerobyteWorkflows": "Bestätigte idempotente Bereitstellung, Stack-Stopp/Neustart, dauerhafte Ausfallwarnungen und Wiederherstellung, verbindungsbezogene externe Freigabe und lesende Föderationsübersicht.",
     "watcher.zerobyte.diagnostics": "Externe Konfigurationsdiagnose",
     "watcher.zerobyte.diagnosticHelp": "Nur lesende API-Prüfungen. Betreiberpunkte müssen auf dem Zerobyte-Host geprüft werden.",

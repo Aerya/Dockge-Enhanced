@@ -2180,6 +2180,7 @@
     "watcher.zerobyte.peerDisabled": "集成已禁用",
     "watcher.zerobyte.peerUnavailable": "Zerobyte 无法访问",
     "watcher.zerobyte.peerCounts": "{jobs} 个任务 · {failed} 次失败 · {active} 个活动操作",
+    "releaseNews.item.zerobyteProtection": "钩子与资源完整性检查、阻止保护失效的启动、手动恢复日志服务、保护停止后的存储重新验证、更精确的联合诊断及可重复隔离测试。",
     "releaseNews.item.zerobyteWorkflows": "经确认且幂等的资源创建、堆栈停止与恢复、持久故障警报和取消恢复、按连接确认的外部恢复与只读联合状态。",
     "watcher.zerobyte.diagnostics": "外部配置诊断",
     "watcher.zerobyte.diagnosticHelp": "只读 API 检查。操作员项目必须在 Zerobyte 主机上验证，无法自动认证。",

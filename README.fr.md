@@ -1,5 +1,7 @@
 <p align="center">
 
+**2026-10-17 — Zerobyte** — Surveillance de l’intégrité des hooks et ressources, refus des lancements dégradés depuis Enhanced, reprise manuelle des services journalisés, revalidation confirmée du stockage même après arrêt par le garde-fou, diagnostics fédérés plus précis et lanceur de tests isolés.
+
 **2026-10-16 — Workflows Zerobyte protégés** — Provisionnement confirmé et idempotent des sources/dépôts/jobs, hooks d’arrêt/redémarrage, alertes persistantes et reprise après panne, validation externe liée à la connexion et supervision fédérée en lecture seule.
 
 **2026-10-16 — Intégration Zerobyte facultative** — Sauvegardes propose une connexion Zerobyte ou une installation Compose propre à l’instance, des sources RO/destinations RW explicites, des contrôles de chemins et montages distants, des opérations confirmées et une restauration dédiée de test. La couverture Restic native est conservée. [Documentation](docs/zerobyte.fr.md).
