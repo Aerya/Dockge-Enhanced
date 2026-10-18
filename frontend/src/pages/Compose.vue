@@ -52,6 +52,7 @@
                 :external="stack.isExternal"
                 :draft="{ name: stack.name, compose: stack.composeYAML, env: stack.composeENV || '', override: stack.composeOverrideYAML || '', isAdd }"
                 @sync="prepareComposeImageSync"
+                @busy="composeDiagnosticsBusy = $event"
             />
             <StackReplicationStatus
                 v-if="!isAdd && stack.isManagedByDockge && !stack.isExternal && $root.agentCount > 1"
@@ -154,7 +155,7 @@
                         </button>
                     </div>
                     <div class="stack-action-group stack-action-group--information">
-                        <button class="btn btn-normal stack-action" :title="$t('composeDiagnostics.title')" :aria-label="$t('composeDiagnostics.title')" :disabled="processing" @click="$refs.composeDiagnostics.scan()">
+                        <button class="btn btn-normal stack-action" :title="$t(composeDiagnosticsBusy ? 'composeDiagnostics.loading' : 'composeDiagnostics.title')" :aria-label="$t('composeDiagnostics.title')" :aria-busy="composeDiagnosticsBusy" :disabled="processing || composeDiagnosticsBusy" @click="$refs.composeDiagnostics.scan()">
                             <font-awesome-icon icon="search" />
                             <span class="stack-action-label">{{ $t('composeDiagnostics.title') }}</span>
                         </button>
@@ -1027,6 +1028,7 @@ export default {
     yamlDoc: null,  // For keeping the yaml comments
     data() {
         return {
+            composeDiagnosticsBusy: false,
             jsonConfig: {},
             envsubstJSONConfig: {},
             yamlError: "",
