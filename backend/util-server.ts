@@ -9,6 +9,7 @@ import { execFile } from "child_process";
 import { AgentManager } from "./agent-manager";
 
 export interface JWTDecoded {
+    twoFaVersion?: number;
     username : string;
     h? : string;
     userId? : number;
@@ -17,6 +18,7 @@ export interface JWTDecoded {
 
 export interface DockgeSocket extends Socket {
     userID: number;
+    federationAuthenticated?: boolean;
     consoleTerminal? : Terminal;
     instanceManager : AgentManager;
     endpoint : string;

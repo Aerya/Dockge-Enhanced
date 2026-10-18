@@ -23,6 +23,9 @@ import path from "path";
 import axios from "axios";
 import { getAuthMode, isSetupCompleted, markSetupCompleted } from "../auth";
 import { parseDocument } from "yaml";
+import { createLoginChallenge, interactiveSessionVersionMatches, validLoginChallenge, type LoginChallenge } from "../two-factor-auth";
+import { registerTwoFactorHandlers } from "../two-factor-socket";
+import { registerAccountSession, reserveAccountSecurity } from "../account-security";
 
 /**
  * Vérifie un token Cloudflare Turnstile côté serveur via l'API siteverify.
@@ -57,6 +60,40 @@ async function verifyTurnstile(token : unknown, clientIP : string) : Promise<boo
 
 export class MainSocketHandler extends SocketHandler {
     create(socket : DockgeSocket, server : DockgeServer) {
+        const factors = registerTwoFactorHandlers(socket, server);
+        const finishLogin = async (authenticated: User, federation = false) => {
+            const validate = async () => {
+                const current = await R.findOne("user", " id = ? AND active = 1 ", [ authenticated.id ]) as User;
+                if (!socket.connected || !current || (!federation &&
+                    (current.password !== authenticated.password || Number(current.twofa_version) !== Number(authenticated.twofa_version)))) {
+                    throw new Error("twoFactor.restartLogin");
+                }
+                return current;
+            };
+            const register = (user: User) => {
+                socket.federationAuthenticated = federation;
+                return server.afterLogin(socket, user);
+            };
+            if (federation) {
+                // A scoped credential is independent of interactive 2FA changes.
+                // Do not turn temporary enrollment contention into an agent's
+                // permanent authentication failure; still revalidate active user.
+                await register(await validate());
+            } else {
+                await registerAccountSession(authenticated.id, validate, register);
+            }
+            if (!socket.connected) {
+                throw new Error("twoFactor.restartLogin");
+            }
+        };
+        let pendingLogin: LoginChallenge | null = null;
+        let pendingAccount: { id: number;
+            version: number;
+            password: string } | null = null;
+        socket.on("disconnect", () => {
+            pendingLogin = null;
+            pendingAccount = null;
+        });
 
         // ***************************
         // Public Socket API
@@ -140,12 +177,12 @@ export class MainSocketHandler extends SocketHandler {
 
                 if (user) {
                     // Check if the password changed
-                    if (!isFederationToken && decoded.h !== passwordVersionFingerprint(user.password, server.jwtSecret)) {
+                    if (!isFederationToken && (decoded.h !== passwordVersionFingerprint(user.password, server.jwtSecret) || !interactiveSessionVersionMatches(decoded, { twofa_version: user.twofa_version }))) {
                         throw new Error("The token is invalid due to password change or old token");
                     }
 
                     log.debug("auth", "afterLogin");
-                    await server.afterLogin(socket, user);
+                    await finishLogin(user, isFederationToken);
                     log.debug("auth", "afterLogin ok");
 
                     log.info("auth", `Successfully logged in user ${user.username}. IP=${clientIP}`);
@@ -183,115 +220,64 @@ export class MainSocketHandler extends SocketHandler {
 
         // Login
         socket.on("login", async (data, callback) => {
-            const clientIP = await server.getClientIP(socket);
-
-            log.info("auth", `Login by username + password. IP=${clientIP}`);
-
-            // Checking
             if (typeof callback !== "function") {
                 return;
             }
-
-            if (!data) {
-                return;
-            }
-
-            if (await getAuthMode() !== "local") {
-                callback({
-                    ok: false,
-                    msg: "Local authentication is disabled.",
-                });
-                return;
-            }
-
-            // Login Rate Limit
-            if (!await loginRateLimiter.pass(callback)) {
-                log.info("auth", `Too many failed requests for user ${data.username}. IP=${clientIP}`);
-                return;
-            }
-
-            // Cloudflare Turnstile (si activé). On ne vérifie que la 1re étape
-            // (username + password) : pour la 2e étape 2FA, data.token est le code
-            // TOTP, pas un token Turnstile, donc on saute la vérification.
-            if (!data.token) {
-                if (!await verifyTurnstile(data.turnstileToken, clientIP)) {
-                    log.warn("auth", `Turnstile verification failed for user ${data.username}. IP=${clientIP}`);
-                    callback({
-                        ok: false,
-                        msg: "authTurnstileFailed",
-                        msgi18n: true,
-                    });
+            try {
+                if (!data || typeof data.username !== "string" || typeof data.password !== "string" || await getAuthMode() !== "local") {
+                    throw new Error("authIncorrectCreds");
+                }
+                if (!await loginRateLimiter.pass(callback)) {
                     return;
                 }
-            }
-
-            const user = await this.login(data.username, data.password);
-
-            if (user) {
-                if (user.twofa_status === 0) {
-                    server.afterLogin(socket, user);
-
-                    log.info("auth", `Successfully logged in user ${data.username}. IP=${clientIP}`);
-
-                    callback({
-                        ok: true,
-                        token: User.createJWT(user, server.jwtSecret),
-                    });
+                const challenged = validLoginChallenge(pendingLogin, data.challenge, data.username, data.password, server.jwtSecret);
+                if (data.challenge && !challenged) {
+                    throw new Error("twoFactor.restartLogin");
                 }
-
-                if (user.twofa_status === 1 && !data.token) {
-
-                    log.info("auth", `2FA token required for user ${data.username}. IP=${clientIP}`);
-
-                    callback({
-                        tokenRequired: true,
-                    });
+                if (!challenged && !await verifyTurnstile(data.turnstileToken, await server.getClientIP(socket))) {
+                    throw new Error("authTurnstileFailed");
                 }
-
-                if (data.token) {
-                    // @ts-ignore
-                    const verify = notp.totp.verify(data.token, user.twofa_secret, twoFAVerifyOptions);
-
-                    if (user.twofa_last_token !== data.token && verify) {
-                        server.afterLogin(socket, user);
-
-                        await R.exec("UPDATE `user` SET twofa_last_token = ? WHERE id = ? ", [
-                            data.token,
-                            socket.userID,
-                        ]);
-
-                        log.info("auth", `Successfully logged in user ${data.username}. IP=${clientIP}`);
-
-                        callback({
-                            ok: true,
-                            token: User.createJWT(user, server.jwtSecret),
-                        });
-                    } else {
-
-                        log.warn("auth", `Invalid token provided for user ${data.username}. IP=${clientIP}`);
-
-                        callback({
-                            ok: false,
-                            msg: "authInvalidToken",
-                            msgi18n: true,
-                        });
+                const user = await this.login(data.username, data.password);
+                if (!user) {
+                    throw new Error("authIncorrectCreds");
+                }
+                if (user.twofa_status) {
+                    if (!data.token) {
+                        pendingLogin = createLoginChallenge(data.username, data.password, server.jwtSecret);
+                        pendingAccount = { id: user.id,
+                            version: Number(user.twofa_version),
+                            password: user.password };
+                        callback({ tokenRequired: true,
+                            challenge: pendingLogin.id });
+                        return;
                     }
+                    if (challenged && (!pendingAccount || pendingAccount.id !== user.id ||
+                        pendingAccount.version !== Number(user.twofa_version) || pendingAccount.password !== user.password)) {
+                        throw new Error("twoFactor.restartLogin");
+                    }
+                    if (!await twoFaRateLimiter.pass(callback)) {
+                        return;
+                    }
+                    await factors.verify(user.id, data.token, { passwordHash: user.password,
+                        version: Number(user.twofa_version) });
                 }
-            } else {
-
-                log.warn("auth", `Incorrect username or password for user ${data.username}. IP=${clientIP}`);
-
-                callback({
-                    ok: false,
-                    msg: "authIncorrectCreds",
-                    msgi18n: true,
-                });
+                pendingLogin = null;
+                pendingAccount = null;
+                await finishLogin(user);
+                callback({ ok: true,
+                    token: User.createJWT(user, server.jwtSecret) });
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "";
+                callback({ ok: false,
+                    msg: message.startsWith("twoFactor.") || [ "authIncorrectCreds", "authTurnstileFailed" ].includes(message)
+                        ? message : "twoFactor.unavailable",
+                    msgi18n: true });
             }
-
         });
 
         // Change Password
         socket.on("changePassword", async (password, callback) => {
+            let release: (() => void) | undefined;
             try {
                 checkLogin(socket);
 
@@ -303,6 +289,7 @@ export class MainSocketHandler extends SocketHandler {
                     throw new Error("Password is too weak. It should contain alphabetic and numeric characters. It must be at least 6 characters in length.");
                 }
 
+                release = reserveAccountSecurity(socket.userID);
                 let user = await doubleCheckPassword(socket, password.currentPassword);
                 await user.resetPassword(password.newPassword);
 
@@ -320,6 +307,8 @@ export class MainSocketHandler extends SocketHandler {
                         msg: e.message,
                     });
                 }
+            } finally {
+                release?.();
             }
         });
 
@@ -470,8 +459,9 @@ export class MainSocketHandler extends SocketHandler {
         if (user && verifyPassword(password, user.password)) {
             // Upgrade the hash to bcrypt
             if (needRehashPassword(user.password)) {
+                user.password = generatePasswordHash(password);
                 await R.exec("UPDATE `user` SET password = ? WHERE id = ? ", [
-                    generatePasswordHash(password),
+                    user.password,
                     user.id,
                 ]);
             }

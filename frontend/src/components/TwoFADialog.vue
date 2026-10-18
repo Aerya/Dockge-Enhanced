@@ -1,199 +1,179 @@
 <template>
-    <form @submit.prevent="submit">
-        <div ref="modal" class="modal fade" tabindex="-1" data-bs-backdrop="static">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            {{ $t("Setup 2FA") }}
-                            <span v-if="twoFAStatus == true" class="badge bg-primary">{{ $t("Active") }}</span>
-                            <span v-if="twoFAStatus == false" class="badge bg-primary">{{ $t("Inactive") }}</span>
-                        </h5>
-                        <button :disabled="processing" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" />
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <div v-if="uri && twoFAStatus == false" class="mx-auto text-center" style="width: 210px;">
-                                <vue-qrcode :key="uri" :value="uri" type="image/png" :quality="1" :color="{ light: '#ffffff' }" />
-                                <button v-show="!showURI" type="button" class="btn btn-outline-primary btn-sm mt-2" @click="showURI = true">{{ $t("Show URI") }}</button>
-                            </div>
-                            <p v-if="showURI && twoFAStatus == false" class="text-break mt-2">{{ uri }}</p>
-
-                            <div v-if="!(uri && twoFAStatus == false)" class="mb-3">
-                                <label for="current-password" class="form-label">
-                                    {{ $t("Current Password") }}
-                                </label>
-                                <input
-                                    id="current-password"
-                                    v-model="currentPassword"
-                                    type="password"
-                                    class="form-control"
-                                    autocomplete="current-password"
-                                    required
-                                />
-                            </div>
-
-                            <button v-if="uri == null && twoFAStatus == false" class="btn btn-primary" type="button" @click="prepare2FA()">
-                                {{ $t("Enable 2FA") }}
-                            </button>
-
-                            <button v-if="twoFAStatus == true" class="btn btn-danger" type="button" :disabled="processing" @click="confirmDisableTwoFA()">
-                                {{ $t("Disable 2FA") }}
-                            </button>
-
-                            <div v-if="uri && twoFAStatus == false" class="mt-3">
-                                <label for="basic-url" class="form-label">{{ $t("twoFAVerifyLabel") }}</label>
-                                <div class="input-group">
-                                    <input v-model="token" type="text" maxlength="6" class="form-control" autocomplete="one-time-code" required>
-                                    <button class="btn btn-outline-primary" type="button" @click="verifyToken()">{{ $t("Verify Token") }}</button>
-                                </div>
-                                <p v-show="tokenValid" class="mt-2 token-valid">{{ $t("tokenValidSettingsMsg") }}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-if="uri && twoFAStatus == false" class="modal-footer">
-                        <button type="submit" class="btn btn-primary" :disabled="processing || tokenValid == false" @click="confirmEnableTwoFA()">
-                            <div v-if="processing" class="spinner-border spinner-border-sm me-1"></div>
-                            {{ $t("Save") }}
-                        </button>
-                    </div>
+    <div ref="element" class="modal fade" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <form class="modal-content" @submit.prevent="run(uri ? 'enable' : 'prepare')">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ $t('twoFactor.title') }}</h5>
+                    <button type="button" class="btn-close" :disabled="busy || (codes.length > 0 && !saved)" :aria-label="$t('twoFactor.close')" @click="close" />
                 </div>
-            </div>
+                <div class="modal-body">
+                    <p v-if="error" role="alert" class="alert alert-danger">{{ $t(error) }}</p>
+                    <p v-if="loading">{{ $t('twoFactor.loading') }}</p>
+                    <template v-else-if="codes.length">
+                        <p class="alert alert-warning">{{ $t('twoFactor.saveCodes') }}</p>
+                        <ul class="recovery-codes"><li v-for="item in codes" :key="item"><code>{{ item }}</code></li></ul>
+                        <button type="button" class="btn btn-outline-primary mb-3" @click="download">{{ $t('twoFactor.downloadCodes') }}</button>
+                        <div class="form-check">
+                            <input id="twofa-saved" v-model="saved" class="form-check-input" type="checkbox">
+                            <label class="form-check-label" for="twofa-saved">{{ $t('twoFactor.codesSaved') }}</label>
+                        </div>
+                    </template>
+                    <template v-else-if="ready">
+                        <p>{{ $t(enabled ? 'twoFactor.enabled' : 'twoFactor.description') }}</p>
+                        <p v-if="enabled">{{ $t('twoFactor.remaining', { count: remaining }) }}</p>
+                        <label for="twofa-password" class="form-label">{{ $t('twoFactor.password') }}</label>
+                        <input id="twofa-password" v-model="password" class="form-control mb-3" type="password" autocomplete="current-password" required :disabled="busy">
+                        <template v-if="uri">
+                            <div class="text-center"><VueQrcode :value="uri" :width="210" :color="{ light: '#ffffff', dark: '#000000' }" /></div>
+                            <details class="mb-3"><summary>{{ $t('twoFactor.showSecret') }}</summary><code class="text-break">{{ uri }}</code></details>
+                        </template>
+                        <template v-if="enabled || uri">
+                            <label for="twofa-code" class="form-label">{{ $t(enabled ? 'twoFactor.loginCode' : 'twoFactor.totpCode') }}</label>
+                            <input id="twofa-code" v-model="code" class="form-control mb-3" type="text" :maxlength="enabled ? 35 : 6" autocomplete="one-time-code" :disabled="busy">
+                        </template>
+                        <template v-if="enabled">
+                            <button type="button" class="btn btn-outline-primary mb-3" :disabled="busy || !password || !code" @click="run('regenerate')">{{ $t('twoFactor.regenerate') }}</button>
+                            <div class="form-check mb-3">
+                                <input id="twofa-disable-confirm" v-model="confirmDisable" type="checkbox" class="form-check-input">
+                                <label for="twofa-disable-confirm" class="form-check-label">{{ $t('twoFactor.confirmDisable') }}</label>
+                            </div>
+                            <button type="button" class="btn btn-danger" :disabled="busy || !password || !code || !confirmDisable" @click="run('disable')">{{ $t('twoFactor.disable') }}</button>
+                        </template>
+                        <button v-else type="submit" class="btn btn-primary" :disabled="busy || !password || (!!uri && code.length !== 6)">{{ $t(uri ? 'twoFactor.save' : 'twoFactor.enable') }}</button>
+                    </template>
+                </div>
+                <div v-if="codes.length" class="modal-footer"><button type="button" class="btn btn-primary" :disabled="!saved" @click="close">{{ $t('twoFactor.close') }}</button></div>
+            </form>
         </div>
-    </form>
-
-    <Confirm ref="confirmEnableTwoFA" btn-style="btn-danger" :yes-text="$t('Yes')" :no-text="$t('No')" @yes="save2FA">
-        {{ $t("confirmEnableTwoFAMsg") }}
-    </Confirm>
-
-    <Confirm ref="confirmDisableTwoFA" btn-style="btn-danger" :yes-text="$t('Yes')" :no-text="$t('No')" @yes="disable2FA">
-        {{ $t("confirmDisableTwoFAMsg") }}
-    </Confirm>
+    </div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
+import { getCurrentInstance, onMounted, onUnmounted, ref } from "vue";
 import { Modal } from "bootstrap";
-import Confirm from "./Confirm.vue";
+import type { Socket } from "socket.io-client";
 import VueQrcode from "vue-qrcode";
-import { useToast } from "vue-toastification";
-const toast = useToast();
 
-export default {
-    components: {
-        Confirm,
-        VueQrcode,
-    },
-    props: {},
-    data() {
-        return {
-            currentPassword: "",
-            processing: false,
-            uri: null,
-            tokenValid: false,
-            twoFAStatus: null,
-            token: null,
-            showURI: false,
-        };
-    },
-    mounted() {
-        this.modal = new Modal(this.$refs.modal);
-        this.getStatus();
-    },
-    methods: {
-        /** Show the dialog */
-        show() {
-            this.modal.show();
-        },
+interface Root {
+    getSocket(): Socket;
+    storage(): { token: string };
+    socketIO: { token: string };
+}
+interface Reply {
+    ok: boolean;
+    msg?: string;
+    uri?: string;
+    enabled?: boolean;
+    recoveryRemaining?: number;
+    recoveryCodes?: string[];
+    token?: string;
+}
+const root = getCurrentInstance()!.proxy!.$root as unknown as Root;
+const element = ref<HTMLElement>();
+const password = ref("");
+const code = ref("");
+const uri = ref("");
+const codes = ref<string[]>([]);
+const enabled = ref(false);
+const remaining = ref(0);
+const busy = ref(false);
+const loading = ref(false);
+const ready = ref(false);
+const error = ref("");
+const saved = ref(false);
+const confirmDisable = ref(false);
+let modal: Modal;
 
-        /** Show dialog to confirm enabling 2FA */
-        confirmEnableTwoFA() {
-            this.$refs.confirmEnableTwoFA.show();
-        },
-
-        /** Show dialog to confirm disabling 2FA */
-        confirmDisableTwoFA() {
-            this.$refs.confirmDisableTwoFA.show();
-        },
-
-        /** Prepare 2FA configuration */
-        prepare2FA() {
-            this.processing = true;
-
-            this.$root.getSocket().emit("prepare2FA", this.currentPassword, (res) => {
-                this.processing = false;
-
-                if (res.ok) {
-                    this.uri = res.uri;
-                } else {
-                    toast.error(res.msg);
-                }
-            });
-        },
-
-        /** Save the current 2FA configuration */
-        save2FA() {
-            this.processing = true;
-
-            this.$root.getSocket().emit("save2FA", this.currentPassword, (res) => {
-                this.processing = false;
-
-                if (res.ok) {
-                    this.$root.toastRes(res);
-                    this.getStatus();
-                    this.currentPassword = "";
-                    this.modal.hide();
-                } else {
-                    toast.error(res.msg);
-                }
-            });
-        },
-
-        /** Disable 2FA for this user */
-        disable2FA() {
-            this.processing = true;
-
-            this.$root.getSocket().emit("disable2FA", this.currentPassword, (res) => {
-                this.processing = false;
-
-                if (res.ok) {
-                    this.$root.toastRes(res);
-                    this.getStatus();
-                    this.currentPassword = "";
-                    this.modal.hide();
-                } else {
-                    toast.error(res.msg);
-                }
-            });
-        },
-
-        /** Verify the token generated by the user */
-        verifyToken() {
-            this.$root.getSocket().emit("verifyToken", this.token, this.currentPassword, (res) => {
-                if (res.ok) {
-                    this.tokenValid = res.valid;
-                } else {
-                    toast.error(res.msg);
-                }
-            });
-        },
-
-        /** Get current status of 2FA */
-        getStatus() {
-            this.$root.getSocket().emit("twoFAStatus", (res) => {
-                if (res.ok) {
-                    this.twoFAStatus = res.status;
-                } else {
-                    toast.error(res.msg);
-                }
-            });
-        },
-    },
-};
+function clear() {
+    password.value = "";
+    code.value = "";
+    uri.value = "";
+    codes.value = [];
+    saved.value = false;
+    confirmDisable.value = false;
+}
+function request(action: string): Promise<Reply> {
+    return new Promise((resolve, reject) => {
+        root.getSocket().timeout(15000).emit(`twoFactor:${action}`, { password: password.value,
+            code: code.value }, (err: Error | null, reply: Reply) => {
+            if (err || !reply?.ok) {
+                reject(new Error(reply?.msg || "twoFactor.unavailable"));
+            } else {
+                resolve(reply);
+            }
+        });
+    });
+}
+async function show() {
+    clear();
+    error.value = "";
+    ready.value = false;
+    loading.value = true;
+    modal.show();
+    try {
+        const reply = await request("status");
+        enabled.value = !!reply.enabled;
+        remaining.value = reply.recoveryRemaining ?? 0;
+        ready.value = true;
+    } catch (err) {
+        error.value = err instanceof Error ? err.message : "twoFactor.unavailable";
+    } finally {
+        loading.value = false;
+    }
+}
+async function run(action: string) {
+    if (busy.value || !ready.value) {
+        return;
+    }
+    busy.value = true;
+    error.value = "";
+    try {
+        const reply = await request(action);
+        if (reply.token) {
+            root.storage().token = reply.token;
+            root.socketIO.token = reply.token;
+        }
+        if (action === "prepare") {
+            uri.value = reply.uri ?? "";
+        } else {
+            clear();
+            enabled.value = !!reply.enabled;
+            remaining.value = reply.recoveryRemaining ?? 0;
+            codes.value = reply.recoveryCodes ?? [];
+        }
+    } catch (err) {
+        error.value = err instanceof Error ? err.message : "twoFactor.unavailable";
+    } finally {
+        busy.value = false;
+    }
+}
+function close() {
+    if (busy.value || (codes.value.length && !saved.value)) {
+        return;
+    }
+    root.getSocket().emit("twoFactor:cancel", {}, () => {});
+    modal.hide();
+    clear();
+}
+function download() {
+    const url = URL.createObjectURL(new Blob([ "Dockge-Enhanced — recovery codes\n\n" + codes.value.join("\n") ], { type: "text/plain" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "dockge-enhanced-recovery-codes.txt";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+onMounted(() => {
+    modal = new Modal(element.value!);
+});
+onUnmounted(() => {
+    clear();
+    modal?.dispose();
+});
+defineExpose({ show });
 </script>
 
-<style lang="scss" scoped>
-.token-valid {
-    color: var(--success);
-}
+<style scoped>
+.recovery-codes { padding-left: 1.2rem; }
+.recovery-codes code { overflow-wrap: anywhere; }
 </style>

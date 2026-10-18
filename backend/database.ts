@@ -1,6 +1,5 @@
 import { log } from "./log";
 import { R } from "redbean-node";
-import { DockgeServer } from "./dockge-server";
 import fs from "fs";
 import path from "path";
 import knex from "knex";
@@ -33,18 +32,18 @@ export class Database {
 
     static knexMigrationsPath = "./backend/migrations";
 
-    private static server : DockgeServer;
+    private static server : { config: { dataDir: string } };
 
     /**
      * Use for decode the auth object
      */
     jwtSecret? : string;
 
-    static async init(server : DockgeServer) {
+    static async init(server : { config: { dataDir: string } }, autoloadModels = true) {
         this.server = server;
 
         log.debug("server", "Connecting to the database");
-        await Database.connect();
+        await Database.connect(autoloadModels);
         log.info("server", "Connected to the database");
 
         // Patch the database

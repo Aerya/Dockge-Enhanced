@@ -8,7 +8,8 @@ import { passwordStrength } from "check-password-strength";
 import { R } from "redbean-node";
 import { log } from "./log";
 import { User } from "./models/user";
-import { generatePasswordHash } from "./password-hash";
+import { generatePasswordHash, passwordVersionFingerprint } from "./password-hash";
+import { interactiveSessionVersionMatches } from "./two-factor-auth";
 import { Settings } from "./settings";
 import { JWTDecoded } from "./util-server";
 
@@ -329,8 +330,15 @@ export async function authenticateHttpRequest(
 
     try {
         const decoded = jwt.verify(token, jwtSecret) as JWTDecoded;
+        const user = decoded.scope === "federation" && Number.isInteger(decoded.userId)
+            ? await R.findOne("user", " id = ? AND active = 1 ", [ Number(decoded.userId) ]) as User
+            : await R.findOne("user", " username = ? AND active = 1 ", [ decoded.username ]) as User;
+        if (!user || (decoded.scope !== "federation" &&
+            (decoded.h !== passwordVersionFingerprint(user.password, jwtSecret) || !interactiveSessionVersionMatches(decoded, { twofa_version: user.twofa_version })))) {
+            throw new Error("Revoked session");
+        }
         return { mode,
-            username: decoded.username };
+            username: user.username };
     } catch {
         throw new AuthenticationError("Token invalide ou expiré");
     }

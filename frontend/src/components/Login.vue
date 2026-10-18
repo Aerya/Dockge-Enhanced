@@ -16,8 +16,8 @@
 
                 <div v-if="tokenRequired">
                     <div class="form-floating mt-3">
-                        <input id="otp" v-model="token" type="text" maxlength="6" class="form-control" placeholder="123456" autocomplete="one-time-code" required>
-                        <label for="otp">{{ $t("Token") }}</label>
+                        <input id="otp" v-model="token" type="text" maxlength="35" class="form-control" placeholder="123456" autocomplete="one-time-code" required>
+                        <label for="otp">{{ $t("twoFactor.loginCode") }}</label>
                     </div>
                 </div>
 
@@ -32,7 +32,9 @@
                 </div>
 
                 <!-- Cloudflare Turnstile -->
-                <div v-if="turnstileEnabled && !tokenRequired" ref="turnstile" class="d-flex justify-content-center mb-3"></div>
+                <div v-if="turnstileEnabled" v-show="!tokenRequired" class="mb-3">
+                    <div ref="turnstile" class="d-flex justify-content-center"></div>
+                </div>
 
                 <button class="w-100 btn btn-primary" type="submit" :disabled="processing">
                     {{ $t("Login") }}
@@ -56,6 +58,7 @@ export default {
             token: "",
             res: null,
             tokenRequired: false,
+            challenge: "",
             turnstileToken: "",
             turnstileWidgetId: null,
             previousTitle: "",
@@ -104,8 +107,14 @@ export default {
 
                 if (res.tokenRequired) {
                     this.tokenRequired = true;
+                    this.challenge = res.challenge;
                 } else {
                     this.res = res;
+                    if (res.msg === "twoFactor.restartLogin") {
+                        this.tokenRequired = false;
+                        this.challenge = "";
+                        this.token = "";
+                    }
                 }
 
                 // Réinitialise le widget Turnstile après une tentative (token à usage unique)
@@ -113,7 +122,7 @@ export default {
                     window.turnstile.reset(this.turnstileWidgetId);
                     this.turnstileToken = "";
                 }
-            }, this.turnstileToken);
+            }, this.turnstileToken, this.challenge);
         },
 
         /**

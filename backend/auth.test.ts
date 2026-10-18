@@ -9,6 +9,7 @@ import {
     isSetupCompleted,
 } from "./auth";
 import { Settings } from "./settings";
+import { passwordVersionFingerprint } from "./password-hash";
 
 process.env.DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS = "172.20.0.0/24,::1";
 process.env.DOCKGE_AUTH_PROXY_HEADER = "x-forwarded-user";
@@ -50,15 +51,37 @@ test("disabled mode keeps the historical automatic identity", async () => {
     });
 });
 
-test("local mode still accepts Dockge JWT and rejects missing tokens", async () => {
+test("local mode accepts current Dockge JWT, revokes old 2FA sessions and preserves federation", async t => {
     process.env.DOCKGE_AUTH_MODE = "local";
-    const token = jwt.sign({ username: "local-user" }, "test-secret");
+    const original = R.findOne;
+    let version = 0;
+    R.findOne = (async () => ({ username: "local-user",
+        password: "fixture-hash",
+        twofa_version: version })) as unknown as typeof R.findOne;
+    t.after(() => {
+        R.findOne = original;
+    });
+    const token = jwt.sign({ username: "local-user",
+        h: passwordVersionFingerprint("fixture-hash", "test-secret") }, "test-secret");
     const identity = await authenticateHttpRequest({
         headers: { authorization: `Bearer ${token}` },
         query: {},
         socket: {},
     } as never, "test-secret");
     assert.equal(identity.username, "local-user");
+    version = 1;
+    const request = (value: string) => ({ headers: { authorization: `Bearer ${value}` },
+        query: {},
+        socket: {} }) as never;
+    await assert.rejects(authenticateHttpRequest(request(token), "test-secret"), /Token invalide/);
+    const current = jwt.sign({ username: "local-user",
+        h: passwordVersionFingerprint("fixture-hash", "test-secret"),
+        twoFaVersion: 1 }, "test-secret");
+    assert.equal((await authenticateHttpRequest(request(current), "test-secret")).username, "local-user");
+    const federation = jwt.sign({ username: "previous-name",
+        userId: 1,
+        scope: "federation" }, "test-secret");
+    assert.equal((await authenticateHttpRequest(request(federation), "test-secret")).username, "local-user");
 
     await assert.rejects(
         authenticateHttpRequest(

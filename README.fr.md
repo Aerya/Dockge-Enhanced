@@ -65,6 +65,10 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Statut des stacks détectées :** Les projets Compose détectés mais non adoptés, comme ceux de DDEV, ne provoquent plus d’erreurs `spawn docker ENOENT` répétées lorsque leur dossier est absent de la racine des stacks. Le statut des stacks externes adoptées utilise leur dossier, leur nom de projet et leurs fichiers Compose enregistrés.
 
+**Authentification TOTP à deux facteurs facultative :** Activez-la dans **Paramètres → Sécurité → Paramètres 2FA** avec votre mot de passe actuel, scannez le QR code et confirmez un code de votre application d’authentification. Enregistrez les dix codes de secours à usage unique : ils ne sont affichés qu’une fois. Désactivée par défaut, cette protection concerne la connexion locale, pas l’authentification par proxy ni les jetons de fédération. Avant d’activer la 2FA, utilisez des jetons de fédération pour les instances liées ; les connexions par mot de passe seul ne fonctionneront plus.
+
+Sauvegardez tout `/app/data`, y compris `two-factor.key`. Une restauration de la base seule ne permet pas de déchiffrer le secret sans cette clé. En cas de perte de l’application et de tous les codes de secours, un administrateur ayant accès au conteneur peut lancer `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm` depuis `/app`, puis redémarrer Enhanced ; le mot de passe est conservé.
+
 **Historique CPU/RAM par service Compose :** Activez l’enregistrement dans **Monitoring**, puis ouvrez **Consommation** dans les actions d’une stack. Les graphiques compacts présentent le total de la stack et un historique par service Compose, y compris pour les projets Compose non gérés. Les mises à jour et recréations restent dans le même historique ; les réplicas simultanés sont additionnés à chaque mesure avant le calcul des moyennes et maxima. Les mesures existantes sont conservées sans réinitialisation. Périodes : 24 heures, 7 jours, 1 mois, 1 an ou toutes les données enregistrées. L’enregistrement est désactivé par défaut et collecte une mesure toutes les 5 minutes, même sans navigateur ouvert. Pour le CPU, 100 % correspond à un cœur ; sous Linux, la RAM exclut le cache récupérable. Les interruptions restent visibles et les pics entre deux mesures peuvent être manqués. Les totaux excluent les processus natifs de l’hôte et les conteneurs hors Compose. Le tri CPU/RAM reste disponible dans la liste des stacks.
 
 **Sauvegardes avec Zerobyte :** connectez une instance existante ou installez une instance Compose dédiée depuis **Sauvegardes → Zerobyte**. Utilisez-la en complément de Restic natif ou pour vos sauvegardes planifiées, avec des dépôts distincts. L’intégration propose un assistant de configuration, des workflows protégés d’arrêt/redémarrage des applications, des contrôles du stockage, des restaurations de test dédiées et une supervision multi-serveurs en lecture seule. Un stockage réseau indisponible bloque la sauvegarde sans repli local. [Guide de configuration et de reprise](docs/zerobyte.fr.md).
@@ -498,7 +502,7 @@ La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouto
 - Validation centralisée des noms de stacks pour bloquer tout path traversal hors du répertoire géré
 - Scan Trivy
 - Exceptions CVE
-- 2FA
+- 2FA TOTP facultative pour les comptes locaux : activation vérifiée par QR code, secrets chiffrés, codes de secours à usage unique et révocation des sessions
 - Cloudflare Turnstile
 - Trusted proxy
 - Sidecar restreint et plan d'update signé

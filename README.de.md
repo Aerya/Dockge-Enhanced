@@ -64,6 +64,10 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 **Dienststatus erkannter Stacks:** Erkannte, aber nicht übernommene Compose-Projekte wie DDEV verursachen keine wiederholten `spawn docker ENOENT`-Fehler mehr, wenn ihr Verzeichnis im Stack-Stamm fehlt. Übernommene externe Stacks verwenden für den Dienststatus ihr registriertes Verzeichnis, ihren Projektnamen und ihre Compose-Dateien.
 
+**Optionale TOTP-Zwei-Faktor-Authentifizierung :** Aktivieren Sie sie unter **Einstellungen → Sicherheit → 2FA-Einstellungen** mit Ihrem aktuellen Passwort, scannen Sie den QR-Code und bestätigen Sie einen Authenticator-Code. Speichern Sie die zehn einmal gültigen Wiederherstellungscodes; sie werden nur einmal angezeigt. Standardmäßig deaktiviert, schützt sie lokale Anmeldungen, nicht Trusted-Proxy-Authentifizierung oder Föderationstoken. Verwenden Sie vor der Aktivierung der 2FA Föderationstoken für verknüpfte Instanzen; Verbindungen nur mit Passwort funktionieren danach nicht mehr.
+
+Sichern Sie das gesamte `/app/data`, einschließlich `two-factor.key`. Eine reine Datenbankwiederherstellung kann das Geheimnis ohne diesen Schlüssel nicht entschlüsseln. Bei Verlust von Authenticator und allen Wiederherstellungscodes kann ein Containeradministrator unter `/app` den Befehl `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm` ausführen und Enhanced neu starten; das Passwort bleibt unverändert.
+
 **CPU/RAM-Verlauf pro Compose-Dienst :** Aktivieren Sie die Aufzeichnung unter **Monitoring** und öffnen Sie **Ressourcenverbrauch** in den Stack-Aktionen. Kompakte Diagramme zeigen die Stack-Summe und einen Verlauf pro Compose-Dienst, einschließlich nicht verwalteter Compose-Projekte. Updates und Neuerstellungen bleiben im selben Verlauf; gleichzeitige Replikate werden vor der Berechnung von Mittelwerten und Maxima je Messung addiert. Vorhandene Messwerte bleiben ohne Zurücksetzen erhalten. Zeiträume: 24 Stunden, 7 Tage, 1 Monat, 1 Jahr oder alle Daten. Die Aufzeichnung ist standardmäßig deaktiviert und misst alle 5 Minuten, auch ohne geöffneten Browser. CPU: 100 % entspricht einem Kern; unter Linux wird rückgewinnbarer Cache vom RAM abgezogen. Messlücken bleiben sichtbar; Spitzen zwischen Messungen können fehlen. Stack-Summen enthalten keine nativen Host-Prozesse oder Container außerhalb von Compose. Die CPU/RAM-Sortierung der Stack-Liste bleibt verfügbar.
 
 **Backups mit Zerobyte:** Unter **Sicherungen → Zerobyte** eine vorhandene Instanz verbinden oder eine eigene Compose-Instanz installieren. Zerobyte ergänzt native Restic-Backups oder übernimmt geplante Backups mit getrennten Repositories. Einrichtungsassistent, geschützte Anwendungs-Stopps und -Neustarts, Speicherprüfungen, separate Testwiederherstellungen und lesende Multi-Server-Übersichten stehen zur Verfügung. Bei nicht verfügbarem Netzwerkspeicher wird das Backup ohne lokalen Ersatzspeicher blockiert. [Einrichtungs- und Wiederherstellungsanleitung](docs/zerobyte.de.md).
@@ -498,7 +502,7 @@ Die Restic-Snapshot-Liste ist standardmäßig auf **Alle** eingestellt. **Speich
 - Zentralisierte Stack-Namensvalidierung blockiert Pfadüberschreitungen (Path Traversal) außerhalb des verwalteten Stacks-Verzeichnisses
 - Trivy-Schwachstellenscan
 - CVE-Ausnahmen
-- 2FA
+- Optionale TOTP-2FA für lokale Konten: bestätigte QR-Einrichtung, verschlüsselte Geheimnisse, einmalige Wiederherstellungscodes und Sitzungswiderruf
 - Cloudflare Turnstile
 - Vertrauenswürdiger Proxy
 - Einschränkbares Selbst-Update-Sidecar und signierter Update-Plan

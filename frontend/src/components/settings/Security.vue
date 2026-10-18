@@ -68,10 +68,9 @@
                 </form>
             </template>
 
-            <!-- TODO: Hidden for now -->
-            <div v-if="authMode === 'local' && false" class="mt-5 mb-3">
+            <div v-if="authMode === 'local'" class="mt-5 mb-3">
                 <h5 class="my-4 settings-subheading">
-                    {{ $t("Two Factor Authentication") }}
+                    {{ $t("twoFactor.title") }}
                 </h5>
                 <div class="mb-4">
                     <button
@@ -79,7 +78,7 @@
                         type="button"
                         @click="$refs.TwoFADialog.show()"
                     >
-                        {{ $t("2FA Settings") }}
+                        {{ $t("twoFactor.settings") }}
                     </button>
                 </div>
             </div>
