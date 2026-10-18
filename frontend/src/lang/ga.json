@@ -159,5 +159,6 @@
     "watcher.registryDns.resolved": "Réitithe",
     "watcher.registryDns.noAddress": "Gan seoladh",
     "watcher.registryDns.errorStatus": "Earráid",
-    "watcher.registryDns.hostNotFound": "Níor aimsíodh ainm an óstaigh."
+    "watcher.registryDns.hostNotFound": "Níor aimsíodh ainm an óstaigh.",
+    "releaseNews.item.composeAgentConvenience": "Naisc HTTP/HTTPS ainmnithe, teimpléad réamhshocraithe .env inchumraithe, clibeanna buana agus scagadh gníomhairí, agus naisc droim ar ais roghnacha le comharthaí aonair. Is leor cuntas riarthóra áitiúil atá ann cheana. Ceanglaíonn an nód go huathoibríoch lena fhreastalaí lárnach féin amháin; teastaíonn nasc cónaidhme díreach chun sonraí a aistriú idir freastalaithe."
 }

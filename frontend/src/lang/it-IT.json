@@ -143,5 +143,6 @@
     "watcher.registryDns.resolved": "Risolto",
     "watcher.registryDns.noAddress": "Nessun indirizzo",
     "watcher.registryDns.errorStatus": "Errore",
-    "watcher.registryDns.hostNotFound": "Nome host non trovato."
+    "watcher.registryDns.hostNotFound": "Nome host non trovato.",
+    "releaseNews.item.composeAgentConvenience": "Link HTTP/HTTPS con nome, modello .env predefinito configurabile, tag persistenti e filtri per gli agenti, e connessioni inverse facoltative con token individuali. Basta un account amministratore locale esistente. Il nodo si collega automaticamente solo al proprio server centrale; i trasferimenti tra server richiedono una federazione diretta."
 }

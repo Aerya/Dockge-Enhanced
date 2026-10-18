@@ -159,5 +159,6 @@
     "watcher.registryDns.resolved": "Feloldva",
     "watcher.registryDns.noAddress": "Nincs cím",
     "watcher.registryDns.errorStatus": "Hiba",
-    "watcher.registryDns.hostNotFound": "A hosztnév nem található."
+    "watcher.registryDns.hostNotFound": "A hosztnév nem található.",
+    "releaseNews.item.composeAgentConvenience": "Elnevezett HTTP/HTTPS-hivatkozások, beállítható alapértelmezett .env-sablon, tartós ügynökcímkék és szűrés, valamint opcionális fordított kapcsolatok egyedi tokenekkel. Elegendő egy meglévő helyi rendszergazdai fiók. A csomópont automatikusan csak a saját központi szerveréhez kapcsolódik; a szerverek közötti adatátvitelhez közvetlen föderációs kapcsolat kell."
 }

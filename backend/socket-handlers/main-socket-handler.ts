@@ -342,6 +342,13 @@ export class MainSocketHandler extends SocketHandler {
             try {
                 checkLogin(socket);
 
+                if (data.composeEnvTemplate !== undefined && (
+                    typeof data.composeEnvTemplate !== "string"
+                    || Buffer.byteLength(data.composeEnvTemplate, "utf8") > 65536
+                    || data.composeEnvTemplate.includes("\0")
+                )) {
+                    throw new ValidationError("composeTemplate.envInvalid");
+                }
                 if (data.composeTemplate !== undefined) {
                     if (typeof data.composeTemplate !== "string" || Buffer.byteLength(data.composeTemplate, "utf8") > 65536) {
                         throw new ValidationError("Invalid Compose template");

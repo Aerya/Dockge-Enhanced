@@ -25,6 +25,9 @@ export class TerminalSocketHandler extends AgentSocketHandler {
                 if (terminal instanceof InteractiveTerminal) {
                     //log.debug("terminalInput", "Terminal found, writing to terminal.");
                     terminal.write(cmd);
+                    if (typeof callback === "function") {
+                        callbackResult({ ok: true }, callback);
+                    }
                 } else {
                     throw new Error("Terminal not found or it is not a Interactive Terminal.");
                 }

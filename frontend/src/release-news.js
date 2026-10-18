@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-18-compose-agent-convenience",
+        items: [ "releaseNews.item.composeAgentConvenience" ],
+    },
+    {
         id: "2026-10-18-totp-authentication",
         items: [ "releaseNews.item.totpAuthentication" ],
     },

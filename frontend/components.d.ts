@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     About: typeof import('./src/components/settings/About.vue')['default']
+    AgentTagsEditor: typeof import('./src/components/AgentTagsEditor.vue')['default']
     Appearance: typeof import('./src/components/settings/Appearance.vue')['default']
     ArrayInput: typeof import('./src/components/ArrayInput.vue')['default']
     ArraySelect: typeof import('./src/components/ArraySelect.vue')['default']
@@ -43,6 +44,7 @@ declare module 'vue' {
     PlugNPiNLabelAssistant: typeof import('./src/components/PlugNPiNLabelAssistant.vue')['default']
     RemoteInstanceLinks: typeof import('./src/components/RemoteInstanceLinks.vue')['default']
     ResourceSparkline: typeof import('./src/components/ResourceSparkline.vue')['default']
+    ReverseAgentSetup: typeof import('./src/components/ReverseAgentSetup.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Security: typeof import('./src/components/settings/Security.vue')['default']
@@ -58,6 +60,7 @@ declare module 'vue' {
     StackStatsBadge: typeof import('./src/components/StackStatsBadge.vue')['default']
     StackTransferModal: typeof import('./src/components/StackTransferModal.vue')['default']
     StackUpdateBadge: typeof import('./src/components/StackUpdateBadge.vue')['default']
+    StackURLsInput: typeof import('./src/components/StackURLsInput.vue')['default']
     SystemStatsBar: typeof import('./src/components/SystemStatsBar.vue')['default']
     Terminal: typeof import('./src/components/Terminal.vue')['default']
     TwoFADialog: typeof import('./src/components/TwoFADialog.vue')['default']

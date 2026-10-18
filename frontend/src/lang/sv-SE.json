@@ -159,5 +159,6 @@
     "watcher.registryDns.resolved": "Löst",
     "watcher.registryDns.noAddress": "Ingen adress",
     "watcher.registryDns.errorStatus": "Fel",
-    "watcher.registryDns.hostNotFound": "Värdnamnet hittades inte."
+    "watcher.registryDns.hostNotFound": "Värdnamnet hittades inte.",
+    "releaseNews.item.composeAgentConvenience": "Namngivna HTTP/HTTPS-länkar, konfigurerbar standardmall för .env, beständiga agenttaggar och filtrering samt valfria omvända anslutningar med individuella token. Ett befintligt lokalt administratörskonto räcker. Noden ansluter automatiskt endast till sin egen centrala server; dataöverföring mellan servrar kräver direkt federation."
 }

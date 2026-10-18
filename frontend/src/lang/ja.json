@@ -156,5 +156,6 @@
     "watcher.registryDns.resolved": "解決済み",
     "watcher.registryDns.noAddress": "アドレスなし",
     "watcher.registryDns.errorStatus": "エラー",
-    "watcher.registryDns.hostNotFound": "ホスト名が見つかりません。"
+    "watcher.registryDns.hostNotFound": "ホスト名が見つかりません。",
+    "releaseNews.item.composeAgentConvenience": "名前付きHTTP/HTTPSリンク、設定可能な既定の.envテンプレート、永続的なエージェントタグと絞り込み、ノード別トークンによる任意の逆方向接続を追加しました。既存のローカル管理者アカウントがあれば十分です。ノードは自身の中央サーバーにのみ自動接続します。サーバー間のデータ転送には引き続き直接のフェデレーション接続が必要です。"
 }

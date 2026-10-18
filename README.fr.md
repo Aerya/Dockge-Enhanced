@@ -63,6 +63,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Modèles Compose et agents distants :** Liens HTTP/HTTPS nommés, modèle .env par défaut configurable, tags persistants des agents et filtrage par tag, ainsi que connexions inversées facultatives avec jetons individuels et rattachement automatique après initialisation du compte local. Les agents inversés appartiennent à leur serveur central ; les transferts de données interserveurs nécessitent toujours une fédération directe. Un compte administrateur local existant suffit : aucun nouveau compte à créer. [Documentation](docs/compose-and-reverse-agents.md).
+
 **Statut des stacks détectées :** Les projets Compose détectés mais non adoptés, comme ceux de DDEV, ne provoquent plus d’erreurs `spawn docker ENOENT` répétées lorsque leur dossier est absent de la racine des stacks. Le statut des stacks externes adoptées utilise leur dossier, leur nom de projet et leurs fichiers Compose enregistrés.
 
 **Authentification TOTP à deux facteurs facultative :** Activez-la dans **Paramètres → Sécurité → Paramètres 2FA** avec votre mot de passe actuel, scannez le QR code et confirmez un code de votre application d’authentification. Enregistrez les dix codes de secours à usage unique : ils ne sont affichés qu’une fois. Désactivée par défaut, cette protection concerne la connexion locale, pas l’authentification par proxy ni les jetons de fédération. Avant d’activer la 2FA, utilisez des jetons de fédération pour les instances liées ; les connexions par mot de passe seul ne fonctionneront plus.

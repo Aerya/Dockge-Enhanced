@@ -143,5 +143,6 @@
     "watcher.registryDns.resolved": "Opgelost",
     "watcher.registryDns.noAddress": "Geen adres",
     "watcher.registryDns.errorStatus": "Fout",
-    "watcher.registryDns.hostNotFound": "Hostnaam niet gevonden."
+    "watcher.registryDns.hostNotFound": "Hostnaam niet gevonden.",
+    "releaseNews.item.composeAgentConvenience": "Benoemde HTTP/HTTPS-links, een instelbaar standaard .env-sjabloon, blijvende agenttags en filtering, plus optionele omgekeerde verbindingen met afzonderlijke tokens. Een bestaand lokaal beheerdersaccount volstaat. De node verbindt automatisch uitsluitend met zijn eigen centrale server; gegevensoverdracht tussen servers vereist directe federatie."
 }

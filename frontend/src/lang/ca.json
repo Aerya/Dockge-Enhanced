@@ -143,5 +143,6 @@
     "watcher.registryDns.resolved": "Resolt",
     "watcher.registryDns.noAddress": "Sense adreça",
     "watcher.registryDns.errorStatus": "Error",
-    "watcher.registryDns.hostNotFound": "No s’ha trobat el nom del servidor."
+    "watcher.registryDns.hostNotFound": "No s’ha trobat el nom del servidor.",
+    "releaseNews.item.composeAgentConvenience": "Enllaços HTTP/HTTPS amb nom, plantilla .env predeterminada configurable, etiquetes persistents i filtratge dels agents, i connexions inverses opcionals amb tokens individuals. N’hi ha prou amb un compte d’administrador local existent. El node es connecta automàticament només al seu servidor central; les transferències entre servidors requereixen federació directa."
 }

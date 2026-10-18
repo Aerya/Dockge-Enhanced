@@ -143,5 +143,6 @@
     "watcher.registryDns.resolved": "Вызначана",
     "watcher.registryDns.noAddress": "Няма адраса",
     "watcher.registryDns.errorStatus": "Памылка",
-    "watcher.registryDns.hostNotFound": "Імя вузла не знойдзена."
+    "watcher.registryDns.hostNotFound": "Імя вузла не знойдзена.",
+    "releaseNews.item.composeAgentConvenience": "Іменаваныя спасылкі HTTP/HTTPS, наладжвальны шаблон .env, пастаянныя тэгі агентаў і фільтраванне, а таксама неабавязковыя зваротныя злучэнні з асобнымі токенамі. Дастаткова існага лакальнага ўліковага запісу адміністратара. Вузел аўтаматычна далучаецца толькі да свайго цэнтральнага сервера; перадача даных паміж серверамі патрабуе прамога федэратыўнага злучэння."
 }

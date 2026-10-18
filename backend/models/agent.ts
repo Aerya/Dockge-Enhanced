@@ -21,6 +21,7 @@ export class Agent extends BeanModel {
     toJSON() : LooseObject {
         return {
             url: this.url,
+            reverse: this.url.startsWith("reverse://"),
             username: this.username,
             endpoint: this.endpoint,
             displayName: this.display_name || "",

@@ -1,3 +1,4 @@
+import type { Socket as ServerSocket } from "socket.io";
 import type { DockgeSocket } from "./util-server";
 import { io, type Socket as SocketClient } from "socket.io-client";
 import { log } from "./log";
@@ -57,25 +58,74 @@ type SharedAgentStatus = "connecting" | "online" | "offline";
  */
 export class AgentManager {
 
-    private static readonly sharedAgentSocketList : Record<string, SocketClient> = {};
-    private static readonly sharedAgentLoggedInList : Record<string, boolean> = {};
-    private static readonly sharedReconnectFailureList : Record<string, number> = {};
-    private static readonly sharedCircuitRetryTimerList : Record<string, NodeJS.Timeout> = {};
-    private static readonly sharedConfigs : Record<string, SharedAgentConfig> = {};
+    private static readonly sharedAgentSocketList: Record<string, SocketClient> = {};
+    private static readonly sharedAgentLoggedInList: Record<string, boolean> = {};
+    private static readonly sharedReconnectFailureList: Record<string, number> = {};
+    private static readonly sharedCircuitRetryTimerList: Record<string, NodeJS.Timeout> = {};
+    private static readonly sharedConfigs: Record<string, SharedAgentConfig> = {};
     private static readonly sharedAvailabilityAlerts = new FederationAvailabilityAlertTracker();
     private static readonly subscribers = new Set<DockgeSocket>();
     private static readonly authenticationFailures = new Set<string>();
 
+    private static readonly reverseSockets = new Map<string, ServerSocket>();
+    private static readonly reverseEndpoints = new Set<string>();
+
+    static attachReverse(endpoint: string, socket: ServerSocket): void {
+        const previous = AgentManager.reverseSockets.get(endpoint);
+        AgentManager.reverseSockets.set(endpoint, socket);
+        AgentManager.reverseEndpoints.add(endpoint);
+        previous?.disconnect(true);
+        const manager = new AgentManager();
+        manager.broadcastStatus(endpoint, "online");
+        socket.data.consoleRequested = false;
+        socket.on("agent-event", (event: unknown, ...args: unknown[]) => {
+            if (AgentManager.reverseSockets.get(endpoint) !== socket || typeof event !== "string" || ![ "stackList", "terminalWrite" ].includes(event)) {
+                return;
+            }
+            if (event === "terminalWrite") {
+                const name = args[0];
+                if (typeof args[1] !== "string" || typeof name !== "string" || !([ "compose-", "combined-", "container-", "container-exec-" ].some(prefix => name.startsWith(`${prefix}${endpoint}-`)) || (name === "console" && socket.data.consoleRequested))) {
+                    return;
+                }
+            }
+            if (event === "stackList" && args[0] && typeof args[0] === "object") {
+                const data = args[0] as LooseObject;
+                // Remote nodes may only publish their own stacks.
+                data.endpoint = endpoint;
+                if (data.stackList && typeof data.stackList === "object") {
+                    for (const stack of Object.values(data.stackList) as LooseObject[]) {
+                        if (stack && typeof stack === "object") {
+                            stack.endpoint = endpoint;
+                        }
+                    }
+                }
+            }
+            manager.broadcast("agent", event, ...args);
+        });
+        socket.on("disconnect", () => {
+            if (AgentManager.reverseSockets.get(endpoint) === socket) {
+                AgentManager.reverseSockets.delete(endpoint);
+                manager.broadcastStatus(endpoint, "offline");
+            }
+        });
+        for (const subscriber of AgentManager.subscribers) {
+            void new AgentManager(subscriber).sendAgentList();
+        }
+    }
+
     static connectionFailure(endpoint: string): "authentication" | "offline" | null {
+        if (AgentManager.reverseEndpoints.has(endpoint)) {
+            return AgentManager.reverseSockets.get(endpoint)?.connected ? null : "offline";
+        }
         if (AgentManager.authenticationFailures.has(endpoint)) {
             return "authentication";
         }
         return AgentManager.sharedAgentSocketList[endpoint]?.connected && AgentManager.sharedAgentLoggedInList[endpoint] ? null : "offline";
     }
 
-    private static sharedFirstConnectTime : Dayjs = dayjs();
+    private static sharedFirstConnectTime: Dayjs = dayjs();
 
-    protected socket? : DockgeSocket;
+    protected socket?: DockgeSocket;
 
     constructor(socket?: DockgeSocket) {
         this.socket = socket;
@@ -96,7 +146,7 @@ export class AgentManager {
         const list : Record<string, Agent> = await Agent.getAgentList();
         const wanted = new Set(Object.keys(list));
 
-        for (const endpoint of Object.keys(AgentManager.sharedConfigs)) {
+        for (const endpoint of [ ...Object.keys(AgentManager.sharedConfigs), ...AgentManager.reverseEndpoints ]) {
             if (!wanted.has(endpoint)) {
                 manager.disconnect(endpoint);
             }
@@ -104,6 +154,11 @@ export class AgentManager {
 
         for (const endpoint of Object.keys(list)) {
             const agent = list[endpoint];
+            if (agent.url.startsWith("reverse://")) {
+                AgentManager.reverseEndpoints.add(endpoint);
+                manager.broadcastStatus(endpoint, manager.statusFor(endpoint));
+                continue;
+            }
             const next : SharedAgentConfig = {
                 url: agent.url,
                 username: agent.username,
@@ -137,6 +192,9 @@ export class AgentManager {
         for (const endpoint of Object.keys(AgentManager.sharedAgentSocketList)) {
             manager.disconnect(endpoint);
         }
+        for (const endpoint of [ ...AgentManager.reverseEndpoints ]) {
+            manager.disconnect(endpoint);
+        }
         AgentManager.subscribers.clear();
     }
 
@@ -147,7 +205,7 @@ export class AgentManager {
 
         AgentManager.subscribers.add(this.socket);
 
-        for (const endpoint of Object.keys(AgentManager.sharedConfigs)) {
+        for (const endpoint of [ ...Object.keys(AgentManager.sharedConfigs), ...AgentManager.reverseEndpoints ]) {
             this.socket.emit("agentStatus", {
                 endpoint,
                 status: this.statusFor(endpoint),
@@ -162,6 +220,9 @@ export class AgentManager {
     }
 
     private statusFor(endpoint: string): SharedAgentStatus {
+        if (AgentManager.reverseEndpoints.has(endpoint)) {
+            return AgentManager.reverseSockets.get(endpoint)?.connected ? "online" : "offline";
+        }
         const client = AgentManager.sharedAgentSocketList[endpoint];
 
         if (client?.connected && AgentManager.sharedAgentLoggedInList[endpoint]) {
@@ -553,6 +614,9 @@ export class AgentManager {
     }
 
     disconnect(endpoint : string): void {
+        AgentManager.reverseSockets.get(endpoint)?.disconnect(true);
+        AgentManager.reverseSockets.delete(endpoint);
+        AgentManager.reverseEndpoints.delete(endpoint);
         this.clearCircuitRetry(endpoint);
 
         const client = AgentManager.sharedAgentSocketList[endpoint];
@@ -578,6 +642,26 @@ export class AgentManager {
     }
 
     async emitToEndpoint(endpoint: string, eventName: string, ...args : unknown[]) {
+        if (AgentManager.reverseEndpoints.has(endpoint)) {
+            const reverse = AgentManager.reverseSockets.get(endpoint);
+            if (!reverse?.connected) {
+                throw new Error("Reverse agent is offline");
+            }
+            if (eventName === "mainTerminal") {
+                reverse.data.consoleRequested = true;
+            }
+            const last = args[args.length - 1];
+            if (typeof last === "function") {
+                args.pop();
+                reverse.timeout(30 * 60_000 + 5000).emit("command", eventName, args, (error: Error | null, result: unknown) => {
+                    last(error ? { ok: false,
+                        msg: "Reverse agent response timed out; the operation may still be running. Check its state before retrying." } : result);
+                });
+            } else {
+                reverse.emit("command", eventName, args);
+            }
+            return;
+        }
         let client = AgentManager.sharedAgentSocketList[endpoint];
         let diff = dayjs().diff(this.firstConnectTime, "second");
 
@@ -629,7 +713,7 @@ export class AgentManager {
     }
 
     emitToAllEndpoints(eventName: string, ...args : unknown[]): void {
-        for (const endpoint of Object.keys(AgentManager.sharedAgentSocketList)) {
+        for (const endpoint of [ ...Object.keys(AgentManager.sharedAgentSocketList), ...AgentManager.reverseEndpoints ]) {
             this.emitToEndpoint(endpoint, eventName, ...args).catch((error) => {
                 log.warn(
                     "agent-manager",
@@ -653,10 +737,12 @@ export class AgentManager {
             username: "",
             endpoint: "",
             displayName: typeof localDisplayName === "string" ? localDisplayName : "",
+            tags: await Settings.get("agentTags:") || [],
         };
 
         for (const endpoint in list) {
-            result[endpoint] = list[endpoint].toJSON();
+            result[endpoint] = { ...list[endpoint].toJSON(),
+                tags: await Settings.get(`agentTags:${endpoint}`) || [] };
         }
 
         this.socket.emit("agentList", {

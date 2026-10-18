@@ -1,3 +1,6 @@
+import { issueReverseAgent } from "../reverse-agent";
+import { normalizeAgentTags } from "../../common/agent-tags";
+import { Agent } from "../models/agent";
 import { SocketHandler } from "../socket-handler.js";
 import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
@@ -51,6 +54,40 @@ export function normalizeAgentDisplayName(value: unknown): string {
 export class ManageAgentSocketHandler extends SocketHandler {
 
     create(socket : DockgeSocket, server : DockgeServer) {
+        socket.on("createReverseAgent", async (data: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                const name = normalizeAgentDisplayName((data as LooseObject)?.displayName);
+                const result = await issueReverseAgent(name, socket.userID);
+                await socket.instanceManager.sendAgentList();
+                callbackResult({ ok: true,
+                    ...result }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        socket.on("setAgentTags", async (data: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                if (!data || typeof data !== "object") {
+                    throw new Error("Invalid agent metadata");
+                }
+                const { endpoint, tags } = data as { endpoint: unknown;
+                    tags: unknown };
+                if (typeof endpoint !== "string" || (endpoint !== "" && !Object.hasOwn(await Agent.getAgentList(), endpoint))) {
+                    throw new Error("Unknown agent");
+                }
+                const normalized = normalizeAgentTags(tags);
+                await Settings.set(`agentTags:${endpoint}`, normalized, "agent-metadata");
+                await socket.instanceManager.sendAgentList();
+                server.refreshBrowserSocketClients(socket.id);
+                callbackResult({ ok: true }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
         socket.on("createAgentFederationToken", async (_requestData : unknown, callback : unknown) => {
             try {
                 checkLogin(socket);
@@ -273,14 +310,15 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 if (typeof data.url !== "string") {
                     throw new Error("URL must be a string");
                 }
-                const self = await federationSelfForSocket(socket, server, data.self);
-
                 let manager = socket.instanceManager;
-                await synchronizeAgentMesh(self, meshEndpoint({ url: data.url,
-                    username: "removed",
-                    password: "removed",
-                    displayName: "" }));
-                await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
+                if (!data.url.startsWith("reverse://")) {
+                    const self = await federationSelfForSocket(socket, server, data.self);
+                    await synchronizeAgentMesh(self, meshEndpoint({ url: data.url,
+                        username: "removed",
+                        password: "removed",
+                        displayName: "" }));
+                    await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
+                }
                 await manager.remove(data.url);
                 await AgentManager.refreshFromDatabase();
 

@@ -62,6 +62,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Compose defaults and remote agents :** Named HTTP/HTTPS links, a configurable default .env template, persistent agent tags and tag filtering, plus optional reverse agent connections with per-node tokens and automatic attachment after local account setup. Reverse agents belong to their hub; inter-server data transfers still require direct federation. An existing local administrator account is sufficient; no new account is needed. [Documentation](docs/compose-and-reverse-agents.md).
+
 **Service status for discovered stacks:** Discovered but unadopted Compose projects such as DDEV no longer trigger repeated `spawn docker ENOENT` errors when their directory is absent from the stacks root. Adopted external stacks use their registered directory, project name and Compose files for service status.
 
 **Optional TOTP two-factor authentication :** Enable **Settings → Security → 2FA Settings** with your current password, scan the QR code and confirm an authenticator code. Save the ten single-use recovery codes; they are shown only once. Activation is off by default and applies to local sign-in, not trusted-proxy authentication or federation tokens. Linked instances must use federation tokens before enabling 2FA; password-only connections will no longer work.

@@ -99,7 +99,7 @@ export async function localMeshPeers(self: AgentMeshPeer): Promise<AgentMeshPeer
     const agents = await Agent.getAgentList();
     const peers = validateMeshPeers([
         self,
-        ...Object.values(agents).map((agent) => ({
+        ...Object.values(agents).filter(agent => !agent.url.startsWith("reverse://")).map((agent) => ({
             url: agent.url,
             username: agent.username,
             password: agent.password,
@@ -129,7 +129,7 @@ export async function upsertMeshPeers(peers: AgentMeshPeer[], ownEndpoint: strin
         await R.store(bean);
     }
     for (const agent of existingAgents) {
-        if (!desiredEndpoints.has(agent.endpoint)) {
+        if (!agent.url.startsWith("reverse://") && !desiredEndpoints.has(agent.endpoint)) {
             await R.trash(agent);
         }
     }

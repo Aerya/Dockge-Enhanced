@@ -62,6 +62,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+**Compose-Vorlagen und entfernte Agents :** Benannte HTTP/HTTPS-Links, konfigurierbare .env-Standardvorlage, dauerhafte Agent-Tags und Tag-Filter sowie optionale Rückwärtsverbindungen mit individuellen Tokens und automatischer Anmeldung nach Einrichtung des lokalen Kontos. Rückwärts verbundene Agents gehören zu ihrem Hub; Datenübertragungen zwischen Servern benötigen weiterhin direkte Föderation. Ein vorhandenes lokales Administratorkonto genügt; ein neues Konto ist nicht erforderlich. [Dokumentation](docs/compose-and-reverse-agents.md).
+
 **Dienststatus erkannter Stacks:** Erkannte, aber nicht übernommene Compose-Projekte wie DDEV verursachen keine wiederholten `spawn docker ENOENT`-Fehler mehr, wenn ihr Verzeichnis im Stack-Stamm fehlt. Übernommene externe Stacks verwenden für den Dienststatus ihr registriertes Verzeichnis, ihren Projektnamen und ihre Compose-Dateien.
 
 **Optionale TOTP-Zwei-Faktor-Authentifizierung :** Aktivieren Sie sie unter **Einstellungen → Sicherheit → 2FA-Einstellungen** mit Ihrem aktuellen Passwort, scannen Sie den QR-Code und bestätigen Sie einen Authenticator-Code. Speichern Sie die zehn einmal gültigen Wiederherstellungscodes; sie werden nur einmal angezeigt. Standardmäßig deaktiviert, schützt sie lokale Anmeldungen, nicht Trusted-Proxy-Authentifizierung oder Föderationstoken. Verwenden Sie vor der Aktivierung der 2FA Föderationstoken für verknüpfte Instanzen; Verbindungen nur mit Passwort funktionieren danach nicht mehr.

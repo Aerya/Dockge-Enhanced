@@ -153,5 +153,6 @@
     "watcher.registryDns.resolved": "Opløst",
     "watcher.registryDns.noAddress": "Ingen adresse",
     "watcher.registryDns.errorStatus": "Fejl",
-    "watcher.registryDns.hostNotFound": "Værtsnavn blev ikke fundet."
+    "watcher.registryDns.hostNotFound": "Værtsnavn blev ikke fundet.",
+    "releaseNews.item.composeAgentConvenience": "Navngivne HTTP/HTTPS-links, en tilpasselig .env-standardskabelon, vedvarende agenttags og filtrering samt valgfrie omvendte forbindelser med individuelle tokens. En eksisterende lokal administratorkonto er tilstrækkelig. Noden tilsluttes automatisk kun sin egen centrale server; dataoverførsel mellem servere kræver direkte føderation."
 }
