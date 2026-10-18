@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.discoveredStackServiceStatus": "Erkannte, aber nicht übernommene Compose-Projekte wie DDEV verursachen keine wiederholten spawn docker ENOENT-Fehler mehr, wenn ihr Verzeichnis im Stack-Stamm fehlt. Übernommene externe Stacks verwenden für den Dienststatus ihr registriertes Verzeichnis, ihren Projektnamen und ihre Compose-Dateien.",
     "stackHistory.services": "Compose-Dienste",
     "stackHistory.serviceHistoryHint": "Ein Verlauf pro Compose-Dienst, der bei Updates erhalten bleibt. Gleichzeitige Replikate werden addiert.",
     "stackHistory.serviceHistoryUnavailable": "Aktualisieren Sie die ausgewählte Instanz, um den nach Compose-Diensten gruppierten Verlauf anzuzeigen.",

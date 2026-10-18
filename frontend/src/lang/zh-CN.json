@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.discoveredStackServiceStatus": "DDEV 等已发现但尚未接管的 Compose 项目在 Stack 根目录中没有对应目录时，不再反复触发 spawn docker ENOENT 错误。已接管的外部 Stack 使用已登记的目录、项目名称和 Compose 文件查询服务状态。",
     "stackHistory.services": "Compose 服务",
     "stackHistory.serviceHistoryHint": "每个 Compose 服务保留一份历史，不因更新而分开；同时运行的副本用量会相加。",
     "stackHistory.serviceHistoryUnavailable": "请更新所选实例，以查看按 Compose 服务分组的历史。",

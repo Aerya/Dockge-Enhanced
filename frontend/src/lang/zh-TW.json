@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.discoveredStackServiceStatus": "DDEV 等已偵測但尚未接管的 Compose 專案在 Stack 根目錄中沒有對應目錄時，不再反覆觸發 spawn docker ENOENT 錯誤。已接管的外部 Stack 使用已登記的目錄、專案名稱和 Compose 檔案查詢服務狀態。",
     "releaseNews.item.selfUpdateDiskAndImageSafety": "自我更新會在備份或下載前檢查 Docker 儲存空間；無法驗證時自動更新將延期。任一階段消失的 updater 都會被偵測到，下載超過 20 分鐘仍在執行時會提示檢查。超過 48 小時的舊版未使用 Enhanced 映像會被清理，目前、回復、復原和已排除映像仍受保護。",
     "releaseNews.item.registryDnsFallback": "ImageWatcher 現支援選用的備援 DNS：優先使用系統 DNS，僅在解析失敗時嘗試 Quad9、Cloudflare 或自訂 IPv4/IPv6 伺服器。可在 Watcher > 映像中檢查 A/AAAA、耗時及診斷；不修改主機或 Docker Engine 的 DNS。",
     "watcher.backup.reset.title": "重設 Restic 儲存庫",

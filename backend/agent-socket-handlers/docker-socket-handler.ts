@@ -1059,7 +1059,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     throw new ValidationError("Stack name must be a string");
                 }
 
-                const stack = await Stack.getStack(server, stackName, true);
+                const stack = await Stack.getStack(server, stackName);
                 const { serviceStatusList, lastUpdated, lastStartedAt } = await stack.getServiceStatusList();
                 callbackResult({
                     ok: true,

@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-18 — Service status for discovered stacks** — Unadopted Compose projects such as DDEV no longer trigger repeated `spawn docker ENOENT` errors when their directory is absent from the stacks root. Adopted external stacks use their registered directory, project name and Compose files for service status.
+
 **2026-10-17 — CPU/RAM history by Compose service** — History now groups existing container measurements by stack and Compose service instead of Docker ID. Recreated versions share one history; simultaneous replicas are summed before averages, maxima and downsampling. The stack total remains unchanged, no recorded data is deleted and linked instances running older versions receive a clear update notice.
 
 **2026-10-17 — WebUI Socket.IO transport fallback** — The WebUI now tries WebSocket first to avoid the initial polling-to-WebSocket upgrade associated with reconnect loops reported in louislam/dockge#1008. Automatic polling fallback remains available when WebSocket is refused. Existing authentication and reconnect handlers are unchanged; linked-instance connections are not modified. Covered by local transport, reconnect and server-restart tests, plus short Chromium checks; the reporter’s exact intermittent failure remains unconfirmed.

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.discoveredStackServiceStatus": "Les projets Compose détectés mais non adoptés, comme ceux de DDEV, ne provoquent plus d’erreurs spawn docker ENOENT répétées lorsque leur dossier est absent de la racine des stacks. Le statut des stacks externes adoptées utilise leur dossier, leur nom de projet et leurs fichiers Compose enregistrés.",
     "stackHistory.services": "Services Compose",
     "stackHistory.serviceHistoryHint": "Un historique par service Compose, conservé au fil des mises à jour. Les réplicas simultanés sont additionnés.",
     "stackHistory.serviceHistoryUnavailable": "Mettez à jour l’instance sélectionnée pour afficher l’historique regroupé par service Compose.",
