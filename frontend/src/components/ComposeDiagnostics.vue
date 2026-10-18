@@ -1,16 +1,11 @@
 <template>
-    <section v-if="visible" class="card p-3 mb-3" aria-live="polite">
+    <section v-if="visible && result && (result.conflicts.length || result.drift.length)" class="compose-diagnostics border rounded p-2 mb-2 small" aria-live="polite">
         <div class="d-flex flex-wrap gap-2 align-items-center">
-            <h5 class="mb-0">{{ $t('composeDiagnostics.title') }}</h5>
-            <button class="btn btn-sm btn-normal" :disabled="busy" @click="scan">{{ $t('composeDiagnostics.scan') }}</button>
+            <strong :title="$t('composeDiagnostics.hint')">{{ $t('composeDiagnostics.title') }}</strong>
             <button class="btn btn-sm btn-normal ms-auto" @click="visible = false">{{ $t('composeDiagnostics.close') }}</button>
         </div>
-        <p class="small mt-2">{{ $t('composeDiagnostics.hint') }}</p>
-        <p v-if="busy">{{ $t('composeDiagnostics.loading') }}</p>
-        <p v-if="error" class="text-warning">{{ $t('composeDiagnostics.unavailable') }}</p>
         <template v-if="result">
             <p v-if="result.warnings.length" class="text-warning">{{ $t('composeDiagnostics.partial') }}: {{ result.warnings.join(', ') }}</p>
-            <p v-if="!result.conflicts.length && !result.drift.length && !result.warnings.length">{{ $t('composeDiagnostics.clear') }}</p>
             <div v-for="(item, index) in result.conflicts" :key="`port-${index}`" class="border rounded p-2 mb-2">
                 <strong>{{ $t('composeDiagnostics.port') }} {{ item.requested.published }}/{{ item.requested.protocol }}</strong>
                 · {{ item.requested.service }} ↔ {{ item.occupied.owner }} / {{ item.occupied.service }} ({{ item.occupied.host || '*' }}:{{ item.occupied.published }})
@@ -31,7 +26,7 @@ export default {
     endpoint: { type: String,
         default: "" },
     external: Boolean },
-    emits: [ "sync" ],
+    emits: [ "sync", "busy" ],
     data: () => ({ visible: false,
         busy: false,
         result: null,
@@ -45,12 +40,13 @@ export default {
             } },
     },
     methods: {
-        async scan() {
+        async scan(notify = true) {
             if (this.busy) {
                 return null;
             }
-            this.visible = true;
+            this.visible = false;
             this.busy = true;
+            this.$emit("busy", true);
             this.result = null;
             this.error = false;
             const snapshot = JSON.stringify(this.draft);
@@ -70,16 +66,28 @@ export default {
                     throw new Error("draft changed");
                 }
                 this.result = result;
+                this.visible = result.conflicts.length > 0 || result.drift.length > 0;
+                if (notify && !this.visible) {
+                    if (result.warnings.length) {
+                        this.$root.toastError(`${this.$t("composeDiagnostics.partial")}: ${result.warnings.join(", ")}`);
+                    } else {
+                        this.$root.toastSuccess(this.$t("composeDiagnostics.clear"));
+                    }
+                }
                 return this.result;
             } catch {
                 this.error = true;
+                if (notify) {
+                    this.$root.toastError(this.$t("composeDiagnostics.unavailable"));
+                }
                 return null;
             } finally {
                 this.busy = false;
+                this.$emit("busy", false);
             }
         },
         async confirmSave() {
-            const result = await this.scan();
+            const result = await this.scan(false);
             if (!result || result.conflicts.length || result.warnings.length) {
                 return window.confirm(this.$t(result ? "composeDiagnostics.confirm" : "composeDiagnostics.confirmUnavailable"));
             }
