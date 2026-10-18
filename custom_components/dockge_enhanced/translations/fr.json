@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dockge Enhanced",
+        "data": {
+          "url": "URL de l’instance",
+          "token": "Jeton API",
+          "controls": "Activer démarrage / arrêt / redémarrage (permissions API nécessaires)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Jeton API",
+        "data": {
+          "token": "Jeton API"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Connexion à l’instance impossible",
+      "invalid_auth": "Jeton invalide ou permissions insuffisantes"
+    },
+    "abort": {
+      "already_configured": "Cette instance est déjà configurée",
+      "reauth_successful": "Authentification renouvelée"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Statut"
+      }
+    },
+    "binary_sensor": {
+      "running": {
+        "name": "En cours d’exécution"
+      }
+    },
+    "button": {
+      "start": {
+        "name": "Démarrer"
+      },
+      "stop": {
+        "name": "Arrêter"
+      },
+      "restart": {
+        "name": "Redémarrer"
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "Contrôle de la stack"
+      }
+    }
+  }
+}

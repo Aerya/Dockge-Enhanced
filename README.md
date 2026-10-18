@@ -62,6 +62,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Compose checks and Home Assistant :** Advisory port-conflict checks before saving/deploying, including resolved variables, overrides and ranges; running-image reference comparison with a reviewable YAML correction. Optional Home Assistant custom integration with state sensors and permission-scoped start/stop/restart controls. [Guide](docs/HOME-ASSISTANT.md).
+
 **Instance / Global :** Home: local statistics first, then global totals independent of stack filters. Expand each summary card for per-instance values and direct menu links. Offline or older instances are marked unavailable; backup coverage distinguishes disabled instances.
 
 **Service status for discovered stacks:** Discovered but unadopted Compose projects such as DDEV no longer trigger repeated `spawn docker ENOENT` errors when their directory is absent from the stacks root. Adopted external stacks use their registered directory, project name and Compose files for service status.
@@ -537,6 +539,8 @@ The Restic snapshot list defaults to **All**. **Save** stores settings and reten
 ### Automation & audit
 
 [REST API, webhooks and Home Assistant guide](docs/AUTOMATION.md).
+
+- **Compose checks and Home Assistant :** Advisory port-conflict checks before saving/deploying, including resolved variables, overrides and ranges; running-image reference comparison with a reviewable YAML correction. Optional Home Assistant custom integration with state sensors and permission-scoped start/stop/restart controls. [Guide](docs/HOME-ASSISTANT.md).
 - Permission- and stack-scoped REST API
 - Per-stack webhooks
 - Home Assistant examples
@@ -942,6 +946,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 ## Credits
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway
+- [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — inspiration for port-conflict detection, Compose drift checks and the Home Assistant companion integration.
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — source of significant UI/UX, theming, internationalization and frontend architecture improvements adapted into this project
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — the original project (MIT licence)
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — real-time Docker log viewer (MIT licence)

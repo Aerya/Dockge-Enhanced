@@ -63,6 +63,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Contrôles Compose et Home Assistant :** Avertissements de conflits de ports avant enregistrement/déploiement, avec résolution des variables, overrides et plages ; comparaison des références d’images exécutées et correction du YAML à vérifier. Intégration Home Assistant facultative avec capteurs d’état et commandes démarrer/arrêter/redémarrer limitées par permissions. [Guide](docs/HOME-ASSISTANT.md).
+
 **Instance / Global :** Accueil : statistiques de l’instance en premier, puis totaux globaux indépendants des filtres des stacks. Chaque carte de résumé propose un détail par instance avec des liens directs vers ses menus. Les instances hors ligne ou anciennes sont signalées comme indisponibles ; le bilan des sauvegardes distingue les instances désactivées.
 
 **Statut des stacks détectées :** Les projets Compose détectés mais non adoptés, comme ceux de DDEV, ne provoquent plus d’erreurs `spawn docker ENOENT` répétées lorsque leur dossier est absent de la racine des stacks. Le statut des stacks externes adoptées utilise leur dossier, leur nom de projet et leurs fichiers Compose enregistrés.
@@ -537,6 +539,8 @@ La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouto
 ### Automatisation & audit
 
 [Guide API REST, webhooks et Home Assistant](docs/AUTOMATION.fr.md).
+
+- **Contrôles Compose et Home Assistant :** Avertissements de conflits de ports avant enregistrement/déploiement, avec résolution des variables, overrides et plages ; comparaison des références d’images exécutées et correction du YAML à vérifier. Intégration Home Assistant facultative avec capteurs d’état et commandes démarrer/arrêter/redémarrer limitées par permissions. [Guide](docs/HOME-ASSISTANT.md).
 - API REST limitée par permissions et stacks
 - Webhooks par stack
 - Exemples Home Assistant
@@ -942,6 +946,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 ## Crédits
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
+- [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — inspiration pour la détection des conflits de ports, le contrôle des écarts Compose et l’intégration Home Assistant.
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — source d’améliorations importantes de l’UI/UX, des thèmes, de l’internationalisation et de l’architecture frontend adaptées dans ce projet
 - [**Dockge**](https://github.com/louislam/dockge) par louislam — le projet d'origine (licence MIT)
 - [**Dozzle**](https://github.com/amir20/dozzle) par Amir Rajan — visualisation en temps réel des logs Docker (licence MIT)

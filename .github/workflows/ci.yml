@@ -65,6 +65,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/container-counts.test.ts
 
+      - name: Tests des diagnostics Compose et des corrections YAML
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test common/compose-diagnostics.test.ts backend/compose-diagnostics.test.ts frontend/src/compose-diagnostics-ui.test.ts
+
       - name: Tests de préparation des montages hôte
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/stack-bind-directory.test.ts

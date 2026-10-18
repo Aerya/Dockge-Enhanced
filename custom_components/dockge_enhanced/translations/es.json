@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dockge Enhanced",
+        "data": {
+          "url": "URL de la instancia",
+          "token": "Token API",
+          "controls": "Activar inicio / parada / reinicio (requiere permisos API)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Token API",
+        "data": {
+          "token": "Token API"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No se puede conectar",
+      "invalid_auth": "Token no válido o permisos insuficientes"
+    },
+    "abort": {
+      "already_configured": "Esta instancia ya está configurada",
+      "reauth_successful": "Autenticación renovada"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Estado"
+      }
+    },
+    "binary_sensor": {
+      "running": {
+        "name": "En ejecución"
+      }
+    },
+    "button": {
+      "start": {
+        "name": "Iniciar"
+      },
+      "stop": {
+        "name": "Detener"
+      },
+      "restart": {
+        "name": "Reiniciar"
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "Control de la stack"
+      }
+    }
+  }
+}

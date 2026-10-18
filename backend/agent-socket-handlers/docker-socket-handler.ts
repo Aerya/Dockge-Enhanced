@@ -4,6 +4,7 @@ import { AgentSocketHandler } from "../agent-socket-handler";
 import { DockgeServer } from "../dockge-server";
 import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
 import { Stack } from "../stack";
+import { inspectComposeDraft } from "../compose-diagnostics";
 import { AgentSocket } from "../../common/agent-socket";
 import { ImageWatcher, imageStatusStore, WatcherSettings } from "../watchers/image-watcher";
 import { BackupManager } from "../watchers/backup-manager";
@@ -39,6 +40,25 @@ export function instanceSystemStatsResponse(
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         // Do not call super.create()
+        agentSocket.on("inspectComposeDraft", async (draft: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                const value = draft as { name?: unknown;
+                    compose?: unknown;
+                    env?: unknown;
+                    override?: unknown;
+                    isAdd?: unknown };
+                if (!value || typeof value.name !== "string" || typeof value.compose !== "string" ||
+                    typeof value.env !== "string" || typeof value.override !== "string" || typeof value.isAdd !== "boolean" ||
+                    value.compose.length + value.env.length + value.override.length > 2 * 1024 * 1024) {
+                    throw new ValidationError("Invalid Compose diagnostic request");
+                }
+                callbackResult({ ok: true,
+                    data: await inspectComposeDraft(server, value.name, value.compose, value.env, value.override, value.isAdd) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
         agentSocket.on("getZerobyteSummary", async (callback) => {
             try {
                 checkLogin(socket);

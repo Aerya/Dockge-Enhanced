@@ -7,6 +7,10 @@ stacks
 tmp
 /private
 dockge-fork
+__pycache__
+*.pyc
+custom_components
+tests/home_assistant
 
 # Version control
 .git

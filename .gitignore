@@ -9,4 +9,6 @@ tmp
 
 # Git only
 frontend-dist
+__pycache__/
+*.pyc
 
