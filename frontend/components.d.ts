@@ -25,6 +25,7 @@ declare module 'vue' {
     BDropdownItem: typeof import('bootstrap-vue-next')['BDropdownItem']
     BModal: typeof import('bootstrap-vue-next')['BModal']
     BOffcanvas: typeof import('bootstrap-vue-next')['BOffcanvas']
+    ComposeDiagnostics: typeof import('./src/components/ComposeDiagnostics.vue')['default']
     Confirm: typeof import('./src/components/Confirm.vue')['default']
     Container: typeof import('./src/components/Container.vue')['default']
     ContainerStatsBadge: typeof import('./src/components/ContainerStatsBadge.vue')['default']

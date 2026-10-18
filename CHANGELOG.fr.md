@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-18 — Contrôles Compose et Home Assistant** — Avertissements de conflits de ports avant enregistrement/déploiement, avec résolution des variables, overrides et plages ; comparaison des références d’images exécutées et correction du YAML à vérifier. Intégration Home Assistant facultative avec capteurs d’état et commandes démarrer/arrêter/redémarrer limitées par permissions. [Guide](docs/HOME-ASSISTANT.md).
+
 **2026-10-18 — Instance / Global** — Accueil : statistiques de l’instance en premier, puis totaux globaux indépendants des filtres des stacks. Chaque carte de résumé propose un détail par instance avec des liens directs vers ses menus. Les instances hors ligne ou anciennes sont signalées comme indisponibles ; le bilan des sauvegardes distingue les instances désactivées.
 
 **2026-10-18 — Statut des stacks détectées** — Les projets Compose non adoptés, comme ceux de DDEV, ne provoquent plus d’erreurs `spawn docker ENOENT` répétées lorsque leur dossier est absent de la racine des stacks. Le statut des stacks externes adoptées utilise leur dossier, leur nom de projet et leurs fichiers Compose enregistrés.

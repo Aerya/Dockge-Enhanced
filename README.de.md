@@ -62,6 +62,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+**Compose-Prüfungen und Home Assistant :** Warnungen vor Portkonflikten beim Speichern/Bereitstellen, einschließlich aufgelöster Variablen, Overrides und Bereiche; Vergleich laufender Image-Referenzen mit überprüfbarer YAML-Korrektur. Optionale Home-Assistant-Integration mit Zustandssensoren und berechtigungsgebundenen Start/Stopp/Neustart-Aktionen. [Guide](docs/HOME-ASSISTANT.md).
+
 **Instance / Global :** Startseite: zuerst lokale Statistiken, darunter globale Summen unabhängig von Stack-Filtern. Aufklappbare Übersichtskarten zeigen Werte und direkte Menülinks je Instanz. Offline- oder ältere Instanzen werden als nicht verfügbar angezeigt; deaktivierte Backups werden separat ausgewiesen.
 
 **Dienststatus erkannter Stacks:** Erkannte, aber nicht übernommene Compose-Projekte wie DDEV verursachen keine wiederholten `spawn docker ENOENT`-Fehler mehr, wenn ihr Verzeichnis im Stack-Stamm fehlt. Übernommene externe Stacks verwenden für den Dienststatus ihr registriertes Verzeichnis, ihren Projektnamen und ihre Compose-Dateien.
@@ -537,6 +539,8 @@ Die Restic-Snapshot-Liste ist standardmäßig auf **Alle** eingestellt. **Speich
 ### Automatisierung & Audit
 
 [Anleitung zu REST-API, Webhooks und Home Assistant](docs/AUTOMATION.de.md).
+
+- **Compose-Prüfungen und Home Assistant :** Warnungen vor Portkonflikten beim Speichern/Bereitstellen, einschließlich aufgelöster Variablen, Overrides und Bereiche; Vergleich laufender Image-Referenzen mit überprüfbarer YAML-Korrektur. Optionale Home-Assistant-Integration mit Zustandssensoren und berechtigungsgebundenen Start/Stopp/Neustart-Aktionen. [Guide](docs/HOME-ASSISTANT.md).
 - Berechtigungs- und Stack-bezogene REST-API
 - Stack-spezifische Webhooks
 - Home-Assistant-Beispiele
@@ -942,6 +946,7 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 ## Mitwirkende
 
 - [**Apprise**](https://github.com/caronc/apprise-api) – plattformübergreifendes Benachrichtigung-Gateway
+- [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — Inspiration für Portkonflikt-Erkennung, Compose-Abweichungsprüfung und Home-Assistant-Integration.
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) – Quelle für bedeutende UI/UX-, Themen-, Internationalisierungs- und Frontend-Architekturverbesserungen, die in dieses Projekt übernommen wurden
 - [**Dockge**](https://github.com/louislam/dockge) von louislam – das ursprüngliche Projekt (MIT-Lizenz)
 - [**Dozzle**](https://github.com/amir20/dozzle) von Amir Rajan – Echtzeit-Docker-Protokollviewer (MIT-Lizenz)

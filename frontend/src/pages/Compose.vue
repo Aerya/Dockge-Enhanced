@@ -44,6 +44,15 @@
                 </div>
             </h1>
 
+            <ComposeDiagnostics
+                v-if="stack.isManagedByDockge"
+                :key="`${endpoint}/${stack.name}`"
+                ref="composeDiagnostics"
+                :endpoint="endpoint"
+                :external="stack.isExternal"
+                :draft="{ name: stack.name, compose: stack.composeYAML, env: stack.composeENV || '', override: stack.composeOverrideYAML || '', isAdd }"
+                @sync="prepareComposeImageSync"
+            />
             <StackReplicationStatus
                 v-if="!isAdd && stack.isManagedByDockge && !stack.isExternal && $root.agentCount > 1"
                 ref="stackReplicationStatus"
@@ -145,6 +154,10 @@
                         </button>
                     </div>
                     <div class="stack-action-group stack-action-group--information">
+                        <button class="btn btn-normal stack-action" :title="$t('composeDiagnostics.title')" :aria-label="$t('composeDiagnostics.title')" :disabled="processing" @click="$refs.composeDiagnostics.scan()">
+                            <font-awesome-icon icon="search" />
+                            <span class="stack-action-label">{{ $t('composeDiagnostics.title') }}</span>
+                        </button>
                         <button v-if="!isAdd && !isEditMode" type="button" class="btn stack-action" :class="showStackResourceHistory ? 'btn-primary' : 'btn-normal'" :title="$t('stackHistory.actionHint')" :aria-label="$t('stackHistory.action')" :aria-expanded="showStackResourceHistory" @click="showStackResourceHistory = !showStackResourceHistory">
                             <font-awesome-icon icon="chart-line" />
                             <span class="stack-action-label">{{ $t('stackHistory.action') }}</span>
@@ -918,6 +931,8 @@ import RemoteInstanceLinks from "../components/RemoteInstanceLinks.vue";
 import PlugNPiNLabelAssistant from "../components/PlugNPiNLabelAssistant.vue";
 import StackGitPanel from "../components/StackGitPanel.vue";
 import StackResourceHistory from "../components/StackResourceHistory.vue";
+import ComposeDiagnostics from "../components/ComposeDiagnostics.vue";
+import { prepareImageSync } from "../compose-drift";
 import { applyPlugNPiNLabelsToCompose, PlugNPiNSequenceLabelsError } from "../plugnpin-labels";
 import { useStackSchedules } from "../composables/useStackSchedules";
 
@@ -937,6 +952,7 @@ let serviceStatusTimeout = null;
 
 export default {
     components: {
+        ComposeDiagnostics,
         NetworkInput,
         StackAutoUpdateBulk,
         FontAwesomeIcon,
@@ -2309,7 +2325,7 @@ export default {
             });
         },
 
-        deployStack() {
+        async deployStack() {
             this.processing = true;
 
             if (!this.jsonConfig.services) {
@@ -2339,6 +2355,11 @@ export default {
                 }
             }
 
+            await this.$nextTick();
+            if (!await this.$refs.composeDiagnostics.confirmSave()) {
+                this.processing = false;
+                return;
+            }
             this.bindTerminal();
 
             this.$root.emitAgent(this.stack.endpoint, "deployStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, this.stack.composeOverrideYAML ?? "", (res) => {
@@ -2364,8 +2385,12 @@ export default {
             this.saveStackInternal(resume);
         },
 
-        saveStackInternal(resumeAfterSave = false) {
+        async saveStackInternal(resumeAfterSave = false) {
             this.processing = true;
+            if (!await this.$refs.composeDiagnostics.confirmSave()) {
+                this.processing = false;
+                return;
+            }
 
             this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, this.stack.composeOverrideYAML ?? "", (res) => {
                 this.processing = false;
@@ -2384,6 +2409,24 @@ export default {
                     this.$router.push(this.url);
                 }
             });
+        },
+
+        prepareComposeImageSync(item) {
+            if (item.running.length !== 1 || this.stack.isExternal || !window.confirm(this.$t("composeDiagnostics.syncConfirm"))) {
+                return;
+            }
+            try {
+                const override = parseDocument(this.stack.composeOverrideYAML || "").toJS() || {};
+                const field = override.services?.[item.service]?.image !== undefined ? "composeOverrideYAML" : "composeYAML";
+                const next = prepareImageSync(this.stack[field], item.service, item.running[0]);
+                if (!this.isEditMode) {
+                    this.enableEditMode();
+                }
+                this.stack[field] = next;
+                this.yamlCodeChange();
+            } catch {
+                this.$root.toastError(this.$t("composeDiagnostics.manualSync"));
+            }
         },
 
         startStack() {

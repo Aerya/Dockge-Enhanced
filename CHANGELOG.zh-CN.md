@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-18 — Compose 检查与 Home Assistant** — 保存或部署前提示端口冲突，支持解析变量、覆盖文件和端口范围；比较运行中的镜像引用并准备待审核的 YAML 修正。可选 Home Assistant 集成提供状态传感器和受权限限制的启动、停止、重启控制。 [Guide](docs/HOME-ASSISTANT.md).
+
 **2026-10-18 — Instance / Global** — 首页先显示本地实例统计，下方显示不受 Stack 筛选影响的全局汇总。展开摘要卡片可查看各实例数据并直接打开对应菜单。离线或旧版本实例标记为不可用；备份汇总单独列出已禁用的实例。
 
 **2026-10-18 — 已发现 Stack 的服务状态** — DDEV 等尚未接管的 Compose 项目在 Stack 根目录中没有对应目录时，不再反复触发 `spawn docker ENOENT` 错误。已接管的外部 Stack 使用已登记的目录、项目名称和 Compose 文件查询服务状态。

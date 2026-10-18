@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-18-compose-diagnostics-ha",
+        items: [ "releaseNews.item.composeDiagnostics" ],
+    },
+    {
         id: "2026-10-18-home-instance-global",
         items: [ "releaseNews.item.homeInstanceGlobal" ],
     },

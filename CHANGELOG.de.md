@@ -1,5 +1,7 @@
 # Dockge-Enhanced-Changelog
 
+**2026-10-18 — Compose-Prüfungen und Home Assistant** — Warnungen vor Portkonflikten beim Speichern/Bereitstellen, einschließlich aufgelöster Variablen, Overrides und Bereiche; Vergleich laufender Image-Referenzen mit überprüfbarer YAML-Korrektur. Optionale Home-Assistant-Integration mit Zustandssensoren und berechtigungsgebundenen Start/Stopp/Neustart-Aktionen. [Guide](docs/HOME-ASSISTANT.md).
+
 **2026-10-18 — Instance / Global** — Startseite: zuerst lokale Statistiken, darunter globale Summen unabhängig von Stack-Filtern. Aufklappbare Übersichtskarten zeigen Werte und direkte Menülinks je Instanz. Offline- oder ältere Instanzen werden als nicht verfügbar angezeigt; deaktivierte Backups werden separat ausgewiesen.
 
 **2026-10-18 — Dienststatus erkannter Stacks** — Nicht übernommene Compose-Projekte wie DDEV verursachen keine wiederholten `spawn docker ENOENT`-Fehler mehr, wenn ihr Verzeichnis im Stack-Stamm fehlt. Übernommene externe Stacks verwenden für den Dienststatus ihr registriertes Verzeichnis, ihren Projektnamen und ihre Compose-Dateien.

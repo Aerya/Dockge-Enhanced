@@ -56,6 +56,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 10 月
 
+**Compose 检查与 Home Assistant :** 保存或部署前提示端口冲突，支持解析变量、覆盖文件和端口范围；比较运行中的镜像引用并准备待审核的 YAML 修正。可选 Home Assistant 集成提供状态传感器和受权限限制的启动、停止、重启控制。 [Guide](docs/HOME-ASSISTANT.md).
+
 **Instance / Global :** 首页先显示本地实例统计，下方显示不受 Stack 筛选影响的全局汇总。展开摘要卡片可查看各实例数据并直接打开对应菜单。离线或旧版本实例标记为不可用；备份汇总单独列出已禁用的实例。
 
 **已发现 Stack 的服务状态：** DDEV 等已发现但尚未接管的 Compose 项目在 Stack 根目录中没有对应目录时，不再反复触发 `spawn docker ENOENT` 错误。已接管的外部 Stack 使用已登记的目录、项目名称和 Compose 文件查询服务状态。
@@ -491,6 +493,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 ### 自动化与审计
 
 [REST API、Webhooks 与 Home Assistant 指南](docs/AUTOMATION.zh-CN.md)。
+
+- **Compose 检查与 Home Assistant :** 保存或部署前提示端口冲突，支持解析变量、覆盖文件和端口范围；比较运行中的镜像引用并准备待审核的 YAML 修正。可选 Home Assistant 集成提供状态传感器和受权限限制的启动、停止、重启控制。 [Guide](docs/HOME-ASSISTANT.md).
 - REST API
 - 每 Stack Webhook
 - Home Assistant 示例
@@ -753,6 +757,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 ## 致谢
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — 多平台通知网关
+- [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — 端口冲突检测、Compose 差异检查和 Home Assistant 集成的灵感来源。
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — 已整合的重要 UI/UX、主题、国际化和前端架构改进来源
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — 原始项目（MIT）
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — Docker 实时日志查看器
