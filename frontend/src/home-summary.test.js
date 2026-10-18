@@ -103,3 +103,32 @@ test('renders local/global cards, expandable remote links and incomplete status'
     assert.match(html, /target="_blank" rel="noopener noreferrer"/);
     assert.match(html, /home.scope.partial/);
 });
+
+test('rendering instance colors cannot lock subsequent home requests in a mixed-version federation', async () => {
+    const context = {
+        ...component.data(),
+        $root: {agentList:{'':{},remote:{},other:{}}},
+        requestInstanceAgent: async (endpoint, event) => {
+            if (event === 'instanceHomeSummaryGet') return endpoint === '' ? {data:{images:{enabled:true,count:0}}} : null;
+            if (event === 'instanceContainerCountsGet') return {data:{total:10,running:10,stopped:0,paused:0}};
+            return {ok:true};
+        },
+    };
+    for (const endpoint of ['', 'remote', 'other']) {
+        assert.ok(component.methods.instanceAgentStyle.call(context, endpoint));
+    }
+    assert.equal(context.refreshingHome, false);
+    await component.methods.refreshInstanceOverviews.call(context);
+    assert.equal(context.instanceHomeSummaries[''].images.count, 0);
+    assert.equal(context.instanceHomeSummaries.remote, null);
+    assert.equal(context.instanceContainerCounts.remote.running, 10);
+    assert.equal(context.refreshingHome, false);
+    await component.methods.refreshInstanceOverviews.call(context);
+    assert.equal(context.refreshingHome, false);
+});
+
+test('a failed refresh releases the lock so the next interval can retry', async () => {
+    const context = {...component.data(), $root:{agentList:{'':{}}}, requestInstanceAgent:async () => {throw new Error('disconnected');}};
+    await assert.rejects(component.methods.refreshInstanceOverviews.call(context), /disconnected/);
+    assert.equal(context.refreshingHome, false);
+});

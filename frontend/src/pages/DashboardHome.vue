@@ -517,10 +517,6 @@ export default {
         },
 
         instanceAgentStyle(endpoint) {
-            if (this.refreshingHome) {
-                return;
-            }
-            this.refreshingHome = true;
             const endpoints = Object.keys(this.$root.agentList || {});
             const index = Math.max(0, endpoints.indexOf(endpoint)) % 8;
             const light = [ "#1d4ed8", "#047857", "#b45309", "#7e22ce", "#be123c", "#0e7490", "#4d7c0f", "#c2410c" ];
@@ -565,39 +561,42 @@ export default {
                 return;
             }
             this.refreshingHome = true;
-            const endpoints = Object.keys(this.$root.agentList || {});
-            const results = await Promise.all(endpoints.map(async (endpoint) => {
-                const [ stats, pins, containers, home ] = await Promise.all([
-                    this.requestInstanceAgent(endpoint, "instanceSystemStatsGet"),
-                    this.requestInstanceAgent(endpoint, "stackPinsGet"),
-                    this.requestInstanceAgent(endpoint, "instanceContainerCountsGet"),
-                    this.requestInstanceAgent(endpoint, "instanceHomeSummaryGet"),
-                ]);
-                return { endpoint,
-                    stats,
-                    pins,
-                    containers,
-                    home };
-            }));
-            for (const { endpoint, stats, pins, containers, home } of results) {
-                this.instanceHomeSummaries[endpoint] = home?.data ?? null;
-                if (stats) {
-                    this.instanceSystemStats = { ...this.instanceSystemStats,
-                        [endpoint]: stats };
+            try {
+                const endpoints = Object.keys(this.$root.agentList || {});
+                const results = await Promise.all(endpoints.map(async (endpoint) => {
+                    const [ stats, pins, containers, home ] = await Promise.all([
+                        this.requestInstanceAgent(endpoint, "instanceSystemStatsGet"),
+                        this.requestInstanceAgent(endpoint, "stackPinsGet"),
+                        this.requestInstanceAgent(endpoint, "instanceContainerCountsGet"),
+                        this.requestInstanceAgent(endpoint, "instanceHomeSummaryGet"),
+                    ]);
+                    return { endpoint,
+                        stats,
+                        pins,
+                        containers,
+                        home };
+                }));
+                for (const { endpoint, stats, pins, containers, home } of results) {
+                    this.instanceHomeSummaries[endpoint] = home?.data ?? null;
+                    if (stats) {
+                        this.instanceSystemStats = { ...this.instanceSystemStats,
+                            [endpoint]: stats };
+                    }
+                    if (pins && Array.isArray(pins.pinnedStacks)) {
+                        this.instancePins = { ...this.instancePins,
+                            [endpoint]: pins.pinnedStacks };
+                    }
+                    if (containers?.data && Number.isFinite(containers.data.total)) {
+                        this.instanceContainerCounts = { ...this.instanceContainerCounts,
+                            [endpoint]: containers.data };
+                    } else {
+                        this.instanceContainerCounts = { ...this.instanceContainerCounts,
+                            [endpoint]: null };
+                    }
                 }
-                if (pins && Array.isArray(pins.pinnedStacks)) {
-                    this.instancePins = { ...this.instancePins,
-                        [endpoint]: pins.pinnedStacks };
-                }
-                if (containers?.data && Number.isFinite(containers.data.total)) {
-                    this.instanceContainerCounts = { ...this.instanceContainerCounts,
-                        [endpoint]: containers.data };
-                } else {
-                    this.instanceContainerCounts = { ...this.instanceContainerCounts,
-                        [endpoint]: null };
-                }
+            } finally {
+                this.refreshingHome = false;
             }
-            this.refreshingHome = false;
         },
 
         formatInstanceRam(ram) {
