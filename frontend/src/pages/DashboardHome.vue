@@ -10,113 +10,84 @@
                 <div class="col-md-7">
                     <!-- Stats -->
                     <div class="shadow-box big-padding text-center mb-4">
-                        <h2 class="overview-title">{{ $t("home.overview.stacks") }}<span v-if="overviewAgentScope" class="ms-2">· {{ overviewAgentScope }}</span></h2>
+                        <h2 class="overview-title">{{ $t("home.overview.stacks") }}</h2>
+                        <p v-if="onlineAgentCount < agentOverviewList.length" class="text-warning small">{{ $t("home.scope.partial", { value: $t("home.scope.global"), n: agentOverviewList.length - onlineAgentCount }) }}</p>
                         <div class="row">
                             <div class="col">
                                 <h3>{{ $tc("home.stackState.active", activeNum) }}</h3>
                                 <span class="num active">{{ activeNum }}</span>
+                                <div class="scope-label">{{ $t("home.scope.instance") }}</div>
+                                <div class="home-global">{{ getStatusNum("active") }} · {{ $t("home.scope.global") }}</div>
                             </div>
                             <div class="col">
                                 <h3>{{ $tc("home.stackState.stopped", exitedNum) }}</h3>
                                 <span class="num exited">{{ exitedNum }}</span>
+                                <div class="scope-label">{{ $t("home.scope.instance") }}</div>
+                                <div class="home-global">{{ getStatusNum("exited") }} · {{ $t("home.scope.global") }}</div>
                             </div>
                             <div class="col">
                                 <h3>{{ $tc("home.stackState.inactive", inactiveNum) }}</h3>
                                 <span class="num inactive">{{ inactiveNum }}</span>
+                                <div class="scope-label">{{ $t("home.scope.instance") }}</div>
+                                <div class="home-global">{{ getStatusNum("inactive") }} · {{ $t("home.scope.global") }}</div>
                             </div>
-                            <div v-if="pausedNum > 0" class="col">
+                            <div v-if="getStatusNum('paused') > 0" class="col">
                                 <h3>{{ $t("paused") }}</h3>
                                 <span class="num exited">{{ pausedNum }}</span>
+                                <div class="scope-label">{{ $t("home.scope.instance") }}</div>
+                                <div class="home-global">{{ getStatusNum("paused") }} · {{ $t("home.scope.global") }}</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="shadow-box big-padding text-center mb-4">
-                        <h2 class="overview-title">{{ $t("home.overview.containers") }}<span v-if="overviewAgentScope" class="ms-2">· {{ overviewAgentScope }}</span></h2>
+                        <h2 class="overview-title">{{ $t("home.overview.containers") }}</h2>
+                        <p v-if="missingContainerInstances" class="text-warning small">{{ $t("home.scope.partial", { value: $t("home.scope.global"), n: missingContainerInstances }) }}</p>
                         <div v-if="containerCountsKnown" class="row">
                             <div class="col">
                                 <h3>{{ $t("home.containerState.running") }}</h3>
-                                <span class="num active">{{ containerCounts.running }}</span>
+                                <span class="num active">{{ instanceContainerCounts['']?.running ?? "—" }}</span>
+                                <div class="scope-label">{{ $t("home.scope.instance") }}</div>
+                                <div class="home-global">{{ containerCounts.running }} · {{ $t("home.scope.global") }}</div>
                             </div>
                             <div class="col">
                                 <h3>{{ $t("home.containerState.stopped") }}</h3>
-                                <span class="num exited">{{ containerCounts.stopped }}</span>
+                                <span class="num exited">{{ instanceContainerCounts['']?.stopped ?? "—" }}</span>
+                                <div class="scope-label">{{ $t("home.scope.instance") }}</div>
+                                <div class="home-global">{{ containerCounts.stopped }} · {{ $t("home.scope.global") }}</div>
                             </div>
                             <div v-if="containerCounts.paused > 0" class="col">
                                 <h3>{{ $t("home.containerState.paused") }}</h3>
-                                <span class="num inactive">{{ containerCounts.paused }}</span>
+                                <span class="num inactive">{{ instanceContainerCounts['']?.paused ?? "—" }}</span>
+                                <div class="scope-label">{{ $t("home.scope.instance") }}</div>
+                                <div class="home-global">{{ containerCounts.paused }} · {{ $t("home.scope.global") }}</div>
                             </div>
                         </div>
                         <div v-else class="text-muted">{{ $t("home.containerState.unavailable") }}</div>
                     </div>
 
-                    <!-- Summary Cards -->
-                    <div v-if="hasSummaryCards" class="row g-3 mb-4">
-                        <!-- Image Updates -->
-                        <div v-if="summary.images !== null" class="col-6">
-                            <div
-                                class="shadow-box summary-card" :class="summary.images.state" role="button" tabindex="0"
-                                @click="$router.push('/watcher?tab=images')"
-                                @keyup.enter="$router.push('/watcher?tab=images')"
-                            >
-                                <font-awesome-icon icon="sync-alt" class="summary-icon" />
-                                <div class="summary-value" :class="{ text: summary.images.state !== 'warn' }">
-                                    <template v-if="summary.images.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
-                                    <template v-else-if="summary.images.state === 'ok'">{{ $t("home.summary.state.ok") }}</template>
-                                    <template v-else>{{ summary.images.count }}</template>
+                    <!-- Local values first; federation totals never depend on sidebar filters. -->
+                    <div class="row g-3 mb-4">
+                        <div v-for="card in homeCards" :key="card.kind" class="col-12 col-sm-6">
+                            <div class="shadow-box summary-card" :class="localHomeValue(card.kind).state">
+                                <font-awesome-icon :icon="card.icon" class="summary-icon" />
+                                <h3 class="summary-label">{{ $t(card.title) }}</h3>
+                                <router-link :to="'/watcher?tab=' + card.tab" class="home-local-link">
+                                    <div class="summary-value text">{{ homeValueLabel(localHomeValue(card.kind), card.kind) }}</div>
+                                    <small>{{ $t('home.scope.instance') }}</small>
+                                </router-link>
+                                <div class="home-global" :class="globalHomeValue(card.kind).state">
+                                    {{ globalHomeLabel(card.kind) }} · {{ $t('home.scope.global') }}
                                 </div>
-                                <div class="summary-label">{{ $t("home.summary.images.title") }}</div>
-                            </div>
-                        </div>
-
-                        <!-- Backup Status -->
-                        <div v-if="summary.backup !== null" class="col-6">
-                            <div
-                                class="shadow-box summary-card" :class="summary.backup.state" role="button" tabindex="0"
-                                @click="$router.push('/watcher?tab=backup')"
-                                @keyup.enter="$router.push('/watcher?tab=backup')"
-                            >
-                                <font-awesome-icon icon="database" class="summary-icon" />
-                                <div class="summary-value text">
-                                    <template v-if="summary.backup.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
-                                    <template v-else-if="summary.backup.ageMs === null">{{ $t("home.summary.backup.never") }}</template>
-                                    <template v-else>{{ formatBackupAge(summary.backup.ageMs) }}</template>
-                                </div>
-                                <div class="summary-label">{{ $t("home.summary.backup.title") }}</div>
-                            </div>
-                        </div>
-
-                        <!-- Crash-loop / Unhealthy Containers -->
-                        <div v-if="summary.containers !== null" class="col-6">
-                            <div
-                                class="shadow-box summary-card" :class="summary.containers.state" role="button" tabindex="0"
-                                @click="$router.push('/watcher?tab=monitoring')"
-                                @keyup.enter="$router.push('/watcher?tab=monitoring')"
-                            >
-                                <font-awesome-icon icon="heartbeat" class="summary-icon" />
-                                <div class="summary-value" :class="{ text: summary.containers.state !== 'danger' }">
-                                    <template v-if="summary.containers.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
-                                    <template v-else-if="summary.containers.state === 'ok'">{{ $t("home.summary.state.ok") }}</template>
-                                    <template v-else>{{ summary.containers.count }}</template>
-                                </div>
-                                <div class="summary-label">{{ $t("home.summary.monitoring.title") }}</div>
-                            </div>
-                        </div>
-
-                        <!-- Trivy Security Scan -->
-                        <div v-if="summary.trivy !== null" class="col-6">
-                            <div
-                                class="shadow-box summary-card" :class="summary.trivy.state" role="button" tabindex="0"
-                                @click="$router.push('/watcher?tab=trivy')"
-                                @keyup.enter="$router.push('/watcher?tab=trivy')"
-                            >
-                                <font-awesome-icon icon="shield-alt" class="summary-icon" />
-                                <div class="summary-value" :class="{ text: summary.trivy.state !== 'danger' }">
-                                    <template v-if="summary.trivy.state === 'disabled'">{{ $t("home.summary.state.disabled") }}</template>
-                                    <template v-else-if="summary.trivy.state === 'ok'">{{ $t("home.summary.state.ok") }}</template>
-                                    <template v-else>{{ summary.trivy.count }}</template>
-                                </div>
-                                <div class="summary-label">{{ $t("home.summary.trivy.title") }}</div>
+                                <details class="home-instance-details">
+                                    <summary>{{ $t('home.scope.details') }}</summary>
+                                    <div v-for="[endpoint, agent] in agentOverviewList" :key="endpoint" class="home-instance-row">
+                                        <router-link v-if="endpoint === ''" :to="'/watcher?tab=' + card.tab">{{ agent.displayName || $t('home.scope.instance') }}</router-link>
+                                        <a v-else-if="homeInstanceLink(agent.url, card.tab)" :href="homeInstanceLink(agent.url, card.tab)" target="_blank" rel="noopener noreferrer">{{ agent.displayName || endpoint }} ↗</a>
+                                        <span v-else>{{ agent.displayName || endpoint }}</span>
+                                        <span>{{ homeValueLabel(instanceHomeValue(endpoint, card.kind), card.kind) }}</span>
+                                    </div>
+                                </details>
                             </div>
                         </div>
                     </div>
@@ -321,6 +292,7 @@
 </template>
 
 <script>
+import { aggregateHomeValues, homeSummaryValue, homeInstanceLink } from "../home-summary";
 import { statusNameShort } from "../../../common/util-common";
 import { formatPowerWatts, resolvePowerWatchWebUrl } from "../powerwatch";
 
@@ -364,13 +336,26 @@ export default {
             selectedOverviewEndpoint: null,
             instanceOverviewTimer: null,
             instanceContainerCounts: {},
-            selectedAgentFilters: [],
-            summary: {
-                images: null,
-                backup: null,
-                containers: null,
-                trivy: null,
-            },
+            instanceHomeSummaries: {},
+            refreshingHome: false,
+            homeCards: [
+                { kind: "images",
+                    tab: "images",
+                    icon: "sync-alt",
+                    title: "home.summary.images.title" },
+                { kind: "backup",
+                    tab: "backup",
+                    icon: "database",
+                    title: "home.summary.backup.title" },
+                { kind: "containers",
+                    tab: "monitoring",
+                    icon: "heartbeat",
+                    title: "home.summary.monitoring.title" },
+                { kind: "trivy",
+                    tab: "trivy",
+                    icon: "shield-alt",
+                    title: "home.summary.trivy.title" },
+            ],
             agent: {
                 url: "http://",
                 username: "",
@@ -382,31 +367,16 @@ export default {
 
     computed: {
         activeNum() {
-            return this.getStatusNum("active");
+            return this.getStatusNum("active", "");
         },
         inactiveNum() {
-            return this.getStatusNum("inactive");
+            return this.getStatusNum("inactive", "");
         },
         exitedNum() {
-            return this.getStatusNum("exited");
+            return this.getStatusNum("exited", "");
         },
         pausedNum() {
-            return this.getStatusNum("paused");
-        },
-        hasSummaryCards() {
-            return this.summary.images !== null
-                || this.summary.backup !== null
-                || this.summary.containers !== null
-                || this.summary.trivy !== null;
-        },
-        overviewAgentScope() {
-            if (this.selectedAgentFilters.length === 0 || this.selectedAgentFilters.length === Object.keys(this.$root.agentList || {}).length) {
-                return "";
-            }
-            if (this.selectedAgentFilters.length === 1) {
-                return this.$root.endpointDisplayFunction(this.selectedAgentFilters[0]);
-            }
-            return this.$t("stackFilterSelectedInstances", [ this.selectedAgentFilters.length ]);
+            return this.getStatusNum("paused", "");
         },
         containerCounts() {
             const counts = {
@@ -415,7 +385,7 @@ export default {
                 paused: 0,
             };
             for (const [ endpoint, value ] of Object.entries(this.instanceContainerCounts)) {
-                if (!this.isOverviewEndpointSelected(endpoint) || this.$root.agentStatusList?.[endpoint] !== "online" || !value) {
+                if (this.$root.agentStatusList?.[endpoint] !== "online" || !value) {
                     continue;
                 }
                 for (const state of Object.keys(counts)) {
@@ -424,8 +394,11 @@ export default {
             }
             return counts;
         },
+        missingContainerInstances() {
+            return this.agentOverviewList.filter(([ endpoint ]) => this.$root.agentStatusList?.[endpoint] !== "online" || !this.instanceContainerCounts[endpoint]).length;
+        },
         containerCountsKnown() {
-            return Object.entries(this.instanceContainerCounts).some(([ endpoint, value ]) => this.isOverviewEndpointSelected(endpoint) && this.$root.agentStatusList?.[endpoint] === "online" && value);
+            return Object.entries(this.instanceContainerCounts).some(([ endpoint, value ]) => this.$root.agentStatusList?.[endpoint] === "online" && value);
         },
         agentOverviewList() {
             return Object.entries(this.$root.agentList || {});
@@ -448,20 +421,6 @@ export default {
     },
 
     mounted() {
-        try {
-            const saved = localStorage.getItem("stackAgentFilters");
-            const stored = saved === null ? null : JSON.parse(saved);
-            if (Array.isArray(stored)) {
-                this.selectedAgentFilters = stored.filter(endpoint => typeof endpoint === "string");
-            } else {
-                const legacy = localStorage.getItem("stackAgentFilter");
-                this.selectedAgentFilters = legacy && legacy !== "__all__" ? [ legacy ] : [];
-            }
-        } catch {
-            const legacy = localStorage.getItem("stackAgentFilter");
-            this.selectedAgentFilters = legacy && legacy !== "__all__" ? [ legacy ] : [];
-        }
-        window.addEventListener("dockge-stack-agent-filters-changed", this.updateOverviewAgentFilters);
         this.initialPerPage = this.perPage;
 
         this.$watch(() => this.$root.agentCount, (count) => {
@@ -475,7 +434,6 @@ export default {
         window.addEventListener("resize", this.updatePerPage);
         this.updatePerPage();
 
-        this.fetchSummary();
         this.refreshInstanceOverviews();
         this.instanceOverviewTimer = window.setInterval(() => {
             this.refreshInstanceOverviews();
@@ -483,7 +441,6 @@ export default {
     },
 
     beforeUnmount() {
-        window.removeEventListener("dockge-stack-agent-filters-changed", this.updateOverviewAgentFilters);
         window.removeEventListener("resize", this.updatePerPage);
         if (this.instanceOverviewTimer) {
             window.clearInterval(this.instanceOverviewTimer);
@@ -492,16 +449,44 @@ export default {
     },
 
     methods: {
-
-        updateOverviewAgentFilters(event) {
-            const endpoints = event?.detail?.endpoints;
-            this.selectedAgentFilters = Array.isArray(endpoints) ? endpoints.filter(endpoint => typeof endpoint === "string") : [];
+        homeInstanceLink,
+        instanceHomeValue(endpoint, kind) {
+            if (this.$root.agentStatusList?.[endpoint] !== "online") {
+                return { state: "unavailable" };
+            }
+            return homeSummaryValue(this.instanceHomeSummaries[endpoint]?.[kind], kind);
         },
-
-        isOverviewEndpointSelected(endpoint) {
-            return this.selectedAgentFilters.length === 0
-                || this.selectedAgentFilters.length === Object.keys(this.$root.agentList || {}).length
-                || this.selectedAgentFilters.includes(endpoint);
+        localHomeValue(kind) {
+            return this.instanceHomeValue("", kind);
+        },
+        globalHomeValue(kind) {
+            return aggregateHomeValues(this.agentOverviewList.map(([ endpoint ]) => this.instanceHomeValue(endpoint, kind)), kind === "backup");
+        },
+        homeValueLabel(value, kind) {
+            if (value.state === "unavailable") {
+                return this.$t("home.scope.unavailable");
+            }
+            if (value.state === "disabled") {
+                return this.$t("home.summary.state.disabled");
+            }
+            if (kind === "backup") {
+                return value.ageMs === null ? this.$t("home.summary.backup.never") : this.formatBackupAge(value.ageMs);
+            }
+            return value.count || this.$t("home.summary.state.ok");
+        },
+        globalHomeLabel(kind) {
+            const value = this.globalHomeValue(kind);
+            let label = kind === "backup" && value.enabled ? this.$t("home.scope.backups", { n: value.healthy,
+                total: value.enabled })
+                : value.enabled ? (value.count || this.$t("home.summary.state.ok")) : this.$t("home.summary.state.disabled");
+            if (value.missing) {
+                label = this.$t("home.scope.partial", { value: value.enabled ? label : "—",
+                    n: value.missing });
+            }
+            if (value.disabled) {
+                label += " · " + this.$t("home.scope.disabled", { n: value.disabled });
+            }
+            return label;
         },
 
         instanceOverview(endpoint) {
@@ -532,6 +517,10 @@ export default {
         },
 
         instanceAgentStyle(endpoint) {
+            if (this.refreshingHome) {
+                return;
+            }
+            this.refreshingHome = true;
             const endpoints = Object.keys(this.$root.agentList || {});
             const index = Math.max(0, endpoints.indexOf(endpoint)) % 8;
             const light = [ "#1d4ed8", "#047857", "#b45309", "#7e22ce", "#be123c", "#0e7490", "#4d7c0f", "#c2410c" ];
@@ -554,31 +543,44 @@ export default {
                         settled = true; resolve(null);
                     }
                 }, 8000);
-                this.$root.emitAgent(endpoint, eventName, (response) => {
-                    if (settled) {
-                        return;
-                    }
+                try {
+                    this.$root.emitAgent(endpoint, eventName, (response) => {
+                        if (settled) {
+                            return;
+                        }
+                        settled = true;
+                        window.clearTimeout(timer);
+                        resolve(response?.ok ? response : null);
+                    });
+                } catch {
                     settled = true;
                     window.clearTimeout(timer);
-                    resolve(response?.ok ? response : null);
-                });
+                    resolve(null);
+                }
             });
         },
 
         async refreshInstanceOverviews() {
+            if (this.refreshingHome) {
+                return;
+            }
+            this.refreshingHome = true;
             const endpoints = Object.keys(this.$root.agentList || {});
             const results = await Promise.all(endpoints.map(async (endpoint) => {
-                const [ stats, pins, containers ] = await Promise.all([
+                const [ stats, pins, containers, home ] = await Promise.all([
                     this.requestInstanceAgent(endpoint, "instanceSystemStatsGet"),
                     this.requestInstanceAgent(endpoint, "stackPinsGet"),
                     this.requestInstanceAgent(endpoint, "instanceContainerCountsGet"),
+                    this.requestInstanceAgent(endpoint, "instanceHomeSummaryGet"),
                 ]);
                 return { endpoint,
                     stats,
                     pins,
-                    containers };
+                    containers,
+                    home };
             }));
-            for (const { endpoint, stats, pins, containers } of results) {
+            for (const { endpoint, stats, pins, containers, home } of results) {
+                this.instanceHomeSummaries[endpoint] = home?.data ?? null;
                 if (stats) {
                     this.instanceSystemStats = { ...this.instanceSystemStats,
                         [endpoint]: stats };
@@ -595,6 +597,7 @@ export default {
                         [endpoint]: null };
                 }
             }
+            this.refreshingHome = false;
         },
 
         formatInstanceRam(ram) {
@@ -647,122 +650,9 @@ export default {
         },
 
         /**
-         * Auth headers for the watcher/monitoring REST APIs (same pattern as Layout.vue).
-         * @returns {object} headers object
-         */
-        summaryHeaders() {
-            const token = localStorage.getItem("token") ?? sessionStorage.getItem("token") ?? "";
-            return token ? { "Authorization": `Bearer ${token}` } : {};
-        },
-
-        /**
-         * Silent GET helper — returns parsed JSON on success, null on any
-         * network error / non-2xx (401, feature off...) so cards stay hidden.
-         * @param {string} path - API path
-         * @returns {Promise<object|null>} parsed body or null
-         */
-        async summaryGet(path) {
-            try {
-                const res = await fetch(path, { headers: this.summaryHeaders() });
-                if (!res.ok) {
-                    return null;
-                }
-                const json = await res.json();
-                return json?.ok ? json : null;
-            } catch {
-                return null;
-            }
-        },
-
-        /**
-         * Loads the summary cards data. Every card is independent: any failed
-         * request or disabled feature simply hides its card.
-         * @returns {Promise<void>}
-         */
-        async fetchSummary() {
-            const [
-                imgSettings,
-                backupSettings,
-                backupHistory,
-                monSettings,
-                overview,
-                trivySettings,
-                trivyStatus,
-            ] = await Promise.all([
-                this.summaryGet("/api/watcher/image/settings"),
-                this.summaryGet("/api/watcher/backup/settings"),
-                this.summaryGet("/api/watcher/backup/history"),
-                this.summaryGet("/api/monitoring/settings"),
-                this.summaryGet("/api/monitoring/overview"),
-                this.summaryGet("/api/watcher/trivy/settings"),
-                this.summaryGet("/api/watcher/trivy/status"),
-            ]);
-
-            // 1. Image updates — card visible whenever the watcher settings respond
-            if (imgSettings?.data) {
-                if (!imgSettings.data.enabled) {
-                    this.summary.images = { state: "disabled" };
-                } else if (overview?.data?.images) {
-                    const n = overview.data.images.pendingCount ?? 0;
-                    this.summary.images = n > 0 ? { state: "warn",
-                        count: n } : { state: "ok" };
-                }
-            }
-
-            // 2. Backup — shown when settings respond; warning when never backed up or overdue
-            const bs = backupSettings?.data;
-            if (bs) {
-                if (!bs.enabled) {
-                    this.summary.backup = { state: "disabled" };
-                } else if (Array.isArray(backupHistory?.data)) {
-                    const lastSuccess = backupHistory.data.find((e) => e.success);
-                    if (!lastSuccess) {
-                        this.summary.backup = { state: "warn",
-                            ageMs: null };
-                    } else {
-                        const ageMs = Math.max(0, Date.now() - new Date(lastSuccess.timestamp).getTime());
-                        const intervalMs = (Number(bs.intervalHours) || 24) * 3_600_000;
-                        this.summary.backup = { state: ageMs > intervalMs * 1.5 ? "warn" : "ok",
-                            ageMs };
-                    }
-                }
-            }
-
-            // 3. Crash-loop / unhealthy containers
-            const ms = monSettings?.data;
-            if (ms) {
-                if (!(ms.crashLoopEnabled || ms.healthcheckEnabled)) {
-                    this.summary.containers = { state: "disabled" };
-                } else if (overview?.data) {
-                    const n = (overview.data.crashes?.length ?? 0) + (overview.data.health?.length ?? 0);
-                    this.summary.containers = n > 0 ? { state: "danger",
-                        count: n } : { state: "ok" };
-                }
-            }
-
-            // 4. Trivy — images at or above the configured severity threshold
-            const ts = trivySettings?.data;
-            if (ts) {
-                if (!ts.enabled) {
-                    this.summary.trivy = { state: "disabled" };
-                } else if (Array.isArray(trivyStatus?.data?.lastResults)) {
-                    const levels = { UNKNOWN: 0,
-                        LOW: 1,
-                        MEDIUM: 2,
-                        HIGH: 3,
-                        CRITICAL: 4 };
-                    const min = levels[ts.minSeverityAlert] ?? levels.HIGH;
-                    const n = trivyStatus.data.lastResults.filter((r) => (levels[r.maxSeverity] ?? 0) >= min).length;
-                    this.summary.trivy = n > 0 ? { state: "danger",
-                        count: n } : { state: "ok" };
-                }
-            }
-        },
-
-        /**
-         * Formats a backup age for the card value.
-         * @param {number} ageMs - age in milliseconds
-         * @returns {string} localized relative time
+         * Formats the elapsed time since the latest successful backup.
+         * @param {number} ageMs - Backup age in milliseconds
+         * @returns {string} localized age
          */
         formatBackupAge(ageMs) {
             const minutes = Math.floor(ageMs / 60_000);
@@ -890,12 +780,15 @@ export default {
             });
         },
 
-        getStatusNum(statusName) {
+        getStatusNum(statusName, endpoint = null) {
             let num = 0;
 
             for (let stackName in this.$root.completeStackList) {
                 const stack = this.$root.completeStackList[stackName];
-                if (!this.isOverviewEndpointSelected(stack.endpoint || "")) {
+                if (this.$root.agentStatusList?.[stack.endpoint || ""] !== "online") {
+                    continue;
+                }
+                if (endpoint !== null && (stack.endpoint || "") !== endpoint) {
                     continue;
                 }
                 if (statusNameShort(stack.status) === statusName) {
@@ -1203,7 +1096,6 @@ table {
     height: 100%;
     padding: 16px 10px;
     text-align: center;
-    cursor: pointer;
     color: var(--text-muted);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 
@@ -1257,4 +1149,15 @@ table {
     }
 }
 
+</style>
+
+<style scoped>
+.home-local-link { color: inherit; text-decoration: none; }
+.home-local-link:hover { text-decoration: underline; }
+.home-global, .scope-label { font-size: var(--fs-sm); color: var(--text-muted); }
+.home-global { margin-top: 8px; }
+.home-global.unavailable, .home-global.warn { color: var(--bs-warning); }
+.home-instance-details { width: 100%; margin-top: 10px; font-size: var(--fs-sm); }
+.home-instance-details summary { cursor: pointer; }
+.home-instance-row { display: flex; justify-content: space-between; gap: 12px; padding-top: 8px; text-align: start; overflow-wrap: anywhere; }
 </style>

@@ -57,6 +57,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/socket-connection.test.ts
 
+      - name: Tests des résumés Instance et Global
+        if: steps.docs.outputs.docs_only != 'true'
+        run: node --test frontend/src/home-summary.test.js
+
       - name: Tests du compteur de conteneurs
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/container-counts.test.ts

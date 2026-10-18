@@ -2317,5 +2317,13 @@
     "watcher.zerobyte.peerError.authentication": "Authentication rejected: reauthenticate the agent.",
     "watcher.zerobyte.peerError.offline": "Instance disconnected: check availability.",
     "watcher.zerobyte.peerError.timeout": "No response: check connection and version compatibility.",
-    "watcher.zerobyte.peerError.incompatible": "Incompatible response: check instance version."
+    "watcher.zerobyte.peerError.incompatible": "Incompatible response: check instance version.",
+    "home.scope.instance": "Instance",
+    "home.scope.global": "Global",
+    "home.scope.details": "Details by instance",
+    "home.scope.unavailable": "Unavailable",
+    "home.scope.backups": "{n}/{total} instances backed up on schedule",
+    "home.scope.partial": "{value} · incomplete ({n} unavailable)",
+    "home.scope.disabled": "{n} disabled",
+    "releaseNews.item.homeInstanceGlobal": "Home: local statistics first, then global totals independent of stack filters. Expand each summary card for per-instance values and direct menu links. Offline or older instances are marked unavailable; backup coverage distinguishes disabled instances."
 }
