@@ -2313,5 +2313,13 @@
     "watcher.zerobyte.peerError.authentication": "Authentification refusée : réauthentifier l’agent.",
     "watcher.zerobyte.peerError.offline": "Instance déconnectée : vérifier sa disponibilité.",
     "watcher.zerobyte.peerError.timeout": "Réponse absente : vérifier connexion et compatibilité de version.",
-    "watcher.zerobyte.peerError.incompatible": "Réponse incompatible : vérifier la version de l’instance."
+    "watcher.zerobyte.peerError.incompatible": "Réponse incompatible : vérifier la version de l’instance.",
+    "home.scope.instance": "Instance",
+    "home.scope.global": "Global",
+    "home.scope.details": "Détail par instance",
+    "home.scope.unavailable": "Indisponible",
+    "home.scope.backups": "{n}/{total} instances sauvegardées dans les délais",
+    "home.scope.partial": "{value} · incomplet ({n} indisponibles)",
+    "home.scope.disabled": "{n} désactivées",
+    "releaseNews.item.homeInstanceGlobal": "Accueil : statistiques de l’instance en premier, puis totaux globaux indépendants des filtres des stacks. Chaque carte de résumé propose un détail par instance avec des liens directs vers ses menus. Les instances hors ligne ou anciennes sont signalées comme indisponibles ; le bilan des sauvegardes distingue les instances désactivées."
 }

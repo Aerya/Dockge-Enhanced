@@ -1,3 +1,4 @@
+import { TrivyScanner } from "../watchers/trivy-scanner";
 import { localZerobyteSummary } from "../integrations/zerobyte-federation";
 import { AgentSocketHandler } from "../agent-socket-handler";
 import { DockgeServer } from "../dockge-server";
@@ -88,6 +89,36 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 ), callback);
             } catch (e) {
                 callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("instanceHomeSummaryGet", (callback) => {
+            try {
+                checkLogin(socket);
+                const backup = BackupManager.getInstance();
+                const last = backup.getHistory().find(entry => entry.success);
+                const monitor = MonitoringWatcher.getInstance();
+                const trivy = TrivyScanner.getInstance();
+                const levels: Record<string, number> = { UNKNOWN: 0,
+                    LOW: 1,
+                    MEDIUM: 2,
+                    HIGH: 3,
+                    CRITICAL: 4 };
+                callbackResult({ ok: true,
+                    data: {
+                        images: { enabled: ImageWatcher.getInstance().settings.enabled,
+                            count: [ ...imageStatusStore.values() ].filter(s => s.hasUpdate && !s.error).length },
+                        backup: { enabled: backup.settings.enabled,
+                            timestamp: last?.timestamp ?? null,
+                            intervalHours: backup.settings.intervalHours },
+                        containers: { enabled: monitor.settings.crashLoopEnabled || monitor.settings.healthcheckEnabled,
+                            count: monitor.getRecentCrashEvents().length + monitor.getRecentHealthEvents().length },
+                        trivy: { enabled: trivy.settings.enabled,
+                            count: (trivy.getStatus().lastResults ?? []).filter(r =>
+                                (levels[r.maxSeverity] ?? 0) >= (levels[trivy.settings.minSeverityAlert] ?? 3)).length },
+                    } }, callback);
+            } catch (error) {
+                callbackError(error, callback);
             }
         });
 

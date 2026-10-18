@@ -1236,5 +1236,13 @@
     "watcher.zerobyte.peerError.authentication": "Autenticación rechazada: reautenticar agente.",
     "watcher.zerobyte.peerError.offline": "Instancia desconectada: verificar disponibilidad.",
     "watcher.zerobyte.peerError.timeout": "Sin respuesta: revisar conexión y compatibilidad.",
-    "watcher.zerobyte.peerError.incompatible": "Respuesta incompatible: revisar versión."
+    "watcher.zerobyte.peerError.incompatible": "Respuesta incompatible: revisar versión.",
+    "home.scope.instance": "Instancia",
+    "home.scope.global": "Global",
+    "home.scope.details": "Detalle por instancia",
+    "home.scope.unavailable": "No disponible",
+    "home.scope.backups": "{n}/{total} instancias respaldadas a tiempo",
+    "home.scope.partial": "{value} · incompleto ({n} no disponibles)",
+    "home.scope.disabled": "{n} desactivadas",
+    "releaseNews.item.homeInstanceGlobal": "Inicio: estadísticas locales primero y totales globales independientes de los filtros de stacks debajo. Cada tarjeta de resumen ofrece detalles por instancia y enlaces directos a sus menús. Las instancias desconectadas o antiguas aparecen como no disponibles; el resumen de copias distingue las instancias desactivadas."
 }

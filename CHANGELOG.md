@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-18 — Instance / Global** — Home: local statistics first, then global totals independent of stack filters. Expand each summary card for per-instance values and direct menu links. Offline or older instances are marked unavailable; backup coverage distinguishes disabled instances.
+
 **2026-10-18 — Service status for discovered stacks** — Unadopted Compose projects such as DDEV no longer trigger repeated `spawn docker ENOENT` errors when their directory is absent from the stacks root. Adopted external stacks use their registered directory, project name and Compose files for service status.
 
 **2026-10-18 — Optional TOTP two-factor authentication** — Enable **Settings → Security → 2FA Settings** with your current password, scan the QR code and confirm an authenticator code. Save the ten single-use recovery codes; they are shown only once. Off by default, this protects local sign-in without changing trusted-proxy authentication or federation tokens. Back up all of `/app/data`, including `two-factor.key`. A database-only restore cannot decrypt the authenticator secret without this key. If the authenticator and all recovery codes are lost, a container administrator can run `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm` from `/app`, then restart Enhanced; the password is unchanged. Linked instances must use federation tokens before enabling 2FA; password-only connections will no longer work.

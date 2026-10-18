@@ -2317,5 +2317,13 @@
     "watcher.zerobyte.peerError.authentication": "Authentifizierung abgelehnt: Agent neu anmelden.",
     "watcher.zerobyte.peerError.offline": "Instanz getrennt: Verfügbarkeit prüfen.",
     "watcher.zerobyte.peerError.timeout": "Keine Antwort: Verbindung und Version prüfen.",
-    "watcher.zerobyte.peerError.incompatible": "Inkompatible Antwort: Version prüfen."
+    "watcher.zerobyte.peerError.incompatible": "Inkompatible Antwort: Version prüfen.",
+    "home.scope.instance": "Instanz",
+    "home.scope.global": "Global",
+    "home.scope.details": "Details je Instanz",
+    "home.scope.unavailable": "Nicht verfügbar",
+    "home.scope.backups": "{n}/{total} Instanzen planmäßig gesichert",
+    "home.scope.partial": "{value} · unvollständig ({n} nicht verfügbar)",
+    "home.scope.disabled": "{n} deaktiviert",
+    "releaseNews.item.homeInstanceGlobal": "Startseite: zuerst lokale Statistiken, darunter globale Summen unabhängig von Stack-Filtern. Aufklappbare Übersichtskarten zeigen Werte und direkte Menülinks je Instanz. Offline- oder ältere Instanzen werden als nicht verfügbar angezeigt; deaktivierte Backups werden separat ausgewiesen."
 }

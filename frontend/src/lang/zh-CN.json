@@ -2254,5 +2254,13 @@
     "watcher.zerobyte.peerError.authentication": "认证被拒绝：重新认证代理。",
     "watcher.zerobyte.peerError.offline": "实例已断开：检查可用性。",
     "watcher.zerobyte.peerError.timeout": "未响应：检查连接和版本兼容性。",
-    "watcher.zerobyte.peerError.incompatible": "响应不兼容：检查实例版本。"
+    "watcher.zerobyte.peerError.incompatible": "响应不兼容：检查实例版本。",
+    "home.scope.instance": "实例",
+    "home.scope.global": "全局",
+    "home.scope.details": "各实例详情",
+    "home.scope.unavailable": "不可用",
+    "home.scope.backups": "{n}/{total} 个实例按时备份",
+    "home.scope.partial": "{value} · 不完整（{n} 个不可用）",
+    "home.scope.disabled": "{n} 个已禁用",
+    "releaseNews.item.homeInstanceGlobal": "首页先显示本地实例统计，下方显示不受 Stack 筛选影响的全局汇总。展开摘要卡片可查看各实例数据并直接打开对应菜单。离线或旧版本实例标记为不可用；备份汇总单独列出已禁用的实例。"
 }
