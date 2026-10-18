@@ -287,9 +287,6 @@
     },
     "curly": {
       "count": 28
-    },
-    "no-useless-assignment": {
-      "count": 1
     }
   },
   "backend/start-guard.test.ts": {

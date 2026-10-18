@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+**2026-10-18 — 已发现 Stack 的服务状态** — DDEV 等尚未接管的 Compose 项目在 Stack 根目录中没有对应目录时，不再反复触发 `spawn docker ENOENT` 错误。已接管的外部 Stack 使用已登记的目录、项目名称和 Compose 文件查询服务状态。
+
 **2026-10-17 — 按 Compose 服务显示 CPU/RAM 历史** — 历史现在按 Stack 和 Compose 服务汇总已有测量数据，而不是按 Docker 标识符分别显示。重建后的版本共用同一历史；同时运行的副本在计算平均值、峰值及时间聚合前按采样合计。Stack 总量保持不变，不删除任何测量数据；关联实例版本过旧时会显示更新提示。
 
 **2026-10-17 — WebUI Socket.IO 连接** — WebUI 现在优先尝试 WebSocket，避免与 louislam/dockge#1008 所述重连循环相关的初始 polling 升级过程。WebSocket 被拒绝时仍可自动回退到 polling。现有认证、重连处理及实例间连接保持不变。已通过本地传输、重连、服务器重启测试及短时 Chromium 检查；报告者遇到的具体间歇性故障仍待确认。

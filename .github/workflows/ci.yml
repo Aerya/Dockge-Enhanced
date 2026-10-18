@@ -65,6 +65,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/stack-bind-directory.test.ts
 
+      - name: Tests du statut des stacks détectées et adoptées
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/stack-service-status.test.ts
+
       - name: Tests des reprises registry de l’ImageWatcher
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/watchers/image-watcher.test.ts

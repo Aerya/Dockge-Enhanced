@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-18-discovered-stack-service-status",
+        items: [ "releaseNews.item.discoveredStackServiceStatus" ],
+    },
+    {
         id: "2026-10-17-service-resource-history",
         items: [ "releaseNews.item.serviceResourceHistory" ],
     },

@@ -1913,6 +1913,15 @@ export class Stack {
         let lastUpdated: string | null = null;
         let lastStartedAt: string | null = null;
 
+        // Discovered projects have no local Compose directory until adoption.
+        // Check before the cache too, in case a previously managed path vanished.
+        if (!this.isManagedByDockge) {
+            serviceStatusCache.delete(this.name);
+            return { serviceStatusList,
+                lastUpdated,
+                lastStartedAt };
+        }
+
         // ── Cache court (point #9) : réutilise le dernier `inspect` si frais ──
         const cached = serviceStatusCache.get(this.name);
         if (cached && Date.now() - cached.at < intervals().serviceStatusTtl) {
