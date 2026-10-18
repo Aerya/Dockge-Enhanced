@@ -38,6 +38,7 @@ export class User extends BeanModel {
         return jwt.sign({
             username: user.username,
             h: passwordVersionFingerprint(user.password, jwtSecret),
+            twoFaVersion: Number(user.twofa_version ?? 0),
         }, jwtSecret);
     }
 

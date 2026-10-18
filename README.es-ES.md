@@ -64,6 +64,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Estado de servicios de stacks detectadas:** Los proyectos Compose detectados pero no adoptados, como DDEV, ya no generan errores repetidos `spawn docker ENOENT` cuando su directorio no existe en la raíz de stacks. Las stacks externas adoptadas usan su directorio, nombre de proyecto y archivos Compose registrados para consultar el estado.
 
+**Autenticación TOTP de dos factores opcional :** Actívela en **Ajustes → Seguridad → Ajustes 2FA** con su contraseña actual, escanee el código QR y confirme un código de su aplicación de autenticación. Guarde los diez códigos de recuperación de un solo uso; solo se muestran una vez. Está desactivada de forma predeterminada y protege el inicio de sesión local, no la autenticación por proxy ni los tokens de federación. Antes de activar la 2FA, utilice tokens de federación para las instancias vinculadas; las conexiones solo con contraseña dejarán de funcionar.
+
+Guarde todo `/app/data`, incluido `two-factor.key`. Restaurar solo la base de datos no permite descifrar el secreto sin esta clave. Si pierde la aplicación y todos los códigos de recuperación, un administrador del contenedor puede ejecutar `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm` desde `/app` y reiniciar Enhanced; la contraseña no cambia.
+
 **Historial CPU/RAM por servicio Compose :** Active la grabación en **Monitorización** y abra **Consumo de recursos** en las acciones del stack. Los gráficos compactos muestran el total del stack y un historial por servicio Compose, incluidos los proyectos Compose no gestionados. Las actualizaciones y recreaciones conservan el mismo historial; las réplicas simultáneas se suman antes de calcular promedios y máximos. Las mediciones existentes se conservan sin reinicio. Períodos: 24 horas, 7 días, 1 mes, 1 año o todos los datos registrados. La grabación está desactivada por defecto y recoge muestras cada 5 minutos sin navegador abierto. CPU: 100 % equivale a un núcleo; la RAM en Linux excluye la caché recuperable. Se conservan los huecos y pueden perderse picos entre muestras. Los totales excluyen procesos nativos del host y contenedores fuera de Compose. Se mantiene la ordenación CPU/RAM en la lista de stacks.
 
 **Copias con Zerobyte:** conecta una instancia existente o instala una instancia Compose dedicada desde **Copias de seguridad → Zerobyte**. Úsala junto con Restic nativo o para tus copias programadas, con repositorios separados. Incluye asistente de configuración, parada y reinicio protegidos de aplicaciones, comprobaciones del almacenamiento, restauraciones de prueba dedicadas y supervisión multiservidor de solo lectura. Si el almacenamiento de red no está disponible, la copia se bloquea sin recurrir al almacenamiento local. [Guía de configuración y recuperación](docs/zerobyte.es.md).
@@ -472,7 +476,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 ### Seguridad
 - Validación centralizada de nombres de stacks para bloquear path traversal fuera del directorio gestionado
 - Trivy y excepciones CVE
-- 2FA, Turnstile y trusted proxy
+- 2FA TOTP opcional para cuentas locales: configuración QR verificada, secretos cifrados, códigos de recuperación de un solo uso y revocación de sesiones; Turnstile y trusted proxy
 - Sidecar restringido y plan firmado
 - Protecciones destructivas
 - Transferencia cifrada de credenciales

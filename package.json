@@ -14,7 +14,8 @@
         "dev:backend": "cross-env NODE_ENV=development tsx watch --inspect ./backend/index.ts",
         "dev:frontend": "cross-env NODE_ENV=development vite --host --config ./frontend/vite.config.ts",
         "build:frontend": "vite build --config ./frontend/vite.config.ts",
-        "reset-password": "tsx ./extra/reset-password.ts"
+        "reset-password": "tsx ./extra/reset-password.ts",
+        "reset-2fa": "tsx ./extra/reset-two-factor.ts"
     },
     "dependencies": {
         "@codemirror/language-data": "^6.5.2",
@@ -42,6 +43,7 @@
         "markdown-it": "^15.0.2",
         "mysql2": "~3.24.5",
         "node-cron": "^4.6.0",
+        "otpauth": "9.5.2",
         "promisify-child-process": "~4.1.2",
         "redbean-node": "~0.4.0",
         "semver": "^7.8.5",

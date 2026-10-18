@@ -935,9 +935,14 @@ export class DockgeServer {
      * @param {string} userID
      * @param {string?} currentSocketID
      */
-    disconnectAllSocketClients(userID: number | undefined, currentSocketID? : string) {
+    disconnectAllSocketClients(userID: number | undefined, currentSocketID? : string, preserveFederation = false) {
         for (const rawSocket of this.io.sockets.sockets.values()) {
             let socket = rawSocket as DockgeSocket;
+            // Only a verified scoped JWT qualifies; a client-supplied endpoint
+            // header must never exempt an interactive session from revocation.
+            if (preserveFederation && socket.federationAuthenticated) {
+                continue;
+            }
             if ((!userID || socket.userID === userID) && socket.id !== currentSocketID) {
                 try {
                     socket.emit("refresh");

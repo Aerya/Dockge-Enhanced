@@ -64,6 +64,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Service status for discovered stacks:** Discovered but unadopted Compose projects such as DDEV no longer trigger repeated `spawn docker ENOENT` errors when their directory is absent from the stacks root. Adopted external stacks use their registered directory, project name and Compose files for service status.
 
+**Optional TOTP two-factor authentication :** Enable **Settings → Security → 2FA Settings** with your current password, scan the QR code and confirm an authenticator code. Save the ten single-use recovery codes; they are shown only once. Activation is off by default and applies to local sign-in, not trusted-proxy authentication or federation tokens. Linked instances must use federation tokens before enabling 2FA; password-only connections will no longer work.
+
+Keep the entire `/app/data` directory in backups, including `two-factor.key`. A database-only restore cannot decrypt the authenticator secret without this key. If both the authenticator and recovery codes are lost, an administrator with container access can run `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm` from `/app`, then restart Enhanced; the password remains unchanged.
+
 **CPU/RAM history by Compose service :** Enable recording in **Monitoring**, then open **Resource usage** in a stack's actions. The compact charts show the stack total and one history per Compose service, including unmanaged Compose projects. Updates and container recreations remain in the same service history; simultaneous replicas are summed at each sample before averages and maxima are calculated. Existing measurements are preserved without a reset. Ranges: 24 hours, 7 days, 1 month, 1 year or all recorded data. Recording is disabled by default and samples every 5 minutes without an open browser. CPU: 100% = one core; Linux RAM excludes reclaimable cache. Gaps remain visible and peaks between samples can be missed. Stack totals exclude native host processes and containers outside Compose. CPU/RAM sorting remains available in the stack list.
 
 **Zerobyte backups:** connect an existing instance or install a dedicated Compose instance from **Backups → Zerobyte**. Use it alongside native Restic backups or for your scheduled backups, with separate repositories. Guided setup, protected application stop/restart workflows, storage checks, dedicated test restores and read-only multi-server status are available. If network storage is unavailable, backups stop without a local fallback. [Setup and recovery guide](docs/zerobyte.md).
@@ -498,7 +502,7 @@ The Restic snapshot list defaults to **All**. **Save** stores settings and reten
 - Centralized stack-name validation blocks path traversal outside the managed stacks directory
 - Trivy vulnerability scanning
 - CVE exceptions
-- 2FA
+- Optional TOTP 2FA for local accounts: verified QR enrollment, encrypted secrets, single-use recovery codes and session revocation
 - Cloudflare Turnstile
 - Trusted proxy
 - Restricted self-update sidecar and signed update plan

@@ -58,6 +58,10 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 **已发现 Stack 的服务状态：** DDEV 等已发现但尚未接管的 Compose 项目在 Stack 根目录中没有对应目录时，不再反复触发 `spawn docker ENOENT` 错误。已接管的外部 Stack 使用已登记的目录、项目名称和 Compose 文件查询服务状态。
 
+**可选 TOTP 双重身份验证 :** 在**设置 → 安全 → 双重身份验证设置**中输入当前密码，扫描二维码并输入身份验证应用的验证码以启用。请保存十个一次性恢复码；它们只显示一次。此功能默认关闭，仅保护本地登录，不影响可信代理认证或联合令牌。 启用双重身份验证前，请将关联实例改为使用联合令牌；仅使用密码的连接将不再有效。
+
+请备份整个 `/app/data`，包括 `two-factor.key`。仅恢复数据库而没有此密钥时，无法解密身份验证密钥。如果身份验证应用和所有恢复码均已丢失，有容器访问权限的管理员可在 `/app` 中运行 `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm`，然后重启 Enhanced；密码保持不变。
+
 **按 Compose 服务显示 CPU/RAM 历史 :** 在**监控**中启用记录，然后通过堆栈操作中的**资源用量**打开历史。紧凑图表显示 Stack 总量及每个 Compose 服务的历史，包括未托管的 Compose 项目。更新和重建容器后仍归入同一服务历史；同时运行的副本会在计算平均值和峰值之前按每次采样合计。已有测量数据保留，无需重置。支持 24 小时、7 天、1 个月、1 年或全部数据。记录默认关闭，每 5 分钟采样一次，无需保持浏览器打开。CPU 的 100% 表示一个核心；Linux RAM 不包含可回收缓存。采样中断保留为空缺，两次采样之间的峰值可能遗漏。Stack 总量不包含宿主机原生进程或 Compose 之外的容器。Stack 列表仍支持 CPU/RAM 排序。
 
 **Zerobyte 备份：**在 **备份 → Zerobyte** 中连接现有实例或安装独立的 Compose 实例。可与原生 Restic 配合使用，也可接管计划备份，并使用独立仓库。支持配置向导、受保护的应用停止与重启、存储检查、独立测试恢复及只读多服务器状态。网络存储不可用时会阻止备份，不会自动使用本地备用目录。[配置与恢复指南](docs/zerobyte.zh-CN.md)。
@@ -458,7 +462,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 ### 安全
 - 集中验证 Stack 名称，阻止路径遍历逃离受管理的 Stack 目录
 - Trivy 与 CVE 例外
-- 2FA、Turnstile、trusted proxy
+- 本地账户可选 TOTP 双重身份验证：验证二维码配置、加密密钥、一次性恢复码和会话撤销；Turnstile 和 trusted proxy
 - 受限制 sidecar 与签名计划
 - Docker 破坏性操作保护
 - 私有 Registry 凭据加密传输
