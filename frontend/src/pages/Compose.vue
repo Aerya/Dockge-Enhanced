@@ -431,6 +431,7 @@
                                 :stack-name="stack.name"
                                 :stats-stack-name="stack.externalProject || stack.name"
                                 :endpoint="endpoint"
+                                :primary-hostname="stack.configuredPrimaryHostname"
                                 :show-resource-stats="!endpoint"
                                 :dozzle-url="dozzleUrl"
                                 :container-action-labels="containerActionLabels"

@@ -320,6 +320,10 @@ export default defineComponent({
         StackScheduleEditor,
     },
     props: {
+        primaryHostname: {
+            type: String,
+            default: "",
+        },
         name: {
             type: String,
             required: true,
@@ -632,7 +636,7 @@ export default defineComponent({
             });
         },
         parsePort(port) {
-            const hostname = resolveEndpointHostname(this.endpoint, this.$root.agentList[this.endpoint]?.url, location.hostname, location.protocol);
+            const hostname = resolveEndpointHostname(this.endpoint, this.$root.agentList[this.endpoint]?.url, location.hostname, location.protocol, this.primaryHostname);
             return parseDockerPort(port, hostname);
         },
         remove() {

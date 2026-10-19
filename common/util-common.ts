@@ -535,7 +535,13 @@ export function parseDockerPort(input : string | DockerPortObject, hostname : st
         display: display,
     };
 }
-export function resolveEndpointHostname(endpoint: string, agentUrl: string | undefined, localHostname: string, protocol = "http:"): string {
+export function resolveEndpointHostname(endpoint: string, agentUrl: string | undefined, localHostname: string, protocol = "http:", primaryHostname = ""): string {
+    // Only an explicitly configured hostname overrides the instance/browser fallback.
+    // The legacy stack.primaryHostname also contains synthetic "localhost" defaults.
+    const configured = primaryHostname.trim();
+    if (configured) {
+        return formatDockerPortHostname(configured);
+    }
     if (!endpoint) {
         return localHostname;
     }
