@@ -53,6 +53,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run check-ts
 
+      - name: Tests des liens de ports et du nom d’hôte principal
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test common/util-common.test.ts
+
       - name: Tests des transports Socket.IO de la WebUI
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/socket-connection.test.ts
