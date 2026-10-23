@@ -20,13 +20,13 @@
                 </select>
             </div>
 
-            <!-- Server Timezone -->
-            <div v-if="false" class="mb-4">
-                <label for="timezone" class="form-label">
-                    {{ $t("Server Timezone") }}
+            <div class="mb-4">
+                <label for="scheduling-timezone" class="form-label">
+                    {{ $t("schedulingTimezone.label") }}
                 </label>
-                <select id="timezone" v-model="settings.serverTimezone" class="form-select">
+                <select id="scheduling-timezone" v-model="settings.schedulingTimezone" class="form-select">
                     <option value="UTC">UTC</option>
+                    <option v-if="settings.schedulingTimezone && !timezoneList.some(zone => zone.value === settings.schedulingTimezone) && settings.schedulingTimezone !== 'UTC'" :value="settings.schedulingTimezone">{{ settings.schedulingTimezone }}</option>
                     <option
                         v-for="(timezone, index) in timezoneList"
                         :key="index"
@@ -35,6 +35,7 @@
                         {{ timezone.name }}
                     </option>
                 </select>
+                <div class="form-text">{{ $t("schedulingTimezone.help") }}</div>
             </div>
 
             <!-- Primary Hostname -->
@@ -78,6 +79,7 @@
 
 import dayjs from "dayjs";
 import { parseDocument } from "yaml";
+import { timezoneList } from "../../util-frontend";
 
 const defaultComposeTemplate = "services:\n  nginx:\n    image: nginx:latest\n    restart: unless-stopped\n    ports:\n      - \"8080:80\"\n";
 
@@ -92,21 +94,11 @@ export default {
 
     data() {
         return {
-            timezoneList: [],
+            timezoneList: timezoneList().filter(zone => zone.value !== "UTC"),
+            originalSchedulingTimezone: "",
             composeTemplateDraft: defaultComposeTemplate,
             templateError: "",
         };
-    },
-
-    watch: {
-        settingsLoaded: {
-            immediate: true,
-            handler(loaded) {
-                if (loaded) {
-                    this.composeTemplateDraft = this.settings.composeTemplate || defaultComposeTemplate;
-                }
-            },
-        },
     },
 
     computed: {
@@ -124,6 +116,18 @@ export default {
         }
     },
 
+    watch: {
+        settingsLoaded: {
+            immediate: true,
+            handler(loaded) {
+                if (loaded) {
+                    this.composeTemplateDraft = this.settings.composeTemplate || defaultComposeTemplate;
+                    this.originalSchedulingTimezone = this.settings.schedulingTimezone;
+                }
+            },
+        },
+    },
+
     methods: {
         /** Save the settings */
         saveGeneral() {
@@ -133,6 +137,10 @@ export default {
                 return;
             }
             this.templateError = "";
+            if (this.settings.schedulingTimezone !== this.originalSchedulingTimezone &&
+                !window.confirm(this.$t("schedulingTimezone.confirm", { timezone: this.settings.schedulingTimezone }))) {
+                return;
+            }
             this.settings.composeTemplate = this.composeTemplateDraft;
             localStorage.timezone = this.$root.userTimezone;
             this.saveSettings();

@@ -1,3 +1,5 @@
+import { schedulingClock } from "../scheduling-timezone";
+
 export interface UpdatePause {
     enabled: boolean;
     until: string | null;
@@ -41,7 +43,8 @@ export function isWithinMaintenanceWindow(start: string, end: string, now = new 
         return false;
     }
 
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const clock = schedulingClock(now);
+    const currentMinutes = clock.hour * 60 + clock.minute;
     const toMinutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
     const startMinutes = toMinutes(start);
     const endMinutes = toMinutes(end);

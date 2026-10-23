@@ -87,6 +87,10 @@
                             <font-awesome-icon icon="heartbeat" />
                             <span class="stack-action-label">{{ $t("serviceHealthcheck.action") }}</span>
                         </button>
+                        <button v-if="isEditMode" type="button" class="btn btn-normal stack-action" :title="$t('stackTimezone.title')" :aria-label="$t('stackTimezone.title')" @click="openStackTimezone">
+                            <font-awesome-icon icon="calendar-days" />
+                            <span class="stack-action-label">{{ $t("stackTimezone.title") }}</span>
+                        </button>
                         <button v-if="!isEditMode" class="btn btn-secondary stack-action" :title="$t('editStack')" :aria-label="$t('editStack')" :disabled="processing" @click="enableEditMode">
                             <font-awesome-icon icon="pen" />
                             <span class="stack-action-label">{{ $t("editStack") }}</span>
@@ -192,6 +196,15 @@
                             <span class="stack-action-label">{{ $t("stackActionLabels") }}</span>
                         </button>
                     </div>
+                </div>
+                <div v-if="isEditMode && showStackTimezone" class="shadow-box p-3 mb-3">
+                    <h3 class="h6">{{ $t("stackTimezone.title") }} <span v-if="stackTimezone">— {{ stackTimezone }}</span></h3>
+                    <p class="small">{{ $t("stackTimezone.help") }}</p>
+                    <div class="form-check mb-2">
+                        <input id="apply-stack-timezone" v-model="stackTimezoneEnabled" type="checkbox" class="form-check-input" :disabled="!stackTimezone" />
+                        <label for="apply-stack-timezone" class="form-check-label">{{ $t("stackTimezone.enable") }}</label>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary" :disabled="!stackTimezoneEnabled || !stackTimezone || processing" @click="applyStackTimezone">{{ $t("stackTimezone.apply") }}</button>
                 </div>
                 <div v-if="isEditMode && showHealthcheckPicker" class="shadow-box big-padding mb-3 compose-tight">
                     <label class="form-label" for="healthcheck-service-select">{{ $t("serviceHealthcheck.chooseService") }}</label>
@@ -893,6 +906,7 @@
 
 <script>
 import CodeMirror from "vue-codemirror6";
+import { prepareComposeTimezone } from "../../../common/compose-timezone";
 import { yaml } from "@codemirror/lang-yaml";
 import { python } from "@codemirror/lang-python";
 import { dracula, tomorrow } from "thememirror";
@@ -1073,6 +1087,9 @@ export default {
             healthcheckTargetService: "",
             healthcheckEditRequest: 0,
             showHealthcheckPicker: false,
+            showStackTimezone: false,
+            stackTimezoneEnabled: false,
+            stackTimezone: "",
             selectedHealthcheckService: "",
             stopServiceStatusTimeout: false,
             selectedLogService: "",
@@ -2842,6 +2859,51 @@ export default {
             }
             this.selectedHealthcheckService = services.includes(this.selectedHealthcheckService) ? this.selectedHealthcheckService : services[0] ?? "";
             this.showHealthcheckPicker = !this.showHealthcheckPicker;
+        },
+
+        openStackTimezone() {
+            this.showStackTimezone = !this.showStackTimezone;
+            this.stackTimezoneEnabled = false;
+            this.stackTimezone = "";
+            if (!this.showStackTimezone) {
+                return;
+            }
+            const endpoint = this.endpoint;
+            this.$root.emitAgent(endpoint, "getSchedulingTimezone", (res) => {
+                if (endpoint !== this.endpoint) {
+                    return;
+                }
+                if (res?.ok) {
+                    this.stackTimezone = res.timezone;
+                } else {
+                    this.$root.toastError(this.$t("stackTimezone.unavailable"));
+                }
+            });
+        },
+
+        async applyStackTimezone() {
+            if (!this.stackTimezoneEnabled || !this.stackTimezone) {
+                return;
+            }
+            try {
+                const result = prepareComposeTimezone(this.stack.composeYAML, this.stack.composeOverrideYAML ?? "", this.stackTimezone);
+                if (result.conflicts.length && !window.confirm(this.$t("stackTimezone.confirm", { services: result.conflicts.join(", "),
+                    timezone: this.stackTimezone }))) {
+                    return;
+                }
+                const focused = this.editorFocus;
+                this.editorFocus = true;
+                this.stack.composeYAML = result.compose;
+                this.stack.composeOverrideYAML = result.override;
+                this.yamlCodeChange();
+                await this.$nextTick();
+                this.editorFocus = focused;
+                this.stackTimezoneEnabled = false;
+                this.showStackTimezone = false;
+                this.$root.toastSuccess(this.$t("stackTimezone.applied"));
+            } catch {
+                this.$root.toastError(this.$t("stackTimezone.invalid"));
+            }
         },
 
         openSelectedHealthcheckService() {

@@ -90,6 +90,10 @@ Unter **Watcher > Images > Fallback-DNS** können Sie den anwendungsbezogenen DN
 
 #### Updates und ImageWatcher
 
+**Zeitzone der Zeitpläne und optionale Container-TZ :** Die **Zeitzone der Zeitpläne** lässt sich unter **Einstellungen → Allgemein** wählen. Sie gilt für Stack-Start/Stopp, Image-Updates, Selbstaktualisierungsfenster sowie native Restic- und Sicherheitsprüfungs-Crons dieser Instanz. Ohne ausdrückliche Auswahl bleibt die bestehende Laufzeit-Zeitzone erhalten; gespeicherte Uhrzeiten werden nicht umgeschrieben. Verknüpfte Instanzen und externe Werkzeuge wie Zerobyte behalten eigene Einstellungen. Relative Intervalle, Pausenfristen und Aufbewahrung bleiben unverändert. Sommerzeitwechsel folgen der gewählten Zone: Eine fehlende Ortszeit wird nicht garantiert ausgeführt, eine wiederholte Stunde kann zweimal auftreten. Eine Zeit außerhalb des Übergangs, etwa 04:00, ist vorzuziehen.
+
+Unter den Bearbeitungsaktionen eines Stacks bietet **Container-Zeitzone** eine **standardmäßig deaktivierte** Option, um `TZ` zum Compose-Entwurf und Override hinzuzufügen. Vorhandene oder geerbte Werte, auch mögliche Werte aus `env_file`/`extends`, erfordern eine Bestätigung. YAML prüfen, speichern und Container neu erstellen/bereitstellen. Das Image muss `TZ` unterstützen. `.env`-/`env_file`-Dateien bleiben unverändert; spätere globale Zeitzonenänderungen schreiben Stacks nicht automatisch um und erstellen keine Container neu.
+
 **Benachrichtigungen zu Image-Updates :** Discord und Apprise melden ein ausstehendes Image-Update nur einmal pro Stack, Image und Remote-Digest, auch wenn es auf ein geplantes Zeitfenster wartet. Dieser Verlauf bleibt nach einem Neustart von Enhanced erhalten. Ein neuer Digest wird erneut gemeldet; Ergebnisse automatischer Updates erhalten weiterhin eine eigene Benachrichtigung. Fehlgeschlagene Zustellungen werden bei späteren Prüfungen erneut versucht, getrennt je Discord-Webhook und konfiguriertem Apprise-Ziel.
 
 **Gestoppte Dienste bleiben gestoppt:** Automatische Image-Updates werden verschoben, wenn ein betroffener Compose-Dienst oder ein erforderlicher Netzwerk-Namespace-Begleiter gestoppt ist oder fehlt. ImageWatcher prüft dies nach dem Pull vor der Neuerstellung erneut und versucht das Update bei einer späteren Prüfung nochmals. Ein gestoppter Dienst wird nicht durch `compose up` geweckt.
@@ -414,6 +418,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Versionsbewusste Aushandlung von Funktionen zwischen gemischten Dockge-Enhanced-Releases
 
 ### Stack-Management
+
+- Gemeinsame Zeitzone für Zeitpläne pro Instanz und optionale, bestätigte TZ-Änderungen pro Stack im Compose-Editor; keine automatische Container-Neuerstellung.
 
 - Stack-Aktionsleiste mit direkten Aktionen und Symbolen allein oder mit Text
 - Optionaler Compose-Healthcheck-Assistent pro Dienst mit bearbeitbarem HTTP-/TCP-Vorschlag und Befehlsvorschau
@@ -765,7 +771,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
 #      - DOCKER_API_VERSION=x.xx             # optional — for NAS devices with older Docker API
-      - TZ=Europe/Paris                      # timezone (affects scheduled updates)
+      - TZ=Europe/Paris                      # optionale Laufzeit-Zeitzone; Zeitpläne in der WebUI konfigurierbar
 ```
 
 ```bash
@@ -864,7 +870,7 @@ Um einen Dienst zu veröffentlichen, bearbeiten Sie dessen Stack und verwenden S
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge-Datenverzeichnis; nur für einen benutzerdefinierten persistenten Einhängepunkt überschreiben |
 | `DOCKGE_PUBLIC_URL` | *(keine)* | Öffentliche URL, die in Discord-Benachrichtigungslinks verwendet wird (z. B. `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(keine)* | Legt die vom Client ausgehandelte Docker-API-Version fest — nützlich auf bestimmten NAS-Systemen (z. B. Synology DSM 7.x) |
-| `TZ` | `UTC` | Container-Zeitzone — **wichtig**, damit geplante Auto-Updates zur richtigen Ortszeit (z. B. `Europe/Paris`) ausgeführt werden |
+| `TZ` | `UTC` | Laufzeit-Zeitzone des Containers; Standard für Zeitpläne bis zur ausdrücklichen Auswahl unter **Einstellungen → Allgemein**. Die WebUI-Auswahl hat für Enhanced-Zeitpläne Vorrang. |
 | `DOCKGE_PORT` | `5001` | Port der Web-Benutzeroberfläche |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | HTTPS aktivieren |
 | `DOCKGE_AUTH_MODE` | *(nicht gesetzt)* | Authentifizierungsmodus: `local`, `disabled` oder `trusted-proxy`. Wenn nicht gesetzt, bleiben das historische Verhalten und die Einstellung `disableAuth` erhalten |

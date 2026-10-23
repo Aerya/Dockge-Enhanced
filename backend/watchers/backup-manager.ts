@@ -5,7 +5,7 @@ import { isZerobyteApplicationBackupActive } from "../integrations/zerobyte-coor
  * Fichier : backend/watchers/backup-manager.ts
  */
 
-import * as cron from "node-cron";
+import { scheduleInTimezone } from "../scheduling-cron";
 import { exec, execFile, spawn } from "child_process";
 import { promisify } from "util";
 import * as readline from "readline";
@@ -779,8 +779,8 @@ export function isResticRepositoryMissingError(error: unknown): boolean {
 
 export class BackupManager {
     private static _instance: BackupManager;
-    private cronJob: cron.ScheduledTask | null = null;
-    private stalenessCron: cron.ScheduledTask | null = null;
+    private cronJob: ReturnType<typeof scheduleInTimezone> | null = null;
+    private stalenessCron: ReturnType<typeof scheduleInTimezone> | null = null;
     private lastStalenessNotif = 0;
     private lastOnSaveTrigger = 0;
     private backupRunLock = new BackupRunLock();
@@ -1023,7 +1023,7 @@ export class BackupManager {
         this.settings.intervalHours = intervalHours;
         const cronExpr = cronExpressionForIntervalHours(intervalHours);
         console.log(`[BackupManager] Démarrage — backup toutes les ${intervalHours}h (${cronExpr})`);
-        this.cronJob = cron.schedule(cronExpr, () => {
+        this.cronJob = scheduleInTimezone(cronExpr, () => {
             this.runBackup({ trigger: "scheduled" }).catch(e => {
                 if (e instanceof BackupAlreadyRunningError) {
                     console.log("[BackupManager] Backup planifié ignoré : un backup Restic est déjà en cours");
@@ -1032,7 +1032,7 @@ export class BackupManager {
                 }
             });
         });
-        this.stalenessCron = cron.schedule("0 * * * *", () => this.checkStaleness().catch(console.error));
+        this.stalenessCron = scheduleInTimezone("0 * * * *", () => this.checkStaleness().catch(console.error));
     }
 
     stop(): void {

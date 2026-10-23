@@ -90,6 +90,10 @@ En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (
 
 #### Actualizaciones e ImageWatcher
 
+**Zona horaria de programaciones y TZ opcional por stack :** Seleccione la **Zona horaria de las programaciones** en **Ajustes → General**. Controla el inicio/parada de stacks, las actualizaciones de imágenes, las franjas de autoactualización y los crons nativos de Restic y seguridad de esta instancia. Sin elección explícita se conserva la zona actual del proceso; no se reescriben las horas guardadas. Las instancias vinculadas y herramientas externas como Zerobyte conservan sus propios ajustes. Los intervalos relativos, vencimientos de pausas y retenciones no cambian. Se aplica el horario de verano de la zona elegida: una hora inexistente no garantiza ejecución y una hora repetida puede ocurrir dos veces. Es preferible elegir una hora fuera de la transición, como las 04:00.
+
+En las acciones de edición del stack, **Zona horaria de los contenedores** ofrece una opción **desactivada por defecto** para añadir `TZ` al borrador Compose y su override. Los valores existentes o heredados, incluidos los posibles valores de `env_file`/`extends`, requieren confirmación. Revise el YAML, guarde y recree/despliegue los contenedores. Las imágenes deben admitir `TZ`. No se modifican archivos `.env`/`env_file`; futuros cambios globales no reescriben ni recrean los stacks automáticamente.
+
 **Notificaciones de actualizaciones de imágenes :** Discord y Apprise anuncian una actualización pendiente una sola vez por stack, imagen y digest remoto, incluso si espera una franja programada. Este registro se conserva tras reiniciar Enhanced. Un nuevo digest se vuelve a anunciar; los resultados de las actualizaciones automáticas mantienen su propia notificación. Los envíos fallidos se reintentan en las comprobaciones siguientes, por separado para cada webhook de Discord y el destino Apprise configurado.
 
 **Los servicios detenidos permanecen detenidos:** una actualización automática de imagen se aplaza si un servicio Compose seleccionado, incluido un compañero necesario del espacio de nombres de red, está detenido o ausente. ImageWatcher vuelve a comprobarlo después de la descarga y antes de recrearlo, y reintenta más adelante. No utiliza `compose up` para iniciar un servicio detenido.
@@ -413,6 +417,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Gestión de stacks
 
+- Zona horaria común por instancia y aplicación opcional de TZ por stack en el editor, con confirmación y sin recreación automática.
+
 - Barra de acciones del stack con acciones directas y modos de iconos solos o con texto
 - Asistente opcional de healthcheck Compose por servicio con propuesta HTTP/TCP editable y vista previa del comando
 - Control por servicio para ignorar un servicio opcional en el estado global manteniendo visible su propio estado
@@ -729,7 +735,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
 #      - DOCKER_API_VERSION=x.xx             # opcional — para dispositivos NAS con API de Docker más antigua
-      - TZ=Europe/Paris                      # zona horaria (afecta actualizaciones programadas)
+      - TZ=Europe/Paris                      # zona del proceso opcional; programaciones configurables en la WebUI
 ```
 
 ```bash
@@ -828,7 +834,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKGE_DATA_DIR` | `/app/data` | Directorio de datos de Dockge; cámbialo solo para un montaje persistente personalizado |
 | `DOCKGE_PUBLIC_URL` | *(ninguna)* | URL pública usada en enlaces de notificaciones Discord (por ejemplo `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(ninguna)* | Fija la versión de la API de Docker negociada por el cliente — útil en ciertos sistemas NAS (por ejemplo Synology DSM 7.x) |
-| `TZ` | `UTC` | Zona horaria del contenedor — **importante** para que las actualizaciones automáticas programadas se disparen en la hora local correcta (por ejemplo `Europe/Paris`) |
+| `TZ` | `UTC` | Zona del proceso en el contenedor; predeterminada para programaciones hasta elegir una en **Ajustes → General**. La elección WebUI tiene prioridad para las programaciones de Enhanced. |
 | `DOCKGE_PORT` | `5001` | Puerto de la interfaz web |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Habilita HTTPS |
 | `DOCKGE_AUTH_MODE` | *(no establecido)* | Modo de autenticación: `local`, `disabled`, o `trusted-proxy`. Cuando no está establecido, se conserva el comportamiento histórico y la configuración `disableAuth` |

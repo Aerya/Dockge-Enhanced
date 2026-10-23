@@ -18,6 +18,7 @@ import {
 import { passwordStrength } from "check-password-strength";
 import jwt from "jsonwebtoken";
 import { Settings } from "../settings";
+import { getSchedulingTimezone, setSchedulingTimezone, validateSchedulingTimezone } from "../scheduling-timezone";
 import fs, { promises as fsAsync } from "fs";
 import path from "path";
 import axios from "axios";
@@ -316,6 +317,7 @@ export class MainSocketHandler extends SocketHandler {
             try {
                 checkLogin(socket);
                 const data = await Settings.getSettings("general");
+                data.schedulingTimezone = getSchedulingTimezone();
 
                 if (fs.existsSync(path.join(server.stacksDir, "global.env"))) {
                     data.globalENV = fs.readFileSync(path.join(server.stacksDir, "global.env"), "utf-8");
@@ -341,6 +343,10 @@ export class MainSocketHandler extends SocketHandler {
         socket.on("setSettings", async (data, currentPassword, callback) => {
             try {
                 checkLogin(socket);
+
+                if (data.schedulingTimezone !== undefined) {
+                    data.schedulingTimezone = validateSchedulingTimezone(data.schedulingTimezone);
+                }
 
                 if (data.composeTemplate !== undefined) {
                     if (typeof data.composeTemplate !== "string" || Buffer.byteLength(data.composeTemplate, "utf8") > 65536) {
@@ -377,6 +383,10 @@ export class MainSocketHandler extends SocketHandler {
                 delete data.globalENV;
 
                 await Settings.setSettings("general", data);
+                if (data.schedulingTimezone !== undefined) {
+                    setSchedulingTimezone(data.schedulingTimezone);
+                    server.io.emit("schedulingTimezone", getSchedulingTimezone());
+                }
 
                 callback({
                     ok: true,

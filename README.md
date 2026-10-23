@@ -90,6 +90,10 @@ Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS
 
 #### Updates and ImageWatcher
 
+**Scheduling timezone and optional container TZ :** Choose the **Scheduling timezone** in **Settings → General**. It controls this instance’s stack start/stop schedules, image-update times, self-update windows, native Restic and security-scan crons. Without an explicit choice, the existing runtime timezone is preserved; saved clock times are not rewritten. Linked instances and external backup tools such as Zerobyte keep their own settings. Relative intervals, pause deadlines and retention are unchanged. DST follows the selected zone: a missing local hour is not guaranteed to execute, and a repeated hour may occur twice; prefer a time outside the transition, such as 04:00.
+
+In a stack’s edit actions, **Container timezone** offers an option **off by default** to add `TZ` to the Compose draft and override. Existing values (including inherited values or `env_file`/`extends`) require confirmation. Review the YAML, save and recreate/deploy to apply it. Images must support `TZ`; source `.env`/`env_file` files are not changed, and future global timezone changes do not automatically rewrite or recreate stacks.
+
 **Image update notifications :** Discord and Apprise announce a pending image update only once per stack, image and remote digest, including updates waiting for a scheduled window. This tracking survives Enhanced restarts. A new digest is announced again; automatic update results still generate their own notification. Failed deliveries are retried on subsequent checks independently for each Discord webhook and the configured Apprise destination.
 
 **Stopped services stay stopped:** automatic image updates are deferred when any targeted Compose service (including a required network-namespace companion) is stopped or absent. ImageWatcher checks again after pulling, before recreation, and retries on a later check. It does not use `compose up` to wake a stopped service.
@@ -414,6 +418,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Version-aware capability negotiation between mixed Dockge-Enhanced releases
 
 ### Stack management
+
+- Shared scheduling timezone per instance, with optional, confirmed per-stack TZ changes in the Compose editor; no automatic container recreation.
 
 - Stack action bar with direct actions and icons-only or icons-and-text modes
 - Optional per-service Compose healthcheck assistant with editable HTTP/TCP proposal and command preview
@@ -765,7 +771,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
 #      - DOCKER_API_VERSION=x.xx             # optional — for NAS devices with older Docker API
-      - TZ=Europe/Paris                      # timezone (affects scheduled updates)
+      - TZ=Europe/Paris                      # optional runtime timezone; schedules configurable in WebUI
 ```
 
 ```bash
@@ -864,7 +870,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge data directory; override only for a custom persistent mount |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(none)* | Fixes the Docker API version negotiated by the client — useful on certain NAS systems (e.g. Synology DSM 7.x) |
-| `TZ` | `UTC` | Container timezone — **important** for scheduled auto-updates to fire at the right local time (e.g. `Europe/Paris`) |
+| `TZ` | `UTC` | Container runtime timezone; scheduling defaults to it until explicitly configured in **Settings → General**. The WebUI choice takes precedence for Enhanced schedules. |
 | `DOCKGE_PORT` | `5001` | Web UI port |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Enable HTTPS |
 | `DOCKGE_AUTH_MODE` | *(unset)* | Authentication mode: `local`, `disabled`, or `trusted-proxy`. When unset, the historical behavior and `disableAuth` setting are preserved |

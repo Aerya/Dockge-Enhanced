@@ -234,6 +234,11 @@ export default defineComponent({
 
             // Custom Events
 
+            socket.on("schedulingTimezone", (timezone: string) => {
+                this.info = { ...this.info,
+                    schedulingTimezone: timezone };
+            });
+
             socket.on("info", (info) => {
                 this.info = info;
             });
