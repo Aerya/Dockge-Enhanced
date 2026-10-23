@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-23 — Visualización de los ajustes** — Corregido un error al importar la lista de zonas horarias que podía dejar la página Ajustes en blanco (`timezones is not iterable`). El selector de zona horaria y el menú vuelven a mostrarse sin modificar los ajustes guardados ni las programaciones. Pruebas de regresión con los datos reales de zonas horarias y el renderizado de la página General. Corrige #555.
+
 **2026-10-23 — Zona horaria de programaciones y TZ opcional por stack** — Zona horaria común por instancia y aplicación opcional de TZ por stack en el editor, con confirmación y sin recreación automática. Zona del proceso en el contenedor; predeterminada para programaciones hasta elegir una en **Ajustes → General**. La elección WebUI tiene prioridad para las programaciones de Enhanced.
 
 **2026-10-23 — Notificaciones de actualizaciones de imágenes** — Discord y Apprise anuncian una actualización pendiente una sola vez por stack, imagen y digest remoto, incluso si espera una franja programada. Este registro se conserva tras reiniciar Enhanced. Un nuevo digest se vuelve a anunciar; los resultados de las actualizaciones automáticas mantienen su propia notificación. Los envíos fallidos se reintentan en las comprobaciones siguientes, por separado para cada webhook de Discord y el destino Apprise configurado.

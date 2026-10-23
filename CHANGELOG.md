@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-23 — Settings page rendering** — Fixed a timezone-list import error that could leave Settings blank (`timezones is not iterable`). The timezone selector and settings menu render again without changing saved settings or schedules. Regression tests cover the real timezone data and General page rendering. Fixes #555.
+
 **2026-10-23 — Scheduling timezone and optional container TZ** — Shared scheduling timezone per instance, with optional, confirmed per-stack TZ changes in the Compose editor; no automatic container recreation. Container runtime timezone; scheduling defaults to it until explicitly configured in **Settings → General**. The WebUI choice takes precedence for Enhanced schedules.
 
 **2026-10-23 — Image update notifications** — Discord and Apprise announce a pending image update only once per stack, image and remote digest, including updates waiting for a scheduled window. This tracking survives Enhanced restarts. A new digest is announced again; automatic update results still generate their own notification. Failed deliveries are retried on subsequent checks independently for each Discord webhook and the configured Apprise destination.
