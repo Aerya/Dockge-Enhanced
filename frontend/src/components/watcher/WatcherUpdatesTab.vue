@@ -11,9 +11,7 @@
             <select id="self-update-mode" v-model="settings.mode" class="form-select" @change="save">
                 <option value="manual">{{ $t("updates.self.manual") }}</option>
                 <option value="sidecar">{{ $t("updates.self.sidecar") }}</option>
-                <option value="agent" disabled>{{ $t("updates.self.agent") }}</option>
             </select>
-            <p class="form-text">{{ $t("updates.self.agentUnavailable") }}</p>
 
             <template v-if="settings.mode === 'sidecar'">
                 <label class="form-label mt-3">{{ $t("updates.self.when") }}</label>

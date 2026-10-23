@@ -1817,8 +1817,6 @@
     "updates.self.mode": "更新方式",
     "updates.self.manual": "手动（仅通知）",
     "updates.self.sidecar": "通过受保护的 sidecar 自动更新",
-    "updates.self.agent": "通过远程代理自动更新",
-    "updates.self.agentUnavailable": "远程代理暂不支持：它需要专用的主机代理。",
     "updates.self.when": "自动更新时间",
     "updates.self.immediate": "发现更新后立即执行",
     "updates.self.window": "在维护窗口期间执行",

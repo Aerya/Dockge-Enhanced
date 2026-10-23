@@ -1624,8 +1624,6 @@
     "updates.self.mode": "更新方式",
     "updates.self.manual": "手動（僅通知）",
     "updates.self.sidecar": "透過受保護的 sidecar 自動更新",
-    "updates.self.agent": "透過遠端代理程式自動更新",
-    "updates.self.agentUnavailable": "遠端代理程式尚未支援：需要專用的主機代理程式。",
     "updates.self.when": "自動更新時機",
     "updates.self.immediate": "有更新時立即執行",
     "updates.self.window": "於維護時段執行",
