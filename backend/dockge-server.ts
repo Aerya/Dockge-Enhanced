@@ -44,6 +44,7 @@ import { Socket } from "socket.io";
 import { MainSocketHandler } from "./socket-handlers/main-socket-handler";
 import { SocketHandler } from "./socket-handler";
 import { Settings } from "./settings";
+import { getSchedulingTimezone, setSchedulingTimezone } from "./scheduling-timezone";
 import checkVersion from "./check-version";
 import dayjs from "dayjs";
 import { R } from "redbean-node";
@@ -547,6 +548,7 @@ export class DockgeServer {
         // Connect to database
         try {
             await Database.init(this);
+            setSchedulingTimezone(await Settings.get("schedulingTimezone"));
         } catch (e) {
             if (e instanceof Error) {
                 log.error("server", "Failed to prepare your database: " + e.message);
@@ -669,7 +671,7 @@ export class DockgeServer {
             authModeManaged: Boolean(process.env.DOCKGE_AUTH_MODE),
             turnstileEnabled: !!generalSettings.turnstileEnabled && !!generalSettings.turnstileSiteKey,
             turnstileSiteKey: generalSettings.turnstileEnabled ? (generalSettings.turnstileSiteKey ?? "") : "",
-            //serverTimezone: await this.getTimezone(),
+            schedulingTimezone: getSchedulingTimezone(),
             //serverTimezoneOffset: this.getTimezoneOffset(),
         });
     }
@@ -699,54 +701,11 @@ export class DockgeServer {
     }
 
     /**
-     * Attempt to get the current server timezone
-     * If this fails, fall back to environment variables and then make a
-     * guess.
+     * Get the effective scheduling timezone, initialized before watchers start.
      * @returns {Promise<string>} Current timezone
      */
     async getTimezone() {
-        // From process.env.TZ
-        try {
-            if (process.env.TZ) {
-                this.checkTimezone(process.env.TZ);
-                return process.env.TZ;
-            }
-        } catch (e) {
-            if (e instanceof Error) {
-                log.warn("timezone", e.message + " in process.env.TZ");
-            }
-        }
-
-        const timezone = await Settings.get("serverTimezone");
-
-        // From Settings
-        try {
-            log.debug("timezone", "Using timezone from settings: " + timezone);
-            if (timezone) {
-                this.checkTimezone(timezone);
-                return timezone;
-            }
-        } catch (e) {
-            if (e instanceof Error) {
-                log.warn("timezone", e.message + " in settings");
-            }
-        }
-
-        // Guess
-        try {
-            const guess = dayjs.tz.guess();
-            log.debug("timezone", "Guessing timezone: " + guess);
-            if (guess) {
-                this.checkTimezone(guess);
-                return guess;
-            } else {
-                return "UTC";
-            }
-        } catch (e) {
-            // Guess failed, fall back to UTC
-            log.debug("timezone", "Guessed an invalid timezone. Use UTC as fallback");
-            return "UTC";
-        }
+        return getSchedulingTimezone();
     }
 
     /**

@@ -14,6 +14,7 @@ import { getVolumeMounts, listDir, readFile, writeFile, createEntry, renameEntry
 import { StartGuardWatcher } from "../watchers/start-guard-watcher";
 import { normalizeUpdatePause } from "../watchers/update-policy";
 import { Settings } from "../settings";
+import { getSchedulingTimezone } from "../scheduling-timezone";
 import { applyStackPin, normalizePinnedStacks, STACK_PINS_SETTING_KEY } from "../stack-pins";
 import { getStackStatsSnapshot, getSystemStatsSnapshot } from "../routers/system-stats-router";
 import { ComposeEditLeaseManager } from "../self-update/editor-lease";
@@ -40,6 +41,15 @@ export function instanceSystemStatsResponse(
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         // Do not call super.create()
+        agentSocket.on("getSchedulingTimezone", (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true,
+                    timezone: getSchedulingTimezone() }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
         agentSocket.on("inspectComposeDraft", async (draft: unknown, callback) => {
             try {
                 checkLogin(socket);

@@ -91,6 +91,10 @@ Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli D
 
 #### Mises à jour et ImageWatcher
 
+**Fuseau des planifications et TZ facultatif des conteneurs :** Choisissez le **Fuseau horaire des planifications** dans **Paramètres → Général**. Il pilote les horaires de démarrage/arrêt des stacks, les mises à jour d’images, les créneaux de mise à jour interne et les crons Restic natif et d’analyse de sécurité de cette instance. Sans choix explicite, le fuseau actuel du processus est conservé ; les heures enregistrées ne sont pas réécrites. Les instances liées et les outils externes comme Zerobyte conservent leurs propres réglages. Les intervalles relatifs, échéances de pause et rétentions ne changent pas. Le changement d’heure suit le fuseau choisi : une heure inexistante n’est pas garantie d’être exécutée et une heure répétée peut survenir deux fois ; préférez un horaire hors transition, comme 04:00.
+
+Dans les actions d’édition d’une stack, **Fuseau des conteneurs** propose une option **désactivée par défaut** pour ajouter `TZ` au brouillon Compose et à son override. Les valeurs existantes, héritées ou susceptibles de venir d’un `env_file`/`extends` nécessitent une confirmation. Vérifiez le YAML, enregistrez puis recréez/déployez pour appliquer. Les images doivent prendre en charge `TZ` ; les fichiers `.env`/`env_file` ne sont pas modifiés, et un futur changement du fuseau global ne réécrit ni ne recrée automatiquement les stacks.
+
 **Notifications des mises à jour d’images :** Discord et Apprise n’annoncent qu’une fois une mise à jour en attente pour une même stack, image et digest distant, y compris lorsqu’elle attend son créneau planifié. Ce suivi est conservé après redémarrage d’Enhanced. Un nouveau digest est annoncé à nouveau ; les résultats des mises à jour automatiques conservent leur propre notification. Les envois échoués sont retentés aux contrôles suivants, indépendamment pour chaque webhook Discord et la destination Apprise configurée.
 
 **Les services arrêtés restent arrêtés :** une mise à jour automatique d’image est reportée si un service Compose ciblé, y compris un compagnon de namespace réseau requis, est arrêté ou absent. ImageWatcher revérifie après le téléchargement, avant la recréation, puis réessaie lors d’un contrôle ultérieur. Il n’utilise pas `compose up` pour réveiller un service arrêté.
@@ -414,6 +418,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Négociation des capacités entre différentes versions de Dockge-Enhanced
 
 ### Gestion des stacks
+
+- Fuseau commun aux planifications de chaque instance et application facultative de TZ par stack dans l’éditeur, avec confirmation ; aucune recréation automatique.
 
 - Barre d’actions de stack avec actions directes et modes icônes seules ou icônes avec texte
 - Assistant facultatif de healthcheck Compose par service avec proposition HTTP/TCP modifiable et aperçu de la commande
@@ -765,7 +771,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
 #      - DOCKER_API_VERSION=x.xx             # optionnel — pour les NAS avec une API Docker ancienne
-      - TZ=Europe/Paris                      # fuseau horaire (affecte les MàJ planifiées)
+      - TZ=Europe/Paris                      # fuseau du processus facultatif ; planifications réglables dans la WebUI
 ```
 
 ```bash
@@ -864,7 +870,7 @@ Pour publier un service, éditez sa stack puis utilisez **Publication PlugNPiN (
 | `DOCKGE_DATA_DIR` | `/app/data` | Dossier de données Dockge ; ne le modifier que pour un montage persistant personnalisé |
 | `DOCKGE_PUBLIC_URL` | *(aucun)* | URL publique utilisée dans les liens des notifications Discord (ex : `https://dockge.mondomaine.fr`) |
 | `DOCKER_API_VERSION` | *(aucun)* | Fixe la version d'API Docker négociée par le client — utile sur certains NAS (ex : Synology DSM 7.x) |
-| `TZ` | `UTC` | Fuseau horaire du container — **important** pour que les MàJ planifiées se déclenchent à la bonne heure locale (ex : `Europe/Paris`) |
+| `TZ` | `UTC` | Fuseau du processus dans le conteneur ; utilisé par défaut tant qu’aucun fuseau n’est choisi dans **Paramètres → Général**. Le choix WebUI est prioritaire pour les planifications d’Enhanced. |
 | `DOCKGE_PORT` | `5001` | Port de la WebUI |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Activer HTTPS |
 | `DOCKGE_AUTH_MODE` | *(non défini)* | Mode d’authentification : `local`, `disabled` ou `trusted-proxy`. Non défini, le comportement historique et le réglage `disableAuth` sont conservés |

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-23-scheduling-timezone",
+        items: [ "releaseNews.item.schedulingTimezone" ],
+    },
+    {
         id: "2026-10-23-image-update-notifications",
         items: [ "releaseNews.item.imageUpdateNotifications" ],
     },

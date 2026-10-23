@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-23 — Fuseau des planifications et TZ facultatif des conteneurs** — Fuseau commun aux planifications de chaque instance et application facultative de TZ par stack dans l’éditeur, avec confirmation ; aucune recréation automatique. Fuseau du processus dans le conteneur ; utilisé par défaut tant qu’aucun fuseau n’est choisi dans **Paramètres → Général**. Le choix WebUI est prioritaire pour les planifications d’Enhanced.
+
 **2026-10-23 — Notifications des mises à jour d’images** — Discord et Apprise n’annoncent qu’une fois une mise à jour en attente pour une même stack, image et digest distant, y compris lorsqu’elle attend son créneau planifié. Ce suivi est conservé après redémarrage d’Enhanced. Un nouveau digest est annoncé à nouveau ; les résultats des mises à jour automatiques conservent leur propre notification. Les envois échoués sont retentés aux contrôles suivants, indépendamment pour chaque webhook Discord et la destination Apprise configurée.
 
 **2026-10-18 — Contrôles Compose et Home Assistant** — Avertissements de conflits de ports avant enregistrement/déploiement, avec résolution des variables, overrides et plages ; comparaison des références d’images exécutées et correction du YAML à vérifier. Intégration Home Assistant facultative avec capteurs d’état et commandes démarrer/arrêter/redémarrer limitées par permissions. [Guide](docs/HOME-ASSISTANT.md).

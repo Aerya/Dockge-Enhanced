@@ -3,7 +3,7 @@
  * Fichier : backend/watchers/trivy-scanner.ts
  */
 
-import * as cron from "node-cron";
+import { scheduleInTimezone } from "../scheduling-cron";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import * as path from "path";
@@ -137,7 +137,7 @@ interface ScanStatus {
 
 export class TrivyScanner {
     private static instance: TrivyScanner;
-    private cronJob: cron.ScheduledTask | null = null;
+    private cronJob: ReturnType<typeof scheduleInTimezone> | null = null;
     private baseUrl: string = "";
 
     private scanStatus: ScanStatus = {
@@ -236,7 +236,7 @@ export class TrivyScanner {
         this.settings.intervalHours = intervalHours;
         const cronExpr = `0 */${intervalHours} * * *`;
         log.info("trivy", `Démarrage — scan toutes les ${intervalHours}h`);
-        this.cronJob = cron.schedule(cronExpr, () => this.runScan());
+        this.cronJob = scheduleInTimezone(cronExpr, () => this.runScan());
     }
 
     stop(): void {

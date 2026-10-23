@@ -84,6 +84,10 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 #### 更新与 ImageWatcher
 
+**统一计划任务时区与可选容器 TZ :** 在 **设置 → 常规** 中选择 **计划任务时区**。它控制此实例的 Stack 启停、镜像更新、内部更新时段，以及原生 Restic 和安全扫描的 cron 任务。未明确选择时保留当前进程时区，不会重写已保存的计划时间。关联实例及 Zerobyte 等外部工具保留各自的设置。相对间隔、暂停截止时间和保留策略不变。夏令时遵循所选时区：不存在的本地时间不保证执行，重复的小时可能出现两次；建议使用过渡时段以外的时间，例如 04:00。
+
+在 Stack 编辑操作中，**容器时区** 提供 **默认关闭** 的选项，将 `TZ` 添加到 Compose 草稿及 override。已有或继承的值（包括可能来自 `env_file`/`extends` 的值）需要确认。请检查 YAML，保存后重新创建/部署容器。镜像必须支持 `TZ`。不会修改 `.env`/`env_file` 文件；以后更改全局时区也不会自动重写 Stack 或重建容器。
+
 **镜像更新通知 :** Discord 和 Apprise 对同一 Stack、镜像和远程摘要的待更新版本只通知一次，包括等待计划时段的更新。此记录在 Enhanced 重启后仍然保留。检测到新的摘要会再次通知；自动更新结果仍会单独通知。发送失败后会在后续检查中重试，每个 Discord Webhook 和已配置的 Apprise 目标分别记录发送结果。
 
 **已停止的服务保持停止：**如果目标 Compose 服务或所需的网络命名空间配套服务已停止或不存在，自动镜像更新会推迟。ImageWatcher 在下载后、重建前再次检查，并在后续检查中重试。它不会通过 `compose up` 启动已停止的服务。
@@ -400,6 +404,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ### Stack 管理
 
+- 每个实例的计划任务使用统一时区；编辑器提供需确认的可选按 Stack 应用 TZ 功能，不会自动重新创建容器。
+
 - Stack 操作栏提供直接操作，支持仅图标或图标加文字模式
 - 可选的逐服务 Compose 健康检查助手，提供可编辑的 HTTP/TCP 建议与命令预览
 - 可按服务忽略其对应用栈整体状态的影响，同时保留服务自身状态
@@ -588,7 +594,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
 #      - DOCKER_API_VERSION=x.xx             # 可选：旧版 Docker API 的 NAS
-      - TZ=Europe/Paris                      # 时区，会影响计划任务
+      - TZ=Europe/Paris                      # 可选进程时区；计划任务时区可在 WebUI 配置
 ```
 
 启动：
@@ -680,7 +686,7 @@ Nginx Proxy Manager 凭据是必需的；Pi-hole、AdGuard Home、metrics 和 de
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge 数据目录；仅在使用自定义持久化挂载时覆盖 |
 | `DOCKGE_PUBLIC_URL` | 无 | Discord 通知中使用的公网 URL，例如 `https://dockge.example.com` |
 | `DOCKER_API_VERSION` | 无 | 固定 Docker Client 协商的 API 版本，适合部分 NAS |
-| `TZ` | `UTC` | 容器时区；计划自动更新依赖此值 |
+| `TZ` | `UTC` | 容器进程时区；未在 **设置 → 常规** 明确选择时作为计划任务的默认值。WebUI 选择对 Enhanced 计划任务优先。 |
 | `DOCKGE_PORT` | `5001` | Web UI 端口 |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | 启用 HTTPS |
 | `DOCKGE_AUTH_MODE` | 未设置 | `local`、`disabled` 或 `trusted-proxy` |

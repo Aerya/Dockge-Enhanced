@@ -7,6 +7,7 @@ import { log } from "../log";
 import { Stack } from "../stack";
 import { Settings } from "../settings";
 import { resolveDataDir } from "../data-dir";
+import { getSchedulingTimezone, onSchedulingTimezoneChange, schedulingClock } from "../scheduling-timezone";
 
 const DATA_DIR = resolveDataDir();
 const SETTINGS_PATH = path.join(DATA_DIR, "stack-schedules.json");
@@ -54,17 +55,18 @@ function validDate(value: unknown): value is string {
         return false;
     }
     const [ year, month, day ] = value.split("-").map(Number);
-    const date = new Date(year, month - 1, day, 12);
-    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+    const date = new Date(Date.UTC(year, month - 1, day, 12));
+    return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
 function weekdayForDate(value: string): number {
     const [ year, month, day ] = value.split("-").map(Number);
-    return new Date(year, month - 1, day).getDay();
+    return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 }
 
 function dateNumber(date: Date): number {
-    return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+    const clock = schedulingClock(date);
+    return Date.UTC(clock.year, clock.month - 1, clock.day);
 }
 
 function anchorNumber(value: string): number {
@@ -79,7 +81,13 @@ export class StackScheduler {
     private jobs = new Map<string, Cron>();
     private runningStacks = new Set<string>();
     private enabled = false;
-    private timezone = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    private get timezone(): string {
+        return getSchedulingTimezone();
+    }
+
+    constructor() {
+        onSchedulingTimezoneChange(() => this.reschedule());
+    }
 
     static getInstance(): StackScheduler {
         if (!StackScheduler.instance) {

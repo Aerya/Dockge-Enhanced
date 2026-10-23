@@ -1,5 +1,6 @@
 <template>
     <section class="watcher-updates">
+        <SchedulingTimezoneNotice />
         <h2 class="h4 mb-3"><font-awesome-icon icon="sync-alt" class="me-2" />{{ $t("updates.heading") }}</h2>
 
         <div class="shadow-box big-padding mb-3">
@@ -185,6 +186,7 @@
 </template>
 
 <script setup lang="ts">
+import SchedulingTimezoneNotice from "../SchedulingTimezoneNotice.vue";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { watcherApi } from "./shared";

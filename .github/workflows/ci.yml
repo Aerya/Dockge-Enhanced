@@ -165,6 +165,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/stack-readme.test.ts
 
+      - name: Tests des fuseaux de planification et des variables TZ Compose
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/scheduling-timezone.test.ts backend/scheduling-integration.test.ts common/compose-timezone.test.ts backend/self-update/settings.test.ts backend/watchers/update-policy.test.ts
+
       - name: Tests des propositions de healthcheck par service
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/service-healthcheck.test.ts

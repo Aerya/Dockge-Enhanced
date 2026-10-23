@@ -4,7 +4,8 @@
  * Fichier : backend/watchers/image-watcher.ts
  */
 
-import * as cron from "node-cron";
+import { scheduleInTimezone } from "../scheduling-cron";
+import { schedulingClock } from "../scheduling-timezone";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs/promises";
@@ -1273,10 +1274,10 @@ export function updateVerificationResult(status: ImageStatus): {
 
 export class ImageWatcher {
     private static _instance: ImageWatcher;
-    private cronJob: cron.ScheduledTask | null = null;
-    private minuteCron: cron.ScheduledTask | null = null;
+    private cronJob: ReturnType<typeof scheduleInTimezone> | null = null;
+    private minuteCron: ReturnType<typeof scheduleInTimezone> | null = null;
     private immediateCron: ReturnType<typeof setInterval> | null = null;
-    private cleanupCron: cron.ScheduledTask | null = null;
+    private cleanupCron: ReturnType<typeof scheduleInTimezone> | null = null;
     private _immediateCycleRunning = false;
     private immediateRemoteCache: Map<string, Promise<RemoteDigestInfo>> | null = null;
     private readonly registryCooldownUntil = new Map<string, number>();
@@ -1651,7 +1652,7 @@ export class ImageWatcher {
         console.log(
       `[ImageWatcher] Démarrage — vérification toutes les ${intervalHours}h`,
         );
-        this.cronJob = cron.schedule(expr, () => this.runCheck());
+        this.cronJob = scheduleInTimezone(expr, () => this.runCheck());
         // Contrôle ciblé indépendant du scan global ; un intervalle nul le désactive.
         this.settings.immediateCheckMinutes = sanitizeImmediateCheckMinutes(this.settings.immediateCheckMinutes);
         if (this.settings.immediateCheckMinutes > 0) {
@@ -1660,11 +1661,11 @@ export class ImageWatcher {
             }, this.settings.immediateCheckMinutes * 60_000);
         }
         // Cron minutaire pour appliquer les màj planifiées
-        this.minuteCron = cron.schedule("* * * * *", () =>
+        this.minuteCron = scheduleInTimezone("* * * * *", () =>
             this.applyPendingUpdates().catch(console.error),
         );
         // Cron horaire pour supprimer les anciennes images dont le rollback a expiré
-        this.cleanupCron = cron.schedule("0 * * * *", () =>
+        this.cleanupCron = scheduleInTimezone("0 * * * *", () =>
             this.cleanExpiredRollbacks().catch(console.error),
         );
         // Réconciliation immédiate des tags rollback expirés/orphelins au démarrage.
@@ -2038,7 +2039,8 @@ export class ImageWatcher {
         }
 
         const now = new Date();
-        const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        const clock = schedulingClock(now);
+        const currentTime = `${String(clock.hour).padStart(2, "0")}:${String(clock.minute).padStart(2, "0")}`;
 
         if (isUpdatePaused(this.settings.globalUpdatePause)) {
             return;

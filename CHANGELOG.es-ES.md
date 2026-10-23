@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-23 — Zona horaria de programaciones y TZ opcional por stack** — Zona horaria común por instancia y aplicación opcional de TZ por stack en el editor, con confirmación y sin recreación automática. Zona del proceso en el contenedor; predeterminada para programaciones hasta elegir una en **Ajustes → General**. La elección WebUI tiene prioridad para las programaciones de Enhanced.
+
 **2026-10-23 — Notificaciones de actualizaciones de imágenes** — Discord y Apprise anuncian una actualización pendiente una sola vez por stack, imagen y digest remoto, incluso si espera una franja programada. Este registro se conserva tras reiniciar Enhanced. Un nuevo digest se vuelve a anunciar; los resultados de las actualizaciones automáticas mantienen su propia notificación. Los envíos fallidos se reintentan en las comprobaciones siguientes, por separado para cada webhook de Discord y el destino Apprise configurado.
 
 **2026-10-18 — Comprobaciones Compose y Home Assistant** — Avisos de conflictos de puertos antes de guardar/desplegar, con variables, overrides y rangos resueltos; comparación de referencias de imágenes ejecutadas y corrección del YAML para revisar. Integración opcional de Home Assistant con sensores y controles de inicio/parada/reinicio limitados por permisos. [Guide](docs/HOME-ASSISTANT.md).

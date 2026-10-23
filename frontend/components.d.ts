@@ -46,6 +46,7 @@ declare module 'vue' {
     ResourceSparkline: typeof import('./src/components/ResourceSparkline.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SchedulingTimezoneNotice: typeof import('./src/components/SchedulingTimezoneNotice.vue')['default']
     Security: typeof import('./src/components/settings/Security.vue')['default']
     StackActionMenu: typeof import('./src/components/StackActionMenu.vue')['default']
     StackAutoUpdateBulk: typeof import('./src/components/StackAutoUpdateBulk.vue')['default']
