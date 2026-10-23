@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-23-emudhra-tls",
+        items: [ "releaseNews.item.emudhraTls" ],
+    },
+    {
         id: "2026-10-23-scheduling-timezone",
         items: [ "releaseNews.item.schedulingTimezone" ],
     },

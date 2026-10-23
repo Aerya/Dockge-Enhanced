@@ -62,6 +62,13 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+### TLS-Sicherheit — Oktober 2026
+
+Zertifikatsspeicher und TLS-Komponenten der Images werden nach dem eMudhra-Vorfall aktualisiert. Die Prüfungen umfassen die betroffenen Ketten, beide No-CT-Fälle und eine gültige HTTPS-Verbindung. Laufende Images bleiben unverändert; ihr Austausch muss nach der Validierung geplant werden.
+
+[Details zum Vorfall](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
 **Compose-Prüfungen und Home Assistant :** Warnungen vor Portkonflikten beim Speichern/Bereitstellen, einschließlich aufgelöster Variablen, Overrides und Bereiche; Vergleich laufender Image-Referenzen mit überprüfbarer YAML-Korrektur. Optionale Home-Assistant-Integration mit Zustandssensoren und berechtigungsgebundenen Start/Stopp/Neustart-Aktionen. [Guide](docs/HOME-ASSISTANT.md).
 
 **Instance / Global :** Startseite: zuerst lokale Statistiken, darunter globale Summen unabhängig von Stack-Filtern. Aufklappbare Übersichtskarten zeigen Werte und direkte Menülinks je Instanz. Offline- oder ältere Instanzen werden als nicht verfügbar angezeigt; deaktivierte Backups werden separat ausgewiesen.

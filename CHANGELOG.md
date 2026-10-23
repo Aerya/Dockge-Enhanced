@@ -1,5 +1,12 @@
 # Dockge Enhanced Changelog
 
+### TLS security — October 2026
+
+Update image trust stores and TLS components following the eMudhra incident. Checks cover the compromised chains, including both No CT cases, and a valid HTTPS connection. Running images remain unchanged: schedule their replacement after validation.
+
+[Incident details](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
 **2026-10-23 — Settings page rendering** — Fixed a timezone-list import error that could leave Settings blank (`timezones is not iterable`). The timezone selector and settings menu render again without changing saved settings or schedules. Regression tests cover the real timezone data and General page rendering. Fixes #555.
 
 **2026-10-23 — Scheduling timezone and optional container TZ** — Shared scheduling timezone per instance, with optional, confirmed per-stack TZ changes in the Compose editor; no automatic container recreation. Container runtime timezone; scheduling defaults to it until explicitly configured in **Settings → General**. The WebUI choice takes precedence for Enhanced schedules.
