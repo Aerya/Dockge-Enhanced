@@ -62,6 +62,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Port links :** Choose Hostname or IP address for container port links in Settings → General. Each linked instance keeps its own choice; the existing default is preserved. Hostname mode prioritizes Primary Hostname, falling back to the browser/agent address. IP mode supports automatic IP selection or an explicit reachable IPv4/IPv6. If no IP is known, the badge remains visible without a link, with an explanatory tooltip. Configure each hosting instance separately and update both sides to use this preference through federation; older agents retain their previous behavior. Docker port bindings, DNS and stored hostnames are unchanged.
+
 ### TLS security — October 2026
 
 Update image trust stores and TLS components following the eMudhra incident. Checks cover the compromised chains, including both No CT cases, and a valid HTTPS connection. Running images remain unchanged: schedule their replacement after validation.
@@ -410,6 +412,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 <details>
 <summary>Show all features</summary>
+
+- Choose Hostname or IP address for container port links in Settings → General. Each linked instance keeps its own choice; the existing default is preserved.
 
 ### Multi-server & federation
 - Full-mesh federation between Dockge-Enhanced instances

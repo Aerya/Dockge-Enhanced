@@ -63,6 +63,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Liens de ports :** Choisissez Nom d’hôte ou Adresse IP pour les liens de ports des conteneurs dans Paramètres → Général. Chaque instance liée conserve son choix ; le comportement par défaut est préservé. Le mode Nom d’hôte privilégie le Nom d’hôte principal, puis l’adresse du navigateur/de l’agent. Le mode IP utilise une IP connue ou une IPv4/IPv6 explicite joignable. Sans IP connue, le badge reste visible sans lien avec une infobulle explicative. Configurez chaque instance hébergeuse séparément et mettez les deux côtés à jour pour transmettre ce choix en fédération ; les anciens agents gardent leur comportement. Ports Docker, DNS et noms d’hôte enregistrés restent inchangés.
+
 ### Sécurité TLS — octobre 2026
 
 Mise à jour des certificats et des composants TLS des images après l’incident eMudhra. Les contrôles couvrent les chaînes compromises, dont les deux cas « No CT », et une connexion HTTPS valide. Une image déjà en cours d’exécution reste inchangée : son remplacement doit être planifié après validation.
@@ -410,6 +412,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 <details>
 <summary>Afficher toutes les fonctionnalités</summary>
+
+- Choisissez Nom d’hôte ou Adresse IP pour les liens de ports des conteneurs dans Paramètres → Général. Chaque instance liée conserve son choix ; le comportement par défaut est préservé.
 
 ### Multi-serveurs & fédération
 - Fédération en maillage complet entre instances Dockge-Enhanced

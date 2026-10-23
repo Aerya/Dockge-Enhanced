@@ -55,7 +55,7 @@ jobs:
 
       - name: Tests des liens de ports et du nom d’hôte principal
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test common/util-common.test.ts
+        run: npx tsx --test common/util-common.test.ts common/port-link-settings.test.ts backend/port-link-federation.test.ts
 
       - name: Tests des transports Socket.IO de la WebUI
         if: steps.docs.outputs.docs_only != 'true'

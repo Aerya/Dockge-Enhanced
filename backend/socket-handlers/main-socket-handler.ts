@@ -1,6 +1,7 @@
 // @ts-ignore
 import composerize from "composerize";
 import { SocketHandler } from "../socket-handler.js";
+import { validatePortLinkSettings } from "../../common/port-link-settings";
 import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
 import { R } from "redbean-node";
@@ -318,6 +319,8 @@ export class MainSocketHandler extends SocketHandler {
                 checkLogin(socket);
                 const data = await Settings.getSettings("general");
                 data.schedulingTimezone = getSchedulingTimezone();
+                data.portLinkAddressMode = data.portLinkAddressMode === "ip" ? "ip" : "hostname";
+                data.portLinkIp = data.portLinkIp || "";
 
                 if (fs.existsSync(path.join(server.stacksDir, "global.env"))) {
                     data.globalENV = fs.readFileSync(path.join(server.stacksDir, "global.env"), "utf-8");
@@ -343,6 +346,7 @@ export class MainSocketHandler extends SocketHandler {
         socket.on("setSettings", async (data, currentPassword, callback) => {
             try {
                 checkLogin(socket);
+                validatePortLinkSettings(data);
 
                 if (data.schedulingTimezone !== undefined) {
                     data.schedulingTimezone = validateSchedulingTimezone(data.schedulingTimezone);

@@ -38,6 +38,20 @@
                 <div class="form-text">{{ $t("schedulingTimezone.help") }}</div>
             </div>
 
+            <div class="mb-4">
+                <label class="form-label" for="port-link-address-mode">{{ $t("portLinks.label") }}</label>
+                <select id="port-link-address-mode" v-model="settings.portLinkAddressMode" class="form-select">
+                    <option value="hostname">{{ $t("portLinks.hostname") }}</option>
+                    <option value="ip">{{ $t("portLinks.ip") }}</option>
+                </select>
+                <div class="form-text">{{ $t("portLinks.help") }}</div>
+                <template v-if="settings.portLinkAddressMode === 'ip'">
+                    <label class="form-label mt-2" for="port-link-ip">{{ $t("portLinks.explicitIp") }}</label>
+                    <input id="port-link-ip" v-model="settings.portLinkIp" class="form-control" type="text" :placeholder="$t('portLinks.automatic')" />
+                    <div class="form-text">{{ $t("portLinks.ipHelp") }}</div>
+                </template>
+            </div>
+
             <!-- Primary Hostname -->
             <div class="mb-4">
                 <label class="form-label" for="primaryBaseURL">

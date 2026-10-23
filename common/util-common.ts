@@ -3,6 +3,7 @@
  */
 import yaml, { Document, Pair, Scalar } from "yaml";
 import { DotenvParseOutput } from "dotenv";
+import { portLinkIpLiteral } from "./port-link-settings";
 
 // Init dayjs
 import dayjs from "dayjs";
@@ -535,7 +536,38 @@ export function parseDockerPort(input : string | DockerPortObject, hostname : st
         display: display,
     };
 }
-export function resolveEndpointHostname(endpoint: string, agentUrl: string | undefined, localHostname: string, protocol = "http:", primaryHostname = ""): string {
+export function parseDockerPortLink(input: string | DockerPortObject, hostname: string, addressMode = "hostname") {
+    const parsed = parseDockerPort(input, hostname);
+    if (addressMode !== "ip") {
+        return parsed;
+    }
+    if (!hostname) {
+        return { ...parsed,
+            url: "" };
+    }
+    if (parsed.url) {
+        try {
+            const url = new URL(parsed.url);
+            url.hostname = hostname;
+            parsed.url = url.toString();
+        } catch {
+            parsed.url = "";
+        }
+    }
+    return parsed;
+}
+
+export function resolveEndpointHostname(endpoint: string, agentUrl: string | undefined, localHostname: string, protocol = "http:", primaryHostname = "", addressMode = "hostname", explicitIp = ""): string {
+    if (addressMode === "ip") {
+        const configuredIp = portLinkIpLiteral(explicitIp);
+        if (configuredIp) {
+            return configuredIp;
+        }
+        // For a remote stack, never fall back to the central server's address.
+        const instanceHost = resolveEndpointHostname(endpoint, agentUrl, localHostname, protocol, "");
+        const endpointHost = endpoint ? resolveEndpointHostname(endpoint, undefined, "", protocol, "") : "";
+        return portLinkIpLiteral(instanceHost) || portLinkIpLiteral(endpointHost) || portLinkIpLiteral(primaryHostname);
+    }
     // Only an explicitly configured hostname overrides the instance/browser fallback.
     // The legacy stack.primaryHostname also contains synthetic "localhost" defaults.
     const configured = primaryHostname.trim();
