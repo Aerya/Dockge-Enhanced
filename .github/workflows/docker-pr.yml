@@ -79,6 +79,16 @@ jobs:
           tags: dockge-enhanced-updater-pr:${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           pull: true
 
+      - name: Vérifier le runtime Node et les modules natifs
+        run: |
+          tag="${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}"
+          docker run --rm --network none --read-only --tmpfs /tmp --tmpfs /app/data \
+            -v "$PWD/.github/scripts/docker-runtime-smoke.cjs:/runtime-smoke.cjs:ro" \
+            --entrypoint node "dockge-enhanced-pr:$tag" /runtime-smoke.cjs
+          docker run --rm --network none --read-only --tmpfs /tmp \
+            -v "$PWD/.github/scripts/docker-runtime-smoke.cjs:/runtime-smoke.cjs:ro" \
+            --entrypoint node "dockge-enhanced-updater-pr:$tag" /runtime-smoke.cjs --runtime-only
+
       - name: Scanner l’image construite
         run: |
           tag="${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}"
@@ -104,11 +114,10 @@ jobs:
       - name: Tester le démarrage et l’endpoint de santé
         run: |
           tag="${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}"
-          mkdir -p /tmp/dockge-validation-stacks
           docker run -d --name dockge-pr-validation \
             -p 127.0.0.1:5001:5001 \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v /tmp/dockge-validation-stacks:/opt/stacks \
+            --tmpfs /app/data --tmpfs /opt/stacks \
             -e DOCKGE_STACKS_DIR=/opt/stacks \
             "dockge-enhanced-pr:$tag"
           for _ in $(seq 1 60); do
