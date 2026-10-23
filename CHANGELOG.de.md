@@ -1,5 +1,7 @@
 # Dockge-Enhanced-Changelog
 
+**2026-10-23 — Benachrichtigungen zu Image-Updates** — Discord und Apprise melden ein ausstehendes Image-Update nur einmal pro Stack, Image und Remote-Digest, auch wenn es auf ein geplantes Zeitfenster wartet. Dieser Verlauf bleibt nach einem Neustart von Enhanced erhalten. Ein neuer Digest wird erneut gemeldet; Ergebnisse automatischer Updates erhalten weiterhin eine eigene Benachrichtigung. Fehlgeschlagene Zustellungen werden bei späteren Prüfungen erneut versucht, getrennt je Discord-Webhook und konfiguriertem Apprise-Ziel.
+
 **2026-10-18 — Compose-Prüfungen und Home Assistant** — Warnungen vor Portkonflikten beim Speichern/Bereitstellen, einschließlich aufgelöster Variablen, Overrides und Bereiche; Vergleich laufender Image-Referenzen mit überprüfbarer YAML-Korrektur. Optionale Home-Assistant-Integration mit Zustandssensoren und berechtigungsgebundenen Start/Stopp/Neustart-Aktionen. [Guide](docs/HOME-ASSISTANT.md).
 
 **2026-10-18 — Instance / Global** — Startseite: zuerst lokale Statistiken, darunter globale Summen unabhängig von Stack-Filtern. Aufklappbare Übersichtskarten zeigen Werte und direkte Menülinks je Instanz. Offline- oder ältere Instanzen werden als nicht verfügbar angezeigt; deaktivierte Backups werden separat ausgewiesen.

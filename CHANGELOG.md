@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+**2026-10-23 — Image update notifications** — Discord and Apprise announce a pending image update only once per stack, image and remote digest, including updates waiting for a scheduled window. This tracking survives Enhanced restarts. A new digest is announced again; automatic update results still generate their own notification. Failed deliveries are retried on subsequent checks independently for each Discord webhook and the configured Apprise destination.
+
 **2026-10-18 — Compose checks and Home Assistant** — Advisory port-conflict checks before saving/deploying, including resolved variables, overrides and ranges; running-image reference comparison with a reviewable YAML correction. Optional Home Assistant custom integration with state sensors and permission-scoped start/stop/restart controls. [Guide](docs/HOME-ASSISTANT.md).
 
 **2026-10-18 — Instance / Global** — Home: local statistics first, then global totals independent of stack filters. Expand each summary card for per-instance values and direct menu links. Offline or older instances are marked unavailable; backup coverage distinguishes disabled instances.

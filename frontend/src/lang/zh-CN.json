@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.imageUpdateNotifications": "ImageWatcher：同一待更新镜像版本不再重复发送 Discord/Apprise 通知，重启后仍然有效。新版本和自动更新结果仍会通知。",
     "composeDiagnostics.close": "关闭",
     "composeDiagnostics.loading": "正在检查…",
     "releaseNews.item.composeDiagnostics": "保存或部署前提示端口冲突，支持解析变量、覆盖文件和端口范围；比较运行中的镜像引用并准备待审核的 YAML 修正。可选 Home Assistant 集成提供状态传感器和受权限限制的启动、停止、重启控制。",

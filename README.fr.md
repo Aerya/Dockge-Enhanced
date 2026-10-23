@@ -91,6 +91,8 @@ Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli D
 
 #### Mises à jour et ImageWatcher
 
+**Notifications des mises à jour d’images :** Discord et Apprise n’annoncent qu’une fois une mise à jour en attente pour une même stack, image et digest distant, y compris lorsqu’elle attend son créneau planifié. Ce suivi est conservé après redémarrage d’Enhanced. Un nouveau digest est annoncé à nouveau ; les résultats des mises à jour automatiques conservent leur propre notification. Les envois échoués sont retentés aux contrôles suivants, indépendamment pour chaque webhook Discord et la destination Apprise configurée.
+
 **Les services arrêtés restent arrêtés :** une mise à jour automatique d’image est reportée si un service Compose ciblé, y compris un compagnon de namespace réseau requis, est arrêté ou absent. ImageWatcher revérifie après le téléchargement, avant la recréation, puis réessaie lors d’un contrôle ultérieur. Il n’utilise pas `compose up` pour réveiller un service arrêté.
 
 **Fréquences de vérification :** dans **Watcher > Images**, le scan général couvre toutes les images toutes les **6 h par défaut**. Les images en mode **Immédiat** bénéficient en plus d’un contrôle ciblé toutes les **5 min par défaut**. Cet intervalle ciblé peut être défini en minutes ou en heures (de 5 min à 24 h), ou désactivé seul : le scan général reste actif. Sélectionner le mode Immédiat peut toujours déclencher un contrôle ciblé ponctuel.
@@ -484,6 +486,7 @@ La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouto
 - Intégration aux workflows de récupération et de mise à jour
 
 ### Mises à jour
+- Une annonce par stack/image/digest en attente et par destination de notification, conservée après redémarrage ; nouvel essai en cas d’échec d’envoi et maintien des notifications de résultat des mises à jour automatiques.
 - Mises à jour groupées des images d’une stack: aperçu et conservation des exceptions individuelles.
 - **ImageWatcher Immédiat** : contrôle ciblé à l’activation puis toutes les 5 minutes par défaut (réglable ou désactivable indépendamment du scan général de 6 h), détection des images réellement exécutées, mutualisation des requêtes et temporisation HTTP 429.
 - Exclusion par service des contrôles ImageWatcher et mises à jour automatiques/groupées avec `dockge.imageupdates.check: "false"`

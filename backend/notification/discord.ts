@@ -119,16 +119,17 @@ export class DiscordNotifier {
     }
 
     /** Envoie l'embed sur tous les webhooks configurés en parallèle */
-    async sendEmbed(options: EmbedOptions): Promise<void> {
+    async sendEmbed(options: EmbedOptions): Promise<boolean> {
         if (this.urls.length === 0) {
             console.warn("[DiscordNotifier] Aucun webhook configuré, notification ignorée.");
-            return;
+            return false;
         }
         const results = await Promise.all(this.urls.map(url => this.sendEmbedToUrl(url, options)));
         const sent = results.filter(Boolean).length;
         const failed = this.urls.length - sent;
         if (sent > 0) log.info("discord", `Notification envoyée — success=${sent}/${this.urls.length} title=${options.title}`);
         if (failed > 0 && sent === 0) console.error(`[DiscordNotifier] Échec total — aucun webhook n'a reçu : ${options.title}`);
+        return failed === 0;
     }
 
     /** Envoie un message texte simple sur tous les webhooks */

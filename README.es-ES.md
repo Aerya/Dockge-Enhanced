@@ -90,6 +90,8 @@ En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (
 
 #### Actualizaciones e ImageWatcher
 
+**Notificaciones de actualizaciones de imágenes :** Discord y Apprise anuncian una actualización pendiente una sola vez por stack, imagen y digest remoto, incluso si espera una franja programada. Este registro se conserva tras reiniciar Enhanced. Un nuevo digest se vuelve a anunciar; los resultados de las actualizaciones automáticas mantienen su propia notificación. Los envíos fallidos se reintentan en las comprobaciones siguientes, por separado para cada webhook de Discord y el destino Apprise configurado.
+
 **Los servicios detenidos permanecen detenidos:** una actualización automática de imagen se aplaza si un servicio Compose seleccionado, incluido un compañero necesario del espacio de nombres de red, está detenido o ausente. ImageWatcher vuelve a comprobarlo después de la descarga y antes de recrearlo, y reintenta más adelante. No utiliza `compose up` para iniciar un servicio detenido.
 
 **Intervalos de comprobación:** en **Watcher > Imágenes**, el análisis general cubre todas las imágenes cada **6 horas por defecto**. Las imágenes en modo **Inmediato** también reciben comprobaciones específicas cada **5 minutos por defecto**. Este intervalo se puede ajustar en minutos u horas (entre 5 minutos y 24 horas), o desactivar solo las comprobaciones periódicas específicas; el análisis general sigue activo. Al seleccionar el modo Inmediato, todavía se puede iniciar una comprobación específica puntual.
@@ -463,6 +465,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Historial e integración con recuperación protegida
 
 ### Actualizaciones
+- Un aviso persistente por stack/imagen/digest pendiente y destino de notificación; reintentos de envío y notificaciones de resultados de actualizaciones automáticas.
 - Actualizaciones de imágenes agrupadas por stack: vista previa y conservación de excepciones.
 - **ImageWatcher Inmediato**: control al activar la opción y cada 5 minutos por defecto (configurable o desactivable sin afectar al análisis general de 6 horas), comprobación de las imágenes realmente ejecutadas, consultas compartidas y espera tras HTTP 429.
 - Exclusión por servicio de comprobaciones de ImageWatcher y actualizaciones automáticas/por lotes mediante `dockge.imageupdates.check: "false"`

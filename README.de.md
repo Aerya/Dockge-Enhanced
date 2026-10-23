@@ -90,6 +90,8 @@ Unter **Watcher > Images > Fallback-DNS** können Sie den anwendungsbezogenen DN
 
 #### Updates und ImageWatcher
 
+**Benachrichtigungen zu Image-Updates :** Discord und Apprise melden ein ausstehendes Image-Update nur einmal pro Stack, Image und Remote-Digest, auch wenn es auf ein geplantes Zeitfenster wartet. Dieser Verlauf bleibt nach einem Neustart von Enhanced erhalten. Ein neuer Digest wird erneut gemeldet; Ergebnisse automatischer Updates erhalten weiterhin eine eigene Benachrichtigung. Fehlgeschlagene Zustellungen werden bei späteren Prüfungen erneut versucht, getrennt je Discord-Webhook und konfiguriertem Apprise-Ziel.
+
 **Gestoppte Dienste bleiben gestoppt:** Automatische Image-Updates werden verschoben, wenn ein betroffener Compose-Dienst oder ein erforderlicher Netzwerk-Namespace-Begleiter gestoppt ist oder fehlt. ImageWatcher prüft dies nach dem Pull vor der Neuerstellung erneut und versucht das Update bei einer späteren Prüfung nochmals. Ein gestoppter Dienst wird nicht durch `compose up` geweckt.
 
 **Prüfintervalle:** Unter **Watcher > Images** erfasst der vollständige Scan standardmäßig **alle 6 Stunden** alle Images. Images im **Sofort-Modus** werden zusätzlich standardmäßig **alle 5 Minuten** gezielt geprüft. Dieses gezielte Intervall lässt sich in Minuten oder Stunden (5 Minuten bis 24 Stunden) einstellen oder separat deaktivieren; der vollständige Scan bleibt aktiv. Das Auswählen des Sofort-Modus kann weiterhin eine einmalige gezielte Prüfung auslösen.
@@ -484,6 +486,7 @@ Die Restic-Snapshot-Liste ist standardmäßig auf **Alle** eingestellt. **Speich
 - Integration in geschützte Update- und Wiederherstellungsworkflows
 
 ### Updates
+- Eine persistente Meldung pro ausstehendem Stack/Image/Digest und Benachrichtigungsziel; erneuter Versuch bei Zustellfehlern und weiterhin Ergebnismeldungen automatischer Updates.
 - Sammel-Image-Richtlinien für einen Stack: Vorschau und Beibehaltung einzelner Ausnahmen.
 - **ImageWatcher Immediate**: gezielte Prüfungen bei Aktivierung und standardmäßig alle 5 Minuten (unabhängig vom vollständigen 6-Stunden-Scan einstellbar oder deaktivierbar), Erkennung tatsächlich laufender Images, gemeinsame Registry-Anfragen und HTTP-429-Abkühlphasen.
 - Dienstspezifischer Ausschluss von ImageWatcher-Prüfungen und automatischen/Batch-Image-Updates mit `dockge.imageupdates.check: "false"`
