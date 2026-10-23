@@ -79,6 +79,12 @@
                 <div v-if="templateError" class="text-danger mt-1" role="alert">{{ templateError }}</div>
             </div>
 
+            <div class="mb-4">
+                <label class="form-label" for="default-env-template">{{ $t("composeTemplate.envHeading") }}</label>
+                <textarea id="default-env-template" v-model="composeEnvTemplateDraft" class="form-control font-monospace" rows="6" maxlength="65536" spellcheck="false" />
+                <div class="form-text">{{ $t("composeTemplate.envHelp") }}</div>
+            </div>
+
             <!-- Save Button -->
             <div>
                 <button class="btn btn-primary" type="submit">
@@ -91,6 +97,7 @@
 
 <script>
 
+import { DEFAULT_COMPOSE_ENV, MAX_COMPOSE_TEMPLATE_BYTES } from "../../../../common/compose-templates";
 import dayjs from "dayjs";
 import { parseDocument } from "yaml";
 import { timezoneList } from "../../util-frontend";
@@ -111,6 +118,7 @@ export default {
             timezoneList: timezoneList().filter(zone => zone.value !== "UTC"),
             originalSchedulingTimezone: "",
             composeTemplateDraft: defaultComposeTemplate,
+            composeEnvTemplateDraft: DEFAULT_COMPOSE_ENV,
             templateError: "",
         };
     },
@@ -136,6 +144,7 @@ export default {
             handler(loaded) {
                 if (loaded) {
                     this.composeTemplateDraft = this.settings.composeTemplate || defaultComposeTemplate;
+                    this.composeEnvTemplateDraft = this.settings.composeEnvTemplate ?? DEFAULT_COMPOSE_ENV;
                     this.originalSchedulingTimezone = this.settings.schedulingTimezone;
                 }
             },
@@ -145,8 +154,12 @@ export default {
     methods: {
         /** Save the settings */
         saveGeneral() {
+            if (new TextEncoder().encode(this.composeEnvTemplateDraft).length > MAX_COMPOSE_TEMPLATE_BYTES || this.composeEnvTemplateDraft.includes("\0")) {
+                this.templateError = this.$t("composeTemplate.envInvalid");
+                return;
+            }
             const doc = parseDocument(this.composeTemplateDraft);
-            if (doc.errors.length || !doc.has("services") || this.composeTemplateDraft.length > 65536) {
+            if (doc.errors.length || !doc.has("services") || new TextEncoder().encode(this.composeTemplateDraft).length > MAX_COMPOSE_TEMPLATE_BYTES) {
                 this.templateError = this.$t("composeTemplate.invalid");
                 return;
             }
@@ -156,6 +169,7 @@ export default {
                 return;
             }
             this.settings.composeTemplate = this.composeTemplateDraft;
+            this.settings.composeEnvTemplate = this.composeEnvTemplateDraft;
             localStorage.timezone = this.$root.userTimezone;
             this.saveSettings();
         },

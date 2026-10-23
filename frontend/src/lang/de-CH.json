@@ -159,5 +159,6 @@
     "watcher.registryDns.resolved": "Aufgelöst",
     "watcher.registryDns.noAddress": "Keine Adresse",
     "watcher.registryDns.errorStatus": "Fehler",
-    "watcher.registryDns.hostNotFound": "Hostname nicht gefunden."
+    "watcher.registryDns.hostNotFound": "Hostname nicht gefunden.",
+    "releaseNews.item.composeAgentConvenience": "Benannte HTTP/HTTPS-Links, konfigurierbare .env-Standardvorlage, dauerhafte Agent-Tags und Filter sowie optionale Rückwärtsverbindungen mit individuellen Tokens. Ein vorhandenes lokales Administratorkonto genügt. Der Knoten verbindet sich automatisch nur mit seinem Hub; Datenübertragungen zwischen Servern benötigen direkte Föderation."
 }

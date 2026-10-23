@@ -44,6 +44,8 @@ import { parse } from '@vue/compiler-sfc';
 const { descriptor } = parse(readFileSync(new URL('./pages/DashboardHome.vue', import.meta.url), 'utf8'));
 const component = runInNewContext(descriptor.script.content.replace(/^import .*;$/gm, '').replace('export default', 'result ='), {
     aggregateHomeValues, homeSummaryValue, homeInstanceLink,
+    // These editors are outside the summary fragment rendered by this test.
+    AgentTagsEditor: {}, ReverseAgentSetup: {},
     statusNameShort: value => value,
 });
 test('homepage keeps local stacks first and totals independent of sidebar filters', () => {

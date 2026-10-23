@@ -456,7 +456,7 @@ export default {
         },
         targetAgents() {
             return Object.entries(this.$root.agentList)
-                .filter(([ endpoint ]) => endpoint !== this.endpoint && this.$root.agentStatusList[endpoint] === "online")
+                .filter(([ endpoint, agent ]) => endpoint !== this.endpoint && !agent.reverse && !this.$root.agentList[this.endpoint]?.reverse && this.$root.agentStatusList[endpoint] === "online")
                 .map(([ endpoint, agent ]) => ({ endpoint,
                     name: agent.displayName || endpoint || this.$t("currentEndpoint") }));
         },

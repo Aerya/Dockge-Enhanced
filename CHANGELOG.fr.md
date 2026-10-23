@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**À paraître — Modèles Compose et agents distants** — Liens HTTP/HTTPS nommés, modèle .env par défaut configurable, tags persistants des agents et filtrage par tag, ainsi que connexions inversées facultatives avec jetons individuels et rattachement automatique après initialisation du compte local. Les agents inversés appartiennent à leur serveur central ; les transferts de données interserveurs nécessitent toujours une fédération directe. Un compte administrateur local existant suffit : aucun nouveau compte à créer. [Documentation](docs/compose-and-reverse-agents.md).
+
 **2026-10-23 — Liens de ports** — Choisissez Nom d’hôte ou Adresse IP pour les liens de ports des conteneurs dans Paramètres → Général. Chaque instance liée conserve son choix ; le comportement par défaut est préservé. Le mode Nom d’hôte privilégie le Nom d’hôte principal, puis l’adresse du navigateur/de l’agent. Le mode IP utilise une IP connue ou une IPv4/IPv6 explicite joignable. Sans IP connue, le badge reste visible sans lien avec une infobulle explicative. Configurez chaque instance hébergeuse séparément et mettez les deux côtés à jour pour transmettre ce choix en fédération ; les anciens agents gardent leur comportement. Ports Docker, DNS et noms d’hôte enregistrés restent inchangés.
 
 ### Sécurité TLS — octobre 2026

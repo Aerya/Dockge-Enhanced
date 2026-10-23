@@ -143,5 +143,6 @@
     "watcher.registryDns.resolved": "Resolvido",
     "watcher.registryDns.noAddress": "Sem endereço",
     "watcher.registryDns.errorStatus": "Erro",
-    "watcher.registryDns.hostNotFound": "Nome do anfitrião não encontrado."
+    "watcher.registryDns.hostNotFound": "Nome do anfitrião não encontrado.",
+    "releaseNews.item.composeAgentConvenience": "Ligações HTTP/HTTPS com nome, modelo .env predefinido configurável, etiquetas persistentes e filtragem de agentes, e ligações inversas opcionais com tokens individuais. Basta uma conta de administrador local existente. O nó liga-se automaticamente apenas ao seu servidor central; as transferências entre servidores exigem federação direta."
 }

@@ -140,5 +140,6 @@
     "watcher.registryDns.resolved": "تم الحل",
     "watcher.registryDns.noAddress": "لا يوجد عنوان",
     "watcher.registryDns.errorStatus": "خطأ",
-    "watcher.registryDns.hostNotFound": "لم يُعثر على اسم المضيف."
+    "watcher.registryDns.hostNotFound": "لم يُعثر على اسم المضيف.",
+    "releaseNews.item.composeAgentConvenience": "روابط HTTP/HTTPS بأسماء، وقالب .env افتراضي قابل للتخصيص، ووسوم دائمة للوكلاء مع التصفية، واتصالات عكسية اختيارية برمز مستقل لكل عقدة. يكفي حساب مسؤول محلي موجود. تتصل العقدة تلقائيًا بالخادم المركزي المحدد؛ نقل البيانات بين الخوادم يتطلب اتصال اتحاد مباشرًا."
 }

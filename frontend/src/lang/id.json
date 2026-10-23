@@ -149,5 +149,6 @@
     "watcher.registryDns.resolved": "Berhasil",
     "watcher.registryDns.noAddress": "Tidak ada alamat",
     "watcher.registryDns.errorStatus": "Kesalahan",
-    "watcher.registryDns.hostNotFound": "Nama host tidak ditemukan."
+    "watcher.registryDns.hostNotFound": "Nama host tidak ditemukan.",
+    "releaseNews.item.composeAgentConvenience": "Tautan HTTP/HTTPS bernama, templat .env bawaan yang dapat disesuaikan, tag agen permanen dan filter, serta koneksi balik opsional dengan token masing-masing. Akun administrator lokal yang sudah ada sudah cukup. Node tersambung otomatis hanya ke server pusatnya; transfer data antarserver tetap memerlukan federasi langsung."
 }

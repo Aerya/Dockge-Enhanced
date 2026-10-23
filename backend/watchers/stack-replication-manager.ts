@@ -603,6 +603,9 @@ export class StackReplicationManager {
         if (!agent) {
             throw new ValidationError(`Agent not found: ${endpoint}`);
         }
+        if (agent.url.startsWith("reverse://")) {
+            throw new ValidationError("reverseAgent.directRequired");
+        }
         return new Promise((resolve, reject) => {
             let client: SocketClient | undefined;
             let settled = false;

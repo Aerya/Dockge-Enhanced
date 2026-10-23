@@ -143,5 +143,6 @@
     "watcher.registryDns.resolved": "แปลงชื่อสำเร็จ",
     "watcher.registryDns.noAddress": "ไม่มีที่อยู่",
     "watcher.registryDns.errorStatus": "ข้อผิดพลาด",
-    "watcher.registryDns.hostNotFound": "ไม่พบชื่อโฮสต์"
+    "watcher.registryDns.hostNotFound": "ไม่พบชื่อโฮสต์",
+    "releaseNews.item.composeAgentConvenience": "ลิงก์ HTTP/HTTPS ที่ตั้งชื่อได้ เทมเพลต .env เริ่มต้นที่ปรับแต่งได้ แท็กเอเจนต์แบบถาวรและการกรอง พร้อมการเชื่อมต่อย้อนกลับแบบเลือกใช้ด้วยโทเค็นแยกแต่ละโหนด บัญชีผู้ดูแลระบบภายในที่มีอยู่ก็เพียงพอ โหนดจะเชื่อมต่ออัตโนมัติกับเซิร์ฟเวอร์กลางของตนเท่านั้น การถ่ายโอนข้อมูลระหว่างเซิร์ฟเวอร์ยังต้องใช้การเชื่อมต่อเฟเดอเรชันโดยตรง"
 }

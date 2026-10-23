@@ -557,14 +557,8 @@
     }
   },
   "frontend/src/components/StackList.vue": {
-    "@stylistic/brace-style": {
-      "count": 4
-    },
     "@stylistic/max-statements-per-line": {
       "count": 2
-    },
-    "@stylistic/object-property-newline": {
-      "count": 1
     },
     "curly": {
       "count": 10

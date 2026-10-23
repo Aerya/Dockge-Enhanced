@@ -143,5 +143,6 @@
     "watcher.registryDns.resolved": "Razrešeno",
     "watcher.registryDns.noAddress": "Ni naslova",
     "watcher.registryDns.errorStatus": "Napaka",
-    "watcher.registryDns.hostNotFound": "Ime gostitelja ni bilo najdeno."
+    "watcher.registryDns.hostNotFound": "Ime gostitelja ni bilo najdeno.",
+    "releaseNews.item.composeAgentConvenience": "Poimenovane povezave HTTP/HTTPS, nastavljiva privzeta predloga .env, trajne oznake agentov in filtriranje ter izbirne povratne povezave s posameznimi žetoni. Zadostuje obstoječi lokalni skrbniški račun. Vozlišče se samodejno poveže le s svojim osrednjim strežnikom; prenos podatkov med strežniki zahteva neposredno federativno povezavo."
 }

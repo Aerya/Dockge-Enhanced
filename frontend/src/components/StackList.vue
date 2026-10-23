@@ -1,6 +1,13 @@
 <template>
     <div class="shadow-box">
         <div class="list-header">
+            <label v-if="agentTagOptions.length || agentTagFilter" class="small mb-2">
+                {{ $t('agentTags.filter') }}
+                <select v-model="agentTagFilter" class="form-select form-select-sm">
+                    <option value="">{{ $t('stackFilterAllInstances') }}</option>
+                    <option v-for="tag in agentTagOptions" :key="tag" :value="tag">{{ tag }}</option>
+                </select>
+            </label>
             <div class="header-top">
                 <div class="stack-summary" :aria-label="$t('stackSummaryAria')" role="group">
                     <button
@@ -165,6 +172,7 @@
 </template>
 
 <script>
+import { filterStacksByAgentTag } from "../../../common/agent-tags";
 import StackListItem from "../components/StackListItem.vue";
 import { CREATED_FILE, CREATED_STACK, EXITED, PAUSED, RUNNING, UNKNOWN } from "../../../common/util-common";
 import { useStackSchedules } from "../composables/useStackSchedules";
@@ -192,6 +200,7 @@ export default {
             stackStatusFilter: "all",
             stackAgentFilters: this.loadAgentFilters(),
             stackGroupByAgent: this.loadStackGrouping(),
+            agentTagFilter: "",
             stackSort: this.loadStackSort(),
             pinnedStacks: this.loadLegacyPinnedStacks(),
             pinsInitialized: false,
@@ -364,12 +373,12 @@ export default {
             return this.$t("stackFilterSelectedInstances", [ this.stackAgentFilters.length ]);
         },
 
+        agentTagOptions() {
+            return [ ...new Set(Object.values(this.$root.agentList).flatMap(agent => agent.tags || [])) ].sort();
+        },
         agentFilteredStacks() {
-            if (this.allAgentsSelected) {
-                return this.allStacks;
-            }
-
-            return this.allStacks.filter(stack => this.stackAgentFilters.includes(stack.endpoint || ""));
+            const stacks = this.allAgentsSelected ? this.allStacks : this.allStacks.filter(stack => this.stackAgentFilters.includes(stack.endpoint || ""));
+            return filterStacksByAgentTag(stacks, this.$root.agentList, this.agentTagFilter);
         },
 
         stackListGroups() {
@@ -496,7 +505,8 @@ export default {
                     .map(name => name.trim())
                     .filter(Boolean)
             ));
-            this.pinnedStacks = { ...this.pinnedStacks, [endpoint || ""]: clean };
+            this.pinnedStacks = { ...this.pinnedStacks,
+                [endpoint || ""]: clean };
         },
         isStackPinned(stack) {
             const endpoint = stack.endpoint || "";
@@ -506,7 +516,9 @@ export default {
             return new Promise(resolve => {
                 let settled = false;
                 const timer = window.setTimeout(() => {
-                    if (!settled) { settled = true; resolve(null); }
+                    if (!settled) {
+                        settled = true; resolve(null);
+                    }
                 }, 8000);
                 this.$root.emitAgent(endpoint, "stackPinsGet", response => {
                     if (settled) return;
@@ -520,7 +532,9 @@ export default {
             return new Promise(resolve => {
                 let settled = false;
                 const timer = window.setTimeout(() => {
-                    if (!settled) { settled = true; resolve(null); }
+                    if (!settled) {
+                        settled = true; resolve(null);
+                    }
                 }, 8000);
                 this.$root.emitAgent(endpoint, "stackPinSet", name, pinned, response => {
                     if (settled) return;
@@ -535,7 +549,7 @@ export default {
             const available = new Set(options.map(agent => agent.endpoint));
             const jobs = [];
             let unavailable = false;
-            for (const [endpoint, names] of Object.entries(this.pinnedStacks)) {
+            for (const [ endpoint, names ] of Object.entries(this.pinnedStacks)) {
                 if (!available.has(endpoint)) {
                     if (names.length > 0) unavailable = true;
                     continue;

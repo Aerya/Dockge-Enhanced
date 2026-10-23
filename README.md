@@ -62,6 +62,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Compose defaults and remote agents :** Named HTTP/HTTPS links, a configurable default .env template, persistent agent tags and tag filtering, plus optional reverse agent connections with per-node tokens and automatic attachment after local account setup. Reverse agents belong to their hub; inter-server data transfers still require direct federation. An existing local administrator account is sufficient; no new account is needed. [Documentation](docs/compose-and-reverse-agents.md).
+
 **Port links :** Choose Hostname or IP address for container port links in Settings → General. Each linked instance keeps its own choice; the existing default is preserved. Hostname mode prioritizes Primary Hostname, falling back to the browser/agent address. IP mode supports automatic IP selection or an explicit reachable IPv4/IPv6. If no IP is known, the badge remains visible without a link, with an explanatory tooltip. Configure each hosting instance separately and update both sides to use this preference through federation; older agents retain their previous behavior. Docker port bindings, DNS and stored hostnames are unchanged.
 
 ### TLS security — October 2026

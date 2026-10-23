@@ -159,5 +159,6 @@
     "watcher.registryDns.resolved": "Çözüldü",
     "watcher.registryDns.noAddress": "Adres yok",
     "watcher.registryDns.errorStatus": "Hata",
-    "watcher.registryDns.hostNotFound": "Ana makine adı bulunamadı."
+    "watcher.registryDns.hostNotFound": "Ana makine adı bulunamadı.",
+    "releaseNews.item.composeAgentConvenience": "Adlandırılmış HTTP/HTTPS bağlantıları, yapılandırılabilir varsayılan .env şablonu, kalıcı aracı etiketleri ve filtreleme, ayrıca ayrı belirteçlerle isteğe bağlı ters bağlantılar. Mevcut bir yerel yönetici hesabı yeterlidir. Düğüm yalnızca kendi merkezi sunucusuna otomatik bağlanır; sunucular arası veri aktarımı doğrudan federasyon bağlantısı gerektirir."
 }

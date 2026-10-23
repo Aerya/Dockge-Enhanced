@@ -62,6 +62,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+**Compose-Vorlagen und entfernte Agents :** Benannte HTTP/HTTPS-Links, konfigurierbare .env-Standardvorlage, dauerhafte Agent-Tags und Tag-Filter sowie optionale Rückwärtsverbindungen mit individuellen Tokens und automatischer Anmeldung nach Einrichtung des lokalen Kontos. Rückwärts verbundene Agents gehören zu ihrem Hub; Datenübertragungen zwischen Servern benötigen weiterhin direkte Föderation. Ein vorhandenes lokales Administratorkonto genügt; ein neues Konto ist nicht erforderlich. [Dokumentation](docs/compose-and-reverse-agents.md).
+
 **Port-Links :** Unter Einstellungen → Allgemein Hostname oder IP-Adresse für Container-Port-Links auswählen. Jede verknüpfte Instanz behält ihre eigene Auswahl; der bisherige Standard bleibt erhalten. Der Hostname-Modus bevorzugt den primären Hostnamen, danach die Browser-/Agent-Adresse. Der IP-Modus nutzt eine bekannte IP oder eine explizite erreichbare IPv4/IPv6. Ohne bekannte IP bleibt die Port-Anzeige ohne Link mit erklärendem Tooltip sichtbar. Jede hostende Instanz separat konfigurieren und beide Seiten für diese Föderationseinstellung aktualisieren; ältere Agenten behalten ihr Verhalten. Docker-Portbindungen, DNS und gespeicherte Hostnamen bleiben unverändert.
 
 ### TLS-Sicherheit — Oktober 2026

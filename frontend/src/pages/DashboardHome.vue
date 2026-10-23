@@ -109,6 +109,7 @@
                             <small class="text-muted">{{ onlineAgentCount }} / {{ agentOverviewList.length }} {{ $t("linkedInstances.online") }}</small>
                         </div>
 
+                        <ReverseAgentSetup />
                         <div v-for="(agent, endpoint) in $root.agentList" :key="endpoint" class="mb-3 agent">
                             <!-- Agent Status -->
                             <template v-if="$root.agentStatusList[endpoint]">
@@ -145,7 +146,8 @@
                                     </template>
                                     <template v-else>
                                         <span class="agent-name-line">
-                                            <a :href="agent.url" target="_blank">{{ agent.displayName || endpoint }}</a>
+                                            <span v-if="agent.reverse">{{ agent.displayName || endpoint }} <span class="badge bg-secondary">{{ $t("reverseAgent.badge") }}</span></span>
+                                            <a v-else :href="agent.url" target="_blank" rel="noopener noreferrer">{{ agent.displayName || endpoint }}</a>
                                             <span
                                                 v-if="agent.suppressOfflineAlerts"
                                                 class="badge rounded-pill agent-intermittent-badge"
@@ -163,7 +165,7 @@
                             </template>
 
                             <button
-                                v-if="endpoint !== '' && $root.agentStatusList[endpoint] === 'offline'"
+                                v-if="endpoint !== '' && !agent.reverse && $root.agentStatusList[endpoint] === 'offline'"
                                 class="btn btn-sm btn-link p-1 ms-1 reauthenticate-agent" :title="$t('reauthenticateAgent')"
                                 @click="startReauthenticateAgent(agent)"
                             >
@@ -189,6 +191,7 @@
                             <!-- Remove Button -->
                             <font-awesome-icon v-if="endpoint !== ''" class="ms-2 remove-agent" icon="trash" @click="showRemoveAgentDialog[agent.url] = !showRemoveAgentDialog[agent.url]" />
 
+                            <AgentTagsEditor class="w-100" :endpoint="endpoint" :tags="agent.tags || []" />
                             <div
                                 class="instance-overview-summary"
                                 :class="{ selected: selectedOverviewEndpoint === endpoint }"
@@ -292,12 +295,16 @@
 </template>
 
 <script>
+import ReverseAgentSetup from "../components/ReverseAgentSetup.vue";
+import AgentTagsEditor from "../components/AgentTagsEditor.vue";
 import { aggregateHomeValues, homeSummaryValue, homeInstanceLink } from "../home-summary";
 import { statusNameShort } from "../../../common/util-common";
 import { formatPowerWatts, resolvePowerWatchWebUrl } from "../powerwatch";
 
 export default {
     components: {
+        AgentTagsEditor,
+        ReverseAgentSetup,
 
     },
     props: {
@@ -424,7 +431,7 @@ export default {
         this.initialPerPage = this.perPage;
 
         this.$watch(() => this.$root.agentCount, (count) => {
-            if (count > 1 && !this.federationMigrationAttempted) {
+            if (count > 1 && Object.values(this.$root.agentList).some(agent => agent.url && !agent.reverse) && !this.federationMigrationAttempted) {
                 this.federationMigrationAttempted = true;
                 this.migrateFederation();
             }

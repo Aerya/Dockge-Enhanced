@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**Pendiente de publicación — Plantillas Compose y agentes remotos** — Enlaces HTTP/HTTPS con nombre, plantilla .env predeterminada configurable, etiquetas persistentes de agentes y filtrado, además de conexiones inversas opcionales con tokens individuales y registro automático tras configurar la cuenta local. Los agentes inversos pertenecen a su servidor central; las transferencias de datos entre servidores siguen requiriendo federación directa. Basta con una cuenta de administrador local existente; no hay que crear otra. [Documentación](docs/compose-and-reverse-agents.md).
+
 **2026-10-23 — Enlaces de puertos** — Elija Nombre de host o Dirección IP para los enlaces de puertos en Ajustes → General. Cada instancia vinculada conserva su elección; se mantiene el comportamiento predeterminado. El modo Nombre de host prioriza el nombre principal y después la dirección del navegador/agente. El modo IP usa una IP conocida o una IPv4/IPv6 explícita accesible. Sin IP conocida, el puerto sigue visible sin enlace y con una explicación emergente. Configure cada instancia anfitriona por separado y actualice ambos extremos para transmitir esta preferencia; los agentes antiguos conservan su comportamiento. No cambia los puertos Docker, DNS ni los nombres guardados.
 
 ### Seguridad TLS — octubre de 2026

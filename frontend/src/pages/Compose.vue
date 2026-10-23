@@ -127,11 +127,11 @@
                             <font-awesome-icon icon="play" />
                             <span class="stack-action-label">{{ $t("stackActionHelp.unpauseAction") }}</span>
                         </button>
-                        <button v-if="$root.agentCount > 1 && !isEditMode && !stack.isExternal" class="btn btn-normal stack-action" :title="$t('stackTransfer.copyAction')" :aria-label="$t('stackTransfer.copyAction')" :disabled="processing" @click="openStackTransfer('copy')">
+                        <button v-if="$root.agentCount > 1 && !isEditMode && !stack.isExternal" class="btn btn-normal stack-action" :title="$t($root.agentList[endpoint]?.reverse ? 'reverseAgent.directRequired' : 'stackTransfer.copyAction')" :aria-label="$t('stackTransfer.copyAction')" :disabled="processing || $root.agentList[endpoint]?.reverse" @click="openStackTransfer('copy')">
                             <font-awesome-icon icon="copy" />
                             <span class="stack-action-label">{{ $t("stackTransfer.copyAction") }}</span>
                         </button>
-                        <button v-if="$root.agentCount > 1 && !isEditMode && !stack.isExternal" class="btn btn-normal stack-action" :title="$t('stackTransfer.moveAction')" :aria-label="$t('stackTransfer.moveAction')" :disabled="processing" @click="openStackTransfer('move')">
+                        <button v-if="$root.agentCount > 1 && !isEditMode && !stack.isExternal" class="btn btn-normal stack-action" :title="$t($root.agentList[endpoint]?.reverse ? 'reverseAgent.directRequired' : 'stackTransfer.moveAction')" :aria-label="$t('stackTransfer.moveAction')" :disabled="processing || $root.agentList[endpoint]?.reverse" @click="openStackTransfer('move')">
                             <font-awesome-icon icon="clone" />
                             <span class="stack-action-label">{{ $t("stackTransfer.moveAction") }}</span>
                         </button>
@@ -225,7 +225,7 @@
 
             <!-- URLs -->
             <div v-if="urls.length > 0" class="mb-3 compose-tight">
-                <a v-for="(url, index) in urls" :key="index" target="_blank" :href="url.url">
+                <a v-for="(url, index) in urls" :key="index" target="_blank" rel="noopener noreferrer" :href="url.url">
                     <span class="badge bg-secondary me-2">{{ url.display }}</span>
                 </a>
             </div>
@@ -483,7 +483,7 @@
                                 <label class="form-label">
                                     {{ $tc("url", 2) }}
                                 </label>
-                                <ArrayInput name="urls" :display-name="$t('url')" placeholder="https://" object-type="x-dockge" />
+                                <StackURLsInput :model-value="jsonConfig['x-dockge']?.urls" @update:model-value="setStackURLs" />
                             </div>
                         </div>
                     </div>
@@ -907,6 +907,9 @@
 </template>
 
 <script>
+import StackURLsInput from "../components/StackURLsInput.vue";
+import { stackURLLinks } from "../../../common/stack-urls";
+import { applyComposeTemplates, DEFAULT_COMPOSE_ENV } from "../../../common/compose-templates";
 import CodeMirror from "vue-codemirror6";
 import { prepareComposeTimezone } from "../../../common/compose-timezone";
 import { yaml } from "@codemirror/lang-yaml";
@@ -962,7 +965,7 @@ services:
     ports:
       - "8080:80"
 `;
-const envDefault = "# VARIABLE=value #comment";
+const envDefault = DEFAULT_COMPOSE_ENV;
 
 let yamlErrorTimeout = null;
 
@@ -970,6 +973,7 @@ let serviceStatusTimeout = null;
 
 export default {
     components: {
+        StackURLsInput,
         ComposeDiagnostics,
         NetworkInput,
         StackAutoUpdateBulk,
@@ -1229,37 +1233,14 @@ export default {
         },
         remoteStackUrl() {
             const agentUrl = this.$root.agentList[this.endpoint]?.url;
-            if (!this.endpoint || !agentUrl || !this.stack.name) {
+            if (!this.endpoint || !agentUrl || !/^https?:/.test(agentUrl) || !this.stack.name) {
                 return "";
             }
             return new URL(`compose/${encodeURIComponent(this.stack.name)}`, agentUrl.replace(/\/?$/, "/")).toString();
         },
 
         urls() {
-            if (!this.envsubstJSONConfig["x-dockge"] || !this.envsubstJSONConfig["x-dockge"].urls || !Array.isArray(this.envsubstJSONConfig["x-dockge"].urls)) {
-                return [];
-            }
-
-            let urls = [];
-            for (const url of this.envsubstJSONConfig["x-dockge"].urls) {
-                let display;
-                try {
-                    let obj = new URL(url);
-                    let pathname = obj.pathname;
-                    if (pathname === "/") {
-                        pathname = "";
-                    }
-                    display = obj.host + pathname + obj.search;
-                } catch (e) {
-                    display = url;
-                }
-
-                urls.push({
-                    display,
-                    url,
-                });
-            }
-            return urls;
+            return stackURLLinks(this.envsubstJSONConfig["x-dockge"]?.urls);
         },
 
         isAdd() {
@@ -1506,6 +1487,7 @@ export default {
             } else {
                 composeYAML = template;
             }
+            const useConfiguredEnv = useConfiguredTemplate && !this.$root.envTemplate;
             if (this.$root.envTemplate) {
                 composeENV = this.$root.envTemplate;
                 this.$root.envTemplate = "";
@@ -1527,15 +1509,25 @@ export default {
 
             this.yamlCodeChange();
 
-            if (useConfiguredTemplate) {
-                this.$root.getSocket().emit("getSettings", (res) => {
-                    const configured = res?.ok && typeof res.data?.composeTemplate === "string" ? res.data.composeTemplate : "";
-                    // Do not replace a draft that the user has already started editing.
-                    if (configured && this.isAdd && this.stack.composeYAML === template) {
-                        this.stack.composeYAML = configured;
+            if (useConfiguredTemplate || useConfiguredEnv) {
+                // The visual editor first normalizes YAML (including networks).
+                // Take the baseline after that render, before accepting user input.
+                this.$nextTick(() => {
+                    const draft = this.stack;
+                    const initial = { composeYAML: draft.composeYAML,
+                        composeENV: draft.composeENV };
+                    this.captureComposeEditBaseline();
+                    this.$root.getSocket().emit("getSettings", (res) => {
+                        if (!res?.ok || !this.isAdd || this.stack !== draft) {
+                            return;
+                        }
+                        const wasUntouched = !this.hasUnsavedComposeChanges;
+                        applyComposeTemplates(this.stack, initial, res.data || {}, useConfiguredTemplate, useConfiguredEnv);
                         this.yamlCodeChange();
-                        this.captureComposeEditBaseline();
-                    }
+                        if (wasUntouched) {
+                            this.$nextTick(() => this.captureComposeEditBaseline());
+                        }
+                    });
                 });
             }
 
@@ -1564,6 +1556,12 @@ export default {
         }
     },
     methods: {
+        setStackURLs(urls) {
+            if (!this.jsonConfig["x-dockge"]) {
+                this.jsonConfig["x-dockge"] = {};
+            }
+            this.jsonConfig["x-dockge"].urls = urls;
+        },
         openStackActionHelp() {
             clearTimeout(this.stackActionHelpTimeout);
             const requestId = ++this.stackActionHelpRequestId;

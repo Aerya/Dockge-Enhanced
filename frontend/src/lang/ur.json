@@ -143,5 +143,6 @@
     "watcher.registryDns.resolved": "حل شدہ",
     "watcher.registryDns.noAddress": "کوئی پتہ نہیں",
     "watcher.registryDns.errorStatus": "خرابی",
-    "watcher.registryDns.hostNotFound": "میزبان کا نام نہیں ملا۔"
+    "watcher.registryDns.hostNotFound": "میزبان کا نام نہیں ملا۔",
+    "releaseNews.item.composeAgentConvenience": "نام والے HTTP/HTTPS روابط، قابل ترتیب طے شدہ .env سانچہ، ایجنٹس کے مستقل ٹیگ اور فلٹر، اور ہر نوڈ کے الگ ٹوکن کے ساتھ اختیاری معکوس رابطے۔ موجودہ مقامی منتظم اکاؤنٹ کافی ہے۔ نوڈ خودکار طور پر صرف اپنے مرکزی سرور سے جڑتا ہے؛ سرورز کے درمیان ڈیٹا کی منتقلی کے لیے براہ راست فیڈریشن رابطہ درکار ہے۔"
 }

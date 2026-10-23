@@ -1,6 +1,6 @@
-import test from "node:test";
+import test, { mock } from "node:test";
 import assert from "node:assert/strict";
-import { meshEndpoint, normalizeMeshPeer, normalizeMeshSelf, peersForTarget, validateMeshCatalogue, validateMeshPeers } from "./agent-mesh";
+import { localMeshPeers, upsertMeshPeers, meshEndpoint, normalizeMeshPeer, normalizeMeshSelf, peersForTarget, validateMeshCatalogue, validateMeshPeers } from "./agent-mesh";
 import { AGENT_TOKEN_USERNAME } from "./agent-manager";
 
 const peers = [
@@ -64,4 +64,32 @@ test("turns a server-issued token into a federation credential", () => {
 
 test("accepts an empty catalogue when an instance leaves the federation", () => {
     assert.deepEqual(validateMeshCatalogue([]), []);
+});
+
+test("mesh synchronization neither exports nor deletes reverse agents", async () => {
+    const { Agent } = await import("./models/agent");
+    const { R } = await import("redbean-node");
+    const direct = { ...peers[1],
+        endpoint: "enhanced-b:5001",
+        display_name: "B" };
+    const reverse = { url: "reverse://node",
+        endpoint: "node",
+        username: "reverse",
+        password: "private-hash",
+        display_name: "Remote" };
+    mock.method(Agent, "getAgentList", async () => ({ direct,
+        reverse }));
+    const removed: unknown[] = [];
+    mock.method(R, "trash", async (value: unknown) => {
+        removed.push(value);
+    });
+    try {
+        const catalogue = await localMeshPeers(peers[0]);
+        assert.equal(catalogue.length, 2);
+        assert.equal(JSON.stringify(catalogue).includes("private-hash"), false);
+        await upsertMeshPeers([], "enhanced-a:5001");
+        assert.deepEqual(removed, [ direct ]);
+    } finally {
+        mock.restoreAll();
+    }
 });

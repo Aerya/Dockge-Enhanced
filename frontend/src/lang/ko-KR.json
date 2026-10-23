@@ -143,5 +143,6 @@
     "watcher.registryDns.resolved": "확인됨",
     "watcher.registryDns.noAddress": "주소 없음",
     "watcher.registryDns.errorStatus": "오류",
-    "watcher.registryDns.hostNotFound": "호스트 이름을 찾을 수 없습니다."
+    "watcher.registryDns.hostNotFound": "호스트 이름을 찾을 수 없습니다.",
+    "releaseNews.item.composeAgentConvenience": "이름이 있는 HTTP/HTTPS 링크, 구성 가능한 기본 .env 템플릿, 영구 에이전트 태그와 필터, 개별 토큰을 사용하는 선택적 역방향 연결을 추가했습니다. 기존 로컬 관리자 계정이면 충분합니다. 노드는 자신의 중앙 서버에만 자동 연결됩니다. 서버 간 데이터 전송에는 직접 페더레이션 연결이 필요합니다."
 }

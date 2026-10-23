@@ -42,7 +42,7 @@ export default defineComponent({
     computed: {
         links(): Array<{ endpoint: string; name: string; href: string }> {
             return Object.entries(this.agents)
-                .filter(([ endpoint, agent ]) => endpoint && agent.url && (!this.endpoint || endpoint === this.endpoint))
+                .filter(([ endpoint, agent ]) => endpoint && agent.url && /^https?:/.test(agent.url) && (!this.endpoint || endpoint === this.endpoint))
                 .map(([ endpoint, agent ]) => ({
                     endpoint,
                     name: agent.displayName || endpoint,

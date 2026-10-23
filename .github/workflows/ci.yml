@@ -117,6 +117,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/federation-health.test.ts backend/agent-manager-process.test.ts backend/agent-manager.test.ts backend/socket-handlers/manage-agent-socket-handler.test.ts
 
+      - name: Tests des modèles Compose et des agents inversés
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test common/compose-convenience.test.ts backend/reverse-agent.test.ts backend/agent-mesh.test.ts backend/agent-socket-handlers/terminal-socket-handler.test.ts backend/socket-handlers/agent-proxy-socket-handler.test.ts
+
       - name: Tests des prérequis de démarrage
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/start-guard.test.ts

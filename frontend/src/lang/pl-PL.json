@@ -159,5 +159,6 @@
     "watcher.registryDns.resolved": "Rozwiązano",
     "watcher.registryDns.noAddress": "Brak adresu",
     "watcher.registryDns.errorStatus": "Błąd",
-    "watcher.registryDns.hostNotFound": "Nie znaleziono nazwy hosta."
+    "watcher.registryDns.hostNotFound": "Nie znaleziono nazwy hosta.",
+    "releaseNews.item.composeAgentConvenience": "Nazwane łącza HTTP/HTTPS, konfigurowalny domyślny szablon .env, trwałe tagi agentów i filtrowanie oraz opcjonalne połączenia odwrotne z indywidualnymi tokenami. Wystarczy istniejące lokalne konto administratora. Węzeł łączy się automatycznie tylko ze swoim serwerem centralnym; przesyłanie danych między serwerami wymaga bezpośredniej federacji."
 }

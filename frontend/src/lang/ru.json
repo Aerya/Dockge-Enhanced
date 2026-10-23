@@ -143,5 +143,6 @@
     "watcher.registryDns.resolved": "Разрешено",
     "watcher.registryDns.noAddress": "Нет адреса",
     "watcher.registryDns.errorStatus": "Ошибка",
-    "watcher.registryDns.hostNotFound": "Имя узла не найдено."
+    "watcher.registryDns.hostNotFound": "Имя узла не найдено.",
+    "releaseNews.item.composeAgentConvenience": "Именованные ссылки HTTP/HTTPS, настраиваемый шаблон .env, постоянные теги агентов и фильтрация, а также необязательные обратные подключения с отдельными токенами. Достаточно существующей локальной учётной записи администратора. Узел автоматически подключается только к своему центральному серверу; передача данных между серверами требует прямого федеративного соединения."
 }

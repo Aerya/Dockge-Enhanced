@@ -159,5 +159,6 @@
     "watcher.registryDns.resolved": "Rezolvat",
     "watcher.registryDns.noAddress": "Fără adresă",
     "watcher.registryDns.errorStatus": "Eroare",
-    "watcher.registryDns.hostNotFound": "Numele gazdei nu a fost găsit."
+    "watcher.registryDns.hostNotFound": "Numele gazdei nu a fost găsit.",
+    "releaseNews.item.composeAgentConvenience": "Linkuri HTTP/HTTPS denumite, șablon .env implicit configurabil, etichete persistente și filtrare pentru agenți, plus conexiuni inverse opționale cu tokenuri individuale. Este suficient un cont de administrator local existent. Nodul se conectează automat doar la serverul său central; transferurile între servere necesită federare directă."
 }

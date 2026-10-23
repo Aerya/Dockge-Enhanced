@@ -1,3 +1,4 @@
+import { installReverseHub, startReverseNode, stopReverseNode } from "./reverse-agent";
 import "dotenv/config";
 import os from "os";
 import { MainRouter } from "./routers/main-router";
@@ -375,6 +376,8 @@ export class DockgeServer {
             }
         });
 
+        installReverseHub(this.io);
+
         this.io.on("connection", async (socket: Socket) => {
             let dockgeSocket = socket as DockgeSocket;
             dockgeSocket.instanceManager = new AgentManager(dockgeSocket);
@@ -581,6 +584,11 @@ export class DockgeServer {
 
         // Listen
         this.httpServer.listen(this.config.port, this.config.hostname, () => {
+            try {
+                startReverseNode(this);
+            } catch (error) {
+                log.error("reverse-agent", error instanceof Error ? error.message : "Invalid reverse agent configuration");
+            }
             AgentManager.bootstrap()
                 .catch((error) => log.error(
                     "agent-manager",
@@ -876,6 +884,7 @@ export class DockgeServer {
         // TODO: Close all terminals?
 
         StackReplicationManager.getInstance().stop();
+        stopReverseNode();
         AgentManager.shutdown();
         await Database.close();
         Settings.stopCacheCleaner();

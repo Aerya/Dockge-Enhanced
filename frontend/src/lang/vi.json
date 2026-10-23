@@ -142,5 +142,6 @@
     "watcher.registryDns.resolved": "Đã phân giải",
     "watcher.registryDns.noAddress": "Không có địa chỉ",
     "watcher.registryDns.errorStatus": "Lỗi",
-    "watcher.registryDns.hostNotFound": "Không tìm thấy tên máy chủ."
+    "watcher.registryDns.hostNotFound": "Không tìm thấy tên máy chủ.",
+    "releaseNews.item.composeAgentConvenience": "Liên kết HTTP/HTTPS có tên, mẫu .env mặc định tùy chỉnh được, thẻ tác nhân lưu lâu dài và bộ lọc, cùng kết nối ngược tùy chọn bằng token riêng. Tài khoản quản trị viên cục bộ hiện có là đủ. Nút tự động kết nối chỉ với máy chủ trung tâm của mình; truyền dữ liệu giữa các máy chủ vẫn cần liên kết liên hợp trực tiếp."
 }

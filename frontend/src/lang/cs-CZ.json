@@ -156,5 +156,6 @@
     "watcher.registryDns.resolved": "Vyřešeno",
     "watcher.registryDns.noAddress": "Žádná adresa",
     "watcher.registryDns.errorStatus": "Chyba",
-    "watcher.registryDns.hostNotFound": "Název hostitele nenalezen."
+    "watcher.registryDns.hostNotFound": "Název hostitele nenalezen.",
+    "releaseNews.item.composeAgentConvenience": "Pojmenované odkazy HTTP/HTTPS, nastavitelná výchozí šablona .env, trvalé štítky agentů a filtrování i volitelná zpětná připojení se samostatnými tokeny. Stačí existující místní účet správce. Uzel se automaticky připojuje pouze ke svému centrálnímu serveru; přenos dat mezi servery vyžaduje přímé federované spojení."
 }

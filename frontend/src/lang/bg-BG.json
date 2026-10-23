@@ -159,5 +159,6 @@
     "watcher.registryDns.resolved": "Разрешен",
     "watcher.registryDns.noAddress": "Няма адрес",
     "watcher.registryDns.errorStatus": "Грешка",
-    "watcher.registryDns.hostNotFound": "Името на хоста не е намерено."
+    "watcher.registryDns.hostNotFound": "Името на хоста не е намерено.",
+    "releaseNews.item.composeAgentConvenience": "Именувани HTTP/HTTPS връзки, персонализируем шаблон .env, постоянни тагове и филтриране на агенти, както и незадължителни обратни връзки с отделни токени. Съществуващ локален администраторски акаунт е достатъчен. Възелът се свързва автоматично само със своя централен сървър; прехвърлянето на данни между сървъри изисква пряка федеративна връзка."
 }
