@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+**2026-10-23 — Enlaces de puertos** — Elija Nombre de host o Dirección IP para los enlaces de puertos en Ajustes → General. Cada instancia vinculada conserva su elección; se mantiene el comportamiento predeterminado. El modo Nombre de host prioriza el nombre principal y después la dirección del navegador/agente. El modo IP usa una IP conocida o una IPv4/IPv6 explícita accesible. Sin IP conocida, el puerto sigue visible sin enlace y con una explicación emergente. Configure cada instancia anfitriona por separado y actualice ambos extremos para transmitir esta preferencia; los agentes antiguos conservan su comportamiento. No cambia los puertos Docker, DNS ni los nombres guardados.
+
 ### Seguridad TLS — octubre de 2026
 
 Se actualizan los almacenes de certificados y los componentes TLS de las imágenes tras el incidente de eMudhra. Las pruebas incluyen las cadenas afectadas, los dos casos No CT y una conexión HTTPS válida. Las imágenes en ejecución no cambian; su sustitución debe planificarse después de la validación.

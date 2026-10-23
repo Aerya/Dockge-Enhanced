@@ -398,6 +398,8 @@ export class Stack {
             startGuard: metadata.startGuard,
             primaryHostname,
             configuredPrimaryHostname,
+            portLinkAddressMode: await Settings.get("portLinkAddressMode") === "ip" ? "ip" : "hostname",
+            portLinkIp: await Settings.get("portLinkIp") || "",
         };
     }
 

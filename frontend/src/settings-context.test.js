@@ -73,4 +73,31 @@ test("general settings render inside the actual nested router views", async () =
     const html = await renderToString(app);
     assert.match(html, /id="scheduling-timezone"/);
     assert.match(html, /id="default-compose-template"/);
+    assert.match(html, /id="port-link-address-mode"/);
+    assert.match(html, /value="hostname"/);
+    assert.match(html, /value="ip"/);
+});
+
+test("IP settings remain editable on mobile and preserve the explicit IP", async () => {
+    const settings = loadComponent("./pages/Settings.vue");
+    const general = loadComponent("./components/settings/General.vue");
+    const settingsPage = {
+        ...settings,
+        data: () => ({ ...settings.data(), settings: { portLinkAddressMode: "ip", portLinkIp: "192.0.2.15" } }),
+    };
+    const shell = { render: () => Vue.h(RouterView) };
+    const router = createRouter({ history: createMemoryHistory(), routes: [{
+        path: "/settings", component: settingsPage, children: [{
+            path: "general", name: "settings-general", component: general,
+        }],
+    }] });
+    const app = Vue.createSSRApp({ ...shell, data: () => ({ isMobile: true }) });
+    app.config.globalProperties.$t = key => key;
+    app.use(router);
+    await router.push("/settings/general");
+    await router.isReady();
+    const html = await renderToString(app);
+    assert.match(html, /id="port-link-ip"/);
+    assert.match(html, /value="192.0.2.15"/);
+    assert.match(html, /portLinks.ipHelp/);
 });

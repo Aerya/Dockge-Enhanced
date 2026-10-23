@@ -445,6 +445,8 @@
                                 :stats-stack-name="stack.externalProject || stack.name"
                                 :endpoint="endpoint"
                                 :primary-hostname="stack.configuredPrimaryHostname"
+                                :port-link-address-mode="stack.portLinkAddressMode"
+                                :port-link-ip="stack.portLinkIp"
                                 :show-resource-stats="!endpoint"
                                 :dozzle-url="dozzleUrl"
                                 :container-action-labels="containerActionLabels"
