@@ -90,6 +90,8 @@ Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS
 
 #### Updates and ImageWatcher
 
+**Image update notifications :** Discord and Apprise announce a pending image update only once per stack, image and remote digest, including updates waiting for a scheduled window. This tracking survives Enhanced restarts. A new digest is announced again; automatic update results still generate their own notification. Failed deliveries are retried on subsequent checks independently for each Discord webhook and the configured Apprise destination.
+
 **Stopped services stay stopped:** automatic image updates are deferred when any targeted Compose service (including a required network-namespace companion) is stopped or absent. ImageWatcher checks again after pulling, before recreation, and retries on a later check. It does not use `compose up` to wake a stopped service.
 
 **Image check intervals:** In **Watcher > Images**, the full scan covers all images every **6 hours by default**. Immediate-mode images also receive separate targeted checks every **5 minutes by default**. You can set that targeted interval in minutes or hours (5 minutes to 24 hours), or disable only those periodic targeted checks; the full scan remains active. The selected Immediate policy can still trigger a one-off targeted check.
@@ -484,6 +486,7 @@ The Restic snapshot list defaults to **All**. **Save** stores settings and reten
 - Integration with protected update and recovery workflows
 
 ### Updates
+- One pending-update announcement per stack/image/digest and notification destination, persisted across restarts; retry failed deliveries and keep automatic update result notifications.
 - Bulk automatic image policies for a stack: preview and preservation of individual exceptions.
 - **ImageWatcher Immediate**: targeted checks on activation and every 5 minutes by default (configurable or disabled separately from the 6-hour full scan), detection of images actually running, shared registry requests and HTTP 429 cooldowns.
 - Per-service exclusion from ImageWatcher checks and automatic/batch image updates with `dockge.imageupdates.check: "false"`

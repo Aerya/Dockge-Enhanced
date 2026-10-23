@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.imageUpdateNotifications": "ImageWatcher: keine wiederholten Discord/Apprise-Meldungen für dieselbe ausstehende Image-Version, auch nach einem Neustart. Neue Versionen und Ergebnisse automatischer Updates werden weiterhin gemeldet.",
     "composeDiagnostics.close": "Schließen",
     "composeDiagnostics.loading": "Prüfung läuft…",
     "releaseNews.item.composeDiagnostics": "Warnungen vor Portkonflikten beim Speichern/Bereitstellen, einschließlich aufgelöster Variablen, Overrides und Bereiche; Vergleich laufender Image-Referenzen mit überprüfbarer YAML-Korrektur. Optionale Home-Assistant-Integration mit Zustandssensoren und berechtigungsgebundenen Start/Stopp/Neustart-Aktionen.",

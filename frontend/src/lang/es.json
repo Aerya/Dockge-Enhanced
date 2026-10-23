@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.imageUpdateNotifications": "ImageWatcher: sin avisos Discord/Apprise repetidos para la misma versión de imagen pendiente, incluso tras reiniciar. Las nuevas versiones y los resultados de las actualizaciones automáticas siguen notificándose.",
     "composeDiagnostics.close": "Cerrar",
     "composeDiagnostics.loading": "Comprobando…",
     "releaseNews.item.composeDiagnostics": "Avisos de conflictos de puertos antes de guardar/desplegar, con variables, overrides y rangos resueltos; comparación de referencias de imágenes ejecutadas y corrección del YAML para revisar. Integración opcional de Home Assistant con sensores y controles de inicio/parada/reinicio limitados por permisos.",

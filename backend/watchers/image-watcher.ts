@@ -19,6 +19,7 @@ import { parse as parseDotenv } from "dotenv";
 
 EventEmitter.defaultMaxListeners = 50;
 import { DiscordNotifier } from "../notification/discord";
+import { ImageUpdateNotifications } from "./image-update-notifications";
 import { AppriseNotifier } from "../notification/apprise";
 import { getNotificationLang, getNotificationLocale, notificationText, NotificationLang } from "../notification/notification-lang";
 import { Settings } from "../settings";
@@ -1297,6 +1298,7 @@ export class ImageWatcher {
     private readonly settingsPath: string;
     private readonly rollbackPath: string;
     private readonly updateHistoryPath: string;
+    private readonly updateNotifications: ImageUpdateNotifications;
     private readonly externalStacks: ExternalStackManager;
 
     constructor(dataDir = DATA_DIR) {
@@ -1304,6 +1306,7 @@ export class ImageWatcher {
         this.settingsPath = path.join(dataDir, "watcher-settings.json");
         this.rollbackPath = path.join(dataDir, "rollback-registry.json");
         this.updateHistoryPath = path.join(dataDir, "update-history.json");
+        this.updateNotifications = new ImageUpdateNotifications(path.join(dataDir, "image-update-notifications.json"));
         this.externalStacks = new ExternalStackManager(dataDir, STACKS_DIR);
     }
 
@@ -2693,11 +2696,33 @@ export class ImageWatcher {
         cfg: Record<string, AutoUpdateEntry> = {},
         globalWindow: AutomaticImageUpdateWindow | null = null,
     ): Promise<void> {
+        for (const webhook of new Set(this.settings.discordWebhooks)) {
+            await this.updateNotifications.dispatch([ "discord", webhook ], updates, autoUpdated, selected =>
+                this.sendUpdateNotification(selected, totalChecked, autoUpdated, cfg, globalWindow, webhook))
+                .catch(() => console.error("[ImageWatcher] Notification Discord ou enregistrement de son reçu impossible ; nouvelle tentative au prochain contrôle."));
+        }
+        if (this.settings.appriseServerUrl) {
+            await this.updateNotifications.dispatch(
+                [ "apprise", this.settings.appriseServerUrl, ...[ ...this.settings.appriseUrls ].sort() ],
+                updates, autoUpdated, selected =>
+                    this.sendUpdateNotification(selected, totalChecked, autoUpdated, cfg, globalWindow),
+            ).catch(() => console.error("[ImageWatcher] Notification Apprise ou enregistrement de son reçu impossible ; nouvelle tentative au prochain contrôle."));
+        }
+    }
+
+    private async sendUpdateNotification(
+        updates: ImageStatus[],
+        totalChecked: number,
+        autoUpdated: ImageStatus[],
+        cfg: Record<string, AutoUpdateEntry>,
+        globalWindow: AutomaticImageUpdateWindow | null,
+        discordWebhook?: string,
+    ): Promise<boolean> {
         const discordNotifier =
-            this.settings.discordWebhooks.length > 0
-                ? new DiscordNotifier(this.settings.discordWebhooks)
+            discordWebhook
+                ? new DiscordNotifier(discordWebhook)
                 : null;
-        const appriseNotifier = this.settings.appriseServerUrl
+        const appriseNotifier = !discordWebhook && this.settings.appriseServerUrl
             ? new AppriseNotifier(
                 this.settings.appriseServerUrl,
                 this.settings.appriseUrls,
@@ -2825,7 +2850,7 @@ export class ImageWatcher {
         ];
 
         if (discordNotifier) {
-            await discordNotifier.sendEmbed({
+            return discordNotifier.sendEmbed({
                 title,
                 color:
           autoUpdated.length > 0 && notAuto.length === 0 ? 0x22c55e : 0xf59e0b,
@@ -2840,7 +2865,7 @@ export class ImageWatcher {
             const imageLines = fields
                 .map((f) => `**${f.name}**\n${f.value}`)
                 .join("\n\n");
-            await appriseNotifier.send({
+            return appriseNotifier.send({
                 title,
                 body: `${description}\n\n${imageLines}`.trim(),
                 type:
@@ -2849,5 +2874,6 @@ export class ImageWatcher {
               : "warning",
             });
         }
+        return false;
     }
 }

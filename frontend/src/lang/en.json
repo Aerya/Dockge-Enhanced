@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.imageUpdateNotifications": "ImageWatcher: no repeated Discord/Apprise announcements for the same pending image version, even after a restart. New versions and automatic update results are still notified.",
     "composeDiagnostics.close": "Close",
     "composeDiagnostics.loading": "Checking…",
     "releaseNews.item.composeDiagnostics": "Advisory port-conflict checks before saving/deploying, including resolved variables, overrides and ranges; running-image reference comparison with a reviewable YAML correction. Optional Home Assistant custom integration with state sensors and permission-scoped start/stop/restart controls.",
