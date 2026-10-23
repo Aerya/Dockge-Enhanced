@@ -65,6 +65,19 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Modèles Compose et agents distants :** Liens HTTP/HTTPS nommés, modèle .env par défaut configurable, tags persistants des agents et filtrage par tag, ainsi que connexions inversées facultatives avec jetons individuels et rattachement automatique après initialisation du compte local. Les agents inversés appartiennent à leur serveur central ; les transferts de données interserveurs nécessitent toujours une fédération directe. Un compte administrateur local existant suffit : aucun nouveau compte à créer. [Documentation](docs/compose-and-reverse-agents.md).
 
+**Liens de ports :** Choisissez Nom d’hôte ou Adresse IP pour les liens de ports des conteneurs dans Paramètres → Général. Chaque instance liée conserve son choix ; le comportement par défaut est préservé. Le mode Nom d’hôte privilégie le Nom d’hôte principal, puis l’adresse du navigateur/de l’agent. Le mode IP utilise une IP connue ou une IPv4/IPv6 explicite joignable. Sans IP connue, le badge reste visible sans lien avec une infobulle explicative. Configurez chaque instance hébergeuse séparément et mettez les deux côtés à jour pour transmettre ce choix en fédération ; les anciens agents gardent leur comportement. Ports Docker, DNS et noms d’hôte enregistrés restent inchangés.
+
+### Sécurité TLS — octobre 2026
+
+Mise à jour des certificats et des composants TLS des images après l’incident eMudhra. Les contrôles couvrent les chaînes compromises, dont les deux cas « No CT », et une connexion HTTPS valide. Une image déjà en cours d’exécution reste inchangée : son remplacement doit être planifié après validation.
+
+[Détails de l’incident](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
+**Contrôles Compose et Home Assistant :** Avertissements de conflits de ports avant enregistrement/déploiement, avec résolution des variables, overrides et plages ; comparaison des références d’images exécutées et correction du YAML à vérifier. Intégration Home Assistant facultative avec capteurs d’état et commandes démarrer/arrêter/redémarrer limitées par permissions. [Guide](docs/HOME-ASSISTANT.md).
+
+**Instance / Global :** Accueil : statistiques de l’instance en premier, puis totaux globaux indépendants des filtres des stacks. Chaque carte de résumé propose un détail par instance avec des liens directs vers ses menus. Les instances hors ligne ou anciennes sont signalées comme indisponibles ; le bilan des sauvegardes distingue les instances désactivées.
+
 **Statut des stacks détectées :** Les projets Compose détectés mais non adoptés, comme ceux de DDEV, ne provoquent plus d’erreurs `spawn docker ENOENT` répétées lorsque leur dossier est absent de la racine des stacks. Le statut des stacks externes adoptées utilise leur dossier, leur nom de projet et leurs fichiers Compose enregistrés.
 
 **Authentification TOTP à deux facteurs facultative :** Activez-la dans **Paramètres → Sécurité → Paramètres 2FA** avec votre mot de passe actuel, scannez le QR code et confirmez un code de votre application d’authentification. Enregistrez les dix codes de secours à usage unique : ils ne sont affichés qu’une fois. Désactivée par défaut, cette protection concerne la connexion locale, pas l’authentification par proxy ni les jetons de fédération. Avant d’activer la 2FA, utilisez des jetons de fédération pour les instances liées ; les connexions par mot de passe seul ne fonctionneront plus.
@@ -88,6 +101,12 @@ En mode édition du Compose, l’action **Healthchecks** figure aussi dans la ba
 Dans **Watcher > Images > DNS de secours**, il est possible d'activer le repli DNS (désactivé par défaut), d'ajouter, modifier ou supprimer des serveurs IPv4/IPv6 et de tester les requêtes A et AAAA avec délais et diagnostics. Le DNS système reste prioritaire ; le repli intervient uniquement en cas d'échec de résolution DNS lors des requêtes HTTP aux registries et aux services de jetons prises en charge par ImageWatcher. Quad9 (`9.9.9.9`, `2620:fe::fe`) et Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`) servent d'exemples modifiables. Les paramètres déjà enregistrés sont conservés. Aucun DNS de l'hôte ou de Docker Engine n'est modifié ; les pulls et les auto-mises à jour pilotés par Docker Engine ne sont pas couverts.
 
 #### Mises à jour et ImageWatcher
+
+**Fuseau des planifications et TZ facultatif des conteneurs :** Choisissez le **Fuseau horaire des planifications** dans **Paramètres → Général**. Il pilote les horaires de démarrage/arrêt des stacks, les mises à jour d’images, les créneaux de mise à jour interne et les crons Restic natif et d’analyse de sécurité de cette instance. Sans choix explicite, le fuseau actuel du processus est conservé ; les heures enregistrées ne sont pas réécrites. Les instances liées et les outils externes comme Zerobyte conservent leurs propres réglages. Les intervalles relatifs, échéances de pause et rétentions ne changent pas. Le changement d’heure suit le fuseau choisi : une heure inexistante n’est pas garantie d’être exécutée et une heure répétée peut survenir deux fois ; préférez un horaire hors transition, comme 04:00.
+
+Dans les actions d’édition d’une stack, **Fuseau des conteneurs** propose une option **désactivée par défaut** pour ajouter `TZ` au brouillon Compose et à son override. Les valeurs existantes, héritées ou susceptibles de venir d’un `env_file`/`extends` nécessitent une confirmation. Vérifiez le YAML, enregistrez puis recréez/déployez pour appliquer. Les images doivent prendre en charge `TZ` ; les fichiers `.env`/`env_file` ne sont pas modifiés, et un futur changement du fuseau global ne réécrit ni ne recrée automatiquement les stacks.
+
+**Notifications des mises à jour d’images :** Discord et Apprise n’annoncent qu’une fois une mise à jour en attente pour une même stack, image et digest distant, y compris lorsqu’elle attend son créneau planifié. Ce suivi est conservé après redémarrage d’Enhanced. Un nouveau digest est annoncé à nouveau ; les résultats des mises à jour automatiques conservent leur propre notification. Les envois échoués sont retentés aux contrôles suivants, indépendamment pour chaque webhook Discord et la destination Apprise configurée.
 
 **Les services arrêtés restent arrêtés :** une mise à jour automatique d’image est reportée si un service Compose ciblé, y compris un compagnon de namespace réseau requis, est arrêté ou absent. ImageWatcher revérifie après le téléchargement, avant la recréation, puis réessaie lors d’un contrôle ultérieur. Il n’utilise pas `compose up` pour réveiller un service arrêté.
 
@@ -396,6 +415,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 <details>
 <summary>Afficher toutes les fonctionnalités</summary>
 
+- Choisissez Nom d’hôte ou Adresse IP pour les liens de ports des conteneurs dans Paramètres → Général. Chaque instance liée conserve son choix ; le comportement par défaut est préservé.
+
 ### Multi-serveurs & fédération
 - Fédération en maillage complet entre instances Dockge-Enhanced
 - Administration depuis n'importe quelle instance liée
@@ -410,6 +431,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Négociation des capacités entre différentes versions de Dockge-Enhanced
 
 ### Gestion des stacks
+
+- Fuseau commun aux planifications de chaque instance et application facultative de TZ par stack dans l’éditeur, avec confirmation ; aucune recréation automatique.
 
 - Barre d’actions de stack avec actions directes et modes icônes seules ou icônes avec texte
 - Assistant facultatif de healthcheck Compose par service avec proposition HTTP/TCP modifiable et aperçu de la commande
@@ -482,6 +505,7 @@ La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouto
 - Intégration aux workflows de récupération et de mise à jour
 
 ### Mises à jour
+- Une annonce par stack/image/digest en attente et par destination de notification, conservée après redémarrage ; nouvel essai en cas d’échec d’envoi et maintien des notifications de résultat des mises à jour automatiques.
 - Mises à jour groupées des images d’une stack: aperçu et conservation des exceptions individuelles.
 - **ImageWatcher Immédiat** : contrôle ciblé à l’activation puis toutes les 5 minutes par défaut (réglable ou désactivable indépendamment du scan général de 6 h), détection des images réellement exécutées, mutualisation des requêtes et temporisation HTTP 429.
 - Exclusion par service des contrôles ImageWatcher et mises à jour automatiques/groupées avec `dockge.imageupdates.check: "false"`
@@ -537,6 +561,8 @@ La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouto
 ### Automatisation & audit
 
 [Guide API REST, webhooks et Home Assistant](docs/AUTOMATION.fr.md).
+
+- **Contrôles Compose et Home Assistant :** Avertissements de conflits de ports avant enregistrement/déploiement, avec résolution des variables, overrides et plages ; comparaison des références d’images exécutées et correction du YAML à vérifier. Intégration Home Assistant facultative avec capteurs d’état et commandes démarrer/arrêter/redémarrer limitées par permissions. [Guide](docs/HOME-ASSISTANT.md).
 - API REST limitée par permissions et stacks
 - Webhooks par stack
 - Exemples Home Assistant
@@ -758,7 +784,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
 #      - DOCKER_API_VERSION=x.xx             # optionnel — pour les NAS avec une API Docker ancienne
-      - TZ=Europe/Paris                      # fuseau horaire (affecte les MàJ planifiées)
+      - TZ=Europe/Paris                      # fuseau du processus facultatif ; planifications réglables dans la WebUI
 ```
 
 ```bash
@@ -857,7 +883,7 @@ Pour publier un service, éditez sa stack puis utilisez **Publication PlugNPiN (
 | `DOCKGE_DATA_DIR` | `/app/data` | Dossier de données Dockge ; ne le modifier que pour un montage persistant personnalisé |
 | `DOCKGE_PUBLIC_URL` | *(aucun)* | URL publique utilisée dans les liens des notifications Discord (ex : `https://dockge.mondomaine.fr`) |
 | `DOCKER_API_VERSION` | *(aucun)* | Fixe la version d'API Docker négociée par le client — utile sur certains NAS (ex : Synology DSM 7.x) |
-| `TZ` | `UTC` | Fuseau horaire du container — **important** pour que les MàJ planifiées se déclenchent à la bonne heure locale (ex : `Europe/Paris`) |
+| `TZ` | `UTC` | Fuseau du processus dans le conteneur ; utilisé par défaut tant qu’aucun fuseau n’est choisi dans **Paramètres → Général**. Le choix WebUI est prioritaire pour les planifications d’Enhanced. |
 | `DOCKGE_PORT` | `5001` | Port de la WebUI |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Activer HTTPS |
 | `DOCKGE_AUTH_MODE` | *(non défini)* | Mode d’authentification : `local`, `disabled` ou `trusted-proxy`. Non défini, le comportement historique et le réglage `disableAuth` sont conservés |
@@ -942,6 +968,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 ## Crédits
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
+- [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — inspiration pour la détection des conflits de ports, le contrôle des écarts Compose et l’intégration Home Assistant.
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — source d’améliorations importantes de l’UI/UX, des thèmes, de l’internationalisation et de l’architecture frontend adaptées dans ce projet
 - [**Dockge**](https://github.com/louislam/dockge) par louislam — le projet d'origine (licence MIT)
 - [**Dozzle**](https://github.com/amir20/dozzle) par Amir Rajan — visualisation en temps réel des logs Docker (licence MIT)

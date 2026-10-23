@@ -1,0 +1,12 @@
+{
+  "domain": "dockge_enhanced",
+  "name": "Dockge Enhanced",
+  "codeowners": ["@Aerya"],
+  "config_flow": true,
+  "documentation": "https://github.com/Aerya/Dockge-Enhanced/blob/main/docs/HOME-ASSISTANT.md",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/Aerya/Dockge-Enhanced/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}

@@ -1931,5 +1931,13 @@
     "watcher.registryDns.noAddress": "無位址",
     "watcher.registryDns.errorStatus": "錯誤",
     "watcher.registryDns.hostNotFound": "找不到主機名稱。",
-    "releaseNews.item.composeAgentConvenience": "支援具名 HTTP/HTTPS 連結、可設定的預設 .env 範本、持久化代理標籤與篩選，以及使用個別權杖的選用反向連線。已有本機管理員帳號即可，無需建立新帳號。節點只會自動連接至自己的中央伺服器；伺服器間資料傳輸仍需直接聯邦連線。"
+    "releaseNews.item.composeAgentConvenience": "支援具名 HTTP/HTTPS 連結、可設定的預設 .env 範本、持久化代理標籤與篩選，以及使用個別權杖的選用反向連線。已有本機管理員帳號即可，無需建立新帳號。節點只會自動連接至自己的中央伺服器；伺服器間資料傳輸仍需直接聯邦連線。",
+    "home.scope.instance": "實例",
+    "home.scope.global": "全域",
+    "home.scope.details": "各實例詳情",
+    "home.scope.unavailable": "無法使用",
+    "home.scope.backups": "{n}/{total} 個實例按時備份",
+    "home.scope.partial": "{value} · 不完整（{n} 個無法使用）",
+    "home.scope.disabled": "{n} 個已停用",
+    "releaseNews.item.homeInstanceGlobal": "首頁先顯示本機實例統計，下方顯示不受 Stack 篩選影響的全域彙總。展開摘要卡片可查看各實例資料並直接開啟對應選單。離線或舊版本實例標記為無法使用；備份彙總單獨列出已停用的實例。"
 }

@@ -2,6 +2,25 @@
 
 **Pendiente de publicación — Plantillas Compose y agentes remotos** — Enlaces HTTP/HTTPS con nombre, plantilla .env predeterminada configurable, etiquetas persistentes de agentes y filtrado, además de conexiones inversas opcionales con tokens individuales y registro automático tras configurar la cuenta local. Los agentes inversos pertenecen a su servidor central; las transferencias de datos entre servidores siguen requiriendo federación directa. Basta con una cuenta de administrador local existente; no hay que crear otra. [Documentación](docs/compose-and-reverse-agents.md).
 
+**2026-10-23 — Enlaces de puertos** — Elija Nombre de host o Dirección IP para los enlaces de puertos en Ajustes → General. Cada instancia vinculada conserva su elección; se mantiene el comportamiento predeterminado. El modo Nombre de host prioriza el nombre principal y después la dirección del navegador/agente. El modo IP usa una IP conocida o una IPv4/IPv6 explícita accesible. Sin IP conocida, el puerto sigue visible sin enlace y con una explicación emergente. Configure cada instancia anfitriona por separado y actualice ambos extremos para transmitir esta preferencia; los agentes antiguos conservan su comportamiento. No cambia los puertos Docker, DNS ni los nombres guardados.
+
+### Seguridad TLS — octubre de 2026
+
+Se actualizan los almacenes de certificados y los componentes TLS de las imágenes tras el incidente de eMudhra. Las pruebas incluyen las cadenas afectadas, los dos casos No CT y una conexión HTTPS válida. Las imágenes en ejecución no cambian; su sustitución debe planificarse después de la validación.
+
+[Detalles del incidente](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
+**2026-10-23 — Visualización de los ajustes** — Corregido un error al importar la lista de zonas horarias que podía dejar la página Ajustes en blanco (`timezones is not iterable`). El selector de zona horaria y el menú vuelven a mostrarse sin modificar los ajustes guardados ni las programaciones. Pruebas de regresión con los datos reales de zonas horarias y el renderizado de la página General. Corrige #555.
+
+**2026-10-23 — Zona horaria de programaciones y TZ opcional por stack** — Zona horaria común por instancia y aplicación opcional de TZ por stack en el editor, con confirmación y sin recreación automática. Zona del proceso en el contenedor; predeterminada para programaciones hasta elegir una en **Ajustes → General**. La elección WebUI tiene prioridad para las programaciones de Enhanced.
+
+**2026-10-23 — Notificaciones de actualizaciones de imágenes** — Discord y Apprise anuncian una actualización pendiente una sola vez por stack, imagen y digest remoto, incluso si espera una franja programada. Este registro se conserva tras reiniciar Enhanced. Un nuevo digest se vuelve a anunciar; los resultados de las actualizaciones automáticas mantienen su propia notificación. Los envíos fallidos se reintentan en las comprobaciones siguientes, por separado para cada webhook de Discord y el destino Apprise configurado.
+
+**2026-10-18 — Comprobaciones Compose y Home Assistant** — Avisos de conflictos de puertos antes de guardar/desplegar, con variables, overrides y rangos resueltos; comparación de referencias de imágenes ejecutadas y corrección del YAML para revisar. Integración opcional de Home Assistant con sensores y controles de inicio/parada/reinicio limitados por permisos. [Guide](docs/HOME-ASSISTANT.md).
+
+**2026-10-18 — Instance / Global** — Inicio: estadísticas locales primero y totales globales independientes de los filtros de stacks debajo. Cada tarjeta de resumen ofrece detalles por instancia y enlaces directos a sus menús. Las instancias desconectadas o antiguas aparecen como no disponibles; el resumen de copias distingue las instancias desactivadas.
+
 **2026-10-18 — Estado de servicios de stacks detectadas** — Los proyectos Compose no adoptados, como DDEV, ya no generan errores repetidos `spawn docker ENOENT` cuando su directorio no existe en la raíz de stacks. Las stacks externas adoptadas usan su directorio, nombre de proyecto y archivos Compose registrados para consultar el estado.
 
 **2026-10-18 — Autenticación TOTP de dos factores opcional** — Actívela en **Ajustes → Seguridad → Ajustes 2FA** con su contraseña actual, escanee el código QR y confirme un código de su aplicación de autenticación. Guarde los diez códigos de recuperación de un solo uso; solo se muestran una vez. Está desactivada de forma predeterminada y protege el inicio de sesión local, no la autenticación por proxy ni los tokens de federación. Guarde todo `/app/data`, incluido `two-factor.key`. Restaurar solo la base de datos no permite descifrar el secreto sin esta clave. Si pierde la aplicación y todos los códigos de recuperación, un administrador del contenedor puede ejecutar `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm` desde `/app` y reiniciar Enhanced; la contraseña no cambia. Antes de activar la 2FA, utilice tokens de federación para las instancias vinculadas; las conexiones solo con contraseña dejarán de funcionar.

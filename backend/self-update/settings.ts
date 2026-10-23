@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { isWithinMaintenanceWindow, normalizeUpdatePause } from "../watchers/update-policy";
 import { SelfUpdateSettings } from "./types";
 import { resolveDataDir } from "../data-dir";
+import { schedulingClock } from "../scheduling-timezone";
 
 export interface AutomaticImageUpdateWindow {
     start: string;
@@ -40,7 +41,7 @@ export function normalizeSelfUpdateSettings(value: unknown): SelfUpdateSettings 
 export function selfUpdateMayRun(settings: SelfUpdateSettings, now = new Date()): boolean {
     if (settings.mode !== "sidecar") return false;
     if (settings.pause.enabled && (!settings.pause.until || Date.parse(settings.pause.until) > now.getTime())) return false;
-    return settings.schedule.type === "immediate" || (settings.schedule.days.includes(now.getDay()) && isWithinMaintenanceWindow(settings.schedule.start, settings.schedule.end, now));
+    return settings.schedule.type === "immediate" || (settings.schedule.days.includes(schedulingClock(now).weekday) && isWithinMaintenanceWindow(settings.schedule.start, settings.schedule.end, now));
 }
 
 /**
@@ -58,7 +59,7 @@ export function getAutomaticImageUpdateWindow(settings: SelfUpdateSettings): Aut
 
 export function automaticImageUpdatesMayRun(settings: SelfUpdateSettings, now = new Date()): boolean {
     const window = getAutomaticImageUpdateWindow(settings);
-    return !window || (window.days.includes(now.getDay()) && isWithinMaintenanceWindow(window.start, window.end, now));
+    return !window || (window.days.includes(schedulingClock(now).weekday) && isWithinMaintenanceWindow(window.start, window.end, now));
 }
 
 export function selfUpdateSettingsPath(dataDir = resolveDataDir()): string {

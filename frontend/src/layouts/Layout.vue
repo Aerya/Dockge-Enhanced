@@ -77,6 +77,11 @@
                                 <a href="https://github.com/Aerya/PowerWatch" target="_blank" rel="noopener noreferrer">PowerWatch</a>
                             </template>
                         </i18n-t>
+                        <i18n-t v-else-if="item === 'releaseNews.item.emudhraTls'" keypath="releaseNews.item.emudhraTls" tag="span">
+                            <template #incident>
+                                <a href="https://emudhra.we-have-a-problem.com/" target="_blank" rel="noopener noreferrer">eMudhra</a>
+                            </template>
+                        </i18n-t>
                         <span v-else>{{ $t(item) }}</span>
                     </li>
                 </ul>

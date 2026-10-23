@@ -1,8 +1,10 @@
+import { TrivyScanner } from "../watchers/trivy-scanner";
 import { localZerobyteSummary } from "../integrations/zerobyte-federation";
 import { AgentSocketHandler } from "../agent-socket-handler";
 import { DockgeServer } from "../dockge-server";
 import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
 import { Stack } from "../stack";
+import { inspectComposeDraft } from "../compose-diagnostics";
 import { AgentSocket } from "../../common/agent-socket";
 import { ImageWatcher, imageStatusStore, WatcherSettings } from "../watchers/image-watcher";
 import { BackupManager } from "../watchers/backup-manager";
@@ -12,6 +14,7 @@ import { getVolumeMounts, listDir, readFile, writeFile, createEntry, renameEntry
 import { StartGuardWatcher } from "../watchers/start-guard-watcher";
 import { normalizeUpdatePause } from "../watchers/update-policy";
 import { Settings } from "../settings";
+import { getSchedulingTimezone } from "../scheduling-timezone";
 import { applyStackPin, normalizePinnedStacks, STACK_PINS_SETTING_KEY } from "../stack-pins";
 import { getStackStatsSnapshot, getSystemStatsSnapshot } from "../routers/system-stats-router";
 import { ComposeEditLeaseManager } from "../self-update/editor-lease";
@@ -38,6 +41,34 @@ export function instanceSystemStatsResponse(
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         // Do not call super.create()
+        agentSocket.on("getSchedulingTimezone", (callback) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true,
+                    timezone: getSchedulingTimezone() }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+        agentSocket.on("inspectComposeDraft", async (draft: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                const value = draft as { name?: unknown;
+                    compose?: unknown;
+                    env?: unknown;
+                    override?: unknown;
+                    isAdd?: unknown };
+                if (!value || typeof value.name !== "string" || typeof value.compose !== "string" ||
+                    typeof value.env !== "string" || typeof value.override !== "string" || typeof value.isAdd !== "boolean" ||
+                    value.compose.length + value.env.length + value.override.length > 2 * 1024 * 1024) {
+                    throw new ValidationError("Invalid Compose diagnostic request");
+                }
+                callbackResult({ ok: true,
+                    data: await inspectComposeDraft(server, value.name, value.compose, value.env, value.override, value.isAdd) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
         agentSocket.on("getZerobyteSummary", async (callback) => {
             try {
                 checkLogin(socket);
@@ -88,6 +119,36 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 ), callback);
             } catch (e) {
                 callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("instanceHomeSummaryGet", (callback) => {
+            try {
+                checkLogin(socket);
+                const backup = BackupManager.getInstance();
+                const last = backup.getHistory().find(entry => entry.success);
+                const monitor = MonitoringWatcher.getInstance();
+                const trivy = TrivyScanner.getInstance();
+                const levels: Record<string, number> = { UNKNOWN: 0,
+                    LOW: 1,
+                    MEDIUM: 2,
+                    HIGH: 3,
+                    CRITICAL: 4 };
+                callbackResult({ ok: true,
+                    data: {
+                        images: { enabled: ImageWatcher.getInstance().settings.enabled,
+                            count: [ ...imageStatusStore.values() ].filter(s => s.hasUpdate && !s.error).length },
+                        backup: { enabled: backup.settings.enabled,
+                            timestamp: last?.timestamp ?? null,
+                            intervalHours: backup.settings.intervalHours },
+                        containers: { enabled: monitor.settings.crashLoopEnabled || monitor.settings.healthcheckEnabled,
+                            count: monitor.getRecentCrashEvents().length + monitor.getRecentHealthEvents().length },
+                        trivy: { enabled: trivy.settings.enabled,
+                            count: (trivy.getStatus().lastResults ?? []).filter(r =>
+                                (levels[r.maxSeverity] ?? 0) >= (levels[trivy.settings.minSeverityAlert] ?? 3)).length },
+                    } }, callback);
+            } catch (error) {
+                callbackError(error, callback);
             }
         });
 

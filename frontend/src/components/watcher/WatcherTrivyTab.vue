@@ -1,5 +1,6 @@
 <template>
     <div>
+        <SchedulingTimezoneNotice />
         <div class="shadow-box big-padding mb-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="settings-subheading mb-0">
@@ -435,6 +436,7 @@
 </template>
 
 <script setup lang="ts">
+import SchedulingTimezoneNotice from "../SchedulingTimezoneNotice.vue";
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { watcherApi } from "./shared";

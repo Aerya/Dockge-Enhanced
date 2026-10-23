@@ -53,7 +53,7 @@
                 <div v-if="!isEditMode">
                     <span class="badge me-1" :class="bgStyle">{{ status }}</span>
 
-                    <a v-for="port in (ports ?? envsubstService.ports)" :key="port" :href="parsePort(port).url" target="_blank">
+                    <a v-for="port in (ports ?? envsubstService.ports)" :key="port" :href="parsePort(port).url || undefined" :title="portLinkAddressMode === 'ip' && !parsePort(port).url ? $t('portLinks.missingIp') : undefined" target="_blank" rel="noopener noreferrer">
                         <span class="badge me-1 bg-secondary">{{ parsePort(port).display }}</span>
                     </a>
 
@@ -299,7 +299,7 @@
 <script>
 import { defineComponent } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { parseDockerPort, imageRegistryUrl, resolveEndpointHostname } from "../../../common/util-common";
+import { parseDockerPortLink, imageRegistryUrl, resolveEndpointHostname } from "../../../common/util-common";
 import {
     composeLabelIsFalse,
     composeLabelIsTrue,
@@ -320,6 +320,18 @@ export default defineComponent({
         StackScheduleEditor,
     },
     props: {
+        portLinkAddressMode: {
+            type: String,
+            default: "hostname",
+        },
+        portLinkIp: {
+            type: String,
+            default: "",
+        },
+        primaryHostname: {
+            type: String,
+            default: "",
+        },
         name: {
             type: String,
             required: true,
@@ -632,8 +644,8 @@ export default defineComponent({
             });
         },
         parsePort(port) {
-            const hostname = resolveEndpointHostname(this.endpoint, this.$root.agentList[this.endpoint]?.url, location.hostname, location.protocol);
-            return parseDockerPort(port, hostname);
+            const hostname = resolveEndpointHostname(this.endpoint, this.$root.agentList[this.endpoint]?.url, location.hostname, location.protocol, this.primaryHostname, this.portLinkAddressMode, this.portLinkIp);
+            return parseDockerPortLink(port, hostname, this.portLinkAddressMode);
         },
         remove() {
             delete this.jsonObject.services[this.name];

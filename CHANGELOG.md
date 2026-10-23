@@ -2,6 +2,25 @@
 
 **Unreleased — Compose defaults and remote agents** — Named HTTP/HTTPS links, a configurable default .env template, persistent agent tags and tag filtering, plus optional reverse agent connections with per-node tokens and automatic attachment after local account setup. Reverse agents belong to their hub; inter-server data transfers still require direct federation. An existing local administrator account is sufficient; no new account is needed. [Documentation](docs/compose-and-reverse-agents.md).
 
+**2026-10-23 — Port links** — Choose Hostname or IP address for container port links in Settings → General. Each linked instance keeps its own choice; the existing default is preserved. Hostname mode prioritizes Primary Hostname, falling back to the browser/agent address. IP mode supports automatic IP selection or an explicit reachable IPv4/IPv6. If no IP is known, the badge remains visible without a link, with an explanatory tooltip. Configure each hosting instance separately and update both sides to use this preference through federation; older agents retain their previous behavior. Docker port bindings, DNS and stored hostnames are unchanged.
+
+### TLS security — October 2026
+
+Update image trust stores and TLS components following the eMudhra incident. Checks cover the compromised chains, including both No CT cases, and a valid HTTPS connection. Running images remain unchanged: schedule their replacement after validation.
+
+[Incident details](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
+**2026-10-23 — Settings page rendering** — Fixed a timezone-list import error that could leave Settings blank (`timezones is not iterable`). The timezone selector and settings menu render again without changing saved settings or schedules. Regression tests cover the real timezone data and General page rendering. Fixes #555.
+
+**2026-10-23 — Scheduling timezone and optional container TZ** — Shared scheduling timezone per instance, with optional, confirmed per-stack TZ changes in the Compose editor; no automatic container recreation. Container runtime timezone; scheduling defaults to it until explicitly configured in **Settings → General**. The WebUI choice takes precedence for Enhanced schedules.
+
+**2026-10-23 — Image update notifications** — Discord and Apprise announce a pending image update only once per stack, image and remote digest, including updates waiting for a scheduled window. This tracking survives Enhanced restarts. A new digest is announced again; automatic update results still generate their own notification. Failed deliveries are retried on subsequent checks independently for each Discord webhook and the configured Apprise destination.
+
+**2026-10-18 — Compose checks and Home Assistant** — Advisory port-conflict checks before saving/deploying, including resolved variables, overrides and ranges; running-image reference comparison with a reviewable YAML correction. Optional Home Assistant custom integration with state sensors and permission-scoped start/stop/restart controls. [Guide](docs/HOME-ASSISTANT.md).
+
+**2026-10-18 — Instance / Global** — Home: local statistics first, then global totals independent of stack filters. Expand each summary card for per-instance values and direct menu links. Offline or older instances are marked unavailable; backup coverage distinguishes disabled instances.
+
 **2026-10-18 — Service status for discovered stacks** — Unadopted Compose projects such as DDEV no longer trigger repeated `spawn docker ENOENT` errors when their directory is absent from the stacks root. Adopted external stacks use their registered directory, project name and Compose files for service status.
 
 **2026-10-18 — Optional TOTP two-factor authentication** — Enable **Settings → Security → 2FA Settings** with your current password, scan the QR code and confirm an authenticator code. Save the ten single-use recovery codes; they are shown only once. Off by default, this protects local sign-in without changing trusted-proxy authentication or federation tokens. Back up all of `/app/data`, including `two-factor.key`. A database-only restore cannot decrypt the authenticator secret without this key. If the authenticator and all recovery codes are lost, a container administrator can run `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm` from `/app`, then restart Enhanced; the password is unchanged. Linked instances must use federation tokens before enabling 2FA; password-only connections will no longer work.

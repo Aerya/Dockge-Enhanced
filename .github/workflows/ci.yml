@@ -53,13 +53,29 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run check-ts
 
+      - name: Tests des liens de ports et du nom d’hôte principal
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test common/util-common.test.ts common/port-link-settings.test.ts backend/port-link-federation.test.ts
+
       - name: Tests des transports Socket.IO de la WebUI
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/socket-connection.test.ts
 
+      - name: Tests du rendu des paramètres et des fuseaux horaires
+        if: steps.docs.outputs.docs_only != 'true'
+        run: node --test frontend/src/settings-context.test.js
+
+      - name: Tests des résumés Instance et Global
+        if: steps.docs.outputs.docs_only != 'true'
+        run: node --test frontend/src/home-summary.test.js
+
       - name: Tests du compteur de conteneurs
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/container-counts.test.ts
+
+      - name: Tests des diagnostics Compose et des corrections YAML
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test common/compose-diagnostics.test.ts backend/compose-diagnostics.test.ts frontend/src/compose-diagnostics-ui.test.ts
 
       - name: Tests de préparation des montages hôte
         if: steps.docs.outputs.docs_only != 'true'
@@ -71,7 +87,7 @@ jobs:
 
       - name: Tests des reprises registry de l’ImageWatcher
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/watchers/image-watcher.test.ts
+        run: npx tsx --test backend/watchers/image-watcher.test.ts backend/watchers/image-update-notifications.test.ts
 
       - name: Tests du fallback DNS configurable des registries
         if: steps.docs.outputs.docs_only != 'true'
@@ -156,6 +172,10 @@ jobs:
       - name: Tests du rendu Markdown des README de stacks
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/stack-readme.test.ts
+
+      - name: Tests des fuseaux de planification et des variables TZ Compose
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/scheduling-timezone.test.ts backend/scheduling-integration.test.ts common/compose-timezone.test.ts backend/self-update/settings.test.ts backend/watchers/update-policy.test.ts
 
       - name: Tests des propositions de healthcheck par service
         if: steps.docs.outputs.docs_only != 'true'

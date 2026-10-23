@@ -58,6 +58,19 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 **Compose 模板与远程代理 :** 支持命名的 HTTP/HTTPS 链接、可配置的默认 .env 模板、持久化代理标签与筛选，以及使用独立令牌的可选反向连接。本地账户初始化后，节点会自动连接。反向代理仅属于其中心服务器；服务器间数据传输仍需直接联合连接。 已有本地管理员账户即可，无需创建新账户。 [文档](docs/compose-and-reverse-agents.md).
 
+**端口链接 :** 在“设置 → 常规”中选择容器端口链接使用主机名还是 IP 地址。每个关联实例保留自己的选择，默认行为保持不变。 主机名模式优先使用配置的主机名，其次使用浏览器或代理地址。IP 模式使用已知 IP 或指定的可访问 IPv4/IPv6。未知 IP 时，端口徽章仍显示，但不提供链接，并带有提示说明。请分别配置各托管实例，并更新关联双方以支持此设置；旧代理保留原有行为。不修改 Docker 端口绑定、DNS 或已保存的主机名。
+
+### TLS 安全更新 — 2026 年 10 月
+
+针对 eMudhra 事件更新镜像中的证书库和 TLS 组件。测试覆盖受影响的证书链、两个 No CT 案例以及有效的 HTTPS 连接。正在运行的镜像保持不变；请在验证后安排替换。
+
+[事件详情](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
+**Compose 检查与 Home Assistant :** 保存或部署前提示端口冲突，支持解析变量、覆盖文件和端口范围；比较运行中的镜像引用并准备待审核的 YAML 修正。可选 Home Assistant 集成提供状态传感器和受权限限制的启动、停止、重启控制。 [Guide](docs/HOME-ASSISTANT.md).
+
+**Instance / Global :** 首页先显示本地实例统计，下方显示不受 Stack 筛选影响的全局汇总。展开摘要卡片可查看各实例数据并直接打开对应菜单。离线或旧版本实例标记为不可用；备份汇总单独列出已禁用的实例。
+
 **已发现 Stack 的服务状态：** DDEV 等已发现但尚未接管的 Compose 项目在 Stack 根目录中没有对应目录时，不再反复触发 `spawn docker ENOENT` 错误。已接管的外部 Stack 使用已登记的目录、项目名称和 Compose 文件查询服务状态。
 
 **可选 TOTP 双重身份验证 :** 在**设置 → 安全 → 双重身份验证设置**中输入当前密码，扫描二维码并输入身份验证应用的验证码以启用。请保存十个一次性恢复码；它们只显示一次。此功能默认关闭，仅保护本地登录，不影响可信代理认证或联合令牌。 启用双重身份验证前，请将关联实例改为使用联合令牌；仅使用密码的连接将不再有效。
@@ -81,6 +94,12 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 在 **Watcher > Images > 备用 DNS** 中，可启用备用 DNS（默认关闭）、添加/编辑/删除 IPv4 或 IPv6 服务器，并测试 A/AAAA 查询、耗时和诊断信息。始终优先使用系统 DNS；只有 ImageWatcher 对仓库和令牌服务的受支持 HTTP 请求发生 DNS 解析失败时才会使用备用服务器。默认示例为 Quad9（`9.9.9.9`、`2620:fe::fe`）和 Cloudflare（`1.1.1.1`、`2606:4700:4700::1111`），均可修改。已有配置不会被覆盖。不会修改主机或 Docker Engine 的 DNS；Docker Engine 自行执行的拉取与自动更新不受此功能影响。
 
 #### 更新与 ImageWatcher
+
+**统一计划任务时区与可选容器 TZ :** 在 **设置 → 常规** 中选择 **计划任务时区**。它控制此实例的 Stack 启停、镜像更新、内部更新时段，以及原生 Restic 和安全扫描的 cron 任务。未明确选择时保留当前进程时区，不会重写已保存的计划时间。关联实例及 Zerobyte 等外部工具保留各自的设置。相对间隔、暂停截止时间和保留策略不变。夏令时遵循所选时区：不存在的本地时间不保证执行，重复的小时可能出现两次；建议使用过渡时段以外的时间，例如 04:00。
+
+在 Stack 编辑操作中，**容器时区** 提供 **默认关闭** 的选项，将 `TZ` 添加到 Compose 草稿及 override。已有或继承的值（包括可能来自 `env_file`/`extends` 的值）需要确认。请检查 YAML，保存后重新创建/部署容器。镜像必须支持 `TZ`。不会修改 `.env`/`env_file` 文件；以后更改全局时区也不会自动重写 Stack 或重建容器。
+
+**镜像更新通知 :** Discord 和 Apprise 对同一 Stack、镜像和远程摘要的待更新版本只通知一次，包括等待计划时段的更新。此记录在 Enhanced 重启后仍然保留。检测到新的摘要会再次通知；自动更新结果仍会单独通知。发送失败后会在后续检查中重试，每个 Discord Webhook 和已配置的 Apprise 目标分别记录发送结果。
 
 **已停止的服务保持停止：**如果目标 Compose 服务或所需的网络命名空间配套服务已停止或不存在，自动镜像更新会推迟。ImageWatcher 在下载后、重建前再次检查，并在后续检查中重试。它不会通过 `compose up` 启动已停止的服务。
 
@@ -383,6 +402,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 <details>
 <summary>查看全部功能</summary>
 
+- 在“设置 → 常规”中选择容器端口链接使用主机名还是 IP 地址。每个关联实例保留自己的选择，默认行为保持不变。
+
 ### 多服务器与联邦
 - 全网状联邦
 - 从任意已连接实例管理
@@ -395,6 +416,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 不同 Dockge-Enhanced 版本之间的能力协商
 
 ### Stack 管理
+
+- 每个实例的计划任务使用统一时区；编辑器提供需确认的可选按 Stack 应用 TZ 功能，不会自动重新创建容器。
 
 - Stack 操作栏提供直接操作，支持仅图标或图标加文字模式
 - 可选的逐服务 Compose 健康检查助手，提供可编辑的 HTTP/TCP 建议与命令预览
@@ -446,6 +469,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 历史记录与恢复流程集成
 
 ### 更新
+- 按 Stack、镜像、待更新摘要和通知目标持久化去重；发送失败会重试，自动更新结果仍单独通知。
 - 应用栈镜像批量自动更新: 变更预览和现有例外保留.
 - **ImageWatcher 立即更新**：启用时立即检查，之后默认每 5 分钟定向检查（可独立于 6 小时完整扫描调整或禁用）；基于容器实际运行的映像比较，并合并请求、处理 HTTP 429 限流。
 - 使用 `dockge.imageupdates.check: "false"` 按服务排除 ImageWatcher 检查及自动/批量更新
@@ -491,6 +515,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 ### 自动化与审计
 
 [REST API、Webhooks 与 Home Assistant 指南](docs/AUTOMATION.zh-CN.md)。
+
+- **Compose 检查与 Home Assistant :** 保存或部署前提示端口冲突，支持解析变量、覆盖文件和端口范围；比较运行中的镜像引用并准备待审核的 YAML 修正。可选 Home Assistant 集成提供状态传感器和受权限限制的启动、停止、重启控制。 [Guide](docs/HOME-ASSISTANT.md).
 - REST API
 - 每 Stack Webhook
 - Home Assistant 示例
@@ -581,7 +607,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
 #      - DOCKER_API_VERSION=x.xx             # 可选：旧版 Docker API 的 NAS
-      - TZ=Europe/Paris                      # 时区，会影响计划任务
+      - TZ=Europe/Paris                      # 可选进程时区；计划任务时区可在 WebUI 配置
 ```
 
 启动：
@@ -673,7 +699,7 @@ Nginx Proxy Manager 凭据是必需的；Pi-hole、AdGuard Home、metrics 和 de
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge 数据目录；仅在使用自定义持久化挂载时覆盖 |
 | `DOCKGE_PUBLIC_URL` | 无 | Discord 通知中使用的公网 URL，例如 `https://dockge.example.com` |
 | `DOCKER_API_VERSION` | 无 | 固定 Docker Client 协商的 API 版本，适合部分 NAS |
-| `TZ` | `UTC` | 容器时区；计划自动更新依赖此值 |
+| `TZ` | `UTC` | 容器进程时区；未在 **设置 → 常规** 明确选择时作为计划任务的默认值。WebUI 选择对 Enhanced 计划任务优先。 |
 | `DOCKGE_PORT` | `5001` | Web UI 端口 |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | 启用 HTTPS |
 | `DOCKGE_AUTH_MODE` | 未设置 | `local`、`disabled` 或 `trusted-proxy` |
@@ -753,6 +779,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 ## 致谢
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — 多平台通知网关
+- [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — 端口冲突检测、Compose 差异检查和 Home Assistant 集成的灵感来源。
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — 已整合的重要 UI/UX、主题、国际化和前端架构改进来源
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — 原始项目（MIT）
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — Docker 实时日志查看器

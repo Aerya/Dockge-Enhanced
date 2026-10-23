@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dockge Enhanced",
+        "data": {
+          "url": "Instance URL",
+          "token": "API token",
+          "controls": "Enable start / stop / restart controls (requires API permissions)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "API token",
+        "data": {
+          "token": "API token"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the instance",
+      "invalid_auth": "Invalid token or insufficient permissions"
+    },
+    "abort": {
+      "already_configured": "This instance is already configured",
+      "reauth_successful": "Authentication renewed"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Status"
+      }
+    },
+    "binary_sensor": {
+      "running": {
+        "name": "Running"
+      }
+    },
+    "button": {
+      "start": {
+        "name": "Start"
+      },
+      "stop": {
+        "name": "Stop"
+      },
+      "restart": {
+        "name": "Restart"
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "Stack control"
+      }
+    }
+  }
+}

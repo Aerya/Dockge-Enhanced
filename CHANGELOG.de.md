@@ -2,6 +2,25 @@
 
 **Noch nicht veröffentlicht — Compose-Vorlagen und entfernte Agents** — Benannte HTTP/HTTPS-Links, konfigurierbare .env-Standardvorlage, dauerhafte Agent-Tags und Tag-Filter sowie optionale Rückwärtsverbindungen mit individuellen Tokens und automatischer Anmeldung nach Einrichtung des lokalen Kontos. Rückwärts verbundene Agents gehören zu ihrem Hub; Datenübertragungen zwischen Servern benötigen weiterhin direkte Föderation. Ein vorhandenes lokales Administratorkonto genügt; ein neues Konto ist nicht erforderlich. [Dokumentation](docs/compose-and-reverse-agents.md).
 
+**2026-10-23 — Port-Links** — Unter Einstellungen → Allgemein Hostname oder IP-Adresse für Container-Port-Links auswählen. Jede verknüpfte Instanz behält ihre eigene Auswahl; der bisherige Standard bleibt erhalten. Der Hostname-Modus bevorzugt den primären Hostnamen, danach die Browser-/Agent-Adresse. Der IP-Modus nutzt eine bekannte IP oder eine explizite erreichbare IPv4/IPv6. Ohne bekannte IP bleibt die Port-Anzeige ohne Link mit erklärendem Tooltip sichtbar. Jede hostende Instanz separat konfigurieren und beide Seiten für diese Föderationseinstellung aktualisieren; ältere Agenten behalten ihr Verhalten. Docker-Portbindungen, DNS und gespeicherte Hostnamen bleiben unverändert.
+
+### TLS-Sicherheit — Oktober 2026
+
+Zertifikatsspeicher und TLS-Komponenten der Images werden nach dem eMudhra-Vorfall aktualisiert. Die Prüfungen umfassen die betroffenen Ketten, beide No-CT-Fälle und eine gültige HTTPS-Verbindung. Laufende Images bleiben unverändert; ihr Austausch muss nach der Validierung geplant werden.
+
+[Details zum Vorfall](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
+**2026-10-23 — Anzeige der Einstellungen** — Ein Importfehler der Zeitzonenliste wurde behoben, der eine leere Einstellungsseite verursachen konnte (`timezones is not iterable`). Zeitzonenauswahl und Menü werden wieder angezeigt, ohne gespeicherte Einstellungen oder Zeitpläne zu ändern. Regressionstests prüfen die tatsächlichen Zeitzonendaten und die Darstellung der Seite Allgemein. Behebt #555.
+
+**2026-10-23 — Zeitzone der Zeitpläne und optionale Container-TZ** — Gemeinsame Zeitzone für Zeitpläne pro Instanz und optionale, bestätigte TZ-Änderungen pro Stack im Compose-Editor; keine automatische Container-Neuerstellung. Laufzeit-Zeitzone des Containers; Standard für Zeitpläne bis zur ausdrücklichen Auswahl unter **Einstellungen → Allgemein**. Die WebUI-Auswahl hat für Enhanced-Zeitpläne Vorrang.
+
+**2026-10-23 — Benachrichtigungen zu Image-Updates** — Discord und Apprise melden ein ausstehendes Image-Update nur einmal pro Stack, Image und Remote-Digest, auch wenn es auf ein geplantes Zeitfenster wartet. Dieser Verlauf bleibt nach einem Neustart von Enhanced erhalten. Ein neuer Digest wird erneut gemeldet; Ergebnisse automatischer Updates erhalten weiterhin eine eigene Benachrichtigung. Fehlgeschlagene Zustellungen werden bei späteren Prüfungen erneut versucht, getrennt je Discord-Webhook und konfiguriertem Apprise-Ziel.
+
+**2026-10-18 — Compose-Prüfungen und Home Assistant** — Warnungen vor Portkonflikten beim Speichern/Bereitstellen, einschließlich aufgelöster Variablen, Overrides und Bereiche; Vergleich laufender Image-Referenzen mit überprüfbarer YAML-Korrektur. Optionale Home-Assistant-Integration mit Zustandssensoren und berechtigungsgebundenen Start/Stopp/Neustart-Aktionen. [Guide](docs/HOME-ASSISTANT.md).
+
+**2026-10-18 — Instance / Global** — Startseite: zuerst lokale Statistiken, darunter globale Summen unabhängig von Stack-Filtern. Aufklappbare Übersichtskarten zeigen Werte und direkte Menülinks je Instanz. Offline- oder ältere Instanzen werden als nicht verfügbar angezeigt; deaktivierte Backups werden separat ausgewiesen.
+
 **2026-10-18 — Dienststatus erkannter Stacks** — Nicht übernommene Compose-Projekte wie DDEV verursachen keine wiederholten `spawn docker ENOENT`-Fehler mehr, wenn ihr Verzeichnis im Stack-Stamm fehlt. Übernommene externe Stacks verwenden für den Dienststatus ihr registriertes Verzeichnis, ihren Projektnamen und ihre Compose-Dateien.
 
 **2026-10-18 — Optionale TOTP-Zwei-Faktor-Authentifizierung** — Aktivieren Sie sie unter **Einstellungen → Sicherheit → 2FA-Einstellungen** mit Ihrem aktuellen Passwort, scannen Sie den QR-Code und bestätigen Sie einen Authenticator-Code. Speichern Sie die zehn einmal gültigen Wiederherstellungscodes; sie werden nur einmal angezeigt. Standardmäßig deaktiviert, schützt sie lokale Anmeldungen, nicht Trusted-Proxy-Authentifizierung oder Föderationstoken. Sichern Sie das gesamte `/app/data`, einschließlich `two-factor.key`. Eine reine Datenbankwiederherstellung kann das Geheimnis ohne diesen Schlüssel nicht entschlüsseln. Bei Verlust von Authenticator und allen Wiederherstellungscodes kann ein Containeradministrator unter `/app` den Befehl `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm` ausführen und Enhanced neu starten; das Passwort bleibt unverändert. Verwenden Sie vor der Aktivierung der 2FA Föderationstoken für verknüpfte Instanzen; Verbindungen nur mit Passwort funktionieren danach nicht mehr.

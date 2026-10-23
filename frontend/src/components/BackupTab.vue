@@ -1,5 +1,6 @@
 <template>
     <div>
+        <SchedulingTimezoneNotice />
         <BackupZerobyte />
 
         <!-- ═══ DESTINATIONS ═══ -->
@@ -241,6 +242,7 @@
 </template>
 
 <script setup lang="ts">
+import SchedulingTimezoneNotice from "./SchedulingTimezoneNotice.vue";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz } from "../composables/useServerTz";

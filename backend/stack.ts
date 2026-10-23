@@ -360,7 +360,8 @@ export class Stack {
     async toJSON(endpoint : string) : Promise<object> {
 
         // Since we have multiple agents now, embed primary hostname in the stack object too.
-        let primaryHostname = await Settings.get("primaryHostname");
+        const configuredPrimaryHostname = await Settings.get("primaryHostname") || "";
+        let primaryHostname = configuredPrimaryHostname;
         if (!primaryHostname) {
             if (!endpoint) {
                 primaryHostname = "localhost";
@@ -396,6 +397,9 @@ export class Stack {
             readmeUnavailable,
             startGuard: metadata.startGuard,
             primaryHostname,
+            configuredPrimaryHostname,
+            portLinkAddressMode: await Settings.get("portLinkAddressMode") === "ip" ? "ip" : "hostname",
+            portLinkIp: await Settings.get("portLinkIp") || "",
         };
     }
 

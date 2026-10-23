@@ -2,6 +2,30 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { parseDockerPort, resolveEndpointHostname } from "./util-common";
 
+test("configured primary hostname overrides the browser domain for local port links (#538)", () => {
+    const hostname = resolveEndpointHostname("", undefined, "dockge.example.test", "https:", "192.168.8.222");
+    assert.equal(parseDockerPort("0.0.0.0:5000->5000/tcp", hostname).url, "http://192.168.8.222:5000");
+});
+
+test("linked instance primary hostname overrides its agent URL", () => {
+    const hostname = resolveEndpointHostname("agent.example.test:5001", "https://agent.example.test", "main.example.test", "https:", "service.example.test");
+    assert.equal(parseDockerPort("5000:5000", hostname).url, "http://service.example.test:5000");
+});
+
+test("missing or blank configuration preserves local and legacy agent fallbacks", () => {
+    assert.equal(resolveEndpointHostname("", undefined, "browser.example.test", "https:", "  "), "browser.example.test");
+    assert.equal(resolveEndpointHostname("agent.example.test:5001", undefined, "browser.example.test"), "agent.example.test");
+    assert.equal(resolveEndpointHostname("agent.example.test:5001", "https://proxy.example.test", "browser.example.test", "https:", ""), "proxy.example.test");
+});
+
+test("configured IPv6 and explicit localhost remain valid port link hosts", () => {
+    for (const configured of [ "2001:db8::1", "[2001:db8::1]" ]) {
+        const hostname = resolveEndpointHostname("", undefined, "browser.example.test", "http:", configured);
+        assert.equal(parseDockerPort("5000:5000", hostname).url, "http://[2001:db8::1]:5000");
+    }
+    assert.equal(resolveEndpointHostname("", undefined, "browser.example.test", "http:", " localhost "), "localhost");
+});
+
 test("builds published-port links with the stack instance hostname", () => {
     const hostname = resolveEndpointHostname("target.example.test:5001", "http://target.example.test:5001", "source.example.test", "http:");
     assert.equal(hostname, "target.example.test");

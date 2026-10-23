@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dockge Enhanced",
+        "data": {
+          "url": "实例 URL",
+          "token": "API 令牌",
+          "controls": "启用启动 / 停止 / 重启（需要 API 权限）"
+        }
+      },
+      "reauth_confirm": {
+        "title": "API 令牌",
+        "data": {
+          "token": "API 令牌"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "无法连接实例",
+      "invalid_auth": "令牌无效或权限不足"
+    },
+    "abort": {
+      "already_configured": "此实例已配置",
+      "reauth_successful": "身份验证已更新"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "状态"
+      }
+    },
+    "binary_sensor": {
+      "running": {
+        "name": "运行中"
+      }
+    },
+    "button": {
+      "start": {
+        "name": "启动"
+      },
+      "stop": {
+        "name": "停止"
+      },
+      "restart": {
+        "name": "重启"
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "堆栈控制"
+      }
+    }
+  }
+}

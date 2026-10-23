@@ -4,6 +4,30 @@ export const RELEASE_NEWS = [
         items: [ "releaseNews.item.composeAgentConvenience" ],
     },
     {
+        id: "2026-10-23-port-link-address",
+        items: [ "releaseNews.item.portLinks" ],
+    },
+    {
+        id: "2026-10-23-emudhra-tls",
+        items: [ "releaseNews.item.emudhraTls" ],
+    },
+    {
+        id: "2026-10-23-scheduling-timezone",
+        items: [ "releaseNews.item.schedulingTimezone" ],
+    },
+    {
+        id: "2026-10-23-image-update-notifications",
+        items: [ "releaseNews.item.imageUpdateNotifications" ],
+    },
+    {
+        id: "2026-10-18-compose-diagnostics-ha",
+        items: [ "releaseNews.item.composeDiagnostics" ],
+    },
+    {
+        id: "2026-10-18-home-instance-global",
+        items: [ "releaseNews.item.homeInstanceGlobal" ],
+    },
+    {
         id: "2026-10-18-totp-authentication",
         items: [ "releaseNews.item.totpAuthentication" ],
     },

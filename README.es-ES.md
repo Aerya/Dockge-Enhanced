@@ -64,6 +64,19 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Plantillas Compose y agentes remotos :** Enlaces HTTP/HTTPS con nombre, plantilla .env predeterminada configurable, etiquetas persistentes de agentes y filtrado, además de conexiones inversas opcionales con tokens individuales y registro automático tras configurar la cuenta local. Los agentes inversos pertenecen a su servidor central; las transferencias de datos entre servidores siguen requiriendo federación directa. Basta con una cuenta de administrador local existente; no hay que crear otra. [Documentación](docs/compose-and-reverse-agents.md).
 
+**Enlaces de puertos :** Elija Nombre de host o Dirección IP para los enlaces de puertos en Ajustes → General. Cada instancia vinculada conserva su elección; se mantiene el comportamiento predeterminado. El modo Nombre de host prioriza el nombre principal y después la dirección del navegador/agente. El modo IP usa una IP conocida o una IPv4/IPv6 explícita accesible. Sin IP conocida, el puerto sigue visible sin enlace y con una explicación emergente. Configure cada instancia anfitriona por separado y actualice ambos extremos para transmitir esta preferencia; los agentes antiguos conservan su comportamiento. No cambia los puertos Docker, DNS ni los nombres guardados.
+
+### Seguridad TLS — octubre de 2026
+
+Se actualizan los almacenes de certificados y los componentes TLS de las imágenes tras el incidente de eMudhra. Las pruebas incluyen las cadenas afectadas, los dos casos No CT y una conexión HTTPS válida. Las imágenes en ejecución no cambian; su sustitución debe planificarse después de la validación.
+
+[Detalles del incidente](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
+**Comprobaciones Compose y Home Assistant :** Avisos de conflictos de puertos antes de guardar/desplegar, con variables, overrides y rangos resueltos; comparación de referencias de imágenes ejecutadas y corrección del YAML para revisar. Integración opcional de Home Assistant con sensores y controles de inicio/parada/reinicio limitados por permisos. [Guide](docs/HOME-ASSISTANT.md).
+
+**Instance / Global :** Inicio: estadísticas locales primero y totales globales independientes de los filtros de stacks debajo. Cada tarjeta de resumen ofrece detalles por instancia y enlaces directos a sus menús. Las instancias desconectadas o antiguas aparecen como no disponibles; el resumen de copias distingue las instancias desactivadas.
+
 **Estado de servicios de stacks detectadas:** Los proyectos Compose detectados pero no adoptados, como DDEV, ya no generan errores repetidos `spawn docker ENOENT` cuando su directorio no existe en la raíz de stacks. Las stacks externas adoptadas usan su directorio, nombre de proyecto y archivos Compose registrados para consultar el estado.
 
 **Autenticación TOTP de dos factores opcional :** Actívela en **Ajustes → Seguridad → Ajustes 2FA** con su contraseña actual, escanee el código QR y confirme un código de su aplicación de autenticación. Guarde los diez códigos de recuperación de un solo uso; solo se muestran una vez. Está desactivada de forma predeterminada y protege el inicio de sesión local, no la autenticación por proxy ni los tokens de federación. Antes de activar la 2FA, utilice tokens de federación para las instancias vinculadas; las conexiones solo con contraseña dejarán de funcionar.
@@ -87,6 +100,12 @@ En el modo de edición de Compose, **Comprobaciones de salud** también aparece 
 En **Watcher > Imágenes > DNS de respaldo**, se puede activar el respaldo DNS (desactivado por defecto), añadir, editar o eliminar servidores IPv4/IPv6 y probar consultas A y AAAA con tiempos y diagnósticos. El DNS del sistema tiene prioridad: el respaldo solo se usa ante fallos de resolución DNS en las solicitudes HTTP compatibles de ImageWatcher a registries y servicios de tokens. Quad9 (`9.9.9.9`, `2620:fe::fe`) y Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`) son ejemplos modificables. Se conservan los ajustes guardados. No cambia el DNS del host ni de Docker Engine; las descargas y autoactualizaciones realizadas por Docker Engine no están cubiertas.
 
 #### Actualizaciones e ImageWatcher
+
+**Zona horaria de programaciones y TZ opcional por stack :** Seleccione la **Zona horaria de las programaciones** en **Ajustes → General**. Controla el inicio/parada de stacks, las actualizaciones de imágenes, las franjas de autoactualización y los crons nativos de Restic y seguridad de esta instancia. Sin elección explícita se conserva la zona actual del proceso; no se reescriben las horas guardadas. Las instancias vinculadas y herramientas externas como Zerobyte conservan sus propios ajustes. Los intervalos relativos, vencimientos de pausas y retenciones no cambian. Se aplica el horario de verano de la zona elegida: una hora inexistente no garantiza ejecución y una hora repetida puede ocurrir dos veces. Es preferible elegir una hora fuera de la transición, como las 04:00.
+
+En las acciones de edición del stack, **Zona horaria de los contenedores** ofrece una opción **desactivada por defecto** para añadir `TZ` al borrador Compose y su override. Los valores existentes o heredados, incluidos los posibles valores de `env_file`/`extends`, requieren confirmación. Revise el YAML, guarde y recree/despliegue los contenedores. Las imágenes deben admitir `TZ`. No se modifican archivos `.env`/`env_file`; futuros cambios globales no reescriben ni recrean los stacks automáticamente.
+
+**Notificaciones de actualizaciones de imágenes :** Discord y Apprise anuncian una actualización pendiente una sola vez por stack, imagen y digest remoto, incluso si espera una franja programada. Este registro se conserva tras reiniciar Enhanced. Un nuevo digest se vuelve a anunciar; los resultados de las actualizaciones automáticas mantienen su propia notificación. Los envíos fallidos se reintentan en las comprobaciones siguientes, por separado para cada webhook de Discord y el destino Apprise configurado.
 
 **Los servicios detenidos permanecen detenidos:** una actualización automática de imagen se aplaza si un servicio Compose seleccionado, incluido un compañero necesario del espacio de nombres de red, está detenido o ausente. ImageWatcher vuelve a comprobarlo después de la descarga y antes de recrearlo, y reintenta más adelante. No utiliza `compose up` para iniciar un servicio detenido.
 
@@ -396,6 +415,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 <details>
 <summary>Mostrar todas las funcionalidades</summary>
 
+- Elija Nombre de host o Dirección IP para los enlaces de puertos en Ajustes → General. Cada instancia vinculada conserva su elección; se mantiene el comportamiento predeterminado.
+
 ### Multiservidor y federación
 - Federación en malla completa
 - Administración desde cualquier instancia vinculada
@@ -408,6 +429,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Negociación de capacidades entre distintas versiones de Dockge-Enhanced
 
 ### Gestión de stacks
+
+- Zona horaria común por instancia y aplicación opcional de TZ por stack en el editor, con confirmación y sin recreación automática.
 
 - Barra de acciones del stack con acciones directas y modos de iconos solos o con texto
 - Asistente opcional de healthcheck Compose por servicio con propuesta HTTP/TCP editable y vista previa del comando
@@ -461,6 +484,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Historial e integración con recuperación protegida
 
 ### Actualizaciones
+- Un aviso persistente por stack/imagen/digest pendiente y destino de notificación; reintentos de envío y notificaciones de resultados de actualizaciones automáticas.
 - Actualizaciones de imágenes agrupadas por stack: vista previa y conservación de excepciones.
 - **ImageWatcher Inmediato**: control al activar la opción y cada 5 minutos por defecto (configurable o desactivable sin afectar al análisis general de 6 horas), comprobación de las imágenes realmente ejecutadas, consultas compartidas y espera tras HTTP 429.
 - Exclusión por servicio de comprobaciones de ImageWatcher y actualizaciones automáticas/por lotes mediante `dockge.imageupdates.check: "false"`
@@ -506,6 +530,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 ### Automatización y auditoría
 
 [Guía de API REST, webhooks y Home Assistant](docs/AUTOMATION.es.md).
+
+- **Comprobaciones Compose y Home Assistant :** Avisos de conflictos de puertos antes de guardar/desplegar, con variables, overrides y rangos resueltos; comparación de referencias de imágenes ejecutadas y corrección del YAML para revisar. Integración opcional de Home Assistant con sensores y controles de inicio/parada/reinicio limitados por permisos. [Guide](docs/HOME-ASSISTANT.md).
 - API REST
 - Webhooks
 - Home Assistant
@@ -722,7 +748,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
 #      - DOCKER_API_VERSION=x.xx             # opcional — para dispositivos NAS con API de Docker más antigua
-      - TZ=Europe/Paris                      # zona horaria (afecta actualizaciones programadas)
+      - TZ=Europe/Paris                      # zona del proceso opcional; programaciones configurables en la WebUI
 ```
 
 ```bash
@@ -821,7 +847,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKGE_DATA_DIR` | `/app/data` | Directorio de datos de Dockge; cámbialo solo para un montaje persistente personalizado |
 | `DOCKGE_PUBLIC_URL` | *(ninguna)* | URL pública usada en enlaces de notificaciones Discord (por ejemplo `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(ninguna)* | Fija la versión de la API de Docker negociada por el cliente — útil en ciertos sistemas NAS (por ejemplo Synology DSM 7.x) |
-| `TZ` | `UTC` | Zona horaria del contenedor — **importante** para que las actualizaciones automáticas programadas se disparen en la hora local correcta (por ejemplo `Europe/Paris`) |
+| `TZ` | `UTC` | Zona del proceso en el contenedor; predeterminada para programaciones hasta elegir una en **Ajustes → General**. La elección WebUI tiene prioridad para las programaciones de Enhanced. |
 | `DOCKGE_PORT` | `5001` | Puerto de la interfaz web |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Habilita HTTPS |
 | `DOCKGE_AUTH_MODE` | *(no establecido)* | Modo de autenticación: `local`, `disabled`, o `trusted-proxy`. Cuando no está establecido, se conserva el comportamiento histórico y la configuración `disableAuth` |
@@ -906,6 +932,7 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 ## Créditos
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — gateway de notificación multiplataforma
+- [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — inspiración para la detección de conflictos de puertos, diferencias Compose e integración Home Assistant.
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — fuente de mejoras importantes de UI/UX, temas, internacionalización y arquitectura frontend adaptadas en este proyecto
 - [**Dockge**](https://github.com/louislam/dockge) por louislam — el proyecto original (licencia MIT)
 - [**Dozzle**](https://github.com/amir20/dozzle) por Amir Rajan — visor de registros Docker en tiempo real (licencia MIT)

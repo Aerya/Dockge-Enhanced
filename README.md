@@ -64,6 +64,19 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Compose defaults and remote agents :** Named HTTP/HTTPS links, a configurable default .env template, persistent agent tags and tag filtering, plus optional reverse agent connections with per-node tokens and automatic attachment after local account setup. Reverse agents belong to their hub; inter-server data transfers still require direct federation. An existing local administrator account is sufficient; no new account is needed. [Documentation](docs/compose-and-reverse-agents.md).
 
+**Port links :** Choose Hostname or IP address for container port links in Settings → General. Each linked instance keeps its own choice; the existing default is preserved. Hostname mode prioritizes Primary Hostname, falling back to the browser/agent address. IP mode supports automatic IP selection or an explicit reachable IPv4/IPv6. If no IP is known, the badge remains visible without a link, with an explanatory tooltip. Configure each hosting instance separately and update both sides to use this preference through federation; older agents retain their previous behavior. Docker port bindings, DNS and stored hostnames are unchanged.
+
+### TLS security — October 2026
+
+Update image trust stores and TLS components following the eMudhra incident. Checks cover the compromised chains, including both No CT cases, and a valid HTTPS connection. Running images remain unchanged: schedule their replacement after validation.
+
+[Incident details](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
+**Compose checks and Home Assistant :** Advisory port-conflict checks before saving/deploying, including resolved variables, overrides and ranges; running-image reference comparison with a reviewable YAML correction. Optional Home Assistant custom integration with state sensors and permission-scoped start/stop/restart controls. [Guide](docs/HOME-ASSISTANT.md).
+
+**Instance / Global :** Home: local statistics first, then global totals independent of stack filters. Expand each summary card for per-instance values and direct menu links. Offline or older instances are marked unavailable; backup coverage distinguishes disabled instances.
+
 **Service status for discovered stacks:** Discovered but unadopted Compose projects such as DDEV no longer trigger repeated `spawn docker ENOENT` errors when their directory is absent from the stacks root. Adopted external stacks use their registered directory, project name and Compose files for service status.
 
 **Optional TOTP two-factor authentication :** Enable **Settings → Security → 2FA Settings** with your current password, scan the QR code and confirm an authenticator code. Save the ten single-use recovery codes; they are shown only once. Activation is off by default and applies to local sign-in, not trusted-proxy authentication or federation tokens. Linked instances must use federation tokens before enabling 2FA; password-only connections will no longer work.
@@ -87,6 +100,12 @@ In Compose edit mode, **Healthchecks** is also available in the stack action bar
 Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS fallback (disabled by default), add/edit/remove IPv4 or IPv6 resolvers, and test A and AAAA queries with response times and diagnostics. System DNS is always tried first; fallback is used only for DNS resolution failures in supported ImageWatcher HTTP registry/token requests. The initial examples are Quad9 (`9.9.9.9`, `2620:fe::fe`) and Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`), and are fully customizable. Existing saved settings are preserved. No host or Docker Engine DNS setting is changed; Docker Engine pulls and self-updates are outside this fallback.
 
 #### Updates and ImageWatcher
+
+**Scheduling timezone and optional container TZ :** Choose the **Scheduling timezone** in **Settings → General**. It controls this instance’s stack start/stop schedules, image-update times, self-update windows, native Restic and security-scan crons. Without an explicit choice, the existing runtime timezone is preserved; saved clock times are not rewritten. Linked instances and external backup tools such as Zerobyte keep their own settings. Relative intervals, pause deadlines and retention are unchanged. DST follows the selected zone: a missing local hour is not guaranteed to execute, and a repeated hour may occur twice; prefer a time outside the transition, such as 04:00.
+
+In a stack’s edit actions, **Container timezone** offers an option **off by default** to add `TZ` to the Compose draft and override. Existing values (including inherited values or `env_file`/`extends`) require confirmation. Review the YAML, save and recreate/deploy to apply it. Images must support `TZ`; source `.env`/`env_file` files are not changed, and future global timezone changes do not automatically rewrite or recreate stacks.
+
+**Image update notifications :** Discord and Apprise announce a pending image update only once per stack, image and remote digest, including updates waiting for a scheduled window. This tracking survives Enhanced restarts. A new digest is announced again; automatic update results still generate their own notification. Failed deliveries are retried on subsequent checks independently for each Discord webhook and the configured Apprise destination.
 
 **Stopped services stay stopped:** automatic image updates are deferred when any targeted Compose service (including a required network-namespace companion) is stopped or absent. ImageWatcher checks again after pulling, before recreation, and retries on a later check. It does not use `compose up` to wake a stopped service.
 
@@ -396,6 +415,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 <details>
 <summary>Show all features</summary>
 
+- Choose Hostname or IP address for container port links in Settings → General. Each linked instance keeps its own choice; the existing default is preserved.
+
 ### Multi-server & federation
 - Full-mesh federation between Dockge-Enhanced instances
 - Administration from any linked instance
@@ -410,6 +431,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Version-aware capability negotiation between mixed Dockge-Enhanced releases
 
 ### Stack management
+
+- Shared scheduling timezone per instance, with optional, confirmed per-stack TZ changes in the Compose editor; no automatic container recreation.
 
 - Stack action bar with direct actions and icons-only or icons-and-text modes
 - Optional per-service Compose healthcheck assistant with editable HTTP/TCP proposal and command preview
@@ -482,6 +505,7 @@ The Restic snapshot list defaults to **All**. **Save** stores settings and reten
 - Integration with protected update and recovery workflows
 
 ### Updates
+- One pending-update announcement per stack/image/digest and notification destination, persisted across restarts; retry failed deliveries and keep automatic update result notifications.
 - Bulk automatic image policies for a stack: preview and preservation of individual exceptions.
 - **ImageWatcher Immediate**: targeted checks on activation and every 5 minutes by default (configurable or disabled separately from the 6-hour full scan), detection of images actually running, shared registry requests and HTTP 429 cooldowns.
 - Per-service exclusion from ImageWatcher checks and automatic/batch image updates with `dockge.imageupdates.check: "false"`
@@ -537,6 +561,8 @@ The Restic snapshot list defaults to **All**. **Save** stores settings and reten
 ### Automation & audit
 
 [REST API, webhooks and Home Assistant guide](docs/AUTOMATION.md).
+
+- **Compose checks and Home Assistant :** Advisory port-conflict checks before saving/deploying, including resolved variables, overrides and ranges; running-image reference comparison with a reviewable YAML correction. Optional Home Assistant custom integration with state sensors and permission-scoped start/stop/restart controls. [Guide](docs/HOME-ASSISTANT.md).
 - Permission- and stack-scoped REST API
 - Per-stack webhooks
 - Home Assistant examples
@@ -758,7 +784,7 @@ services:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_DATA_DIR=/app/data
 #      - DOCKER_API_VERSION=x.xx             # optional — for NAS devices with older Docker API
-      - TZ=Europe/Paris                      # timezone (affects scheduled updates)
+      - TZ=Europe/Paris                      # optional runtime timezone; schedules configurable in WebUI
 ```
 
 ```bash
@@ -857,7 +883,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge data directory; override only for a custom persistent mount |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(none)* | Fixes the Docker API version negotiated by the client — useful on certain NAS systems (e.g. Synology DSM 7.x) |
-| `TZ` | `UTC` | Container timezone — **important** for scheduled auto-updates to fire at the right local time (e.g. `Europe/Paris`) |
+| `TZ` | `UTC` | Container runtime timezone; scheduling defaults to it until explicitly configured in **Settings → General**. The WebUI choice takes precedence for Enhanced schedules. |
 | `DOCKGE_PORT` | `5001` | Web UI port |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Enable HTTPS |
 | `DOCKGE_AUTH_MODE` | *(unset)* | Authentication mode: `local`, `disabled`, or `trusted-proxy`. When unset, the historical behavior and `disableAuth` setting are preserved |
@@ -942,6 +968,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 ## Credits
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway
+- [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — inspiration for port-conflict detection, Compose drift checks and the Home Assistant companion integration.
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — source of significant UI/UX, theming, internationalization and frontend architecture improvements adapted into this project
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — the original project (MIT licence)
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — real-time Docker log viewer (MIT licence)

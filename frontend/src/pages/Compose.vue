@@ -44,6 +44,16 @@
                 </div>
             </h1>
 
+            <ComposeDiagnostics
+                v-if="stack.isManagedByDockge"
+                :key="`${endpoint}/${stack.name}`"
+                ref="composeDiagnostics"
+                :endpoint="endpoint"
+                :external="stack.isExternal"
+                :draft="{ name: stack.name, compose: stack.composeYAML, env: stack.composeENV || '', override: stack.composeOverrideYAML || '', isAdd }"
+                @sync="prepareComposeImageSync"
+                @busy="composeDiagnosticsBusy = $event"
+            />
             <StackReplicationStatus
                 v-if="!isAdd && stack.isManagedByDockge && !stack.isExternal && $root.agentCount > 1"
                 ref="stackReplicationStatus"
@@ -76,6 +86,10 @@
                         <button v-if="isEditMode" type="button" class="btn btn-normal stack-action stack-action--healthcheck" :title="$t('serviceHealthcheck.configure')" :aria-label="$t('serviceHealthcheck.configure')" :disabled="containerCount === 0" @click="openStackHealthcheckAction">
                             <font-awesome-icon icon="heartbeat" />
                             <span class="stack-action-label">{{ $t("serviceHealthcheck.action") }}</span>
+                        </button>
+                        <button v-if="isEditMode" type="button" class="btn btn-normal stack-action" :title="$t('stackTimezone.title')" :aria-label="$t('stackTimezone.title')" @click="openStackTimezone">
+                            <font-awesome-icon icon="calendar-days" />
+                            <span class="stack-action-label">{{ $t("stackTimezone.title") }}</span>
                         </button>
                         <button v-if="!isEditMode" class="btn btn-secondary stack-action" :title="$t('editStack')" :aria-label="$t('editStack')" :disabled="processing" @click="enableEditMode">
                             <font-awesome-icon icon="pen" />
@@ -145,6 +159,10 @@
                         </button>
                     </div>
                     <div class="stack-action-group stack-action-group--information">
+                        <button class="btn btn-normal stack-action" :title="$t(composeDiagnosticsBusy ? 'composeDiagnostics.loading' : 'composeDiagnostics.title')" :aria-label="$t('composeDiagnostics.title')" :aria-busy="composeDiagnosticsBusy" :disabled="processing || composeDiagnosticsBusy" @click="$refs.composeDiagnostics.scan()">
+                            <font-awesome-icon icon="search" />
+                            <span class="stack-action-label">{{ $t('composeDiagnostics.title') }}</span>
+                        </button>
                         <button v-if="!isAdd && !isEditMode" type="button" class="btn stack-action" :class="showStackResourceHistory ? 'btn-primary' : 'btn-normal'" :title="$t('stackHistory.actionHint')" :aria-label="$t('stackHistory.action')" :aria-expanded="showStackResourceHistory" @click="showStackResourceHistory = !showStackResourceHistory">
                             <font-awesome-icon icon="chart-line" />
                             <span class="stack-action-label">{{ $t('stackHistory.action') }}</span>
@@ -178,6 +196,15 @@
                             <span class="stack-action-label">{{ $t("stackActionLabels") }}</span>
                         </button>
                     </div>
+                </div>
+                <div v-if="isEditMode && showStackTimezone" class="shadow-box p-3 mb-3">
+                    <h3 class="h6">{{ $t("stackTimezone.title") }} <span v-if="stackTimezone">— {{ stackTimezone }}</span></h3>
+                    <p class="small">{{ $t("stackTimezone.help") }}</p>
+                    <div class="form-check mb-2">
+                        <input id="apply-stack-timezone" v-model="stackTimezoneEnabled" type="checkbox" class="form-check-input" :disabled="!stackTimezone" />
+                        <label for="apply-stack-timezone" class="form-check-label">{{ $t("stackTimezone.enable") }}</label>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary" :disabled="!stackTimezoneEnabled || !stackTimezone || processing" @click="applyStackTimezone">{{ $t("stackTimezone.apply") }}</button>
                 </div>
                 <div v-if="isEditMode && showHealthcheckPicker" class="shadow-box big-padding mb-3 compose-tight">
                     <label class="form-label" for="healthcheck-service-select">{{ $t("serviceHealthcheck.chooseService") }}</label>
@@ -417,6 +444,9 @@
                                 :stack-name="stack.name"
                                 :stats-stack-name="stack.externalProject || stack.name"
                                 :endpoint="endpoint"
+                                :primary-hostname="stack.configuredPrimaryHostname"
+                                :port-link-address-mode="stack.portLinkAddressMode"
+                                :port-link-ip="stack.portLinkIp"
                                 :show-resource-stats="!endpoint"
                                 :dozzle-url="dozzleUrl"
                                 :container-action-labels="containerActionLabels"
@@ -881,6 +911,7 @@ import StackURLsInput from "../components/StackURLsInput.vue";
 import { stackURLLinks } from "../../../common/stack-urls";
 import { applyComposeTemplates, DEFAULT_COMPOSE_ENV } from "../../../common/compose-templates";
 import CodeMirror from "vue-codemirror6";
+import { prepareComposeTimezone } from "../../../common/compose-timezone";
 import { yaml } from "@codemirror/lang-yaml";
 import { python } from "@codemirror/lang-python";
 import { dracula, tomorrow } from "thememirror";
@@ -921,6 +952,8 @@ import RemoteInstanceLinks from "../components/RemoteInstanceLinks.vue";
 import PlugNPiNLabelAssistant from "../components/PlugNPiNLabelAssistant.vue";
 import StackGitPanel from "../components/StackGitPanel.vue";
 import StackResourceHistory from "../components/StackResourceHistory.vue";
+import ComposeDiagnostics from "../components/ComposeDiagnostics.vue";
+import { prepareImageSync } from "../compose-drift";
 import { applyPlugNPiNLabelsToCompose, PlugNPiNSequenceLabelsError } from "../plugnpin-labels";
 import { useStackSchedules } from "../composables/useStackSchedules";
 
@@ -941,6 +974,7 @@ let serviceStatusTimeout = null;
 export default {
     components: {
         StackURLsInput,
+        ComposeDiagnostics,
         NetworkInput,
         StackAutoUpdateBulk,
         FontAwesomeIcon,
@@ -1015,6 +1049,7 @@ export default {
     yamlDoc: null,  // For keeping the yaml comments
     data() {
         return {
+            composeDiagnosticsBusy: false,
             jsonConfig: {},
             envsubstJSONConfig: {},
             yamlError: "",
@@ -1058,6 +1093,9 @@ export default {
             healthcheckTargetService: "",
             healthcheckEditRequest: 0,
             showHealthcheckPicker: false,
+            showStackTimezone: false,
+            stackTimezoneEnabled: false,
+            stackTimezone: "",
             selectedHealthcheckService: "",
             stopServiceStatusTimeout: false,
             selectedLogService: "",
@@ -2307,7 +2345,7 @@ export default {
             });
         },
 
-        deployStack() {
+        async deployStack() {
             this.processing = true;
 
             if (!this.jsonConfig.services) {
@@ -2337,6 +2375,11 @@ export default {
                 }
             }
 
+            await this.$nextTick();
+            if (!await this.$refs.composeDiagnostics.confirmSave()) {
+                this.processing = false;
+                return;
+            }
             this.bindTerminal();
 
             this.$root.emitAgent(this.stack.endpoint, "deployStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, this.stack.composeOverrideYAML ?? "", (res) => {
@@ -2362,8 +2405,12 @@ export default {
             this.saveStackInternal(resume);
         },
 
-        saveStackInternal(resumeAfterSave = false) {
+        async saveStackInternal(resumeAfterSave = false) {
             this.processing = true;
+            if (!await this.$refs.composeDiagnostics.confirmSave()) {
+                this.processing = false;
+                return;
+            }
 
             this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, this.stack.composeOverrideYAML ?? "", (res) => {
                 this.processing = false;
@@ -2382,6 +2429,24 @@ export default {
                     this.$router.push(this.url);
                 }
             });
+        },
+
+        prepareComposeImageSync(item) {
+            if (item.running.length !== 1 || this.stack.isExternal || !window.confirm(this.$t("composeDiagnostics.syncConfirm"))) {
+                return;
+            }
+            try {
+                const override = parseDocument(this.stack.composeOverrideYAML || "").toJS() || {};
+                const field = override.services?.[item.service]?.image !== undefined ? "composeOverrideYAML" : "composeYAML";
+                const next = prepareImageSync(this.stack[field], item.service, item.running[0]);
+                if (!this.isEditMode) {
+                    this.enableEditMode();
+                }
+                this.stack[field] = next;
+                this.yamlCodeChange();
+            } catch {
+                this.$root.toastError(this.$t("composeDiagnostics.manualSync"));
+            }
         },
 
         startStack() {
@@ -2794,6 +2859,51 @@ export default {
             }
             this.selectedHealthcheckService = services.includes(this.selectedHealthcheckService) ? this.selectedHealthcheckService : services[0] ?? "";
             this.showHealthcheckPicker = !this.showHealthcheckPicker;
+        },
+
+        openStackTimezone() {
+            this.showStackTimezone = !this.showStackTimezone;
+            this.stackTimezoneEnabled = false;
+            this.stackTimezone = "";
+            if (!this.showStackTimezone) {
+                return;
+            }
+            const endpoint = this.endpoint;
+            this.$root.emitAgent(endpoint, "getSchedulingTimezone", (res) => {
+                if (endpoint !== this.endpoint) {
+                    return;
+                }
+                if (res?.ok) {
+                    this.stackTimezone = res.timezone;
+                } else {
+                    this.$root.toastError(this.$t("stackTimezone.unavailable"));
+                }
+            });
+        },
+
+        async applyStackTimezone() {
+            if (!this.stackTimezoneEnabled || !this.stackTimezone) {
+                return;
+            }
+            try {
+                const result = prepareComposeTimezone(this.stack.composeYAML, this.stack.composeOverrideYAML ?? "", this.stackTimezone);
+                if (result.conflicts.length && !window.confirm(this.$t("stackTimezone.confirm", { services: result.conflicts.join(", "),
+                    timezone: this.stackTimezone }))) {
+                    return;
+                }
+                const focused = this.editorFocus;
+                this.editorFocus = true;
+                this.stack.composeYAML = result.compose;
+                this.stack.composeOverrideYAML = result.override;
+                this.yamlCodeChange();
+                await this.$nextTick();
+                this.editorFocus = focused;
+                this.stackTimezoneEnabled = false;
+                this.showStackTimezone = false;
+                this.$root.toastSuccess(this.$t("stackTimezone.applied"));
+            } catch {
+                this.$root.toastError(this.$t("stackTimezone.invalid"));
+            }
         },
 
         openSelectedHealthcheckService() {

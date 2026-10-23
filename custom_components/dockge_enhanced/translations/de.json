@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dockge Enhanced",
+        "data": {
+          "url": "Instanz-URL",
+          "token": "API-Token",
+          "controls": "Start / Stopp / Neustart aktivieren (API-Berechtigungen erforderlich)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "API-Token",
+        "data": {
+          "token": "API-Token"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung nicht möglich",
+      "invalid_auth": "Ungültiger Token oder fehlende Berechtigungen"
+    },
+    "abort": {
+      "already_configured": "Diese Instanz ist bereits eingerichtet",
+      "reauth_successful": "Authentifizierung erneuert"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Status"
+      }
+    },
+    "binary_sensor": {
+      "running": {
+        "name": "Läuft"
+      }
+    },
+    "button": {
+      "start": {
+        "name": "Starten"
+      },
+      "stop": {
+        "name": "Stoppen"
+      },
+      "restart": {
+        "name": "Neu starten"
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "Stack-Steuerung"
+      }
+    }
+  }
+}

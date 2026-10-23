@@ -20,13 +20,13 @@
                 </select>
             </div>
 
-            <!-- Server Timezone -->
-            <div v-if="false" class="mb-4">
-                <label for="timezone" class="form-label">
-                    {{ $t("Server Timezone") }}
+            <div class="mb-4">
+                <label for="scheduling-timezone" class="form-label">
+                    {{ $t("schedulingTimezone.label") }}
                 </label>
-                <select id="timezone" v-model="settings.serverTimezone" class="form-select">
+                <select id="scheduling-timezone" v-model="settings.schedulingTimezone" class="form-select">
                     <option value="UTC">UTC</option>
+                    <option v-if="settings.schedulingTimezone && !timezoneList.some(zone => zone.value === settings.schedulingTimezone) && settings.schedulingTimezone !== 'UTC'" :value="settings.schedulingTimezone">{{ settings.schedulingTimezone }}</option>
                     <option
                         v-for="(timezone, index) in timezoneList"
                         :key="index"
@@ -35,6 +35,21 @@
                         {{ timezone.name }}
                     </option>
                 </select>
+                <div class="form-text">{{ $t("schedulingTimezone.help") }}</div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label" for="port-link-address-mode">{{ $t("portLinks.label") }}</label>
+                <select id="port-link-address-mode" v-model="settings.portLinkAddressMode" class="form-select">
+                    <option value="hostname">{{ $t("portLinks.hostname") }}</option>
+                    <option value="ip">{{ $t("portLinks.ip") }}</option>
+                </select>
+                <div class="form-text">{{ $t("portLinks.help") }}</div>
+                <template v-if="settings.portLinkAddressMode === 'ip'">
+                    <label class="form-label mt-2" for="port-link-ip">{{ $t("portLinks.explicitIp") }}</label>
+                    <input id="port-link-ip" v-model="settings.portLinkIp" class="form-control" type="text" :placeholder="$t('portLinks.automatic')" />
+                    <div class="form-text">{{ $t("portLinks.ipHelp") }}</div>
+                </template>
             </div>
 
             <!-- Primary Hostname -->
@@ -85,6 +100,7 @@
 import { DEFAULT_COMPOSE_ENV, MAX_COMPOSE_TEMPLATE_BYTES } from "../../../../common/compose-templates";
 import dayjs from "dayjs";
 import { parseDocument } from "yaml";
+import { timezoneList } from "../../util-frontend";
 
 const defaultComposeTemplate = "services:\n  nginx:\n    image: nginx:latest\n    restart: unless-stopped\n    ports:\n      - \"8080:80\"\n";
 
@@ -99,23 +115,12 @@ export default {
 
     data() {
         return {
-            timezoneList: [],
+            timezoneList: timezoneList().filter(zone => zone.value !== "UTC"),
+            originalSchedulingTimezone: "",
             composeTemplateDraft: defaultComposeTemplate,
             composeEnvTemplateDraft: DEFAULT_COMPOSE_ENV,
             templateError: "",
         };
-    },
-
-    watch: {
-        settingsLoaded: {
-            immediate: true,
-            handler(loaded) {
-                if (loaded) {
-                    this.composeTemplateDraft = this.settings.composeTemplate || defaultComposeTemplate;
-                    this.composeEnvTemplateDraft = this.settings.composeEnvTemplate ?? DEFAULT_COMPOSE_ENV;
-                }
-            },
-        },
     },
 
     computed: {
@@ -133,6 +138,19 @@ export default {
         }
     },
 
+    watch: {
+        settingsLoaded: {
+            immediate: true,
+            handler(loaded) {
+                if (loaded) {
+                    this.composeTemplateDraft = this.settings.composeTemplate || defaultComposeTemplate;
+                    this.composeEnvTemplateDraft = this.settings.composeEnvTemplate ?? DEFAULT_COMPOSE_ENV;
+                    this.originalSchedulingTimezone = this.settings.schedulingTimezone;
+                }
+            },
+        },
+    },
+
     methods: {
         /** Save the settings */
         saveGeneral() {
@@ -146,6 +164,10 @@ export default {
                 return;
             }
             this.templateError = "";
+            if (this.settings.schedulingTimezone !== this.originalSchedulingTimezone &&
+                !window.confirm(this.$t("schedulingTimezone.confirm", { timezone: this.settings.schedulingTimezone }))) {
+                return;
+            }
             this.settings.composeTemplate = this.composeTemplateDraft;
             this.settings.composeEnvTemplate = this.composeEnvTemplateDraft;
             localStorage.timezone = this.$root.userTimezone;

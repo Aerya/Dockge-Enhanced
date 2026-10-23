@@ -1,6 +1,7 @@
 // @ts-ignore
 import composerize from "composerize";
 import { SocketHandler } from "../socket-handler.js";
+import { validatePortLinkSettings } from "../../common/port-link-settings";
 import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
 import { R } from "redbean-node";
@@ -18,6 +19,7 @@ import {
 import { passwordStrength } from "check-password-strength";
 import jwt from "jsonwebtoken";
 import { Settings } from "../settings";
+import { getSchedulingTimezone, setSchedulingTimezone, validateSchedulingTimezone } from "../scheduling-timezone";
 import fs, { promises as fsAsync } from "fs";
 import path from "path";
 import axios from "axios";
@@ -316,6 +318,9 @@ export class MainSocketHandler extends SocketHandler {
             try {
                 checkLogin(socket);
                 const data = await Settings.getSettings("general");
+                data.schedulingTimezone = getSchedulingTimezone();
+                data.portLinkAddressMode = data.portLinkAddressMode === "ip" ? "ip" : "hostname";
+                data.portLinkIp = data.portLinkIp || "";
 
                 if (fs.existsSync(path.join(server.stacksDir, "global.env"))) {
                     data.globalENV = fs.readFileSync(path.join(server.stacksDir, "global.env"), "utf-8");
@@ -341,6 +346,11 @@ export class MainSocketHandler extends SocketHandler {
         socket.on("setSettings", async (data, currentPassword, callback) => {
             try {
                 checkLogin(socket);
+                validatePortLinkSettings(data);
+
+                if (data.schedulingTimezone !== undefined) {
+                    data.schedulingTimezone = validateSchedulingTimezone(data.schedulingTimezone);
+                }
 
                 if (data.composeEnvTemplate !== undefined && (
                     typeof data.composeEnvTemplate !== "string"
@@ -384,6 +394,10 @@ export class MainSocketHandler extends SocketHandler {
                 delete data.globalENV;
 
                 await Settings.setSettings("general", data);
+                if (data.schedulingTimezone !== undefined) {
+                    setSchedulingTimezone(data.schedulingTimezone);
+                    server.io.emit("schedulingTimezone", getSchedulingTimezone());
+                }
 
                 callback({
                     ok: true,
