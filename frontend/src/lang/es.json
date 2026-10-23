@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.emudhraTls": "Se actualizan los almacenes de certificados y los componentes TLS de las imágenes tras el incidente de eMudhra. Las pruebas incluyen las cadenas afectadas, los dos casos No CT y una conexión HTTPS válida. Las imágenes en ejecución no cambian; su sustitución debe planificarse después de la validación. {incident}",
     "schedulingTimezone.label": "Zona horaria de las programaciones",
     "schedulingTimezone.help": "Se aplica a esta instancia Enhanced: inicio/parada de stacks, actualizaciones de imágenes, autoactualización, Restic y análisis de seguridad. Sin una elección explícita se conserva la zona actual del contenedor (TZ o valor del sistema). Las instancias vinculadas tienen su propio ajuste. No cambia las duraciones ni el entorno de los contenedores.",
     "schedulingTimezone.confirm": "¿Usar {timezone} en las programaciones existentes y futuras? Las horas se mantienen, pero sus instantes UTC pueden cambiar. No se iniciará ninguna tarea ni contenedor ahora.",

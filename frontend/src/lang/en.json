@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.emudhraTls": "Update image trust stores and TLS components following the eMudhra incident. Checks cover the compromised chains, including both No CT cases, and a valid HTTPS connection. Running images remain unchanged: schedule their replacement after validation. {incident}",
     "schedulingTimezone.label": "Scheduling timezone",
     "schedulingTimezone.help": "Applies to this Enhanced instance: stack start/stop, image updates, self-update, Restic and security scans. Without an explicit choice, the current container timezone is preserved (TZ or system default). Linked instances have their own setting. Durations and container environments are unchanged.",
     "schedulingTimezone.confirm": "Use {timezone} for existing and future schedules? Their clock times stay the same, but the corresponding UTC times may change. No task or container will be started now.",

@@ -1,5 +1,9 @@
 # ─── Stage 1 : build ─────────────────────────────────────────────
-FROM golang:1.27-alpine AS restic-builder
+FROM golang:1.27.3-alpine AS restic-builder
+
+# eMudhra: refresh both the CA sources and the generated bundle.
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle \
+    && update-ca-certificates
 
 ARG RESTIC_VERSION=0.19.1
 ARG GRPC_VERSION=1.83.2
@@ -12,6 +16,10 @@ RUN wget -qO- "https://github.com/restic/restic/archive/refs/tags/v${RESTIC_VERS
 
 # ─── Stage 2 : build de l'application ─────────────────────────────────
 FROM node:26.12.1-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS builder
+
+# eMudhra: refresh both the CA sources and the generated bundle.
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle \
+    && update-ca-certificates
 
 WORKDIR /app
 
@@ -32,6 +40,10 @@ RUN npm prune --omit=dev
 
 # ─── Stage 2 : image de production ───────────────────────────────
 FROM node:26.12.1-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797
+
+# eMudhra: refresh both the CA sources and the generated bundle.
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle \
+    && update-ca-certificates
 
 WORKDIR /app
 

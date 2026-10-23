@@ -1,5 +1,12 @@
 # Dockge-Enhanced-Changelog
 
+### TLS-Sicherheit — Oktober 2026
+
+Zertifikatsspeicher und TLS-Komponenten der Images werden nach dem eMudhra-Vorfall aktualisiert. Die Prüfungen umfassen die betroffenen Ketten, beide No-CT-Fälle und eine gültige HTTPS-Verbindung. Laufende Images bleiben unverändert; ihr Austausch muss nach der Validierung geplant werden.
+
+[Details zum Vorfall](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
 **2026-10-23 — Anzeige der Einstellungen** — Ein Importfehler der Zeitzonenliste wurde behoben, der eine leere Einstellungsseite verursachen konnte (`timezones is not iterable`). Zeitzonenauswahl und Menü werden wieder angezeigt, ohne gespeicherte Einstellungen oder Zeitpläne zu ändern. Regressionstests prüfen die tatsächlichen Zeitzonendaten und die Darstellung der Seite Allgemein. Behebt #555.
 
 **2026-10-23 — Zeitzone der Zeitpläne und optionale Container-TZ** — Gemeinsame Zeitzone für Zeitpläne pro Instanz und optionale, bestätigte TZ-Änderungen pro Stack im Compose-Editor; keine automatische Container-Neuerstellung. Laufzeit-Zeitzone des Containers; Standard für Zeitpläne bis zur ausdrücklichen Auswahl unter **Einstellungen → Allgemein**. Die WebUI-Auswahl hat für Enhanced-Zeitpläne Vorrang.

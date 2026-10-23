@@ -1,5 +1,12 @@
 # Changelog de Dockge Enhanced
 
+### Seguridad TLS — octubre de 2026
+
+Se actualizan los almacenes de certificados y los componentes TLS de las imágenes tras el incidente de eMudhra. Las pruebas incluyen las cadenas afectadas, los dos casos No CT y una conexión HTTPS válida. Las imágenes en ejecución no cambian; su sustitución debe planificarse después de la validación.
+
+[Detalles del incidente](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
 **2026-10-23 — Visualización de los ajustes** — Corregido un error al importar la lista de zonas horarias que podía dejar la página Ajustes en blanco (`timezones is not iterable`). El selector de zona horaria y el menú vuelven a mostrarse sin modificar los ajustes guardados ni las programaciones. Pruebas de regresión con los datos reales de zonas horarias y el renderizado de la página General. Corrige #555.
 
 **2026-10-23 — Zona horaria de programaciones y TZ opcional por stack** — Zona horaria común por instancia y aplicación opcional de TZ por stack en el editor, con confirmación y sin recreación automática. Zona del proceso en el contenedor; predeterminada para programaciones hasta elegir una en **Ajustes → General**. La elección WebUI tiene prioridad para las programaciones de Enhanced.

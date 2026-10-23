@@ -1,5 +1,12 @@
 # Changelog Dockge Enhanced
 
+### Sécurité TLS — octobre 2026
+
+Mise à jour des certificats et des composants TLS des images après l’incident eMudhra. Les contrôles couvrent les chaînes compromises, dont les deux cas « No CT », et une connexion HTTPS valide. Une image déjà en cours d’exécution reste inchangée : son remplacement doit être planifié après validation.
+
+[Détails de l’incident](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+
+
 **2026-10-23 — Affichage des paramètres** — Correction d’un import de la liste des fuseaux horaires qui pouvait rendre la page Paramètres vide (`timezones is not iterable`). Le sélecteur de fuseau et le menu s’affichent de nouveau, sans modifier les réglages enregistrés ni les planifications. Tests de régression sur les données réelles des fuseaux et le rendu de la page Général. Corrige #555.
 
 **2026-10-23 — Fuseau des planifications et TZ facultatif des conteneurs** — Fuseau commun aux planifications de chaque instance et application facultative de TZ par stack dans l’éditeur, avec confirmation ; aucune recréation automatique. Fuseau du processus dans le conteneur ; utilisé par défaut tant qu’aucun fuseau n’est choisi dans **Paramètres → Général**. Le choix WebUI est prioritaire pour les planifications d’Enhanced.

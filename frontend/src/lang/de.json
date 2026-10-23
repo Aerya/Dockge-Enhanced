@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.emudhraTls": "Zertifikatsspeicher und TLS-Komponenten der Images werden nach dem eMudhra-Vorfall aktualisiert. Die Prüfungen umfassen die betroffenen Ketten, beide No-CT-Fälle und eine gültige HTTPS-Verbindung. Laufende Images bleiben unverändert; ihr Austausch muss nach der Validierung geplant werden. {incident}",
     "schedulingTimezone.label": "Zeitzone der Zeitpläne",
     "schedulingTimezone.help": "Gilt für diese Enhanced-Instanz: Stack-Start/Stopp, Image-Updates, Selbstaktualisierung, Restic und Sicherheitsprüfungen. Ohne ausdrückliche Auswahl bleibt die aktuelle Container-Zeitzone erhalten (TZ oder Systemstandard). Verknüpfte Instanzen haben eigene Einstellungen. Zeitdauern und Container-Umgebungen bleiben unverändert.",
     "schedulingTimezone.confirm": "{timezone} für bestehende und künftige Zeitpläne verwenden? Die Uhrzeiten bleiben gleich, die entsprechenden UTC-Zeitpunkte können sich ändern. Jetzt werden keine Aufgaben oder Container gestartet.",
