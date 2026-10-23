@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import timezones from "timezones-list";
+import timezones from "timezones-list/dist/timezones.json";
 import { localeDirection, currentLocale } from "./i18n";
 import { POSITION } from "vue-toastification";
 

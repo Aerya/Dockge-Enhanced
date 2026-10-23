@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+**2026-10-23 — Affichage des paramètres** — Correction d’un import de la liste des fuseaux horaires qui pouvait rendre la page Paramètres vide (`timezones is not iterable`). Le sélecteur de fuseau et le menu s’affichent de nouveau, sans modifier les réglages enregistrés ni les planifications. Tests de régression sur les données réelles des fuseaux et le rendu de la page Général. Corrige #555.
+
 **2026-10-23 — Fuseau des planifications et TZ facultatif des conteneurs** — Fuseau commun aux planifications de chaque instance et application facultative de TZ par stack dans l’éditeur, avec confirmation ; aucune recréation automatique. Fuseau du processus dans le conteneur ; utilisé par défaut tant qu’aucun fuseau n’est choisi dans **Paramètres → Général**. Le choix WebUI est prioritaire pour les planifications d’Enhanced.
 
 **2026-10-23 — Notifications des mises à jour d’images** — Discord et Apprise n’annoncent qu’une fois une mise à jour en attente pour une même stack, image et digest distant, y compris lorsqu’elle attend son créneau planifié. Ce suivi est conservé après redémarrage d’Enhanced. Un nouveau digest est annoncé à nouveau ; les résultats des mises à jour automatiques conservent leur propre notification. Les envois échoués sont retentés aux contrôles suivants, indépendamment pour chaque webhook Discord et la destination Apprise configurée.
