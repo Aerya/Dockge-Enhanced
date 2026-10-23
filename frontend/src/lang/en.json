@@ -1881,8 +1881,6 @@
     "updates.self.mode": "Update method",
     "updates.self.manual": "Manual (notify only)",
     "updates.self.sidecar": "Automatic via protected sidecar",
-    "updates.self.agent": "Automatic via Remote Agent",
-    "updates.self.agentUnavailable": "Remote Agent is not supported yet: it requires a dedicated host agent.",
     "updates.self.when": "Automatic update timing",
     "updates.self.immediate": "As soon as an update is available",
     "updates.self.window": "During the maintenance window",

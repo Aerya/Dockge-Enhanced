@@ -1908,8 +1908,6 @@
     "updates.self.mode": "Aktualisierungsmethode",
     "updates.self.manual": "Manuell (nur benachrichtigen)",
     "updates.self.sidecar": "Automatisch über geschützten Sidecar",
-    "updates.self.agent": "Automatisch über Remote-Agenten",
-    "updates.self.agentUnavailable": "Der Remote-Agent wird noch nicht unterstützt: Er erfordert einen dedizierten Host-Agenten.",
     "updates.self.when": "Zeitpunkt für automatische Updates",
     "updates.self.immediate": "Sobald ein Update verfügbar ist",
     "updates.self.window": "Während des Wartungsfensters",

@@ -1877,8 +1877,6 @@
     "updates.self.mode": "Méthode de mise à jour",
     "updates.self.manual": "Manuel (notification uniquement)",
     "updates.self.sidecar": "Automatique via sidecar protégé",
-    "updates.self.agent": "Automatique via agent distant",
-    "updates.self.agentUnavailable": "L’agent distant n’est pas encore pris en charge : il nécessite un agent hôte dédié.",
     "updates.self.when": "Moment de la mise à jour automatique",
     "updates.self.immediate": "Dès qu’une mise à jour est disponible",
     "updates.self.window": "Pendant le créneau de maintenance",
