@@ -3,10 +3,11 @@ FROM golang:1.27-alpine AS restic-builder
 
 ARG RESTIC_VERSION=0.19.1
 ARG GRPC_VERSION=1.83.2
+ARG COMPRESS_VERSION=1.18.7
 WORKDIR /src
 RUN wget -qO- "https://github.com/restic/restic/archive/refs/tags/v${RESTIC_VERSION}.tar.gz" \
     | tar -xz --strip-components=1 \
-    && go get "google.golang.org/grpc@v${GRPC_VERSION}" "golang.org/x/net@v0.60.0" \
+    && go get "google.golang.org/grpc@v${GRPC_VERSION}" "golang.org/x/net@v0.60.0" "github.com/klauspost/compress@v${COMPRESS_VERSION}" \
     && go run build.go
 
 # ─── Stage 2 : build de l'application ─────────────────────────────────
