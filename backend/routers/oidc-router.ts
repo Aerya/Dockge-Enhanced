@@ -1,5 +1,6 @@
 import express, { Express, Request, Response, Router as ExpressRouter } from "express";
 import * as client from "openid-client";
+import { rateLimit } from "express-rate-limit";
 import { DockgeServer } from "../dockge-server";
 import { Router } from "../router";
 import { activeOidcConfig, markSetupCompleted } from "../auth";
@@ -56,6 +57,14 @@ export class OidcRouter extends Router {
     create(_app: Express, server: DockgeServer): ExpressRouter {
         const router = express.Router();
 
+        // Stricter than the global /api limit: each request reaches the provider.
+        router.use(rateLimit({
+            windowMs: 60 * 1000,
+            limit: 30,
+            standardHeaders: "draft-8",
+            legacyHeaders: false,
+            handler: (_req, res) => redirectToUi(res, "oidcError", "oidc.busy"),
+        }));
         router.use((_req, res, next) => {
             res.setHeader("Cache-Control", "no-store");
             res.setHeader("Referrer-Policy", "no-referrer");
