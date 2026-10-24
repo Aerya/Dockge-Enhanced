@@ -4,6 +4,7 @@ import { defineComponent } from "vue";
 import jwtDecode from "jwt-decode";
 import { Terminal } from "@xterm/xterm";
 import { AgentSocket } from "../../../common/agent-socket";
+import type { UserAccess } from "../../../common/user-access";
 
 let socket : Socket;
 
@@ -27,6 +28,7 @@ export default defineComponent({
             },
             remember: (localStorage.remember !== "0"),
             loggedIn: false,
+            userAccess: null as UserAccess | null,
             allowLoginDialog: false,
             username: null,
             composeTemplate: "",
@@ -123,6 +125,14 @@ export default defineComponent({
     },
     created() {
         this.initSocketIO();
+        this.getSocket().on("userAccess", (access: UserAccess) => {
+            this.userAccess = access;
+            if (access.role === "restricted") {
+                this.stackList = {};
+                this.allAgentStackList = {};
+                this.agentList = {};
+            }
+        });
     },
     mounted() {
         return;
@@ -428,6 +438,7 @@ export default defineComponent({
             this.storage().removeItem("token");
             this.socketIO.token = null;
             this.loggedIn = false;
+            this.userAccess = null;
             this.username = null;
             this.clearData();
         },
@@ -440,6 +451,9 @@ export default defineComponent({
         },
 
         afterLogin() {
+            if (this.userAccess?.role === "restricted") {
+                return;
+            }
             // The initial locale event can be emitted before authentication and
             // rejected server-side. Re-send it now that the socket is authenticated
             // so Discord/Apprise notifications reliably follow the UI language.

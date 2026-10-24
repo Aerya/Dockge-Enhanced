@@ -61,6 +61,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/socket-connection.test.ts
 
+      - name: Tests des comptes locaux et des permissions par stack
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/user-access.test.ts backend/scoped-account.test.ts frontend/src/scoped-users.test.js
+
       - name: Tests du rendu des paramètres et des fuseaux horaires
         if: steps.docs.outputs.docs_only != 'true'
         run: node --test frontend/src/settings-context.test.js

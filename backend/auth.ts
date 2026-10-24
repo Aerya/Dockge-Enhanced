@@ -154,10 +154,14 @@ export function getTrustedProxyIdentity(request: IncomingMessage): string {
     return username;
 }
 
-async function createUser(username: string, password: string): Promise<User> {
+async function createUser(username: string, password: string, role?: "admin" | "restricted"): Promise<User> {
     const user = R.dispense("user") as User;
     user.username = username;
     user.password = generatePasswordHash(password);
+    if (role) {
+        user.role = role;
+        user.stack_grants = "[]";
+    }
     await R.store(user);
     return user;
 }
@@ -255,6 +259,20 @@ export async function initializeAuthentication(): Promise<boolean> {
     return true;
 }
 
+/**
+ * Role given to an identity the first time the proxy presents it. The first user
+ * of the installation and identities listed in DOCKGE_AUTH_PROXY_ADMIN_USERS become
+ * administrators; any other new identity is restricted with no grants (fail closed).
+ * Existing accounts keep their stored role, so an upgrade never demotes an administrator.
+ */
+export function proxyRoleForNewUser(username: string, hasUsers: boolean): "admin" | "restricted" {
+    const adminUsers = (process.env.DOCKGE_AUTH_PROXY_ADMIN_USERS ?? "")
+        .split(",")
+        .map((name) => name.trim())
+        .filter(Boolean);
+    return !hasUsers || adminUsers.includes(username) ? "admin" : "restricted";
+}
+
 async function findOrCreateTrustedProxyUser(username: string): Promise<User> {
     const existing = await R.findOne("user", " username = ? ", [ username ]) as User;
     if (existing) {
@@ -264,12 +282,14 @@ async function findOrCreateTrustedProxyUser(username: string): Promise<User> {
         return existing;
     }
 
+    const hasUsers = (await R.count("user")) > 0;
     try {
-        const user = await createUser(username, generatedInternalPassword());
+        const user = await createUser(username, generatedInternalPassword(), proxyRoleForNewUser(username, hasUsers));
         await markSetupCompleted();
-        log.info("auth", `Utilisateur proxy créé : ${username}`);
+        log.info("auth", `Utilisateur proxy créé : ${username} (${user.role ?? "admin"})`);
         return user;
     } catch (error) {
+        // Another request may have created the same identity concurrently.
         const user = await R.findOne("user", " username = ? AND active = 1 ", [
             username,
         ]) as User;
@@ -315,7 +335,10 @@ export async function authenticateHttpRequest(
     }
     if (mode === "trusted-proxy") {
         const username = getTrustedProxyIdentity(req);
-        await ensureTrustedProxyUser(username);
+        const user = await ensureTrustedProxyUser(username);
+        if (user.role !== undefined && user.role !== "admin") {
+            throw new AuthenticationError("access.denied");
+        }
         return { mode,
             username };
     }
@@ -336,6 +359,9 @@ export async function authenticateHttpRequest(
         if (!user || (decoded.scope !== "federation" &&
             (decoded.h !== passwordVersionFingerprint(user.password, jwtSecret) || !interactiveSessionVersionMatches(decoded, { twofa_version: user.twofa_version })))) {
             throw new Error("Revoked session");
+        }
+        if (user.role !== undefined && user.role !== "admin") {
+            throw new AuthenticationError("access.denied");
         }
         return { mode,
             username: user.username };
