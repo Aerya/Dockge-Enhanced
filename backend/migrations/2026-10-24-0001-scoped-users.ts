@@ -8,5 +8,7 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
+    // An older schema cannot enforce restricted roles: never turn them into admins.
+    await knex("user").where({ role: "restricted" }).update({ active: 0 });
     await knex.schema.alterTable("user", table => table.dropColumns("role", "stack_grants"));
 }

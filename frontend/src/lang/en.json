@@ -3,7 +3,7 @@
     "access.users": "Users and permissions",
     "access.workspace": "My stacks",
     "access.scopeHelp": "Only authorized stacks and actions are accessible. Logs may contain sensitive information.",
-    "access.adminHelp": "Local accounts only. Selected permissions apply to selected stacks. Compose, files, terminals, deletion, resources, backups and settings remain administrator-only. Update linked instances too.",
+    "access.adminHelp": "Local accounts only. Selected permissions apply to selected stacks. Compose, files, terminals, deletion, resources, backups and settings remain administrator-only. Update linked instances too. Do not run an older Enhanced version with active restricted accounts: older versions cannot enforce these permissions.",
     "access.empty": "No authorized stacks.",
     "access.admin": "Administrator",
     "access.restricted": "Limited access",

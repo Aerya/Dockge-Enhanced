@@ -12,4 +12,6 @@ Editing grants or disabling an account disconnects its sessions. Reconnection re
 
 ## Validation
 
+**Downgrades:** an older Enhanced image does not understand these roles. Disable every restricted account before restoring an older image or database snapshot into such an image. The migration's explicit schema rollback disables restricted accounts, but simply switching Docker images does not run that rollback and cannot provide this protection. Never use an old version with active restricted accounts.
+
 `npx tsx --test backend/user-access.test.ts` covers permission parsing and a real Socket.IO default-deny transport. The opt-in integration script `extra/scoped-users-smoke.ts` starts two native servers with temporary databases and random credentials on loopback ports. It deploys uniquely labeled, volume-free fixtures through Dockge, exercises local/direct/reverse permissions and revocation, then removes those fixtures and temporary data. It requires a built frontend, a working Docker installation, an existing `busybox:stable` image and an explicitly supplied `DOCKGE_TEST_SELF_CONTAINER` (inspected only as the self-protection reference). It never performs a global Docker prune.

@@ -529,6 +529,9 @@ La vue des snapshots Restic affiche **Tous** en premier et par défaut. Le bouto
 
 ### Sécurité
 - **Comptes locaux à accès limité** — Comptes locaux limités par instance et stack, avec droits séparés et interface dédiée. Configuration dans Paramètres → Sécurité. Les comptes existants restent administrateurs ; mettez aussi à jour les instances liées. Journaux sensibles : accordez ce droit avec précaution. [Guide](docs/scoped-users.md).
+
+> Désactivez les comptes limités avant une rétrogradation : les anciennes versions d’Enhanced n’appliquent pas ces permissions.
+
 - Validation centralisée des noms de stacks pour bloquer tout path traversal hors du répertoire géré
 - Scan Trivy
 - Exceptions CVE

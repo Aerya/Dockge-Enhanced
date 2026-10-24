@@ -4,7 +4,7 @@
     "access.users": "Usuarios y permisos",
     "access.workspace": "Mis stacks",
     "access.scopeHelp": "Solo se permiten las stacks y acciones autorizadas. Los registros pueden contener información sensible.",
-    "access.adminHelp": "Solo cuentas locales. Los permisos elegidos se aplican a las stacks seleccionadas. Compose, archivos, terminal, eliminación, recursos, copias y ajustes siguen reservados al administrador. Actualice también las instancias vinculadas.",
+    "access.adminHelp": "Solo cuentas locales. Los permisos elegidos se aplican a las stacks seleccionadas. Compose, archivos, terminal, eliminación, recursos, copias y ajustes siguen reservados al administrador. Actualice también las instancias vinculadas. No utilice una versión antigua de Enhanced con cuentas limitadas activas: las versiones anteriores no aplican estos permisos.",
     "access.empty": "No hay stacks autorizadas.",
     "access.admin": "Administrador",
     "access.restricted": "Acceso limitado",

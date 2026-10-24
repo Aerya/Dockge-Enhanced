@@ -529,6 +529,9 @@ The Restic snapshot list defaults to **All**. **Save** stores settings and reten
 
 ### Security
 - **Restricted local accounts** — Local accounts restricted by instance and stack, with separate permissions and a dedicated workspace. Configure under Settings → Security. Existing accounts remain administrators; update linked instances too. Logs may contain secrets: grant access carefully. [Guide](docs/scoped-users.md).
+
+> Disable restricted accounts before downgrading: older Enhanced versions do not enforce these permissions.
+
 - Centralized stack-name validation blocks path traversal outside the managed stacks directory
 - Trivy vulnerability scanning
 - CVE exceptions

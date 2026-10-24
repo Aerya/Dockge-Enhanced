@@ -529,6 +529,9 @@ Die Restic-Snapshot-Liste ist standardmäßig auf **Alle** eingestellt. **Speich
 
 ### Sicherheit
 - **Eingeschränkte lokale Konten** — Lokale Konten mit eigenen Berechtigungen je Instanz und Stack sowie eigenem Arbeitsbereich. Einrichtung unter Einstellungen → Sicherheit. Bestehende Konten bleiben Administratoren; verknüpfte Instanzen ebenfalls aktualisieren. Protokolle können Geheimnisse enthalten. [Guide](docs/scoped-users.md).
+
+> Eingeschränkte Konten vor einem Downgrade deaktivieren: ältere Enhanced-Versionen setzen diese Rechte nicht durch.
+
 - Zentralisierte Stack-Namensvalidierung blockiert Pfadüberschreitungen (Path Traversal) außerhalb des verwalteten Stacks-Verzeichnisses
 - Trivy-Schwachstellenscan
 - CVE-Ausnahmen

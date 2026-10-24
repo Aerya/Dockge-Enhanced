@@ -3,7 +3,7 @@
     "access.users": "用户与权限",
     "access.workspace": "我的应用栈",
     "access.scopeHelp": "仅能访问授权的应用栈及操作。日志可能包含敏感信息。",
-    "access.adminHelp": "仅支持本地账户。所选权限应用于所选应用栈。Compose、文件、终端、删除、资源、备份和设置仍仅限管理员。请同时更新关联实例。",
+    "access.adminHelp": "仅支持本地账户。所选权限应用于所选应用栈。Compose、文件、终端、删除、资源、备份和设置仍仅限管理员。请同时更新关联实例。 受限账户仍启用时，请勿降级到旧版 Enhanced：旧版本无法执行这些权限限制。",
     "access.empty": "没有授权的应用栈。",
     "access.admin": "管理员",
     "access.restricted": "受限访问",

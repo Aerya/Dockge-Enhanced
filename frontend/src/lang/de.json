@@ -3,7 +3,7 @@
     "access.users": "Benutzer und Berechtigungen",
     "access.workspace": "Meine Stacks",
     "access.scopeHelp": "Nur erlaubte Stacks und Aktionen sind zugänglich. Protokolle können vertrauliche Informationen enthalten.",
-    "access.adminHelp": "Nur lokale Konten. Gewählte Rechte gelten für ausgewählte Stacks. Compose, Dateien, Terminal, Löschen, Ressourcen, Backups und Einstellungen bleiben Administratoren vorbehalten. Verknüpfte Instanzen ebenfalls aktualisieren.",
+    "access.adminHelp": "Nur lokale Konten. Gewählte Rechte gelten für ausgewählte Stacks. Compose, Dateien, Terminal, Löschen, Ressourcen, Backups und Einstellungen bleiben Administratoren vorbehalten. Verknüpfte Instanzen ebenfalls aktualisieren. Keine ältere Enhanced-Version mit aktiven eingeschränkten Konten verwenden: ältere Versionen können diese Rechte nicht erzwingen.",
     "access.empty": "Keine erlaubten Stacks.",
     "access.admin": "Administrator",
     "access.restricted": "Eingeschränkter Zugriff",

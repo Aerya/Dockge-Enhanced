@@ -21,7 +21,7 @@ class TestDialect extends SqliteDialect {
     }
 }
 
-test("migration preserves existing administrator credentials and rolls back only access columns", async () => {
+test("migration preserves administrators and disables restricted users before schema rollback", async () => {
     const db = knex({ client: TestDialect,
         connection: { filename: ":memory:" },
         useNullAsDefault: true });
@@ -30,6 +30,7 @@ test("migration preserves existing administrator credentials and rolls back only
             table.increments("id");
             table.string("username");
             table.string("password");
+            table.integer("active").defaultTo(1);
         });
         await db("user").insert({ username: "existing",
             password: "existing-hash" });
@@ -38,10 +39,15 @@ test("migration preserves existing administrator credentials and rolls back only
         assert.equal(user.password, "existing-hash");
         assert.equal(user.role, "admin");
         assert.equal(user.stack_grants, "[]");
+        await db("user").insert({ username: "restricted",
+            password: "limited-hash",
+            role: "restricted" });
         await down(db);
         assert.deepEqual(await db("user").first(), { id: 1,
             username: "existing",
-            password: "existing-hash" });
+            password: "existing-hash",
+            active: 1 });
+        assert.equal((await db("user").where({ username: "restricted" }).first()).active, 0);
     } finally {
         await db.destroy();
     }

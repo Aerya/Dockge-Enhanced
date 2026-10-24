@@ -504,6 +504,9 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Seguridad
 - **Cuentas locales con acceso limitado** — Cuentas locales limitadas por instancia y stack, con permisos separados y espacio dedicado. Configuración en Ajustes → Seguridad. Las cuentas existentes siguen siendo administradoras; actualice también las instancias vinculadas. Los registros pueden contener secretos. [Guide](docs/scoped-users.md).
+
+> Desactive las cuentas limitadas antes de volver a una versión anterior: las versiones antiguas no aplican estos permisos.
+
 - Validación centralizada de nombres de stacks para bloquear path traversal fuera del directorio gestionado
 - Trivy y excepciones CVE
 - 2FA TOTP opcional para cuentas locales: configuración QR verificada, secretos cifrados, códigos de recuperación de un solo uso y revocación de sesiones; Turnstile y trusted proxy
