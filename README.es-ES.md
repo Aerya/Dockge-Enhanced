@@ -904,6 +904,21 @@ environment:
 
 Reemplaza el CIDR de ejemplo con la red exacta del proxy y configúralo para pasar el encabezado seleccionado. El puerto Dockge no debe ser directamente accesible: solo los proxies declarados pueden proporcionar una identidad. Las identidades del proxy conservan derechos de administrador; las cuentas limitadas solo corresponden a la autenticación local. Se rechaza una identidad proxy con el nombre de una cuenta local limitada. Nunca exempts `/setup`, `/socket.io`, o `/api/*` de la autenticación; el proxy debe reenviar WebSockets y proteger todo el host.
 
+### Inicio de sesión OIDC nativo (Pocket ID, Authentik, Keycloak…)
+
+Sin proxy inverso, Dockge-Enhanced puede iniciar la sesión de los usuarios directamente con un proveedor OpenID Connect, junto con las cuentas locales y la 2FA:
+
+```yaml
+environment:
+  - DOCKGE_OIDC_ISSUER=https://id.example.com
+  - DOCKGE_OIDC_CLIENT_ID=dockge
+  - DOCKGE_OIDC_CLIENT_SECRET_FILE=/run/secrets/dockge_oidc_secret
+  - DOCKGE_OIDC_REDIRECT_URI=https://dockge.example.com/api/auth/oidc/callback
+  - DOCKGE_OIDC_ADMIN_GROUPS=dockge-admins
+```
+
+Los nuevos usuarios OIDC son cuentas restringidas sin acceso hasta que un administrador se lo conceda, salvo que pertenezcan a `DOCKGE_OIDC_ADMIN_GROUPS` o `DOCKGE_OIDC_ADMIN_USERS`. Una cuenta local existente nunca se vincula sin `DOCKGE_OIDC_LINK_EXISTING=true`. `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` deja solo el botón SSO. [Todas las opciones y ejemplos por proveedor](docs/oidc.md) (en inglés).
+
 ---
 
 ## Actualizaciones automáticas

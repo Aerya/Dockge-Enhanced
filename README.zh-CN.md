@@ -750,6 +750,21 @@ environment:
 
 请把示例 CIDR 替换为代理的真实网络。Dockge 端口不应直接暴露；只有声明的可信代理可以提供用户身份。代理身份仍具有管理员权限；受限账户仅支持本地认证。代理身份与受限本地账户重名时将被拒绝。
 
+### 原生 OIDC 登录（Pocket ID、Authentik、Keycloak…）
+
+无需反向代理，Dockge-Enhanced 可直接通过 OpenID Connect 提供商登录，并与本地账户和 2FA 共存：
+
+```yaml
+environment:
+  - DOCKGE_OIDC_ISSUER=https://id.example.com
+  - DOCKGE_OIDC_CLIENT_ID=dockge
+  - DOCKGE_OIDC_CLIENT_SECRET_FILE=/run/secrets/dockge_oidc_secret
+  - DOCKGE_OIDC_REDIRECT_URI=https://dockge.example.com/api/auth/oidc/callback
+  - DOCKGE_OIDC_ADMIN_GROUPS=dockge-admins
+```
+
+新的 OIDC 用户为受限账户，在管理员授权前没有任何访问权限，除非属于 `DOCKGE_OIDC_ADMIN_GROUPS` 或 `DOCKGE_OIDC_ADMIN_USERS`。未设置 `DOCKGE_OIDC_LINK_EXISTING=true` 时，绝不会关联已有本地账户。`DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` 时仅保留 SSO 按钮。[全部选项与提供商示例](docs/oidc.md)（英文）。
+
 ---
 
 ## 自动更新

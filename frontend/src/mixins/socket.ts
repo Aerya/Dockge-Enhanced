@@ -1,4 +1,5 @@
 import { createWebUiSocket } from "../socket-connection";
+import { takeOidcRedirect } from "../oidc-redirect";
 import { Socket } from "socket.io-client";
 import { defineComponent } from "vue";
 import jwtDecode from "jwt-decode";
@@ -7,6 +8,7 @@ import { AgentSocket } from "../../../common/agent-socket";
 import type { UserAccess } from "../../../common/user-access";
 
 let socket : Socket;
+let pendingOidcCode = "";
 
 let terminalMap : Map<string, Terminal> = new Map();
 
@@ -30,6 +32,7 @@ export default defineComponent({
             loggedIn: false,
             userAccess: null as UserAccess | null,
             allowLoginDialog: false,
+            oidcError: "",
             username: null,
             composeTemplate: "",
 
@@ -124,6 +127,19 @@ export default defineComponent({
         },
     },
     created() {
+        const oidcRedirect = takeOidcRedirect();
+        pendingOidcCode = oidcRedirect?.code ?? "";
+        this.oidcError = oidcRedirect?.error ?? "";
+        if (oidcRedirect) {
+            // The router restores the URL it read at startup: drop the fragment
+            // there too so a reload never replays the one-time code.
+            this.$router.isReady().then(() => {
+                if (this.$route.hash) {
+                    this.$router.replace({ ...this.$route,
+                        hash: "" });
+                }
+            });
+        }
         this.initSocketIO();
         this.getSocket().on("userAccess", (access: UserAccess) => {
             this.userAccess = access;
@@ -187,7 +203,11 @@ export default defineComponent({
                 this.socketIO.showReverseProxyGuide = false;
                 const token = this.storage().token;
 
-                if (token) {
+                if (pendingOidcCode) {
+                    const code = pendingOidcCode;
+                    pendingOidcCode = "";
+                    this.loginByOidcCode(code, token);
+                } else if (token) {
                     if (token !== "autoLogin") {
                         console.log("Logging in by token");
                         this.loginByToken(token);
@@ -407,6 +427,32 @@ export default defineComponent({
                 }
 
                 callback(res);
+            });
+        },
+
+        /**
+         * Finish an OIDC login with the one-time code from the callback
+         * @param {string} code One-time code issued by the server
+         * @param {string} previousToken Session to restore if the code is refused
+         * @returns {void}
+         */
+        loginByOidcCode(code : string, previousToken = "") {
+            socket.emit("loginByOidcCode", code, (res) => {
+                this.allowLoginDialog = true;
+                if (!res.ok) {
+                    if (previousToken && previousToken !== "autoLogin") {
+                        this.loginByToken(previousToken);
+                    } else {
+                        this.oidcError = res.msg;
+                    }
+                    return;
+                }
+                this.oidcError = "";
+                this.storage().token = res.token;
+                this.socketIO.token = res.token;
+                this.loggedIn = true;
+                this.username = this.getJWTPayload()?.username;
+                this.afterLogin();
             });
         },
 

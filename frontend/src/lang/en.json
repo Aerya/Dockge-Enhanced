@@ -2422,5 +2422,21 @@
     "home.scope.backups": "{n}/{total} instances backed up on schedule",
     "home.scope.partial": "{value} · incomplete ({n} unavailable)",
     "home.scope.disabled": "{n} disabled",
-    "releaseNews.item.homeInstanceGlobal": "Home: local statistics first, then global totals independent of stack filters. Expand each summary card for per-instance values and direct menu links. Offline or older instances are marked unavailable; backup coverage distinguishes disabled instances."
+    "releaseNews.item.homeInstanceGlobal": "Home: local statistics first, then global totals independent of stack filters. Expand each summary card for per-instance values and direct menu links. Offline or older instances are marked unavailable; backup coverage distinguishes disabled instances.",
+    "oidc.or": "or",
+    "oidc.signIn": "Sign in with SSO",
+    "oidc.linkedAccount": "Account linked to the SSO provider",
+    "oidc.failed": "SSO sign-in failed. Check the Dockge logs.",
+    "oidc.expired": "The SSO sign-in expired or was already used. Please try again.",
+    "oidc.busy": "Too many SSO sign-ins in progress. Please try again in a moment.",
+    "oidc.providerUnavailable": "The SSO provider cannot be reached.",
+    "oidc.providerError": "The SSO provider refused the sign-in.",
+    "oidc.missingUsername": "The SSO provider did not send a username.",
+    "oidc.invalidUsername": "The username sent by the SSO provider is invalid.",
+    "oidc.accountConflict": "A local account already uses this username and is not linked to this SSO identity.",
+    "oidc.emailNotVerified": "Your email address is not verified at the SSO provider.",
+    "oidc.setupRequired": "Create the first administrator before signing in with SSO, or configure DOCKGE_OIDC_ADMIN_USERS or DOCKGE_OIDC_ADMIN_GROUPS.",
+    "oidc.accountDisabled": "This account is disabled.",
+    "oidc.localLoginDisabled": "Sign-in with a username and password is disabled. Use SSO.",
+    "oidc.disabled": "SSO sign-in is not enabled."
 }

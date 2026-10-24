@@ -5,6 +5,7 @@
         <p v-if="error" class="alert alert-warning" role="alert">{{ error }}</p>
         <div v-for="user in users" :key="user.id" class="d-flex flex-wrap align-items-center gap-2 mb-2">
             <strong>{{ user.username }}</strong>
+            <span v-if="user.oidc" class="badge bg-secondary" :title="$t('oidc.linkedAccount')">SSO</span>
             <span>{{ user.role === 'admin' ? $t('access.admin') : user.active ? $t('access.restricted') : $t('access.disabled') }}</span>
             <button v-if="user.role === 'restricted'" class="btn btn-sm btn-normal" @click="edit(user)">{{ $t('Edit') }}</button>
             <button v-if="user.role === 'restricted'" class="btn btn-sm btn-normal" @click="beginAccountAction(user, 'reset2fa')">{{ $t('access.reset2fa') }}</button>
