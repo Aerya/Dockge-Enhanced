@@ -444,7 +444,7 @@ test("construit uniquement des URLs de manifest registry valides", () => {
     assert.throws(() => buildManifestUrl("registry.example", "team/app", "latest?url=http://127.0.0.1"), /Tag d’image invalide/);
 });
 
-test("met toujours à jour le Dozzle géré par Enhanced", () => {
+test("identifie le Dozzle géré dont la politique par défaut impose les mises à jour", () => {
     assert.equal(isMandatoryManagedUpdate({
         stack: "dozzle-dockge-enhanced",
         image: "amir20/dozzle:latest",

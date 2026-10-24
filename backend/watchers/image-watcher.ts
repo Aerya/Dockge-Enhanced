@@ -138,7 +138,7 @@ export function resolveAutomaticImageUpdateAction(
     globalWindowOpen: boolean,
     alreadyPending = false,
 ): AutomaticImageUpdateAction {
-    if (!mandatory && (!entry || entry.mode === "ignored")) {
+    if (entry?.mode === "ignored" || (!mandatory && !entry)) {
         return null;
     }
     if (globalWindow) {
@@ -160,7 +160,7 @@ export function pendingAutomaticImageUpdateMayRun(
     globalWindowOpen: boolean,
     currentTime: string,
 ): boolean {
-    if (!mandatory && (!entry || entry.mode === "ignored")) {
+    if (entry?.mode === "ignored" || (!mandatory && !entry)) {
         return false;
     }
     if (globalWindow) {
@@ -1843,6 +1843,13 @@ export class ImageWatcher {
       return "pending";
     }
     const globalWindowPolicy = await automaticImageUpdateWindowPolicy();
+    // Settings may have changed while the registry request was in flight.
+    if (this.settings.autoUpdateConfig?.[key]?.mode === "ignored") {
+      imageStatusStore.set(key, { ...status,
+        ignored: true,
+        hasUpdate: false });
+      return "skipped";
+    }
     if (globalWindowPolicy.window && !globalWindowPolicy.open) {
       this.settings.pendingAutoUpdates = [ ...new Set([ ...(this.settings.pendingAutoUpdates ?? []), key ]) ];
       await this.persistToFile();
@@ -2166,6 +2173,12 @@ export class ImageWatcher {
     ): Promise<boolean> {
         const key = `${status.stack}::${status.image}`;
         const { composePath, project, configFiles, workingDir, envFiles } = watched;
+        // Read live settings, never the policy captured when a batch was selected.
+        // This also excludes stale manual-batch candidates and managed Dozzle.
+        const ignored = () => this.settings.autoUpdateConfig?.[key]?.mode === "ignored";
+        if (ignored()) {
+            return false;
+        }
         const reservation = this.reserveImageMutation(key);
         if (!reservation) {
             console.log(`[ImageWatcher] Auto-update ${key} reportée : une autre opération Docker de mise à jour est en cours.`);
@@ -2234,6 +2247,9 @@ export class ImageWatcher {
             }
 
             const pullCommand = composeExecInvocation(composePath, [ "pull", ...services ], project, configFiles, workingDir, envFiles);
+            if (ignored()) {
+                return false;
+            }
             await docker(pullCommand.args, {
                 cwd: pullCommand.cwd,
                 timeout: 600000,
@@ -2247,6 +2263,11 @@ export class ImageWatcher {
                 return false;
             }
             const upCommand = composeExecInvocation(composePath, recreateArgs, project, configFiles, workingDir, envFiles);
+            // A pull already in progress is allowed to finish, but must not
+            // recreate a service whose policy changed to ignored meanwhile.
+            if (ignored()) {
+                return false;
+            }
             await docker(upCommand.args, {
                 cwd: upCommand.cwd,
                 timeout: 120000,
