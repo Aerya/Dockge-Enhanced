@@ -1,4 +1,5 @@
 {
+    "access.standaloneContainer": "Conteneur hors stack",
     "access.service": "Nom exact du service Compose (tous ses conteneurs)",
     "access.addService": "Ajouter ce service uniquement",
     "access.myAccount": "Mon compte",

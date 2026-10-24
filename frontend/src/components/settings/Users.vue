@@ -27,12 +27,12 @@
             <div class="user-stack-list mb-3">
                 <div v-for="item in stackOptions" :key="item.key" class="mb-3">
                     <label class="d-block mb-1"><input v-model="selectedStacks" type="checkbox" :value="item.key" class="form-check-input me-2" @change="ensurePermissions(item.key)">{{ item.label }}</label>
-                    <div v-if="JSON.parse(item.key).length === 2" class="d-flex gap-2 mb-2">
+                    <div v-if="JSON.parse(item.key).length === 2 && !isContainerKey(item.key)" class="d-flex gap-2 mb-2">
                         <input v-model="serviceDrafts[item.key]" class="form-control form-control-sm" :aria-label="$t('access.service')" :placeholder="$t('access.service')" pattern="[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}">
                         <button type="button" class="btn btn-sm btn-normal" @click="addService(item.key)">{{ $t('access.addService') }}</button>
                     </div>
                     <div v-if="selectedStacks.includes(item.key)" class="d-flex flex-wrap gap-3 ms-3">
-                        <label v-for="permission in permissions" :key="permission"><input v-model="permissionsByStack[item.key]" type="checkbox" :value="permission" :disabled="permission === 'view'" class="form-check-input me-1">{{ $t(`access.${permission}`) }}</label>
+                        <label v-for="permission in permissionsFor(item.key)" :key="permission"><input v-model="permissionsByStack[item.key]" type="checkbox" :value="permission" :disabled="permission === 'view'" class="form-check-input me-1">{{ $t(`access.${permission}`) }}</label>
                     </div>
                 </div>
             </div>
@@ -45,6 +45,7 @@
 import { USER_PERMISSIONS } from "../../../../common/user-access";
 export default {
     data: () => ({ users: [],
+        containers: [],
         draft: null,
         accountAction: null,
         permissionsByStack: {},
@@ -62,6 +63,12 @@ export default {
                 const key = JSON.stringify([ endpoint, stack.name ]);
                 options.set(key, { key,
                     label: `${this.$root.agentList[endpoint]?.displayName || endpoint || this.$t("localInstance")} / ${stack.displayName || stack.name}` });
+            }
+            // Standalone containers are local-only and keyed as a stack with the @container: prefix.
+            for (const name of this.containers) {
+                const key = JSON.stringify([ "", `@container:${name}` ]);
+                options.set(key, { key,
+                    label: `${this.$t("localInstance")} / ${name} (${this.$t("access.standaloneContainer")})` });
             }
             // Preserve grants while an agent is offline; never silently drop them.
             for (const grant of [ ...(this.draft?.grants || []), ...this.serviceScopes ]) {
@@ -86,6 +93,16 @@ export default {
                     this.users = result.data;
                 }
             });
+            this.$root.getSocket().timeout(10000).emit("scopedContainerCandidates", (error, result) => {
+                this.containers = !error && result?.ok ? result.data : [];
+            });
+        },
+        isContainerKey(key) {
+            return JSON.parse(key)[1]?.startsWith("@container:") === true;
+        },
+        permissionsFor(key) {
+            // A standalone container has no Compose definition to update or recreate.
+            return this.isContainerKey(key) ? this.permissions.filter(permission => ![ "update", "recreate" ].includes(permission)) : this.permissions;
         },
         edit(user) {
             this.accountAction = null;

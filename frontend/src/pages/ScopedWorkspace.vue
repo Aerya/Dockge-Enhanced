@@ -12,7 +12,7 @@
         <section v-for="grant in grants" :key="key(grant)" class="shadow-box p-3 mb-3">
             <h2 class="h5">{{ states[key(grant)]?.displayName || grant.stack }}</h2>
             <p v-if="grant.service">{{ grant.service }} · {{ states[key(grant)]?.serviceState ? $t(states[key(grant)].serviceState) : '—' }}</p>
-            <p class="small text-muted">{{ grant.endpoint || $t('localInstance') }} · {{ grant.stack }}<span v-if="states[key(grant)]"> · {{ $t(statusNameShort(states[key(grant)].status)) }}</span></p>
+            <p class="small text-muted">{{ grant.endpoint || $t('localInstance') }} · {{ stackLabel(grant) }}<span v-if="states[key(grant)]"> · {{ $t(statusNameShort(states[key(grant)].status)) }}</span></p>
             <div class="d-flex flex-wrap gap-2">
                 <button v-for="permission in grant.permissions" :key="permission" class="btn btn-sm btn-normal" :disabled="busy || !$root.socketIO.connected" @click="run(grant, permission)">{{ $t(`access.${permission}`) }}</button>
             </div>
@@ -39,6 +39,9 @@ export default {
     },
     methods: {
         statusNameShort,
+        stackLabel(grant) {
+            return grant.stack.startsWith("@container:") ? this.$t("access.standaloneContainer") : grant.stack;
+        },
         key(grant) {
             return JSON.stringify([ grant.endpoint, grant.stack, ...(grant.service ? [ grant.service ] : []) ]);
         },
@@ -55,7 +58,7 @@ export default {
         },
         run(grant, permission) {
             if (![ "view", "logs" ].includes(permission) && !window.confirm(this.$t("access.confirm", { action: this.$t(`access.${permission}`),
-                stack: grant.service ? `${grant.stack} / ${grant.service}` : grant.stack }))) {
+                stack: grant.service ? `${this.stackLabel(grant)} / ${grant.service}` : this.stackLabel(grant) }))) {
                 return;
             }
             this.busy = true;

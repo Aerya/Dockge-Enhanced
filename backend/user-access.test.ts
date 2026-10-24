@@ -236,3 +236,23 @@ test("trusted-proxy identities fail closed unless first user or explicitly liste
         }
     }
 });
+
+test("standalone container grants are local, lifecycle-only and never update or recreate", () => {
+    const access: UserAccess = { role: "restricted",
+        grants: normalizeGrants([{ endpoint: "",
+            stack: "@container:web",
+            permissions: [ "view", "logs", "restart" ] }]) };
+    assert.equal(canAccess(access, "", "@container:web", "restart"), true);
+    assert.equal(canAccess(access, "", "@container:web", "update"), false);
+    assert.equal(canAccess(access, "", "web", "restart"), false);
+    for (const grant of [
+        { endpoint: "", stack: "@container:web", permissions: [ "view", "update" ] },
+        { endpoint: "", stack: "@container:web", permissions: [ "view", "recreate" ] },
+        { endpoint: "node:5001", stack: "@container:web", permissions: [ "view" ] },
+        { endpoint: "", stack: "@container:web", service: "api", permissions: [ "view" ] },
+        { endpoint: "", stack: "@container:../x", permissions: [ "view" ] },
+        { endpoint: "", stack: "@container:-x", permissions: [ "view" ] },
+    ]) {
+        assert.throws(() => normalizeGrants([ grant ]));
+    }
+});

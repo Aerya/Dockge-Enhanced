@@ -1,4 +1,5 @@
 {
+    "access.standaloneContainer": "Eigenständiger Container",
     "access.service": "Genauer Compose-Dienstname (alle zugehörigen Container)",
     "access.addService": "Nur diesen Dienst hinzufügen",
     "access.myAccount": "Mein Konto",

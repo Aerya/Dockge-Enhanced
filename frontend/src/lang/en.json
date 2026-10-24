@@ -1,4 +1,5 @@
 {
+    "access.standaloneContainer": "Standalone container",
     "access.service": "Exact Compose service name (all its containers)",
     "access.addService": "Add this service only",
     "access.myAccount": "My account",

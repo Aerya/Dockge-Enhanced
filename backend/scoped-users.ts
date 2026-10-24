@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import { R } from "redbean-node";
 import { passwordStrength } from "check-password-strength";
 import { AgentSocket } from "../common/agent-socket";
-import { canAccess, normalizeGrants, USER_PERMISSIONS, type UserPermission } from "../common/user-access";
+import { canAccess, normalizeGrants, standaloneContainerName, USER_PERMISSIONS, type UserPermission } from "../common/user-access";
 import { loadUserAccess, accessFromUser } from "./user-access";
 import type { DockgeSocket } from "./util-server";
 import type { DockgeServer } from "./dockge-server";
@@ -15,6 +15,7 @@ import { assertNotSelfStack } from "./stack-pause-policy";
 import { reserveAccountSecurity } from "./account-security";
 import { AuditLogger } from "./audit-log";
 import { registerScopedAccount } from "./scoped-account";
+import { actionStandalone, listStandaloneContainers, logsStandalone, viewStandalone } from "./standalone-containers";
 
 const execute = promisify(execFile);
 interface ScopedRequest { endpoint: string;
@@ -97,7 +98,27 @@ export function scopedResponse(request: ScopedRequest, value: unknown): unknown 
 }
 
 /** Deliberately small response contract, never Compose/env/inspect/host files. */
+/** Standalone containers have no Compose definition: only lifecycle and read-only actions exist. */
+async function executeStandalone(socket: DockgeSocket, name: string, request: ScopedRequest): Promise<unknown> {
+    if (request.service || !canAccess(await loadUserAccess(socket.userID), "", request.stack, request.permission)) {
+        throw new Error("access.denied");
+    }
+    if (request.permission === "view") {
+        return viewStandalone(name);
+    }
+    if (request.permission === "logs") {
+        return logsStandalone(name);
+    }
+    const current = await resolveCurrentContainer();
+    await actionStandalone(name, request.permission as "start" | "stop" | "restart", current.Id);
+    return { applied: true };
+}
+
 export async function executeScopedLocal(socket: DockgeSocket, server: DockgeServer, agent: AgentSocket, request: ScopedRequest): Promise<unknown> {
+    const standalone = standaloneContainerName(request.stack);
+    if (standalone) {
+        return executeStandalone(socket, standalone, request);
+    }
     const stack = await Stack.getStack(server, request.stack);
     if (request.service) {
         // Resolve the service from Compose, not from an untrusted container name.
@@ -235,6 +256,27 @@ export function registerScopedUsers(socket: DockgeSocket, server: DockgeServer, 
         } finally {
             if (reservation) {
                 activeRequests.delete(reservation);
+            }
+        }
+    });
+    // Admin-only picker source: standalone containers of this instance, excluding this management container.
+    socket.on("scopedContainerCandidates", async (callback) => {
+        try {
+            if ((await loadUserAccess(socket.userID)).role !== "admin" || await getAuthMode() !== "local") {
+                throw new Error("access.denied");
+            }
+            const current = await resolveCurrentContainer();
+            const names = (await listStandaloneContainers())
+                .filter(container => !current.Id || !(container.id.startsWith(current.Id) || current.Id.startsWith(container.id)))
+                .map(container => container.name);
+            if (typeof callback === "function") {
+                callback({ ok: true,
+                    data: names });
+            }
+        } catch {
+            if (typeof callback === "function") {
+                callback({ ok: false,
+                    msg: "access.denied" });
             }
         }
     });
