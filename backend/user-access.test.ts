@@ -14,6 +14,7 @@ import knex, { type Knex } from "knex";
 import sqlite from "@louislam/sqlite3";
 import { up, down } from "./migrations/2026-10-24-0001-scoped-users";
 import { Stack } from "./stack";
+import { proxyRoleForNewUser } from "./auth";
 import { Terminal } from "./terminal";
 
 test("service grants survive recreation without granting sibling services or the whole stack", () => {
@@ -215,5 +216,23 @@ test("real Socket.IO default-deny blocks sensitive and future events, emissions 
     } finally {
         client.disconnect();
         await new Promise<void>(resolve => server.close(() => resolve()));
+    }
+});
+
+test("trusted-proxy identities fail closed unless first user or explicitly listed as administrator", () => {
+    const previous = process.env.DOCKGE_AUTH_PROXY_ADMIN_USERS;
+    try {
+        delete process.env.DOCKGE_AUTH_PROXY_ADMIN_USERS;
+        assert.equal(proxyRoleForNewUser("alice", false), "admin");
+        assert.equal(proxyRoleForNewUser("alice", true), "restricted");
+        process.env.DOCKGE_AUTH_PROXY_ADMIN_USERS = " alice, bob ";
+        assert.equal(proxyRoleForNewUser("alice", true), "admin");
+        assert.equal(proxyRoleForNewUser("carol", true), "restricted");
+    } finally {
+        if (previous === undefined) {
+            delete process.env.DOCKGE_AUTH_PROXY_ADMIN_USERS;
+        } else {
+            process.env.DOCKGE_AUTH_PROXY_ADMIN_USERS = previous;
+        }
     }
 });
