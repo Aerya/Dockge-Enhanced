@@ -14,10 +14,12 @@ import { resolveCurrentContainer } from "./current-container";
 import { assertNotSelfStack } from "./stack-pause-policy";
 import { reserveAccountSecurity } from "./account-security";
 import { AuditLogger } from "./audit-log";
+import { registerScopedAccount } from "./scoped-account";
 
 const execute = promisify(execFile);
 interface ScopedRequest { endpoint: string;
     stack: string;
+    service?: string;
     permission: UserPermission }
 const ACTION_EVENTS = { start: "startStack",
     stop: "stopStack",
@@ -26,12 +28,25 @@ const ACTION_EVENTS = { start: "startStack",
     recreate: "recreateStack" } as const;
 const activeRequests = new Set<string>();
 
-function remoteRequest(socket: DockgeSocket, request: ScopedRequest): Promise<{ ok: boolean;
+export function assertScopedServiceTargets(service: string, targets: string[]): void {
+    if (targets.length !== 1 || targets[0] !== service) {
+        throw new Error("access.denied");
+    }
+}
+
+async function remoteRequest(socket: DockgeSocket, request: ScopedRequest): Promise<{ ok: boolean;
     data?: unknown }> {
+    if (request.service && ![ "view", "logs" ].includes(request.permission)) {
+        const probe = await remoteRequest(socket, { ...request,
+            permission: "view" });
+        if (!probe.ok || !canAccess(await loadUserAccess(socket.userID), request.endpoint, request.stack, request.permission, request.service)) {
+            throw new Error("access.denied");
+        }
+    }
     return new Promise((resolve, reject) => {
         const timeout = [ "view", "logs" ].includes(request.permission) ? 30_000 : 30 * 60_000;
         const timer = setTimeout(() => reject(new Error("access.operationFailed")), timeout);
-        socket.instanceManager.emitToEndpoint(request.endpoint, "scopedStackRequest", request, (result: { ok: boolean;
+        socket.instanceManager.emitToEndpoint(request.endpoint, request.service ? "scopedServiceRequest" : "scopedStackRequest", request, (result: { ok: boolean;
             data?: unknown }) => {
             clearTimeout(timer);
             resolve(result);
@@ -52,9 +67,11 @@ export function parseScopedRequest(value: unknown): ScopedRequest {
     }
     normalizeGrants([{ endpoint: request.endpoint,
         stack: request.stack,
+        ...(request.service !== undefined ? { service: request.service } : {}),
         permissions: [ "view", request.permission ] }]);
     return { endpoint: request.endpoint,
         stack: request.stack,
+        ...(request.service ? { service: request.service } : {}),
         permission: request.permission };
 }
 
@@ -67,7 +84,8 @@ export function scopedResponse(request: ScopedRequest, value: unknown): unknown 
     if (request.permission === "view" && typeof data.status === "number" && Number.isFinite(data.status)) {
         return { name: request.stack,
             status: data.status,
-            displayName: typeof data.displayName === "string" ? data.displayName.slice(0, 256) : request.stack };
+            displayName: typeof data.displayName === "string" ? data.displayName.slice(0, 256) : request.stack,
+            ...(request.service && typeof data.serviceState === "string" ? { serviceState: data.serviceState.slice(0, 64) } : {}) };
     }
     if (request.permission === "logs" && typeof data.logs === "string" && Buffer.byteLength(data.logs) <= 1024 * 1024) {
         return { logs: data.logs };
@@ -81,16 +99,21 @@ export function scopedResponse(request: ScopedRequest, value: unknown): unknown 
 /** Deliberately small response contract, never Compose/env/inspect/host files. */
 export async function executeScopedLocal(socket: DockgeSocket, server: DockgeServer, agent: AgentSocket, request: ScopedRequest): Promise<unknown> {
     const stack = await Stack.getStack(server, request.stack);
+    if (request.service) {
+        // Resolve the service from Compose, not from an untrusted container name.
+        await stack.getServiceActionTargets(request.service);
+    }
     if (request.permission === "view") {
         await stack.updateStatus();
         const summary = stack.toSimpleJSON("") as { status: number;
             displayName?: string };
         return { name: request.stack,
             status: summary.status,
-            displayName: summary.displayName || request.stack };
+            displayName: summary.displayName || request.stack,
+            ...(request.service ? { serviceState: (await stack.getServiceStatusList()).serviceStatusList.get(request.service)?.state || "unknown" } : {}) };
     }
     if (request.permission === "logs") {
-        const result = await execute("docker", stack.getComposeOptions("logs", "--no-color", "--tail", "200"), {
+        const result = await execute("docker", stack.getComposeOptions("logs", "--no-color", "--tail", "200", ...(request.service ? [ request.service ] : [])), {
             cwd: stack.path,
             timeout: 15_000,
             maxBuffer: 1024 * 1024,
@@ -100,8 +123,19 @@ export async function executeScopedLocal(socket: DockgeSocket, server: DockgeSer
     // A delegated account must never stop/recreate this management plane.
     const current = await resolveCurrentContainer();
     assertNotSelfStack(current.Id, await stack.getContainerIds());
-    if (!canAccess(await loadUserAccess(socket.userID), "", request.stack, request.permission)) {
+    if (!canAccess(await loadUserAccess(socket.userID), "", request.stack, request.permission, request.service)) {
         throw new Error("access.denied");
+    }
+    if (request.service) {
+        await stack.serviceAction(socket, request.service, request.permission as "start" | "stop" | "restart" | "update" | "recreate", async targets => {
+            // A service grant cannot mutate namespace dependants, even through
+            // an administrator-authenticated federation link. Fail closed.
+            assertScopedServiceTargets(request.service!, targets);
+            if (!canAccess(await loadUserAccess(socket.userID), "", request.stack, request.permission, request.service)) {
+                throw new Error("access.denied");
+            }
+        });
+        return { applied: true };
     }
     await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error("access.operationFailed")), 30 * 60_000);
@@ -118,26 +152,29 @@ export async function executeScopedLocal(socket: DockgeSocket, server: DockgeSer
 }
 
 export function registerScopedUsers(socket: DockgeSocket, server: DockgeServer, agent: AgentSocket): void {
+    registerScopedAccount(socket, server);
     // This handler is accessible over an authenticated admin federation only.
     // A restricted browser cannot enter the raw `agent` proxy at all.
-    agent.on("scopedStackRequest", async (payload: unknown, callback) => {
-        try {
-            if ((await loadUserAccess(socket.userID)).role !== "admin") {
-                throw new Error("access.denied");
+    for (const event of [ "scopedStackRequest", "scopedServiceRequest" ]) {
+        agent.on(event, async (payload: unknown, callback) => {
+            try {
+                if ((await loadUserAccess(socket.userID)).role !== "admin") {
+                    throw new Error("access.denied");
+                }
+                const request = parseScopedRequest(payload);
+                const data = await executeScopedLocal(socket, server, agent, request);
+                if (typeof callback === "function") {
+                    callback({ ok: true,
+                        data });
+                }
+            } catch {
+                if (typeof callback === "function") {
+                    callback({ ok: false,
+                        msg: "access.operationFailed" });
+                }
             }
-            const request = parseScopedRequest(payload);
-            const data = await executeScopedLocal(socket, server, agent, request);
-            if (typeof callback === "function") {
-                callback({ ok: true,
-                    data });
-            }
-        } catch {
-            if (typeof callback === "function") {
-                callback({ ok: false,
-                    msg: "access.operationFailed" });
-            }
-        }
-    });
+        });
+    }
     socket.on("scopedList", async (callback) => {
         try {
             const access = await loadUserAccess(socket.userID);
@@ -155,7 +192,7 @@ export function registerScopedUsers(socket: DockgeSocket, server: DockgeServer, 
         try {
             const request = parseScopedRequest(payload);
             const access = await loadUserAccess(socket.userID);
-            if (!canAccess(access, request.endpoint, request.stack, request.permission)) {
+            if (!canAccess(access, request.endpoint, request.stack, request.permission, request.service)) {
                 throw new Error("access.denied");
             }
             const key = JSON.stringify([ socket.userID, request.endpoint, request.stack ]);
@@ -171,7 +208,7 @@ export function registerScopedUsers(socket: DockgeSocket, server: DockgeServer, 
             if (!data.ok) {
                 throw new Error("access.operationFailed");
             }
-            if (!canAccess(await loadUserAccess(socket.userID), request.endpoint, request.stack, request.permission)) {
+            if (!canAccess(await loadUserAccess(socket.userID), request.endpoint, request.stack, request.permission, request.service)) {
                 throw new Error("access.denied");
             }
             if (![ "view", "logs" ].includes(request.permission)) {
@@ -179,7 +216,7 @@ export function registerScopedUsers(socket: DockgeSocket, server: DockgeServer, 
                     action: `stack.delegated.${request.permission}`,
                     category: "stack",
                     targetType: "stack",
-                    target: request.stack,
+                    target: request.service ? `${request.stack}/${request.service}` : request.stack,
                     endpoint: request.endpoint,
                     status: "success",
                 });

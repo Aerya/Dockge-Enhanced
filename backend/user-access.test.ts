@@ -8,11 +8,65 @@ import { io } from "socket.io-client";
 import type { DockgeSocket } from "./util-server";
 import { accessFromUser, installUserAccessGuard } from "./user-access";
 import { canAccess, normalizeGrants, type UserAccess } from "../common/user-access";
-import { parseScopedRequest, scopedResponse } from "./scoped-users";
+import { parseScopedRequest, scopedResponse, assertScopedServiceTargets } from "./scoped-users";
 import { createRequire } from "node:module";
 import knex, { type Knex } from "knex";
 import sqlite from "@louislam/sqlite3";
 import { up, down } from "./migrations/2026-10-24-0001-scoped-users";
+import { Stack } from "./stack";
+import { Terminal } from "./terminal";
+
+test("service grants survive recreation without granting sibling services or the whole stack", () => {
+    const access: UserAccess = { role: "restricted",
+        grants: normalizeGrants([
+            { endpoint: "node:5001",
+                stack: "app",
+                service: "web",
+                permissions: [ "view", "restart" ] },
+            { endpoint: "node:5001",
+                stack: "app",
+                service: "db",
+                permissions: [ "view", "logs" ] },
+        ]) };
+    assert.equal(canAccess(access, "node:5001", "app", "restart", "web"), true);
+    assert.equal(canAccess(access, "node:5001", "app", "restart", "db"), false);
+    assert.equal(canAccess(access, "node:5001", "app", "restart"), false);
+    assert.equal(canAccess(access, "", "app", "restart", "web"), false);
+    for (const service of [ "--all", "../web", "web;id", "*", "" ]) {
+        assert.throws(() => parseScopedRequest({ endpoint: "",
+            stack: "app",
+            service,
+            permission: "restart" }));
+    }
+});
+
+test("scoped service actions authorize before Docker and start without dependencies", async t => {
+    const commands: string[][] = [];
+    t.mock.method(Terminal, "exec", async (...parameters: Parameters<typeof Terminal.exec>) => {
+        const args = parameters[4];
+        assert.ok(Array.isArray(args));
+        commands.push(args);
+        return 0;
+    });
+    const stack = Object.create(Stack.prototype) as Stack;
+    Object.defineProperties(stack, { name: { value: "fixture" },
+        path: { value: "/tmp" },
+        server: { value: {} } });
+    Object.defineProperty(stack, "assertStartGuard", { value: async () => {} });
+    t.mock.method(stack, "getComposeOptions", (...args: string[]) => args);
+    t.mock.method(stack, "getServiceActionTargets", async () => [ "web", "dependent" ]);
+    for (const action of [ "start", "stop", "restart", "update", "recreate" ] as const) {
+        await assert.rejects(stack.serviceAction({ endpoint: "" } as DockgeSocket, "web", action, async targets => {
+            assertScopedServiceTargets("web", targets);
+        }), /denied/);
+    }
+    assert.equal(commands.length, 0);
+    t.mock.method(stack, "getServiceActionTargets", async () => [ "web" ]);
+    await stack.serviceAction({ endpoint: "" } as DockgeSocket, "web", "start", async targets => {
+        assertScopedServiceTargets("web", targets);
+    });
+    assert.deepEqual(commands, [[ "up", "-d", "--no-deps", "web" ]]);
+});
 
 const SqliteDialect = createRequire(import.meta.url)("knex/lib/dialects/sqlite3/index.js") as typeof Knex.Client;
 class TestDialect extends SqliteDialect {

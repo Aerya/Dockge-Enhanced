@@ -1574,11 +1574,14 @@ export class Stack {
         return targets;
     }
 
-    async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate"): Promise<string[]> {
+    async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate", authorizeTargets?: (targets: string[]) => Promise<void>): Promise<string[]> {
         if (action !== "stop") {
             await this.assertStartGuard();
         }
         const targets = await this.getServiceActionTargets(serviceName);
+        if (authorizeTargets) {
+            await authorizeTargets(targets);
+        }
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const exec = async (command: string, ...args: string[]) => {
             const exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions(command, ...args), this.path);
@@ -1587,7 +1590,7 @@ export class Stack {
             }
         };
         if (action === "start") {
-            await exec("up", "-d", serviceName);
+            await exec("up", "-d", ...(authorizeTargets ? [ "--no-deps" ] : []), serviceName);
         } else if (action === "stop") {
             await exec("stop", ...[ ...targets ].reverse());
         } else if (action === "restart") {

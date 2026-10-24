@@ -53,7 +53,7 @@ test("editing a user preserves distinct rights per stack, including offline agen
 });
 
 test("workspace renders only granted actions and escapes application logs", async () => {
-    const workspace = component("./pages/ScopedWorkspace.vue", { statusNameShort: () => "running" });
+    const workspace = component("./pages/ScopedWorkspace.vue", { statusNameShort: () => "running", ScopedAccount: { template: "<div>account</div>" } });
     const base = workspace.data();
     workspace.data = () => ({ ...base, grants: [{ endpoint: "", stack: "example", permissions: ["view", "logs"] }], logs: { '["","example"]': '<script>secret()</script>' } });
     const app = Vue.createSSRApp(workspace);
@@ -64,4 +64,18 @@ test("workspace renders only granted actions and escapes application logs", asyn
     assert.ok(!html.includes("access.restart"));
     assert.ok(!html.includes("<script>"));
     assert.ok(html.includes("&lt;script&gt;"));
+});
+
+test("editing service grants preserves different rights and never silently grants the stack", () => {
+    const users = component("./components/settings/Users.vue", { USER_PERMISSIONS: ["view", "logs", "restart"] });
+    const context = { ...users.data(), $t: key => key, $root: { completeStackList: {}, agentList: {} } };
+    Object.assign(context, users.methods);
+    context.edit({ id: 2, grants: [
+        { endpoint: "offline:5001", stack: "app", service: "web", permissions: ["view", "restart"] },
+        { endpoint: "offline:5001", stack: "app", service: "db", permissions: ["view", "logs"] },
+    ] });
+    assert.equal(context.selectedStacks.length, 2);
+    assert.ok(context.selectedStacks.every(key => JSON.parse(key).length === 3));
+    assert.equal(JSON.stringify(context.permissionsByStack['["offline:5001","app","web"]']), '["view","restart"]');
+    assert.equal(users.computed.stackOptions.call(context).length, 2);
 });

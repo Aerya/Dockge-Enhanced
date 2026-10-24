@@ -5,10 +5,13 @@
             <button class="btn btn-normal" @click="$root.logout()">{{ $t('Logout') }}</button>
         </div>
         <p class="text-muted">{{ $t('access.scopeHelp') }}</p>
+        <ScopedAccount />
+        <p v-if="!$root.socketIO.connected" role="status" class="alert alert-warning">{{ $root.socketIO.connectionErrorMsg }}</p>
         <p v-if="error" class="alert alert-warning" role="alert">{{ error }}</p>
         <p v-if="!grants.length">{{ $t('access.empty') }}</p>
         <section v-for="grant in grants" :key="key(grant)" class="shadow-box p-3 mb-3">
             <h2 class="h5">{{ states[key(grant)]?.displayName || grant.stack }}</h2>
+            <p v-if="grant.service">{{ grant.service }} · {{ states[key(grant)]?.serviceState ? $t(states[key(grant)].serviceState) : '—' }}</p>
             <p class="small text-muted">{{ grant.endpoint || $t('localInstance') }} · {{ grant.stack }}<span v-if="states[key(grant)]"> · {{ $t(statusNameShort(states[key(grant)].status)) }}</span></p>
             <div class="d-flex flex-wrap gap-2">
                 <button v-for="permission in grant.permissions" :key="permission" class="btn btn-sm btn-normal" :disabled="busy || !$root.socketIO.connected" @click="run(grant, permission)">{{ $t(`access.${permission}`) }}</button>
@@ -19,7 +22,9 @@
 </template>
 <script>
 import { statusNameShort } from "../../../common/util-common";
+import ScopedAccount from "../components/ScopedAccount.vue";
 export default {
+    components: { ScopedAccount },
     data: () => ({ grants: [],
         states: {},
         logs: {},
@@ -35,7 +40,7 @@ export default {
     methods: {
         statusNameShort,
         key(grant) {
-            return JSON.stringify([ grant.endpoint, grant.stack ]);
+            return JSON.stringify([ grant.endpoint, grant.stack, ...(grant.service ? [ grant.service ] : []) ]);
         },
         load() {
             this.states = {};
@@ -50,13 +55,14 @@ export default {
         },
         run(grant, permission) {
             if (![ "view", "logs" ].includes(permission) && !window.confirm(this.$t("access.confirm", { action: this.$t(`access.${permission}`),
-                stack: grant.stack }))) {
+                stack: grant.service ? `${grant.stack} / ${grant.service}` : grant.stack }))) {
                 return;
             }
             this.busy = true;
             this.error = "";
             this.$root.getSocket().timeout(31 * 60 * 1000).emit("scopedRequest", { endpoint: grant.endpoint,
                 stack: grant.stack,
+                ...(grant.service ? { service: grant.service } : {}),
                 permission }, (error, result) => {
                 this.busy = false;
                 if (error || !result?.ok) {

@@ -49,6 +49,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SchedulingTimezoneNotice: typeof import('./src/components/SchedulingTimezoneNotice.vue')['default']
+    ScopedAccount: typeof import('./src/components/ScopedAccount.vue')['default']
     Security: typeof import('./src/components/settings/Security.vue')['default']
     StackActionMenu: typeof import('./src/components/StackActionMenu.vue')['default']
     StackAutoUpdateBulk: typeof import('./src/components/StackAutoUpdateBulk.vue')['default']

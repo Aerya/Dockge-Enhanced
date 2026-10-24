@@ -36,7 +36,8 @@ export async function loadUserAccess(id: number): Promise<UserAccess> {
 }
 
 const PUBLIC_EVENTS = new Set([ "login", "loginByToken", "setup", "needSetup" ]);
-const LIMITED_EVENTS = new Set([ "logout", "scopedList", "scopedRequest" ]);
+const LIMITED_EVENTS = new Set([ "logout", "scopedList", "scopedRequest", "scopedPassword",
+    "twoFactor:status", "twoFactor:prepare", "twoFactor:enable", "twoFactor:disable", "twoFactor:regenerate", "twoFactor:cancel" ]);
 
 /** Default-deny gate also covers new handlers and the raw federation proxy. */
 export function installUserAccessGuard(socket: DockgeSocket, load = loadUserAccess): void {

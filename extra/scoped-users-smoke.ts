@@ -13,6 +13,7 @@ import { spawn, execFileSync, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { io, type Socket } from "socket.io-client";
 import { bridgeReverseNode } from "../backend/reverse-agent";
+import { totpFor } from "../backend/two-factor-auth";
 
 if (!process.env.DOCKGE_TEST_SELF_CONTAINER) {
     throw new Error("Set DOCKGE_TEST_SELF_CONTAINER explicitly; no production mutation is performed");
@@ -43,7 +44,7 @@ async function freePort(): Promise<number> {
 async function rpc(socket: Socket, event: string, ...args: unknown[]) {
     return socket.timeout(120000).emitWithAck(event, ...args);
 }
-async function connect(url: string, username = "testadmin", extraHeaders = {}) {
+async function connect(url: string, username = "testadmin", extraHeaders = {}, loginPassword = password) {
     const socket = io(url, { reconnection: false,
         extraHeaders });
     sockets.push(socket);
@@ -52,7 +53,7 @@ async function connect(url: string, username = "testadmin", extraHeaders = {}) {
         socket.once("connect_error", reject);
     });
     const response = await rpc(socket, "login", { username,
-        password });
+        password: loginPassword });
     return { socket,
         response };
 }
@@ -107,7 +108,7 @@ try {
         fixtures.push({ socket,
             name,
             url });
-        const compose = `services:\n  fixture:\n    image: ${image}\n    network_mode: none\n    command: [sh, -c, 'echo permitted-log; sleep 3600']\n    labels:\n      dockge.test: scoped-users-${suffix}\n`;
+        const compose = `services:\n  fixture:\n    image: ${image}\n    network_mode: none\n    command: [sh, -c, 'echo permitted-log; sleep 3600']\n    labels:\n      dockge.test: scoped-users-${suffix}\n  other:\n    image: ${image}\n    network_mode: none\n    command: [sh, -c, 'echo sibling-private-log; sleep 3600']\n    labels:\n      dockge.test: scoped-users-${suffix}\n`;
         verified((await rpc(socket, "agent", "", "deployStack", name, compose, "SECRET_DO_NOT_DISCLOSE=fixture", true, "")).ok, "fixture deployed via Dockge");
     }
     verified((await rpc(adminA.socket, "addAgent", { url: b.url,
@@ -170,6 +171,31 @@ try {
     const users = await rpc(adminA.socket, "usersList");
     const reader = users.data.find((entry: { username: string }) => entry.username === "reader");
     verified(reader.role === "restricted", "role escalation rejected");
+    verified((await rpc(adminA.socket, "usersSave", { username: "service-reader",
+        password,
+        active: true,
+        grants: grants.map(grant => ({ ...grant,
+            service: "fixture" })) })).ok, "service grants created");
+    const serviceUser = await connect(a.url, "service-reader");
+    for (const grant of grants) {
+        const sibling = `${grant.stack}-other-1`;
+        const started = execFileSync("docker", [ "inspect", "--format", "{{.State.StartedAt}}", sibling ], { encoding: "utf8" });
+        verified(!(await rpc(serviceUser.socket, "scopedRequest", { ...grant,
+            permission: "restart" })).ok, "service grant cannot restart whole stack");
+        verified(!(await rpc(serviceUser.socket, "scopedRequest", { ...grant,
+            service: "other",
+            permission: "restart" })).ok, "sibling service denied");
+        for (const permission of grant.permissions) {
+            const reply = await rpc(serviceUser.socket, "scopedRequest", { ...grant,
+                service: "fixture",
+                permission });
+            verified(reply.ok, "service action local/direct " + permission);
+            if (permission === "logs") {
+                verified(!reply.data.logs.includes("sibling-private-log"), "service logs never include sibling logs");
+            }
+        }
+        verified(execFileSync("docker", [ "inspect", "--format", "{{.State.StartedAt}}", sibling ], { encoding: "utf8" }) === started, "service mutations leave sibling running unchanged");
+    }
     verified(!(await rpc(adminA.socket, "usersSave", { id: users.data.find((entry: { role: string }) => entry.role === "admin").id,
         username: "testadmin",
         active: false,
@@ -195,6 +221,20 @@ try {
             stack: remote,
             permission })).ok, "reverse agent authorized " + permission);
     }
+    verified((await rpc(adminA.socket, "usersSave", { username: "reverse-service",
+        password,
+        active: true,
+        grants: [{ endpoint: reverse.endpoint,
+            stack: remote,
+            service: "fixture",
+            permissions: [ "view", "logs", "restart", "recreate" ] }] })).ok, "reverse service grant created");
+    const reverseService = await connect(a.url, "reverse-service");
+    for (const permission of [ "view", "logs", "restart", "recreate" ]) {
+        verified((await rpc(reverseService.socket, "scopedRequest", { endpoint: reverse.endpoint,
+            stack: remote,
+            service: "fixture",
+            permission })).ok, "reverse service " + permission);
+    }
     verified(!(await rpc(reverseUser.socket, "scopedRequest", { endpoint,
         stack: remote,
         permission: "view" })).ok, "old direct grant no longer applies after reconnect");
@@ -204,6 +244,40 @@ try {
     verified((await rpc(restored, "loginByToken", reverseUser.response.token)).ok, "JWT reconnect preserves restricted role");
     verified((await rpc(restored, "scopedList")).data[0].endpoint === reverse.endpoint, "JWT reconnect loads current grants");
     verified(!(await rpc(restored, "agent", endpoint, "getStack", remote)).ok, "JWT reconnect cannot bypass proxy guard");
+    const newPassword = `Changed-${randomBytes(24).toString("base64url")}!`;
+    const changed = await rpc(serviceUser.socket, "scopedPassword", { currentPassword: password,
+        newPassword });
+    verified(changed.ok && changed.token, "restricted self password change");
+    verified(!(await connect(a.url, "service-reader")).response.ok, "old password rejected");
+    const ownAccount = await connect(a.url, "service-reader", {}, newPassword);
+    verified(ownAccount.response.ok, "new password accepted");
+    const prepared = await rpc(ownAccount.socket, "twoFactor:prepare", { password: newPassword });
+    verified(prepared.ok, "restricted TOTP enrollment prepared");
+    const secret = new URL(prepared.uri).searchParams.get("secret")!;
+    const enabled = await rpc(ownAccount.socket, "twoFactor:enable", { password: newPassword,
+        code: totpFor(secret).generate() });
+    verified(enabled.ok && enabled.recoveryCodes.length === 10, "restricted TOTP enrollment enabled");
+    const challenge = await connect(a.url, "service-reader", {}, newPassword);
+    verified(challenge.response.tokenRequired === true, "login requires second factor");
+    verified((await rpc(challenge.socket, "login", { username: "service-reader",
+        password: newPassword,
+        token: enabled.recoveryCodes[0],
+        challenge: challenge.response.challenge })).ok, "recovery code authenticates restricted user");
+    const managedAccounts = await rpc(adminA.socket, "usersList");
+    const serviceId = managedAccounts.data.find((entry: { username: string }) => entry.username === "service-reader").id;
+    verified((await rpc(adminA.socket, "usersAccountAction", { id: serviceId,
+        action: "reset2fa",
+        password,
+        confirm: true })).ok, "administrator recovers restricted account");
+    verified((await connect(a.url, "service-reader", {}, newPassword)).response.ok, "login works after administrator 2FA recovery");
+    verified((await rpc(adminA.socket, "usersAccountAction", { id: serviceId,
+        action: "delete",
+        password,
+        confirm: true })).ok, "administrator deletes only account");
+    verified(!(await connect(a.url, "service-reader", {}, newPassword)).response.ok, "deleted account cannot login");
+    verified((await rpc(reverseUser.socket, "scopedRequest", { endpoint: reverse.endpoint,
+        stack: remote,
+        permission: "view" })).ok, "deleting account preserves stack and other users");
     detachBridge();
     reverseSocket.disconnect();
     verified(!(await rpc(reverseUser.socket, "scopedRequest", { endpoint: reverse.endpoint,
