@@ -4,10 +4,12 @@ import { log } from "../log";
 import { callbackError, checkLogin, DockgeSocket } from "../util-server";
 import { AgentSocket } from "../../common/agent-socket";
 import { ALL_ENDPOINTS } from "../../common/util-common";
+import { registerScopedUsers } from "../scoped-users";
 
 export class AgentProxySocketHandler extends SocketHandler {
 
     create2(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
+        registerScopedUsers(socket, server, agentSocket);
         // Agent - proxying requests if needed
         socket.on("agent", async (endpoint : unknown, eventName : unknown, ...args : unknown[]) => {
             try {

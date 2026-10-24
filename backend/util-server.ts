@@ -18,6 +18,7 @@ export interface JWTDecoded {
 
 export interface DockgeSocket extends Socket {
     userID: number;
+    restrictedUser?: boolean;
     federationAuthenticated?: boolean;
     consoleTerminal? : Terminal;
     instanceManager : AgentManager;

@@ -1,4 +1,5 @@
 import { installReverseHub, startReverseNode, stopReverseNode } from "./reverse-agent";
+import { accessFromUser, installUserAccessGuard } from "./user-access";
 import "dotenv/config";
 import os from "os";
 import { MainRouter } from "./routers/main-router";
@@ -380,6 +381,7 @@ export class DockgeServer {
 
         this.io.on("connection", async (socket: Socket) => {
             let dockgeSocket = socket as DockgeSocket;
+            installUserAccessGuard(dockgeSocket);
             dockgeSocket.instanceManager = new AgentManager(dockgeSocket);
             dockgeSocket.emitAgent = (event : string, ...args : unknown[]) => {
                 let obj = args[0];
@@ -515,6 +517,22 @@ export class DockgeServer {
     }
 
     async afterLogin(socket : DockgeSocket, user : User) {
+        const access = accessFromUser(user);
+        if (access.role === "restricted" && (socket.endpoint || socket.federationAuthenticated)) {
+            throw new Error("access.denied");
+        }
+        socket.restrictedUser = access.role === "restricted";
+        socket.emit("userAccess", access);
+        if (socket.restrictedUser) {
+            socket.instanceManager.release();
+            for (const room of socket.rooms) {
+                if (room !== socket.id) {
+                    socket.leave(room);
+                }
+            }
+            socket.userID = user.id;
+            return;
+        }
         if (socket.endpoint) {
             await this.afterAgentLogin(socket, user);
             return;
@@ -796,7 +814,7 @@ export class DockgeServer {
             let dockgeSocket = socket as DockgeSocket;
 
             // Check if the room is a number (user id)
-            if (dockgeSocket.userID) {
+            if (dockgeSocket.userID && !dockgeSocket.restrictedUser) {
 
                 // Get the list only if there is a logged in user
                 if (!stackList) {

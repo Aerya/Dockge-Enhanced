@@ -44,6 +44,7 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 | **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant examples, scheduled operations, and centralized history including operation origin, status and duration |
 | **Docker resources** | Protected unified cleanup for images, volumes, networks and build cache, exact catch-up scheduling, previews, exclusions, history and safeguards around destructive actions |
 | **Security** | Trivy vulnerability scanning, CVE exceptions, protected update workflows, 2FA, trusted-proxy authentication and Cloudflare Turnstile |
+| **Restricted local accounts** | Per-instance and per-stack permissions, dedicated workspace, session revocation; configured in Security |
 | **Monitoring** | System, stack and container statistics, optional 5-minute CPU/RAM history, configurable status bar, health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula, Dozzle and PowerWatch and PowerWatch Hub integrations |
 | **Integrations** | PowerWatch and PowerWatch Hub, PlugNPiN plus per-service label assistance for Nginx Proxy Manager, Pi-hole and AdGuard Home |
 | **Notifications & access** | Discord and Apprise notifications localized in EN/FR/ES/zh-CN, multi-instance awareness, 2FA, trusted proxy support, Turnstile and third-party mobile clients |
@@ -61,6 +62,8 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 October 2026
+
+**Restricted local accounts :** In **Settings → Security → Users and permissions**, create restricted accounts and choose view, logs, start, stop, restart, update and recreate permissions separately for each local or linked stack. No selection means no access. Existing accounts remain administrators. The dedicated workspace exposes no Compose/.env, terminal, files, deletion, backups or settings. Update both ends of linked instances, including reverse agents; older agents have no bypass. Grants use the instance/stack-name pair: review them when reusing a name. Revocation disconnects sessions but does not cancel Docker operations already underway. Logs may contain secrets. First version: local authentication only, no per-container grants or personal password/2FA management for restricted users; an administrator resets their password. [Technical details](docs/scoped-users.md).
 
 **Compose defaults and remote agents :** Named HTTP/HTTPS links, a configurable default .env template, persistent agent tags and tag filtering, plus optional reverse agent connections with per-node tokens and automatic attachment after local account setup. Reverse agents belong to their hub; inter-server data transfers still require direct federation. An existing local administrator account is sufficient; no new account is needed. [Documentation](docs/compose-and-reverse-agents.md).
 
@@ -525,6 +528,7 @@ The Restic snapshot list defaults to **All**. **Save** stores settings and reten
 - Compose project-name reconciliation and exact stack context during updates
 
 ### Security
+- **Restricted local accounts** — Local accounts restricted by instance and stack, with separate permissions and a dedicated workspace. Configure under Settings → Security. Existing accounts remain administrators; update linked instances too. Logs may contain secrets: grant access carefully. [Guide](docs/scoped-users.md).
 - Centralized stack-name validation blocks path traversal outside the managed stacks directory
 - Trivy vulnerability scanning
 - CVE exceptions
@@ -931,7 +935,7 @@ environment:
   - DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS=172.20.0.0/24
 ```
 
-Replace the example CIDR with the proxy’s exact network and configure it to pass the selected header. The Dockge port must not be directly reachable: only declared proxies may provide an identity. Every user authorized by the proxy receives administrator rights because Dockge Enhanced does not currently provide separate roles. Never exempt `/setup`, `/socket.io`, or `/api/*` from authentication; the proxy must forward WebSockets and protect the entire host.
+Replace the example CIDR with the proxy’s exact network and configure it to pass the selected header. The Dockge port must not be directly reachable: only declared proxies may provide an identity. Proxy identities retain administrator rights; restricted accounts apply only to local authentication, and a proxy identity colliding with a restricted local account is rejected. Never exempt `/setup`, `/socket.io`, or `/api/*` from authentication; the proxy must forward WebSockets and protect the entire host.
 
 ---
 

@@ -44,6 +44,7 @@ Dockge Enhanced ist ein Fork von [Dockge](https://github.com/louislam/dockge) zu
 | **Automatisierung & Audit** | Berechtigungsgeschützte REST-API, Webhooks pro Stack, Home-Assistant-Beispiele, geplante Operationen sowie zentralisierter Verlauf einschließlich Operationsursprung, -status und -dauer |
 | **Docker-Ressourcen** | Geschützte, einheitliche Bereinigung für Images, Volumes, Netzwerke und Build-Cache, exakte Aufhol-Zeitplanung, Vorschauen, Ausschlüsse, Verlauf und Schutzmaßnahmen bei destruktiven Aktionen |
 | **Sicherheit** | Trivy-Schwachstellen-Scans, CVE-Ausnahmen, geschützte Update-Workflows, 2FA, Trusted-Proxy-Authentifizierung und Cloudflare Turnstile |
+| **Eingeschränkte lokale Konten** | Rechte je Instanz und Stack, eigener Arbeitsbereich, Sitzungswiderruf; Einrichtung unter Sicherheit |
 | **Monitoring** | System-, Stack- und Container-Statistiken, optionaler 5-Minuten-CPU/RAM-Verlauf, konfigurierbare Statusleiste, Health-Cards, Erkennung von Crash-Loops, Healthcheck-Auto-Heal, responsive/vollbildfähige Logs sowie optionale Kula-, Dozzle- und PowerWatch- sowie PowerWatch-Hub-Integrationen |
 | **Integrationen** | PowerWatch und PowerWatch Hub, PlugNPiN sowie dienstspezifische Label-Unterstützung für Nginx Proxy Manager, Pi-hole und AdGuard Home |
 | **Benachrichtigungen & Zugriff** | Discord- und Apprise-Benachrichtigungen lokalisiert in EN/FR/ES/zh-CN, Multi-Instanz-Erkennung, 2FA, Unterstützung für Trusted Proxies, Turnstile und mobile Apps von Drittanbietern |
@@ -61,6 +62,8 @@ Dockge Enhanced ist ein Fork von [Dockge](https://github.com/louislam/dockge) zu
 Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell sehen können, was sich in Dockge-Enhanced geändert hat.
 
 ### 🆕 Oktober 2026
+
+**Eingeschränkte lokale Konten :** Unter **Einstellungen → Sicherheit → Benutzer und Berechtigungen** können eingeschränkte Konten erstellt werden. Für jeden lokalen oder verknüpften Stack sind Status, Protokolle, Starten, Stoppen, Neustarten, Aktualisieren und Neuerstellen einzeln freigebbar. Ohne Auswahl besteht kein Zugriff. Bestehende Konten bleiben Administratoren. Der eigene Arbeitsbereich bietet keinen Zugriff auf Compose/.env, Terminal, Dateien, Löschen, Backups oder Einstellungen. Beide Seiten verknüpfter Instanzen einschließlich Rückwärts-Agents aktualisieren; ältere Agents werden nicht umgangen. Rechte gelten für Instanz und Stack-Namen: bei Wiederverwendung eines Namens prüfen. Entzug trennt Sitzungen, bricht aber laufende Docker-Operationen nicht ab. Protokolle können Geheimnisse enthalten. Erste Version: nur lokale Anmeldung, keine Rechte pro Container und keine eigene Passwort-/2FA-Verwaltung eingeschränkter Konten; das Passwort setzt der Administrator zurück. [Technische Details](docs/scoped-users.md).
 
 **Compose-Vorlagen und entfernte Agents :** Benannte HTTP/HTTPS-Links, konfigurierbare .env-Standardvorlage, dauerhafte Agent-Tags und Tag-Filter sowie optionale Rückwärtsverbindungen mit individuellen Tokens und automatischer Anmeldung nach Einrichtung des lokalen Kontos. Rückwärts verbundene Agents gehören zu ihrem Hub; Datenübertragungen zwischen Servern benötigen weiterhin direkte Föderation. Ein vorhandenes lokales Administratorkonto genügt; ein neues Konto ist nicht erforderlich. [Dokumentation](docs/compose-and-reverse-agents.md).
 
@@ -525,6 +528,7 @@ Die Restic-Snapshot-Liste ist standardmäßig auf **Alle** eingestellt. **Speich
 - Abgleich von Compose-Projekt Namen und exakter Stack-Kontext während Updates
 
 ### Sicherheit
+- **Eingeschränkte lokale Konten** — Lokale Konten mit eigenen Berechtigungen je Instanz und Stack sowie eigenem Arbeitsbereich. Einrichtung unter Einstellungen → Sicherheit. Bestehende Konten bleiben Administratoren; verknüpfte Instanzen ebenfalls aktualisieren. Protokolle können Geheimnisse enthalten. [Guide](docs/scoped-users.md).
 - Zentralisierte Stack-Namensvalidierung blockiert Pfadüberschreitungen (Path Traversal) außerhalb des verwalteten Stacks-Verzeichnisses
 - Trivy-Schwachstellenscan
 - CVE-Ausnahmen
@@ -931,7 +935,7 @@ environment:
   - DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS=172.20.0.0/24
 ```
 
-Ersetzen Sie die Beispiel-CIDR durch das genaue Netzwerk des Proxys und konfigurieren Sie ihn so, dass er den ausgewählten Header weiterleitet. Der Dockge-Port darf nicht direkt erreichbar sein: Nur deklarierte Proxys dürfen eine Identität bereitstellen. Jeder vom Proxy autorisierte Benutzer erhält Administratorrechte, da Dockge-Enhanced derzeit keine separaten Rollen bereitstellt. Nehmend Sie niemals `/setup`, `/socket.io` oder `/api/*` von der Authentifizierung aus; der Proxy muss WebSockets weiterleiten und den gesamten Host schützen.
+Ersetzen Sie die Beispiel-CIDR durch das genaue Netzwerk des Proxys und konfigurieren Sie ihn so, dass er den ausgewählten Header weiterleitet. Der Dockge-Port darf nicht direkt erreichbar sein: Nur deklarierte Proxys dürfen eine Identität bereitstellen. Proxy-Identitäten behalten Administratorrechte; eingeschränkte Konten gelten nur für die lokale Anmeldung. Eine Proxy-Identität mit dem Namen eines eingeschränkten lokalen Kontos wird abgelehnt. Nehmend Sie niemals `/setup`, `/socket.io` oder `/api/*` von der Authentifizierung aus; der Proxy muss WebSockets weiterleiten und den gesamten Host schützen.
 
 ---
 

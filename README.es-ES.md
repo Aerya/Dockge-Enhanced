@@ -44,6 +44,7 @@ Dockge Enhanced es un fork de [Dockge](https://github.com/louislam/dockge) para 
 | **Automatización y auditoría** | API REST limitada por permisos, webhooks por stack, ejemplos para Home Assistant, operaciones programadas e historial centralizado con origen, estado y duración |
 | **Recursos Docker** | Limpieza unificada protegida de imágenes, volúmenes, redes y caché de build, recuperación exacta, vista previa, exclusiones e historial |
 | **Seguridad** | Escaneo de vulnerabilidades con Trivy, excepciones CVE, flujos de actualización protegidos, 2FA, trusted proxy y Cloudflare Turnstile |
+| **Cuentas locales limitadas** | Permisos por instancia y stack, espacio dedicado, revocación de sesiones; configuración en Seguridad |
 | **Monitorización** | Estadísticas del sistema, stacks y contenedores, historial CPU/RAM opcional cada 5 minutos, barra de estado, tarjetas de salud, crash loops, auto-heal, logs adaptables, Kula, Dozzle, PowerWatch y PowerWatch Hub |
 | **Integraciones** | PowerWatch y PowerWatch Hub, PlugNPiN y asistente de etiquetas por servicio para Nginx Proxy Manager, Pi-hole y AdGuard Home |
 | **Notificaciones y acceso** | Notificaciones Discord y Apprise localizadas en EN/FR/ES/zh-CN, soporte multiinstancia, 2FA, trusted proxy, Turnstile y clientes móviles de terceros |
@@ -61,6 +62,8 @@ Dockge Enhanced es un fork de [Dockge](https://github.com/louislam/dockge) para 
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
 ### 🆕 Octubre de 2026
+
+**Cuentas locales con acceso limitado :** En **Ajustes → Seguridad → Usuarios y permisos**, cree cuentas limitadas y seleccione por stack local o vinculada los permisos de consulta, registros, iniciar, detener, reiniciar, actualizar y recrear. Sin selección no hay acceso. Las cuentas existentes siguen siendo administradoras. El espacio dedicado no permite acceder a Compose/.env, terminal, archivos, eliminación, copias de seguridad ni ajustes. Actualice ambos extremos de las instancias vinculadas, incluidos los agentes inversos; no se omiten las protecciones para agentes antiguos. Los permisos identifican instancia y nombre de stack: revíselos al reutilizar un nombre. Revocar desconecta las sesiones, pero no cancela operaciones Docker ya iniciadas. Los registros pueden contener secretos. Primera versión: solo autenticación local, sin permisos por contenedor ni gestión personal de contraseña/2FA para cuentas limitadas; el administrador restablece su contraseña. [Detalles técnicos](docs/scoped-users.md).
 
 **Plantillas Compose y agentes remotos :** Enlaces HTTP/HTTPS con nombre, plantilla .env predeterminada configurable, etiquetas persistentes de agentes y filtrado, además de conexiones inversas opcionales con tokens individuales y registro automático tras configurar la cuenta local. Los agentes inversos pertenecen a su servidor central; las transferencias de datos entre servidores siguen requiriendo federación directa. Basta con una cuenta de administrador local existente; no hay que crear otra. [Documentación](docs/compose-and-reverse-agents.md).
 
@@ -500,6 +503,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Reconciliación del nombre de proyecto Compose y uso del contexto exacto de la stack durante las actualizaciones
 
 ### Seguridad
+- **Cuentas locales con acceso limitado** — Cuentas locales limitadas por instancia y stack, con permisos separados y espacio dedicado. Configuración en Ajustes → Seguridad. Las cuentas existentes siguen siendo administradoras; actualice también las instancias vinculadas. Los registros pueden contener secretos. [Guide](docs/scoped-users.md).
 - Validación centralizada de nombres de stacks para bloquear path traversal fuera del directorio gestionado
 - Trivy y excepciones CVE
 - 2FA TOTP opcional para cuentas locales: configuración QR verificada, secretos cifrados, códigos de recuperación de un solo uso y revocación de sesiones; Turnstile y trusted proxy
@@ -895,7 +899,7 @@ environment:
   - DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS=172.20.0.0/24
 ```
 
-Reemplaza el CIDR de ejemplo con la red exacta del proxy y configúralo para pasar el encabezado seleccionado. El puerto Dockge no debe ser directamente accesible: solo los proxies declarados pueden proporcionar una identidad. Cada usuario autorizado por el proxy recibe derechos de administrador porque Dockge Enhanced actualmente no proporciona roles separados. Nunca exempts `/setup`, `/socket.io`, o `/api/*` de la autenticación; el proxy debe reenviar WebSockets y proteger todo el host.
+Reemplaza el CIDR de ejemplo con la red exacta del proxy y configúralo para pasar el encabezado seleccionado. El puerto Dockge no debe ser directamente accesible: solo los proxies declarados pueden proporcionar una identidad. Las identidades del proxy conservan derechos de administrador; las cuentas limitadas solo corresponden a la autenticación local. Se rechaza una identidad proxy con el nombre de una cuenta local limitada. Nunca exempts `/setup`, `/socket.io`, o `/api/*` de la autenticación; el proxy debe reenviar WebSockets y proteger todo el host.
 
 ---
 

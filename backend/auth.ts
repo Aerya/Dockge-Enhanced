@@ -258,7 +258,7 @@ export async function initializeAuthentication(): Promise<boolean> {
 async function findOrCreateTrustedProxyUser(username: string): Promise<User> {
     const existing = await R.findOne("user", " username = ? ", [ username ]) as User;
     if (existing) {
-        if (!existing.active) {
+        if (!existing.active || (existing.role !== undefined && existing.role !== "admin")) {
             throw new AuthenticationError("Utilisateur proxy désactivé");
         }
         return existing;
@@ -273,7 +273,7 @@ async function findOrCreateTrustedProxyUser(username: string): Promise<User> {
         const user = await R.findOne("user", " username = ? AND active = 1 ", [
             username,
         ]) as User;
-        if (user) {
+        if (user && (user.role === undefined || user.role === "admin")) {
             return user;
         }
         throw error;
@@ -336,6 +336,9 @@ export async function authenticateHttpRequest(
         if (!user || (decoded.scope !== "federation" &&
             (decoded.h !== passwordVersionFingerprint(user.password, jwtSecret) || !interactiveSessionVersionMatches(decoded, { twofa_version: user.twofa_version })))) {
             throw new Error("Revoked session");
+        }
+        if (user.role !== undefined && user.role !== "admin") {
+            throw new AuthenticationError("access.denied");
         }
         return { mode,
             username: user.username };

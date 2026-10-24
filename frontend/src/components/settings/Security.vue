@@ -12,6 +12,7 @@
                     <button id="logout-btn" class="btn btn-danger ms-4 me-2 mb-2" @click="$root.logout">{{ $t("Logout") }}</button>
                 </p>
 
+                <Users />
                 <h5 class="my-4 settings-subheading">{{ $t("Change Password") }}</h5>
                 <form class="mb-3" @submit.prevent="savePassword">
                     <div class="mb-3">
@@ -146,12 +147,14 @@
 </template>
 
 <script>
+import Users from "./Users.vue";
 import Confirm from "../../components/Confirm.vue";
 import TwoFADialog from "../../components/TwoFADialog.vue";
 import HiddenInput from "../../components/HiddenInput.vue";
 
 export default {
     components: {
+        Users,
         Confirm,
         TwoFADialog,
         HiddenInput
