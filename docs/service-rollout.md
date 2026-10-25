@@ -2,6 +2,12 @@
 
 [English](service-rollout.md) · [Français](service-rollout.fr.md) · [Deutsch](service-rollout.de.md) · [Español](service-rollout.es.md) · [简体中文](service-rollout.zh-CN.md)
 
+Disabled by default. Enhanced starts the new container before stopping the old one: two copies of the same application run temporarily, not two Enhanced instances. The application must support this without data conflicts, duplicate jobs or incompatible database migrations. Enhanced cannot determine this automatically: a healthcheck checks that the container responds, not that running both copies is safe.
+
+If you do not use the compatible Traefik mode, prepare a relay: a small intermediate container that keeps the same access address and sends connections to the right version. The assistant changes only the draft, moving the published port and Traefik/PlugNPiN labels to the relay. Review, then explicitly deploy. A proxy targeting the host IP and that port can keep its destination; if it targets the application service name, point it to the relay name instead. Enhanced does not reconfigure your proxy automatically. Connections arrive from the relay address; no administration API is exposed.
+
+Check compatibility before enabling this option. The application container count temporarily doubles: allow enough CPU/RAM. Fixed container names and shared writable volumes are refused. The relay adds a container and a configuration volume. Its initial installation moves the access port and may cause an outage. Afterwards, use Update; Recreate, restarts and rollback do not guarantee that connections stay open. TCP only, not UDP/QUIC; no universal zero-downtime guarantee.
+
 ## Deployment
 
 Choose native Traefik when the existing Docker discovery and draining prerequisites are met. Otherwise, in the service editor, enter its **internal TCP port** and choose **Prepare an optional relay**. Review the draft before saving and deploying: the published port and Traefik/PlugNPiN labels move to a separate relay service. Initial deployment can interrupt traffic. Keep the existing proxy destination when it uses that host IP and published port; if it uses the application service name, explicitly change it to the relay service name.

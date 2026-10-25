@@ -205,7 +205,7 @@
                     <p class="form-text">{{ $t("serviceRollout.help") }}</p>
                     <p class="form-text">{{ $t("serviceRollout.draining") }}</p>
                     <p v-if="!rollingUpdateSupported" class="text-warning small">{{ $t("serviceRollout.unsupported") }}</p>
-                    <p v-if="rollingUpdate" class="text-warning small">{{ $t("serviceRollout.warning") }}</p>
+                    <p class="text-warning small">{{ $t("serviceRollout.warning") }}</p>
                     <div v-if="rollingUpdateSupported && !hasRollingRelay" class="d-flex flex-wrap gap-2 align-items-center">
                         <label :for="`relay-port-${name}`">{{ $t("serviceRollout.relayPort") }}</label>
                         <input :id="`relay-port-${name}`" v-model="relayPort" type="number" min="1" max="65535" class="form-control form-control-sm" style="width: 7rem" />

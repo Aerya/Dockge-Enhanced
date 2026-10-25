@@ -2,6 +2,12 @@
 
 [English](service-rollout.md) · [Français](service-rollout.fr.md) · [Deutsch](service-rollout.de.md) · [Español](service-rollout.es.md) · [简体中文](service-rollout.zh-CN.md)
 
+Standardmäßig deaktiviert. Enhanced startet den neuen Container, bevor der alte beendet wird: Zwei Exemplare derselben Anwendung laufen vorübergehend gleichzeitig, nicht zwei Enhanced-Instanzen. Dabei dürfen keine Datenkonflikte, doppelten Aufgaben oder inkompatiblen Datenbankmigrationen entstehen. Enhanced kann das nicht automatisch feststellen: Ein Healthcheck prüft die Erreichbarkeit des Containers, nicht die Sicherheit dieses Parallelbetriebs.
+
+Wenn Sie nicht den kompatiblen Traefik-Modus verwenden, bereiten Sie ein Relay vor: einen kleinen Zwischencontainer, der die Zugangsadresse beibehält und Verbindungen zur richtigen Version leitet. Der Assistent ändert nur den Entwurf und verschiebt veröffentlichten Port sowie Traefik/PlugNPiN-Labels zum Relay. Prüfen und ausdrücklich bereitstellen. Ein Proxy mit Host-IP und diesem Port kann sein Ziel behalten; verwendet er den Anwendungsdienstnamen, muss das Ziel auf den Relay-Namen geändert werden. Enhanced konfiguriert Ihren Proxy nicht automatisch um. Verbindungen kommen von der Relay-Adresse; keine Verwaltungs-API wird bereitgestellt.
+
+Prüfen Sie diese Kompatibilität vor dem Aktivieren. Die Anzahl der Anwendungscontainer verdoppelt sich vorübergehend: ausreichend CPU/RAM einplanen. Feste Containernamen und gemeinsam beschreibbare Volumes werden abgelehnt. Das Relay ergänzt einen Container und ein Konfigurationsvolume. Bei der Erstinstallation wird der Zugangsport verschoben; dabei kann es zu einer Unterbrechung kommen. Danach Aktualisieren verwenden; Recreate, Neustarts und Rollback garantieren keine offenen Verbindungen. Nur TCP, kein UDP/QUIC; keine allgemeine Garantie für unterbrechungsfreien Betrieb.
+
 ## Einrichtung
 
 Nutzen Sie natives Traefik, wenn Docker-Erkennung und Verbindungsabbau bereits passen. Andernfalls im Diensteditor den **internen TCP-Port** eingeben und **Optionales Relay vorbereiten** wählen. Vor Speichern und Bereitstellen den Entwurf prüfen: veröffentlichter Port und Traefik/PlugNPiN-Labels wechseln auf einen separaten Relay-Dienst. Die erste Bereitstellung kann unterbrechen. Ein Proxy-Ziel mit Host-IP und veröffentlichtem Port bleibt erhalten; ein Ziel mit dem Anwendungsdienstnamen muss ausdrücklich auf den Relay-Namen geändert werden.

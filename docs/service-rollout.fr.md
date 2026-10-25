@@ -2,6 +2,12 @@
 
 [English](service-rollout.md) · [Français](service-rollout.fr.md) · [Deutsch](service-rollout.de.md) · [Español](service-rollout.es.md) · [简体中文](service-rollout.zh-CN.md)
 
+Désactivé par défaut. Enhanced démarre le nouveau conteneur avant d’arrêter l’ancien : deux exemplaires de la même application tournent temporairement, pas deux instances d’Enhanced. L’application doit pouvoir fonctionner ainsi sans conflits de données, tâches exécutées deux fois ou migrations de base incompatibles. Enhanced ne peut pas le déterminer automatiquement : un healthcheck vérifie que le conteneur répond, pas que cette coexistence est sûre.
+
+Si vous n’utilisez pas le mode Traefik compatible, préparez un relais : un petit conteneur intermédiaire qui garde la même adresse d’accès et dirige les connexions vers la bonne version. L’assistant modifie seulement le brouillon : il déplace le port publié et les labels Traefik/PlugNPiN vers ce relais. Vérifiez puis déployez explicitement. Un proxy qui vise l’IP de l’hôte et ce port peut garder sa destination ; s’il vise le nom du service applicatif, faites-le pointer vers le nom du relais. Enhanced ne modifie pas automatiquement votre proxy. Les connexions arrivent avec l’adresse du relais ; aucune API d’administration n’est exposée.
+
+Vérifiez cette compatibilité avant d’activer l’option. Le nombre de conteneurs de l’application double temporairement : prévoyez assez de CPU/RAM. Les noms de conteneurs fixes et les volumes partagés en écriture sont refusés. Le relais ajoute un conteneur et un volume de configuration. Sa première installation déplace le port d’accès et peut provoquer une coupure. Utilisez ensuite Mettre à jour ; Recreate, les redémarrages et le rollback ne garantissent pas le maintien des connexions. TCP uniquement, pas UDP/QUIC ; aucune garantie universelle de zéro coupure.
+
 ## Mise en place
 
 Choisissez Traefik natif si la découverte Docker existante et les prérequis de retrait du trafic sont satisfaits. Sinon, dans l’éditeur du service, indiquez son **port TCP interne**, puis cliquez sur **Préparer un relais facultatif**. Vérifiez le brouillon avant d’enregistrer et de déployer : le port publié et les labels Traefik/PlugNPiN passent sur un service relais distinct. Le déploiement initial peut interrompre le trafic. Gardez la destination du proxy si elle utilise cette IP hôte et ce port publié ; si elle utilise le nom du service applicatif, remplacez-la explicitement par le nom du relais.

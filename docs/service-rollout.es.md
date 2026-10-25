@@ -2,6 +2,12 @@
 
 [English](service-rollout.md) · [Français](service-rollout.fr.md) · [Deutsch](service-rollout.de.md) · [Español](service-rollout.es.md) · [简体中文](service-rollout.zh-CN.md)
 
+Desactivado por defecto. Enhanced inicia el contenedor nuevo antes de detener el antiguo: funcionan temporalmente dos copias de la misma aplicación, no dos instancias de Enhanced. La aplicación debe permitirlo sin conflictos de datos, tareas duplicadas ni migraciones de base de datos incompatibles. Enhanced no puede determinarlo automáticamente: un healthcheck comprueba que el contenedor responde, no que sea seguro ejecutar ambas copias.
+
+Si no utiliza el modo Traefik compatible, prepare un relé: un pequeño contenedor intermedio que mantiene la dirección de acceso y dirige las conexiones a la versión correcta. El asistente solo modifica el borrador, moviendo el puerto publicado y las etiquetas Traefik/PlugNPiN al relé. Revise y despliegue explícitamente. Un proxy dirigido a la IP del host y ese puerto puede conservar su destino; si usa el nombre del servicio de la aplicación, cámbielo por el nombre del relé. Enhanced no reconfigura su proxy automáticamente. Las conexiones llegan desde la dirección del relé; no se expone ninguna API de administración.
+
+Compruebe esta compatibilidad antes de activar la opción. El número de contenedores de la aplicación se duplica temporalmente: reserve suficiente CPU/RAM. Se rechazan nombres de contenedor fijos y volúmenes compartidos con escritura. El relé añade un contenedor y un volumen de configuración. Su instalación inicial mueve el puerto de acceso y puede causar un corte. Después, utilice Actualizar; Recreate, los reinicios y el rollback no garantizan mantener las conexiones. Solo TCP, no UDP/QUIC; sin garantía universal de cero interrupciones.
+
 ## Configuración
 
 Utilice Traefik nativo si ya cumple los requisitos de descubrimiento Docker y retirada de tráfico. Si no, indique el **puerto TCP interno** en el editor del servicio y elija **Preparar un relé opcional**. Revise antes de guardar y desplegar: el puerto publicado y las etiquetas Traefik/PlugNPiN pasan a un servicio separado. El despliegue inicial puede interrumpir el tráfico. El destino con IP del host y puerto publicado se mantiene; si usa el nombre del servicio de aplicación, cámbielo explícitamente por el del relé.
