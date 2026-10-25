@@ -4,6 +4,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-10-25 — Default Compose filename** — Prepared in this PR; not yet published. COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected. [RichyHBM / Dockge #84](https://github.com/louislam/dockge/pull/84).
+
 **2026-10-25 — Socket.IO default ports** — Prepared in this PR, not yet published. Browser origins using the implicit HTTP/HTTPS port now match an explicit :80/:443 Host header, including IPv6. Different hosts and non-default ports remain rejected; forwarded headers do not override this check.
 
 **2026-10-25 — CPU/RAM limits per service** — Prepared in this PR; not yet published. Optional CPU/RAM limits per service in the administrator Compose editor. Existing aliases stay consistent; other resource settings and restricted-account permissions are preserved. Apply to the draft, then save and deploy explicitly. Inspired by Isurupro7 (Dockge #1006). A low RAM limit can cause an out-of-memory stop. CPU is throttled. Removing a limit does not reserve resources. Existing expressions are preserved until edited. Other resource settings stay unchanged. Overrides, extends or included files may still supply limits: review the final Compose. A prominent RAM warning requires acknowledgement before applying a new or changed memory limit.

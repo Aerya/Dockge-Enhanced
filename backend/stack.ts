@@ -597,6 +597,13 @@ export class Stack {
 
         // Check if the name is used if isAdd
         if (isAdd) {
+            if (!this.isExternal) {
+                const filename = process.env.COMPOSE_FILENAME || "compose.yaml";
+                if (!acceptedComposeFileNames.includes(filename)) {
+                    throw new ValidationError("COMPOSE_FILENAME must be compose.yaml, compose.yml, docker-compose.yaml or docker-compose.yml");
+                }
+                this._composeFileName = filename;
+            }
             if (await fileExists(dir)) {
                 throw new ValidationError("Stack name already exists");
             }

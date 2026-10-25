@@ -4,6 +4,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-10-25 — Nombre predeterminado del archivo Compose** — Preparado en esta PR; todavía no publicado. COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas. [RichyHBM / Dockge #84](https://github.com/louislam/dockge/pull/84).
+
 **2026-10-25 — Puertos predeterminados de Socket.IO** — Preparado en esta PR, todavía no publicado. Un origen del navegador con el puerto HTTP/HTTPS implícito coincide ahora con una cabecera Host con :80/:443 explícito, también en IPv6. Se siguen rechazando hosts y puertos no equivalentes; las cabeceras del proxy no evitan esta comprobación.
 
 **2026-10-25 — Límites de CPU/RAM por servicio** — Preparado en esta PR; todavía no publicado. Límites opcionales de CPU/RAM por servicio en el editor Compose del administrador. Los alias existentes siguen siendo coherentes; los demás ajustes y los permisos restringidos se conservan. Aplique al borrador, guarde y despliegue explícitamente. Inspirado en Isurupro7 (Dockge #1006). Un límite de RAM demasiado bajo puede detener el contenedor por falta de memoria. La CPU se limita. Eliminar un límite no reserva recursos. Las expresiones existentes se conservan hasta editarlas. Los demás ajustes no cambian. Los overrides, extends o archivos incluidos pueden seguir imponiendo límites: revise el Compose final. Una advertencia visible sobre la RAM exige confirmación antes de aplicar un límite de memoria nuevo o modificado.
