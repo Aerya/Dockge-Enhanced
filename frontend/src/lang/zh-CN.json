@@ -2392,5 +2392,21 @@
     "home.scope.backups": "{n}/{total} 个实例按时备份",
     "home.scope.partial": "{value} · 不完整（{n} 个不可用）",
     "home.scope.disabled": "{n} 个已禁用",
-    "releaseNews.item.homeInstanceGlobal": "首页先显示本地实例统计，下方显示不受 Stack 筛选影响的全局汇总。展开摘要卡片可查看各实例数据并直接打开对应菜单。离线或旧版本实例标记为不可用；备份汇总单独列出已禁用的实例。"
+    "releaseNews.item.homeInstanceGlobal": "首页先显示本地实例统计，下方显示不受 Stack 筛选影响的全局汇总。展开摘要卡片可查看各实例数据并直接打开对应菜单。离线或旧版本实例标记为不可用；备份汇总单独列出已禁用的实例。",
+    "oidc.or": "或",
+    "oidc.signIn": "使用 SSO 登录",
+    "oidc.linkedAccount": "已关联 SSO 提供商的账户",
+    "oidc.failed": "SSO 登录失败，请查看 Dockge 日志。",
+    "oidc.expired": "SSO 登录已过期或已被使用，请重试。",
+    "oidc.busy": "进行中的 SSO 登录过多，请稍后重试。",
+    "oidc.providerUnavailable": "无法连接 SSO 提供商。",
+    "oidc.providerError": "SSO 提供商拒绝了登录。",
+    "oidc.missingUsername": "SSO 提供商未提供用户名。",
+    "oidc.invalidUsername": "SSO 提供商提供的用户名无效。",
+    "oidc.accountConflict": "已有本地账户使用此用户名，且未关联到该 SSO 身份。",
+    "oidc.emailNotVerified": "您的电子邮件地址未在 SSO 提供商处验证。",
+    "oidc.setupRequired": "请先创建第一个管理员，或配置 DOCKGE_OIDC_ADMIN_USERS 或 DOCKGE_OIDC_ADMIN_GROUPS。",
+    "oidc.accountDisabled": "此账户已停用。",
+    "oidc.localLoginDisabled": "用户名和密码登录已停用，请使用 SSO。",
+    "oidc.disabled": "未启用 SSO 登录。"
 }

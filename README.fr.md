@@ -43,7 +43,7 @@ Dockge Enhanced est un fork de [Dockge](https://github.com/louislam/dockge) pour
 | **Sauvegarde & reprise** | Sauvegardes Restic multi-destination des bind mounts et volumes, cohérence par stack, restauration sélective, vérification des dépôts, contrôle et diff des snapshots, réinitialisation sécurisée des dépôts, ainsi que les mécanismes de récupération utilisés par les mises à jour protégées. Connexion Zerobyte facultative ou installation gérée, workflows applicatifs protégés et restaurations de test dédiées |
 | **Mises à jour** | Réglages groupés par stack avec conservation des exceptions, contrôle ciblé toutes les 5 minutes en mode Immédiat, respect des images ignorées avant toute modification, mises à jour manuelles, groupées séquentielles ou automatiques des conteneurs avec rollback, créneau de maintenance commun, badges distants, pauses globales/par image et auto-mise à jour protégée de Dockge-Enhanced avec backup obligatoire, contrôles d'intégrité et récupération automatique |
 | **Migration & réplication** | Transferts transactionnels entre instances, migration du Compose et des données persistantes, jobs reprenables, finalisation explicite des déplacements, répliques froides planifiées, snapshots de récupération et workflows de reprise |
-| **Sécurité & authentification** | Comptes locaux limités avec permissions par stack et par service, 2FA TOTP facultative, authentification par trusted proxy, Cloudflare Turnstile, scan de vulnérabilités Trivy, exceptions CVE et workflows de mise à jour protégés |
+| **Sécurité & authentification** | Comptes locaux limités avec permissions par stack et par service, 2FA TOTP facultative, connexion OIDC native, authentification par trusted proxy, Cloudflare Turnstile, scan de vulnérabilités Trivy, exceptions CVE et workflows de mise à jour protégés |
 | **Supervision** | Statistiques système, stacks et conteneurs, historique CPU/RAM facultatif toutes les 5 minutes, barre d'état configurable, cartes de santé, crash loops, auto-heal, logs responsives/plein écran, et intégrations facultatives Kula, Dozzle, PowerWatch et PowerWatch Hub |
 | **Ressources Docker** | Nettoyage unifié protégé des images, volumes, réseaux et caches de build, rattrapage exact, aperçu, exclusions, historique et protections destructives |
 | **Recherche & fichiers** | Recherche globale multi-instance, gestionnaire de fichiers hôte restreint, navigation dans les volumes, transferts par morceaux, édition de texte et lecture de fichiers journaux |
@@ -63,6 +63,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 ### 🆕 Octobre 2026
 
 **Mises à jour sans interruption de service :** Préparé dans cette PR ; pas encore publié. Désactivé par défaut. Enhanced démarre le nouveau conteneur avant d’arrêter l’ancien : deux exemplaires de la même application tournent temporairement, pas deux instances d’Enhanced. L’application doit pouvoir fonctionner ainsi sans conflits de données, tâches exécutées deux fois ou migrations de base incompatibles. Enhanced ne peut pas le déterminer automatiquement : un healthcheck vérifie que le conteneur répond, pas que cette coexistence est sûre. Si vous n’utilisez pas le mode Traefik compatible, préparez un relais : un petit conteneur intermédiaire qui garde la même adresse d’accès et dirige les connexions vers la bonne version. L’assistant modifie seulement le brouillon : il déplace le port publié et les labels Traefik/PlugNPiN vers ce relais. Vérifiez puis déployez explicitement. Un proxy qui vise l’IP de l’hôte et ce port peut garder sa destination ; s’il vise le nom du service applicatif, faites-le pointer vers le nom du relais. Enhanced ne modifie pas automatiquement votre proxy. Les connexions arrivent avec l’adresse du relais ; aucune API d’administration n’est exposée. Vérifiez cette compatibilité avant d’activer l’option. Le nombre de conteneurs de l’application double temporairement : prévoyez assez de CPU/RAM. Les noms de conteneurs fixes et les volumes partagés en écriture sont refusés. Le relais ajoute un conteneur et un volume de configuration. Sa première installation déplace le port d’accès et peut provoquer une coupure. Utilisez ensuite Mettre à jour ; Recreate, les redémarrages et le rollback ne garantissent pas le maintien des connexions. TCP uniquement, pas UDP/QUIC ; aucune garantie universelle de zéro coupure. [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Les nouvelles connexions passent vers le nouveau conteneur seulement après vérification de sa santé. Avec le relais, les connexions déjà ouvertes peuvent se terminer sur l’ancien : il reste actif jusqu’à leur fermeture, sans coupure forcée par un délai. Enhanced termine ce nettoyage automatiquement, même après son redémarrage, et affiche l’attente ou la reprise. Sans relais, le mode Traefik exige un healthcheck déjà déployé permettant de retirer les anciens conteneurs de la liste des destinations avant leur arrêt. L’instance qui héberge la stack doit prendre en charge cette option. Mettez aussi à jour les instances liées ; pour une nouvelle stack distante, enregistrez-la d’abord. Les anciens agents ne respectent pas cette option.
+
+**Connexion OIDC native :** connectez-vous avec un fournisseur OpenID Connect comme Pocket ID, Authentik, Keycloak ou Google, sans reverse proxy et en plus des comptes locaux et de la 2FA. La configuration passe par les variables d’environnement `DOCKGE_OIDC_*` et le flux Authorization Code avec PKCE. Les nouveaux utilisateurs OIDC sont des comptes limités sans aucun accès tant qu’un administrateur ne leur en donne pas, sauf s’ils figurent dans `DOCKGE_OIDC_ADMIN_USERS` ou appartiennent à `DOCKGE_OIDC_ADMIN_GROUPS` ; avec des groupes admin, le rôle suit l’appartenance au groupe à chaque connexion. Aucun « premier utilisateur administrateur » implicite : sur une installation neuve, créez d’abord l’administrateur ou configurez une correspondance admin. Un compte local existant n’est rattaché qu’avec `DOCKGE_OIDC_LINK_EXISTING=true`. Les connexions OIDC ne demandent pas le code TOTP local, et l’OIDC est ignoré en modes `disabled` et `trusted-proxy`. Si vous activez `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true`, gardez la procédure de récupération à portée de main. [Guide](docs/oidc.fr.md).
 
 **Nom du fichier Compose par défaut :** Préparé dans cette PR ; pas encore publié. COMPOSE_FILENAME choisit compose.yaml (par défaut), compose.yml, docker-compose.yaml ou docker-compose.yml uniquement pour les nouvelles stacks. Les stacks existantes et adoptées conservent leurs fichiers. Les autres noms et chemins sont refusés.
 
@@ -529,6 +531,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Comptes locaux avec 2FA TOTP facultative, secrets chiffrés, codes de récupération à usage unique et révocation des sessions
 - Comptes locaux limités avec permissions par instance, stack et service, et espace de travail dédié ([guide](docs/scoped-users.md)) ; désactivez-les avant de revenir à une ancienne version d’Enhanced
 - Authentification par trusted proxy limitée aux réseaux explicitement autorisés, avec identités du proxy associées aux comptes locaux
+- Connexion OIDC native (Pocket ID, Authentik, Keycloak…) avec PKCE, comptes limités par défaut et correspondance admin facultative par utilisateur ou par groupe ([guide](docs/oidc.fr.md))
 - Création non interactive du premier administrateur depuis un fichier secret
 - Protection de la connexion par Cloudflare Turnstile
 - Analyse de vulnérabilités Trivy avec exceptions CVE
@@ -892,6 +895,7 @@ Pour publier un service, éditez sa stack puis utilisez **Publication PlugNPiN (
 | `DOCKER_HOST` | *(aucun)* | Point d’accès Docker, par exemple `tcp://proxy:2375` avec un Docker Socket Proxy de confiance |
 | `DOCKGE_CONTAINER_ID` | *(aucun)* | ID explicite du conteneur Enhanced lorsqu’il ne peut pas être déduit de `HOSTNAME` |
 | `DOCKGE_USAGE_COUNT` | *(activé)* | Mettre `false` pour désactiver le comptage mensuel anonyme des installations |
+| `DOCKGE_OIDC_ISSUER` | *(aucun)* | URL de l’émetteur OpenID Connect ; la définir active la connexion OIDC native. Toutes les options `DOCKGE_OIDC_*` sont décrites dans le [guide OIDC](docs/oidc.fr.md) |
 
 > ℹ️ Sans `DOCKGE_DATA_DIR`, Dockge-Enhanced utilise son volume persistant `/app/data`. Un chemin explicitement configuré reste toujours prioritaire.
 
@@ -931,6 +935,21 @@ environment:
 ```
 
 Remplacez le CIDR d’exemple par le réseau exact du proxy et configurez celui-ci pour transmettre l’en-tête choisi. Le port Dockge ne doit pas être directement accessible : seuls les proxies déclarés peuvent fournir une identité. Chaque identité du proxy utilise le compte local portant le même nom : un compte limité restreint cet utilisateur, un compte administrateur conserve l’accès complet. Une identité sans compte est créée comme compte limité sans droits, sauf le premier utilisateur d’une installation neuve et les identités listées dans `DOCKGE_AUTH_PROXY_ADMIN_USERS`, qui deviennent administrateurs. Les comptes existants conservent leur rôle, et un changement de rôle ou une désactivation peut mettre jusqu’à 30 secondes à s’appliquer aux sessions passant par le proxy. La gestion des comptes reste disponible uniquement en authentification locale. N’exemptez jamais `/setup`, `/socket.io` ou `/api/*` de l’authentification ; le proxy doit transmettre les WebSockets et protéger tout l’hôte.
+
+### Connexion OIDC native (Pocket ID, Authentik, Keycloak…)
+
+Sans reverse proxy, Dockge-Enhanced peut connecter les utilisateurs directement avec un fournisseur OpenID Connect, en plus des comptes locaux et de la 2FA :
+
+```yaml
+environment:
+  - DOCKGE_OIDC_ISSUER=https://id.example.com
+  - DOCKGE_OIDC_CLIENT_ID=dockge
+  - DOCKGE_OIDC_CLIENT_SECRET_FILE=/run/secrets/dockge_oidc_secret
+  - DOCKGE_OIDC_REDIRECT_URI=https://dockge.example.com/api/auth/oidc/callback
+  - DOCKGE_OIDC_ADMIN_GROUPS=dockge-admins
+```
+
+Les nouveaux utilisateurs OIDC sont des comptes limités sans aucun accès tant qu’un administrateur ne leur en donne pas, sauf s’ils font partie de `DOCKGE_OIDC_ADMIN_GROUPS` ou `DOCKGE_OIDC_ADMIN_USERS`. Personne ne devient administrateur implicitement : sur une installation neuve, créez le premier administrateur avec `/setup` ou `DOCKGE_BOOTSTRAP_*`, ou configurez une correspondance admin, sinon la première connexion OIDC est refusée. Un compte local existant n’est jamais rattaché sans `DOCKGE_OIDC_LINK_EXISTING=true`. L’OIDC ne fonctionne qu’en authentification locale et ne demande pas le code TOTP local. `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` ne laisse que le bouton SSO ; si le fournisseur devient indisponible, retirez cette variable et redémarrez le conteneur. [Toutes les options, exemples par fournisseur et récupération](docs/oidc.fr.md).
 
 ---
 

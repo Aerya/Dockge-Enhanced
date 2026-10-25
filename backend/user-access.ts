@@ -35,7 +35,7 @@ export async function loadUserAccess(id: number): Promise<UserAccess> {
     return accessFromUser(user);
 }
 
-const PUBLIC_EVENTS = new Set([ "login", "loginByToken", "setup", "needSetup" ]);
+const PUBLIC_EVENTS = new Set([ "login", "loginByToken", "loginByOidcCode", "setup", "needSetup" ]);
 const LIMITED_EVENTS = new Set([ "logout", "scopedList", "scopedRequest", "scopedPassword",
     "twoFactor:status", "twoFactor:prepare", "twoFactor:enable", "twoFactor:disable", "twoFactor:regenerate", "twoFactor:cancel" ]);
 

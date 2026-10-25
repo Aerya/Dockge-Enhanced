@@ -1375,5 +1375,21 @@
     "home.scope.backups": "{n}/{total} instancias respaldadas a tiempo",
     "home.scope.partial": "{value} · incompleto ({n} no disponibles)",
     "home.scope.disabled": "{n} desactivadas",
-    "releaseNews.item.homeInstanceGlobal": "Inicio: estadísticas locales primero y totales globales independientes de los filtros de stacks debajo. Cada tarjeta de resumen ofrece detalles por instancia y enlaces directos a sus menús. Las instancias desconectadas o antiguas aparecen como no disponibles; el resumen de copias distingue las instancias desactivadas."
+    "releaseNews.item.homeInstanceGlobal": "Inicio: estadísticas locales primero y totales globales independientes de los filtros de stacks debajo. Cada tarjeta de resumen ofrece detalles por instancia y enlaces directos a sus menús. Las instancias desconectadas o antiguas aparecen como no disponibles; el resumen de copias distingue las instancias desactivadas.",
+    "oidc.or": "o",
+    "oidc.signIn": "Iniciar sesión con SSO",
+    "oidc.linkedAccount": "Cuenta vinculada al proveedor SSO",
+    "oidc.failed": "El inicio de sesión SSO ha fallado. Revise los registros de Dockge.",
+    "oidc.expired": "El inicio de sesión SSO ha caducado o ya se ha usado. Inténtelo de nuevo.",
+    "oidc.busy": "Hay demasiados inicios de sesión SSO en curso. Inténtelo de nuevo en un momento.",
+    "oidc.providerUnavailable": "No se puede contactar con el proveedor SSO.",
+    "oidc.providerError": "El proveedor SSO ha rechazado el inicio de sesión.",
+    "oidc.missingUsername": "El proveedor SSO no ha enviado un nombre de usuario.",
+    "oidc.invalidUsername": "El nombre de usuario enviado por el proveedor SSO no es válido.",
+    "oidc.accountConflict": "Una cuenta local ya usa este nombre de usuario y no está vinculada a esta identidad SSO.",
+    "oidc.emailNotVerified": "Su dirección de correo no está verificada en el proveedor SSO.",
+    "oidc.setupRequired": "Cree primero el administrador inicial, o configure DOCKGE_OIDC_ADMIN_USERS o DOCKGE_OIDC_ADMIN_GROUPS.",
+    "oidc.accountDisabled": "Esta cuenta está desactivada.",
+    "oidc.localLoginDisabled": "El inicio de sesión con usuario y contraseña está desactivado. Use SSO.",
+    "oidc.disabled": "El inicio de sesión SSO no está activado."
 }

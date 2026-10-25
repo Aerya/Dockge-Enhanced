@@ -23,7 +23,8 @@ import { getSchedulingTimezone, setSchedulingTimezone, validateSchedulingTimezon
 import fs, { promises as fsAsync } from "fs";
 import path from "path";
 import axios from "axios";
-import { getAuthMode, isSetupCompleted, markSetupCompleted } from "../auth";
+import { activeOidcConfig, getAuthMode, isSetupCompleted, markSetupCompleted } from "../auth";
+import { consumeLoginCode, isLocalLoginDisabled } from "../oidc";
 import { parseDocument } from "yaml";
 import { createLoginChallenge, interactiveSessionVersionMatches, validLoginChallenge, type LoginChallenge } from "../two-factor-auth";
 import { registerTwoFactorHandlers } from "../two-factor-socket";
@@ -229,6 +230,9 @@ export class MainSocketHandler extends SocketHandler {
                 if (!data || typeof data.username !== "string" || typeof data.password !== "string" || await getAuthMode() !== "local") {
                     throw new Error("authIncorrectCreds");
                 }
+                if (isLocalLoginDisabled()) {
+                    throw new Error("oidc.localLoginDisabled");
+                }
                 if (!await loginRateLimiter.pass(callback)) {
                     return;
                 }
@@ -271,8 +275,42 @@ export class MainSocketHandler extends SocketHandler {
             } catch (error) {
                 const message = error instanceof Error ? error.message : "";
                 callback({ ok: false,
-                    msg: message.startsWith("twoFactor.") || [ "authIncorrectCreds", "authTurnstileFailed" ].includes(message)
+                    msg: message.startsWith("twoFactor.") || [ "authIncorrectCreds", "authTurnstileFailed", "oidc.localLoginDisabled" ].includes(message)
                         ? message : "twoFactor.unavailable",
+                    msgi18n: true });
+            }
+        });
+
+        // Login with the one-time code issued by the OIDC callback. The provider
+        // already handled authentication and MFA, so local TOTP is not asked.
+        socket.on("loginByOidcCode", async (code, callback) => {
+            if (typeof callback !== "function") {
+                return;
+            }
+            try {
+                if (!await activeOidcConfig()) {
+                    throw new Error("oidc.disabled");
+                }
+                if (!await loginRateLimiter.pass(callback)) {
+                    return;
+                }
+                const userId = consumeLoginCode(code);
+                if (userId === null) {
+                    throw new Error("oidc.expired");
+                }
+                const user = await R.findOne("user", " id = ? AND active = 1 ", [ userId ]) as User;
+                if (!user) {
+                    throw new Error("oidc.accountDisabled");
+                }
+                await finishLogin(user);
+                log.info("auth", `Successfully logged in user ${user.username} with OIDC. IP=${await server.getClientIP(socket)}`);
+                callback({ ok: true,
+                    token: User.createJWT(user, server.jwtSecret) });
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "";
+                callback({ ok: false,
+                    msg: message.startsWith("oidc.") || message.startsWith("twoFactor.")
+                        ? message : "oidc.failed",
                     msgi18n: true });
             }
         });
