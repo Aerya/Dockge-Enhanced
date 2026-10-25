@@ -1,4 +1,5 @@
 import { installReverseHub, startReverseNode, stopReverseNode } from "./reverse-agent";
+import { isSocketOriginAllowed } from "./socket-origin";
 import { accessFromUser, installUserAccessGuard } from "./user-access";
 import "dotenv/config";
 import os from "os";
@@ -336,18 +337,10 @@ export class DockgeServer {
                     let origin = req.headers.origin;
 
                     // If this is from the browser, check if the origin is allowed
-                    if (origin) {
-                        try {
-                            let originURL = new URL(origin);
-
-                            if (host !== originURL.host) {
-                                isOriginValid = false;
-                                log.error("auth", `Origin (${origin}) does not match host (${host}), IP: ${req.socket.remoteAddress}`);
-                            }
-                        } catch (e) {
-                            // Invalid origin url, probably not from browser
+                    if (origin !== undefined) {
+                        if (!isSocketOriginAllowed(host, origin)) {
                             isOriginValid = false;
-                            log.error("auth", `Invalid origin url (${origin}), IP: ${req.socket.remoteAddress}`);
+                            log.error("auth", `Origin rejected (invalid or different authority), IP: ${req.socket.remoteAddress}`);
                         }
                     } else {
                         log.info("auth", `Origin is not set, IP: ${req.socket.remoteAddress}`);

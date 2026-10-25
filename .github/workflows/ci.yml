@@ -62,11 +62,15 @@ jobs:
 
       - name: Tests des transports Socket.IO de la WebUI
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test frontend/src/socket-connection.test.ts
+        run: npx tsx --test frontend/src/socket-connection.test.ts backend/socket-origin.test.ts
 
       - name: Tests des limites CPU/RAM par service
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/service-resource-limits.test.ts frontend/src/service-resource-limits-ui.test.js
+
+      - name: Tests du nom de fichier Compose des nouvelles stacks
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/stack-compose-filename.test.ts backend/stack-compose-project-name.test.ts
 
       - name: Tests des comptes locaux et des permissions par stack
         if: steps.docs.outputs.docs_only != 'true'

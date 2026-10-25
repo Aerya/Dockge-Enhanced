@@ -6,6 +6,10 @@
 
 **2026-10-25 — 原生 OIDC 登录** — 无需反向代理即可通过 OpenID Connect 提供商（Pocket ID、Authentik、Keycloak、Google…）登录，并与本地账户和 2FA 共存。采用带 PKCE 的授权码流程，通过 `DOCKGE_OIDC_*` 环境变量配置。新的 OIDC 用户为无访问权限的受限账户，除非列在 `DOCKGE_OIDC_ADMIN_USERS` 中或属于 `DOCKGE_OIDC_ADMIN_GROUPS`；设置管理员组后，每次登录时角色随组成员关系同步。仅在 `DOCKGE_OIDC_LINK_EXISTING=true` 时关联已有本地账户。`DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` 时仅保留 SSO 按钮。OIDC 登录不要求本地 TOTP 验证码。现有安装不受影响。[文档](docs/oidc.zh-CN.md)。相关 #567。
 
+**2026-10-25 — 默认 Compose 文件名** — 本分支的功能；正式版本需等待 PR 合并。 COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。 [RichyHBM / Dockge #84](https://github.com/louislam/dockge/pull/84).
+
+**2026-10-25 — Socket.IO 默认端口** — 本分支的修复；正式版本需等待 PR 合并。浏览器来源使用隐式 HTTP/HTTPS 端口时，现在可匹配显式带有 :80/:443 的 Host 标头，包括 IPv6。不同主机或不等价端口仍被拒绝；代理转发标头不能绕过此检查。
+
 **2026-10-25 — 服务级 CPU/RAM 限制** — 本 PR 中准备的功能，尚未正式发布。 管理员 Compose 编辑器新增可选的服务级 CPU/RAM 限制。现有别名保持一致，其他资源设置和受限账户权限不变。先应用到草稿，再明确保存和部署。灵感来自 Isurupro7（Dockge #1006）。 RAM 限制过低可能导致容器因内存不足而停止。CPU 会被限速。移除限制不会预留资源。 现有表达式在编辑前保持不变，其他资源设置也不变。override、extends 或包含的文件仍可能提供限制，请检查最终 Compose 配置。 应用新的或修改后的内存限制前，必须确认醒目的 RAM 警告。
 
 **2026-10-24 — 受限本地账户** — 在**设置 → 安全 → 用户与权限**中创建受限账户，分别为每个本地或关联 Stack 授予查看状态、日志、启动、停止、重启、更新和重建权限。未选择即无权限。现有账户仍为管理员。独立工作区不提供 Compose/.env、终端、文件、删除、备份或设置访问。关联实例两端（包括反向代理）均需更新，旧代理不会绕过权限限制。权限绑定实例与 Stack 名称；复用名称时请重新检查权限。撤销权限会断开会话，但不会中止已开始的 Docker 操作。日志可能包含秘密信息。支持本地认证及可选的服务级权限，覆盖服务的所有副本并在重建后保留。用户可管理自己的密码、TOTP 和恢复码；管理员可重置 2FA 或仅删除账户。会影响网络命名空间依赖服务的操作将被拒绝，委托启动不会自动启动依赖服务。[技术说明](docs/scoped-users.md)。

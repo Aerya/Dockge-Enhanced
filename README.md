@@ -63,6 +63,10 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Native OIDC sign-in:** Sign in with an OpenID Connect provider such as Pocket ID, Authentik, Keycloak or Google, without a reverse proxy and alongside local accounts and 2FA. Configuration uses `DOCKGE_OIDC_*` environment variables and the Authorization Code flow with PKCE. New OIDC users are restricted accounts with no access until an administrator grants it, unless they are listed in `DOCKGE_OIDC_ADMIN_USERS` or belong to `DOCKGE_OIDC_ADMIN_GROUPS`; with admin groups, the role follows group membership at every login. There is no implicit “first user becomes admin” rule: on a new installation, create the first administrator first or configure an admin mapping. Existing local accounts are linked only with `DOCKGE_OIDC_LINK_EXISTING=true`. OIDC logins do not ask for the local TOTP code, and OIDC is ignored in `disabled` and `trusted-proxy` modes. If you set `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true`, keep the recovery procedure at hand. [Guide](docs/oidc.md).
 
+**Default Compose filename :** Prepared in this PR; not yet published. COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected.
+
+**Socket.IO default ports :** Prepared in this PR, not yet published. Browser origins using the implicit HTTP/HTTPS port now match an explicit :80/:443 Host header, including IPv6. Different hosts and non-default ports remain rejected; forwarded headers do not override this check.
+
 **CPU/RAM limits per service :** Prepared in this PR; not yet published. Optional CPU/RAM limits per service in the administrator Compose editor. Existing aliases stay consistent; other resource settings and restricted-account permissions are preserved. Apply to the draft, then save and deploy explicitly. Inspired by Isurupro7 (Dockge #1006). A low RAM limit can cause an out-of-memory stop. CPU is throttled. Removing a limit does not reserve resources. Existing expressions are preserved until edited. Other resource settings stay unchanged. Overrides, extends or included files may still supply limits: review the final Compose. A prominent RAM warning requires acknowledgement before applying a new or changed memory limit.
 
 **Ignored images are respected:** ImageWatcher rechecks **Ignore** after the registry check, before downloading and again just before recreating containers, including scheduled updates that were already selected and the managed Dozzle container. Stale manual-batch candidates are blocked too. A download already started may finish, but no recreation follows; a Docker recreation already running is not interrupted.
@@ -460,6 +464,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-service option to ignore an optional service in the overall stack status
 
 ### Compose editing
+
+- **Default Compose filename** — COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected.
 - optional per-service CPU/RAM limits — Prepared in this PR; not yet published. Only edits the draft. Save, then explicitly deploy/recreate to apply to containers; running containers are not changed here.
 - Compose, `compose.override.yaml` and `.env` editors with variable highlighting, folding, search and fullscreen mode
 - Validated default Compose and `.env` templates for new stacks only
@@ -861,6 +867,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | Variable | Default | Description |
 |---|---|---|
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directory containing Docker Compose stacks |
+| `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge data directory; override only for a custom persistent mount |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(none)* | Fixes the Docker API version negotiated by the client — useful on certain NAS systems (e.g. Synology DSM 7.x) |
@@ -980,6 +987,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — real-time Docker log viewer (MIT licence)
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — inspiration and compatible labels for per-service stack-status and image-update exclusions
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration for optional per-service CPU/RAM limits, adapted without changing restricted-account permissions
+- [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Default Compose filename.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — inspiration for the restricted host file manager and real-container view adapted for Enhanced (MIT licence)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — optional DNS and Nginx Proxy Manager automation (GPLv3)

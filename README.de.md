@@ -63,6 +63,10 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 **Native OIDC-Anmeldung:** Anmeldung über einen OpenID-Connect-Anbieter wie Pocket ID, Authentik, Keycloak oder Google, ohne Reverse Proxy und zusätzlich zu lokalen Konten und 2FA. Konfiguriert wird über die Umgebungsvariablen `DOCKGE_OIDC_*` mit dem Authorization-Code-Flow und PKCE. Neue OIDC-Benutzer sind eingeschränkte Konten ohne Zugriff, bis ein Administrator ihn gewährt, außer sie stehen in `DOCKGE_OIDC_ADMIN_USERS` oder gehören zu `DOCKGE_OIDC_ADMIN_GROUPS`; mit Admin-Gruppen folgt die Rolle bei jeder Anmeldung der Gruppenmitgliedschaft. Es gibt keine implizite Regel „erster Benutzer wird Administrator“: Legen Sie bei einer neuen Installation zuerst den Administrator an oder konfigurieren Sie eine Admin-Zuordnung. Bestehende lokale Konten werden nur mit `DOCKGE_OIDC_LINK_EXISTING=true` verknüpft. OIDC-Anmeldungen fragen nicht nach dem lokalen TOTP-Code, und OIDC wird in den Modi `disabled` und `trusted-proxy` ignoriert. Wenn Sie `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` setzen, halten Sie das Wiederherstellungsverfahren bereit. [Anleitung](docs/oidc.de.md).
 
+**Standardname der Compose-Datei :** In dieser PR vorbereitet; noch nicht publiziert. COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt.
+
+**Socket.IO-Standardports :** In dieser PR vorbereitet, noch nicht veröffentlicht. Browser-Ursprünge mit implizitem HTTP/HTTPS-Port entsprechen nun einem Host-Header mit explizitem :80/:443, auch bei IPv6. Andere Hosts und nicht gleichwertige Ports bleiben gesperrt; Proxy-Header umgehen diese Prüfung nicht.
+
 **CPU-/RAM-Limits pro Dienst :** In dieser PR vorbereitet; noch nicht publiziert. Optionale CPU-/RAM-Limits pro Dienst im Compose-Editor für Administratoren. Vorhandene Aliase bleiben konsistent; andere Ressourceneinstellungen und eingeschränkte Kontorechte bleiben erhalten. Auf den Entwurf anwenden, dann ausdrücklich speichern und bereitstellen. Inspiriert von Isurupro7 (Dockge #1006). Ein zu niedriges RAM-Limit kann den Container wegen Speichermangels stoppen. Die CPU wird gedrosselt. Das Entfernen eines Limits reserviert keine Ressourcen. Vorhandene Ausdrücke bleiben bis zur Bearbeitung erhalten. Andere Ressourceneinstellungen bleiben unverändert. Overrides, extends oder eingebundene Dateien können weiterhin Limits vorgeben: Prüfen Sie die endgültige Compose-Konfiguration. Ein deutlich sichtbarer RAM-Hinweis muss vor dem Anwenden eines neuen oder geänderten Speicherlimits bestätigt werden.
 
 **Ignorierte Images werden beachtet:** ImageWatcher prüft **Ignorieren** nach der Registry-Prüfung, vor dem Download und erneut unmittelbar vor der Neuerstellung der Container, auch bei bereits ausgewählten geplanten Updates und beim verwalteten Dozzle-Container. Veraltete Kandidaten manueller Stapel werden ebenfalls blockiert. Ein bereits begonnener Download darf abgeschlossen werden, es folgt aber keine Neuerstellung; eine bereits laufende Docker-Neuerstellung wird nicht abgebrochen.
@@ -460,6 +464,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Option pro Dienst, einen optionalen Dienst beim Gesamtstatus des Stacks zu ignorieren
 
 ### Compose-Bearbeitung
+
+- **Standardname der Compose-Datei** — COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt.
 - optionale CPU-/RAM-Limits pro Dienst — In dieser PR vorbereitet; noch nicht publiziert. Ändert nur den Entwurf. Speichern Sie und führen Sie anschließend ausdrücklich eine Bereitstellung/Neuerstellung aus. Laufende Container werden hier nicht verändert.
 - Editoren für Compose, `compose.override.yaml` und `.env` mit Variablenhervorhebung, Faltung, Suche und Vollbildmodus
 - Geprüfte Standardvorlagen für Compose und `.env`, nur für neue Stacks
@@ -861,6 +867,7 @@ Um einen Dienst zu veröffentlichen, bearbeiten Sie dessen Stack und verwenden S
 | Variable | Standardwert | Beschreibung |
 |---|---|---|
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Verzeichnis mit Docker-Compose-Stacks |
+| `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge-Datenverzeichnis; nur für einen benutzerdefinierten persistenten Einhängepunkt überschreiben |
 | `DOCKGE_PUBLIC_URL` | *(keine)* | Öffentliche URL, die in Discord-Benachrichtigungslinks verwendet wird (z. B. `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(keine)* | Legt die vom Client ausgehandelte Docker-API-Version fest — nützlich auf bestimmten NAS-Systemen (z. B. Synology DSM 7.x) |
@@ -980,6 +987,7 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 - [**Dozzle**](https://github.com/amir20/dozzle) von Amir Rajan – Echtzeit-Docker-Protokollviewer (MIT-Lizenz)
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) von hamphh – Inspiration und kompatible Labels für den Stack-Status pro Dienst und den Ausschluss von Image-Updates
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — Inspiration für optionale CPU-/RAM-Limits pro Dienst, ohne Änderungen an eingeschränkten Kontorechten
+- [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Standardname der Compose-Datei.
 - [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) von Lorwell – Inspiration für den eingeschränkten Host-Dateimanager und die Ansicht echter Container, angepasst für Enhanced (MIT-Lizenz)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) von DeepSpace2 – optionale DNS- und Nginx-Proxy-Manager-Automatisierung (GPLv3)
