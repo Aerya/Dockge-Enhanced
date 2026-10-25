@@ -37,7 +37,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 | --- | --- |
 | **多服务器** | Dockge-Enhanced 实例之间的全网格联邦、可从任意关联服务器管理、带节点独立令牌的可选反向连接、持久化代理标签、服务器分组与选择、远程更新状态、事务性 Stack 复制/迁移、可续传传输和计划冷复制 |
 | **Stack 管理** | 固定 Stack、紧凑的状态和资源指示、可折叠/可调整的导航、灵活的日志/Compose 工作区、直接可用的操作栏（仅图标或图标加文字）、带说明的 Stack/容器操作、Stack 暂停/恢复、按容器计划、Build + Recreate、备注、Git 工具、主机启动前置条件，以及共享 VPN/网络命名空间服务的自动重建 |
-| **Compose 编辑** | Compose、override 和 `.env` 编辑器，默认 Compose 和 `.env` 模板，命名链接，YAML 修复，逐服务健康检查助手，端口冲突和镜像偏差检查，以及可选的按 Stack `TZ` |
+| **Compose 编辑** | Compose、override 和 `.env` 编辑器，默认 Compose 和 `.env` 模板，命名链接，YAML 修复，逐服务健康检查助手，端口冲突和镜像偏差检查，以及可选的按 Stack `TZ`; 可选的服务级 CPU/RAM 限制 (本 PR 中准备的功能，尚未正式发布。) |
 | **备份与恢复** | 多目标 Restic 备份、绑定挂载和卷、按 Stack 一致性、选择性恢复、仓库检查、快照校验与差异、安全重置仓库，以及受保护更新使用的恢复流程。可选连接或托管安装 Zerobyte、受保护的应用流程和专用测试恢复 |
 | **更新** | 按 Stack 批量策略并保留例外、立即模式每 5 分钟定向检查、任何变更前都遵守镜像忽略设置、手动/顺序批量/自动容器更新并可回滚、共享维护窗口、远程更新标记、全局/按镜像暂停，以及带强制备份、完整性检查和自动恢复的受保护 Dockge-Enhanced 自更新 |
 | **迁移与复制** | 实例间事务性 Stack 传输、Compose 和持久数据迁移、可续传任务、显式完成迁移、计划冷副本、恢复快照和故障切换流程 |
@@ -59,6 +59,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 本节汇总近期最重要的变化，方便快速了解 Dockge-Enhanced 最近新增了什么。
 
 ### 🆕 2026 年 10 月
+
+**服务级 CPU/RAM 限制 :** 本 PR 中准备的功能，尚未正式发布。 管理员 Compose 编辑器新增可选的服务级 CPU/RAM 限制。现有别名保持一致，其他资源设置和受限账户权限不变。先应用到草稿，再明确保存和部署。灵感来自 Isurupro7（Dockge #1006）。 RAM 限制过低可能导致容器因内存不足而停止。CPU 会被限速。移除限制不会预留资源。 现有表达式在编辑前保持不变，其他资源设置也不变。override、extends 或包含的文件仍可能提供限制，请检查最终 Compose 配置。 应用新的或修改后的内存限制前，必须确认醒目的 RAM 警告。
 
 **遵守镜像忽略设置：** ImageWatcher 会在 Registry 检查之后、下载之前以及重建容器之前再次检查**忽略**设置，包括已选中的计划更新和托管的 Dozzle 容器。手动批量更新中已过时的候选项也会被阻止。已开始的下载可以完成，但不会再进行重建；已经在运行的 Docker 重建不会被中断。
 
@@ -457,6 +459,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 可按服务设置在 Stack 整体状态中忽略某个可选服务
 
 ### Compose 编辑
+- 可选的服务级 CPU/RAM 限制 — 本 PR 中准备的功能，尚未正式发布。 仅修改草稿。请保存后明确部署或重建，才能应用到容器；此处不会修改运行中的容器。
 - Compose、`compose.override.yaml` 和 `.env` 编辑器，支持变量高亮、折叠、搜索和全屏
 - 经过校验的默认 Compose 和 `.env` 模板，仅用于新建 Stack
 - Stack 的命名 HTTP/HTTPS 链接
@@ -961,6 +964,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — 原始项目（MIT）
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — Docker 实时日志查看器
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — 按服务排除整体状态和镜像更新功能的灵感及兼容标签来源
+- [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — 为可选的服务级 CPU/RAM 限制提供灵感，适配时保留受限账户权限
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — 可选 DNS / Nginx Proxy Manager 自动化
