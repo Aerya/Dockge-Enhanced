@@ -1,8 +1,10 @@
-# Modèles Compose, liens et agents
+# Compose templates, links and agents
 
-## Liens nommés
+[English](compose-and-reverse-agents.md) · [Français](compose-and-reverse-agents.fr.md)
 
-L’éditeur des URL accepte un libellé facultatif. Les anciens liens restent valides et peuvent être mélangés aux objets :
+## Named links
+
+The URL editor accepts an optional label. Existing plain links remain valid and can be mixed with objects:
 
 ```yaml
 x-dockge:
@@ -12,26 +14,26 @@ x-dockge:
       label: Administration
 ```
 
-Les variables Compose sont résolues comme auparavant. Seuls les liens HTTP/HTTPS valides sont rendus cliquables. Un libellé vide affiche l’adresse ; les champs supplémentaires d’un objet sont conservés par l’éditeur.
+Compose variables are resolved as before. Only valid HTTP/HTTPS links are rendered as clickable. An empty label shows the address; extra fields of an object are preserved by the editor.
 
-## Modèle .env
+## .env template
 
-Dans **Paramètres → Général**, configurez le modèle Compose et son `.env`. Ils sont copiés dans les nouvelles stacks seulement. Un `.env` vide est autorisé. Les imports et les champs déjà modifiés ne sont pas remplacés si les paramètres arrivent après le début de la saisie. Les valeurs ne sont pas appliquées aux stacks existantes et ne remplacent pas `global.env`.
+In **Settings → General**, configure the **Default Compose template** and the **Default .env template**. They are copied into new stacks only. An empty `.env` is allowed. Imports and fields already edited are not replaced if the settings arrive after you started typing. The values are not applied to existing stacks and do not replace `global.env`.
 
-Exemple de valeurs communes : `TZ=Europe/Paris`, `PUID=1000`, `PGID=1000`. Évitez les secrets réutilisés dans ce modèle général.
+Example of shared values: `TZ=Europe/Paris`, `PUID=1000`, `PGID=1000`. Avoid reusable secrets in this general template.
 
-## Tags d’agents
+## Agent tags
 
-Dans la liste des instances liées, ouvrez **Tags de l’agent**. Entrez jusqu’à 20 tags de 40 caractères, séparés par des virgules. Ils sont normalisés en minuscules, dédoublonnés et enregistrés sur l’instance où vous les éditez, comme une organisation locale du tableau de bord. Le filtre par tag de la liste des stacks se combine avec le filtre par instance. Cela ne déclenche aucun déploiement groupé.
+In the linked-instance list, open **Agent tags**. Enter up to 20 tags of 40 characters, separated by commas. They are normalized to lowercase, deduplicated and saved on the instance where you edit them, as a local organization of the dashboard. The tag filter of the stack list combines with the instance filter. It never triggers a bulk deployment.
 
-## Connexion inversée et rattachement automatique
+## Reverse connection and automatic attachment
 
-Ce mode sert aux hôtes derrière NAT/CGNAT qui peuvent joindre un serveur central mais ne peuvent pas recevoir de connexion entrante depuis celui-ci. Il est facultatif. Le maillage direct reste disponible et continue à fonctionner de la même manière.
+This mode is for hosts behind NAT/CGNAT that can reach a central server but cannot receive an incoming connection from it. It is optional. The direct mesh remains available and keeps working the same way.
 
-1. Sur le serveur central, ouvrez **Ajouter un agent en connexion inversée** et créez un jeton. Donnez éventuellement un nom ; sinon le hostname envoyé par le nœud sera utilisé.
-2. Copiez le jeton pendant son affichage unique. Le serveur ne conserve que son empreinte SHA-256 et l’identifiant du compte émetteur.
-3. Sur le nœud, utilisez votre compte administrateur Enhanced local existant : aucun nouveau compte n’est nécessaire. Sur une installation neuve uniquement, créez d’abord ce compte. Ce mode utilise l’authentification locale ; un nœud configuré exclusivement en trusted proxy n’est pas pris en charge. La 2FA peut être activée : le pont interne utilise une identité de fédération, sans désactiver la protection des connexions interactives.
-4. Ajoutez les variables suivantes au service Enhanced existant dans Dockge, puis recréez ce service :
+1. On the central server (hub), open **Add a reverse agent** and create a node token. Optionally give it a name; otherwise the hostname sent by the node is used.
+2. Copy the token while it is displayed: it is shown only once. The server keeps only its SHA-256 fingerprint and the ID of the issuing account.
+3. On the node, use your existing local Enhanced administrator account: no new account is needed. On a fresh installation only, create that account first. This mode uses local authentication; a node configured exclusively in trusted-proxy mode is not supported. 2FA can stay enabled: the internal bridge uses a federation identity without disabling the protection of interactive sign-ins.
+4. Add the following variables to the existing Enhanced service in Dockge, then recreate that service:
 
 ```yaml
 environment:
@@ -41,7 +43,7 @@ secrets:
   - dockge_reverse_token
 ```
 
-Au niveau racine du Compose :
+At the root level of the Compose file:
 
 ```yaml
 secrets:
@@ -49,10 +51,10 @@ secrets:
     file: ./reverse-agent-token.txt
 ```
 
-Le fichier contient uniquement le jeton. Protégez-le sur l’hôte. `DOCKGE_REVERSE_TOKEN` est également accepté ; le fichier prend priorité si les deux sont définis. L’URL doit être une origine HTTP(S), sans chemin, paramètres ni identifiants. Utilisez HTTPS sur Internet. Le pont interne se connecte au listener local configuré ; si ce listener utilise TLS, son certificat doit être valide pour cette adresse locale.
+The file contains only the token. Protect it on the host. `DOCKGE_REVERSE_TOKEN` is also accepted; the file takes precedence when both are set. The URL must be an HTTP(S) origin without path, query parameters or credentials. Use HTTPS over the Internet. The internal bridge connects to the configured local listener; if that listener uses TLS, its certificate must be valid for that local address.
 
-Le nœud se rattache automatiquement au démarrage. Après une coupure, il retente une connexion toutes les 30 à 45 secondes. Fermer une WebUI n’arrête pas le transport. Le serveur central peut consulter les stacks, leurs journaux et leurs statistiques, éditer les Compose et envoyer les commandes de gestion habituelles via ce canal. Le nœud n’obtient pas de session administrateur sur le serveur central : son jeton ne permet que de publier ses événements et de recevoir les commandes qui lui sont destinées.
+The node attaches automatically at startup. After a disconnection, it retries every 30 to 45 seconds. Closing a WebUI does not stop the transport. The hub can view the node's stacks, logs and statistics, edit Compose files and send the usual management commands through this channel. The node does not get an administrator session on the hub: its token only allows it to publish its events and receive the commands addressed to it.
 
-**Révocation :** supprimer l’agent sur le serveur central coupe la connexion et invalide son jeton. Pour remplacer un jeton perdu, supprimez l’ancienne entrée et créez-en une nouvelle. Désactiver ou supprimer le compte émetteur révoque aussi les jetons, avec une revalidation des connexions actives toutes les 30 secondes. Un jeton est prévu pour un seul nœud ; ne le partagez pas entre plusieurs machines.
+**Revocation:** deleting the agent on the hub closes the connection and invalidates its token. To replace a lost token, delete the old entry and create a new one. Disabling or deleting the issuing account also revokes its tokens, and active connections are revalidated every 30 seconds. A token is meant for a single node; do not share it between machines.
 
-**Périmètre :** les agents inversés appartiennent au serveur central qui les a inscrits ; ils ne sont pas propagés dans le maillage complet. Ils n’exposent pas de lien direct vers leur WebUI. Les copies, migrations et répliques de données interserveurs nécessitent toujours une fédération directement joignable. Le rattachement automatique ne crée pas le compte initial du nœud et ne provisionne pas Docker ou la machine.
+**Scope:** reverse agents belong to the hub that registered them; they are not propagated in the full mesh. They do not expose a direct link to their WebUI. Copies, migrations and data replicas between servers still require directly reachable federation. Automatic attachment does not create the node's initial account and does not provision Docker or the machine.

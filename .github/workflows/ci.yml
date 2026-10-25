@@ -34,6 +34,9 @@ jobs:
         if: steps.docs.outputs.docs_only == 'true'
         run: echo "Aucun fichier applicatif modifié."
 
+      - name: Contrôle documentaire (README, CHANGELOG, guides)
+        run: python3 .github/scripts/check_docs.py
+
       - name: Setup Node.js 22
         if: steps.docs.outputs.docs_only != 'true'
         uses: actions/setup-node@v7

@@ -36,23 +36,21 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 
 | Area | Dockge Enhanced adds |
 | --- | --- |
-| **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers, and scheduled cold replication |
-| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, raw YAML copy, explained stack/container actions, stack pause/resume, a configurable default Compose template, per-container scheduling, Build + Recreate, notes, Git tools, host start prerequisites, and automatic recreation of services sharing VPN/network namespaces. Stack action bar with direct actions and icons-only or icons-and-text modes |
-| **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, plus recovery workflows used by protected updates. Optional Zerobyte connection or managed installation, protected application workflows and dedicated test restores |
-| **Updates** | Stack-wide bulk policies with exception preservation, 5-minute targeted Immediate image checks, Image update detection, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
+| **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, optional reverse agent connections with per-node tokens, persistent agent tags, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers and scheduled cold replication |
+| **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, a directly accessible action bar with icons-only or icons-and-text modes, explained stack/container actions, stack pause/resume, per-container scheduling, Build + Recreate, notes, Git tools, host start prerequisites and automatic recreation of services sharing VPN/network namespaces |
+| **Compose editing** | Compose, override and `.env` editors, default Compose and `.env` templates, named links, YAML repair, a per-service healthcheck assistant, port-conflict and image-drift checks and an optional per-stack `TZ` |
+| **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, safe repository reset, plus recovery workflows used by protected updates. Optional Zerobyte connection or managed installation, protected application workflows and dedicated test restores |
+| **Updates** | Stack-wide bulk policies with exception preservation, 5-minute targeted Immediate image checks, ignored images respected before any change, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
-| **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant examples, scheduled operations, and centralized history including operation origin, status and duration |
+| **Security & authentication** | Restricted local accounts with per-stack and per-service permissions, optional TOTP 2FA, trusted-proxy authentication, Cloudflare Turnstile, Trivy vulnerability scanning, CVE exceptions and protected update workflows |
+| **Monitoring** | System, stack and container statistics, optional 5-minute CPU/RAM history, configurable status bar, health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula, Dozzle, PowerWatch and PowerWatch Hub integrations |
 | **Docker resources** | Protected unified cleanup for images, volumes, networks and build cache, exact catch-up scheduling, previews, exclusions, history and safeguards around destructive actions |
-| **Security** | Trivy vulnerability scanning, CVE exceptions, protected update workflows, 2FA, trusted-proxy authentication and Cloudflare Turnstile |
-| **Restricted local accounts** | Per-instance and per-stack permissions, dedicated workspace, session revocation; configured in Security |
-| **Monitoring** | System, stack and container statistics, optional 5-minute CPU/RAM history, configurable status bar, health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula, Dozzle and PowerWatch and PowerWatch Hub integrations |
-| **Integrations** | PowerWatch and PowerWatch Hub, PlugNPiN plus per-service label assistance for Nginx Proxy Manager, Pi-hole and AdGuard Home |
-| **Notifications & access** | Discord and Apprise notifications localized in EN/FR/ES/zh-CN, multi-instance awareness, 2FA, trusted proxy support, Turnstile and third-party mobile clients |
 | **Search & files** | Global multi-instance search, restricted host file manager, volume browsing, chunked transfers, text editing and file log viewing |
 | **External stacks** | Discover and integrate existing Compose projects, authorize their paths and inspect actual containers without moving their data |
+| **Automation & audit** | Permission-scoped REST API, per-stack webhooks, Home Assistant integration, scheduled operations, and centralized history including operation origin, status and duration |
+| **Integrations** | Zerobyte, PowerWatch and PowerWatch Hub, PlugNPiN plus per-service label assistance for Nginx Proxy Manager, Pi-hole and AdGuard Home, Dozzle, Kula and Home Assistant |
 | **Appearance** | Day/night palettes, built-in themes, browser preferences and stack actions with icons or icons and text |
-
-> **Update schedules:** when automatic Dockge-Enhanced updates use a maintenance window, the same window applies to every automatic container image update. Updates detected outside it are queued until the next allowed window. Per-image schedules remain available when no global window is configured, while **Update now** always remains immediate.
+| **Notifications & access** | Discord and Apprise notifications localized in EN/FR/ES/zh-CN, multi-instance awareness, remote announcements and third-party mobile clients |
 
 ## Latest updates
 
@@ -63,30 +61,27 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
-**Restricted local accounts :** In **Settings → Security → Users and permissions**, create restricted accounts and choose view, logs, start, stop, restart, update and recreate permissions separately for each local or linked stack. No selection means no access. Existing accounts remain administrators. The dedicated workspace exposes no Compose/.env, terminal, files, deletion, backups or settings. Update both ends of linked instances, including reverse agents; older agents have no bypass. Grants use the instance/stack-name pair: review them when reusing a name. Revocation disconnects sessions but does not cancel Docker operations already underway. Logs may contain secrets. Local authentication, with optional per-service grants covering all replicas across recreations. Restricted users manage their own password, TOTP and recovery codes; administrators can reset 2FA or delete only the account. Service actions that would affect network-namespace dependants are refused; delegated starts do not start dependencies. [Technical details](docs/scoped-users.md).
+**Ignored images are respected:** ImageWatcher rechecks **Ignore** after the registry check, before downloading and again just before recreating containers, including scheduled updates that were already selected and the managed Dozzle container. Stale manual-batch candidates are blocked too. A download already started may finish, but no recreation follows; a Docker recreation already running is not interrupted.
 
-**Compose defaults and remote agents :** Named HTTP/HTTPS links, a configurable default .env template, persistent agent tags and tag filtering, plus optional reverse agent connections with per-node tokens and automatic attachment after local account setup. Reverse agents belong to their hub; inter-server data transfers still require direct federation. An existing local administrator account is sufficient; no new account is needed. [Documentation](docs/compose-and-reverse-agents.md).
+**Restricted local accounts:** In **Settings → Security → Users and permissions**, create restricted accounts and choose view, logs, start, stop, restart, update and recreate permissions separately for each local or linked stack. No selection means no access. Existing accounts remain administrators. The dedicated workspace exposes no Compose/.env, terminal, files, deletion, backups or settings. Update both ends of linked instances, including reverse agents; older agents have no bypass. Grants use the instance/stack-name pair: review them when reusing a name. Revocation disconnects sessions but does not cancel Docker operations already underway. Logs may contain secrets. Local authentication, with optional per-service grants covering all replicas across recreations. Restricted users manage their own password, TOTP and recovery codes; administrators can reset 2FA or delete only the account. Service actions that would affect network-namespace dependants are refused; delegated starts do not start dependencies. With trusted-proxy authentication, each proxy identity uses the local account with the same name; an unknown identity is created as a restricted account without grants, except the first user of a fresh installation and identities listed in `DOCKGE_AUTH_PROXY_ADMIN_USERS`. [Technical details](docs/scoped-users.md).
 
-**Port links :** Choose Hostname or IP address for container port links in Settings → General. Each linked instance keeps its own choice; the existing default is preserved. Hostname mode prioritizes Primary Hostname, falling back to the browser/agent address. IP mode supports automatic IP selection or an explicit reachable IPv4/IPv6. If no IP is known, the badge remains visible without a link, with an explanatory tooltip. Configure each hosting instance separately and update both sides to use this preference through federation; older agents retain their previous behavior. Docker port bindings, DNS and stored hostnames are unchanged.
+**Compose defaults and remote agents:** Named HTTP/HTTPS links, a configurable default .env template, persistent agent tags and tag filtering, plus optional reverse agent connections with per-node tokens and automatic attachment after local account setup. Reverse agents belong to their hub; inter-server data transfers still require direct federation. An existing local administrator account is sufficient; no new account is needed. [Documentation](docs/compose-and-reverse-agents.md).
 
-### TLS security — October 2026
+**Port links:** Choose Hostname or IP address for container port links in Settings → General. Each linked instance keeps its own choice; the existing default is preserved. Hostname mode prioritizes Primary Hostname, falling back to the browser/agent address. IP mode supports automatic IP selection or an explicit reachable IPv4/IPv6. If no IP is known, the badge remains visible without a link, with an explanatory tooltip. Configure each hosting instance separately and update both sides to use this preference through federation; older agents retain their previous behavior. Docker port bindings, DNS and stored hostnames are unchanged.
 
-Update image trust stores and TLS components following the eMudhra incident. Checks cover the compromised chains, including both No CT cases, and a valid HTTPS connection. Running images remain unchanged: schedule their replacement after validation.
+**TLS security and security updates:** Update image trust stores and TLS components following the eMudhra incident. Checks cover the compromised chains, including both No CT cases, and a valid HTTPS connection. Running images remain unchanged: schedule their replacement after validation. The image also moves to Node.js 26.12.1 for the October 2026 Node.js security releases, and `follow-redirects` and the bundled Restic build receive dependency security fixes. [Incident details](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
 
-[Incident details](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+**Compose checks and Home Assistant:** Advisory port-conflict checks before saving/deploying, including resolved variables, overrides and ranges; running-image reference comparison with a reviewable YAML correction. Optional Home Assistant custom integration with state sensors and permission-scoped start/stop/restart controls. [Guide](docs/HOME-ASSISTANT.md).
 
-
-**Compose checks and Home Assistant :** Advisory port-conflict checks before saving/deploying, including resolved variables, overrides and ranges; running-image reference comparison with a reviewable YAML correction. Optional Home Assistant custom integration with state sensors and permission-scoped start/stop/restart controls. [Guide](docs/HOME-ASSISTANT.md).
-
-**Instance / Global :** Home: local statistics first, then global totals independent of stack filters. Expand each summary card for per-instance values and direct menu links. Offline or older instances are marked unavailable; backup coverage distinguishes disabled instances.
+**Instance / Global:** Home: local statistics first, then global totals independent of stack filters. Expand each summary card for per-instance values and direct menu links. Offline or older instances are marked unavailable; backup coverage distinguishes disabled instances.
 
 **Service status for discovered stacks:** Discovered but unadopted Compose projects such as DDEV no longer trigger repeated `spawn docker ENOENT` errors when their directory is absent from the stacks root. Adopted external stacks use their registered directory, project name and Compose files for service status.
 
-**Optional TOTP two-factor authentication :** Enable **Settings → Security → 2FA Settings** with your current password, scan the QR code and confirm an authenticator code. Save the ten single-use recovery codes; they are shown only once. Activation is off by default and applies to local sign-in, not trusted-proxy authentication or federation tokens. Linked instances must use federation tokens before enabling 2FA; password-only connections will no longer work.
+**Optional TOTP two-factor authentication:** Enable **Settings → Security → 2FA Settings** with your current password, scan the QR code and confirm an authenticator code. Save the ten single-use recovery codes; they are shown only once. Activation is off by default and applies to local sign-in, not trusted-proxy authentication or federation tokens. Linked instances must use federation tokens before enabling 2FA; password-only connections will no longer work.
 
 Keep the entire `/app/data` directory in backups, including `two-factor.key`. A database-only restore cannot decrypt the authenticator secret without this key. If both the authenticator and recovery codes are lost, an administrator with container access can run `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm` from `/app`, then restart Enhanced; the password remains unchanged.
 
-**CPU/RAM history by Compose service :** Enable recording in **Monitoring**, then open **Resource usage** in a stack's actions. The compact charts show the stack total and one history per Compose service, including unmanaged Compose projects. Updates and container recreations remain in the same service history; simultaneous replicas are summed at each sample before averages and maxima are calculated. Existing measurements are preserved without a reset. Ranges: 24 hours, 7 days, 1 month, 1 year or all recorded data. Recording is disabled by default and samples every 5 minutes without an open browser. CPU: 100% = one core; Linux RAM excludes reclaimable cache. Gaps remain visible and peaks between samples can be missed. Stack totals exclude native host processes and containers outside Compose. CPU/RAM sorting remains available in the stack list.
+**CPU/RAM history by Compose service:** Enable recording in **Monitoring**, then open **Resource usage** in a stack's actions. The compact charts show the stack total and one history per Compose service, including unmanaged Compose projects. Updates and container recreations remain in the same service history; simultaneous replicas are summed at each sample before averages and maxima are calculated. Existing measurements are preserved without a reset. Ranges: 24 hours, 7 days, 1 month, 1 year or all recorded data. Recording is disabled by default and samples every 5 minutes without an open browser. CPU: 100% = one core; Linux RAM excludes reclaimable cache. Gaps remain visible and peaks between samples can be missed. Stack totals exclude native host processes and containers outside Compose. CPU/RAM sorting remains available in the stack list.
 
 **Zerobyte backups:** connect an existing instance or install a dedicated Compose instance from **Backups → Zerobyte**. Use it alongside native Restic backups or for your scheduled backups, with separate repositories. Guided setup, protected application stop/restart workflows, storage checks, dedicated test restores and read-only multi-server status are available. If network storage is unavailable, backups stop without a local fallback. [Setup and recovery guide](docs/zerobyte.md).
 
@@ -96,19 +91,13 @@ Keep the entire `/app/data` directory in backups, including `two-factor.key`. A 
 
 In Compose edit mode, **Healthchecks** is also available in the stack action bar. Choose a service if the stack has several.
 
-#### Features and DNS
-
-**Optional DNS fallback for registry checks**
-
-Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS fallback (disabled by default), add/edit/remove IPv4 or IPv6 resolvers, and test A and AAAA queries with response times and diagnostics. System DNS is always tried first; fallback is used only for DNS resolution failures in supported ImageWatcher HTTP registry/token requests. The initial examples are Quad9 (`9.9.9.9`, `2620:fe::fe`) and Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`), and are fully customizable. Existing saved settings are preserved. No host or Docker Engine DNS setting is changed; Docker Engine pulls and self-updates are outside this fallback.
-
 #### Updates and ImageWatcher
 
-**Scheduling timezone and optional container TZ :** Choose the **Scheduling timezone** in **Settings → General**. It controls this instance’s stack start/stop schedules, image-update times, self-update windows, native Restic and security-scan crons. Without an explicit choice, the existing runtime timezone is preserved; saved clock times are not rewritten. Linked instances and external backup tools such as Zerobyte keep their own settings. Relative intervals, pause deadlines and retention are unchanged. DST follows the selected zone: a missing local hour is not guaranteed to execute, and a repeated hour may occur twice; prefer a time outside the transition, such as 04:00.
+**Scheduling timezone and optional container TZ:** Choose the **Scheduling timezone** in **Settings → General**. It controls this instance’s stack start/stop schedules, image-update times, self-update windows, native Restic and security-scan crons. Without an explicit choice, the existing runtime timezone is preserved; saved clock times are not rewritten. Linked instances and external backup tools such as Zerobyte keep their own settings. Relative intervals, pause deadlines and retention are unchanged. DST follows the selected zone: a missing local hour is not guaranteed to execute, and a repeated hour may occur twice; prefer a time outside the transition, such as 04:00.
 
 In a stack’s edit actions, **Container timezone** offers an option **off by default** to add `TZ` to the Compose draft and override. Existing values (including inherited values or `env_file`/`extends`) require confirmation. Review the YAML, save and recreate/deploy to apply it. Images must support `TZ`; source `.env`/`env_file` files are not changed, and future global timezone changes do not automatically rewrite or recreate stacks.
 
-**Image update notifications :** Discord and Apprise announce a pending image update only once per stack, image and remote digest, including updates waiting for a scheduled window. This tracking survives Enhanced restarts. A new digest is announced again; automatic update results still generate their own notification. Failed deliveries are retried on subsequent checks independently for each Discord webhook and the configured Apprise destination.
+**Image update notifications:** Discord and Apprise announce a pending image update only once per stack, image and remote digest, including updates waiting for a scheduled window. This tracking survives Enhanced restarts. A new digest is announced again; automatic update results still generate their own notification. Failed deliveries are retried on subsequent checks independently for each Discord webhook and the configured Apprise destination.
 
 **Stopped services stay stopped:** automatic image updates are deferred when any targeted Compose service (including a required network-namespace companion) is stopped or absent. ImageWatcher checks again after pulling, before recreation, and retries on a later check. It does not use `compose up` to wake a stopped service.
 
@@ -150,6 +139,14 @@ The Images view can sort errors first. Transiently unreachable targets are prese
 
 The stack-wide automatic update policy now opens from the stack action bar in a modal; individual container controls remain unchanged. Image update, ignore, pause and rollback actions use compact buttons with accessible labels.
 
+**Optional DNS fallback for registry checks**
+
+Under **Watcher > Images > Fallback DNS**, you can enable application-scoped DNS fallback (disabled by default), add/edit/remove IPv4 or IPv6 resolvers, and test A and AAAA queries with response times and diagnostics. System DNS is always tried first; fallback is used only for DNS resolution failures in supported ImageWatcher HTTP registry/token requests. The initial examples are Quad9 (`9.9.9.9`, `2620:fe::fe`) and Cloudflare (`1.1.1.1`, `2606:4700:4700::1111`), and are fully customizable. Existing saved settings are preserved. No host or Docker Engine DNS setting is changed; Docker Engine pulls and self-updates are outside this fallback.
+
+**Self-update through Docker Socket Proxy**
+
+The self-update checker and updater sidecar follow the Docker endpoint actually used by Enhanced: a Unix socket (including `DOCKGE_DOCKER_SOCKET`) or `DOCKER_HOST=tcp://…` behind a trusted Docker Socket Proxy. In TCP mode no placeholder socket is mounted; the sidecar is attached to the instance's Docker networks before it consumes the signed plan. See [the protected update workflow](#dockge-enhanced-automatic-update-workflow) for the permissions the proxy must allow.
+
 #### Backups, cleanup and reliability
 
 **Faster, race-safe Docker image cleanup**
@@ -188,6 +185,10 @@ Backup settings, run-now and maintenance actions are separated; repository state
 
 Restic password errors, prune audit summaries and automatic update messages are no longer incorrectly displayed in French in an English installation.
 
+**Healthcheck with an HTTP proxy configured**
+
+The built-in container healthcheck ignores proxy variables and queries `127.0.0.1` directly, so a configured or unreachable proxy no longer marks Enhanced unhealthy. Other network access keeps using the configured proxy.
+
 #### Monitoring and integrations
 
 **Optional PowerWatch electrical monitoring**
@@ -196,9 +197,7 @@ Restic password errors, prune audit summaries and automatic update messages are 
 
 Current whole-machine power, confidence and a direct WebUI link appear in Monitoring, the system status bar and compact linked-instance summaries through the existing federation channel. The status bar and instance cards display only the watts next to the electrical icon; the tooltip identifies PowerWatch and its measured or estimated confidence. PowerWatch measures or estimates consumption according to the available sensors.
 
-
-
-##### Optional monitoring services: Kula, Dozzle, PowerWatch and Hub
+**Optional monitoring services: Kula, Dozzle, PowerWatch and Hub**
 
 In **Monitoring** (`/watcher/monitoring`), the four optional third-party services appear in separate, consistent cards, with brief descriptions and links to their GitHub repositories. PowerWatch and its Hub each offer independent external/managed modes, installation, start, restart, stop and connectivity test. Managed Hub uses the PowerWatch image's `powerwatch-hub` binary, defaults to `127.0.0.1:3065`, and stores its data in a dedicated persistent Docker volume.
 
@@ -210,7 +209,25 @@ To connect an **existing PowerWatch**, enter the usual **WebUI address** (for ex
 
 Monitoring can record one lightweight host CPU/RAM sample every 5 minutes, independently of browser sessions. The responsive SVG graph offers 24-hour, 7-day, monthly and custom ranges; the selected display range can be saved and restored on the next visit. Long ranges are downsampled server-side and downtime remains visible as gaps. Recording is disabled by default and low-power mode does not stop it when explicitly enabled.
 
+The optional CPU/RAM history keeps its real sampling gaps but uses a more compact PowerWatch-inspired chart with lighter grid lines and subtle filled areas.
+
 #### Stacks, interface and usability
+
+**Directly accessible stack actions**
+
+Every stack action is available directly in the action bar, without submenus, in visually separated groups that wrap to the available width. Icons-only and icons-and-text modes keep their tooltips; commands, availability conditions and confirmations are unchanged.
+
+**German interface**
+
+The interface and release news are available in German, with German README and changelog. Discord and Apprise notifications fall back to English when German is selected.
+
+**Container counters on the home page**
+
+The home page shows running, stopped and paused containers, including reachable linked instances. Stack and container counters follow the instance filter of the stack list.
+
+**Safer stack starts and immediate image checks**
+
+Enhanced prepares missing absolute host bind directories before start/deploy/recreate operations when the mount is clearly directory-like. This is especially useful on NAS hosts such as Synology where Docker refuses a bind source that does not exist yet. File-like bind sources are never auto-created as directories. Per-image **Immediate** auto-update now starts a targeted image check as soon as the policy is saved. Successful stack restarts also refresh the real stack state and hide stale Compose progress output.
 
 **Cleaner Compose volumes and logs**
 
@@ -268,16 +285,13 @@ Automatic cleanup no longer skips the next scheduled slot when a previous run fi
 
 Circuit-breaker availability notifications are now tied to a continuous outage episode: each linked instance sends at most one alert while a peer remains offline, and the alert is re-armed only after that peer successfully authenticates online again. Each remote instance can also be marked locally as **Intermittent machine — do not alert when unavailable**. This is intended for desktops, laptops and other peers that are routinely powered off or suspended; automatic reconnects, backoff and circuit-breaker protection remain active. Because the preference is local, mark the intermittent peer on every always-on Dockge instance from which you do not want availability alerts.
 
-
 **Process-wide federation transport**
 
 Federation now uses one shared outbound transport per Dockge-Enhanced process instead of one connection set per WebUI socket. Linked instances are loaded from SQLite and connected automatically when the server starts listening. Opening several WebUIs no longer multiplies remote sockets, closing the last browser no longer disconnects linked instances, and the circuit-breaker retry continues after about 5 minutes even with no WebUI open. Credential changes, mesh repair and peer removal immediately resynchronize the shared transport.
 
-
 **Federation reconnect-storm hardening**
 
 Federated sockets now use a lightweight authentication path and no longer execute the WebUI stack/agent bootstrap. Socket.IO reconnects are explicitly bounded with exponential backoff, jitter and a 5-minute circuit breaker. Excessive inbound federation handshakes are rejected before authentication and simultaneous inbound federation sockets are capped. If a reconnect guard trips or SQLite/Knex contention is detected, the existing Discord/Apprise configuration emits a rate-limited alert without querying SQLite.
-
 
 **Network namespace-safe targeted updates**
 
@@ -309,31 +323,25 @@ The global palette now supports **fuzzy matching** for small typing mistakes and
 
 Historical configuration search in **recent Restic snapshots** can be enabled explicitly from the palette; it is bounded to 5 recent snapshots and 80 Compose/.env files per instance to protect remote repositories. Searching inside `.env` **values** is also an explicit opt-in: values are used only for matching, are never returned/displayed, and while this sensitive mode is active the query is never stored in recent or pinned searches. Linked instances use the V2 agent protocol when available, with a V1 fallback for simple searches on older linked instances.
 
-
 **Automatic self-update protection while editing Compose/.env**
 
 When a compose, override or `.env` file has unsaved changes in the WebUI, the owning Dockge-Enhanced instance temporarily blocks its automatic self-update — including edits opened from another linked WebUI. The editor keeps a short-lived heartbeat lease so stale browser sessions expire automatically. If an update becomes ready while unsaved work is present, the user gets a dialog to **save and update**, **defer for 30 minutes**, **defer for 1 hour**, or **keep working**. The backend re-checks blockers again before preparing and launching the updater sidecar so an edit started during backup/verification cannot be interrupted by the restart.
-
 
 **Linked-instance overview on the home page**
 
 The existing agent panel on the home page now doubles as a compact infrastructure overview. Each linked Dockge-Enhanced instance shows its stack totals and states, host CPU/RAM usage, uptime and pinned-stack count while keeping the existing rename, reauthentication, removal and add-agent controls. Clicking an instance summary filters the stack list on the left to that server; clicking it again restores the all-servers view.
 
-
 **Per-stack CPU/RAM stats across linked instances**
 
 The **Show CPU / RAM statistics per stack** option is now owned by each Dockge-Enhanced instance. When enabled on a server, that server collects its own Docker statistics and exposes them through the existing linked-instance channel. Every linked WebUI displaying that server shows the same CPU/RAM badges for its stacks and containers. Hiding the server hides its statistics; disabling the option on the owning instance stops collection and exposure for that instance.
-
 
 **Server-persisted pinned stacks across linked instances**
 
 Pinned stacks are now owned by the Dockge-Enhanced instance that hosts them instead of by one browser's `localStorage`. Pinning a stack on Garuda, DockerLab or LincStation stores that preference on the corresponding server. Any linked WebUI that displays that server sees the same pinned stack; hiding that server hides its pins without deleting them. Pins therefore survive logout/login, browser changes and Dockge-Enhanced updates. Existing browser-local pins are migrated automatically when their owning instances are reachable.
 
-
 **Dedicated self-update backup retention**
 
 Mandatory Restic snapshots created before protected Dockge-Enhanced self-updates now use a dedicated retention policy. After the new snapshot has been created **and verified**, Dockge-Enhanced keeps the **2 latest self-update snapshots for this installation** and prunes older generations before launching the updater sidecar. A stable installation-specific tag prevents cleanup from touching another Dockge-Enhanced instance sharing the same Restic repository. Normal backup retention (`keepLast`, daily, weekly, monthly) is unchanged. If this dedicated pruning fails, the verified backup is kept and the update may continue; the cleanup error is logged and a later self-update will try again.
-
 
 **Docker Compose project-name reconciliation**
 
@@ -342,7 +350,6 @@ Managed stacks whose directory name contains dots or uppercase characters are no
 **Compose long port syntax support**
 
 Container cards now support both short and long Compose port syntax. Definitions using `published`, `target`, `protocol`, `mode` or `host_ip` no longer trigger `split is not a function` and no longer make the container card disappear. IPv6 `host_ip` values are also formatted correctly in generated links.
-
 
 **Compose YAML repair and formatter**
 
@@ -367,7 +374,6 @@ Image update information is retrieved independently from every connected Dockge-
 **Clear build identity and update progress**
 
 The Updates page now identifies installed and available builds using OCI metadata, including build date, Git commit and immutable digest. Update stages, Restic progress, elapsed time and remaining-time estimates are displayed consistently.
-
 
 **Remote announcements**
 
@@ -418,186 +424,154 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 <details>
 <summary>Show all features</summary>
 
-- Choose Hostname or IP address for container port links in Settings → General. Each linked instance keeps its own choice; the existing default is preserved.
-
 ### Multi-server & federation
-- Full-mesh federation between Dockge-Enhanced instances
-- Administration from any linked instance
-- Server selection and grouping
-- Remote stack and image-update status
-- Dedicated federation tokens
-- Recovery of broken federation links
-- Browser refreshes during agent changes preserve federation connections
-- Unified multi-instance management
-- Linked-instance overview with reachability and direct WebUI access
-- Global multi-instance search across stacks, Compose/.env files, Docker resources and recent Restic snapshots
-- Version-aware capability negotiation between mixed Dockge-Enhanced releases
+- Full-mesh federation between Dockge-Enhanced instances, managed from any linked WebUI
+- Optional reverse agent connections for hosts behind NAT/CGNAT, with one token per node, automatic attachment and revocation; reverse agents belong to their hub ([guide](docs/compose-and-reverse-agents.md))
+- Persistent agent tags and tag filtering, combined with the instance filter
+- Server selection, grouping and stable colours in the stack list
+- Linked-instance overview on the home page, with Instance / Global statistics, reachability and direct WebUI links
+- Remote stack status, image-update badges and per-stack CPU/RAM statistics from each instance
+- Dedicated federation tokens, broken-link recovery and connections preserved during browser refreshes
+- Process-wide federation transport with bounded reconnects, a circuit breaker and one availability alert per outage
+- Intermittent machines that can be excluded from availability alerts
+- Version-aware transfer protocol negotiation between mixed Dockge-Enhanced releases
+- Per-instance choice of Hostname or IP address for container port links
 
 ### Stack management
-
-- Shared scheduling timezone per instance, with optional, confirmed per-stack TZ changes in the Compose editor; no automatic container recreation.
-
-- Stack action bar with direct actions and icons-only or icons-and-text modes
-- Optional per-service Compose healthcheck assistant with editable HTTP/TCP proposal and command preview
-- Per-service controls to ignore an optional service in the overall stack status while keeping its own status visible
-- Optional WebUI display name for a stack, without changing its Compose or Restic identity
-- Compact actual-container links, with details and individual start/stop/restart actions for Compose replicas, separate from service actions
-- Compact mounted-volume rows with a separate Browse button, destination, host path and size
-- Optional root-restricted host file manager, distinct from the per-stack volume browser, with chunked transfers and a file-log viewer
-- Create, edit, start, stop and recreate Compose stacks
-- Server-persisted pinned stacks shared across linked WebUIs
-- External Compose stack discovery and adoption without moving files or data
-- Protected one-click authorization for external stack paths
-- Optional complete removal of adopted external stacks, including their source folder and Enhanced access mount
-- Label-based permanent cleanup for broken external stacks, with a frozen resource inventory and reinforced confirmations before containers, volumes, networks, images and Compose sources are removed
-- Sort by creation date or last update
-- Per-stack notes
-- Markdown `README.md` display and editing for managed stacks, including copy/move transfers
-- Git tools
-- Build + Recreate
-- Per-service and per-container actions
-- Scheduled operations
-- Host mount and `systemd` prerequisites
+- Create, edit, start, stop, restart, update, recreate, pause/resume and take down Compose stacks
+- Directly accessible stack action bar, with icons-only or icons-and-text modes and explained Compose commands
+- Per-service and per-container actions, including actual containers and Compose replicas
 - Automatic recreation of direct and transitive services sharing a VPN/network namespace through `service:` or `container:`
-- Collapsible and resizable stack sidebar
-- Compact status, CPU and RAM indicators
-- Compose editor support for long port syntax and preserved `tmpfs` permission modes
+- Build + Recreate for locally built images
+- Scheduled stack and container start/stop
+- Host mount and `systemd` start prerequisites, with optional monitoring and recovery
+- Server-persisted pinned stacks shared across linked WebUIs
+- Optional WebUI display names, without changing the Compose project or Restic identity
+- Per-stack notes, Markdown `README.md` and Git tools
+- Sorting by name, status, instance, creation date, last update, CPU or RAM
+- Collapsible, resizable stack sidebar with compact status, CPU and RAM indicators, and a flexible Logs/Compose workspace
+- Compose project-name reconciliation, so dotted or uppercase directory names do not create duplicate stacks
+- External Compose stack discovery and adoption without moving files or data, with protected path authorization
+- Optional complete removal of adopted external stacks and label-based cleanup of broken external stacks, with reinforced confirmations
+- Per-service option to ignore an optional service in the overall stack status
+
+### Compose editing
+- Compose, `compose.override.yaml` and `.env` editors with variable highlighting, folding, search and fullscreen mode
+- Validated default Compose and `.env` templates for new stacks only
+- Named HTTP/HTTPS links for stacks
+- Fix / format YAML action, preserved quoted scalars and `tmpfs` octal modes
+- Long port syntax support
+- Optional per-service healthcheck assistant with an editable HTTP/TCP proposal and command preview
+- Advisory port-conflict and running-image drift checks before saving or deploying
+- Optional per-stack container `TZ`, applied only after review and confirmation
+- PlugNPiN label assistant for Nginx Proxy Manager, Pi-hole and AdGuard Home
 
 ### Migration & replication
-- Copy or move stacks between instances
-- Compose configuration transfer
-- Bind mount and named-volume transfer
-- Resumable jobs
-- SHA-256 verification
-- Transactional deployment and rollback
-- Local Docker image transfer when required
-- Secure private-registry credential transfer
-- `container_name` conflict detection
-- Scheduled cold replication
-- Recovery snapshots and workflows
+- Copy or move stacks between instances with their Compose configuration
+- Bind mount and named-volume transfer, with editable source → target mappings
+- Direct resumable HTTP transfers, shared Restic repositories or explicit SSH/rsync profiles
+- SHA-256 verification, transactional deployment and rollback
+- Optional transfer of local Docker images and encrypted private-registry credentials
+- `container_name` conflict detection and real deployment errors
+- Explicit move finalization or return to source
+- Scheduled cold replicas configured on the source instance, with retained snapshots and manual failover
+- Isolated disaster-recovery tests and application profiles for PostgreSQL, MariaDB/MySQL, Redis and SQLite
 
 ### Backup & recovery
+- Native Restic backups of Compose, `.env`, bind mounts, named volumes and `/app/data`
+- Multiple destinations: local, SFTP/NAS, S3/Backblaze B2 and REST Server
+- Scheduled backups, **Back up now** and backups on Compose save, with an overlap guard
+- Per-stack consistency: live, stop then restart, or application hooks
+- Stack exclusions, built-in and custom exclude patterns, and automatic exclusion of nested local repositories
+- Initialization of missing repositories only, with blocking access, network and password errors
+- Ordinary retention and a dedicated self-update retention
+- Safe repository reset for Local, SFTP, S3 and REST destinations, keeping the previous repository for recovery
+- Snapshot browser with previews and diffs, selective restore and per-stack restore
+- Restore tests after scheduled backups, `restic check`, backup history and overdue alerts
+- Optional Zerobyte connection or dedicated managed Compose installation, alongside native Restic or for scheduled backups with separate repositories
+- Guided Zerobyte source, repository and job creation; new jobs stay disabled until reviewed, and existing jobs can be migrated after confirmation
+- Protected Zerobyte stop/restart workflows, integrity checks, a persistent recovery journal and targeted manual recovery
+- Zerobyte network-storage checks without local fallback, dedicated test restores and read-only federated status
+- Guides: [Restic backups and recovery](docs/restic.md) · [Zerobyte setup and recovery](docs/zerobyte.md)
 
-- Optional Zerobyte: existing instance or dedicated managed Compose installation, alongside native Restic or for scheduled backups with separate repositories
-- Guided Zerobyte source/repository/job creation and confirmed migration of existing jobs; new jobs remain disabled until reviewed
-- Zerobyte hook/resource integrity checks, application stop/restart workflows, persistent recovery journal and targeted manual service recovery
-- Network-storage checks without local fallback, confirmed storage revalidation, dedicated test restores and read-only federated Zerobyte status
+### Updates & ImageWatcher
+- Image update detection by digest, without pulling, including remote instances
+- Off, Immediate and Scheduled policies per image, plus stack-wide bulk policies that preserve individual exceptions by default
+- Full scan every 6 hours by default and targeted Immediate checks every 5 minutes by default, configurable or disabled separately
+- Checks against the images actually running in each container, shared registry requests and HTTP 429/503 retries
+- Optional DNS fallback for registry checks, without changing host or Docker Engine DNS
+- **Ignore** and `dockge.imageupdates.check: "false"` exclusions respected before any pull or recreation, including managed Dozzle
+- Manual, automatic and sequential “update all” image updates with rollback to the previous image
+- Stopped and paused stacks are not woken up by automatic updates
+- Global and per-image pause, skipped releases and auto-update history
+- One pending-update notification per stack, image, digest and destination
+- A global maintenance window: when automatic Dockge-Enhanced updates use one, it also gates automatic image updates, otherwise per-image schedules apply; **Update now** stays immediate
+- Protected Dockge-Enhanced self-update with mandatory Restic backup, integrity check, readiness validation and automatic recovery
+- Self-update through a Unix socket or a trusted Docker Socket Proxy, with disk-space checks and protection while Compose or `.env` edits are unsaved
+- Persisted 8-stage self-update timeline with live host load
+- Reliable current-container discovery with custom Compose `hostname:` values, and a visible degraded state when verification is unavailable
 
-**Optional Zerobyte integration:** Use **Backups → Zerobyte** to connect an existing instance or install a dedicated Compose instance. Zerobyte can complement native Restic backups or handle your scheduled backups instead, using separate repositories. The guided setup creates sources, a repository and a disabled job for review before activation. Protected workflows stop and restart the selected applications; unavailable network storage blocks the backup without falling back to local storage. External installations require explicit checks of mounts and repository separation. See the [Zerobyte setup and recovery guide](docs/zerobyte.md).
-
-**Repository/source overlap:** preferably keep local Restic repositories outside selected backup folders. If a repository is nested below a source, saving the settings displays a warning and backups automatically exclude the repository, its reset archives and its other Docker mount paths. Resolved symbolic links are checked too. Disabled local destinations remain protected. Selecting a repository itself or one of its subfolders as a backup source is refused; paths are checked again before running a backup. No repository is moved or reset by this check.
-
-**Safe Restic repository reset (Local, SFTP, S3 and REST).** In **Backup → Maintenance and diagnostics**, choose an enabled destination and preview its repository and snapshot count. The reset requires two explicit acknowledgements, the exact confirmation phrase and a short-lived one-use token. A local repository is renamed into a retained archive before creating a fresh one; a remote repository switches to a new SFTP directory, S3 prefix or REST URL without deleting the old repository. The new active repository has no old snapshots; Recent history entries for that destination are removed while other destinations’ history is retained. The previous repository remains stored at its old location for recovery. This is **not** permanent deletion of backup data. Do not reset a repository shared by other clients without coordinating them.
-
-On the first backup, Restic automatically initializes **only demonstrably missing** repositories; access, network and password errors block initialization. The UI shows repository status for each enabled destination.
-
-The interface separates **Save** (settings only), **Back up now** (immediate backup, then ordinary retention on success), and **maintenance tools** (repository/snapshot status refresh and integrity check). The backup button has stronger contrast.
-
-
-The Restic snapshot list defaults to **All**. **Save** stores settings and retention policy without immediately running a backup or prune; ordinary retention runs after successful backups, except deferred on-save backups. Self-update backups have their own retention.
-
-- Restic backups
-- Automatic exclusion of local Restic repositories, including disabled destinations, with overlap warnings
-- Multiple backup destinations
-- Stack-consistent backups
-- Bind mounts and volumes
-- Selective restore
-- Repository integrity checks
-- Snapshot testing and comparison
-- Backup history
-- Integration with protected update and recovery workflows
-
-### Updates
-- One pending-update announcement per stack/image/digest and notification destination, persisted across restarts; retry failed deliveries and keep automatic update result notifications.
-- Bulk automatic image policies for a stack: preview and preservation of individual exceptions.
-- **ImageWatcher Immediate**: targeted checks on activation and every 5 minutes by default (configurable or disabled separately from the 6-hour full scan), detection of images actually running, shared registry requests and HTTP 429 cooldowns.
-- Per-service exclusion from ImageWatcher checks and automatic/batch image updates with `dockge.imageupdates.check: "false"`
-- Docker image update monitoring
-- Remote update detection
-- Manual and automatic image updates
-- Sequential "update all" for available container images, with progress and stop-on-failure
-- Rollback to the previous image
-- Scheduled updates
-- Global and per-image pause
-- Protected Dockge-Enhanced self-update
-- Persisted 8-stage self-update timeline with per-stage duration, Restic files/bytes/throughput when available, and live host CPU/RAM + 1-minute load
-- Reliable current-container discovery with custom Compose `hostname:` values and a visible degraded state when update verification is unavailable
-- Mandatory Restic backup and integrity verification
-- Readiness validation and automatic recovery
-- Protection against self-update while Compose or `.env` changes are unsaved
-- Compose project-name reconciliation and exact stack context during updates
-
-### Security
-- **Restricted local accounts** — Local accounts restricted by instance and stack, with separate permissions and a dedicated workspace. Configure under Settings → Security. Existing accounts remain administrators; update linked instances too. Logs may contain secrets: grant access carefully. [Guide](docs/scoped-users.md). Service-level permissions cover all replicas across recreations. Users manage their password and 2FA; administrators can reset 2FA or delete the account without touching stack data.
-
-> Disable restricted accounts before downgrading: older Enhanced versions do not enforce these permissions.
-
-- Centralized stack-name validation blocks path traversal outside the managed stacks directory
-- Trivy vulnerability scanning
-- CVE exceptions
-- Optional TOTP 2FA for local accounts: verified QR enrollment, encrypted secrets, single-use recovery codes and session revocation
-- Cloudflare Turnstile
-- Trusted proxy
-- Restricted self-update sidecar and signed update plan
-- Destructive-operation safeguards
+### Security & authentication
+- Local accounts with optional TOTP 2FA, encrypted secrets, single-use recovery codes and session revocation
+- Restricted local accounts with per-instance, per-stack and per-service permissions and a dedicated workspace ([guide](docs/scoped-users.md)); disable them before downgrading to an older Enhanced version
+- Trusted-proxy authentication with explicitly trusted networks and proxy identities mapped to local accounts
+- Non-interactive administrator bootstrap from a secret file
+- Cloudflare Turnstile login protection
+- Trivy vulnerability scanning with CVE exceptions
+- Centralized stack-name validation against path traversal
+- Restricted self-update sidecar with a signed update plan
 - Encrypted private-registry credential transfer
+- Safeguards and confirmations around destructive operations
+- TLS trust-store checks after the eMudhra incident ([TLS checks](security/emudhra/README.md))
 
 ### Monitoring
-- Optional 5-minute CPU/RAM history per stack and Compose service, continuous across updates, summed replicas, compact action panel, 24h/7d/1m/1y/all ranges and CPU/RAM sorting
-- **PowerWatch Hub**: managed Compose deployment or connection to an existing Hub, aggregating nodes added through the Hub WebUI.
-- System, stack and container statistics
-- Optional 5-minute CPU/RAM history with 24-hour, 7-day, monthly and custom ranges, server-side downsampling and visible downtime gaps
-- Configurable system status bar
-- Dashboard health cards
-- Crash-loop detection
-- Healthcheck auto-heal
-- Responsive live and fullscreen logs with vertically stacked filters, grouped actions and search, including a **since last restart** range and one-click copy of the latest **50 / 100 / 150** or all loaded lines
-- Optional browser-persisted default for log timestamps in Appearance settings
-- Autoscroll pause and long-line handling
-- Kula and Dozzle integrations
-- Optional PowerWatch integration: read-only connection to an existing installation or hardware-aware managed Compose deployment, with current power and WebUI links across linked instances
-- Per-stack CPU/RAM statistics from local and linked instances
+- System, stack and container CPU, RAM and disk statistics, with a configurable status bar
+- Host system details, temperatures and monitored disk partitions
+- Optional 5-minute CPU/RAM history for the host and per Compose service, with visible gaps
+- Dashboard health cards, crash-loop detection and healthcheck auto-heal
+- Responsive live and fullscreen logs with service filter, search, time ranges, **since last restart**, copy of the latest 50 / 100 / 150 or all loaded lines, autoscroll pause, long-line handling and optional default timestamps
+- Low-power mode for NAS and small hosts
+- Optional Kula, Dozzle, PowerWatch and PowerWatch Hub integrations, with current PowerWatch power shown across linked instances
 
 ### Docker resources
-- Images, volumes, networks and unmanaged containers
-- Unified manual/automatic cleanup for images, networks, volumes and build cache, with per-category results and 30-run history
-- Exact `lastRun + interval` scheduling checked every 15 minutes, including one catch-up after host sleep or restart
-- Full Image-ID classification across running and stopped containers; multiple tags sharing one image are counted once
-- Risky-deletion safeguards
+- Images, volumes, networks and unmanaged containers, with search
+- `bridge`, `macvlan` and `ipvlan` network management
+- Unified manual and automatic cleanup for images, networks, volumes and build cache, with previews, exclusions and history
+- Exact catch-up scheduling and Image-ID based classification
+- Protection of running and stopped containers, rollback and recovery images, and recent Dockge-Enhanced images
+
+### Search & files
+- Global multi-instance search (`Ctrl+K`) across stacks, Compose/`.env` files, Docker resources and recent Restic snapshots
+- Opt-in search in `.env` values, which are never returned or stored in history
+- Compact mounted-volume rows with sizes and a volume browser/editor for each container, even when the stack is stopped
+- Optional root-restricted host file manager with chunked transfers, text editing and a file-log viewer
 
 ### Automation & audit
-
-[REST API, webhooks and Home Assistant guide](docs/AUTOMATION.md).
-
-- **Compose checks and Home Assistant :** Advisory port-conflict checks before saving/deploying, including resolved variables, overrides and ranges; running-image reference comparison with a reviewable YAML correction. Optional Home Assistant custom integration with state sensors and permission-scoped start/stop/restart controls. [Guide](docs/HOME-ASSISTANT.md).
-- Permission- and stack-scoped REST API
+- Permission- and stack-scoped REST API tokens
 - Per-stack webhooks
-- Home Assistant examples
-- Scheduled operations
-- Centralized history with origin, status and duration
+- Optional Home Assistant custom integration and examples
+- Centralized audit history with origin, status and duration
+- Guides: [REST API, webhooks and Home Assistant](docs/AUTOMATION.md) · [Home Assistant integration](docs/HOME-ASSISTANT.md)
 
 ### Integrations
-
-- Zerobyte — optional backup integration with managed installation or external connection
-- PowerWatch Hub — managed installation or existing Hub connection
-- PlugNPiN
-- Nginx Proxy Manager, Pi-hole and AdGuard Home label assistants
+- Zerobyte: managed installation or external connection
+- PowerWatch and PowerWatch Hub: external observation or managed deployment
+- PlugNPiN for Nginx Proxy Manager, Pi-hole and AdGuard Home
 - Dozzle
 - Kula
-- PowerWatch (external observation or managed deployment)
+- Home Assistant
 
-### Appearance
+### Appearance & languages
 - Separate day and night palettes, including the original Dockge-Enhanced themes
 - Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night and Rosé Pine options
-- Browser-persisted selection with system-aware Auto mode
+- Browser-persisted preferences with a system-aware Auto mode
+- Enhanced features translated in English, French, German, Spanish and Simplified Chinese; other interface languages fall back to English for them
 
 ### Notifications & access
-- Discord and Apprise
-- Notifications localized in EN / FR / ES / zh-CN
-- Remote operational announcements
-- Persistent unread release-news journal
+- Discord and Apprise notifications, localized in EN / FR / ES / zh-CN
+- Instance name in notifications and `DOCKGE_PUBLIC_URL` links
+- Remote operational announcements and a persistent unread release-news journal
 - Optional weekly and monthly anonymous installation-count reports via a GitHub Actions Discord webhook
-- 2FA, trusted proxy and Cloudflare Turnstile
 - Third-party mobile clients
 
 </details>
@@ -764,12 +738,6 @@ Before an automatic self-update starts, Enhanced also checks that no sensitive o
 
 ---
 
-**Daily stack operations**
-
-Enhanced prepares missing absolute host bind directories before start/deploy/recreate operations when the mount is clearly directory-like. This is especially useful on NAS hosts such as Synology where Docker refuses a bind source that does not exist yet. File-like bind sources are never auto-created as directories. Per-image **Immediate** auto-update now starts a targeted image check as soon as the policy is saved. Successful stack restarts also refresh the real stack state and hide stale Compose progress output.
-
-The optional CPU/RAM history keeps its real sampling gaps but uses a more compact PowerWatch-inspired chart with lighter grid lines and subtle filled areas.
-
 ## Installation
 
 ```yaml
@@ -802,7 +770,7 @@ Open **http://localhost:5001**, create your admin account, then click **Monitori
 
 > The `/backup:/backup` volume is optional but recommended if you use **local** as a Restic backup destination — set the destination path to `/backup` so your snapshots land on a dedicated host directory outside the container.
 
-> **Backing up multiple data directories?** Add as many volumes as you need (e.g. `../../media:/media-data`), then register each container path in the Backup tab under **Additional paths** — Restic will include them all in every backup run.
+> **Backing up multiple data directories?** Add as many volumes as you need (e.g. `../../media:/media-data`), then select the mounted paths in **Backup → Docker volumes to backup**; Restic includes them in every backup run. See the [Restic guide](docs/restic.md).
 
 > **Monitoring a disk partition other than `/`?** Disk stats are read from inside the container with `df`. If you want to track a host path like `/mnt/data`, mount it read-only and add it in the **Monitoring** tab under *Monitored disk partitions*:
 > ```yaml
@@ -900,6 +868,15 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKGE_BOOTSTRAP_PASSWORD_FILE` | *(none)* | Secret file containing the password; recommended for automated bootstrap |
 | `DOCKGE_BOOTSTRAP_PASSWORD` | *(none)* | Direct password alternative, less secure because it is visible in the container environment |
 | `DOCKGE_TRANSFER_RSYNC_PROFILES` | `[]` | JSON array of local SSH/rsync profiles (`label`, `host`, `port`, `user`, `path`, `keyPath`, optional `bandwidthKbps`). Configure the same destination identity on both instances; key paths never leave their instance |
+| `DOCKGE_AUTH_PROXY_ADMIN_USERS` | *(none)* | Comma-separated proxy identities created as administrators on first sign-in in `trusted-proxy` mode; other new identities are restricted without grants |
+| `DOCKGE_REVERSE_HUB_URL` | *(none)* | Hub origin for an optional reverse agent connection (HTTP(S), no path); see the [reverse agent guide](docs/compose-and-reverse-agents.md) |
+| `DOCKGE_REVERSE_TOKEN_FILE` / `DOCKGE_REVERSE_TOKEN` | *(none)* | Per-node reverse agent token; the file takes precedence and is recommended |
+| `DOCKGE_FILE_MANAGER_ROOT` | *(none)* | Container path exposed by the optional host file manager; disabled when unset |
+| `DOCKGE_FILE_MANAGER_MAX_FILE_SIZE` | `104857600` | Maximum transfer size of the host file manager, in bytes (100 MiB) |
+| `DOCKGE_DOCKER_SOCKET` | `/var/run/docker.sock` | Docker socket path, for example for rootless Docker or Podman |
+| `DOCKER_HOST` | *(none)* | Docker endpoint, for example `tcp://proxy:2375` with a trusted Docker Socket Proxy |
+| `DOCKGE_CONTAINER_ID` | *(none)* | Explicit Enhanced container ID when it cannot be resolved from `HOSTNAME` |
+| `DOCKGE_USAGE_COUNT` | *(enabled)* | Set to `false` to disable the anonymous monthly installation count |
 
 > ℹ️ Without `DOCKGE_DATA_DIR`, Dockge-Enhanced uses its persistent `/app/data` volume. Explicitly configured paths always take precedence.
 
@@ -938,7 +915,7 @@ environment:
   - DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS=172.20.0.0/24
 ```
 
-Replace the example CIDR with the proxy’s exact network and configure it to pass the selected header. The Dockge port must not be directly reachable: only declared proxies may provide an identity. Proxy identities retain administrator rights; restricted accounts apply only to local authentication, and a proxy identity colliding with a restricted local account is rejected. Never exempt `/setup`, `/socket.io`, or `/api/*` from authentication; the proxy must forward WebSockets and protect the entire host.
+Replace the example CIDR with the proxy’s exact network and configure it to pass the selected header. The Dockge port must not be directly reachable: only declared proxies may provide an identity. Each proxy identity uses the local account with the same username: a restricted account limits that proxy user, and an administrator account keeps full access. An identity without an account is created as a restricted account with no grants, except the first user of a fresh installation and the identities listed in `DOCKGE_AUTH_PROXY_ADMIN_USERS`, which become administrators. Existing accounts keep their role, and role or disable changes can take up to 30 seconds to apply to proxy sessions. Account management remains available in local authentication mode only. Never exempt `/setup`, `/socket.io`, or `/api/*` from authentication; the proxy must forward WebSockets and protect the entire host.
 
 ---
 
