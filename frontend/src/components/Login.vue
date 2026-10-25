@@ -4,12 +4,12 @@
             <form @submit.prevent="submit">
                 <h1 class="h3 mb-3 fw-normal" />
 
-                <div v-if="!tokenRequired" class="form-floating">
+                <div v-if="!tokenRequired && !localLoginDisabled" class="form-floating">
                     <input id="floatingInput" v-model="username" type="text" class="form-control" placeholder="Username" autocomplete="username" required>
                     <label for="floatingInput">{{ $t("Username") }}</label>
                 </div>
 
-                <div v-if="!tokenRequired" class="form-floating mt-3">
+                <div v-if="!tokenRequired && !localLoginDisabled" class="form-floating mt-3">
                     <input id="floatingPassword" v-model="password" type="password" class="form-control" placeholder="Password" autocomplete="current-password" required>
                     <label for="floatingPassword">{{ $t("Password") }}</label>
                 </div>
@@ -32,16 +32,29 @@
                 </div>
 
                 <!-- Cloudflare Turnstile -->
-                <div v-if="turnstileEnabled" v-show="!tokenRequired" class="mb-3">
+                <div v-if="turnstileEnabled && !localLoginDisabled" v-show="!tokenRequired" class="mb-3">
                     <div ref="turnstile" class="d-flex justify-content-center"></div>
                 </div>
 
-                <button class="w-100 btn btn-primary" type="submit" :disabled="processing">
+                <button v-if="!localLoginDisabled" class="w-100 btn btn-primary" type="submit" :disabled="processing">
                     {{ $t("Login") }}
                 </button>
 
+                <template v-if="oidcEnabled && !tokenRequired">
+                    <div v-if="!localLoginDisabled" class="login-separator text-muted my-3">
+                        {{ $t("oidc.or") }}
+                    </div>
+                    <a class="w-100 btn" :class="localLoginDisabled ? 'btn-primary' : 'btn-outline-primary'" href="/api/auth/oidc/login" @click="$root.oidcError = ''">
+                        <font-awesome-icon icon="key" class="me-2" />{{ oidcButtonLabel }}
+                    </a>
+                </template>
+
                 <div v-if="res && !res.ok" class="alert alert-danger mt-3" role="alert">
                     {{ $t(res.msg) }}
+                </div>
+
+                <div v-if="$root.oidcError" class="alert alert-danger mt-3" role="alert">
+                    {{ $te($root.oidcError) ? $t($root.oidcError) : $t("oidc.failed") }}
                 </div>
             </form>
         </div>
@@ -68,6 +81,15 @@ export default {
     computed: {
         turnstileEnabled() {
             return !!this.$root.info?.turnstileEnabled;
+        },
+        oidcEnabled() {
+            return !!this.$root.info?.oidc;
+        },
+        localLoginDisabled() {
+            return !!this.$root.info?.oidc?.localLoginDisabled;
+        },
+        oidcButtonLabel() {
+            return this.$root.info?.oidc?.buttonLabel || this.$t("oidc.signIn");
         },
         turnstileSiteKey() {
             return this.$root.info?.turnstileSiteKey ?? "";
@@ -197,6 +219,20 @@ export default {
 
     > .form-control {
         padding-left: 1.3rem;
+    }
+}
+
+.login-separator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    &::before,
+    &::after {
+        content: "";
+        flex: 1;
+        border-top: 1px solid currentColor;
+        opacity: 0.4;
     }
 }
 

@@ -42,7 +42,7 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 | **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, safe repository reset, plus recovery workflows used by protected updates. Optional Zerobyte connection or managed installation, protected application workflows and dedicated test restores |
 | **Updates** | Stack-wide bulk policies with exception preservation, 5-minute targeted Immediate image checks, ignored images respected before any change, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
-| **Security & authentication** | Restricted local accounts with per-stack and per-service permissions, optional TOTP 2FA, trusted-proxy authentication, Cloudflare Turnstile, Trivy vulnerability scanning, CVE exceptions and protected update workflows |
+| **Security & authentication** | Restricted local accounts with per-stack and per-service permissions, optional TOTP 2FA, native OIDC sign-in, trusted-proxy authentication, Cloudflare Turnstile, Trivy vulnerability scanning, CVE exceptions and protected update workflows |
 | **Monitoring** | System, stack and container statistics, optional 5-minute CPU/RAM history, configurable status bar, health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula, Dozzle, PowerWatch and PowerWatch Hub integrations |
 | **Docker resources** | Protected unified cleanup for images, volumes, networks and build cache, exact catch-up scheduling, previews, exclusions, history and safeguards around destructive actions |
 | **Search & files** | Global multi-instance search, restricted host file manager, volume browsing, chunked transfers, text editing and file log viewing |
@@ -60,6 +60,8 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 October 2026
+
+**Native OIDC sign-in:** Sign in with an OpenID Connect provider such as Pocket ID, Authentik, Keycloak or Google, without a reverse proxy and alongside local accounts and 2FA. Configuration uses `DOCKGE_OIDC_*` environment variables and the Authorization Code flow with PKCE. New OIDC users are restricted accounts with no access until an administrator grants it, unless they are listed in `DOCKGE_OIDC_ADMIN_USERS` or belong to `DOCKGE_OIDC_ADMIN_GROUPS`; with admin groups, the role follows group membership at every login. There is no implicit “first user becomes admin” rule: on a new installation, create the first administrator first or configure an admin mapping. Existing local accounts are linked only with `DOCKGE_OIDC_LINK_EXISTING=true`. OIDC logins do not ask for the local TOTP code, and OIDC is ignored in `disabled` and `trusted-proxy` modes. If you set `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true`, keep the recovery procedure at hand. [Guide](docs/oidc.md).
 
 **Default Compose filename :** Prepared in this PR; not yet published. COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected.
 
@@ -524,6 +526,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Local accounts with optional TOTP 2FA, encrypted secrets, single-use recovery codes and session revocation
 - Restricted local accounts with per-instance, per-stack and per-service permissions and a dedicated workspace ([guide](docs/scoped-users.md)); disable them before downgrading to an older Enhanced version
 - Trusted-proxy authentication with explicitly trusted networks and proxy identities mapped to local accounts
+- Native OIDC sign-in (Pocket ID, Authentik, Keycloak…) with PKCE, restricted accounts by default and optional admin mapping by user or group ([guide](docs/oidc.md))
 - Non-interactive administrator bootstrap from a secret file
 - Cloudflare Turnstile login protection
 - Trivy vulnerability scanning with CVE exceptions
@@ -887,6 +890,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKER_HOST` | *(none)* | Docker endpoint, for example `tcp://proxy:2375` with a trusted Docker Socket Proxy |
 | `DOCKGE_CONTAINER_ID` | *(none)* | Explicit Enhanced container ID when it cannot be resolved from `HOSTNAME` |
 | `DOCKGE_USAGE_COUNT` | *(enabled)* | Set to `false` to disable the anonymous monthly installation count |
+| `DOCKGE_OIDC_ISSUER` | *(none)* | OpenID Connect issuer URL; setting it enables native OIDC sign-in. Every `DOCKGE_OIDC_*` option is described in the [OIDC guide](docs/oidc.md) |
 
 > ℹ️ Without `DOCKGE_DATA_DIR`, Dockge-Enhanced uses its persistent `/app/data` volume. Explicitly configured paths always take precedence.
 
@@ -926,6 +930,21 @@ environment:
 ```
 
 Replace the example CIDR with the proxy’s exact network and configure it to pass the selected header. The Dockge port must not be directly reachable: only declared proxies may provide an identity. Each proxy identity uses the local account with the same username: a restricted account limits that proxy user, and an administrator account keeps full access. An identity without an account is created as a restricted account with no grants, except the first user of a fresh installation and the identities listed in `DOCKGE_AUTH_PROXY_ADMIN_USERS`, which become administrators. Existing accounts keep their role, and role or disable changes can take up to 30 seconds to apply to proxy sessions. Account management remains available in local authentication mode only. Never exempt `/setup`, `/socket.io`, or `/api/*` from authentication; the proxy must forward WebSockets and protect the entire host.
+
+### Native OIDC sign-in (Pocket ID, Authentik, Keycloak…)
+
+Without a reverse proxy, Dockge-Enhanced can sign users in directly with an OpenID Connect provider, alongside local accounts and 2FA:
+
+```yaml
+environment:
+  - DOCKGE_OIDC_ISSUER=https://id.example.com
+  - DOCKGE_OIDC_CLIENT_ID=dockge
+  - DOCKGE_OIDC_CLIENT_SECRET_FILE=/run/secrets/dockge_oidc_secret
+  - DOCKGE_OIDC_REDIRECT_URI=https://dockge.example.com/api/auth/oidc/callback
+  - DOCKGE_OIDC_ADMIN_GROUPS=dockge-admins
+```
+
+New OIDC users are restricted accounts with no access until an administrator grants it, unless they belong to `DOCKGE_OIDC_ADMIN_GROUPS` or `DOCKGE_OIDC_ADMIN_USERS`. No user becomes an administrator implicitly: on a new installation, create the first administrator with `/setup` or `DOCKGE_BOOTSTRAP_*`, or configure an admin mapping, otherwise the first OIDC login is refused. Existing local accounts are never linked unless `DOCKGE_OIDC_LINK_EXISTING=true`. OIDC works only in local authentication mode and does not ask for the local TOTP code. `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` leaves only the SSO button; to recover when the provider is unavailable, remove it and restart the container. [All options, provider examples and recovery](docs/oidc.md).
 
 ---
 

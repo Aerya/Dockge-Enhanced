@@ -42,7 +42,7 @@ Dockge Enhanced ist ein Fork von [Dockge](https://github.com/louislam/dockge) zu
 | **Backup & Wiederherstellung** | Restic-Backups an mehrere Ziele, Bind-Mounts und Volumes, Konsistenz pro Stack, selektive Wiederherstellung, Repository-Prüfungen, Snapshot-Verifizierung und Diffs, sicheres Zurücksetzen von Repositories sowie Wiederherstellungsworkflows, die von geschützten Updates verwendet werden. Optionale Zerobyte-Verbindung oder verwaltete Installation, geschützte Anwendungsworkflows und separate Testwiederherstellungen |
 | **Updates** | Stack-weite Bulk-Richtlinien unter Beibehaltung von Ausnahmen, zielgerichtete sofortige Image-Prüfungen alle 5 Minuten, Beachtung ignorierter Images vor jeder Änderung, manuelles, sequenzielles Bulk- oder automatisches Container-Update mit Rollback, ein gemeinsames Wartungsfenster, Remote-Update-Badges, globale/imagebezogene Pausensteuerungen sowie geschützte Dockge-Enhanced-Selbst-Updates mit obligatorischem Backup, Integritätsprüfungen und automatischer Wiederherstellung |
 | **Migration & Replikation** | Transaktionsbasierte Stack-Übertragungen zwischen Instanzen, Migration von Compose und persistenten Daten, fortsetzbare Jobs, explizite Verschiebe-Finalisierung, geplante Kaltrepliken, Wiederherstellungs-Snapshots und Failover-Workflows |
-| **Sicherheit & Authentifizierung** | Eingeschränkte lokale Konten mit Berechtigungen pro Stack und Dienst, optionale TOTP-2FA, Trusted-Proxy-Authentifizierung, Cloudflare Turnstile, Trivy-Schwachstellen-Scans, CVE-Ausnahmen und geschützte Update-Workflows |
+| **Sicherheit & Authentifizierung** | Eingeschränkte lokale Konten mit Berechtigungen pro Stack und Dienst, optionale TOTP-2FA, native OIDC-Anmeldung, Trusted-Proxy-Authentifizierung, Cloudflare Turnstile, Trivy-Schwachstellen-Scans, CVE-Ausnahmen und geschützte Update-Workflows |
 | **Monitoring** | System-, Stack- und Container-Statistiken, optionaler 5-Minuten-CPU/RAM-Verlauf, konfigurierbare Statusleiste, Health-Cards, Erkennung von Crash-Loops, Healthcheck-Auto-Heal, responsive/vollbildfähige Logs sowie optionale Kula-, Dozzle-, PowerWatch- und PowerWatch-Hub-Integrationen |
 | **Docker-Ressourcen** | Geschützte, einheitliche Bereinigung für Images, Volumes, Netzwerke und Build-Cache, exakte Aufhol-Zeitplanung, Vorschauen, Ausschlüsse, Verlauf und Schutzmaßnahmen bei destruktiven Aktionen |
 | **Suche & Dateien** | Globale Suche über mehrere Instanzen, eingeschränkter Host-Dateimanager, Volume-Browser, stückweise Übertragungen, Textbearbeitung und Dateiprotokolle |
@@ -60,6 +60,8 @@ Dockge Enhanced ist ein Fork von [Dockge](https://github.com/louislam/dockge) zu
 Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell sehen können, was sich in Dockge-Enhanced geändert hat.
 
 ### 🆕 Oktober 2026
+
+**Native OIDC-Anmeldung:** Anmeldung über einen OpenID-Connect-Anbieter wie Pocket ID, Authentik, Keycloak oder Google, ohne Reverse Proxy und zusätzlich zu lokalen Konten und 2FA. Konfiguriert wird über die Umgebungsvariablen `DOCKGE_OIDC_*` mit dem Authorization-Code-Flow und PKCE. Neue OIDC-Benutzer sind eingeschränkte Konten ohne Zugriff, bis ein Administrator ihn gewährt, außer sie stehen in `DOCKGE_OIDC_ADMIN_USERS` oder gehören zu `DOCKGE_OIDC_ADMIN_GROUPS`; mit Admin-Gruppen folgt die Rolle bei jeder Anmeldung der Gruppenmitgliedschaft. Es gibt keine implizite Regel „erster Benutzer wird Administrator“: Legen Sie bei einer neuen Installation zuerst den Administrator an oder konfigurieren Sie eine Admin-Zuordnung. Bestehende lokale Konten werden nur mit `DOCKGE_OIDC_LINK_EXISTING=true` verknüpft. OIDC-Anmeldungen fragen nicht nach dem lokalen TOTP-Code, und OIDC wird in den Modi `disabled` und `trusted-proxy` ignoriert. Wenn Sie `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` setzen, halten Sie das Wiederherstellungsverfahren bereit. [Anleitung](docs/oidc.de.md).
 
 **Standardname der Compose-Datei :** In dieser PR vorbereitet; noch nicht publiziert. COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt.
 
@@ -524,6 +526,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Lokale Konten mit optionaler TOTP-2FA, verschlüsselten Geheimnissen, Einmal-Wiederherstellungscodes und Sitzungswiderruf
 - Eingeschränkte lokale Konten mit Berechtigungen pro Instanz, Stack und Dienst sowie eigenem Arbeitsbereich ([Anleitung](docs/scoped-users.md)); vor einem Downgrade auf eine ältere Enhanced-Version deaktivieren
 - Trusted-Proxy-Authentifizierung aus ausdrücklich vertrauenswürdigen Netzwerken, Proxy-Identitäten werden lokalen Konten zugeordnet
+- Native OIDC-Anmeldung (Pocket ID, Authentik, Keycloak…) mit PKCE, standardmäßig eingeschränkten Konten und optionaler Admin-Zuordnung nach Benutzer oder Gruppe ([Anleitung](docs/oidc.de.md))
 - Nicht interaktive Erstellung des ersten Administrators aus einer Secret-Datei
 - Anmeldeschutz mit Cloudflare Turnstile
 - Trivy-Schwachstellenscans mit CVE-Ausnahmen
@@ -887,6 +890,7 @@ Um einen Dienst zu veröffentlichen, bearbeiten Sie dessen Stack und verwenden S
 | `DOCKER_HOST` | *(keine)* | Docker-Endpunkt, z. B. `tcp://proxy:2375` mit einem vertrauenswürdigen Docker Socket Proxy |
 | `DOCKGE_CONTAINER_ID` | *(keine)* | Explizite Container-ID von Enhanced, wenn sie nicht aus `HOSTNAME` ermittelt werden kann |
 | `DOCKGE_USAGE_COUNT` | *(aktiviert)* | Auf `false` setzen, um die anonyme monatliche Installationszählung zu deaktivieren |
+| `DOCKGE_OIDC_ISSUER` | *(keine)* | Issuer-URL des OpenID-Connect-Anbieters; ist sie gesetzt, wird die native OIDC-Anmeldung aktiviert. Alle Optionen `DOCKGE_OIDC_*` stehen in der [OIDC-Anleitung](docs/oidc.de.md) |
 
 > ℹ️ Ohne `DOCKGE_DATA_DIR` verwendet Dockge-Enhanced sein persistentes `/app/data`-Volume. Explizit konfigurierte Pfade haben immer Vorrang.
 
@@ -926,6 +930,21 @@ environment:
 ```
 
 Ersetzen Sie das Beispiel-CIDR durch das genaue Netzwerk des Proxys und konfigurieren Sie ihn so, dass er den gewählten Header weitergibt. Der Dockge-Port darf nicht direkt erreichbar sein: Nur deklarierte Proxys dürfen eine Identität liefern. Jede Proxy-Identität verwendet das lokale Konto mit demselben Benutzernamen: Ein eingeschränktes Konto begrenzt diesen Proxy-Benutzer, ein Administratorkonto behält vollen Zugriff. Eine Identität ohne Konto wird als eingeschränktes Konto ohne Berechtigungen angelegt, außer dem ersten Benutzer einer neuen Installation und den in `DOCKGE_AUTH_PROXY_ADMIN_USERS` aufgeführten Identitäten, die Administratoren werden. Bestehende Konten behalten ihre Rolle; Rollenänderungen oder Deaktivierungen können bis zu 30 Sekunden brauchen, bis sie für Proxy-Sitzungen gelten. Die Kontenverwaltung bleibt nur bei lokaler Authentifizierung verfügbar. Nehmen Sie `/setup`, `/socket.io` oder `/api/*` niemals von der Authentifizierung aus; der Proxy muss WebSockets weiterleiten und den gesamten Host schützen.
+
+### Native OIDC-Anmeldung (Pocket ID, Authentik, Keycloak…)
+
+Ohne Reverse Proxy kann Dockge-Enhanced Benutzer direkt über einen OpenID-Connect-Anbieter anmelden, zusätzlich zu lokalen Konten und 2FA:
+
+```yaml
+environment:
+  - DOCKGE_OIDC_ISSUER=https://id.example.com
+  - DOCKGE_OIDC_CLIENT_ID=dockge
+  - DOCKGE_OIDC_CLIENT_SECRET_FILE=/run/secrets/dockge_oidc_secret
+  - DOCKGE_OIDC_REDIRECT_URI=https://dockge.example.com/api/auth/oidc/callback
+  - DOCKGE_OIDC_ADMIN_GROUPS=dockge-admins
+```
+
+Neue OIDC-Benutzer sind eingeschränkte Konten ohne Zugriff, bis ein Administrator ihn gewährt, außer sie gehören zu `DOCKGE_OIDC_ADMIN_GROUPS` oder `DOCKGE_OIDC_ADMIN_USERS`. Niemand wird implizit Administrator: Legen Sie bei einer neuen Installation den ersten Administrator über `/setup` oder `DOCKGE_BOOTSTRAP_*` an oder konfigurieren Sie eine Admin-Zuordnung, sonst wird die erste OIDC-Anmeldung abgelehnt. Bestehende lokale Konten werden nie ohne `DOCKGE_OIDC_LINK_EXISTING=true` verknüpft. OIDC funktioniert nur bei lokaler Authentifizierung und fragt nicht nach dem lokalen TOTP-Code. `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` lässt nur die SSO-Schaltfläche übrig; ist der Anbieter nicht erreichbar, entfernen Sie die Variable und starten den Container neu. [Alle Optionen, Anbieterbeispiele und Wiederherstellung](docs/oidc.de.md).
 
 ---
 

@@ -4,6 +4,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-10-25 — Native OIDC-Anmeldung** — Anmeldung über einen OpenID-Connect-Anbieter (Pocket ID, Authentik, Keycloak, Google…) ohne Reverse Proxy, zusätzlich zu lokalen Konten und 2FA. Authorization-Code-Flow mit PKCE, konfiguriert über die Umgebungsvariablen `DOCKGE_OIDC_*`. Neue OIDC-Benutzer sind eingeschränkte Konten ohne Zugriff, außer sie stehen in `DOCKGE_OIDC_ADMIN_USERS` oder gehören zu `DOCKGE_OIDC_ADMIN_GROUPS`; mit Admin-Gruppen folgt die Rolle bei jeder Anmeldung der Gruppenmitgliedschaft. Ein bestehendes lokales Konto wird nur mit `DOCKGE_OIDC_LINK_EXISTING=true` verknüpft. `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` lässt nur die SSO-Schaltfläche übrig. OIDC-Anmeldungen fragen nicht nach dem lokalen TOTP-Code. Bestehende Installationen bleiben unverändert. [Dokumentation](docs/oidc.de.md). Bezug zu #567.
+
 **2026-10-25 — Standardname der Compose-Datei** — In dieser PR vorbereitet; noch nicht publiziert. COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt. [RichyHBM / Dockge #84](https://github.com/louislam/dockge/pull/84).
 
 **2026-10-25 — Socket.IO-Standardports** — In dieser PR vorbereitet, noch nicht veröffentlicht. Browser-Ursprünge mit implizitem HTTP/HTTPS-Port entsprechen nun einem Host-Header mit explizitem :80/:443, auch bei IPv6. Andere Hosts und nicht gleichwertige Ports bleiben gesperrt; Proxy-Header umgehen diese Prüfung nicht.

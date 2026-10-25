@@ -4,6 +4,8 @@
 
 [README](README.zh-CN.md) 介绍近期主要更新和完整功能目录。
 
+**2026-10-25 — 原生 OIDC 登录** — 无需反向代理即可通过 OpenID Connect 提供商（Pocket ID、Authentik、Keycloak、Google…）登录，并与本地账户和 2FA 共存。采用带 PKCE 的授权码流程，通过 `DOCKGE_OIDC_*` 环境变量配置。新的 OIDC 用户为无访问权限的受限账户，除非列在 `DOCKGE_OIDC_ADMIN_USERS` 中或属于 `DOCKGE_OIDC_ADMIN_GROUPS`；设置管理员组后，每次登录时角色随组成员关系同步。仅在 `DOCKGE_OIDC_LINK_EXISTING=true` 时关联已有本地账户。`DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` 时仅保留 SSO 按钮。OIDC 登录不要求本地 TOTP 验证码。现有安装不受影响。[文档](docs/oidc.zh-CN.md)。相关 #567。
+
 **2026-10-25 — 默认 Compose 文件名** — 本分支的功能；正式版本需等待 PR 合并。 COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。 [RichyHBM / Dockge #84](https://github.com/louislam/dockge/pull/84).
 
 **2026-10-25 — Socket.IO 默认端口** — 本分支的修复；正式版本需等待 PR 合并。浏览器来源使用隐式 HTTP/HTTPS 端口时，现在可匹配显式带有 :80/:443 的 Host 标头，包括 IPv6。不同主机或不等价端口仍被拒绝；代理转发标头不能绕过此检查。

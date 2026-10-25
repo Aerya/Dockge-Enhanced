@@ -12,6 +12,7 @@ import { generatePasswordHash, passwordVersionFingerprint } from "./password-has
 import { interactiveSessionVersionMatches } from "./two-factor-auth";
 import { Settings } from "./settings";
 import { JWTDecoded } from "./util-server";
+import { getOidcConfig, OidcConfig, validateOidcConfiguration } from "./oidc";
 
 export type AuthMode = "local" | "disabled" | "trusted-proxy";
 
@@ -205,8 +206,23 @@ export async function isSetupCompleted(): Promise<boolean> {
     return Boolean(await Settings.get(SETUP_COMPLETED_KEY));
 }
 
+/** OIDC settings, only while local authentication is in effect. */
+export async function activeOidcConfig(): Promise<OidcConfig | null> {
+    const config = getOidcConfig();
+    return config && await getAuthMode() === "local" ? config : null;
+}
+
 export async function initializeAuthentication(): Promise<boolean> {
     const mode = await getAuthMode();
+    const oidc = validateOidcConfiguration();
+    if (oidc) {
+        if (mode === "local") {
+            log.info("auth", `Connexion OIDC activée : ${oidc.issuer.href}` +
+                (oidc.disableLocalLogin ? " (connexion locale désactivée)" : ""));
+        } else {
+            log.warn("auth", `Configuration OIDC ignorée en mode ${mode}`);
+        }
+    }
     const userCount = Number(
         (await R.knex("user").count("id as count").first()).count,
     );

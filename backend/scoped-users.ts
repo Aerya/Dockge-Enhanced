@@ -289,11 +289,13 @@ export function registerScopedUsers(socket: DockgeSocket, server: DockgeServer, 
                 username: string;
                 active: number;
                 role: string;
-                stack_grants: string }[] = await R.knex("user").select("id", "username", "active", "role", "stack_grants");
+                stack_grants: string;
+                oidc_subject: string | null }[] = await R.knex("user").select("id", "username", "active", "role", "stack_grants", "oidc_subject");
             callback({ ok: true,
                 data: rows.map(row => ({ id: row.id,
                     username: row.username,
                     active: Boolean(row.active),
+                    oidc: Boolean(row.oidc_subject),
                     ...accessFromUser(row) })) });
         } catch {
             if (typeof callback === "function") {

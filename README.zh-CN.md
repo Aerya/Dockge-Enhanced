@@ -41,7 +41,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 | **备份与恢复** | 多目标 Restic 备份、绑定挂载和卷、按 Stack 一致性、选择性恢复、仓库检查、快照校验与差异、安全重置仓库，以及受保护更新使用的恢复流程。可选连接或托管安装 Zerobyte、受保护的应用流程和专用测试恢复 |
 | **更新** | 按 Stack 批量策略并保留例外、立即模式每 5 分钟定向检查、任何变更前都遵守镜像忽略设置、手动/顺序批量/自动容器更新并可回滚、共享维护窗口、远程更新标记、全局/按镜像暂停，以及带强制备份、完整性检查和自动恢复的受保护 Dockge-Enhanced 自更新 |
 | **迁移与复制** | 实例间事务性 Stack 传输、Compose 和持久数据迁移、可续传任务、显式完成迁移、计划冷副本、恢复快照和故障切换流程 |
-| **安全与认证** | 按 Stack 和服务授权的受限本地账户、可选 TOTP 2FA、可信代理认证、Cloudflare Turnstile、Trivy 漏洞扫描、CVE 例外和受保护的更新流程 |
+| **安全与认证** | 按 Stack 和服务授权的受限本地账户、可选 TOTP 2FA、原生 OIDC 登录、可信代理认证、Cloudflare Turnstile、Trivy 漏洞扫描、CVE 例外和受保护的更新流程 |
 | **监控** | 系统、Stack 和容器统计，可选每 5 分钟 CPU/RAM 历史，可配置状态栏，健康卡片，崩溃循环检测，健康检查自动修复，响应式/全屏日志，以及可选的 Kula、Dozzle、PowerWatch 和 PowerWatch Hub 集成 |
 | **Docker 资源** | 受保护的统一清理（镜像、卷、网络和构建缓存）、精确补执行、预览、排除项、历史以及破坏性操作保护 |
 | **搜索与文件** | 跨实例全局搜索、受限主机文件管理器、卷浏览、分块传输、文本编辑和文件日志查看 |
@@ -59,6 +59,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 本节汇总近期最重要的变化，方便快速了解 Dockge-Enhanced 最近新增了什么。
 
 ### 🆕 2026 年 10 月
+
+**原生 OIDC 登录：** 无需反向代理即可通过 Pocket ID、Authentik、Keycloak 或 Google 等 OpenID Connect 提供商登录，并与本地账户和 2FA 共存。通过 `DOCKGE_OIDC_*` 环境变量配置，使用带 PKCE 的授权码流程。新的 OIDC 用户为没有任何访问权限的受限账户，需由管理员授权，除非列在 `DOCKGE_OIDC_ADMIN_USERS` 中或属于 `DOCKGE_OIDC_ADMIN_GROUPS`；设置管理员组后，每次登录时角色都会随组成员关系同步。不存在“第一个用户自动成为管理员”的隐含规则：新安装时请先创建管理员或配置管理员映射。仅在 `DOCKGE_OIDC_LINK_EXISTING=true` 时才会关联已有本地账户。OIDC 登录不要求本地 TOTP 验证码，在 `disabled` 和 `trusted-proxy` 模式下 OIDC 会被忽略。如果设置 `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true`，请事先准备好恢复步骤。[指南](docs/oidc.zh-CN.md)。
 
 **默认 Compose 文件名 :** 本分支的功能；正式版本需等待 PR 合并。 COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。
 
@@ -525,6 +527,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 本地账户支持可选 TOTP 2FA、加密密钥、一次性恢复码和会话撤销
 - 受限本地账户，按实例、Stack 和服务授权，并提供独立工作区（[指南](docs/scoped-users.md)）；降级到旧版 Enhanced 之前请先停用这些账户
 - 仅接受明确信任网络的可信代理认证，代理身份对应本地账户
+- 原生 OIDC 登录（Pocket ID、Authentik、Keycloak…），使用 PKCE，默认创建受限账户，可按用户或组映射管理员（[指南](docs/oidc.zh-CN.md)）
 - 从 Secret 文件非交互式创建首个管理员
 - Cloudflare Turnstile 登录保护
 - Trivy 漏洞扫描和 CVE 例外
@@ -890,6 +893,7 @@ PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics �
 | `DOCKER_HOST` | *(无)* | Docker endpoint，例如配合可信 Docker Socket Proxy 使用 `tcp://proxy:2375` |
 | `DOCKGE_CONTAINER_ID` | *(无)* | 无法从 `HOSTNAME` 识别时，显式指定 Enhanced 容器 ID |
 | `DOCKGE_USAGE_COUNT` | *(启用)* | 设为 `false` 可关闭每月匿名安装计数 |
+| `DOCKGE_OIDC_ISSUER` | *(无)* | OpenID Connect 签发者 URL；设置后即启用原生 OIDC 登录。所有 `DOCKGE_OIDC_*` 选项见 [OIDC 指南](docs/oidc.zh-CN.md) |
 
 > ℹ️ 未设置 `DOCKGE_DATA_DIR` 时，Dockge-Enhanced 使用持久化卷 `/app/data`。显式配置的路径始终优先。
 
@@ -929,6 +933,21 @@ environment:
 ```
 
 请将示例 CIDR 替换为代理的确切网络，并配置代理传递所选 Header。Dockge 端口不能被直接访问：只有声明的代理才能提供身份。每个代理身份都使用同名的本地账户：受限账户会限制该代理用户，管理员账户保留完整访问权限。没有对应账户的身份会被创建为没有任何授权的受限账户；新安装的第一个用户以及 `DOCKGE_AUTH_PROXY_ADMIN_USERS` 中列出的身份除外，它们会成为管理员。现有账户保留其角色；角色变更或停用最多可能需要 30 秒才会对代理会话生效。账户管理仅在本地认证模式下可用。绝不要让 `/setup`、`/socket.io` 或 `/api/*` 跳过认证；代理必须转发 WebSocket 并保护整个主机。
+
+### 原生 OIDC 登录（Pocket ID、Authentik、Keycloak…）
+
+无需反向代理，Dockge-Enhanced 可直接通过 OpenID Connect 提供商登录，并与本地账户和 2FA 共存：
+
+```yaml
+environment:
+  - DOCKGE_OIDC_ISSUER=https://id.example.com
+  - DOCKGE_OIDC_CLIENT_ID=dockge
+  - DOCKGE_OIDC_CLIENT_SECRET_FILE=/run/secrets/dockge_oidc_secret
+  - DOCKGE_OIDC_REDIRECT_URI=https://dockge.example.com/api/auth/oidc/callback
+  - DOCKGE_OIDC_ADMIN_GROUPS=dockge-admins
+```
+
+新的 OIDC 用户为受限账户，在管理员授权前没有任何访问权限，除非属于 `DOCKGE_OIDC_ADMIN_GROUPS` 或 `DOCKGE_OIDC_ADMIN_USERS`。没有用户会被隐式设为管理员：新安装时，请通过 `/setup` 或 `DOCKGE_BOOTSTRAP_*` 创建第一个管理员，或配置管理员映射，否则第一次 OIDC 登录会被拒绝。未设置 `DOCKGE_OIDC_LINK_EXISTING=true` 时，绝不会关联已有本地账户。OIDC 仅在本地认证模式下工作，且不要求本地 TOTP 验证码。`DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` 时仅保留 SSO 按钮；如果提供商不可用，请删除该变量并重启容器。[全部选项、提供商示例与恢复方法](docs/oidc.zh-CN.md)。
 
 ---
 

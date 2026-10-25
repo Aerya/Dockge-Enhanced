@@ -13,6 +13,7 @@ import { StackTransferRouter } from "./routers/stack-transfer-router";
 import { IntegrationsRouter } from "./routers/integrations-router";
 import { AutomationRouter } from "./routers/automation-router";
 import { StackToolsRouter } from "./routers/stack-tools-router";
+import { OidcRouter } from "./routers/oidc-router";
 import { ImageWatcher } from "./watchers/image-watcher";
 import { TrivyScanner } from "./watchers/trivy-scanner";
 import { BackupManager } from "./watchers/backup-manager";
@@ -84,6 +85,7 @@ import { StackReplicationSocketHandler } from "./socket-handlers/stack-replicati
 import { StackMoveSocketHandler } from "./socket-handlers/stack-move-socket-handler";
 import { Terminal } from "./terminal";
 import {
+    activeOidcConfig,
     ensureTrustedProxyUser,
     getAuthMode,
     getTrustedProxyIdentity,
@@ -114,6 +116,7 @@ export class DockgeServer {
         new IntegrationsRouter(),
         new AutomationRouter(),
         new StackToolsRouter(),
+        new OidcRouter(),
     ];
 
     /**
@@ -681,6 +684,8 @@ export class DockgeServer {
         // Config publique Cloudflare Turnstile (le secret reste côté serveur)
         const generalSettings = await Settings.getSettings("general");
 
+        const oidcConfig = await activeOidcConfig();
+
         socket.emit("info", {
             version: versionProperty,
             latestVersion: latestVersionProperty,
@@ -688,6 +693,10 @@ export class DockgeServer {
             primaryHostname: await Settings.get("primaryHostname"),
             authMode: await getAuthMode(),
             authModeManaged: Boolean(process.env.DOCKGE_AUTH_MODE),
+            oidc: oidcConfig ? {
+                buttonLabel: oidcConfig.buttonLabel,
+                localLoginDisabled: oidcConfig.disableLocalLogin,
+            } : null,
             turnstileEnabled: !!generalSettings.turnstileEnabled && !!generalSettings.turnstileSiteKey,
             turnstileSiteKey: generalSettings.turnstileEnabled ? (generalSettings.turnstileSiteKey ?? "") : "",
             schedulingTimezone: getSchedulingTimezone(),

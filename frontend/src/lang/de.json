@@ -2437,5 +2437,21 @@
     "home.scope.backups": "{n}/{total} Instanzen planmäßig gesichert",
     "home.scope.partial": "{value} · unvollständig ({n} nicht verfügbar)",
     "home.scope.disabled": "{n} deaktiviert",
-    "releaseNews.item.homeInstanceGlobal": "Startseite: zuerst lokale Statistiken, darunter globale Summen unabhängig von Stack-Filtern. Aufklappbare Übersichtskarten zeigen Werte und direkte Menülinks je Instanz. Offline- oder ältere Instanzen werden als nicht verfügbar angezeigt; deaktivierte Backups werden separat ausgewiesen."
+    "releaseNews.item.homeInstanceGlobal": "Startseite: zuerst lokale Statistiken, darunter globale Summen unabhängig von Stack-Filtern. Aufklappbare Übersichtskarten zeigen Werte und direkte Menülinks je Instanz. Offline- oder ältere Instanzen werden als nicht verfügbar angezeigt; deaktivierte Backups werden separat ausgewiesen.",
+    "oidc.or": "oder",
+    "oidc.signIn": "Mit SSO anmelden",
+    "oidc.linkedAccount": "Mit dem SSO-Anbieter verknüpftes Konto",
+    "oidc.failed": "Die SSO-Anmeldung ist fehlgeschlagen. Prüfen Sie die Dockge-Protokolle.",
+    "oidc.expired": "Die SSO-Anmeldung ist abgelaufen oder wurde bereits verwendet. Bitte erneut versuchen.",
+    "oidc.busy": "Zu viele laufende SSO-Anmeldungen. Bitte gleich erneut versuchen.",
+    "oidc.providerUnavailable": "Der SSO-Anbieter ist nicht erreichbar.",
+    "oidc.providerError": "Der SSO-Anbieter hat die Anmeldung abgelehnt.",
+    "oidc.missingUsername": "Der SSO-Anbieter hat keinen Benutzernamen übermittelt.",
+    "oidc.invalidUsername": "Der vom SSO-Anbieter übermittelte Benutzername ist ungültig.",
+    "oidc.accountConflict": "Ein lokales Konto verwendet diesen Benutzernamen bereits und ist nicht mit dieser SSO-Identität verknüpft.",
+    "oidc.emailNotVerified": "Ihre E-Mail-Adresse ist beim SSO-Anbieter nicht bestätigt.",
+    "oidc.setupRequired": "Legen Sie zuerst den ersten Administrator an oder konfigurieren Sie DOCKGE_OIDC_ADMIN_USERS bzw. DOCKGE_OIDC_ADMIN_GROUPS.",
+    "oidc.accountDisabled": "Dieses Konto ist deaktiviert.",
+    "oidc.localLoginDisabled": "Die Anmeldung mit Benutzername und Passwort ist deaktiviert. Verwenden Sie SSO.",
+    "oidc.disabled": "Die SSO-Anmeldung ist nicht aktiviert."
 }

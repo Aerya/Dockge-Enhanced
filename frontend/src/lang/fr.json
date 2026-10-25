@@ -2433,5 +2433,21 @@
     "home.scope.backups": "{n}/{total} instances sauvegardées dans les délais",
     "home.scope.partial": "{value} · incomplet ({n} indisponibles)",
     "home.scope.disabled": "{n} désactivées",
-    "releaseNews.item.homeInstanceGlobal": "Accueil : statistiques de l’instance en premier, puis totaux globaux indépendants des filtres des stacks. Chaque carte de résumé propose un détail par instance avec des liens directs vers ses menus. Les instances hors ligne ou anciennes sont signalées comme indisponibles ; le bilan des sauvegardes distingue les instances désactivées."
+    "releaseNews.item.homeInstanceGlobal": "Accueil : statistiques de l’instance en premier, puis totaux globaux indépendants des filtres des stacks. Chaque carte de résumé propose un détail par instance avec des liens directs vers ses menus. Les instances hors ligne ou anciennes sont signalées comme indisponibles ; le bilan des sauvegardes distingue les instances désactivées.",
+    "oidc.or": "ou",
+    "oidc.signIn": "Se connecter avec le SSO",
+    "oidc.linkedAccount": "Compte lié au fournisseur SSO",
+    "oidc.failed": "La connexion SSO a échoué. Consultez les journaux de Dockge.",
+    "oidc.expired": "La connexion SSO a expiré ou a déjà été utilisée. Réessayez.",
+    "oidc.busy": "Trop de connexions SSO en cours. Réessayez dans un instant.",
+    "oidc.providerUnavailable": "Le fournisseur SSO est injoignable.",
+    "oidc.providerError": "Le fournisseur SSO a refusé la connexion.",
+    "oidc.missingUsername": "Le fournisseur SSO n’a pas transmis de nom d’utilisateur.",
+    "oidc.invalidUsername": "Le nom d’utilisateur transmis par le fournisseur SSO est invalide.",
+    "oidc.accountConflict": "Un compte local utilise déjà ce nom d’utilisateur et n’est pas lié à cette identité SSO.",
+    "oidc.emailNotVerified": "Votre adresse e-mail n’est pas vérifiée chez le fournisseur SSO.",
+    "oidc.setupRequired": "Créez d’abord le premier administrateur, ou configurez DOCKGE_OIDC_ADMIN_USERS ou DOCKGE_OIDC_ADMIN_GROUPS.",
+    "oidc.accountDisabled": "Ce compte est désactivé.",
+    "oidc.localLoginDisabled": "La connexion par identifiant et mot de passe est désactivée. Utilisez le SSO.",
+    "oidc.disabled": "La connexion SSO n’est pas activée."
 }
