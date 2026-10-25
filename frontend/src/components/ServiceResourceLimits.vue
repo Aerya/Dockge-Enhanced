@@ -13,9 +13,16 @@
             </label>
         </div>
         <p class="form-text">{{ $t("resourceLimits.existing") }}</p>
-        <p class="form-text text-warning">{{ $t("resourceLimits.warning") }}</p>
+        <div class="alert alert-warning mt-3" role="alert">
+            <strong>{{ $t("resourceLimits.warningTitle") }}</strong>
+            <p class="mb-0 mt-1">{{ $t("resourceLimits.warning") }}</p>
+            <label v-if="memoryRequiresAcknowledgement" class="d-flex gap-2 align-items-start mt-2">
+                <input v-model="memoryAcknowledged" type="checkbox" class="form-check-input flex-shrink-0" />
+                <span>{{ $t("resourceLimits.acknowledge") }}</span>
+            </label>
+        </div>
         <p v-if="error || structureError" role="alert" class="text-danger">{{ $t(`resourceLimits.${error || structureError}`) }}</p>
-        <button type="button" class="btn btn-sm btn-primary" :disabled="!!structureError || !changed" @click="apply">{{ $t("resourceLimits.apply") }}</button>
+        <button type="button" class="btn btn-sm btn-primary" :disabled="!!structureError || !changed || (memoryRequiresAcknowledgement && !memoryAcknowledged)" @click="apply">{{ $t("resourceLimits.apply") }}</button>
         <p class="form-text mb-0 mt-2">{{ $t("resourceLimits.saveHint") }}</p>
     </section>
 </template>
@@ -33,19 +40,31 @@ export default {
         memory: "",
         originalCpu: "",
         originalMemory: "",
+        memoryAcknowledged: false,
         error: "",
         structureError: "" }),
     computed: {
+        memoryRequiresAcknowledgement() {
+            return this.memory.trim() !== "" && this.memory.trim() !== this.originalMemory;
+        },
         changed() {
             return this.cpu.trim() !== this.originalCpu || this.memory.trim() !== this.originalMemory;
         },
     },
     watch: {
+        cpu() {
+            this.error = "";
+        },
+        memory() {
+            this.memoryAcknowledged = false;
+            this.error = "";
+        },
         service: {
             immediate: true,
             deep: true,
             handler() {
                 this.error = "";
+                this.memoryAcknowledged = false;
                 this.structureError = "";
                 try {
                     const draft = readResourceLimits(this.service);
@@ -61,8 +80,13 @@ export default {
         apply() {
             this.error = "";
             try {
-                this.$emit("apply", applyResourceLimits(this.service, { cpu: this.cpu,
-                    memory: this.memory }));
+                const updated = applyResourceLimits(this.service, { cpu: this.cpu,
+                    memory: this.memory });
+                if (this.memory.trim() && this.memory.trim() !== this.originalMemory && !this.memoryAcknowledged) {
+                    this.error = "acknowledge";
+                    return;
+                }
+                this.$emit("apply", updated);
             } catch (error) {
                 this.error = error.message;
             }

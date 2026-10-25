@@ -1,4 +1,6 @@
 {
+    "resourceLimits.warningTitle": "Speicherlimit: Risiko eines Containerstopps",
+    "resourceLimits.acknowledge": "Ich verstehe, dass dieses RAM-Limit den Container stoppen kann, wenn sein Speicherbedarf darüber liegt.",
     "resourceLimits.title": "CPU-/RAM-Limits",
     "resourceLimits.cpu": "CPU-Kerne (z. B. 0.5)",
     "resourceLimits.memory": "RAM (z. B. 512M oder 1G)",
@@ -10,7 +12,7 @@
     "resourceLimits.invalidCpu": "Geben Sie eine positive CPU-Anzahl mit Dezimalpunkt und höchstens 9 Nachkommastellen ein.",
     "resourceLimits.invalidMemory": "Geben Sie mindestens 6 MiB RAM an (z. B. 128M, 1G oder Bytes).",
     "resourceLimits.invalidStructure": "Diese Ressourcenstruktur lässt sich hier nicht bearbeiten. Verwenden Sie den YAML-Editor.",
-    "releaseNews.item.serviceResourceLimits": "Optionale CPU-/RAM-Limits pro Dienst im Compose-Editor für Administratoren. Vorhandene Aliase bleiben konsistent; andere Ressourceneinstellungen und eingeschränkte Kontorechte bleiben erhalten. Auf den Entwurf anwenden, dann ausdrücklich speichern und bereitstellen. Inspiriert von Isurupro7 (Dockge #1006).",
+    "releaseNews.item.serviceResourceLimits": "Optionale CPU-/RAM-Limits pro Dienst im Compose-Editor für Administratoren. Vorhandene Aliase bleiben konsistent; andere Ressourceneinstellungen und eingeschränkte Kontorechte bleiben erhalten. Auf den Entwurf anwenden, dann ausdrücklich speichern und bereitstellen. Inspiriert von Isurupro7 (Dockge #1006). Ein deutlich sichtbarer RAM-Hinweis muss vor dem Anwenden eines neuen oder geänderten Speicherlimits bestätigt werden.",
     "access.standaloneContainer": "Eigenständiger Container",
     "access.service": "Genauer Compose-Dienstname (alle zugehörigen Container)",
     "access.addService": "Nur diesen Dienst hinzufügen",

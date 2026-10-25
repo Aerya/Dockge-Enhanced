@@ -32,10 +32,24 @@ test("apply emits only a valid draft; no Docker or socket action", () => {
     assert.equal(events.length, 0);
     context.cpu = "0.5";
     component.methods.apply.call(context);
+    assert.equal(events.length, 0, "RAM change needs explicit acknowledgement");
+    assert.equal(context.error, "acknowledge");
+    context.memoryAcknowledged = true;
+    component.methods.apply.call(context);
     assert.equal(events.length, 1);
     assert.equal(events[0][0], "apply");
     assert.equal(events[0][1].deploy.resources.limits.memory, "128M");
     assert.deepEqual(context.service, { image: "busybox:stable" });
+});
+
+test("RAM acknowledgement is reset after changing the value and not needed for removal", () => {
+    const context = { memory: "64M", originalMemory: "128M", memoryAcknowledged: true, error: "invalidMemory" };
+    assert.equal(component.computed.memoryRequiresAcknowledgement.call(context), true);
+    component.watch.memory.call(context);
+    assert.equal(context.memoryAcknowledged, false);
+    assert.equal(context.error, "");
+    context.memory = "";
+    assert.equal(component.computed.memoryRequiresAcknowledgement.call(context), false);
 });
 
 test("malformed deployment mapping is shown as non-editable, never overwritten", async () => {

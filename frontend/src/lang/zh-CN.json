@@ -1,4 +1,6 @@
 {
+    "resourceLimits.warningTitle": "内存限制：容器可能停止",
+    "resourceLimits.acknowledge": "我理解，如果容器的内存需求超过此 RAM 限制，容器可能停止。",
     "resourceLimits.title": "CPU / RAM 限制",
     "resourceLimits.cpu": "CPU 核心数（如 0.5）",
     "resourceLimits.memory": "RAM（如 512M 或 1G）",
@@ -10,7 +12,7 @@
     "resourceLimits.invalidCpu": "请输入正数 CPU 数量，使用小数点，最多 9 位小数。",
     "resourceLimits.invalidMemory": "请输入至少 6 MiB 的 RAM 大小（如 128M、1G 或字节数）。",
     "resourceLimits.invalidStructure": "无法在此编辑该资源结构，请使用 YAML 编辑器。",
-    "releaseNews.item.serviceResourceLimits": "管理员 Compose 编辑器新增可选的服务级 CPU/RAM 限制。现有别名保持一致，其他资源设置和受限账户权限不变。先应用到草稿，再明确保存和部署。灵感来自 Isurupro7（Dockge #1006）。",
+    "releaseNews.item.serviceResourceLimits": "管理员 Compose 编辑器新增可选的服务级 CPU/RAM 限制。现有别名保持一致，其他资源设置和受限账户权限不变。先应用到草稿，再明确保存和部署。灵感来自 Isurupro7（Dockge #1006）。 应用新的或修改后的内存限制前，必须确认醒目的 RAM 警告。",
     "access.standaloneContainer": "独立容器",
     "access.service": "准确的 Compose 服务名称（包含其所有容器）",
     "access.addService": "仅添加此服务",

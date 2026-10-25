@@ -1,4 +1,6 @@
 {
+    "resourceLimits.warningTitle": "Límite de memoria: riesgo de detener el contenedor",
+    "resourceLimits.acknowledge": "Entiendo que este límite de RAM puede detener el contenedor si sus necesidades de memoria lo superan.",
     "resourceLimits.title": "Límites de CPU / RAM",
     "resourceLimits.cpu": "Núcleos de CPU (p. ej. 0.5)",
     "resourceLimits.memory": "RAM (p. ej. 512M o 1G)",
@@ -10,7 +12,7 @@
     "resourceLimits.invalidCpu": "Introduzca una cantidad de CPU positiva, con punto decimal y un máximo de 9 decimales.",
     "resourceLimits.invalidMemory": "Indique al menos 6 MiB de RAM (p. ej. 128M, 1G o bytes).",
     "resourceLimits.invalidStructure": "Esta estructura de recursos no se puede editar aquí. Utilice el editor YAML.",
-    "releaseNews.item.serviceResourceLimits": "Límites opcionales de CPU/RAM por servicio en el editor Compose del administrador. Los alias existentes siguen siendo coherentes; los demás ajustes y los permisos restringidos se conservan. Aplique al borrador, guarde y despliegue explícitamente. Inspirado en Isurupro7 (Dockge #1006).",
+    "releaseNews.item.serviceResourceLimits": "Límites opcionales de CPU/RAM por servicio en el editor Compose del administrador. Los alias existentes siguen siendo coherentes; los demás ajustes y los permisos restringidos se conservan. Aplique al borrador, guarde y despliegue explícitamente. Inspirado en Isurupro7 (Dockge #1006). Una advertencia visible sobre la RAM exige confirmación antes de aplicar un límite de memoria nuevo o modificado.",
     "access.standaloneContainer": "Contenedor independiente",
     "access.service": "Nombre exacto del servicio Compose (todos sus contenedores)",
     "access.addService": "Añadir solo este servicio",
