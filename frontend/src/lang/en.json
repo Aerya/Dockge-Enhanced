@@ -12,6 +12,7 @@
     "resourceLimits.invalidCpu": "Enter a positive CPU count, using a decimal point and at most 9 decimal places.",
     "resourceLimits.invalidMemory": "Enter a RAM size of at least 6 MiB (e.g. 128M, 1G, or bytes).",
     "resourceLimits.invalidStructure": "This resource structure cannot be edited here. Use the YAML editor.",
+    "releaseNews.item.composeFilename": "COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected.",
     "releaseNews.item.serviceResourceLimits": "Optional CPU/RAM limits per service in the administrator Compose editor. Existing aliases stay consistent; other resource settings and restricted-account permissions are preserved. Apply to the draft, then save and deploy explicitly. Inspired by Isurupro7 (Dockge #1006). A prominent RAM warning requires acknowledgement before applying a new or changed memory limit.",
     "access.standaloneContainer": "Standalone container",
     "access.service": "Exact Compose service name (all its containers)",

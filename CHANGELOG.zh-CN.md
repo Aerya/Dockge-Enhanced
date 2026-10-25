@@ -4,6 +4,8 @@
 
 [README](README.zh-CN.md) 介绍近期主要更新和完整功能目录。
 
+**2026-10-25 — 默认 Compose 文件名** — 本分支的功能；正式版本需等待 PR 合并。 COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。 [RichyHBM / Dockge #84](https://github.com/louislam/dockge/pull/84).
+
 **2026-10-25 — Socket.IO 默认端口** — 本分支的修复；正式版本需等待 PR 合并。浏览器来源使用隐式 HTTP/HTTPS 端口时，现在可匹配显式带有 :80/:443 的 Host 标头，包括 IPv6。不同主机或不等价端口仍被拒绝；代理转发标头不能绕过此检查。
 
 **2026-10-25 — 服务级 CPU/RAM 限制** — 本 PR 中准备的功能，尚未正式发布。 管理员 Compose 编辑器新增可选的服务级 CPU/RAM 限制。现有别名保持一致，其他资源设置和受限账户权限不变。先应用到草稿，再明确保存和部署。灵感来自 Isurupro7（Dockge #1006）。 RAM 限制过低可能导致容器因内存不足而停止。CPU 会被限速。移除限制不会预留资源。 现有表达式在编辑前保持不变，其他资源设置也不变。override、extends 或包含的文件仍可能提供限制，请检查最终 Compose 配置。 应用新的或修改后的内存限制前，必须确认醒目的 RAM 警告。

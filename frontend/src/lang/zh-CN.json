@@ -12,6 +12,7 @@
     "resourceLimits.invalidCpu": "请输入正数 CPU 数量，使用小数点，最多 9 位小数。",
     "resourceLimits.invalidMemory": "请输入至少 6 MiB 的 RAM 大小（如 128M、1G 或字节数）。",
     "resourceLimits.invalidStructure": "无法在此编辑该资源结构，请使用 YAML 编辑器。",
+    "releaseNews.item.composeFilename": "COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。",
     "releaseNews.item.serviceResourceLimits": "管理员 Compose 编辑器新增可选的服务级 CPU/RAM 限制。现有别名保持一致，其他资源设置和受限账户权限不变。先应用到草稿，再明确保存和部署。灵感来自 Isurupro7（Dockge #1006）。 应用新的或修改后的内存限制前，必须确认醒目的 RAM 警告。",
     "access.standaloneContainer": "独立容器",
     "access.service": "准确的 Compose 服务名称（包含其所有容器）",

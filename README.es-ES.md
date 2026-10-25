@@ -61,6 +61,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Nombre predeterminado del archivo Compose :** Preparado en esta PR; todavía no publicado. COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas.
+
 **Puertos predeterminados de Socket.IO :** Preparado en esta PR, todavía no publicado. Un origen del navegador con el puerto HTTP/HTTPS implícito coincide ahora con una cabecera Host con :80/:443 explícito, también en IPv6. Se siguen rechazando hosts y puertos no equivalentes; las cabeceras del proxy no evitan esta comprobación.
 
 **Límites de CPU/RAM por servicio :** Preparado en esta PR; todavía no publicado. Límites opcionales de CPU/RAM por servicio en el editor Compose del administrador. Los alias existentes siguen siendo coherentes; los demás ajustes y los permisos restringidos se conservan. Aplique al borrador, guarde y despliegue explícitamente. Inspirado en Isurupro7 (Dockge #1006). Un límite de RAM demasiado bajo puede detener el contenedor por falta de memoria. La CPU se limita. Eliminar un límite no reserva recursos. Las expresiones existentes se conservan hasta editarlas. Los demás ajustes no cambian. Los overrides, extends o archivos incluidos pueden seguir imponiendo límites: revise el Compose final. Una advertencia visible sobre la RAM exige confirmación antes de aplicar un límite de memoria nuevo o modificado.
@@ -462,6 +464,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Opción por servicio para ignorar un servicio opcional en el estado global del stack
 
 ### Edición de Compose
+
+- **Nombre predeterminado del archivo Compose** — COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas.
 - límites opcionales de CPU/RAM por servicio — Preparado en esta PR; todavía no publicado. Solo modifica el borrador. Guarde y despliegue/recree explícitamente para aplicarlo a los contenedores; los contenedores activos no se modifican aquí.
 - Editores de Compose, `compose.override.yaml` y `.env` con resaltado de variables, plegado, búsqueda y pantalla completa
 - Plantillas Compose y `.env` por defecto validadas, aplicadas solo a los stacks nuevos
@@ -862,6 +866,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | Variable | Predeterminado | Descripción |
 |---|---|---|
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directorio que contiene los stacks Docker Compose |
+| `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Directorio de datos de Dockge; cámbialo solo para un montaje persistente personalizado |
 | `DOCKGE_PUBLIC_URL` | *(ninguna)* | URL pública usada en enlaces de notificaciones Discord (por ejemplo `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(ninguna)* | Fija la versión de la API de Docker negociada por el cliente — útil en ciertos sistemas NAS (por ejemplo Synology DSM 7.x) |
@@ -965,6 +970,7 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 - [**Dozzle**](https://github.com/amir20/dozzle) por Amir Rajan — visor de registros Docker en tiempo real (licencia MIT)
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) por hamphh — inspiración y etiquetas compatibles para excluir por servicio el estado global y las actualizaciones de imágenes
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiración para límites opcionales de CPU/RAM por servicio, sin modificar los permisos restringidos
+- [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Nombre predeterminado del archivo Compose.
 - [**Kula**](https://github.com/c0m4r/kula) por c0m4r — monitor de sistema ligero (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — inspiración para el gestor de archivos del host restringido y la vista por contenedor real adaptados a Enhanced (licencia MIT)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) por DeepSpace2 — automatización opcional de DNS y Nginx Proxy Manager (GPLv3)

@@ -12,6 +12,7 @@
     "resourceLimits.invalidCpu": "Geben Sie eine positive CPU-Anzahl mit Dezimalpunkt und höchstens 9 Nachkommastellen ein.",
     "resourceLimits.invalidMemory": "Geben Sie mindestens 6 MiB RAM an (z. B. 128M, 1G oder Bytes).",
     "resourceLimits.invalidStructure": "Diese Ressourcenstruktur lässt sich hier nicht bearbeiten. Verwenden Sie den YAML-Editor.",
+    "releaseNews.item.composeFilename": "COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt.",
     "releaseNews.item.serviceResourceLimits": "Optionale CPU-/RAM-Limits pro Dienst im Compose-Editor für Administratoren. Vorhandene Aliase bleiben konsistent; andere Ressourceneinstellungen und eingeschränkte Kontorechte bleiben erhalten. Auf den Entwurf anwenden, dann ausdrücklich speichern und bereitstellen. Inspiriert von Isurupro7 (Dockge #1006). Ein deutlich sichtbarer RAM-Hinweis muss vor dem Anwenden eines neuen oder geänderten Speicherlimits bestätigt werden.",
     "access.standaloneContainer": "Eigenständiger Container",
     "access.service": "Genauer Compose-Dienstname (alle zugehörigen Container)",

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-25-compose-filename",
+        items: [ "releaseNews.item.composeFilename" ],
+    },
+    {
         id: "2026-10-25-service-resource-limits",
         items: [ "releaseNews.item.serviceResourceLimits" ],
     },

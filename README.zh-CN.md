@@ -60,6 +60,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 10 月
 
+**默认 Compose 文件名 :** 本分支的功能；正式版本需等待 PR 合并。 COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。
+
 **Socket.IO 默认端口 :** 本分支的修复；正式版本需等待 PR 合并。浏览器来源使用隐式 HTTP/HTTPS 端口时，现在可匹配显式带有 :80/:443 的 Host 标头，包括 IPv6。不同主机或不等价端口仍被拒绝；代理转发标头不能绕过此检查。
 
 **服务级 CPU/RAM 限制 :** 本 PR 中准备的功能，尚未正式发布。 管理员 Compose 编辑器新增可选的服务级 CPU/RAM 限制。现有别名保持一致，其他资源设置和受限账户权限不变。先应用到草稿，再明确保存和部署。灵感来自 Isurupro7（Dockge #1006）。 RAM 限制过低可能导致容器因内存不足而停止。CPU 会被限速。移除限制不会预留资源。 现有表达式在编辑前保持不变，其他资源设置也不变。override、extends 或包含的文件仍可能提供限制，请检查最终 Compose 配置。 应用新的或修改后的内存限制前，必须确认醒目的 RAM 警告。
@@ -461,6 +463,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 可按服务设置在 Stack 整体状态中忽略某个可选服务
 
 ### Compose 编辑
+
+- **默认 Compose 文件名** — COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。
 - 可选的服务级 CPU/RAM 限制 — 本 PR 中准备的功能，尚未正式发布。 仅修改草稿。请保存后明确部署或重建，才能应用到容器；此处不会修改运行中的容器。
 - Compose、`compose.override.yaml` 和 `.env` 编辑器，支持变量高亮、折叠、搜索和全屏
 - 经过校验的默认 Compose 和 `.env` 模板，仅用于新建 Stack
@@ -863,6 +867,7 @@ PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics �
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Docker Compose Stack 所在目录 |
+| `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。 |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge 数据目录；仅在使用自定义持久化挂载时覆盖 |
 | `DOCKGE_PUBLIC_URL` | *(无)* | Discord 通知链接使用的公开 URL（例如 `https://dockge.example.com`） |
 | `DOCKER_API_VERSION` | *(无)* | 固定 Docker 客户端协商的 API 版本，适用于部分 NAS 系统（例如 Synology DSM 7.x） |
@@ -967,6 +972,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — Docker 实时日志查看器
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — 按服务排除整体状态和镜像更新功能的灵感及兼容标签来源
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — 为可选的服务级 CPU/RAM 限制提供灵感，适配时保留受限账户权限
+- [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — 默认 Compose 文件名.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — 可选 DNS / Nginx Proxy Manager 自动化
