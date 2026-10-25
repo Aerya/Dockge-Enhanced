@@ -977,7 +977,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — 按服务排除整体状态和镜像更新功能的灵感及兼容标签来源
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — 为可选的服务级 CPU/RAM 限制提供灵感，适配时保留受限账户权限
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — 默认 Compose 文件名.
-- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) / [**Dockge #170**](https://github.com/louislam/dockge/pull/170) — 按服务渐进更新.
+- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — 按服务渐进更新.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — 可选 DNS / Nginx Proxy Manager 自动化

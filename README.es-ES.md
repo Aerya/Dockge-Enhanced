@@ -975,7 +975,7 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) por hamphh — inspiración y etiquetas compatibles para excluir por servicio el estado global y las actualizaciones de imágenes
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiración para límites opcionales de CPU/RAM por servicio, sin modificar los permisos restringidos
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Nombre predeterminado del archivo Compose.
-- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) / [**Dockge #170**](https://github.com/louislam/dockge/pull/170) — Actualizaciones progresivas por servicio.
+- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Actualizaciones progresivas por servicio.
 - [**Kula**](https://github.com/c0m4r/kula) por c0m4r — monitor de sistema ligero (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — inspiración para el gestor de archivos del host restringido y la vista por contenedor real adaptados a Enhanced (licencia MIT)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) por DeepSpace2 — automatización opcional de DNS y Nginx Proxy Manager (GPLv3)
