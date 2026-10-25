@@ -1,4 +1,11 @@
 {
+    "serviceRollout.unsupported": "托管 Stack 的实例必须支持渐进更新。也请更新关联实例；新建远程 Stack 请先保存。旧版代理不会遵守此选项。",
+    "serviceRollout.draining": "需要 CMD-SHELL 健康检查、sh/touch/rm 和可写的 /tmp。启用时会在草稿中添加流量排空检查：首次使用渐进更新前，请先保存并部署一次。旧副本会先退出代理的健康目标池再停止；不保证长时间请求不中断。",
+    "serviceRollout.title": "渐进更新（高级）",
+    "serviceRollout.help": "默认关闭。需要健康的副本、共享网络上的 Traefik、HTTP 路由器和明确的内部端口，不允许发布主机端口、固定容器名称或共享可写卷。更新前会检查解析后的 Compose 配置。",
+    "serviceRollout.warning": "临时将副本数量加倍。应用必须支持多个实例同时运行。不保证保留正在处理的请求；Recreate 和回滚仍可能中断服务。",
+    "serviceRollout.confirm": "启用渐进更新？我确认应用支持多个实例同时运行，并且有额外的 CPU/RAM 资源。",
+    "releaseNews.item.serviceRollout": "渐进更新（高级）. 默认关闭。需要健康的副本、共享网络上的 Traefik、HTTP 路由器和明确的内部端口，不允许发布主机端口、固定容器名称或共享可写卷。更新前会检查解析后的 Compose 配置。 临时将副本数量加倍。应用必须支持多个实例同时运行。不保证保留正在处理的请求；Recreate 和回滚仍可能中断服务。 需要 CMD-SHELL 健康检查、sh/touch/rm 和可写的 /tmp。启用时会在草稿中添加流量排空检查：首次使用渐进更新前，请先保存并部署一次。旧副本会先退出代理的健康目标池再停止；不保证长时间请求不中断。",
     "resourceLimits.warningTitle": "内存限制：容器可能停止",
     "resourceLimits.acknowledge": "我理解，如果容器的内存需求超过此 RAM 限制，容器可能停止。",
     "resourceLimits.title": "CPU / RAM 限制",

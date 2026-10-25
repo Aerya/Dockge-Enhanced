@@ -51,6 +51,7 @@ import {
     targetedComposeRecreateArgs,
 } from "../compose-network-namespace";
 import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/compose-labels";
+import { prepareRollout, type ComposeRun } from "../service-rollout";
 import { finishDockerCleanup, tryStartDockerCleanup } from "../docker-operation-state";
 import { reconcileRollbackKeepTags, rollbackTagFromKey as rollbackTag } from "./auto-prune-manager";
 import { resolveDataDir } from "../data-dir";
@@ -1532,7 +1533,7 @@ export class ImageWatcher {
 
     /** Registry checks are read-only; only Docker-changing work blocks self-update. */
     hasDockerOperationInProgress(): boolean {
-        return this._updatingImages.size > 0 || (this.manualBatch.running && this.manualBatch.current !== null);
+        return isDockerUpdateReservedBy("image-update") || this._updatingImages.size > 0 || (this.manualBatch.running && this.manualBatch.current !== null);
     }
 
     private reserveImageMutation(key: string): DockerUpdateReservation | null {
@@ -2216,6 +2217,14 @@ export class ImageWatcher {
                 envFiles,
             );
             const runningCommand = composeExecInvocation(composePath, [ "ps", "--status", "running", "--services" ], project, configFiles, workingDir, envFiles);
+            const rolloutCompose: ComposeRun = (args, timeout, override) => {
+                const invocation = composeExecInvocation(composePath, args, project,
+                    override ? [ ...(configFiles?.length ? configFiles : [ composePath ]).filter(file => path.resolve(file) !== path.resolve(override)), override ] : configFiles, workingDir, envFiles);
+                return docker(invocation.args, { cwd: invocation.cwd,
+                    timeout });
+            };
+            const rolloutTargets = recreateArgs.slice(1).filter(arg => !arg.startsWith("-"));
+            const rollout = await prepareRollout(rolloutCompose, (args, timeout) => docker(args, { timeout }), rolloutTargets, { stateDir: path.join(this.dataDir, "rolling-updates") });
             const runningServices = await docker(runningCommand.args, { cwd: runningCommand.cwd,
                 timeout: 15_000 });
             const stoppedTargets = missingRunningComposeTargets(recreateArgs, runningServices);
@@ -2247,6 +2256,9 @@ export class ImageWatcher {
             }
 
             const pullCommand = composeExecInvocation(composePath, [ "pull", ...services ], project, configFiles, workingDir, envFiles);
+            if (rollout && !oldImageId) {
+                throw new Error("Rolling update requires a single identifiable previous image for rollback");
+            }
             if (ignored()) {
                 return false;
             }
@@ -2268,13 +2280,44 @@ export class ImageWatcher {
             if (ignored()) {
                 return false;
             }
-            await docker(upCommand.args, {
-                cwd: upCommand.cwd,
-                timeout: 120000,
-            });
+            if (rollout) {
+                // Protect the previous image even if retirement or a later
+                // service fails after the first replica has been replaced.
+                if (oldImageId) {
+                    const now = new Date();
+                    await this.saveRollbackEntry({
+                        key,
+                        image: status.image,
+                        stack: status.stack,
+                        composePath,
+                        project,
+                        configFiles,
+                        workingDir,
+                        envFiles,
+                        service: services[0] ?? null,
+                        services,
+                        oldImageId,
+                        updatedAt: now.toISOString(),
+                        expiresAt: new Date(now.getTime() + ROLLBACK_WINDOW_MS).toISOString(),
+                    });
+                }
+                await rollout.execute(() => !ignored());
+                const remaining = recreateArgs.filter(arg => !rollout.services.includes(arg));
+                if (remaining.some(arg => !arg.startsWith("-") && arg !== "up")) {
+                    await docker(remaining.length === recreateArgs.length ? upCommand.args :
+                        composeExecInvocation(composePath, remaining, project, configFiles, workingDir, envFiles).args,
+                    { cwd: upCommand.cwd,
+                        timeout: 120000 });
+                }
+            } else {
+                await docker(upCommand.args, {
+                    cwd: upCommand.cwd,
+                    timeout: 120000,
+                });
+            }
 
             // ── Sauvegarde l'entrée de rollback si on avait une image antérieure ──
-            if (oldImageId) {
+            if (oldImageId && !rollout) {
                 const now = new Date();
                 await this.saveRollbackEntry({
                     key,

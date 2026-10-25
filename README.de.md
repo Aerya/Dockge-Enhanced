@@ -61,6 +61,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+**Rollende Updates pro Dienst :** In dieser PR vorbereitet; noch nicht publiziert. Standardmäßig deaktiviert. Erfordert gesunde Replikate, Traefik in einem gemeinsamen Netzwerk, einen HTTP-Router und einen expliziten internen Port, keine veröffentlichten Host-Ports oder festen Containernamen und keine gemeinsam beschreibbaren Volumes. Die aufgelöste Compose-Konfiguration wird vor dem Update geprüft. Verdoppelt vorübergehend die Replikate. Die Anwendung muss parallele Instanzen unterstützen. Laufende Anfragen sind nicht garantiert; Recreate und Rollback bleiben unterbrechend. [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Erfordert einen CMD-SHELL-Healthcheck, sh/touch/rm und ein beschreibbares /tmp. Beim Aktivieren wird der Entwurf um eine Drain-Prüfung ergänzt: vor rollenden Updates einmal speichern und bereitstellen. Alte Replikate verlassen vor dem Stoppen den gesunden Proxy-Pool; lange Anfragen sind nicht garantiert. Die Host-Instanz muss rollende Updates unterstützen. Aktualisieren Sie auch verbundene Instanzen; speichern Sie neue entfernte Stacks zuerst. Ältere Agents beachten diese Option nicht.
+
 **Standardname der Compose-Datei :** In dieser PR vorbereitet; noch nicht publiziert. COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt.
 
 **Socket.IO-Standardports :** In dieser PR vorbereitet, noch nicht veröffentlicht. Browser-Ursprünge mit implizitem HTTP/HTTPS-Port entsprechen nun einem Host-Header mit explizitem :80/:443, auch bei IPv6. Andere Hosts und nicht gleichwertige Ports bleiben gesperrt; Proxy-Header umgehen diese Prüfung nicht.
@@ -504,6 +506,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Anleitungen: [Restic-Backups und Wiederherstellung](docs/restic.de.md) · [Zerobyte-Einrichtung und -Wiederherstellung](docs/zerobyte.de.md)
 
 ### Updates & ImageWatcher
+
+- **Rollende Updates pro Dienst** — `dockge.rollout.enabled: "true"`. Verdoppelt vorübergehend die Replikate. Die Anwendung muss parallele Instanzen unterstützen. Laufende Anfragen sind nicht garantiert; Recreate und Rollback bleiben unterbrechend.
 - Erkennung von Image-Updates per Digest, ohne Pull, auch auf entfernten Instanzen
 - Richtlinien Aus, Sofort und Geplant pro Image sowie stackweite Sammelrichtlinien, die einzelne Ausnahmen standardmäßig beibehalten
 - Vollständiger Scan standardmäßig alle 6 Stunden und gezielte Sofort-Prüfungen standardmäßig alle 5 Minuten, getrennt konfigurierbar oder abschaltbar
@@ -969,6 +973,7 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) von hamphh – Inspiration und kompatible Labels für den Stack-Status pro Dienst und den Ausschluss von Image-Updates
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — Inspiration für optionale CPU-/RAM-Limits pro Dienst, ohne Änderungen an eingeschränkten Kontorechten
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Standardname der Compose-Datei.
+- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) / [**Dockge #170**](https://github.com/louislam/dockge/pull/170) — Rollende Updates pro Dienst.
 - [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) von Lorwell – Inspiration für den eingeschränkten Host-Dateimanager und die Ansicht echter Container, angepasst für Enhanced (MIT-Lizenz)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) von DeepSpace2 – optionale DNS- und Nginx-Proxy-Manager-Automatisierung (GPLv3)

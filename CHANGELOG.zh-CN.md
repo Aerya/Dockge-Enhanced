@@ -4,6 +4,8 @@
 
 [README](README.zh-CN.md) 介绍近期主要更新和完整功能目录。
 
+**2026-10-25 — 按服务渐进更新** — 本分支的功能；正式版本需等待 PR 合并。 默认关闭。需要健康的副本、共享网络上的 Traefik、HTTP 路由器和明确的内部端口，不允许发布主机端口、固定容器名称或共享可写卷。更新前会检查解析后的 Compose 配置。 临时将副本数量加倍。应用必须支持多个实例同时运行。不保证保留正在处理的请求；Recreate 和回滚仍可能中断服务。 [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). 需要 CMD-SHELL 健康检查、sh/touch/rm 和可写的 /tmp。启用时会在草稿中添加流量排空检查：首次使用渐进更新前，请先保存并部署一次。旧副本会先退出代理的健康目标池再停止；不保证长时间请求不中断。 托管 Stack 的实例必须支持渐进更新。也请更新关联实例；新建远程 Stack 请先保存。旧版代理不会遵守此选项。
+
 **2026-10-25 — 默认 Compose 文件名** — 本分支的功能；正式版本需等待 PR 合并。 COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。 [RichyHBM / Dockge #84](https://github.com/louislam/dockge/pull/84).
 
 **2026-10-25 — Socket.IO 默认端口** — 本分支的修复；正式版本需等待 PR 合并。浏览器来源使用隐式 HTTP/HTTPS 端口时，现在可匹配显式带有 :80/:443 的 Host 标头，包括 IPv6。不同主机或不等价端口仍被拒绝；代理转发标头不能绕过此检查。

@@ -61,6 +61,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Octubre de 2026
 
+**Actualizaciones progresivas por servicio :** Preparado en esta PR; todavía no publicado. Desactivada por defecto. Requiere réplicas saludables, Traefik en una red compartida, un router HTTP y un puerto interno explícito, sin puertos de host publicados ni nombre fijo de contenedor, y sin volúmenes compartidos de escritura. Se valida el Compose resuelto antes de actualizar. Duplica temporalmente las réplicas. La aplicación debe admitir instancias simultáneas. No se garantiza conservar las solicitudes en curso; Recreate y la reversión siguen siendo interruptivos. [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Requiere un healthcheck CMD-SHELL, sh/touch/rm y /tmp escribible. La activación añade una comprobación de drenaje al borrador: guarde y despliegue una vez antes de usar actualizaciones progresivas. Las réplicas antiguas salen del grupo saludable del proxy antes de detenerse; no se garantizan las solicitudes largas. La instancia anfitriona debe admitir esta opción. Actualice también las instancias vinculadas; guarde primero los stacks remotos nuevos. Los agentes antiguos no respetan esta opción.
+
 **Nombre predeterminado del archivo Compose :** Preparado en esta PR; todavía no publicado. COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas.
 
 **Puertos predeterminados de Socket.IO :** Preparado en esta PR, todavía no publicado. Un origen del navegador con el puerto HTTP/HTTPS implícito coincide ahora con una cabecera Host con :80/:443 explícito, también en IPv6. Se siguen rechazando hosts y puertos no equivalentes; las cabeceras del proxy no evitan esta comprobación.
@@ -506,6 +508,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Guías: [Copias Restic y recuperación](docs/restic.es.md) · [Instalación y recuperación de Zerobyte](docs/zerobyte.es.md)
 
 ### Actualizaciones e ImageWatcher
+
+- **Actualizaciones progresivas por servicio** — `dockge.rollout.enabled: "true"`. Duplica temporalmente las réplicas. La aplicación debe admitir instancias simultáneas. No se garantiza conservar las solicitudes en curso; Recreate y la reversión siguen siendo interruptivos.
 - Detección de actualizaciones de imágenes por digest, sin pull, también en instancias remotas
 - Políticas Desactivado, Inmediato y Programado por imagen, y políticas agrupadas por stack que conservan por defecto las excepciones individuales
 - Análisis completo cada 6 horas por defecto y comprobaciones dirigidas en modo Inmediato cada 5 minutos por defecto, configurables o desactivables por separado
@@ -971,6 +975,7 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) por hamphh — inspiración y etiquetas compatibles para excluir por servicio el estado global y las actualizaciones de imágenes
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiración para límites opcionales de CPU/RAM por servicio, sin modificar los permisos restringidos
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Nombre predeterminado del archivo Compose.
+- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) / [**Dockge #170**](https://github.com/louislam/dockge/pull/170) — Actualizaciones progresivas por servicio.
 - [**Kula**](https://github.com/c0m4r/kula) por c0m4r — monitor de sistema ligero (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — inspiración para el gestor de archivos del host restringido y la vista por contenedor real adaptados a Enhanced (licencia MIT)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) por DeepSpace2 — automatización opcional de DNS y Nginx Proxy Manager (GPLv3)

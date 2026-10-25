@@ -62,6 +62,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Mises à jour progressives par service :** Préparé dans cette PR ; pas encore publié. Désactivée par défaut. Nécessite des réplicas sains, Traefik sur un réseau partagé, un routeur HTTP et un port interne explicite, aucun port hôte publié ni nom de conteneur fixe, et aucun volume partagé en écriture. Les contrôles portent sur le Compose résolu avant la mise à jour. Double temporairement les réplicas. L’application doit supporter plusieurs instances simultanées. Les requêtes en cours ne sont pas garanties ; Recreate et le rollback restent interruptifs. [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Nécessite un healthcheck CMD-SHELL, sh/touch/rm et /tmp accessible en écriture. L’activation ajoute au brouillon un contrôle de retrait du trafic : enregistrez et déployez une première fois avant toute mise à jour progressive. Les anciens réplicas quittent les cibles saines du proxy avant leur arrêt ; les requêtes longues ne sont pas garanties. L’instance qui héberge la stack doit prendre en charge cette option. Mettez aussi à jour les instances liées ; pour une nouvelle stack distante, enregistrez-la d’abord. Les anciens agents ne respectent pas cette option.
+
 **Nom du fichier Compose par défaut :** Préparé dans cette PR ; pas encore publié. COMPOSE_FILENAME choisit compose.yaml (par défaut), compose.yml, docker-compose.yaml ou docker-compose.yml uniquement pour les nouvelles stacks. Les stacks existantes et adoptées conservent leurs fichiers. Les autres noms et chemins sont refusés.
 
 **Ports Socket.IO par défaut :** Préparé dans cette PR, pas encore publié. Une origine navigateur utilisant le port HTTP/HTTPS implicite correspond désormais à un en-tête Host avec :80/:443 explicite, y compris en IPv6. Les hôtes et ports non équivalents restent refusés ; les en-têtes de proxy ne contournent pas ce contrôle.
@@ -505,6 +507,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Guides : [Sauvegardes et restauration Restic](docs/restic.fr.md) · [Installation et reprise Zerobyte](docs/zerobyte.fr.md)
 
 ### Mises à jour & ImageWatcher
+
+- **Mises à jour progressives par service** — `dockge.rollout.enabled: "true"`. Double temporairement les réplicas. L’application doit supporter plusieurs instances simultanées. Les requêtes en cours ne sont pas garanties ; Recreate et le rollback restent interruptifs.
 - Détection des mises à jour d’images par digest, sans pull, y compris sur les instances distantes
 - Politiques Désactivé, Immédiat et Planifié par image, et réglages groupés par stack qui conservent par défaut les exceptions individuelles
 - Analyse complète toutes les 6 heures par défaut et contrôles ciblés en mode Immédiat toutes les 5 minutes par défaut, configurables ou désactivables séparément
@@ -970,6 +974,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) par hamphh — inspiration et labels compatibles pour les exclusions par service du statut global et des mises à jour d’image
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration pour les limites CPU/RAM facultatives par service, adaptées sans modifier les permissions des comptes limités
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Nom du fichier Compose par défaut.
+- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) / [**Dockge #170**](https://github.com/louislam/dockge/pull/170) — Mises à jour progressives par service.
 - [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) par Lorwell — inspiration pour le gestionnaire de fichiers hôte restreint et la vue par conteneur réel adaptés à Enhanced (licence MIT)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) par DeepSpace2 — automatisation optionnelle du DNS et de Nginx Proxy Manager (GPLv3)

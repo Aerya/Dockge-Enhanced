@@ -61,6 +61,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Rolling updates per service :** Prepared in this PR; not yet published. Disabled by default. Requires healthy replicas, Traefik on a shared network, an HTTP router and explicit internal port, no published host ports or fixed container name, and no writable shared volumes. Checks run against the resolved Compose before updating. Temporarily doubles the replicas. The application must support concurrent instances. In-flight requests are not guaranteed to survive; explicit Recreate and rollback remain disruptive. [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Requires a CMD-SHELL healthcheck with sh/touch/rm and a writable /tmp. Enabling adds a drain check to the draft: save and deploy it once before using rolling updates. Old replicas are removed from the proxy health pool before stopping; this is not a guarantee for long-running requests. The hosting instance must support rolling updates. Update linked instances too; for a new remote stack, save it first. Older agents do not honor this option.
+
 **Default Compose filename :** Prepared in this PR; not yet published. COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected.
 
 **Socket.IO default ports :** Prepared in this PR, not yet published. Browser origins using the implicit HTTP/HTTPS port now match an explicit :80/:443 Host header, including IPv6. Different hosts and non-default ports remain rejected; forwarded headers do not override this check.
@@ -504,6 +506,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Guides: [Restic backups and recovery](docs/restic.md) · [Zerobyte setup and recovery](docs/zerobyte.md)
 
 ### Updates & ImageWatcher
+
+- **Rolling updates per service** — `dockge.rollout.enabled: "true"`. Temporarily doubles the replicas. The application must support concurrent instances. In-flight requests are not guaranteed to survive; explicit Recreate and rollback remain disruptive.
 - Image update detection by digest, without pulling, including remote instances
 - Off, Immediate and Scheduled policies per image, plus stack-wide bulk policies that preserve individual exceptions by default
 - Full scan every 6 hours by default and targeted Immediate checks every 5 minutes by default, configurable or disabled separately
@@ -969,6 +973,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — inspiration and compatible labels for per-service stack-status and image-update exclusions
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration for optional per-service CPU/RAM limits, adapted without changing restricted-account permissions
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Default Compose filename.
+- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) / [**Dockge #170**](https://github.com/louislam/dockge/pull/170) — Rolling updates per service.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — inspiration for the restricted host file manager and real-container view adapted for Enhanced (MIT licence)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — optional DNS and Nginx Proxy Manager automation (GPLv3)

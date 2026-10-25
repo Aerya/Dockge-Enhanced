@@ -194,6 +194,17 @@
 
                 <ServiceResourceLimits :service="service" @apply="jsonObject.services[name] = $event" />
 
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input :id="`rollout-${name}`" v-model="rollingUpdate" :disabled="!rollingUpdateSupported" type="checkbox" class="form-check-input" />
+                        <label :for="`rollout-${name}`" class="form-check-label">{{ $t("serviceRollout.title") }}</label>
+                    </div>
+                    <p class="form-text">{{ $t("serviceRollout.help") }}</p>
+                    <p class="form-text">{{ $t("serviceRollout.draining") }}</p>
+                    <p v-if="!rollingUpdateSupported" class="text-warning small">{{ $t("serviceRollout.unsupported") }}</p>
+                    <p v-if="rollingUpdate" class="text-warning small">{{ $t("serviceRollout.warning") }}</p>
+                </div>
+
                 <div ref="healthcheckPanel" class="service-healthcheck mb-4">
                     <h5>{{ $t("serviceHealthcheck.title") }}</h5>
                     <p class="form-text mb-2">{{ $t("serviceHealthcheck.help") }}</p>
@@ -313,6 +324,7 @@ import VolumeBrowser from "./VolumeBrowser.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
 import ServiceResourceLimits from "./ServiceResourceLimits.vue";
+import { LABEL_ROLLOUT, rolloutEnabled, ROLLOUT_HEALTH_PREFIX } from "../../../common/service-rollout";
 import { buildServiceHealthcheck, proposeServiceHealthcheck } from "../service-healthcheck";
 
 export default defineComponent({
@@ -507,6 +519,36 @@ export default defineComponent({
                 return {};
             }
             return this.jsonObject.services[this.name];
+        },
+
+        rollingUpdateSupported() {
+            return this.stack?.supportsServiceRollout === true || (this.$parent.$parent.isAdd && !this.$parent.$parent.endpoint);
+        },
+
+        rollingUpdate: {
+            get() {
+                return rolloutEnabled(this.service);
+            },
+            set(enabled) {
+                if (!this.rollingUpdateSupported) {
+                    return;
+                }
+                if (enabled && !window.confirm(this.$t("serviceRollout.confirm"))) {
+                    return;
+                }
+                if (enabled) {
+                    const test = this.service.healthcheck?.test;
+                    if (!Array.isArray(test) || test[0] !== "CMD-SHELL" || typeof test[1] !== "string" || this.service.healthcheck.disable) {
+                        window.alert(this.$t("serviceRollout.draining"));
+                        return;
+                    }
+                    if (!test[1].startsWith(ROLLOUT_HEALTH_PREFIX)) {
+                        this.service.healthcheck = { ...this.service.healthcheck,
+                            test: [ "CMD-SHELL", ROLLOUT_HEALTH_PREFIX + "(" + test[1] + ")" ] };
+                    }
+                }
+                setComposeLabel(this.service, LABEL_ROLLOUT, enabled ? "true" : null);
+            },
         },
 
         ignoreServiceStatus: {

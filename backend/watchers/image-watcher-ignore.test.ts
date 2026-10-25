@@ -29,7 +29,11 @@ if (block && args.includes(block)) {
         Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
     }
 }
-if (args.includes("config")) console.log(JSON.stringify({services:{app:{image:"fixture/shared:latest"}}}));
+if (args.includes("config")) {
+    const invalidRollout = fs.existsSync(path.join(root, "rollout-invalid")) && process.cwd().endsWith("/a");
+    console.log(JSON.stringify({name:"fixture",services:{app:{image:"fixture/shared:latest",
+        ...(invalidRollout ? {labels:{"dockge.rollout.enabled":"true"},ports:[{published:"8080"}]} : {})}}}));
+}
 else if (args.includes("ps")) console.log(args.includes("paused") ? "" : args.includes("-q") ? "container-fixture" : "app");
 else if (args.includes("inspect")) console.log("sha256:old");
 else if (!args.some(a => ["pull", "up", "tag", "rmi"].includes(a))) process.exit(3);
@@ -91,7 +95,7 @@ beforeEach(async () => {
     rollbackStore.clear();
     updateHistoryStore.length = 0;
     await fs.writeFile(path.join(root, "commands"), "");
-    for (const file of [ "block", "entered", "release" ]) {
+    for (const file of [ "block", "entered", "release", "rollout-invalid" ]) {
         await fs.rm(path.join(root, file), { force: true });
     }
 });
@@ -105,6 +109,20 @@ after(async () => {
     }
     await fs.rm(root, { recursive: true,
         force: true });
+});
+
+test("rolling prerequisites veto every update mode without fallback or contaminating a shared image", async () => {
+    await fs.writeFile(path.join(root, "rollout-invalid"), "");
+    for (const mode of [ "immediate", "scheduled", "manual" ] as const) {
+        const instance = watcher();
+        await fs.writeFile(path.join(root, "commands"), "");
+        assert.equal(await instance.performAutoUpdate(status("a"), watched("a"), mode), false);
+        assert.equal((await commands()).some(args => args.includes("pull") || args.includes("up")), false);
+        assert.match(updateHistoryStore[0].error ?? "", /ports/);
+        // A failed rollout must release the shared reservation. The same image
+        // in another stack without opt-in keeps the ordinary update behavior.
+        assert.equal(await instance.performAutoUpdate(status("b"), watched("b"), mode), true);
+    }
 });
 
 test("ignored vetoes mandatory Dozzle and all open or closed maintenance windows", () => {

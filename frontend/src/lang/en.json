@@ -1,4 +1,11 @@
 {
+    "serviceRollout.unsupported": "The hosting instance must support rolling updates. Update linked instances too; for a new remote stack, save it first. Older agents do not honor this option.",
+    "serviceRollout.draining": "Requires a CMD-SHELL healthcheck with sh/touch/rm and a writable /tmp. Enabling adds a drain check to the draft: save and deploy it once before using rolling updates. Old replicas are removed from the proxy health pool before stopping; this is not a guarantee for long-running requests.",
+    "serviceRollout.title": "Rolling update (advanced)",
+    "serviceRollout.help": "Disabled by default. Requires healthy replicas, Traefik on a shared network, an HTTP router and explicit internal port, no published host ports or fixed container name, and no writable shared volumes. Checks run against the resolved Compose before updating.",
+    "serviceRollout.warning": "Temporarily doubles the replicas. The application must support concurrent instances. In-flight requests are not guaranteed to survive; explicit Recreate and rollback remain disruptive.",
+    "serviceRollout.confirm": "Enable rolling updates for this service? I confirm that the application supports concurrent instances and that extra CPU/RAM is available.",
+    "releaseNews.item.serviceRollout": "Rolling update (advanced). Disabled by default. Requires healthy replicas, Traefik on a shared network, an HTTP router and explicit internal port, no published host ports or fixed container name, and no writable shared volumes. Checks run against the resolved Compose before updating. Temporarily doubles the replicas. The application must support concurrent instances. In-flight requests are not guaranteed to survive; explicit Recreate and rollback remain disruptive. Requires a CMD-SHELL healthcheck with sh/touch/rm and a writable /tmp. Enabling adds a drain check to the draft: save and deploy it once before using rolling updates. Old replicas are removed from the proxy health pool before stopping; this is not a guarantee for long-running requests.",
     "resourceLimits.warningTitle": "Memory limit: risk of stopping the container",
     "resourceLimits.acknowledge": "I understand that this RAM limit may stop the container if its memory needs exceed it.",
     "resourceLimits.title": "CPU / RAM limits",

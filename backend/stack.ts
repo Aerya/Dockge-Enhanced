@@ -34,6 +34,8 @@ import {
 import { ContainerInstance, parseContainerInstances, requireContainerInstance } from "./container-instances";
 import { trackDockerBuild } from "./docker-operation-state";
 import { withStackMetadataWriteLock } from "./stack-metadata-lock";
+import { prepareRollout, rolloutTransport, type ComposeRun } from "./service-rollout";
+import { tryReserveDockerUpdate } from "./self-update/operation-coordinator";
 
 // ─── Cache court de getServiceStatusList (point #9 : éviter `docker inspect`
 // de TOUS les containers à chaque refresh / chaque onglet ouvert). TTL piloté
@@ -420,6 +422,7 @@ export class Stack {
             tags: [],
             isManagedByDockge: this.isManagedByDockge,
             composeFileName: this._composeFileName,
+            supportsServiceRollout: true,
             buildServices: this.getBuildServices(),
             createdAt,
             createdAtEstimated,
@@ -1603,6 +1606,10 @@ export class Stack {
         } else if (action === "restart") {
             await exec("restart", ...targets);
         } else if (action === "update" || action === "pull-recreate") {
+            if (await this.tryRollingUpdate(targets, authorizeTargets ? () => authorizeTargets(targets) : undefined)) {
+                serviceStatusCache.delete(this.name);
+                return targets;
+            }
             // A manual update means "pull + recreate": once the image has been
             // refreshed locally, force the selected service onto that image.
             // Network namespace dependants are recreated in the same operation
@@ -1661,6 +1668,9 @@ export class Stack {
 
     async pullAndRecreate(socket: DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
+        if (await this.tryRollingUpdate()) {
+            return 0;
+        }
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("pull"), this.path);
         if (exitCode !== 0) {
@@ -1676,6 +1686,73 @@ export class Stack {
         }
         await this.writeMeta({ lastStartedAt: new Date().toISOString() });
         return exitCode;
+    }
+
+    /** Only the opted-in update path changes; explicit recreate remains a recreate. */
+    private async tryRollingUpdate(targets?: string[], authorize?: () => Promise<void>): Promise<boolean> {
+        const transport = rolloutTransport(this.getComposeOptions("config").slice(0, -1), this.path);
+        const resolved = JSON.parse(await transport.compose([ "config", "--format", "json" ], 30_000)) as { services: Record<string, Record<string, unknown>> };
+        const names = targets ?? Object.keys(resolved.services);
+        if (!names.some(name => composeLabelIsTrue(resolved.services[name]?.labels as Record<string, unknown>, "dockge.rollout.enabled"))) {
+            return false;
+        }
+        if (!targets && Object.values(resolved.services).some(service => Array.isArray(service.profiles) && service.profiles.length)) {
+            throw new Error("Rolling updates on a stack with profiles must target an individual service");
+        }
+        const reservation = tryReserveDockerUpdate("image-update");
+        if (!reservation) {
+            throw new Error("Another Docker update is active; retry later");
+        }
+        try {
+            const { isSelfUpdateBlockingImageMutations } = await import("./watchers/image-watcher");
+            if (await isSelfUpdateBlockingImageMutations(this.server.config.dataDir)) {
+                throw new Error("Self-update is active; retry later");
+            }
+            const compose: ComposeRun = async (args, timeout, override) => {
+                if (!override || this.isExternal) {
+                    return transport.compose(args, timeout, override);
+                }
+                const files = [ path.join(this.path, this._composeFileName) ];
+                const implicitOverride = path.join(this.path, COMPOSE_OVERRIDE_FILE);
+                if (fs.existsSync(implicitOverride)) {
+                    files.push(implicitOverride);
+                }
+                const explicit = rolloutTransport([ ...this.getComposeOptions("config").slice(0, -1), ...files.flatMap(file => [ "-f", file ]) ], this.path);
+                // Do not silently drop COMPOSE_FILE or nonstandard implicit overrides.
+                const expected = JSON.parse(await transport.compose([ "config", "--format", "json" ], 30_000));
+                const actual = JSON.parse(await explicit.compose([ "config", "--format", "json" ], 30_000));
+                if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+                    throw new Error("Rollout: Compose file chain differs; explicit multi-file configuration required");
+                }
+                return explicit.compose(args, timeout, override);
+            };
+            const plan = await prepareRollout(compose, transport.docker, names, { stateDir: path.join(this.server.config.dataDir, "rolling-updates") });
+            if (!plan) {
+                throw new Error("Rollout policy changed; retry");
+            }
+            if (authorize) {
+                await authorize();
+            }
+            await compose([ "pull", ...names ], 600_000);
+            if (authorize) {
+                await authorize();
+            }
+            await plan.execute(async () => {
+                if (authorize) {
+                    await authorize();
+                }
+                return true;
+            });
+            const remaining = names.filter(name => !plan.services.includes(name));
+            if (remaining.length) {
+                await compose([ "up", "-d", "--force-recreate", "--no-deps", ...remaining ], 120_000);
+            }
+            await this.writeMeta({ lastUpdated: new Date().toISOString(),
+                lastStartedAt: new Date().toISOString() });
+            return true;
+        } finally {
+            reservation.release();
+        }
     }
 
     async buildAndRecreate(socket: DockgeSocket) : Promise<number> {
