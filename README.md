@@ -38,7 +38,7 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 | --- | --- |
 | **Multi-server** | Full-mesh federation between Dockge-Enhanced instances, management from any linked server, optional reverse agent connections with per-node tokens, persistent agent tags, server grouping and selection, remote update status, transactional stack copy/migration, resumable transfers and scheduled cold replication |
 | **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, a directly accessible action bar with icons-only or icons-and-text modes, explained stack/container actions, stack pause/resume, per-container scheduling, Build + Recreate, notes, Git tools, host start prerequisites and automatic recreation of services sharing VPN/network namespaces |
-| **Compose editing** | Compose, override and `.env` editors, default Compose and `.env` templates, named links, YAML repair, a per-service healthcheck assistant, port-conflict and image-drift checks and an optional per-stack `TZ` |
+| **Compose editing** | Compose, override and `.env` editors, default Compose and `.env` templates, named links, YAML repair, a per-service healthcheck assistant, port-conflict and image-drift checks and an optional per-stack `TZ`; optional per-service CPU/RAM limits (Prepared in this PR; not yet published.) |
 | **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, safe repository reset, plus recovery workflows used by protected updates. Optional Zerobyte connection or managed installation, protected application workflows and dedicated test restores |
 | **Updates** | Stack-wide bulk policies with exception preservation, 5-minute targeted Immediate image checks, ignored images respected before any change, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
@@ -62,6 +62,8 @@ The most important recent changes are grouped here so you can quickly see what h
 ### 🆕 October 2026
 
 **Native OIDC sign-in:** Sign in with an OpenID Connect provider such as Pocket ID, Authentik, Keycloak or Google, without a reverse proxy and alongside local accounts and 2FA. Configuration uses `DOCKGE_OIDC_*` environment variables and the Authorization Code flow with PKCE. New OIDC users are restricted accounts with no access until an administrator grants it, unless they are listed in `DOCKGE_OIDC_ADMIN_USERS` or belong to `DOCKGE_OIDC_ADMIN_GROUPS`; with admin groups, the role follows group membership at every login. There is no implicit “first user becomes admin” rule: on a new installation, create the first administrator first or configure an admin mapping. Existing local accounts are linked only with `DOCKGE_OIDC_LINK_EXISTING=true`. OIDC logins do not ask for the local TOTP code, and OIDC is ignored in `disabled` and `trusted-proxy` modes. If you set `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true`, keep the recovery procedure at hand. [Guide](docs/oidc.md).
+
+**CPU/RAM limits per service :** Prepared in this PR; not yet published. Optional CPU/RAM limits per service in the administrator Compose editor. Existing aliases stay consistent; other resource settings and restricted-account permissions are preserved. Apply to the draft, then save and deploy explicitly. Inspired by Isurupro7 (Dockge #1006). A low RAM limit can cause an out-of-memory stop. CPU is throttled. Removing a limit does not reserve resources. Existing expressions are preserved until edited. Other resource settings stay unchanged. Overrides, extends or included files may still supply limits: review the final Compose. A prominent RAM warning requires acknowledgement before applying a new or changed memory limit.
 
 **Ignored images are respected:** ImageWatcher rechecks **Ignore** after the registry check, before downloading and again just before recreating containers, including scheduled updates that were already selected and the managed Dozzle container. Stale manual-batch candidates are blocked too. A download already started may finish, but no recreation follows; a Docker recreation already running is not interrupted.
 
@@ -458,6 +460,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-service option to ignore an optional service in the overall stack status
 
 ### Compose editing
+- optional per-service CPU/RAM limits — Prepared in this PR; not yet published. Only edits the draft. Save, then explicitly deploy/recreate to apply to containers; running containers are not changed here.
 - Compose, `compose.override.yaml` and `.env` editors with variable highlighting, folding, search and fullscreen mode
 - Validated default Compose and `.env` templates for new stacks only
 - Named HTTP/HTTPS links for stacks
@@ -976,6 +979,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**Dockge**](https://github.com/louislam/dockge) by louislam — the original project (MIT licence)
 - [**Dozzle**](https://github.com/amir20/dozzle) by Amir Rajan — real-time Docker log viewer (MIT licence)
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — inspiration and compatible labels for per-service stack-status and image-update exclusions
+- [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration for optional per-service CPU/RAM limits, adapted without changing restricted-account permissions
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — inspiration for the restricted host file manager and real-container view adapted for Enhanced (MIT licence)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — optional DNS and Nginx Proxy Manager automation (GPLv3)

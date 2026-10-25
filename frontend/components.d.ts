@@ -51,6 +51,7 @@ declare module 'vue' {
     SchedulingTimezoneNotice: typeof import('./src/components/SchedulingTimezoneNotice.vue')['default']
     ScopedAccount: typeof import('./src/components/ScopedAccount.vue')['default']
     Security: typeof import('./src/components/settings/Security.vue')['default']
+    ServiceResourceLimits: typeof import('./src/components/ServiceResourceLimits.vue')['default']
     StackActionMenu: typeof import('./src/components/StackActionMenu.vue')['default']
     StackAutoUpdateBulk: typeof import('./src/components/StackAutoUpdateBulk.vue')['default']
     StackGitPanel: typeof import('./src/components/StackGitPanel.vue')['default']
