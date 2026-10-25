@@ -35,6 +35,7 @@ import { ContainerInstance, parseContainerInstances, requireContainerInstance } 
 import { trackDockerBuild } from "./docker-operation-state";
 import { withStackMetadataWriteLock } from "./stack-metadata-lock";
 import { prepareRollout, rolloutTransport, type ComposeRun } from "./service-rollout";
+import { rolloutStates } from "./rollout-recovery";
 import { stackMutation } from "./stack-mutation";
 import { tryReserveDockerUpdate } from "./self-update/operation-coordinator";
 
@@ -424,6 +425,7 @@ export class Stack {
             isManagedByDockge: this.isManagedByDockge,
             composeFileName: this._composeFileName,
             supportsServiceRollout: true,
+            rollingUpdates: rolloutStates(this.path, true),
             buildServices: this.getBuildServices(),
             createdAt,
             createdAtEstimated,
@@ -1749,7 +1751,8 @@ export class Stack {
                 }
                 return explicit.compose(args, timeout, override);
             };
-            const plan = await prepareRollout(compose, transport.docker, names, { stateDir: path.join(this.server.config.dataDir, "rolling-updates") });
+            const plan = await prepareRollout(compose, transport.docker, names, { stateDir: path.join(this.server.config.dataDir, "rolling-updates"),
+                projectPath: path.resolve(this.path) });
             if (!plan) {
                 throw new Error("Rollout policy changed; retry");
             }

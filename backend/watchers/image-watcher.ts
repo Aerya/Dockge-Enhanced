@@ -315,6 +315,7 @@ export interface UpdateHistoryEntry {
     success: boolean;
     /** Docker Compose succeeded but the running image digest could not be confirmed. */
     verification?: "verified" | "unverified";
+    retirementDeferred?: boolean;
     error?: string;
 }
 
@@ -2242,7 +2243,8 @@ export class ImageWatcher {
                     timeout });
             };
             const rolloutTargets = recreateArgs.slice(1).filter(arg => !arg.startsWith("-"));
-            const rollout = await prepareRollout(rolloutCompose, (args, timeout) => docker(args, { timeout }), rolloutTargets, { stateDir: path.join(this.dataDir, "rolling-updates") });
+            const rollout = await prepareRollout(rolloutCompose, (args, timeout) => docker(args, { timeout }), rolloutTargets, { stateDir: path.join(this.dataDir, "rolling-updates"),
+                projectPath: path.resolve(workingDir ?? path.dirname(composePath)) });
             const runningServices = await docker(runningCommand.args, { cwd: runningCommand.cwd,
                 timeout: 15_000 });
             const stoppedTargets = missingRunningComposeTargets(recreateArgs, runningServices);
@@ -2298,6 +2300,7 @@ export class ImageWatcher {
             if (ignored()) {
                 return false;
             }
+            let retirementDeferred = false;
             if (rollout) {
                 // Protect the previous image even if retirement or a later
                 // service fails after the first replica has been replaced.
@@ -2319,7 +2322,7 @@ export class ImageWatcher {
                         expiresAt: new Date(now.getTime() + ROLLBACK_WINDOW_MS).toISOString(),
                     });
                 }
-                await rollout.execute(() => !ignored());
+                retirementDeferred = (await rollout.execute(() => !ignored())).pending.length > 0;
                 const remaining = recreateArgs.filter(arg => !rollout.services.includes(arg) && !rollout.managedServices.includes(arg));
                 if (remaining.some(arg => !arg.startsWith("-") && arg !== "up")) {
                     await docker(remaining.length === recreateArgs.length ? upCommand.args :
@@ -2357,7 +2360,9 @@ export class ImageWatcher {
             // Recheck pour mettre à jour le digest dans le store
             const newStatus = await this.checkOneImage(status.image, status.stack, watched);
             imageStatusStore.set(key, newStatus);
-            const verification = updateVerificationResult(newStatus);
+            const verification = retirementDeferred ? { digest: "",
+                verification: "unverified" as const,
+                error: "Rolling update applied; old connections are draining. Retirement continues automatically." } : updateVerificationResult(newStatus);
             await this.touchUpdatedStackMetadata(status.stack, watched);
             console.log(
         `[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`,
@@ -2371,6 +2376,7 @@ export class ImageWatcher {
                 mode,
                 success: true,
                 verification: verification.verification,
+                ...(retirementDeferred ? { retirementDeferred: true } : {}),
                 error: verification.error,
             });
 

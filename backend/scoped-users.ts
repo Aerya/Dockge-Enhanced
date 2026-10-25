@@ -8,6 +8,7 @@ import { loadUserAccess, accessFromUser } from "./user-access";
 import type { DockgeSocket } from "./util-server";
 import type { DockgeServer } from "./dockge-server";
 import { Stack } from "./stack";
+import { rolloutStates } from "./rollout-recovery";
 import { getAuthMode } from "./auth";
 import { generatePasswordHash } from "./password-hash";
 import { resolveCurrentContainer } from "./current-container";
@@ -106,13 +107,15 @@ export function scopedResponse(request: ScopedRequest, value: unknown): unknown 
         return { name: request.stack,
             status: data.status,
             displayName: typeof data.displayName === "string" ? data.displayName.slice(0, 256) : request.stack,
+            ...(data.retirementPending === true ? { retirementPending: true } : {}),
             ...(request.service && typeof data.serviceState === "string" ? { serviceState: data.serviceState.slice(0, 64) } : {}) };
     }
     if (request.permission === "logs" && typeof data.logs === "string" && Buffer.byteLength(data.logs) <= 1024 * 1024) {
         return { logs: data.logs };
     }
     if (![ "view", "logs" ].includes(request.permission) && data.applied === true) {
-        return { applied: true };
+        return { applied: true,
+            ...(data.retirementPending === true ? { retirementPending: true } : {}) };
     }
     throw new Error("access.operationFailed");
 }
@@ -150,6 +153,7 @@ export async function executeScopedLocal(socket: DockgeSocket, server: DockgeSer
             displayName?: string };
         return { name: request.stack,
             status: summary.status,
+            ...(rolloutStates(stack.path).some(item => !request.service || item.service === request.service) ? { retirementPending: true } : {}),
             displayName: summary.displayName || request.stack,
             ...(request.service ? { serviceState: (await stack.getServiceStatusList()).serviceStatusList.get(request.service)?.state || "unknown" } : {}) };
     }
@@ -173,7 +177,8 @@ export async function executeScopedLocal(socket: DockgeSocket, server: DockgeSer
             // an administrator-authenticated federation link. Fail closed.
             assertScopedMutationAccess(await loadUserAccess(socket.userID), request, targets, managedRelays, delegatedServices);
         });
-        return { applied: true };
+        return { applied: true,
+            ...(rolloutStates(stack.path).some(item => item.service === request.service) ? { retirementPending: true } : {}) };
     }
     await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error("access.operationFailed")), 30 * 60_000);
@@ -186,7 +191,8 @@ export async function executeScopedLocal(socket: DockgeSocket, server: DockgeSer
             }
         });
     });
-    return { applied: true };
+    return { applied: true,
+        ...(rolloutStates(stack.path).length ? { retirementPending: true } : {}) };
 }
 
 export function registerScopedUsers(socket: DockgeSocket, server: DockgeServer, agent: AgentSocket): void {

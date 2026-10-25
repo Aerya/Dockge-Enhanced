@@ -96,13 +96,14 @@ test("isolated Docker: real proxy, successive updates, failed health and persist
             get().catch(error => httpFailures.push(String(error)));
         }, 200);
         for (const version of [ "version-two", "version-three" ]) {
-            const plan = await prepareRollout(transport.compose, transport.docker, [ "app" ], { stateDir });
+            const plan = await prepareRollout(transport.compose, transport.docker, [ "app" ], { stateDir,
+                projectPath: root });
             assert.ok(plan);
             await build(version);
             await plan.execute();
             assert.match(await get(), new RegExp(version));
             assert.equal((await transport.compose([ "ps", "-aq", "app" ], 15_000)).trim().split("\n").length, 1);
-            await assert.rejects(readdir(stateDir), { code: "ENOENT" }, "rollout creates no auxiliary Compose override");
+            assert.ok((await readdir(stateDir)).every(file => /^[a-f0-9]{64}\.json$/.test(file)), "only recovery journals, no auxiliary Compose overrides");
             const stable = (await transport.compose([ "ps", "-q", "app" ], 15_000)).trim();
             await transport.compose([ "up", "-d", "--no-deps", "app" ], 30_000);
             assert.equal((await transport.compose([ "ps", "-q", "app" ], 15_000)).trim(), stable, "ordinary Deploy preserves the replica");
@@ -114,7 +115,8 @@ test("isolated Docker: real proxy, successive updates, failed health and persist
         assert.deepEqual(recorded, [ file ], "discovery depends only on the original Compose file");
         const discovery = rolloutTransport([ "compose", "-p", project, ...recorded.flatMap((value: string) => [ "-f", value ]) ], root);
         assert.ok(JSON.parse(await discovery.compose([ "config", "--format", "json" ], 15_000)).services.app);
-        const failing = await prepareRollout(discovery.compose, transport.docker, [ "app" ], { stateDir });
+        const failing = await prepareRollout(discovery.compose, transport.docker, [ "app" ], { stateDir,
+            projectPath: root });
         await build("broken");
         await assert.rejects(failing!.execute(), /Rollout failed/);
         assert.equal((await transport.compose([ "ps", "-q", "app" ], 15_000)).trim(), latest);

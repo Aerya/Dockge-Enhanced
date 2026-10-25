@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MonitoringWatcher } from "./watchers/monitoring-watcher";
-import { markRolloutDraining } from "./stack-mutation";
+import { markRolloutDraining, registerPendingRollout, releasePendingRollout } from "./stack-mutation";
 
 test("monitoring does not alert or restart intentionally draining replicas; real failures still heal", async () => {
     for (const mode of [ "notify", "restart_service", "stack_aware" ]) {
@@ -33,5 +33,33 @@ test("monitoring does not alert or restart intentionally draining replicas; real
         } finally {
             release();
         }
+    }
+});
+
+test("a failed replacement is reported but auto-heal does not race durable rollback", async () => {
+    let alerts = 0;
+    let heals = 0;
+    const events: { actionStatus: string }[] = [];
+    const watcher = Object.assign(Object.create(MonitoringWatcher.prototype), {
+        settings: { healthcheckCooldownMinutes: 1,
+            healthcheckAutoHealMode: "restart_container" },
+        healthCooldowns: new Map(),
+        recentHealthEvents: events,
+        saveHealthEvents: async () => {},
+        sendHealthAlert: async () => {
+            alerts++;
+        },
+        applyHealthAction: async () => {
+            heals++;
+        },
+    }) as { onContainerUnhealthy(event: object, name: string, id: string): Promise<void> };
+    registerPendingRollout("/fixture/rollout-monitoring", "test");
+    try {
+        await watcher.onContainerUnhealthy({ Actor: { Attributes: { "com.docker.compose.project.working_dir": "/fixture/rollout-monitoring" } } }, "failed-new", "new-id");
+        assert.equal(alerts, 1);
+        assert.equal(heals, 0);
+        assert.equal(events[0].actionStatus, "skipped");
+    } finally {
+        releasePendingRollout("/fixture/rollout-monitoring", "test");
     }
 });

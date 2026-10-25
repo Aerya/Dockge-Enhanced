@@ -127,7 +127,8 @@ test("real NPM and PlugNPiN retain publication throughout successive rolling upd
             }).catch(error => failures.push(String(error)));
         }, 200);
         for (const version of [ "version-two", "version-three" ]) {
-            const plan = await prepareRollout(compose, docker, [ "app" ]);
+            const plan = await prepareRollout(compose, docker, [ "app" ], { stateDir: path.join(root, "journal"),
+                projectPath: root });
             assert.ok(plan);
             await build(version);
             await plan.execute();

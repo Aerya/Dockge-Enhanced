@@ -74,7 +74,7 @@ jobs:
 
       - name: Tests des mises à jour progressives par service
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/service-rollout.test.ts backend/rollout-relay.test.ts backend/stack-mutation.test.ts backend/rollout-monitoring.test.ts frontend/src/rollout-relay.test.ts frontend/src/rollout-relay-ui.test.js
+        run: npx tsx --test backend/service-rollout.test.ts backend/rollout-relay.test.ts backend/rollout-recovery.test.ts backend/stack-mutation.test.ts backend/rollout-monitoring.test.ts frontend/src/rollout-relay.test.ts frontend/src/rollout-relay-ui.test.js
 
       - name: Tests des comptes locaux et des permissions par stack
         if: steps.docs.outputs.docs_only != 'true'

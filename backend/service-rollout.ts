@@ -6,7 +6,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { rolloutEnabled, rolloutProblems, ROLLOUT_DRAIN_FILE, ROLLOUT_HEALTH_PREFIX } from "../common/service-rollout";
-import { RolloutRelay } from "./rollout-relay";
+import { RolloutRelay, RelayDrainPending } from "./rollout-relay";
+import { getRolloutRecovery, type RolloutRecord } from "./rollout-recovery";
 import { markRolloutDraining } from "./stack-mutation";
 import { LABEL_RELAY, LABEL_RELAY_OWNER, LABEL_RELAY_PORT, RELAY_IMAGE, relayConfig } from "../common/rollout-relay";
 
@@ -61,12 +62,12 @@ export function rolloutTransport(prefix: string[], cwd: string): { compose: Comp
 export interface RolloutPlan {
     services: string[];
     managedServices: string[];
-    execute(allowed?: () => boolean | Promise<boolean>): Promise<void>;
+    execute(allowed?: () => boolean | Promise<boolean>): Promise<{ pending: string[] }>;
 }
 
 /**
  * Caller must own the shared image-update reservation throughout preparation,
- * pull and execution. A process restart with leftover replicas fails closed.
+ * pull and execution. Recovery finishes only the already authorised transaction.
  */
 export async function prepareRollout(
     compose: ComposeRun,
@@ -74,7 +75,8 @@ export async function prepareRollout(
     targets: string[],
     options: { wait?: (ms: number) => Promise<void>;
         attempts?: number;
-        stateDir?: string } = {},
+        stateDir?: string;
+        projectPath?: string } = {},
 ): Promise<RolloutPlan | null> {
     const model = JSON.parse(await compose([ "config", "--format", "json" ], 30_000)) as Model;
     if (!model.services || typeof model.services !== "object") {
@@ -185,6 +187,7 @@ export async function prepareRollout(
         services: selected,
         managedServices: plans.flatMap(plan => plan.relayService ? [ plan.relayService ] : []),
         async execute(allowed = () => true) {
+            const pending: string[] = [];
             for (const plan of plans) {
                 if (!await allowed()) {
                     throw new Error("Rollout cancelled before replacement");
@@ -204,6 +207,8 @@ export async function prepareRollout(
                 let retiring = false;
                 let relayChanged = false;
                 let releaseDrain = () => {};
+                const recovery = options.stateDir && options.projectPath ? getRolloutRecovery(options.stateDir, docker) : undefined;
+                let journal: RolloutRecord | undefined;
                 const wait = options.wait ?? sleep;
                 const hostnames = (containers: Container[]) => containers.map(item => {
                     const hostname = item.Name?.replace(/^\//, "");
@@ -225,6 +230,18 @@ export async function prepareRollout(
                     return replacements;
                 };
                 try {
+                    if (recovery) {
+                        journal = await recovery.begin({ directory: options.projectPath!,
+                            project: model.name,
+                            service: plan.name,
+                            targetImage: imageId,
+                            old: plan.old.map(item => ({ id: item.Id,
+                                image: item.Image })),
+                            ...(plan.relay ? { relay: { id: plan.relay.id,
+                                service: plan.relayService!,
+                                port: plan.relay.port,
+                                origin: plan.relayOrigin! } } : {}) });
+                    }
                     if (plan.relay) {
                         // Freeze discovery before scaling: a service DNS alias would
                         // otherwise expose starting/unhealthy replacement replicas.
@@ -265,10 +282,26 @@ export async function prepareRollout(
                     // Never remove replacements after retirement starts: a partial stop
                     // must leave the new healthy service available for manual recovery.
                     retiring = true;
+                    if (journal && recovery) {
+                        journal.next = final.map(item => ({ id: item.Id,
+                            image: item.Image }));
+                        journal.phase = "draining";
+                        await recovery.save(journal);
+                    }
                     if (plan.relay) {
                         const previousWorkers = await plan.relay.workers();
                         await plan.relay.route(hostnames(final), wait);
-                        await plan.relay.drain(previousWorkers, wait, options.attempts ?? 60);
+                        try {
+                            await plan.relay.drain(previousWorkers, wait, options.attempts ?? 60);
+                        } catch (error) {
+                            if (!(error instanceof RelayDrainPending) || !journal || !recovery) {
+                                throw error;
+                            }
+                            // Commit has succeeded. Keep new traffic on the new
+                            // replicas and let the durable worker finish later.
+                            pending.push(plan.name);
+                            continue;
+                        }
                     } else {
                         releaseDrain = markRolloutDraining(plan.old.map(previous => previous.Id));
                         for (const previous of plan.old) {
@@ -292,12 +325,20 @@ export async function prepareRollout(
                     if (!await allowed() || ready.length !== plan.old.length || ready.some(item => item.Image !== imageId || !item.State.Running || item.State.Paused || item.State.Health?.Status !== "healthy")) {
                         throw new Error("Rollout: replacements lost readiness while draining");
                     }
+                    if (journal && recovery) {
+                        journal.phase = "retiring";
+                        await recovery.save(journal);
+                    }
                     await docker([ "stop", "--time", "30", ...plan.old.map(item => item.Id) ], 90_000);
                     await docker([ "rm", ...plan.old.map(item => item.Id) ], 30_000);
                     if (plan.relay) {
                         // Normal Compose recreations can change container names.
                         // Once old replicas are gone, service discovery is safe again.
                         await plan.relay.route([ plan.relayOrigin! ], wait);
+                    }
+                    if (journal && recovery) {
+                        journal.phase = "completed";
+                        await recovery.save(journal);
                     }
                 } catch (error) {
                     if (retiring && plan.relay) {
@@ -328,6 +369,10 @@ export async function prepareRollout(
                             if (plan.relay && relayChanged) {
                                 await plan.relay.route([ plan.relayOrigin! ], wait);
                             }
+                            if (journal && recovery) {
+                                journal.phase = "cancelled";
+                                await recovery.save(journal);
+                            }
                         } catch {
                             throw new Error("Rollout failed; cleanup incomplete. Old replicas preserved; inspect the replacement containers.", { cause: error });
                         }
@@ -336,8 +381,12 @@ export async function prepareRollout(
                     throw new Error((retiring ? "Rollout retirement incomplete; replacement containers retained. Inspect the old containers before retrying." : "Rollout failed; old replicas preserved.") + detail, { cause: error });
                 } finally {
                     releaseDrain();
+                    if (journal && recovery) {
+                        recovery.release(journal);
+                    }
                 }
             }
+            return { pending };
         },
     };
 }

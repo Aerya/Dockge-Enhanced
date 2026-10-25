@@ -4,7 +4,7 @@
 
 [README](README.zh-CN.md) 介绍近期主要更新和完整功能目录。
 
-**2026-10-25 — 按服务渐进更新** — 本分支的功能；正式版本需等待 PR 合并。 两种可选方式：Traefik 原生发现，或保持 IP:端口入口稳定的 TCP 中继，供 NPM、Nginx、Caddy、HAProxy 及其他 TCP 客户端使用。不会自动修改任何代理配置。要求副本健康、应用支持多实例；不允许固定容器名或共享可写卷。 临时将副本数翻倍。中继会增加一个容器和一个配置卷；首次安装可能中断服务。Recreate 和回滚仍会中断服务。不支持 UDP/QUIC，也不保证所有场景零中断。 [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Traefik 模式要求预先部署支持流量摘除的 CMD-SHELL 健康检查。中继模式会让现有连接继续使用旧容器；等待期限结束后若仍有连接，将保留容器并将操作标记为未完成。 托管 Stack 的实例必须支持渐进更新。也请更新关联实例；新建远程 Stack 请先保存。旧版代理不会遵守此选项。
+**2026-10-25 — 按服务渐进更新** — 本分支的功能；正式版本需等待 PR 合并。 两种可选方式：Traefik 原生发现，或保持 IP:端口入口稳定的 TCP 中继，供 NPM、Nginx、Caddy、HAProxy 及其他 TCP 客户端使用。不会自动修改任何代理配置。要求副本健康、应用支持多实例；不允许固定容器名或共享可写卷。 临时将副本数翻倍。中继会增加一个容器和一个配置卷；首次安装可能中断服务。Recreate 和回滚仍会中断服务。不支持 UDP/QUIC，也不保证所有场景零中断。 [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Traefik 模式要求预先部署支持摘除流量的健康检查。中继模式下，现有连接继续使用旧容器，不会因超时被强制断开。旧容器会在后台自动移除，Enhanced 重启后也会继续；服务界面显示等待或恢复状态。 托管 Stack 的实例必须支持渐进更新。也请更新关联实例；新建远程 Stack 请先保存。旧版代理不会遵守此选项。
 
 **2026-10-25 — 默认 Compose 文件名** — 本分支的功能；正式版本需等待 PR 合并。 COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。 [RichyHBM / Dockge #84](https://github.com/louislam/dockge/pull/84).
 

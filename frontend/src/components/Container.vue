@@ -3,6 +3,9 @@
         <div class="row">
             <div class="col-12">
                 <h4>{{ name }}</h4>
+                <p v-if="!isEditMode && rollingState" class="small text-warning" role="status">
+                    {{ $t(rollingState.phase === 'cancelled' ? 'serviceRollout.cancelled' : rollingState.attention ? 'serviceRollout.recoveryAttention' : ['preparing', 'cancelling'].includes(rollingState.phase) ? 'serviceRollout.recovering' : 'serviceRollout.pending') }}
+                </p>
                 <div class="image mb-2">
                     <span class="me-1">{{ imageName }}:</span><span class="tag">{{ imageTag }}</span>
                     <a
@@ -533,6 +536,9 @@ export default defineComponent({
 
         rollingUpdateSupported() {
             return this.stack?.supportsServiceRollout === true || (this.$parent.$parent.isAdd && !this.$parent.$parent.endpoint);
+        },
+        rollingState() {
+            return this.stack?.rollingUpdates?.find(item => item.service === this.name && item.phase !== "completed");
         },
         hasRollingRelay() {
             return !!composeLabelValue(this.service.labels, "dockge.rollout.relay");

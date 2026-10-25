@@ -4,7 +4,7 @@
  * Never prunes Docker. Only the generated fixture stacks are removed.
  */
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, access } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
@@ -303,6 +303,36 @@ try {
             service: "fixture",
             permission })).ok, "reverse service " + permission);
     }
+    if (process.env.RUN_DOCKER_ROLLOUT_TEST === "1") {
+        const name = `acl-rollout-remote-${suffix}`;
+        const grant = { endpoint: reverse.endpoint,
+            stack: name,
+            service: "app",
+            permissions: [ "view", "update" ] };
+        const ids = () => execFileSync("docker", [ "ps", "-aq", "--filter", `label=com.docker.compose.project=${name}`, "--filter", "label=com.docker.compose.service=app" ], { encoding: "utf8" }).trim();
+        const old = ids();
+        verified((await rpc(adminA.socket, "usersSave", { username: "reverse-rollout",
+            password,
+            active: true,
+            grants: [ grant ] })).ok, "reverse rollout application grant created");
+        const denied = await connect(a.url, "reverse-rollout");
+        const request = { endpoint: reverse.endpoint,
+            stack: name,
+            service: "app",
+            permission: "update" };
+        verified(!(await rpc(denied.socket, "scopedRequest", request)).ok && ids() === old, "reverse rollout cannot expand app-only scope");
+        const listing = await rpc(adminA.socket, "usersList");
+        const id = listing.data.find((entry: { username: string }) => entry.username === "reverse-rollout").id;
+        verified((await rpc(adminA.socket, "usersSave", { id,
+            username: "reverse-rollout",
+            active: true,
+            grants: [ grant, { ...grant,
+                service: "app-rollout-relay" }] })).ok, "reverse rollout relay grant added");
+        const permitted = await connect(a.url, "reverse-rollout");
+        verified((await rpc(permitted.socket, "scopedRequest", request)).ok, "real rolling update through reverse federation");
+        verified(ids() !== old && !ids().includes("\n"), "reverse federation retires only the permitted old replica");
+        console.log("PASS delegated rollout: reverse");
+    }
     verified(!(await rpc(reverseUser.socket, "scopedRequest", { endpoint,
         stack: remote,
         permission: "view" })).ok, "old direct grant no longer applies after reconnect");
@@ -361,6 +391,36 @@ try {
     sockets.push(tokenSocket);
     await new Promise<void>(resolve => tokenSocket.once("connect", () => resolve()));
     verified(!(await rpc(tokenSocket, "loginByToken", user.response.token)).ok, "disabled JWT revoked");
+    if (process.env.RUN_ROLLOUT_BROWSER_TEST === "1") {
+        const freshAdmin = await connect(a.url);
+        const name = `acl-browser-${suffix}`;
+        fixtures.push({ socket: freshAdmin.socket,
+            name,
+            url: a.url });
+        const compose = { services: { app: { image,
+            command: [ "sh", "-c", "mkdir -p /tmp/www; echo browser-fixture > /tmp/www/index.html; exec httpd -f -p 8080 -h /tmp/www" ],
+            ports: [ "127.0.0.1::8080" ],
+            healthcheck: { test: [ "CMD-SHELL", "wget -q -O- http://127.0.0.1:8080 | grep -q browser-fixture" ],
+                interval: "1s",
+                retries: 3 } } } };
+        verified((await rpc(freshAdmin.socket, "agent", "", "deployStack", name, stringify(compose), "", true, "")).ok, "browser fixture deployed via Enhanced");
+        await writeFile(path.join(root, "browser.json"), JSON.stringify({ url: a.url,
+            username: "testadmin",
+            password,
+            stack: name,
+            finish: path.join(root, "browser-finished") }), { mode: 0o600 });
+        console.log("BROWSER_FIXTURE " + path.join(root, "browser.json"));
+        let finished = false;
+        for (let attempt = 0; attempt < 900; attempt++) {
+            try {
+                await access(path.join(root, "browser-finished"));
+                finished = true;
+                break;
+            } catch { /* bounded interactive validation window */ }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        verified(finished, "browser validation explicitly completed within the isolated test window");
+    }
     console.log(`PASS: ${checks} integration assertions; isolated local and linked instances`);
 } catch (error) {
     for (const [ name, output ] of serverLogs) {

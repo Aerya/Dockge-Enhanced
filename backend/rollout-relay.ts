@@ -4,12 +4,22 @@ import path from "node:path";
 import { relayConfig, RELAY_CONFIG, RELAY_SIGNATURE } from "../common/rollout-relay";
 import type { DockerRun } from "./service-rollout";
 
+export class RelayDrainPending extends Error {
+    constructor() {
+        super("Rollout relay: active connections remain; old replicas must be retained");
+    }
+}
+
 /** Commands address only an inspected relay belonging to this Compose project. */
 export class RolloutRelay {
     constructor(private docker: DockerRun, readonly id: string, readonly port: number) {}
 
     async workers(): Promise<string[]> {
         return (await this.workerState()).map(worker => worker.pid);
+    }
+
+    async hasDrainingWorkers(): Promise<boolean> {
+        return (await this.workerState()).some(worker => worker.draining);
     }
 
     private async workerState(): Promise<{ pid: string;
@@ -21,12 +31,14 @@ export class RolloutRelay {
             .filter(worker => /^\d+$/.test(worker.pid));
     }
 
-    async assertReady(): Promise<void> {
+    async assertReady(validateCurrent = true): Promise<void> {
         const config = await this.docker([ "exec", this.id, "cat", RELAY_CONFIG ], 15_000);
         if (!config.startsWith(RELAY_SIGNATURE + "\n")) {
             throw new Error("Rollout: refusing to overwrite an unmanaged relay configuration");
         }
-        await this.docker([ "exec", this.id, "nginx", "-t", "-c", RELAY_CONFIG ], 15_000);
+        if (validateCurrent) {
+            await this.docker([ "exec", this.id, "nginx", "-t", "-c", RELAY_CONFIG ], 15_000);
+        }
         if (!(await this.workers()).length) {
             throw new Error("Rollout relay has no live workers");
         }
@@ -76,6 +88,6 @@ export class RolloutRelay {
             }
             await wait(2_000);
         }
-        throw new Error("Rollout relay: active connections remain; old replicas must be retained");
+        throw new RelayDrainPending();
     }
 }

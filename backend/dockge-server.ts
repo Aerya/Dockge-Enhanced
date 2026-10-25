@@ -25,6 +25,8 @@ import { AutoPruneManager } from "./watchers/auto-prune-manager";
 import { DockerCleanupManager } from "./docker-prune-service";
 import { SelfUpdateChecker } from "./watchers/self-update-checker";
 import { SelfUpdateManager } from "./self-update/manager";
+import { getRolloutRecovery } from "./rollout-recovery";
+import { rolloutTransport } from "./service-rollout";
 import { StackScheduler } from "./watchers/stack-scheduler";
 import { StackReplicationManager } from "./watchers/stack-replication-manager";
 import { StartGuardWatcher } from "./watchers/start-guard-watcher";
@@ -592,6 +594,11 @@ export class DockgeServer {
             log.error("auth", `Invalid authentication configuration: ${message}`);
             process.exit(1);
         }
+
+        // Load durable reservations before accepting mutations or auto-healing.
+        const rolloutRecovery = getRolloutRecovery(path.join(this.config.dataDir, "rolling-updates"), rolloutTransport([], process.cwd()).docker);
+        await rolloutRecovery.load();
+        rolloutRecovery.start();
 
         // Listen
         this.httpServer.listen(this.config.port, this.config.hostname, () => {
