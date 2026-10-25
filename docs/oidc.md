@@ -1,5 +1,7 @@
 # OpenID Connect (OIDC) sign-in
 
+[English](oidc.md) · [Français](oidc.fr.md) · [Español](oidc.es.md) · [Deutsch](oidc.de.md) · [简体中文](oidc.zh-CN.md)
+
 Dockge-Enhanced can sign users in directly with an OpenID Connect provider such as Pocket ID, Authentik, Keycloak, Authelia or Google, without a reverse proxy in front. OIDC works **alongside** local accounts, 2FA and restricted accounts, in the `local` authentication mode (the default). It is ignored when `DOCKGE_AUTH_MODE` is `disabled` or `trusted-proxy`.
 
 Dockge uses the Authorization Code flow with PKCE (S256), `state` and `nonce`. It validates the ID token (signature, issuer, audience, expiry, nonce). After a successful login, Dockge opens the same session as a password login, so the HTTP APIs, revocation, audit log and restricted accounts behave exactly the same way.

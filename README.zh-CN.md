@@ -35,18 +35,21 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 | 领域 | Dockge Enhanced 提供 |
 | --- | --- |
-| **多服务器** | 实例间网状联合、服务器分组、跨服务器管理与能力协商 |
-| **Stack 管理** | Compose 编辑、真实容器操作、健康检查向导、置顶及计划操作 |
-| **备份与恢复** | 多目标 Restic、可选 Zerobyte、应用一致性、快照检查与独立测试恢复 |
-| **更新** | ImageWatcher、批量策略、维护窗口、回滚及受保护的自身更新 |
-| **迁移与复制** | 配置与数据传输、可恢复任务、SHA-256 校验及计划冷复制 |
-| **监控与安全** | CPU/RAM 历史、健康状态、自动修复、Trivy、2FA 与代理认证 |
-| **受限本地账户** | 按实例和 Stack 授权、独立工作区、会话撤销；在安全设置中配置 |
-| **自动化与资源** | 限权 API、Webhooks、计划操作、审计及受保护的 Docker 清理 |
-| **集成与通知** | Kula、Dozzle、PowerWatch、Hub、PlugNPiN、Discord 与 Apprise |
+| **多服务器** | Dockge-Enhanced 实例之间的全网格联邦、可从任意关联服务器管理、带节点独立令牌的可选反向连接、持久化代理标签、服务器分组与选择、远程更新状态、事务性 Stack 复制/迁移、可续传传输和计划冷复制 |
+| **Stack 管理** | 固定 Stack、紧凑的状态和资源指示、可折叠/可调整的导航、灵活的日志/Compose 工作区、直接可用的操作栏（仅图标或图标加文字）、带说明的 Stack/容器操作、Stack 暂停/恢复、按容器计划、Build + Recreate、备注、Git 工具、主机启动前置条件，以及共享 VPN/网络命名空间服务的自动重建 |
+| **Compose 编辑** | Compose、override 和 `.env` 编辑器，默认 Compose 和 `.env` 模板，命名链接，YAML 修复，逐服务健康检查助手，端口冲突和镜像偏差检查，以及可选的按 Stack `TZ` |
+| **备份与恢复** | 多目标 Restic 备份、绑定挂载和卷、按 Stack 一致性、选择性恢复、仓库检查、快照校验与差异、安全重置仓库，以及受保护更新使用的恢复流程。可选连接或托管安装 Zerobyte、受保护的应用流程和专用测试恢复 |
+| **更新** | 按 Stack 批量策略并保留例外、立即模式每 5 分钟定向检查、任何变更前都遵守镜像忽略设置、手动/顺序批量/自动容器更新并可回滚、共享维护窗口、远程更新标记、全局/按镜像暂停，以及带强制备份、完整性检查和自动恢复的受保护 Dockge-Enhanced 自更新 |
+| **迁移与复制** | 实例间事务性 Stack 传输、Compose 和持久数据迁移、可续传任务、显式完成迁移、计划冷副本、恢复快照和故障切换流程 |
+| **安全与认证** | 按 Stack 和服务授权的受限本地账户、可选 TOTP 2FA、原生 OIDC 登录、可信代理认证、Cloudflare Turnstile、Trivy 漏洞扫描、CVE 例外和受保护的更新流程 |
+| **监控** | 系统、Stack 和容器统计，可选每 5 分钟 CPU/RAM 历史，可配置状态栏，健康卡片，崩溃循环检测，健康检查自动修复，响应式/全屏日志，以及可选的 Kula、Dozzle、PowerWatch 和 PowerWatch Hub 集成 |
+| **Docker 资源** | 受保护的统一清理（镜像、卷、网络和构建缓存）、精确补执行、预览、排除项、历史以及破坏性操作保护 |
 | **搜索与文件** | 跨实例全局搜索、受限主机文件管理器、卷浏览、分块传输、文本编辑和文件日志查看 |
 | **外部 Stack** | 检测并集成现有 Compose 项目、授权访问路径、查看实际容器，无需移动数据 |
+| **自动化与审计** | 限权 REST API、按 Stack 的 Webhook、Home Assistant 集成、计划操作，以及记录来源、状态和耗时的集中历史 |
+| **集成** | Zerobyte、PowerWatch 和 PowerWatch Hub、PlugNPiN 及用于 Nginx Proxy Manager、Pi-hole 和 AdGuard Home 的逐服务标签助手、Dozzle、Kula 和 Home Assistant |
 | **外观** | 日夜配色、内置主题、浏览器偏好及仅图标或图标加文字的 Stack 操作 |
+| **通知与访问** | 支持 EN/FR/ES/zh-CN 的 Discord 和 Apprise 通知、多实例识别、远程公告和第三方移动客户端 |
 
 ## 最新动态
 
@@ -57,56 +60,49 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 10 月
 
-**受限本地账户 :** 在**设置 → 安全 → 用户与权限**中创建受限账户，分别为每个本地或关联 Stack 授予查看状态、日志、启动、停止、重启、更新和重建权限。未选择即无权限。现有账户仍为管理员。独立工作区不提供 Compose/.env、终端、文件、删除、备份或设置访问。关联实例两端（包括反向代理）均需更新，旧代理不会绕过权限限制。权限绑定实例与 Stack 名称；复用名称时请重新检查权限。撤销权限会断开会话，但不会中止已开始的 Docker 操作。日志可能包含秘密信息。支持本地认证及可选的服务级权限，覆盖服务的所有副本并在重建后保留。用户可管理自己的密码、TOTP 和恢复码；管理员可重置 2FA 或仅删除账户。会影响网络命名空间依赖服务的操作将被拒绝，委托启动不会自动启动依赖服务。[技术说明](docs/scoped-users.md)。
+**原生 OIDC 登录：** 无需反向代理即可通过 Pocket ID、Authentik、Keycloak 或 Google 等 OpenID Connect 提供商登录，并与本地账户和 2FA 共存。通过 `DOCKGE_OIDC_*` 环境变量配置，使用带 PKCE 的授权码流程。新的 OIDC 用户为没有任何访问权限的受限账户，需由管理员授权，除非列在 `DOCKGE_OIDC_ADMIN_USERS` 中或属于 `DOCKGE_OIDC_ADMIN_GROUPS`；设置管理员组后，每次登录时角色都会随组成员关系同步。不存在“第一个用户自动成为管理员”的隐含规则：新安装时请先创建管理员或配置管理员映射。仅在 `DOCKGE_OIDC_LINK_EXISTING=true` 时才会关联已有本地账户。OIDC 登录不要求本地 TOTP 验证码，在 `disabled` 和 `trusted-proxy` 模式下 OIDC 会被忽略。如果设置 `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true`，请事先准备好恢复步骤。[指南](docs/oidc.zh-CN.md)。
 
-**Compose 模板与远程代理 :** 支持命名的 HTTP/HTTPS 链接、可配置的默认 .env 模板、持久化代理标签与筛选，以及使用独立令牌的可选反向连接。本地账户初始化后，节点会自动连接。反向代理仅属于其中心服务器；服务器间数据传输仍需直接联合连接。 已有本地管理员账户即可，无需创建新账户。 [文档](docs/compose-and-reverse-agents.md).
+**遵守镜像忽略设置：** ImageWatcher 会在 Registry 检查之后、下载之前以及重建容器之前再次检查**忽略**设置，包括已选中的计划更新和托管的 Dozzle 容器。手动批量更新中已过时的候选项也会被阻止。已开始的下载可以完成，但不会再进行重建；已经在运行的 Docker 重建不会被中断。
 
-**端口链接 :** 在“设置 → 常规”中选择容器端口链接使用主机名还是 IP 地址。每个关联实例保留自己的选择，默认行为保持不变。 主机名模式优先使用配置的主机名，其次使用浏览器或代理地址。IP 模式使用已知 IP 或指定的可访问 IPv4/IPv6。未知 IP 时，端口徽章仍显示，但不提供链接，并带有提示说明。请分别配置各托管实例，并更新关联双方以支持此设置；旧代理保留原有行为。不修改 Docker 端口绑定、DNS 或已保存的主机名。
+**受限本地账户：** 在**设置 → 安全 → 用户与权限**中创建受限账户，分别为每个本地或关联 Stack 授予查看状态、日志、启动、停止、重启、更新和重建权限。未选择即无权限。现有账户仍为管理员。独立工作区不提供 Compose/.env、终端、文件、删除、备份或设置访问。关联实例两端（包括反向代理）均需更新，旧代理不会绕过权限限制。权限绑定实例与 Stack 名称；复用名称时请重新检查权限。撤销权限会断开会话，但不会中止已开始的 Docker 操作。日志可能包含秘密信息。支持本地认证及可选的服务级权限，覆盖服务的所有副本并在重建后保留。用户可管理自己的密码、TOTP 和恢复码；管理员可重置 2FA 或仅删除账户。会影响网络命名空间依赖服务的操作将被拒绝，委托启动不会自动启动依赖服务。 使用可信代理认证时，每个代理身份都对应同名的本地账户；未知身份会被创建为没有任何授权的受限账户，新安装的第一个用户以及 `DOCKGE_AUTH_PROXY_ADMIN_USERS` 中列出的身份除外。[技术说明](docs/scoped-users.md)。
 
-### TLS 安全更新 — 2026 年 10 月
+**Compose 模板与远程代理：** 支持命名的 HTTP/HTTPS 链接、可配置的默认 .env 模板、持久化代理标签与筛选，以及使用独立令牌的可选反向连接。本地账户初始化后，节点会自动连接。反向代理仅属于其中心服务器；服务器间数据传输仍需直接联合连接。 已有本地管理员账户即可，无需创建新账户。 [文档](docs/compose-and-reverse-agents.md).
 
-针对 eMudhra 事件更新镜像中的证书库和 TLS 组件。测试覆盖受影响的证书链、两个 No CT 案例以及有效的 HTTPS 连接。正在运行的镜像保持不变；请在验证后安排替换。
+**端口链接：** 在“设置 → 常规”中选择容器端口链接使用主机名还是 IP 地址。每个关联实例保留自己的选择，默认行为保持不变。 主机名模式优先使用配置的主机名，其次使用浏览器或代理地址。IP 模式使用已知 IP 或指定的可访问 IPv4/IPv6。未知 IP 时，端口徽章仍显示，但不提供链接，并带有提示说明。请分别配置各托管实例，并更新关联双方以支持此设置；旧代理保留原有行为。不修改 Docker 端口绑定、DNS 或已保存的主机名。
 
-[事件详情](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+**TLS 安全与安全更新：** 针对 eMudhra 事件更新镜像中的证书库和 TLS 组件。测试覆盖受影响的证书链、两个 No CT 案例以及有效的 HTTPS 连接。正在运行的镜像保持不变；请在验证后安排替换。 镜像同时升级到 Node.js 26.12.1，以纳入 2026 年 10 月的 Node.js 安全版本；`follow-redirects` 和内置 Restic 构建也获得了安全修复。 [事件详情](https://emudhra.we-have-a-problem.com/) · [TLS 检查](security/emudhra/README.md)
 
+**Compose 检查与 Home Assistant：** 保存或部署前提示端口冲突，支持解析变量、覆盖文件和端口范围；比较运行中的镜像引用并准备待审核的 YAML 修正。可选 Home Assistant 集成提供状态传感器和受权限限制的启动、停止、重启控制。 [Guide](docs/HOME-ASSISTANT.md).
 
-**Compose 检查与 Home Assistant :** 保存或部署前提示端口冲突，支持解析变量、覆盖文件和端口范围；比较运行中的镜像引用并准备待审核的 YAML 修正。可选 Home Assistant 集成提供状态传感器和受权限限制的启动、停止、重启控制。 [Guide](docs/HOME-ASSISTANT.md).
-
-**Instance / Global :** 首页先显示本地实例统计，下方显示不受 Stack 筛选影响的全局汇总。展开摘要卡片可查看各实例数据并直接打开对应菜单。离线或旧版本实例标记为不可用；备份汇总单独列出已禁用的实例。
+**Instance / Global：** 首页先显示本地实例统计，下方显示不受 Stack 筛选影响的全局汇总。展开摘要卡片可查看各实例数据并直接打开对应菜单。离线或旧版本实例标记为不可用；备份汇总单独列出已禁用的实例。
 
 **已发现 Stack 的服务状态：** DDEV 等已发现但尚未接管的 Compose 项目在 Stack 根目录中没有对应目录时，不再反复触发 `spawn docker ENOENT` 错误。已接管的外部 Stack 使用已登记的目录、项目名称和 Compose 文件查询服务状态。
 
-**可选 TOTP 双重身份验证 :** 在**设置 → 安全 → 双重身份验证设置**中输入当前密码，扫描二维码并输入身份验证应用的验证码以启用。请保存十个一次性恢复码；它们只显示一次。此功能默认关闭，仅保护本地登录，不影响可信代理认证或联合令牌。 启用双重身份验证前，请将关联实例改为使用联合令牌；仅使用密码的连接将不再有效。
+**可选 TOTP 双重身份验证：** 在**设置 → 安全 → 双重身份验证设置**中输入当前密码，扫描二维码并输入身份验证应用的验证码以启用。请保存十个一次性恢复码；它们只显示一次。此功能默认关闭，仅保护本地登录，不影响可信代理认证或联合令牌。 启用双重身份验证前，请将关联实例改为使用联合令牌；仅使用密码的连接将不再有效。
 
 请备份整个 `/app/data`，包括 `two-factor.key`。仅恢复数据库而没有此密钥时，无法解密身份验证密钥。如果身份验证应用和所有恢复码均已丢失，有容器访问权限的管理员可在 `/app` 中运行 `./node_modules/.bin/tsx ./extra/reset-two-factor.ts --username ACCOUNT --confirm`，然后重启 Enhanced；密码保持不变。
 
-**按 Compose 服务显示 CPU/RAM 历史 :** 在**监控**中启用记录，然后通过堆栈操作中的**资源用量**打开历史。紧凑图表显示 Stack 总量及每个 Compose 服务的历史，包括未托管的 Compose 项目。更新和重建容器后仍归入同一服务历史；同时运行的副本会在计算平均值和峰值之前按每次采样合计。已有测量数据保留，无需重置。支持 24 小时、7 天、1 个月、1 年或全部数据。记录默认关闭，每 5 分钟采样一次，无需保持浏览器打开。CPU 的 100% 表示一个核心；Linux RAM 不包含可回收缓存。采样中断保留为空缺，两次采样之间的峰值可能遗漏。Stack 总量不包含宿主机原生进程或 Compose 之外的容器。Stack 列表仍支持 CPU/RAM 排序。
+**按 Compose 服务显示 CPU/RAM 历史：** 在**监控**中启用记录，然后通过堆栈操作中的**资源用量**打开历史。紧凑图表显示 Stack 总量及每个 Compose 服务的历史，包括未托管的 Compose 项目。更新和重建容器后仍归入同一服务历史；同时运行的副本会在计算平均值和峰值之前按每次采样合计。已有测量数据保留，无需重置。支持 24 小时、7 天、1 个月、1 年或全部数据。记录默认关闭，每 5 分钟采样一次，无需保持浏览器打开。CPU 的 100% 表示一个核心；Linux RAM 不包含可回收缓存。采样中断保留为空缺，两次采样之间的峰值可能遗漏。Stack 总量不包含宿主机原生进程或 Compose 之外的容器。Stack 列表仍支持 CPU/RAM 排序。
 
-**Zerobyte 备份：**在 **备份 → Zerobyte** 中连接现有实例或安装独立的 Compose 实例。可与原生 Restic 配合使用，也可接管计划备份，并使用独立仓库。支持配置向导、受保护的应用停止与重启、存储检查、独立测试恢复及只读多服务器状态。网络存储不可用时会阻止备份，不会自动使用本地备用目录。[配置与恢复指南](docs/zerobyte.zh-CN.md)。
+**Zerobyte 备份**：在 **备份 → Zerobyte** 中连接现有实例或安装独立的 Compose 实例。可与原生 Restic 配合使用，也可接管计划备份，并使用独立仓库。支持配置向导、受保护的应用停止与重启、存储检查、独立测试恢复及只读多服务器状态。网络存储不可用时会阻止备份，不会自动使用本地备用目录。[配置与恢复指南](docs/zerobyte.zh-CN.md)。
 
-**避免 Restic 备份自身仓库：**如果本地仓库位于所选备份目录内，Enhanced 会显示警告并自动排除它。例如，可以继续将 `/app/data` 作为备份来源，将 `/app/data/backups` 作为仓库。不能直接选择仓库本身或其子目录作为来源。现有路径、密码和保留设置保持不变。
+**避免 Restic 备份自身仓库**：如果本地仓库位于所选备份目录内，Enhanced 会显示警告并自动排除它。例如，可以继续将 `/app/data` 作为备份来源，将 `/app/data/backups` 作为仓库。不能直接选择仓库本身或其子目录作为来源。现有路径、密码和保留设置保持不变。
 
-**可选的逐服务健康检查助手：**查看现有 Stack 或创建新 Stack 时，点击服务上的 **配置健康检查**。助手会根据 Compose 内部端口建议本地 HTTP URL 或 TCP 端口。写入 YAML 前可以检查或修改目标及完整命令；不会自动替换现有健康检查。检查在镜像内部执行，因此需要 `/bin/sh` 以及 `curl`/`wget` 或 `nc`。部署后请确认健康状态；TCP 端口开放并不代表应用已准备就绪。
+**可选的逐服务健康检查助手**：查看现有 Stack 或创建新 Stack 时，点击服务上的 **配置健康检查**。助手会根据 Compose 内部端口建议本地 HTTP URL 或 TCP 端口。写入 YAML 前可以检查或修改目标及完整命令；不会自动替换现有健康检查。检查在镜像内部执行，因此需要 `/bin/sh` 以及 `curl`/`wget` 或 `nc`。部署后请确认健康状态；TCP 端口开放并不代表应用已准备就绪。
 
 在 Compose 编辑模式下，Stack 操作栏中也有 **健康检查**。如果 Stack 包含多个服务，请先选择要配置的服务。
 
-#### 功能与备用 DNS
-
-**镜像仓库检查的备用 DNS**
-
-在 **Watcher > Images > 备用 DNS** 中，可启用备用 DNS（默认关闭）、添加/编辑/删除 IPv4 或 IPv6 服务器，并测试 A/AAAA 查询、耗时和诊断信息。始终优先使用系统 DNS；只有 ImageWatcher 对仓库和令牌服务的受支持 HTTP 请求发生 DNS 解析失败时才会使用备用服务器。默认示例为 Quad9（`9.9.9.9`、`2620:fe::fe`）和 Cloudflare（`1.1.1.1`、`2606:4700:4700::1111`），均可修改。已有配置不会被覆盖。不会修改主机或 Docker Engine 的 DNS；Docker Engine 自行执行的拉取与自动更新不受此功能影响。
-
 #### 更新与 ImageWatcher
 
-**统一计划任务时区与可选容器 TZ :** 在 **设置 → 常规** 中选择 **计划任务时区**。它控制此实例的 Stack 启停、镜像更新、内部更新时段，以及原生 Restic 和安全扫描的 cron 任务。未明确选择时保留当前进程时区，不会重写已保存的计划时间。关联实例及 Zerobyte 等外部工具保留各自的设置。相对间隔、暂停截止时间和保留策略不变。夏令时遵循所选时区：不存在的本地时间不保证执行，重复的小时可能出现两次；建议使用过渡时段以外的时间，例如 04:00。
+**统一计划任务时区与可选容器 TZ：** 在 **设置 → 常规** 中选择 **计划任务时区**。它控制此实例的 Stack 启停、镜像更新、内部更新时段，以及原生 Restic 和安全扫描的 cron 任务。未明确选择时保留当前进程时区，不会重写已保存的计划时间。关联实例及 Zerobyte 等外部工具保留各自的设置。相对间隔、暂停截止时间和保留策略不变。夏令时遵循所选时区：不存在的本地时间不保证执行，重复的小时可能出现两次；建议使用过渡时段以外的时间，例如 04:00。
 
 在 Stack 编辑操作中，**容器时区** 提供 **默认关闭** 的选项，将 `TZ` 添加到 Compose 草稿及 override。已有或继承的值（包括可能来自 `env_file`/`extends` 的值）需要确认。请检查 YAML，保存后重新创建/部署容器。镜像必须支持 `TZ`。不会修改 `.env`/`env_file` 文件；以后更改全局时区也不会自动重写 Stack 或重建容器。
 
-**镜像更新通知 :** Discord 和 Apprise 对同一 Stack、镜像和远程摘要的待更新版本只通知一次，包括等待计划时段的更新。此记录在 Enhanced 重启后仍然保留。检测到新的摘要会再次通知；自动更新结果仍会单独通知。发送失败后会在后续检查中重试，每个 Discord Webhook 和已配置的 Apprise 目标分别记录发送结果。
+**镜像更新通知：** Discord 和 Apprise 对同一 Stack、镜像和远程摘要的待更新版本只通知一次，包括等待计划时段的更新。此记录在 Enhanced 重启后仍然保留。检测到新的摘要会再次通知；自动更新结果仍会单独通知。发送失败后会在后续检查中重试，每个 Discord Webhook 和已配置的 Apprise 目标分别记录发送结果。
 
-**已停止的服务保持停止：**如果目标 Compose 服务或所需的网络命名空间配套服务已停止或不存在，自动镜像更新会推迟。ImageWatcher 在下载后、重建前再次检查，并在后续检查中重试。它不会通过 `compose up` 启动已停止的服务。
+**已停止的服务保持停止**：如果目标 Compose 服务或所需的网络命名空间配套服务已停止或不存在，自动镜像更新会推迟。ImageWatcher 在下载后、重建前再次检查，并在后续检查中重试。它不会通过 `compose up` 启动已停止的服务。
 
-**检查间隔：**在 **Watcher > Images** 中，完整扫描默认每 **6 小时**检查所有镜像。**立即模式**镜像还会默认每 **5 分钟**接受一次定向检查。定向检查间隔可按分钟或小时设置（5 分钟至 24 小时），也可单独禁用；完整扫描仍会运行。选择立即模式时仍可触发一次定向检查。
+**检查间隔**：在 **Watcher > Images** 中，完整扫描默认每 **6 小时**检查所有镜像。**立即模式**镜像还会默认每 **5 分钟**接受一次定向检查。定向检查间隔可按分钟或小时设置（5 分钟至 24 小时），也可单独禁用；完整扫描仍会运行。选择立即模式时仍可触发一次定向检查。
 
 **macOS 主机绑定挂载准备**
 
@@ -143,6 +139,14 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 **Stack 与镜像更新操作界面 (#489–#490)**
 
 Stack 批量自动更新设置移至操作栏中的弹窗，容器各自的设置不变。镜像更新、忽略、暂停和回滚操作改为紧凑按钮，并保留辅助功能标签。
+
+**镜像仓库检查的备用 DNS**
+
+在 **Watcher > Images > 备用 DNS** 中，可启用备用 DNS（默认关闭）、添加/编辑/删除 IPv4 或 IPv6 服务器，并测试 A/AAAA 查询、耗时和诊断信息。始终优先使用系统 DNS；只有 ImageWatcher 对仓库和令牌服务的受支持 HTTP 请求发生 DNS 解析失败时才会使用备用服务器。默认示例为 Quad9（`9.9.9.9`、`2620:fe::fe`）和 Cloudflare（`1.1.1.1`、`2606:4700:4700::1111`），均可修改。已有配置不会被覆盖。不会修改主机或 Docker Engine 的 DNS；Docker Engine 自行执行的拉取与自动更新不受此功能影响。
+
+**通过 Docker Socket Proxy 自更新**
+
+自更新检查和更新 sidecar 会使用 Enhanced 实际采用的 Docker endpoint：Unix 套接字（包括 `DOCKGE_DOCKER_SOCKET`），或位于可信 Docker Socket Proxy 之后的 `DOCKER_HOST=tcp://…`。TCP 模式下不会挂载虚设的套接字；sidecar 会先接入实例的 Docker 网络，然后才处理已签名的更新计划。代理需要允许的权限见下文“Dockge-Enhanced 自动更新流程”。
 
 #### 备份、清理与可靠性
 
@@ -182,6 +186,10 @@ Docker 可能会保留镜像的 repository 名称，但把 tag 变成 `<none>`�
 
 Restic 密码错误、清理审计摘要和自动更新消息不再错误地以法语显示在英文安装中。
 
+**配置 HTTP 代理时的健康检查**
+
+容器内置健康检查会忽略代理变量并直接访问 `127.0.0.1`，因此已配置或不可达的代理不会再把 Enhanced 标记为不健康。其他网络访问仍使用已配置的代理。
+
 #### 监控与集成
 
 **可选的 PowerWatch 功耗监控**
@@ -192,11 +200,9 @@ Restic 密码错误、清理审计摘要和自动更新消息不再错误地以�
 
 也可以直接通过 Enhanced 安装和管理可选的 **PowerWatch Hub**，或通过现有 Hub 的 WebUI 地址连接。Hub 是独立服务：它在自己的仪表板中聚合既有 PowerWatch 的私有 HTTP API，无需主机硬件权限。Dockge-Enhanced 只提供一个全局 Hub 链接，不会为每个关联实例重复显示。PowerWatch 现已支持**可选的原生身份验证**（默认关闭）以及只读 Bearer API 令牌。**Enhanced 现在支持只读 Bearer 令牌**，可直接读取受保护的 PowerWatch 实例。在 **Monitoring → PowerWatch → 只读 API 令牌** 中输入令牌；保存后令牌保持隐藏，且不会发送给 Hub。Hub 另有可选的管理操作令牌保护。请勿将未受保护的界面暴露到公网。
 
-
-##### 可选监控服务：Kula、Dozzle、PowerWatch 和 Hub
+**可选监控服务：Kula、Dozzle、PowerWatch 和 Hub**
 
 在 **Monitoring** (`/watcher/monitoring`) 页面中，四项第三方服务以独立且统一的卡片呈现，包含说明及 GitHub 链接。PowerWatch 和 Hub 均可连接外部实例或由 Enhanced 管理安装，并支持安装、启动、重启、停止及连接测试。托管 Hub 使用 PowerWatch 镜像中的 `powerwatch-hub` 程序，默认监听 `127.0.0.1:3065`，数据保存在独立 Docker 卷中。
-
 
 连接**现有 PowerWatch** 时，只需在 PowerWatch 地址中填写其常用 **WebUI 地址**（例如 `http://192.168.0.64:3064`）；Enhanced 会自动访问同一地址下的 `/api/snapshot`。只有特殊反向代理配置才需要在高级选项中填写独立 WebUI 地址。连接**现有 Hub** 也只需填写其 WebUI 地址；Enhanced 会自动访问 `/api/hub/snapshot`。
 
@@ -204,7 +210,33 @@ Restic 密码错误、清理审计摘要和自动更新消息不再错误地以�
 
 Monitoring 可在没有浏览器打开时每 5 分钟记录一次轻量级主机 CPU/RAM 样本。响应式 SVG 图表支持 24 小时、7 天、1 个月和自定义范围；所选显示周期可以保存，并在下次打开时恢复。长时间范围会在服务端聚合，停机时间以空档显示。记录功能默认关闭；明确启用后，即使在低功耗模式下也会继续。
 
+可选的 CPU/RAM 历史会保留真实的采样空档，但使用受 PowerWatch 启发的更紧凑图表，网格线更浅，并带有柔和的填充区域。
+
 #### Stack、界面与易用性
+
+**Stack 操作直接可用**
+
+所有 Stack 操作都直接显示在操作栏中，不再使用子菜单，按视觉分组并根据可用宽度自动换行。“仅图标”和“图标加文字”模式都保留提示；命令、可用条件和确认步骤保持不变。
+
+**德语界面**
+
+界面和更新说明提供德语版本，并新增德语 README 和更新日志。选择德语时，Discord 和 Apprise 通知回退为英语。
+
+**首页容器计数**
+
+首页显示运行中、已停止和已暂停的容器，包括可访问的关联实例。Stack 和容器计数会跟随 Stack 列表的实例筛选。
+
+**更安全的 Stack 启动与即时镜像检查**
+
+在启动、部署或重建前，如果绝对 bind mount 明确指向目录，Enhanced 现在会自动准备缺失的主机目录。这对 Synology NAS 尤其有用，因为 Docker 会拒绝尚不存在的 bind 源。疑似文件的 bind 源不会被自动创建为目录。镜像的 **立即** 自动更新模式在保存后会立刻执行针对该镜像的检查。Stack 重启成功后，Enhanced 还会重新读取真实状态并隐藏已经过期的 Compose 进度输出。
+
+**更整洁的 Compose 卷与日志**
+
+已挂载卷和实际容器使用紧凑行显示，不再是整行宽度的可点击条。日志面板将三个筛选器纵向排列，操作按钮分组，搜索放在最后；辅助技术仍可读取筛选器名称。外观设置可以为当前浏览器默认启用日志时间戳。
+
+**日间与夜间配色**
+
+外观设置现在为浅色和深色模式提供独立配色：四种日间方案和八种夜间方案，包括原有主题。Catppuccin、Nord、Solarized、Dracula、Gruvbox、Tokyo Night 和 Rosé Pine 会为页面、页眉、面板和控件重新着色；所选配色保存在浏览器中，“自动”模式仍跟随系统主题。
 
 **更稳定的关联实例连接**
 
@@ -254,16 +286,13 @@ Stack 按钮现在说明实际执行的命令。帮助面板展示所选 Stack �
 
 断路器可用性通知现在按一次连续离线事件管理：只要关联实例持续离线，每个 Dockge 实例最多发送一次告警；只有对端重新成功认证并恢复在线后，告警才会重新启用。每个远程实例还可以在本机标记为 **间歇性机器 — 不可用时不发送告警**。该模式适用于经常关机或休眠的台式机、笔记本等节点；自动重连、退避和断路器保护仍会继续工作。由于这是本地偏好，需要在每台常开且不希望收到该告警的 Dockge 实例上标记相应的间歇性节点。
 
-
 **进程级共享联邦传输**
 
 联邦现在由每个 Dockge-Enhanced 进程共享一套出站传输，而不是每个 WebUI socket 各自建立连接。服务器开始监听后会从 SQLite 加载关联实例并自动连接。打开多个 WebUI 不会再成倍创建远程 socket，关闭最后一个浏览器也不会断开关联实例；约 5 分钟后的断路器重试即使在没有 WebUI 打开时也会继续。凭据变更、mesh 修复或删除 peer 会立即重新同步共享传输。
 
-
 **联邦重连风暴防护**
 
 联邦 socket 现在使用轻量认证路径，不再执行 WebUI 的 Stack/代理初始化。Socket.IO 重连被明确限制，并使用指数退避、随机抖动和 5 分钟断路器。过量入站联邦握手会在认证前被拒绝，同时限制并发入站联邦 socket 数量。如果重连保护触发或检测到 SQLite/Knex 争用，现有 Discord/Apprise 配置会在不查询 SQLite 的情况下发送限频告警。
-
 
 **网络命名空间安全的定向更新**
 
@@ -295,31 +324,25 @@ Enhanced 现在可以检测现有 Docker Compose 项目，并在**不移动 Comp
 
 用户可显式启用对**最近 Restic 快照**中的历史配置搜索；为保护远程仓库，每个实例最多检查最近 5 个快照和 80 个 Compose/.env 文件。对 **`.env` 值**的搜索同样必须显式开启：值只参与匹配，绝不会返回或显示；启用该敏感模式后，查询也不会保存到最近搜索或收藏中。关联实例优先使用 V2 协议，旧实例的简单搜索仍可回退到 V1。
 
-
 **编辑 Compose/.env 时保护自动更新**
 
 当 WebUI 中的 compose、override 或 `.env` 存在尚未保存的更改时，所属 Dockge-Enhanced 实例会暂时阻止自身自动更新，即使该编辑来自另一台关联 WebUI。编辑器通过短时 heartbeat lease 保持状态，遗留浏览器会话会自动过期。如果更新在存在未保存内容时准备就绪，用户可在对话框中选择**保存并更新**、**推迟 30 分钟**、**推迟 1 小时**或**继续编辑**。后端还会在准备和启动 updater sidecar 前再次检查阻塞状态，避免在备份或校验期间开始的新编辑被重启中断。
-
 
 **首页关联实例概览**
 
 首页现有的代理面板现在也作为紧凑的基础设施概览。每个关联的 Dockge-Enhanced 实例都会显示其堆栈总数和状态、主机 CPU/RAM 使用率、运行时间以及固定堆栈数量，同时保留重命名、重新认证、删除和添加代理等现有操作。点击某个实例摘要会将左侧堆栈列表筛选到该服务器，再次点击则恢复所有服务器视图。
 
-
 **关联实例之间的堆栈 CPU/RAM 统计**
 
 **显示每个堆栈的 CPU / 内存统计** 选项现在归属于各个 Dockge-Enhanced 实例。某服务器启用该选项后，会在本机采集 Docker 统计，并通过现有的关联实例通道提供数据。任何显示该服务器的关联 WebUI 都会为其堆栈和容器显示相同的 CPU/RAM 指标。隐藏服务器会隐藏其统计；在所属实例上关闭该选项则会停止该实例的采集和数据提供。
-
 
 **关联实例之间持久化的固定堆栈**
 
 固定堆栈现在归属于实际托管它的 Dockge-Enhanced 实例，而不是某个浏览器的 `localStorage`。在 Garuda、DockerLab 或 LincStation 上固定堆栈时，偏好会保存到对应服务器。任何显示该服务器的关联 WebUI 都会看到相同的固定堆栈；隐藏服务器只会隐藏其固定项，不会删除它们。因此固定状态可跨退出/重新登录、更换浏览器和 Dockge-Enhanced 更新保留。旧的浏览器本地固定状态会在所属实例可访问时自动迁移。
 
-
 **self-update 备份独立保留策略**
 
 Dockge-Enhanced 在受保护的自动更新前创建的强制 Restic 快照现在使用独立保留策略。新快照**创建并验证成功后**，系统会为当前安装保留**最近 2 个 self-update 快照**，并在启动 updater sidecar 前删除更旧的版本。稳定的安装专属标签可避免在多个 Dockge-Enhanced 实例共享同一 Restic 仓库时误删其他实例的快照。普通备份的保留策略（`keepLast`、每日、每周、每月）保持不变。如果独立清理失败，已验证的备份仍会保留，更新可以继续；错误会写入日志，并在后续自动更新时再次尝试清理。
-
 
 **Docker Compose 项目名称匹配改进**
 
@@ -354,7 +377,6 @@ Updater 同时支持普通 Unix socket（包括 `DOCKGE_DOCKER_SOCKET`）以及�
 **清晰的 build 标识与更新进度**
 
 “更新”页面通过 OCI 元数据识别 build，并统一显示更新阶段、Restic 进度和已用时间。
-
 
 **远程公告**
 
@@ -405,149 +427,155 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 <details>
 <summary>查看全部功能</summary>
 
-- 在“设置 → 常规”中选择容器端口链接使用主机名还是 IP 地址。每个关联实例保留自己的选择，默认行为保持不变。
-
 ### 多服务器与联邦
-- 全网状联邦
-- 从任意已连接实例管理
-- 服务器选择与分组
-- 远程 Stack 与更新状态
-- 专用联邦 Token 与连接恢复
-- 修改关联实例时刷新浏览器而不中断联邦连接
-- 已连接实例概览、可达性状态和 WebUI 直达入口
-- 跨 Stack、Compose/.env 文件、Docker 资源和近期 Restic Snapshot 的全局多实例搜索
-- 不同 Dockge-Enhanced 版本之间的能力协商
+- Dockge-Enhanced 实例之间的全网格联邦，可从任意关联 WebUI 管理
+- 为 NAT/CGNAT 后的主机提供可选反向连接：每个节点独立令牌、自动接入和撤销；反向代理只属于其中心服务器（[指南](docs/compose-and-reverse-agents.md)）
+- 持久化代理标签和标签筛选，可与实例筛选组合使用
+- Stack 列表中的服务器选择、分组和稳定配色
+- 首页关联实例概览，包含 Instance / Global 统计、可达性和各 WebUI 直达链接
+- 每个实例提供各自的 Stack 状态、镜像更新标记和按 Stack 的 CPU/RAM 统计
+- 专用联邦令牌、断开链接修复，刷新浏览器时保持联邦连接
+- 进程级联邦传输，带有受限重连、断路器，每次故障只发送一次可用性告警
+- 可将经常关机的设备排除在可用性告警之外
+- 不同 Dockge-Enhanced 版本之间协商传输协议
+- 每个实例可选择端口链接使用主机名还是 IP 地址
 
 ### Stack 管理
+- 创建、编辑、启动、停止、重启、更新、重建、暂停/恢复和拆除 Compose Stack
+- 直接可用的 Stack 操作栏，支持仅图标或图标加文字，并说明实际执行的 Compose 命令
+- 按服务和按容器操作，包括实际容器和 Compose 副本
+- 通过 `service:` 或 `container:` 共享 VPN/网络命名空间的直接和间接服务会自动重建
+- 本地构建镜像的 Build + Recreate
+- Stack 和容器的计划启动/停止
+- 主机启动前置条件（挂载点和 `systemd` 服务），可选监控与恢复
+- 固定 Stack 保存在服务器上，并在关联 WebUI 之间共享
+- 可选 WebUI 显示名称，不改变 Compose 项目或 Restic 标识
+- Stack 备注、Markdown `README.md` 和 Git 工具
+- 按名称、状态、实例、创建日期、最后更新、CPU 或 RAM 排序
+- 可折叠、可调整宽度的 Stack 侧栏，带紧凑的状态、CPU 和 RAM 指示，以及灵活的日志/Compose 工作区
+- 匹配 Compose 项目名称，目录名包含点或大写字母时不会产生重复 Stack
+- 发现并接管外部 Compose Stack，无需移动文件或数据，并提供受保护的路径授权
+- 可选彻底删除已接管的外部 Stack，并按标签清理损坏的外部 Stack，均需加强确认
+- 可按服务设置在 Stack 整体状态中忽略某个可选服务
 
-- 每个实例的计划任务使用统一时区；编辑器提供需确认的可选按 Stack 应用 TZ 功能，不会自动重新创建容器。
-
-- Stack 操作栏提供直接操作，支持仅图标或图标加文字模式
-- 可选的逐服务 Compose 健康检查助手，提供可编辑的 HTTP/TCP 建议与命令预览
-- 可按服务忽略其对应用栈整体状态的影响，同时保留服务自身状态
-- 可选的 Web UI 显示名称，不改变 Compose 或 Restic 标识
-- 实际容器与副本的详情及单容器启动、停止、重启操作，与 Compose 服务级操作分离
-- 可选的受限主机文件管理器：与 Stack 卷浏览器分离，支持分块传输与文件日志查看
-- 创建、编辑、启动、停止和重新创建 Compose Stack
-- 服务端持久化并在关联 WebUI 间共享的固定 Stack 与排序
-- 无需移动文件或数据即可发现并接管外部 Compose Stack
-- 通过受保护的一键授权开放外部 Stack 路径
-- 可选完整删除已接管的外部 Stack，包括源目录和 Enhanced 访问挂载
-- 基于标签永久清理损坏的外部 Stack，并在删除容器、卷、网络、镜像和 Compose 源文件前锁定资源清单并要求强化确认
-- 备注和 Git 工具
-- 受管理 Stack 的 Markdown `README.md` 查看与编辑，复制或迁移时一同传输
-- Build + Recreate
-- 服务/容器级操作和计划任务
-- 自动重新创建通过 `service:` 或 `container:` 直接或间接共享 VPN/网络命名空间的服务
-- 可折叠/调整大小的侧栏与资源指标
-- Compose 编辑器支持端口长语法并保留 `tmpfs` 权限模式
+### Compose 编辑
+- Compose、`compose.override.yaml` 和 `.env` 编辑器，支持变量高亮、折叠、搜索和全屏
+- 经过校验的默认 Compose 和 `.env` 模板，仅用于新建 Stack
+- Stack 的命名 HTTP/HTTPS 链接
+- “修复 / 格式化 YAML”操作，保留带引号的值和 `tmpfs` 八进制模式
+- 支持长格式端口语法
+- 可选的逐服务健康检查助手，可编辑 HTTP/TCP 建议并预览命令
+- 保存或部署前提示端口冲突和与运行中镜像的偏差
+- 可选的按 Stack 容器 `TZ`，仅在审核并确认后应用
+- 用于 Nginx Proxy Manager、Pi-hole 和 AdGuard Home 的 PlugNPiN 标签助手
 
 ### 迁移与复制
-- 实例间复制或移动
-- Compose、bind mount 与卷传输
-- 可恢复任务和 SHA-256 校验
-- 事务式部署与 rollback
-- 本地镜像和私有 Registry 凭据传输
-- `container_name` 冲突检测
-- 计划冷复制
+- 在实例之间复制或迁移 Stack 及其 Compose 配置
+- 传输绑定挂载和命名卷，源 → 目标映射可编辑
+- 可续传的直连 HTTP 传输、共享 Restic 仓库或显式 SSH/rsync 配置
+- SHA-256 校验、事务性部署和回滚
+- 可选传输本地 Docker 镜像和加密的私有 Registry 凭据
+- 检测 `container_name` 冲突并显示真实的部署错误
+- 显式完成迁移或返回源实例
+- 在源实例上配置的计划冷副本，保留快照并支持手动故障切换
+- 隔离的灾难恢复测试，以及 PostgreSQL、MariaDB/MySQL、Redis 和 SQLite 应用配置模板
 
 ### 备份与恢复
+- 原生 Restic 备份 Compose、`.env`、绑定挂载、命名卷和 `/app/data`
+- 多个目标：本地、SFTP/NAS、S3/Backblaze B2 和 REST Server
+- 计划备份、**立即备份**和保存 Compose 时备份，并防止同时运行
+- 按 Stack 的一致性：实时、先停止再启动或应用钩子
+- 排除 Stack、内置和自定义排除模式，并自动排除嵌套的本地仓库
+- 只初始化确实缺失的仓库，访问、网络和密码错误会阻止初始化
+- 普通保留策略和自更新备份专用保留策略
+- 安全重置 Local、SFTP、S3 和 REST 仓库，并保留旧仓库用于恢复
+- 带预览和差异对比的快照浏览器、选择性恢复和按 Stack 恢复
+- 计划备份后的恢复测试、`restic check`、备份历史和逾期告警
+- 可选 Zerobyte：连接现有实例或部署专用的托管 Compose 安装，可与原生 Restic 并用，也可承担计划备份，并使用独立仓库
+- 引导创建 Zerobyte 源、仓库和任务；新任务在审核前保持停用，现有任务可在确认后迁移
+- 受保护的 Zerobyte 停止/重启流程、完整性检查、持久恢复日志和定向手动恢复
+- Zerobyte 网络存储检查（不回退到本地）、专用测试恢复和只读联邦状态
+- 指南：[Restic 备份与恢复](docs/restic.zh-CN.md) · [Zerobyte 安装与恢复](docs/zerobyte.zh-CN.md)
 
-- 可选 Zerobyte：连接现有实例或托管独立 Compose 安装，与原生 Restic 配合或接管计划备份，使用独立仓库
-- 引导创建 Zerobyte 来源、仓库和任务，确认迁移已有任务；新任务在检查前保持禁用
-- Zerobyte 钩子与资源检查、应用停止和重启、持久恢复日志及针对服务的手动恢复
-- 网络存储检查且无本地回退、经确认的存储重新验证、独立测试恢复及只读联合 Zerobyte 状态
+### 更新与 ImageWatcher
+- 通过 digest 检测镜像更新，无需拉取，也适用于远程实例
+- 每个镜像可设为关闭、立即或定时，并支持按 Stack 批量设置，默认保留单独例外
+- 默认每 6 小时完整扫描，立即模式镜像默认每 5 分钟定向检查，两者可分别配置或关闭
+- 检查每个容器实际运行的镜像，共享 Registry 请求，并在 HTTP 429/503 时重试
+- 可选的 Registry 检查备用 DNS，不修改主机或 Docker Engine 的 DNS
+- 在任何拉取或重建前都会遵守**忽略**和 `dockge.imageupdates.check: "false"`，包括托管的 Dozzle
+- 手动、自动和按顺序“全部更新”的镜像更新，并可回滚到旧镜像
+- 自动更新不会唤醒已停止或已暂停的 Stack
+- 全局和按镜像暂停、跳过版本和自动更新历史
+- 每个 Stack、镜像、digest 和通知目标只发送一次待更新通知
+- 全局维护窗口：为 Dockge-Enhanced 自动更新设置后，也同样限制镜像自动更新，否则使用各镜像自己的计划；**立即更新**始终立即执行
+- 受保护的 Dockge-Enhanced 自更新：强制 Restic 备份、完整性检查、就绪验证和自动恢复
+- 通过 Unix 套接字或可信的 Docker Socket Proxy 进行自更新，检查磁盘空间，并在 Compose 或 `.env` 有未保存修改时阻止自动更新
+- 持久化的 8 阶段自更新时间线，并显示实时主机负载
+- 在使用自定义 Compose `hostname:` 时也能可靠识别当前容器，无法验证时显示降级状态
 
-**可选 Zerobyte 集成:** 在 **备份 → Zerobyte** 中连接现有实例，或安装独立的 Compose 实例。Zerobyte 可以补充原生 Restic 备份，也可以接管计划备份；请使用独立的仓库。向导创建来源、仓库和默认禁用的任务，供启用前检查。受保护的工作流会停止并重新启动所选应用；网络存储不可用时会阻止备份，不会自动写入本地备用目录。外部实例需要操作员明确检查挂载及仓库隔离。请参阅 [Zerobyte 配置与恢复指南](docs/zerobyte.zh-CN.md)。
-
-**仓库位于备份来源内：**建议将本地 Restic 仓库放在所选目录之外。如果仓库位于来源目录内，保存设置时会显示警告，备份会自动排除仓库、重置时保留的归档及其其他 Docker 挂载路径。还会检查解析后的符号链接。已禁用的本地目标也保持受保护。不能选择仓库本身或其子目录作为来源；每次备份前都会重新检查路径。此检查不会移动或重置任何仓库。
-
-**安全重置 Restic 仓库（Local、SFTP、S3 和 REST）。** 在备份页面的维护工具中选择已启用的目标，先查看仓库和快照数量。操作要求两项确认、准确输入确认语句以及有时限的一次性令牌。对于本地仓库，旧目录会先重命名为保留的归档；对于远程仓库，Dockge 切换到新的 SFTP 目录、S3 前缀或 REST URL，不删除旧仓库。新的活动仓库不包含旧快照，“最近历史”仅清除该目标的记录，保留其他目标的历史。旧备份仍保存在原位置，可以恢复，**不会永久删除**。共享仓库的用户应事先协调。
-
-- Restic 多目标备份
-- 自动排除本地 Restic 仓库，包括已禁用的目标，并提示路径嵌套问题
-- Bind mount 与卷
-- 选择性恢复
-- 仓库与 Snapshot 检查
-- 历史记录与恢复流程集成
-
-### 更新
-- 按 Stack、镜像、待更新摘要和通知目标持久化去重；发送失败会重试，自动更新结果仍单独通知。
-- 应用栈镜像批量自动更新: 变更预览和现有例外保留.
-- **ImageWatcher 立即更新**：启用时立即检查，之后默认每 5 分钟定向检查（可独立于 6 小时完整扫描调整或禁用）；基于容器实际运行的映像比较，并合并请求、处理 HTTP 429 限流。
-- 使用 `dockge.imageupdates.check: "false"` 按服务排除 ImageWatcher 检查及自动/批量更新
-- 镜像更新监控与远程检测
-- 手动和自动更新
-- 可用镜像的顺序批量更新，显示进度并在首次失败时停止
-- Rollback、计划与暂停
-- Dockge-Enhanced 受保护自动更新
-- 持久化的 8 阶段真实自更新流程，显示每步耗时、可用时的 Restic 文件/字节/吞吐量，以及主机实时 CPU/RAM 与 1 分钟负载
-- 支持自定义 Compose `hostname:` 的可靠当前容器识别，并在无法验证更新时显示降级状态
-- 强制 Restic 备份、完整性和可用性检查
-- 失败时自动恢复
-- Compose 或 `.env` 存在未保存修改时阻止自更新
-- 更新时校准 Compose 项目名称并使用 Stack 的准确上下文
-
-### 安全
-- **受限本地账户** — 新增按实例和 Stack 限制的本地账户，支持独立权限及专用工作区。在“设置 → 安全”中配置。现有账户仍为管理员，关联实例也需更新。日志可能包含秘密信息，请谨慎授权。 [Guide](docs/scoped-users.md). 服务级权限涵盖重建后的所有副本。用户可管理密码和 2FA；管理员可重置 2FA 或删除账户，而不会修改 Stack 数据。
-
-> 降级前请禁用受限账户：旧版 Enhanced 不执行这些权限限制。
-
-- 集中验证 Stack 名称，阻止路径遍历逃离受管理的 Stack 目录
-- Trivy 与 CVE 例外
-- 本地账户可选 TOTP 双重身份验证：验证二维码配置、加密密钥、一次性恢复码和会话撤销；Turnstile 和 trusted proxy
-- 受限制 sidecar 与签名计划
-- Docker 破坏性操作保护
-- 私有 Registry 凭据加密传输
+### 安全与认证
+- 本地账户支持可选 TOTP 2FA、加密密钥、一次性恢复码和会话撤销
+- 受限本地账户，按实例、Stack 和服务授权，并提供独立工作区（[指南](docs/scoped-users.md)）；降级到旧版 Enhanced 之前请先停用这些账户
+- 仅接受明确信任网络的可信代理认证，代理身份对应本地账户
+- 原生 OIDC 登录（Pocket ID、Authentik、Keycloak…），使用 PKCE，默认创建受限账户，可按用户或组映射管理员（[指南](docs/oidc.zh-CN.md)）
+- 从 Secret 文件非交互式创建首个管理员
+- Cloudflare Turnstile 登录保护
+- Trivy 漏洞扫描和 CVE 例外
+- 集中校验 Stack 名称，防止路径遍历
+- 受限的自更新 sidecar 和签名更新计划
+- 加密传输私有 Registry 凭据
+- 破坏性操作的保护和确认
+- eMudhra 事件后的 TLS 证书库检查（[TLS 检查](security/emudhra/README.md)）
 
 ### 监控
-- 可选的每 5 分钟 Stack 及 Compose 服务 CPU/RAM 历史，更新后连续保留、副本合计、紧凑操作面板、24 小时/7 天/1 个月/1 年/全部范围及 CPU/RAM 排序
-- **PowerWatch Hub**：可独立托管安装或连接既有 Hub，并通过 Hub WebUI 手动添加节点进行汇总。
-- 系统、Stack 和容器统计
-- 可选的 5 分钟 CPU/RAM 历史，支持 24 小时、7 天、1 个月和自定义范围、服务端降采样以及可见的停机空档
-- 状态栏与健康卡片
-- Crash loop 与 healthcheck 自动修复
-- 实时/全屏日志，支持**自上次重启以来**的时间范围，并可一键复制最近 **50 / 100 / 150** 行或全部已加载日志
-- Kula 与 Dozzle
-- 可选 PowerWatch 集成：只读连接现有安装，或按主机硬件部署托管 Compose，并在关联实例中显示当前功率与 WebUI 链接
-- 本地及已连接实例的每 Stack CPU/RAM 统计
+- 系统、Stack 和容器的 CPU、RAM 和磁盘统计，以及可配置的状态栏
+- 主机系统详情、温度和受监控磁盘分区
+- 可选的每 5 分钟主机及 Compose 服务 CPU/RAM 历史，并显示数据空档
+- 仪表板健康卡片、崩溃循环检测和健康检查自动修复
+- 响应式实时日志和全屏日志：服务筛选、搜索、时间范围、**自上次重启以来**、复制最近 50 / 100 / 150 行或全部已加载行、暂停自动滚动、长行处理和可选默认时间戳
+- 适用于 NAS 和小型主机的低功耗模式
+- 可选 Kula、Dozzle、PowerWatch 和 PowerWatch Hub 集成，关联实例上也显示 PowerWatch 当前功率
 
 ### Docker 资源
-- 镜像、卷、网络和未管理容器
-- 镜像、网络、卷和构建缓存的统一手动/自动清理；手动与自动模式使用相同宽限期，镜像按唯一 Image ID 计数，并显示每个类别的结果及最近 30 次历史
-- 每 15 分钟检查精确的 `lastRun + interval` 到期时间，休眠或重启后只补跑一次
-- 基于完整 Image ID 对运行中和已停止容器进行分类；同一镜像的多个标签只计数一次
-- 高风险删除保护
+- 镜像、卷、网络和未管理容器，并支持搜索
+- 管理 `bridge`、`macvlan` 和 `ipvlan` 网络
+- 统一的手动和自动清理，覆盖镜像、网络、卷和构建缓存，提供预览、排除项和历史
+- 精确补执行计划，按 Image ID 分类
+- 保护运行中和已停止容器、回滚和恢复镜像以及较新的 Dockge-Enhanced 镜像
+
+### 搜索与文件
+- 跨实例全局搜索（`Ctrl+K`），覆盖 Stack、Compose/`.env` 文件、Docker 资源和最近的 Restic 快照
+- 可选搜索 `.env` 值，这些值从不返回，也不会保存到历史中
+- 紧凑的已挂载卷行及大小显示，每个容器都有卷浏览器/编辑器，即使 Stack 已停止也可使用
+- 可选的受限根目录主机文件管理器，支持分块传输、文本编辑和文件日志查看
 
 ### 自动化与审计
-
-[REST API、Webhooks 与 Home Assistant 指南](docs/AUTOMATION.zh-CN.md)。
-
-- **Compose 检查与 Home Assistant :** 保存或部署前提示端口冲突，支持解析变量、覆盖文件和端口范围；比较运行中的镜像引用并准备待审核的 YAML 修正。可选 Home Assistant 集成提供状态传感器和受权限限制的启动、停止、重启控制。 [Guide](docs/HOME-ASSISTANT.md).
-- REST API
-- 每 Stack Webhook
-- Home Assistant 示例
-- 计划操作
-- 集中历史记录
+- 按权限和 Stack 限定范围的 REST API 令牌
+- 按 Stack 的 Webhook
+- 可选的 Home Assistant 自定义集成和示例
+- 集中审计历史，记录来源、状态和耗时
+- 指南：[REST API、Webhook 与 Home Assistant](docs/AUTOMATION.zh-CN.md) · [Home Assistant 集成](docs/HOME-ASSISTANT.md)
 
 ### 集成
+- Zerobyte：托管安装或外部连接
+- PowerWatch 和 PowerWatch Hub：外部观察或托管部署
+- 用于 Nginx Proxy Manager、Pi-hole 和 AdGuard Home 的 PlugNPiN
+- Dozzle
+- Kula
+- Home Assistant
 
-- Zerobyte — 可选备份集成，支持托管安装或连接外部实例
-- PowerWatch Hub — 托管安装或连接已有 Hub
-- PlugNPiN
-- Nginx Proxy Manager
-- Pi-hole
-- AdGuard Home
-- Dozzle 与 Kula
-- PowerWatch（外部观察或托管部署）
+### 外观与语言
+- 独立的日间和夜间配色，包括 Dockge-Enhanced 原有主题
+- Catppuccin、Nord、Solarized、Dracula、Gruvbox、Tokyo Night 和 Rosé Pine 选项
+- 偏好保存在浏览器中，“自动”模式跟随系统
+- Enhanced 功能提供英语、法语、德语、西班牙语和简体中文版本；其他界面语言对这些功能回退为英语
 
 ### 通知与访问
-- Discord 与 Apprise
-- EN / FR / ES / zh-CN
-- 远程运维公告
-- 持久化的未读版本新闻记录
-- 通过 GitHub Actions Discord Webhook 可选发送每周和每月匿名安装计数报告
-- 2FA、trusted proxy、Turnstile
+- Discord 和 Apprise 通知，支持 EN / FR / ES / zh-CN
+- 通知中包含实例名称，并可通过 `DOCKGE_PUBLIC_URL` 添加链接
+- 远程运维公告和持久化的未读更新日志
+- 可选通过 GitHub Actions Discord Webhook 发送每周和每月匿名安装计数报告
 - 第三方移动客户端
 
 </details>
@@ -565,7 +593,7 @@ Dockge-Enhanced 会自动处理完整流程：强制 Restic 备份、完整性�
 
 在 **更新** 页面为 Dockge-Enhanced 自动更新配置维护时段后，该时段也会成为所有镜像自动更新的全局窗口。窗口之外检测到的镜像更新会排队等待下一个允许时段；手动执行的 **立即更新** 不受此窗口限制。
 
-更新 sidecar 支持 Unix Docker socket（包括 `DOCKGE_DOCKER_SOCKET`），也支持通过 `DOCKER_HOST=tcp://proxy:2375` 使用可信任的 Docker Socket Proxy。TCP 模式下不会挂载伪造的 Unix socket；sidecar 会先加入相同 Docker 网络，再以经过签名的计划使用该连接。只读代理无法完成更新；未加密的 TCP 端点必须限制在可信内部网络。
+更新器支持普通 Unix 套接字（包括 `DOCKGE_DOCKER_SOCKET`），也支持通过 `DOCKER_HOST=tcp://proxy:2375` 配置的可信 Docker Socket Proxy。TCP 模式下不会挂载任何套接字：更新器先在实例的某个 Docker 网络上启动，再加入其余网络，并且只有在启动信号确认所有网络都已接入后才执行签名计划。它使用同一个已配置的 Docker endpoint。代理必须允许容器 inspect/create/start/stop/remove、镜像 inspect/pull 和网络连接；只读代理无法完成自更新。未加密的 TCP endpoint 只能放在可信内部网络中。如果证书目录已挂载到 Enhanced 容器中，TLS 设置会被保留；否则更新会在替换容器之前安全停止。
 
 自动自更新开始前，Enhanced 还会确认没有敏感操作正在执行：Restic 备份或恢复、堆栈复制/移动/数据传输或复制同步、Docker 镜像检查/更新、Trivy 扫描以及受保护的外部堆栈集成。如果存在阻塞操作，更新会进入等待状态，WebUI 和 Discord/Apprise 会显示具体原因，随后 watcher 会自动重试。
 
@@ -587,7 +615,130 @@ Dockge-Enhanced 会自动处理完整流程：强制 Restic 备份、完整性�
 <details>
 <summary>查看截图</summary>
 
-项目截图位于 [`screens/`](screens/) 目录。主 README 中展示了界面、更新、备份、Trivy、Discord 通知和多实例功能的最新截图。
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/1.png"><img src="screens/1.png" width="100%"/></a>
+      <sub>多实例仪表板与全局状态</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/2.png"><img src="screens/2.png" width="100%"/></a>
+      <sub>包含 Compose、容器和日志的 Stack 视图</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/3.png"><img src="screens/3.png" width="100%"/></a>
+      <sub>详细的 Stack 管理与操作</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/4.png"><img src="screens/4.png" width="100%"/></a>
+      <sub>复制/迁移向导 — 选择数据</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/5.png"><img src="screens/5.png" width="100%"/></a>
+      <sub>复制/迁移向导 — 准备传输</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/6.png"><img src="screens/6.png" width="100%"/></a>
+      <sub>复制/迁移向导 — 卷映射与校验</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/7.png"><img src="screens/7.png" width="100%"/></a>
+      <sub>带高级运维工具的 Stack 视图</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/8.png"><img src="screens/8.png" width="100%"/></a>
+      <sub>镜像更新监控</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/9.png"><img src="screens/9.png" width="100%"/></a>
+      <sub>受监控镜像的详细状态</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/10.png"><img src="screens/10.png" width="100%"/></a>
+      <sub>Stack 启动与停止计划</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/11.png"><img src="screens/11.png" width="100%"/></a>
+      <sub>安全分析与 Trivy 结果</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/12.png"><img src="screens/12.png" width="100%"/></a>
+      <sub>Restic 备份配置</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/13.png"><img src="screens/13.png" width="100%"/></a>
+      <sub>包含的卷、排除项与备份一致性</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/14.png"><img src="screens/14.png" width="100%"/></a>
+      <sub>Docker 资源管理</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/15.png"><img src="screens/15.png" width="100%"/></a>
+      <sub>监控与容器健康状态</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/16.png"><img src="screens/16.png" width="100%"/></a>
+      <sub>响应式 / 移动端界面</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/17.png"><img src="screens/17.png" width="100%"/></a>
+      <sub>集中审计历史</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/18.png"><img src="screens/18.png" width="100%"/></a>
+      <sub>安全与认证设置</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/19.png"><img src="screens/19.png" width="100%"/></a>
+      <sub>可选集成</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/20.png"><img src="screens/20.png" width="100%"/></a>
+      <sub>自动化、API 与 Webhook</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/21.png"><img src="screens/21.png" width="100%"/></a>
+      <sub>“关于”页面与版本信息</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/EnhancedUpdate.png"><img src="screens/EnhancedUpdate.png" width="100%"/></a>
+      <sub>应用内更新 Dockge Enhanced</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/DiscordUpdates.png"><img src="screens/DiscordUpdates.png" width="100%"/></a>
+      <sub>Discord — 镜像更新告警</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/DiscordTrivy.png"><img src="screens/DiscordTrivy.png" width="100%"/></a>
+      <sub>Discord — Trivy 安全告警</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="screens/DiscordBackup.png"><img src="screens/DiscordBackup.png" width="100%"/></a>
+      <sub>Discord — 备份通知</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="screens/DiscordEnhancedUpdate.png"><img src="screens/DiscordEnhancedUpdate.png" width="100%"/></a>
+      <sub>Discord — Dockge Enhanced 更新告警</sub>
+    </td>
+  </tr>
+</table>
 
 </details>
 
@@ -617,21 +768,22 @@ services:
       - TZ=Europe/Paris                      # 可选进程时区；计划任务时区可在 WebUI 配置
 ```
 
-启动：
-
 ```bash
 docker compose up -d
 ```
 
-打开 **http://localhost:5001**，创建管理员账号，然后即可使用 Dockge Enhanced。
+打开 `http://localhost:5001`，创建管理员账户，然后点击导航栏中的**监控**。
 
-> `/backup:/backup` 不是必需的，但如果使用 Restic 的本地目标，建议挂载一个独立主机目录并把备份目标设为 `/backup`。
+> `/backup:/backup` 卷是可选的，但如果使用**本地**作为 Restic 备份目标，建议挂载它，并将目标路径设为 `/backup`，让快照保存在容器之外的独立主机目录中。
 
-> 如果要备份多个数据目录，可以添加多个 volume，然后在 **Backup** 页面中的 **Additional paths** 注册对应的容器路径。
+> **需要备份多个数据目录？** 可以按需添加多个卷（例如 `../../media:/media-data`），然后在 **备份 → 要备份的 Docker 数据卷**中选择这些已挂载路径；Restic 会在每次备份时包含它们。参见 [Restic 指南](docs/restic.zh-CN.md)。
 
-> 如果要监控 `/` 之外的主机磁盘分区，请把目标路径只读挂载到容器，并在 **Monitoring** 页面中加入该路径。
+> **需要监控 `/` 以外的磁盘分区？** 磁盘统计在容器内通过 `df` 读取。如需跟踪 `/mnt/data` 等主机路径，请以只读方式挂载它，并在**监控**页面的*受监控磁盘分区*中添加：
+> ```yaml
+>       - /mnt/data:/mnt/data:ro
+> ```
 
-**PowerWatch 和 PowerWatch Hub 均为可选服务**，无需添加到上面的 Enhanced Compose。安装后打开 **Monitoring**（`/watcher/monitoring`），即可连接既有实例或独立部署托管服务。连接受保护的 PowerWatch 实例时，请在 Monitoring → PowerWatch 中填写只读 Bearer API 令牌。未启用认证的实例仍无需令牌。
+**PowerWatch 和 PowerWatch Hub 均为可选服务**：两者都无需添加到上面的 Enhanced Compose 中。安装后打开 **Watcher → 监控**（`/watcher/monitoring`），即可连接现有实例，或分别部署托管服务。支持受保护的 PowerWatch 实例：在“监控 → PowerWatch”中填写其只读 Bearer 令牌。未启用认证的实例仍无需令牌。
 
 ### 与 Dockge 并行测试 Dockge-Enhanced
 
@@ -690,9 +842,15 @@ Dockge-Enhanced 将使用您现有的账号、设置和 stacks 启动。
 <details>
 <summary>查看配置说明</summary>
 
-在 **Settings → Integrations** 中配置 [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN)。只有明确启用并保存后，Dockge Enhanced 才会创建受管的 `plugnpin-dockge-enhanced` Stack。
+在 **设置 → 集成** 中配置 [PlugNPiN](https://github.com/DeepSpace2/PlugNPiN)。在选择**启用 PlugNPiN**并保存表单之前，该集成完全不会生效。启用后会创建受管理的 `plugnpin-dockge-enhanced` Stack；停用时会执行 Compose down 并删除生成的 Stack 目录。
 
-Nginx Proxy Manager 凭据是必需的；Pi-hole、AdGuard Home、metrics 和 debug 日志均可单独选择。密码通过 stdin 写入专用 Docker volume，不会返回浏览器，也不会写入生成的 Compose 文件。
+PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics 和 debug 日志均可单独选择。密码通过 stdin 写入专用的 `dockge_enhanced_plugnpin_secrets` Docker 卷，绝不会返回浏览器，也不会写入生成的 Compose 文件。
+
+如需发布某个服务，请编辑其 Stack，并使用 Compose 编辑器下方的 **PlugNPiN 发布（可选）**。助手会生成所需的 `plugNPiN.ip` 和 `plugNPiN.url` 标签以及所选的 NPM 选项，并可直接应用。现有的映射格式标签和注释会被保留；对于列表格式的标签，Dockge 有意只提供可复制的输出，而不会改写现有结构。
+
+> 停用控制器会停止其容器，但在带标签的应用容器仍在运行时，无法保证立即删除它创建的条目。如果必须先删除这些条目，请在 PlugNPiN 仍运行时移除标签或停止相关应用。
+
+> PlugNPiN `1.0.0` 目前在上游只发布 `amd64` 版本。在不支持的架构上，Dockge 会保持该集成停用并给出明确提示；Dockge Enhanced 的其他部分仍支持多架构。
 
 </details>
 
@@ -704,26 +862,40 @@ Nginx Proxy Manager 凭据是必需的；Pi-hole、AdGuard Home、metrics 和 de
 |---|---|---|
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Docker Compose Stack 所在目录 |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge 数据目录；仅在使用自定义持久化挂载时覆盖 |
-| `DOCKGE_PUBLIC_URL` | 无 | Discord 通知中使用的公网 URL，例如 `https://dockge.example.com` |
-| `DOCKER_API_VERSION` | 无 | 固定 Docker Client 协商的 API 版本，适合部分 NAS |
-| `TZ` | `UTC` | 容器进程时区；未在 **设置 → 常规** 明确选择时作为计划任务的默认值。WebUI 选择对 Enhanced 计划任务优先。 |
+| `DOCKGE_PUBLIC_URL` | *(无)* | Discord 通知链接使用的公开 URL（例如 `https://dockge.example.com`） |
+| `DOCKER_API_VERSION` | *(无)* | 固定 Docker 客户端协商的 API 版本，适用于部分 NAS 系统（例如 Synology DSM 7.x） |
+| `TZ` | `UTC` | 容器运行时时区；在**设置 → 常规**中明确配置之前，计划任务默认使用它。WebUI 中的选择对 Enhanced 计划任务优先 |
 | `DOCKGE_PORT` | `5001` | Web UI 端口 |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | 启用 HTTPS |
-| `DOCKGE_AUTH_MODE` | 未设置 | `local`、`disabled` 或 `trusted-proxy` |
-| `DOCKGE_AUTH_PROXY_HEADER` | `x-forwarded-user` | trusted-proxy 模式下包含已验证身份的 Header |
-| `DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS` | 必填（代理模式） | 允许提供身份 Header 的地址/CIDR |
-| `DOCKGE_BOOTSTRAP_USERNAME` | 无 | 数据库没有用户时创建的首个管理员名称 |
-| `DOCKGE_BOOTSTRAP_PASSWORD_FILE` | 无 | 管理员密码 Secret 文件；自动部署时推荐 |
-| `DOCKGE_BOOTSTRAP_PASSWORD` | 无 | 直接密码方式；由于会暴露在容器环境中，安全性较低 |
-| `DOCKGE_TRANSFER_RSYNC_PROFILES` | `[]` | 本地 SSH/rsync 传输配置 JSON |
+| `DOCKGE_AUTH_MODE` | *(未设置)* | 认证模式：`local`、`disabled` 或 `trusted-proxy`。未设置时保留历史行为和 `disableAuth` 设置 |
+| `DOCKGE_AUTH_PROXY_HEADER` | `x-forwarded-user` | `trusted-proxy` 模式下包含已由代理验证身份的 Header |
+| `DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS` | *(代理模式必填)* | 允许提供身份 Header 的地址或 CIDR，用逗号分隔 |
+| `DOCKGE_BOOTSTRAP_USERNAME` | *(无)* | 首个管理员名称，仅在数据库中没有用户时创建 |
+| `DOCKGE_BOOTSTRAP_PASSWORD_FILE` | *(无)* | 包含密码的 Secret 文件；自动初始化时推荐使用 |
+| `DOCKGE_BOOTSTRAP_PASSWORD` | *(无)* | 直接提供密码的替代方式，安全性较低，因为它会出现在容器环境中 |
+| `DOCKGE_TRANSFER_RSYNC_PROFILES` | `[]` | 本地 SSH/rsync 配置的 JSON 数组（`label`、`host`、`port`、`user`、`path`、`keyPath`，可选 `bandwidthKbps`）。请在两个实例上配置相同的目标身份；密钥路径不会离开其所在实例 |
+| `DOCKGE_AUTH_PROXY_ADMIN_USERS` | *(无)* | 用逗号分隔的代理身份，在 `trusted-proxy` 模式下首次登录时创建为管理员；其他新身份为没有任何授权的受限账户 |
+| `DOCKGE_REVERSE_HUB_URL` | *(无)* | 可选反向连接的中心服务器 origin（HTTP(S)，不含路径）；参见[反向代理指南](docs/compose-and-reverse-agents.md) |
+| `DOCKGE_REVERSE_TOKEN_FILE` / `DOCKGE_REVERSE_TOKEN` | *(无)* | 节点专用的反向连接令牌；文件方式优先，且推荐使用 |
+| `DOCKGE_FILE_MANAGER_ROOT` | *(无)* | 可选主机文件管理器开放的容器内路径；未设置时禁用 |
+| `DOCKGE_FILE_MANAGER_MAX_FILE_SIZE` | `104857600` | 主机文件管理器的最大传输大小，单位为字节（100 MiB） |
+| `DOCKGE_DOCKER_SOCKET` | `/var/run/docker.sock` | Docker 套接字路径，例如用于 rootless Docker 或 Podman |
+| `DOCKER_HOST` | *(无)* | Docker endpoint，例如配合可信 Docker Socket Proxy 使用 `tcp://proxy:2375` |
+| `DOCKGE_CONTAINER_ID` | *(无)* | 无法从 `HOSTNAME` 识别时，显式指定 Enhanced 容器 ID |
+| `DOCKGE_USAGE_COUNT` | *(启用)* | 设为 `false` 可关闭每月匿名安装计数 |
+| `DOCKGE_OIDC_ISSUER` | *(无)* | OpenID Connect 签发者 URL；设置后即启用原生 OIDC 登录。所有 `DOCKGE_OIDC_*` 选项见 [OIDC 指南](docs/oidc.zh-CN.md) |
 
 > ℹ️ 未设置 `DOCKGE_DATA_DIR` 时，Dockge-Enhanced 使用持久化卷 `/app/data`。显式配置的路径始终优先。
 
+> ℹ️ `DOCKGE_PUBLIC_URL` 是可选的。未设置时，Discord 通知不包含链接。适用于反向代理和 HTTPS 域名。
+
+> SSH/rsync 配置要求在每个参与的 Dockge 实例中以只读方式挂载私钥和已填写的 `known_hosts` 文件。始终强制使用 `StrictHostKeyChecking=yes`；WebUI 不接受密码或任意远程命令。
+
 ### 身份验证与初始化
 
-现有安装无需修改。没有额外环境变量时，账号、登录页、2FA 和“禁用身份验证”功能与之前保持一致。
+**现有安装无需任何修改。** 不设置上述变量时，账户、登录页、2FA 和**禁用身份验证**设置的行为与之前完全相同。新安装首次启动时，打开 `/setup` 正常创建管理员。初始化完成后，即使 SPA 地址仍为人所知，服务器也会拒绝之后的所有初始化请求。
 
-自动初始化管理员时，推荐使用 Secret：
+如需非交互式初始化，建议挂载 Secret，并只设置以下可选变量：
 
 ```yaml
 services:
@@ -739,7 +911,9 @@ secrets:
     file: ./secrets/dockge_admin_password
 ```
 
-可信代理示例：
+只要已存在用户，初始化变量就会被忽略，因此绝不会修改现有账户或密码。
+
+如需将访问认证交给 [OAuth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/configuration/overview/) 或 Traefik ForwardAuth：
 
 ```yaml
 environment:
@@ -748,7 +922,7 @@ environment:
   - DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS=172.20.0.0/24
 ```
 
-请把示例 CIDR 替换为代理的真实网络。Dockge 端口不应直接暴露；只有声明的可信代理可以提供用户身份。代理身份仍具有管理员权限；受限账户仅支持本地认证。代理身份与受限本地账户重名时将被拒绝。
+请将示例 CIDR 替换为代理的确切网络，并配置代理传递所选 Header。Dockge 端口不能被直接访问：只有声明的代理才能提供身份。每个代理身份都使用同名的本地账户：受限账户会限制该代理用户，管理员账户保留完整访问权限。没有对应账户的身份会被创建为没有任何授权的受限账户；新安装的第一个用户以及 `DOCKGE_AUTH_PROXY_ADMIN_USERS` 中列出的身份除外，它们会成为管理员。现有账户保留其角色；角色变更或停用最多可能需要 30 秒才会对代理会话生效。账户管理仅在本地认证模式下可用。绝不要让 `/setup`、`/socket.io` 或 `/api/*` 跳过认证；代理必须转发 WebSocket 并保护整个主机。
 
 ### 原生 OIDC 登录（Pocket ID、Authentik、Keycloak…）
 
@@ -763,7 +937,7 @@ environment:
   - DOCKGE_OIDC_ADMIN_GROUPS=dockge-admins
 ```
 
-新的 OIDC 用户为受限账户，在管理员授权前没有任何访问权限，除非属于 `DOCKGE_OIDC_ADMIN_GROUPS` 或 `DOCKGE_OIDC_ADMIN_USERS`。未设置 `DOCKGE_OIDC_LINK_EXISTING=true` 时，绝不会关联已有本地账户。`DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` 时仅保留 SSO 按钮。[全部选项与提供商示例](docs/oidc.md)（英文）。
+新的 OIDC 用户为受限账户，在管理员授权前没有任何访问权限，除非属于 `DOCKGE_OIDC_ADMIN_GROUPS` 或 `DOCKGE_OIDC_ADMIN_USERS`。没有用户会被隐式设为管理员：新安装时，请通过 `/setup` 或 `DOCKGE_BOOTSTRAP_*` 创建第一个管理员，或配置管理员映射，否则第一次 OIDC 登录会被拒绝。未设置 `DOCKGE_OIDC_LINK_EXISTING=true` 时，绝不会关联已有本地账户。OIDC 仅在本地认证模式下工作，且不要求本地 TOTP 验证码。`DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true` 时仅保留 SSO 按钮；如果提供商不可用，请删除该变量并重启容器。[全部选项、提供商示例与恢复方法](docs/oidc.zh-CN.md)。
 
 ---
 
@@ -819,9 +993,3 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 ## 许可证
 
 MIT — 参见 [LICENSE](LICENSE)。
-
-**日常 Stack 操作**
-
-在启动、部署或重建前，如果绝对 bind mount 明确指向目录，Enhanced 现在会自动准备缺失的主机目录。这对 Synology NAS 尤其有用，因为 Docker 会拒绝尚不存在的 bind 源。疑似文件的 bind 源不会被自动创建为目录。镜像的 **立即** 自动更新模式在保存后会立刻执行针对该镜像的检查。Stack 重启成功后，Enhanced 还会重新读取真实状态并隐藏已经过期的 Compose 进度输出。
-
-CPU/RAM 历史仍会保留真实采样空档，但图表更紧凑，采用 PowerWatch 风格的轻量网格和柔和填充。
