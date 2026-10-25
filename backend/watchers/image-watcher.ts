@@ -51,6 +51,8 @@ import {
     targetedComposeRecreateArgs,
 } from "../compose-network-namespace";
 import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/compose-labels";
+import { prepareRollout, type ComposeRun } from "../service-rollout";
+import { withStackMutation } from "../stack-mutation";
 import { finishDockerCleanup, tryStartDockerCleanup } from "../docker-operation-state";
 import { reconcileRollbackKeepTags, rollbackTagFromKey as rollbackTag } from "./auto-prune-manager";
 import { resolveDataDir } from "../data-dir";
@@ -313,6 +315,7 @@ export interface UpdateHistoryEntry {
     success: boolean;
     /** Docker Compose succeeded but the running image digest could not be confirmed. */
     verification?: "verified" | "unverified";
+    retirementDeferred?: boolean;
     error?: string;
 }
 
@@ -1532,7 +1535,7 @@ export class ImageWatcher {
 
     /** Registry checks are read-only; only Docker-changing work blocks self-update. */
     hasDockerOperationInProgress(): boolean {
-        return this._updatingImages.size > 0 || (this.manualBatch.running && this.manualBatch.current !== null);
+        return isDockerUpdateReservedBy("image-update") || this._updatingImages.size > 0 || (this.manualBatch.running && this.manualBatch.current !== null);
     }
 
     private reserveImageMutation(key: string): DockerUpdateReservation | null {
@@ -2171,6 +2174,23 @@ export class ImageWatcher {
         mode: "immediate" | "scheduled" | "manual" = "immediate",
         respectPaused = false,
     ): Promise<boolean> {
+        try {
+            return await withStackMutation(path.resolve(watched.workingDir ?? path.dirname(watched.composePath)),
+                () => this.performReservedAutoUpdate(status, watched, mode, respectPaused));
+        } catch (error) {
+            if (error instanceof Error && error.message.startsWith("Another operation is active on this stack")) {
+                return false;
+            }
+            throw error;
+        }
+    }
+
+    private async performReservedAutoUpdate(
+        status: ImageStatus,
+        watched: WatchedComposeStack,
+        mode: "immediate" | "scheduled" | "manual",
+        respectPaused: boolean,
+    ): Promise<boolean> {
         const key = `${status.stack}::${status.image}`;
         const { composePath, project, configFiles, workingDir, envFiles } = watched;
         // Read live settings, never the policy captured when a batch was selected.
@@ -2216,6 +2236,15 @@ export class ImageWatcher {
                 envFiles,
             );
             const runningCommand = composeExecInvocation(composePath, [ "ps", "--status", "running", "--services" ], project, configFiles, workingDir, envFiles);
+            const rolloutCompose: ComposeRun = (args, timeout, override) => {
+                const invocation = composeExecInvocation(composePath, args, project,
+                    override ? [ ...(configFiles?.length ? configFiles : [ composePath ]).filter(file => path.resolve(file) !== path.resolve(override)), override ] : configFiles, workingDir, envFiles);
+                return docker(invocation.args, { cwd: invocation.cwd,
+                    timeout });
+            };
+            const rolloutTargets = recreateArgs.slice(1).filter(arg => !arg.startsWith("-"));
+            const rollout = await prepareRollout(rolloutCompose, (args, timeout) => docker(args, { timeout }), rolloutTargets, { stateDir: path.join(this.dataDir, "rolling-updates"),
+                projectPath: path.resolve(workingDir ?? path.dirname(composePath)) });
             const runningServices = await docker(runningCommand.args, { cwd: runningCommand.cwd,
                 timeout: 15_000 });
             const stoppedTargets = missingRunningComposeTargets(recreateArgs, runningServices);
@@ -2247,6 +2276,9 @@ export class ImageWatcher {
             }
 
             const pullCommand = composeExecInvocation(composePath, [ "pull", ...services ], project, configFiles, workingDir, envFiles);
+            if (rollout && !oldImageId) {
+                throw new Error("Rolling update requires a single identifiable previous image for rollback");
+            }
             if (ignored()) {
                 return false;
             }
@@ -2268,13 +2300,45 @@ export class ImageWatcher {
             if (ignored()) {
                 return false;
             }
-            await docker(upCommand.args, {
-                cwd: upCommand.cwd,
-                timeout: 120000,
-            });
+            let retirementDeferred = false;
+            if (rollout) {
+                // Protect the previous image even if retirement or a later
+                // service fails after the first replica has been replaced.
+                if (oldImageId) {
+                    const now = new Date();
+                    await this.saveRollbackEntry({
+                        key,
+                        image: status.image,
+                        stack: status.stack,
+                        composePath,
+                        project,
+                        configFiles,
+                        workingDir,
+                        envFiles,
+                        service: services[0] ?? null,
+                        services,
+                        oldImageId,
+                        updatedAt: now.toISOString(),
+                        expiresAt: new Date(now.getTime() + ROLLBACK_WINDOW_MS).toISOString(),
+                    });
+                }
+                retirementDeferred = (await rollout.execute(() => !ignored())).pending.length > 0;
+                const remaining = recreateArgs.filter(arg => !rollout.services.includes(arg) && !rollout.managedServices.includes(arg));
+                if (remaining.some(arg => !arg.startsWith("-") && arg !== "up")) {
+                    await docker(remaining.length === recreateArgs.length ? upCommand.args :
+                        composeExecInvocation(composePath, remaining, project, configFiles, workingDir, envFiles).args,
+                    { cwd: upCommand.cwd,
+                        timeout: 120000 });
+                }
+            } else {
+                await docker(upCommand.args, {
+                    cwd: upCommand.cwd,
+                    timeout: 120000,
+                });
+            }
 
             // ── Sauvegarde l'entrée de rollback si on avait une image antérieure ──
-            if (oldImageId) {
+            if (oldImageId && !rollout) {
                 const now = new Date();
                 await this.saveRollbackEntry({
                     key,
@@ -2296,7 +2360,9 @@ export class ImageWatcher {
             // Recheck pour mettre à jour le digest dans le store
             const newStatus = await this.checkOneImage(status.image, status.stack, watched);
             imageStatusStore.set(key, newStatus);
-            const verification = updateVerificationResult(newStatus);
+            const verification = retirementDeferred ? { digest: "",
+                verification: "unverified" as const,
+                error: "Rolling update applied; old connections are draining. Retirement continues automatically." } : updateVerificationResult(newStatus);
             await this.touchUpdatedStackMetadata(status.stack, watched);
             console.log(
         `[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`,
@@ -2310,6 +2376,7 @@ export class ImageWatcher {
                 mode,
                 success: true,
                 verification: verification.verification,
+                ...(retirementDeferred ? { retirementDeferred: true } : {}),
                 error: verification.error,
             });
 
@@ -2513,6 +2580,14 @@ export class ImageWatcher {
     }
 
     async performRollback(key: string): Promise<void> {
+        const entry = rollbackStore.get(key);
+        if (!entry) {
+            throw new Error("Aucune entrée de rollback pour cette image");
+        }
+        return withStackMutation(path.resolve(entry.workingDir ?? path.dirname(entry.composePath)), () => this.performReservedRollback(key));
+    }
+
+    private async performReservedRollback(key: string): Promise<void> {
         const entry = rollbackStore.get(key);
         if (!entry) {
             throw new Error("Aucune entrée de rollback pour cette image");

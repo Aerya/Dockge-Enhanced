@@ -1,0 +1,27 @@
+# Updates without service interruption
+
+[English](service-rollout.md) · [Français](service-rollout.fr.md) · [Deutsch](service-rollout.de.md) · [Español](service-rollout.es.md) · [简体中文](service-rollout.zh-CN.md)
+
+Disabled by default. Enhanced starts the new container before stopping the old one: two copies of the same application run temporarily, not two Enhanced instances. The application must support this without data conflicts, duplicate jobs or incompatible database migrations. Enhanced cannot determine this automatically: a healthcheck checks that the container responds, not that running both copies is safe.
+
+If you do not use the compatible Traefik mode, prepare a relay: a small intermediate container that keeps the same access address and sends connections to the right version. The assistant changes only the draft, moving the published port and Traefik/PlugNPiN labels to the relay. Review, then explicitly deploy. A proxy targeting the host IP and that port can keep its destination; if it targets the application service name, point it to the relay name instead. Enhanced does not reconfigure your proxy automatically. Connections arrive from the relay address; no administration API is exposed.
+
+Check compatibility before enabling this option. The application container count temporarily doubles: allow enough CPU/RAM. Fixed container names and shared writable volumes are refused. The relay adds a container and a configuration volume. Its initial installation moves the access port and may cause an outage. Afterwards, use Update; Recreate, restarts and rollback do not guarantee that connections stay open. TCP only, not UDP/QUIC; no universal zero-downtime guarantee.
+
+## Deployment
+
+Choose native Traefik when the existing Docker discovery and draining prerequisites are met. Otherwise, in the service editor, enter its **internal TCP port** and choose **Prepare an optional relay**. Review the draft before saving and deploying: the published port and Traefik/PlugNPiN labels move to a separate relay service. Initial deployment can interrupt traffic. Keep the existing proxy destination when it uses that host IP and published port; if it uses the application service name, explicitly change it to the relay service name.
+
+The relay uses Nginx stream without TLS termination or an administration API. HTTP, TLS and WebSocket can pass over TCP; UDP/QUIC is unsupported. It does not require NPM, Caddy or HAProxy API credentials. This is protocol compatibility, not certification of every product/version. Native integration currently targets Traefik. The relay gets a persistent configuration volume and a dedicated network/alias; never manually remove these while it is used. Back up this configuration with the stack.
+
+## Recovery and limits
+
+Healthchecks and additional CPU/RAM capacity are required. Fixed container names, shared writable volumes and namespace consumers remain incompatible. The draft assistant refuses ambiguous port variables/ranges, profiles and extends rather than guessing. Existing CPU/RAM limits remain unchanged. Connections see the relay IP; applications requiring the original client IP need a separately reviewed trusted-proxy configuration.
+
+During application updates the relay is not recreated. New traffic switches only to healthy replacements. Connections lasting beyond the foreground waiting period remain open, and old containers are retired automatically once the old worker generations finish. New traffic does not switch back merely because a connection is long-lived. Restarting the relay itself, Recreate and explicit rollback remain disruptive.
+
+Update both ends of linked instances. A restricted account needs update permissions for the application **and its relay**. Opening the editor changes nothing; preparing a relay changes only the draft. Disabling updates without service interruption does not dismantle the relay or move ports back: review that migration explicitly. No production proxy configuration is modified automatically.
+
+Update without service interruptions add no auxiliary Compose file or temporary label; a later unchanged Deploy preserves the container. The operation journal is saved atomically before Docker mutations. After interruption, a pre-commit transaction is cancelled; a committed transaction resumes retirement of the recorded old IDs only. Identity and health are rechecked before removal; a failed replacement can return traffic to the recorded healthy previous generation. Pending stack mutations are blocked, while idle draining releases the global update reservation. Intentionally drained old replicas do not trigger auto-healing. The journal belongs in Enhanced persistent data and backups; do not delete it to clear a pending operation. Changed identities or unhealthy surviving replicas suspend destructive recovery and show an attention state. The update history records that retirement was deferred at the time of application; the current state is shown on the service. At relay startup an invalid persisted route is replaced by its validated Compose bootstrap; valid routes are preserved.
+
+[Wowu/docker-rollout](https://github.com/Wowu/docker-rollout) · [Dockge #170](https://github.com/louislam/dockge/pull/170) · [Nginx](https://nginx.org/en/docs/control.html)

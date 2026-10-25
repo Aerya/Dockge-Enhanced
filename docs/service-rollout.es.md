@@ -1,0 +1,27 @@
+# Actualizaciones sin interrupción del servicio
+
+[English](service-rollout.md) · [Français](service-rollout.fr.md) · [Deutsch](service-rollout.de.md) · [Español](service-rollout.es.md) · [简体中文](service-rollout.zh-CN.md)
+
+Desactivado por defecto. Enhanced inicia el contenedor nuevo antes de detener el antiguo: funcionan temporalmente dos copias de la misma aplicación, no dos instancias de Enhanced. La aplicación debe permitirlo sin conflictos de datos, tareas duplicadas ni migraciones de base de datos incompatibles. Enhanced no puede determinarlo automáticamente: un healthcheck comprueba que el contenedor responde, no que sea seguro ejecutar ambas copias.
+
+Si no utiliza el modo Traefik compatible, prepare un relé: un pequeño contenedor intermedio que mantiene la dirección de acceso y dirige las conexiones a la versión correcta. El asistente solo modifica el borrador, moviendo el puerto publicado y las etiquetas Traefik/PlugNPiN al relé. Revise y despliegue explícitamente. Un proxy dirigido a la IP del host y ese puerto puede conservar su destino; si usa el nombre del servicio de la aplicación, cámbielo por el nombre del relé. Enhanced no reconfigura su proxy automáticamente. Las conexiones llegan desde la dirección del relé; no se expone ninguna API de administración.
+
+Compruebe esta compatibilidad antes de activar la opción. El número de contenedores de la aplicación se duplica temporalmente: reserve suficiente CPU/RAM. Se rechazan nombres de contenedor fijos y volúmenes compartidos con escritura. El relé añade un contenedor y un volumen de configuración. Su instalación inicial mueve el puerto de acceso y puede causar un corte. Después, utilice Actualizar; Recreate, los reinicios y el rollback no garantizan mantener las conexiones. Solo TCP, no UDP/QUIC; sin garantía universal de cero interrupciones.
+
+## Configuración
+
+Utilice Traefik nativo si ya cumple los requisitos de descubrimiento Docker y retirada de tráfico. Si no, indique el **puerto TCP interno** en el editor del servicio y elija **Preparar un relé opcional**. Revise antes de guardar y desplegar: el puerto publicado y las etiquetas Traefik/PlugNPiN pasan a un servicio separado. El despliegue inicial puede interrumpir el tráfico. El destino con IP del host y puerto publicado se mantiene; si usa el nombre del servicio de aplicación, cámbielo explícitamente por el del relé.
+
+El relé usa Nginx stream sin terminar TLS ni exponer API administrativa. HTTP, TLS y WebSocket pueden pasar por TCP; UDP/QUIC no está soportado. No requiere credenciales API de NPM, Caddy o HAProxy. Compatibilidad de protocolo no equivale a certificar cada producto/versión. La integración nativa actual es Traefik. El relé tiene volumen de configuración persistente y red/alias propio; no los elimine durante el uso. Incluya la configuración en la copia de la stack.
+
+## Recuperación y límites
+
+Se necesitan healthchecks y CPU/RAM adicionales. Nombres fijos, volúmenes compartidos de escritura y consumidores de espacios de nombres siguen siendo incompatibles. El asistente rechaza variables/rangos ambiguos de puertos, profiles y extends. Conserva los límites CPU/RAM existentes. Las conexiones ven la IP del relé; las aplicaciones que necesitan la IP cliente original requieren una configuración de proxy de confianza revisada por separado.
+
+El relé no se recrea durante las actualizaciones de la aplicación. El tráfico nuevo cambia solo a reemplazos sanos. Las conexiones que superan la espera en primer plano permanecen abiertas; los contenedores antiguos se retiran automáticamente cuando terminan sus generaciones de workers. Una conexión larga no devuelve por sí sola los clientes nuevos a la versión anterior. Reiniciar el relé, Recreate y el rollback explícito siguen siendo interruptivos.
+
+Actualice ambos extremos de las instancias vinculadas. Una cuenta restringida necesita permisos de actualización para la aplicación **y su relé**. Abrir el editor no cambia nada; preparar modifica solo el borrador. Desactivar actualizaciones sin interrupción del servicio no desmonta el relé ni devuelve los puertos: revise explícitamente esa migración. No se modifica automáticamente ningún proxy de producción.
+
+Las actualizaciones no añaden overrides Compose ni etiquetas temporales; un Deploy sin cambios conserva el contenedor. El diario se guarda atómicamente antes de las mutaciones Docker. Tras una interrupción se cancela una transacción no confirmada; una confirmada reanuda únicamente la retirada de los IDs antiguos guardados. Se verifican identidad y salud antes de borrar; un reemplazo defectuoso puede devolver el tráfico a la generación anterior registrada y sana. Se bloquean las mutaciones simultáneas de la stack, pero la espera pasiva libera el bloqueo global de actualizaciones. Las réplicas retiradas intencionadamente no activan auto-reparación. Incluya el diario en los datos persistentes y backups de Enhanced; no lo borre para desbloquear operaciones. Identidades cambiadas o réplicas supervivientes no sanas suspenden las eliminaciones y muestran una advertencia. El historial registra la retirada aplazada en el momento de aplicar; el servicio muestra el estado actual. Al iniciar el relé, una ruta persistida inválida se sustituye por la configuración Compose inicial validada; las rutas válidas se conservan.
+
+[Wowu/docker-rollout](https://github.com/Wowu/docker-rollout) · [Dockge #170](https://github.com/louislam/dockge/pull/170) · [Nginx](https://nginx.org/en/docs/control.html)

@@ -34,6 +34,10 @@ import {
 import { ContainerInstance, parseContainerInstances, requireContainerInstance } from "./container-instances";
 import { trackDockerBuild } from "./docker-operation-state";
 import { withStackMetadataWriteLock } from "./stack-metadata-lock";
+import { prepareRollout, rolloutTransport, type ComposeRun } from "./service-rollout";
+import { rolloutStates } from "./rollout-recovery";
+import { stackMutation } from "./stack-mutation";
+import { tryReserveDockerUpdate } from "./self-update/operation-coordinator";
 
 // ─── Cache court de getServiceStatusList (point #9 : éviter `docker inspect`
 // de TOUS les containers à chaque refresh / chaque onglet ouvert). TTL piloté
@@ -420,6 +424,8 @@ export class Stack {
             tags: [],
             isManagedByDockge: this.isManagedByDockge,
             composeFileName: this._composeFileName,
+            supportsServiceRollout: true,
+            rollingUpdates: rolloutStates(this.path, true),
             buildServices: this.getBuildServices(),
             createdAt,
             createdAtEstimated,
@@ -558,6 +564,10 @@ export class Stack {
         return this._externalPath ?? path.join(this.server.stacksDir, this.name);
     }
 
+    get operationProject(): string {
+        return path.resolve(this.path);
+    }
+
     private get metaPath() : string {
         if (!this.isExternal) return path.join(this.path, ".dockge-meta.json");
         return path.join(this.server.config.dataDir, "external-stack-meta", `${this.name}.json`);
@@ -590,6 +600,7 @@ export class Stack {
      * Save the stack to the disk
      * @param isAdd
      */
+    @stackMutation
     async save(isAdd : boolean) {
         this.validate();
 
@@ -981,6 +992,7 @@ export class Stack {
         return result.stdout?.toString() ?? "";
     }
 
+    @stackMutation
     async deploy(socket : DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
@@ -1015,6 +1027,7 @@ export class Stack {
      *   - force : si true, en cas d'échec du `down` on supprime quand même le
      *     dossier (utile quand `down` échoue mais qu'on veut nettoyer). Défaut : false.
      */
+    @stackMutation
     async delete(socket: DockgeSocket, options: {
         removeFiles?: boolean;
         force?: boolean;
@@ -1409,6 +1422,7 @@ export class Stack {
         };
     }
 
+    @stackMutation
     async start(socket: DockgeSocket) {
         await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
@@ -1420,6 +1434,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async stop(socket: DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("stop"), this.path);
@@ -1429,6 +1444,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async setPaused(socket: DockgeSocket, paused: boolean): Promise<void> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const action = paused ? "pause" : "unpause";
@@ -1450,6 +1466,7 @@ export class Stack {
         return result.stdout?.toString().split(/\s+/).filter(Boolean) ?? [];
     }
 
+    @stackMutation
     async startScheduled(): Promise<number> {
         await this.assertStartGuard();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--remove-orphans"), {
@@ -1462,6 +1479,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async recreateScheduled(): Promise<number> {
         await this.assertStartGuard();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), {
@@ -1474,6 +1492,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async stopScheduled(): Promise<number> {
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("stop"), {
             cwd: this.path,
@@ -1493,6 +1512,7 @@ export class Stack {
         await this.getServiceActionTargets(serviceName);
     }
 
+    @stackMutation
     async serviceScheduled(serviceName: string, action: "start" | "stop"): Promise<number> {
         if (action === "start") {
             await this.assertStartGuard();
@@ -1516,6 +1536,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async restart(socket: DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
@@ -1527,6 +1548,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async restartService(serviceName: string) : Promise<number> {
         if (!serviceName) {
             throw new ValidationError("Service name is required");
@@ -1565,6 +1587,7 @@ export class Stack {
         }
     }
 
+    @stackMutation
     async recreateServiceInBackground(serviceName: string): Promise<string[]> {
         await this.assertStartGuard();
         const targets = await this.getServiceActionTargets(serviceName);
@@ -1581,7 +1604,8 @@ export class Stack {
         return targets;
     }
 
-    async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate", authorizeTargets?: (targets: string[]) => Promise<void>): Promise<string[]> {
+    @stackMutation
+    async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate", authorizeTargets?: (targets: string[], managedRelays?: string[]) => Promise<void>): Promise<string[]> {
         if (action !== "stop") {
             await this.assertStartGuard();
         }
@@ -1603,6 +1627,10 @@ export class Stack {
         } else if (action === "restart") {
             await exec("restart", ...targets);
         } else if (action === "update" || action === "pull-recreate") {
+            if (await this.tryRollingUpdate(targets, authorizeTargets)) {
+                serviceStatusCache.delete(this.name);
+                return targets;
+            }
             // A manual update means "pull + recreate": once the image has been
             // refreshed locally, force the selected service onto that image.
             // Network namespace dependants are recreated in the same operation
@@ -1618,6 +1646,7 @@ export class Stack {
         return targets;
     }
 
+    @stackMutation
     async recreate(socket: DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
@@ -1629,6 +1658,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async recreateInBackground() : Promise<number> {
         await this.assertStartGuard();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), {
@@ -1643,6 +1673,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async down(socket: DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("down"), this.path);
@@ -1659,8 +1690,12 @@ export class Stack {
         return this.pullAndRecreate(socket);
     }
 
+    @stackMutation
     async pullAndRecreate(socket: DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
+        if (await this.tryRollingUpdate()) {
+            return 0;
+        }
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("pull"), this.path);
         if (exitCode !== 0) {
@@ -1678,6 +1713,75 @@ export class Stack {
         return exitCode;
     }
 
+    /** Only the opted-in update path changes; explicit recreate remains a recreate. */
+    private async tryRollingUpdate(targets?: string[], authorize?: (targets: string[], managedRelays?: string[]) => Promise<void>): Promise<boolean> {
+        const transport = rolloutTransport(this.getComposeOptions("config").slice(0, -1), this.path);
+        const resolved = JSON.parse(await transport.compose([ "config", "--format", "json" ], 30_000)) as { services: Record<string, Record<string, unknown>> };
+        const names = targets ?? Object.keys(resolved.services);
+        if (!names.some(name => composeLabelIsTrue(resolved.services[name]?.labels as Record<string, unknown>, "dockge.rollout.enabled"))) {
+            return false;
+        }
+        if (!targets && Object.values(resolved.services).some(service => Array.isArray(service.profiles) && service.profiles.length)) {
+            throw new Error("Rolling updates on a stack with profiles must target an individual service");
+        }
+        const reservation = tryReserveDockerUpdate("image-update");
+        if (!reservation) {
+            throw new Error("Another Docker update is active; retry later");
+        }
+        try {
+            const { isSelfUpdateBlockingImageMutations } = await import("./watchers/image-watcher");
+            if (await isSelfUpdateBlockingImageMutations(this.server.config.dataDir)) {
+                throw new Error("Self-update is active; retry later");
+            }
+            const compose: ComposeRun = async (args, timeout, override) => {
+                if (!override || this.isExternal) {
+                    return transport.compose(args, timeout, override);
+                }
+                const files = [ path.join(this.path, this._composeFileName) ];
+                const implicitOverride = path.join(this.path, COMPOSE_OVERRIDE_FILE);
+                if (fs.existsSync(implicitOverride)) {
+                    files.push(implicitOverride);
+                }
+                const explicit = rolloutTransport([ ...this.getComposeOptions("config").slice(0, -1), ...files.flatMap(file => [ "-f", file ]) ], this.path);
+                // Do not silently drop COMPOSE_FILE or nonstandard implicit overrides.
+                const expected = JSON.parse(await transport.compose([ "config", "--format", "json" ], 30_000));
+                const actual = JSON.parse(await explicit.compose([ "config", "--format", "json" ], 30_000));
+                if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+                    throw new Error("Rollout: Compose file chain differs; explicit multi-file configuration required");
+                }
+                return explicit.compose(args, timeout, override);
+            };
+            const plan = await prepareRollout(compose, transport.docker, names, { stateDir: path.join(this.server.config.dataDir, "rolling-updates"),
+                projectPath: path.resolve(this.path) });
+            if (!plan) {
+                throw new Error("Rollout policy changed; retry");
+            }
+            if (authorize) {
+                await authorize([ ...names, ...plan.managedServices ], plan.managedServices);
+            }
+            await compose([ "pull", ...names ], 600_000);
+            if (authorize) {
+                await authorize([ ...names, ...plan.managedServices ], plan.managedServices);
+            }
+            await plan.execute(async () => {
+                if (authorize) {
+                    await authorize([ ...names, ...plan.managedServices ], plan.managedServices);
+                }
+                return true;
+            });
+            const remaining = names.filter(name => !plan.services.includes(name) && !plan.managedServices.includes(name));
+            if (remaining.length) {
+                await compose([ "up", "-d", "--force-recreate", "--no-deps", ...remaining ], 120_000);
+            }
+            await this.writeMeta({ lastUpdated: new Date().toISOString(),
+                lastStartedAt: new Date().toISOString() });
+            return true;
+        } finally {
+            reservation.release();
+        }
+    }
+
+    @stackMutation
     async buildAndRecreate(socket: DockgeSocket) : Promise<number> {
         const buildServices = this.getBuildServices();
         if (buildServices.length === 0) {
@@ -1886,6 +1990,7 @@ export class Stack {
         return requireContainerInstance(await this.getContainerInstances(), id);
     }
 
+    @stackMutation
     async runContainerInstanceAction(id: unknown, action: "start" | "stop" | "restart"): Promise<void> {
         const instance = await this.getContainerInstance(id);
         if (action !== "stop") {

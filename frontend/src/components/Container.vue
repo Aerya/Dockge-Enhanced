@@ -3,6 +3,9 @@
         <div class="row">
             <div class="col-12">
                 <h4>{{ name }}</h4>
+                <p v-if="!isEditMode && rollingState" class="small text-warning" role="status">
+                    {{ $t(rollingState.phase === 'cancelled' ? 'serviceRollout.cancelled' : rollingState.attention ? 'serviceRollout.recoveryAttention' : ['preparing', 'cancelling'].includes(rollingState.phase) ? 'serviceRollout.recovering' : 'serviceRollout.pending') }}
+                </p>
                 <div class="image mb-2">
                     <span class="me-1">{{ imageName }}:</span><span class="tag">{{ imageTag }}</span>
                     <a
@@ -194,6 +197,23 @@
 
                 <ServiceResourceLimits :service="service" @apply="jsonObject.services[name] = $event" />
 
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input :id="`rollout-${name}`" v-model="rollingUpdate" :disabled="!rollingUpdateSupported || (!rollingUpdate && !hasRollingRelay && !nativeRolloutAvailable)" type="checkbox" class="form-check-input" />
+                        <label :for="`rollout-${name}`" class="form-check-label">{{ $t(hasRollingRelay ? "serviceRollout.title" : "serviceRollout.native") }}</label>
+                    </div>
+                    <p class="form-text">{{ $t("serviceRollout.help") }}</p>
+                    <p class="form-text">{{ $t("serviceRollout.draining") }}</p>
+                    <p v-if="!rollingUpdateSupported" class="text-warning small">{{ $t("serviceRollout.unsupported") }}</p>
+                    <p class="text-warning small">{{ $t("serviceRollout.warning") }}</p>
+                    <div v-if="rollingUpdateSupported && !hasRollingRelay" class="d-flex flex-wrap gap-2 align-items-center">
+                        <label :for="`relay-port-${name}`">{{ $t("serviceRollout.relayPort") }}</label>
+                        <input :id="`relay-port-${name}`" v-model="relayPort" type="number" min="1" max="65535" class="form-control form-control-sm" style="width: 7rem" />
+                        <button type="button" class="btn btn-sm btn-normal" @click="prepareRelay">{{ $t("serviceRollout.relayAdd") }}</button>
+                    </div>
+                    <p class="form-text">{{ $t("serviceRollout.relayHelp") }}</p>
+                </div>
+
                 <div ref="healthcheckPanel" class="service-healthcheck mb-4">
                     <h5>{{ $t("serviceHealthcheck.title") }}</h5>
                     <p class="form-text mb-2">{{ $t("serviceHealthcheck.help") }}</p>
@@ -305,6 +325,7 @@ import { parseDockerPortLink, imageRegistryUrl, resolveEndpointHostname } from "
 import {
     composeLabelIsFalse,
     composeLabelIsTrue,
+    composeLabelValue,
     LABEL_IMAGEUPDATES_CHECK,
     LABEL_STATUS_IGNORE,
     setComposeLabel,
@@ -313,6 +334,9 @@ import VolumeBrowser from "./VolumeBrowser.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
 import ServiceResourceLimits from "./ServiceResourceLimits.vue";
+import { LABEL_ROLLOUT, rolloutEnabled, ROLLOUT_HEALTH_PREFIX } from "../../../common/service-rollout";
+import { addRolloutRelay } from "../rollout-relay";
+import { toRaw } from "vue";
 import { buildServiceHealthcheck, proposeServiceHealthcheck } from "../service-healthcheck";
 
 export default defineComponent({
@@ -427,6 +451,7 @@ export default defineComponent({
     data() {
         return {
             showConfig: false,
+            relayPort: 8080,
             showSchedule: false,
             healthcheckMethod: "http",
             healthcheckTarget: "",
@@ -507,6 +532,45 @@ export default defineComponent({
                 return {};
             }
             return this.jsonObject.services[this.name];
+        },
+
+        rollingUpdateSupported() {
+            return this.stack?.supportsServiceRollout === true || (this.$parent.$parent.isAdd && !this.$parent.$parent.endpoint);
+        },
+        rollingState() {
+            return this.stack?.rollingUpdates?.find(item => item.service === this.name && item.phase !== "completed");
+        },
+        hasRollingRelay() {
+            return !!composeLabelValue(this.service.labels, "dockge.rollout.relay");
+        },
+        nativeRolloutAvailable() {
+            return composeLabelIsTrue(this.service.labels, "traefik.enable");
+        },
+
+        rollingUpdate: {
+            get() {
+                return rolloutEnabled(this.service);
+            },
+            set(enabled) {
+                if (!this.rollingUpdateSupported) {
+                    return;
+                }
+                if (enabled && !window.confirm(this.$t("serviceRollout.confirm"))) {
+                    return;
+                }
+                if (enabled && !this.hasRollingRelay) {
+                    const test = this.service.healthcheck?.test;
+                    if (!Array.isArray(test) || test[0] !== "CMD-SHELL" || typeof test[1] !== "string" || this.service.healthcheck.disable) {
+                        window.alert(this.$t("serviceRollout.draining"));
+                        return;
+                    }
+                    if (!test[1].startsWith(ROLLOUT_HEALTH_PREFIX)) {
+                        this.service.healthcheck = { ...this.service.healthcheck,
+                            test: [ "CMD-SHELL", ROLLOUT_HEALTH_PREFIX + "(" + test[1] + ")" ] };
+                    }
+                }
+                setComposeLabel(this.service, LABEL_ROLLOUT, enabled ? "true" : null);
+            },
         },
 
         ignoreServiceStatus: {
@@ -591,6 +655,19 @@ export default defineComponent({
         }
     },
     methods: {
+        prepareRelay() {
+            if (!this.rollingUpdateSupported || !window.confirm(this.$t("serviceRollout.relayConfirm"))) {
+                return;
+            }
+            try {
+                const next = addRolloutRelay(toRaw(this.jsonObject), this.name, Number(this.relayPort));
+                this.jsonObject.services = next.services;
+                this.jsonObject.volumes = next.volumes;
+                this.jsonObject.networks = next.networks;
+            } catch {
+                window.alert(this.$t("serviceRollout.relayInvalid"));
+            }
+        },
         openHealthcheckConfig() {
             if (!this.showConfig) {
                 this.openServiceConfig();

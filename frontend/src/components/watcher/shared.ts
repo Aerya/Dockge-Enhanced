@@ -79,6 +79,7 @@ export interface UpdateHistoryEntry {
     mode: "immediate" | "scheduled" | "manual";
     success: boolean;
     verification?: "verified" | "unverified";
+    retirementDeferred?: boolean;
     error?: string;
 }
 

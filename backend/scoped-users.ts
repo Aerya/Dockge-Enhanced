@@ -3,11 +3,12 @@ import { promisify } from "node:util";
 import { R } from "redbean-node";
 import { passwordStrength } from "check-password-strength";
 import { AgentSocket } from "../common/agent-socket";
-import { canAccess, normalizeGrants, standaloneContainerName, USER_PERMISSIONS, type UserPermission } from "../common/user-access";
+import { canAccess, normalizeGrants, standaloneContainerName, USER_PERMISSIONS, type UserPermission, type UserAccess } from "../common/user-access";
 import { loadUserAccess, accessFromUser } from "./user-access";
 import type { DockgeSocket } from "./util-server";
 import type { DockgeServer } from "./dockge-server";
 import { Stack } from "./stack";
+import { rolloutStates } from "./rollout-recovery";
 import { getAuthMode } from "./auth";
 import { generatePasswordHash } from "./password-hash";
 import { resolveCurrentContainer } from "./current-container";
@@ -29,14 +30,32 @@ const ACTION_EVENTS = { start: "startStack",
     recreate: "recreateStack" } as const;
 const activeRequests = new Set<string>();
 
-export function assertScopedServiceTargets(service: string, targets: string[]): void {
-    if (targets.length !== 1 || targets[0] !== service) {
+export function assertScopedServiceTargets(service: string, targets: string[], managedRelays: string[] = []): void {
+    const expected = [ service, ...managedRelays ];
+    if (managedRelays.length > 1 || new Set(expected).size !== expected.length ||
+        targets.length !== expected.length || targets.some(target => !expected.includes(target))) {
+        throw new Error("access.denied");
+    }
+}
+
+export function assertScopedMutationAccess(access: UserAccess, request: ScopedRequest, targets: string[], managedRelays: string[] = [], delegatedServices?: string[]): void {
+    assertScopedServiceTargets(request.service!, targets, managedRelays);
+    if (targets.some(target => !canAccess(access, "", request.stack, request.permission, target) ||
+        (delegatedServices !== undefined && !delegatedServices.includes(target)))) {
         throw new Error("access.denied");
     }
 }
 
 async function remoteRequest(socket: DockgeSocket, request: ScopedRequest): Promise<{ ok: boolean;
     data?: unknown }> {
+    // Construct the delegation exclusively from server-side grants, never from
+    // a browser-supplied list. The remote agent must constrain relay mutations
+    // despite its federation connection being authenticated as administrator.
+    const access = await loadUserAccess(socket.userID);
+    const delegatedServices = request.service ? [ ...new Set([ request.service, ...access.grants
+        .filter(grant => grant.endpoint === request.endpoint && grant.stack === request.stack && grant.service &&
+            canAccess(access, request.endpoint, request.stack, request.permission, grant.service))
+        .map(grant => grant.service!) ]) ] : [];
     if (request.service && ![ "view", "logs" ].includes(request.permission)) {
         const probe = await remoteRequest(socket, { ...request,
             permission: "view" });
@@ -47,7 +66,9 @@ async function remoteRequest(socket: DockgeSocket, request: ScopedRequest): Prom
     return new Promise((resolve, reject) => {
         const timeout = [ "view", "logs" ].includes(request.permission) ? 30_000 : 30 * 60_000;
         const timer = setTimeout(() => reject(new Error("access.operationFailed")), timeout);
-        socket.instanceManager.emitToEndpoint(request.endpoint, request.service ? "scopedServiceRequest" : "scopedStackRequest", request, (result: { ok: boolean;
+        socket.instanceManager.emitToEndpoint(request.endpoint, request.service ? "scopedServiceRequest" : "scopedStackRequest", { ...request,
+            delegatedServices,
+            delegatedStack: canAccess(access, request.endpoint, request.stack, request.permission) }, (result: { ok: boolean;
             data?: unknown }) => {
             clearTimeout(timer);
             resolve(result);
@@ -86,13 +107,15 @@ export function scopedResponse(request: ScopedRequest, value: unknown): unknown 
         return { name: request.stack,
             status: data.status,
             displayName: typeof data.displayName === "string" ? data.displayName.slice(0, 256) : request.stack,
+            ...(data.retirementPending === true ? { retirementPending: true } : {}),
             ...(request.service && typeof data.serviceState === "string" ? { serviceState: data.serviceState.slice(0, 64) } : {}) };
     }
     if (request.permission === "logs" && typeof data.logs === "string" && Buffer.byteLength(data.logs) <= 1024 * 1024) {
         return { logs: data.logs };
     }
     if (![ "view", "logs" ].includes(request.permission) && data.applied === true) {
-        return { applied: true };
+        return { applied: true,
+            ...(data.retirementPending === true ? { retirementPending: true } : {}) };
     }
     throw new Error("access.operationFailed");
 }
@@ -114,7 +137,7 @@ async function executeStandalone(socket: DockgeSocket, name: string, request: Sc
     return { applied: true };
 }
 
-export async function executeScopedLocal(socket: DockgeSocket, server: DockgeServer, agent: AgentSocket, request: ScopedRequest): Promise<unknown> {
+export async function executeScopedLocal(socket: DockgeSocket, server: DockgeServer, agent: AgentSocket, request: ScopedRequest, delegatedServices?: string[]): Promise<unknown> {
     const standalone = standaloneContainerName(request.stack);
     if (standalone) {
         return executeStandalone(socket, standalone, request);
@@ -130,6 +153,7 @@ export async function executeScopedLocal(socket: DockgeSocket, server: DockgeSer
             displayName?: string };
         return { name: request.stack,
             status: summary.status,
+            ...(rolloutStates(stack.path).some(item => !request.service || item.service === request.service) ? { retirementPending: true } : {}),
             displayName: summary.displayName || request.stack,
             ...(request.service ? { serviceState: (await stack.getServiceStatusList()).serviceStatusList.get(request.service)?.state || "unknown" } : {}) };
     }
@@ -148,15 +172,13 @@ export async function executeScopedLocal(socket: DockgeSocket, server: DockgeSer
         throw new Error("access.denied");
     }
     if (request.service) {
-        await stack.serviceAction(socket, request.service, request.permission as "start" | "stop" | "restart" | "update" | "recreate", async targets => {
+        await stack.serviceAction(socket, request.service, request.permission as "start" | "stop" | "restart" | "update" | "recreate", async (targets, managedRelays = []) => {
             // A service grant cannot mutate namespace dependants, even through
             // an administrator-authenticated federation link. Fail closed.
-            assertScopedServiceTargets(request.service!, targets);
-            if (!canAccess(await loadUserAccess(socket.userID), "", request.stack, request.permission, request.service)) {
-                throw new Error("access.denied");
-            }
+            assertScopedMutationAccess(await loadUserAccess(socket.userID), request, targets, managedRelays, delegatedServices);
         });
-        return { applied: true };
+        return { applied: true,
+            ...(rolloutStates(stack.path).some(item => item.service === request.service) ? { retirementPending: true } : {}) };
     }
     await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error("access.operationFailed")), 30 * 60_000);
@@ -169,7 +191,8 @@ export async function executeScopedLocal(socket: DockgeSocket, server: DockgeSer
             }
         });
     });
-    return { applied: true };
+    return { applied: true,
+        ...(rolloutStates(stack.path).length ? { retirementPending: true } : {}) };
 }
 
 export function registerScopedUsers(socket: DockgeSocket, server: DockgeServer, agent: AgentSocket): void {
@@ -183,7 +206,15 @@ export function registerScopedUsers(socket: DockgeSocket, server: DockgeServer, 
                     throw new Error("access.denied");
                 }
                 const request = parseScopedRequest(payload);
-                const data = await executeScopedLocal(socket, server, agent, request);
+                const delegation = (payload as { delegatedServices?: unknown }).delegatedServices;
+                if (delegation !== undefined && (!Array.isArray(delegation) || delegation.length > 1024 ||
+                    delegation.some(value => typeof value !== "string" || !/^[a-zA-Z0-9_.-]+$/.test(value)))) {
+                    throw new Error("access.denied");
+                }
+                // Older peers never delegate sibling services implicitly.
+                const wholeStack = (payload as { delegatedStack?: unknown }).delegatedStack === true;
+                const services = request.service && !wholeStack ? (delegation as string[] | undefined) ?? [ request.service ] : undefined;
+                const data = await executeScopedLocal(socket, server, agent, request, services);
                 if (typeof callback === "function") {
                     callback({ ok: true,
                         data });

@@ -8,7 +8,7 @@ import { io } from "socket.io-client";
 import type { DockgeSocket } from "./util-server";
 import { accessFromUser, installUserAccessGuard } from "./user-access";
 import { canAccess, normalizeGrants, type UserAccess } from "../common/user-access";
-import { parseScopedRequest, scopedResponse, assertScopedServiceTargets } from "./scoped-users";
+import { parseScopedRequest, scopedResponse, assertScopedServiceTargets, assertScopedMutationAccess } from "./scoped-users";
 import { createRequire } from "node:module";
 import knex, { type Knex } from "knex";
 import sqlite from "@louislam/sqlite3";
@@ -16,6 +16,39 @@ import { up, down } from "./migrations/2026-10-24-0001-scoped-users";
 import { Stack } from "./stack";
 import { proxyRoleForNewUser } from "./auth";
 import { Terminal } from "./terminal";
+import { withStackMutation } from "./stack-mutation";
+
+test("manual stack actions cannot enter Docker while a rolling mutation owns the stack", async t => {
+    const stack = Object.create(Stack.prototype) as Stack;
+    Object.defineProperties(stack, { name: { value: "locked" },
+        path: { value: "/tmp/rollout-action-lock" },
+        server: { value: {} } });
+    const socket = { endpoint: "" } as DockgeSocket;
+    let commands = 0;
+    t.mock.method(Terminal, "exec", async () => {
+        commands++;
+        return 0;
+    });
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => {
+        release = resolve;
+    });
+    const running = withStackMutation(stack.operationProject, () => gate);
+    try {
+        for (const action of [
+            () => stack.deploy(socket), () => stack.start(socket), () => stack.stop(socket),
+            () => stack.restart(socket), () => stack.recreate(socket), () => stack.down(socket),
+            () => stack.serviceAction(socket, "web", "restart"), () => stack.restartService("web"),
+            () => stack.runContainerInstanceAction("fixture", "restart"), () => stack.save(false),
+        ]) {
+            await assert.rejects(action(), /operation is active/);
+        }
+        assert.equal(commands, 0);
+    } finally {
+        release();
+        await running;
+    }
+});
 
 test("service grants survive recreation without granting sibling services or the whole stack", () => {
     const access: UserAccess = { role: "restricted",
@@ -70,6 +103,62 @@ test("scoped service actions authorize before Docker and start without dependenc
 });
 
 const SqliteDialect = createRequire(import.meta.url)("knex/lib/dialects/sqlite3/index.js") as typeof Knex.Client;
+
+test("rolling service actions require explicit application AND managed-relay grants", async t => {
+    const stack = Object.create(Stack.prototype) as Stack;
+    Object.defineProperties(stack, { name: { value: "fixture" },
+        path: { value: "/tmp/relay-permissions" },
+        server: { value: {} } });
+    Object.defineProperty(stack, "assertStartGuard", { value: async () => {} });
+    t.mock.method(stack, "getServiceActionTargets", async () => [ "web" ]);
+    let mutations = 0;
+    Object.defineProperty(stack, "tryRollingUpdate", { value: async (_targets: string[], authorize: (targets: string[], relays?: string[]) => Promise<void>) => {
+        await authorize([ "web", "web-relay" ], [ "web-relay" ]);
+        mutations++;
+        return true;
+    } });
+    const request = { endpoint: "",
+        stack: "fixture",
+        service: "web",
+        permission: "update" as const };
+    const access: UserAccess = { role: "restricted",
+        grants: normalizeGrants([
+            { endpoint: "",
+                stack: "fixture",
+                service: "web",
+                permissions: [ "view", "update" ] },
+        ]) };
+    const execute = () => stack.serviceAction({ endpoint: "" } as DockgeSocket, "web", "update", async (targets, relays) => {
+        assertScopedMutationAccess(access, request, targets, relays);
+    });
+    await assert.rejects(execute(), /denied/);
+    assert.equal(mutations, 0);
+    access.grants.push(...normalizeGrants([{ endpoint: "",
+        stack: "fixture",
+        service: "web-relay",
+        permissions: [ "view", "update" ] }]));
+    await execute();
+    assert.equal(mutations, 1);
+    access.grants.pop();
+    await assert.rejects(execute(), /denied/);
+    assert.equal(mutations, 1);
+});
+
+test("federated administrator cannot expand the originating user's service delegation", () => {
+    const admin: UserAccess = { role: "admin",
+        grants: [] };
+    const request = { endpoint: "",
+        stack: "fixture",
+        service: "web",
+        permission: "update" as const };
+    assert.throws(() => assertScopedMutationAccess(admin, request, [ "web", "relay" ], [ "relay" ], [ "web" ]), /denied/);
+    assertScopedMutationAccess(admin, request, [ "web", "relay" ], [ "relay" ], [ "web", "relay" ]);
+    assert.throws(() => assertScopedMutationAccess(admin, request, [ "web", "db" ], [], [ "web", "db" ]), /denied/);
+    // The browser parser discards all proposed delegation fields.
+    assert.deepEqual(parseScopedRequest({ ...request,
+        delegatedServices: [ "web", "db" ],
+        delegatedStack: true }), request);
+});
 class TestDialect extends SqliteDialect {
     _driver() {
         return sqlite;

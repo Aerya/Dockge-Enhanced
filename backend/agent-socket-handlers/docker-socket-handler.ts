@@ -4,6 +4,7 @@ import { AgentSocketHandler } from "../agent-socket-handler";
 import { DockgeServer } from "../dockge-server";
 import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
 import { Stack } from "../stack";
+import { rolloutStates } from "../rollout-recovery";
 import { inspectComposeDraft } from "../compose-diagnostics";
 import { AgentSocket } from "../../common/agent-socket";
 import { ImageWatcher, imageStatusStore, WatcherSettings } from "../watchers/image-watcher";
@@ -830,7 +831,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 }
                 callbackResult({
                     ok: true,
-                    msg: "Updated",
+                    msg: rolloutStates(stack.path).length ? "serviceRollout.pending" : "Updated",
                     msgi18n: true,
                 }, callback);
                 server.sendStackList();
@@ -859,7 +860,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 }
                 callbackResult({
                     ok: true,
-                    msg: "PulledAndRecreated",
+                    msg: rolloutStates(stack.path).length ? "serviceRollout.pending" : "PulledAndRecreated",
                     msgi18n: true,
                 }, callback);
                 server.sendStackList();
@@ -1052,7 +1053,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 await this.auditStack(socket, `service.${action}`, `${stackName}/${serviceName}`, "success", null, { affectedServices });
                 server.sendStackList();
                 callbackResult({ ok: true,
-                    msg: "Service action completed",
+                    msg: rolloutStates(stack.path).length ? "serviceRollout.pending" : "Service action completed",
+                    msgi18n: rolloutStates(stack.path).length > 0,
                     affectedServices }, callback);
             } catch (e) {
                 callbackError(e, callback);

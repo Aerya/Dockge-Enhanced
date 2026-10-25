@@ -60,6 +60,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 10 月
 
+**服务不中断更新 :** 本分支的功能；正式版本需等待 PR 合并。 默认禁用。Enhanced 先启动新容器，再停止旧容器：同一个应用会暂时同时运行两份，并不是运行两个 Enhanced 实例。应用必须允许这种并行运行，不能产生数据冲突、重复任务或不兼容的数据库迁移。Enhanced 无法自动判断这一点：健康检查只能确认容器是否响应，不能证明两份应用同时运行是安全的。 如果没有使用兼容的 Traefik 模式，可以准备一个中继：这是一个小型中间容器，保持访问地址不变，并将连接送到正确版本。助手只修改草稿，将发布端口和 Traefik/PlugNPiN 标签移到中继。请检查后明确部署。如果代理指向主机 IP 和该端口，可保留原目标；如果指向应用服务名，请改为中继服务名。Enhanced 不会自动修改您的代理配置。连接来源显示为中继地址；不暴露管理 API。 启用前请先确认兼容性。应用容器数量会暂时翻倍，请预留足够的 CPU/RAM。固定容器名和共享可写卷会被拒绝。中继会增加一个容器和一个配置卷。首次安装会将访问端口移到中继，可能短暂中断访问。之后请使用“更新”；Recreate、重启和回滚不保证保持现有连接。仅支持 TCP，不支持 UDP/QUIC，也不保证所有场景零中断。 [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). 只有新容器通过健康检查后，新连接才会转向它。使用中继时，已有连接可在旧容器上自然结束：旧容器会一直运行到连接关闭，不会因等待超时而强制断开。Enhanced 会自动完成清理，重启后也会继续，并显示等待或恢复状态。不使用中继的 Traefik 模式要求预先部署健康检查，以便在停止旧容器之前将其从流量目标中移除。 托管 Stack 的实例必须支持服务不中断更新。也请更新关联实例；新建远程 Stack 请先保存。旧版代理不会遵守此选项。
+
 **原生 OIDC 登录：** 无需反向代理即可通过 Pocket ID、Authentik、Keycloak 或 Google 等 OpenID Connect 提供商登录，并与本地账户和 2FA 共存。通过 `DOCKGE_OIDC_*` 环境变量配置，使用带 PKCE 的授权码流程。新的 OIDC 用户为没有任何访问权限的受限账户，需由管理员授权，除非列在 `DOCKGE_OIDC_ADMIN_USERS` 中或属于 `DOCKGE_OIDC_ADMIN_GROUPS`；设置管理员组后，每次登录时角色都会随组成员关系同步。不存在“第一个用户自动成为管理员”的隐含规则：新安装时请先创建管理员或配置管理员映射。仅在 `DOCKGE_OIDC_LINK_EXISTING=true` 时才会关联已有本地账户。OIDC 登录不要求本地 TOTP 验证码，在 `disabled` 和 `trusted-proxy` 模式下 OIDC 会被忽略。如果设置 `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true`，请事先准备好恢复步骤。[指南](docs/oidc.zh-CN.md)。
 
 **默认 Compose 文件名 :** 本分支的功能；正式版本需等待 PR 合并。 COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。
@@ -507,6 +509,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 指南：[Restic 备份与恢复](docs/restic.zh-CN.md) · [Zerobyte 安装与恢复](docs/zerobyte.zh-CN.md)
 
 ### 更新与 ImageWatcher
+
+- **服务不中断更新** — `dockge.rollout.enabled: "true"`. 启用前请先确认兼容性。应用容器数量会暂时翻倍，请预留足够的 CPU/RAM。固定容器名和共享可写卷会被拒绝。中继会增加一个容器和一个配置卷。首次安装会将访问端口移到中继，可能短暂中断访问。之后请使用“更新”；Recreate、重启和回滚不保证保持现有连接。仅支持 TCP，不支持 UDP/QUIC，也不保证所有场景零中断。 [部署](docs/service-rollout.zh-CN.md).
 - 通过 digest 检测镜像更新，无需拉取，也适用于远程实例
 - 每个镜像可设为关闭、立即或定时，并支持按 Stack 批量设置，默认保留单独例外
 - 默认每 6 小时完整扫描，立即模式镜像默认每 5 分钟定向检查，两者可分别配置或关闭
@@ -992,6 +996,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — 按服务排除整体状态和镜像更新功能的灵感及兼容标签来源
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — 为可选的服务级 CPU/RAM 限制提供灵感，适配时保留受限账户权限
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — 默认 Compose 文件名.
+- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — 服务不中断更新.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — 可选 DNS / Nginx Proxy Manager 自动化

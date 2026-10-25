@@ -16,6 +16,7 @@ import { getNotificationLang, getNotificationLocale, notificationText, Notificat
 import { Settings } from "../settings";
 import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
+import { isRolloutDraining, hasPendingRollout, withStackMutation } from "../stack-mutation";
 import { log } from "../log";
 import { resolveDataDir } from "../data-dir";
 
@@ -337,6 +338,9 @@ export class MonitoringWatcher {
     }
 
     private async onContainerUnhealthy(ev: DockerEvent, name: string, id: string): Promise<void> {
+        if (isRolloutDraining(id)) {
+            return;
+        }
         const now = Date.now();
         const cooldownMs = Math.max(1, this.settings.healthcheckCooldownMinutes) * 60_000;
         const lastAction = this.healthCooldowns.get(name) ?? 0;
@@ -350,6 +354,8 @@ export class MonitoringWatcher {
         const external = composeProject && this.server ? await this.server.externalStacks.getByProject(composeProject) : undefined;
         const stackName = external?.name ?? composeProject;
         const serviceName = attrs["com.docker.compose.service"] ?? null;
+        const directory = attrs["com.docker.compose.project.working_dir"];
+        const projectDirectory = directory && path.isAbsolute(directory) ? path.resolve(directory) : undefined;
         const action = this.settings.healthcheckAutoHealMode;
         const event: HealthEvent = {
             containerName: name,
@@ -363,8 +369,11 @@ export class MonitoringWatcher {
             timestamp: new Date().toISOString(),
         };
 
-        if (action !== "notify") {
-            const result = await this.applyHealthAction(action, name, id, stackName, serviceName);
+        if (projectDirectory && hasPendingRollout(projectDirectory)) {
+            event.actionStatus = "skipped";
+            event.message = "Rolling update recovery owns this service; failure reported without concurrent auto-healing";
+        } else if (action !== "notify") {
+            const result = await this.applyHealthAction(action, name, id, stackName, serviceName, projectDirectory);
             event.actionStatus = result.ok ? "success" : "failed";
             event.message = result.message;
         }
@@ -380,16 +389,23 @@ export class MonitoringWatcher {
         containerName: string,
         containerId: string,
         stackName: string | null,
-        serviceName: string | null
+        serviceName: string | null,
+        projectDirectory?: string
     ): Promise<{ ok: boolean; message: string }> {
         try {
             if (action === "restart_container") {
-                await childProcessAsync.spawn("docker", [ "restart", containerId || containerName ], { encoding: "utf-8" });
+                const restart = async () => {
+                    await childProcessAsync.spawn("docker", [ "restart", containerId || containerName ], { encoding: "utf-8" });
+                };
+                await (projectDirectory ? withStackMutation(projectDirectory, restart) : restart());
                 return { ok: true, message: "Container restarted" };
             }
 
             if (!stackName || !serviceName || !this.server) {
-                await childProcessAsync.spawn("docker", [ "restart", containerId || containerName ], { encoding: "utf-8" });
+                const restart = async () => {
+                    await childProcessAsync.spawn("docker", [ "restart", containerId || containerName ], { encoding: "utf-8" });
+                };
+                await (projectDirectory ? withStackMutation(projectDirectory, restart) : restart());
                 return { ok: true, message: "No managed compose service found, container restarted" };
             }
 
