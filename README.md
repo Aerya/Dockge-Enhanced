@@ -61,7 +61,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
-**Rolling updates per service :** Prepared in this PR; not yet published. Two optional paths: native Traefik discovery or a stable TCP relay that keeps an IP:port destination for NPM, Nginx, Caddy, HAProxy and other TCP clients. No proxy is reconfigured automatically. Healthy replicas and a multi-instance application are required; no fixed container name or shared writable volume. Temporarily doubles replicas. The relay adds a container and a configuration volume; initial installation may interrupt service. Recreate and rollback remain disruptive. UDP/QUIC is unsupported; there is no universal zero-downtime guarantee. [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Traefik mode requires a previously deployed draining healthcheck. With the relay, existing connections stay on the old containers without a forced timeout. Retirement continues automatically in the background and resumes after Enhanced restarts; the service displays its pending or recovery state. The hosting instance must support rolling updates. Update linked instances too; for a new remote stack, save it first. Older agents do not honor this option.
+**Updates without service interruption :** Prepared in this PR; not yet published. Two optional paths: native Traefik discovery or a stable TCP relay that keeps an IP:port destination for NPM, Nginx, Caddy, HAProxy and other TCP clients. No proxy is reconfigured automatically. Healthy replicas and a multi-instance application are required; no fixed container name or shared writable volume. Temporarily doubles replicas. The relay adds a container and a configuration volume; initial installation may interrupt service. Recreate and rollback remain disruptive. UDP/QUIC is unsupported; there is no universal zero-downtime guarantee. [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Traefik mode requires a previously deployed draining healthcheck. With the relay, existing connections stay on the old containers without a forced timeout. Retirement continues automatically in the background and resumes after Enhanced restarts; the service displays its pending or recovery state. The hosting instance must support updates without service interruption. Update linked instances too; for a new remote stack, save it first. Older agents do not honor this option.
 
 **Default Compose filename :** Prepared in this PR; not yet published. COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected.
 
@@ -507,7 +507,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Updates & ImageWatcher
 
-- **Rolling updates per service** — `dockge.rollout.enabled: "true"`. Temporarily doubles replicas. The relay adds a container and a configuration volume; initial installation may interrupt service. Recreate and rollback remain disruptive. UDP/QUIC is unsupported; there is no universal zero-downtime guarantee. [Deployment](docs/service-rollout.md).
+- **Updates without service interruption** — `dockge.rollout.enabled: "true"`. Temporarily doubles replicas. The relay adds a container and a configuration volume; initial installation may interrupt service. Recreate and rollback remain disruptive. UDP/QUIC is unsupported; there is no universal zero-downtime guarantee. [Deployment](docs/service-rollout.md).
 - Image update detection by digest, without pulling, including remote instances
 - Off, Immediate and Scheduled policies per image, plus stack-wide bulk policies that preserve individual exceptions by default
 - Full scan every 6 hours by default and targeted Immediate checks every 5 minutes by default, configurable or disabled separately
@@ -973,7 +973,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — inspiration and compatible labels for per-service stack-status and image-update exclusions
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration for optional per-service CPU/RAM limits, adapted without changing restricted-account permissions
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Default Compose filename.
-- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Rolling updates per service.
+- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates without service interruption.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — inspiration for the restricted host file manager and real-container view adapted for Enhanced (MIT licence)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — optional DNS and Nginx Proxy Manager automation (GPLv3)

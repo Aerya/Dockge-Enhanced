@@ -1,4 +1,4 @@
-# Docker rollout
+# Actualizaciones sin interrupción del servicio
 
 [English](service-rollout.md) · [Français](service-rollout.fr.md) · [Deutsch](service-rollout.de.md) · [Español](service-rollout.es.md) · [简体中文](service-rollout.zh-CN.md)
 
@@ -14,7 +14,7 @@ Se necesitan healthchecks y CPU/RAM adicionales. Nombres fijos, volúmenes compa
 
 El relé no se recrea durante las actualizaciones de la aplicación. El tráfico nuevo cambia solo a reemplazos sanos. Las conexiones que superan la espera en primer plano permanecen abiertas; los contenedores antiguos se retiran automáticamente cuando terminan sus generaciones de workers. Una conexión larga no devuelve por sí sola los clientes nuevos a la versión anterior. Reiniciar el relé, Recreate y el rollback explícito siguen siendo interruptivos.
 
-Actualice ambos extremos de las instancias vinculadas. Una cuenta restringida necesita permisos de actualización para la aplicación **y su relé**. Abrir el editor no cambia nada; preparar modifica solo el borrador. Desactivar actualizaciones progresivas no desmonta el relé ni devuelve los puertos: revise explícitamente esa migración. No se modifica automáticamente ningún proxy de producción.
+Actualice ambos extremos de las instancias vinculadas. Una cuenta restringida necesita permisos de actualización para la aplicación **y su relé**. Abrir el editor no cambia nada; preparar modifica solo el borrador. Desactivar actualizaciones sin interrupción del servicio no desmonta el relé ni devuelve los puertos: revise explícitamente esa migración. No se modifica automáticamente ningún proxy de producción.
 
 Las actualizaciones no añaden overrides Compose ni etiquetas temporales; un Deploy sin cambios conserva el contenedor. El diario se guarda atómicamente antes de las mutaciones Docker. Tras una interrupción se cancela una transacción no confirmada; una confirmada reanuda únicamente la retirada de los IDs antiguos guardados. Se verifican identidad y salud antes de borrar; un reemplazo defectuoso puede devolver el tráfico a la generación anterior registrada y sana. Se bloquean las mutaciones simultáneas de la stack, pero la espera pasiva libera el bloqueo global de actualizaciones. Las réplicas retiradas intencionadamente no activan auto-reparación. Incluya el diario en los datos persistentes y backups de Enhanced; no lo borre para desbloquear operaciones. Identidades cambiadas o réplicas supervivientes no sanas suspenden las eliminaciones y muestran una advertencia. El historial registra la retirada aplazada en el momento de aplicar; el servicio muestra el estado actual. Al iniciar el relé, una ruta persistida inválida se sustituye por la configuración Compose inicial validada; las rutas válidas se conservan.
 

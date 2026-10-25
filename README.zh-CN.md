@@ -60,7 +60,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 10 月
 
-**按服务渐进更新 :** 本分支的功能；正式版本需等待 PR 合并。 两种可选方式：Traefik 原生发现，或保持 IP:端口入口稳定的 TCP 中继，供 NPM、Nginx、Caddy、HAProxy 及其他 TCP 客户端使用。不会自动修改任何代理配置。要求副本健康、应用支持多实例；不允许固定容器名或共享可写卷。 临时将副本数翻倍。中继会增加一个容器和一个配置卷；首次安装可能中断服务。Recreate 和回滚仍会中断服务。不支持 UDP/QUIC，也不保证所有场景零中断。 [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Traefik 模式要求预先部署支持摘除流量的健康检查。中继模式下，现有连接继续使用旧容器，不会因超时被强制断开。旧容器会在后台自动移除，Enhanced 重启后也会继续；服务界面显示等待或恢复状态。 托管 Stack 的实例必须支持渐进更新。也请更新关联实例；新建远程 Stack 请先保存。旧版代理不会遵守此选项。
+**服务不中断更新 :** 本分支的功能；正式版本需等待 PR 合并。 两种可选方式：Traefik 原生发现，或保持 IP:端口入口稳定的 TCP 中继，供 NPM、Nginx、Caddy、HAProxy 及其他 TCP 客户端使用。不会自动修改任何代理配置。要求副本健康、应用支持多实例；不允许固定容器名或共享可写卷。 临时将副本数翻倍。中继会增加一个容器和一个配置卷；首次安装可能中断服务。Recreate 和回滚仍会中断服务。不支持 UDP/QUIC，也不保证所有场景零中断。 [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Traefik 模式要求预先部署支持摘除流量的健康检查。中继模式下，现有连接继续使用旧容器，不会因超时被强制断开。旧容器会在后台自动移除，Enhanced 重启后也会继续；服务界面显示等待或恢复状态。 托管 Stack 的实例必须支持服务不中断更新。也请更新关联实例；新建远程 Stack 请先保存。旧版代理不会遵守此选项。
 
 **默认 Compose 文件名 :** 本分支的功能；正式版本需等待 PR 合并。 COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。
 
@@ -508,7 +508,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ### 更新与 ImageWatcher
 
-- **按服务渐进更新** — `dockge.rollout.enabled: "true"`. 临时将副本数翻倍。中继会增加一个容器和一个配置卷；首次安装可能中断服务。Recreate 和回滚仍会中断服务。不支持 UDP/QUIC，也不保证所有场景零中断。 [部署](docs/service-rollout.zh-CN.md).
+- **服务不中断更新** — `dockge.rollout.enabled: "true"`. 临时将副本数翻倍。中继会增加一个容器和一个配置卷；首次安装可能中断服务。Recreate 和回滚仍会中断服务。不支持 UDP/QUIC，也不保证所有场景零中断。 [部署](docs/service-rollout.zh-CN.md).
 - 通过 digest 检测镜像更新，无需拉取，也适用于远程实例
 - 每个镜像可设为关闭、立即或定时，并支持按 Stack 批量设置，默认保留单独例外
 - 默认每 6 小时完整扫描，立即模式镜像默认每 5 分钟定向检查，两者可分别配置或关闭
@@ -977,7 +977,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) by hamphh — 按服务排除整体状态和镜像更新功能的灵感及兼容标签来源
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — 为可选的服务级 CPU/RAM 限制提供灵感，适配时保留受限账户权限
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — 默认 Compose 文件名.
-- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — 按服务渐进更新.
+- [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — 服务不中断更新.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — 可选 DNS / Nginx Proxy Manager 自动化
