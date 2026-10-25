@@ -192,6 +192,8 @@
                     </div>
                 </div>
 
+                <ServiceResourceLimits :service="service" @apply="jsonObject.services[name] = $event" />
+
                 <div ref="healthcheckPanel" class="service-healthcheck mb-4">
                     <h5>{{ $t("serviceHealthcheck.title") }}</h5>
                     <p class="form-text mb-2">{{ $t("serviceHealthcheck.help") }}</p>
@@ -310,6 +312,7 @@ import {
 import VolumeBrowser from "./VolumeBrowser.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
+import ServiceResourceLimits from "./ServiceResourceLimits.vue";
 import { buildServiceHealthcheck, proposeServiceHealthcheck } from "../service-healthcheck";
 
 export default defineComponent({
@@ -318,6 +321,7 @@ export default defineComponent({
         VolumeBrowser,
         ContainerStatsBadge,
         StackScheduleEditor,
+        ServiceResourceLimits,
     },
     props: {
         portLinkAddressMode: {
