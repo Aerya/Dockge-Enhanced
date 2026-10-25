@@ -153,6 +153,10 @@ test("Docker relay: fixed port, successive updates, long connection, failed heal
             }
             assert.equal((await transport.compose([ "ps", "-aq", "app" ], 15_000)).trim().split("\n").length, 1);
             assert.equal((await transport.compose([ "ps", "-q", "app-rollout-relay" ], 15_000)).trim(), relayId);
+            const stableApp = (await transport.compose([ "ps", "-q", "app" ], 15_000)).trim();
+            await transport.compose([ "up", "-d", "--no-deps", "app" ], 30_000);
+            assert.equal((await transport.compose([ "ps", "-q", "app" ], 15_000)).trim(), stableApp,
+                "ordinary Deploy must not recreate a successfully updated service");
         }
         const old = (await transport.compose([ "ps", "-q", "app" ], 15_000)).trim();
         const failed = await prepareRollout(transport.compose, transport.docker, [ "app" ], { stateDir });
@@ -194,6 +198,12 @@ test("Docker relay: fixed port, successive updates, long connection, failed heal
             await new Promise(resolve => setTimeout(resolve, 300));
         }
         assert.match(await get(), /version-three/);
+        // Keep the relay configuration volume: this is precisely the recovery
+        // path that used to restart forever on a deleted app-2 DNS name.
+        await transport.compose([ "down", "--timeout", "5" ], 30_000);
+        await transport.compose([ "up", "-d", "--wait", "--wait-timeout", "45" ], 60_000);
+        address = (await transport.compose([ "port", "app-rollout-relay", "8080" ], 15_000)).trim();
+        assert.match(await get(), /version-four/);
     } finally {
         if (polling) {
             clearInterval(polling);

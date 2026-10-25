@@ -35,6 +35,7 @@ import { ContainerInstance, parseContainerInstances, requireContainerInstance } 
 import { trackDockerBuild } from "./docker-operation-state";
 import { withStackMetadataWriteLock } from "./stack-metadata-lock";
 import { prepareRollout, rolloutTransport, type ComposeRun } from "./service-rollout";
+import { stackMutation } from "./stack-mutation";
 import { tryReserveDockerUpdate } from "./self-update/operation-coordinator";
 
 // ─── Cache court de getServiceStatusList (point #9 : éviter `docker inspect`
@@ -561,6 +562,10 @@ export class Stack {
         return this._externalPath ?? path.join(this.server.stacksDir, this.name);
     }
 
+    get operationProject(): string {
+        return path.resolve(this.path);
+    }
+
     private get metaPath() : string {
         if (!this.isExternal) return path.join(this.path, ".dockge-meta.json");
         return path.join(this.server.config.dataDir, "external-stack-meta", `${this.name}.json`);
@@ -593,6 +598,7 @@ export class Stack {
      * Save the stack to the disk
      * @param isAdd
      */
+    @stackMutation
     async save(isAdd : boolean) {
         this.validate();
 
@@ -984,6 +990,7 @@ export class Stack {
         return result.stdout?.toString() ?? "";
     }
 
+    @stackMutation
     async deploy(socket : DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
@@ -1018,6 +1025,7 @@ export class Stack {
      *   - force : si true, en cas d'échec du `down` on supprime quand même le
      *     dossier (utile quand `down` échoue mais qu'on veut nettoyer). Défaut : false.
      */
+    @stackMutation
     async delete(socket: DockgeSocket, options: {
         removeFiles?: boolean;
         force?: boolean;
@@ -1412,6 +1420,7 @@ export class Stack {
         };
     }
 
+    @stackMutation
     async start(socket: DockgeSocket) {
         await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
@@ -1423,6 +1432,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async stop(socket: DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("stop"), this.path);
@@ -1432,6 +1442,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async setPaused(socket: DockgeSocket, paused: boolean): Promise<void> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const action = paused ? "pause" : "unpause";
@@ -1453,6 +1464,7 @@ export class Stack {
         return result.stdout?.toString().split(/\s+/).filter(Boolean) ?? [];
     }
 
+    @stackMutation
     async startScheduled(): Promise<number> {
         await this.assertStartGuard();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--remove-orphans"), {
@@ -1465,6 +1477,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async recreateScheduled(): Promise<number> {
         await this.assertStartGuard();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), {
@@ -1477,6 +1490,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async stopScheduled(): Promise<number> {
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("stop"), {
             cwd: this.path,
@@ -1496,6 +1510,7 @@ export class Stack {
         await this.getServiceActionTargets(serviceName);
     }
 
+    @stackMutation
     async serviceScheduled(serviceName: string, action: "start" | "stop"): Promise<number> {
         if (action === "start") {
             await this.assertStartGuard();
@@ -1519,6 +1534,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async restart(socket: DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
@@ -1530,6 +1546,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async restartService(serviceName: string) : Promise<number> {
         if (!serviceName) {
             throw new ValidationError("Service name is required");
@@ -1568,6 +1585,7 @@ export class Stack {
         }
     }
 
+    @stackMutation
     async recreateServiceInBackground(serviceName: string): Promise<string[]> {
         await this.assertStartGuard();
         const targets = await this.getServiceActionTargets(serviceName);
@@ -1584,7 +1602,8 @@ export class Stack {
         return targets;
     }
 
-    async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate", authorizeTargets?: (targets: string[]) => Promise<void>): Promise<string[]> {
+    @stackMutation
+    async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate", authorizeTargets?: (targets: string[], managedRelays?: string[]) => Promise<void>): Promise<string[]> {
         if (action !== "stop") {
             await this.assertStartGuard();
         }
@@ -1625,6 +1644,7 @@ export class Stack {
         return targets;
     }
 
+    @stackMutation
     async recreate(socket: DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
@@ -1636,6 +1656,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async recreateInBackground() : Promise<number> {
         await this.assertStartGuard();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), {
@@ -1650,6 +1671,7 @@ export class Stack {
         return exitCode;
     }
 
+    @stackMutation
     async down(socket: DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("down"), this.path);
@@ -1666,6 +1688,7 @@ export class Stack {
         return this.pullAndRecreate(socket);
     }
 
+    @stackMutation
     async pullAndRecreate(socket: DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
         if (await this.tryRollingUpdate()) {
@@ -1689,7 +1712,7 @@ export class Stack {
     }
 
     /** Only the opted-in update path changes; explicit recreate remains a recreate. */
-    private async tryRollingUpdate(targets?: string[], authorize?: (targets: string[]) => Promise<void>): Promise<boolean> {
+    private async tryRollingUpdate(targets?: string[], authorize?: (targets: string[], managedRelays?: string[]) => Promise<void>): Promise<boolean> {
         const transport = rolloutTransport(this.getComposeOptions("config").slice(0, -1), this.path);
         const resolved = JSON.parse(await transport.compose([ "config", "--format", "json" ], 30_000)) as { services: Record<string, Record<string, unknown>> };
         const names = targets ?? Object.keys(resolved.services);
@@ -1731,15 +1754,15 @@ export class Stack {
                 throw new Error("Rollout policy changed; retry");
             }
             if (authorize) {
-                await authorize([ ...names, ...plan.managedServices ]);
+                await authorize([ ...names, ...plan.managedServices ], plan.managedServices);
             }
             await compose([ "pull", ...names ], 600_000);
             if (authorize) {
-                await authorize([ ...names, ...plan.managedServices ]);
+                await authorize([ ...names, ...plan.managedServices ], plan.managedServices);
             }
             await plan.execute(async () => {
                 if (authorize) {
-                    await authorize([ ...names, ...plan.managedServices ]);
+                    await authorize([ ...names, ...plan.managedServices ], plan.managedServices);
                 }
                 return true;
             });
@@ -1755,6 +1778,7 @@ export class Stack {
         }
     }
 
+    @stackMutation
     async buildAndRecreate(socket: DockgeSocket) : Promise<number> {
         const buildServices = this.getBuildServices();
         if (buildServices.length === 0) {
@@ -1963,6 +1987,7 @@ export class Stack {
         return requireContainerInstance(await this.getContainerInstances(), id);
     }
 
+    @stackMutation
     async runContainerInstanceAction(id: unknown, action: "start" | "stop" | "restart"): Promise<void> {
         const instance = await this.getContainerInstance(id);
         if (action !== "stop") {

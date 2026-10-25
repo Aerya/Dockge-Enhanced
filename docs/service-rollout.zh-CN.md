@@ -16,4 +16,6 @@
 
 请更新关联实例两端。受限账户需拥有应用**及其中继**的更新权限。打开编辑器不会修改配置；准备中继仅修改草稿。禁用滚动更新不会拆除中继或还原端口，这一迁移需明确检查。不会自动修改生产代理配置。
 
+渐进更新不再添加额外的 Compose 覆盖文件或临时标签：之后在配置未变时执行 Deploy 会保留容器。中继启动时，如果持久化配置已失效（例如 down/up 删除了旧容器名），会验证并使用 Compose 中的初始配置替换它；仍然有效的配置会保留。这修复了名称消失导致的重启循环，但尚不等于完整的中断操作自动恢复。操作期间，Enhanced 会拒绝对同一 Stack 目录的并发操作；有意退出流量池的旧副本在排空期间不会触发自动修复。
+
 [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout) · [Dockge #170](https://github.com/louislam/dockge/pull/170) · [Nginx](https://nginx.org/en/docs/control.html)

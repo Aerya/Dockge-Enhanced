@@ -66,7 +66,10 @@ export function addRolloutRelay(input: Compose, name: string, port: number): Com
         image: RELAY_IMAGE,
         restart: "unless-stopped",
         entrypoint: [ "/bin/sh", "-ec" ],
-        command: [ `test -s ${RELAY_CONFIG} || printf '%s' "$$DOCKGE_RELAY_BOOTSTRAP" > ${RELAY_CONFIG}; exec nginx -c ${RELAY_CONFIG} -g 'daemon off;'` ],
+        // A persisted route may address replicas removed by a later down/up.
+        // Keep a valid route on restart, but recover an invalid one from the
+        // Compose-owned bootstrap instead of restarting forever on stale DNS.
+        command: [ `if ! test -s ${RELAY_CONFIG} || ! nginx -t -c ${RELAY_CONFIG}; then printf '%s' "$$DOCKGE_RELAY_BOOTSTRAP" > ${RELAY_CONFIG}.next; nginx -t -c ${RELAY_CONFIG}.next; mv ${RELAY_CONFIG}.next ${RELAY_CONFIG}; fi; exec nginx -c ${RELAY_CONFIG} -g 'daemon off;'` ],
         environment: { DOCKGE_RELAY_BOOTSTRAP: config },
         labels: relayLabels,
         ...(app.ports ? { ports: app.ports } : {}),

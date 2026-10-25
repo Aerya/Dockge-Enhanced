@@ -52,6 +52,7 @@ import {
 } from "../compose-network-namespace";
 import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/compose-labels";
 import { prepareRollout, type ComposeRun } from "../service-rollout";
+import { withStackMutation } from "../stack-mutation";
 import { finishDockerCleanup, tryStartDockerCleanup } from "../docker-operation-state";
 import { reconcileRollbackKeepTags, rollbackTagFromKey as rollbackTag } from "./auto-prune-manager";
 import { resolveDataDir } from "../data-dir";
@@ -2172,6 +2173,23 @@ export class ImageWatcher {
         mode: "immediate" | "scheduled" | "manual" = "immediate",
         respectPaused = false,
     ): Promise<boolean> {
+        try {
+            return await withStackMutation(path.resolve(watched.workingDir ?? path.dirname(watched.composePath)),
+                () => this.performReservedAutoUpdate(status, watched, mode, respectPaused));
+        } catch (error) {
+            if (error instanceof Error && error.message.startsWith("Another operation is active on this stack")) {
+                return false;
+            }
+            throw error;
+        }
+    }
+
+    private async performReservedAutoUpdate(
+        status: ImageStatus,
+        watched: WatchedComposeStack,
+        mode: "immediate" | "scheduled" | "manual",
+        respectPaused: boolean,
+    ): Promise<boolean> {
         const key = `${status.stack}::${status.image}`;
         const { composePath, project, configFiles, workingDir, envFiles } = watched;
         // Read live settings, never the policy captured when a batch was selected.
@@ -2556,6 +2574,14 @@ export class ImageWatcher {
     }
 
     async performRollback(key: string): Promise<void> {
+        const entry = rollbackStore.get(key);
+        if (!entry) {
+            throw new Error("Aucune entrée de rollback pour cette image");
+        }
+        return withStackMutation(path.resolve(entry.workingDir ?? path.dirname(entry.composePath)), () => this.performReservedRollback(key));
+    }
+
+    private async performReservedRollback(key: string): Promise<void> {
         const entry = rollbackStore.get(key);
         if (!entry) {
             throw new Error("Aucune entrée de rollback pour cette image");

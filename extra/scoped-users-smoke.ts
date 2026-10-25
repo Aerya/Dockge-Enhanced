@@ -16,6 +16,7 @@ import { bridgeReverseNode } from "../backend/reverse-agent";
 import { totpFor } from "../backend/two-factor-auth";
 import { parse, stringify } from "yaml";
 import { applyResourceLimits } from "../frontend/src/service-resource-limits";
+import { addRolloutRelay } from "../frontend/src/rollout-relay";
 
 if (!process.env.DOCKGE_TEST_SELF_CONTAINER) {
     throw new Error("Set DOCKGE_TEST_SELF_CONTAINER explicitly; no production mutation is performed");
@@ -26,6 +27,7 @@ const root = await mkdtemp(path.join(tmpdir(), "dockge-users-smoke-"));
 const suffix = randomBytes(5).toString("hex");
 const password = `Test-${randomBytes(24).toString("base64url")}!`;
 const processes: ChildProcess[] = [];
+const serverLogs = new Map<string, () => string>();
 const sockets: Socket[] = [];
 const fixtures: { socket: Socket;
     name: string;
@@ -74,9 +76,11 @@ async function server(name: string) {
             DOCKGE_DATA_DIR: path.join(dir, "data"),
             DOCKGE_CONTAINER_ID: globalThis.process.env.DOCKGE_TEST_SELF_CONTAINER },
         stdio: [ "ignore", "pipe", "pipe" ],
+        detached: true,
     });
     processes.push(child);
     let output = "";
+    serverLogs.set(name, () => output);
     child.stdout!.on("data", chunk => {
         output = (output + chunk).slice(-150000);
     });
@@ -131,6 +135,57 @@ try {
     const local = fixtures[0].name;
     const remote = fixtures[1].name;
     const endpoint = `127.0.0.1:${b.port}`;
+    if (process.env.RUN_DOCKER_ROLLOUT_TEST === "1") {
+        for (const [ label, url, targetEndpoint ] of [[ "local", a.url, "" ], [ "remote", b.url, endpoint ]] as const) {
+            const { socket } = await connect(url);
+            const name = `acl-rollout-${label}-${suffix}`;
+            fixtures.push({ socket,
+                name,
+                url });
+            const compose = addRolloutRelay({ services: { app: {
+                image,
+                command: [ "sh", "-c", "mkdir -p /tmp/www; echo fixture > /tmp/www/index.html; exec httpd -f -p 8080 -h /tmp/www" ],
+                ports: [ "127.0.0.1::8080" ],
+                labels: { "dockge.test": `scoped-users-${suffix}` },
+                healthcheck: { test: [ "CMD-SHELL", "wget -q -O- http://127.0.0.1:8080 | grep -q fixture" ],
+                    interval: "1s",
+                    timeout: "1s",
+                    retries: 3 },
+            } } }, "app", 8080);
+            const deployed = await rpc(socket, "agent", "", "deployStack", name, stringify(compose), "", true, "");
+            verified(deployed.ok, "relay fixture deployed through Enhanced");
+            const username = `rollout-${label}`;
+            const grant = { endpoint: targetEndpoint,
+                stack: name,
+                service: "app",
+                permissions: [ "view", "update" ] };
+            verified((await rpc(adminA.socket, "usersSave", { username,
+                password,
+                active: true,
+                grants: [ grant ] })).ok, "application-only grant created");
+            const limited = await connect(a.url, username);
+            const ids = () => execFileSync("docker", [ "ps", "-aq", "--filter", `label=com.docker.compose.project=${name}`, "--filter", "label=com.docker.compose.service=app" ], { encoding: "utf8" }).trim();
+            const old = ids();
+            const request = { endpoint: targetEndpoint,
+                stack: name,
+                service: "app",
+                permission: "update" };
+            verified(!(await rpc(limited.socket, "scopedRequest", request)).ok, "local/remote app-only grant cannot mutate relay");
+            verified(ids() === old, "denied rollout does not recreate application");
+            const listing = await rpc(adminA.socket, "usersList");
+            const id = listing.data.find((user: { username: string }) => user.username === username).id;
+            verified((await rpc(adminA.socket, "usersSave", { id,
+                username,
+                active: true,
+                grants: [ grant, { ...grant,
+                    service: "app-rollout-relay" }] })).ok, "explicit relay grant added");
+            const permitted = await connect(a.url, username);
+            const updated = await rpc(permitted.socket, "scopedRequest", request);
+            verified(updated.ok, "local/remote delegated rollout succeeds: " + JSON.stringify(updated));
+            verified(ids() !== old && !ids().includes("\n"), "real rollout replaced exactly the permitted application replica");
+            console.log("PASS delegated rollout:", label);
+        }
+    }
     const grants = [{ endpoint: "",
         stack: local,
         permissions: [ "view", "logs", "restart" ] }, { endpoint,
@@ -307,21 +362,50 @@ try {
     await new Promise<void>(resolve => tokenSocket.once("connect", () => resolve()));
     verified(!(await rpc(tokenSocket, "loginByToken", user.response.token)).ok, "disabled JWT revoked");
     console.log(`PASS: ${checks} integration assertions; isolated local and linked instances`);
+} catch (error) {
+    for (const [ name, output ] of serverLogs) {
+        await writeFile(path.join(tmpdir(), `rollout-smoke-${suffix}-${name}.log`), output());
+    }
+    console.error("Smoke test failed before cleanup:", error);
+    throw error;
 } finally {
     for (const fixture of fixtures) {
         assert.ok(fixture.name.startsWith("acl-") && fixture.name.endsWith(suffix), "safe cleanup target");
         // Federation changes can disconnect an administrator's old UI socket.
         const cleanup = await connect(fixture.url);
         const result = await rpc(cleanup.socket, "agent", "", "deleteStack", fixture.name, { removeFiles: true });
-        verified(result.ok, "fixture deleted through a fresh authenticated Dockge session");
+        if (!result.ok) {
+            // An RPC timeout may have happened before this fixture was created.
+            // Never substitute a broad Docker cleanup for an absent test stack.
+            const remaining = execFileSync("docker", [ "ps", "-aq", "--filter", `label=com.docker.compose.project=${fixture.name}` ], { encoding: "utf8" }).trim();
+            assert.equal(remaining, "", "fixture cleanup failed with containers still present");
+        }
+        if (fixture.name.startsWith("acl-rollout-")) {
+            const volumes = execFileSync("docker", [ "volume", "ls", "-q", "--filter", `label=com.docker.compose.project=${fixture.name}` ], { encoding: "utf8" }).trim().split(/\s+/).filter(Boolean);
+            if (volumes.length) {
+                execFileSync("docker", [ "volume", "rm", ...volumes ], { stdio: "ignore" });
+            }
+        }
     }
     for (const socket of sockets) {
         socket.disconnect();
     }
     for (const child of processes) {
-        child.kill("SIGTERM");
+        try {
+            process.kill(-child.pid!, "SIGTERM");
+        } catch { /* already exited */ }
     }
-    await Promise.all(processes.map(child => child.exitCode !== null ? Promise.resolve() : once(child, "exit")));
+    await Promise.race([
+        Promise.all(processes.map(child => child.exitCode !== null ? Promise.resolve() : once(child, "exit"))),
+        new Promise(resolve => setTimeout(resolve, 10_000)),
+    ]);
+    for (const child of processes) {
+        // Kill only the dedicated test process group (tsx can leave its native
+        // server child alive after its wrapper receives SIGTERM).
+        try {
+            process.kill(-child.pid!, "SIGKILL");
+        } catch { /* already exited */ }
+    }
     const current = execFileSync("docker", [ "ps", "-q", "--no-trunc" ], { encoding: "utf8" });
     for (const id of baseline) {
         assert.ok(current.includes(id), "existing container still running");

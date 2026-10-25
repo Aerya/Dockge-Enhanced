@@ -3,14 +3,11 @@
  * https://github.com/Wowu/docker-rollout
  * No shell hooks or downloaded executable; the existing Docker transport is reused.
  */
-import { randomUUID, createHash } from "node:crypto";
-import { mkdir, writeFile, rename } from "node:fs/promises";
-import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { rolloutEnabled, rolloutProblems, ROLLOUT_DRAIN_FILE, ROLLOUT_HEALTH_PREFIX } from "../common/service-rollout";
-import { resolveDataDir } from "./data-dir";
 import { RolloutRelay } from "./rollout-relay";
+import { markRolloutDraining } from "./stack-mutation";
 import { LABEL_RELAY, LABEL_RELAY_OWNER, LABEL_RELAY_PORT, RELAY_IMAGE, relayConfig } from "../common/rollout-relay";
 
 export type DockerRun = (args: string[], timeout: number) => Promise<string>;
@@ -204,19 +201,9 @@ export async function prepareRollout(
                 if (!/^sha256:[a-f0-9]{64}$/.test(imageId)) {
                     throw new Error("Rollout: invalid target image ID");
                 }
-                const token = randomUUID();
-                const directory = options.stateDir ?? path.join(resolveDataDir(), "rolling-updates");
-                await mkdir(directory, { recursive: true,
-                    mode: 0o700 });
-                // Docker records this path in its Compose discovery labels. Keep
-                // one stable, tiny file per project, not a deleted temporary file
-                // or an ever-growing chain of historical overrides.
-                const override = path.join(directory, createHash("sha256").update(model.name).digest("hex") + ".json");
-                // Only the new replicas get this unique marker (--no-recreate).
-                await writeFile(override + ".tmp", JSON.stringify({ services: { [plan.name]: { labels: { [MARKER]: token } } } }), { mode: 0o600 });
-                await rename(override + ".tmp", override);
                 let retiring = false;
                 let relayChanged = false;
+                let releaseDrain = () => {};
                 const wait = options.wait ?? sleep;
                 const hostnames = (containers: Container[]) => containers.map(item => {
                     const hostname = item.Name?.replace(/^\//, "");
@@ -225,7 +212,18 @@ export async function prepareRollout(
                     }
                     return hostname;
                 });
-                const owned = async () => inspect(ids(await docker([ "ps", "-aq", "--filter", "label=" + MARKER + "=" + token ], 15_000)));
+                // Keep Compose's config hash unchanged: operation labels would
+                // force an unrelated later Deploy to recreate the service.
+                const owned = async () => {
+                    const replicas = await inspect(ids(await compose([ "ps", "-aq", plan.name ], 15_000)));
+                    const replacements = replicas.filter(item => !plan.old.some(old => old.Id === item.Id));
+                    if (replacements.length > plan.old.length || replacements.some(item =>
+                        item.Config.Labels["com.docker.compose.project"] !== model.name ||
+                        item.Config.Labels["com.docker.compose.service"] !== plan.name || item.Image !== imageId)) {
+                        throw new Error("Rollout: unexpected concurrent replicas; refusing automatic removal");
+                    }
+                    return replacements;
+                };
                 try {
                     if (plan.relay) {
                         // Freeze discovery before scaling: a service DNS alias would
@@ -233,7 +231,7 @@ export async function prepareRollout(
                         relayChanged = true;
                         await plan.relay.route(hostnames(plan.old), wait);
                     }
-                    await compose([ "up", "-d", "--no-deps", "--no-recreate", "--no-build", "--pull", "never", "--scale", plan.name + "=" + plan.old.length * 2, plan.name ], 120_000, override);
+                    await compose([ "up", "-d", "--no-deps", "--no-recreate", "--no-build", "--pull", "never", "--scale", plan.name + "=" + plan.old.length * 2, plan.name ], 120_000);
                     let replacements: Container[] = [];
                     let healthy = false;
                     for (let attempt = 0; attempt < (options.attempts ?? 60); attempt++) {
@@ -272,6 +270,7 @@ export async function prepareRollout(
                         await plan.relay.route(hostnames(final), wait);
                         await plan.relay.drain(previousWorkers, wait, options.attempts ?? 60);
                     } else {
+                        releaseDrain = markRolloutDraining(plan.old.map(previous => previous.Id));
                         for (const previous of plan.old) {
                             await docker([ "exec", previous.Id, "sh", "-c", "touch " + ROLLOUT_DRAIN_FILE ], 15_000);
                         }
@@ -330,11 +329,13 @@ export async function prepareRollout(
                                 await plan.relay.route([ plan.relayOrigin! ], wait);
                             }
                         } catch {
-                            throw new Error("Rollout failed; cleanup incomplete. Old replicas preserved; inspect the marked replacement containers.", { cause: error });
+                            throw new Error("Rollout failed; cleanup incomplete. Old replicas preserved; inspect the replacement containers.", { cause: error });
                         }
                     }
                     const detail = error instanceof Error && error.message.startsWith("Rollout relay:") ? " " + error.message : "";
                     throw new Error((retiring ? "Rollout retirement incomplete; replacement containers retained. Inspect the old containers before retrying." : "Rollout failed; old replicas preserved.") + detail, { cause: error });
+                } finally {
+                    releaseDrain();
                 }
             }
         },

@@ -1,6 +1,5 @@
 import test, { after } from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -31,6 +30,7 @@ function fixture() {
         Config: { Image: "fixture/app:latest",
             Healthcheck: { Test: [ "CMD-SHELL", ROLLOUT_HEALTH_PREFIX + "true" ] },
             Labels: { ...labels,
+                "com.docker.compose.project": "fixture",
                 "com.docker.compose.service": "app" } as Record<string, string> },
         Mounts: [] as { RW: boolean }[],
         NetworkSettings: { Networks: { fixture: {} } },
@@ -54,12 +54,10 @@ function fixture() {
             return [ old.Id, ...state.created.map(item => item.Id) ].join("\n");
         }
         if (args[0] === "up") {
-            assert.ok(override);
+            assert.equal(override, undefined);
             assert.ok(args.includes("--no-recreate"));
             assert.ok(args.includes("--no-deps"));
-            const extra = JSON.parse(await readFile(override!, "utf8"));
             const next = container("new", target, state.timeout ? "starting" : state.health);
-            next.Config.Labels["dockge.rollout.operation"] = extra.services.app.labels["dockge.rollout.operation"];
             state.created.push(next);
             if (state.failUp) {
                 throw new Error("up failed after creating replacement");

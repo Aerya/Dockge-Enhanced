@@ -16,4 +16,6 @@ During application updates, the relay is not recreated. New connections switch o
 
 Update both ends of linked instances. A restricted account needs update permissions for the application **and its relay**. Opening the editor changes nothing; preparing a relay changes only the draft. Disabling rolling updates does not dismantle the relay or move ports back: review that migration explicitly. No production proxy configuration is modified automatically.
 
+Rolling updates no longer add an auxiliary Compose file or a temporary label: an unchanged later Deploy preserves the container. At relay startup, if the persisted configuration is invalid (for example after down/up removed the old container names), the validated Compose bootstrap configuration replaces it. A still-valid configuration is preserved. This fixes the restart loop caused by a vanished name, but is not yet complete automatic reconciliation of an interrupted operation. Concurrent Enhanced actions on the same stack directory are rejected during the operation; intentionally drained old replicas do not trigger auto-healing during that drain.
+
 [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout) · [Dockge #170](https://github.com/louislam/dockge/pull/170) · [Nginx](https://nginx.org/en/docs/control.html)

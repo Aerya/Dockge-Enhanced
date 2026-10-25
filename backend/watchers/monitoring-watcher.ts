@@ -16,6 +16,7 @@ import { getNotificationLang, getNotificationLocale, notificationText, Notificat
 import { Settings } from "../settings";
 import { DockgeServer } from "../dockge-server";
 import { Stack } from "../stack";
+import { isRolloutDraining } from "../stack-mutation";
 import { log } from "../log";
 import { resolveDataDir } from "../data-dir";
 
@@ -337,6 +338,9 @@ export class MonitoringWatcher {
     }
 
     private async onContainerUnhealthy(ev: DockerEvent, name: string, id: string): Promise<void> {
+        if (isRolloutDraining(id)) {
+            return;
+        }
         const now = Date.now();
         const cooldownMs = Math.max(1, this.settings.healthcheckCooldownMinutes) * 60_000;
         const lastAction = this.healthCooldowns.get(name) ?? 0;

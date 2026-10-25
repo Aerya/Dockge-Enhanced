@@ -102,12 +102,16 @@ test("isolated Docker: real proxy, successive updates, failed health and persist
             await plan.execute();
             assert.match(await get(), new RegExp(version));
             assert.equal((await transport.compose([ "ps", "-aq", "app" ], 15_000)).trim().split("\n").length, 1);
-            assert.equal((await readdir(stateDir)).length, 1, "one persistent file, no override accumulation");
+            await assert.rejects(readdir(stateDir), { code: "ENOENT" }, "rollout creates no auxiliary Compose override");
+            const stable = (await transport.compose([ "ps", "-q", "app" ], 15_000)).trim();
+            await transport.compose([ "up", "-d", "--no-deps", "app" ], 30_000);
+            assert.equal((await transport.compose([ "ps", "-q", "app" ], 15_000)).trim(), stable, "ordinary Deploy preserves the replica");
         }
         const latest = (await transport.compose([ "ps", "-q", "app" ], 15_000)).trim();
         assert.notEqual(first, latest);
         const inspect = JSON.parse(await transport.docker([ "inspect", latest ], 15_000));
         const recorded = inspect[0].Config.Labels["com.docker.compose.project.config_files"].split(",");
+        assert.deepEqual(recorded, [ file ], "discovery depends only on the original Compose file");
         const discovery = rolloutTransport([ "compose", "-p", project, ...recorded.flatMap((value: string) => [ "-f", value ]) ], root);
         assert.ok(JSON.parse(await discovery.compose([ "config", "--format", "json" ], 15_000)).services.app);
         const failing = await prepareRollout(discovery.compose, transport.docker, [ "app" ], { stateDir });
