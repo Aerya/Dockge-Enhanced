@@ -1606,7 +1606,7 @@ export class Stack {
         } else if (action === "restart") {
             await exec("restart", ...targets);
         } else if (action === "update" || action === "pull-recreate") {
-            if (await this.tryRollingUpdate(targets, authorizeTargets ? () => authorizeTargets(targets) : undefined)) {
+            if (await this.tryRollingUpdate(targets, authorizeTargets)) {
                 serviceStatusCache.delete(this.name);
                 return targets;
             }
@@ -1689,7 +1689,7 @@ export class Stack {
     }
 
     /** Only the opted-in update path changes; explicit recreate remains a recreate. */
-    private async tryRollingUpdate(targets?: string[], authorize?: () => Promise<void>): Promise<boolean> {
+    private async tryRollingUpdate(targets?: string[], authorize?: (targets: string[]) => Promise<void>): Promise<boolean> {
         const transport = rolloutTransport(this.getComposeOptions("config").slice(0, -1), this.path);
         const resolved = JSON.parse(await transport.compose([ "config", "--format", "json" ], 30_000)) as { services: Record<string, Record<string, unknown>> };
         const names = targets ?? Object.keys(resolved.services);
@@ -1731,19 +1731,19 @@ export class Stack {
                 throw new Error("Rollout policy changed; retry");
             }
             if (authorize) {
-                await authorize();
+                await authorize([ ...names, ...plan.managedServices ]);
             }
             await compose([ "pull", ...names ], 600_000);
             if (authorize) {
-                await authorize();
+                await authorize([ ...names, ...plan.managedServices ]);
             }
             await plan.execute(async () => {
                 if (authorize) {
-                    await authorize();
+                    await authorize([ ...names, ...plan.managedServices ]);
                 }
                 return true;
             });
-            const remaining = names.filter(name => !plan.services.includes(name));
+            const remaining = names.filter(name => !plan.services.includes(name) && !plan.managedServices.includes(name));
             if (remaining.length) {
                 await compose([ "up", "-d", "--force-recreate", "--no-deps", ...remaining ], 120_000);
             }

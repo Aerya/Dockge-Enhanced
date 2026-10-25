@@ -2302,7 +2302,7 @@ export class ImageWatcher {
                     });
                 }
                 await rollout.execute(() => !ignored());
-                const remaining = recreateArgs.filter(arg => !rollout.services.includes(arg));
+                const remaining = recreateArgs.filter(arg => !rollout.services.includes(arg) && !rollout.managedServices.includes(arg));
                 if (remaining.some(arg => !arg.startsWith("-") && arg !== "up")) {
                     await docker(remaining.length === recreateArgs.length ? upCommand.args :
                         composeExecInvocation(composePath, remaining, project, configFiles, workingDir, envFiles).args,

@@ -10,17 +10,21 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { rolloutEnabled, rolloutProblems, ROLLOUT_DRAIN_FILE, ROLLOUT_HEALTH_PREFIX } from "../common/service-rollout";
 import { resolveDataDir } from "./data-dir";
+import { RolloutRelay } from "./rollout-relay";
+import { LABEL_RELAY, LABEL_RELAY_OWNER, LABEL_RELAY_PORT, RELAY_IMAGE, relayConfig } from "../common/rollout-relay";
 
 export type DockerRun = (args: string[], timeout: number) => Promise<string>;
 export type ComposeRun = (args: string[], timeout: number, override?: string) => Promise<string>;
 interface Container {
     Id: string;
+    Name?: string;
     Image: string;
     State: { Running: boolean;
         Paused?: boolean;
         Health?: { Status: string } };
     Config: { Image: string;
         Labels: Record<string, string>;
+        Env?: string[];
         Healthcheck?: { Test?: string[] } };
     Mounts?: { RW: boolean }[];
     HostConfig?: { PortBindings?: Record<string, unknown>;
@@ -31,7 +35,10 @@ interface Model { name: string;
     services: Record<string, Record<string, unknown>> }
 interface Target { name: string;
     old: Container[];
-    image: string }
+    image: string;
+    relay?: RolloutRelay;
+    relayService?: string;
+    relayOrigin?: string }
 const MARKER = "dockge.rollout.operation";
 const ids = (output: string) => output.trim().split(/\s+/).filter(Boolean);
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
@@ -56,6 +63,7 @@ export function rolloutTransport(prefix: string[], cwd: string): { compose: Comp
 
 export interface RolloutPlan {
     services: string[];
+    managedServices: string[];
     execute(allowed?: () => boolean | Promise<boolean>): Promise<void>;
 }
 
@@ -97,6 +105,7 @@ export async function prepareRollout(
     const plans: Target[] = [];
     for (const name of selected) {
         const service = model.services[name];
+        const relayService = (service.labels as Record<string, string> | undefined)?.[LABEL_RELAY];
         const errors = rolloutProblems(service);
         // Namespace consumers must not remain attached to the replaced container.
         if (Object.values(model.services).some(other =>
@@ -114,12 +123,49 @@ export async function prepareRollout(
         const old = await inspect(ids(await compose([ "ps", "-aq", name ], 15_000)));
         if (old.length !== count || old.some(container => !container.State.Running || container.State.Paused ||
             container.State.Health?.Status !== "healthy" || container.Config.Labels["com.docker.compose.service"] !== name ||
-            !container.Config.Healthcheck?.Test?.[1]?.startsWith(ROLLOUT_HEALTH_PREFIX) ||
+            (!relayService && !container.Config.Healthcheck?.Test?.[1]?.startsWith(ROLLOUT_HEALTH_PREFIX)) ||
             container.Mounts?.some(mount => mount.RW) || Object.keys(container.HostConfig?.PortBindings ?? {}).length)) {
             throw new Error("Rollout " + name + ": expected healthy replicas without writable mounts or published ports; resolve leftover/stopped containers first");
         }
         if (new Set(old.map(container => container.Image)).size !== 1) {
             throw new Error("Rollout: mixed image versions; reconcile the previous operation first");
+        }
+        if (relayService) {
+            if (old.some(container => Object.keys(container.Config.Labels).some(key => key.startsWith("plugNPiN.") || /^caddy(?:[._]|$)/.test(key)) ||
+                container.Config.Labels["traefik.enable"] === "true" || container.Config.Env?.some(value => /^VIRTUAL_HOST=.+/.test(value)))) {
+                throw new Error("Rollout: deploy publication-label changes first; old replicas must not own proxy/DNS entries");
+            }
+            const relayDefinition = model.services[relayService];
+            const relayLabels = relayDefinition?.labels as Record<string, string> | undefined;
+            const port = Number(relayLabels?.[LABEL_RELAY_PORT]);
+            const origin = model.name + "-" + name + "-rollout-origin";
+            const networks = service.networks as Record<string, { aliases?: string[] }> | undefined;
+            if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(relayService) ||
+                relayDefinition?.image !== RELAY_IMAGE || relayLabels?.[LABEL_RELAY_OWNER] !== name ||
+                !Number.isInteger(port) || port < 1 || port > 65535 || rolloutEnabled(relayDefinition) ||
+                !Object.values(networks ?? {}).some(network => network?.aliases?.includes(origin))) {
+                throw new Error("Rollout: invalid managed relay definition");
+            }
+            relayConfig([ origin ], port);
+            const relays = await inspect(ids(await compose([ "ps", "-aq", relayService ], 15_000)));
+            if (relays.length !== 1 || !relays[0].State.Running || relays[0].State.Paused ||
+                relays[0].Config.Image !== RELAY_IMAGE ||
+                relays[0].Config.Labels[LABEL_RELAY_OWNER] !== name ||
+                relays[0].Config.Labels[LABEL_RELAY_PORT] !== String(port) ||
+                relays[0].Config.Labels["com.docker.compose.project"] !== model.name ||
+                relays[0].Config.Labels["com.docker.compose.service"] !== relayService ||
+                !old.every(previous => Object.keys(previous.NetworkSettings?.Networks ?? {}).some(network => network in (relays[0].NetworkSettings?.Networks ?? {})))) {
+                throw new Error("Rollout: deploy the managed relay first on a shared network");
+            }
+            const relay = new RolloutRelay(docker, relays[0].Id, port);
+            await relay.assertReady();
+            plans.push({ name,
+                old,
+                image: String(service.image),
+                relay,
+                relayService,
+                relayOrigin: origin });
+            continue;
         }
         for (const container of old) {
             await docker([ "exec", container.Id, "sh", "-c", "command -v touch >/dev/null && command -v rm >/dev/null && test -w /tmp" ], 15_000);
@@ -140,6 +186,7 @@ export async function prepareRollout(
     }
     return {
         services: selected,
+        managedServices: plans.flatMap(plan => plan.relayService ? [ plan.relayService ] : []),
         async execute(allowed = () => true) {
             for (const plan of plans) {
                 if (!await allowed()) {
@@ -169,8 +216,23 @@ export async function prepareRollout(
                 await writeFile(override + ".tmp", JSON.stringify({ services: { [plan.name]: { labels: { [MARKER]: token } } } }), { mode: 0o600 });
                 await rename(override + ".tmp", override);
                 let retiring = false;
+                let relayChanged = false;
+                const wait = options.wait ?? sleep;
+                const hostnames = (containers: Container[]) => containers.map(item => {
+                    const hostname = item.Name?.replace(/^\//, "");
+                    if (!hostname || !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/.test(hostname)) {
+                        throw new Error("Rollout: invalid container DNS identity");
+                    }
+                    return hostname;
+                });
                 const owned = async () => inspect(ids(await docker([ "ps", "-aq", "--filter", "label=" + MARKER + "=" + token ], 15_000)));
                 try {
+                    if (plan.relay) {
+                        // Freeze discovery before scaling: a service DNS alias would
+                        // otherwise expose starting/unhealthy replacement replicas.
+                        relayChanged = true;
+                        await plan.relay.route(hostnames(plan.old), wait);
+                    }
                     await compose([ "up", "-d", "--no-deps", "--no-recreate", "--no-build", "--pull", "never", "--scale", plan.name + "=" + plan.old.length * 2, plan.name ], 120_000, override);
                     let replacements: Container[] = [];
                     let healthy = false;
@@ -205,30 +267,51 @@ export async function prepareRollout(
                     // Never remove replacements after retirement starts: a partial stop
                     // must leave the new healthy service available for manual recovery.
                     retiring = true;
-                    for (const previous of plan.old) {
-                        await docker([ "exec", previous.Id, "sh", "-c", "touch " + ROLLOUT_DRAIN_FILE ], 15_000);
-                    }
-                    let drained = false;
-                    for (let attempt = 0; attempt < (options.attempts ?? 60); attempt++) {
-                        const draining = await inspect(plan.old.map(item => item.Id));
-                        if (draining.every(item => item.State.Running && item.State.Health?.Status === "unhealthy")) {
-                            drained = true;
-                            break;
+                    if (plan.relay) {
+                        const previousWorkers = await plan.relay.workers();
+                        await plan.relay.route(hostnames(final), wait);
+                        await plan.relay.drain(previousWorkers, wait, options.attempts ?? 60);
+                    } else {
+                        for (const previous of plan.old) {
+                            await docker([ "exec", previous.Id, "sh", "-c", "touch " + ROLLOUT_DRAIN_FILE ], 15_000);
                         }
-                        await (options.wait ?? sleep)(2_000);
+                        let drained = false;
+                        for (let attempt = 0; attempt < (options.attempts ?? 60); attempt++) {
+                            const draining = await inspect(plan.old.map(item => item.Id));
+                            if (draining.every(item => item.State.Running && item.State.Health?.Status === "unhealthy")) {
+                                drained = true;
+                                break;
+                            }
+                            await (options.wait ?? sleep)(2_000);
+                        }
+                        if (!drained) {
+                            throw new Error("Rollout: old replicas did not leave the proxy health pool");
+                        }
+                        await (options.wait ?? sleep)(10_000);
                     }
-                    if (!drained) {
-                        throw new Error("Rollout: old replicas did not leave the proxy health pool");
-                    }
-                    await (options.wait ?? sleep)(10_000);
                     const ready = await owned();
                     if (!await allowed() || ready.length !== plan.old.length || ready.some(item => item.Image !== imageId || !item.State.Running || item.State.Paused || item.State.Health?.Status !== "healthy")) {
                         throw new Error("Rollout: replacements lost readiness while draining");
                     }
                     await docker([ "stop", "--time", "30", ...plan.old.map(item => item.Id) ], 90_000);
                     await docker([ "rm", ...plan.old.map(item => item.Id) ], 30_000);
+                    if (plan.relay) {
+                        // Normal Compose recreations can change container names.
+                        // Once old replicas are gone, service discovery is safe again.
+                        await plan.relay.route([ plan.relayOrigin! ], wait);
+                    }
                 } catch (error) {
-                    if (retiring) {
+                    if (retiring && plan.relay) {
+                        // A failed switch/readiness check must not leave traffic on
+                        // broken replacements. Restore only if all old replicas live.
+                        try {
+                            const survivors = await inspect(plan.old.map(item => item.Id));
+                            if (survivors.length === plan.old.length && survivors.every(item => item.State.Running && item.State.Health?.Status === "healthy")) {
+                                await plan.relay.route(hostnames(plan.old), wait);
+                            }
+                        } catch { /* keep both generations for explicit recovery */ }
+                    }
+                    if (retiring && !plan.relay) {
                         // Best effort: restore still-running old replicas to the
                         // proxy pool. Never delete the healthy replacements here.
                         for (const previous of plan.old) {
@@ -243,11 +326,15 @@ export async function prepareRollout(
                             if (created.length) {
                                 await docker([ "rm", "-f", ...created.map(item => item.Id) ], 30_000);
                             }
+                            if (plan.relay && relayChanged) {
+                                await plan.relay.route([ plan.relayOrigin! ], wait);
+                            }
                         } catch {
                             throw new Error("Rollout failed; cleanup incomplete. Old replicas preserved; inspect the marked replacement containers.", { cause: error });
                         }
                     }
-                    throw new Error(retiring ? "Rollout retirement incomplete; healthy replacements retained. Inspect the old containers before retrying." : "Rollout failed; old replicas preserved.", { cause: error });
+                    const detail = error instanceof Error && error.message.startsWith("Rollout relay:") ? " " + error.message : "";
+                    throw new Error((retiring ? "Rollout retirement incomplete; replacement containers retained. Inspect the old containers before retrying." : "Rollout failed; old replicas preserved.") + detail, { cause: error });
                 }
             }
         },

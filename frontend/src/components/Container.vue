@@ -196,13 +196,19 @@
 
                 <div class="mb-4">
                     <div class="form-check">
-                        <input :id="`rollout-${name}`" v-model="rollingUpdate" :disabled="!rollingUpdateSupported" type="checkbox" class="form-check-input" />
-                        <label :for="`rollout-${name}`" class="form-check-label">{{ $t("serviceRollout.title") }}</label>
+                        <input :id="`rollout-${name}`" v-model="rollingUpdate" :disabled="!rollingUpdateSupported || (!rollingUpdate && !hasRollingRelay && !nativeRolloutAvailable)" type="checkbox" class="form-check-input" />
+                        <label :for="`rollout-${name}`" class="form-check-label">{{ $t(hasRollingRelay ? "serviceRollout.title" : "serviceRollout.native") }}</label>
                     </div>
                     <p class="form-text">{{ $t("serviceRollout.help") }}</p>
                     <p class="form-text">{{ $t("serviceRollout.draining") }}</p>
                     <p v-if="!rollingUpdateSupported" class="text-warning small">{{ $t("serviceRollout.unsupported") }}</p>
                     <p v-if="rollingUpdate" class="text-warning small">{{ $t("serviceRollout.warning") }}</p>
+                    <div v-if="rollingUpdateSupported && !hasRollingRelay" class="d-flex flex-wrap gap-2 align-items-center">
+                        <label :for="`relay-port-${name}`">{{ $t("serviceRollout.relayPort") }}</label>
+                        <input :id="`relay-port-${name}`" v-model="relayPort" type="number" min="1" max="65535" class="form-control form-control-sm" style="width: 7rem" />
+                        <button type="button" class="btn btn-sm btn-normal" @click="prepareRelay">{{ $t("serviceRollout.relayAdd") }}</button>
+                    </div>
+                    <p class="form-text">{{ $t("serviceRollout.relayHelp") }}</p>
                 </div>
 
                 <div ref="healthcheckPanel" class="service-healthcheck mb-4">
@@ -316,6 +322,7 @@ import { parseDockerPortLink, imageRegistryUrl, resolveEndpointHostname } from "
 import {
     composeLabelIsFalse,
     composeLabelIsTrue,
+    composeLabelValue,
     LABEL_IMAGEUPDATES_CHECK,
     LABEL_STATUS_IGNORE,
     setComposeLabel,
@@ -325,6 +332,8 @@ import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
 import ServiceResourceLimits from "./ServiceResourceLimits.vue";
 import { LABEL_ROLLOUT, rolloutEnabled, ROLLOUT_HEALTH_PREFIX } from "../../../common/service-rollout";
+import { addRolloutRelay } from "../rollout-relay";
+import { toRaw } from "vue";
 import { buildServiceHealthcheck, proposeServiceHealthcheck } from "../service-healthcheck";
 
 export default defineComponent({
@@ -439,6 +448,7 @@ export default defineComponent({
     data() {
         return {
             showConfig: false,
+            relayPort: 8080,
             showSchedule: false,
             healthcheckMethod: "http",
             healthcheckTarget: "",
@@ -524,6 +534,12 @@ export default defineComponent({
         rollingUpdateSupported() {
             return this.stack?.supportsServiceRollout === true || (this.$parent.$parent.isAdd && !this.$parent.$parent.endpoint);
         },
+        hasRollingRelay() {
+            return !!composeLabelValue(this.service.labels, "dockge.rollout.relay");
+        },
+        nativeRolloutAvailable() {
+            return composeLabelIsTrue(this.service.labels, "traefik.enable");
+        },
 
         rollingUpdate: {
             get() {
@@ -536,7 +552,7 @@ export default defineComponent({
                 if (enabled && !window.confirm(this.$t("serviceRollout.confirm"))) {
                     return;
                 }
-                if (enabled) {
+                if (enabled && !this.hasRollingRelay) {
                     const test = this.service.healthcheck?.test;
                     if (!Array.isArray(test) || test[0] !== "CMD-SHELL" || typeof test[1] !== "string" || this.service.healthcheck.disable) {
                         window.alert(this.$t("serviceRollout.draining"));
@@ -633,6 +649,19 @@ export default defineComponent({
         }
     },
     methods: {
+        prepareRelay() {
+            if (!this.rollingUpdateSupported || !window.confirm(this.$t("serviceRollout.relayConfirm"))) {
+                return;
+            }
+            try {
+                const next = addRolloutRelay(toRaw(this.jsonObject), this.name, Number(this.relayPort));
+                this.jsonObject.services = next.services;
+                this.jsonObject.volumes = next.volumes;
+                this.jsonObject.networks = next.networks;
+            } catch {
+                window.alert(this.$t("serviceRollout.relayInvalid"));
+            }
+        },
         openHealthcheckConfig() {
             if (!this.showConfig) {
                 this.openServiceConfig();

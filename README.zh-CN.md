@@ -60,7 +60,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 10 月
 
-**按服务渐进更新 :** 本分支的功能；正式版本需等待 PR 合并。 默认关闭。需要健康的副本、共享网络上的 Traefik、HTTP 路由器和明确的内部端口，不允许发布主机端口、固定容器名称或共享可写卷。更新前会检查解析后的 Compose 配置。 临时将副本数量加倍。应用必须支持多个实例同时运行。不保证保留正在处理的请求；Recreate 和回滚仍可能中断服务。 [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). 需要 CMD-SHELL 健康检查、sh/touch/rm 和可写的 /tmp。启用时会在草稿中添加流量排空检查：首次使用渐进更新前，请先保存并部署一次。旧副本会先退出代理的健康目标池再停止；不保证长时间请求不中断。 托管 Stack 的实例必须支持渐进更新。也请更新关联实例；新建远程 Stack 请先保存。旧版代理不会遵守此选项。
+**按服务渐进更新 :** 本分支的功能；正式版本需等待 PR 合并。 两种可选方式：Traefik 原生发现，或保持 IP:端口入口稳定的 TCP 中继，供 NPM、Nginx、Caddy、HAProxy 及其他 TCP 客户端使用。不会自动修改任何代理配置。要求副本健康、应用支持多实例；不允许固定容器名或共享可写卷。 临时将副本数翻倍。中继会增加一个容器和一个配置卷；首次安装可能中断服务。Recreate 和回滚仍会中断服务。不支持 UDP/QUIC，也不保证所有场景零中断。 [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout). Traefik 模式要求预先部署支持流量摘除的 CMD-SHELL 健康检查。中继模式会让现有连接继续使用旧容器；等待期限结束后若仍有连接，将保留容器并将操作标记为未完成。 托管 Stack 的实例必须支持渐进更新。也请更新关联实例；新建远程 Stack 请先保存。旧版代理不会遵守此选项。
 
 **默认 Compose 文件名 :** 本分支的功能；正式版本需等待 PR 合并。 COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。
 
@@ -508,7 +508,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ### 更新与 ImageWatcher
 
-- **按服务渐进更新** — `dockge.rollout.enabled: "true"`. 临时将副本数量加倍。应用必须支持多个实例同时运行。不保证保留正在处理的请求；Recreate 和回滚仍可能中断服务。
+- **按服务渐进更新** — `dockge.rollout.enabled: "true"`. 临时将副本数翻倍。中继会增加一个容器和一个配置卷；首次安装可能中断服务。Recreate 和回滚仍会中断服务。不支持 UDP/QUIC，也不保证所有场景零中断。 [部署](docs/service-rollout.zh-CN.md).
 - 通过 digest 检测镜像更新，无需拉取，也适用于远程实例
 - 每个镜像可设为关闭、立即或定时，并支持按 Stack 批量设置，默认保留单独例外
 - 默认每 6 小时完整扫描，立即模式镜像默认每 5 分钟定向检查，两者可分别配置或关闭
