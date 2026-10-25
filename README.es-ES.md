@@ -38,7 +38,7 @@ Dockge Enhanced es un fork de [Dockge](https://github.com/louislam/dockge) para 
 | --- | --- |
 | **Multiservidor** | Federación en malla completa entre instancias Dockge-Enhanced, administración desde cualquier servidor vinculado, conexiones inversas opcionales con token por nodo, etiquetas de agente persistentes, selección y agrupación de servidores, estado de actualizaciones remotas, copia/migración transaccional de stacks, transferencias reanudables y replicación en frío programada |
 | **Gestión de stacks** | Stacks fijados, indicadores compactos de estado y recursos, navegación plegable/redimensionable, espacio Logs/Compose flexible, barra de acciones accesible directamente con iconos solos o con texto, acciones de stack/contenedor explicadas, pausa/reanudación de stacks, programación por contenedor, Build + Recreate, notas, herramientas Git, requisitos de inicio del host y recreación automática de servicios que comparten namespaces de red VPN |
-| **Edición de Compose** | Editores de Compose, override y `.env`, plantillas Compose y `.env` por defecto, enlaces con nombre, reparación de YAML, asistente de healthcheck por servicio, comprobaciones de conflictos de puertos y diferencias de imagen, y `TZ` opcional por stack |
+| **Edición de Compose** | Editores de Compose, override y `.env`, plantillas Compose y `.env` por defecto, enlaces con nombre, reparación de YAML, asistente de healthcheck por servicio, comprobaciones de conflictos de puertos y diferencias de imagen, y `TZ` opcional por stack; límites opcionales de CPU/RAM por servicio (Preparado en esta PR; todavía no publicado.) |
 | **Copias de seguridad y recuperación** | Copias Restic multidestino de bind mounts y volúmenes, consistencia por stack, restauración selectiva, comprobación de repositorios, verificación y diferencias de snapshots, reinicio seguro de repositorios, además de los mecanismos de recuperación usados por las actualizaciones protegidas. Conexión opcional a Zerobyte o instalación gestionada, flujos de aplicaciones protegidos y restauraciones de prueba dedicadas |
 | **Actualizaciones** | Configuración agrupada por stack con conservación de excepciones, comprobación dirigida cada 5 minutos en modo Inmediato, respeto de las imágenes ignoradas antes de cualquier cambio, actualizaciones manuales, masivas secuenciales o automáticas de contenedores con rollback, ventana de mantenimiento compartida, indicadores remotos, pausas globales/por imagen y autoactualización protegida de Dockge-Enhanced con copia obligatoria, controles de integridad y recuperación automática |
 | **Migración y replicación** | Transferencias transaccionales entre instancias, migración de Compose y datos persistentes, trabajos reanudables, finalización explícita de movimientos, réplicas en frío programadas, snapshots de recuperación y flujos de recuperación |
@@ -60,6 +60,8 @@ Dockge Enhanced es un fork de [Dockge](https://github.com/louislam/dockge) para 
 Los cambios recientes más importantes se agrupan aquí para entender rápidamente qué ha cambiado en Dockge-Enhanced.
 
 ### 🆕 Octubre de 2026
+
+**Límites de CPU/RAM por servicio :** Preparado en esta PR; todavía no publicado. Límites opcionales de CPU/RAM por servicio en el editor Compose del administrador. Los alias existentes siguen siendo coherentes; los demás ajustes y los permisos restringidos se conservan. Aplique al borrador, guarde y despliegue explícitamente. Inspirado en Isurupro7 (Dockge #1006). Un límite de RAM demasiado bajo puede detener el contenedor por falta de memoria. La CPU se limita. Eliminar un límite no reserva recursos. Las expresiones existentes se conservan hasta editarlas. Los demás ajustes no cambian. Los overrides, extends o archivos incluidos pueden seguir imponiendo límites: revise el Compose final. Una advertencia visible sobre la RAM exige confirmación antes de aplicar un límite de memoria nuevo o modificado.
 
 **Se respetan las imágenes ignoradas:** ImageWatcher vuelve a comprobar **Ignore** tras la consulta al registro, antes de la descarga y de nuevo justo antes de recrear los contenedores, incluidas las actualizaciones programadas ya seleccionadas y el contenedor Dozzle gestionado. También se bloquean los candidatos obsoletos de los lotes manuales. Una descarga ya iniciada puede terminar, pero no le sigue ninguna recreación; una recreación de Docker ya en curso no se interrumpe.
 
@@ -458,6 +460,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Opción por servicio para ignorar un servicio opcional en el estado global del stack
 
 ### Edición de Compose
+- límites opcionales de CPU/RAM por servicio — Preparado en esta PR; todavía no publicado. Solo modifica el borrador. Guarde y despliegue/recree explícitamente para aplicarlo a los contenedores; los contenedores activos no se modifican aquí.
 - Editores de Compose, `compose.override.yaml` y `.env` con resaltado de variables, plegado, búsqueda y pantalla completa
 - Plantillas Compose y `.env` por defecto validadas, aplicadas solo a los stacks nuevos
 - Enlaces HTTP/HTTPS con nombre para los stacks
@@ -959,6 +962,7 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 - [**Dockge**](https://github.com/louislam/dockge) por louislam — el proyecto original (licencia MIT)
 - [**Dozzle**](https://github.com/amir20/dozzle) por Amir Rajan — visor de registros Docker en tiempo real (licencia MIT)
 - [**hamphh/dockge**](https://github.com/hamphh/dockge) por hamphh — inspiración y etiquetas compatibles para excluir por servicio el estado global y las actualizaciones de imágenes
+- [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiración para límites opcionales de CPU/RAM por servicio, sin modificar los permisos restringidos
 - [**Kula**](https://github.com/c0m4r/kula) por c0m4r — monitor de sistema ligero (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — inspiración para el gestor de archivos del host restringido y la vista por contenedor real adaptados a Enhanced (licencia MIT)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) por DeepSpace2 — automatización opcional de DNS y Nginx Proxy Manager (GPLv3)
