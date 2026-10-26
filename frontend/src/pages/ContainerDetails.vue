@@ -22,7 +22,7 @@
                 <div class="shadow-box detail-card"><div class="detail-label">{{ $t("dockerImage") }}</div><span>{{ instance.image || $t("notAvailableShort") }}</span></div>
                 <div class="shadow-box detail-card"><div class="detail-label">{{ $t("containerInstance.state") }}</div><span>{{ instance.state || $t("notAvailableShort") }}</span></div>
                 <div class="shadow-box detail-card"><div class="detail-label">{{ $t("containerInstance.health") }}</div><span>{{ instance.health || $t("notAvailableShort") }}</span></div>
-                <div class="shadow-box detail-card"><div class="detail-label">{{ $tc("port", 2) }}</div><span>{{ instance.ports || $t("notAvailableShort") }}</span></div>
+                <div class="shadow-box detail-card"><div class="detail-label">{{ $t("port", 2) }}</div><span>{{ instance.ports || $t("notAvailableShort") }}</span></div>
                 <div class="shadow-box detail-card"><div class="detail-label">{{ $t("containerInstance.createdAt") }}</div><span>{{ instance.createdAt || $t("notAvailableShort") }}</span></div>
                 <div v-if="stats" class="shadow-box detail-card"><div class="detail-label">CPU</div><span>{{ stats.CPUPerc }}</span></div>
                 <div v-if="stats" class="shadow-box detail-card"><div class="detail-label">RAM</div><span>{{ stats.MemUsage }}</span></div>
