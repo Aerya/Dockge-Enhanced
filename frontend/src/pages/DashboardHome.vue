@@ -14,19 +14,19 @@
                         <p v-if="onlineAgentCount < agentOverviewList.length" class="text-warning small">{{ $t("home.scope.partial", { value: $t("home.scope.global"), n: agentOverviewList.length - onlineAgentCount }) }}</p>
                         <div class="row">
                             <div class="col">
-                                <h3>{{ $tc("home.stackState.active", activeNum) }}</h3>
+                                <h3>{{ $t("home.stackState.active", activeNum) }}</h3>
                                 <span class="num active">{{ activeNum }}</span>
                                 <div class="scope-label">{{ $t("home.scope.instance") }}</div>
                                 <div class="home-global">{{ getStatusNum("active") }} · {{ $t("home.scope.global") }}</div>
                             </div>
                             <div class="col">
-                                <h3>{{ $tc("home.stackState.stopped", exitedNum) }}</h3>
+                                <h3>{{ $t("home.stackState.stopped", exitedNum) }}</h3>
                                 <span class="num exited">{{ exitedNum }}</span>
                                 <div class="scope-label">{{ $t("home.scope.instance") }}</div>
                                 <div class="home-global">{{ getStatusNum("exited") }} · {{ $t("home.scope.global") }}</div>
                             </div>
                             <div class="col">
-                                <h3>{{ $tc("home.stackState.inactive", inactiveNum) }}</h3>
+                                <h3>{{ $t("home.stackState.inactive", inactiveNum) }}</h3>
                                 <span class="num inactive">{{ inactiveNum }}</span>
                                 <div class="scope-label">{{ $t("home.scope.instance") }}</div>
                                 <div class="home-global">{{ getStatusNum("inactive") }} · {{ $t("home.scope.global") }}</div>
@@ -200,9 +200,9 @@
                                 <button type="button" class="instance-overview-select" @click="selectInstanceStacks(endpoint)">
                                     <div class="instance-stack-summary">
                                         <span><strong>{{ instanceOverview(endpoint).total }}</strong> {{ $t("linkedInstances.stacks") }}</span>
-                                        <span class="instance-state active"><strong>{{ instanceOverview(endpoint).active }}</strong> {{ $tc("linkedInstances.active", instanceOverview(endpoint).active) }}</span>
-                                        <span class="instance-state stopped"><strong>{{ instanceOverview(endpoint).stopped }}</strong> {{ $tc("linkedInstances.stopped", instanceOverview(endpoint).stopped) }}</span>
-                                        <span class="instance-state inactive"><strong>{{ instanceOverview(endpoint).inactive }}</strong> {{ $tc("linkedInstances.inactive", instanceOverview(endpoint).inactive) }}</span>
+                                        <span class="instance-state active"><strong>{{ instanceOverview(endpoint).active }}</strong> {{ $t("linkedInstances.active", instanceOverview(endpoint).active) }}</span>
+                                        <span class="instance-state stopped"><strong>{{ instanceOverview(endpoint).stopped }}</strong> {{ $t("linkedInstances.stopped", instanceOverview(endpoint).stopped) }}</span>
+                                        <span class="instance-state inactive"><strong>{{ instanceOverview(endpoint).inactive }}</strong> {{ $t("linkedInstances.inactive", instanceOverview(endpoint).inactive) }}</span>
                                         <span v-if="instanceOverview(endpoint).paused > 0" class="instance-state stopped"><strong>{{ instanceOverview(endpoint).paused }}</strong> {{ $t("paused") }}</span>
                                     </div>
                                 </button>

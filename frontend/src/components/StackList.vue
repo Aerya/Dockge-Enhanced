@@ -25,7 +25,7 @@
                         type="button"
                         @click="setStackStatusFilter('active')"
                     >
-                        <span>{{ $tc("stackSummaryActive", stackSummary.active) }}</span>
+                        <span>{{ $t("stackSummaryActive", stackSummary.active) }}</span>
                         <strong>{{ stackSummary.active }}</strong>
                     </button>
                     <button
@@ -35,7 +35,7 @@
                         type="button"
                         @click="setStackStatusFilter('stopped')"
                     >
-                        <span>{{ $tc("stackSummaryStopped", stackSummary.stopped) }}</span>
+                        <span>{{ $t("stackSummaryStopped", stackSummary.stopped) }}</span>
                         <strong>{{ stackSummary.stopped }}</strong>
                     </button>
                     <button
@@ -55,7 +55,7 @@
                         type="button"
                         @click="setStackStatusFilter('inactive')"
                     >
-                        <span>{{ $tc("stackSummaryInactive", stackSummary.inactive) }}</span>
+                        <span>{{ $t("stackSummaryInactive", stackSummary.inactive) }}</span>
                         <strong>{{ stackSummary.inactive }}</strong>
                     </button>
                     <button

@@ -395,7 +395,7 @@
                         @click="toggleContainers"
                     >
                         <span class="containers-toggle-title">
-                            {{ $tc("container", 2) }}
+                            {{ $t("container", 2) }}
                             <span class="containers-count">{{ containerCount }}</span>
                         </span>
                         <span class="containers-toggle-status">
@@ -405,7 +405,7 @@
                                 class="container-status-summary"
                                 :class="containerStatusClass(item.state)"
                             >
-                                {{ item.count }} {{ $tc(item.labelKey, item.count) }}
+                                {{ item.count }} {{ $t(item.labelKey, item.count) }}
                             </span>
                             <font-awesome-icon :icon="containersExpanded ? 'chevron-down' : 'chevron-right'" />
                         </span>
@@ -481,7 +481,7 @@
                             <!-- URLs -->
                             <div class="mb-4">
                                 <label class="form-label">
-                                    {{ $tc("url", 2) }}
+                                    {{ $t("url", 2) }}
                                 </label>
                                 <StackURLsInput :model-value="jsonConfig['x-dockge']?.urls" @update:model-value="setStackURLs" />
                             </div>
@@ -754,13 +754,13 @@
 
                         <!-- Volumes -->
                         <div v-if="false">
-                            <h4 class="mb-3 compose-tight">{{ $tc("volume", 2) }}</h4>
+                            <h4 class="mb-3 compose-tight">{{ $t("volume", 2) }}</h4>
                             <div class="shadow-box big-padding mb-3 compose-tight compose-box">
                             </div>
                         </div>
 
                         <!-- Networks -->
-                        <h4 class="mb-3 compose-tight">{{ $tc("network", 2) }}</h4>
+                        <h4 class="mb-3 compose-tight">{{ $t("network", 2) }}</h4>
                         <div class="shadow-box big-padding mb-3 compose-tight compose-box">
                             <NetworkInput />
                         </div>
