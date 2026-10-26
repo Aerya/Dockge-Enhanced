@@ -33,7 +33,26 @@ jobs:
           latest=$(gh api repos/restic/restic/releases/latest --jq '.tag_name | ltrimstr("v")')
           sed -i -E "s/ARG RESTIC_VERSION=[0-9.]+/ARG RESTIC_VERSION=$latest/" Dockerfile
 
+      - name: Vérifier si des corrections npm sont nécessaires
+        id: npm-audit
+        run: |
+          set +e
+          npm audit --json > "$RUNNER_TEMP/npm-audit-before.json"
+          status=$?
+          set -e
+          test "$status" -le 1
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const audit = JSON.parse(fs.readFileSync(path.join(process.env.RUNNER_TEMP, "npm-audit-before.json"), "utf8"));
+          if (audit.error || typeof audit.metadata?.vulnerabilities?.total !== "number") {
+            throw new Error("L’audit npm n’a pas fourni de bilan exploitable");
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `required=${audit.metadata.vulnerabilities.total > 0}\n`);
+          NODE
+
       - name: Appliquer uniquement les corrections npm non destructives
+        if: steps.npm-audit.outputs.required == 'true'
         run: |
           set +e
           npm audit fix --package-lock-only --ignore-scripts
@@ -59,7 +78,7 @@ jobs:
           commit-message: "Corriger automatiquement les dépendances vulnérables"
           title: "Corriger automatiquement les dépendances vulnérables"
           body: |
-            Cette PR applique uniquement les corrections non destructives proposées par `npm audit fix`.
+            Cette PR actualise Restic et, si l’audit détecte des vulnérabilités, applique les corrections non destructives proposées par `npm audit fix`.
 
             La fusion reste conditionnée à l’audit npm, à TypeScript, aux tests d’authentification, au build frontend, aux builds Docker amd64/arm64 et à Trivy.
           labels: dependencies
