@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.cleanupNotifications": "Discord 和 Apprise 报告显示实例名称并按类别汇总，完整 Docker 输出保留在历史记录中。最后检查时发现的镜像保护会计为跳过，真正的失败仍会明确显示。Enhanced 镜像包含 Buildx。",
     "watcher.img.defaultScheduledTime": "计划更新的默认时间",
     "watcher.img.defaultScheduledTimeHint": "仅用于新建计划（默认为 02:00），使用 Enhanced 的计划任务时区。现有时间保持不变。关联堆栈使用其托管实例的设置。",
     "watcher.img.invalidScheduledTime": "请输入 HH:MM 格式的有效时间。",

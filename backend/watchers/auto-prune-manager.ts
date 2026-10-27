@@ -18,6 +18,8 @@ import { log } from "../log";
 import { resolveDataDir } from "../data-dir";
 import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
+import { Settings } from "../settings";
+import { cleanupNotification, imageCleanupCounts } from "../notification/cleanup";
 import {
     dockerDaemonAvailable,
     finishDockerCleanup,
@@ -97,6 +99,23 @@ export interface PruneResult {
 
 export type PruneImageOutcome = "removed" | "used" | "active" | "rollback" | "recovery"
     | "tooRecent" | "excluded" | "alreadyAbsent" | "error";
+
+/** A fresh safety check refused removal; this is an explained skip, not a Docker failure. */
+export class ImageRemovalProtectedError extends Error {
+    constructor(public readonly outcome: "used" | "active" | "rollback" | "recovery" | "excluded", message: string) {
+        super(message);
+    }
+}
+
+export function recordImageRemovalFailure(error: unknown, decision: PruneImageDecision, errors: string[]): void {
+    decision.detail = dockerError(error);
+    if (error instanceof ImageRemovalProtectedError) {
+        decision.outcome = error.outcome;
+    } else {
+        decision.outcome = "error";
+        errors.push(`${decision.id}: ${decision.detail}`);
+    }
+}
 
 export interface PruneImageDecision {
     id: string;
@@ -685,19 +704,20 @@ export class AutoPruneManager {
             "ps", "-aq", "--filter", `ancestor=${imageId}`,
         ], { maxBuffer: 20 * 1024 * 1024 });
         if (containerIds.trim()) {
-            throw new Error("Cette image est utilisée par un conteneur");
+            const active = inspectedImageReferences(inspected).some(reference => reference.startsWith(`${SELF_IMAGE_REPOSITORY}:`) || reference.startsWith(`${SELF_IMAGE_REPOSITORY}@`));
+            throw new ImageRemovalProtectedError(active ? "active" : "used", "Cette image est utilisée par un conteneur");
         }
 
         if ((inspected.RepoTags ?? []).some(tag => activeRollbackTags().has(tag))) {
-            throw new Error("Cette image est protégée pour un rollback");
+            throw new ImageRemovalProtectedError("rollback", "Cette image est protégée pour un rollback");
         }
 
         if (setHasImageId(activeRollbackImageIds(), imageId)) {
-            throw new Error("Cette image est protégée pour un rollback");
+            throw new ImageRemovalProtectedError("rollback", "Cette image est protégée pour un rollback");
         }
 
         if (setHasImageId(recoveryImageIds(), imageId)) {
-            throw new Error("Cette image est protégée pour une récupération");
+            throw new ImageRemovalProtectedError("recovery", "Cette image est protégée pour une récupération");
         }
         return inspected;
     }
@@ -759,7 +779,7 @@ export class AutoPruneManager {
             const currentReferences = inspectedImageReferences(current);
             if (exclusions.some(exclusion => sameImageId(exclusion, imageId)
                 || displayReferences.includes(exclusion) || currentReferences.includes(exclusion))) {
-                throw new Error("Cette image est exclue de la purge");
+                throw new ImageRemovalProtectedError("excluded", "Cette image est exclue de la purge");
             }
             const target = currentReferences.find(reference => !attempted.has(reference));
             if (!target) {
@@ -770,7 +790,7 @@ export class AutoPruneManager {
                 const freshReferences = inspectedImageReferences(allowed);
                 if (exclusions.some(exclusion => sameImageId(exclusion, imageId)
                     || displayReferences.includes(exclusion) || freshReferences.includes(exclusion))) {
-                    throw new Error("Cette image est exclue de la purge");
+                    throw new ImageRemovalProtectedError("excluded", "Cette image est exclue de la purge");
                 }
                 if (freshReferences.some(reference => !attempted.has(reference))) {
                     current = allowed;
@@ -973,8 +993,13 @@ export class AutoPruneManager {
                         skipped.push(id);
                     }
                 } catch (error) {
-                    decision.detail = dockerError(error);
-                    errors.push(`${id}: ${decision.detail}`);
+                    recordImageRemovalFailure(error, decision, errors);
+                    if (decision.outcome === "excluded") {
+                        excluded.push(id);
+                    } else if (decision.outcome !== "error") {
+                        protectedImages.push(id);
+                    }
+                    skipped.push(id);
                 }
             }
             await this.reconcileFinalImageState(examined, removed, alreadyAbsent, errors);
@@ -994,7 +1019,7 @@ export class AutoPruneManager {
         }
         log.info("AutoPruneManager", `Orphelines : ${summary}`);
         if (notify) {
-            await this.notifyPrune("Images orphelines", [ summary, ...errors ].join("\n"), errors.length ? "failure" : "success");
+            await this.notifyPrune("dangling", examined, errors, origin);
         }
         return { removed,
             skipped,
@@ -1094,8 +1119,10 @@ export class AutoPruneManager {
                         decision.outcome = deleted ? "removed" : "alreadyAbsent";
                         (deleted ? removed : alreadyAbsent).push(displayName);
                     } catch (error) {
-                        decision.detail = dockerError(error);
-                        errors.push(`${group.id}: ${decision.detail}`);
+                        recordImageRemovalFailure(error, decision, errors);
+                        if (decision.outcome === "excluded") {
+                            excluded.push(displayName);
+                        }
                     }
                 }
                 if ([ "active", "used", "rollback", "recovery" ].includes(decision.outcome)) {
@@ -1125,7 +1152,7 @@ export class AutoPruneManager {
         }
         log.info("AutoPruneManager", `Inutilisées : ${summary}`);
         if (notify) {
-            await this.notifyPrune("Images inutilisées", [ summary, ...errors ].join("\n"), errors.length > 0 ? "failure" : "success");
+            await this.notifyPrune("unused", examined, errors, origin);
         }
         return {
             removed,
@@ -1140,25 +1167,34 @@ export class AutoPruneManager {
         };
     }
 
-    private async notifyPrune(title: string, body: string, type: "success" | "warning" | "failure"): Promise<void> {
+    private async notifyPrune(kind: "dangling" | "unused", examined: PruneImageDecision[], errors: string[], origin: "manual" | "automatic"): Promise<void> {
         try {
             const settings = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "watcher-settings.json"), "utf8")) as {
                 discordWebhooks?: string[];
                 appriseServerUrl?: string;
                 appriseUrls?: string[];
             };
-            const fullTitle = `Dockge-Enhanced — ${title}`;
+            const type = errors.length ? "failure" : "success";
+            const notification = cleanupNotification({ event: errors.length ? "partial" : "completed",
+                automatic: origin === "automatic",
+                hostname: String(await Settings.get("primaryHostname") || ""),
+                language: String(await Settings.get("uiLocale") || "en"),
+                categories: [ "images" ],
+                summaries: { images: { imagePasses: [{ kind,
+                    counts: imageCleanupCounts(examined) }],
+                failed: errors.length > 0 } } });
             await Promise.all([
                 settings.discordWebhooks?.length
                     ? new DiscordNotifier(settings.discordWebhooks).sendEmbed({
-                        title: fullTitle,
-                        description: body,
-                        color: type === "failure" ? 0xef4444 : type === "warning" ? 0xf59e0b : 0x22c55e,
+                        title: notification.title,
+                        description: notification.body,
+                        footer: notification.footer,
+                        color: type === "failure" ? 0xef4444 : 0x22c55e,
                     })
                     : Promise.resolve(),
                 settings.appriseServerUrl
-                    ? new AppriseNotifier(settings.appriseServerUrl, settings.appriseUrls ?? []).send({ title: fullTitle,
-                        body,
+                    ? new AppriseNotifier(settings.appriseServerUrl, settings.appriseUrls ?? []).send({ title: notification.title,
+                        body: notification.body,
                         type })
                     : Promise.resolve(false),
             ]);

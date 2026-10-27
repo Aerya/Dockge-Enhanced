@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.cleanupNotifications": "Discord- und Apprise-Berichte nennen die Instanz und fassen jede Kategorie zusammen; vollständige Docker-Ausgaben bleiben im Verlauf. Beim letzten Prüfschritt erkannte Image-Schutzmaßnahmen zählen als übersprungen, echte Fehler bleiben sichtbar. Buildx ist im Enhanced-Image enthalten.",
     "watcher.img.defaultScheduledTime": "Standardzeit für geplante Updates",
     "watcher.img.defaultScheduledTimeHint": "Nur für neue Zeitpläne (Standard: 02:00), in der Planungszeitzone von Enhanced. Bestehende Uhrzeiten bleiben unverändert. Verknüpfte Stacks verwenden die Einstellung ihrer Host-Instanz.",
     "watcher.img.invalidScheduledTime": "Geben Sie eine gültige Uhrzeit im Format HH:MM ein.",

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.cleanupNotifications": "Discord and Apprise cleanup reports identify the instance and summarize each category, keeping full Docker output in history. Last-minute image protections are reported as skips; genuine failures remain visible. Buildx is included in the Enhanced image.",
     "watcher.img.defaultScheduledTime": "Default time for scheduled updates",
     "watcher.img.defaultScheduledTimeHint": "Used for new schedules only (02:00 by default), in Enhanced’s scheduling timezone. Existing times remain unchanged. Linked stacks use their hosting instance’s setting.",
     "watcher.img.invalidScheduledTime": "Enter a valid time in HH:MM format.",

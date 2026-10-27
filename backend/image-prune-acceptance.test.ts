@@ -210,6 +210,27 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
             assert.ok(!raceCalls.some(args => args[0] === "rmi" && args[1] === racingId));
         });
 
+        await t.test("une image devenue utilisée avant rmi est conservée sans faux échec", async () => {
+            fs.writeFileSync(callsPath, "");
+            fs.writeFileSync(scenarioPath, JSON.stringify({
+                rows: [ row(19, "fixture/late-used"), row(20, "<none>", "<none>") ],
+                containers: [],
+                lateContainers: [{ Id: "new-container",
+                    Image: id(19) }, { Id: "new-dangling-container",
+                    Image: id(20) }],
+            }));
+            const dangling = await manager.runDanglingPrune(false);
+            assert.deepEqual(dangling.errors, []);
+            assert.equal(dangling.examined.find(item => item.id === id(20))?.outcome, "used");
+            assert.ok(dangling.protected.includes(id(20)));
+            const unused = await manager.runUnusedPrune(false);
+            assert.deepEqual(unused.errors, []);
+            assert.equal(unused.examined.find(item => item.id === id(19))?.outcome, "used");
+            assert.equal(unused.removed.length, 0);
+            const commands = fs.readFileSync(callsPath, "utf8").trim().split("\n").map(line => JSON.parse(line) as string[]);
+            assert.ok(!commands.some(args => args[0] === "rmi"));
+        });
+
         const keepRow = (number: number, key: string) => {
             const [ repository, tag ] = rollbackTagFromKey(key).split(":");
             return row(number, repository, tag, 2_200);
@@ -264,6 +285,6 @@ test("les boutons du panneau Purge auto restent des exécutions auto-prune", () 
 
 test("l'ImageWatcher réconcilie les keep dès son démarrage", () => {
     const source = fs.readFileSync(path.join(process.cwd(), "backend/watchers/image-watcher.ts"), "utf8");
-    assert.match(source, /cleanupCron = cron\.schedule\("0 \* \* \* \*"/);
+    assert.match(source, /cleanupCron = scheduleInTimezone\("0 \* \* \* \*"/);
     assert.match(source, /Réconciliation immédiate des tags rollback expirés\/orphelins au démarrage\.[\s\S]*this\.cleanExpiredRollbacks\(\)\.catch\(console\.error\)/);
 });

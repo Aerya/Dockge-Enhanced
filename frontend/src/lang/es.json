@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.cleanupNotifications": "Los informes de Discord y Apprise identifican la instancia y resumen cada categoría; la salida completa de Docker se conserva en el historial. Las protecciones de imágenes detectadas en la última comprobación se distinguen de los fallos reales. La imagen de Enhanced incluye Buildx.",
     "watcher.img.defaultScheduledTime": "Hora predeterminada de las actualizaciones programadas",
     "watcher.img.defaultScheduledTimeHint": "Solo para nuevas programaciones (02:00 por defecto), en la zona horaria de planificación de Enhanced. Los horarios existentes no cambian. Las stacks vinculadas utilizan el ajuste de su instancia anfitriona.",
     "watcher.img.invalidScheduledTime": "Introduce una hora válida en formato HH:MM.",

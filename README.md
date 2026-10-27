@@ -61,6 +61,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Clearer cleanup notifications :** Discord and Apprise cleanup reports identify the instance and summarize each category, keeping full Docker output in history. Last-minute image protections are reported as skips; genuine failures remain visible. Buildx is included in the Enhanced image.
+
 **Default scheduled update time :** Choose the default scheduled image update time in Images. Existing schedules remain unchanged; linked stacks use their hosting instance’s setting and scheduling timezone.
 
 **Updates without service interruption :** Enhanced starts and checks the new container before switching traffic and retiring the old one. Optional, disabled by default; requires an application that can safely run two copies temporarily, spare CPU/RAM, and Traefik or the proposed TCP relay. Initial setup, restarts, Recreate and rollback can interrupt access. [Setup and precautions](docs/service-rollout.md) · [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout).
@@ -556,6 +558,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Images, volumes, networks and unmanaged containers, with search
 - `bridge`, `macvlan` and `ipvlan` network management
 - Unified manual and automatic cleanup for images, networks, volumes and build cache, with previews, exclusions and history
+- Compact, translated Discord/Apprise cleanup reports with instance name and full details retained in history
 - Exact catch-up scheduling and Image-ID based classification
 - Protection of running and stopped containers, rollback and recovery images, and recent Dockge-Enhanced images
 
