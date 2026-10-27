@@ -61,6 +61,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
+**Default scheduled update time :** Choose the default scheduled image update time in Images. Existing schedules remain unchanged; linked stacks use their hosting instance’s setting and scheduling timezone.
+
 **Updates without service interruption :** Enhanced starts and checks the new container before switching traffic and retiring the old one. Optional, disabled by default; requires an application that can safely run two copies temporarily, spare CPU/RAM, and Traefik or the proposed TCP relay. Initial setup, restarts, Recreate and rollback can interrupt access. [Setup and precautions](docs/service-rollout.md) · [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout).
 
 **Native OIDC sign-in:** Sign in with an OpenID Connect provider such as Pocket ID, Authentik, Keycloak or Google, without a reverse proxy and alongside local accounts and 2FA. Configuration uses `DOCKGE_OIDC_*` environment variables and the Authorization Code flow with PKCE. New OIDC users are restricted accounts with no access until an administrator grants it, unless they are listed in `DOCKGE_OIDC_ADMIN_USERS` or belong to `DOCKGE_OIDC_ADMIN_GROUPS`; with admin groups, the role follows group membership at every login. There is no implicit “first user becomes admin” rule: on a new installation, create the first administrator first or configure an admin mapping. Existing local accounts are linked only with `DOCKGE_OIDC_LINK_EXISTING=true`. OIDC logins do not ask for the local TOTP code, and OIDC is ignored in `disabled` and `trusted-proxy` modes. If you set `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true`, keep the recovery procedure at hand. [Guide](docs/oidc.md).
@@ -512,6 +514,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - **Updates without service interruption** — `dockge.rollout.enabled: "true"`. Check compatibility before enabling this option. The application container count temporarily doubles: allow enough CPU/RAM. Fixed container names and shared writable volumes are refused. The relay adds a container and a configuration volume. Its initial installation moves the access port and may cause an outage. Afterwards, use Update; Recreate, restarts and rollback do not guarantee that connections stay open. TCP only, not UDP/QUIC; no universal zero-downtime guarantee. [Deployment](docs/service-rollout.md).
 - Image update detection by digest, without pulling, including remote instances
 - Off, Immediate and Scheduled policies per image, plus stack-wide bulk policies that preserve individual exceptions by default
+- Configurable default scheduled time (02:00), without changing existing schedules; each hosting instance keeps its own setting
 - Full scan every 6 hours by default and targeted Immediate checks every 5 minutes by default, configurable or disabled separately
 - Checks against the images actually running in each container, shared registry requests and HTTP 429/503 retries
 - Optional DNS fallback for registry checks, without changing host or Docker Engine DNS

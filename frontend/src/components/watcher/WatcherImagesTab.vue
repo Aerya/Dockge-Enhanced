@@ -65,6 +65,12 @@
                     <small class="text-muted">{{ $t("watcher.img.immediateHint") }}</small>
                 </div>
 
+                <div class="col-lg-4">
+                    <label for="defaultScheduledTime" class="form-label">{{ $t("watcher.img.defaultScheduledTime") }}</label>
+                    <input id="defaultScheduledTime" v-model="imgSettings.defaultScheduledTime" type="time" class="form-control" required />
+                    <small class="text-muted">{{ $t("watcher.img.defaultScheduledTimeHint") }}</small>
+                </div>
+
                 <!-- Plateforme image -->
                 <div class="col-lg-3">
                     <label class="form-label">{{
@@ -737,6 +743,7 @@
 
 <script setup lang="ts">
 import SchedulingTimezoneNotice from "../SchedulingTimezoneNotice.vue";
+import { isScheduledTime } from "../../../../common/image-update-time";
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { watcherApi } from "./shared";
@@ -1084,6 +1091,10 @@ async function dismissRollback(s: ImageStatus) {
 // ─── Actions ──────────────────────────────────────────────────────
 
 async function saveImgSettings() {
+    if (!isScheduledTime(imgSettings.value.defaultScheduledTime)) {
+        showToast(t("watcher.img.invalidScheduledTime"), false);
+        return;
+    }
     const immediateCheckMinutes = immediateMode.value === "disabled" ? 0
         : immediateMode.value === "automatic" ? 5
             : customInterval.value * (customUnit.value === "hours" ? 60 : 1);
@@ -1121,7 +1132,7 @@ function getAutoUpdateMode(
 function getAutoUpdateTime(s: ImageStatus): string {
     return (
         imgSettings.value.autoUpdateConfig[`${s.stack}::${s.image}`]?.time ??
-        "02:00"
+        imgSettings.value.defaultScheduledTime
     );
 }
 

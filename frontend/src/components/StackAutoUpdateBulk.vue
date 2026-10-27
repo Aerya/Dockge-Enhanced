@@ -50,7 +50,8 @@ import { getCurrentInstance, ref } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 
 const props = defineProps<{ stackName: string;
-    endpoint: string }>();
+    endpoint: string;
+    defaultTime: string }>();
 const emit = defineEmits<{ applied: [] }>();
 const { t } = useI18n();
 const ownerRoot = (getCurrentInstance()?.proxy as unknown as { $root?: { emitAgent: (endpoint: string, event: string, payload: unknown, callback: (result: { ok?: boolean;
@@ -58,7 +59,7 @@ const ownerRoot = (getCurrentInstance()?.proxy as unknown as { $root?: { emitAge
     msg?: string;
     message?: string }) => void) => void } })?.$root;
 const mode = ref<"off" | "immediate" | "scheduled">("scheduled");
-const time = ref("02:00");
+const time = ref(props.defaultTime);
 const preserveExisting = ref(true);
 const loading = ref(false);
 const error = ref("");

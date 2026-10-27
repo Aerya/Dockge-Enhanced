@@ -12,6 +12,7 @@ import * as fs from "fs/promises";
 import * as fsSync from "fs";
 import * as path from "path";
 import { buildStackBulkPlan, StackBulkRequest, validateStackBulkRequest } from "./stack-auto-update";
+import { DEFAULT_SCHEDULED_TIME, isScheduledTime, resolveScheduledTime } from "../../common/image-update-time";
 import * as yaml from "js-yaml";
 import axios from "axios";
 import { registryDnsAxiosOptions } from "../registry-dns-fallback";
@@ -265,6 +266,7 @@ export interface WatcherSettings {
     enabled: boolean;
     intervalHours: number;
     immediateCheckMinutes: number; // 0 disables periodic targeted checks; full scans remain active
+    defaultScheduledTime: string;
     discordWebhooks: string[]; // liste de webhooks (migration auto depuis discordWebhook)
     credentials: RegistryCredential[];
     notificationLang: NotificationLang;
@@ -1322,6 +1324,7 @@ export class ImageWatcher {
         enabled: false,
         intervalHours: 6,
         immediateCheckMinutes: DEFAULT_IMMEDIATE_CHECK_MINUTES,
+        defaultScheduledTime: DEFAULT_SCHEDULED_TIME,
         discordWebhooks: [],
         credentials: [],
         notificationLang: "fr",
@@ -1375,6 +1378,7 @@ export class ImageWatcher {
             this.settings = {
                 ...this.settings,
                 ...(data as Partial<WatcherSettings>),
+                defaultScheduledTime: isScheduledTime(data.defaultScheduledTime) ? data.defaultScheduledTime : DEFAULT_SCHEDULED_TIME,
             };
         } catch {
             /* première utilisation */
@@ -1382,8 +1386,10 @@ export class ImageWatcher {
     }
 
     async saveSettings(partial: Partial<WatcherSettings>, runInitialCheck = true): Promise<void> {
+        const defaultScheduledTime = resolveScheduledTime(partial.defaultScheduledTime, this.settings.defaultScheduledTime);
         this.settings = { ...this.settings,
             ...partial,
+            defaultScheduledTime,
             immediateCheckMinutes: sanitizeImmediateCheckMinutes(partial.immediateCheckMinutes ?? this.settings.immediateCheckMinutes) };
         this.settings.credentials = this.settings.credentials.map((credential) => ({
             ...credential,
@@ -1438,6 +1444,7 @@ export class ImageWatcher {
     getAutoUpdateState() {
         return {
             enabled: this.settings.enabled,
+            defaultScheduledTime: this.settings.defaultScheduledTime,
             autoUpdateConfig: this.settings.autoUpdateConfig ?? {},
             pendingAutoUpdates: this.settings.pendingAutoUpdates ?? [],
             updatingImages: [ ...this._updatingImages ],
@@ -1459,14 +1466,14 @@ export class ImageWatcher {
 
     /** Preview and apply use the same resolved Compose model and plan builder. */
     async previewStackBulkAutoUpdate(raw: unknown) {
-        const request = validateStackBulkRequest(raw);
+        const request = validateStackBulkRequest(raw, this.settings.defaultScheduledTime);
         const model = await this.resolveStackBulkComposeModel(request.stack);
         return buildStackBulkPlan(request, model, this.settings.autoUpdateConfig ?? {});
     }
 
     /** Persist a policy batch once after rechecking Compose and settings, with a bulk-write guard. */
     async applyStackBulkAutoUpdate(raw: unknown) {
-        const request: StackBulkRequest = validateStackBulkRequest(raw);
+        const request: StackBulkRequest = validateStackBulkRequest(raw, this.settings.defaultScheduledTime);
         if (!request.previewToken) {
             throw new Error("Aperçu obligatoire avant application");
         }

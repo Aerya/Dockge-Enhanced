@@ -1,4 +1,8 @@
 {
+    "watcher.img.defaultScheduledTime": "Standardzeit für geplante Updates",
+    "watcher.img.defaultScheduledTimeHint": "Nur für neue Zeitpläne (Standard: 02:00), in der Planungszeitzone von Enhanced. Bestehende Uhrzeiten bleiben unverändert. Verknüpfte Stacks verwenden die Einstellung ihrer Host-Instanz.",
+    "watcher.img.invalidScheduledTime": "Geben Sie eine gültige Uhrzeit im Format HH:MM ein.",
+    "releaseNews.item.defaultScheduledTime": "Die vorgeschlagene Uhrzeit für geplante Image-Updates lässt sich unter Images festlegen. Bestehende Zeitpläne bleiben unverändert; verknüpfte Stacks verwenden die Einstellung und Planungszeitzone ihrer Host-Instanz.",
     "serviceRollout.cancelled": "Das letzte Update ohne Dienstunterbrechung wurde abgebrochen oder auf die vorherige Generation zurückgesetzt. Prüfen Sie den Dienst vor einem erneuten Versuch.",
     "serviceRollout.recovering": "Unterbrochenes Update: Die vorherige Generation wird sicher wiederhergestellt.",
     "serviceRollout.pending": "Update ohne Dienstunterbrechung angewendet: bestehende Verbindungen werden abgewartet. Alte Container werden automatisch entfernt, auch nach einem Neustart.",
