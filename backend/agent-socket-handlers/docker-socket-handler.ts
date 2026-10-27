@@ -7,6 +7,7 @@ import { Stack } from "../stack";
 import { rolloutStates } from "../rollout-recovery";
 import { inspectComposeDraft } from "../compose-diagnostics";
 import { AgentSocket } from "../../common/agent-socket";
+import { resolveScheduledTime } from "../../common/image-update-time";
 import { ImageWatcher, imageStatusStore, WatcherSettings } from "../watchers/image-watcher";
 import { BackupManager } from "../watchers/backup-manager";
 import { isLowPower } from "../low-power";
@@ -398,7 +399,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 } : {};
                 const key = typeof data.key === "string" ? data.key : "";
                 const mode = data.mode;
-                const time = typeof data.time === "string" ? data.time : undefined;
+                const time = data.time;
 
                 if (!key || !key.includes("::")) {
                     throw new ValidationError("key must use stack::image format");
@@ -406,11 +407,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 if (![ "off", "immediate", "scheduled", "ignored" ].includes(String(mode))) {
                     throw new ValidationError("invalid auto-update mode");
                 }
-                if (mode === "scheduled" && time !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
-                    throw new ValidationError("invalid scheduled time");
-                }
-
                 const watcher = ImageWatcher.getInstance();
+                const scheduledTime = mode === "scheduled" ? resolveScheduledTime(time, watcher.settings.defaultScheduledTime) : undefined;
                 const autoUpdateConfig = { ...(watcher.settings.autoUpdateConfig ?? {}) };
                 let pendingAutoUpdates = [ ...(watcher.settings.pendingAutoUpdates ?? []) ];
 
@@ -428,7 +426,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
 
                     autoUpdateConfig[key] = mode === "scheduled"
                         ? { mode,
-                            time: time ?? "02:00",
+                            time: scheduledTime,
                             pause: effectivePause }
                         : { mode: mode as "immediate" | "ignored",
                             pause: effectivePause };

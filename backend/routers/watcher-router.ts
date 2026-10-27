@@ -23,6 +23,7 @@ import { DiscordNotifier } from "../notification/discord";
 import { AppriseNotifier } from "../notification/apprise";
 import { AuditLogger, setAuditUser } from "../audit-log";
 import { normalizeRegistryHost } from "../registry-auth";
+import { resolveScheduledTime } from "../../common/image-update-time";
 import { StackScheduler } from "../watchers/stack-scheduler";
 import { requireHttpAuth } from "../auth";
 import { normalizeUpdatePause } from "../watchers/update-policy";
@@ -251,6 +252,13 @@ export class WatcherRouter extends Router {
                     message: "mode invalide (off | immediate | scheduled | ignored)" });
             }
             const watcher = ImageWatcher.getInstance();
+            let scheduledTime: string | undefined;
+            try {
+                scheduledTime = mode === "scheduled" ? resolveScheduledTime(time, watcher.settings.defaultScheduledTime) : undefined;
+            } catch (error) {
+                return res.status(400).json({ ok: false,
+                    message: String(error) });
+            }
             const autoUpdateConfig = { ...(watcher.settings.autoUpdateConfig ?? {}) };
             let pendingAutoUpdates = [ ...(watcher.settings.pendingAutoUpdates ?? []) ];
 
@@ -267,7 +275,7 @@ export class WatcherRouter extends Router {
                     : normalizeUpdatePause(pause);
                 autoUpdateConfig[key] = mode === "scheduled"
                     ? { mode,
-                        time: time ?? "02:00",
+                        time: scheduledTime,
                         pause: effectivePause }
                     : { mode,
                         pause: effectivePause };
@@ -283,10 +291,11 @@ export class WatcherRouter extends Router {
                 }
             }
             await auditWatcherAction(req, "image.auto_update.configure", "image", key, "success", null, { mode,
-                time: mode === "scheduled" ? time ?? "02:00" : undefined });
+                time: scheduledTime });
             return res.json({
                 ok: true,
-                data: { immediateCheckStarted: mode === "immediate" },
+                data: { immediateCheckStarted: mode === "immediate",
+                    time: scheduledTime },
             });
         });
 

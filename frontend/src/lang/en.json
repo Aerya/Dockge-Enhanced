@@ -1,4 +1,8 @@
 {
+    "watcher.img.defaultScheduledTime": "Default time for scheduled updates",
+    "watcher.img.defaultScheduledTimeHint": "Used for new schedules only (02:00 by default), in Enhanced’s scheduling timezone. Existing times remain unchanged. Linked stacks use their hosting instance’s setting.",
+    "watcher.img.invalidScheduledTime": "Enter a valid time in HH:MM format.",
+    "releaseNews.item.defaultScheduledTime": "Choose the default scheduled image update time in Images. Existing schedules remain unchanged; linked stacks use their hosting instance’s setting and scheduling timezone.",
     "serviceRollout.cancelled": "The previous update without service interruption was cancelled or recovered to the previous generation. Check the service before retrying.",
     "serviceRollout.recovering": "Interrupted update without service interruption: restoring the previous generation safely.",
     "serviceRollout.pending": "Update without service interruption applied: waiting for existing connections to close; retirement continues automatically, including after restart.",

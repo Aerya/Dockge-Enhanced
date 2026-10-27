@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-27-default-scheduled-time",
+        items: [ "releaseNews.item.defaultScheduledTime" ],
+    },
+    {
         id: "2026-10-25-service-rollout",
         items: [ "releaseNews.item.serviceRollout" ],
     },

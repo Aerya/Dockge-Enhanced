@@ -1,5 +1,6 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { POLL, makePoller, type Poller } from "./useLowPower";
+import { DEFAULT_SCHEDULED_TIME } from "../../../common/image-update-time";
 
 export interface ImageStatus {
     image: string;
@@ -28,6 +29,8 @@ interface AutoUpdateEntry {
 const statusCache = ref<ImageStatus[]>([]);
 const remoteStatusCache = ref<Record<string, ImageStatus[]>>({});
 const autoUpdateConfig = ref<Record<string, AutoUpdateEntry>>({});
+const defaultScheduledTime = ref(DEFAULT_SCHEDULED_TIME);
+const autoUpdateLoaded = ref(false);
 const pendingAutoUpdates = ref<string[]>([]);
 const updatingImages = ref<string[]>([]);
 let poller: Poller | null = null;
@@ -94,6 +97,8 @@ async function fetchStatus() {
 
         const autoUpdateJson = await autoUpdateRes.json();
         if (autoUpdateJson.ok) {
+            defaultScheduledTime.value = autoUpdateJson.data?.defaultScheduledTime ?? DEFAULT_SCHEDULED_TIME;
+            autoUpdateLoaded.value = true;
             autoUpdateConfig.value = autoUpdateJson.data?.autoUpdateConfig ?? {};
             pendingAutoUpdates.value = autoUpdateJson.data?.pendingAutoUpdates ?? [];
             updatingImages.value = autoUpdateJson.data?.updatingImages ?? [];
@@ -176,7 +181,7 @@ export function useImageStatus() {
         const config = autoUpdateConfig.value[key];
         return {
             mode: config?.mode ?? "off",
-            time: config?.time ?? "02:00",
+            time: config?.time ?? defaultScheduledTime.value,
             pending: pendingAutoUpdates.value.includes(key),
             updating: updatingImages.value.includes(key),
         };
@@ -191,7 +196,7 @@ export function useImageStatus() {
                 body: JSON.stringify({
                     key,
                     mode,
-                    ...(mode === "scheduled" ? { time: time ?? "02:00" } : {}),
+                    ...(mode === "scheduled" && time !== undefined ? { time } : {}),
                 }),
             });
             const json = await res.json();
@@ -209,7 +214,7 @@ export function useImageStatus() {
                 autoUpdateConfig.value[key] = mode === "scheduled"
                     ? {
                         mode,
-                        time: time ?? "02:00",
+                        time: json.data?.time ?? time ?? defaultScheduledTime.value,
                     }
                     : { mode };
             }
@@ -226,6 +231,8 @@ export function useImageStatus() {
     }
 
     return {
+        defaultScheduledTime,
+        autoUpdateLoaded,
         statusCache,
         remoteStatusCache,
         statusForStack,

@@ -34,6 +34,7 @@ export interface ImgSettings {
     enabled: boolean;
     intervalHours: number;
     immediateCheckMinutes: number;
+    defaultScheduledTime: string;
     discordWebhooks: string[];
     autoUpdateConfig: Record<string, AutoUpdateEntry>;
     pendingAutoUpdates: string[];

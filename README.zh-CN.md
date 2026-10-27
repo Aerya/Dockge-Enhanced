@@ -60,6 +60,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 10 月
 
+**计划更新的默认时间 :** 可在“镜像”中设置计划镜像更新的默认时间。现有计划保持不变；关联堆栈使用其托管实例的设置和计划任务时区。
+
 **服务不中断更新 :** Enhanced 先启动并检查新容器，再切换流量并移除旧容器。此选项默认禁用；应用须允许暂时同时运行两份，并需预留 CPU/RAM，使用 Traefik 或助手提供的 TCP 中继。首次配置、重启、Recreate 和回滚可能中断访问。[配置与注意事项](docs/service-rollout.zh-CN.md) · [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout)。
 
 **原生 OIDC 登录：** 无需反向代理即可通过 Pocket ID、Authentik、Keycloak 或 Google 等 OpenID Connect 提供商登录，并与本地账户和 2FA 共存。通过 `DOCKGE_OIDC_*` 环境变量配置，使用带 PKCE 的授权码流程。新的 OIDC 用户为没有任何访问权限的受限账户，需由管理员授权，除非列在 `DOCKGE_OIDC_ADMIN_USERS` 中或属于 `DOCKGE_OIDC_ADMIN_GROUPS`；设置管理员组后，每次登录时角色都会随组成员关系同步。不存在“第一个用户自动成为管理员”的隐含规则：新安装时请先创建管理员或配置管理员映射。仅在 `DOCKGE_OIDC_LINK_EXISTING=true` 时才会关联已有本地账户。OIDC 登录不要求本地 TOTP 验证码，在 `disabled` 和 `trusted-proxy` 模式下 OIDC 会被忽略。如果设置 `DOCKGE_OIDC_DISABLE_LOCAL_LOGIN=true`，请事先准备好恢复步骤。[指南](docs/oidc.zh-CN.md)。
@@ -513,6 +515,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - **服务不中断更新** — `dockge.rollout.enabled: "true"`. 启用前请先确认兼容性。应用容器数量会暂时翻倍，请预留足够的 CPU/RAM。固定容器名和共享可写卷会被拒绝。中继会增加一个容器和一个配置卷。首次安装会将访问端口移到中继，可能短暂中断访问。之后请使用“更新”；Recreate、重启和回滚不保证保持现有连接。仅支持 TCP，不支持 UDP/QUIC，也不保证所有场景零中断。 [部署](docs/service-rollout.zh-CN.md).
 - 通过 digest 检测镜像更新，无需拉取，也适用于远程实例
 - 每个镜像可设为关闭、立即或定时，并支持按 Stack 批量设置，默认保留单独例外
+- 可配置计划更新的默认时间（02:00），不改变现有计划；每个托管实例保留自己的设置
 - 默认每 6 小时完整扫描，立即模式镜像默认每 5 分钟定向检查，两者可分别配置或关闭
 - 检查每个容器实际运行的镜像，共享 Registry 请求，并在 HTTP 429/503 时重试
 - 可选的 Registry 检查备用 DNS，不修改主机或 Docker Engine 的 DNS

@@ -1,5 +1,6 @@
 /** Stack-wide image policy: resolve eligible services, not client-supplied image keys. */
 import { createHash } from "crypto";
+import { DEFAULT_SCHEDULED_TIME, resolveScheduledTime } from "../../common/image-update-time";
 import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/compose-labels";
 import type { ResolvedComposeModel } from "../compose-network-namespace";
 import type { AutoUpdateEntry } from "./image-watcher";
@@ -33,7 +34,7 @@ export interface StackBulkPlan {
         after: string }[];
 }
 
-export function validateStackBulkRequest(input: unknown): StackBulkRequest {
+export function validateStackBulkRequest(input: unknown, defaultTime = DEFAULT_SCHEDULED_TIME): StackBulkRequest {
     if (!input || typeof input !== "object" || Array.isArray(input)) {
         throw new Error("Paramètres de mise à jour de stack invalides");
     }
@@ -48,16 +49,14 @@ export function validateStackBulkRequest(input: unknown): StackBulkRequest {
     if (typeof raw.preserveExisting !== "boolean") {
         throw new Error("Le choix de conservation des exceptions est obligatoire");
     }
-    if (raw.mode === "scheduled" && (typeof raw.time !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(raw.time))) {
-        throw new Error("Heure HH:MM invalide");
-    }
+    const time = raw.mode === "scheduled" ? resolveScheduledTime(raw.time, defaultTime) : undefined;
     if (raw.previewToken !== undefined && (typeof raw.previewToken !== "string" || !/^[0-9a-f]{64}$/.test(raw.previewToken))) {
         throw new Error("Aperçu invalide");
     }
     return {
         stack,
         mode: raw.mode,
-        ...(raw.mode === "scheduled" ? { time: raw.time as string } : {}),
+        ...(raw.mode === "scheduled" ? { time } : {}),
         preserveExisting: raw.preserveExisting,
         ...(raw.previewToken ? { previewToken: raw.previewToken as string } : {}),
     };
@@ -102,7 +101,7 @@ export function buildStackBulkPlan(
             continue;
         }
         const after = request.mode === "scheduled" ? `scheduled@${request.time}` : request.mode;
-        const before = previous ? (previous.mode === "scheduled" ? `scheduled@${previous.time ?? "02:00"}` : previous.mode) : "off";
+        const before = previous ? (previous.mode === "scheduled" ? `scheduled@${previous.time ?? DEFAULT_SCHEDULED_TIME}` : previous.mode) : "off";
         // Replacing a policy also clears its individual pause; preserving keeps it intact.
         if (before === after && (!previous || !previous.pause?.enabled)) {
             unchanged++;

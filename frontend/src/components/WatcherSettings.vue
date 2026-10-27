@@ -115,6 +115,7 @@ import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import RemoteInstanceLinks from "./RemoteInstanceLinks.vue";
 import { initServerTz } from "../composables/useServerTz";
 import { watcherApi } from "./watcher/shared";
+import { DEFAULT_SCHEDULED_TIME } from "../../../common/image-update-time";
 import type { AppriseSettings, Cred, ImgSettings, TrivySettings } from "./watcher/shared";
 
 const { locale, setLocaleMessage } = useI18n();
@@ -156,6 +157,7 @@ const imgSettings = ref<ImgSettings>({
     enabled: false,
     intervalHours: 6,
     immediateCheckMinutes: 5,
+    defaultScheduledTime: DEFAULT_SCHEDULED_TIME,
     discordWebhooks: [],
     autoUpdateConfig: {},
     pendingAutoUpdates: [],
@@ -246,6 +248,7 @@ onMounted(async () => {
             enabled: imgRes.data.enabled,
             intervalHours: imgRes.data.intervalHours,
             immediateCheckMinutes: imgRes.data.immediateCheckMinutes ?? 5,
+            defaultScheduledTime: imgRes.data.defaultScheduledTime ?? DEFAULT_SCHEDULED_TIME,
             discordWebhooks: imgRes.data.discordWebhooks ?? [],
             autoUpdateConfig: imgRes.data.autoUpdateConfig ?? {},
             pendingAutoUpdates: imgRes.data.pendingAutoUpdates ?? [],

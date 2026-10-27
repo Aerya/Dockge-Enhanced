@@ -792,12 +792,14 @@
 
             <BModal v-if="!isAdd && stack.isManagedByDockge && stack.name" v-model="showStackAutoUpdate" :title="$t('stackBulk.title')" no-footer size="lg">
                 <StackAutoUpdateBulk
-                    v-if="showStackAutoUpdate"
+                    v-if="showStackAutoUpdate && (endpoint ? remoteAutoUpdateLoaded : autoUpdateLoaded)"
                     :key="`${endpoint || 'local'}::${stack.name}`"
                     :stack-name="stack.name"
                     :endpoint="endpoint || ''"
+                    :default-time="endpoint ? remoteAutoUpdateState.defaultScheduledTime : defaultScheduledTime"
                     @applied="onStackAutoUpdateBulkApplied"
                 />
+                <p v-else class="text-muted" role="status">{{ $t("stackBulk.loading") }}</p>
             </BModal>
 
             <BModal v-model="showDisplayNameDialog" :title="$t('stackDisplayName.edit')" no-footer>
@@ -944,6 +946,7 @@ import { renderStackReadme } from "../stack-readme";
 import { computed, getCurrentInstance, ref } from "vue";
 import { setLowPower, POLL, isVisible } from "../composables/useLowPower";
 import { useImageStatus } from "../composables/useImageStatus";
+import { DEFAULT_SCHEDULED_TIME } from "../../../common/image-update-time";
 import StackScheduleEditor from "../components/StackScheduleEditor.vue";
 import StackTransferModal from "../components/StackTransferModal.vue";
 import StackReplicationStatus from "../components/StackReplicationStatus.vue";
@@ -1005,6 +1008,8 @@ export default {
             autoUpdateFor,
             setAutoUpdateMode: saveAutoUpdateMode,
             refreshImageStatus,
+            defaultScheduledTime,
+            autoUpdateLoaded,
         } = useImageStatus();
 
         const focusEffectHandler = (state, focusing) => {
@@ -1044,6 +1049,8 @@ export default {
             autoUpdateFor,
             saveAutoUpdateMode,
             refreshImageStatus,
+            defaultScheduledTime,
+            autoUpdateLoaded,
             schedulerEnabled };
     },
     yamlDoc: null,  // For keeping the yaml comments
@@ -1114,6 +1121,7 @@ export default {
             autoUpdateSaving: {},
             remoteAutoUpdateLoaded: false,
             remoteAutoUpdateState: {
+                defaultScheduledTime: DEFAULT_SCHEDULED_TIME,
                 autoUpdateConfig: {},
                 pendingAutoUpdates: [],
                 updatingImages: [],
@@ -2204,7 +2212,7 @@ export default {
                 return null;
             }
             if (!this.endpoint) {
-                return this.autoUpdateFor(this.stack.name, image);
+                return this.autoUpdateLoaded ? this.autoUpdateFor(this.stack.name, image) : null;
             }
             if (!this.remoteAutoUpdateLoaded) {
                 return null;
@@ -2214,7 +2222,7 @@ export default {
             const config = this.remoteAutoUpdateState.autoUpdateConfig?.[key];
             return {
                 mode: config?.mode ?? "off",
-                time: config?.time ?? "02:00",
+                time: config?.time ?? this.remoteAutoUpdateState.defaultScheduledTime,
                 pending: this.remoteAutoUpdateState.pendingAutoUpdates?.includes(key) ?? false,
                 updating: this.remoteAutoUpdateState.updatingImages?.includes(key) ?? false,
             };
@@ -2228,6 +2236,7 @@ export default {
             this.$root.emitAgent(this.endpoint, "watcherImageAutoUpdateGet", (res) => {
                 if (res?.ok) {
                     this.remoteAutoUpdateState = {
+                        defaultScheduledTime: res.data?.defaultScheduledTime ?? DEFAULT_SCHEDULED_TIME,
                         autoUpdateConfig: res.data?.autoUpdateConfig ?? {},
                         pendingAutoUpdates: res.data?.pendingAutoUpdates ?? [],
                         updatingImages: res.data?.updatingImages ?? [],
@@ -2266,7 +2275,7 @@ export default {
                         "watcherImageAutoUpdateSet",
                         { key,
                             mode,
-                            ...(mode === "scheduled" ? { time: time ?? "02:00" } : {}) },
+                            ...(mode === "scheduled" && time !== undefined ? { time } : {}) },
                         (res) => resolve({
                             ok: res?.ok === true,
                             message: res?.msg ?? res?.message,
@@ -2276,6 +2285,7 @@ export default {
                 });
                 if (result.ok && result.data) {
                     this.remoteAutoUpdateState = {
+                        defaultScheduledTime: result.data.defaultScheduledTime ?? DEFAULT_SCHEDULED_TIME,
                         autoUpdateConfig: result.data.autoUpdateConfig ?? {},
                         pendingAutoUpdates: result.data.pendingAutoUpdates ?? [],
                         updatingImages: result.data.updatingImages ?? [],

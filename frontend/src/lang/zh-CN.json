@@ -1,4 +1,8 @@
 {
+    "watcher.img.defaultScheduledTime": "计划更新的默认时间",
+    "watcher.img.defaultScheduledTimeHint": "仅用于新建计划（默认为 02:00），使用 Enhanced 的计划任务时区。现有时间保持不变。关联堆栈使用其托管实例的设置。",
+    "watcher.img.invalidScheduledTime": "请输入 HH:MM 格式的有效时间。",
+    "releaseNews.item.defaultScheduledTime": "可在“镜像”中设置计划镜像更新的默认时间。现有计划保持不变；关联堆栈使用其托管实例的设置和计划任务时区。",
     "serviceRollout.cancelled": "上次服务不中断更新已取消或恢复到上一代。重试前请检查服务。",
     "serviceRollout.recovering": "服务不中断更新已中断：正在安全恢复上一代容器。",
     "serviceRollout.pending": "服务不中断更新已应用：等待现有连接关闭。旧容器将在连接结束后自动移除，重启后也会继续。",

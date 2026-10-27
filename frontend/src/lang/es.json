@@ -1,4 +1,8 @@
 {
+    "watcher.img.defaultScheduledTime": "Hora predeterminada de las actualizaciones programadas",
+    "watcher.img.defaultScheduledTimeHint": "Solo para nuevas programaciones (02:00 por defecto), en la zona horaria de planificación de Enhanced. Los horarios existentes no cambian. Las stacks vinculadas utilizan el ajuste de su instancia anfitriona.",
+    "watcher.img.invalidScheduledTime": "Introduce una hora válida en formato HH:MM.",
+    "releaseNews.item.defaultScheduledTime": "Elige la hora propuesta para las actualizaciones de imágenes programadas en Imágenes. Los horarios existentes no cambian; las stacks vinculadas utilizan el ajuste y la zona horaria de planificación de su instancia anfitriona.",
     "serviceRollout.cancelled": "La última actualización sin interrupción del servicio se canceló o volvió a la generación anterior. Revise el servicio antes de reintentar.",
     "serviceRollout.recovering": "Actualización sin interrupción del servicio interrumpida: restaurando de forma segura la generación anterior.",
     "serviceRollout.pending": "Actualización sin interrupción del servicio aplicada: esperando el cierre de las conexiones existentes. La retirada continúa automáticamente, incluso tras reiniciar.",

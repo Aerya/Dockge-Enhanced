@@ -1,4 +1,8 @@
 {
+    "watcher.img.defaultScheduledTime": "Heure par défaut des mises à jour planifiées",
+    "watcher.img.defaultScheduledTimeHint": "Pour les nouvelles planifications uniquement (02:00 par défaut), dans le fuseau des planifications d’Enhanced. Les horaires existants restent inchangés. Les stacks liées utilisent le réglage de leur instance hôte.",
+    "watcher.img.invalidScheduledTime": "Saisissez une heure valide au format HH:MM.",
+    "releaseNews.item.defaultScheduledTime": "Choisissez l’heure proposée pour les mises à jour d’images planifiées dans Images. Les horaires existants restent inchangés ; les stacks liées utilisent le réglage et le fuseau des planifications de leur instance hôte.",
     "serviceRollout.cancelled": "La dernière mise à jour sans interruption de service a été annulée ou rétablie sur la génération précédente. Vérifiez le service avant de réessayer.",
     "serviceRollout.recovering": "Mise à jour sans interruption de service interrompue : restauration sécurisée de la génération précédente.",
     "serviceRollout.pending": "Mise à jour sans interruption de service appliquée : attente de la fermeture des connexions existantes. Le retrait se poursuit automatiquement, même après redémarrage.",
