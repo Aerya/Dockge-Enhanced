@@ -60,6 +60,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 10 月
 
+**更清晰的清理通知 :** Discord 和 Apprise 报告显示实例名称并按类别汇总，完整 Docker 输出保留在历史记录中。最后检查时发现的镜像保护会计为跳过，真正的失败仍会明确显示。Enhanced 镜像包含 Buildx。
+
 **计划更新的默认时间 :** 可在“镜像”中设置计划镜像更新的默认时间。现有计划保持不变；关联堆栈使用其托管实例的设置和计划任务时区。
 
 **服务不中断更新 :** Enhanced 先启动并检查新容器，再切换流量并移除旧容器。此选项默认禁用；应用须允许暂时同时运行两份，并需预留 CPU/RAM，使用 Traefik 或助手提供的 TCP 中继。首次配置、重启、Recreate 和回滚可能中断访问。[配置与注意事项](docs/service-rollout.zh-CN.md) · [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout)。
@@ -557,6 +559,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 镜像、卷、网络和未管理容器，并支持搜索
 - 管理 `bridge`、`macvlan` 和 `ipvlan` 网络
 - 统一的手动和自动清理，覆盖镜像、网络、卷和构建缓存，提供预览、排除项和历史
+- 简洁且本地化的 Discord/Apprise 清理报告，显示实例名称，并在历史记录中保留完整详情
 - 精确补执行计划，按 Image ID 分类
 - 保护运行中和已停止容器、回滚和恢复镜像以及较新的 Dockge-Enhanced 镜像
 

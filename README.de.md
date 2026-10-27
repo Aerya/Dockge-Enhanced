@@ -61,6 +61,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+**Übersichtlichere Bereinigungsbenachrichtigungen :** Discord- und Apprise-Berichte nennen die Instanz und fassen jede Kategorie zusammen; vollständige Docker-Ausgaben bleiben im Verlauf. Beim letzten Prüfschritt erkannte Image-Schutzmaßnahmen zählen als übersprungen, echte Fehler bleiben sichtbar. Buildx ist im Enhanced-Image enthalten.
+
 **Standardzeit für geplante Updates :** Die vorgeschlagene Uhrzeit für geplante Image-Updates lässt sich unter Images festlegen. Bestehende Zeitpläne bleiben unverändert; verknüpfte Stacks verwenden die Einstellung und Planungszeitzone ihrer Host-Instanz.
 
 **Updates ohne Dienstunterbrechung :** Enhanced startet und prüft den neuen Container, bevor der Verkehr umgeschaltet und der alte entfernt wird. Standardmäßig deaktiviert; die Anwendung muss zwei vorübergehend gleichzeitig laufende Exemplare vertragen. Zusätzliche CPU/RAM sowie Traefik oder das angebotene TCP-Relay sind nötig. Ersteinrichtung, Neustarts, Recreate und Rollback können den Zugriff unterbrechen. [Einrichtung und Vorsichtsmaßnahmen](docs/service-rollout.de.md) · [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout).
@@ -556,6 +558,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Images, Volumes, Netzwerke und nicht verwaltete Container, mit Suche
 - Verwaltung von `bridge`-, `macvlan`- und `ipvlan`-Netzwerken
 - Einheitliche manuelle und automatische Bereinigung für Images, Netzwerke, Volumes und Build-Cache, mit Vorschau, Ausschlüssen und Verlauf
+- Kompakte, übersetzte Discord/Apprise-Bereinigungsberichte mit Instanzname und vollständigen Details im Verlauf
 - Exakte Aufhol-Zeitplanung und Klassifizierung nach Image-ID
 - Schutz laufender und gestoppter Container, von Rollback- und Wiederherstellungs-Images sowie aktueller Dockge-Enhanced-Images
 

@@ -87,7 +87,7 @@ if (args[0] === "images" && args[1] === "-a") {
     if (args.length === 2) {
         process.stdout.write(containers.map(container => container.Id).join("\n"));
     } else {
-        process.stdout.write(containers.filter(container => args[3] === `ancestor=${container.Image}`).map(container => container.Id).join("\n"));
+        process.stdout.write([ ...containers, ...(scenario.lateContainers ?? []) ].filter(container => args[3] === `ancestor=${container.Image}`).map(container => container.Id).join("\n"));
     }
 } else if (args[0] === "inspect") {
     const containers = scenario.containers ?? [{ Id: "fixture-active-container", Image: id(1), State: { Status: "running" } }];

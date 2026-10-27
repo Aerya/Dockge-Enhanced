@@ -62,6 +62,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
+**Notifications de nettoyage plus lisibles :** Les bilans Discord et Apprise indiquent l’instance et résument chaque catégorie ; les sorties Docker complètes restent dans l’historique. Les protections d’images détectées au dernier contrôle sont distinguées des vrais échecs. Buildx est inclus dans l’image Enhanced.
+
 **Heure par défaut des mises à jour planifiées :** Choisissez l’heure proposée pour les mises à jour d’images planifiées dans Images. Les horaires existants restent inchangés ; les stacks liées utilisent le réglage et le fuseau des planifications de leur instance hôte.
 
 **Mises à jour sans interruption de service :** Enhanced démarre et vérifie le nouveau conteneur avant de basculer le trafic et de retirer l’ancien. Option désactivée par défaut : l’application doit accepter deux exemplaires temporaires, avec assez de CPU/RAM et Traefik ou le relais TCP proposé. La mise en place initiale, les redémarrages, Recreate et le rollback peuvent couper l’accès. [Configuration et précautions](docs/service-rollout.fr.md) · [Wowu/docker-rollout](https://github.com/Wowu/docker-rollout).
@@ -557,6 +559,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Images, volumes, réseaux et conteneurs non gérés, avec recherche
 - Gestion des réseaux `bridge`, `macvlan` et `ipvlan`
 - Nettoyage manuel et automatique unifié des images, réseaux, volumes et caches de build, avec aperçus, exclusions et historique
+- Bilans de nettoyage Discord/Apprise compacts et traduits, avec nom d’instance et détails complets conservés dans l’historique
 - Rattrapage exact des échéances et classification par Image ID
 - Protection des conteneurs actifs et arrêtés, des images de rollback et de récupération et des images récentes de Dockge-Enhanced
 

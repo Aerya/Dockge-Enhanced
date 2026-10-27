@@ -13,6 +13,8 @@ import { recordImagePruneReport } from "./image-prune-report";
 import { getSelfUpdateBlocker } from "./self-update/operation-guard";
 import { DiscordNotifier } from "./notification/discord";
 import { AppriseNotifier } from "./notification/apprise";
+import { Settings } from "./settings";
+import { buildCacheCleanupSummary, cleanupNotification, imageCleanupCounts, type CleanupEvent, type CleanupSummaries } from "./notification/cleanup";
 import { log } from "./log";
 import { resolveDataDir } from "./data-dir";
 import {
@@ -55,6 +57,7 @@ export interface PruneHistoryEntry {
     categories: PruneCategory[];
     results: Partial<Record<PruneCategory, string>>;
     success: boolean;
+    summaries?: CleanupSummaries;
 }
 
 const DATA_DIR = resolveDataDir();
@@ -541,22 +544,23 @@ export class DockerCleanupManager {
                 }
                 this.persist();
                 if (notifyDeferred) {
-                    await this.notify("Nettoyage automatique reporté", blockedReason, "warning");
+                    await this.notify("deferred", categories, "warning", undefined, blockedReason);
                 }
                 return null;
             }
             this.settings.lastDeferredReason = undefined;
             this.settings.lastDeferredNotificationAt = undefined;
             this.persist();
-            await this.notify("Nettoyage automatique prêt", `Catégories : ${categories.join(", ")}`, "warning");
+            await this.notify("started", categories, "warning");
             const entry = await this.executeProtected(categories);
             this.settings.lastRun = entry.finishedAt;
             this.settings.lastResult = entry.success ? "Terminé" : "Terminé avec erreurs";
             this.persist();
             await this.notify(
-                entry.success ? "Nettoyage automatique terminé" : "Nettoyage automatique incomplet",
-                Object.values(entry.results).join("\n"),
+                entry.success ? "completed" : "partial",
+                categories,
                 entry.success ? "success" : "failure",
+                entry,
             );
             return entry;
         } catch (error: unknown) {
@@ -577,7 +581,7 @@ export class DockerCleanupManager {
             this.settings.lastRun = entry.finishedAt;
             this.settings.lastResult = `Échec : ${message}`;
             this.persist();
-            await this.notify("Échec du nettoyage automatique", message, "failure");
+            await this.notify("failed", categories, "failure", entry, message);
             return entry;
         } finally {
             finishDockerCleanup();
@@ -607,8 +611,10 @@ export class DockerCleanupManager {
     private async executeProtected(categories: AutomaticPruneCategory[]): Promise<PruneHistoryEntry> {
         const startedAt = new Date().toISOString();
         const results: Partial<Record<PruneCategory, string>> = {};
+        const summaries: CleanupSummaries = {};
         let success = true;
         for (const category of categories) {
+            const summary = summaries[category] = {} as NonNullable<CleanupSummaries[PruneCategory]>;
             try {
                 const blockedReason = await this.currentBlockerReason();
                 if (blockedReason) {
@@ -624,6 +630,13 @@ export class DockerCleanupManager {
                     recordImagePruneReport("automatic", "all", [ ...dangling.examined, ...unused.examined ], [ ...dangling.errors, ...unused.errors ]);
                     const outcome = summarizeImagePruneResults(dangling, unused);
                     results.images = outcome.message;
+                    summary.imagePasses = [
+                        { kind: "dangling",
+                            counts: imageCleanupCounts(dangling.examined) },
+                        { kind: "unused",
+                            counts: imageCleanupCounts(unused.examined) },
+                    ];
+                    summary.failed = !outcome.success;
                     if (!outcome.success) {
                         success = false;
                     }
@@ -632,9 +645,11 @@ export class DockerCleanupManager {
                 if (category === "buildCache") {
                     if ((this.settings.exclusions.buildCache ?? []).includes("build-cache")) {
                         results.buildCache = "Exclu";
+                        summary.excluded = true;
                         continue;
                     }
                     results.buildCache = await docker([ "builder", "prune", "-a", "-f", "--filter", `until=${this.settings.graceHours}h` ]);
+                    Object.assign(summary, buildCacheCleanupSummary(results.buildCache));
                     continue;
                 }
                 const exclusions = this.settings.exclusions[category] ?? [];
@@ -643,13 +658,16 @@ export class DockerCleanupManager {
                     automaticCandidateAllowed(candidate, exclusions, this.settings.graceHours));
                 const resource = category === "volumes" ? "volume" : "network";
                 const removed: string[] = [];
+                summary.removed = 0;
                 for (const candidate of candidates) {
                     await docker([ resource, "rm", candidate.id ]);
                     removed.push(candidate.name);
+                    summary.removed++;
                 }
                 results[category] = `${removed.length} supprimé(s)${removed.length ? ` : ${removed.join(", ")}` : ""}`;
             } catch (error) {
                 success = false;
+                summary.failed = true;
                 results[category] = error instanceof Error ? error.message : String(error);
             }
         }
@@ -660,6 +678,7 @@ export class DockerCleanupManager {
             categories,
             results,
             success,
+            summaries,
         };
         saveHistory([ entry, ...readHistory() ]);
         return entry;
@@ -708,25 +727,32 @@ export class DockerCleanupManager {
         this.startupTimer.unref?.();
     }
 
-    private async notify(title: string, body: string, type: "success" | "warning" | "failure"): Promise<void> {
+    private async notify(event: CleanupEvent, categories: PruneCategory[], type: "success" | "warning" | "failure", entry?: PruneHistoryEntry, reason?: string): Promise<void> {
         try {
             const settings = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "watcher-settings.json"), "utf8")) as {
                 discordWebhooks?: string[];
                 appriseServerUrl?: string;
                 appriseUrls?: string[];
             };
-            const fullTitle = `Dockge-Enhanced — ${title}`;
+            const notification = cleanupNotification({ event,
+                hostname: String(await Settings.get("primaryHostname") || ""),
+                language: String(await Settings.get("uiLocale") || "en"),
+                categories,
+                summaries: entry?.summaries,
+                durationSeconds: entry ? (Date.parse(entry.finishedAt) - Date.parse(entry.startedAt)) / 1000 : undefined,
+                reason });
             await Promise.all([
                 settings.discordWebhooks?.length
                     ? new DiscordNotifier(settings.discordWebhooks).sendEmbed({
-                        title: fullTitle,
-                        description: body,
+                        title: notification.title,
+                        description: notification.body,
+                        footer: notification.footer,
                         color: type === "failure" ? 0xef4444 : type === "warning" ? 0xf59e0b : 0x22c55e,
                     })
                     : Promise.resolve(),
                 settings.appriseServerUrl
-                    ? new AppriseNotifier(settings.appriseServerUrl, settings.appriseUrls ?? []).send({ title: fullTitle,
-                        body,
+                    ? new AppriseNotifier(settings.appriseServerUrl, settings.appriseUrls ?? []).send({ title: notification.title,
+                        body: notification.body,
                         type })
                     : Promise.resolve(false),
             ]);

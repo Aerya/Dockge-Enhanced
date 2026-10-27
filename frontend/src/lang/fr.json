@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.cleanupNotifications": "Les bilans Discord et Apprise indiquent l’instance et résument chaque catégorie ; les sorties Docker complètes restent dans l’historique. Les protections d’images détectées au dernier contrôle sont distinguées des vrais échecs. Buildx est inclus dans l’image Enhanced.",
     "watcher.img.defaultScheduledTime": "Heure par défaut des mises à jour planifiées",
     "watcher.img.defaultScheduledTimeHint": "Pour les nouvelles planifications uniquement (02:00 par défaut), dans le fuseau des planifications d’Enhanced. Les horaires existants restent inchangés. Les stacks liées utilisent le réglage de leur instance hôte.",
     "watcher.img.invalidScheduledTime": "Saisissez une heure valide au format HH:MM.",
