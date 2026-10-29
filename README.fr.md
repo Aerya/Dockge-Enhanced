@@ -62,7 +62,7 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Octobre 2026
 
-**Choisir la sauvegarde avant l’auto-mise à jour :** Restic reste le choix par défaut. Vous pouvez sélectionner un job Zerobyte dédié : Enhanced attend sa réussite et relit le fichier de récupération de cette mise à jour dans le nouveau snapshot. Un échec ou un délai de 30 minutes bloque la mise à jour. Désactiver les sauvegardes intégrées exige une confirmation ; les sauvegardes externes sont alors sous votre responsabilité. Le rollback d’image ne restaure pas les données modifiées.
+**Choisir la sauvegarde avant l’auto-mise à jour :** Trois choix avant la mise à jour d’Enhanced : Restic (par défaut), Zerobyte avec sauvegarde vérifiée, ou aucune sauvegarde préalable après confirmation du risque de perte de données. Dans ce dernier mode, Enhanced ne lance ni ne vérifie aucune sauvegarde et n’exige pas de preuve de sauvegarde externe. Avec Zerobyte, un job dédié doit réussir et son nouveau snapshot contenir le fichier de récupération de cette mise à jour ; un échec ou un délai de 30 minutes bloque la mise à jour. Le rollback d’image ne restaure pas les données modifiées.
 
 **Notifications de nettoyage plus lisibles :** Les bilans Discord et Apprise indiquent l’instance et résument chaque catégorie ; les sorties Docker complètes restent dans l’historique. Les protections d’images détectées au dernier contrôle sont distinguées des vrais échecs. Buildx est inclus dans l’image Enhanced.
 
@@ -529,7 +529,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Pause globale et par image, versions ignorées et historique des mises à jour automatiques
 - Une seule notification de mise à jour en attente par stack, image, digest et destination
 - Créneau de maintenance global : lorsqu’il est configuré pour les mises à jour automatiques de Dockge-Enhanced, il s’applique aussi aux mises à jour automatiques d’images, sinon les horaires par image s’appliquent ; **Mettre à jour** reste immédiat
-- Auto-mise à jour protégée : Restic par défaut, sauvegarde Zerobyte vérifiée ou sauvegardes externes explicitement confirmées. État de récupération signé, contrôle d’espace disque, healthcheck et rollback d’image conservés.
+- Auto-mise à jour protégée : Restic par défaut, sauvegarde Zerobyte vérifiée ou aucune sauvegarde préalable après confirmation du risque. État de récupération signé, contrôle d’espace disque, healthcheck et rollback d’image conservés.
 - Auto-mise à jour via socket Unix ou Docker Socket Proxy de confiance, avec contrôle de l’espace disque et protection tant que des modifications Compose ou `.env` ne sont pas enregistrées
 - Chronologie persistante du self-update en 8 étapes, avec charge de l’hôte en direct
 - Détection fiable du conteneur courant avec des valeurs Compose `hostname:` personnalisées, et état dégradé visible si la vérification est impossible

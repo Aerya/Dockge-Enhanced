@@ -72,6 +72,6 @@ In **Backup → Maintenance and diagnostics**, choose an enabled destination and
 
 ## Choose the backup before self-update
 
-Restic remains the default. You can instead select a dedicated Zerobyte job: Enhanced waits for its successful completion and reads back this update’s recovery file from the new snapshot. Failure or a 30-minute timeout blocks the update. Disabling integrated backups requires confirmation; external backups are then your responsibility. Image rollback does not restore modified data.
+Three choices before updating Enhanced: Restic (default), Zerobyte with a verified backup, or no backup before updating after acknowledging the risk of data loss. In the last mode, Enhanced neither runs nor verifies any backup and requires no proof of an external backup. With Zerobyte, a dedicated job must succeed and its new snapshot must contain this update’s recovery file; failure or a 30-minute timeout blocks the update. Image rollback does not restore modified data.
 
 Configure Zerobyte under Backup. Use a dedicated job: source = the complete Enhanced data directory mounted in Zerobyte, with no filters, hooks, schedule or retries. Enhanced verifies the fresh snapshot and blocks the update on failure or after 30 minutes. Retention remains managed in Zerobyte.

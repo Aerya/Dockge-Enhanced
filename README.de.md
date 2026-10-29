@@ -61,7 +61,7 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
-**Backup vor dem Selbst-Update auswählen :** Restic bleibt der Standard. Alternativ kann ein eigener Zerobyte-Job gewählt werden: Enhanced wartet auf den erfolgreichen Abschluss und liest die Wiederherstellungsdatei dieses Updates aus dem neuen Snapshot zurück. Fehler oder ein Timeout nach 30 Minuten blockieren das Update. Das Deaktivieren integrierter Backups erfordert eine Bestätigung; externe Backups liegen dann in Ihrer Verantwortung. Ein Image-Rollback stellt geänderte Daten nicht wieder her.
+**Backup vor dem Selbst-Update auswählen :** Drei Möglichkeiten vor dem Enhanced-Update: Restic (Standard), Zerobyte mit geprüftem Backup oder kein Backup vor dem Update nach Bestätigung des Datenverlustrisikos. Im letzten Modus startet oder prüft Enhanced kein Backup und verlangt keinen Nachweis eines externen Backups. Bei Zerobyte muss ein eigener Job erfolgreich sein und sein neuer Snapshot die Wiederherstellungsdatei dieses Updates enthalten; Fehler oder ein Timeout nach 30 Minuten blockieren das Update. Ein Image-Rollback stellt geänderte Daten nicht wieder her.
 
 **Übersichtlichere Bereinigungsbenachrichtigungen :** Discord- und Apprise-Berichte nennen die Instanz und fassen jede Kategorie zusammen; vollständige Docker-Ausgaben bleiben im Verlauf. Beim letzten Prüfschritt erkannte Image-Schutzmaßnahmen zählen als übersprungen, echte Fehler bleiben sichtbar. Buildx ist im Enhanced-Image enthalten.
 
@@ -528,7 +528,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Globale und imagebezogene Pause, übersprungene Versionen und Verlauf automatischer Updates
 - Eine Benachrichtigung über ausstehende Updates pro Stack, Image, Digest und Ziel
 - Globales Wartungsfenster: Wird es für automatische Dockge-Enhanced-Updates verwendet, gilt es auch für automatische Image-Updates, andernfalls gelten die imagebezogenen Zeitpläne; **Jetzt aktualisieren** bleibt sofort wirksam
-- Geschütztes Selbst-Update: Restic als Standard, geprüftes Zerobyte-Backup oder ausdrücklich bestätigte externe Backups. Signierter Wiederherstellungsstatus, Speicherplatzprüfung, Healthcheck und Image-Rollback bleiben aktiv.
+- Geschütztes Selbst-Update: Restic als Standard, geprüftes Zerobyte-Backup oder kein Backup vor dem Update nach Bestätigung des Risikos. Signierter Wiederherstellungsstatus, Speicherplatzprüfung, Healthcheck und Image-Rollback bleiben aktiv.
 - Selbst-Update über einen Unix-Socket oder einen vertrauenswürdigen Docker Socket Proxy, mit Speicherplatzprüfung und Schutz bei ungespeicherten Compose- oder `.env`-Änderungen
 - Persistente 8-stufige Self-Update-Zeitleiste mit Live-Hostlast
 - Zuverlässige Erkennung des eigenen Containers bei benutzerdefinierten Compose-`hostname:`-Werten und sichtbarer eingeschränkter Zustand, wenn die Prüfung nicht möglich ist
