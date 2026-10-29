@@ -216,38 +216,12 @@
       "count": 5
     }
   },
-  "backend/self-update/operation-guard-policy.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 1
-    }
-  },
-  "backend/self-update/operation-guard.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 1
-    },
-    "curly": {
-      "count": 1
-    }
-  },
   "backend/self-update/policy.test.ts": {
     "curly": {
       "count": 2
     }
   },
   "backend/self-update/policy.ts": {
-    "curly": {
-      "count": 3
-    }
-  },
-  "backend/self-update/settings.test.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 14
-    }
-  },
-  "backend/self-update/settings.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 4
-    },
     "curly": {
       "count": 3
     }
@@ -679,20 +653,6 @@
   "frontend/src/components/settings/GlobalEnv.vue": {
     "@stylistic/object-property-newline": {
       "count": 1
-    }
-  },
-  "frontend/src/components/watcher/WatcherUpdatesTab.vue": {
-    "@stylistic/brace-style": {
-      "count": 4
-    },
-    "@stylistic/max-statements-per-line": {
-      "count": 2
-    },
-    "@stylistic/object-property-newline": {
-      "count": 25
-    },
-    "curly": {
-      "count": 20
     }
   },
   "frontend/src/components/watcher/shared.ts": {

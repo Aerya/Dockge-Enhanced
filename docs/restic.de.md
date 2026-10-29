@@ -69,3 +69,9 @@ Wählen Sie unter **Backup → Wartung und Diagnose** ein aktives Ziel und sehen
 - Stellen Sie eine beliebige Auswahl von Dateien wieder her, oder einen ganzen Stack mit **Stack wiederherstellen**.
 - Nach jedem geplanten Backup liest ein Wiederherstellungstest eine echte Datei aus dem neuen Snapshot und speichert das Ergebnis im Backup-Verlauf. Verwenden Sie **Integrität prüfen** für ein vollständiges `restic check`.
 - Geschützte Selbst-Updates und Wiederherstellungsworkflows stützen sich auf diese geprüften Restic-Snapshots.
+
+## Backup vor dem Selbst-Update auswählen
+
+Restic bleibt der Standard. Alternativ kann ein eigener Zerobyte-Job gewählt werden: Enhanced wartet auf den erfolgreichen Abschluss und liest die Wiederherstellungsdatei dieses Updates aus dem neuen Snapshot zurück. Fehler oder ein Timeout nach 30 Minuten blockieren das Update. Das Deaktivieren integrierter Backups erfordert eine Bestätigung; externe Backups liegen dann in Ihrer Verantwortung. Ein Image-Rollback stellt geänderte Daten nicht wieder her.
+
+Konfigurieren Sie Zerobyte unter Backup. Verwenden Sie einen eigenen Job: Quelle = vollständiges, in Zerobyte eingebundenes Enhanced-Datenverzeichnis, ohne Filter, Hooks, Zeitplan oder Wiederholungen. Enhanced prüft den neuen Snapshot und blockiert das Update bei Fehlern oder nach 30 Minuten. Die Aufbewahrung wird weiterhin in Zerobyte verwaltet.

@@ -23,6 +23,8 @@ import { resolveDataDir } from "../data-dir";
 import { tryReserveDockerUpdate } from "./operation-coordinator";
 import { checkSelfUpdateDiskSpace } from "./disk-space";
 import { sidecarWatchState, updaterContainerFailure } from "./sidecar-watch";
+import { runZerobyteSelfUpdateBackup } from "./zerobyte-backup";
+import { isZerobyteApplicationBackupActive } from "../integrations/zerobyte-coordination";
 
 const execFileAsync = promisify(execFile);
 const DATA_DIR = resolveDataDir();
@@ -151,6 +153,10 @@ export class SelfUpdateManager {
         } catch {
             this.operation = idle();
         }
+        if (!this.requestInFlight && [ "backing-up", "verifying-backup" ].includes(this.operation.state)
+            && this.operation.stageHistory?.some(entry => entry.backupProvider === "zerobyte")) {
+            await this.failCurrentOperation("Zerobyte backup verification was interrupted by an Enhanced restart; self-update stopped. Check the backup task before retrying");
+        }
         await this.processTerminalNotification();
         this.startTerminalStatusWatch();
     }
@@ -165,6 +171,21 @@ export class SelfUpdateManager {
 
     getProgress(): SelfUpdateProgress | null {
         return this.progress ? { ...this.progress } : null;
+    }
+
+    private async skipBackupStages(stages: SelfUpdateStage[]): Promise<void> {
+        const now = new Date().toISOString();
+        const current = this.operation.stageHistory?.at(-1);
+        if (current && !current.finishedAt) {
+            current.finishedAt = now;
+        }
+        for (const stage of stages) {
+            this.operation.stageHistory?.push({ stage,
+                startedAt: now,
+                finishedAt: now,
+                skipped: true });
+        }
+        await this.saveOperation();
     }
 
     private transitionStageHistory(stage: SelfUpdateStage, now: string): { history: SelfUpdateStageTiming[];
@@ -292,8 +313,18 @@ export class SelfUpdateManager {
     }
 
     async saveSettings(value: unknown): Promise<SelfUpdateSettings> {
-        this.settings = normalizeSelfUpdateSettings(value);
-        await atomicWriteJson(SETTINGS_PATH, this.settings);
+        const raw = value && typeof value === "object" ? value as Record<string, unknown> : {};
+        const next = normalizeSelfUpdateSettings({ ...this.settings,
+            ...raw,
+            backupProvider: raw.backupProvider ?? this.settings.backupProvider });
+        if (this.settings.backupProvider !== "external" && next.backupProvider === "external" && raw.externalBackupAcknowledged !== true) {
+            throw new Error("Explicit acknowledgement of external backup responsibility is required");
+        }
+        if (next.backupProvider === "zerobyte" && (!next.zerobyteJobId || !next.zerobyteDataPath)) {
+            throw new Error("A Zerobyte backup job and the Enhanced data path in Zerobyte are required");
+        }
+        await atomicWriteJson(SETTINGS_PATH, next);
+        this.settings = next;
         return this.getSettings();
     }
 
@@ -361,12 +392,21 @@ export class SelfUpdateManager {
             throw new Error("An image Docker operation is already running");
         }
         this.requestInFlight = true;
+        // Capture the policy before yielding: changing settings cannot alter an active run.
+        const backupSettings = this.getSettings();
         try {
             if (automatic && !this.canAutoUpdate()) {
                 return this.getOperation();
             }
             if (this.settings.mode !== "sidecar" && automatic) {
                 return this.getOperation();
+            }
+            if (isZerobyteApplicationBackupActive()) {
+                if (automatic) {
+                    return this.deferAutomaticUpdate(targetImage, { code: "zerobyte-backup",
+                        message: BLOCKER_MESSAGES["zerobyte-backup"] });
+                }
+                throw new Error("A Zerobyte application backup or recovery is in progress");
             }
             if (automatic) {
                 const blocker = await getSelfUpdateBlocker();
@@ -428,6 +468,7 @@ export class SelfUpdateManager {
                 stageStartedAt: startedAt,
                 stageHistory: [{
                     stage: "preparing",
+                    backupProvider: backupSettings.backupProvider,
                     startedAt,
                     finishedAt: null,
                 }],
@@ -443,69 +484,85 @@ export class SelfUpdateManager {
             const secret = await this.getOrCreateSecret();
             const selfUpdateRetentionTag = `self-update-instance-${crypto.createHash("sha256").update(secret).digest("hex").slice(0, 16)}`;
 
-            await this.setStage("backup", "Mandatory Restic backup in progress", "backing-up");
-            log.info("self-update", `Étape 2/8 — backup Restic minimal démarré — id=${plan.id} data=${DATA_DIR} recovery=${recoveryPath}`);
-            let backup;
-            try {
-                backup = await BackupManager.getInstance().runBackup({
-                    tag: "self-update",
-                    trigger: "manual",
-                    onProgress: (progress) => {
-                        this.progress = progress;
-                    },
-                    additionalPaths: [ DATA_DIR, recoveryPath ],
-                    selfUpdateOnly: true,
-                    suppressNotification: true,
-                    additionalTags: [ selfUpdateRetentionTag ],
-                });
-            } catch (error) {
-                return this.failCurrentOperation(`Backup failed: ${error instanceof Error ? error.message : String(error)}`);
-            }
-            if (!backup.success) {
-                log.error("self-update", `Backup Restic échoué — id=${plan.id} error=${backup.error ?? "unknown error"}`);
-                return this.failCurrentOperation(`Backup failed: ${backup.error ?? "unknown error"}`);
-            }
+            if (backupSettings.backupProvider === "restic") {
+                await this.setStage("backup", "Mandatory Restic backup in progress", "backing-up");
+                log.info("self-update", `Étape 2/8 — backup Restic minimal démarré — id=${plan.id} data=${DATA_DIR} recovery=${recoveryPath}`);
+                let backup;
+                try {
+                    backup = await BackupManager.getInstance().runBackup({
+                        tag: "self-update",
+                        trigger: "manual",
+                        onProgress: (progress) => {
+                            this.progress = progress;
+                        },
+                        additionalPaths: [ DATA_DIR, recoveryPath ],
+                        selfUpdateOnly: true,
+                        suppressNotification: true,
+                        additionalTags: [ selfUpdateRetentionTag ],
+                    });
+                } catch (error) {
+                    return this.failCurrentOperation(`Backup failed: ${error instanceof Error ? error.message : String(error)}`);
+                }
+                if (!backup.success) {
+                    log.error("self-update", `Backup Restic échoué — id=${plan.id} error=${backup.error ?? "unknown error"}`);
+                    return this.failCurrentOperation(`Backup failed: ${backup.error ?? "unknown error"}`);
+                }
 
-            log.info("self-update", `Backup Restic terminé — id=${plan.id} duration=${Date.now() - startedMs}ms`);
-            this.progress = null;
-            await this.setStage("verify-backup", "Self-update snapshot verification in progress", "verifying-backup");
-            log.info("self-update", `Étape 3/8 — validation ciblée du snapshot Restic — id=${plan.id}`);
-            try {
-                const verification = await BackupManager.getInstance().verifyFreshBackup(
+                log.info("self-update", `Backup Restic terminé — id=${plan.id} duration=${Date.now() - startedMs}ms`);
+                this.progress = null;
+                await this.setStage("verify-backup", "Self-update snapshot verification in progress", "verifying-backup");
+                log.info("self-update", `Étape 3/8 — validation ciblée du snapshot Restic — id=${plan.id}`);
+                try {
+                    const verification = await BackupManager.getInstance().verifyFreshBackup(
+                        backup,
+                        recoveryPath,
+                        plan.id,
+                        (progress) => {
+                            this.progress = progress;
+                        },
+                    );
+                    const failed = verification.find((result) => !result.ok);
+                    if (failed) {
+                        return this.failCurrentOperation(`Backup verification failed for ${failed.label}: ${failed.output}`);
+                    }
+                } catch (error) {
+                    return this.failCurrentOperation(`Backup verification failed: ${error instanceof Error ? error.message : String(error)}`);
+                }
+                this.progress = null;
+
+                await this.setStage("prune-backup", "Pruning old self-update Restic snapshots", "verifying-backup");
+                log.info("self-update", `Étape 4/8 — rétention Restic self-update — id=${plan.id}`);
+                const retentionResults = await BackupManager.getInstance().pruneSelfUpdateSnapshots(
                     backup,
-                    recoveryPath,
-                    plan.id,
+                    selfUpdateRetentionTag,
+                    2,
                     (progress) => {
                         this.progress = progress;
                     },
                 );
-                const failed = verification.find((result) => !result.ok);
-                if (failed) {
-                    return this.failCurrentOperation(`Backup verification failed for ${failed.label}: ${failed.output}`);
-                }
-            } catch (error) {
-                return this.failCurrentOperation(`Backup verification failed: ${error instanceof Error ? error.message : String(error)}`);
-            }
-            this.progress = null;
-
-            await this.setStage("prune-backup", "Pruning old self-update Restic snapshots", "verifying-backup");
-            log.info("self-update", `Étape 4/8 — rétention Restic self-update — id=${plan.id}`);
-            const retentionResults = await BackupManager.getInstance().pruneSelfUpdateSnapshots(
-                backup,
-                selfUpdateRetentionTag,
-                2,
-                (progress) => {
-                    this.progress = progress;
-                },
-            );
-            this.progress = null;
-            for (const retention of retentionResults) {
-                if (retention.error) {
-                    log.warn(
-                        "self-update",
+                this.progress = null;
+                for (const retention of retentionResults) {
+                    if (retention.error) {
+                        log.warn(
+                            "self-update",
                     `Nettoyage des anciens snapshots reporté — label=${retention.label} error=${retention.error}`,
-                    );
+                        );
+                    }
                 }
+
+            } else if (backupSettings.backupProvider === "zerobyte") {
+                try {
+                    await this.setStage("backup", "Zerobyte backup in progress", "backing-up");
+                    await runZerobyteSelfUpdateBackup(backupSettings, recoveryPath, async () => {
+                        await this.setStage("verify-backup", "Zerobyte snapshot verification in progress", "verifying-backup");
+                    });
+                    await this.skipBackupStages([ "prune-backup" ]);
+                } catch (error) {
+                    return this.failCurrentOperation(`Backup verification failed: ${error instanceof Error ? error.message : String(error)}`);
+                }
+            } else {
+                await this.skipBackupStages([ "backup", "verify-backup", "prune-backup" ]);
+                log.warn("self-update", "Integrated Restic backup explicitly disabled; external backups are not verified");
             }
 
             const deferredBeforePreparation = await this.recheckAutomaticBlocker(targetImage, automatic, "la préparation du sidecar");
@@ -656,6 +713,7 @@ export class SelfUpdateManager {
             "active-editor": [ "des modifications non enregistrées sont en cours dans un compose ou un fichier .env", "unsaved compose or .env changes are being edited", "se están editando cambios no guardados en un compose o archivo .env", "正在编辑 compose 或 .env 中尚未保存的更改" ],
             "image-work": [ "une vérification ou une mise à jour d’image Docker est en cours", "an image update or image check is in progress", "hay una comprobación o actualización de imagen Docker en curso", "Docker 镜像检查或更新正在进行" ],
             "restic-backup": [ "un backup Restic ou sa vérification est en cours", "a Restic backup or backup verification is in progress", "hay una copia Restic o su verificación en curso", "Restic 备份或备份验证正在进行" ],
+            "zerobyte-backup": [ "une sauvegarde applicative Zerobyte ou sa récupération est en cours", "a Zerobyte application backup or recovery is in progress", "hay una copia de aplicaciones Zerobyte o su recuperación en curso", "Zerobyte 应用备份或恢复正在进行" ],
             "restic-restore": [ "une restauration Restic est en cours", "a Restic restore is in progress", "hay una restauración Restic en curso", "Restic 恢复正在进行" ],
             "stack-transfer": [ "une copie, un déplacement ou un transfert de données de stack est en cours", "a stack copy, move or data transfer is in progress", "hay una copia, traslado o transferencia de datos de stack en curso", "堆栈复制、移动或数据传输正在进行" ],
             "stack-replication": [ "une réplication ou un test de restauration de stack est en cours", "a stack replication or recovery test is in progress", "hay una replicación o una prueba de recuperación de stack en curso", "堆栈复制或恢复测试正在进行" ],
@@ -805,6 +863,14 @@ export class SelfUpdateManager {
             const shortDigest = targetDigest ? targetDigest.slice(0, 12) : "";
             const targetRepo = this.operation.targetImage.match(/^ghcr\.io\/(.+?)@sha256:/i)?.[1] ?? "aerya/dockge-enhanced";
             const changelogUrl = `https://github.com/${targetRepo}`;
+            const backupProvider = this.operation.stageHistory?.find(entry => entry.backupProvider)?.backupProvider ?? "restic";
+            const backupVerified = this.operation.stageHistory?.some(entry => entry.stage === "verify-backup" && entry.finishedAt && !entry.skipped) === true;
+            const backupLabel = backupProvider === "zerobyte" ? "Zerobyte" : "Restic";
+            const backupSummary = notificationText(lang,
+                backupProvider === "external" ? "**Sauvegarde intégrée** · Désactivée ; sauvegardes externes non vérifiées" : `**Sauvegarde ${backupLabel}** · ${backupVerified ? "Vérifiée" : "Non confirmée"}`,
+                backupProvider === "external" ? "**Integrated backup** · Disabled; external backups not verified" : `**${backupLabel} backup** · ${backupVerified ? "Verified" : "Not confirmed"}`,
+                backupProvider === "external" ? "**Copia integrada** · Desactivada; copias externas no verificadas" : `**Copia ${backupLabel}** · ${backupVerified ? "Verificada" : "No confirmada"}`,
+                backupProvider === "external" ? "**内置备份** · 已禁用；外部备份未验证" : `**${backupLabel} 备份** · ${backupVerified ? "已验证" : "未确认"}`);
 
             if (title === "✅ Dockge-Enhanced self-update succeeded") {
                 localizedBody = notificationText(
@@ -812,7 +878,7 @@ export class SelfUpdateManager {
                     [
                         "Mise à jour installée avec succès.",
                         "",
-                        "**Backup Restic** · Vérifié",
+                        backupSummary,
                         shortDigest ? `**Image** · \`${shortDigest}\`` : "",
                         "**État** · Opérationnel",
                         "",
@@ -821,7 +887,7 @@ export class SelfUpdateManager {
                     [
                         "Update installed successfully.",
                         "",
-                        "**Restic backup** · Verified",
+                        backupSummary,
                         shortDigest ? `**Image** · \`${shortDigest}\`` : "",
                         "**Status** · Operational",
                         "",
@@ -830,7 +896,7 @@ export class SelfUpdateManager {
                     [
                         "Actualización instalada correctamente.",
                         "",
-                        "**Copia Restic** · Verificada",
+                        backupSummary,
                         shortDigest ? `**Imagen** · \`${shortDigest}\`` : "",
                         "**Estado** · Operativo",
                         "",
@@ -839,7 +905,7 @@ export class SelfUpdateManager {
                     [
                         "更新已成功安装。",
                         "",
-                        "**Restic 备份** · 已验证",
+                        backupSummary,
                         shortDigest ? `**镜像** · \`${shortDigest}\`` : "",
                         "**状态** · 运行正常",
                         "",
@@ -853,7 +919,7 @@ export class SelfUpdateManager {
                     [
                         "La mise à jour a échoué, mais l’ancienne version a été restaurée automatiquement.",
                         "",
-                        "**Backup Restic** · Vérifié",
+                        backupSummary,
                         "**Rollback** · Réussi",
                         "**État** · Opérationnel",
                         "",
@@ -862,7 +928,7 @@ export class SelfUpdateManager {
                     [
                         "The update failed, but the previous version was restored automatically.",
                         "",
-                        "**Restic backup** · Verified",
+                        backupSummary,
                         "**Rollback** · Successful",
                         "**Status** · Operational",
                         "",
@@ -871,7 +937,7 @@ export class SelfUpdateManager {
                     [
                         "La actualización falló, pero la versión anterior se restauró automáticamente.",
                         "",
-                        "**Copia Restic** · Verificada",
+                        backupSummary,
                         "**Rollback** · Correcto",
                         "**Estado** · Operativo",
                         "",
@@ -880,7 +946,7 @@ export class SelfUpdateManager {
                     [
                         "更新失败，但旧版本已自动恢复。",
                         "",
-                        "**Restic 备份** · 已验证",
+                        backupSummary,
                         "**回滚** · 成功",
                         "**状态** · 运行正常",
                         "",

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-10-29-self-update-backup",
+        items: [ "releaseNews.item.selfUpdateBackup" ],
+    },
+    {
         id: "2026-10-27-cleanup-notifications",
         items: [ "releaseNews.item.cleanupNotifications" ],
     },

@@ -101,12 +101,16 @@ export function validateRestoreRoot(value: unknown): string {
 export class ZerobyteManager {
     private readonly filePath: string;
     private operationBusy = false;
+    private pinnedConfig?: ZerobyteConfig;
 
     constructor(dataDir = resolveDataDir()) {
         this.filePath = path.join(dataDir, "zerobyte-settings.json");
     }
 
     private async read(): Promise<ZerobyteConfig> {
+        if (this.pinnedConfig) {
+            return { ...this.pinnedConfig };
+        }
         try {
             const raw = object(JSON.parse(await fs.readFile(this.filePath, "utf8")));
             return {
@@ -132,6 +136,19 @@ export class ZerobyteManager {
             restoreEnabled: Boolean(settings.externalRisksAcknowledged && settings.externalRestoreRoot),
             externalRisksAcknowledged: settings.externalRisksAcknowledged === true,
             externalRestoreRoot: settings.externalRestoreRoot || "" };
+    }
+
+    /** Keep credentials and endpoint stable for a multi-request verification. */
+    async session(): Promise<ZerobyteManager> {
+        const session = new ZerobyteManager(path.dirname(this.filePath));
+        session.pinnedConfig = await this.read();
+        return session;
+    }
+
+    async recoverySnapshotFile(repositoryId: string, snapshotId: string, filePath: string): Promise<unknown> {
+        const query = new URLSearchParams({ path: filePath,
+            kind: "file" });
+        return this.request("GET", `/api/v1/repositories/${id(repositoryId)}/snapshots/${id(snapshotId)}/dump?${query}`);
     }
 
     async saveConfig(input: unknown): Promise<ZerobyteSafeConfig> {

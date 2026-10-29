@@ -6,6 +6,7 @@ import { ImageWatcher } from "../watchers/image-watcher";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { ComposeEditLeaseManager } from "./editor-lease";
 import { resolveDataDir } from "../data-dir";
+import { isZerobyteApplicationBackupActive } from "../integrations/zerobyte-coordination";
 import {
     BLOCKER_MESSAGES,
     isExternalStackIntegrationStateActive,
@@ -43,7 +44,9 @@ async function hasActiveExternalStackIntegration(): Promise<boolean> {
         const operation = JSON.parse(await fs.readFile(EXTERNAL_STACK_ACCESS_STATUS, "utf8")) as { state?: unknown };
         return isExternalStackIntegrationStateActive(operation.state);
     } catch (error) {
-        if ((error as NodeJS.ErrnoException)?.code === "ENOENT") return false;
+        if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+            return false;
+        }
         throw error;
     }
 }
@@ -59,6 +62,7 @@ export async function getSelfUpdateBlocker(): Promise<SelfUpdateBlocker | null> 
             activeEditor: ComposeEditLeaseManager.getInstance().hasBlockingLease(),
             imageWork: ImageWatcher.getInstance().hasDockerOperationInProgress(),
             resticBackup: BackupManager.getInstance().isBackupRunActive(),
+            zerobyteBackup: isZerobyteApplicationBackupActive(),
             resticRestore: BackupManager.getInstance().isRestoreRunActive(),
             stackTransfer,
             stackReplication,
@@ -66,6 +70,7 @@ export async function getSelfUpdateBlocker(): Promise<SelfUpdateBlocker | null> 
             externalStackIntegration,
         });
     } catch {
-        return { code: "state-check-error", message: BLOCKER_MESSAGES["state-check-error"] };
+        return { code: "state-check-error",
+            message: BLOCKER_MESSAGES["state-check-error"] };
     }
 }

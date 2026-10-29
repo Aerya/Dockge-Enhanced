@@ -40,7 +40,7 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 | **Stack management** | Pinned stacks, compact status and resource indicators, collapsible/resizable navigation, flexible Logs/Compose workspace, a directly accessible action bar with icons-only or icons-and-text modes, explained stack/container actions, stack pause/resume, per-container scheduling, Build + Recreate, notes, Git tools, host start prerequisites and automatic recreation of services sharing VPN/network namespaces |
 | **Compose editing** | Compose, override and `.env` editors, default Compose and `.env` templates, named links, YAML repair, a per-service healthcheck assistant, port-conflict and image-drift checks and an optional per-stack `TZ`; optional per-service CPU/RAM limits |
 | **Backup & recovery** | Multi-destination Restic backups, bind mounts and volumes, per-stack consistency, selective restore, repository checks, snapshot verification and diffs, safe repository reset, plus recovery workflows used by protected updates. Optional Zerobyte connection or managed installation, protected application workflows and dedicated test restores |
-| **Updates** | Stack-wide bulk policies with exception preservation, 5-minute targeted Immediate image checks, ignored images respected before any change, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with mandatory backup, integrity checks and automatic recovery |
+| **Updates** | Stack-wide bulk policies with exception preservation, 5-minute targeted Immediate image checks, ignored images respected before any change, manual, sequential bulk or automatic container updates with rollback, a shared maintenance window, remote update badges, global/per-image pause controls, and protected Dockge-Enhanced self-updates with backup by default, integrity checks and automatic recovery |
 | **Migration & replication** | Transactional stack transfers between instances, Compose and persistent-data migration, resumable jobs, explicit move finalization, scheduled cold replicas, recovery snapshots and failover workflows |
 | **Security & authentication** | Restricted local accounts with per-stack and per-service permissions, optional TOTP 2FA, native OIDC sign-in, trusted-proxy authentication, Cloudflare Turnstile, Trivy vulnerability scanning, CVE exceptions and protected update workflows |
 | **Monitoring** | System, stack and container statistics, optional 5-minute CPU/RAM history, configurable status bar, health cards, crash-loop detection, healthcheck auto-heal, responsive/fullscreen logs, and optional Kula, Dozzle, PowerWatch and PowerWatch Hub integrations |
@@ -60,6 +60,8 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 October 2026
+
+**Choose the backup before self-update :** Restic remains the default. You can instead select a dedicated Zerobyte job: Enhanced waits for its successful completion and reads back this update’s recovery file from the new snapshot. Failure or a 30-minute timeout blocks the update. Disabling integrated backups requires confirmation; external backups are then your responsibility. Image rollback does not restore modified data.
 
 **Clearer cleanup notifications :** Discord and Apprise cleanup reports identify the instance and summarize each category, keeping full Docker output in history. Last-minute image protections are reported as skips; genuine failures remain visible. Buildx is included in the Enhanced image.
 
@@ -355,7 +357,7 @@ Pinned stacks are now owned by the Dockge-Enhanced instance that hosts them inst
 
 **Dedicated self-update backup retention**
 
-Mandatory Restic snapshots created before protected Dockge-Enhanced self-updates now use a dedicated retention policy. After the new snapshot has been created **and verified**, Dockge-Enhanced keeps the **2 latest self-update snapshots for this installation** and prunes older generations before launching the updater sidecar. A stable installation-specific tag prevents cleanup from touching another Dockge-Enhanced instance sharing the same Restic repository. Normal backup retention (`keepLast`, daily, weekly, monthly) is unchanged. If this dedicated pruning fails, the verified backup is kept and the update may continue; the cleanup error is logged and a later self-update will try again.
+Restic snapshots (when this provider is selected) created before protected Dockge-Enhanced self-updates now use a dedicated retention policy. After the new snapshot has been created **and verified**, Dockge-Enhanced keeps the **2 latest self-update snapshots for this installation** and prunes older generations before launching the updater sidecar. A stable installation-specific tag prevents cleanup from touching another Dockge-Enhanced instance sharing the same Restic repository. Normal backup retention (`keepLast`, daily, weekly, monthly) is unchanged. If this dedicated pruning fails, the verified backup is kept and the update may continue; the cleanup error is logged and a later self-update will try again.
 
 **Docker Compose project-name reconciliation**
 
@@ -526,7 +528,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Global and per-image pause, skipped releases and auto-update history
 - One pending-update notification per stack, image, digest and destination
 - A global maintenance window: when automatic Dockge-Enhanced updates use one, it also gates automatic image updates, otherwise per-image schedules apply; **Update now** stays immediate
-- Protected Dockge-Enhanced self-update with mandatory Restic backup, integrity check, readiness validation and automatic recovery
+- Protected self-update: Restic by default, a verified Zerobyte backup, or explicitly acknowledged external backups. Signed recovery state, disk-space checks, health checks and image rollback remain enabled.
 - Self-update through a Unix socket or a trusted Docker Socket Proxy, with disk-space checks and protection while Compose or `.env` edits are unsaved
 - Persisted 8-stage self-update timeline with live host load
 - Reliable current-container discovery with custom Compose `hostname:` values, and a visible degraded state when verification is unavailable
@@ -607,7 +609,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 <details>
 <summary>Show the protected update workflow</summary>
 
-Dockge-Enhanced handles the complete workflow automatically: mandatory Restic backup, integrity verification, controlled container replacement, health check and final confirmation. Discord/Apprise notifications also let users follow the operation without keeping the WebUI open.
+Dockge-Enhanced handles the complete workflow automatically: Restic backup by default, integrity verification, controlled container replacement, health check and final confirmation. Discord/Apprise notifications also let users follow the operation without keeping the WebUI open.
 
 The updater supports the normal Unix socket (including `DOCKGE_DOCKER_SOCKET`) and a trusted Docker Socket Proxy configured with `DOCKER_HOST=tcp://proxy:2375`. In TCP mode it never mounts a socket: the updater starts on one of the instance’s Docker networks, joins any additional networks, and only executes its signed plan after a start signal confirms all attachments. It uses the same configured Docker endpoint. The proxy must allow container inspection/create/start/stop/remove, image inspection/pull and network connection; a read-only proxy cannot perform a self-update. Keep an unencrypted TCP endpoint on a trusted internal network only. TLS settings are retained when the certificate directory is mounted in the Enhanced container; otherwise the update stops safely before replacement.
 

@@ -6,6 +6,7 @@ export interface SelfUpdateOperationSnapshot {
     activeEditor: boolean;
     imageWork: boolean;
     resticBackup: boolean;
+    zerobyteBackup?: boolean;
     resticRestore: boolean;
     stackTransfer: boolean;
     stackReplication: boolean;
@@ -23,6 +24,7 @@ export const BLOCKER_MESSAGES: Record<SelfUpdateBlockerCode, string> = {
     "external-stack-integration": "a protected external-stack integration is in progress",
     "restic-restore": "a Restic restore is in progress",
     "restic-backup": "a Restic backup or backup verification is in progress",
+    "zerobyte-backup": "a Zerobyte application backup or recovery is in progress",
     "stack-transfer": "a stack copy, move or data transfer is in progress",
     "stack-replication": "a stack replication or recovery test is in progress",
     "image-work": "an image update or image check is in progress",
@@ -37,13 +39,15 @@ export function selectSelfUpdateBlocker(snapshot: SelfUpdateOperationSnapshot): 
         [ "external-stack-integration", snapshot.externalStackIntegration ],
         [ "restic-restore", snapshot.resticRestore ],
         [ "restic-backup", snapshot.resticBackup ],
+        [ "zerobyte-backup", snapshot.zerobyteBackup === true ],
         [ "stack-transfer", snapshot.stackTransfer ],
         [ "stack-replication", snapshot.stackReplication ],
         [ "image-work", snapshot.imageWork ],
         [ "trivy-scan", snapshot.trivyScan ],
     ];
-    const match = ordered.find(([, active]) => active);
-    return match ? { code: match[0], message: BLOCKER_MESSAGES[match[0]] } : null;
+    const match = ordered.find(([ , active ]) => active);
+    return match ? { code: match[0],
+        message: BLOCKER_MESSAGES[match[0]] } : null;
 }
 
 export function isExternalStackIntegrationStateActive(state: unknown): boolean {

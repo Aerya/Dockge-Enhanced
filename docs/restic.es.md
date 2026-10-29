@@ -69,3 +69,9 @@ En **Backup → Mantenimiento y diagnóstico**, elige un destino activo y revisa
 - Restaura cualquier selección de archivos, o un stack completo con **Restore stack**.
 - Tras cada copia programada, una prueba de restauración lee un archivo real del nuevo snapshot y registra el resultado en el historial. Usa **Check integrity** para un `restic check` completo.
 - Las autoactualizaciones protegidas y los flujos de recuperación se basan en estos snapshots Restic verificados.
+
+## Elegir la copia previa a la autoactualización
+
+Restic sigue siendo la opción predeterminada. Puede elegir una tarea Zerobyte dedicada: Enhanced espera su éxito y vuelve a leer el archivo de recuperación de esta actualización en el nuevo snapshot. Un error o un plazo de 30 minutos bloquea la actualización. Desactivar las copias integradas requiere confirmación; las copias externas quedan bajo su responsabilidad. El rollback de imagen no restaura datos modificados.
+
+Configure Zerobyte en Copia de seguridad. Use una tarea dedicada: origen = directorio completo de datos de Enhanced montado en Zerobyte, sin filtros, hooks, programación ni reintentos. Enhanced verifica el snapshot nuevo y bloquea la actualización si falla o tras 30 minutos. La retención sigue gestionándose en Zerobyte.

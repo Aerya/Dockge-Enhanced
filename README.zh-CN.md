@@ -39,7 +39,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 | **Stack 管理** | 固定 Stack、紧凑的状态和资源指示、可折叠/可调整的导航、灵活的日志/Compose 工作区、直接可用的操作栏（仅图标或图标加文字）、带说明的 Stack/容器操作、Stack 暂停/恢复、按容器计划、Build + Recreate、备注、Git 工具、主机启动前置条件，以及共享 VPN/网络命名空间服务的自动重建 |
 | **Compose 编辑** | Compose、override 和 `.env` 编辑器，默认 Compose 和 `.env` 模板，命名链接，YAML 修复，逐服务健康检查助手，端口冲突和镜像偏差检查，以及可选的按 Stack `TZ`; 可选的服务级 CPU/RAM 限制 (本 PR 中准备的功能，尚未正式发布。) |
 | **备份与恢复** | 多目标 Restic 备份、绑定挂载和卷、按 Stack 一致性、选择性恢复、仓库检查、快照校验与差异、安全重置仓库，以及受保护更新使用的恢复流程。可选连接或托管安装 Zerobyte、受保护的应用流程和专用测试恢复 |
-| **更新** | 按 Stack 批量策略并保留例外、立即模式每 5 分钟定向检查、任何变更前都遵守镜像忽略设置、手动/顺序批量/自动容器更新并可回滚、共享维护窗口、远程更新标记、全局/按镜像暂停，以及带强制备份、完整性检查和自动恢复的受保护 Dockge-Enhanced 自更新 |
+| **更新** | 按 Stack 批量策略并保留例外、立即模式每 5 分钟定向检查、任何变更前都遵守镜像忽略设置、手动/顺序批量/自动容器更新并可回滚、共享维护窗口、远程更新标记、全局/按镜像暂停，以及带默认备份、完整性检查和自动恢复的受保护 Dockge-Enhanced 自更新 |
 | **迁移与复制** | 实例间事务性 Stack 传输、Compose 和持久数据迁移、可续传任务、显式完成迁移、计划冷副本、恢复快照和故障切换流程 |
 | **安全与认证** | 按 Stack 和服务授权的受限本地账户、可选 TOTP 2FA、原生 OIDC 登录、可信代理认证、Cloudflare Turnstile、Trivy 漏洞扫描、CVE 例外和受保护的更新流程 |
 | **监控** | 系统、Stack 和容器统计，可选每 5 分钟 CPU/RAM 历史，可配置状态栏，健康卡片，崩溃循环检测，健康检查自动修复，响应式/全屏日志，以及可选的 Kula、Dozzle、PowerWatch 和 PowerWatch Hub 集成 |
@@ -59,6 +59,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 本节汇总近期最重要的变化，方便快速了解 Dockge-Enhanced 最近新增了什么。
 
 ### 🆕 2026 年 10 月
+
+**选择自更新前的备份方式 :** 默认仍使用 Restic。也可选择专用 Zerobyte 任务：Enhanced 等待其成功完成，再从新快照读回本次更新的恢复文件。失败或超过 30 分钟会阻止更新。禁用内置备份需要确认，之后外部备份由您负责。镜像回滚不会恢复已修改的数据。
 
 **更清晰的清理通知 :** Discord 和 Apprise 报告显示实例名称并按类别汇总，完整 Docker 输出保留在历史记录中。最后检查时发现的镜像保护会计为跳过，真正的失败仍会明确显示。Enhanced 镜像包含 Buildx。
 
@@ -354,7 +356,7 @@ Enhanced 现在可以检测现有 Docker Compose 项目，并在**不移动 Comp
 
 **self-update 备份独立保留策略**
 
-Dockge-Enhanced 在受保护的自动更新前创建的强制 Restic 快照现在使用独立保留策略。新快照**创建并验证成功后**，系统会为当前安装保留**最近 2 个 self-update 快照**，并在启动 updater sidecar 前删除更旧的版本。稳定的安装专属标签可避免在多个 Dockge-Enhanced 实例共享同一 Restic 仓库时误删其他实例的快照。普通备份的保留策略（`keepLast`、每日、每周、每月）保持不变。如果独立清理失败，已验证的备份仍会保留，更新可以继续；错误会写入日志，并在后续自动更新时再次尝试清理。
+Dockge-Enhanced 在受保护的自动更新前创建的Restic 快照（选择此提供程序时）现在使用独立保留策略。新快照**创建并验证成功后**，系统会为当前安装保留**最近 2 个 self-update 快照**，并在启动 updater sidecar 前删除更旧的版本。稳定的安装专属标签可避免在多个 Dockge-Enhanced 实例共享同一 Restic 仓库时误删其他实例的快照。普通备份的保留策略（`keepLast`、每日、每周、每月）保持不变。如果独立清理失败，已验证的备份仍会保留，更新可以继续；错误会写入日志，并在后续自动更新时再次尝试清理。
 
 **Docker Compose 项目名称匹配改进**
 
@@ -378,7 +380,7 @@ Stack 编辑器现在为 `compose.yaml` 提供 **修复 / 格式化 YAML** 操�
 
 **受保护的 Dockge-Enhanced 自动更新**
 
-Dockge-Enhanced 现在可以通过受严格限制的 sidecar 自动更新。替换容器前必须完成 Restic 备份和仓库完整性检查，新版本必须通过可用性检查，否则自动恢复之前的镜像。
+Dockge-Enhanced 现在可以通过受严格限制的 sidecar 自动更新。默认在替换容器前完成 Restic 备份和仓库完整性检查，新版本必须通过可用性检查，否则自动恢复之前的镜像。
 
 Updater 同时支持普通 Unix socket（包括 `DOCKGE_DOCKER_SOCKET`）以及使用 `DOCKER_HOST=tcp://proxy:2375` 的受信任 Docker Socket Proxy。TCP 模式不会挂载 socket：sidecar 启动时先接入 Enhanced 的一个 Docker 网络，再连接其余网络；只有全部网络连接完成并收到启动信号后，才会执行已签名的计划。Docker 端点保持不变。代理必须允许容器检查、创建、启动、停止和删除，镜像检查/拉取以及网络连接；只读代理不能执行 self-update。未加密的 TCP 端点只能位于受信任的内部网络。若证书目录已挂载到 Enhanced，会保留 TLS 设置；否则更新会在替换前安全停止。
 
@@ -527,7 +529,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 全局和按镜像暂停、跳过版本和自动更新历史
 - 每个 Stack、镜像、digest 和通知目标只发送一次待更新通知
 - 全局维护窗口：为 Dockge-Enhanced 自动更新设置后，也同样限制镜像自动更新，否则使用各镜像自己的计划；**立即更新**始终立即执行
-- 受保护的 Dockge-Enhanced 自更新：强制 Restic 备份、完整性检查、就绪验证和自动恢复
+- 受保护的自更新：默认 Restic、已验证的 Zerobyte 备份，或明确确认的外部备份。保留签名恢复状态、磁盘空间检查、健康检查和镜像回滚。
 - 通过 Unix 套接字或可信的 Docker Socket Proxy 进行自更新，检查磁盘空间，并在 Compose 或 `.env` 有未保存修改时阻止自动更新
 - 持久化的 8 阶段自更新时间线，并显示实时主机负载
 - 在使用自定义 Compose `hostname:` 时也能可靠识别当前容器，无法验证时显示降级状态
@@ -608,7 +610,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 <details>
 <summary>查看受保护的更新流程</summary>
 
-Dockge-Enhanced 会自动处理完整流程：强制 Restic 备份、完整性验证、受控替换容器、健康检查和最终确认。Discord/Apprise 通知也可以在无需一直打开 WebUI 的情况下跟踪操作。
+Dockge-Enhanced 会自动处理完整流程：默认 Restic 备份、完整性验证、受控替换容器、健康检查和最终确认。Discord/Apprise 通知也可以在无需一直打开 WebUI 的情况下跟踪操作。
 
 在 **更新** 页面为 Dockge-Enhanced 自动更新配置维护时段后，该时段也会成为所有镜像自动更新的全局窗口。窗口之外检测到的镜像更新会排队等待下一个允许时段；手动执行的 **立即更新** 不受此窗口限制。
 

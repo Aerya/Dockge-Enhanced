@@ -69,3 +69,9 @@ In **Backup → Maintenance and diagnostics**, choose an enabled destination and
 - Restore any selection of files, or a whole stack with **Restore stack**.
 - After each scheduled backup, a restore test reads a real file from the new snapshot and records the result in the backup history. Use **Check integrity** for a full `restic check`.
 - Protected self-updates and recovery workflows rely on these verified Restic snapshots.
+
+## Choose the backup before self-update
+
+Restic remains the default. You can instead select a dedicated Zerobyte job: Enhanced waits for its successful completion and reads back this update’s recovery file from the new snapshot. Failure or a 30-minute timeout blocks the update. Disabling integrated backups requires confirmation; external backups are then your responsibility. Image rollback does not restore modified data.
+
+Configure Zerobyte under Backup. Use a dedicated job: source = the complete Enhanced data directory mounted in Zerobyte, with no filters, hooks, schedule or retries. Enhanced verifies the fresh snapshot and blocks the update on failure or after 30 minutes. Retention remains managed in Zerobyte.

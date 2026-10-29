@@ -4,6 +4,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-10-29 — Choisir la sauvegarde avant l’auto-mise à jour** — Restic reste le choix par défaut. Vous pouvez sélectionner un job Zerobyte dédié : Enhanced attend sa réussite et relit le fichier de récupération de cette mise à jour dans le nouveau snapshot. Un échec ou un délai de 30 minutes bloque la mise à jour. Désactiver les sauvegardes intégrées exige une confirmation ; les sauvegardes externes sont alors sous votre responsabilité. Le rollback d’image ne restaure pas les données modifiées.
+
 **2026-10-27 — Notifications de nettoyage plus lisibles** — Les bilans Discord et Apprise indiquent l’instance et résument chaque catégorie ; les sorties Docker complètes restent dans l’historique. Les protections d’images détectées au dernier contrôle sont distinguées des vrais échecs. Buildx est inclus dans l’image Enhanced.
 
 **2026-10-27 — Heure par défaut des mises à jour planifiées** — Choisissez l’heure proposée pour les mises à jour d’images planifiées dans Images. Les horaires existants restent inchangés ; les stacks liées utilisent le réglage et le fuseau des planifications de leur instance hôte.

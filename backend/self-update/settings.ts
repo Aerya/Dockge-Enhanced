@@ -13,8 +13,15 @@ export interface AutomaticImageUpdateWindow {
 
 export const DEFAULT_SELF_UPDATE_SETTINGS: SelfUpdateSettings = {
     mode: "manual",
-    schedule: { type: "immediate", start: "03:00", end: "05:00", days: [ 0, 1, 2, 3, 4, 5, 6 ] },
-    pause: { enabled: false, until: null },
+    backupProvider: "restic",
+    zerobyteJobId: "",
+    zerobyteDataPath: "",
+    schedule: { type: "immediate",
+        start: "03:00",
+        end: "05:00",
+        days: [ 0, 1, 2, 3, 4, 5, 6 ] },
+    pause: { enabled: false,
+        until: null },
 };
 
 export function normalizeSelfUpdateSettings(value: unknown): SelfUpdateSettings {
@@ -28,6 +35,9 @@ export function normalizeSelfUpdateSettings(value: unknown): SelfUpdateSettings 
 
     return {
         mode: raw.mode === "sidecar" || raw.mode === "agent" ? raw.mode : "manual",
+        backupProvider: raw.backupProvider === "zerobyte" || raw.backupProvider === "external" ? raw.backupProvider : "restic",
+        zerobyteJobId: typeof raw.zerobyteJobId === "string" && /^[a-zA-Z0-9_-]{1,128}$/.test(raw.zerobyteJobId) ? raw.zerobyteJobId : "",
+        zerobyteDataPath: typeof raw.zerobyteDataPath === "string" && raw.zerobyteDataPath.length <= 1024 && raw.zerobyteDataPath.startsWith("/") && !/[\x00-\x1f]/.test(raw.zerobyteDataPath) && !raw.zerobyteDataPath.split("/").some(p => p === ".." || p === ".") ? raw.zerobyteDataPath.replace(/\/$/, "") : "",
         schedule: {
             type: scheduleRaw.type === "window" ? "window" : "immediate",
             start: validTime(scheduleRaw.start, DEFAULT_SELF_UPDATE_SETTINGS.schedule.start),
@@ -39,8 +49,12 @@ export function normalizeSelfUpdateSettings(value: unknown): SelfUpdateSettings 
 }
 
 export function selfUpdateMayRun(settings: SelfUpdateSettings, now = new Date()): boolean {
-    if (settings.mode !== "sidecar") return false;
-    if (settings.pause.enabled && (!settings.pause.until || Date.parse(settings.pause.until) > now.getTime())) return false;
+    if (settings.mode !== "sidecar") {
+        return false;
+    }
+    if (settings.pause.enabled && (!settings.pause.until || Date.parse(settings.pause.until) > now.getTime())) {
+        return false;
+    }
     return settings.schedule.type === "immediate" || (settings.schedule.days.includes(schedulingClock(now).weekday) && isWithinMaintenanceWindow(settings.schedule.start, settings.schedule.end, now));
 }
 
@@ -49,7 +63,9 @@ export function selfUpdateMayRun(settings: SelfUpdateSettings, now = new Date())
  * container image updates. Manual image updates remain available at any time.
  */
 export function getAutomaticImageUpdateWindow(settings: SelfUpdateSettings): AutomaticImageUpdateWindow | null {
-    if (settings.mode !== "sidecar" || settings.schedule.type !== "window") return null;
+    if (settings.mode !== "sidecar" || settings.schedule.type !== "window") {
+        return null;
+    }
     return {
         start: settings.schedule.start,
         end: settings.schedule.end,
