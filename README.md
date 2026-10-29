@@ -61,7 +61,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 October 2026
 
-**Choose the backup before self-update :** Restic remains the default. You can instead select a dedicated Zerobyte job: Enhanced waits for its successful completion and reads back this update’s recovery file from the new snapshot. Failure or a 30-minute timeout blocks the update. Disabling integrated backups requires confirmation; external backups are then your responsibility. Image rollback does not restore modified data.
+**Choose the backup before self-update :** Three choices before updating Enhanced: Restic (default), Zerobyte with a verified backup, or no backup before updating after acknowledging the risk of data loss. In the last mode, Enhanced neither runs nor verifies any backup and requires no proof of an external backup. With Zerobyte, a dedicated job must succeed and its new snapshot must contain this update’s recovery file; failure or a 30-minute timeout blocks the update. Image rollback does not restore modified data.
 
 **Clearer cleanup notifications :** Discord and Apprise cleanup reports identify the instance and summarize each category, keeping full Docker output in history. Last-minute image protections are reported as skips; genuine failures remain visible. Buildx is included in the Enhanced image.
 
@@ -528,7 +528,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Global and per-image pause, skipped releases and auto-update history
 - One pending-update notification per stack, image, digest and destination
 - A global maintenance window: when automatic Dockge-Enhanced updates use one, it also gates automatic image updates, otherwise per-image schedules apply; **Update now** stays immediate
-- Protected self-update: Restic by default, a verified Zerobyte backup, or explicitly acknowledged external backups. Signed recovery state, disk-space checks, health checks and image rollback remain enabled.
+- Protected self-update: Restic by default, a verified Zerobyte backup, or no backup before updating after acknowledging the risk. Signed recovery state, disk-space checks, health checks and image rollback remain enabled.
 - Self-update through a Unix socket or a trusted Docker Socket Proxy, with disk-space checks and protection while Compose or `.env` edits are unsaved
 - Persisted 8-stage self-update timeline with live host load
 - Reliable current-container discovery with custom Compose `hostname:` values, and a visible degraded state when verification is unavailable

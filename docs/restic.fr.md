@@ -72,6 +72,6 @@ Dans **Sauvegarde → Maintenance et diagnostics**, choisissez une destination a
 
 ## Choisir la sauvegarde avant l’auto-mise à jour
 
-Restic reste le choix par défaut. Vous pouvez sélectionner un job Zerobyte dédié : Enhanced attend sa réussite et relit le fichier de récupération de cette mise à jour dans le nouveau snapshot. Un échec ou un délai de 30 minutes bloque la mise à jour. Désactiver les sauvegardes intégrées exige une confirmation ; les sauvegardes externes sont alors sous votre responsabilité. Le rollback d’image ne restaure pas les données modifiées.
+Trois choix avant la mise à jour d’Enhanced : Restic (par défaut), Zerobyte avec sauvegarde vérifiée, ou aucune sauvegarde préalable après confirmation du risque de perte de données. Dans ce dernier mode, Enhanced ne lance ni ne vérifie aucune sauvegarde et n’exige pas de preuve de sauvegarde externe. Avec Zerobyte, un job dédié doit réussir et son nouveau snapshot contenir le fichier de récupération de cette mise à jour ; un échec ou un délai de 30 minutes bloque la mise à jour. Le rollback d’image ne restaure pas les données modifiées.
 
 Configurez Zerobyte dans Sauvegarde. Utilisez un job dédié : source = dossier complet de données Enhanced monté dans Zerobyte, sans filtres, hooks, planification ni tentatives automatiques. Enhanced vérifie le snapshot frais et bloque la mise à jour en cas d’échec ou après 30 minutes. La rétention reste gérée dans Zerobyte.

@@ -72,6 +72,6 @@ En **Backup → Mantenimiento y diagnóstico**, elige un destino activo y revisa
 
 ## Elegir la copia previa a la autoactualización
 
-Restic sigue siendo la opción predeterminada. Puede elegir una tarea Zerobyte dedicada: Enhanced espera su éxito y vuelve a leer el archivo de recuperación de esta actualización en el nuevo snapshot. Un error o un plazo de 30 minutos bloquea la actualización. Desactivar las copias integradas requiere confirmación; las copias externas quedan bajo su responsabilidad. El rollback de imagen no restaura datos modificados.
+Tres opciones antes de actualizar Enhanced: Restic (predeterminada), Zerobyte con copia verificada o ninguna copia previa tras aceptar el riesgo de pérdida de datos. En este último modo, Enhanced no ejecuta ni verifica ninguna copia y no exige pruebas de una copia externa. Con Zerobyte, una tarea dedicada debe completarse correctamente y su nuevo snapshot debe contener el archivo de recuperación de esta actualización; un fallo o un plazo de 30 minutos bloquea la actualización. El rollback de imagen no restaura datos modificados.
 
 Configure Zerobyte en Copia de seguridad. Use una tarea dedicada: origen = directorio completo de datos de Enhanced montado en Zerobyte, sin filtros, hooks, programación ni reintentos. Enhanced verifica el snapshot nuevo y bloquea la actualización si falla o tras 30 minutos. La retención sigue gestionándose en Zerobyte.

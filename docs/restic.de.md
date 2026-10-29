@@ -72,6 +72,6 @@ Wählen Sie unter **Backup → Wartung und Diagnose** ein aktives Ziel und sehen
 
 ## Backup vor dem Selbst-Update auswählen
 
-Restic bleibt der Standard. Alternativ kann ein eigener Zerobyte-Job gewählt werden: Enhanced wartet auf den erfolgreichen Abschluss und liest die Wiederherstellungsdatei dieses Updates aus dem neuen Snapshot zurück. Fehler oder ein Timeout nach 30 Minuten blockieren das Update. Das Deaktivieren integrierter Backups erfordert eine Bestätigung; externe Backups liegen dann in Ihrer Verantwortung. Ein Image-Rollback stellt geänderte Daten nicht wieder her.
+Drei Möglichkeiten vor dem Enhanced-Update: Restic (Standard), Zerobyte mit geprüftem Backup oder kein Backup vor dem Update nach Bestätigung des Datenverlustrisikos. Im letzten Modus startet oder prüft Enhanced kein Backup und verlangt keinen Nachweis eines externen Backups. Bei Zerobyte muss ein eigener Job erfolgreich sein und sein neuer Snapshot die Wiederherstellungsdatei dieses Updates enthalten; Fehler oder ein Timeout nach 30 Minuten blockieren das Update. Ein Image-Rollback stellt geänderte Daten nicht wieder her.
 
 Konfigurieren Sie Zerobyte unter Backup. Verwenden Sie einen eigenen Job: Quelle = vollständiges, in Zerobyte eingebundenes Enhanced-Datenverzeichnis, ohne Filter, Hooks, Zeitplan oder Wiederholungen. Enhanced prüft den neuen Snapshot und blockiert das Update bei Fehlern oder nach 30 Minuten. Die Aufbewahrung wird weiterhin in Zerobyte verwaltet.

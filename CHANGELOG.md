@@ -4,7 +4,7 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
-**2026-10-29 — Choose the backup before self-update** — Restic remains the default. You can instead select a dedicated Zerobyte job: Enhanced waits for its successful completion and reads back this update’s recovery file from the new snapshot. Failure or a 30-minute timeout blocks the update. Disabling integrated backups requires confirmation; external backups are then your responsibility. Image rollback does not restore modified data.
+**2026-10-29 — Choose the backup before self-update** — Three choices before updating Enhanced: Restic (default), Zerobyte with a verified backup, or no backup before updating after acknowledging the risk of data loss. In the last mode, Enhanced neither runs nor verifies any backup and requires no proof of an external backup. With Zerobyte, a dedicated job must succeed and its new snapshot must contain this update’s recovery file; failure or a 30-minute timeout blocks the update. Image rollback does not restore modified data.
 
 **2026-10-27 — Clearer cleanup notifications** — Discord and Apprise cleanup reports identify the instance and summarize each category, keeping full Docker output in history. Last-minute image protections are reported as skips; genuine failures remain visible. Buildx is included in the Enhanced image.
 

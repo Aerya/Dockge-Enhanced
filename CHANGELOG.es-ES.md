@@ -4,7 +4,7 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
-**2026-10-29 — Elegir la copia previa a la autoactualización** — Restic sigue siendo la opción predeterminada. Puede elegir una tarea Zerobyte dedicada: Enhanced espera su éxito y vuelve a leer el archivo de recuperación de esta actualización en el nuevo snapshot. Un error o un plazo de 30 minutos bloquea la actualización. Desactivar las copias integradas requiere confirmación; las copias externas quedan bajo su responsabilidad. El rollback de imagen no restaura datos modificados.
+**2026-10-29 — Elegir la copia previa a la autoactualización** — Tres opciones antes de actualizar Enhanced: Restic (predeterminada), Zerobyte con copia verificada o ninguna copia previa tras aceptar el riesgo de pérdida de datos. En este último modo, Enhanced no ejecuta ni verifica ninguna copia y no exige pruebas de una copia externa. Con Zerobyte, una tarea dedicada debe completarse correctamente y su nuevo snapshot debe contener el archivo de recuperación de esta actualización; un fallo o un plazo de 30 minutos bloquea la actualización. El rollback de imagen no restaura datos modificados.
 
 **2026-10-27 — Notificaciones de limpieza más claras** — Los informes de Discord y Apprise identifican la instancia y resumen cada categoría; la salida completa de Docker se conserva en el historial. Las protecciones de imágenes detectadas en la última comprobación se distinguen de los fallos reales. La imagen de Enhanced incluye Buildx.
 
