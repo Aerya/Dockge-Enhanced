@@ -1130,11 +1130,17 @@ export class WatcherRouter extends Router {
         });
 
         router.post("/self/settings", async (req: Request, res: Response) => {
-            const settings = await SelfUpdateManager.getInstance().saveSettings(req.body);
-            await auditWatcherAction(req, "self_update.configure", "dockge", "self", "success", null, { mode: settings.mode,
-                schedule: settings.schedule });
-            res.json({ ok: true,
-                data: settings });
+            try {
+                const settings = await SelfUpdateManager.getInstance().saveSettings(req.body);
+                await auditWatcherAction(req, "self_update.configure", "dockge", "self", "success", null, { mode: settings.mode,
+                    schedule: settings.schedule,
+                    backupProvider: settings.backupProvider });
+                res.json({ ok: true,
+                    data: settings });
+            } catch (error) {
+                res.status(400).json({ ok: false,
+                    message: error instanceof Error ? error.message : String(error) });
+            }
         });
 
         router.post("/self/update", async (req: Request, res: Response) => {

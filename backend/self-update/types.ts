@@ -2,7 +2,7 @@ import { UpdatePause } from "../watchers/update-policy";
 
 export type SelfUpdateMode = "manual" | "sidecar" | "agent";
 export type SelfUpdateScheduleType = "immediate" | "window";
-export type SelfUpdateBlockerCode = "active-editor" | "image-work" | "restic-backup" | "restic-restore" | "stack-transfer" | "stack-replication" | "trivy-scan" | "external-stack-integration" | "disk-space" | "state-check-error";
+export type SelfUpdateBlockerCode = "active-editor" | "image-work" | "restic-backup" | "zerobyte-backup" | "restic-restore" | "stack-transfer" | "stack-replication" | "trivy-scan" | "external-stack-integration" | "disk-space" | "state-check-error";
 
 export type SelfUpdateStage =
     | "preparing"
@@ -17,12 +17,17 @@ export type SelfUpdateStage =
 
 export interface SelfUpdateStageTiming {
     stage: SelfUpdateStage;
+    skipped?: boolean;
+    backupProvider?: "restic" | "zerobyte" | "external";
     startedAt: string;
     finishedAt?: string | null;
 }
 
 export interface SelfUpdateSettings {
     mode: SelfUpdateMode;
+    backupProvider: "restic" | "zerobyte" | "external";
+    zerobyteJobId: string;
+    zerobyteDataPath: string;
     schedule: {
         type: SelfUpdateScheduleType;
         start: string;

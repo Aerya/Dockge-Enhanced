@@ -5,13 +5,29 @@
 
         <div class="shadow-box big-padding mb-3">
             <h3 class="h6">{{ $t("updates.self.heading") }}</h3>
-            <p class="form-text">{{ $t("updates.self.backupRequired") }}</p>
+            <p class="form-text">{{ $t("updates.self.backupPolicyHelp") }}</p>
             <p class="alert alert-info py-2">{{ $t("updates.self.scopeHint") }}</p>
             <label class="form-label" for="self-update-mode">{{ $t("updates.self.mode") }}</label>
             <select id="self-update-mode" v-model="settings.mode" class="form-select" @change="save">
                 <option value="manual">{{ $t("updates.self.manual") }}</option>
                 <option value="sidecar">{{ $t("updates.self.sidecar") }}</option>
             </select>
+
+            <label class="form-label mt-3" for="self-update-backup">{{ $t("updates.self.backupPolicy") }}</label>
+            <select id="self-update-backup" v-model="settings.backupProvider" class="form-select" :disabled="operationExecuting" @change="changeBackupProvider">
+                <option value="restic">{{ $t("updates.self.backupRestic") }}</option>
+                <option value="zerobyte">{{ $t("updates.self.backupZerobyte") }}</option>
+                <option value="external">{{ $t("updates.self.backupExternal") }}</option>
+            </select>
+            <p v-if="settings.backupProvider === 'external'" class="alert alert-warning mt-2">{{ $t("updates.self.backupExternalWarning") }}</p>
+            <div v-if="settings.backupProvider === 'zerobyte'" class="mt-2">
+                <p class="form-text">{{ $t("updates.self.backupZerobyteHelp") }}</p>
+                <label for="self-update-zb-job" class="form-label">{{ $t("updates.self.backupZerobyteJob") }}</label>
+                <input id="self-update-zb-job" v-model="settings.zerobyteJobId" class="form-control" :disabled="operationExecuting" @input="markSettingsDirty" @change="save">
+                <label for="self-update-zb-path" class="form-label mt-2">{{ $t("updates.self.backupZerobytePath") }}</label>
+                <input id="self-update-zb-path" v-model="settings.zerobyteDataPath" class="form-control" placeholder="/sources/enhanced-data" :disabled="operationExecuting" @input="markSettingsDirty" @change="save">
+            </div>
+            <p v-if="settingsError" class="alert alert-danger mt-2" role="alert">{{ settingsError }}</p>
 
             <template v-if="settings.mode === 'sidecar'">
                 <label class="form-label mt-3">{{ $t("updates.self.when") }}</label>
@@ -93,6 +109,7 @@
             </p>
 
             <template v-if="operationActive || showStageTimeline">
+                <p class="form-text">{{ $t("updates.self.backupPolicy") }} : {{ $t(operation.stageHistory?.find(entry => entry.backupProvider)?.backupProvider === 'zerobyte' ? 'updates.self.backupZerobyte' : operation.stageHistory?.find(entry => entry.backupProvider)?.backupProvider === 'external' ? 'updates.self.backupExternal' : 'updates.self.backupRestic') }}</p>
                 <div v-if="operationExecuting && hostStats" class="machine-load mb-3">
                     <strong>{{ $t("updates.status.machineLoad") }}</strong>
                     <span>CPU {{ hostStats.cpu }}%</span>
@@ -143,7 +160,7 @@
                                 <strong>{{ index + 1 }}. {{ $t(step.titleKey) }}</strong>
                                 <span v-if="stepDurationLabel(step.stage)" class="stage-duration">{{ stepDurationLabel(step.stage) }}</span>
                             </div>
-                            <div class="form-text">{{ $t(step.descriptionKey) }}</div>
+                            <div class="form-text">{{ stageTiming(step.stage)?.skipped ? $t("updates.self.backupSkipped") : $t(step.descriptionKey) }}</div>
                         </div>
                     </div>
                     <div v-if="operation.stage === 'rollback'" class="update-stage" :class="stepStatusClass('rollback')">
@@ -189,10 +206,13 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { watcherApi } from "./shared";
 
-interface BuildMetadata { revision: string; created: string; }
+interface BuildMetadata { revision: string;
+    created: string; }
 type SelfUpdateStage = "preparing" | "backup" | "verify-backup" | "prune-backup" | "prepare-updater" | "pull-target" | "replace-container" | "health-check" | "rollback";
 interface StageTiming {
     stage: SelfUpdateStage;
+    skipped?: boolean;
+    backupProvider?: string;
     startedAt: string;
     finishedAt?: string | null;
 }
@@ -218,11 +238,40 @@ interface HostStats {
 }
 
 const { t } = useI18n();
-const settings = ref({ mode: "manual", schedule: { type: "immediate", start: "03:00", end: "05:00", days: [ 0, 1, 2, 3, 4, 5, 6 ] }, pause: { enabled: false, until: null as string | null } });
-const updatePause = ref({ enabled: false, until: null as string | null });
-const emptyBuild = (): BuildMetadata => ({ revision: "", created: "" });
-const status = ref({ updateAvailable: false, repo: "", localDigest: "", remoteDigest: "", localBuild: emptyBuild(), remoteBuild: emptyBuild(), error: null as string | null });
-const operation = ref<Operation>({ state: "idle", message: "", startedAt: null, finishedAt: null, targetImage: "" });
+const settings = ref({ mode: "manual",
+    backupProvider: "restic",
+    zerobyteJobId: "",
+    zerobyteDataPath: "",
+    schedule: { type: "immediate",
+        start: "03:00",
+        end: "05:00",
+        days: [ 0, 1, 2, 3, 4, 5, 6 ] },
+    pause: { enabled: false,
+        until: null as string | null } });
+const savedBackupProvider = ref("restic");
+const settingsError = ref("");
+let settingsDirty = false;
+let settingsRevision = 0;
+function markSettingsDirty() {
+    settingsDirty = true;
+    settingsRevision++;
+}
+const updatePause = ref({ enabled: false,
+    until: null as string | null });
+const emptyBuild = (): BuildMetadata => ({ revision: "",
+    created: "" });
+const status = ref({ updateAvailable: false,
+    repo: "",
+    localDigest: "",
+    remoteDigest: "",
+    localBuild: emptyBuild(),
+    remoteBuild: emptyBuild(),
+    error: null as string | null });
+const operation = ref<Operation>({ state: "idle",
+    message: "",
+    startedAt: null,
+    finishedAt: null,
+    targetImage: "" });
 const progress = ref<null | {
     phase: "backup" | "verification" | "retention";
     label: string;
@@ -247,7 +296,8 @@ const imageBatch = ref({
 const pausePreset = ref("7");
 const pauseDate = ref("");
 const now = ref(Date.now());
-const weekDays = computed(() => [ 0, 1, 2, 3, 4, 5, 6 ].map((value) => ({ value, label: t(`updates.self.day${value}`) })));
+const weekDays = computed(() => [ 0, 1, 2, 3, 4, 5, 6 ].map((value) => ({ value,
+    label: t(`updates.self.day${value}`) })));
 let statusTimer: ReturnType<typeof setInterval> | undefined;
 let clockTimer: ReturnType<typeof setInterval> | undefined;
 
@@ -309,15 +359,27 @@ const currentStateLabel = computed(() => {
     if (operationActive.value && operation.value.stage) {
         return t(`updates.stage.${operation.value.stage}.title`);
     }
-    if (operationActive.value) return t(`updates.status.${operation.value.state}`);
-    if ([ "failed", "rolled-back", "rollback-failed" ].includes(operation.value.state)) return t(`updates.status.${operation.value.state}`);
-    if (status.value.error) return t("updates.status.checkUnavailableTitle");
+    if (operationActive.value) {
+        return t(`updates.status.${operation.value.state}`);
+    }
+    if ([ "failed", "rolled-back", "rollback-failed" ].includes(operation.value.state)) {
+        return t(`updates.status.${operation.value.state}`);
+    }
+    if (status.value.error) {
+        return t("updates.status.checkUnavailableTitle");
+    }
     return status.value.updateAvailable ? t("updates.status.available") : t("updates.status.current");
 });
 const currentStateClass = computed(() => {
-    if (operationActive.value) return "state-active";
-    if ([ "failed", "rolled-back", "rollback-failed" ].includes(operation.value.state)) return "state-error";
-    if (status.value.error) return "state-error";
+    if (operationActive.value) {
+        return "state-active";
+    }
+    if ([ "failed", "rolled-back", "rollback-failed" ].includes(operation.value.state)) {
+        return "state-error";
+    }
+    if (status.value.error) {
+        return "state-error";
+    }
     return status.value.updateAvailable ? "state-warning" : "state-success";
 });
 const showTechnicalError = computed(() => [ "failed", "rollback-failed" ].includes(operation.value.state) && !!operation.value.message);
@@ -335,7 +397,9 @@ const targetDigest = computed(() => operationActive.value ? (operationTargetDige
 const targetBuildMetadata = computed(() => (!operationActive.value || targetDigest.value === status.value.remoteDigest) ? status.value.remoteBuild : emptyBuild());
 const targetBuildLabel = computed(() => buildLabel(targetBuildMetadata.value, targetDigest.value));
 const progressPercent = computed(() => {
-    if (!progress.value || progress.value.phase !== "backup" || !progress.value.total) return null;
+    if (!progress.value || progress.value.phase !== "backup" || !progress.value.total) {
+        return null;
+    }
     return Math.max(0, Math.min(100, Math.round((progress.value.completed || 0) / progress.value.total * 100)));
 });
 const elapsedMs = computed(() => operation.value.startedAt ? Math.max(0, now.value - Date.parse(operation.value.startedAt)) : 0);
@@ -347,7 +411,9 @@ const remainingLabel = computed(() => {
         return "";
     }
     const remaining = progress.value.total - progress.value.completed;
-    if (remaining <= 0) return "";
+    if (remaining <= 0) {
+        return "";
+    }
     return formatDuration(stageElapsedMs.value * remaining / progress.value.completed);
 });
 const throughputLabel = computed(() => {
@@ -361,19 +427,27 @@ const loadAverageLabel = computed(() => {
     return Number.isFinite(value) ? Number(value).toFixed(2) : "";
 });
 const lastOperationLabel = computed(() => {
-    if (!terminalStates.has(operation.value.state) || !operation.value.finishedAt) return "";
+    if (!terminalStates.has(operation.value.state) || !operation.value.finishedAt) {
+        return "";
+    }
     const date = new Date(operation.value.finishedAt).toLocaleString();
     const duration = operation.value.startedAt ? formatDuration(Date.parse(operation.value.finishedAt) - Date.parse(operation.value.startedAt)) : "";
     const state = t(`updates.status.${operation.value.state}`);
-    return duration ? t("updates.status.lastOperationWithDuration", { state, date, duration }) : t("updates.status.lastOperationAt", { state, date });
+    return duration ? t("updates.status.lastOperationWithDuration", { state,
+        date,
+        duration }) : t("updates.status.lastOperationAt", { state,
+        date });
 });
 const pauseLabel = computed(() => updatePause.value.until ? t("updates.pause.until", { date: new Date(updatePause.value.until).toLocaleString() }) : t("updates.pause.indefinite"));
 
 function stageTiming(stage: SelfUpdateStage): StageTiming | undefined {
-    return [...(operation.value.stageHistory ?? [])].reverse().find(entry => entry.stage === stage);
+    return [ ...(operation.value.stageHistory ?? []) ].reverse().find(entry => entry.stage === stage);
 }
 
 function stepStatusClass(stage: SelfUpdateStage): string {
+    if (stageTiming(stage)?.skipped) {
+        return "stage-skipped";
+    }
     if (stage === "rollback") {
         if (operation.value.state === "rolling-back") {
             return "stage-current";
@@ -408,6 +482,9 @@ function stepStatusClass(stage: SelfUpdateStage): string {
 }
 
 function stepMarker(stage: SelfUpdateStage): string {
+    if (stageTiming(stage)?.skipped) {
+        return "—";
+    }
     const statusClass = stepStatusClass(stage);
     if (statusClass === "stage-done") {
         return "✓";
@@ -450,12 +527,18 @@ async function loadHostStats() {
 }
 
 async function load() {
+    const loadedRevision = settingsRevision;
     const [ settingsResult, statusResult, pauseResult, imageResult ] = await Promise.all([
         watcherApi("GET", "/self/settings"), watcherApi("GET", "/self/status"), watcherApi("GET", "/image/auto-update"), watcherApi("GET", "/image/update-all"),
     ]);
-    if (settingsResult.ok) settings.value = settingsResult.data;
+    if (settingsResult.ok && !settingsDirty && loadedRevision === settingsRevision) {
+        settings.value = { ...settings.value,
+            ...settingsResult.data };
+        savedBackupProvider.value = settings.value.backupProvider;
+    }
     if (statusResult.ok) {
-        status.value = { ...status.value, ...statusResult };
+        status.value = { ...status.value,
+            ...statusResult };
         operation.value = statusResult.operation ?? operation.value;
         progress.value = statusResult.progress ?? null;
     }
@@ -493,9 +576,37 @@ async function updateAllImages() {
     }
 }
 
-async function save() { await watcherApi("POST", "/self/settings", settings.value); }
+async function save(externalBackupAcknowledged: unknown = false) {
+    markSettingsDirty();
+    const savedRevision = settingsRevision;
+    const result = await watcherApi("POST", "/self/settings", { ...settings.value,
+        externalBackupAcknowledged: externalBackupAcknowledged === true });
+    settingsError.value = result.ok ? "" : result.message || t("updates.images.unknownError");
+    if (result.ok) {
+        savedBackupProvider.value = settings.value.backupProvider;
+        if (savedRevision === settingsRevision) {
+            settingsDirty = false;
+        }
+    }
+}
+async function changeBackupProvider() {
+    if (settings.value.backupProvider === "external" && savedBackupProvider.value !== "external") {
+        if (!window.confirm(t("updates.self.backupExternalWarning"))) {
+            settings.value.backupProvider = savedBackupProvider.value;
+            return;
+        }
+        await save(true);
+    } else if (settings.value.backupProvider !== "zerobyte" || (settings.value.zerobyteJobId && settings.value.zerobyteDataPath)) {
+        await save();
+    } else {
+        // Keep the incomplete Zerobyte draft while the user fills both fields.
+        markSettingsDirty();
+    }
+}
 async function saveUpdatePause() {
-    if (!updatePause.value.enabled) updatePause.value.until = null;
+    if (!updatePause.value.enabled) {
+        updatePause.value.until = null;
+    }
     settings.value.pause = { ...updatePause.value };
     await Promise.all([
         watcherApi("POST", "/self/settings", settings.value),
@@ -512,7 +623,9 @@ async function setCustomPause() {
 }
 
 function formatBytes(value?: number): string {
-    if (!value) return "0 B";
+    if (!value) {
+        return "0 B";
+    }
     const units = [ "B", "KiB", "MiB", "GiB", "TiB" ];
     const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
     return `${(value / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
@@ -522,9 +635,14 @@ function formatDuration(ms: number): string {
     const seconds = Math.max(0, Math.round(ms / 1000));
     const minutes = Math.floor(seconds / 60);
     const rest = seconds % 60;
-    if (minutes === 0) return t("updates.status.seconds", { value: rest });
-    if (rest === 0) return t("updates.status.minutes", { value: minutes });
-    return t("updates.status.minutesSeconds", { minutes, seconds: rest });
+    if (minutes === 0) {
+        return t("updates.status.seconds", { value: rest });
+    }
+    if (rest === 0) {
+        return t("updates.status.minutes", { value: minutes });
+    }
+    return t("updates.status.minutesSeconds", { minutes,
+        seconds: rest });
 }
 
 function shortDigest(digest: string): string {
@@ -533,14 +651,22 @@ function shortDigest(digest: string): string {
 
 function buildLabel(build: BuildMetadata, digest: string): string {
     const parts: string[] = [];
-    if (build?.created && !Number.isNaN(Date.parse(build.created))) parts.push(new Date(build.created).toLocaleDateString());
-    if (build?.revision) parts.push(build.revision.slice(0, 7));
-    if (parts.length === 0 && digest) parts.push(shortDigest(digest));
+    if (build?.created && !Number.isNaN(Date.parse(build.created))) {
+        parts.push(new Date(build.created).toLocaleDateString());
+    }
+    if (build?.revision) {
+        parts.push(build.revision.slice(0, 7));
+    }
+    if (parts.length === 0 && digest) {
+        parts.push(shortDigest(digest));
+    }
     return parts.length ? parts.join(" · ") : t("updates.status.buildUnknown");
 }
 
 async function startUpdate() {
-    if (!status.value.repo || !status.value.remoteDigest) return;
+    if (!status.value.repo || !status.value.remoteDigest) {
+        return;
+    }
     updating.value = true;
     try {
         const res = await watcherApi("POST", "/self/update", { targetImage: `ghcr.io/${status.value.repo}@${status.value.remoteDigest}` });
@@ -558,11 +684,17 @@ onMounted(async () => {
     await watcherApi("POST", "/self/check");
     await load();
     statusTimer = setInterval(load, 2_500);
-    clockTimer = setInterval(() => { now.value = Date.now(); }, 1_000);
+    clockTimer = setInterval(() => {
+        now.value = Date.now();
+    }, 1_000);
 });
 onBeforeUnmount(() => {
-    if (statusTimer) clearInterval(statusTimer);
-    if (clockTimer) clearInterval(clockTimer);
+    if (statusTimer) {
+        clearInterval(statusTimer);
+    }
+    if (clockTimer) {
+        clearInterval(clockTimer);
+    }
 });
 </script>
 

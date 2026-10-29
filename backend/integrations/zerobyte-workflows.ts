@@ -11,6 +11,8 @@ import { BackupManager } from "../watchers/backup-manager";
 import { zerobyte, ZerobyteManager } from "./zerobyte-manager";
 import { managedWorkflowContext, probeManagedDestination } from "./zerobyte-installer";
 import { isZerobyteApplicationBackupActive, setZerobyteApplicationBackupActive } from "./zerobyte-coordination";
+import { isSelfUpdateBlockingImageMutations } from "../watchers/image-watcher";
+import { isDockerUpdateReservedBy } from "../self-update/operation-coordinator";
 
 const exec = promisify(execFile);
 interface Prepared { stack: string;
@@ -501,6 +503,10 @@ export class ZerobyteWorkflows {
             if (phase === "pre") {
                 if (state.lease?.task === body.jobId && state.lease.workflow === workflow.id) {
                     return;
+                }
+                const selfUpdateActive = await isSelfUpdateBlockingImageMutations(this.server.config.dataDir);
+                if (selfUpdateActive || isDockerUpdateReservedBy("self-update")) {
+                    throw new Error("A self-update is preparing or running; application backup postponed");
                 }
                 if (state.lease || this.dependencies.nativeBusy() || isZerobyteApplicationBackupActive()) {
                     throw new Error("Another application backup or native restore is active");

@@ -8,25 +8,44 @@ import {
 } from "./settings";
 
 test("existing installations keep manual self-update by default", () => {
+    assert.equal(normalizeSelfUpdateSettings({}).backupProvider, "restic");
+    assert.equal(normalizeSelfUpdateSettings({ backupProvider: "unknown" }).backupProvider, "restic");
     assert.equal(normalizeSelfUpdateSettings({}).mode, "manual");
     assert.equal(selfUpdateMayRun(normalizeSelfUpdateSettings({})), false);
+});
+
+test("backup provider and Zerobyte identifiers are normalized safely", () => {
+    assert.equal(normalizeSelfUpdateSettings({ backupProvider: "external" }).backupProvider, "external");
+    assert.equal(normalizeSelfUpdateSettings({ backupProvider: "zerobyte" }).backupProvider, "zerobyte");
+    for (const zerobyteDataPath of [ "/", "relative", "/data/../etc", "/data\nsecret" ]) {
+        assert.equal(normalizeSelfUpdateSettings({ zerobyteDataPath }).zerobyteDataPath, "");
+    }
+    assert.equal(normalizeSelfUpdateSettings({ zerobyteJobId: "../secret" }).zerobyteJobId, "");
 });
 
 test("sidecar immediate updates are allowed unless paused", () => {
     const settings = normalizeSelfUpdateSettings({ mode: "sidecar" });
     assert.equal(selfUpdateMayRun(settings), true);
-    settings.pause = { enabled: true, until: null };
+    settings.pause = { enabled: true,
+        until: null };
     assert.equal(selfUpdateMayRun(settings), false);
 });
 
 test("window updates wait for the configured time", () => {
-    const settings = normalizeSelfUpdateSettings({ mode: "sidecar", schedule: { type: "window", start: "03:00", end: "05:00" } });
+    const settings = normalizeSelfUpdateSettings({ mode: "sidecar",
+        schedule: { type: "window",
+            start: "03:00",
+            end: "05:00" } });
     assert.equal(selfUpdateMayRun(settings, new Date(2026, 0, 1, 4, 0)), true);
     assert.equal(selfUpdateMayRun(settings, new Date(2026, 0, 1, 6, 0)), false);
 });
 
 test("window updates only run on selected weekdays", () => {
-    const settings = normalizeSelfUpdateSettings({ mode: "sidecar", schedule: { type: "window", start: "03:00", end: "05:00", days: [ 1 ] } });
+    const settings = normalizeSelfUpdateSettings({ mode: "sidecar",
+        schedule: { type: "window",
+            start: "03:00",
+            end: "05:00",
+            days: [ 1 ] } });
     assert.equal(selfUpdateMayRun(settings, new Date("2026-08-31T04:00:00")), true);
     assert.equal(selfUpdateMayRun(settings, new Date("2026-09-01T04:00:00")), false);
 });
@@ -34,7 +53,10 @@ test("window updates only run on selected weekdays", () => {
 test("self-update window gates every automatic image update", () => {
     const settings = normalizeSelfUpdateSettings({
         mode: "sidecar",
-        schedule: { type: "window", start: "03:00", end: "05:00", days: [ 1 ] },
+        schedule: { type: "window",
+            start: "03:00",
+            end: "05:00",
+            days: [ 1 ] },
     });
 
     assert.deepEqual(getAutomaticImageUpdateWindow(settings), {
@@ -50,9 +72,12 @@ test("self-update window gates every automatic image update", () => {
 test("manual or immediate self-update settings do not delay automatic images", () => {
     const manual = normalizeSelfUpdateSettings({
         mode: "manual",
-        schedule: { type: "window", start: "03:00", end: "05:00" },
+        schedule: { type: "window",
+            start: "03:00",
+            end: "05:00" },
     });
-    const immediate = normalizeSelfUpdateSettings({ mode: "sidecar", schedule: { type: "immediate" } });
+    const immediate = normalizeSelfUpdateSettings({ mode: "sidecar",
+        schedule: { type: "immediate" } });
 
     assert.equal(getAutomaticImageUpdateWindow(manual), null);
     assert.equal(automaticImageUpdatesMayRun(manual, new Date("2026-08-31T06:00:00")), true);

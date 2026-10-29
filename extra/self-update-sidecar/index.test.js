@@ -17,6 +17,25 @@ function clock() {
     return { now: () => value, sleep: ms => { value += ms; } };
 }
 
+test("sidecar preserves backup provider and skipped steps across replacement", () => {
+    const statusPath = path.join(root, "status.json");
+    fs.writeFileSync(statusPath, JSON.stringify({
+        id: "backup-policy", state: "updating", stage: "prepare-updater",
+        stageHistory: [
+            { stage: "preparing", backupProvider: "external", startedAt: "2026-10-29T00:00:00Z", finishedAt: "2026-10-29T00:00:01Z" },
+            { stage: "backup", skipped: true, startedAt: "2026-10-29T00:00:01Z", finishedAt: "2026-10-29T00:00:01Z" },
+            { stage: "prepare-updater", startedAt: "2026-10-29T00:00:01Z" },
+        ],
+    }));
+    sidecar.writeStatus("waiting-health", "checking", false, { id: "backup-policy" }, "health-check");
+    sidecar.writeStatus("succeeded", "ready", false, { id: "backup-policy" }, "health-check");
+    const status = JSON.parse(fs.readFileSync(statusPath, "utf8"));
+    assert.equal(status.stageHistory[0].backupProvider, "external");
+    assert.equal(status.stageHistory[1].skipped, true);
+    assert.equal(status.notificationPending, true);
+    fs.rmSync(statusPath);
+});
+
 test("a healthy container must remain healthy for the stability period", () => {
     const time = clock();
     const docker = args => args[1] === "inspect" ? JSON.stringify({ State: { Running: true, Status: "running", Health: { Status: "healthy" } } }) : "";

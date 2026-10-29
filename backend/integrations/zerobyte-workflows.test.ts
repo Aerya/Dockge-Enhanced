@@ -7,6 +7,7 @@ import { ZerobyteWorkflows } from "./zerobyte-workflows";
 import { ZerobyteManager } from "./zerobyte-manager";
 import { DockgeServer } from "../dockge-server";
 import { isZerobyteApplicationBackupActive, setZerobyteApplicationBackupActive } from "./zerobyte-coordination";
+import { tryReserveDockerUpdate } from "../self-update/operation-coordinator";
 
 async function fixture() {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "zerobyte-workflow-"));
@@ -132,6 +133,28 @@ async function fixture() {
                 force: true });
         } };
 }
+test("self-update reservations and persisted sidecar state prevent stop hooks", async () => {
+    const f = await fixture();
+    const reservation = tryReserveDockerUpdate("self-update");
+    assert.ok(reservation);
+    try {
+        await assert.rejects(f.workflows.hook(f.workflow.id, "pre", "Bearer " + f.workflow.token, f.body), /self-update/);
+        assert.ok(!f.events.includes("stop"));
+        assert.equal(isZerobyteApplicationBackupActive(), false);
+        reservation.release();
+        await fs.mkdir(path.join(f.dir, "self-update"));
+        await fs.writeFile(path.join(f.dir, "self-update/status.json"), JSON.stringify({ state: "updating" }));
+        await assert.rejects(f.workflows.hook(f.workflow.id, "pre", "Bearer " + f.workflow.token, f.body), /self-update/);
+        assert.ok(!f.events.includes("stop"));
+        await fs.writeFile(path.join(f.dir, "self-update/status.json"), JSON.stringify({ state: "scheduled" }));
+        await f.workflows.hook(f.workflow.id, "pre", "Bearer " + f.workflow.token, f.body);
+        assert.ok(f.events.includes("stop"));
+    } finally {
+        reservation.release();
+        await f.cleanup();
+    }
+});
+
 test("confirmed provisioning is idempotent, disabled, without retention and hides callback secrets", async () => {
     const f = await fixture();
     try {
