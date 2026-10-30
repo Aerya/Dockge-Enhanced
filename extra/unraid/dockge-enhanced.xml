@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>dockge-enhanced-unraid-test</Name>
+  <Repository>ghcr.io/aerya/dockge-enhanced:test-unraid</Repository>
+  <Registry>https://ghcr.io/aerya/dockge-enhanced</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/Aerya/Dockge-Enhanced/issues</Support>
+  <Project>https://github.com/Aerya/Dockge-Enhanced</Project>
+  <Overview>Experimental Unraid test package, not validated on real Unraid hardware. Docker Compose is included. Use disposable stacks and dedicated data. Keep self-updates and automatic cleanup disabled. The Docker socket grants host-level control. Read extra/unraid/README.md on branch test/unraid before installing.</Overview>
+  <Category>Tools: System:</Category>
+  <WebUI>http://[IP]:[PORT:5001]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/test/unraid/extra/unraid/dockge-enhanced.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Aerya/Dockge-Enhanced/test/unraid/frontend/public/web-app-manifest-192x192.png</Icon>
+  <ExtraParams>--restart unless-stopped</ExtraParams>
+  <Config Name="WebUI" Target="5001" Default="5055" Mode="tcp" Description="Choose a free host port." Type="Port" Display="always" Required="true" Mask="false">5055</Config>
+  <Config Name="Dedicated test data" Target="/app/data" Default="/mnt/user/appdata/dockge-enhanced-unraid-test/data" Mode="rw" Description="Never reuse production data." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/dockge-enhanced-unraid-test/data</Config>
+  <Config Name="Dedicated test stacks" Target="/mnt/user/appdata/dockge-enhanced-unraid-test/stacks" Default="/mnt/user/appdata/dockge-enhanced-unraid-test/stacks" Mode="rw" Description="Host path, container path and DOCKGE_STACKS_DIR must match exactly. Change all three together." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/dockge-enhanced-unraid-test/stacks</Config>
+  <Config Name="DOCKGE_STACKS_DIR" Target="DOCKGE_STACKS_DIR" Default="/mnt/user/appdata/dockge-enhanced-unraid-test/stacks" Mode="" Description="Must match both sides of the stacks mount." Type="Variable" Display="always" Required="true" Mask="false">/mnt/user/appdata/dockge-enhanced-unraid-test/stacks</Config>
+  <Config Name="Docker socket" Target="/var/run/docker.sock" Default="/var/run/docker.sock" Mode="rw" Description="Grants control over ALL host containers, including production. Not a security sandbox." Type="Path" Display="always" Required="true" Mask="false">/var/run/docker.sock</Config>
+</Container>
