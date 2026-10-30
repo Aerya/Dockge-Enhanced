@@ -61,6 +61,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+**Browser- und Mobilgeräte-Symbole :** ICO- und PNG-Symbole werden aus dem Enhanced-SVG-Logo neu erzeugt, statt Farbstreifen anzuzeigen. Versionierte Symbol-URLs erneuern den Browser-Cache; eine bestehende Verknüpfung auf dem Startbildschirm muss gegebenenfalls neu angelegt werden.
+
 **Backup vor dem Selbst-Update auswählen :** Drei Möglichkeiten vor dem Enhanced-Update: Restic (Standard), Zerobyte mit geprüftem Backup oder kein Backup vor dem Update nach Bestätigung des Datenverlustrisikos. Im letzten Modus startet oder prüft Enhanced kein Backup und verlangt keinen Nachweis eines externen Backups. Bei Zerobyte muss ein eigener Job erfolgreich sein und sein neuer Snapshot die Wiederherstellungsdatei dieses Updates enthalten; Fehler oder ein Timeout nach 30 Minuten blockieren das Update. Ein Image-Rollback stellt geänderte Daten nicht wieder her.
 
 **Übersichtlichere Bereinigungsbenachrichtigungen :** Discord- und Apprise-Berichte nennen die Instanz und fassen jede Kategorie zusammen; vollständige Docker-Ausgaben bleiben im Verlauf. Beim letzten Prüfschritt erkannte Image-Schutzmaßnahmen zählen als übersprungen, echte Fehler bleiben sichtbar. Buildx ist im Enhanced-Image enthalten.

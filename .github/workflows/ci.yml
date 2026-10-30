@@ -37,6 +37,9 @@ jobs:
       - name: Contrôle documentaire (README, CHANGELOG, guides)
         run: python3 .github/scripts/check_docs.py
 
+      - name: Vérifier les icônes raster et leurs références
+        run: python3 .github/scripts/check_icons.py
+
       - name: Setup Node.js 22
         if: steps.docs.outputs.docs_only != 'true'
         uses: actions/setup-node@v7

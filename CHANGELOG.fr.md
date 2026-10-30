@@ -4,6 +4,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-10-30 — Icônes du navigateur et des mobiles** — Les icônes ICO et PNG sont régénérées depuis le logo SVG Enhanced au lieu d’afficher des rayures colorées. Leurs URL versionnées renouvellent le cache du navigateur ; un raccourci déjà installé sur l’écran d’accueil peut nécessiter d’être recréé.
+
 **2026-10-29 — Choisir la sauvegarde avant l’auto-mise à jour** — Trois choix avant la mise à jour d’Enhanced : Restic (par défaut), Zerobyte avec sauvegarde vérifiée, ou aucune sauvegarde préalable après confirmation du risque de perte de données. Dans ce dernier mode, Enhanced ne lance ni ne vérifie aucune sauvegarde et n’exige pas de preuve de sauvegarde externe. Avec Zerobyte, un job dédié doit réussir et son nouveau snapshot contenir le fichier de récupération de cette mise à jour ; un échec ou un délai de 30 minutes bloque la mise à jour. Le rollback d’image ne restaure pas les données modifiées.
 
 **2026-10-27 — Notifications de nettoyage plus lisibles** — Les bilans Discord et Apprise indiquent l’instance et résument chaque catégorie ; les sorties Docker complètes restent dans l’historique. Les protections d’images détectées au dernier contrôle sont distinguées des vrais échecs. Buildx est inclus dans l’image Enhanced.
