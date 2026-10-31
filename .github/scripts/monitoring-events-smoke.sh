@@ -14,7 +14,7 @@ started=$(date +%s)
 created+=("$(docker run -d --name monitoring-smoke-crash --label dockge-monitoring-smoke=true \
     --network none --read-only --restart always --entrypoint sh "$image" -c 'sleep 1; exit 1')")
 created+=("$(docker run -d --name monitoring-smoke-unhealthy --label dockge-monitoring-smoke=true \
-    --network none --read-only --health-cmd 'exit 1' --health-interval 1s --health-retries 1 --health-start-period 0s \
+    --network none --read-only --health-cmd 'exit 1' --health-interval 1s --health-retries 1 --health-start-period 1s \
     --entrypoint sh "$image" -c 'sleep 120')")
 ready=false
 for _ in $(seq 1 30); do
