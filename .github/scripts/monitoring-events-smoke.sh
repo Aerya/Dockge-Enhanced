@@ -14,7 +14,7 @@ started=$(date +%s)
 created+=("$(docker run -d --name monitoring-smoke-crash --label dockge-monitoring-smoke=true \
     --network none --read-only --restart always --entrypoint sh "$image" -c 'sleep 1; exit 1')")
 created+=("$(docker run -d --name monitoring-smoke-unhealthy --label dockge-monitoring-smoke=true \
-    --network none --read-only --health-cmd 'exit 1' --health-interval 1s --health-retries 1 \
+    --network none --read-only --health-cmd 'exit 1' --health-interval 1s --health-retries 1 --health-start-period 0s \
     --entrypoint sh "$image" -c 'sleep 120')")
 ready=false
 for _ in $(seq 1 30); do
@@ -25,7 +25,10 @@ for _ in $(seq 1 30); do
     fi
     sleep 1
 done
-[[ "$ready" == true ]]
+if [[ "$ready" != true ]]; then
+    docker inspect --format '{{.Name}} restarts={{.RestartCount}} state={{json .State}}' "${created[@]}"
+    exit 1
+fi
 # Make the exclusive upper bound later than the events being checked.
 sleep 1
 finished=$(date +%s)
