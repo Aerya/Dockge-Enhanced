@@ -129,6 +129,9 @@ jobs:
           docker logs dockge-pr-validation
           exit 1
 
+      - name: Tester les événements Docker réels du Monitoring
+        run: bash .github/scripts/monitoring-events-smoke.sh "dockge-enhanced-pr:${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}"
+
       - name: Nettoyer le conteneur de validation
         if: always()
         run: |

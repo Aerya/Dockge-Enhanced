@@ -61,6 +61,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 Oktober 2026
 
+**Monitoring mit aktuellen Docker-Versionen :** Docker-Ereignisse werden über `Action` und `Actor.ID` mit Rückfall auf ältere Felder gelesen, damit Crash-Loop-Warnungen, Unhealthy-Meldungen und konfigurierte Auto-Heal-Aktionen wieder ausgelöst werden. Benachrichtigungsintervalle und Rollout-Schutz bleiben erhalten.
+
 **Browser- und Mobilgeräte-Symbole :** ICO- und PNG-Symbole werden aus dem Enhanced-SVG-Logo neu erzeugt, statt Farbstreifen anzuzeigen. Versionierte Symbol-URLs erneuern den Browser-Cache; eine bestehende Verknüpfung auf dem Startbildschirm muss gegebenenfalls neu angelegt werden.
 
 **Backup vor dem Selbst-Update auswählen :** Drei Möglichkeiten vor dem Enhanced-Update: Restic (Standard), Zerobyte mit geprüftem Backup oder kein Backup vor dem Update nach Bestätigung des Datenverlustrisikos. Im letzten Modus startet oder prüft Enhanced kein Backup und verlangt keinen Nachweis eines externen Backups. Bei Zerobyte muss ein eigener Job erfolgreich sein und sein neuer Snapshot die Wiederherstellungsdatei dieses Updates enthalten; Fehler oder ein Timeout nach 30 Minuten blockieren das Update. Ein Image-Rollback stellt geänderte Daten nicht wieder her.

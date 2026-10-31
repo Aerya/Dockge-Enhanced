@@ -74,9 +74,11 @@ export interface HealthEvent {
 }
 
 interface DockerEvent {
+    Action?: string;
     status?: string;
     id?: string;
     Actor?: {
+        ID?: string;
         Attributes?: Record<string, string | undefined>;
     };
 }
@@ -285,9 +287,10 @@ export class MonitoringWatcher {
         try {
             const ev = JSON.parse(line) as DockerEvent;
             const attrs = ev.Actor?.Attributes ?? {};
-            const name = attrs.name ?? ev.id?.slice(0, 12) ?? "unknown";
-            const id = ev.id ?? name;
-            const status = ev.status ?? "";
+            const eventId = ev.Actor?.ID ?? ev.id;
+            const name = attrs.name ?? eventId?.slice(0, 12) ?? "unknown";
+            const id = eventId ?? name;
+            const status = ev.Action ?? ev.status ?? "";
 
             if (this.settings.crashLoopEnabled && status === "die") {
                 this.onContainerDie(name, id);
