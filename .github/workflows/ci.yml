@@ -177,7 +177,7 @@ jobs:
 
       - name: Tests des ressources et de l’historique par stack
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/stack-resource-stats.test.ts backend/stack-resource-history.test.ts backend/monitoring-history.test.ts frontend/src/stack-resource-sort.test.ts
+        run: npx tsx --test backend/stack-resource-stats.test.ts backend/stack-resource-history.test.ts backend/monitoring-history.test.ts backend/watchers/monitoring-watcher.test.ts frontend/src/stack-resource-sort.test.ts
 
       - name: Tests de l’intégration PowerWatch
         if: steps.docs.outputs.docs_only != 'true'

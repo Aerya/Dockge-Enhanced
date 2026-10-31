@@ -4,6 +4,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-10-31 — Monitorización con versiones recientes de Docker** — Lectura de `Action` y `Actor.ID` en los eventos Docker, con respaldo de los campos antiguos, para recuperar las alertas de reinicios en bucle, notificaciones unhealthy y acciones auto-heal configuradas. Se conservan los intervalos entre alertas y las protecciones de actualización sin interrupción.
+
 **2026-10-30 — Iconos del navegador y móviles** — Los iconos ICO y PNG se regeneran a partir del logotipo SVG de Enhanced en lugar de mostrar rayas de colores. Las URL versionadas renuevan la caché del navegador; puede ser necesario volver a crear un acceso directo ya instalado en la pantalla de inicio.
 
 **2026-10-29 — Elegir la copia previa a la autoactualización** — Tres opciones antes de actualizar Enhanced: Restic (predeterminada), Zerobyte con copia verificada o ninguna copia previa tras aceptar el riesgo de pérdida de datos. En este último modo, Enhanced no ejecuta ni verifica ninguna copia y no exige pruebas de una copia externa. Con Zerobyte, una tarea dedicada debe completarse correctamente y su nuevo snapshot debe contener el archivo de recuperación de esta actualización; un fallo o un plazo de 30 minutos bloquea la actualización. El rollback de imagen no restaura datos modificados.
