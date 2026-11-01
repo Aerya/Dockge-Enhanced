@@ -60,7 +60,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
-**Compose 与恢复修复 :** 允许在授权路径内恢复 `.env` 等隐藏文件，编辑器保留 configs/secrets 的八进制权限，并修复已发布 IPv6 端口链接显示 `NaN` 的问题。
+**改善 Unraid 兼容性 :** 已在 Unraid 7.3.4 虚拟机中验证：恢复堆栈的 `.env` 文件，编辑 Compose 时保留 configs/secrets 权限，并正确打开已发布端口的链接。这些通用修复也适用于其他安装环境，无需启用特殊的 Unraid 模式。 [Unraid 测试版安装指南](https://github.com/Aerya/Dockge-Enhanced/blob/test/unraid/extra/unraid/README.zh-CN.md).
 
 **重试已推迟的计划更新 :** 如果其他更新在计划时间占用 Docker 锁，镜像会保留在队列中，并在后续每分钟调度时重试，Enhanced 重启后也会继续。暂停、忽略的镜像、时间变更和全局维护窗口仍然有效。实际更新失败不会每分钟重试。
 

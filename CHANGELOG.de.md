@@ -4,7 +4,7 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
-**2026-11-01 — Compose- und Wiederherstellungskorrekturen** — Versteckte Dateien wie `.env` können innerhalb erlaubter Pfade wiederhergestellt werden. Der Editor bewahrt oktale Config-/Secret-Berechtigungen; veröffentlichte IPv6-Portlinks zeigen kein `NaN` mehr.
+**2026-11-01 — Verbesserte Unraid-Kompatibilität** — In einer Unraid-7.3.4-VM geprüfte Korrekturen: `.env`-Dateien von Stacks wiederherstellen, Compose-Dateien ohne Änderung der Config-/Secret-Berechtigungen bearbeiten und korrekte Links zu veröffentlichten Ports öffnen. Die gemeinsamen Korrekturen helfen auch anderen Installationen; ein besonderer Unraid-Modus ist nicht nötig.
 
 **2026-11-01 — Verschobene geplante Updates erneut versuchen** — Wenn ein anderes Update zur geplanten Zeit die Docker-Sperre hält, bleibt das Image in der Warteschlange und wird bei den nächsten minütlichen Durchläufen erneut versucht, auch nach einem Neustart von Enhanced. Pausen, ignorierte Images, geänderte Zeitpläne und das globale Wartungsfenster werden weiterhin berücksichtigt. Fehlgeschlagene Updates werden nicht jede Minute wiederholt.
 

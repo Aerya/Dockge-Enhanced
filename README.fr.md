@@ -62,7 +62,7 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
-**Correctifs Compose et restauration :** Restauration des fichiers cachés comme `.env` dans les chemins autorisés, conservation des permissions octales des configs/secrets dans l’éditeur et correction des liens de ports IPv6 publiés pouvant afficher `NaN`.
+**Compatibilité Unraid améliorée :** Correctifs vérifiés dans une VM Unraid 7.3.4 : restaurer les fichiers `.env` des stacks, modifier un Compose sans altérer les permissions des configs/secrets et ouvrir les bons liens de ports publiés. Ces corrections communes profitent aussi aux autres installations, sans mode spécial Unraid à activer. [Guide d’installation de la bêta Unraid](https://github.com/Aerya/Dockge-Enhanced/blob/test/unraid/extra/unraid/README.fr.md).
 
 **Reprise des mises à jour planifiées reportées :** Si une autre mise à jour occupe le verrou Docker à l’heure prévue, l’image reste en attente et une nouvelle tentative a lieu aux passages suivants du planificateur, chaque minute, y compris après un redémarrage d’Enhanced. Les pauses, exclusions, changements d’horaire et le créneau global de maintenance restent respectés. Un véritable échec de mise à jour n’est pas réessayé chaque minute.
 

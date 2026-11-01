@@ -61,7 +61,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
-**Compose and restore fixes :** Restore hidden files such as `.env` within authorized paths, preserve octal config/secret permissions in the editor, and fix published IPv6 port links that could show `NaN`.
+**Improved Unraid compatibility :** Fixes verified in an Unraid 7.3.4 VM: restore stack `.env` files, edit Compose files without changing config/secret permissions, and open the correct published port links. These shared fixes also benefit other installations; no Unraid-specific mode is required. [Unraid beta installation guide](https://github.com/Aerya/Dockge-Enhanced/blob/test/unraid/extra/unraid/README.md).
 
 **Retry deferred scheduled updates :** When another update holds the Docker lock at the scheduled time, the image stays queued and is retried on the next minute ticks, including after an Enhanced restart. Pauses, ignored images, changed schedules and the global maintenance window remain respected. Actual update failures are not retried every minute.
 
