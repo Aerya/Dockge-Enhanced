@@ -58,6 +58,7 @@ async function fixture() {
         },
     } as unknown as ZerobyteManager;
     const deps = {
+        reconnect: async () => {},
         context: async () => ({ owner: "owner",
             localMounts: [{ target: "/sources/test" }],
             destinationMounts: [{ target: "/destinations/test" }],
@@ -151,6 +152,30 @@ test("self-update reservations and persisted sidecar state prevent stop hooks", 
         assert.ok(f.events.includes("stop"));
     } finally {
         reservation.release();
+        await f.cleanup();
+    }
+});
+
+test("network repair failure never prevents recovery of an interrupted backup", async () => {
+    const f = await fixture();
+    try {
+        await f.workflows.hook(f.workflow.id, "pre", "Bearer " + f.workflow.token, f.body);
+        f.failedTask();
+        let attempts = 0;
+        const recovered = new ZerobyteWorkflows({ config: { dataDir: f.dir } } as DockgeServer, f.manager, {
+            ...f.deps,
+            reconnect: async () => {
+                attempts++;
+                throw new Error("Docker network unavailable");
+            },
+        });
+        await recovered.tick();
+        assert.equal(attempts, 1);
+        assert.equal((await recovered.status()).active, null);
+        assert.ok(f.events.includes("restore:1"));
+        await recovered.tick();
+        assert.equal(attempts, 2);
+    } finally {
         await f.cleanup();
     }
 });

@@ -61,7 +61,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
-**Improved Unraid compatibility :** Fixes verified in an Unraid 7.3.4 VM: restore stack `.env` files, edit Compose files without changing config/secret permissions, and open the correct published port links. These shared fixes also benefit other installations; no Unraid-specific mode is required. [Unraid beta installation guide](https://github.com/Aerya/Dockge-Enhanced/blob/test/unraid/extra/unraid/README.md).
+**Improved Unraid compatibility :** Fixes verified in an Unraid 7.3.4 VM: restore stack `.env` files, edit Compose files without changing config/secret permissions, and open the correct published port links. These shared fixes also benefit other installations; no Unraid-specific mode is required. Template and installation guide included; managed Zerobyte reconnects after Enhanced is recreated. [Unraid installation guide](extra/unraid/README.md).
 
 **Retry deferred scheduled updates :** When another update holds the Docker lock at the scheduled time, the image stays queued and is retried on the next minute ticks, including after an Enhanced restart. Pauses, ignored images, changed schedules and the global maintenance window remain respected. Actual update failures are not retried every minute.
 
@@ -588,6 +588,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Guides: [REST API, webhooks and Home Assistant](docs/AUTOMATION.md) · [Home Assistant integration](docs/HOME-ASSISTANT.md)
 
 ### Integrations
+
+- Unraid: [installation template and guide](extra/unraid/README.md), no Compose plugin required.
 - Zerobyte: managed installation or external connection
 - PowerWatch and PowerWatch Hub: external observation or managed deployment
 - PlugNPiN for Nginx Proxy Manager, Pi-hole and AdGuard Home
@@ -773,6 +775,8 @@ Before an automatic self-update starts, Enhanced also checks that no sensitive o
 ---
 
 ## Installation
+
+Unraid: [installation template and guide](extra/unraid/README.md), no Compose plugin required.
 
 ```yaml
 # compose.yaml
