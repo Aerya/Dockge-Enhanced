@@ -636,7 +636,7 @@ export function assertPathWithinRoots(candidate: string, roots: string[]): strin
             return resolvedRoot;
         }
         const segments = relative.split(path.sep);
-        if (!path.isAbsolute(relative) && segments.every(segment => /^[a-zA-Z0-9][a-zA-Z0-9_. -]*$/.test(segment))) {
+        if (!path.isAbsolute(relative) && segments.every(segment => segment !== "." && segment !== ".." && /^(?:[a-zA-Z0-9]|\.[a-zA-Z0-9_])[a-zA-Z0-9_. -]*$/.test(segment))) {
             return path.join(resolvedRoot, ...segments);
         }
     }

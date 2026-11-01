@@ -228,6 +228,10 @@ test("defaults unknown stack policies to hot mode", () => {
 });
 
 test("borne les chemins aux racines autorisées", () => {
+    assert.equal(assertPathWithinRoots("/mnt/data/app/.env", [ "/mnt/data" ]), "/mnt/data/app/.env");
+    assert.equal(assertPathWithinRoots("/mnt/data/.config/app/.env.local", [ "/mnt/data" ]), "/mnt/data/.config/app/.env.local");
+    assert.throws(() => assertPathWithinRoots("/mnt/data/../.env", [ "/mnt/data" ]), /hors des emplacements/);
+    assert.throws(() => assertPathWithinRoots("/mnt/data/app/.env\0", [ "/mnt/data" ]), /hors des emplacements/);
     assert.equal(assertPathWithinRoots("/mnt/data/app/config", [ "/mnt/data" ]), "/mnt/data/app/config");
     assert.equal(assertPathWithinRoots("/mnt/data", [ "/mnt/data" ]), "/mnt/data");
     assert.throws(() => assertPathWithinRoots("/mnt/database", [ "/mnt/data" ]), /hors des emplacements/);
