@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.windowsWsl": "Guide Windows 11 pour Docker Desktop avec WSL2 et des conteneurs Linux. Correction des montages Windows du sidecar de mise à jour et redémarrage ordonné des services partageant un namespace réseau. Le monitoring décrit la VM Linux, pas tout l’hôte Windows. Après redémarrage Windows, certains montages WSL nécessitent une reprise manuelle décrite dans le guide.",
     "stack.lastOperation": "Dernière opération",
     "stack.lastOperationHint": "Date du dernier déploiement, pull ou mise à jour d’image vérifiée ; elle ne garantit pas que tous les services sont à jour.",
     "releaseNews.item.verifiedImageUpdates": "ImageWatcher retrouve les images dont le tag local a disparu, vérifie chaque réplica ciblé après Compose et signale les divergences comme des échecs. Une mise à jour non vérifiable ne fait plus avancer la date. Les images téléchargées restent protégées de la purge pendant 24 heures après une tentative interrompue ou non vérifiée.",

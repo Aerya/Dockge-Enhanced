@@ -15,7 +15,9 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 </p>
 
 <p align="center">
-  <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
+  <img src="https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black" alt="Linux">
+  <a href="extra/unraid/README.md"><img src="https://img.shields.io/badge/Unraid-F15A2C?logo=unraid&logoColor=white" alt="Unraid"></a>
+  <a href="docs/windows.md"><img src="https://img.shields.io/badge/Windows-WSL2-0078D4" alt="Windows — WSL2"></a>
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
   <img src="https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20ES%20%7C%20DE%20%7C%20zh--CN-blue" alt="i18n">
   <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
@@ -61,7 +63,9 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
-**Verified image updates — Proposed change in this branch; not yet published.** ImageWatcher recovers images whose local tag disappeared, verifies every targeted replica after Compose and reports mismatches as failures. Unverifiable updates do not advance the date. Downloaded images remain protected from cleanup for 24 hours after an interrupted or unverified attempt. [Verified image updates](docs/image-update-verification.md).
+**Windows 11 / WSL2 validation:** installation guide, tested Compose actions, Restic/Zerobyte backups and linked instances. The Windows sidecar mount and shared-network restart fixes preserve Linux/Unraid paths and permissions. [Windows 11 with Docker Desktop (WSL2)](docs/windows.md). After restarting Windows, some WSL mounts require the manual recovery described in the guide.
+
+**Verified image updates :** ImageWatcher recovers images whose local tag disappeared, verifies every targeted replica after Compose and reports mismatches as failures. Unverifiable updates do not advance the date. Downloaded images remain protected from cleanup for 24 hours after an interrupted or unverified attempt. [Verified image updates](docs/image-update-verification.md).
 
 **Improved Unraid compatibility :** Fixes verified in an Unraid 7.3.4 VM: restore stack `.env` files, edit Compose files without changing config/secret permissions, and open the correct published port links. These shared fixes also benefit other installations; no Unraid-specific mode is required. Template and installation guide included; managed Zerobyte reconnects after Enhanced is recreated. [Unraid installation guide](extra/unraid/README.md).
 
@@ -466,6 +470,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-instance choice of Hostname or IP address for container port links
 
 ### Stack management
+- Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md)
 - Create, edit, start, stop, restart, update, recreate, pause/resume and take down Compose stacks
 - Directly accessible stack action bar, with icons-only or icons-and-text modes and explained Compose commands
 - Per-service and per-container actions, including actual containers and Compose replicas
@@ -779,6 +784,8 @@ Before an automatic self-update starts, Enhanced also checks that no sensitive o
 ## Installation
 
 Unraid: [installation template and guide](extra/unraid/README.md), no Compose plugin required.
+
+Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md).
 
 ```yaml
 # compose.yaml

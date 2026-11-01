@@ -29,6 +29,7 @@ import {
     composeModelReadError,
     parseResolvedComposeModel,
     resolveNetworkNamespaceRecreateTargets,
+    restartComposeServices,
     targetedComposeRecreateArgsForTargets,
 } from "./compose-network-namespace";
 import { ContainerInstance, parseContainerInstances, requireContainerInstance } from "./container-instances";
@@ -1540,12 +1541,14 @@ export class Stack {
     async restart(socket: DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("restart"), this.path);
-        if (exitCode !== 0) {
-            throw new Error("Failed to restart, please check the terminal output for more information.");
-        }
+        await restartComposeServices(await this.getResolvedServiceModel(), undefined, async (command, ...args) => {
+            const exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions(command, ...args), this.path);
+            if (exitCode !== 0) {
+                throw new Error("Failed to restart, please check the terminal output for more information.");
+            }
+        });
         await this.writeMeta({ lastStartedAt: new Date().toISOString() });
-        return exitCode;
+        return 0;
     }
 
     @stackMutation
@@ -1554,22 +1557,27 @@ export class Stack {
             throw new ValidationError("Service name is required");
         }
         await this.assertStartGuard();
-        const res = await childProcessAsync.spawn("docker", this.getComposeOptions("restart", serviceName), {
-            cwd: this.path,
-            encoding: "utf-8",
+        await restartComposeServices(await this.getResolvedServiceModel(), [ serviceName ], async (command, ...args) => {
+            const res = await childProcessAsync.spawn("docker", this.getComposeOptions(command, ...args), {
+                cwd: this.path,
+                encoding: "utf-8",
+            });
+            if ((res.code ?? 0) !== 0) {
+                throw new Error(`Failed to restart service ${serviceName}`);
+            }
         });
-        const exitCode = res.code ?? 0;
-        if (exitCode !== 0) {
-            throw new Error(`Failed to restart service ${serviceName}`);
-        }
         await this.writeMeta({ lastStartedAt: new Date().toISOString() });
-        return exitCode;
+        return 0;
     }
 
     async getServiceActionTargets(serviceName: string): Promise<string[]> {
         if (!/^[a-zA-Z0-9_.-]+$/.test(serviceName)) {
             throw new ValidationError("Invalid service name");
         }
+        return resolveNetworkNamespaceRecreateTargets(await this.getResolvedServiceModel(), [ serviceName ]);
+    }
+
+    private async getResolvedServiceModel() {
         try {
             const result = await childProcessAsync.spawn("docker", this.getComposeOptions("config", "--format", "json"), {
                 cwd: this.path,
@@ -1578,10 +1586,7 @@ export class Stack {
             if ((result.code ?? 0) !== 0) {
                 throw new Error(result.stderr?.toString().trim() || "docker compose config failed");
             }
-            return resolveNetworkNamespaceRecreateTargets(
-                parseResolvedComposeModel(result.stdout?.toString() || ""),
-                [ serviceName ],
-            );
+            return parseResolvedComposeModel(result.stdout?.toString() || "");
         } catch (error) {
             throw composeModelReadError(error);
         }
@@ -1609,7 +1614,11 @@ export class Stack {
         if (action !== "stop") {
             await this.assertStartGuard();
         }
-        const targets = await this.getServiceActionTargets(serviceName);
+        if (!/^[a-zA-Z0-9_.-]+$/.test(serviceName)) {
+            throw new ValidationError("Invalid service name");
+        }
+        const model = await this.getResolvedServiceModel();
+        const targets = resolveNetworkNamespaceRecreateTargets(model, [ serviceName ]);
         if (authorizeTargets) {
             await authorizeTargets(targets);
         }
@@ -1625,7 +1634,7 @@ export class Stack {
         } else if (action === "stop") {
             await exec("stop", ...[ ...targets ].reverse());
         } else if (action === "restart") {
-            await exec("restart", ...targets);
+            await restartComposeServices(model, targets, exec);
         } else if (action === "update" || action === "pull-recreate") {
             if (await this.tryRollingUpdate(targets, authorizeTargets)) {
                 serviceStatusCache.delete(this.name);

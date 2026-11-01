@@ -1,10 +1,12 @@
 # Dockge Enhanced Changelog
 
-> **Verified image updates — Proposed change in this branch; not yet published.** ImageWatcher recovers images whose local tag disappeared, verifies every targeted replica after Compose and reports mismatches as failures. Unverifiable updates do not advance the date. Downloaded images remain protected from cleanup for 24 hours after an interrupted or unverified attempt. [Verified image updates](docs/image-update-verification.md).
+> **Windows 11 / WSL2 validation:** installation guide, tested Compose actions, Restic/Zerobyte backups and linked instances. The Windows sidecar mount and shared-network restart fixes preserve Linux/Unraid paths and permissions. [Windows 11 with Docker Desktop (WSL2)](docs/windows.md). After restarting Windows, some WSL mounts require the manual recovery described in the guide.
 
 Complete project history, newest first. Each date is the day the change was merged into `main`. Application changes merged into `main` are published as `ghcr.io/aerya/dockge-enhanced:latest` by the build workflow; documentation-only commits do not produce a new image. Features that exist only in an open pull request or a test image are not listed here.
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
+
+**2026-11-01 — Verified image updates** — ImageWatcher recovers images whose local tag disappeared, verifies every targeted replica after Compose and reports mismatches as failures. Unverifiable updates do not advance the date. Downloaded images remain protected from cleanup for 24 hours after an interrupted or unverified attempt. [Verified image updates](docs/image-update-verification.md).
 
 **2026-11-01 — Improved Unraid compatibility** — Fixes verified in an Unraid 7.3.4 VM: restore stack `.env` files, edit Compose files without changing config/secret permissions, and open the correct published port links. These shared fixes also benefit other installations; no Unraid-specific mode is required. Template and installation guide included; managed Zerobyte reconnects after Enhanced is recreated.
 

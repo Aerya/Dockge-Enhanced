@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.windowsWsl": "Windows 11 guide for Docker Desktop with WSL2 and Linux containers. Fixes Windows self-update sidecar mounts and restarts services sharing a network namespace in order. Monitoring describes the Linux VM, not the whole Windows host. After restarting Windows, some WSL mounts require the manual recovery described in the guide.",
     "stack.lastOperation": "Last operation",
     "stack.lastOperationHint": "Date of the last deployment, pull or verified image update; this does not mean every service is up to date.",
     "releaseNews.item.verifiedImageUpdates": "ImageWatcher recovers images whose local tag disappeared, verifies every targeted replica after Compose and reports mismatches as failures. Unverifiable updates do not advance the date. Downloaded images remain protected from cleanup for 24 hours after an interrupted or unverified attempt.",

@@ -128,3 +128,50 @@ export function targetedComposeRecreateArgsForTargets(targets: string[]): [strin
         ...targets,
     ];
 }
+
+/** Compose restart may restart namespace providers and consumers concurrently. */
+export async function restartComposeServices(
+    model: ResolvedComposeModel,
+    requested: string[] | undefined,
+    run: (command: string, ...args: string[]) => Promise<void>,
+): Promise<void> {
+    const targets = resolveNetworkNamespaceRecreateTargets(model, requested ?? Object.keys(model.services));
+    if (targets.length === 0) {
+        throw new Error(`${COMPOSE_MODEL_ERROR}: no service was selected for restart`);
+    }
+    const providers = new Map(targets.map(name => [ name, new Set<string>() ]));
+    for (const provider of targets) {
+        for (const consumer of resolveNetworkNamespaceRecreateTargets(model, [ provider ]).slice(1)) {
+            providers.get(consumer)?.add(provider);
+        }
+    }
+    if ([ ...providers.values() ].every(dependencies => dependencies.size === 0)) {
+        await run("restart", ...(requested ?? []));
+        return;
+    }
+    const ordered: string[] = [];
+    const visiting = new Set<string>();
+    const visited = new Set<string>();
+    const visit = (name: string) => {
+        if (visiting.has(name)) {
+            throw new Error(`${COMPOSE_MODEL_ERROR}: cyclic network namespace dependency`);
+        }
+        if (visited.has(name)) {
+            return;
+        }
+        visiting.add(name);
+        for (const provider of providers.get(name) ?? []) {
+            visit(provider);
+        }
+        visiting.delete(name);
+        visited.add(name);
+        ordered.push(name);
+    };
+    // Resolve the complete order before making any Docker mutation.
+    targets.forEach(visit);
+    for (const name of ordered) {
+        // Wait for the provider to run before starting a consumer. Unlike up,
+        // restart never applies pending Compose edits or pulls a new image.
+        await run("restart", "--no-deps", name);
+    }
+}
