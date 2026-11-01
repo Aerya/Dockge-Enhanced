@@ -4,6 +4,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-01 — Correcciones de Compose y restauración** — Restauración de archivos ocultos como `.env` dentro de las rutas permitidas, conservación de permisos octales de configs/secrets en el editor y corrección de enlaces de puertos IPv6 publicados que podían mostrar `NaN`.
+
 **2026-11-01 — Reintentar actualizaciones programadas aplazadas** — Si otra actualización ocupa el bloqueo de Docker a la hora prevista, la imagen permanece en espera y se reintenta en los siguientes ciclos de un minuto, incluso tras reiniciar Enhanced. Se respetan las pausas, exclusiones, cambios de horario y la ventana global de mantenimiento. Los fallos reales de actualización no se reintentan cada minuto.
 
 **2026-10-31 — Monitorización con versiones recientes de Docker** — Lectura de `Action` y `Actor.ID` en los eventos Docker, con respaldo de los campos antiguos, para recuperar las alertas de reinicios en bucle, notificaciones unhealthy y acciones auto-heal configuradas. Se conservan los intervalos entre alertas y las protecciones de actualización sin interrupción.

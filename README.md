@@ -61,6 +61,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Compose and restore fixes :** Restore hidden files such as `.env` within authorized paths, preserve octal config/secret permissions in the editor, and fix published IPv6 port links that could show `NaN`.
+
 **Retry deferred scheduled updates :** When another update holds the Docker lock at the scheduled time, the image stays queued and is retried on the next minute ticks, including after an Enhanced restart. Pauses, ignored images, changed schedules and the global maintenance window remain respected. Actual update failures are not retried every minute.
 
 ### 🆕 October 2026

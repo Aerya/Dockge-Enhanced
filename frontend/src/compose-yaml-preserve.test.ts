@@ -1,6 +1,38 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { preserveQuotedScalarStyles, preserveTmpfsModeLiterals } from "./compose-yaml-preserve";
+import { parse, stringify } from "yaml";
+
+test("preserves octal config and secret permissions across reorder, deletion and formatting", () => {
+    const original = `services:
+  app:
+    configs:
+      - {source: first, target: /one, mode: 0777}
+      - {source: second, target: /two, mode: 0440}
+    secrets:
+      - {source: password, mode: 0400}
+`;
+    const model = parse(original);
+    model.services.app.configs.reverse();
+    const generated = stringify(model);
+    const result = preserveTmpfsModeLiterals(original, generated);
+    assert.match(result, /mode: 0440/);
+    assert.match(result, /mode: 0777/);
+    assert.match(result, /mode: 0400/);
+    assert.deepEqual(parse(result), model);
+    model.services.app.configs.pop();
+    model.services.app.secrets[0].mode = 600;
+    const edited = preserveTmpfsModeLiterals(original, stringify(model));
+    assert.match(edited, /mode: 0440/);
+    assert.match(edited, /mode: 600/);
+    assert.doesNotMatch(edited, /0777|0400/);
+});
+
+test("does not copy permissions between services or different mounts", () => {
+    const original = "services: {app: {configs: [{source: a, mode: 0777}]}}";
+    const generated = "services: {other: {configs: [{source: a, mode: 777}]}, app: {configs: [{source: b, mode: 777}]}}";
+    assert.equal(preserveTmpfsModeLiterals(original, generated), generated);
+});
 
 test("preserves leading-zero tmpfs mode after visual YAML regeneration", () => {
     const original = `services:

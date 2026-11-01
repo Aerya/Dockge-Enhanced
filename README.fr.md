@@ -62,6 +62,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Correctifs Compose et restauration :** Restauration des fichiers cachés comme `.env` dans les chemins autorisés, conservation des permissions octales des configs/secrets dans l’éditeur et correction des liens de ports IPv6 publiés pouvant afficher `NaN`.
+
 **Reprise des mises à jour planifiées reportées :** Si une autre mise à jour occupe le verrou Docker à l’heure prévue, l’image reste en attente et une nouvelle tentative a lieu aux passages suivants du planificateur, chaque minute, y compris après un redémarrage d’Enhanced. Les pauses, exclusions, changements d’horaire et le créneau global de maintenance restent respectés. Un véritable échec de mise à jour n’est pas réessayé chaque minute.
 
 ### 🆕 Octobre 2026
