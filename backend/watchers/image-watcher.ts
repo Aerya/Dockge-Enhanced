@@ -4,6 +4,8 @@
  * Fichier : backend/watchers/image-watcher.ts
  */
 
+import { protectPendingPull, releasePendingPull } from "./pending-image-pulls";
+import { captureServiceImageTargets, resolveServiceImageTargets, verifyServiceImageTargets, ImageUpdateVerificationError } from "./image-update-verification";
 import { scheduleInTimezone } from "../scheduling-cron";
 import { schedulingClock } from "../scheduling-timezone";
 import { execFile } from "child_process";
@@ -54,7 +56,7 @@ import {
 import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/compose-labels";
 import { prepareRollout, type ComposeRun } from "../service-rollout";
 import { withStackMutation } from "../stack-mutation";
-import { finishDockerCleanup, tryStartDockerCleanup } from "../docker-operation-state";
+import { finishDockerCleanup, isDockerCleanupActive, tryStartDockerCleanup } from "../docker-operation-state";
 import { reconcileRollbackKeepTags, rollbackTagFromKey as rollbackTag } from "./auto-prune-manager";
 import { resolveDataDir } from "../data-dir";
 import { withStackMetadataWriteLock } from "../stack-metadata-lock";
@@ -975,9 +977,9 @@ function sanitizeIntervalHours(value: unknown, fallback = 6): number {
 }
 
 /** Informations sur l'image actuellement présente localement */
-async function getLocalImageInfo(image: string): Promise<LocalImageInfo> {
+async function getLocalImageInfo(image: string, reference = image): Promise<LocalImageInfo> {
     try {
-        const ref = withExplicitTag(image);
+        const ref = withExplicitTag(reference);
         const stdout = await docker([ "image", "inspect", "--format", "{{json .}}", ref ], { timeout: 15000 });
         const data = JSON.parse(stdout.trim());
         const repoDigests = findRepoDigestsForImage(image, data?.RepoDigests);
@@ -1549,6 +1551,9 @@ export class ImageWatcher {
     }
 
     private reserveImageMutation(key: string): DockerUpdateReservation | null {
+        if (isDockerCleanupActive()) {
+            return null;
+        }
         const reservation = tryReserveDockerUpdate("image-update");
         if (!reservation) {
             return null;
@@ -1848,7 +1853,10 @@ export class ImageWatcher {
       status.ignoredDigest = status.remoteDigest;
     }
     imageStatusStore.set(key, status);
-    if (!status.hasUpdate || status.error) {
+    if (status.error) {
+      return "pending";
+    }
+    if (!status.hasUpdate) {
       return "up-to-date";
     }
 
@@ -2336,6 +2344,10 @@ export class ImageWatcher {
                 console.warn("[ImageWatcher] Impossible de capturer l'image avant MàJ pour %s :", key, error);
             }
 
+            // Rolling services have their own replica/health/draining verification.
+            const ordinaryTargets = rolloutTargets.filter(service => !rollout?.services.includes(service) && !rollout?.managedServices.includes(service));
+            const runDocker = (args: string[], timeout: number) => docker(args, { timeout });
+            const verificationTargets = await captureServiceImageTargets(rolloutCompose, runDocker, ordinaryTargets);
             const pullCommand = composeExecInvocation(composePath, [ "pull", ...services ], project, configFiles, workingDir, envFiles);
             if (rollout && !oldImageId) {
                 throw new Error("Rolling update requires a single identifiable previous image for rollback");
@@ -2343,10 +2355,17 @@ export class ImageWatcher {
             if (ignored()) {
                 return false;
             }
+            protectPendingPull(key, withExplicitTag(status.image), "", this.dataDir);
             await docker(pullCommand.args, {
                 cwd: pullCommand.cwd,
                 timeout: 600000,
             });
+            const pulled = await getLocalImageInfo(status.image);
+            if (!pulled.imageId) {
+                throw new ImageUpdateVerificationError("Cannot inspect the downloaded image", "unverified");
+            }
+            protectPendingPull(key, withExplicitTag(status.image), pulled.imageId, this.dataDir);
+            await resolveServiceImageTargets(verificationTargets, runDocker);
             // Recheck immediately before up: a service may have stopped during pull.
             const stillRunning = await docker(runningCommand.args, { cwd: runningCommand.cwd,
                 timeout: 15_000 });
@@ -2418,15 +2437,23 @@ export class ImageWatcher {
                 });
             }
 
+            await verifyServiceImageTargets(verificationTargets, rolloutCompose, runDocker);
             // Recheck pour mettre à jour le digest dans le store
             const newStatus = await this.checkOneImage(status.image, status.stack, watched);
             imageStatusStore.set(key, newStatus);
             const verification = retirementDeferred ? { digest: "",
                 verification: "unverified" as const,
                 error: "Rolling update applied; old connections are draining. Retirement continues automatically." } : updateVerificationResult(newStatus);
-            await this.touchUpdatedStackMetadata(status.stack, watched);
+            if (!retirementDeferred && verification.verification !== "verified") {
+                throw new ImageUpdateVerificationError(verification.error ?? "Image update could not be verified",
+                    newStatus.hasUpdate && !newStatus.error ? "failed" : "unverified");
+            }
+            if (!retirementDeferred) {
+                await this.touchUpdatedStackMetadata(status.stack, watched);
+                releasePendingPull(key, this.dataDir);
+            }
             console.log(
-        `[ImageWatcher] Auto-update terminée: ${status.stack}/${status.image}`,
+        `[ImageWatcher] Auto-update ${retirementDeferred ? "en attente de drainage" : "terminée"}: ${status.stack}/${status.image}`,
             );
             await this._recordUpdateHistory({
                 timestamp: new Date().toISOString(),
@@ -2435,13 +2462,13 @@ export class ImageWatcher {
                 oldDigest,
                 newDigest: verification.digest,
                 mode,
-                success: true,
+                success: !retirementDeferred,
                 verification: verification.verification,
                 ...(retirementDeferred ? { retirementDeferred: true } : {}),
                 error: verification.error,
             });
 
-            return true;
+            return !retirementDeferred;
         } catch (e) {
             const errMsg = e instanceof Error ? e.message : String(e);
             console.error(
@@ -2458,6 +2485,7 @@ export class ImageWatcher {
                 newDigest: "",
                 mode,
                 success: false,
+                ...(e instanceof ImageUpdateVerificationError && e.verification === "unverified" ? { verification: "unverified" as const } : {}),
                 error: errMsg,
             });
 
@@ -2760,7 +2788,15 @@ export class ImageWatcher {
             lastChecked: new Date().toISOString(),
         };
         try {
-            const localInfo = await getLocalImageInfo(image);
+            let localInfo = await getLocalImageInfo(image);
+            const missingLocalTag = !localInfo.imageId;
+            if (missingLocalTag && watched) {
+                // A container keeps its immutable image even after its tag was removed.
+                const runningIds = await runningComposeImageIds(image, watched);
+                if (runningIds.length) {
+                    localInfo = await getLocalImageInfo(image, runningIds[0]);
+                }
+            }
             const preferredPlatform =
                 this.settings.imagePlatform ||
         (localInfo.platform ? platformToString(localInfo.platform) : "");
@@ -2815,6 +2851,13 @@ export class ImageWatcher {
         localInfo.digest;
 
             if (!localInfo.comparable) {
+                // Untagging can also erase RepoDigests. A real running image plus a
+                // resolved registry target is sufficient to repair the missing tag;
+                // never compare a Docker config ID to a manifest digest.
+                if (missingLocalTag && watched && localInfo.imageId && status.remoteDigest) {
+                    status.hasUpdate = true;
+                    return status;
+                }
                 status.hasUpdate = false;
                 if (!localMatchesRemote) {
                     status.error = localInfo.digest
@@ -2840,7 +2883,7 @@ export class ImageWatcher {
                 }
             }
             // RepoDigests peut contenir le manifest plateforme ou l'index multi-arch.
-            status.hasUpdate = (comparableLocalDigests.length > 0 && !localMatchesRemote) || runningDrift;
+            status.hasUpdate = missingLocalTag || (comparableLocalDigests.length > 0 && !localMatchesRemote) || runningDrift;
         } catch (e: unknown) {
             status.error = imageCheckErrorMessage(image, e);
             console.warn(`[ImageWatcher] ${stack}/${image}: ${status.error}`);

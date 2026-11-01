@@ -1,4 +1,7 @@
 {
+    "stack.lastOperation": "最近操作",
+    "stack.lastOperationHint": "最近一次部署、拉取或已验证镜像更新的时间；不代表所有服务均为最新。",
+    "releaseNews.item.verifiedImageUpdates": "ImageWatcher 可从运行中的容器找回本地标签丢失的镜像，在 Compose 执行后验证每个目标副本，并将不一致报告为失败。无法验证的更新不会推进时间。下载的镜像在更新中断或未验证后受到 24 小时清理保护。",
     "releaseNews.item.scheduledUpdateRetry": "如果其他更新在计划时间占用 Docker 锁，镜像会保留在队列中，并在后续每分钟调度时重试，Enhanced 重启后也会继续。暂停、忽略的镜像、时间变更和全局维护窗口仍然有效。实际更新失败不会每分钟重试。",
     "updates.blocker.zerobyte-backup": "Zerobyte 应用备份或恢复正在进行",
     "releaseNews.item.selfUpdateBackup": "更新 Enhanced 前有三种选择：Restic（默认）、Zerobyte 备份并验证，或确认数据丢失风险后不进行更新前备份。最后一种模式下，Enhanced 不会执行或验证任何备份，也不要求提供外部备份证明。使用 Zerobyte 时，专用任务必须成功完成，且新快照必须包含本次更新的恢复文件；失败或超过 30 分钟会阻止更新。镜像回滚不会恢复已修改的数据。",

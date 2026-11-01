@@ -2049,7 +2049,7 @@ export class Stack {
 
         // ── lastUpdated depuis .dockge-meta.json (écrit à chaque pull/deploy) ──
         const meta = await this.readMeta();
-        lastUpdated = meta.lastUpdated ?? meta.lastStartedAt ?? null;
+        lastUpdated = meta.lastUpdated ?? null;
 
         try {
             const res = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--format", "json"), {
@@ -2110,8 +2110,7 @@ export class Stack {
                 } catch { /* ignore — inspect non bloquant */ }
             }
 
-            // Fallback lastUpdated si le fichier meta n'existe pas encore
-            if (!lastUpdated) lastUpdated = lastStartedAt;
+            // A container start is not evidence of a deployment or verified image update.
             // Fallback lastStartedAt depuis meta si aucun container running
             if (!lastStartedAt) lastStartedAt = meta.lastStartedAt ?? null;
 

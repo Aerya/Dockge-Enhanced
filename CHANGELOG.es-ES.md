@@ -1,5 +1,7 @@
 # Changelog de Dockge Enhanced
 
+> **Verificación de actualizaciones de imágenes — Cambio propuesto en esta rama; aún no publicado.** ImageWatcher recupera imágenes cuyo tag local desapareció, verifica cada réplica afectada después de Compose y señala las discrepancias como fallos. Las actualizaciones no verificables no cambian la fecha. Las imágenes descargadas quedan protegidas de la limpieza durante 24 horas tras un intento interrumpido o no verificado. [Verificación de actualizaciones de imágenes](docs/image-update-verification.es.md).
+
 Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fecha corresponde al día en que el cambio se fusionó en `main`. Los cambios de la aplicación fusionados en `main` se publican como `ghcr.io/aerya/dockge-enhanced:latest` mediante el workflow de compilación; los commits solo de documentación no generan una nueva imagen. Las funciones que solo existen en una pull request abierta o en una imagen de prueba no aparecen aquí.
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.

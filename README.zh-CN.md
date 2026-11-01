@@ -60,6 +60,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**验证镜像更新 — 仅为本分支提案，不属于已发布版本。** ImageWatcher 可从运行中的容器找回本地标签丢失的镜像，在 Compose 执行后验证每个目标副本，并将不一致报告为失败。无法验证的更新不会推进时间。下载的镜像在更新中断或未验证后受到 24 小时清理保护。 [验证镜像更新](docs/image-update-verification.zh-CN.md).
+
 **改善 Unraid 兼容性 :** 已在 Unraid 7.3.4 虚拟机中验证：恢复堆栈的 `.env` 文件，编辑 Compose 时保留 configs/secrets 权限，并正确打开已发布端口的链接。这些通用修复也适用于其他安装环境，无需启用特殊的 Unraid 模式。 附带安装模板和指南；重建 Enhanced 后，自动恢复与其管理的 Zerobyte 的网络连接。 [Unraid 安装指南](extra/unraid/README.zh-CN.md).
 
 **重试已推迟的计划更新 :** 如果其他更新在计划时间占用 Docker 锁，镜像会保留在队列中，并在后续每分钟调度时重试，Enhanced 重启后也会继续。暂停、忽略的镜像、时间变更和全局维护窗口仍然有效。实际更新失败不会每分钟重试。
@@ -527,7 +529,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 ### 更新与 ImageWatcher
 
 - **服务不中断更新** — `dockge.rollout.enabled: "true"`. 启用前请先确认兼容性。应用容器数量会暂时翻倍，请预留足够的 CPU/RAM。固定容器名和共享可写卷会被拒绝。中继会增加一个容器和一个配置卷。首次安装会将访问端口移到中继，可能短暂中断访问。之后请使用“更新”；Recreate、重启和回滚不保证保持现有连接。仅支持 TCP，不支持 UDP/QUIC，也不保证所有场景零中断。 [部署](docs/service-rollout.zh-CN.md).
-- 通过 digest 检测镜像更新，无需拉取，也适用于远程实例
+- 通过 digest 检测镜像更新，无需拉取，也适用于远程实例 [验证镜像更新: 仅为本分支提案，不属于已发布版本。](docs/image-update-verification.zh-CN.md).
 - 每个镜像可设为关闭、立即或定时，并支持按 Stack 批量设置，默认保留单独例外
 - 可配置计划更新的默认时间（02:00），不改变现有计划；每个托管实例保留自己的设置
 - 默认每 6 小时完整扫描，立即模式镜像默认每 5 分钟定向检查，两者可分别配置或关闭

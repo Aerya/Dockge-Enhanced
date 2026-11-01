@@ -151,9 +151,9 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
             const racingId = id(17);
             const excludedReference = "fixture/new-excluded:keep";
             fs.writeFileSync(scenarioPath, JSON.stringify({
-                rows: [ { ...row(17, "fixture/race-excluded"),
+                rows: [{ ...row(17, "fixture/race-excluded"),
                     InspectRepoTags: [],
-                    InspectRepoDigests: [] } ],
+                    InspectRepoDigests: [] }],
                 containers: [],
                 inspectReferenceTransitions: {
                     [racingId]: {
@@ -182,9 +182,9 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
             const racingId = id(18);
             const freshReference = "fixture/new-reference:latest";
             fs.writeFileSync(scenarioPath, JSON.stringify({
-                rows: [ { ...row(18, "fixture/race-reference"),
+                rows: [{ ...row(18, "fixture/race-reference"),
                     InspectRepoTags: [],
-                    InspectRepoDigests: [] } ],
+                    InspectRepoDigests: [] }],
                 containers: [],
                 inspectReferenceTransitions: {
                     [racingId]: {
@@ -231,6 +231,23 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
             assert.ok(!commands.some(args => args[0] === "rmi"));
         });
 
+        await t.test("a freshly pulled old image survives unused and direct cleanup until verification", async () => {
+            const { protectPendingPull, releasePendingPull } = await import("./watchers/pending-image-pulls");
+            fs.writeFileSync(scenarioPath, JSON.stringify({ rows: [ row(20, "fixture/pulled", "latest", 2_200) ],
+                containers: [] }));
+            fs.writeFileSync(callsPath, "");
+            protectPendingPull("stack::fixture/pulled:latest", "fixture/pulled:latest", id(20), directory);
+            const states = await manager.getImagePurgeStates(await manager.loadImageInventory(false));
+            assert.equal(states.get(id(20))?.state, "tooRecent");
+            const result = await manager.runUnusedPrune(false);
+            assert.deepEqual(result.removed, []);
+            await assert.rejects(manager.removeImageSafely(id(20), true), /protégée/);
+            const calls = fs.readFileSync(callsPath, "utf8").trim().split("\n").map(line => JSON.parse(line) as string[]);
+            assert.ok(!calls.some(args => args[0] === "rmi"));
+            releasePendingPull("stack::fixture/pulled:latest", directory);
+            assert.equal(await manager.removeImageSafely(id(20)), true);
+        });
+
         const keepRow = (number: number, key: string) => {
             const [ repository, tag ] = rollbackTagFromKey(key).split(":");
             return row(number, repository, tag, 2_200);
@@ -248,11 +265,11 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
         fs.writeFileSync(scenarioPath, JSON.stringify({
             rows: [ keepRow(11, "orphan::keep"), keepRow(12, "expired::three-months"),
                 keepRow(13, "recovery::keep"), keepRow(14, "active::keep"), keepRow(15, "used::keep") ],
-            containers: [ {
+            containers: [{
                 Id: "used-keep",
                 Image: id(15),
                 State: { Status: "exited" },
-            } ],
+            }],
         }));
         fs.writeFileSync(callsPath, "");
         const retired = await reconcileRollbackKeepTags(directory);

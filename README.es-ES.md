@@ -61,6 +61,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Verificación de actualizaciones de imágenes — Cambio propuesto en esta rama; aún no publicado.** ImageWatcher recupera imágenes cuyo tag local desapareció, verifica cada réplica afectada después de Compose y señala las discrepancias como fallos. Las actualizaciones no verificables no cambian la fecha. Las imágenes descargadas quedan protegidas de la limpieza durante 24 horas tras un intento interrumpido o no verificado. [Verificación de actualizaciones de imágenes](docs/image-update-verification.es.md).
+
 **Compatibilidad mejorada con Unraid :** Correcciones verificadas en una VM con Unraid 7.3.4: restaurar los archivos `.env` de las stacks, editar Compose sin alterar los permisos de configs/secrets y abrir los enlaces correctos de los puertos publicados. Estas correcciones comunes también benefician a otras instalaciones, sin activar un modo especial para Unraid. Incluye plantilla y guía de instalación; Zerobyte gestionado se reconecta tras recrear Enhanced. [Guía de instalación Unraid](extra/unraid/README.es.md).
 
 **Reintentar actualizaciones programadas aplazadas :** Si otra actualización ocupa el bloqueo de Docker a la hora prevista, la imagen permanece en espera y se reintenta en los siguientes ciclos de un minuto, incluso tras reiniciar Enhanced. Se respetan las pausas, exclusiones, cambios de horario y la ventana global de mantenimiento. Los fallos reales de actualización no se reintentan cada minuto.
@@ -527,7 +529,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Actualizaciones e ImageWatcher
 
-- **Actualizaciones sin interrupción del servicio** — `dockge.rollout.enabled: "true"`. Compruebe esta compatibilidad antes de activar la opción. El número de contenedores de la aplicación se duplica temporalmente: reserve suficiente CPU/RAM. Se rechazan nombres de contenedor fijos y volúmenes compartidos con escritura. El relé añade un contenedor y un volumen de configuración. Su instalación inicial mueve el puerto de acceso y puede causar un corte. Después, utilice Actualizar; Recreate, los reinicios y el rollback no garantizan mantener las conexiones. Solo TCP, no UDP/QUIC; sin garantía universal de cero interrupciones. [Configuración](docs/service-rollout.es.md).
+- **Actualizaciones sin interrupción del servicio** — `dockge.rollout.enabled: "true"`. Compruebe esta compatibilidad antes de activar la opción. El número de contenedores de la aplicación se duplica temporalmente: reserve suficiente CPU/RAM. Se rechazan nombres de contenedor fijos y volúmenes compartidos con escritura. El relé añade un contenedor y un volumen de configuración. Su instalación inicial mueve el puerto de acceso y puede causar un corte. Después, utilice Actualizar; Recreate, los reinicios y el rollback no garantizan mantener las conexiones. Solo TCP, no UDP/QUIC; sin garantía universal de cero interrupciones. [Configuración](docs/service-rollout.es.md). [Verificación de actualizaciones: cambio propuesto en esta rama](docs/image-update-verification.es.md).
 - Detección de actualizaciones de imágenes por digest, sin pull, también en instancias remotas
 - Políticas Desactivado, Inmediato y Programado por imagen, y políticas agrupadas por stack que conservan por defecto las excepciones individuales
 - Hora programada predeterminada configurable (02:00), sin cambiar los horarios existentes; cada instancia anfitriona conserva su ajuste
