@@ -1,5 +1,7 @@
 # Dockge-Enhanced-Changelog
 
+> **Überprüfung von Image-Updates — Vorgeschlagene Änderung in diesem Branch; noch nicht veröffentlicht.** ImageWatcher findet Images ohne lokalen Tag wieder, überprüft nach Compose jedes betroffene Replikat und meldet Abweichungen als Fehler. Nicht überprüfbare Updates ändern das Datum nicht. Heruntergeladene Images bleiben nach abgebrochenen oder ungeprüften Versuchen 24 Stunden vor der Bereinigung geschützt. [Überprüfung von Image-Updates](docs/image-update-verification.de.md).
+
 Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag, an dem die Änderung in `main` gemergt wurde. Anwendungsänderungen in `main` werden vom Build-Workflow als `ghcr.io/aerya/dockge-enhanced:latest` veröffentlicht; reine Dokumentations-Commits erzeugen kein neues Image. Funktionen, die nur in einem offenen Pull Request oder einem Test-Image existieren, werden hier nicht aufgeführt.
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.

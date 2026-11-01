@@ -62,6 +62,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Vérification des mises à jour d’images — Correctif proposé dans cette branche ; pas encore publié.** ImageWatcher retrouve les images dont le tag local a disparu, vérifie chaque réplica ciblé après Compose et signale les divergences comme des échecs. Une mise à jour non vérifiable ne fait plus avancer la date. Les images téléchargées restent protégées de la purge pendant 24 heures après une tentative interrompue ou non vérifiée. [Vérification des mises à jour d’images](docs/image-update-verification.fr.md).
+
 **Compatibilité Unraid améliorée :** Correctifs vérifiés dans une VM Unraid 7.3.4 : restaurer les fichiers `.env` des stacks, modifier un Compose sans altérer les permissions des configs/secrets et ouvrir les bons liens de ports publiés. Ces corrections communes profitent aussi aux autres installations, sans mode spécial Unraid à activer. Template et guide d’installation inclus ; Zerobyte géré se reconnecte après recréation d’Enhanced. [Guide d’installation Unraid](extra/unraid/README.fr.md).
 
 **Reprise des mises à jour planifiées reportées :** Si une autre mise à jour occupe le verrou Docker à l’heure prévue, l’image reste en attente et une nouvelle tentative a lieu aux passages suivants du planificateur, chaque minute, y compris après un redémarrage d’Enhanced. Les pauses, exclusions, changements d’horaire et le créneau global de maintenance restent respectés. Un véritable échec de mise à jour n’est pas réessayé chaque minute.
@@ -527,7 +529,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 ### Mises à jour & ImageWatcher
 
 - **Mises à jour sans interruption de service** — `dockge.rollout.enabled: "true"`. Vérifiez cette compatibilité avant d’activer l’option. Le nombre de conteneurs de l’application double temporairement : prévoyez assez de CPU/RAM. Les noms de conteneurs fixes et les volumes partagés en écriture sont refusés. Le relais ajoute un conteneur et un volume de configuration. Sa première installation déplace le port d’accès et peut provoquer une coupure. Utilisez ensuite Mettre à jour ; Recreate, les redémarrages et le rollback ne garantissent pas le maintien des connexions. TCP uniquement, pas UDP/QUIC ; aucune garantie universelle de zéro coupure. [Mise en place](docs/service-rollout.fr.md).
-- Détection des mises à jour d’images par digest, sans pull, y compris sur les instances distantes
+- Détection des mises à jour d’images par digest, sans pull, y compris sur les instances distantes [Vérification des mises à jour d’images: Correctif proposé dans cette branche ; pas encore publié.](docs/image-update-verification.fr.md).
 - Politiques Désactivé, Immédiat et Planifié par image, et réglages groupés par stack qui conservent par défaut les exceptions individuelles
 - Heure planifiée par défaut configurable (02:00), sans modifier les horaires existants ; chaque instance hôte conserve son réglage
 - Analyse complète toutes les 6 heures par défaut et contrôles ciblés en mode Immédiat toutes les 5 minutes par défaut, configurables ou désactivables séparément

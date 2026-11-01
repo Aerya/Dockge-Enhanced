@@ -11,6 +11,7 @@
  */
 
 import path from "path";
+import { isPendingPullProtected } from "./pending-image-pulls";
 import * as fs from "node:fs";
 import { execFile } from "child_process";
 import { promisify } from "util";
@@ -102,7 +103,7 @@ export type PruneImageOutcome = "removed" | "used" | "active" | "rollback" | "re
 
 /** A fresh safety check refused removal; this is an explained skip, not a Docker failure. */
 export class ImageRemovalProtectedError extends Error {
-    constructor(public readonly outcome: "used" | "active" | "rollback" | "recovery" | "excluded", message: string) {
+    constructor(public readonly outcome: "used" | "active" | "rollback" | "recovery" | "excluded" | "tooRecent", message: string) {
         super(message);
     }
 }
@@ -140,6 +141,7 @@ export interface ImagePurgeContext {
     exclusions: string[];
     inspected?: InspectedImage;
     minimumAgeHours?: number;
+    pendingPullProtected?: boolean;
 }
 
 export function inspectedImageReferences(image: InspectedImage | undefined): string[] {
@@ -164,6 +166,10 @@ export function evaluateImagePurgeState(group: ImageRowGroup, context: ImagePurg
     }
     if (context.exclusions.some(value => sameImageId(value, group.id) || references.includes(value))) {
         return { state: "excluded" };
+    }
+    if (context.pendingPullProtected) {
+        return { state: "tooRecent",
+            detail: "Image protégée pendant 24 h après son téléchargement pour une mise à jour non vérifiée" };
     }
     const minimumAge = selfImage
         ? Math.max(SELF_IMAGE_GRACE_HOURS, context.minimumAgeHours ?? 0)
@@ -435,7 +441,7 @@ export async function reconcileRollbackKeepTags(dataDir = DATA_DIR, now = Date.n
         for (const tag of group.references.filter(ref => ref.startsWith("dockge-rollback-") && ref.endsWith(":keep") && !activeTags.has(ref))) {
             const { stdout: containers } = await execFileAsync("docker", [ "ps", "-aq", "--filter", `ancestor=${group.id}` ]);
             const protectedElsewhere = Boolean(containers.trim()) || setHasImageId(recoveryIds, group.id)
-                || setHasImageId(activeIds, group.id);
+                || setHasImageId(activeIds, group.id) || isPendingPullProtected(group.id, group.references, dataDir);
             if (protectedElsewhere && group.references.length === 1) {
                 // Un tag de remplacement évite que `rmi tag` détruise l'unique référence
                 // d'une image encore nécessaire au recovery ou à un conteneur.
@@ -700,6 +706,9 @@ export class AutoPruneManager {
         }
 
         const imageId = normalizeImageId(inspected.Id);
+        if (isPendingPullProtected(imageId, inspectedImageReferences(inspected))) {
+            throw new ImageRemovalProtectedError("tooRecent", "Image protégée pendant 24 h après son téléchargement pour une mise à jour non vérifiée");
+        }
         const { stdout: containerIds } = await execFileAsync("docker", [
             "ps", "-aq", "--filter", `ancestor=${imageId}`,
         ], { maxBuffer: 20 * 1024 * 1024 });
@@ -902,6 +911,7 @@ export class AutoPruneManager {
             }
             states.set(group.id, evaluateImagePurgeState(group, {
                 usedImageIds: source.usedImageIds,
+                pendingPullProtected: isPendingPullProtected(group.id, [ ...group.references, ...inspectedImageReferences(inspected) ]),
                 recoveryIds,
                 rollbackIds,
                 rollbackTags,
@@ -977,7 +987,7 @@ export class AutoPruneManager {
                     skipped.push(id);
                     continue;
                 }
-                if (!imageCreatedOldEnough(image?.Created, minimumAgeHours)) {
+                if (isPendingPullProtected(id, inspectedImageReferences(image)) || !imageCreatedOldEnough(image?.Created, minimumAgeHours)) {
                     decision.outcome = "tooRecent";
                     tooRecent.push(id);
                     skipped.push(id);
@@ -1100,6 +1110,7 @@ export class AutoPruneManager {
                 }
                 const evaluation = evaluateImagePurgeState(group, {
                     usedImageIds: inventory.usedImageIds,
+                    pendingPullProtected: isPendingPullProtected(group.id, [ ...group.references, ...inspectedImageReferences(inspected) ]),
                     recoveryIds,
                     rollbackIds,
                     rollbackTags,

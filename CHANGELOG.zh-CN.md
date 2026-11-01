@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+> **验证镜像更新 — 仅为本分支提案，不属于已发布版本。** ImageWatcher 可从运行中的容器找回本地标签丢失的镜像，在 Compose 执行后验证每个目标副本，并将不一致报告为失败。无法验证的更新不会推进时间。下载的镜像在更新中断或未验证后受到 24 小时清理保护。 [验证镜像更新](docs/image-update-verification.zh-CN.md).
+
 完整的项目历史，最新条目在前。每个日期均为该变更合并到 `main` 的日期。合并到 `main` 的应用变更会由构建工作流发布为 `ghcr.io/aerya/dockge-enhanced:latest`；仅涉及文档的提交不会生成新镜像。仅存在于未合并 Pull Request 或测试镜像中的功能不会列在这里。
 
 [README](README.zh-CN.md) 介绍近期主要更新和完整功能目录。

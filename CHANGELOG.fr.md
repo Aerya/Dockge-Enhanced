@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+> **Vérification des mises à jour d’images — Correctif proposé dans cette branche ; pas encore publié.** ImageWatcher retrouve les images dont le tag local a disparu, vérifie chaque réplica ciblé après Compose et signale les divergences comme des échecs. Une mise à jour non vérifiable ne fait plus avancer la date. Les images téléchargées restent protégées de la purge pendant 24 heures après une tentative interrompue ou non vérifiée. [Vérification des mises à jour d’images](docs/image-update-verification.fr.md).
+
 Historique complet du projet, du plus récent au plus ancien. Chaque date correspond à la fusion de la modification dans `main`. Les modifications applicatives fusionnées dans `main` sont publiées sous `ghcr.io/aerya/dockge-enhanced:latest` par le workflow de construction ; les commits purement documentaires ne produisent pas de nouvelle image. Les fonctionnalités présentes uniquement dans une pull request ouverte ou une image de test ne figurent pas ici.
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.

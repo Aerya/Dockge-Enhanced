@@ -35,8 +35,8 @@
                     :path="`/compose/${encodeURIComponent(stack.name)}`"
                 />
                 <div v-if="lastUpdated || lastStartedAt" class="stack-meta-bar">
-                    <span v-if="lastUpdated" class="stack-meta-item" :title="new Date(lastUpdated).toLocaleString()">
-                        <font-awesome-icon icon="clock" class="me-1" />{{ $t('updatedAt') }} {{ relativeTime(lastUpdated) }}
+                    <span v-if="lastUpdated" class="stack-meta-item" :title="`${new Date(lastUpdated).toLocaleString()} — ${$t('stack.lastOperationHint')}`">
+                        <font-awesome-icon icon="clock" class="me-1" />{{ $t('stack.lastOperation') }} {{ relativeTime(lastUpdated) }}
                     </span>
                     <span v-if="lastStartedAt" class="stack-meta-item" :title="new Date(lastStartedAt).toLocaleString()">
                         <font-awesome-icon icon="rotate" class="me-1" />{{ $t('restartedAt') }} {{ relativeTime(lastStartedAt) }}

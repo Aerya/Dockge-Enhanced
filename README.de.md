@@ -61,6 +61,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Überprüfung von Image-Updates — Vorgeschlagene Änderung in diesem Branch; noch nicht veröffentlicht.** ImageWatcher findet Images ohne lokalen Tag wieder, überprüft nach Compose jedes betroffene Replikat und meldet Abweichungen als Fehler. Nicht überprüfbare Updates ändern das Datum nicht. Heruntergeladene Images bleiben nach abgebrochenen oder ungeprüften Versuchen 24 Stunden vor der Bereinigung geschützt. [Überprüfung von Image-Updates](docs/image-update-verification.de.md).
+
 **Verbesserte Unraid-Kompatibilität :** In einer Unraid-7.3.4-VM geprüfte Korrekturen: `.env`-Dateien von Stacks wiederherstellen, Compose-Dateien ohne Änderung der Config-/Secret-Berechtigungen bearbeiten und korrekte Links zu veröffentlichten Ports öffnen. Die gemeinsamen Korrekturen helfen auch anderen Installationen; ein besonderer Unraid-Modus ist nicht nötig. Vorlage und Installationsanleitung enthalten; verwaltetes Zerobyte verbindet sich nach Neuerstellung von Enhanced wieder. [Unraid-Installationsanleitung](extra/unraid/README.de.md).
 
 **Verschobene geplante Updates erneut versuchen :** Wenn ein anderes Update zur geplanten Zeit die Docker-Sperre hält, bleibt das Image in der Warteschlange und wird bei den nächsten minütlichen Durchläufen erneut versucht, auch nach einem Neustart von Enhanced. Pausen, ignorierte Images, geänderte Zeitpläne und das globale Wartungsfenster werden weiterhin berücksichtigt. Fehlgeschlagene Updates werden nicht jede Minute wiederholt.
@@ -526,7 +528,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 ### Updates & ImageWatcher
 
 - **Updates ohne Dienstunterbrechung** — `dockge.rollout.enabled: "true"`. Prüfen Sie diese Kompatibilität vor dem Aktivieren. Die Anzahl der Anwendungscontainer verdoppelt sich vorübergehend: ausreichend CPU/RAM einplanen. Feste Containernamen und gemeinsam beschreibbare Volumes werden abgelehnt. Das Relay ergänzt einen Container und ein Konfigurationsvolume. Bei der Erstinstallation wird der Zugangsport verschoben; dabei kann es zu einer Unterbrechung kommen. Danach Aktualisieren verwenden; Recreate, Neustarts und Rollback garantieren keine offenen Verbindungen. Nur TCP, kein UDP/QUIC; keine allgemeine Garantie für unterbrechungsfreien Betrieb. [Einrichtung](docs/service-rollout.de.md).
-- Erkennung von Image-Updates per Digest, ohne Pull, auch auf entfernten Instanzen
+- Erkennung von Image-Updates per Digest, ohne Pull, auch auf entfernten Instanzen [Überprüfung von Image-Updates: Vorgeschlagene Änderung in diesem Branch; noch nicht veröffentlicht.](docs/image-update-verification.de.md).
 - Richtlinien Aus, Sofort und Geplant pro Image sowie stackweite Sammelrichtlinien, die einzelne Ausnahmen standardmäßig beibehalten
 - Konfigurierbare Standardzeit für geplante Updates (02:00), ohne bestehende Zeitpläne zu ändern; jede Host-Instanz behält ihre eigene Einstellung
 - Vollständiger Scan standardmäßig alle 6 Stunden und gezielte Sofort-Prüfungen standardmäßig alle 5 Minuten, getrennt konfigurierbar oder abschaltbar

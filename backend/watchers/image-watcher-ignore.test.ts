@@ -34,10 +34,11 @@ if (fs.existsSync(path.join(root, "rollout-valid"))) {
     let output = "";
     if (args.includes("config")) output=JSON.stringify({name:"fixture",services:{app:{image:"fixture/shared:latest",labels,healthcheck:{test:["CMD-SHELL",health+"true"]}},sibling:{image:"fixture/shared:latest"}}});
     else if (args.includes("ps")) output=args.includes("paused")?"":args.includes("--services")?"app\\nsibling":args[0]!=="compose"?proxy+"\\n"+old:args.includes("-aq")?[...(state.removed?[]:[old]),...(state.created?[next]:[])].join("\\n"):old;
-    else if (args[0]==="container") output=previous;
+    else if (args[0]==="container") output=args.includes("{{json .}}") ? JSON.stringify({ ...container(old),State:{Running:true,Health:{Status:"healthy"}},Image:state.siblingUpdated?target:previous,Config:{Labels:{"com.docker.compose.service":"sibling"}} }) : previous;
     else if (args[0]==="inspect") output=JSON.stringify(args.slice(1).map(container));
-    else if (args[0]==="image") output=target;
+    else if (args[0]==="image") output=args.includes("{{json .}}") ? JSON.stringify({Id:target}) : target;
     else if (args.includes("--scale")) state.created=true;
+    else if (args.includes("up")) state.siblingUpdated=true;
     else if (args[0]==="exec") state.drained=String(args.at(-1)).startsWith("touch");
     else if (args[0]==="rm") state.removed=true;
     else if (!args.some(a=>["pull","up","tag","rmi","stop"].includes(a))) process.exit(3);
@@ -59,7 +60,10 @@ if (args.includes("config")) {
         ...(invalidRollout ? {labels:{"dockge.rollout.enabled":"true"},ports:[{published:"8080"}]} : {})}}}));
 }
 else if (args.includes("ps")) console.log(args.includes("paused") ? "" : args.includes("-q") ? "container-fixture" : "app");
-else if (args.includes("inspect")) console.log("sha256:old");
+else if (args.includes("inspect")) {
+    const imageId = "sha256:" + "d".repeat(64);
+    console.log(args.includes("{{json .}}") ? JSON.stringify(args[0] === "image" ? {Id:imageId} : {Image:imageId,State:{Running:true},Config:{Labels:{"com.docker.compose.service":"app"}}}) : imageId);
+}
 else if (!args.some(a => ["pull", "up", "tag", "rmi"].includes(a))) process.exit(3);
 `, { mode: 0o700 });
 process.env.PATH = path.join(root, "bin") + path.delimiter + savedEnv.PATH;
@@ -397,4 +401,50 @@ test("a manual batch occupying the scheduled minute preserves the due slot", asy
     await w.applyPendingUpdates(new Date(now.getTime() + 120_000));
     assert.equal(calls, 1);
     assert.deepEqual(w.settings.pendingAutoUpdates, []);
+});
+
+test("a remaining digest mismatch is a failure and cannot advance stack metadata", async () => {
+    const w = watcher();
+    const meta = path.join(root, "stacks", "a", ".dockge-meta.json");
+    await fs.writeFile(meta, JSON.stringify({ lastUpdated: "2026-01-01T00:00:00Z" }));
+    w.checkOneImage = async (_image, stack) => status(stack);
+    assert.equal(await w.performAutoUpdate(status("a"), watched("a")), false);
+    assert.equal(updateHistoryStore[0].success, false);
+    assert.match(updateHistoryStore[0].error ?? "", /ne correspond pas/);
+    assert.equal(JSON.parse(await fs.readFile(meta, "utf8")).lastUpdated, "2026-01-01T00:00:00Z");
+    const { isPendingPullProtected } = await import("./pending-image-pulls");
+    assert.equal(isPendingPullProtected(`sha256:${"d".repeat(64)}`, [], path.join(root, "data")), true);
+});
+
+test("a registry verification failure stays unverified without advancing metadata or returning up-to-date", async () => {
+    const w = watcher();
+    const meta = path.join(root, "stacks", "a", ".dockge-meta.json");
+    await fs.writeFile(meta, JSON.stringify({ lastUpdated: "2026-01-01T00:00:00Z" }));
+    w.checkOneImage = async (_image, stack) => ({ ...status(stack),
+        hasUpdate: false,
+        error: "Registry unavailable" });
+    assert.equal(await w.performAutoUpdate(status("a"), watched("a")), false);
+    assert.equal(updateHistoryStore[0].success, false);
+    assert.equal(updateHistoryStore[0].verification, "unverified");
+    assert.equal(JSON.parse(await fs.readFile(meta, "utf8")).lastUpdated, "2026-01-01T00:00:00Z");
+    assert.equal(await w.runImmediateCheck(key("a")), "pending");
+});
+
+test("manual cleanup and image mutations exclude one another in both directions", async () => {
+    const { tryStartDockerCleanup, finishDockerCleanup } = await import("../docker-operation-state");
+    const { tryReserveDockerUpdate } = await import("../self-update/operation-coordinator");
+    assert.equal(tryStartDockerCleanup(), true);
+    try {
+        assert.equal(await watcher().performAutoUpdate(status("a"), watched("a")), false);
+        assert.deepEqual(await commands(), []);
+    } finally {
+        finishDockerCleanup();
+    }
+    const reservation = tryReserveDockerUpdate("image-update");
+    assert.ok(reservation);
+    try {
+        assert.equal(tryStartDockerCleanup(), false);
+    } finally {
+        reservation.release();
+    }
 });

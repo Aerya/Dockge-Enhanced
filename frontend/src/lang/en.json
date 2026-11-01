@@ -1,4 +1,7 @@
 {
+    "stack.lastOperation": "Last operation",
+    "stack.lastOperationHint": "Date of the last deployment, pull or verified image update; this does not mean every service is up to date.",
+    "releaseNews.item.verifiedImageUpdates": "ImageWatcher recovers images whose local tag disappeared, verifies every targeted replica after Compose and reports mismatches as failures. Unverifiable updates do not advance the date. Downloaded images remain protected from cleanup for 24 hours after an interrupted or unverified attempt.",
     "releaseNews.item.scheduledUpdateRetry": "When another update holds the Docker lock at the scheduled time, the image stays queued and is retried on the next minute ticks, including after an Enhanced restart. Pauses, ignored images, changed schedules and the global maintenance window remain respected. Actual update failures are not retried every minute.",
     "updates.blocker.zerobyte-backup": "a Zerobyte application backup or recovery is in progress",
     "releaseNews.item.selfUpdateBackup": "Three choices before updating Enhanced: Restic (default), Zerobyte with a verified backup, or no backup before updating after acknowledging the risk of data loss. In the last mode, Enhanced neither runs nor verifies any backup and requires no proof of an external backup. With Zerobyte, a dedicated job must succeed and its new snapshot must contain this update’s recovery file; failure or a 30-minute timeout blocks the update. Image rollback does not restore modified data.",

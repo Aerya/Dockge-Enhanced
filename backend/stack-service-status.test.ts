@@ -56,6 +56,7 @@ test("managed service status remains populated and a vanished directory invalida
         startedAt,
     });
     assert.equal(result.lastStartedAt, "2026-10-18T08:00:00.000Z");
+    assert.equal(result.lastUpdated, null, "a start must not invent an image-update timestamp");
     assert.deepEqual(await stack.getServiceStatusList(), result);
     assert.equal(spawn.mock.callCount(), 2);
     await fs.rm(dir, { recursive: true });

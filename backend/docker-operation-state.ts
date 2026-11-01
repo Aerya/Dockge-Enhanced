@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { activeDockerUpdateOperation } from "./self-update/operation-coordinator";
 
 const execFileAsync = promisify(execFile);
 
@@ -54,7 +55,14 @@ export async function trackDockerBuild<T>(operation: () => Promise<T>): Promise<
     }
 }
 
+export function isDockerCleanupActive(): boolean {
+    return cleanupExecutionLock.isLocked();
+}
+
 export function tryStartDockerCleanup(): boolean {
+    if (activeDockerUpdateOperation()) {
+        return false;
+    }
     return cleanupExecutionLock.tryAcquire();
 }
 

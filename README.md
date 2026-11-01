@@ -61,6 +61,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Verified image updates — Proposed change in this branch; not yet published.** ImageWatcher recovers images whose local tag disappeared, verifies every targeted replica after Compose and reports mismatches as failures. Unverifiable updates do not advance the date. Downloaded images remain protected from cleanup for 24 hours after an interrupted or unverified attempt. [Verified image updates](docs/image-update-verification.md).
+
 **Improved Unraid compatibility :** Fixes verified in an Unraid 7.3.4 VM: restore stack `.env` files, edit Compose files without changing config/secret permissions, and open the correct published port links. These shared fixes also benefit other installations; no Unraid-specific mode is required. Template and installation guide included; managed Zerobyte reconnects after Enhanced is recreated. [Unraid installation guide](extra/unraid/README.md).
 
 **Retry deferred scheduled updates :** When another update holds the Docker lock at the scheduled time, the image stays queued and is retried on the next minute ticks, including after an Enhanced restart. Pauses, ignored images, changed schedules and the global maintenance window remain respected. Actual update failures are not retried every minute.
@@ -526,7 +528,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 ### Updates & ImageWatcher
 
 - **Updates without service interruption** — `dockge.rollout.enabled: "true"`. Check compatibility before enabling this option. The application container count temporarily doubles: allow enough CPU/RAM. Fixed container names and shared writable volumes are refused. The relay adds a container and a configuration volume. Its initial installation moves the access port and may cause an outage. Afterwards, use Update; Recreate, restarts and rollback do not guarantee that connections stay open. TCP only, not UDP/QUIC; no universal zero-downtime guarantee. [Deployment](docs/service-rollout.md).
-- Image update detection by digest, without pulling, including remote instances
+- Image update detection by digest, without pulling, including remote instances [Verified image updates: Proposed change in this branch; not yet published.](docs/image-update-verification.md).
 - Off, Immediate and Scheduled policies per image, plus stack-wide bulk policies that preserve individual exceptions by default
 - Configurable default scheduled time (02:00), without changing existing schedules; each hosting instance keeps its own setting
 - Full scan every 6 hours by default and targeted Immediate checks every 5 minutes by default, configurable or disabled separately
