@@ -88,14 +88,18 @@ test("scoped service actions authorize before Docker and start without dependenc
         server: { value: {} } });
     Object.defineProperty(stack, "assertStartGuard", { value: async () => {} });
     t.mock.method(stack, "getComposeOptions", (...args: string[]) => args);
-    t.mock.method(stack, "getServiceActionTargets", async () => [ "web", "dependent" ]);
+    let sharedNetwork = true;
+    Object.defineProperty(stack, "getResolvedServiceModel", { value: async () => ({ services: sharedNetwork
+        ? { web: {},
+            dependent: { network_mode: "service:web" } }
+        : { web: {} } }) });
     for (const action of [ "start", "stop", "restart", "update", "recreate" ] as const) {
         await assert.rejects(stack.serviceAction({ endpoint: "" } as DockgeSocket, "web", action, async targets => {
             assertScopedServiceTargets("web", targets);
         }), /denied/);
     }
     assert.equal(commands.length, 0);
-    t.mock.method(stack, "getServiceActionTargets", async () => [ "web" ]);
+    sharedNetwork = false;
     await stack.serviceAction({ endpoint: "" } as DockgeSocket, "web", "start", async targets => {
         assertScopedServiceTargets("web", targets);
     });
@@ -110,7 +114,7 @@ test("rolling service actions require explicit application AND managed-relay gra
         path: { value: "/tmp/relay-permissions" },
         server: { value: {} } });
     Object.defineProperty(stack, "assertStartGuard", { value: async () => {} });
-    t.mock.method(stack, "getServiceActionTargets", async () => [ "web" ]);
+    Object.defineProperty(stack, "getResolvedServiceModel", { value: async () => ({ services: { web: {} } }) });
     let mutations = 0;
     Object.defineProperty(stack, "tryRollingUpdate", { value: async (_targets: string[], authorize: (targets: string[], relays?: string[]) => Promise<void>) => {
         await authorize([ "web", "web-relay" ], [ "web-relay" ]);

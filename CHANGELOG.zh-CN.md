@@ -1,10 +1,12 @@
 # Dockge Enhanced 更新日志
 
-> **验证镜像更新 — 仅为本分支提案，不属于已发布版本。** ImageWatcher 可从运行中的容器找回本地标签丢失的镜像，在 Compose 执行后验证每个目标副本，并将不一致报告为失败。无法验证的更新不会推进时间。下载的镜像在更新中断或未验证后受到 24 小时清理保护。 [验证镜像更新](docs/image-update-verification.zh-CN.md).
+> **Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。
 
 完整的项目历史，最新条目在前。每个日期均为该变更合并到 `main` 的日期。合并到 `main` 的应用变更会由构建工作流发布为 `ghcr.io/aerya/dockge-enhanced:latest`；仅涉及文档的提交不会生成新镜像。仅存在于未合并 Pull Request 或测试镜像中的功能不会列在这里。
 
 [README](README.zh-CN.md) 介绍近期主要更新和完整功能目录。
+
+**2026-11-01 — 验证镜像更新** — ImageWatcher 可从运行中的容器找回本地标签丢失的镜像，在 Compose 执行后验证每个目标副本，并将不一致报告为失败。无法验证的更新不会推进时间。下载的镜像在更新中断或未验证后受到 24 小时清理保护。 [验证镜像更新](docs/image-update-verification.zh-CN.md).
 
 **2026-11-01 — 改善 Unraid 兼容性** — 已在 Unraid 7.3.4 虚拟机中验证：恢复堆栈的 `.env` 文件，编辑 Compose 时保留 configs/secrets 权限，并正确打开已发布端口的链接。这些通用修复也适用于其他安装环境，无需启用特殊的 Unraid 模式。 附带安装模板和指南；重建 Enhanced 后，自动恢复与其管理的 Zerobyte 的网络连接。
 

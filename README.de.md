@@ -15,7 +15,9 @@ Dockge Enhanced ist ein Fork von [Dockge](https://github.com/louislam/dockge) zu
 </p>
 
 <p align="center">
-  <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
+  <img src="https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black" alt="Linux">
+  <a href="extra/unraid/README.de.md"><img src="https://img.shields.io/badge/Unraid-F15A2C?logo=unraid&logoColor=white" alt="Unraid"></a>
+  <a href="docs/windows.de.md"><img src="https://img.shields.io/badge/Windows-WSL2-0078D4" alt="Windows — WSL2"></a>
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
   <img src="https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20ES%20%7C%20DE%20%7C%20zh--CN-blue" alt="i18n">
   <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
@@ -61,7 +63,9 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
-**Überprüfung von Image-Updates — Vorgeschlagene Änderung in diesem Branch; noch nicht veröffentlicht.** ImageWatcher findet Images ohne lokalen Tag wieder, überprüft nach Compose jedes betroffene Replikat und meldet Abweichungen als Fehler. Nicht überprüfbare Updates ändern das Datum nicht. Heruntergeladene Images bleiben nach abgebrochenen oder ungeprüften Versuchen 24 Stunden vor der Bereinigung geschützt. [Überprüfung von Image-Updates](docs/image-update-verification.de.md).
+**Validierung unter Windows 11 / WSL2:** Installationsanleitung, Compose-Aktionen, Restic-/Zerobyte-Sicherungen und verbundene Instanzen getestet. Die Korrekturen für Windows-Sidecar-Mounts und geordnete Neustarts bei gemeinsamem Netzwerk erhalten Linux-/Unraid-Pfade und Berechtigungen. [Windows 11 mit Docker Desktop (WSL2)](docs/windows.de.md). Nach einem Windows-Neustart benötigen manche WSL-Mounts die im Leitfaden beschriebene manuelle Wiederaufnahme.
+
+**Überprüfung von Image-Updates :** ImageWatcher findet Images ohne lokalen Tag wieder, überprüft nach Compose jedes betroffene Replikat und meldet Abweichungen als Fehler. Nicht überprüfbare Updates ändern das Datum nicht. Heruntergeladene Images bleiben nach abgebrochenen oder ungeprüften Versuchen 24 Stunden vor der Bereinigung geschützt. [Überprüfung von Image-Updates](docs/image-update-verification.de.md).
 
 **Verbesserte Unraid-Kompatibilität :** In einer Unraid-7.3.4-VM geprüfte Korrekturen: `.env`-Dateien von Stacks wiederherstellen, Compose-Dateien ohne Änderung der Config-/Secret-Berechtigungen bearbeiten und korrekte Links zu veröffentlichten Ports öffnen. Die gemeinsamen Korrekturen helfen auch anderen Installationen; ein besonderer Unraid-Modus ist nicht nötig. Vorlage und Installationsanleitung enthalten; verwaltetes Zerobyte verbindet sich nach Neuerstellung von Enhanced wieder. [Unraid-Installationsanleitung](extra/unraid/README.de.md).
 
@@ -466,6 +470,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Wahl von Hostname oder IP-Adresse für Container-Port-Links pro Instanz
 
 ### Stack-Verwaltung
+- Windows 11 mit Docker Desktop/WSL2: [Installation und Grenzen](docs/windows.de.md)
 - Compose-Stacks erstellen, bearbeiten, starten, stoppen, neu starten, aktualisieren, neu erstellen, pausieren/fortsetzen und abbauen
 - Direkt erreichbare Stack-Aktionsleiste im Modus „nur Symbole“ oder „Symbole mit Text“, mit erläuterten Compose-Befehlen
 - Aktionen pro Dienst und pro Container, einschließlich tatsächlicher Container und Compose-Replikate
@@ -779,6 +784,8 @@ Bevor ein automatisches Selbst-Update startet, überprüft Enhanced zudem, dass 
 ## Installation
 
 Unraid: [Installationsvorlage und Anleitung](extra/unraid/README.de.md), kein zusätzliches Compose-Plugin erforderlich.
+
+Windows 11 mit Docker Desktop/WSL2: [Installation und Grenzen](docs/windows.de.md).
 
 ```yaml
 # compose.yaml

@@ -15,7 +15,9 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 </p>
 
 <p align="center">
-  <img src="https://github.com/Aerya/Dockge-Enhanced/actions/workflows/build-publish.yml/badge.svg?branch=main" alt="Build">
+  <img src="https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black" alt="Linux">
+  <a href="extra/unraid/README.zh-CN.md"><img src="https://img.shields.io/badge/Unraid-F15A2C?logo=unraid&logoColor=white" alt="Unraid"></a>
+  <a href="docs/windows.zh-CN.md"><img src="https://img.shields.io/badge/Windows-WSL2-0078D4" alt="Windows — WSL2"></a>
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-lightgrey" alt="multi-arch">
   <img src="https://img.shields.io/badge/i18n-EN%20%7C%20FR%20%7C%20ES%20%7C%20DE%20%7C%20zh--CN-blue" alt="i18n">
   <img src="https://img.shields.io/badge/based%20on-Dockge-orange?logo=github&logoColor=white" alt="based on Dockge">
@@ -60,7 +62,9 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
-**验证镜像更新 — 仅为本分支提案，不属于已发布版本。** ImageWatcher 可从运行中的容器找回本地标签丢失的镜像，在 Compose 执行后验证每个目标副本，并将不一致报告为失败。无法验证的更新不会推进时间。下载的镜像在更新中断或未验证后受到 24 小时清理保护。 [验证镜像更新](docs/image-update-verification.zh-CN.md).
+**Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。
+
+**验证镜像更新 :** ImageWatcher 可从运行中的容器找回本地标签丢失的镜像，在 Compose 执行后验证每个目标副本，并将不一致报告为失败。无法验证的更新不会推进时间。下载的镜像在更新中断或未验证后受到 24 小时清理保护。 [验证镜像更新](docs/image-update-verification.zh-CN.md).
 
 **改善 Unraid 兼容性 :** 已在 Unraid 7.3.4 虚拟机中验证：恢复堆栈的 `.env` 文件，编辑 Compose 时保留 configs/secrets 权限，并正确打开已发布端口的链接。这些通用修复也适用于其他安装环境，无需启用特殊的 Unraid 模式。 附带安装模板和指南；重建 Enhanced 后，自动恢复与其管理的 Zerobyte 的网络连接。 [Unraid 安装指南](extra/unraid/README.zh-CN.md).
 
@@ -467,6 +471,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 每个实例可选择端口链接使用主机名还是 IP 地址
 
 ### Stack 管理
+- Windows 11 与 Docker Desktop/WSL2：[安装和限制](docs/windows.zh-CN.md)
 - 创建、编辑、启动、停止、重启、更新、重建、暂停/恢复和拆除 Compose Stack
 - 直接可用的 Stack 操作栏，支持仅图标或图标加文字，并说明实际执行的 Compose 命令
 - 按服务和按容器操作，包括实际容器和 Compose 副本
@@ -782,6 +787,8 @@ Dockge-Enhanced 会自动处理完整流程：默认 Restic 备份、完整性�
 ## 安装
 
 Unraid：[安装模板和指南](extra/unraid/README.zh-CN.md)，不需要额外的 Compose 插件。
+
+Windows 11 与 Docker Desktop/WSL2：[安装和限制](docs/windows.zh-CN.md).
 
 ```yaml
 # compose.yaml

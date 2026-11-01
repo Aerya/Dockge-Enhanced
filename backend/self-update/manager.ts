@@ -25,6 +25,7 @@ import { checkSelfUpdateDiskSpace } from "./disk-space";
 import { sidecarWatchState, updaterContainerFailure } from "./sidecar-watch";
 import { runZerobyteSelfUpdateBackup } from "./zerobyte-backup";
 import { isZerobyteApplicationBackupActive } from "../integrations/zerobyte-coordination";
+import { sidecarStateMount } from "./state-mount";
 
 const execFileAsync = promisify(execFile);
 const DATA_DIR = resolveDataDir();
@@ -583,7 +584,7 @@ export class SelfUpdateManager {
             await this.cleanupArtifacts(plan.id);
             await atomicWriteJson(path.join(STATE_DIR, `${plan.id}.json`), payload);
 
-            const stateSource = stateMount.Type === "volume" ? (stateMount.Name ?? stateMount.Source) : stateMount.Source;
+            const stateMapping = sidecarStateMount(stateMount);
             const connection = selfUpdateDockerConnection(inspected);
             const tcpNetworkPlan = connection.kind === "tcp" ? planSidecarNetworks(connection.networks) : null;
             const socketGroup = connection.kind === "unix" ? (await fs.stat(connection.socket!)).gid : undefined;
@@ -614,12 +615,11 @@ export class SelfUpdateManager {
                 "--cap-drop", "ALL",
                 "--security-opt", "no-new-privileges",
                 "--read-only",
-                "-v", `${stateSource}:/state`,
                 // Compose runs inside the sidecar but records its -f paths on the host.
                 // Expose the same directory at the absolute host path (read-only).
-                "-v", `${stateMount.Source}:${stateMount.Source}:ro`,
+                ...stateMapping.args,
                 "-e", `SELF_UPDATE_PLAN=/state/self-update/${plan.id}.json`,
-                "-e", `SELF_UPDATE_HOST_STATE_DIR=${path.join(stateMount.Source, "self-update")}`,
+                "-e", `SELF_UPDATE_HOST_STATE_DIR=${path.join(stateMapping.hostPath, "self-update")}`,
                 "-e", `SELF_UPDATE_ALLOW_TEST_IMAGES=${process.env.DOCKGE_SELF_UPDATE_TEST_IMAGE ?? ""}`,
                 "-e", `SELF_UPDATE_ALLOWED_REPOSITORY=${plan.allowedRepository}`,
                 "-e", `SELF_UPDATE_TARGET_CONTAINER_ID=${plan.targetContainerId}`,
@@ -1039,7 +1039,7 @@ export class SelfUpdateManager {
         // Exclude ONLY our generated overrides; they remain on disk for inspection,
         // but must not become inputs to the following update.
         const dataMount = (inspected.Mounts ?? []).find(mount => mount.Destination === DATA_DIR);
-        const generatedOverrideDir = dataMount?.Source ? path.join(dataMount.Source, "self-update") : "";
+        const generatedOverrideDir = dataMount?.Source ? path.join(sidecarStateMount(dataMount).hostPath, "self-update") : "";
         const configFiles = labeledConfigFiles.filter(file => !(
             generatedOverrideDir && path.dirname(file) === generatedOverrideDir
             && /^[a-f0-9]{32}\.override\.yaml$/.test(path.basename(file))

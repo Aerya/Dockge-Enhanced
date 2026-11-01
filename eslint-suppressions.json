@@ -37,11 +37,6 @@
       "count": 1
     }
   },
-  "backend/compose-network-namespace.test.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 1
-    }
-  },
   "backend/database.ts": {
     "no-useless-assignment": {
       "count": 1

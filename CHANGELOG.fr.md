@@ -1,10 +1,12 @@
 # Changelog Dockge Enhanced
 
-> **Vérification des mises à jour d’images — Correctif proposé dans cette branche ; pas encore publié.** ImageWatcher retrouve les images dont le tag local a disparu, vérifie chaque réplica ciblé après Compose et signale les divergences comme des échecs. Une mise à jour non vérifiable ne fait plus avancer la date. Les images téléchargées restent protégées de la purge pendant 24 heures après une tentative interrompue ou non vérifiée. [Vérification des mises à jour d’images](docs/image-update-verification.fr.md).
+> **Validation Windows 11 / WSL2 :** guide d’installation, actions Compose, sauvegardes Restic/Zerobyte et instances liées testées. Les corrections du montage Windows du sidecar et du redémarrage des services partageant un réseau préservent les chemins et permissions Linux/Unraid. [Windows 11 avec Docker Desktop (WSL2)](docs/windows.fr.md). Après redémarrage Windows, certains montages WSL nécessitent une reprise manuelle décrite dans le guide.
 
 Historique complet du projet, du plus récent au plus ancien. Chaque date correspond à la fusion de la modification dans `main`. Les modifications applicatives fusionnées dans `main` sont publiées sous `ghcr.io/aerya/dockge-enhanced:latest` par le workflow de construction ; les commits purement documentaires ne produisent pas de nouvelle image. Les fonctionnalités présentes uniquement dans une pull request ouverte ou une image de test ne figurent pas ici.
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
+
+**2026-11-01 — Vérification des mises à jour d’images** — ImageWatcher retrouve les images dont le tag local a disparu, vérifie chaque réplica ciblé après Compose et signale les divergences comme des échecs. Une mise à jour non vérifiable ne fait plus avancer la date. Les images téléchargées restent protégées de la purge pendant 24 heures après une tentative interrompue ou non vérifiée. [Vérification des mises à jour d’images](docs/image-update-verification.fr.md).
 
 **2026-11-01 — Compatibilité Unraid améliorée** — Correctifs vérifiés dans une VM Unraid 7.3.4 : restaurer les fichiers `.env` des stacks, modifier un Compose sans altérer les permissions des configs/secrets et ouvrir les bons liens de ports publiés. Ces corrections communes profitent aussi aux autres installations, sans mode spécial Unraid à activer. Template et guide d’installation inclus ; Zerobyte géré se reconnecte après recréation d’Enhanced.
 

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-01-windows-wsl",
+        items: [ "releaseNews.item.windowsWsl" ],
+    },
+    {
         id: "2026-11-01-verified-image-updates",
         items: [ "releaseNews.item.verifiedImageUpdates" ],
     },
