@@ -67,6 +67,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/socket-connection.test.ts backend/socket-origin.test.ts
 
+      - name: Tests de conservation et de formatage du YAML Compose
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test frontend/src/compose-yaml-preserve.test.ts frontend/src/compose-yaml-format.test.ts
+
       - name: Tests des limites CPU/RAM par service
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/service-resource-limits.test.ts frontend/src/service-resource-limits-ui.test.js

@@ -266,6 +266,23 @@ test("résout les chemins existants avec l’API Node", async () => {
     }
 });
 
+test("autorise un vrai .env mais rejette un .env lié hors de la racine", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-hidden-root-"));
+    const outside = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-hidden-outside-"));
+    try {
+        await fs.writeFile(path.join(root, ".env"), "FIXTURE=value");
+        assert.equal(await assertExistingPathWithinRoots(path.join(root, ".env"), [ root ]), await fs.realpath(path.join(root, ".env")));
+        await fs.writeFile(path.join(outside, ".env"), "OUTSIDE=value");
+        await fs.symlink(path.join(outside, ".env"), path.join(root, ".env.link"));
+        await assert.rejects(assertExistingPathWithinRoots(path.join(root, ".env.link"), [ root ]), /hors des emplacements/);
+    } finally {
+        await fs.rm(root, { recursive: true,
+            force: true });
+        await fs.rm(outside, { recursive: true,
+            force: true });
+    }
+});
+
 test("autorise toujours /app/data dans le navigateur de volumes", () => {
     const roots = buildVolumeBrowseRoots([
         { source: "/volume1/docker",
