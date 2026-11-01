@@ -473,11 +473,10 @@ export function parseDockerPort(input : string | DockerPortObject, hostname : st
     // coming from docker ps, split host part
     const arrow = part1.indexOf("->");
     if (arrow >= 0) {
-        part1 = part1.split("->")[0];
-        const colon = part1.indexOf(":");
-        if (colon >= 0) {
-            part1 = part1.split(":")[1];
-        }
+        // Docker lists both 0.0.0.0:port and [::]:port. Extract the
+        // published port at the LAST colon, not inside the IPv6 address.
+        const published = part1.slice(0, arrow).trim();
+        part1 = published.slice(published.lastIndexOf(":") + 1);
     }
 
     // Split the last ":"
@@ -524,6 +523,11 @@ export function parseDockerPort(input : string | DockerPortObject, hostname : st
     }
 
     let portInt = parseInt(port);
+
+    if (!Number.isInteger(portInt) || portInt < 1 || portInt > 65535) {
+        return { url: "",
+            display: display || input };
+    }
 
     if (portInt == 443) {
         protocol = "https";

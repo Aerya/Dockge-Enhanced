@@ -228,6 +228,10 @@ test("defaults unknown stack policies to hot mode", () => {
 });
 
 test("borne les chemins aux racines autorisées", () => {
+    assert.equal(assertPathWithinRoots("/mnt/data/app/.env", [ "/mnt/data" ]), "/mnt/data/app/.env");
+    assert.equal(assertPathWithinRoots("/mnt/data/.config/app/.env.local", [ "/mnt/data" ]), "/mnt/data/.config/app/.env.local");
+    assert.throws(() => assertPathWithinRoots("/mnt/data/../.env", [ "/mnt/data" ]), /hors des emplacements/);
+    assert.throws(() => assertPathWithinRoots("/mnt/data/app/.env\0", [ "/mnt/data" ]), /hors des emplacements/);
     assert.equal(assertPathWithinRoots("/mnt/data/app/config", [ "/mnt/data" ]), "/mnt/data/app/config");
     assert.equal(assertPathWithinRoots("/mnt/data", [ "/mnt/data" ]), "/mnt/data");
     assert.throws(() => assertPathWithinRoots("/mnt/database", [ "/mnt/data" ]), /hors des emplacements/);
@@ -258,6 +262,23 @@ test("résout les chemins existants avec l’API Node", async () => {
         assert.equal(await assertExistingPathWithinRoots(child, [ root ]), await fs.realpath(child));
     } finally {
         await fs.rm(root, { recursive: true,
+            force: true });
+    }
+});
+
+test("autorise un vrai .env mais rejette un .env lié hors de la racine", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-hidden-root-"));
+    const outside = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-hidden-outside-"));
+    try {
+        await fs.writeFile(path.join(root, ".env"), "FIXTURE=value");
+        assert.equal(await assertExistingPathWithinRoots(path.join(root, ".env"), [ root ]), await fs.realpath(path.join(root, ".env")));
+        await fs.writeFile(path.join(outside, ".env"), "OUTSIDE=value");
+        await fs.symlink(path.join(outside, ".env"), path.join(root, ".env.link"));
+        await assert.rejects(assertExistingPathWithinRoots(path.join(root, ".env.link"), [ root ]), /hors des emplacements/);
+    } finally {
+        await fs.rm(root, { recursive: true,
+            force: true });
+        await fs.rm(outside, { recursive: true,
             force: true });
     }
 });

@@ -40,6 +40,9 @@ jobs:
       - name: Vérifier les icônes raster et leurs références
         run: python3 .github/scripts/check_icons.py
 
+      - name: Vérifier le template et les guides Unraid
+        run: python3 extra/unraid/test_template.py
+
       - name: Setup Node.js 22
         if: steps.docs.outputs.docs_only != 'true'
         uses: actions/setup-node@v7
@@ -66,6 +69,14 @@ jobs:
       - name: Tests des transports Socket.IO de la WebUI
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/socket-connection.test.ts backend/socket-origin.test.ts
+
+      - name: Tests de conservation et de formatage du YAML Compose
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test frontend/src/compose-yaml-preserve.test.ts frontend/src/compose-yaml-format.test.ts
+
+      - name: Tests de reconnexion et de récupération Zerobyte
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/integrations/zerobyte-installer.test.ts backend/integrations/zerobyte-workflows.test.ts
 
       - name: Tests des limites CPU/RAM par service
         if: steps.docs.outputs.docs_only != 'true'

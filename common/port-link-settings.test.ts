@@ -3,6 +3,16 @@ import test from "node:test";
 import { portLinkIpLiteral, validatePortLinkSettings } from "./port-link-settings";
 import { parseDockerPortLink, resolveEndpointHostname } from "./util-common";
 
+test("Docker IPv4 and IPv6 published ports never generate NaN links", () => {
+    for (const binding of [ "0.0.0.0:18080->8080/tcp", "[::]:18080->8080/tcp", ":::18080->8080/tcp" ]) {
+        assert.equal(parseDockerPortLink(binding, "192.0.2.10").url, "http://192.0.2.10:18080");
+        assert.equal(parseDockerPortLink(binding, "192.0.2.10").display, "18080");
+    }
+    for (const invalid of [ "", "invalid", ":->80/tcp", "0:80", "65536:80" ]) {
+        assert.equal(parseDockerPortLink(invalid, "192.0.2.10").url, "");
+    }
+});
+
 test("IP mode uses the linked instance IP, never the central browser or its hostname", () => {
     for (const endpoint of [ "192.0.2.10:5001", "192.0.2.11:5001" ]) {
         const host = resolveEndpointHostname(endpoint, `http://${endpoint}`, "192.0.2.1", "http:", "unresolvable-name", "ip");

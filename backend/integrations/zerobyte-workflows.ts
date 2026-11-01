@@ -9,7 +9,7 @@ import { log } from "../log";
 import { DockgeServer } from "../dockge-server";
 import { BackupManager } from "../watchers/backup-manager";
 import { zerobyte, ZerobyteManager } from "./zerobyte-manager";
-import { managedWorkflowContext, probeManagedDestination } from "./zerobyte-installer";
+import { managedWorkflowContext, probeManagedDestination, restoreManagedZerobyteNetwork } from "./zerobyte-installer";
 import { isZerobyteApplicationBackupActive, setZerobyteApplicationBackupActive } from "./zerobyte-coordination";
 import { isSelfUpdateBlockingImageMutations } from "../watchers/image-watcher";
 import { isDockerUpdateReservedBy } from "../self-update/operation-coordinator";
@@ -52,6 +52,7 @@ interface State { workflows: Workflow[];
     lease?: Lease;
     events: Event[] }
 interface Dependencies {
+    reconnect: () => Promise<void>;
     context: () => ReturnType<typeof managedWorkflowContext>;
     probe: (target: string) => Promise<void>;
     plan: (names: string[]) => Promise<Prepared[]>;
@@ -69,6 +70,7 @@ export class ZerobyteWorkflows {
     constructor(private server: DockgeServer, private manager: ZerobyteManager = zerobyte, dependencies: Partial<Dependencies> = {}) {
         this.file = path.join(server.config.dataDir, "zerobyte-workflows.json");
         this.dependencies = {
+            reconnect: () => restoreManagedZerobyteNetwork(server),
             context: () => managedWorkflowContext(server),
             probe: target => probeManagedDestination(server, target),
             plan: names => this.planStacks(names),
@@ -86,8 +88,9 @@ export class ZerobyteWorkflows {
             void this.tick().catch(() => {});
         }, 15000);
         this.timer.unref();
-        void this.read().then(state => {
+        void this.read().then(async state => {
             setZerobyteApplicationBackupActive(Boolean(state.lease));
+            await this.tick();
         }).catch(() => {});
     }
 
@@ -589,6 +592,11 @@ export class ZerobyteWorkflows {
         }
         await this.exclusive(async () => {
             const state = await this.read();
+            // Retry on the existing bounded timer; never let failed reconnection
+            // prevent the recovery/deadline handling of an already active backup.
+            try {
+                await this.dependencies.reconnect();
+            } catch { /* Docker/network may not be available yet after boot. */ }
             if (!state.lease) {
                 if (!(await this.manager.getSafeConfig()).enabled) {
                     return;

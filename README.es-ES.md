@@ -61,6 +61,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Compatibilidad mejorada con Unraid :** Correcciones verificadas en una VM con Unraid 7.3.4: restaurar los archivos `.env` de las stacks, editar Compose sin alterar los permisos de configs/secrets y abrir los enlaces correctos de los puertos publicados. Estas correcciones comunes también benefician a otras instalaciones, sin activar un modo especial para Unraid. Incluye plantilla y guía de instalación; Zerobyte gestionado se reconecta tras recrear Enhanced. [Guía de instalación Unraid](extra/unraid/README.es.md).
+
 **Reintentar actualizaciones programadas aplazadas :** Si otra actualización ocupa el bloqueo de Docker a la hora prevista, la imagen permanece en espera y se reintenta en los siguientes ciclos de un minuto, incluso tras reiniciar Enhanced. Se respetan las pausas, exclusiones, cambios de horario y la ventana global de mantenimiento. Los fallos reales de actualización no se reintentan cada minuto.
 
 ### 🆕 Octubre de 2026
@@ -588,6 +590,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Guías: [API REST, webhooks y Home Assistant](docs/AUTOMATION.es.md) · [Integración con Home Assistant](docs/HOME-ASSISTANT.md)
 
 ### Integraciones
+
+- Unraid: [plantilla y guía de instalación](extra/unraid/README.es.md), sin plugin Compose adicional.
 - Zerobyte: instalación gestionada o conexión externa
 - PowerWatch y PowerWatch Hub: observación externa o despliegue gestionado
 - PlugNPiN para Nginx Proxy Manager, Pi-hole y AdGuard Home
@@ -773,6 +777,8 @@ Antes de iniciar una autoactualización, Enhanced comprueba también que no haya
 ---
 
 ## Instalación
+
+Unraid: [plantilla y guía de instalación](extra/unraid/README.es.md), sin plugin Compose adicional.
 
 ```yaml
 # compose.yaml

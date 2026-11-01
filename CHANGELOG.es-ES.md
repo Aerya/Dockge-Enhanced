@@ -4,6 +4,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-01 — Compatibilidad mejorada con Unraid** — Correcciones verificadas en una VM con Unraid 7.3.4: restaurar los archivos `.env` de las stacks, editar Compose sin alterar los permisos de configs/secrets y abrir los enlaces correctos de los puertos publicados. Estas correcciones comunes también benefician a otras instalaciones, sin activar un modo especial para Unraid. Incluye plantilla y guía de instalación; Zerobyte gestionado se reconecta tras recrear Enhanced.
+
 **2026-11-01 — Reintentar actualizaciones programadas aplazadas** — Si otra actualización ocupa el bloqueo de Docker a la hora prevista, la imagen permanece en espera y se reintenta en los siguientes ciclos de un minuto, incluso tras reiniciar Enhanced. Se respetan las pausas, exclusiones, cambios de horario y la ventana global de mantenimiento. Los fallos reales de actualización no se reintentan cada minuto.
 
 **2026-10-31 — Monitorización con versiones recientes de Docker** — Lectura de `Action` y `Actor.ID` en los eventos Docker, con respaldo de los campos antiguos, para recuperar las alertas de reinicios en bucle, notificaciones unhealthy y acciones auto-heal configuradas. Se conservan los intervalos entre alertas y las protecciones de actualización sin interrupción.

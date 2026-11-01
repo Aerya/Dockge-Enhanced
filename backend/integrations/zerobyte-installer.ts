@@ -33,8 +33,8 @@ async function docker(...args: string[]): Promise<string> {
         throw new Error("Zerobyte Docker operation failed; check Docker availability, paths and port conflicts");
     }
 }
-async function context(server: DockgeServer) {
-    const self = (JSON.parse(await docker("inspect", process.env.HOSTNAME || os.hostname())) as Container[])[0];
+async function context(server: DockgeServer, run: (...args: string[]) => Promise<string> = docker) {
+    const self = (JSON.parse(await run("inspect", process.env.HOSTNAME || os.hostname())) as Container[])[0];
     const data = self.Mounts.find(m => m.Destination === server.config.dataDir);
     const stacks = self.Mounts.find(m => m.Destination === server.stacksDir);
     if (!data?.Source || !stacks?.Source || data.Type !== "bind" || stacks.Type !== "bind") {
@@ -354,6 +354,40 @@ async function apply(server: DockgeServer, body: unknown, update: boolean) {
 }
 export const installManagedZerobyte = (server: DockgeServer, body: unknown) => apply(server, body, false);
 export const updateManagedZerobyteMounts = (server: DockgeServer, body: unknown) => apply(server, body, true);
+
+/** Reattach only our own installation after DockerMan recreates Enhanced. */
+const networkDocker = async (...args: string[]) => (await exec("docker", args, { timeout: 5000,
+    maxBuffer: 4 * 1024 * 1024 })).stdout;
+export async function reconnectOwnedZerobyteNetwork(ctx: { name: string;
+    owner: string;
+    self: { Id: string } }, run: (...args: string[]) => Promise<string> = networkDocker): Promise<void> {
+    const networkName = `${ctx.name}_default`;
+    const network = JSON.parse(await run("network", "inspect", networkName))[0];
+    const container = JSON.parse(await run("inspect", `${ctx.name}-zerobyte-1`))[0];
+    if (network?.Labels?.["com.docker.compose.project"] !== ctx.name ||
+        container?.Config?.Labels?.[OWNER] !== ctx.owner ||
+        container?.Config?.Labels?.["com.docker.compose.project"] !== ctx.name ||
+        !network.Containers?.[container.Id]) {
+        throw new Error("Managed Zerobyte network ownership cannot be verified");
+    }
+    // Do not disconnect a live endpoint: an in-flight backup may use its callback.
+    if (!network.Containers[ctx.self.Id]) {
+        await run("network", "connect", "--alias", `enhanced-${ctx.owner}`, networkName, ctx.self.Id);
+    }
+}
+
+export async function restoreManagedZerobyteNetwork(server: DockgeServer): Promise<void> {
+    const config = await zerobyte.getSafeConfig();
+    if (!config.enabled || !/^http:\/\/zerobyte-[a-f0-9]{12}:4096$/.test(config.url)) {
+        return;
+    }
+    const ctx = await context(server, networkDocker);
+    if (config.url !== `http://${ctx.name}:4096`) {
+        return;
+    }
+    await fs.access(path.join(ctx.directory, ".zerobyte.json"));
+    await reconnectOwnedZerobyteNetwork(ctx);
+}
 
 /** Only the owned managed API origin can authorize Docker-backed safety checks. */
 export async function managedConnection(server: DockgeServer): Promise<boolean> {

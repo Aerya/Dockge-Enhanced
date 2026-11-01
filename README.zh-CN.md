@@ -60,6 +60,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**改善 Unraid 兼容性 :** 已在 Unraid 7.3.4 虚拟机中验证：恢复堆栈的 `.env` 文件，编辑 Compose 时保留 configs/secrets 权限，并正确打开已发布端口的链接。这些通用修复也适用于其他安装环境，无需启用特殊的 Unraid 模式。 附带安装模板和指南；重建 Enhanced 后，自动恢复与其管理的 Zerobyte 的网络连接。 [Unraid 安装指南](extra/unraid/README.zh-CN.md).
+
 **重试已推迟的计划更新 :** 如果其他更新在计划时间占用 Docker 锁，镜像会保留在队列中，并在后续每分钟调度时重试，Enhanced 重启后也会继续。暂停、忽略的镜像、时间变更和全局维护窗口仍然有效。实际更新失败不会每分钟重试。
 
 ### 🆕 2026 年 10 月
@@ -587,6 +589,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 指南：[REST API、Webhook 与 Home Assistant](docs/AUTOMATION.zh-CN.md) · [Home Assistant 集成](docs/HOME-ASSISTANT.md)
 
 ### 集成
+
+- Unraid：[安装模板和指南](extra/unraid/README.zh-CN.md)，不需要额外的 Compose 插件。
 - Zerobyte：托管安装或外部连接
 - PowerWatch 和 PowerWatch Hub：外部观察或托管部署
 - 用于 Nginx Proxy Manager、Pi-hole 和 AdGuard Home 的 PlugNPiN
@@ -774,6 +778,8 @@ Dockge-Enhanced 会自动处理完整流程：默认 Restic 备份、完整性�
 ---
 
 ## 安装
+
+Unraid：[安装模板和指南](extra/unraid/README.zh-CN.md)，不需要额外的 Compose 插件。
 
 ```yaml
 # compose.yaml
