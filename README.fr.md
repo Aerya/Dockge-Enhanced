@@ -60,6 +60,10 @@ Dockge Enhanced est un fork de [Dockge](https://github.com/louislam/dockge) pour
 
 Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
+### 🆕 Novembre 2026
+
+**Reprise des mises à jour planifiées reportées :** Si une autre mise à jour occupe le verrou Docker à l’heure prévue, l’image reste en attente et une nouvelle tentative a lieu aux passages suivants du planificateur, chaque minute, y compris après un redémarrage d’Enhanced. Les pauses, exclusions, changements d’horaire et le créneau global de maintenance restent respectés. Un véritable échec de mise à jour n’est pas réessayé chaque minute.
+
 ### 🆕 Octobre 2026
 
 **Monitoring avec les versions récentes de Docker :** Lecture de `Action` et `Actor.ID` dans les événements Docker, avec repli sur les anciens champs, pour rétablir les alertes de crash loop, les notifications unhealthy et les actions auto-heal configurées. Les délais anti-spam et les protections des mises à jour sans interruption sont conservés.
