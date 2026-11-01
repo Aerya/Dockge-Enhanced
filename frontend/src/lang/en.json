@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.scheduledUpdateRetry": "When another update holds the Docker lock at the scheduled time, the image stays queued and is retried on the next minute ticks, including after an Enhanced restart. Pauses, ignored images, changed schedules and the global maintenance window remain respected. Actual update failures are not retried every minute.",
     "updates.blocker.zerobyte-backup": "a Zerobyte application backup or recovery is in progress",
     "releaseNews.item.selfUpdateBackup": "Three choices before updating Enhanced: Restic (default), Zerobyte with a verified backup, or no backup before updating after acknowledging the risk of data loss. In the last mode, Enhanced neither runs nor verifies any backup and requires no proof of an external backup. With Zerobyte, a dedicated job must succeed and its new snapshot must contain this update’s recovery file; failure or a 30-minute timeout blocks the update. Image rollback does not restore modified data.",
     "updates.self.backupPolicy": "Backup before self-update",

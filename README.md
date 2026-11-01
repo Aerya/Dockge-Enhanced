@@ -59,6 +59,10 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
+### 🆕 November 2026
+
+**Retry deferred scheduled updates :** When another update holds the Docker lock at the scheduled time, the image stays queued and is retried on the next minute ticks, including after an Enhanced restart. Pauses, ignored images, changed schedules and the global maintenance window remain respected. Actual update failures are not retried every minute.
+
 ### 🆕 October 2026
 
 **Monitoring with recent Docker versions :** Read `Action` and `Actor.ID` from Docker events, with fallback to the legacy fields, so crash-loop alerts, unhealthy notifications and configured auto-heal actions are triggered again. Existing cooldowns and rollout protections are preserved.

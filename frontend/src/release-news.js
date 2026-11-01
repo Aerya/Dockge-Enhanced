@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-01-scheduled-update-retry",
+        items: [ "releaseNews.item.scheduledUpdateRetry" ],
+    },
+    {
         id: "2026-10-29-self-update-backup",
         items: [ "releaseNews.item.selfUpdateBackup" ],
     },
