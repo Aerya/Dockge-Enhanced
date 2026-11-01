@@ -36,7 +36,7 @@ The container is **not privileged**, but the Docker socket controls **all host c
 
 Validated in an **Unraid 7.3.4 / Docker 29.8.2 VM**, with an XFS array and btrfs Docker vDisk: DockerMan installation/updates, editing/deployment, non-root permissions, IPv4/IPv6 port links, Enhanced/host reboot, array stop/start, Restic, Zerobyte and Appdata Backup. CI adds regression tests, AMD64/ARM64 builds and strict Trivy scans.
 
-Additional tests: full `data` and `stacks` restoration with Appdata Backup, HTTP access over macvlan and ipvlan, Zerobyte network outage, and backup/restore on a lab SMB/CIFS mount. Remote mounts must be available before Zerobyte: a missing mount blocks backups without writing into the underlying local directory. After remounting, explicitly revalidate storage if its identity changed.
+Additional tests: full `data` and `stacks` restoration with Appdata Backup, HTTP access over macvlan and ipvlan, Zerobyte network outage, and backup/restore on a lab SMB/CIFS mount. Remote mounts must be available before Zerobyte: a missing mount blocks backups without writing into the underlying local directory. After remounting, restart Zerobyte; if its guard reports a changed storage identity, explicitly revalidate storage.
 
 This is not certification of every Unraid hardware/pool/plugin combination or native macOS/Windows testing. Report the Unraid version, image/commit, paths, network driver, steps and logs **without secrets** in [Enhanced issues](https://github.com/Aerya/Dockge-Enhanced/issues). When removing a lab, verify container names and directory contents; never run global Docker cleanup.
 

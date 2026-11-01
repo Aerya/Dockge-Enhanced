@@ -36,7 +36,7 @@ Compose 部署时会遵守 `depends_on`/`service_healthy` 和 `network_mode: ser
 
 实测环境为 **Unraid 7.3.4 / Docker 29.8.2 VM**、XFS array、btrfs Docker vDisk：DockerMan 安装/更新、编辑/部署、非 root 权限、IPv4/IPv6 端口链接、Enhanced/主机重启、array 停止/启动、Restic、Zerobyte 和 Appdata Backup。CI 另有回归测试、AMD64/ARM64 构建和严格 Trivy 扫描。
 
-补充实测：通过 Appdata Backup 完整恢复 `data` 和 `stacks`、macvlan/ipvlan HTTP 访问、Zerobyte 网络中断，以及实验室 SMB/CIFS 挂载的备份/恢复。远程挂载必须先于 Zerobyte 就绪：挂载缺失时会拒绝备份，不会写入下层本地目录。重新挂载后，如果存储身份发生变化，需要显式重新验证。
+补充实测：通过 Appdata Backup 完整恢复 `data` 和 `stacks`、macvlan/ipvlan HTTP 访问、Zerobyte 网络中断，以及实验室 SMB/CIFS 挂载的备份/恢复。远程挂载必须先于 Zerobyte 就绪：挂载缺失时会拒绝备份，不会写入下层本地目录。重新挂载后，重新启动 Zerobyte；如果保护机制检测到存储身份变化，需要显式重新验证。
 
 这不是对所有 Unraid 硬件、存储池、插件的认证，也不是 macOS/Windows 原生实测。反馈时向 [Enhanced issues](https://github.com/Aerya/Dockge-Enhanced/issues) 提供 Unraid 版本、镜像/提交、路径、网络驱动、步骤及**无秘密信息**的日志。删除实验环境前核对名称和目录内容；绝不全局清理 Docker。
 

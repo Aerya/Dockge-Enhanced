@@ -36,7 +36,7 @@ El contenedor **no es privilegiado**, pero el socket Docker controla **todos los
 
 Probado en una **VM Unraid 7.3.4 / Docker 29.8.2**, array XFS y vDisk Docker btrfs: instalación/actualización DockerMan, edición/despliegue, permisos no-root, enlaces IPv4/IPv6, reinicio de Enhanced/host, parada/inicio del array, Restic, Zerobyte y Appdata Backup. CI añade regresiones, builds AMD64/ARM64 y Trivy estricto.
 
-Pruebas adicionales: restauración completa de `data` y `stacks` con Appdata Backup, HTTP mediante macvlan e ipvlan, caída de red Zerobyte y backup/restauración en un montaje SMB/CIFS del laboratorio. El montaje remoto debe estar disponible antes de Zerobyte: si falta, se rechaza el backup sin escribir en el directorio local subyacente. Tras remontarlo, revalidar explícitamente el almacenamiento si cambió su identidad.
+Pruebas adicionales: restauración completa de `data` y `stacks` con Appdata Backup, HTTP mediante macvlan e ipvlan, caída de red Zerobyte y backup/restauración en un montaje SMB/CIFS del laboratorio. El montaje remoto debe estar disponible antes de Zerobyte: si falta, se rechaza el backup sin escribir en el directorio local subyacente. Tras remontarlo, reiniciar Zerobyte; si su protección detecta una identidad de almacenamiento distinta, revalidarlo explícitamente.
 
 No certifica cada combinación de hardware/pool/plugin ni incluye pruebas nativas macOS/Windows. Enviar versión de Unraid, imagen/commit, rutas, controlador de red, pasos y logs **sin secretos** a [Enhanced issues](https://github.com/Aerya/Dockge-Enhanced/issues). Al retirar un laboratorio, comprobar nombres y carpetas; nunca ejecutar una limpieza Docker global.
 
