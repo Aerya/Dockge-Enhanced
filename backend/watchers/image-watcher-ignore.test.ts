@@ -73,7 +73,7 @@ interface Harness {
     checkOneImage(image: string, stack: string): Promise<ImageStatus>;
     runImmediateCheck(key: string): Promise<string>;
     runCheck(): Promise<ImageStatus[]>;
-    applyPendingUpdates(): Promise<void>;
+    applyPendingUpdates(now?: Date): Promise<void>;
     performAutoUpdate(status: ImageStatus, watched: WatchedComposeStack, mode?: "immediate" | "scheduled" | "manual"): Promise<boolean>;
     performRollback(key: string): Promise<void>;
 }
@@ -281,3 +281,120 @@ for (const barrier of [ "inspect", "pull" ]) {
         assert.equal(updateHistoryStore[0].stack, "b");
     });
 }
+
+test("scheduled lock deferral survives restart and retries after its minute without duplicating work", async () => {
+    const { tryReserveDockerUpdate } = await import("../self-update/operation-coordinator");
+    const { schedulingClock } = await import("../scheduling-timezone");
+    const now = new Date();
+    const clock = schedulingClock(now);
+    const time = `${String(clock.hour).padStart(2, "0")}:${String(clock.minute).padStart(2, "0")}`;
+    const w = watcher();
+    w.settings.autoUpdateConfig[key("a")] = { mode: "scheduled",
+        time };
+    w.settings.pendingAutoUpdates = [ key("a") ];
+    const lock = tryReserveDockerUpdate("self-update");
+    assert.ok(lock);
+    try {
+        await w.applyPendingUpdates(now);
+        assert.deepEqual(w.settings.pendingAutoUpdates, [ key("a") ]);
+        assert.ok(w.settings.pendingAutoUpdateDue?.[key("a")]);
+        assert.equal((await commands()).length, 0);
+    } finally {
+        lock.release();
+    }
+    const restored = new ImageWatcher(path.join(root, "data"));
+    await restored.loadSettings();
+    const retry = restored as unknown as Harness;
+    retry.checkOneImage = async (_image, stack) => ({ ...status(stack),
+        hasUpdate: false });
+    const later = new Date(now.getTime() + 120_000);
+    await Promise.all([ retry.applyPendingUpdates(later), retry.applyPendingUpdates(later) ]);
+    assert.deepEqual(retry.settings.pendingAutoUpdates, []);
+    assert.deepEqual(retry.settings.pendingAutoUpdateDue, {});
+    assert.equal((await commands()).filter(args => args.includes("pull")).length, 1);
+});
+
+test("due updates respect pause, ignore and changed schedules, without catching up newly detected images", async () => {
+    const w = watcher();
+    w.settings.autoUpdateConfig[key("a")] = { mode: "scheduled",
+        time: "03:00" };
+    w.settings.pendingAutoUpdates = [ key("a") ];
+    const due = JSON.stringify([ "scheduled", "03:00" ]);
+    w.settings.pendingAutoUpdateDue = { [key("a")]: due };
+    w.settings.autoUpdateConfig[key("a")].pause = { enabled: true,
+        until: null };
+    await w.applyPendingUpdates();
+    assert.equal((await commands()).length, 0);
+    assert.equal(w.settings.pendingAutoUpdateDue[key("a")], due);
+    w.settings.autoUpdateConfig[key("a")].pause = { enabled: false,
+        until: null };
+    w.settings.autoUpdateConfig[key("a")].time = "23:59";
+    const { setSchedulingTimezone } = await import("../scheduling-timezone");
+    setSchedulingTimezone("UTC");
+    try {
+        await w.applyPendingUpdates(new Date("2026-11-01T03:02:00Z"));
+    } finally {
+        setSchedulingTimezone(undefined);
+    }
+    assert.equal((await commands()).length, 0);
+    assert.equal(w.settings.pendingAutoUpdateDue[key("a")], undefined);
+    w.settings.autoUpdateConfig[key("a")].mode = "ignored";
+    await w.applyPendingUpdates();
+    assert.equal((await commands()).length, 0);
+    assert.equal(w.settings.pendingAutoUpdateDue[key("a")], undefined);
+    assert.equal(pendingAutomaticImageUpdateMayRun({ mode: "scheduled",
+        time: "03:00" }, false, null, true, "03:02"), false);
+    assert.equal(pendingAutomaticImageUpdateMayRun({ mode: "scheduled",
+        time: "03:00" }, false, null, true, "03:02", true), true);
+    assert.equal(pendingAutomaticImageUpdateMayRun({ mode: "scheduled",
+        time: "03:00" }, false,
+    { start: "02:00",
+        end: "04:00",
+        days: [ 0, 1, 2, 3, 4, 5, 6 ] }, false, "04:02", true), false);
+});
+
+test("terminal update failure is not retried every minute and does not strand the batch guard", async () => {
+    const w = watcher();
+    w.settings.pendingAutoUpdates = [ key("a") ];
+    let calls = 0;
+    w.performAutoUpdate = async () => {
+        calls++;
+        return false;
+    };
+    await w.applyPendingUpdates();
+    await w.applyPendingUpdates();
+    assert.equal(calls, 1);
+    assert.deepEqual(w.settings.pendingAutoUpdates, []);
+    w.settings.pendingAutoUpdates = [ key("a") ];
+    w.performAutoUpdate = async () => {
+        throw new Error("temporary test failure");
+    };
+    await assert.rejects(w.applyPendingUpdates(), /temporary test failure/);
+    w.performAutoUpdate = async () => true;
+    await w.applyPendingUpdates();
+    assert.deepEqual(w.settings.pendingAutoUpdates, []);
+});
+
+test("a manual batch occupying the scheduled minute preserves the due slot", async () => {
+    const w = watcher() as Harness & { manualBatch: { running: boolean } };
+    const { schedulingClock } = await import("../scheduling-timezone");
+    const now = new Date();
+    const clock = schedulingClock(now);
+    const time = `${String(clock.hour).padStart(2, "0")}:${String(clock.minute).padStart(2, "0")}`;
+    w.settings.autoUpdateConfig[key("a")] = { mode: "scheduled",
+        time };
+    w.settings.pendingAutoUpdates = [ key("a") ];
+    w.manualBatch.running = true;
+    await w.applyPendingUpdates(now);
+    assert.ok(w.settings.pendingAutoUpdateDue?.[key("a")]);
+    assert.equal((await commands()).length, 0);
+    w.manualBatch.running = false;
+    let calls = 0;
+    w.performAutoUpdate = async () => {
+        calls++;
+        return true;
+    };
+    await w.applyPendingUpdates(new Date(now.getTime() + 120_000));
+    assert.equal(calls, 1);
+    assert.deepEqual(w.settings.pendingAutoUpdates, []);
+});

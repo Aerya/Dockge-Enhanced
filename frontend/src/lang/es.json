@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.scheduledUpdateRetry": "Si otra actualización ocupa el bloqueo de Docker a la hora prevista, la imagen permanece en espera y se reintenta en los siguientes ciclos de un minuto, incluso tras reiniciar Enhanced. Se respetan las pausas, exclusiones, cambios de horario y la ventana global de mantenimiento. Los fallos reales de actualización no se reintentan cada minuto.",
     "updates.blocker.zerobyte-backup": "hay una copia de aplicaciones Zerobyte o su recuperación en curso",
     "releaseNews.item.selfUpdateBackup": "Tres opciones antes de actualizar Enhanced: Restic (predeterminada), Zerobyte con copia verificada o ninguna copia previa tras aceptar el riesgo de pérdida de datos. En este último modo, Enhanced no ejecuta ni verifica ninguna copia y no exige pruebas de una copia externa. Con Zerobyte, una tarea dedicada debe completarse correctamente y su nuevo snapshot debe contener el archivo de recuperación de esta actualización; un fallo o un plazo de 30 minutos bloquea la actualización. El rollback de imagen no restaura datos modificados.",
     "updates.self.backupPolicy": "Copia antes de actualizar",

@@ -162,6 +162,7 @@ export function pendingAutomaticImageUpdateMayRun(
     globalWindow: AutomaticImageUpdateWindow | null,
     globalWindowOpen: boolean,
     currentTime: string,
+    alreadyDue = false,
 ): boolean {
     if (entry?.mode === "ignored" || (!mandatory && !entry)) {
         return false;
@@ -172,7 +173,7 @@ export function pendingAutomaticImageUpdateMayRun(
     if (mandatory || entry?.mode === "immediate") {
         return true;
     }
-    return entry?.mode === "scheduled" && entry.time === currentTime;
+    return entry?.mode === "scheduled" && (entry.time === currentTime || alreadyDue);
 }
 
 async function automaticImageUpdateWindowPolicy(now = new Date()): Promise<{
@@ -271,6 +272,7 @@ export interface WatcherSettings {
     credentials: RegistryCredential[];
     notificationLang: NotificationLang;
     autoUpdateConfig: Record<string, AutoUpdateEntry>; // clé "stack::image" → config màj auto
+    pendingAutoUpdateDue?: Record<string, string>; // policy signature of due, deferred updates
     pendingAutoUpdates: string[]; // clés en attente de màj planifiée
     appriseServerUrl: string; // URL du serveur Apprise (ex: "http://apprise:8000")
     appriseUrls: string[]; // URLs Apprise (ntfy://, tgram://, etc.)
@@ -1287,6 +1289,7 @@ export class ImageWatcher {
     private immediateRemoteCache: Map<string, Promise<RemoteDigestInfo>> | null = null;
     private readonly registryCooldownUntil = new Map<string, number>();
     private baseUrl: string = "";
+    private _pendingUpdatesRunning = false;
     private _checkRunning = false;
     private _updatingImages = new Set<string>();
     private _stackBulkApplying = false;
@@ -2043,19 +2046,25 @@ export class ImageWatcher {
         return results;
     }
 
-    /** Applique les màj planifiées dont l'heure correspond à l'heure courante (appelé chaque minute) */
-    private async applyPendingUpdates(): Promise<void> {
-/* eslint-disable @stylistic/indent -- this legacy watcher uses two-space indentation */
-    if (this.manualBatch.running) {
-      return;
+    /** Capture each scheduled slot and retry lock deferrals on subsequent minute ticks. */
+    private async applyPendingUpdates(now = new Date()): Promise<void> {
+        if (this._pendingUpdatesRunning) {
+            return;
+        }
+        this._pendingUpdatesRunning = true;
+        try {
+            await this.runPendingUpdates(now);
+        } finally {
+            this._pendingUpdatesRunning = false;
+        }
     }
-        /* eslint-enable @stylistic/indent */
+
+    private async runPendingUpdates(now: Date): Promise<void> {
         const pending = this.settings.pendingAutoUpdates ?? [];
         if (pending.length === 0) {
             return;
         }
 
-        const now = new Date();
         const clock = schedulingClock(now);
         const currentTime = `${String(clock.hour).padStart(2, "0")}:${String(clock.minute).padStart(2, "0")}`;
 
@@ -2068,6 +2077,21 @@ export class ImageWatcher {
             return;
         }
 
+        const due = this.settings.pendingAutoUpdateDue ??= {};
+        const signature = (key: string) => JSON.stringify([
+            this.settings.autoUpdateConfig?.[key]?.mode,
+            this.settings.autoUpdateConfig?.[key]?.time,
+        ]);
+        let invalidated = false;
+        for (const key of Object.keys(due)) {
+            if (!pending.includes(key) || due[key] !== signature(key)) {
+                delete due[key];
+                invalidated = true;
+            }
+        }
+        if (invalidated) {
+            await this.persistToFile();
+        }
         const toApply = pending.filter((key) => {
             const cfg = this.settings.autoUpdateConfig?.[key];
             const sepIdx = key.indexOf("::");
@@ -2084,17 +2108,17 @@ export class ImageWatcher {
                 globalWindowPolicy.window,
                 globalWindowPolicy.open,
                 currentTime,
+                due[key] === signature(key),
             );
         });
         if (toApply.length === 0) {
             return;
         }
 
-        // Retire les clés traitées du pending avant d'appliquer (évite double-tir si la màj est longue)
-        // Pas de restart — le watcher tourne déjà, on veut juste persister l'état
-        this.settings.pendingAutoUpdates = pending.filter(
-            (k) => !toApply.includes(k),
-        );
+        // Persist eligibility before any mutation; a restart must not lose a deferred slot.
+        for (const key of toApply) {
+            due[key] = signature(key);
+        }
         await this.persistToFile();
 
         console.log(
@@ -2104,16 +2128,31 @@ export class ImageWatcher {
         const applied: ImageStatus[] = [];
         const watchedStacks = await collectWatchedComposeStacks(STACKS_DIR, this.externalStacks);
         for (const key of toApply) {
+            if (this.manualBatch.running) {
+                break;
+            }
+            const liveWindow = await automaticImageUpdateWindowPolicy();
+            if (liveWindow.window && !liveWindow.open) {
+                break;
+            }
             const sepIdx = key.indexOf("::");
             if (sepIdx === -1) {
                 continue;
             }
             const stack = key.slice(0, sepIdx);
             const image = key.slice(sepIdx + 2);
+            const cfg = this.settings.autoUpdateConfig?.[key];
+            if (!this.settings.pendingAutoUpdates.includes(key) || due[key] !== signature(key) ||
+                cfg?.mode === "ignored" || isUpdatePaused(cfg?.pause) || isUpdatePaused(this.settings.globalUpdatePause)) {
+                continue;
+            }
 
             // Trouve le fichier compose (stack native ou externe)
             const watched = watchedStacks.get(stack);
             if (!watched) {
+                this.settings.pendingAutoUpdates = this.settings.pendingAutoUpdates.filter(k => k !== key);
+                delete due[key];
+                await this.persistToFile();
                 continue;
             }
 
@@ -2127,11 +2166,21 @@ export class ImageWatcher {
                 lastChecked: new Date().toISOString(),
             };
 
+            let deferred = false;
             const success = await this.performAutoUpdate(
                 status,
                 watched,
                 "scheduled",
+                false,
+                () => {
+                    deferred = true;
+                },
             );
+            if (!deferred) {
+                this.settings.pendingAutoUpdates = this.settings.pendingAutoUpdates.filter(k => k !== key);
+                delete due[key];
+                await this.persistToFile();
+            }
             if (success) {
                 applied.push(status);
             }
@@ -2180,12 +2229,14 @@ export class ImageWatcher {
         watched: WatchedComposeStack,
         mode: "immediate" | "scheduled" | "manual" = "immediate",
         respectPaused = false,
+        onDeferred?: () => void,
     ): Promise<boolean> {
         try {
             return await withStackMutation(path.resolve(watched.workingDir ?? path.dirname(watched.composePath)),
-                () => this.performReservedAutoUpdate(status, watched, mode, respectPaused));
+                () => this.performReservedAutoUpdate(status, watched, mode, respectPaused, onDeferred));
         } catch (error) {
             if (error instanceof Error && error.message.startsWith("Another operation is active on this stack")) {
+                onDeferred?.();
                 return false;
             }
             throw error;
@@ -2197,6 +2248,7 @@ export class ImageWatcher {
         watched: WatchedComposeStack,
         mode: "immediate" | "scheduled" | "manual",
         respectPaused: boolean,
+        onDeferred?: () => void,
     ): Promise<boolean> {
         const key = `${status.stack}::${status.image}`;
         const { composePath, project, configFiles, workingDir, envFiles } = watched;
@@ -2208,12 +2260,14 @@ export class ImageWatcher {
         }
         const reservation = this.reserveImageMutation(key);
         if (!reservation) {
+            onDeferred?.();
             console.log(`[ImageWatcher] Auto-update ${key} reportée : une autre opération Docker de mise à jour est en cours.`);
             return false;
         }
         const oldDigest = status.localDigest ?? "";
         try {
             if (await isSelfUpdateBlockingImageMutations(this.dataDir)) {
+                onDeferred?.();
                 console.log(`[ImageWatcher] Auto-update ${key} reportée : une mise à jour de Dockge-Enhanced est en cours.`);
                 return false;
             }

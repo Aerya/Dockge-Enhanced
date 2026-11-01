@@ -4,6 +4,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-01 — Reprise des mises à jour planifiées reportées** — Si une autre mise à jour occupe le verrou Docker à l’heure prévue, l’image reste en attente et une nouvelle tentative a lieu aux passages suivants du planificateur, chaque minute, y compris après un redémarrage d’Enhanced. Les pauses, exclusions, changements d’horaire et le créneau global de maintenance restent respectés. Un véritable échec de mise à jour n’est pas réessayé chaque minute.
+
 **2026-10-31 — Monitoring avec les versions récentes de Docker** — Lecture de `Action` et `Actor.ID` dans les événements Docker, avec repli sur les anciens champs, pour rétablir les alertes de crash loop, les notifications unhealthy et les actions auto-heal configurées. Les délais anti-spam et les protections des mises à jour sans interruption sont conservés.
 
 **2026-10-30 — Icônes du navigateur et des mobiles** — Les icônes ICO et PNG sont régénérées depuis le logo SVG Enhanced au lieu d’afficher des rayures colorées. Leurs URL versionnées renouvellent le cache du navigateur ; un raccourci déjà installé sur l’écran d’accueil peut nécessiter d’être recréé.
