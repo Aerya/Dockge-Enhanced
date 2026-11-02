@@ -199,3 +199,14 @@ test("runtime capture imports and packaged sidecars cannot bypass diagnostics", 
     assert.equal(typeof native.execFile, "function");
     assert.notEqual(native.execFile, buffer.execFile);
 });
+
+test("packaged updater retains a useful source location without absolute paths", async () => {
+    const { runInNewContext } = require("node:vm");
+    const wrapped = buffer.wrapBuffered(() => { throw Object.assign(new Error("overflow"), { code: "ENOBUFS" }); }, { mode: "execFile" });
+    await captureErrors(async messages => {
+        assert.throws(() => runInNewContext('wrapped("docker", ["inspect"])', { wrapped }, { filename: "/updater/index.js" }), { code: "ENOBUFS" });
+        assert.equal(messages.length, 1);
+        assert.match(messages[0], /extra\/self-update-sidecar\/index.js:1:/);
+        assert.doesNotMatch(messages[0], /"source":"\//);
+    });
+});

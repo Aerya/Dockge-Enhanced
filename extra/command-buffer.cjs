@@ -44,6 +44,8 @@ function sourceLocation() {
         if (line.includes("command-buffer.cjs") || line.includes("buffered-process.ts")) continue;
         const match = line.match(/(?:backend|extra)\/[a-zA-Z0-9_./-]+\.(?:ts|js|cjs):\d+:\d+/);
         if (match) return match[0];
+        const updater = line.match(/\/updater\/index\.js:(\d+:\d+)/);
+        if (updater) return `extra/self-update-sidecar/index.js:${updater[1]}`;
     }
     return "unknown";
 }
