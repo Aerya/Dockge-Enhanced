@@ -63,6 +63,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Listado fiable de volúmenes de las stacks :** Los volúmenes montados siguen visibles cuando Docker devuelve descripciones grandes de los contenedores. Enhanced lee solo los campos necesarios en pequeños lotes, sin limitar el número de contenedores ni de volúmenes. Los errores identifican la operación fallida sin exponer secretos. Actualiza también las instancias vinculadas que alojan las stacks.
+
 **Validación de Windows 11 / WSL2:** guía de instalación, acciones Compose, copias Restic/Zerobyte e instancias vinculadas probadas. Las correcciones de los montajes Windows del sidecar y del reinicio ordenado de servicios con red compartida conservan las rutas y permisos Linux/Unraid. [Windows 11 con Docker Desktop (WSL2)](docs/windows.es.md). Tras reiniciar Windows, algunos montajes WSL requieren la recuperación manual descrita en la guía.
 
 **Verificación de actualizaciones de imágenes :** ImageWatcher recupera imágenes cuyo tag local desapareció, verifica cada réplica afectada después de Compose y señala las discrepancias como fallos. Las actualizaciones no verificables no cambian la fecha. Las imágenes descargadas quedan protegidas de la limpieza durante 24 horas tras un intento interrumpido o no verificado. [Verificación de actualizaciones de imágenes](docs/image-update-verification.es.md).
@@ -586,7 +588,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 ### Búsqueda y archivos
 - Búsqueda global multiinstancia (`Ctrl+K`) en stacks, archivos Compose/`.env`, recursos Docker y snapshots Restic recientes
 - Búsqueda opcional en los valores de `.env`, que nunca se devuelven ni se guardan en el historial
-- Filas compactas de volúmenes montados con su tamaño y explorador/editor de volúmenes para cada contenedor, incluso con el stack detenido
+- Filas compactas de volúmenes montados con su tamaño y explorador/editor de volúmenes para cada contenedor, incluso con el stack detenido; la inspección por lotes acotados conserva todos los contenedores y montajes
 - Gestor opcional de archivos del host limitado a una raíz, con transferencias por fragmentos, edición de texto y lectura de archivos de log
 
 ### Automatización y auditoría

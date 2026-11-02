@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.stackVolumeInspection": "Los volúmenes montados siguen visibles cuando Docker devuelve descripciones grandes de los contenedores. Enhanced lee solo los campos necesarios en pequeños lotes, sin limitar el número de contenedores ni de volúmenes. Los errores identifican la operación fallida sin exponer secretos. Actualiza también las instancias vinculadas que alojan las stacks.",
     "releaseNews.item.windowsWsl": "Guía Windows 11 para Docker Desktop con WSL2 y contenedores Linux. Corrección de los montajes Windows del sidecar de actualización y reinicio ordenado de servicios con un namespace de red compartido. El monitoring describe la VM Linux, no todo el equipo Windows. Tras reiniciar Windows, algunos montajes WSL requieren la recuperación manual descrita en la guía.",
     "stack.lastOperation": "Última operación",
     "stack.lastOperationHint": "Fecha del último despliegue, pull o actualización de imagen verificada; no garantiza que todos los servicios estén al día.",
