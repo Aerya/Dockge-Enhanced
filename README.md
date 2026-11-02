@@ -63,6 +63,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Self-update with a shared data/Compose directory :** The updater reuses the existing mount when its data and Compose directories coincide, avoiding a Docker “Duplicate mount point” failure before replacement. Recovery data stays writable and the host-path alias stays read-only.
+
 **Configurable command buffers :** Captured command output limits can be adjusted with bounded environment settings. Overflow logs identify the command family, source location and limit without printing arguments or captured output. Existing defaults and streaming commands are preserved. [Command buffers](docs/command-buffers.md).
 
 **Reliable stack volume listing :** Mounted volumes remain visible when Docker returns large container descriptions. Enhanced reads only the required fields in small batches, without limiting the number of containers or volumes. Errors identify the failed operation without exposing secrets. Update linked hosting instances too.

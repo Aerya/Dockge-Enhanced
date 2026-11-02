@@ -6,6 +6,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-02 — Selbst-Update mit gemeinsamem Daten-/Compose-Verzeichnis** — Der Updater verwendet den vorhandenen Mount, wenn Daten und Compose im selben Verzeichnis liegen. So entfällt der Docker-Fehler „Duplicate mount point“ vor dem Austausch. Wiederherstellungsdaten bleiben beschreibbar, der Hostpfad-Alias schreibgeschützt.
+
 **2026-11-02 — Konfigurierbare Befehlspuffer** — Die Grenzen erfasster Befehlsausgaben lassen sich über begrenzte Umgebungsvariablen anpassen. Bei Überschreitung nennen Logs Befehlsgruppe, Quellcodeposition und Grenze, ohne Argumente oder erfasste Ausgabe. Standardwerte und Streaming-Befehle bleiben erhalten. [Befehlspuffer](docs/command-buffers.de.md). #604.
 
 **2026-11-02 — Zuverlässige Anzeige der Stack-Volumes** — Eingebundene Volumes bleiben auch bei umfangreichen Docker-Containerbeschreibungen sichtbar. Enhanced liest nur die benötigten Felder in kleinen Gruppen, ohne die Anzahl der Container oder Volumes zu begrenzen. Fehler benennen den fehlgeschlagenen Vorgang, ohne Geheimnisse offenzulegen. Aktualisieren Sie auch die verbundenen Instanzen, auf denen die Stacks laufen. #604.

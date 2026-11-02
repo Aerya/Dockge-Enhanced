@@ -63,6 +63,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Autoactualización con directorio compartido :** El updater reutiliza el montaje existente cuando los directorios de datos y Compose coinciden, evitando el error Docker «Duplicate mount point» antes del reemplazo. Los datos de recuperación mantienen la escritura y el alias de la ruta del host sigue en solo lectura.
+
 **Búferes de comandos configurables :** Los límites de salida capturada se ajustan mediante variables de entorno acotadas. Los desbordamientos indican la familia del comando, ubicación del código y límite, sin argumentos ni salida capturada. Se conservan los valores predeterminados y los comandos en streaming. [Búferes de comandos](docs/command-buffers.es.md).
 
 **Listado fiable de volúmenes de las stacks :** Los volúmenes montados siguen visibles cuando Docker devuelve descripciones grandes de los contenedores. Enhanced lee solo los campos necesarios en pequeños lotes, sin limitar el número de contenedores ni de volúmenes. Los errores identifican la operación fallida sin exponer secretos. Actualiza también las instancias vinculadas que alojan las stacks.

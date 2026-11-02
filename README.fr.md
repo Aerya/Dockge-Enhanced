@@ -64,6 +64,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Auto-mise à jour avec dossiers communs :** L’updater réutilise le montage existant lorsque les dossiers de données et du Compose sont identiques, évitant l’échec Docker « Duplicate mount point » avant le remplacement. Les données de récupération restent accessibles en écriture et l’alias du chemin hôte en lecture seule.
+
 **Buffers de commandes configurables :** Les limites de sortie capturée sont ajustables par des variables d’environnement bornées. Les dépassements indiquent la famille de commande, l’emplacement dans le code et la limite, sans arguments ni sortie capturée. Les valeurs par défaut et les commandes en streaming sont préservées. [Buffers de commandes](docs/command-buffers.fr.md).
 
 **Affichage fiable des volumes des stacks :** Les volumes montés restent visibles lorsque Docker renvoie de grosses descriptions de conteneurs. Enhanced lit uniquement les champs nécessaires par petits lots, sans limiter le nombre de conteneurs ni de volumes. Les erreurs identifient l’opération en échec sans exposer de secrets. Mettez aussi à jour les instances liées qui hébergent les stacks.
