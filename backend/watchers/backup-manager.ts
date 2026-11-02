@@ -6,7 +6,8 @@ import { isZerobyteApplicationBackupActive } from "../integrations/zerobyte-coor
  */
 
 import { scheduleInTimezone } from "../scheduling-cron";
-import { exec, execFile, spawn } from "child_process";
+import { exec, execFile } from "../buffered-process";
+import { spawn } from "node:child_process";
 import { promisify } from "util";
 import * as readline from "readline";
 import * as fs from "fs/promises";

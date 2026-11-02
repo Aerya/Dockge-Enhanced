@@ -6,7 +6,7 @@
  * Notification Discord : une seule fois par digest distant (pas de spam).
  */
 
-import { execFile } from "node:child_process";
+import { execFile } from "../buffered-process";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { promisify } from "node:util";

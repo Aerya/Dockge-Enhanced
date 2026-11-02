@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "./buffered-process";
 import {
     AutoPruneManager,
     groupImageRowsById,

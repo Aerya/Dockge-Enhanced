@@ -16,7 +16,7 @@
  */
 import { Stack } from "./stack";
 import { DockgeServer } from "./dockge-server";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "./buffered-process";
 import { spawn } from "child_process";
 import path from "path";
 import { log } from "./log";

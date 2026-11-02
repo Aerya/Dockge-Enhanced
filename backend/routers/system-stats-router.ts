@@ -10,7 +10,7 @@
 
 import os from "os";
 import * as fs from "fs/promises";
-import { exec } from "child_process";
+import { exec } from "../buffered-process";
 import { promisify } from "util";
 import { Router } from "../router";
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";

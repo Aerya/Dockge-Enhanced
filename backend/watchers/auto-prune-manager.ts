@@ -13,7 +13,7 @@
 import path from "path";
 import { isPendingPullProtected } from "./pending-image-pulls";
 import * as fs from "node:fs";
-import { execFile } from "child_process";
+import { execFile } from "../buffered-process";
 import { promisify } from "util";
 import { log } from "../log";
 import { resolveDataDir } from "../data-dir";
