@@ -1,4 +1,36 @@
 {
   "version": 1,
-  "announcements": []
+  "announcements": [
+    {
+      "id": "2026-11-02-self-update-duplicate-mount",
+      "enabled": true,
+      "severity": "warning",
+      "title": {
+        "fr": "Auto-mise à jour bloquée : intervention nécessaire",
+        "en": "Self-update blocked: manual action required",
+        "de": "Selbstaktualisierung blockiert: manueller Eingriff erforderlich",
+        "es": "Actualización interna bloqueada: se requiere intervención",
+        "zh-CN": "自动更新受阻：需要手动操作"
+      },
+      "message": {
+        "fr": "Une régression peut empêcher la mise à jour interne d’Enhanced avec l’erreur « Duplicate mount point ». Je vous présente mes excuses pour ce problème et la manipulation supplémentaire qu’il impose.\n\nLe correctif est disponible, mais les installations touchées doivent être mises à jour manuellement une fois : leur updater ne peut pas installer lui-même la correction.\n\nSuivez le guide lié pour télécharger la nouvelle image et recréer uniquement Enhanced, en conservant ses données et ses montages. Ne supprimez ni vos données ni vos volumes. Une courte interruption de l’interface est à prévoir.\n\nCette erreur survient avant le remplacement d’Enhanced : relancer le bouton de mise à jour ne la résoudra pas.",
+        "en": "A regression can prevent Enhanced’s internal update with the error “Duplicate mount point”. I apologise for this problem and the extra manual work it requires.\n\nThe fix is available, but affected installations need a one-time manual update: their updater cannot install the fix itself.\n\nFollow the linked guide to download the new image and recreate only Enhanced, preserving its data and mounts. Do not delete your data or volumes. Expect a brief interruption of the interface.\n\nThis error happens before Enhanced is replaced: clicking the update button again will not resolve it.",
+        "de": "Eine Regression kann die interne Aktualisierung von Enhanced mit dem Fehler „Duplicate mount point“ verhindern. Ich entschuldige mich für dieses Problem und den zusätzlichen manuellen Aufwand.\n\nDie Korrektur ist verfügbar, betroffene Installationen müssen jedoch einmal manuell aktualisiert werden: Ihr Updater kann die Korrektur nicht selbst installieren.\n\nFolgen Sie der verlinkten Anleitung, um das neue Image herunterzuladen und nur Enhanced neu zu erstellen, ohne Daten oder Einbindungen zu verlieren. Löschen Sie keine Daten oder Volumes. Die Oberfläche wird kurzzeitig nicht erreichbar sein.\n\nDer Fehler tritt vor dem Ersetzen von Enhanced auf: Ein erneuter Klick auf die Aktualisierung behebt ihn nicht.",
+        "es": "Una regresión puede impedir la actualización interna de Enhanced con el error «Duplicate mount point». Pido disculpas por este problema y por la intervención adicional que requiere.\n\nLa corrección está disponible, pero las instalaciones afectadas necesitan una actualización manual una sola vez: su actualizador no puede instalarla por sí mismo.\n\nSiga la guía enlazada para descargar la nueva imagen y recrear únicamente Enhanced, conservando sus datos y montajes. No elimine datos ni volúmenes. La interfaz dejará de estar disponible brevemente.\n\nEl error ocurre antes de reemplazar Enhanced: volver a pulsar el botón de actualización no lo resolverá.",
+        "zh-CN": "一个回归问题可能导致 Enhanced 内部更新失败，并显示“Duplicate mount point”错误。对于此问题及其带来的额外手动操作，我深表歉意。\n\n修复版本已发布，但受影响的安装需要手动更新一次：其更新器无法自行安装此修复。\n\n请按照链接中的指南下载新镜像，仅重新创建 Enhanced，并保留数据和挂载。请勿删除数据或卷。界面将短暂中断。\n\n该错误发生在替换 Enhanced 之前，重复点击更新按钮无法解决。"
+      },
+      "url": "https://github.com/Aerya/Dockge-Enhanced/blob/main/docs/self-update-recovery.md",
+      "dismissible": true,
+      "target": {
+        "revisions": [
+          "07f97cc11bf72af31f93efae8ccd9bbdebfecc75",
+          "c2584e2ff8452bda94f60c5fa3a3e7d6a5d527eb",
+          "9f58ec70314ebb015ac948f4866af6ce08f15354",
+          "ef5ff3f8d8e197d659b818ff70694ad8941c114b",
+          "510449ab8853dc853eeac06172f024f4a5626971",
+          "b6c21d54f14f5434318775ba28d2cdb4fb08c849"
+        ]
+      }
+    }
+  ]
 }
