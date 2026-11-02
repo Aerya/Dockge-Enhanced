@@ -63,6 +63,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Conteo anónimo por período :** Estimaciones independientes por semana, mes y año; Discord muestra la semana anterior, mes actual, todos los meses pasados y año sin sumar los meses. Se conserva el historial mensual y se indican períodos incompletos y límites de migración.
+
 **Autoactualización con directorio compartido :** El updater reutiliza el montaje existente cuando los directorios de datos y Compose coinciden, evitando el error Docker «Duplicate mount point» antes del reemplazo. Los datos de recuperación mantienen la escritura y el alias de la ruta del host sigue en solo lectura.
 
 **Búferes de comandos configurables :** Los límites de salida capturada se ajustan mediante variables de entorno acotadas. Los desbordamientos indican la familia del comando, ubicación del código y límite, sin argumentos ni salida capturada. Se conservan los valores predeterminados y los comandos en streaming. [Búferes de comandos](docs/command-buffers.es.md).
@@ -347,15 +349,15 @@ Un caso admitido explícitamente es [Gluetun-Companion](https://github.com/Aerya
 
 **Conteo anónimo de instalaciones**
 
-Para conocer de forma aproximada cuántas instalaciones de Dockge-Enhanced están realmente activas sin operar un servicio de analítica separado, Enhanced descarga como máximo una vez al mes un pequeño archivo técnico alojado en una release de GitHub dedicada. El `download_count` público de GitHub de ese asset mensual es el único agregado utilizado para el conteo.
+Enhanced estima las instancias participantes mediante tres descargas independientes: una por semana (lunes–domingo UTC), una por mes y una por año natural UTC. Se utiliza el `download_count` público de pequeños archivos de una release de GitHub; los pulls Docker no se convierten en instalaciones. El total anual nunca es la suma de los meses.
 
 No se genera ni se transmite ningún identificador de instalación. La solicitud no contiene hostname, nombre de instancia, stack, contenedor, imagen Docker, configuración, ruta, cuenta de GitHub, correo electrónico, arquitectura ni identificador de build. Como con cualquier descarga de un asset de GitHub, la conexión es procesada por GitHub; Dockge-Enhanced no recibe ni almacena las direcciones IP de las instalaciones.
 
-El mes ya contabilizado se guarda únicamente en el directorio de datos local para que una misma instalación descargue el asset como máximo una vez al mes. El conteo está activado por defecto y puede desactivarse con `DOCKGE_USAGE_COUNT=false`. Recrear o borrar el directorio de datos puede hacer que una instalación vuelva a contarse durante el mismo mes, por lo que la cifra es deliberadamente aproximada.
+Los períodos contabilizados se guardan localmente. El conteo puede desactivarse con `DOCKGE_USAGE_COUNT=false`. Se conservan los contadores mensuales existentes, sin volver a contar el mes al migrar. Reiniciar los datos o realizar descargas externas puede sobrecontar; versiones antiguas, desactivación y fallos de red pueden infracontar. No son usuarios únicos, nuevas instalaciones ni instancias actualmente encendidas. Los contadores semanales/anuales empiezan con versiones compatibles: no se inventa el historial.
 
-El mecanismo es completamente público: [código en Enhanced](./backend/anonymous-install-count.ts), [workflow de GitHub que crea los assets mensuales](./.github/workflows/usage-count-asset.yml) y [contadores mensuales agregados](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count).
+El mecanismo es público: [código Enhanced](./backend/anonymous-install-count.ts), [workflow de preparación de períodos](./.github/workflows/usage-count-asset.yml) y [contadores agregados](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Los períodos siguientes se preparan por adelantado; se registran errores sin identificadores ni secretos, con un reintento como máximo cada 12 horas por período.
 
-Los propietarios del repositorio pueden añadir un secreto de Actions llamado `USAGE_COUNT_DISCORD_WEBHOOK` para recibir un conteo provisional cada lunes y el total definitivo del mes anterior el primer día de cada mes. El workflow también puede ejecutarse manualmente para enviar el conteo actual de inmediato. El valor del webhook permanece cifrado por GitHub y nunca se guarda en el repositorio.
+El secreto Actions `USAGE_COUNT_DISCORD_WEBHOOK` permite recibir informes cada lunes y el primer día del mes: semana natural anterior, mes actual, todos los meses anteriores y año actual contado por separado. Si coinciden las fechas se envía un solo informe. También admite ejecución manual. Los períodos parciales o ausentes se indican; las versiones antiguas solo contribuyen al mes, infravalorando semanas y años durante la migración. Los informes se conservan 90 días como artefactos Actions. El webhook permanece secreto.
 
 **Búsqueda global multi-instancia V2 (`Ctrl+K`)**
 
@@ -933,7 +935,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKGE_DOCKER_SOCKET` | `/var/run/docker.sock` | Ruta del socket Docker, por ejemplo para Docker rootless o Podman |
 | `DOCKER_HOST` | *(ninguno)* | Endpoint de Docker, por ejemplo `tcp://proxy:2375` con un Docker Socket Proxy de confianza |
 | `DOCKGE_CONTAINER_ID` | *(ninguno)* | ID explícito del contenedor de Enhanced cuando no puede deducirse de `HOSTNAME` |
-| `DOCKGE_USAGE_COUNT` | *(activado)* | Ponlo en `false` para desactivar el conteo mensual anónimo de instalaciones |
+| `DOCKGE_USAGE_COUNT` | *(activado)* | Usar `false` para desactivar los contadores anónimos semanales/mensuales/anuales |
 | `DOCKGE_COMMAND_BUFFER_MULTIPLIER` | `1` | Multiplicador de los límites existentes (entero 1–16); aumentar con precaución: crece la memoria por comando simultáneo. [Búferes de comandos](docs/command-buffers.es.md) |
 | `DOCKGE_COMMAND_BUFFER_MAX_MIB` | `256` | Límite absoluto por comando, en MiB (entero 1–256). |
 | `DOCKGE_OIDC_ISSUER` | *(ninguno)* | URL del emisor OpenID Connect; al definirla se activa el inicio de sesión OIDC nativo. Todas las opciones `DOCKGE_OIDC_*` se describen en la [guía de OIDC](docs/oidc.es.md) |

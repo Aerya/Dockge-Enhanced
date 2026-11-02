@@ -62,6 +62,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**按周期匿名统计 :** 独立估算周度、月度和年度数据；Discord 显示上一完整周、当月、所有历史月份及当年，不累加月度数据。保留月度历史，明确标注不完整周期及迁移限制。
+
 **数据与 Compose 共用目录时的自更新 :** 当数据和 Compose 位于同一目录时，更新器复用现有挂载，避免在替换前发生 Docker“Duplicate mount point”错误。恢复数据仍可写，主机路径别名保持只读。
 
 **可配置的命令缓冲区 :** 可通过有范围限制的环境变量调整命令输出缓冲区。溢出日志包含命令类别、代码位置和限制，不输出参数或捕获的内容。默认值和流式命令保持不变。 [命令缓冲区](docs/command-buffers.zh-CN.md).
@@ -344,15 +346,15 @@ Enhanced 现在可以检测现有 Docker Compose 项目，并在**不移动 Comp
 
 **匿名安装计数**
 
-为了在不运行独立分析服务的情况下大致了解真正活跃的 Dockge-Enhanced 安装数量，Enhanced 每月最多下载一次托管在专用 GitHub Release 中的极小技术文件。计数仅使用 GitHub 为该月 asset 提供的公开 `download_count` 聚合值。
+Enhanced 通过三个独立下载估算参与统计的实例：每周一次（UTC 周一至周日）、每月一次、每个 UTC 日历年一次。统计使用 GitHub release 小文件的公开 `download_count`，不将 Docker 拉取次数换算为安装数。年度总数绝不是各月总数相加。
 
 此计数不会生成或发送任何安装标识符。请求中不包含 hostname、实例名称、Stack、容器、Docker 镜像、配置、路径、GitHub 账户、电子邮件、架构或 build 标识。与任何 GitHub asset 下载一样，连接本身由 GitHub 处理；Dockge-Enhanced 不会接收或存储安装实例的 IP 地址。
 
-已计数的月份只保存在本地数据目录中，以确保同一安装每月最多下载一次该 asset。计数默认启用，可通过 `DOCKGE_USAGE_COUNT=false` 禁用。重新创建或删除数据目录可能使同一安装在当月再次被计数，因此该数字有意保持为近似值。
+已统计的周期保存在本地数据中。可通过 `DOCKGE_USAGE_COUNT=false` 关闭统计。保留已有月度计数，升级后不会重复统计当月。重置数据或外部下载可能多计；旧版本、关闭统计以及网络错误可能少计。这不是独立用户数、新增安装数或当前运行实例数。周度和年度计数从兼容版本开始，不会伪造过去的统计。
 
-整个机制完全公开：[Enhanced 端代码](./backend/anonymous-install-count.ts)、[创建每月 asset 的 GitHub workflow](./.github/workflows/usage-count-asset.yml)以及[每月聚合计数](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count)。
+机制公开可查：[Enhanced 代码](./backend/anonymous-install-count.ts)、[周期准备 workflow](./.github/workflows/usage-count-asset.yml) 和[汇总计数](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count)。提前准备后续周期；错误日志不包含标识符或机密，每个周期最多每 12 小时重试一次。
 
-仓库所有者可以添加名为 `USAGE_COUNT_DISCORD_WEBHOOK` 的 Actions Secret，以便每周一接收当月暂定计数，并在每月第一天接收上个月的最终计数。也可以手动运行 workflow，立即发送当前计数。Webhook 值由 GitHub 加密，绝不会提交到仓库。
+Actions Secret `USAGE_COUNT_DISCORD_WEBHOOK` 可在每周一及每月第一天发送报告，包括上一完整自然周、当月、所有历史月份及独立统计的当年。日期重合时仅发送一份报告，也支持手动运行。报告标明不完整或缺失的周期；旧版本仅计入月度，因此迁移期间周度和年度会偏低。报告作为 Actions 构件保留 90 天。Webhook 保持保密。
 
 **多实例全局搜索 V2（`Ctrl+K`）**
 
@@ -934,7 +936,7 @@ PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics �
 | `DOCKGE_DOCKER_SOCKET` | `/var/run/docker.sock` | Docker 套接字路径，例如用于 rootless Docker 或 Podman |
 | `DOCKER_HOST` | *(无)* | Docker endpoint，例如配合可信 Docker Socket Proxy 使用 `tcp://proxy:2375` |
 | `DOCKGE_CONTAINER_ID` | *(无)* | 无法从 `HOSTNAME` 识别时，显式指定 Enhanced 容器 ID |
-| `DOCKGE_USAGE_COUNT` | *(启用)* | 设为 `false` 可关闭每月匿名安装计数 |
+| `DOCKGE_USAGE_COUNT` | *(启用)* | 设为 `false` 可关闭匿名周度/月度/年度统计 |
 | `DOCKGE_COMMAND_BUFFER_MULTIPLIER` | `1` | 现有限制的倍数（整数 1–16）；请谨慎增加：每个并发命令的内存占用会增加。 [命令缓冲区](docs/command-buffers.zh-CN.md) |
 | `DOCKGE_COMMAND_BUFFER_MAX_MIB` | `256` | 每个命令的绝对上限，单位 MiB（整数 1–256）。 |
 | `DOCKGE_OIDC_ISSUER` | *(无)* | OpenID Connect 签发者 URL；设置后即启用原生 OIDC 登录。所有 `DOCKGE_OIDC_*` 选项见 [OIDC 指南](docs/oidc.zh-CN.md) |
