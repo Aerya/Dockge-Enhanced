@@ -62,6 +62,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**可配置的命令缓冲区 :** 可通过有范围限制的环境变量调整命令输出缓冲区。溢出日志包含命令类别、代码位置和限制，不输出参数或捕获的内容。默认值和流式命令保持不变。 [命令缓冲区](docs/command-buffers.zh-CN.md).
+
 **可靠显示堆栈挂载卷 :** 即使 Docker 返回大量容器信息，也能显示挂载卷。Enhanced 分小批次仅读取所需字段，不限制容器或卷的数量。错误信息会指出失败的操作，但不会泄露敏感信息。请同时更新承载堆栈的关联实例。
 
 **Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。
@@ -591,6 +593,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 可选的受限根目录主机文件管理器，支持分块传输、文本编辑和文件日志查看
 
 ### 自动化与审计
+- [可配置的命令缓冲区](docs/command-buffers.zh-CN.md)
 - 按权限和 Stack 限定范围的 REST API 令牌
 - 按 Stack 的 Webhook
 - 可选的 Home Assistant 自定义集成和示例
@@ -930,6 +933,8 @@ PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics �
 | `DOCKER_HOST` | *(无)* | Docker endpoint，例如配合可信 Docker Socket Proxy 使用 `tcp://proxy:2375` |
 | `DOCKGE_CONTAINER_ID` | *(无)* | 无法从 `HOSTNAME` 识别时，显式指定 Enhanced 容器 ID |
 | `DOCKGE_USAGE_COUNT` | *(启用)* | 设为 `false` 可关闭每月匿名安装计数 |
+| `DOCKGE_COMMAND_BUFFER_MULTIPLIER` | `1` | 现有限制的倍数（整数 1–16）；请谨慎增加：每个并发命令的内存占用会增加。 [命令缓冲区](docs/command-buffers.zh-CN.md) |
+| `DOCKGE_COMMAND_BUFFER_MAX_MIB` | `256` | 每个命令的绝对上限，单位 MiB（整数 1–256）。 |
 | `DOCKGE_OIDC_ISSUER` | *(无)* | OpenID Connect 签发者 URL；设置后即启用原生 OIDC 登录。所有 `DOCKGE_OIDC_*` 选项见 [OIDC 指南](docs/oidc.zh-CN.md) |
 
 > ℹ️ 未设置 `DOCKGE_DATA_DIR` 时，Dockge-Enhanced 使用持久化卷 `/app/data`。显式配置的路径始终优先。

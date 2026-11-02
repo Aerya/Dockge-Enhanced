@@ -8,7 +8,7 @@ import { protectPendingPull, releasePendingPull } from "./pending-image-pulls";
 import { captureServiceImageTargets, resolveServiceImageTargets, verifyServiceImageTargets, ImageUpdateVerificationError } from "./image-update-verification";
 import { scheduleInTimezone } from "../scheduling-cron";
 import { schedulingClock } from "../scheduling-timezone";
-import { execFile } from "child_process";
+import { execFile } from "../buffered-process";
 import { promisify } from "util";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";

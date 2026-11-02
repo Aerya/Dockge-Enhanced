@@ -21,7 +21,7 @@ import {
 } from "../common/util-common";
 import { composeLabelIsTrue, LABEL_STATUS_IGNORE } from "../common/compose-labels";
 import { InteractiveTerminal, Terminal } from "./terminal";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "./buffered-process";
 import { Settings } from "./settings";
 import { intervals } from "./low-power";
 import { getVolumeSourceSize } from "./volume-usage";

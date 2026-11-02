@@ -63,6 +63,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Konfigurierbare Befehlspuffer :** Die Grenzen erfasster Befehlsausgaben lassen sich über begrenzte Umgebungsvariablen anpassen. Bei Überschreitung nennen Logs Befehlsgruppe, Quellcodeposition und Grenze, ohne Argumente oder erfasste Ausgabe. Standardwerte und Streaming-Befehle bleiben erhalten. [Befehlspuffer](docs/command-buffers.de.md).
+
 **Zuverlässige Anzeige der Stack-Volumes :** Eingebundene Volumes bleiben auch bei umfangreichen Docker-Containerbeschreibungen sichtbar. Enhanced liest nur die benötigten Felder in kleinen Gruppen, ohne die Anzahl der Container oder Volumes zu begrenzen. Fehler benennen den fehlgeschlagenen Vorgang, ohne Geheimnisse offenzulegen. Aktualisieren Sie auch die verbundenen Instanzen, auf denen die Stacks laufen.
 
 **Validierung unter Windows 11 / WSL2:** Installationsanleitung, Compose-Aktionen, Restic-/Zerobyte-Sicherungen und verbundene Instanzen getestet. Die Korrekturen für Windows-Sidecar-Mounts und geordnete Neustarts bei gemeinsamem Netzwerk erhalten Linux-/Unraid-Pfade und Berechtigungen. [Windows 11 mit Docker Desktop (WSL2)](docs/windows.de.md). Nach einem Windows-Neustart benötigen manche WSL-Mounts die im Leitfaden beschriebene manuelle Wiederaufnahme.
@@ -590,6 +592,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Optionaler, auf ein Wurzelverzeichnis beschränkter Host-Dateimanager mit stückweisen Übertragungen, Textbearbeitung und Anzeige von Dateiprotokollen
 
 ### Automatisierung & Audit
+- [Konfigurierbare Befehlspuffer](docs/command-buffers.de.md)
 - REST-API-Tokens, beschränkt nach Berechtigungen und Stacks
 - Webhooks pro Stack
 - Optionale benutzerdefinierte Home-Assistant-Integration und Beispiele
@@ -927,6 +930,8 @@ Um einen Dienst zu veröffentlichen, bearbeiten Sie dessen Stack und verwenden S
 | `DOCKER_HOST` | *(keine)* | Docker-Endpunkt, z. B. `tcp://proxy:2375` mit einem vertrauenswürdigen Docker Socket Proxy |
 | `DOCKGE_CONTAINER_ID` | *(keine)* | Explizite Container-ID von Enhanced, wenn sie nicht aus `HOSTNAME` ermittelt werden kann |
 | `DOCKGE_USAGE_COUNT` | *(aktiviert)* | Auf `false` setzen, um die anonyme monatliche Installationszählung zu deaktivieren |
+| `DOCKGE_COMMAND_BUFFER_MULTIPLIER` | `1` | Multiplikator vorhandener Grenzen (Ganzzahl 1–16); vorsichtig erhöhen: der Speicherbedarf steigt pro gleichzeitigem Befehl. [Befehlspuffer](docs/command-buffers.de.md) |
+| `DOCKGE_COMMAND_BUFFER_MAX_MIB` | `256` | Absolute Grenze pro Befehl in MiB (Ganzzahl 1–256). |
 | `DOCKGE_OIDC_ISSUER` | *(keine)* | Issuer-URL des OpenID-Connect-Anbieters; ist sie gesetzt, wird die native OIDC-Anmeldung aktiviert. Alle Optionen `DOCKGE_OIDC_*` stehen in der [OIDC-Anleitung](docs/oidc.de.md) |
 
 > ℹ️ Ohne `DOCKGE_DATA_DIR` verwendet Dockge-Enhanced sein persistentes `/app/data`-Volume. Explizit konfigurierte Pfade haben immer Vorrang.

@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import { isIP } from "node:net";
 import * as path from "node:path";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "../buffered-process";
 import { resolveDataDir } from "../data-dir";
 
 export type PowerWatchMode = "managed" | "external";

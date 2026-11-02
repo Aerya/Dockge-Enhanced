@@ -63,6 +63,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Búferes de comandos configurables :** Los límites de salida capturada se ajustan mediante variables de entorno acotadas. Los desbordamientos indican la familia del comando, ubicación del código y límite, sin argumentos ni salida capturada. Se conservan los valores predeterminados y los comandos en streaming. [Búferes de comandos](docs/command-buffers.es.md).
+
 **Listado fiable de volúmenes de las stacks :** Los volúmenes montados siguen visibles cuando Docker devuelve descripciones grandes de los contenedores. Enhanced lee solo los campos necesarios en pequeños lotes, sin limitar el número de contenedores ni de volúmenes. Los errores identifican la operación fallida sin exponer secretos. Actualiza también las instancias vinculadas que alojan las stacks.
 
 **Validación de Windows 11 / WSL2:** guía de instalación, acciones Compose, copias Restic/Zerobyte e instancias vinculadas probadas. Las correcciones de los montajes Windows del sidecar y del reinicio ordenado de servicios con red compartida conservan las rutas y permisos Linux/Unraid. [Windows 11 con Docker Desktop (WSL2)](docs/windows.es.md). Tras reiniciar Windows, algunos montajes WSL requieren la recuperación manual descrita en la guía.
@@ -592,6 +594,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Gestor opcional de archivos del host limitado a una raíz, con transferencias por fragmentos, edición de texto y lectura de archivos de log
 
 ### Automatización y auditoría
+- [Búferes de comandos configurables](docs/command-buffers.es.md)
 - Tokens de API REST limitados por permisos y por stack
 - Webhooks por stack
 - Integración personalizada y ejemplos opcionales de Home Assistant
@@ -929,6 +932,8 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKER_HOST` | *(ninguno)* | Endpoint de Docker, por ejemplo `tcp://proxy:2375` con un Docker Socket Proxy de confianza |
 | `DOCKGE_CONTAINER_ID` | *(ninguno)* | ID explícito del contenedor de Enhanced cuando no puede deducirse de `HOSTNAME` |
 | `DOCKGE_USAGE_COUNT` | *(activado)* | Ponlo en `false` para desactivar el conteo mensual anónimo de instalaciones |
+| `DOCKGE_COMMAND_BUFFER_MULTIPLIER` | `1` | Multiplicador de los límites existentes (entero 1–16); aumentar con precaución: crece la memoria por comando simultáneo. [Búferes de comandos](docs/command-buffers.es.md) |
+| `DOCKGE_COMMAND_BUFFER_MAX_MIB` | `256` | Límite absoluto por comando, en MiB (entero 1–256). |
 | `DOCKGE_OIDC_ISSUER` | *(ninguno)* | URL del emisor OpenID Connect; al definirla se activa el inicio de sesión OIDC nativo. Todas las opciones `DOCKGE_OIDC_*` se describen en la [guía de OIDC](docs/oidc.es.md) |
 
 > ℹ️ Sin `DOCKGE_DATA_DIR`, Dockge-Enhanced usa su volumen persistente `/app/data`. Una ruta configurada explícitamente siempre tiene prioridad.

@@ -5,7 +5,7 @@ import { log } from "./log";
 import { ERROR_TYPE_VALIDATION } from "../common/util-common";
 import { R } from "redbean-node";
 import { verifyPassword } from "./password-hash";
-import { execFile } from "child_process";
+import { execFile } from "./buffered-process";
 import { AgentManager } from "./agent-manager";
 
 export interface JWTDecoded {

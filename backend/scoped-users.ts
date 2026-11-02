@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile } from "./buffered-process";
 import { promisify } from "node:util";
 import { R } from "redbean-node";
 import { passwordStrength } from "check-password-strength";

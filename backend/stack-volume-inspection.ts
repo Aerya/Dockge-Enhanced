@@ -1,5 +1,6 @@
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "./buffered-process";
 import { log } from "./log";
+import { isBufferOverflow, resolveCommandBuffer } from "../extra/command-buffer.cjs";
 
 export const VOLUME_INSPECT_BATCH_SIZE = 16;
 export const VOLUME_COMMAND_MAX_BUFFER = 4 * 1024 * 1024;
@@ -26,8 +27,8 @@ function safeVolumeCommandError(operation: string, error: unknown): Error {
     // Child-process errors carry stdout/stderr, which may contain secrets.
     // Keep only a bounded diagnostic, including in the public error cause.
     const code = error && typeof error === "object" && "code" in error && typeof error.code === "number" ? error.code : null;
-    const reason = error instanceof Error && /maxBuffer/i.test(error.message)
-        ? "command output exceeds 4 MiB"
+    const reason = isBufferOverflow(error)
+        ? `command output exceeds ${resolveCommandBuffer(VOLUME_COMMAND_MAX_BUFFER) / (1024 * 1024)} MiB`
         : `Docker command failed or timed out${code === null ? "" : ` (exit ${code})`}`;
     const message = `Unable to read stack volumes (${operation}): ${reason}`;
     log.warn("stackVolumes", message);

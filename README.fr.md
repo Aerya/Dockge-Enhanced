@@ -64,6 +64,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Buffers de commandes configurables :** Les limites de sortie capturée sont ajustables par des variables d’environnement bornées. Les dépassements indiquent la famille de commande, l’emplacement dans le code et la limite, sans arguments ni sortie capturée. Les valeurs par défaut et les commandes en streaming sont préservées. [Buffers de commandes](docs/command-buffers.fr.md).
+
 **Affichage fiable des volumes des stacks :** Les volumes montés restent visibles lorsque Docker renvoie de grosses descriptions de conteneurs. Enhanced lit uniquement les champs nécessaires par petits lots, sans limiter le nombre de conteneurs ni de volumes. Les erreurs identifient l’opération en échec sans exposer de secrets. Mettez aussi à jour les instances liées qui hébergent les stacks.
 
 **Validation Windows 11 / WSL2 :** guide d’installation, actions Compose, sauvegardes Restic/Zerobyte et instances liées testées. Les corrections du montage Windows du sidecar et du redémarrage des services partageant un réseau préservent les chemins et permissions Linux/Unraid. [Windows 11 avec Docker Desktop (WSL2)](docs/windows.fr.md). Après redémarrage Windows, certains montages WSL nécessitent une reprise manuelle décrite dans le guide.
@@ -591,6 +593,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Gestionnaire facultatif de fichiers hôte limité à une racine, avec transferts par morceaux, édition de texte et lecture de fichiers journaux
 
 ### Automatisation & audit
+- [Buffers de commandes configurables](docs/command-buffers.fr.md)
 - Jetons d’API REST limités par permissions et par stack
 - Webhooks par stack
 - Intégration personnalisée et exemples Home Assistant facultatifs
@@ -928,6 +931,8 @@ Pour publier un service, éditez sa stack puis utilisez **Publication PlugNPiN (
 | `DOCKER_HOST` | *(aucun)* | Point d’accès Docker, par exemple `tcp://proxy:2375` avec un Docker Socket Proxy de confiance |
 | `DOCKGE_CONTAINER_ID` | *(aucun)* | ID explicite du conteneur Enhanced lorsqu’il ne peut pas être déduit de `HOSTNAME` |
 | `DOCKGE_USAGE_COUNT` | *(activé)* | Mettre `false` pour désactiver le comptage mensuel anonyme des installations |
+| `DOCKGE_COMMAND_BUFFER_MULTIPLIER` | `1` | Multiplicateur des plafonds existants (entier 1–16) ; augmenter avec prudence : la mémoire consommée augmente par commande simultanée. [Buffers de commandes](docs/command-buffers.fr.md) |
+| `DOCKGE_COMMAND_BUFFER_MAX_MIB` | `256` | Plafond absolu par commande, en Mio (entier 1–256). |
 | `DOCKGE_OIDC_ISSUER` | *(aucun)* | URL de l’émetteur OpenID Connect ; la définir active la connexion OIDC native. Toutes les options `DOCKGE_OIDC_*` sont décrites dans le [guide OIDC](docs/oidc.fr.md) |
 
 > ℹ️ Sans `DOCKGE_DATA_DIR`, Dockge-Enhanced utilise son volume persistant `/app/data`. Un chemin explicitement configuré reste toujours prioritaire.

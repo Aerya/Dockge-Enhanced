@@ -1,6 +1,6 @@
 import fs, { promises as fsAsync } from "node:fs";
 import path from "node:path";
-import { execFile } from "node:child_process";
+import { execFile } from "../buffered-process";
 import { promisify } from "node:util";
 import yaml from "yaml";
 import { DockgeServer } from "../dockge-server";

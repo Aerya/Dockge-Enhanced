@@ -3,7 +3,7 @@ import test from "node:test";
 import os from "node:os";
 import path from "node:path";
 import { promises as fs } from "node:fs";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "./buffered-process";
 import { Stack } from "./stack";
 import { DockgeServer } from "./dockge-server";
 import { AgentSocket } from "../common/agent-socket";

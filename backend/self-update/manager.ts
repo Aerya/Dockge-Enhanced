@@ -1,4 +1,5 @@
-import { execFile } from "child_process";
+import { execFile } from "../buffered-process";
+import { commandBufferEnvArgs } from "../../extra/command-buffer.cjs";
 import { promisify } from "util";
 import * as crypto from "crypto";
 import * as fs from "fs/promises";
@@ -624,6 +625,7 @@ export class SelfUpdateManager {
                 "-e", `SELF_UPDATE_ALLOWED_REPOSITORY=${plan.allowedRepository}`,
                 "-e", `SELF_UPDATE_TARGET_CONTAINER_ID=${plan.targetContainerId}`,
                 "-e", `SELF_UPDATE_TARGET_CONTAINER_NAME=${plan.targetContainerName}`,
+                ...commandBufferEnvArgs(),
                 sidecarImage,
             ];
             if (connection.kind === "unix") {
