@@ -589,10 +589,11 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 ### Recherche & fichiers
 - Recherche globale multi-instance (`Ctrl+K`) dans les stacks, fichiers Compose/`.env`, ressources Docker et snapshots Restic récents
 - Recherche facultative dans les valeurs `.env`, jamais renvoyées ni enregistrées dans l’historique
-- Lignes compactes des volumes montés avec leur taille, et navigateur/éditeur de volumes pour chaque conteneur, même lorsque la stack est arrêtée ; lecture par lots bornés conservant tous les conteneurs et montages; [Buffers de commandes](docs/command-buffers.fr.md).
+- Lignes compactes des volumes montés avec leur taille, et navigateur/éditeur de volumes pour chaque conteneur, même lorsque la stack est arrêtée ; lecture par lots bornés conservant tous les conteneurs et montages
 - Gestionnaire facultatif de fichiers hôte limité à une racine, avec transferts par morceaux, édition de texte et lecture de fichiers journaux
 
 ### Automatisation & audit
+- [Buffers de commandes configurables](docs/command-buffers.fr.md)
 - Jetons d’API REST limités par permissions et par stack
 - Webhooks par stack
 - Intégration personnalisée et exemples Home Assistant facultatifs

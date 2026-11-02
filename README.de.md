@@ -588,10 +588,11 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 ### Suche & Dateien
 - Globale instanzübergreifende Suche (`Ctrl+K`) in Stacks, Compose-/`.env`-Dateien, Docker-Ressourcen und aktuellen Restic-Snapshots
 - Optionale Suche in `.env`-Werten, die nie zurückgegeben oder im Verlauf gespeichert werden
-- Kompakte Zeilen für eingebundene Volumes mit Größen und ein Volume-Browser/-Editor pro Container, auch bei gestopptem Stack; begrenzte Abfragegruppen erhalten alle Container und Mounts; [Befehlspuffer](docs/command-buffers.de.md).
+- Kompakte Zeilen für eingebundene Volumes mit Größen und ein Volume-Browser/-Editor pro Container, auch bei gestopptem Stack; begrenzte Abfragegruppen erhalten alle Container und Mounts
 - Optionaler, auf ein Wurzelverzeichnis beschränkter Host-Dateimanager mit stückweisen Übertragungen, Textbearbeitung und Anzeige von Dateiprotokollen
 
 ### Automatisierung & Audit
+- [Konfigurierbare Befehlspuffer](docs/command-buffers.de.md)
 - REST-API-Tokens, beschränkt nach Berechtigungen und Stacks
 - Webhooks pro Stack
 - Optionale benutzerdefinierte Home-Assistant-Integration und Beispiele

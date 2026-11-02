@@ -588,10 +588,11 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 ### Search & files
 - Global multi-instance search (`Ctrl+K`) across stacks, Compose/`.env` files, Docker resources and recent Restic snapshots
 - Opt-in search in `.env` values, which are never returned or stored in history
-- Compact mounted-volume rows with sizes and a volume browser/editor for each container, even when the stack is stopped; bounded inspection batches preserve every container and mount; [Command buffers](docs/command-buffers.md).
+- Compact mounted-volume rows with sizes and a volume browser/editor for each container, even when the stack is stopped; bounded inspection batches preserve every container and mount
 - Optional root-restricted host file manager with chunked transfers, text editing and a file-log viewer
 
 ### Automation & audit
+- [Configurable command buffers](docs/command-buffers.md)
 - Permission- and stack-scoped REST API tokens
 - Per-stack webhooks
 - Optional Home Assistant custom integration and examples

@@ -589,10 +589,11 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 ### 搜索与文件
 - 跨实例全局搜索（`Ctrl+K`），覆盖 Stack、Compose/`.env` 文件、Docker 资源和最近的 Restic 快照
 - 可选搜索 `.env` 值，这些值从不返回，也不会保存到历史中
-- 紧凑的已挂载卷行及大小显示，每个容器都有卷浏览器/编辑器，即使 Stack 已停止也可使用；分批检查保留所有容器和挂载; [命令缓冲区](docs/command-buffers.zh-CN.md).
+- 紧凑的已挂载卷行及大小显示，每个容器都有卷浏览器/编辑器，即使 Stack 已停止也可使用；分批检查保留所有容器和挂载
 - 可选的受限根目录主机文件管理器，支持分块传输、文本编辑和文件日志查看
 
 ### 自动化与审计
+- [可配置的命令缓冲区](docs/command-buffers.zh-CN.md)
 - 按权限和 Stack 限定范围的 REST API 令牌
 - 按 Stack 的 Webhook
 - 可选的 Home Assistant 自定义集成和示例
