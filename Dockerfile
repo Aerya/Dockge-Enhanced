@@ -15,7 +15,7 @@ RUN wget -qO- "https://github.com/restic/restic/archive/refs/tags/v${RESTIC_VERS
     && go run build.go
 
 # ─── Stage 2 : build de l'application ─────────────────────────────────
-FROM node:26.12.1-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS builder
+FROM node:26.13.0-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS builder
 
 # eMudhra: refresh both the CA sources and the generated bundle.
 RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle \
@@ -39,7 +39,7 @@ RUN npm run build:frontend
 RUN npm prune --omit=dev
 
 # ─── Stage 2 : image de production ───────────────────────────────
-FROM node:26.12.1-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797
+FROM node:26.13.0-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94
 
 # eMudhra: refresh both the CA sources and the generated bundle.
 RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle \
