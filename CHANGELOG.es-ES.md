@@ -6,6 +6,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-02 — Listado fiable de volúmenes de las stacks** — Los volúmenes montados siguen visibles cuando Docker devuelve descripciones grandes de los contenedores. Enhanced lee solo los campos necesarios en pequeños lotes, sin limitar el número de contenedores ni de volúmenes. Los errores identifican la operación fallida sin exponer secretos. Actualiza también las instancias vinculadas que alojan las stacks. #604.
+
 **2026-11-01 — Verificación de actualizaciones de imágenes** — ImageWatcher recupera imágenes cuyo tag local desapareció, verifica cada réplica afectada después de Compose y señala las discrepancias como fallos. Las actualizaciones no verificables no cambian la fecha. Las imágenes descargadas quedan protegidas de la limpieza durante 24 horas tras un intento interrumpido o no verificado. [Verificación de actualizaciones de imágenes](docs/image-update-verification.es.md).
 
 **2026-11-01 — Compatibilidad mejorada con Unraid** — Correcciones verificadas en una VM con Unraid 7.3.4: restaurar los archivos `.env` de las stacks, editar Compose sin alterar los permisos de configs/secrets y abrir los enlaces correctos de los puertos publicados. Estas correcciones comunes también benefician a otras instalaciones, sin activar un modo especial para Unraid. Incluye plantilla y guía de instalación; Zerobyte gestionado se reconecta tras recrear Enhanced.

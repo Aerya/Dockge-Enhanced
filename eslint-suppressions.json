@@ -251,9 +251,6 @@
     "@stylistic/object-property-newline": {
       "count": 55
     },
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
     "curly": {
       "count": 27
     }

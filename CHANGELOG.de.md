@@ -6,6 +6,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-02 — Zuverlässige Anzeige der Stack-Volumes** — Eingebundene Volumes bleiben auch bei umfangreichen Docker-Containerbeschreibungen sichtbar. Enhanced liest nur die benötigten Felder in kleinen Gruppen, ohne die Anzahl der Container oder Volumes zu begrenzen. Fehler benennen den fehlgeschlagenen Vorgang, ohne Geheimnisse offenzulegen. Aktualisieren Sie auch die verbundenen Instanzen, auf denen die Stacks laufen. #604.
+
 **2026-11-01 — Überprüfung von Image-Updates** — ImageWatcher findet Images ohne lokalen Tag wieder, überprüft nach Compose jedes betroffene Replikat und meldet Abweichungen als Fehler. Nicht überprüfbare Updates ändern das Datum nicht. Heruntergeladene Images bleiben nach abgebrochenen oder ungeprüften Versuchen 24 Stunden vor der Bereinigung geschützt. [Überprüfung von Image-Updates](docs/image-update-verification.de.md).
 
 **2026-11-01 — Verbesserte Unraid-Kompatibilität** — In einer Unraid-7.3.4-VM geprüfte Korrekturen: `.env`-Dateien von Stacks wiederherstellen, Compose-Dateien ohne Änderung der Config-/Secret-Berechtigungen bearbeiten und korrekte Links zu veröffentlichten Ports öffnen. Die gemeinsamen Korrekturen helfen auch anderen Installationen; ein besonderer Unraid-Modus ist nicht nötig. Vorlage und Installationsanleitung enthalten; verwaltetes Zerobyte verbindet sich nach Neuerstellung von Enhanced wieder.

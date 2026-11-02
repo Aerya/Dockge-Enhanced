@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-02-stack-volume-inspection",
+        items: [ "releaseNews.item.stackVolumeInspection" ],
+    },
+    {
         id: "2026-11-01-windows-wsl",
         items: [ "releaseNews.item.windowsWsl" ],
     },

@@ -62,6 +62,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**可靠显示堆栈挂载卷 :** 即使 Docker 返回大量容器信息，也能显示挂载卷。Enhanced 分小批次仅读取所需字段，不限制容器或卷的数量。错误信息会指出失败的操作，但不会泄露敏感信息。请同时更新承载堆栈的关联实例。
+
 **Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。
 
 **验证镜像更新 :** ImageWatcher 可从运行中的容器找回本地标签丢失的镜像，在 Compose 执行后验证每个目标副本，并将不一致报告为失败。无法验证的更新不会推进时间。下载的镜像在更新中断或未验证后受到 24 小时清理保护。 [验证镜像更新](docs/image-update-verification.zh-CN.md).
@@ -585,7 +587,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 ### 搜索与文件
 - 跨实例全局搜索（`Ctrl+K`），覆盖 Stack、Compose/`.env` 文件、Docker 资源和最近的 Restic 快照
 - 可选搜索 `.env` 值，这些值从不返回，也不会保存到历史中
-- 紧凑的已挂载卷行及大小显示，每个容器都有卷浏览器/编辑器，即使 Stack 已停止也可使用
+- 紧凑的已挂载卷行及大小显示，每个容器都有卷浏览器/编辑器，即使 Stack 已停止也可使用；分批检查保留所有容器和挂载
 - 可选的受限根目录主机文件管理器，支持分块传输、文本编辑和文件日志查看
 
 ### 自动化与审计
