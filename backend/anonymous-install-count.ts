@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomInt } from "node:crypto";
 import { log } from "./log";
+import { periods, periodStart } from "../extra/usage-periods.cjs";
 
 const DEFAULT_RELEASE_BASE_URL = "https://github.com/Aerya/Dockge-Enhanced/releases/download/usage-count";
 const STATE_FILENAME = "anonymous-install-count.json";
@@ -13,6 +14,9 @@ const START_DELAY_MAX_MS = 30 * 60 * 1000;
 export interface AnonymousInstallCountState {
     lastCountedMonth: string | null;
     lastAttemptAt: string | null;
+    lastCountedWeek?: string | null;
+    lastCountedYear?: string | null;
+    attempts?: Record<string, string>;
 }
 
 function envFlagDisabled(value: string | undefined): boolean {
@@ -24,24 +28,33 @@ export function getUsageCountMonth(date = new Date()): string {
 }
 
 export function getUsageCountAssetUrl(month: string, baseUrl = DEFAULT_RELEASE_BASE_URL): string {
-    if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("Invalid usage count month");
+    periodStart(month);
     const normalizedBase = baseUrl.trim().replace(/\/+$/, "");
     const parsed = new URL(normalizedBase);
-    if (parsed.protocol !== "https:") throw new Error("Usage count endpoint must use HTTPS");
+    if (parsed.protocol !== "https:") {
+        throw new Error("Usage count endpoint must use HTTPS");
+    }
     return `${normalizedBase}/${month}.txt`;
 }
 
 export function shouldAttemptUsageCount(state: AnonymousInstallCountState, now = new Date()): boolean {
     const month = getUsageCountMonth(now);
-    if (state.lastCountedMonth === month) return false;
-    if (!state.lastAttemptAt) return true;
+    if (state.lastCountedMonth === month) {
+        return false;
+    }
+    if (!state.lastAttemptAt) {
+        return true;
+    }
     const lastAttempt = Date.parse(state.lastAttemptAt);
-    if (!Number.isFinite(lastAttempt)) return true;
+    if (!Number.isFinite(lastAttempt)) {
+        return true;
+    }
     return now.getTime() - lastAttempt >= RETRY_INTERVAL_MS;
 }
 
-class AnonymousInstallCount {
+export class AnonymousInstallCount {
     private readonly statePath: string;
+    private running = false;
 
     constructor(dataDir: string) {
         this.statePath = path.join(dataDir, STATE_FILENAME);
@@ -49,13 +62,32 @@ class AnonymousInstallCount {
 
     private async loadState(): Promise<AnonymousInstallCountState> {
         try {
-            const parsed = JSON.parse(await fs.readFile(this.statePath, "utf8")) as Partial<AnonymousInstallCountState>;
+            const raw: unknown = JSON.parse(await fs.readFile(this.statePath, "utf8"));
+            if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+                throw new Error("Invalid count state");
+            }
+            const parsed = raw as Partial<AnonymousInstallCountState>;
+            for (const value of [ parsed.lastCountedMonth, parsed.lastCountedWeek, parsed.lastCountedYear, parsed.lastAttemptAt ]) {
+                if (value !== undefined && value !== null && typeof value !== "string") {
+                    throw new Error("Invalid count state field");
+                }
+            }
+            if (parsed.attempts !== undefined && (!parsed.attempts || typeof parsed.attempts !== "object" || Array.isArray(parsed.attempts) || Object.values(parsed.attempts).some(value => typeof value !== "string"))) {
+                throw new Error("Invalid count retry state");
+            }
             return {
                 lastCountedMonth: typeof parsed.lastCountedMonth === "string" ? parsed.lastCountedMonth : null,
                 lastAttemptAt: typeof parsed.lastAttemptAt === "string" ? parsed.lastAttemptAt : null,
+                lastCountedWeek: typeof parsed.lastCountedWeek === "string" ? parsed.lastCountedWeek : null,
+                lastCountedYear: typeof parsed.lastCountedYear === "string" ? parsed.lastCountedYear : null,
+                attempts: parsed.attempts && typeof parsed.attempts === "object" ? parsed.attempts : {},
             };
-        } catch {
-            return { lastCountedMonth: null, lastAttemptAt: null };
+        } catch (error) {
+            if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) {
+                throw error;
+            }
+            return { lastCountedMonth: null,
+                lastAttemptAt: null };
         }
     }
 
@@ -67,48 +99,75 @@ class AnonymousInstallCount {
     }
 
     async run(now = new Date()): Promise<void> {
-        const state = await this.loadState();
-        if (!shouldAttemptUsageCount(state, now)) return;
-
-        const month = getUsageCountMonth(now);
-        state.lastAttemptAt = now.toISOString();
-        await this.saveState(state);
-
-        const baseUrl = process.env.DOCKGE_USAGE_COUNT_URL?.trim() || DEFAULT_RELEASE_BASE_URL;
-        let response: Response;
+        if (this.running) {
+            return;
+        }
+        this.running = true;
         try {
-            response = await fetch(getUsageCountAssetUrl(month, baseUrl), {
-                method: "GET",
-                redirect: "follow",
-                cache: "no-store",
-                signal: AbortSignal.timeout(15_000),
-            });
-        } catch (error) {
-            log.debug("usage-count", `Monthly GitHub count request failed: ${error instanceof Error ? error.message : String(error)}`);
-            return;
+            await this.countPeriods(now);
+        } finally {
+            this.running = false;
         }
+    }
 
-        if (!response.ok) {
-            log.debug("usage-count", `Monthly GitHub count request returned HTTP ${response.status}`);
-            return;
+    private async countPeriods(now: Date): Promise<void> {
+        const state = await this.loadState();
+        const current = periods(now);
+        const fields = { month: "lastCountedMonth",
+            week: "lastCountedWeek",
+            year: "lastCountedYear" } as const;
+        state.attempts = Object.fromEntries(Object.entries(state.attempts ?? {}).filter(([ key ]) => Object.values(current).includes(key)));
+        const baseUrl = process.env.DOCKGE_USAGE_COUNT_URL?.trim() || DEFAULT_RELEASE_BASE_URL;
+        for (const kind of [ "month", "week", "year" ] as const) {
+            const key = current[kind];
+            if (state[fields[kind]] === key) {
+                continue;
+            }
+            const attempt = state.attempts[key];
+            const elapsed = now.getTime() - Date.parse(attempt ?? "");
+            if (elapsed >= 0 && elapsed < RETRY_INTERVAL_MS) {
+                continue;
+            }
+            state.attempts[key] = now.toISOString();
+            if (kind === "month") {
+                state.lastAttemptAt = now.toISOString();
+            }
+            await this.saveState(state);
+            try {
+                const response = await fetch(getUsageCountAssetUrl(key, baseUrl), {
+                    method: "GET",
+                    redirect: "follow",
+                    cache: "no-store",
+                    signal: AbortSignal.timeout(15_000),
+                });
+                if (!response.ok) {
+                    await response.body?.cancel();
+                    log.warn("usage-count", `${kind}: count unavailable (HTTP ${response.status}); retry in 12h`);
+                    continue;
+                }
+                await response.arrayBuffer();
+            } catch {
+                // Never log endpoint URLs, proxies or credentials from network errors.
+                log.warn("usage-count", `${kind}: count request failed; retry in 12h`);
+                continue;
+            }
+            state[fields[kind]] = key;
+            await this.saveState(state);
         }
-
-        // Consume the tiny asset so GitHub records a completed download.
-        await response.arrayBuffer();
-        state.lastCountedMonth = month;
-        await this.saveState(state);
     }
 }
 
 let started = false;
 
 export function startAnonymousInstallCount(dataDir: string): void {
-    if (started || process.env.NODE_ENV !== "production" || process.env.CI === "true" || envFlagDisabled(process.env.DOCKGE_USAGE_COUNT)) return;
+    if (started || process.env.NODE_ENV !== "production" || process.env.CI === "true" || envFlagDisabled(process.env.DOCKGE_USAGE_COUNT)) {
+        return;
+    }
     started = true;
 
     const counter = new AnonymousInstallCount(dataDir);
     const run = () => counter.run().catch((error) => {
-        log.debug("usage-count", `Monthly GitHub count failed: ${error instanceof Error ? error.message : String(error)}`);
+        log.warn("usage-count", `Count state could not be read or saved (${error instanceof Error ? error.name : "unknown error"}); no state reset performed`);
     });
 
     const initialTimer = setTimeout(() => {

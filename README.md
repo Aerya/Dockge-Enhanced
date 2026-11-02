@@ -63,6 +63,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Anonymous counts by period :** Independent weekly, monthly and yearly estimates; Discord reports the previous week, current month, every past month and the current year without adding monthly totals. Existing monthly history is preserved; incomplete periods and migration limits are explicit.
+
 **Self-update with a shared data/Compose directory :** The updater reuses the existing mount when its data and Compose directories coincide, avoiding a Docker “Duplicate mount point” failure before replacement. Recovery data stays writable and the host-path alias stays read-only.
 
 **Configurable command buffers :** Captured command output limits can be adjusted with bounded environment settings. Overflow logs identify the command family, source location and limit without printing arguments or captured output. Existing defaults and streaming commands are preserved. [Command buffers](docs/command-buffers.md).
@@ -345,15 +347,15 @@ A supported example is [Gluetun-Companion](https://github.com/Aerya/Gluetun-Comp
 
 **Anonymous installation count**
 
-To get an approximate number of active Dockge-Enhanced installations without running a separate analytics service, Enhanced downloads a tiny technical asset from a dedicated GitHub release at most once per month. GitHub's public `download_count` for that monthly asset is the only aggregate used for the count.
+Enhanced estimates participating instances through three independent downloads: one per week (Monday–Sunday UTC), one per month and one per UTC calendar year. The public `download_count` of tiny GitHub release assets is used; Docker pulls are not converted into installations. The annual total is never the sum of monthly totals.
 
 No installation identifier is generated or sent for this count. The request contains no hostname, instance name, stack, container, Docker image, configuration, path, GitHub account, email, architecture or build identifier. As with any GitHub asset download, the connection itself is handled by GitHub; Dockge-Enhanced does not receive or store installation IP addresses.
 
-The already-counted month is stored only in the local data directory so the same installation downloads the asset at most once per month. Counting is enabled by default and can be disabled with `DOCKGE_USAGE_COUNT=false`. Recreating or deleting the data directory can make the same installation count again for the current month, so the figure is intentionally approximate.
+Counted periods are remembered in local data. Set `DOCKGE_USAGE_COUNT=false` to opt out. Existing monthly counters are preserved, without recounting the month after migration. Data resets or external downloads can overcount; old versions, opt-outs and network failures can undercount. These are not unique users, new installations or currently running instances. Weekly/yearly counters start with compatible versions: no historical counts are invented.
 
-The mechanism is fully public: [Enhanced-side code](./backend/anonymous-install-count.ts), [GitHub workflow that creates the monthly assets](./.github/workflows/usage-count-asset.yml), and [aggregate monthly counters](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count).
+The mechanism is public: [Enhanced code](./backend/anonymous-install-count.ts), [period preparation workflow](./.github/workflows/usage-count-asset.yml) and [aggregate counters](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Upcoming periods are prepared in advance; failures are logged without identifiers or secrets, with at most one retry every 12 hours per period.
 
-Repository owners can add an Actions secret named `USAGE_COUNT_DISCORD_WEBHOOK` to receive a provisional count every Monday and the final count for the previous month on the first day of each month. The workflow can also be run manually to send the current count immediately. The webhook value remains encrypted by GitHub and is never committed to the repository.
+The Actions secret `USAGE_COUNT_DISCORD_WEBHOOK` enables reports every Monday and on the first of each month: the previous calendar week, current month, all past months and the independently counted current year. Coinciding dates generate one report. Manual runs are supported. Partial or missing periods are labelled; old versions only contribute to monthly counts, undercounting weeks and years during migration. Reports are retained as Actions artifacts for 90 days. The webhook remains secret.
 
 **Global multi-instance search V2 (`Ctrl+K`)**
 
@@ -931,7 +933,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKGE_DOCKER_SOCKET` | `/var/run/docker.sock` | Docker socket path, for example for rootless Docker or Podman |
 | `DOCKER_HOST` | *(none)* | Docker endpoint, for example `tcp://proxy:2375` with a trusted Docker Socket Proxy |
 | `DOCKGE_CONTAINER_ID` | *(none)* | Explicit Enhanced container ID when it cannot be resolved from `HOSTNAME` |
-| `DOCKGE_USAGE_COUNT` | *(enabled)* | Set to `false` to disable the anonymous monthly installation count |
+| `DOCKGE_USAGE_COUNT` | *(enabled)* | Set `false` to disable anonymous weekly/monthly/yearly counts |
 | `DOCKGE_COMMAND_BUFFER_MULTIPLIER` | `1` | Multiplier for existing capture limits (integer 1–16); increase cautiously: memory use grows per concurrent command. [Command buffers](docs/command-buffers.md) |
 | `DOCKGE_COMMAND_BUFFER_MAX_MIB` | `256` | Hard ceiling per command, in MiB (integer 1–256). |
 | `DOCKGE_OIDC_ISSUER` | *(none)* | OpenID Connect issuer URL; setting it enables native OIDC sign-in. Every `DOCKGE_OIDC_*` option is described in the [OIDC guide](docs/oidc.md) |

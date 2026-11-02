@@ -6,6 +6,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-02 — Comptage anonyme par période** — Estimations indépendantes par semaine, mois et année ; Discord affiche la semaine écoulée, le mois en cours, tous les mois passés et l’année sans additionner les mois. L’historique mensuel est conservé ; périodes incomplètes et limites de migration sont explicites.
+
 **2026-11-02 — Auto-mise à jour avec dossiers communs** — L’updater réutilise le montage existant lorsque les dossiers de données et du Compose sont identiques, évitant l’échec Docker « Duplicate mount point » avant le remplacement. Les données de récupération restent accessibles en écriture et l’alias du chemin hôte en lecture seule.
 
 **2026-11-02 — Buffers de commandes configurables** — Les limites de sortie capturée sont ajustables par des variables d’environnement bornées. Les dépassements indiquent la famille de commande, l’emplacement dans le code et la limite, sans arguments ni sortie capturée. Les valeurs par défaut et les commandes en streaming sont préservées. [Buffers de commandes](docs/command-buffers.fr.md). #604.

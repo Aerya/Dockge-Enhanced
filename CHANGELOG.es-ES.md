@@ -6,6 +6,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-02 — Conteo anónimo por período** — Estimaciones independientes por semana, mes y año; Discord muestra la semana anterior, mes actual, todos los meses pasados y año sin sumar los meses. Se conserva el historial mensual y se indican períodos incompletos y límites de migración.
+
 **2026-11-02 — Autoactualización con directorio compartido** — El updater reutiliza el montaje existente cuando los directorios de datos y Compose coinciden, evitando el error Docker «Duplicate mount point» antes del reemplazo. Los datos de recuperación mantienen la escritura y el alias de la ruta del host sigue en solo lectura.
 
 **2026-11-02 — Búferes de comandos configurables** — Los límites de salida capturada se ajustan mediante variables de entorno acotadas. Los desbordamientos indican la familia del comando, ubicación del código y límite, sin argumentos ni salida capturada. Se conservan los valores predeterminados y los comandos en streaming. [Búferes de comandos](docs/command-buffers.es.md). #604.

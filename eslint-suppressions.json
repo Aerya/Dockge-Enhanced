@@ -14,19 +14,6 @@
       "count": 2
     }
   },
-  "backend/anonymous-install-count.test.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 4
-    }
-  },
-  "backend/anonymous-install-count.ts": {
-    "@stylistic/object-property-newline": {
-      "count": 1
-    },
-    "curly": {
-      "count": 7
-    }
-  },
   "backend/audit-log.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 6

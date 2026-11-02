@@ -64,6 +64,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Comptage anonyme par période :** Estimations indépendantes par semaine, mois et année ; Discord affiche la semaine écoulée, le mois en cours, tous les mois passés et l’année sans additionner les mois. L’historique mensuel est conservé ; périodes incomplètes et limites de migration sont explicites.
+
 **Auto-mise à jour avec dossiers communs :** L’updater réutilise le montage existant lorsque les dossiers de données et du Compose sont identiques, évitant l’échec Docker « Duplicate mount point » avant le remplacement. Les données de récupération restent accessibles en écriture et l’alias du chemin hôte en lecture seule.
 
 **Buffers de commandes configurables :** Les limites de sortie capturée sont ajustables par des variables d’environnement bornées. Les dépassements indiquent la famille de commande, l’emplacement dans le code et la limite, sans arguments ni sortie capturée. Les valeurs par défaut et les commandes en streaming sont préservées. [Buffers de commandes](docs/command-buffers.fr.md).
@@ -346,15 +348,15 @@ Un cas explicitement pris en charge est [Gluetun-Companion](https://github.com/A
 
 **Comptage anonyme des installations**
 
-Afin de connaître approximativement le nombre d’installations de Dockge-Enhanced réellement actives sans exploiter de service d’analytics séparé, Enhanced télécharge au maximum une fois par mois un minuscule fichier technique placé dans une release GitHub dédiée. Le `download_count` public de GitHub pour cet asset mensuel est le seul agrégat utilisé pour le comptage.
+Enhanced estime les instances participantes grâce à trois téléchargements indépendants : un par semaine (lundi–dimanche UTC), un par mois et un par année civile UTC. Les `download_count` publics des petits fichiers de la release GitHub sont utilisés ; les pulls Docker ne sont pas convertis en installations. Le total annuel n’est jamais la somme des mois.
 
 Aucun identifiant d’installation n’est généré ni transmis pour ce comptage. La requête ne contient aucun hostname, nom d’instance, stack, conteneur, image Docker, configuration, chemin, compte GitHub, e-mail, architecture ou identifiant de build. Comme pour tout téléchargement d’asset GitHub, la connexion elle-même est traitée par GitHub ; Dockge-Enhanced ne reçoit ni ne stocke l’adresse IP des installations.
 
-Le mois déjà compté est mémorisé uniquement dans le répertoire de données local afin qu’une même installation ne télécharge l’asset qu’une fois par mois. Le comptage est activé par défaut et peut être désactivé avec `DOCKGE_USAGE_COUNT=false`. Une recréation ou suppression du répertoire de données peut faire recompter la même installation pendant le mois en cours : le chiffre reste donc volontairement approximatif.
+Les périodes déjà comptées sont mémorisées dans les données locales. Le comptage reste désactivable avec `DOCKGE_USAGE_COUNT=false`. Les anciens compteurs mensuels sont conservés, sans recompter le mois après migration. Une réinitialisation des données ou un téléchargement externe peut surcompter ; les versions anciennes, la désactivation et les erreurs réseau peuvent sous-compter. Ce ne sont ni des utilisateurs uniques, ni de nouvelles installations, ni un relevé des instances actuellement allumées. Les compteurs semaine/année démarrent avec les versions compatibles : aucun historique n’est inventé.
 
-Le mécanisme est entièrement public : [code côté Enhanced](./backend/anonymous-install-count.ts), [workflow GitHub qui crée les assets mensuels](./.github/workflows/usage-count-asset.yml) et [compteurs mensuels agrégés](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count).
+Le mécanisme est public : [code Enhanced](./backend/anonymous-install-count.ts), [workflow de préparation des périodes](./.github/workflows/usage-count-asset.yml) et [compteurs agrégés](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Les périodes suivantes sont préparées à l’avance ; les erreurs de comptage sont signalées sans identifiant ni secret, avec une nouvelle tentative limitée à une toutes les 12 heures par période.
 
-Les propriétaires du dépôt peuvent ajouter un secret Actions nommé `USAGE_COUNT_DISCORD_WEBHOOK` pour recevoir un compteur provisoire chaque lundi et le total définitif du mois précédent le premier jour de chaque mois. Le workflow peut également être lancé manuellement afin d’envoyer immédiatement le compteur actuel. La valeur du webhook reste chiffrée par GitHub et n’est jamais enregistrée dans le dépôt.
+Le secret Actions `USAGE_COUNT_DISCORD_WEBHOOK` permet de recevoir chaque lundi et chaque premier du mois un rapport : semaine civile écoulée, mois en cours, tous les mois précédents et année en cours comptée séparément. Un seul rapport est envoyé si ces dates coïncident. Le lancement manuel est possible. Les périodes partielles ou absentes sont indiquées ; les anciennes versions ne contribuent qu’au mois, ce qui sous-estime semaine et année pendant la migration. Les relevés sont conservés 90 jours dans les artefacts Actions. Le webhook reste secret.
 
 **Recherche globale multi-instance V2 (`Ctrl+K`)**
 
@@ -932,7 +934,7 @@ Pour publier un service, éditez sa stack puis utilisez **Publication PlugNPiN (
 | `DOCKGE_DOCKER_SOCKET` | `/var/run/docker.sock` | Chemin du socket Docker, par exemple pour Docker rootless ou Podman |
 | `DOCKER_HOST` | *(aucun)* | Point d’accès Docker, par exemple `tcp://proxy:2375` avec un Docker Socket Proxy de confiance |
 | `DOCKGE_CONTAINER_ID` | *(aucun)* | ID explicite du conteneur Enhanced lorsqu’il ne peut pas être déduit de `HOSTNAME` |
-| `DOCKGE_USAGE_COUNT` | *(activé)* | Mettre `false` pour désactiver le comptage mensuel anonyme des installations |
+| `DOCKGE_USAGE_COUNT` | *(activé)* | Mettre `false` pour désactiver les compteurs anonymes semaine/mois/année |
 | `DOCKGE_COMMAND_BUFFER_MULTIPLIER` | `1` | Multiplicateur des plafonds existants (entier 1–16) ; augmenter avec prudence : la mémoire consommée augmente par commande simultanée. [Buffers de commandes](docs/command-buffers.fr.md) |
 | `DOCKGE_COMMAND_BUFFER_MAX_MIB` | `256` | Plafond absolu par commande, en Mio (entier 1–256). |
 | `DOCKGE_OIDC_ISSUER` | *(aucun)* | URL de l’émetteur OpenID Connect ; la définir active la connexion OIDC native. Toutes les options `DOCKGE_OIDC_*` sont décrites dans le [guide OIDC](docs/oidc.fr.md) |

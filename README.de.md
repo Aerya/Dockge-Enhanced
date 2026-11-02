@@ -63,6 +63,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Anonyme Zählung nach Zeitraum :** Unabhängige Schätzungen für Woche, Monat und Jahr; Discord zeigt vergangene Woche, laufenden Monat, alle früheren Monate und das Jahr ohne Addition der Monatswerte. Monatshistorie bleibt erhalten; unvollständige Zeiträume und Migrationsgrenzen werden gekennzeichnet.
+
 **Selbst-Update mit gemeinsamem Daten-/Compose-Verzeichnis :** Der Updater verwendet den vorhandenen Mount, wenn Daten und Compose im selben Verzeichnis liegen. So entfällt der Docker-Fehler „Duplicate mount point“ vor dem Austausch. Wiederherstellungsdaten bleiben beschreibbar, der Hostpfad-Alias schreibgeschützt.
 
 **Konfigurierbare Befehlspuffer :** Die Grenzen erfasster Befehlsausgaben lassen sich über begrenzte Umgebungsvariablen anpassen. Bei Überschreitung nennen Logs Befehlsgruppe, Quellcodeposition und Grenze, ohne Argumente oder erfasste Ausgabe. Standardwerte und Streaming-Befehle bleiben erhalten. [Befehlspuffer](docs/command-buffers.de.md).
@@ -345,15 +347,15 @@ Ein unterstütztes Beispiel ist [Gluetun-Companion](https://github.com/Aerya/Glu
 
 **Anonyme Installationsanzahl**
 
-Um eine ungefähre Anzahl aktiver Dockge-Enhanced-Installationen zu ermitteln, ohne einen separaten Analysedienst zu betreiben, lädt Enhanced höchstens einmal im Monat ein winziges technisches Asset von einem dedizierten GitHub-Release herunter. Der öffentliche `download_count` von GitHub für dieses monatliche Asset ist das einzige für die Zählung verwendete Aggregat.
+Enhanced schätzt teilnehmende Instanzen durch drei unabhängige Downloads: einen pro Woche (Montag–Sonntag UTC), einen pro Monat und einen pro UTC-Kalenderjahr. Verwendet wird der öffentliche `download_count` kleiner GitHub-Release-Dateien; Docker-Pulls werden nicht in Installationen umgerechnet. Die Jahreszahl ist niemals die Summe der Monatszahlen.
 
 Für diese Zählung wird keine Installationskennung generiert oder gesendet. Die Anfrage enthält keinen Hostnamen, Instanznamen, Stack, Container, Docker-Image, Konfiguration, Pfad, GitHub-Konto, E-Mail-Adresse, Architektur oder Build-Kennung. Wie bei jedem Download von GitHub-Assets wird die Verbindung selbst von GitHub abgewickelt; Dockge-Enhanced empfängt oder speichert keine IP-Adressen der Installation.
 
-Der bereits gezählte Monat wird ausschließlich im lokalen Datenverzeichnis gespeichert, sodass dieselbe Installation das Asset höchstens einmal pro Monat herunterlädt. Die Zählung ist standardmäßig aktiviert und kann mit `DOCKGE_USAGE_COUNT=false` deaktiviert werden. Das Neuerstellen oder Löschen des Datenverzeichnisses kann dazu führen, dass dieselbe Installation für den aktuellen Monat erneut gezählt wird, weshalb die Zahl absichtlich ein Näherungswert ist.
+Bereits gezählte Zeiträume werden lokal gespeichert. Mit `DOCKGE_USAGE_COUNT=false` lässt sich die Zählung deaktivieren. Vorhandene Monatszähler bleiben erhalten, ohne den Monat nach der Migration erneut zu zählen. Zurückgesetzte Daten oder externe Downloads können zu Überzählungen führen; alte Versionen, Deaktivierung und Netzwerkfehler zu Unterzählungen. Es handelt sich weder um eindeutige Nutzer noch um Neuinstallationen oder aktuell laufende Instanzen. Wochen-/Jahreszähler beginnen mit kompatiblen Versionen; historische Werte werden nicht erfunden.
 
-Der Mechanismus ist vollständig öffentlich: [Code auf Enhanced-Seite](./backend/anonymous-install-count.ts), [GitHub-Workflow zur Erstellung der monatlichen Assets](./.github/workflows/usage-count-asset.yml) und [aggregierte Monatszähler](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count).
+Der Mechanismus ist öffentlich: [Enhanced-Code](./backend/anonymous-install-count.ts), [Workflow zur Vorbereitung der Zeiträume](./.github/workflows/usage-count-asset.yml) und [aggregierte Zähler](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Kommende Zeiträume werden vorab vorbereitet; Fehler werden ohne Kennungen oder Geheimnisse protokolliert. Pro Zeitraum erfolgt höchstens alle 12 Stunden ein neuer Versuch.
 
-Repository-Besitzer können ein Actions-Geheimnis namens `USAGE_COUNT_DISCORD_WEBHOOK` hinzufügen, um jeden Montag eine vorläufige Anzahl und am ersten Tag jedes Monats die endgültige Anzahl für den Vormonat zu erhalten. Der Workflow kann auch manuell ausgeführt werden, um die aktuelle Anzahl sofort zu senden. Der Webhook-Wert bleibt von GitHub verschlüsselt und wird niemals in das Repository eingecheckt.
+Das Actions-Geheimnis `USAGE_COUNT_DISCORD_WEBHOOK` aktiviert Berichte montags und am Monatsersten: vergangene Kalenderwoche, laufender Monat, alle früheren Monate und separat gezähltes laufendes Jahr. Zusammenfallende Termine erzeugen nur einen Bericht. Manuelle Ausführung ist möglich. Unvollständige oder fehlende Zeiträume werden gekennzeichnet; alte Versionen zählen nur monatlich, wodurch Wochen und Jahre während der Migration unterschätzt werden. Berichte bleiben 90 Tage als Actions-Artefakte erhalten. Der Webhook bleibt geheim.
 
 **Globale instanzenübergreifende Suche V2 (`Ctrl+K`)**
 
@@ -931,7 +933,7 @@ Um einen Dienst zu veröffentlichen, bearbeiten Sie dessen Stack und verwenden S
 | `DOCKGE_DOCKER_SOCKET` | `/var/run/docker.sock` | Pfad zum Docker-Socket, z. B. für rootless Docker oder Podman |
 | `DOCKER_HOST` | *(keine)* | Docker-Endpunkt, z. B. `tcp://proxy:2375` mit einem vertrauenswürdigen Docker Socket Proxy |
 | `DOCKGE_CONTAINER_ID` | *(keine)* | Explizite Container-ID von Enhanced, wenn sie nicht aus `HOSTNAME` ermittelt werden kann |
-| `DOCKGE_USAGE_COUNT` | *(aktiviert)* | Auf `false` setzen, um die anonyme monatliche Installationszählung zu deaktivieren |
+| `DOCKGE_USAGE_COUNT` | *(aktiviert)* | Mit `false` die anonymen Wochen-/Monats-/Jahreszähler deaktivieren |
 | `DOCKGE_COMMAND_BUFFER_MULTIPLIER` | `1` | Multiplikator vorhandener Grenzen (Ganzzahl 1–16); vorsichtig erhöhen: der Speicherbedarf steigt pro gleichzeitigem Befehl. [Befehlspuffer](docs/command-buffers.de.md) |
 | `DOCKGE_COMMAND_BUFFER_MAX_MIB` | `256` | Absolute Grenze pro Befehl in MiB (Ganzzahl 1–256). |
 | `DOCKGE_OIDC_ISSUER` | *(keine)* | Issuer-URL des OpenID-Connect-Anbieters; ist sie gesetzt, wird die native OIDC-Anmeldung aktiviert. Alle Optionen `DOCKGE_OIDC_*` stehen in der [OIDC-Anleitung](docs/oidc.de.md) |
