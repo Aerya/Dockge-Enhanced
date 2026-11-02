@@ -62,7 +62,19 @@ export class AnonymousInstallCount {
 
     private async loadState(): Promise<AnonymousInstallCountState> {
         try {
-            const parsed = JSON.parse(await fs.readFile(this.statePath, "utf8")) as Partial<AnonymousInstallCountState>;
+            const raw: unknown = JSON.parse(await fs.readFile(this.statePath, "utf8"));
+            if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+                throw new Error("Invalid count state");
+            }
+            const parsed = raw as Partial<AnonymousInstallCountState>;
+            for (const value of [ parsed.lastCountedMonth, parsed.lastCountedWeek, parsed.lastCountedYear, parsed.lastAttemptAt ]) {
+                if (value !== undefined && value !== null && typeof value !== "string") {
+                    throw new Error("Invalid count state field");
+                }
+            }
+            if (parsed.attempts !== undefined && (!parsed.attempts || typeof parsed.attempts !== "object" || Array.isArray(parsed.attempts) || Object.values(parsed.attempts).some(value => typeof value !== "string"))) {
+                throw new Error("Invalid count retry state");
+            }
             return {
                 lastCountedMonth: typeof parsed.lastCountedMonth === "string" ? parsed.lastCountedMonth : null,
                 lastAttemptAt: typeof parsed.lastAttemptAt === "string" ? parsed.lastAttemptAt : null,

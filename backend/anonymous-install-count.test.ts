@@ -98,6 +98,10 @@ test("corrupt state is not silently reset and causes no download", async (t) => 
     });
     const counter = new AnonymousInstallCount(dir);
     await assert.rejects(counter.run());
+    for (const invalid of [ "null", "[]", "{\"lastCountedMonth\":42}", "{\"attempts\":[]}" ]) {
+        await fs.writeFile(file, invalid);
+        await assert.rejects(counter.run());
+    }
     assert.equal(fetch.mock.callCount(), 0);
     await fs.writeFile(file, "{}");
     await counter.run();
