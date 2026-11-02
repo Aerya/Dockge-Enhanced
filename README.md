@@ -63,6 +63,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Reliable stack volume listing :** Mounted volumes remain visible when Docker returns large container descriptions. Enhanced reads only the required fields in small batches, without limiting the number of containers or volumes. Errors identify the failed operation without exposing secrets. Update linked hosting instances too.
+
 **Windows 11 / WSL2 validation:** installation guide, tested Compose actions, Restic/Zerobyte backups and linked instances. The Windows sidecar mount and shared-network restart fixes preserve Linux/Unraid paths and permissions. [Windows 11 with Docker Desktop (WSL2)](docs/windows.md). After restarting Windows, some WSL mounts require the manual recovery described in the guide.
 
 **Verified image updates :** ImageWatcher recovers images whose local tag disappeared, verifies every targeted replica after Compose and reports mismatches as failures. Unverifiable updates do not advance the date. Downloaded images remain protected from cleanup for 24 hours after an interrupted or unverified attempt. [Verified image updates](docs/image-update-verification.md).
@@ -584,7 +586,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 ### Search & files
 - Global multi-instance search (`Ctrl+K`) across stacks, Compose/`.env` files, Docker resources and recent Restic snapshots
 - Opt-in search in `.env` values, which are never returned or stored in history
-- Compact mounted-volume rows with sizes and a volume browser/editor for each container, even when the stack is stopped
+- Compact mounted-volume rows with sizes and a volume browser/editor for each container, even when the stack is stopped; bounded inspection batches preserve every container and mount
 - Optional root-restricted host file manager with chunked transfers, text editing and a file-log viewer
 
 ### Automation & audit

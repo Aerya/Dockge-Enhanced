@@ -63,6 +63,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Zuverlässige Anzeige der Stack-Volumes :** Eingebundene Volumes bleiben auch bei umfangreichen Docker-Containerbeschreibungen sichtbar. Enhanced liest nur die benötigten Felder in kleinen Gruppen, ohne die Anzahl der Container oder Volumes zu begrenzen. Fehler benennen den fehlgeschlagenen Vorgang, ohne Geheimnisse offenzulegen. Aktualisieren Sie auch die verbundenen Instanzen, auf denen die Stacks laufen.
+
 **Validierung unter Windows 11 / WSL2:** Installationsanleitung, Compose-Aktionen, Restic-/Zerobyte-Sicherungen und verbundene Instanzen getestet. Die Korrekturen für Windows-Sidecar-Mounts und geordnete Neustarts bei gemeinsamem Netzwerk erhalten Linux-/Unraid-Pfade und Berechtigungen. [Windows 11 mit Docker Desktop (WSL2)](docs/windows.de.md). Nach einem Windows-Neustart benötigen manche WSL-Mounts die im Leitfaden beschriebene manuelle Wiederaufnahme.
 
 **Überprüfung von Image-Updates :** ImageWatcher findet Images ohne lokalen Tag wieder, überprüft nach Compose jedes betroffene Replikat und meldet Abweichungen als Fehler. Nicht überprüfbare Updates ändern das Datum nicht. Heruntergeladene Images bleiben nach abgebrochenen oder ungeprüften Versuchen 24 Stunden vor der Bereinigung geschützt. [Überprüfung von Image-Updates](docs/image-update-verification.de.md).
@@ -584,7 +586,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 ### Suche & Dateien
 - Globale instanzübergreifende Suche (`Ctrl+K`) in Stacks, Compose-/`.env`-Dateien, Docker-Ressourcen und aktuellen Restic-Snapshots
 - Optionale Suche in `.env`-Werten, die nie zurückgegeben oder im Verlauf gespeichert werden
-- Kompakte Zeilen für eingebundene Volumes mit Größen und ein Volume-Browser/-Editor pro Container, auch bei gestopptem Stack
+- Kompakte Zeilen für eingebundene Volumes mit Größen und ein Volume-Browser/-Editor pro Container, auch bei gestopptem Stack; begrenzte Abfragegruppen erhalten alle Container und Mounts
 - Optionaler, auf ein Wurzelverzeichnis beschränkter Host-Dateimanager mit stückweisen Übertragungen, Textbearbeitung und Anzeige von Dateiprotokollen
 
 ### Automatisierung & Audit

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.stackVolumeInspection": "Eingebundene Volumes bleiben auch bei umfangreichen Docker-Containerbeschreibungen sichtbar. Enhanced liest nur die benötigten Felder in kleinen Gruppen, ohne die Anzahl der Container oder Volumes zu begrenzen. Fehler benennen den fehlgeschlagenen Vorgang, ohne Geheimnisse offenzulegen. Aktualisieren Sie auch die verbundenen Instanzen, auf denen die Stacks laufen.",
     "releaseNews.item.windowsWsl": "Windows-11-Anleitung für Docker Desktop mit WSL2 und Linux-Containern. Korrigierte Windows-Mounts des Update-Sidecars und geordnete Neustarts von Diensten mit gemeinsamem Netzwerk-Namespace. Das Monitoring zeigt die Linux-VM, nicht den gesamten Windows-Host. Nach einem Windows-Neustart benötigen manche WSL-Mounts die im Leitfaden beschriebene manuelle Wiederaufnahme.",
     "stack.lastOperation": "Letzter Vorgang",
     "stack.lastOperationHint": "Datum des letzten Deployments, Pulls oder überprüften Image-Updates; nicht alle Dienste müssen aktuell sein.",

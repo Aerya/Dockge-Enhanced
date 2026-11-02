@@ -25,6 +25,7 @@ import childProcessAsync from "promisify-child-process";
 import { Settings } from "./settings";
 import { intervals } from "./low-power";
 import { getVolumeSourceSize } from "./volume-usage";
+import { inspectStackVolumes } from "./stack-volume-inspection";
 import {
     composeModelReadError,
     parseResolvedComposeModel,
@@ -1900,23 +1901,10 @@ export class Stack {
     }
 
     async getVolumeUsage(): Promise<StackContainerVolumeUsage[]> {
-        const ps = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "-aq"), {
-            cwd: this.path,
-            encoding: "utf-8",
-        });
-        const ids = (ps.stdout?.toString() ?? "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-        if (ids.length === 0) {
-            return [];
-        }
+        const containers = await inspectStackVolumes(this.getComposeOptions("ps", "-aq"), this.path);
 
-        const inspect = await childProcessAsync.spawn("docker", [ "inspect", ...ids ], {
-            cwd: this.path,
-            encoding: "utf-8",
-        });
-        const containers = JSON.parse(inspect.stdout?.toString() || "[]");
-
-        const result: StackContainerVolumeUsage[] = containers.map((container: any) => {
-            const service = container?.Config?.Labels?.["com.docker.compose.service"] ?? "";
+        const result: StackContainerVolumeUsage[] = containers.map((container) => {
+            const service = container.Service ?? "";
             const name = String(container?.Name ?? "").replace(/^\//, "");
             const mounts: StackVolumeMountUsage[] = [];
 
@@ -1939,7 +1927,7 @@ export class Stack {
                 id: String(container?.Id ?? ""),
                 name,
                 service: service || name,
-                state: String(container?.State?.Status ?? ""),
+                state: container.State,
                 mounts: mounts.sort((a, b) => a.destination.localeCompare(b.destination)),
             };
         }).filter((container: StackContainerVolumeUsage) => container.mounts.length > 0)

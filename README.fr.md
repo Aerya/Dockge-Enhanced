@@ -64,6 +64,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Affichage fiable des volumes des stacks :** Les volumes montés restent visibles lorsque Docker renvoie de grosses descriptions de conteneurs. Enhanced lit uniquement les champs nécessaires par petits lots, sans limiter le nombre de conteneurs ni de volumes. Les erreurs identifient l’opération en échec sans exposer de secrets. Mettez aussi à jour les instances liées qui hébergent les stacks.
+
 **Validation Windows 11 / WSL2 :** guide d’installation, actions Compose, sauvegardes Restic/Zerobyte et instances liées testées. Les corrections du montage Windows du sidecar et du redémarrage des services partageant un réseau préservent les chemins et permissions Linux/Unraid. [Windows 11 avec Docker Desktop (WSL2)](docs/windows.fr.md). Après redémarrage Windows, certains montages WSL nécessitent une reprise manuelle décrite dans le guide.
 
 **Vérification des mises à jour d’images :** ImageWatcher retrouve les images dont le tag local a disparu, vérifie chaque réplica ciblé après Compose et signale les divergences comme des échecs. Une mise à jour non vérifiable ne fait plus avancer la date. Les images téléchargées restent protégées de la purge pendant 24 heures après une tentative interrompue ou non vérifiée. [Vérification des mises à jour d’images](docs/image-update-verification.fr.md).
@@ -585,7 +587,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 ### Recherche & fichiers
 - Recherche globale multi-instance (`Ctrl+K`) dans les stacks, fichiers Compose/`.env`, ressources Docker et snapshots Restic récents
 - Recherche facultative dans les valeurs `.env`, jamais renvoyées ni enregistrées dans l’historique
-- Lignes compactes des volumes montés avec leur taille, et navigateur/éditeur de volumes pour chaque conteneur, même lorsque la stack est arrêtée
+- Lignes compactes des volumes montés avec leur taille, et navigateur/éditeur de volumes pour chaque conteneur, même lorsque la stack est arrêtée ; lecture par lots bornés conservant tous les conteneurs et montages
 - Gestionnaire facultatif de fichiers hôte limité à une racine, avec transferts par morceaux, édition de texte et lecture de fichiers journaux
 
 ### Automatisation & audit
