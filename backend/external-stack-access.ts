@@ -1,4 +1,5 @@
-import { execFile } from "node:child_process";
+import { execFile } from "./buffered-process";
+import { commandBufferEnvArgs } from "../extra/command-buffer.cjs";
 import crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -328,6 +329,7 @@ export class ExternalStackAccessManager {
             "-e", `EXTERNAL_STACK_ACCESS_TARGET_NAME=${targetContainerName}`,
             "-e", `EXTERNAL_STACK_ACCESS_COMPOSE_DIR=${workingDir}`,
             "-e", "EXTERNAL_STACK_ACCESS_START_DELAY_MS=2000",
+            ...commandBufferEnvArgs(),
             helperImage,
             "node", "/app/extra/external-stack-access-sidecar/index.cjs",
         ];
@@ -458,6 +460,7 @@ export class ExternalStackAccessManager {
             "-e", "EXTERNAL_STACK_ACCESS_STATE_DIR=/state/external-stack-access",
             "-e", `EXTERNAL_STACK_ACCESS_TARGET_ID=${inspected.Id}`, "-e", `EXTERNAL_STACK_ACCESS_TARGET_NAME=${targetContainerName}`,
             "-e", `EXTERNAL_STACK_ACCESS_COMPOSE_DIR=${workingDir}`, "-e", "EXTERNAL_STACK_ACCESS_START_DELAY_MS=2000",
+            ...commandBufferEnvArgs(),
             inspected.Image, "node", "/app/extra/external-stack-access-sidecar/index.cjs",
         ];
         try {

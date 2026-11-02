@@ -1,4 +1,4 @@
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "./buffered-process";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import { DockgeServer } from "./dockge-server";

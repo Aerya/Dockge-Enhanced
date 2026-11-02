@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.commandBuffers": "可通过有范围限制的环境变量调整命令输出缓冲区。溢出日志包含命令类别、代码位置和限制，不输出参数或捕获的内容。默认值和流式命令保持不变。",
     "releaseNews.item.stackVolumeInspection": "即使 Docker 返回大量容器信息，也能显示挂载卷。Enhanced 分小批次仅读取所需字段，不限制容器或卷的数量。错误信息会指出失败的操作，但不会泄露敏感信息。请同时更新承载堆栈的关联实例。",
     "releaseNews.item.windowsWsl": "新增 Windows 11 的 Docker Desktop/WSL2 Linux 容器指南。修复 Windows 自更新 sidecar 挂载，并按顺序重启共享网络命名空间的服务。监控显示 Linux 虚拟机，而不是整个 Windows 主机。 Windows 重启后，某些 WSL 挂载需要按指南手动恢复。",
     "stack.lastOperation": "最近操作",

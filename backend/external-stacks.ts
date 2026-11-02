@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "./buffered-process";
 import crypto from "node:crypto";
 import { ValidationError } from "./util-server";
 import { resolveCurrentContainer } from "./current-container";

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { createReadStream, createWriteStream, promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFile } from "node:child_process";
+import { execFile } from "../buffered-process";
 import { promisify } from "node:util";
 import { Readable, Writable } from "node:stream";
 import { pipeline } from "node:stream/promises";

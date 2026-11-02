@@ -4,7 +4,7 @@
  */
 
 import { spawn } from "child_process";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "../buffered-process";
 import * as path from "path";
 import * as fs from "fs/promises";
 import { R } from "redbean-node";

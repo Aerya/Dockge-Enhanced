@@ -1,5 +1,5 @@
 /** Instance-scoped Compose installation. No native Restic settings are modified. */
-import { execFile } from "node:child_process";
+import { execFile } from "../buffered-process";
 import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";

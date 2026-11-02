@@ -69,7 +69,7 @@ import { Stack } from "./stack";
 import { Cron } from "croner";
 import gracefulShutdown from "http-graceful-shutdown";
 import User from "./models/user";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "./buffered-process";
 import { AgentManager } from "./agent-manager";
 import {
     FEDERATION_MAX_CONCURRENT_INBOUND,

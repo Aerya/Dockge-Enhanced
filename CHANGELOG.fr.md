@@ -6,6 +6,10 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-02 — Auto-mise à jour avec dossiers communs** — L’updater réutilise le montage existant lorsque les dossiers de données et du Compose sont identiques, évitant l’échec Docker « Duplicate mount point » avant le remplacement. Les données de récupération restent accessibles en écriture et l’alias du chemin hôte en lecture seule.
+
+**2026-11-02 — Buffers de commandes configurables** — Les limites de sortie capturée sont ajustables par des variables d’environnement bornées. Les dépassements indiquent la famille de commande, l’emplacement dans le code et la limite, sans arguments ni sortie capturée. Les valeurs par défaut et les commandes en streaming sont préservées. [Buffers de commandes](docs/command-buffers.fr.md). #604.
+
 **2026-11-02 — Affichage fiable des volumes des stacks** — Les volumes montés restent visibles lorsque Docker renvoie de grosses descriptions de conteneurs. Enhanced lit uniquement les champs nécessaires par petits lots, sans limiter le nombre de conteneurs ni de volumes. Les erreurs identifient l’opération en échec sans exposer de secrets. Mettez aussi à jour les instances liées qui hébergent les stacks. #604.
 
 **2026-11-01 — Vérification des mises à jour d’images** — ImageWatcher retrouve les images dont le tag local a disparu, vérifie chaque réplica ciblé après Compose et signale les divergences comme des échecs. Une mise à jour non vérifiable ne fait plus avancer la date. Les images téléchargées restent protégées de la purge pendant 24 heures après une tentative interrompue ou non vérifiée. [Vérification des mises à jour d’images](docs/image-update-verification.fr.md).

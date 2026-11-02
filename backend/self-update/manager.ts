@@ -1,4 +1,5 @@
-import { execFile } from "child_process";
+import { execFile } from "../buffered-process";
+import { commandBufferEnvArgs } from "../../extra/command-buffer.cjs";
 import { promisify } from "util";
 import * as crypto from "crypto";
 import * as fs from "fs/promises";
@@ -584,7 +585,7 @@ export class SelfUpdateManager {
             await this.cleanupArtifacts(plan.id);
             await atomicWriteJson(path.join(STATE_DIR, `${plan.id}.json`), payload);
 
-            const stateMapping = sidecarStateMount(stateMount);
+            const stateMapping = sidecarStateMount(stateMount, plan.compose?.workingDir);
             const connection = selfUpdateDockerConnection(inspected);
             const tcpNetworkPlan = connection.kind === "tcp" ? planSidecarNetworks(connection.networks) : null;
             const socketGroup = connection.kind === "unix" ? (await fs.stat(connection.socket!)).gid : undefined;
@@ -624,6 +625,7 @@ export class SelfUpdateManager {
                 "-e", `SELF_UPDATE_ALLOWED_REPOSITORY=${plan.allowedRepository}`,
                 "-e", `SELF_UPDATE_TARGET_CONTAINER_ID=${plan.targetContainerId}`,
                 "-e", `SELF_UPDATE_TARGET_CONTAINER_NAME=${plan.targetContainerName}`,
+                ...commandBufferEnvArgs(),
                 sidecarImage,
             ];
             if (connection.kind === "unix") {
@@ -649,7 +651,7 @@ export class SelfUpdateManager {
                 }
             }
             if (plan.compose) {
-                args.splice(args.length - 1, 0, "-v", `${plan.compose.workingDir}:${plan.compose.workingDir}:ro`, "-e", `SELF_UPDATE_COMPOSE_DIR=${plan.compose.workingDir}`);
+                args.splice(args.length - 1, 0, "-e", `SELF_UPDATE_COMPOSE_DIR=${plan.compose.workingDir}`);
             }
             this.operation = {
                 ...this.operation,

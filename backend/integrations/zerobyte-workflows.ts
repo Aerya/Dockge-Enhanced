@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { execFile } from "node:child_process";
+import { execFile } from "../buffered-process";
 import { promisify } from "node:util";
 import express from "express";
 import { log } from "../log";

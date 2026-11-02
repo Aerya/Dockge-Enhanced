@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "./buffered-process";
 
 test("automatic cleanup sends compact Discord/Apprise reports and retains full history", async (t) => {
     const directory = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-cleanup-notification-"));

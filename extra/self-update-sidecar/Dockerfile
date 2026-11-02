@@ -9,5 +9,6 @@ RUN apk upgrade --no-cache libcrypto3 libssl3 \
     && rm -rf /usr/local/lib/node_modules/npm
 WORKDIR /updater
 COPY --chown=node:node extra/self-update-sidecar/index.js ./index.js
+COPY --chown=node:node extra/command-buffer.cjs /command-buffer.cjs
 USER node
 ENTRYPOINT ["node", "/updater/index.js"]

@@ -11,7 +11,7 @@ function mountField(value: string): string {
 }
 
 /** Docker Desktop reports drive paths, but the Linux sidecar needs a POSIX destination. */
-export function sidecarStateMount(mount: StateMount): { args: string[];
+export function sidecarStateMount(mount: StateMount, composeDir?: string): { args: string[];
     hostPath: string } {
     if (!mount.Source || ![ "bind", "volume" ].includes(mount.Type ?? "")) {
         throw new Error("Self-update requires an identifiable data bind mount or volume");
@@ -29,6 +29,19 @@ export function sidecarStateMount(mount: StateMount): { args: string[];
     }
     const state = [ `type=${mount.Type}`, mountField(`source=${source}`), "target=/state" ].join(",");
     const alias = [ "type=bind", mountField(`source=${mount.Source}`), mountField(`target=${hostPath}`), "readonly" ].join(",");
+    const destination = (value: string) => path.posix.resolve(value);
+    const args = [ "--mount", state ];
+    if (destination(hostPath) !== "/state") {
+        args.push("--mount", alias);
+    }
+    if (composeDir && destination(composeDir) !== destination(hostPath)) {
+        // /state must keep pointing at the writable recovery data, never at
+        // an unrelated Compose directory.
+        if (destination(composeDir) === "/state") {
+            throw new Error("Self-update Compose directory conflicts with the reserved /state mount");
+        }
+        args.push("--mount", [ "type=bind", mountField(`source=${composeDir}`), mountField(`target=${composeDir}`), "readonly" ].join(","));
+    }
     return { hostPath,
-        args: [ "--mount", state, "--mount", alias ] };
+        args };
 }
