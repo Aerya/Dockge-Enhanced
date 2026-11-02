@@ -2,7 +2,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const { execFileSync } = require("child_process");
+const { execFileSync } = require("../command-buffer.cjs");
 const YAML = require("yaml");
 
 const stateDir = process.env.EXTERNAL_STACK_ACCESS_STATE_DIR || "/state/external-stack-access";

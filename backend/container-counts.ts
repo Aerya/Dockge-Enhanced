@@ -1,4 +1,4 @@
-import { execFile } from "child_process";
+import { execFile } from "./buffered-process";
 import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);

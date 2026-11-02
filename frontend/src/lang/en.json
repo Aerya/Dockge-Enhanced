@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.commandBuffers": "Captured command output limits can be adjusted with bounded environment settings. Overflow logs identify the command family, source location and limit without printing arguments or captured output. Existing defaults and streaming commands are preserved.",
     "releaseNews.item.stackVolumeInspection": "Mounted volumes remain visible when Docker returns large container descriptions. Enhanced reads only the required fields in small batches, without limiting the number of containers or volumes. Errors identify the failed operation without exposing secrets. Update linked hosting instances too.",
     "releaseNews.item.windowsWsl": "Windows 11 guide for Docker Desktop with WSL2 and Linux containers. Fixes Windows self-update sidecar mounts and restarts services sharing a network namespace in order. Monitoring describes the Linux VM, not the whole Windows host. After restarting Windows, some WSL mounts require the manual recovery described in the guide.",
     "stack.lastOperation": "Last operation",

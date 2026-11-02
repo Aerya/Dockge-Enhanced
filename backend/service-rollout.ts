@@ -3,7 +3,7 @@
  * https://github.com/Wowu/docker-rollout
  * No shell hooks or downloaded executable; the existing Docker transport is reused.
  */
-import { execFile } from "node:child_process";
+import { execFile } from "./buffered-process";
 import { promisify } from "node:util";
 import { rolloutEnabled, rolloutProblems, ROLLOUT_DRAIN_FILE, ROLLOUT_HEALTH_PREFIX } from "../common/service-rollout";
 import { RolloutRelay, RelayDrainPending } from "./rollout-relay";

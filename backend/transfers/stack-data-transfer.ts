@@ -1,4 +1,5 @@
-import { execFile, spawn } from "node:child_process";
+import { execFile } from "../buffered-process";
+import { spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { Readable, Transform } from "node:stream";
 import { createHash } from "node:crypto";

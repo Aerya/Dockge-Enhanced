@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { Request } from "express";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "../buffered-process";
 import { R } from "redbean-node";
 import { RUNNING } from "../../common/util-common";
 import { AuditLogger } from "../audit-log";

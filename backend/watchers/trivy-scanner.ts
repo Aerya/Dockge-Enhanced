@@ -4,7 +4,7 @@
  */
 
 import { scheduleInTimezone } from "../scheduling-cron";
-import { execFile } from "child_process";
+import { execFile } from "../buffered-process";
 import { promisify } from "util";
 import * as path from "path";
 import { DiscordNotifier } from "../notification/discord";

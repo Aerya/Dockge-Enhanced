@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile } from "./buffered-process";
 import { promisify } from "node:util";
 import { mkdtemp, writeFile, rm, access, readFile } from "node:fs/promises";
 import os from "node:os";

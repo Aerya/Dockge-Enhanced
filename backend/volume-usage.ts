@@ -1,4 +1,4 @@
-import { execFile } from "child_process";
+import { execFile } from "./buffered-process";
 import { randomUUID } from "crypto";
 import { promisify } from "util";
 

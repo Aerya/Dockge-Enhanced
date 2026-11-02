@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-02-command-buffers",
+        items: [ "releaseNews.item.commandBuffers" ],
+    },
+    {
         id: "2026-11-02-stack-volume-inspection",
         items: [ "releaseNews.item.stackVolumeInspection" ],
     },

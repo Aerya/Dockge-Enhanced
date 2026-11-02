@@ -16,7 +16,7 @@ import express, { Express, Router as ExpressRouter, Request, Response, NextFunct
 import { AutoPruneManager } from "../watchers/auto-prune-manager";
 import { AuditLogger, setAuditUser } from "../audit-log";
 import { requireHttpAuth } from "../auth";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "../buffered-process";
 import {
     buildPrunePreview,
     DockerCleanupManager,

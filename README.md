@@ -63,6 +63,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Configurable command buffers :** Captured command output limits can be adjusted with bounded environment settings. Overflow logs identify the command family, source location and limit without printing arguments or captured output. Existing defaults and streaming commands are preserved. [Command buffers](docs/command-buffers.md).
+
 **Reliable stack volume listing :** Mounted volumes remain visible when Docker returns large container descriptions. Enhanced reads only the required fields in small batches, without limiting the number of containers or volumes. Errors identify the failed operation without exposing secrets. Update linked hosting instances too.
 
 **Windows 11 / WSL2 validation:** installation guide, tested Compose actions, Restic/Zerobyte backups and linked instances. The Windows sidecar mount and shared-network restart fixes preserve Linux/Unraid paths and permissions. [Windows 11 with Docker Desktop (WSL2)](docs/windows.md). After restarting Windows, some WSL mounts require the manual recovery described in the guide.
@@ -586,7 +588,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 ### Search & files
 - Global multi-instance search (`Ctrl+K`) across stacks, Compose/`.env` files, Docker resources and recent Restic snapshots
 - Opt-in search in `.env` values, which are never returned or stored in history
-- Compact mounted-volume rows with sizes and a volume browser/editor for each container, even when the stack is stopped; bounded inspection batches preserve every container and mount
+- Compact mounted-volume rows with sizes and a volume browser/editor for each container, even when the stack is stopped; bounded inspection batches preserve every container and mount; [Command buffers](docs/command-buffers.md).
 - Optional root-restricted host file manager with chunked transfers, text editing and a file-log viewer
 
 ### Automation & audit
@@ -927,6 +929,8 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKER_HOST` | *(none)* | Docker endpoint, for example `tcp://proxy:2375` with a trusted Docker Socket Proxy |
 | `DOCKGE_CONTAINER_ID` | *(none)* | Explicit Enhanced container ID when it cannot be resolved from `HOSTNAME` |
 | `DOCKGE_USAGE_COUNT` | *(enabled)* | Set to `false` to disable the anonymous monthly installation count |
+| `DOCKGE_COMMAND_BUFFER_MULTIPLIER` | `1` | Multiplier for existing capture limits (integer 1–16); increase cautiously: memory use grows per concurrent command. [Command buffers](docs/command-buffers.md) |
+| `DOCKGE_COMMAND_BUFFER_MAX_MIB` | `256` | Hard ceiling per command, in MiB (integer 1–256). |
 | `DOCKGE_OIDC_ISSUER` | *(none)* | OpenID Connect issuer URL; setting it enables native OIDC sign-in. Every `DOCKGE_OIDC_*` option is described in the [OIDC guide](docs/oidc.md) |
 
 > ℹ️ Without `DOCKGE_DATA_DIR`, Dockge-Enhanced uses its persistent `/app/data` volume. Explicitly configured paths always take precedence.

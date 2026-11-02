@@ -15,7 +15,7 @@
 
 import * as fs from "fs/promises";
 import * as path from "path";
-import childProcessAsync from "promisify-child-process";
+import childProcessAsync from "../buffered-process";
 import { resolveDataDir } from "../data-dir";
 
 async function docker(args: string[]): Promise<string> {
