@@ -2,13 +2,19 @@
 // Strict test-only Docker replacement: never contacts a Docker daemon.
 const fs = require("node:fs");
 const args = process.argv.slice(2);
+const composeDir = process.env.FIXTURE_SHARED_COMPOSE_DIR;
 fs.appendFileSync(process.env.FIXTURE_DOCKER_LOG, JSON.stringify(args) + "\n");
 let result;
 if (args[0] === "container" && args[1] === "inspect") {
     result = JSON.stringify([{
         Id: "a".repeat(64), Image: "sha256:" + "b".repeat(64), Name: "/fixture-enhanced",
-        Config: { Image: "ghcr.io/aerya/dockge-enhanced:latest", Labels: {} },
-        Mounts: [{ Type: "volume", Name: "fixture-data", Source: "/fixture-data", Destination: process.env.DOCKGE_DATA_DIR }],
+        Config: { Image: "ghcr.io/aerya/dockge-enhanced:latest", Labels: composeDir ? {
+            "com.docker.compose.project": "fixture",
+            "com.docker.compose.service": "enhanced",
+            "com.docker.compose.project.working_dir": composeDir,
+            "com.docker.compose.project.config_files": composeDir + "/compose.yaml",
+        } : {} },
+        Mounts: [{ Type: composeDir ? "bind" : "volume", Name: "fixture-data", Source: composeDir || "/fixture-data", Destination: process.env.DOCKGE_DATA_DIR }],
         NetworkSettings: { Networks: { "fixture-network": {} } },
     }]);
 } else if (args[0] === "info") result = "/fixture-docker";

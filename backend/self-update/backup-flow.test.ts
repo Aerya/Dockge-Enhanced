@@ -81,6 +81,27 @@ test("self-update backup policies drive the real manager without a Docker daemon
             assert.match(commands, /"--network","fixture-network"/);
             assert.equal(activeDockerUpdateOperation(), null);
         });
+        await t.test("shared data and Compose directory launches with one read-only alias", async () => {
+            await reset();
+            process.env.FIXTURE_SHARED_COMPOSE_DIR = process.env.DOCKGE_DATA_DIR;
+            await fs.writeFile(path.join(process.env.DOCKGE_DATA_DIR!, "compose.yaml"), "services: {}\n");
+            try {
+                const result = await manager.requestSidecarUpdate(target);
+                assert.equal(result.state, "updating");
+                const commands: string[][] = (await fs.readFile(process.env.FIXTURE_DOCKER_LOG!, "utf8")).trim().split("\n").map(line => JSON.parse(line));
+                const launch = commands.find(args => args[0] === "run" && args.includes("-d"))!;
+                const mounts = launch.filter((_, index) => launch[index - 1] === "--mount");
+                const legacyMounts = launch.filter((_, index) => launch[index - 1] === "-v");
+                assert.ok(!legacyMounts.some(mount => mount.split(":")[1] === process.env.DOCKGE_DATA_DIR), "Compose must not add a second mount via -v");
+                assert.equal(mounts.filter(mount => mount.includes(`target=${process.env.DOCKGE_DATA_DIR}`)).length, 1);
+                assert.ok(mounts.includes(`type=bind,source=${process.env.DOCKGE_DATA_DIR},target=${process.env.DOCKGE_DATA_DIR},readonly`));
+                assert.ok(mounts.includes(`type=bind,source=${process.env.DOCKGE_DATA_DIR},target=/state`));
+                assert.ok(launch.includes(`SELF_UPDATE_COMPOSE_DIR=${process.env.DOCKGE_DATA_DIR}`));
+                assert.equal(activeDockerUpdateOperation(), null);
+            } finally {
+                delete process.env.FIXTURE_SHARED_COMPOSE_DIR;
+            }
+        });
         await t.test("re-enabling Restic restores the original failure gate", async () => {
             await reset();
             await manager.saveSettings({ backupProvider: "restic" });
