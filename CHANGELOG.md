@@ -6,6 +6,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-02 — Reliable stack volume listing** — Mounted volumes remain visible when Docker returns large container descriptions. Enhanced reads only the required fields in small batches, without limiting the number of containers or volumes. Errors identify the failed operation without exposing secrets. Update linked hosting instances too. #604.
+
 **2026-11-01 — Verified image updates** — ImageWatcher recovers images whose local tag disappeared, verifies every targeted replica after Compose and reports mismatches as failures. Unverifiable updates do not advance the date. Downloaded images remain protected from cleanup for 24 hours after an interrupted or unverified attempt. [Verified image updates](docs/image-update-verification.md).
 
 **2026-11-01 — Improved Unraid compatibility** — Fixes verified in an Unraid 7.3.4 VM: restore stack `.env` files, edit Compose files without changing config/secret permissions, and open the correct published port links. These shared fixes also benefit other installations; no Unraid-specific mode is required. Template and installation guide included; managed Zerobyte reconnects after Enhanced is recreated.
