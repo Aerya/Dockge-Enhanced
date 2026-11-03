@@ -1,5 +1,6 @@
 import { defineComponent } from "vue";
 import { normalizePalette } from "../theme-palettes";
+import { loadCompactInterface, saveCompactInterface } from "../interface-density";
 
 export default defineComponent({
     data() {
@@ -8,6 +9,7 @@ export default defineComponent({
             userTheme: localStorage.theme,
             dayPalette: normalizePalette(localStorage.dayPalette, "light"),
             nightPalette: normalizePalette(localStorage.nightPalette, "dark"),
+            compactInterface: false,
         };
     },
 
@@ -29,6 +31,13 @@ export default defineComponent({
     },
 
     watch: {
+        username(value) {
+            this.compactInterface = loadCompactInterface(localStorage, value);
+        },
+
+        compactInterface(value) {
+            saveCompactInterface(localStorage, this.username, value);
+        },
         userTheme(to, from) {
             localStorage.theme = to;
         },

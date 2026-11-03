@@ -1,6 +1,14 @@
 <template>
     <div>
         <div class="my-4">
+            <label for="interface-density" class="form-label">{{ $t('interfaceDensity.title') }}</label>
+            <select id="interface-density" v-model="$root.compactInterface" class="form-select">
+                <option :value="false">{{ $t('interfaceDensity.classic') }}</option>
+                <option :value="true">{{ $t('interfaceDensity.compact') }}</option>
+            </select>
+            <div class="form-text">{{ $t('interfaceDensity.hint') }}</div>
+        </div>
+        <div class="my-4">
             <label for="language" class="form-label">
                 {{ $t("Language") }}
             </label>

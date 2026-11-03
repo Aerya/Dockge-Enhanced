@@ -1,4 +1,12 @@
 {
+    "interfaceDensity.actions": "Acciones del servicio",
+    "interfaceDensity.service": "Servicio",
+    "interfaceDensity.image": "Imagen",
+    "interfaceDensity.state": "Estado / recursos",
+    "interfaceDensity.title": "Presentación",
+    "interfaceDensity.classic": "Clásica",
+    "interfaceDensity.compact": "Compacta",
+    "interfaceDensity.hint": "Presentación guardada para esta cuenta en este navegador. Cambie sin modificar las stacks.",
     "releaseNews.item.commandBuffers": "Los límites de salida capturada se ajustan mediante variables de entorno acotadas. Los desbordamientos indican la familia del comando, ubicación del código y límite, sin argumentos ni salida capturada. Se conservan los valores predeterminados y los comandos en streaming.",
     "releaseNews.item.stackVolumeInspection": "Los volúmenes montados siguen visibles cuando Docker devuelve descripciones grandes de los contenedores. Enhanced lee solo los campos necesarios en pequeños lotes, sin limitar el número de contenedores ni de volúmenes. Los errores identifican la operación fallida sin exponer secretos. Actualiza también las instancias vinculadas que alojan las stacks.",
     "releaseNews.item.windowsWsl": "Guía Windows 11 para Docker Desktop con WSL2 y contenedores Linux. Corrección de los montajes Windows del sidecar de actualización y reinicio ordenado de servicios con un namespace de red compartido. El monitoring describe la VM Linux, no todo el equipo Windows. Tras reiniciar Windows, algunos montajes WSL requieren la recuperación manual descrita en la guía.",

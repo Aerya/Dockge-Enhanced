@@ -4,6 +4,8 @@
 
 # Dockge Enhanced
 
+> **Test branch — optional compact interface:** visual prototype inspired by [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod), not included in `main` or the `latest` image. In **Settings → Appearance → Layout**, select **Compact** (or use the header toggle). Classic remains the default. Services appear as rows above the Logs and Compose panels; the preference is stored per account in this browser. Use a separate test instance and disposable stacks, never production data; keep automatic cleanup and self-updates disabled.
+
 Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for managing your Docker Compose environments from a web interface, on one or more servers. It brings together stack and container management, global search and file access, migration and replication, backups with Restic or Zerobyte, updates with rollback, monitoring, security checks and automation. Its integrations and recovery tools help you monitor and maintain your services every day.
 
 <p align="center">

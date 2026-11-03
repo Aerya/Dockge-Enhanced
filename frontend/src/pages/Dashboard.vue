@@ -28,7 +28,7 @@
                 :aria-label="$t('stackListResize')"
                 aria-valuemin="18"
                 aria-valuemax="40"
-                :aria-valuenow="stackSidebarWidth"
+                :aria-valuenow="effectiveSidebarWidth"
                 tabindex="0"
                 @pointerdown="startDashboardResize"
                 @keydown.left.prevent="resizeDashboardBy(-2)"
@@ -59,13 +59,16 @@ export default {
             // Desktop: persisted collapse state. Mobile: always starts
             // collapsed (accordion), the state is not persisted.
             sidebarCollapsed: this.$root.isMobile || localStorage.getItem("stackSidebarCollapsed") === "true",
-            stackSidebarWidth: Math.min(40, Math.max(18, Number(localStorage.getItem("stackSidebarWidth")) || 25)),
+            stackSidebarWidth: Number(localStorage.getItem("stackSidebarWidth")) || null,
             dashboardResizing: false,
             dashboardMinHeight: 240,
             dashboardHeightObserver: null,
         };
     },
     computed: {
+        effectiveSidebarWidth() {
+            return Math.min(40, Math.max(18, this.stackSidebarWidth || (this.$root.compactInterface ? 19 : 25)));
+        },
         dashboardLayoutStyle() {
             if (this.$root.isMobile) {
                 return {};
@@ -77,7 +80,7 @@ export default {
                 };
             }
             return {
-                gridTemplateColumns: `minmax(0, ${this.stackSidebarWidth}fr) 10px minmax(0, ${100 - this.stackSidebarWidth}fr)`,
+                gridTemplateColumns: `minmax(0, ${this.effectiveSidebarWidth}fr) 10px minmax(0, ${100 - this.effectiveSidebarWidth}fr)`,
                 minHeight: `${this.dashboardMinHeight}px`,
             };
         },
@@ -142,7 +145,7 @@ export default {
             window.removeEventListener("pointerup", this.stopDashboardResize);
         },
         resizeDashboardBy(delta) {
-            this.stackSidebarWidth = Math.min(40, Math.max(18, this.stackSidebarWidth + delta));
+            this.stackSidebarWidth = Math.min(40, Math.max(18, this.effectiveSidebarWidth + delta));
             localStorage.setItem("stackSidebarWidth", String(this.stackSidebarWidth));
         },
     },

@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+> **Branche de test — interface compacte facultative :** prototype visuel inspiré de [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod), absent de `main` et de l’image `latest`. Dans **Paramètres → Apparence → Présentation**, choisir **Compacte** (ou utiliser le bouton de l’en-tête). Classique reste le choix par défaut. Les services s’affichent en lignes au-dessus des panneaux Logs et Compose ; le choix est enregistré par compte dans ce navigateur. Utiliser une instance séparée et des stacks jetables, jamais les données de production ; laisser le nettoyage automatique et l’auto-mise à jour désactivés.
+
 > **Validation Windows 11 / WSL2 :** guide d’installation, actions Compose, sauvegardes Restic/Zerobyte et instances liées testées. Les corrections du montage Windows du sidecar et du redémarrage des services partageant un réseau préservent les chemins et permissions Linux/Unraid. [Windows 11 avec Docker Desktop (WSL2)](docs/windows.fr.md). Après redémarrage Windows, certains montages WSL nécessitent une reprise manuelle décrite dans le guide.
 
 Historique complet du projet, du plus récent au plus ancien. Chaque date correspond à la fusion de la modification dans `main`. Les modifications applicatives fusionnées dans `main` sont publiées sous `ghcr.io/aerya/dockge-enhanced:latest` par le workflow de construction ; les commits purement documentaires ne produisent pas de nouvelle image. Les fonctionnalités présentes uniquement dans une pull request ouverte ou une image de test ne figurent pas ici.

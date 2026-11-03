@@ -4,6 +4,8 @@
 
 # Dockge Enhanced
 
+> **Testbranch — optionale kompakte Oberfläche:** visueller Prototyp nach dem Vorbild von [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod), nicht in `main` oder im Image `latest` enthalten. Unter **Einstellungen → Erscheinungsbild → Darstellung** die Option **Kompakt** wählen (oder die Schaltfläche im Kopfbereich verwenden). Klassisch bleibt die Standardeinstellung. Dienste erscheinen als Zeilen über den Logs- und Compose-Bereichen; die Auswahl wird pro Konto in diesem Browser gespeichert. Eine separate Testinstanz und entbehrliche Stacks verwenden, niemals Produktionsdaten; automatische Bereinigung und Selbstaktualisierung deaktiviert lassen.
+
 Dockge Enhanced ist ein Fork von [Dockge](https://github.com/louislam/dockge) zur Verwaltung Ihrer Docker-Compose-Umgebungen über eine Weboberfläche auf einem oder mehreren Servern. Es vereint Stack- und Containerverwaltung, globale Suche und Dateizugriff, Migration und Replikation, Backups mit Restic oder Zerobyte, Updates mit Rollback sowie Monitoring, Sicherheitsprüfungen und Automatisierung. Integrationen und Wiederherstellungswerkzeuge unterstützen den täglichen Betrieb Ihrer Dienste.
 
 <p align="center">

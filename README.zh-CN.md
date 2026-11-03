@@ -4,6 +4,8 @@
 
 # Dockge Enhanced
 
+> **测试分支 — 可选紧凑界面：** 参考 [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod) 的视觉原型，尚未包含在 `main` 或 `latest` 镜像中。在 **设置 → 外观 → 界面布局** 中选择 **紧凑**，也可使用页首切换按钮。默认仍为经典布局。服务以行显示在日志和 Compose 面板上方；布局选择按账户保存在当前浏览器中。请使用独立测试实例和可丢弃的测试堆栈，切勿使用生产数据，并保持自动清理及自动更新关闭。
+
 Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通过 Web 界面管理一台或多台服务器上的 Docker Compose 环境。它集成了 Stack 与容器管理、全局搜索与文件访问、迁移与复制、Restic 或 Zerobyte 备份、支持回滚的更新，以及监控、安全检查和自动化。丰富的集成与恢复工具帮助您日常跟踪和维护服务。
 
 <p align="center">

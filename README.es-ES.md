@@ -4,6 +4,8 @@
 
 # Dockge Enhanced
 
+> **Rama de prueba — interfaz compacta opcional:** prototipo visual inspirado en [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod), no incluido en `main` ni en la imagen `latest`. En **Ajustes → Apariencia → Presentación**, seleccione **Compacta** (o use el botón de la cabecera). Clásica sigue siendo la opción predeterminada. Los servicios aparecen en filas sobre los paneles de logs y Compose; la preferencia se guarda por cuenta en este navegador. Use una instancia separada y stacks desechables, nunca datos de producción; mantenga desactivadas la limpieza automática y la autoactualización.
+
 Dockge Enhanced es un fork de [Dockge](https://github.com/louislam/dockge) para administrar tus entornos Docker Compose desde una interfaz web, en uno o varios servidores. Reúne la gestión de stacks y contenedores, la búsqueda global y el acceso a archivos, la migración y replicación, las copias con Restic o Zerobyte, las actualizaciones con rollback, la supervisión, los controles de seguridad y la automatización. Sus integraciones y herramientas de recuperación facilitan el seguimiento y mantenimiento diario de tus servicios.
 
 <p align="center">

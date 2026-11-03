@@ -1,5 +1,7 @@
 # Dockge Enhanced 更新日志
 
+> **测试分支 — 可选紧凑界面：** 参考 [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod) 的视觉原型，尚未包含在 `main` 或 `latest` 镜像中。在 **设置 → 外观 → 界面布局** 中选择 **紧凑**，也可使用页首切换按钮。默认仍为经典布局。服务以行显示在日志和 Compose 面板上方；布局选择按账户保存在当前浏览器中。请使用独立测试实例和可丢弃的测试堆栈，切勿使用生产数据，并保持自动清理及自动更新关闭。
+
 > **Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。
 
 完整的项目历史，最新条目在前。每个日期均为该变更合并到 `main` 的日期。合并到 `main` 的应用变更会由构建工作流发布为 `ghcr.io/aerya/dockge-enhanced:latest`；仅涉及文档的提交不会生成新镜像。仅存在于未合并 Pull Request 或测试镜像中的功能不会列在这里。
