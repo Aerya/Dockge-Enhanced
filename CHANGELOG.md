@@ -6,6 +6,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-04 — Web terminal** — The web terminal now declares xterm-256color correctly: colours and screen clearing work without changing permissions or explicitly restricted environments.
+
 **2026-11-04 — Configuration tools** — Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Configuration tools](docs/configuration-tools.md).
 
 **2026-11-02 — Anonymous counts by period** — Independent weekly, monthly and yearly estimates; Discord reports the previous week, current month, every past month and the current year without adding monthly totals. Existing monthly history is preserved; incomplete periods and migration limits are explicit.

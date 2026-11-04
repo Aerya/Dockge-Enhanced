@@ -116,11 +116,14 @@ export class Terminal {
 
         try {
             this._ptyProcess = pty.spawn(this.file, this.args, {
-                name: this.name,
+                name: "xterm-256color",
                 cwd: this.cwd,
                 cols: TERMINAL_COLS,
                 rows: this.rows,
-                ...(this.env ? { env: this.env } : {}),
+                // Match the browser's xterm terminal without expanding an
+                // explicitly restricted environment passed by the caller.
+                env: { ...(this.env ?? process.env),
+                    TERM: "xterm-256color" },
             });
 
             // On Data

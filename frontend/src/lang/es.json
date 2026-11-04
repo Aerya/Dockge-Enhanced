@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.webTerminal": "El terminal web declara correctamente xterm-256color: funcionan los colores y la limpieza de pantalla sin cambiar los permisos ni los entornos restringidos explícitamente.",
     "Confirm": "Confirmar",
     "Add": "Añadir",
     "releaseNews.item.configurationTools": "Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario .env y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente.",

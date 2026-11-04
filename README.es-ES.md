@@ -63,6 +63,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Terminal web :** El terminal web declara correctamente xterm-256color: funcionan los colores y la limpieza de pantalla sin cambiar los permisos ni los entornos restringidos explícitamente.
+
 **Herramientas de configuración :** Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Herramientas de configuración](docs/configuration-tools.es.md).
 
 **Conteo anónimo por período :** Estimaciones independientes por semana, mes y año; Discord muestra la semana anterior, mes actual, todos los meses pasados y año sin sumar los meses. Se conserva el historial mensual y se indican períodos incompletos y límites de migración.

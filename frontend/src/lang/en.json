@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.webTerminal": "The web terminal now declares xterm-256color correctly: colours and screen clearing work without changing permissions or explicitly restricted environments.",
     "releaseNews.item.configurationTools": "Encrypted file history (20 revisions), saved merged Compose preview, .env form and linked-instance diagnostics. Restoring files never redeploys containers automatically.",
     "configTools.title": "Files and history",
     "configTools.diagnostics": "Instance diagnostics",

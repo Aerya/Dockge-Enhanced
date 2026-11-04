@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-04-web-terminal",
+        items: [ "releaseNews.item.webTerminal" ],
+    },
+    {
         id: "2026-11-04-configuration-tools",
         items: [ "releaseNews.item.configurationTools" ],
     },

@@ -6,6 +6,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-04 — Terminal web** — Le terminal web déclare correctement xterm-256color : couleurs et effacement de l’écran fonctionnent sans modifier les permissions ni les environnements explicitement restreints.
+
 **2026-11-04 — Outils de configuration** — Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Outils de configuration](docs/configuration-tools.fr.md).
 
 **2026-11-02 — Comptage anonyme par période** — Estimations indépendantes par semaine, mois et année ; Discord affiche la semaine écoulée, le mois en cours, tous les mois passés et l’année sans additionner les mois. L’historique mensuel est conservé ; périodes incomplètes et limites de migration sont explicites.

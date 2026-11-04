@@ -63,6 +63,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Webterminal :** Das Webterminal meldet xterm-256color korrekt: Farben und Bildschirmleeren funktionieren, ohne Berechtigungen oder ausdrücklich eingeschränkte Umgebungen zu ändern.
+
 **Konfigurationswerkzeuge :** Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Konfigurationswerkzeuge](docs/configuration-tools.de.md).
 
 **Anonyme Zählung nach Zeitraum :** Unabhängige Schätzungen für Woche, Monat und Jahr; Discord zeigt vergangene Woche, laufenden Monat, alle früheren Monate und das Jahr ohne Addition der Monatswerte. Monatshistorie bleibt erhalten; unvollständige Zeiträume und Migrationsgrenzen werden gekennzeichnet.

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.webTerminal": "网页终端正确声明 xterm-256color，恢复颜色和清屏功能，不改变权限或显式限制的环境变量。",
     "releaseNews.item.configurationTools": "加密文件历史（20 个版本）、已保存的合并 Compose 预览、.env 表单和关联实例诊断。恢复文件不会自动重新部署容器。",
     "configTools.title": "文件与历史",
     "configTools.diagnostics": "实例诊断",
