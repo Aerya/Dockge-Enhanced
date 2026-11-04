@@ -6,6 +6,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-04 — Interface messages** — Common backup, scheduling, ImageWatcher and cleanup messages follow the interface language, including messages from older linked instances. Unknown technical details remain visible unchanged.
+
 **2026-11-04 — Configuration tools** — Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Configuration tools](docs/configuration-tools.md).
 
 **2026-11-02 — Anonymous counts by period** — Independent weekly, monthly and yearly estimates; Discord reports the previous week, current month, every past month and the current year without adding monthly totals. Existing monthly history is preserved; incomplete periods and migration limits are explicit.

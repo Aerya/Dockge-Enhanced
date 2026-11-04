@@ -64,6 +64,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Messages de l’interface :** Les messages courants de sauvegarde, planification, ImageWatcher et nettoyage suivent la langue de l’interface, y compris lorsqu’ils proviennent d’une instance liée plus ancienne. Les détails techniques inconnus restent affichés sans modification.
+
 **Outils de configuration :** Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Outils de configuration](docs/configuration-tools.fr.md).
 
 **Comptage anonyme par période :** Estimations indépendantes par semaine, mois et année ; Discord affiche la semaine écoulée, le mois en cours, tous les mois passés et l’année sans additionner les mois. L’historique mensuel est conservé ; périodes incomplètes et limites de migration sont explicites.

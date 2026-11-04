@@ -6,6 +6,7 @@ import App from "./App.vue";
 import { router } from "./router";
 import { FontAwesomeIcon } from "./icon.js";
 import { i18n } from "./i18n";
+import { localizeServerMessage } from "./server-message";
 
 // Dependencies
 import "bootstrap";
@@ -75,6 +76,9 @@ function rootApp() {
                     }
                 }
 
+                if (typeof msg === "string") {
+                    msg = localizeServerMessage(msg, (key, values) => this.$t(key, values || {}));
+                }
                 if (res.ok) {
                     toast.success(msg);
                 } else {
@@ -87,7 +91,7 @@ function rootApp() {
              * @returns {void}
              */
             toastSuccess(msg : string) {
-                toast.success(this.$t(msg));
+                toast.success(localizeServerMessage(msg, (key, values) => this.$t(key, values || {})));
             },
 
             /**
@@ -96,7 +100,7 @@ function rootApp() {
              * @returns {void}
              */
             toastError(msg : string) {
-                toast.error(this.$t(msg));
+                toast.error(localizeServerMessage(msg, (key, values) => this.$t(key, values || {})));
             },
         },
         render: () => h(App),

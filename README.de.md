@@ -63,6 +63,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Oberflächenmeldungen :** Häufige Meldungen zu Sicherung, Zeitplanung, ImageWatcher und Bereinigung folgen der Oberflächensprache, auch von älteren verknüpften Instanzen. Unbekannte technische Details bleiben unverändert sichtbar.
+
 **Konfigurationswerkzeuge :** Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Konfigurationswerkzeuge](docs/configuration-tools.de.md).
 
 **Anonyme Zählung nach Zeitraum :** Unabhängige Schätzungen für Woche, Monat und Jahr; Discord zeigt vergangene Woche, laufenden Monat, alle früheren Monate und das Jahr ohne Addition der Monatswerte. Monatshistorie bleibt erhalten; unvollständige Zeiträume und Migrationsgrenzen werden gekennzeichnet.
