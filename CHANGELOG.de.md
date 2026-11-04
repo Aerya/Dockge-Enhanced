@@ -6,6 +6,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-04 — Dienstlinks** — Eine eigene Administratorseite bündelt manuelle HTTP/HTTPS-Verknüpfungen und Compose-`x-dockge.urls` lokaler und verbundener Instanzen, mit Suche und Sortierung. Die Startseite bleibt unverändert. Verbundene Instanzen müssen für ihre Links aktualisiert werden; die Verknüpfungen prüfen nicht die Dienstverfügbarkeit.
+
 **2026-11-04 — Konfigurationswerkzeuge** — Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Konfigurationswerkzeuge](docs/configuration-tools.de.md).
 
 **2026-11-02 — Anonyme Zählung nach Zeitraum** — Unabhängige Schätzungen für Woche, Monat und Jahr; Discord zeigt vergangene Woche, laufenden Monat, alle früheren Monate und das Jahr ohne Addition der Monatswerte. Monatshistorie bleibt erhalten; unvollständige Zeiträume und Migrationsgrenzen werden gekennzeichnet.

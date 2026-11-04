@@ -6,6 +6,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-04 — Service links** — A separate administrator page groups manual HTTP/HTTPS shortcuts and Compose `x-dockge.urls` from local and linked instances, with search and ordering. The home page stays unchanged. Update linked instances to display their links; these shortcuts do not check service health.
+
 **2026-11-04 — Configuration tools** — Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Configuration tools](docs/configuration-tools.md).
 
 **2026-11-02 — Anonymous counts by period** — Independent weekly, monthly and yearly estimates; Discord reports the previous week, current month, every past month and the current year without adding monthly totals. Existing monthly history is preserved; incomplete periods and migration limits are explicit.

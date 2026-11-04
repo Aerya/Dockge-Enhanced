@@ -62,6 +62,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**服务链接 :** 独立的管理员页面汇集手动 HTTP/HTTPS 快捷链接以及本地和关联实例的 Compose `x-dockge.urls`，支持搜索和排序。原有首页不变。请更新关联实例以显示其链接；这些快捷链接不检测服务是否可用。
+
 **配置工具 :** 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [配置工具](docs/configuration-tools.zh-CN.md).
 
 **按周期匿名统计 :** 独立估算周度、月度和年度数据；Discord 显示上一完整周、当月、所有历史月份及当年，不累加月度数据。保留月度历史，明确标注不完整周期及迁移限制。
@@ -619,6 +621,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Home Assistant
 
 ### 外观与语言
+- **服务链接** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - 独立的日间和夜间配色，包括 Dockge-Enhanced 原有主题
 - Catppuccin、Nord、Solarized、Dracula、Gruvbox、Tokyo Night 和 Rosé Pine 选项
 - 偏好保存在浏览器中，“自动”模式跟随系统
@@ -1033,6 +1036,8 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 ---
 
 ## 致谢
+
+- [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — 服务链接面板的灵感来源.
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — 多平台通知网关
 - [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — 端口冲突检测、Compose 差异检查和 Home Assistant 集成的灵感来源。
