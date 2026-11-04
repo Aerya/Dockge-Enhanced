@@ -2,8 +2,6 @@
 
 # Herramientas de configuración
 
-Preparado en esta rama; todavía no publicado en `main`/`latest`.
-
 Acciones de stack → **Archivos e historial** muestra versiones y el Compose combinado guardado. Ejecuta `docker compose config` en la instancia propietaria, con overrides y variables, pero sin cambios del borrador. Puede mostrar secretos: requiere administrador y confirmación.
 
 Se guardan 20 versiones distintas antes de guardar o hacer pull de Git: Compose, override y `.env`, o la cadena registrada en stacks externos. No incluye datos de aplicaciones, archivos incluidos indirectamente ni el `global.env` compartido. Máximo 2 MiB por archivo. Un fallo del historial bloquea la escritura.

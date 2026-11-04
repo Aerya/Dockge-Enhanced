@@ -2,8 +2,6 @@
 
 # Outils de configuration
 
-Préparation sur cette branche ; pas encore publiée dans `main`/`latest`.
-
 Dans les actions d’une stack, **Fichiers et historique** donne accès aux versions et au **Compose final enregistré**. Cette vue exécute `docker compose config` sur l’instance propriétaire : elle inclut les overrides et les variables, mais pas les modifications du brouillon. Elle peut contenir des secrets ; son affichage nécessite une confirmation et un compte administrateur.
 
 L’historique conserve les 20 dernières versions distinctes avant une sauvegarde ou un pull Git. Il contient les fichiers Compose, override et `.env` ; pour une stack externe, les fichiers de sa chaîne enregistrée. Les données des applications, les fichiers inclus indirectement et le `global.env` partagé ne sont pas versionnés ici. Chaque fichier est limité à 2 Mio. Une erreur de sauvegarde de l’historique bloque l’écriture pour éviter de perdre la version précédente.

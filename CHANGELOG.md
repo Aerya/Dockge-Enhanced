@@ -1,12 +1,12 @@
 # Dockge Enhanced Changelog
 
-> **Configuration tools** — Prepared on this branch; not yet published in `main`/`latest`. Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Guide](docs/configuration-tools.md).
-
 > **Windows 11 / WSL2 validation:** installation guide, tested Compose actions, Restic/Zerobyte backups and linked instances. The Windows sidecar mount and shared-network restart fixes preserve Linux/Unraid paths and permissions. [Windows 11 with Docker Desktop (WSL2)](docs/windows.md). After restarting Windows, some WSL mounts require the manual recovery described in the guide.
 
 Complete project history, newest first. Each date is the day the change was merged into `main`. Application changes merged into `main` are published as `ghcr.io/aerya/dockge-enhanced:latest` by the build workflow; documentation-only commits do not produce a new image. Features that exist only in an open pull request or a test image are not listed here.
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
+
+**2026-11-04 — Configuration tools** — Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Configuration tools](docs/configuration-tools.md).
 
 **2026-11-02 — Anonymous counts by period** — Independent weekly, monthly and yearly estimates; Discord reports the previous week, current month, every past month and the current year without adding monthly totals. Existing monthly history is preserved; incomplete periods and migration limits are explicit.
 

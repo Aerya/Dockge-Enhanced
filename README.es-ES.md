@@ -63,7 +63,7 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
-**Herramientas de configuración :** Preparado en esta rama; todavía no publicado en `main`/`latest`. Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Herramientas de configuración](docs/configuration-tools.es.md).
+**Herramientas de configuración :** Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Herramientas de configuración](docs/configuration-tools.es.md).
 
 **Conteo anónimo por período :** Estimaciones independientes por semana, mes y año; Discord muestra la semana anterior, mes actual, todos los meses pasados y año sin sumar los meses. Se conserva el historial mensual y se indican períodos incompletos y límites de migración.
 
@@ -502,7 +502,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Edición de Compose
 
-- **Herramientas de configuración** — Preparado en esta rama; todavía no publicado en `main`/`latest`. Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Guide](docs/configuration-tools.es.md).
+- **Herramientas de configuración** — Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Guide](docs/configuration-tools.es.md).
 
 - **Nombre predeterminado del archivo Compose** — COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas.
 - límites opcionales de CPU/RAM por servicio — Solo modifica el borrador. Guarde y despliegue/recree explícitamente para aplicarlo a los contenedores; los contenedores activos no se modifican aquí.

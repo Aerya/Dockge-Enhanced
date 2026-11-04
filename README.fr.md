@@ -64,7 +64,7 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
-**Outils de configuration :** Préparation sur cette branche ; pas encore publiée dans `main`/`latest`. Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Outils de configuration](docs/configuration-tools.fr.md).
+**Outils de configuration :** Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Outils de configuration](docs/configuration-tools.fr.md).
 
 **Comptage anonyme par période :** Estimations indépendantes par semaine, mois et année ; Discord affiche la semaine écoulée, le mois en cours, tous les mois passés et l’année sans additionner les mois. L’historique mensuel est conservé ; périodes incomplètes et limites de migration sont explicites.
 
@@ -501,7 +501,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Édition Compose
 
-- **Outils de configuration** — Préparation sur cette branche ; pas encore publiée dans `main`/`latest`. Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Guide](docs/configuration-tools.fr.md).
+- **Outils de configuration** — Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Guide](docs/configuration-tools.fr.md).
 
 - **Nom du fichier Compose par défaut** — COMPOSE_FILENAME choisit compose.yaml (par défaut), compose.yml, docker-compose.yaml ou docker-compose.yml uniquement pour les nouvelles stacks. Les stacks existantes et adoptées conservent leurs fichiers. Les autres noms et chemins sont refusés.
 - limites CPU/RAM facultatives par service — Modifie uniquement le brouillon. Enregistrez, puis déployez/recréez explicitement pour appliquer aux conteneurs ; les conteneurs actifs ne sont pas modifiés ici.

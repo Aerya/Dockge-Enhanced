@@ -1,12 +1,12 @@
 # Dockge Enhanced 更新日志
 
-> **配置工具** — 仅适用于开发分支 `feat/compose-config-tools`；`main`/`latest` 不包含此功能。 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [指南](docs/configuration-tools.zh-CN.md).
-
 > **Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。
 
 完整的项目历史，最新条目在前。每个日期均为该变更合并到 `main` 的日期。合并到 `main` 的应用变更会由构建工作流发布为 `ghcr.io/aerya/dockge-enhanced:latest`；仅涉及文档的提交不会生成新镜像。仅存在于未合并 Pull Request 或测试镜像中的功能不会列在这里。
 
 [README](README.zh-CN.md) 介绍近期主要更新和完整功能目录。
+
+**2026-11-04 — 配置工具** — 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [配置工具](docs/configuration-tools.zh-CN.md).
 
 **2026-11-02 — 按周期匿名统计** — 独立估算周度、月度和年度数据；Discord 显示上一完整周、当月、所有历史月份及当年，不累加月度数据。保留月度历史，明确标注不完整周期及迁移限制。
 

@@ -1,12 +1,12 @@
 # Changelog de Dockge Enhanced
 
-> **Herramientas de configuración** — Preparado en esta rama; todavía no publicado en `main`/`latest`. Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Guide](docs/configuration-tools.es.md).
-
 > **Validación de Windows 11 / WSL2:** guía de instalación, acciones Compose, copias Restic/Zerobyte e instancias vinculadas probadas. Las correcciones de los montajes Windows del sidecar y del reinicio ordenado de servicios con red compartida conservan las rutas y permisos Linux/Unraid. [Windows 11 con Docker Desktop (WSL2)](docs/windows.es.md). Tras reiniciar Windows, algunos montajes WSL requieren la recuperación manual descrita en la guía.
 
 Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fecha corresponde al día en que el cambio se fusionó en `main`. Los cambios de la aplicación fusionados en `main` se publican como `ghcr.io/aerya/dockge-enhanced:latest` mediante el workflow de compilación; los commits solo de documentación no generan una nueva imagen. Las funciones que solo existen en una pull request abierta o en una imagen de prueba no aparecen aquí.
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
+
+**2026-11-04 — Herramientas de configuración** — Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Herramientas de configuración](docs/configuration-tools.es.md).
 
 **2026-11-02 — Conteo anónimo por período** — Estimaciones independientes por semana, mes y año; Discord muestra la semana anterior, mes actual, todos los meses pasados y año sin sumar los meses. Se conserva el historial mensual y se indican períodos incompletos y límites de migración.
 

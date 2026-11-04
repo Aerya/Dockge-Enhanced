@@ -2,8 +2,6 @@
 
 # Configuration tools
 
-Prepared on this branch; not yet published in `main`/`latest`.
-
 Stack actions → **Files and history** provides revisions and **View saved merged Compose**. This runs `docker compose config` on the owning instance, including overrides and variables but not unsaved drafts. It may expose secrets: administrator access and confirmation are required.
 
 The last 20 distinct file revisions are retained before saves or Git pulls: Compose, override and `.env`, or the registered file chain for external stacks. Application data, indirectly included files and shared `global.env` are not versioned here. Each file is limited to 2 MiB. A history failure blocks the write to protect the previous version.

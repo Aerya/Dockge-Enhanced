@@ -2,8 +2,6 @@
 
 # Konfigurationswerkzeuge
 
-Auf diesem Branch vorbereitet; noch nicht in `main`/`latest` veröffentlicht.
-
 Stack-Aktionen → **Dateien und Verlauf** zeigt Versionen und die gespeicherte zusammengeführte Compose-Konfiguration. `docker compose config` läuft auf der zuständigen Instanz, mit Overrides und Variablen, aber ohne ungespeicherten Entwurf. Geheimnisse können sichtbar werden: nur für Administratoren und nach Bestätigung.
 
 Vor Speichern oder Git-Pull bleiben 20 unterschiedliche Versionen von Compose, Override und `.env` erhalten; bei externen Stacks die registrierte Dateikette. Anwendungsdaten, indirekt eingebundene Dateien und das gemeinsame `global.env` sind nicht enthalten. Maximal 2 MiB pro Datei. Ein Verlaufsfehler blockiert das Schreiben.

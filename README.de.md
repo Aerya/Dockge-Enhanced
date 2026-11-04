@@ -63,7 +63,7 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
-**Konfigurationswerkzeuge :** Auf diesem Branch vorbereitet; noch nicht in `main`/`latest` veröffentlicht. Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Konfigurationswerkzeuge](docs/configuration-tools.de.md).
+**Konfigurationswerkzeuge :** Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Konfigurationswerkzeuge](docs/configuration-tools.de.md).
 
 **Anonyme Zählung nach Zeitraum :** Unabhängige Schätzungen für Woche, Monat und Jahr; Discord zeigt vergangene Woche, laufenden Monat, alle früheren Monate und das Jahr ohne Addition der Monatswerte. Monatshistorie bleibt erhalten; unvollständige Zeiträume und Migrationsgrenzen werden gekennzeichnet.
 
@@ -500,7 +500,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 
 ### Compose-Bearbeitung
 
-- **Konfigurationswerkzeuge** — Auf diesem Branch vorbereitet; noch nicht in `main`/`latest` veröffentlicht. Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Guide](docs/configuration-tools.de.md).
+- **Konfigurationswerkzeuge** — Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Guide](docs/configuration-tools.de.md).
 
 - **Standardname der Compose-Datei** — COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt.
 - optionale CPU-/RAM-Limits pro Dienst — Ändert nur den Entwurf. Speichern Sie und führen Sie anschließend ausdrücklich eine Bereitstellung/Neuerstellung aus. Laufende Container werden hier nicht verändert.

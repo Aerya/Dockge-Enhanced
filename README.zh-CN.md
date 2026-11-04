@@ -62,7 +62,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
-**配置工具 :** 此分支中准备，尚未发布至 `main`/`latest`。 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [配置工具](docs/configuration-tools.zh-CN.md).
+**配置工具 :** 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [配置工具](docs/configuration-tools.zh-CN.md).
 
 **按周期匿名统计 :** 独立估算周度、月度和年度数据；Discord 显示上一完整周、当月、所有历史月份及当年，不累加月度数据。保留月度历史，明确标注不完整周期及迁移限制。
 
@@ -501,7 +501,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ### Compose 编辑
 
-- **配置工具** — 此分支中准备，尚未发布至 `main`/`latest`。 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [Guide](docs/configuration-tools.zh-CN.md).
+- **配置工具** — 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [Guide](docs/configuration-tools.zh-CN.md).
 
 - **默认 Compose 文件名** — COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。
 - 可选的服务级 CPU/RAM 限制 — 本 PR 中准备的功能，尚未正式发布。 仅修改草稿。请保存后明确部署或重建，才能应用到容器；此处不会修改运行中的容器。

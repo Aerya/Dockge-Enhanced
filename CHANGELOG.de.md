@@ -1,12 +1,12 @@
 # Dockge-Enhanced-Changelog
 
-> **Konfigurationswerkzeuge** — Auf diesem Branch vorbereitet; noch nicht in `main`/`latest` veröffentlicht. Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Guide](docs/configuration-tools.de.md).
-
 > **Validierung unter Windows 11 / WSL2:** Installationsanleitung, Compose-Aktionen, Restic-/Zerobyte-Sicherungen und verbundene Instanzen getestet. Die Korrekturen für Windows-Sidecar-Mounts und geordnete Neustarts bei gemeinsamem Netzwerk erhalten Linux-/Unraid-Pfade und Berechtigungen. [Windows 11 mit Docker Desktop (WSL2)](docs/windows.de.md). Nach einem Windows-Neustart benötigen manche WSL-Mounts die im Leitfaden beschriebene manuelle Wiederaufnahme.
 
 Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag, an dem die Änderung in `main` gemergt wurde. Anwendungsänderungen in `main` werden vom Build-Workflow als `ghcr.io/aerya/dockge-enhanced:latest` veröffentlicht; reine Dokumentations-Commits erzeugen kein neues Image. Funktionen, die nur in einem offenen Pull Request oder einem Test-Image existieren, werden hier nicht aufgeführt.
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
+
+**2026-11-04 — Konfigurationswerkzeuge** — Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Konfigurationswerkzeuge](docs/configuration-tools.de.md).
 
 **2026-11-02 — Anonyme Zählung nach Zeitraum** — Unabhängige Schätzungen für Woche, Monat und Jahr; Discord zeigt vergangene Woche, laufenden Monat, alle früheren Monate und das Jahr ohne Addition der Monatswerte. Monatshistorie bleibt erhalten; unvollständige Zeiträume und Migrationsgrenzen werden gekennzeichnet.
 

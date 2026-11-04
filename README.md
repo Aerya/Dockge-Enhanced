@@ -63,7 +63,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
-**Configuration tools :** Prepared on this branch; not yet published in `main`/`latest`. Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Configuration tools](docs/configuration-tools.md).
+**Configuration tools :** Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Configuration tools](docs/configuration-tools.md).
 
 **Anonymous counts by period :** Independent weekly, monthly and yearly estimates; Discord reports the previous week, current month, every past month and the current year without adding monthly totals. Existing monthly history is preserved; incomplete periods and migration limits are explicit.
 
@@ -500,7 +500,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Compose editing
 
-- **Configuration tools** — Prepared on this branch; not yet published in `main`/`latest`. Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Guide](docs/configuration-tools.md).
+- **Configuration tools** — Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Guide](docs/configuration-tools.md).
 
 - **Default Compose filename** — COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected.
 - optional per-service CPU/RAM limits — Only edits the draft. Save, then explicitly deploy/recreate to apply to containers; running containers are not changed here.
