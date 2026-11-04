@@ -63,6 +63,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Konfigurationswerkzeuge :** Auf diesem Branch vorbereitet; noch nicht in `main`/`latest` veröffentlicht. Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Konfigurationswerkzeuge](docs/configuration-tools.de.md).
+
 **Anonyme Zählung nach Zeitraum :** Unabhängige Schätzungen für Woche, Monat und Jahr; Discord zeigt vergangene Woche, laufenden Monat, alle früheren Monate und das Jahr ohne Addition der Monatswerte. Monatshistorie bleibt erhalten; unvollständige Zeiträume und Migrationsgrenzen werden gekennzeichnet.
 
 **Selbst-Update mit gemeinsamem Daten-/Compose-Verzeichnis :** Der Updater verwendet den vorhandenen Mount, wenn Daten und Compose im selben Verzeichnis liegen. So entfällt der Docker-Fehler „Duplicate mount point“ vor dem Austausch. Wiederherstellungsdaten bleiben beschreibbar, der Hostpfad-Alias schreibgeschützt.
@@ -497,6 +499,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Option pro Dienst, einen optionalen Dienst beim Gesamtstatus des Stacks zu ignorieren
 
 ### Compose-Bearbeitung
+
+- **Konfigurationswerkzeuge** — Auf diesem Branch vorbereitet; noch nicht in `main`/`latest` veröffentlicht. Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Guide](docs/configuration-tools.de.md).
 
 - **Standardname der Compose-Datei** — COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt.
 - optionale CPU-/RAM-Limits pro Dienst — Ändert nur den Entwurf. Speichern Sie und führen Sie anschließend ausdrücklich eine Bereitstellung/Neuerstellung aus. Laufende Container werden hier nicht verändert.
@@ -1035,6 +1039,7 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — Inspiration für optionale CPU-/RAM-Limits pro Dienst, ohne Änderungen an eingeschränkten Kontorechten
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Standardname der Compose-Datei.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates ohne Dienstunterbrechung.
+- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — Inspiration für Dateiverlauf, zusammengeführtes Compose, `.env`-Formular und Diagnose.
 - [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) von Lorwell – Inspiration für den eingeschränkten Host-Dateimanager und die Ansicht echter Container, angepasst für Enhanced (MIT-Lizenz)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) von DeepSpace2 – optionale DNS- und Nginx-Proxy-Manager-Automatisierung (GPLv3)

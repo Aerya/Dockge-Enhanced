@@ -1,4 +1,5 @@
 import { DockgeServer } from "./dockge-server";
+import { StackFileHistory } from "./stack-file-history";
 import fs, { promises as fsAsync } from "fs";
 import { log } from "./log";
 import yaml from "yaml";
@@ -570,6 +571,18 @@ export class Stack {
         return path.resolve(this.path);
     }
 
+    get configurationFiles(): Record<string, string> {
+        const files = this.isExternal ? [
+            ...(this._externalConfigFiles?.length ? this._externalConfigFiles : [ this._configFilePath ?? path.join(this.path, this._composeFileName) ]),
+            ...(this._externalEnvFiles?.length ? this._externalEnvFiles : [ path.join(this.path, ".env") ]),
+        ] : [ path.join(this.path, this._composeFileName), path.join(this.path, ".env"), path.join(this.path, COMPOSE_OVERRIDE_FILE) ];
+        return Object.fromEntries(files.map(file => [ path.resolve(file), path.resolve(file) ]));
+    }
+
+    get fileHistory(): StackFileHistory {
+        return new StackFileHistory(this.server.config.dataDir, this.operationProject);
+    }
+
     private get metaPath() : string {
         if (!this.isExternal) return path.join(this.path, ".dockge-meta.json");
         return path.join(this.server.config.dataDir, "external-stack-meta", `${this.name}.json`);
@@ -627,6 +640,10 @@ export class Stack {
             if (!await fileExists(dir)) {
                 throw new ValidationError("Stack not found");
             }
+        }
+
+        if (!isAdd) {
+            await this.fileHistory.capture(this.configurationFiles, "save");
         }
 
         // Write or overwrite the compose.yaml

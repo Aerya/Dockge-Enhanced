@@ -62,6 +62,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run check-ts
 
+      - name: Tests de l’historique des fichiers et de l’éditeur de variables
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/stack-file-history.test.ts common/env-form.test.ts frontend/src/configuration-tools-ui.test.js
+
       - name: Tests des liens de ports et du nom d’hôte principal
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test common/util-common.test.ts common/port-link-settings.test.ts backend/port-link-federation.test.ts

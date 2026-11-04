@@ -1,5 +1,7 @@
 # Dockge-Enhanced-Changelog
 
+> **Konfigurationswerkzeuge** — Auf diesem Branch vorbereitet; noch nicht in `main`/`latest` veröffentlicht. Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Guide](docs/configuration-tools.de.md).
+
 > **Validierung unter Windows 11 / WSL2:** Installationsanleitung, Compose-Aktionen, Restic-/Zerobyte-Sicherungen und verbundene Instanzen getestet. Die Korrekturen für Windows-Sidecar-Mounts und geordnete Neustarts bei gemeinsamem Netzwerk erhalten Linux-/Unraid-Pfade und Berechtigungen. [Windows 11 mit Docker Desktop (WSL2)](docs/windows.de.md). Nach einem Windows-Neustart benötigen manche WSL-Mounts die im Leitfaden beschriebene manuelle Wiederaufnahme.
 
 Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag, an dem die Änderung in `main` gemergt wurde. Anwendungsänderungen in `main` werden vom Build-Workflow als `ghcr.io/aerya/dockge-enhanced:latest` veröffentlicht; reine Dokumentations-Commits erzeugen kein neues Image. Funktionen, die nur in einem offenen Pull Request oder einem Test-Image existieren, werden hier nicht aufgeführt.

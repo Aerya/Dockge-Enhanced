@@ -343,6 +343,9 @@
                 <router-link to="/settings/about" class="mobile-drawer-link mobile-drawer-sublink">
                     {{ $t("About") }}
                 </router-link>
+                <router-link to="/settings/diagnostics" class="mobile-drawer-link mobile-drawer-sublink">
+                    {{ $t("configTools.diagnostics") }}
+                </router-link>
             </nav>
 
             <div v-if="$root.loggedIn" class="mobile-drawer-footer">

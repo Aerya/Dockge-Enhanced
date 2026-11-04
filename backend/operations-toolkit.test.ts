@@ -65,6 +65,7 @@ test("stack notes preserve existing metadata and enforce their size limit", asyn
                 lastUpdated: "2026-07-26T00:00:00.000Z",
                 lastStartedAt: "2026-07-26T01:00:00.000Z",
                 note: "runbook: internal wiki",
+                displayName: "",
                 startGuard: { enabled: false, conditions: [], watch: false, onFailure: "stop", onRecovery: "start", failureDelaySeconds: 10, recoveryDelaySeconds: 5 },
             },
         );
