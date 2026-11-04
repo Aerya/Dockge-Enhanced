@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import { DockgeServer } from "./dockge-server";
 import { Stack } from "./stack";
+import { withStackMutation } from "./stack-mutation";
 import { ValidationError } from "./util-server";
 
 const MAX_GIT_OUTPUT = 256 * 1024;
@@ -185,10 +186,14 @@ export class StackGitService {
     }
 
     async pull(stackName: string) {
-        const cwd = await this.cleanRepositoryPath(stackName);
-        await this.run(cwd, [ "pull", "--ff-only" ]);
-        await this.validateCompose(cwd);
-        return await this.status(stackName);
+        const stack = await Stack.getStack(this.server, stackName);
+        return withStackMutation(stack.operationProject, async () => {
+            const cwd = await this.cleanRepositoryPath(stackName);
+            await stack.fileHistory.capture(stack.configurationFiles, "git-pull");
+            await this.run(cwd, [ "pull", "--ff-only" ]);
+            await this.validateCompose(cwd);
+            return await this.status(stackName);
+        });
     }
 
     async push(stackName: string) {
@@ -198,6 +203,14 @@ export class StackGitService {
     }
 
     async restore(stackName: string, refInput: unknown) {
+        const stack = await Stack.getStack(this.server, stackName);
+        return withStackMutation(stack.operationProject, async () => {
+            await stack.fileHistory.capture(stack.configurationFiles, "restore");
+            return this.restoreUnlocked(stackName, refInput);
+        });
+    }
+
+    private async restoreUnlocked(stackName: string, refInput: unknown) {
         const cwd = await this.cleanRepositoryPath(stackName);
         const ref = String(refInput ?? "").trim();
         if (!/^[a-f0-9]{7,40}$/i.test(ref)) {

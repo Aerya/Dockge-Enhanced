@@ -153,6 +153,9 @@
                             <font-awesome-icon icon="shield-alt" />
                             <span class="stack-action-label">{{ $t("startGuard.action") }}</span>
                         </button>
+                        <button v-if="!isEditMode && !isAdd" type="button" class="btn btn-normal stack-action" :title="$t('configTools.title')" @click="showConfigurationTools = !showConfigurationTools">
+                            <font-awesome-icon icon="history" /><span class="stack-action-label">{{ $t('configTools.title') }}</span>
+                        </button>
                         <button v-if="!endpoint" type="button" class="btn stack-action" :class="showStackGit ? 'btn-primary' : 'btn-normal'" :title="$t('showStackGit')" :aria-label="$t('showStackGit')" @click="showStackGit = !showStackGit">
                             <font-awesome-icon icon="code-branch" />
                             <span class="stack-action-label">{{ $t("showStackGit") }}</span>
@@ -321,6 +324,7 @@
                 </div>
             </div>
 
+            <ConfigurationTools v-if="showConfigurationTools && !isAdd && !isEditMode && stack.isManagedByDockge" :stack-name="stack.name" :endpoint="endpoint" @restored="loadStack" />
             <StackGitPanel
                 v-if="showStackGit && !isAdd && stack.isManagedByDockge && !endpoint"
                 :stack-name="stack.name"
@@ -728,20 +732,22 @@
                             <button v-if="fullscreenEditor === 'env'" type="button" class="btn btn-sm btn-normal editor-fullscreen-close" :title="$t('toggleFullscreen')" @click="toggleFullscreen('env')">
                                 <font-awesome-icon icon="compress" />
                             </button>
-                            <code-mirror
-                                ref="envEditor"
-                                v-model="stack.composeENV"
-                                :extensions="extensionsEnv"
-                                minimal
-                                wrap="true"
-                                :dark="$root.isDark"
-                                tab="true"
-                                :disabled="!isEditMode"
-                                :hasFocus="editorFocus"
-                                :scroll-into-view="false"
-                                preserve-scroll-position
-                                @change="yamlCodeChange"
-                            />
+                            <EnvForm v-model="stack.composeENV" :disabled="!isEditMode">
+                                <code-mirror
+                                    ref="envEditor"
+                                    v-model="stack.composeENV"
+                                    :extensions="extensionsEnv"
+                                    minimal
+                                    wrap="true"
+                                    :dark="$root.isDark"
+                                    tab="true"
+                                    :disabled="!isEditMode"
+                                    :hasFocus="editorFocus"
+                                    :scroll-into-view="false"
+                                    preserve-scroll-position
+                                    @change="yamlCodeChange"
+                                />
+                            </EnvForm>
                         </div>
                     </div>
 
@@ -954,6 +960,8 @@ import PendingStackMoveStatus from "../components/PendingStackMoveStatus.vue";
 import RemoteInstanceLinks from "../components/RemoteInstanceLinks.vue";
 import PlugNPiNLabelAssistant from "../components/PlugNPiNLabelAssistant.vue";
 import StackGitPanel from "../components/StackGitPanel.vue";
+import ConfigurationTools from "../components/ConfigurationTools.vue";
+import EnvForm from "../components/EnvForm.vue";
 import StackResourceHistory from "../components/StackResourceHistory.vue";
 import ComposeDiagnostics from "../components/ComposeDiagnostics.vue";
 import { prepareImageSync } from "../compose-drift";
@@ -990,6 +998,8 @@ export default {
         RemoteInstanceLinks,
         PlugNPiNLabelAssistant,
         StackGitPanel,
+        ConfigurationTools,
+        EnvForm,
         StackResourceHistory,
     },
     beforeRouteUpdate(to, from, next) {
@@ -1130,6 +1140,7 @@ export default {
             stackActionLabels: localStorage.getItem("stackActionLabels") === "1",
             showStackNote: localStorage.getItem("showStackNote") === "1",
             showStackGit: localStorage.getItem("showStackGit") === "1",
+            showConfigurationTools: false,
             showStackAutoUpdate: false,
             showStackSchedule: false,
             dozzleUrl: "",

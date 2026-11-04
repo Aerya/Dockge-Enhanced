@@ -20,6 +20,7 @@ import Appearance from "./components/settings/Appearance.vue";
 import General from "./components/settings/General.vue";
 const Security = () => import("./components/settings/Security.vue");
 const GlobalEnv = () => import("./components/settings/GlobalEnv.vue");
+const Diagnostics = () => import("./components/settings/Diagnostics.vue");
 const Integrations = () => import("./components/settings/Integrations.vue");
 const Automation = () => import("./components/settings/Automation.vue");
 import About from "./components/settings/About.vue";
@@ -217,6 +218,12 @@ const routes = [
                                 name: "settings-globalEnv",
                                 component: GlobalEnv,
                                 meta: { title: "GlobalEnv" },
+                            },
+                            {
+                                path: "diagnostics",
+                                name: "settings-diagnostics",
+                                component: Diagnostics,
+                                meta: { title: "configTools.diagnostics" },
                             },
                             {
                                 path: "integrations",

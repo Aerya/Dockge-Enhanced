@@ -1,4 +1,7 @@
 import { TrivyScanner } from "../watchers/trivy-scanner";
+import { configurationDiagnostics, mergedStackConfiguration } from "../configuration-tools";
+import { withStackMutation } from "../stack-mutation";
+import { loadUserAccess } from "../user-access";
 import { localZerobyteSummary } from "../integrations/zerobyte-federation";
 import { AgentSocketHandler } from "../agent-socket-handler";
 import { DockgeServer } from "../dockge-server";
@@ -43,6 +46,60 @@ export function instanceSystemStatsResponse(
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         // Do not call super.create()
+        agentSocket.on("configurationTools", async (request: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if ((await loadUserAccess(socket.userID)).role !== "admin") {
+                    throw new Error("access.denied");
+                }
+                const value = request as { action?: unknown;
+                    stack?: unknown;
+                    id?: unknown;
+                    confirmed?: unknown };
+                if (!value || typeof value.action !== "string") {
+                    throw new Error("configTools.unavailable");
+                }
+                if (value.action === "diagnostics") {
+                    callbackResult({ ok: true,
+                        data: await configurationDiagnostics(server) }, callback);
+                    return;
+                }
+                if (typeof value.stack !== "string") {
+                    throw new Error("configTools.unavailable");
+                }
+                const stack = await Stack.getStack(server, value.stack);
+                if (!stack.isManagedByDockge) {
+                    throw new Error("configTools.unavailable");
+                }
+                const data = await withStackMutation(stack.operationProject, async () => {
+                    if (value.action === "history") {
+                        return stack.fileHistory.list();
+                    }
+                    if (value.action === "merged" && value.confirmed === true) {
+                        return mergedStackConfiguration(stack);
+                    }
+                    if (value.action === "restore" && value.confirmed === true && typeof value.id === "string") {
+                        await stack.fileHistory.restore(stack.configurationFiles, value.id);
+                        await AuditLogger.getInstance().logFromSocket(socket, {
+                            action: "stack.files.restore",
+                            category: "stack",
+                            targetType: "stack",
+                            target: stack.name,
+                            status: "success",
+                            metadata: { revision: value.id },
+                        });
+                        return true;
+                    }
+                    throw new Error("configTools.unavailable");
+                });
+                callbackResult({ ok: true,
+                    data }, callback);
+            } catch (error) {
+                // Never expose filesystem/crypto errors or file contents.
+                const key = error instanceof Error && /^(configTools\.|access\.)/.test(error.message) ? error.message : "configTools.unavailable";
+                callbackError(new Error(key), callback);
+            }
+        });
         agentSocket.on("getSchedulingTimezone", (callback) => {
             try {
                 checkLogin(socket);

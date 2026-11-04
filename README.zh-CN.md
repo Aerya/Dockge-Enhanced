@@ -62,6 +62,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**配置工具 :** 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [配置工具](docs/configuration-tools.zh-CN.md).
+
 **按周期匿名统计 :** 独立估算周度、月度和年度数据；Discord 显示上一完整周、当月、所有历史月份及当年，不累加月度数据。保留月度历史，明确标注不完整周期及迁移限制。
 
 **数据与 Compose 共用目录时的自更新 :** 当数据和 Compose 位于同一目录时，更新器复用现有挂载，避免在替换前发生 Docker“Duplicate mount point”错误。恢复数据仍可写，主机路径别名保持只读。
@@ -498,6 +500,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 可按服务设置在 Stack 整体状态中忽略某个可选服务
 
 ### Compose 编辑
+
+- **配置工具** — 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [Guide](docs/configuration-tools.zh-CN.md).
 
 - **默认 Compose 文件名** — COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。
 - 可选的服务级 CPU/RAM 限制 — 本 PR 中准备的功能，尚未正式发布。 仅修改草稿。请保存后明确部署或重建，才能应用到容器；此处不会修改运行中的容器。
@@ -1039,6 +1043,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — 为可选的服务级 CPU/RAM 限制提供灵感，适配时保留受限账户权限
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — 默认 Compose 文件名.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — 服务不中断更新.
+- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — 文件历史、合并 Compose、`.env` 表单和诊断功能的灵感来源。
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — 可选 DNS / Nginx Proxy Manager 自动化

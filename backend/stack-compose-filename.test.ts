@@ -28,6 +28,9 @@ test("new filename is validated, persisted and rediscovered without renaming exi
             assert.equal(restored.composeYAML, yaml);
             restored.setComposeContent(yaml + "# saved\n", "VALUE=updated");
             await restored.save(false);
+            const revisions = await restored.fileHistory.list();
+            assert.equal(revisions.length, 1);
+            assert.equal((await restored.fileHistory.get(revisions[0].id)).files[path.join(root, name, filename)], yaml);
             assert.equal(await fs.readFile(path.join(root, name, filename), "utf8"), yaml + "# saved\n");
             assert.equal((await fs.readdir(path.join(root, name))).filter(file => acceptedComposeFileNames.includes(file)).length, 1);
             // Copying/restoring the directory preserves discovery independently of the setting.
@@ -47,6 +50,9 @@ test("new filename is validated, persisted and rediscovered without renaming exi
         stack.setComposeContent(yaml + "# external\n", "");
         await stack.save(false);
         assert.equal(await fs.readFile(path.join(external, "custom.yaml"), "utf8"), yaml + "# external\n");
+        const externalRevisions = await stack.fileHistory.list();
+        assert.equal(externalRevisions.length, 1);
+        assert.equal((await stack.fileHistory.get(externalRevisions[0].id)).files[path.join(external, "custom.yaml")], yaml);
     } finally {
         if (previous === undefined) {
             delete process.env.COMPOSE_FILENAME;

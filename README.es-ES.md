@@ -63,6 +63,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Herramientas de configuración :** Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Herramientas de configuración](docs/configuration-tools.es.md).
+
 **Conteo anónimo por período :** Estimaciones independientes por semana, mes y año; Discord muestra la semana anterior, mes actual, todos los meses pasados y año sin sumar los meses. Se conserva el historial mensual y se indican períodos incompletos y límites de migración.
 
 **Autoactualización con directorio compartido :** El updater reutiliza el montaje existente cuando los directorios de datos y Compose coinciden, evitando el error Docker «Duplicate mount point» antes del reemplazo. Los datos de recuperación mantienen la escritura y el alias de la ruta del host sigue en solo lectura.
@@ -499,6 +501,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Opción por servicio para ignorar un servicio opcional en el estado global del stack
 
 ### Edición de Compose
+
+- **Herramientas de configuración** — Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Guide](docs/configuration-tools.es.md).
 
 - **Nombre predeterminado del archivo Compose** — COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas.
 - límites opcionales de CPU/RAM por servicio — Solo modifica el borrador. Guarde y despliegue/recree explícitamente para aplicarlo a los contenedores; los contenedores activos no se modifican aquí.
@@ -1037,6 +1041,7 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiración para límites opcionales de CPU/RAM por servicio, sin modificar los permisos restringidos
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Nombre predeterminado del archivo Compose.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Actualizaciones sin interrupción del servicio.
+- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiración para el historial, Compose combinado, formulario `.env` y diagnóstico.
 - [**Kula**](https://github.com/c0m4r/kula) por c0m4r — monitor de sistema ligero (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — inspiración para el gestor de archivos del host restringido y la vista por contenedor real adaptados a Enhanced (licencia MIT)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) por DeepSpace2 — automatización opcional de DNS y Nginx Proxy Manager (GPLv3)

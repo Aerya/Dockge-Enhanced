@@ -629,11 +629,6 @@
       "count": 2
     }
   },
-  "frontend/src/components/settings/GlobalEnv.vue": {
-    "@stylistic/object-property-newline": {
-      "count": 1
-    }
-  },
   "frontend/src/components/watcher/shared.ts": {
     "@stylistic/object-property-newline": {
       "count": 1
