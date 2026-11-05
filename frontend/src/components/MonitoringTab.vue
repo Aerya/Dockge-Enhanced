@@ -1170,6 +1170,8 @@ interface HostNavbarDisplay {
 
 // ─── API helper ───────────────────────────────────────────────────
 
+import { localizeApiResponse } from "../server-message-browser";
+
 const API = "/api";
 
 async function api(method: string, path: string, body?: unknown): Promise<{ ok: boolean;
@@ -1183,7 +1185,7 @@ async function api(method: string, path: string, body?: unknown): Promise<{ ok: 
         headers: body ? { "Content-Type": "application/json" } : {},
         body: body ? JSON.stringify(body) : undefined,
     });
-    return res.json();
+    return localizeApiResponse(await res.json());
 }
 
 // ─── State ────────────────────────────────────────────────────────

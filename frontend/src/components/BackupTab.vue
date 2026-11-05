@@ -171,7 +171,7 @@
                 <div v-if="resetPreview" class="mt-3">
                     <p class="text-danger fw-bold">{{ $t('watcher.backup.reset.warning') }}</p>
                     <p><strong>{{ resetPreview.label }}</strong> — <code>{{ resetPreview.path }}</code></p>
-                    <p v-if="resetPreview.archivedPath" class="form-text">Ancien dépôt conservé : <code>{{ resetPreview.archivedPath }}</code></p>
+                    <p v-if="resetPreview.archivedPath" class="form-text">{{ t("serverMessage.repositoryKept") }} <code>{{ resetPreview.archivedPath }}</code></p>
                     <p>{{ $t('watcher.backup.reset.snapshots', { count: resetPreview.snapshots }) }}</p>
                     <div class="form-check mb-2">
                         <input id="reset-ack-loss" v-model="resetAckLoss" type="checkbox" class="form-check-input" />

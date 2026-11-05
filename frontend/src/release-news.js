@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-04-server-messages",
+        items: [ "releaseNews.item.serverMessages" ],
+    },
+    {
         id: "2026-11-04-web-terminal",
         items: [ "releaseNews.item.webTerminal" ],
     },
