@@ -43,6 +43,7 @@ declare module 'vue' {
     NetworkInput: typeof import('./src/components/NetworkInput.vue')['default']
     PendingStackMoveStatus: typeof import('./src/components/PendingStackMoveStatus.vue')['default']
     PlugNPiNLabelAssistant: typeof import('./src/components/PlugNPiNLabelAssistant.vue')['default']
+    PostUpdateOptions: typeof import('./src/components/PostUpdateOptions.vue')['default']
     RemoteInstanceLinks: typeof import('./src/components/RemoteInstanceLinks.vue')['default']
     ResourceSparkline: typeof import('./src/components/ResourceSparkline.vue')['default']
     ReverseAgentSetup: typeof import('./src/components/ReverseAgentSetup.vue')['default']

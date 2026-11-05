@@ -78,6 +78,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/docker-socket-recovery.test.ts
 
+      - name: Tests du nettoyage ciblé après mise à jour
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test common/post-update-policy.test.ts backend/post-update-cleanup.test.ts backend/post-update-snapshot.test.ts
+
       - name: Tests natifs du terminal web
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/terminal-env.test.ts

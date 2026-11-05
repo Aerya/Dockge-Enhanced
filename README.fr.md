@@ -64,6 +64,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Nettoyage après mise à jour :** Deux options indépendantes, activées par défaut : nettoyer les images remplacées et conserver un rollback pendant 24 h. Réglez tous les services actuels depuis l’éditeur de stack, ou personnalisez chaque service. Sans rollback, le nettoyage devient possible après une mise à jour vérifiée ; avec rollback, il attend 24 h. La file ciblée survit aux redémarrages et fonctionne même si la purge globale est désactivée. Les images utilisées ailleurs, exclues ou protégées restent conservées. Mettez aussi à jour les instances liées. Le rollback d’image ne restaure pas les données applicatives.
+
 **Récupération de la connexion Docker :** Récupération facultative lorsqu’un redémarrage de Docker laisse un ancien socket monté. Réglez `DOCKGE_DOCKER_RECOVERY_RETRIES` (`0` par défaut, désactivé) et `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (`30` par défaut). Après des échecs de connexion consécutifs, Enhanced s’arrête proprement pour que `restart: unless-stopped` ou `always` le relance ; les opérations actives reportent cet arrêt. Chaque processus doit avoir joint Docker au moins une fois avant d’autoriser cet arrêt, pour éviter les boucles au démarrage. Les erreurs de droits, TLS ou configuration ne déclenchent pas la récupération.
 
 **Messages de l’interface :** Les messages courants de sauvegarde, planification, ImageWatcher et nettoyage suivent la langue de l’interface, y compris lorsqu’ils proviennent d’une instance liée plus ancienne. Les détails techniques inconnus restent affichés sans modification.
@@ -555,6 +557,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Guides : [Sauvegardes et restauration Restic](docs/restic.fr.md) · [Installation et reprise Zerobyte](docs/zerobyte.fr.md)
 
 ### Mises à jour & ImageWatcher
+
+- Nettoyage ciblé après mise à jour et rollback indépendant de 24 h, réglables par service
 
 - **Mises à jour sans interruption de service** — `dockge.rollout.enabled: "true"`. Vérifiez cette compatibilité avant d’activer l’option. Le nombre de conteneurs de l’application double temporairement : prévoyez assez de CPU/RAM. Les noms de conteneurs fixes et les volumes partagés en écriture sont refusés. Le relais ajoute un conteneur et un volume de configuration. Sa première installation déplace le port d’accès et peut provoquer une coupure. Utilisez ensuite Mettre à jour ; Recreate, les redémarrages et le rollback ne garantissent pas le maintien des connexions. TCP uniquement, pas UDP/QUIC ; aucune garantie universelle de zéro coupure. [Mise en place](docs/service-rollout.fr.md).
 - Détection des mises à jour d’images par digest, sans pull, y compris sur les instances distantes [Vérification des mises à jour d’images: Correctif proposé dans cette branche ; pas encore publié.](docs/image-update-verification.fr.md).

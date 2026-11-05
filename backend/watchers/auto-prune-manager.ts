@@ -11,6 +11,7 @@
  */
 
 import path from "path";
+import { retainedPostUpdateImageIds } from "../post-update-cleanup";
 import { isPendingPullProtected } from "./pending-image-pulls";
 import * as fs from "node:fs";
 import { execFile } from "../buffered-process";
@@ -383,7 +384,7 @@ export function recoveryImageIds(stateDir = SELF_UPDATE_DIR): Set<string> {
 }
 
 export function activeRollbackImageIds(dataDir = DATA_DIR, now = Date.now()): Set<string> {
-    const ids = new Set<string>();
+    const ids = new Set<string>(retainedPostUpdateImageIds(dataDir, now).map(normalizeImageId));
     try {
         const entries = JSON.parse(fs.readFileSync(path.join(dataDir, "rollback-registry.json"), "utf8")) as Array<{
             oldImageId?: string;
@@ -429,8 +430,6 @@ export function activeRollbackTags(dataDir = DATA_DIR, now = Date.now()): Set<st
 /** Retire les tags keep expirés ou orphelins sous le verrou de nettoyage du watcher. */
 export async function reconcileRollbackKeepTags(dataDir = DATA_DIR, now = Date.now()): Promise<string[]> {
     const activeTags = activeRollbackTags(dataDir, now);
-    const activeIds = activeRollbackImageIds(dataDir, now);
-    const recoveryIds = recoveryImageIds(path.join(dataDir, "self-update"));
     const { stdout } = await execFileAsync("docker", [ "images", "-a", "--no-trunc", "--format", "{{json .}}" ], {
         maxBuffer: 20 * 1024 * 1024,
     });
@@ -439,14 +438,9 @@ export async function reconcileRollbackKeepTags(dataDir = DATA_DIR, now = Date.n
     const removed: string[] = [];
     for (const group of groups) {
         for (const tag of group.references.filter(ref => ref.startsWith("dockge-rollback-") && ref.endsWith(":keep") && !activeTags.has(ref))) {
-            const { stdout: containers } = await execFileAsync("docker", [ "ps", "-aq", "--filter", `ancestor=${group.id}` ]);
-            const protectedElsewhere = Boolean(containers.trim()) || setHasImageId(recoveryIds, group.id)
-                || setHasImageId(activeIds, group.id) || isPendingPullProtected(group.id, group.references, dataDir);
-            if (protectedElsewhere && group.references.length === 1) {
-                // Un tag de remplacement évite que `rmi tag` détruise l'unique référence
-                // d'une image encore nécessaire au recovery ou à un conteneur.
-                await execFileAsync("docker", [ "tag", group.id, `dockge-retained-${group.id.slice(7)}:keep` ]);
-            }
+            // Expiring rollback tags is NOT permission to delete the physical image,
+            // including when several expired keep tags were its last references.
+            await execFileAsync("docker", [ "tag", group.id, `dockge-retained-${group.id.slice(7)}:keep` ]);
             try {
                 await execFileAsync("docker", [ "rmi", tag ]);
                 removed.push(tag);

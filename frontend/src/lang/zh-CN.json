@@ -1,4 +1,11 @@
 {
+    "releaseNews.item.postUpdateCleanup": "更新后清理: 两个独立选项，默认均启用：清理被替换的镜像，以及保留回滚 24 小时。可以在堆栈编辑器中设置所有现有服务，也可以逐个调整。禁用回滚时，更新验证成功后即可清理；启用回滚时等待 24 小时。定向清理队列在重启后保留，即使全局清理关闭也会运行。其他容器正在使用、已排除或受保护的镜像会保留。请同时更新关联实例。镜像回滚不会恢复应用数据。",
+    "postUpdate.title": "更新后",
+    "postUpdate.cleanup": "清理旧镜像",
+    "postUpdate.rollback": "保留回滚 24 小时",
+    "postUpdate.help": "两个独立选项，默认均启用。启用回滚时，24 小时后清理；禁用回滚时，在更新验证成功后清理。其他容器正在使用、已排除或受保护的镜像不会删除。保存 Compose 以应用设置。",
+    "postUpdate.bulk": "这些复选框应用于所有服务，随后可以单独调整每个服务。",
+    "postUpdate.unsupported": "请更新托管此堆栈的实例以使用这些设置。",
     "releaseNews.item.dockerRecovery": "Docker 连接恢复 : 当 Docker 重启后容器仍挂载旧套接字时，可选择启用恢复。设置 DOCKGE_DOCKER_RECOVERY_RETRIES（默认 0，禁用）和 DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS（默认 30）。连续连接失败后，Enhanced 正常退出，由 restart: unless-stopped 或 always 重启；活动操作会推迟退出。每个进程必须至少成功连接 Docker 一次才能触发退出，避免启动循环。权限、TLS 或配置错误不会触发恢复。",
     "releaseNews.item.serverMessages": "常见的备份、计划、ImageWatcher 和清理消息遵循界面语言，也支持旧版关联实例的消息。未知技术细节保持原样显示。",
     "serverMessage.required": "需要 {fields}{detail}",
