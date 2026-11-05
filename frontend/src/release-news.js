@@ -4,7 +4,7 @@ export const RELEASE_NEWS = [
         items: [ "releaseNews.item.compactInterface" ],
     },
     {
-        id: "2026-11-05-stack-groups",
+        id: "2026-11-05-account-stack-groups",
         items: [ "releaseNews.item.stackGroups" ],
     },
     {

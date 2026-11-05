@@ -67,7 +67,7 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Interface compacte :** Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation ou l’en-tête. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.
 
-**Groupes de stacks personnalisés :** Créez des groupes repliables réunissant des stacks de plusieurs instances. La recherche révèle les résultats même dans les groupes fermés ; tris, favoris et permissions sont conservés. Préférences enregistrées par compte dans ce navigateur, sans synchronisation entre navigateurs.
+**Groupes de stacks personnalisés :** Les groupes sont enregistrés en base sur cette instance pour votre compte et retrouvés depuis n’importe quel navigateur. Ils peuvent réunir des stacks locales et liées sans modifier les permissions. Importez explicitement les anciens groupes du navigateur sans remplacer ceux du serveur. Les modifications concurrentes sont refusées avec un avertissement.
 
 **Nettoyage après mise à jour :** Deux options indépendantes, activées par défaut : nettoyer les images remplacées et conserver un rollback pendant 24 h. Réglez tous les services actuels depuis l’éditeur de stack, ou personnalisez chaque service. Sans rollback, le nettoyage devient possible après une mise à jour vérifiée ; avec rollback, il attend 24 h. La file ciblée survit aux redémarrages et fonctionne même si la purge globale est désactivée. Les images utilisées ailleurs, exclues ou protégées restent conservées. Mettez aussi à jour les instances liées. Le rollback d’image ne restaure pas les données applicatives.
 
@@ -498,7 +498,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Choix par instance du nom d’hôte ou de l’adresse IP pour les liens de ports des conteneurs
 
 ### Gestion des stacks
-- Groupes personnalisés repliables multi-instances, avec préférences par compte dans le navigateur
+- Groupes de stacks personnalisés — Les groupes sont enregistrés en base sur cette instance pour votre compte et retrouvés depuis n’importe quel navigateur.
 - Réparer un réseau recréé au démarrage (`dockge.start.repair-network`)
 - Windows 11 avec Docker Desktop/WSL2 : [installation et limites](docs/windows.fr.md)
 - Création, édition, démarrage, arrêt, redémarrage, mise à jour, recréation, pause/reprise et démontage des stacks Compose
