@@ -64,6 +64,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Groupes de stacks personnalisés :** Créez des groupes repliables réunissant des stacks de plusieurs instances. La recherche révèle les résultats même dans les groupes fermés ; tris, favoris et permissions sont conservés. Préférences enregistrées par compte dans ce navigateur, sans synchronisation entre navigateurs.
+
 **Récupération de la connexion Docker :** Récupération facultative lorsqu’un redémarrage de Docker laisse un ancien socket monté. Réglez `DOCKGE_DOCKER_RECOVERY_RETRIES` (`0` par défaut, désactivé) et `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (`30` par défaut). Après des échecs de connexion consécutifs, Enhanced s’arrête proprement pour que `restart: unless-stopped` ou `always` le relance ; les opérations actives reportent cet arrêt. Chaque processus doit avoir joint Docker au moins une fois avant d’autoriser cet arrêt, pour éviter les boucles au démarrage. Les erreurs de droits, TLS ou configuration ne déclenchent pas la récupération.
 
 **Messages de l’interface :** Les messages courants de sauvegarde, planification, ImageWatcher et nettoyage suivent la langue de l’interface, y compris lorsqu’ils proviennent d’une instance liée plus ancienne. Les détails techniques inconnus restent affichés sans modification.
@@ -491,6 +493,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Choix par instance du nom d’hôte ou de l’adresse IP pour les liens de ports des conteneurs
 
 ### Gestion des stacks
+- Groupes personnalisés repliables multi-instances, avec préférences par compte dans le navigateur
 - Réparer un réseau recréé au démarrage (`dockge.start.repair-network`)
 - Windows 11 avec Docker Desktop/WSL2 : [installation et limites](docs/windows.fr.md)
 - Création, édition, démarrage, arrêt, redémarrage, mise à jour, recréation, pause/reprise et démontage des stacks Compose

@@ -78,6 +78,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/docker-socket-recovery.test.ts
 
+      - name: Tests des groupes de stacks multi-instances
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test frontend/src/stack-groups.test.ts frontend/src/stack-groups-ui.test.js
+
       - name: Tests natifs du terminal web
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/terminal-env.test.ts

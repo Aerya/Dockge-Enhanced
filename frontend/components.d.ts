@@ -55,6 +55,7 @@ declare module 'vue' {
     StackActionMenu: typeof import('./src/components/StackActionMenu.vue')['default']
     StackAutoUpdateBulk: typeof import('./src/components/StackAutoUpdateBulk.vue')['default']
     StackGitPanel: typeof import('./src/components/StackGitPanel.vue')['default']
+    StackGroups: typeof import('./src/components/StackGroups.vue')['default']
     StackList: typeof import('./src/components/StackList.vue')['default']
     StackListItem: typeof import('./src/components/StackListItem.vue')['default']
     StackReplicationStatus: typeof import('./src/components/StackReplicationStatus.vue')['default']
