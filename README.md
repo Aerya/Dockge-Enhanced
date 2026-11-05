@@ -63,6 +63,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Custom stack groups :** Create collapsible groups containing stacks from several instances. Search reveals matching stacks even in closed groups; sorting, favourites and access permissions are preserved. Preferences are saved per account in this browser, not synchronised between browsers.
+
 **Cleanup after updates :** Two independent options, both enabled by default: clean up replaced images and retain rollback for 24 hours. Configure all current services from the stack editor, or customize each service. With rollback disabled, cleanup becomes eligible after a verified update; with rollback enabled, it waits 24 hours. The targeted queue survives restarts and runs even with global pruning disabled. Images used elsewhere, excluded or protected remain retained. Update linked instances too. Image rollback does not restore application data.
 
 **Docker connection recovery :** Optional recovery after a Docker restart leaves an obsolete socket mount. Set `DOCKGE_DOCKER_RECOVERY_RETRIES` (default `0`, disabled) and `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (default `30`). After consecutive connection failures, Enhanced exits gracefully so `restart: unless-stopped` or `always` can restart it; active operations defer the exit. A successful Docker connection is required in each process before restart is armed, preventing startup loops. Permissions, TLS and configuration errors do not trigger recovery.
@@ -492,6 +494,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-instance choice of Hostname or IP address for container port links
 
 ### Stack management
+- Collapsible custom groups across instances, with per-account browser preferences
 - Repair a recreated network on start (`dockge.start.repair-network`)
 - Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md)
 - Create, edit, start, stop, restart, update, recreate, pause/resume and take down Compose stacks

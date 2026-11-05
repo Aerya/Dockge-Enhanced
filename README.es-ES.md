@@ -63,6 +63,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Grupos personalizados de stacks :** Crea grupos plegables con stacks de varias instancias. La búsqueda muestra coincidencias incluso en grupos cerrados; se mantienen la ordenación, los favoritos y los permisos. Preferencias guardadas por cuenta en este navegador, sin sincronización entre navegadores.
+
 **Limpieza después de actualizar :** Dos opciones independientes, activadas por defecto: limpiar las imágenes sustituidas y conservar un rollback durante 24 horas. Configura todos los servicios actuales desde el editor del stack o personaliza cada servicio. Sin rollback, la limpieza es posible tras una actualización verificada; con rollback, espera 24 horas. La cola específica sobrevive a los reinicios y funciona aunque la limpieza global esté desactivada. Se conservan las imágenes usadas en otro lugar, excluidas o protegidas. Actualiza también las instancias vinculadas. El rollback de imagen no restaura los datos de la aplicación.
 
 **Recuperación de la conexión Docker :** Recuperación opcional cuando un reinicio de Docker deja montado el socket antiguo. Configura `DOCKGE_DOCKER_RECOVERY_RETRIES` (`0` por defecto, desactivado) y `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (`30` por defecto). Tras fallos consecutivos de conexión, Enhanced termina ordenadamente para que `restart: unless-stopped` o `always` lo reinicie; las operaciones activas aplazan la salida. Cada proceso debe haber conectado correctamente con Docker antes de permitir la salida, evitando bucles al arrancar. Los errores de permisos, TLS o configuración no activan la recuperación.
@@ -494,6 +496,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Elección por instancia de nombre de host o dirección IP para los enlaces de puertos de los contenedores
 
 ### Gestión de stacks
+- Grupos personalizados plegables entre instancias, con preferencias por cuenta en el navegador
 - Reparar una red recreada al iniciar (`dockge.start.repair-network`)
 - Windows 11 con Docker Desktop/WSL2: [instalación y límites](docs/windows.es.md)
 - Crear, editar, iniciar, detener, reiniciar, actualizar, recrear, pausar/reanudar y desmontar stacks Compose

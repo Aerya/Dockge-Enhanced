@@ -62,6 +62,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**自定义堆栈分组：** 创建包含多个实例堆栈的可折叠分组。搜索时会显示已折叠分组中的匹配项，保留排序、收藏和访问权限。设置按账户保存在当前浏览器中，不跨浏览器同步。
+
 **更新后清理 :** 两个独立选项，默认均启用：清理被替换的镜像，以及保留回滚 24 小时。可以在堆栈编辑器中设置所有现有服务，也可以逐个调整。禁用回滚时，更新验证成功后即可清理；启用回滚时等待 24 小时。定向清理队列在重启后保留，即使全局清理关闭也会运行。其他容器正在使用、已排除或受保护的镜像会保留。请同时更新关联实例。镜像回滚不会恢复应用数据。
 
 **Docker 连接恢复 :** 当 Docker 重启后容器仍挂载旧套接字时，可选择启用恢复。设置 `DOCKGE_DOCKER_RECOVERY_RETRIES`（默认 `0`，禁用）和 `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`（默认 `30`）。连续连接失败后，Enhanced 正常退出，由 `restart: unless-stopped` 或 `always` 重启；活动操作会推迟退出。每个进程必须至少成功连接 Docker 一次才能触发退出，避免启动循环。权限、TLS 或配置错误不会触发恢复。
@@ -493,6 +495,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 每个实例可选择端口链接使用主机名还是 IP 地址
 
 ### Stack 管理
+- 跨实例的可折叠自定义分组，设置按账户保存在浏览器中
 - 启动时修复重新创建的网络 (`dockge.start.repair-network`)
 - Windows 11 与 Docker Desktop/WSL2：[安装和限制](docs/windows.zh-CN.md)
 - 创建、编辑、启动、停止、重启、更新、重建、暂停/恢复和拆除 Compose Stack
