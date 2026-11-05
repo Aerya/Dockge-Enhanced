@@ -66,6 +66,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Liens des services :** Une page distincte réservée aux administrateurs regroupe les raccourcis HTTP/HTTPS manuels et les `x-dockge.urls` des stacks locales et liées, avec recherche et classement. L’accueil reste inchangé. Mettez les instances liées à jour pour afficher leurs liens ; ces raccourcis ne contrôlent pas la disponibilité des services.
 
+**Réparation réseau au démarrage :** Désactivé par défaut. Au démarrage/déploiement, recrée ce service arrêté uniquement si son réseau a été recréé sous le même nom. Aucun volume supprimé. Les réplicas ou dépendants réseau encore actifs exigent une recréation explicite. Mettez aussi à jour les instances liées qui hébergent les stacks. `dockge.start.repair-network: "true"`.
+
 **Outils de configuration :** Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Outils de configuration](docs/configuration-tools.fr.md).
 
 **Comptage anonyme par période :** Estimations indépendantes par semaine, mois et année ; Discord affiche la semaine écoulée, le mois en cours, tous les mois passés et l’année sans additionner les mois. L’historique mensuel est conservé ; périodes incomplètes et limites de migration sont explicites.
@@ -483,6 +485,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Choix par instance du nom d’hôte ou de l’adresse IP pour les liens de ports des conteneurs
 
 ### Gestion des stacks
+- Réparer un réseau recréé au démarrage (`dockge.start.repair-network`)
 - Windows 11 avec Docker Desktop/WSL2 : [installation et limites](docs/windows.fr.md)
 - Création, édition, démarrage, arrêt, redémarrage, mise à jour, recréation, pause/reprise et démontage des stacks Compose
 - Barre d’actions de stack directement accessible, en mode icônes seules ou icônes avec texte, avec les commandes Compose expliquées

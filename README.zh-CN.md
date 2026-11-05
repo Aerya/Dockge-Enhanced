@@ -64,6 +64,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 **服务链接 :** 独立的管理员页面汇集手动 HTTP/HTTPS 快捷链接以及本地和关联实例的 Compose `x-dockge.urls`，支持搜索和排序。原有首页不变。请更新关联实例以显示其链接；这些快捷链接不检测服务是否可用。
 
+**启动时修复网络 :** 默认关闭。启动或部署时，仅当网络以相同名称重新创建后，才重建此已停止的服务。不删除任何卷。仍在运行的副本或共享网络命名空间的依赖服务需要明确执行重建。也请更新托管 Stack 的关联实例。 `dockge.start.repair-network: "true"`.
+
 **配置工具 :** 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [配置工具](docs/configuration-tools.zh-CN.md).
 
 **按周期匿名统计 :** 独立估算周度、月度和年度数据；Discord 显示上一完整周、当月、所有历史月份及当年，不累加月度数据。保留月度历史，明确标注不完整周期及迁移限制。
@@ -483,6 +485,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 每个实例可选择端口链接使用主机名还是 IP 地址
 
 ### Stack 管理
+- 启动时修复重新创建的网络 (`dockge.start.repair-network`)
 - Windows 11 与 Docker Desktop/WSL2：[安装和限制](docs/windows.zh-CN.md)
 - 创建、编辑、启动、停止、重启、更新、重建、暂停/恢复和拆除 Compose Stack
 - 直接可用的 Stack 操作栏，支持仅图标或图标加文字，并说明实际执行的 Compose 命令
