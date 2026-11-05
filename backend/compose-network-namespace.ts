@@ -3,10 +3,12 @@ export interface ResolvedComposeService {
     labels?: unknown;
     network_mode?: unknown;
     container_name?: unknown;
+    networks?: Record<string, unknown>;
 }
 
 export interface ResolvedComposeModel {
     services: Record<string, ResolvedComposeService>;
+    networks?: Record<string, { name?: string }>;
 }
 
 const COMPOSE_MODEL_ERROR = "Unable to resolve Compose network namespace dependencies";
@@ -21,11 +23,13 @@ export function composeModelReadError(error: unknown): Error {
 
 export function parseResolvedComposeModel(output: string): ResolvedComposeModel {
     try {
-        const parsed = JSON.parse(output) as { services?: unknown };
+        const parsed = JSON.parse(output) as { services?: unknown;
+            networks?: ResolvedComposeModel["networks"] };
         if (!parsed || typeof parsed !== "object" || !parsed.services || typeof parsed.services !== "object" || Array.isArray(parsed.services)) {
             throw new Error("docker compose config returned no services");
         }
-        return { services: parsed.services as Record<string, ResolvedComposeService> };
+        return { services: parsed.services as Record<string, ResolvedComposeService>,
+            ...(parsed.networks ? { networks: parsed.networks } : {}) };
     } catch (error) {
         throw composeModelReadError(error);
     }

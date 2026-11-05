@@ -1,4 +1,6 @@
 import { TrivyScanner } from "../watchers/trivy-scanner";
+import yaml from "yaml";
+import { composeServiceUrls } from "../../common/service-links";
 import { configurationDiagnostics, mergedStackConfiguration } from "../configuration-tools";
 import { withStackMutation } from "../stack-mutation";
 import { loadUserAccess } from "../user-access";
@@ -46,6 +48,36 @@ export function instanceSystemStatsResponse(
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         // Do not call super.create()
+        agentSocket.on("serviceLinks:stacks", async callback => {
+            try {
+                checkLogin(socket);
+                if ((await loadUserAccess(socket.userID)).role !== "admin") {
+                    throw new Error("access.denied");
+                }
+                const links: Array<{ stack: string;
+                    url: string }> = [];
+                let unavailable = 0;
+                for (const [ name, stack ] of await Stack.getStackList(server, true)) {
+                    try {
+                        for (const url of composeServiceUrls(yaml.parse(stack.composeYAML))) {
+                            if (links.length < 2000) {
+                                links.push({ stack: name,
+                                    url });
+                            } else {
+                                unavailable++;
+                            }
+                        }
+                    } catch {
+                        unavailable++;
+                    }
+                }
+                callbackResult({ ok: true,
+                    links,
+                    unavailable }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
         agentSocket.on("configurationTools", async (request: unknown, callback) => {
             try {
                 checkLogin(socket);

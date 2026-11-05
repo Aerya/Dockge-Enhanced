@@ -1,4 +1,5 @@
 export const LABEL_STATUS_IGNORE = "dockge.status.ignore";
+export const LABEL_NETWORK_REPAIR = "dockge.start.repair-network";
 export const LABEL_IMAGEUPDATES_CHECK = "dockge.imageupdates.check";
 
 type ComposeLabels = Record<string, unknown> | unknown[] | undefined;

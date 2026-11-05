@@ -98,6 +98,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/service-rollout.test.ts backend/rollout-relay.test.ts backend/rollout-recovery.test.ts backend/stack-mutation.test.ts backend/rollout-monitoring.test.ts frontend/src/rollout-relay.test.ts frontend/src/rollout-relay-ui.test.js
 
+      - name: Tests des liens de services et de leurs permissions
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/service-links.test.ts frontend/src/service-links-ui.test.js
+
       - name: Tests des comptes locaux et des permissions par stack
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/user-access.test.ts backend/scoped-account.test.ts frontend/src/scoped-users.test.js
@@ -140,7 +144,7 @@ jobs:
 
       - name: Tests des labels par service
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test common/compose-labels.test.ts backend/stack-clean-exit-status.test.ts backend/compose-network-namespace.test.ts
+        run: npx tsx --test common/compose-labels.test.ts backend/stack-clean-exit-status.test.ts backend/compose-network-namespace.test.ts backend/compose-network-repair.test.ts
 
       - name: Tests de la purge automatique des images
         if: steps.docs.outputs.docs_only != 'true'

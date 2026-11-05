@@ -8,6 +8,10 @@ Le [README](README.fr.md) présente les principales nouveautés récentes et le 
 
 **2026-11-04 — Terminal web** — Le terminal web déclare correctement xterm-256color : couleurs et effacement de l’écran fonctionnent sans modifier les permissions ni les environnements explicitement restreints.
 
+**2026-11-04 — Liens des services** — Une page distincte réservée aux administrateurs regroupe les raccourcis HTTP/HTTPS manuels et les `x-dockge.urls` des stacks locales et liées, avec recherche et classement. L’accueil reste inchangé. Mettez les instances liées à jour pour afficher leurs liens ; ces raccourcis ne contrôlent pas la disponibilité des services.
+
+**2026-11-04 — Réparation réseau au démarrage** — Désactivé par défaut. Au démarrage/déploiement, recrée ce service arrêté uniquement si son réseau a été recréé sous le même nom. Aucun volume supprimé. Les réplicas ou dépendants réseau encore actifs exigent une recréation explicite. Mettez aussi à jour les instances liées qui hébergent les stacks.
+
 **2026-11-04 — Outils de configuration** — Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Outils de configuration](docs/configuration-tools.fr.md).
 
 **2026-11-02 — Comptage anonyme par période** — Estimations indépendantes par semaine, mois et année ; Discord affiche la semaine écoulée, le mois en cours, tous les mois passés et l’année sans additionner les mois. L’historique mensuel est conservé ; périodes incomplètes et limites de migration sont explicites.

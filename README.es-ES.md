@@ -65,6 +65,10 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Terminal web :** El terminal web declara correctamente xterm-256color: funcionan los colores y la limpieza de pantalla sin cambiar los permisos ni los entornos restringidos explícitamente.
 
+**Enlaces de servicios :** Una página independiente para administradores agrupa accesos HTTP/HTTPS manuales y `x-dockge.urls` de stacks locales y vinculadas, con búsqueda y ordenación. El inicio no cambia. Actualiza las instancias vinculadas para mostrar sus enlaces; los accesos no comprueban la disponibilidad de los servicios.
+
+**Reparación de red al iniciar :** Desactivado por defecto. Al iniciar/desplegar, recrea este servicio detenido solo si su red se ha recreado con el mismo nombre. No se elimina ningún volumen. Las réplicas o dependientes del espacio de red en ejecución requieren una recreación explícita. Actualice también las instancias enlazadas que alojan las stacks. `dockge.start.repair-network: "true"`.
+
 **Herramientas de configuración :** Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Herramientas de configuración](docs/configuration-tools.es.md).
 
 **Conteo anónimo por período :** Estimaciones independientes por semana, mes y año; Discord muestra la semana anterior, mes actual, todos los meses pasados y año sin sumar los meses. Se conserva el historial mensual y se indican períodos incompletos y límites de migración.
@@ -484,6 +488,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Elección por instancia de nombre de host o dirección IP para los enlaces de puertos de los contenedores
 
 ### Gestión de stacks
+- Reparar una red recreada al iniciar (`dockge.start.repair-network`)
 - Windows 11 con Docker Desktop/WSL2: [instalación y límites](docs/windows.es.md)
 - Crear, editar, iniciar, detener, reiniciar, actualizar, recrear, pausar/reanudar y desmontar stacks Compose
 - Barra de acciones del stack accesible directamente, en modo solo iconos o iconos con texto, con los comandos Compose explicados
@@ -622,6 +627,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Home Assistant
 
 ### Apariencia e idiomas
+- **Enlaces de servicios** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Paletas de día y de noche separadas, incluidos los temas originales de Dockge-Enhanced
 - Opciones Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night y Rosé Pine
 - Preferencias guardadas en el navegador y modo Auto que sigue al sistema
@@ -1033,6 +1039,8 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 ---
 
 ## Créditos
+
+- [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — inspiración para el panel de enlaces de servicios.
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — gateway de notificación multiplataforma
 - [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — inspiración para la detección de conflictos de puertos, diferencias Compose e integración Home Assistant.
