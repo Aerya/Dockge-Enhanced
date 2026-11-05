@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.webTerminal": "Das Webterminal meldet xterm-256color korrekt: Farben und Bildschirmleeren funktionieren, ohne Berechtigungen oder ausdrücklich eingeschränkte Umgebungen zu ändern.",
     "releaseNews.item.serviceLinks": "Dienstlinks : Eine eigene Administratorseite bündelt manuelle HTTP/HTTPS-Verknüpfungen und Compose-x-dockge.urls lokaler und verbundener Instanzen, mit Suche und Sortierung. Die Startseite bleibt unverändert. Verbundene Instanzen müssen für ihre Links aktualisiert werden; die Verknüpfungen prüfen nicht die Dienstverfügbarkeit.",
     "serviceLinks.title": "Dienstlinks",
     "serviceLinks.hint": "HTTP/HTTPS-Verknüpfungen für Administratoren. Keine HTTP-Verfügbarkeitsprüfung. Compose-URLs bleiben in x-dockge.urls.",

@@ -6,6 +6,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-04 — Terminal web** — El terminal web declara correctamente xterm-256color: funcionan los colores y la limpieza de pantalla sin cambiar los permisos ni los entornos restringidos explícitamente.
+
 **2026-11-04 — Enlaces de servicios** — Una página independiente para administradores agrupa accesos HTTP/HTTPS manuales y `x-dockge.urls` de stacks locales y vinculadas, con búsqueda y ordenación. El inicio no cambia. Actualiza las instancias vinculadas para mostrar sus enlaces; los accesos no comprueban la disponibilidad de los servicios.
 
 **2026-11-04 — Reparación de red al iniciar** — Desactivado por defecto. Al iniciar/desplegar, recrea este servicio detenido solo si su red se ha recreado con el mismo nombre. No se elimina ningún volumen. Las réplicas o dependientes del espacio de red en ejecución requieren una recreación explícita. Actualice también las instancias enlazadas que alojan las stacks.

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.webTerminal": "Le terminal web déclare correctement xterm-256color : couleurs et effacement de l’écran fonctionnent sans modifier les permissions ni les environnements explicitement restreints.",
     "releaseNews.item.serviceLinks": "Liens des services : Une page distincte réservée aux administrateurs regroupe les raccourcis HTTP/HTTPS manuels et les x-dockge.urls des stacks locales et liées, avec recherche et classement. L’accueil reste inchangé. Mettez les instances liées à jour pour afficher leurs liens ; ces raccourcis ne contrôlent pas la disponibilité des services.",
     "serviceLinks.title": "Liens des services",
     "serviceLinks.hint": "Raccourcis HTTP/HTTPS réservés aux administrateurs. Aucun contrôle de disponibilité HTTP n’est effectué. Les URL du Compose restent dans x-dockge.urls.",

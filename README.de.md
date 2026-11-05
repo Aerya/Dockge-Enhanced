@@ -63,6 +63,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Webterminal :** Das Webterminal meldet xterm-256color korrekt: Farben und Bildschirmleeren funktionieren, ohne Berechtigungen oder ausdrücklich eingeschränkte Umgebungen zu ändern.
+
 **Dienstlinks :** Eine eigene Administratorseite bündelt manuelle HTTP/HTTPS-Verknüpfungen und Compose-`x-dockge.urls` lokaler und verbundener Instanzen, mit Suche und Sortierung. Die Startseite bleibt unverändert. Verbundene Instanzen müssen für ihre Links aktualisiert werden; die Verknüpfungen prüfen nicht die Dienstverfügbarkeit.
 
 **Netzwerkreparatur beim Start :** Standardmäßig deaktiviert. Beim Start/Bereitstellen wird dieser gestoppte Dienst nur neu erstellt, wenn sein Netzwerk unter demselben Namen neu erstellt wurde. Keine Volumes werden gelöscht. Laufende Replikate oder Netzwerk-Namespace-Abhängige erfordern eine ausdrückliche Neuerstellung. Auch die verknüpften Hosting-Instanzen aktualisieren. `dockge.start.repair-network: "true"`.

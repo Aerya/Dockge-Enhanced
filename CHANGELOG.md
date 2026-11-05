@@ -6,6 +6,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-04 — Web terminal** — The web terminal now declares xterm-256color correctly: colours and screen clearing work without changing permissions or explicitly restricted environments.
+
 **2026-11-04 — Service links** — A separate administrator page groups manual HTTP/HTTPS shortcuts and Compose `x-dockge.urls` from local and linked instances, with search and ordering. The home page stays unchanged. Update linked instances to display their links; these shortcuts do not check service health.
 
 **2026-11-04 — Network repair on start** — Disabled by default. On Start/Deploy, recreate this stopped service only if its network was recreated under the same name. No volumes are deleted. Running replicas or namespace dependants require an explicit recreation. Update linked hosting instances too.

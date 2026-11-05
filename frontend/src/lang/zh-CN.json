@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.webTerminal": "网页终端正确声明 xterm-256color，恢复颜色和清屏功能，不改变权限或显式限制的环境变量。",
     "releaseNews.item.serviceLinks": "服务链接 : 独立的管理员页面汇集手动 HTTP/HTTPS 快捷链接以及本地和关联实例的 Compose x-dockge.urls，支持搜索和排序。原有首页不变。请更新关联实例以显示其链接；这些快捷链接不检测服务是否可用。",
     "serviceLinks.title": "服务链接",
     "serviceLinks.hint": "仅供管理员使用的 HTTP/HTTPS 快捷链接。不执行 HTTP 可用性检查。Compose URL 保留在 x-dockge.urls 中。",

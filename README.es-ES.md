@@ -63,6 +63,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Terminal web :** El terminal web declara correctamente xterm-256color: funcionan los colores y la limpieza de pantalla sin cambiar los permisos ni los entornos restringidos explícitamente.
+
 **Enlaces de servicios :** Una página independiente para administradores agrupa accesos HTTP/HTTPS manuales y `x-dockge.urls` de stacks locales y vinculadas, con búsqueda y ordenación. El inicio no cambia. Actualiza las instancias vinculadas para mostrar sus enlaces; los accesos no comprueban la disponibilidad de los servicios.
 
 **Reparación de red al iniciar :** Desactivado por defecto. Al iniciar/desplegar, recrea este servicio detenido solo si su red se ha recreado con el mismo nombre. No se elimina ningún volumen. Las réplicas o dependientes del espacio de red en ejecución requieren una recreación explícita. Actualice también las instancias enlazadas que alojan las stacks. `dockge.start.repair-network: "true"`.
