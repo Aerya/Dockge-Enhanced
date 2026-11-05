@@ -9,7 +9,7 @@ Le [README](README.fr.md) présente les principales nouveautés récentes et le 
 
 **2026-11-05 — Interface compacte** — Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation ou l’en-tête. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.
 
-**2026-11-05 — Groupes de stacks personnalisés** — Créez des groupes repliables réunissant des stacks de plusieurs instances. La recherche révèle les résultats même dans les groupes fermés ; tris, favoris et permissions sont conservés. Préférences enregistrées par compte dans ce navigateur, sans synchronisation entre navigateurs.
+**2026-11-05 — Groupes de stacks personnalisés** — Les groupes sont enregistrés en base sur cette instance pour votre compte et retrouvés depuis n’importe quel navigateur. Ils peuvent réunir des stacks locales et liées sans modifier les permissions. Importez explicitement les anciens groupes du navigateur sans remplacer ceux du serveur. Les modifications concurrentes sont refusées avec un avertissement.
 
 **2026-11-05 — Nettoyage après mise à jour** — Deux options indépendantes, activées par défaut : nettoyer les images remplacées et conserver un rollback pendant 24 h. Réglez tous les services actuels depuis l’éditeur de stack, ou personnalisez chaque service. Sans rollback, le nettoyage devient possible après une mise à jour vérifiée ; avec rollback, il attend 24 h. La file ciblée survit aux redémarrages et fonctionne même si la purge globale est désactivée. Les images utilisées ailleurs, exclues ou protégées restent conservées. Mettez aussi à jour les instances liées. Le rollback d’image ne restaure pas les données applicatives.
 

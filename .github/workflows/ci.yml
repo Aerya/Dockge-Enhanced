@@ -80,7 +80,7 @@ jobs:
 
       - name: Tests des groupes de stacks multi-instances
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test frontend/src/stack-groups.test.ts frontend/src/stack-groups-ui.test.js
+        run: npx tsx --test backend/stack-group-preferences.test.ts frontend/src/stack-groups.test.ts frontend/src/stack-groups-ui.test.js
 
       - name: Tests du nettoyage ciblé après mise à jour
         if: steps.docs.outputs.docs_only != 'true'

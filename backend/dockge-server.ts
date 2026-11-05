@@ -89,6 +89,7 @@ import { AgentSocket } from "../common/agent-socket";
 import { resolveDataDir } from "./data-dir";
 import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-handler";
 import { ServiceLinksSocketHandler } from "./socket-handlers/service-links-socket-handler";
+import { StackGroupsSocketHandler } from "./socket-handlers/stack-groups-socket-handler";
 import { StackReplicationSocketHandler } from "./socket-handlers/stack-replication-socket-handler";
 import { StackMoveSocketHandler } from "./socket-handlers/stack-move-socket-handler";
 import { Terminal } from "./terminal";
@@ -135,6 +136,7 @@ export class DockgeServer {
         new MainSocketHandler(),
         new ManageAgentSocketHandler(),
         new ServiceLinksSocketHandler(),
+        new StackGroupsSocketHandler(),
         new StackReplicationSocketHandler(),
         new StackMoveSocketHandler(),
     ];

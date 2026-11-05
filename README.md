@@ -66,7 +66,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Compact layout :** Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout or the header. Classic remains the default. Saved per account in this browser.
 
-**Custom stack groups :** Create collapsible groups containing stacks from several instances. Search reveals matching stacks even in closed groups; sorting, favourites and access permissions are preserved. Preferences are saved per account in this browser, not synchronised between browsers.
+**Custom stack groups :** Groups are stored in this instance’s database for your account and available from any browser. Groups can include local and linked stacks without changing access permissions. Import existing browser groups explicitly without replacing server groups. Concurrent edits are rejected with a warning.
 
 **Cleanup after updates :** Two independent options, both enabled by default: clean up replaced images and retain rollback for 24 hours. Configure all current services from the stack editor, or customize each service. With rollback disabled, cleanup becomes eligible after a verified update; with rollback enabled, it waits 24 hours. The targeted queue survives restarts and runs even with global pruning disabled. Images used elsewhere, excluded or protected remain retained. Update linked instances too. Image rollback does not restore application data.
 
@@ -497,7 +497,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-instance choice of Hostname or IP address for container port links
 
 ### Stack management
-- Collapsible custom groups across instances, with per-account browser preferences
+- Custom stack groups — Groups are stored in this instance’s database for your account and available from any browser.
 - Repair a recreated network on start (`dockge.start.repair-network`)
 - Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md)
 - Create, edit, start, stop, restart, update, recreate, pause/resume and take down Compose stacks

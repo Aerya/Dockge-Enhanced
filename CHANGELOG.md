@@ -9,7 +9,7 @@ The [README](README.md) presents the main recent updates and the feature catalog
 
 **2026-11-05 — Compact layout** — Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout or the header. Classic remains the default. Saved per account in this browser.
 
-**2026-11-05 — Custom stack groups** — Create collapsible groups containing stacks from several instances. Search reveals matching stacks even in closed groups; sorting, favourites and access permissions are preserved. Preferences are saved per account in this browser, not synchronised between browsers.
+**2026-11-05 — Custom stack groups** — Groups are stored in this instance’s database for your account and available from any browser. Groups can include local and linked stacks without changing access permissions. Import existing browser groups explicitly without replacing server groups. Concurrent edits are rejected with a warning.
 
 **2026-11-05 — Cleanup after updates** — Two independent options, both enabled by default: clean up replaced images and retain rollback for 24 hours. Configure all current services from the stack editor, or customize each service. With rollback disabled, cleanup becomes eligible after a verified update; with rollback enabled, it waits 24 hours. The targeted queue survives restarts and runs even with global pruning disabled. Images used elsewhere, excluded or protected remain retained. Update linked instances too. Image rollback does not restore application data.
 
