@@ -185,6 +185,8 @@ export const APP_DATA = "/app/data";
 
 // ─── API ──────────────────────────────────────────────────────────
 
+import { localizeApiResponse } from "../../server-message-browser";
+
 const API = "/api/watcher";
 
 export async function api(method: string, path: string, body?: unknown) {
@@ -197,7 +199,7 @@ export async function api(method: string, path: string, body?: unknown) {
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    return res.json();
+    return localizeApiResponse(await res.json());
 }
 
 // ─── Fabriques ────────────────────────────────────────────────────

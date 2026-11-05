@@ -152,6 +152,9 @@
             </div>
 
             <ul class="desktop-nav nav nav-pills">
+                <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted'" class="nav-item me-2">
+                    <router-link to="/service-links" class="nav-link">{{ $t("serviceLinks.title") }}</router-link>
+                </li>
                 <li v-if="$root.loggedIn" class="nav-item me-2">
                     <router-link to="/" class="nav-link">
                         <font-awesome-icon icon="home" /> {{ $t("home") }}
@@ -302,6 +305,7 @@
             </div>
 
             <nav class="mobile-drawer-nav">
+                <router-link v-if="$root.userAccess?.role !== 'restricted'" to="/service-links" class="mobile-drawer-link">{{ $t("serviceLinks.title") }}</router-link>
                 <router-link to="/" class="mobile-drawer-link">
                     <font-awesome-icon icon="home" /> {{ $t("home") }}
                 </router-link>

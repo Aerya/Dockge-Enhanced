@@ -63,6 +63,20 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Custom stack groups :** Create collapsible groups containing stacks from several instances. Search reveals matching stacks even in closed groups; sorting, favourites and access permissions are preserved. Preferences are saved per account in this browser, not synchronised between browsers.
+
+**Cleanup after updates :** Two independent options, both enabled by default: clean up replaced images and retain rollback for 24 hours. Configure all current services from the stack editor, or customize each service. With rollback disabled, cleanup becomes eligible after a verified update; with rollback enabled, it waits 24 hours. The targeted queue survives restarts and runs even with global pruning disabled. Images used elsewhere, excluded or protected remain retained. Update linked instances too. Image rollback does not restore application data.
+
+**Docker connection recovery :** Optional recovery after a Docker restart leaves an obsolete socket mount. Set `DOCKGE_DOCKER_RECOVERY_RETRIES` (default `0`, disabled) and `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (default `30`). After consecutive connection failures, Enhanced exits gracefully so `restart: unless-stopped` or `always` can restart it; active operations defer the exit. A successful Docker connection is required in each process before restart is armed, preventing startup loops. Permissions, TLS and configuration errors do not trigger recovery.
+
+**Interface messages :** Common backup, scheduling, ImageWatcher and cleanup messages follow the interface language, including messages from older linked instances. Unknown technical details remain visible unchanged.
+
+**Web terminal :** The web terminal now declares xterm-256color correctly: colours and screen clearing work without changing permissions or explicitly restricted environments.
+
+**Service links :** A separate administrator page groups manual HTTP/HTTPS shortcuts and Compose `x-dockge.urls` from local and linked instances, with search and ordering. The home page stays unchanged. Update linked instances to display their links; these shortcuts do not check service health.
+
+**Network repair on start :** Disabled by default. On Start/Deploy, recreate this stopped service only if its network was recreated under the same name. No volumes are deleted. Running replicas or namespace dependants require an explicit recreation. Update linked hosting instances too. `dockge.start.repair-network: "true"`.
+
 **Configuration tools :** Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Configuration tools](docs/configuration-tools.md).
 
 **Anonymous counts by period :** Independent weekly, monthly and yearly estimates; Discord reports the previous week, current month, every past month and the current year without adding monthly totals. Existing monthly history is preserved; incomplete periods and migration limits are explicit.
@@ -480,6 +494,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-instance choice of Hostname or IP address for container port links
 
 ### Stack management
+- Collapsible custom groups across instances, with per-account browser preferences
+- Repair a recreated network on start (`dockge.start.repair-network`)
 - Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md)
 - Create, edit, start, stop, restart, update, recreate, pause/resume and take down Compose stacks
 - Directly accessible stack action bar, with icons-only or icons-and-text modes and explained Compose commands
@@ -544,6 +560,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Updates & ImageWatcher
 
+- Targeted post-update image cleanup and independent 24-hour rollback, configurable per service
+
 - **Updates without service interruption** — `dockge.rollout.enabled: "true"`. Check compatibility before enabling this option. The application container count temporarily doubles: allow enough CPU/RAM. Fixed container names and shared writable volumes are refused. The relay adds a container and a configuration volume. Its initial installation moves the access port and may cause an outage. Afterwards, use Update; Recreate, restarts and rollback do not guarantee that connections stay open. TCP only, not UDP/QUIC; no universal zero-downtime guarantee. [Deployment](docs/service-rollout.md).
 - Image update detection by digest, without pulling, including remote instances [Verified image updates: Proposed change in this branch; not yet published.](docs/image-update-verification.md).
 - Off, Immediate and Scheduled policies per image, plus stack-wide bulk policies that preserve individual exceptions by default
@@ -577,6 +595,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - TLS trust-store checks after the eMudhra incident ([TLS checks](security/emudhra/README.md))
 
 ### Monitoring
+- **Docker connection recovery** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - System, stack and container CPU, RAM and disk statistics, with a configurable status bar
 - Host system details, temperatures and monitored disk partitions
 - Optional 5-minute CPU/RAM history for the host and per Compose service, with visible gaps
@@ -618,6 +637,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Home Assistant
 
 ### Appearance & languages
+- **Service links** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Separate day and night palettes, including the original Dockge-Enhanced themes
 - Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night and Rosé Pine options
 - Browser-persisted preferences with a system-aware Auto mode
@@ -917,6 +937,8 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directory containing Docker Compose stacks |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge data directory; override only for a custom persistent mount |
+| `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Consecutive failures before exit (0 disables; maximum 100) |
+| `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Seconds between completed checks (5–3600; each probe times out after 5 seconds) |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(none)* | Fixes the Docker API version negotiated by the client — useful on certain NAS systems (e.g. Synology DSM 7.x) |
 | `TZ` | `UTC` | Container runtime timezone; scheduling defaults to it until explicitly configured in **Settings → General**. The WebUI choice takes precedence for Enhanced schedules. |
@@ -1029,6 +1051,8 @@ Commercial third-party clients are allowed by the license, but must not imply of
 ---
 
 ## Credits
+
+- [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — inspiration for the service links dashboard.
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway
 - [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — inspiration for port-conflict detection, Compose drift checks and the Home Assistant companion integration.

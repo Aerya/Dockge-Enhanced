@@ -407,7 +407,7 @@
                                         :checked="allDeletableSelected"
                                         :indeterminate.prop="someImagesSelected && !allDeletableSelected"
                                         @change="toggleSelectAllImages"
-                                        title="Tout sélectionner / désélectionner"
+                                        :title="t('serverMessage.selectAll')"
                                     />
                                 </th>
                                 <th>{{ $t("dockerResources.images.cols.image") }}</th>
@@ -991,6 +991,8 @@ interface PruneVolumeEntry {
 
 // ─── State ────────────────────────────────────────────────────────
 
+import { localizeApiResponse } from "../server-message-browser";
+
 const { t, te } = useI18n();
 
 // Traduit une clé dynamique (statut/état), retombe sur la valeur brute si absente.
@@ -1280,7 +1282,7 @@ async function api(method: string, path: string, body?: unknown) {
         },
         body: body ? JSON.stringify(body) : undefined,
     });
-    return res.json();
+    return localizeApiResponse(await res.json());
 }
 
 async function loadImages() {
@@ -1502,8 +1504,9 @@ async function deleteSelectedImages() {
     selectedImages.value = new Set();
     await Promise.all([ loadImages(), loadAutoPrune(), loadCleanupSettings(), loadPrunePreview(), loadPruneHistory() ]);
     showToast(fail === 0, fail === 0
-        ? `${ok} image(s) supprimée(s)`
-        : `${ok} supprimée(s), ${fail} échec(s)`
+        ? t("serverMessage.imagesRemoved", { count: ok })
+        : t("serverMessage.imagesPartial", { count: ok,
+            failed: fail })
     );
 }
 

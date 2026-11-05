@@ -180,6 +180,11 @@
                 <div class="service-behaviour mb-4">
                     <h5>{{ $t("serviceBehaviour.title") }}</h5>
                     <div class="form-check mb-3">
+                        <input :id="`repair-network-${name}`" v-model="repairServiceNetwork" class="form-check-input" type="checkbox" />
+                        <label class="form-check-label" :for="`repair-network-${name}`">{{ $t("serviceBehaviour.repairNetwork") }}</label>
+                        <div class="form-text">{{ $t("serviceBehaviour.repairNetworkHelp") }}</div>
+                    </div>
+                    <div class="form-check mb-3">
                         <input :id="`ignore-status-${name}`" v-model="ignoreServiceStatus" class="form-check-input" type="checkbox" />
                         <label class="form-check-label" :for="`ignore-status-${name}`">
                             {{ $t("serviceBehaviour.ignoreStatus") }}
@@ -196,6 +201,7 @@
                 </div>
 
                 <ServiceResourceLimits :service="service" @apply="jsonObject.services[name] = $event" />
+                <PostUpdateOptions :id="`post-update-${name}`" :services="{ [name]: service }" :supported="stack?.supportsPostUpdateCleanup === true || ($parent.$parent.isAdd && !$parent.$parent.endpoint)" />
 
                 <div class="mb-4">
                     <div class="form-check">
@@ -328,12 +334,14 @@ import {
     composeLabelValue,
     LABEL_IMAGEUPDATES_CHECK,
     LABEL_STATUS_IGNORE,
+    LABEL_NETWORK_REPAIR,
     setComposeLabel,
 } from "../../../common/compose-labels";
 import VolumeBrowser from "./VolumeBrowser.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
 import ServiceResourceLimits from "./ServiceResourceLimits.vue";
+import PostUpdateOptions from "./PostUpdateOptions.vue";
 import { LABEL_ROLLOUT, rolloutEnabled, ROLLOUT_HEALTH_PREFIX } from "../../../common/service-rollout";
 import { addRolloutRelay } from "../rollout-relay";
 import { toRaw } from "vue";
@@ -346,6 +354,7 @@ export default defineComponent({
         ContainerStatsBadge,
         StackScheduleEditor,
         ServiceResourceLimits,
+        PostUpdateOptions,
     },
     props: {
         portLinkAddressMode: {
@@ -570,6 +579,15 @@ export default defineComponent({
                     }
                 }
                 setComposeLabel(this.service, LABEL_ROLLOUT, enabled ? "true" : null);
+            },
+        },
+
+        repairServiceNetwork: {
+            get() {
+                return composeLabelIsTrue(this.service.labels, LABEL_NETWORK_REPAIR);
+            },
+            set(enabled) {
+                setComposeLabel(this.service, LABEL_NETWORK_REPAIR, enabled ? "true" : null);
             },
         },
 

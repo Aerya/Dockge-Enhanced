@@ -6,6 +6,20 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-05 — Groupes de stacks personnalisés** — Créez des groupes repliables réunissant des stacks de plusieurs instances. La recherche révèle les résultats même dans les groupes fermés ; tris, favoris et permissions sont conservés. Préférences enregistrées par compte dans ce navigateur, sans synchronisation entre navigateurs.
+
+**2026-11-05 — Nettoyage après mise à jour** — Deux options indépendantes, activées par défaut : nettoyer les images remplacées et conserver un rollback pendant 24 h. Réglez tous les services actuels depuis l’éditeur de stack, ou personnalisez chaque service. Sans rollback, le nettoyage devient possible après une mise à jour vérifiée ; avec rollback, il attend 24 h. La file ciblée survit aux redémarrages et fonctionne même si la purge globale est désactivée. Les images utilisées ailleurs, exclues ou protégées restent conservées. Mettez aussi à jour les instances liées. Le rollback d’image ne restaure pas les données applicatives.
+
+**2026-11-05 — Récupération de la connexion Docker** — Récupération facultative lorsqu’un redémarrage de Docker laisse un ancien socket monté. Réglez `DOCKGE_DOCKER_RECOVERY_RETRIES` (`0` par défaut, désactivé) et `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (`30` par défaut). Après des échecs de connexion consécutifs, Enhanced s’arrête proprement pour que `restart: unless-stopped` ou `always` le relance ; les opérations actives reportent cet arrêt. Chaque processus doit avoir joint Docker au moins une fois avant d’autoriser cet arrêt, pour éviter les boucles au démarrage. Les erreurs de droits, TLS ou configuration ne déclenchent pas la récupération.
+
+**2026-11-04 — Messages de l’interface** — Les messages courants de sauvegarde, planification, ImageWatcher et nettoyage suivent la langue de l’interface, y compris lorsqu’ils proviennent d’une instance liée plus ancienne. Les détails techniques inconnus restent affichés sans modification.
+
+**2026-11-04 — Terminal web** — Le terminal web déclare correctement xterm-256color : couleurs et effacement de l’écran fonctionnent sans modifier les permissions ni les environnements explicitement restreints.
+
+**2026-11-04 — Liens des services** — Une page distincte réservée aux administrateurs regroupe les raccourcis HTTP/HTTPS manuels et les `x-dockge.urls` des stacks locales et liées, avec recherche et classement. L’accueil reste inchangé. Mettez les instances liées à jour pour afficher leurs liens ; ces raccourcis ne contrôlent pas la disponibilité des services.
+
+**2026-11-04 — Réparation réseau au démarrage** — Désactivé par défaut. Au démarrage/déploiement, recrée ce service arrêté uniquement si son réseau a été recréé sous le même nom. Aucun volume supprimé. Les réplicas ou dépendants réseau encore actifs exigent une recréation explicite. Mettez aussi à jour les instances liées qui hébergent les stacks.
+
 **2026-11-04 — Outils de configuration** — Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Outils de configuration](docs/configuration-tools.fr.md).
 
 **2026-11-02 — Comptage anonyme par période** — Estimations indépendantes par semaine, mois et année ; Discord affiche la semaine écoulée, le mois en cours, tous les mois passés et l’année sans additionner les mois. L’historique mensuel est conservé ; périodes incomplètes et limites de migration sont explicites.

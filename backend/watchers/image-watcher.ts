@@ -5,6 +5,10 @@
  */
 
 import { protectPendingPull, releasePendingPull } from "./pending-image-pulls";
+import { PostUpdateCleanupQueue } from "../post-update-cleanup";
+import { capturePostUpdateSnapshot, resolvePostUpdateTargets, verifiedPostUpdateSnapshots, type PostUpdateSnapshot } from "../post-update-snapshot";
+import { ROLLBACK_RETENTION_MS } from "../../common/post-update-policy";
+import { createHash } from "node:crypto";
 import { captureServiceImageTargets, resolveServiceImageTargets, verifyServiceImageTargets, ImageUpdateVerificationError } from "./image-update-verification";
 import { scheduleInTimezone } from "../scheduling-cron";
 import { schedulingClock } from "../scheduling-timezone";
@@ -87,7 +91,6 @@ export async function isSelfUpdateBlockingImageMutations(dataDir = DATA_DIR): Pr
     }
 }
 
-const ROLLBACK_WINDOW_MS = 24 * 3_600_000; // 24 heures
 const UPDATE_HISTORY_MAX = 100;
 const MANAGED_DOZZLE_STACK = "dozzle-dockge-enhanced";
 const MANAGED_DOZZLE_IMAGE = "amir20/dozzle:latest";
@@ -296,6 +299,7 @@ export interface ImageStatus {
 }
 
 export interface RollbackEntry {
+    composeBaseArgs?: string[];
     key: string; // "stack::image"
     image: string; // ex: "nginx:latest"
     stack: string;
@@ -1144,6 +1148,7 @@ async function findComposePath(stackDir: string): Promise<string> {
 }
 
 export interface WatchedComposeStack {
+    composeBaseArgs?: string[];
     composePath: string;
     isExternal?: boolean;
     project?: string;
@@ -1306,6 +1311,8 @@ export class ImageWatcher {
 
     /* eslint-enable @stylistic/indent */
     private readonly dataDir: string;
+    private postUpdateQueue?: PostUpdateCleanupQueue;
+    private postUpdateTimer?: ReturnType<typeof setInterval>;
     private readonly settingsPath: string;
     private readonly rollbackPath: string;
     private readonly updateHistoryPath: string;
@@ -1637,6 +1644,13 @@ export class ImageWatcher {
         await syncDockerRegistryCredentials(this.settings.credentials);
         await this.loadRollbackRegistry();
         await this._loadUpdateHistory();
+        // Independent of registry scanning and of global image pruning.
+        if (!this.postUpdateTimer) {
+            this.postUpdateTimer = setInterval(() => {
+                this.runPostUpdateCleanup().catch(error => log.error("post-update", String(error)));
+            }, 60_000);
+            this.postUpdateTimer.unref();
+        }
         if (this.settings.enabled) {
             this.start();
         }
@@ -2347,6 +2361,7 @@ export class ImageWatcher {
             // Rolling services have their own replica/health/draining verification.
             const ordinaryTargets = rolloutTargets.filter(service => !rollout?.services.includes(service) && !rollout?.managedServices.includes(service));
             const runDocker = (args: string[], timeout: number) => docker(args, { timeout });
+            const postUpdate = await capturePostUpdateSnapshot(rolloutCompose, runDocker, services);
             const verificationTargets = await captureServiceImageTargets(rolloutCompose, runDocker, ordinaryTargets);
             const pullCommand = composeExecInvocation(composePath, [ "pull", ...services ], project, configFiles, workingDir, envFiles);
             if (rollout && !oldImageId) {
@@ -2366,6 +2381,7 @@ export class ImageWatcher {
             }
             protectPendingPull(key, withExplicitTag(status.image), pulled.imageId, this.dataDir);
             await resolveServiceImageTargets(verificationTargets, runDocker);
+            await resolvePostUpdateTargets(postUpdate, runDocker);
             // Recheck immediately before up: a service may have stopped during pull.
             const stillRunning = await docker(runningCommand.args, { cwd: runningCommand.cwd,
                 timeout: 15_000 });
@@ -2381,27 +2397,9 @@ export class ImageWatcher {
                 return false;
             }
             let retirementDeferred = false;
+            await this.retainPostUpdateImages(postUpdate.filter(snapshot => snapshot.targetImageId !== snapshot.oldImageId), { ...watched,
+                name: status.stack });
             if (rollout) {
-                // Protect the previous image even if retirement or a later
-                // service fails after the first replica has been replaced.
-                if (oldImageId) {
-                    const now = new Date();
-                    await this.saveRollbackEntry({
-                        key,
-                        image: status.image,
-                        stack: status.stack,
-                        composePath,
-                        project,
-                        configFiles,
-                        workingDir,
-                        envFiles,
-                        service: services[0] ?? null,
-                        services,
-                        oldImageId,
-                        updatedAt: now.toISOString(),
-                        expiresAt: new Date(now.getTime() + ROLLBACK_WINDOW_MS).toISOString(),
-                    });
-                }
                 retirementDeferred = (await rollout.execute(() => !ignored())).pending.length > 0;
                 const remaining = recreateArgs.filter(arg => !rollout.services.includes(arg) && !rollout.managedServices.includes(arg));
                 if (remaining.some(arg => !arg.startsWith("-") && arg !== "up")) {
@@ -2414,26 +2412,6 @@ export class ImageWatcher {
                 await docker(upCommand.args, {
                     cwd: upCommand.cwd,
                     timeout: 120000,
-                });
-            }
-
-            // ── Sauvegarde l'entrée de rollback si on avait une image antérieure ──
-            if (oldImageId && !rollout) {
-                const now = new Date();
-                await this.saveRollbackEntry({
-                    key,
-                    image: status.image,
-                    stack: status.stack,
-                    composePath,
-                    project,
-                    configFiles,
-                    workingDir,
-                    envFiles,
-                    service: services[0] ?? null,
-                    services,
-                    oldImageId,
-                    updatedAt: now.toISOString(),
-                    expiresAt: new Date(now.getTime() + ROLLBACK_WINDOW_MS).toISOString(),
                 });
             }
 
@@ -2451,6 +2429,13 @@ export class ImageWatcher {
             if (!retirementDeferred) {
                 await this.touchUpdatedStackMetadata(status.stack, watched);
                 releasePendingPull(key, this.dataDir);
+                await this.retainPostUpdateImages(await verifiedPostUpdateSnapshots(postUpdate, rolloutCompose, runDocker), { ...watched,
+                    name: status.stack }, true);
+            } else {
+                // New replicas are healthy/routed; old containers and the durable
+                // rollout lock still prevent cleanup until draining has finished.
+                await this.retainPostUpdateImages(postUpdate, { ...watched,
+                    name: status.stack }, true);
             }
             console.log(
         `[ImageWatcher] Auto-update ${retirementDeferred ? "en attente de drainage" : "terminée"}: ${status.stack}/${status.image}`,
@@ -2583,6 +2568,90 @@ export class ImageWatcher {
 
     // ── Rollback ──────────────────────────────────────────────────────
 
+    private cleanupQueue(): PostUpdateCleanupQueue {
+        this.postUpdateQueue ??= new PostUpdateCleanupQueue(this.dataDir, async entry => {
+            const { AutoPruneManager, ImageRemovalProtectedError } = await import("./auto-prune-manager");
+            const { DockerCleanupManager } = await import("../docker-prune-service");
+            const manager = AutoPruneManager.getInstance();
+            const exclusions = [ ...manager.getSettings().unusedExclusions,
+                ...(DockerCleanupManager.getInstance().getSettings().exclusions.images ?? []) ];
+            try {
+                const inspected = await manager.assertImageRemovalAllowed(entry.imageId);
+                if (!inspected) {
+                    return { outcome: "absent" };
+                }
+                const removed = await manager.removePhysicalImageSafely(inspected, entry.references, exclusions);
+                return { outcome: removed ? "removed" : "absent" };
+            } catch (error) {
+                if (error instanceof ImageRemovalProtectedError) {
+                    return { outcome: "protected",
+                        reason: error.outcome };
+                }
+                throw error;
+            }
+        });
+        return this.postUpdateQueue;
+    }
+
+    async runPostUpdateCleanup(): Promise<void> {
+        const now = Date.now();
+        const due = this.cleanupQueue().snapshot().some(entry => ![ "removed", "absent" ].includes(entry.outcome) && entry.dueAt <= now);
+        if (!due && ![ ...rollbackStore.values() ].some(entry => Date.parse(entry.expiresAt) <= now)) {
+            return;
+        }
+        const { getSelfUpdateBlocker } = await import("../self-update/operation-guard");
+        const { hasActiveStackMutations } = await import("../stack-mutation");
+        const { isDockerBuildActive } = await import("../docker-operation-state");
+        if (hasActiveStackMutations() || isDockerBuildActive() || await getSelfUpdateBlocker()) {
+            return;
+        }
+        await this.cleanExpiredRollbacks();
+        if (!tryStartDockerCleanup()) {
+            return;
+        }
+        const reservation = tryReserveDockerUpdate("image-update");
+        try {
+            if (!reservation || await isSelfUpdateBlockingImageMutations(this.dataDir)
+                || await getSelfUpdateBlocker({ ownsImageReservation: true }) || hasActiveStackMutations() || isDockerBuildActive()) {
+                return;
+            }
+            await this.cleanupQueue().run();
+        } finally {
+            reservation?.release();
+            finishDockerCleanup();
+        }
+    }
+
+    /** Shared by manual stack/service actions and automatic ImageWatcher updates. */
+    async retainPostUpdateImages(snapshots: PostUpdateSnapshot[], watched: WatchedComposeStack & { name: string }, completed = false): Promise<void> {
+        const now = Date.now();
+        for (const snapshot of snapshots) {
+            if (snapshot.policy.rollback) {
+                const identity = createHash("sha256").update(JSON.stringify([ watched.name, snapshot.image, snapshot.service ])).digest("hex");
+                await this.saveRollbackEntry({ key: `post-update::${identity.slice(0, 40)}`,
+                    image: snapshot.image,
+                    stack: watched.name,
+                    composePath: watched.composePath,
+                    project: watched.project,
+                    configFiles: watched.configFiles,
+                    workingDir: watched.workingDir,
+                    envFiles: watched.envFiles,
+                    composeBaseArgs: watched.composeBaseArgs,
+                    service: snapshot.service,
+                    services: [ snapshot.service ],
+                    oldImageId: snapshot.oldImageId,
+                    updatedAt: new Date(now).toISOString(),
+                    expiresAt: new Date(now + ROLLBACK_RETENTION_MS).toISOString() });
+            }
+            if (completed && snapshot.oldImageId !== snapshot.targetImageId) {
+                this.cleanupQueue().enqueue({ stack: watched.name,
+                    service: snapshot.service,
+                    imageId: snapshot.oldImageId,
+                    references: [ snapshot.image ] }, snapshot.policy, now);
+            }
+        }
+    }
+
     private async loadRollbackRegistry(): Promise<void> {
         try {
             const raw = await fs.readFile(this.rollbackPath, "utf8");
@@ -2614,6 +2683,7 @@ export class ImageWatcher {
         const existing = rollbackStore.get(entry.key);
         if (existing) {
             try {
+                await docker([ "tag", existing.oldImageId, `dockge-retained-${existing.oldImageId.replace(/^sha256:/, "")}:keep` ], { timeout: 10000 });
                 await docker([ "rmi", rollbackTag(existing.key) ], { timeout: 10000 });
             } catch {}
         }
@@ -2697,20 +2767,23 @@ export class ImageWatcher {
 
             const image = withExplicitTag(entry.image);
             const services = entry.services?.length ? entry.services : entry.service ? [ entry.service ] : [];
+            const invocation = (args: string[]) => {
+                if (entry.composeBaseArgs) {
+                    if (entry.composeBaseArgs[0] !== "compose" || !entry.composeBaseArgs.every(arg => typeof arg === "string")) {
+                        throw new Error("Invalid saved Compose invocation");
+                    }
+                    return { args: [ ...entry.composeBaseArgs, ...args ],
+                        cwd: entry.workingDir ?? path.dirname(entry.composePath) };
+                }
+                return composeExecInvocation(entry.composePath, args, entry.project, entry.configFiles, entry.workingDir, entry.envFiles);
+            };
             console.log(
                 `[ImageWatcher] Rollback: ${entry.stack}/${entry.image} → ${entry.oldImageId.slice(0, 19)}`,
             );
 
             let recreateArgs = [ "up", "-d" ];
             if (services.length > 0) {
-                const configCommand = composeExecInvocation(
-                    entry.composePath,
-                    [ "config", "--format", "json" ],
-                    entry.project,
-                    entry.configFiles,
-                    entry.workingDir,
-                    entry.envFiles,
-                );
+                const configCommand = invocation([ "config", "--format", "json" ]);
                 try {
                     const output = await docker(configCommand.args, { cwd: configCommand.cwd,
                         timeout: 30_000 });
@@ -2727,7 +2800,7 @@ export class ImageWatcher {
                 await docker([ "rmi", rollbackTag(entry.key) ], { timeout: 10000 });
             } catch {}
             // Redémarre le container avec l'ancienne image
-            const upCommand = composeExecInvocation(entry.composePath, recreateArgs, entry.project, entry.configFiles, entry.workingDir, entry.envFiles);
+            const upCommand = invocation(recreateArgs);
             await docker(upCommand.args, {
                 cwd: upCommand.cwd,
                 timeout: 120000,
@@ -2738,7 +2811,7 @@ export class ImageWatcher {
 
             // Met à jour le status dans le store
             const newStatus = await this.checkOneImage(entry.image, entry.stack);
-            imageStatusStore.set(key, newStatus);
+            imageStatusStore.set(`${entry.stack}::${entry.image}`, newStatus);
             console.log(
                 `[ImageWatcher] Rollback terminé: ${entry.stack}/${entry.image}`,
             );
@@ -2749,7 +2822,8 @@ export class ImageWatcher {
     }
 
     async deleteRollbackEntry(key: string): Promise<void> {
-        if (!rollbackStore.has(key)) {
+        const entry = rollbackStore.get(key);
+        if (!entry) {
             return;
         }
         const reservation = this.reserveImageMutation(key);
@@ -2760,8 +2834,9 @@ export class ImageWatcher {
             if (await isSelfUpdateBlockingImageMutations(this.dataDir)) {
                 throw new Error("Une mise à jour de Dockge-Enhanced est en cours");
             }
-            // Retire le tag de protection — Docker supprime l'image si plus aucun autre tag ne la référence
+            // Dismissing rollback does not bypass cleanup exclusions or opt-out.
             try {
+                await docker([ "tag", entry.oldImageId, `dockge-retained-${entry.oldImageId.replace(/^sha256:/, "")}:keep` ], { timeout: 10000 });
                 await docker([ "rmi", rollbackTag(key) ], { timeout: 30000 });
             } catch {
                 /* déjà supprimée */
