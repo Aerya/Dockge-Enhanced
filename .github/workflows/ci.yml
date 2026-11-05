@@ -74,6 +74,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/server-message.test.ts
 
+      - name: Tests de récupération de la connexion Docker
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/docker-socket-recovery.test.ts
+
       - name: Tests natifs du terminal web
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/terminal-env.test.ts

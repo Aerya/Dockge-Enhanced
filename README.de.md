@@ -63,6 +63,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Docker-Verbindung wiederherstellen :** Optionale Wiederherstellung, wenn nach einem Docker-Neustart der alte Socket eingebunden bleibt. `DOCKGE_DOCKER_RECOVERY_RETRIES` (Standard `0`, deaktiviert) und `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (Standard `30`) konfigurieren. Nach aufeinanderfolgenden Verbindungsfehlern beendet sich Enhanced geordnet, damit `restart: unless-stopped` oder `always` es neu startet; aktive Vorgänge verschieben das Beenden. Jeder Prozess muss Docker zuvor erfolgreich erreicht haben, um Startschleifen zu verhindern. Berechtigungs-, TLS- und Konfigurationsfehler lösen keine Wiederherstellung aus.
+
 **Oberflächenmeldungen :** Häufige Meldungen zu Sicherung, Zeitplanung, ImageWatcher und Bereinigung folgen der Oberflächensprache, auch von älteren verknüpften Instanzen. Unbekannte technische Details bleiben unverändert sichtbar.
 
 **Webterminal :** Das Webterminal meldet xterm-256color korrekt: Farben und Bildschirmleeren funktionieren, ohne Berechtigungen oder ausdrücklich eingeschränkte Umgebungen zu ändern.
@@ -586,6 +588,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Prüfung der TLS-Zertifikatsspeicher nach dem eMudhra-Vorfall ([TLS-Prüfungen](security/emudhra/README.md))
 
 ### Monitoring
+- **Docker-Verbindung wiederherstellen** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - CPU-, RAM- und Datenträgerstatistiken für System, Stacks und Container, mit konfigurierbarer Statusleiste
 - Host-Systemdetails, Temperaturen und überwachte Partitionen
 - Optionaler 5-Minuten-CPU/RAM-Verlauf für den Host und pro Compose-Dienst, mit sichtbaren Lücken
@@ -927,6 +930,8 @@ Um einen Dienst zu veröffentlichen, bearbeiten Sie dessen Stack und verwenden S
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Verzeichnis mit Docker-Compose-Stacks |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge-Datenverzeichnis; nur für einen benutzerdefinierten persistenten Einhängepunkt überschreiben |
+| `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Aufeinanderfolgende Fehler vor dem Beenden (0 deaktiviert; höchstens 100) |
+| `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Sekunden zwischen abgeschlossenen Prüfungen (5–3600; Zeitlimit je Prüfung 5 Sekunden) |
 | `DOCKGE_PUBLIC_URL` | *(keine)* | Öffentliche URL, die in Discord-Benachrichtigungslinks verwendet wird (z. B. `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(keine)* | Legt die vom Client ausgehandelte Docker-API-Version fest — nützlich auf bestimmten NAS-Systemen (z. B. Synology DSM 7.x) |
 | `TZ` | `UTC` | Laufzeit-Zeitzone des Containers; Standard für Zeitpläne bis zur ausdrücklichen Auswahl unter **Einstellungen → Allgemein**. Die WebUI-Auswahl hat für Enhanced-Zeitpläne Vorrang. |

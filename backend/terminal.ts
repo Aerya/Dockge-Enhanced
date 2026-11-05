@@ -17,6 +17,10 @@ import { log } from "./log";
 export class Terminal {
     protected static terminalMap : Map<string, Terminal> = new Map();
 
+    public static hasActiveCommands(): boolean {
+        return Terminal.terminalMap.size > 0;
+    }
+
     protected _ptyProcess? : pty.IPty;
     protected server : DockgeServer;
     protected buffer : LimitQueue<string> = new LimitQueue(100);

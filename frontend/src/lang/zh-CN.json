@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.dockerRecovery": "Docker 连接恢复 : 当 Docker 重启后容器仍挂载旧套接字时，可选择启用恢复。设置 DOCKGE_DOCKER_RECOVERY_RETRIES（默认 0，禁用）和 DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS（默认 30）。连续连接失败后，Enhanced 正常退出，由 restart: unless-stopped 或 always 重启；活动操作会推迟退出。每个进程必须至少成功连接 Docker 一次才能触发退出，避免启动循环。权限、TLS 或配置错误不会触发恢复。",
     "releaseNews.item.serverMessages": "常见的备份、计划、ImageWatcher 和清理消息遵循界面语言，也支持旧版关联实例的消息。未知技术细节保持原样显示。",
     "serverMessage.required": "需要 {fields}{detail}",
     "serverMessage.networkUsed": "网络被 {count} 个容器使用",

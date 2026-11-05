@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.dockerRecovery": "Docker-Verbindung wiederherstellen : Optionale Wiederherstellung, wenn nach einem Docker-Neustart der alte Socket eingebunden bleibt. DOCKGE_DOCKER_RECOVERY_RETRIES (Standard 0, deaktiviert) und DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS (Standard 30) konfigurieren. Nach aufeinanderfolgenden Verbindungsfehlern beendet sich Enhanced geordnet, damit restart: unless-stopped oder always es neu startet; aktive Vorgänge verschieben das Beenden. Jeder Prozess muss Docker zuvor erfolgreich erreicht haben, um Startschleifen zu verhindern. Berechtigungs-, TLS- und Konfigurationsfehler lösen keine Wiederherstellung aus.",
     "releaseNews.item.serverMessages": "Häufige Meldungen zu Sicherung, Zeitplanung, ImageWatcher und Bereinigung folgen der Oberflächensprache, auch von älteren verknüpften Instanzen. Unbekannte technische Details bleiben unverändert sichtbar.",
     "serverMessage.required": "{fields} erforderlich{detail}",
     "serverMessage.networkUsed": "Netzwerk wird von {count} Container(n) verwendet",
