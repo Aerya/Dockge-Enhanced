@@ -136,7 +136,7 @@ jobs:
 
       - name: Tests des labels par service
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test common/compose-labels.test.ts backend/stack-clean-exit-status.test.ts backend/compose-network-namespace.test.ts
+        run: npx tsx --test common/compose-labels.test.ts backend/stack-clean-exit-status.test.ts backend/compose-network-namespace.test.ts backend/compose-network-repair.test.ts
 
       - name: Tests de la purge automatique des images
         if: steps.docs.outputs.docs_only != 'true'

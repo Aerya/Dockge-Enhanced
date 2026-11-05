@@ -1,4 +1,7 @@
 {
+    "serviceBehaviour.repairNetwork": "Neu erstelltes Netzwerk beim Start reparieren",
+    "serviceBehaviour.repairNetworkHelp": "Standardmäßig deaktiviert. Beim Start/Bereitstellen wird dieser gestoppte Dienst nur neu erstellt, wenn sein Netzwerk unter demselben Namen neu erstellt wurde. Keine Volumes werden gelöscht. Laufende Replikate oder Netzwerk-Namespace-Abhängige erfordern eine ausdrückliche Neuerstellung. Auch die verknüpften Hosting-Instanzen aktualisieren.",
+    "releaseNews.item.networkRepair": "Neu erstelltes Netzwerk beim Start reparieren. Standardmäßig deaktiviert. Beim Start/Bereitstellen wird dieser gestoppte Dienst nur neu erstellt, wenn sein Netzwerk unter demselben Namen neu erstellt wurde. Keine Volumes werden gelöscht. Laufende Replikate oder Netzwerk-Namespace-Abhängige erfordern eine ausdrückliche Neuerstellung. Auch die verknüpften Hosting-Instanzen aktualisieren.",
     "releaseNews.item.configurationTools": "Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, .env-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung.",
     "configTools.title": "Dateien und Verlauf",
     "configTools.diagnostics": "Instanzdiagnose",

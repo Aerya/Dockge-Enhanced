@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-04-network-repair",
+        items: [ "releaseNews.item.networkRepair" ],
+    },
+    {
         id: "2026-11-04-configuration-tools",
         items: [ "releaseNews.item.configurationTools" ],
     },
