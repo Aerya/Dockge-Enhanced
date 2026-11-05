@@ -4,7 +4,6 @@
 
 # Dockge Enhanced
 
-> **Branche de test — interface compacte facultative :** prototype visuel inspiré de [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod), absent de `main` et de l’image `latest`. Dans **Paramètres → Apparence → Présentation**, choisir **Compacte** (ou utiliser le bouton de l’en-tête). Classique reste le choix par défaut. Les services s’affichent en lignes au-dessus des panneaux Logs et Compose ; le choix est enregistré par compte dans ce navigateur. Utiliser une instance séparée et des stacks jetables, jamais les données de production ; laisser le nettoyage automatique et l’auto-mise à jour désactivés.
 
 Dockge Enhanced est un fork de [Dockge](https://github.com/louislam/dockge) pour administrer vos environnements Docker Compose depuis une interface web, sur un ou plusieurs serveurs. Il réunit la gestion des stacks et des conteneurs, la recherche globale et l’accès aux fichiers, la migration et la réplication, les sauvegardes avec Restic ou Zerobyte, les mises à jour avec rollback, ainsi que la supervision, les contrôles de sécurité et l’automatisation. Ses intégrations et ses outils de récupération permettent de suivre et de maintenir vos services au quotidien.
 
@@ -65,6 +64,24 @@ Dockge Enhanced est un fork de [Dockge](https://github.com/louislam/dockge) pour
 Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
 ### 🆕 Novembre 2026
+
+**Interface compacte :** Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation ou l’en-tête. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.
+
+**Groupes de stacks personnalisés :** Créez des groupes repliables réunissant des stacks de plusieurs instances. La recherche révèle les résultats même dans les groupes fermés ; tris, favoris et permissions sont conservés. Préférences enregistrées par compte dans ce navigateur, sans synchronisation entre navigateurs.
+
+**Nettoyage après mise à jour :** Deux options indépendantes, activées par défaut : nettoyer les images remplacées et conserver un rollback pendant 24 h. Réglez tous les services actuels depuis l’éditeur de stack, ou personnalisez chaque service. Sans rollback, le nettoyage devient possible après une mise à jour vérifiée ; avec rollback, il attend 24 h. La file ciblée survit aux redémarrages et fonctionne même si la purge globale est désactivée. Les images utilisées ailleurs, exclues ou protégées restent conservées. Mettez aussi à jour les instances liées. Le rollback d’image ne restaure pas les données applicatives.
+
+**Récupération de la connexion Docker :** Récupération facultative lorsqu’un redémarrage de Docker laisse un ancien socket monté. Réglez `DOCKGE_DOCKER_RECOVERY_RETRIES` (`0` par défaut, désactivé) et `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (`30` par défaut). Après des échecs de connexion consécutifs, Enhanced s’arrête proprement pour que `restart: unless-stopped` ou `always` le relance ; les opérations actives reportent cet arrêt. Chaque processus doit avoir joint Docker au moins une fois avant d’autoriser cet arrêt, pour éviter les boucles au démarrage. Les erreurs de droits, TLS ou configuration ne déclenchent pas la récupération.
+
+**Messages de l’interface :** Les messages courants de sauvegarde, planification, ImageWatcher et nettoyage suivent la langue de l’interface, y compris lorsqu’ils proviennent d’une instance liée plus ancienne. Les détails techniques inconnus restent affichés sans modification.
+
+**Terminal web :** Le terminal web déclare correctement xterm-256color : couleurs et effacement de l’écran fonctionnent sans modifier les permissions ni les environnements explicitement restreints.
+
+**Liens des services :** Une page distincte réservée aux administrateurs regroupe les raccourcis HTTP/HTTPS manuels et les `x-dockge.urls` des stacks locales et liées, avec recherche et classement. L’accueil reste inchangé. Mettez les instances liées à jour pour afficher leurs liens ; ces raccourcis ne contrôlent pas la disponibilité des services.
+
+**Réparation réseau au démarrage :** Désactivé par défaut. Au démarrage/déploiement, recrée ce service arrêté uniquement si son réseau a été recréé sous le même nom. Aucun volume supprimé. Les réplicas ou dépendants réseau encore actifs exigent une recréation explicite. Mettez aussi à jour les instances liées qui hébergent les stacks. `dockge.start.repair-network: "true"`.
+
+**Outils de configuration :** Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Outils de configuration](docs/configuration-tools.fr.md).
 
 **Comptage anonyme par période :** Estimations indépendantes par semaine, mois et année ; Discord affiche la semaine écoulée, le mois en cours, tous les mois passés et l’année sans additionner les mois. L’historique mensuel est conservé ; périodes incomplètes et limites de migration sont explicites.
 
@@ -481,6 +498,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Choix par instance du nom d’hôte ou de l’adresse IP pour les liens de ports des conteneurs
 
 ### Gestion des stacks
+- Groupes personnalisés repliables multi-instances, avec préférences par compte dans le navigateur
+- Réparer un réseau recréé au démarrage (`dockge.start.repair-network`)
 - Windows 11 avec Docker Desktop/WSL2 : [installation et limites](docs/windows.fr.md)
 - Création, édition, démarrage, arrêt, redémarrage, mise à jour, recréation, pause/reprise et démontage des stacks Compose
 - Barre d’actions de stack directement accessible, en mode icônes seules ou icônes avec texte, avec les commandes Compose expliquées
@@ -500,6 +519,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Option par service pour ignorer un service facultatif dans l’état global de la stack
 
 ### Édition Compose
+
+- **Outils de configuration** — Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Guide](docs/configuration-tools.fr.md).
 
 - **Nom du fichier Compose par défaut** — COMPOSE_FILENAME choisit compose.yaml (par défaut), compose.yml, docker-compose.yaml ou docker-compose.yml uniquement pour les nouvelles stacks. Les stacks existantes et adoptées conservent leurs fichiers. Les autres noms et chemins sont refusés.
 - limites CPU/RAM facultatives par service — Modifie uniquement le brouillon. Enregistrez, puis déployez/recréez explicitement pour appliquer aux conteneurs ; les conteneurs actifs ne sont pas modifiés ici.
@@ -543,6 +564,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Mises à jour & ImageWatcher
 
+- Nettoyage ciblé après mise à jour et rollback indépendant de 24 h, réglables par service
+
 - **Mises à jour sans interruption de service** — `dockge.rollout.enabled: "true"`. Vérifiez cette compatibilité avant d’activer l’option. Le nombre de conteneurs de l’application double temporairement : prévoyez assez de CPU/RAM. Les noms de conteneurs fixes et les volumes partagés en écriture sont refusés. Le relais ajoute un conteneur et un volume de configuration. Sa première installation déplace le port d’accès et peut provoquer une coupure. Utilisez ensuite Mettre à jour ; Recreate, les redémarrages et le rollback ne garantissent pas le maintien des connexions. TCP uniquement, pas UDP/QUIC ; aucune garantie universelle de zéro coupure. [Mise en place](docs/service-rollout.fr.md).
 - Détection des mises à jour d’images par digest, sans pull, y compris sur les instances distantes [Vérification des mises à jour d’images: Correctif proposé dans cette branche ; pas encore publié.](docs/image-update-verification.fr.md).
 - Politiques Désactivé, Immédiat et Planifié par image, et réglages groupés par stack qui conservent par défaut les exceptions individuelles
@@ -576,6 +599,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Contrôles des magasins de certificats TLS après l’incident eMudhra ([contrôles TLS](security/emudhra/README.md))
 
 ### Supervision
+- **Récupération de la connexion Docker** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - Statistiques CPU, RAM et disque du système, des stacks et des conteneurs, avec barre d’état configurable
 - Détails du système hôte, températures et partitions disque surveillées
 - Historique CPU/RAM facultatif toutes les 5 minutes pour l’hôte et par service Compose, avec interruptions visibles
@@ -617,6 +641,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Home Assistant
 
 ### Apparence & langues
+- **Liens des services** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Palettes jour et nuit distinctes, y compris les thèmes d’origine de Dockge-Enhanced
 - Options Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night et Rosé Pine
 - Préférences enregistrées dans le navigateur et mode Auto qui suit le système
@@ -916,6 +941,8 @@ Pour publier un service, éditez sa stack puis utilisez **Publication PlugNPiN (
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Dossier contenant les stacks Docker Compose |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME choisit compose.yaml (par défaut), compose.yml, docker-compose.yaml ou docker-compose.yml uniquement pour les nouvelles stacks. Les stacks existantes et adoptées conservent leurs fichiers. Les autres noms et chemins sont refusés. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dossier de données Dockge ; ne le modifier que pour un montage persistant personnalisé |
+| `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Échecs consécutifs avant arrêt (0 désactive ; maximum 100) |
+| `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Secondes entre contrôles terminés (5–3600 ; chaque sonde expire après 5 secondes) |
 | `DOCKGE_PUBLIC_URL` | *(aucun)* | URL publique utilisée dans les liens des notifications Discord (ex : `https://dockge.mondomaine.fr`) |
 | `DOCKER_API_VERSION` | *(aucun)* | Fixe la version d'API Docker négociée par le client — utile sur certains NAS (ex : Synology DSM 7.x) |
 | `TZ` | `UTC` | Fuseau du processus dans le conteneur ; utilisé par défaut tant qu’aucun fuseau n’est choisi dans **Paramètres → Général**. Le choix WebUI est prioritaire pour les planifications d’Enhanced. |
@@ -1029,6 +1056,8 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 
 ## Crédits
 
+- [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — inspiration pour le tableau des liens de services.
+
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
 - [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — inspiration pour la détection des conflits de ports, le contrôle des écarts Compose et l’intégration Home Assistant.
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — source d’améliorations importantes de l’UI/UX, des thèmes, de l’internationalisation et de l’architecture frontend adaptées dans ce projet
@@ -1038,6 +1067,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration pour les limites CPU/RAM facultatives par service, adaptées sans modifier les permissions des comptes limités
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Nom du fichier Compose par défaut.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Mises à jour sans interruption de service.
+- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiration pour l’historique des fichiers, le Compose fusionné, le formulaire `.env` et la page de diagnostic. Interface compacte.
 - [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) par Lorwell — inspiration pour le gestionnaire de fichiers hôte restreint et la vue par conteneur réel adaptés à Enhanced (licence MIT)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) par DeepSpace2 — automatisation optionnelle du DNS et de Nginx Proxy Manager (GPLv3)

@@ -1,12 +1,29 @@
 # Dockge Enhanced Changelog
 
-> **Test branch — optional compact interface:** visual prototype inspired by [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod), not included in `main` or the `latest` image. In **Settings → Appearance → Layout**, select **Compact** (or use the header toggle). Classic remains the default. Services appear as rows above the Logs and Compose panels; the preference is stored per account in this browser. Use a separate test instance and disposable stacks, never production data; keep automatic cleanup and self-updates disabled.
 
 > **Windows 11 / WSL2 validation:** installation guide, tested Compose actions, Restic/Zerobyte backups and linked instances. The Windows sidecar mount and shared-network restart fixes preserve Linux/Unraid paths and permissions. [Windows 11 with Docker Desktop (WSL2)](docs/windows.md). After restarting Windows, some WSL mounts require the manual recovery described in the guide.
 
 Complete project history, newest first. Each date is the day the change was merged into `main`. Application changes merged into `main` are published as `ghcr.io/aerya/dockge-enhanced:latest` by the build workflow; documentation-only commits do not produce a new image. Features that exist only in an open pull request or a test image are not listed here.
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
+
+**2026-11-05 — Compact layout** — Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout or the header. Classic remains the default. Saved per account in this browser.
+
+**2026-11-05 — Custom stack groups** — Create collapsible groups containing stacks from several instances. Search reveals matching stacks even in closed groups; sorting, favourites and access permissions are preserved. Preferences are saved per account in this browser, not synchronised between browsers.
+
+**2026-11-05 — Cleanup after updates** — Two independent options, both enabled by default: clean up replaced images and retain rollback for 24 hours. Configure all current services from the stack editor, or customize each service. With rollback disabled, cleanup becomes eligible after a verified update; with rollback enabled, it waits 24 hours. The targeted queue survives restarts and runs even with global pruning disabled. Images used elsewhere, excluded or protected remain retained. Update linked instances too. Image rollback does not restore application data.
+
+**2026-11-05 — Docker connection recovery** — Optional recovery after a Docker restart leaves an obsolete socket mount. Set `DOCKGE_DOCKER_RECOVERY_RETRIES` (default `0`, disabled) and `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (default `30`). After consecutive connection failures, Enhanced exits gracefully so `restart: unless-stopped` or `always` can restart it; active operations defer the exit. A successful Docker connection is required in each process before restart is armed, preventing startup loops. Permissions, TLS and configuration errors do not trigger recovery.
+
+**2026-11-04 — Interface messages** — Common backup, scheduling, ImageWatcher and cleanup messages follow the interface language, including messages from older linked instances. Unknown technical details remain visible unchanged.
+
+**2026-11-04 — Web terminal** — The web terminal now declares xterm-256color correctly: colours and screen clearing work without changing permissions or explicitly restricted environments.
+
+**2026-11-04 — Service links** — A separate administrator page groups manual HTTP/HTTPS shortcuts and Compose `x-dockge.urls` from local and linked instances, with search and ordering. The home page stays unchanged. Update linked instances to display their links; these shortcuts do not check service health.
+
+**2026-11-04 — Network repair on start** — Disabled by default. On Start/Deploy, recreate this stopped service only if its network was recreated under the same name. No volumes are deleted. Running replicas or namespace dependants require an explicit recreation. Update linked hosting instances too.
+
+**2026-11-04 — Configuration tools** — Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Configuration tools](docs/configuration-tools.md).
 
 **2026-11-02 — Anonymous counts by period** — Independent weekly, monthly and yearly estimates; Discord reports the previous week, current month, every past month and the current year without adding monthly totals. Existing monthly history is preserved; incomplete periods and migration limits are explicit.
 

@@ -1,12 +1,29 @@
 # Changelog de Dockge Enhanced
 
-> **Rama de prueba — interfaz compacta opcional:** prototipo visual inspirado en [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod), no incluido en `main` ni en la imagen `latest`. En **Ajustes → Apariencia → Presentación**, seleccione **Compacta** (o use el botón de la cabecera). Clásica sigue siendo la opción predeterminada. Los servicios aparecen en filas sobre los paneles de logs y Compose; la preferencia se guarda por cuenta en este navegador. Use una instancia separada y stacks desechables, nunca datos de producción; mantenga desactivadas la limpieza automática y la autoactualización.
 
 > **Validación de Windows 11 / WSL2:** guía de instalación, acciones Compose, copias Restic/Zerobyte e instancias vinculadas probadas. Las correcciones de los montajes Windows del sidecar y del reinicio ordenado de servicios con red compartida conservan las rutas y permisos Linux/Unraid. [Windows 11 con Docker Desktop (WSL2)](docs/windows.es.md). Tras reiniciar Windows, algunos montajes WSL requieren la recuperación manual descrita en la guía.
 
 Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fecha corresponde al día en que el cambio se fusionó en `main`. Los cambios de la aplicación fusionados en `main` se publican como `ghcr.io/aerya/dockge-enhanced:latest` mediante el workflow de compilación; los commits solo de documentación no generan una nueva imagen. Las funciones que solo existen en una pull request abierta o en una imagen de prueba no aparecen aquí.
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
+
+**2026-11-05 — Interfaz compacta** — Vista opcional inspirada en ethanpil/dockge-mod: servicios en filas sobre Logs y Compose. Seleccione Compacta en Ajustes → Apariencia → Diseño o en la cabecera. Clásica sigue siendo la opción predeterminada. Guardada por cuenta en este navegador.
+
+**2026-11-05 — Grupos personalizados de stacks** — Crea grupos plegables con stacks de varias instancias. La búsqueda muestra coincidencias incluso en grupos cerrados; se mantienen la ordenación, los favoritos y los permisos. Preferencias guardadas por cuenta en este navegador, sin sincronización entre navegadores.
+
+**2026-11-05 — Limpieza después de actualizar** — Dos opciones independientes, activadas por defecto: limpiar las imágenes sustituidas y conservar un rollback durante 24 horas. Configura todos los servicios actuales desde el editor del stack o personaliza cada servicio. Sin rollback, la limpieza es posible tras una actualización verificada; con rollback, espera 24 horas. La cola específica sobrevive a los reinicios y funciona aunque la limpieza global esté desactivada. Se conservan las imágenes usadas en otro lugar, excluidas o protegidas. Actualiza también las instancias vinculadas. El rollback de imagen no restaura los datos de la aplicación.
+
+**2026-11-05 — Recuperación de la conexión Docker** — Recuperación opcional cuando un reinicio de Docker deja montado el socket antiguo. Configura `DOCKGE_DOCKER_RECOVERY_RETRIES` (`0` por defecto, desactivado) y `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (`30` por defecto). Tras fallos consecutivos de conexión, Enhanced termina ordenadamente para que `restart: unless-stopped` o `always` lo reinicie; las operaciones activas aplazan la salida. Cada proceso debe haber conectado correctamente con Docker antes de permitir la salida, evitando bucles al arrancar. Los errores de permisos, TLS o configuración no activan la recuperación.
+
+**2026-11-04 — Mensajes de la interfaz** — Los mensajes habituales de copias, planificación, ImageWatcher y limpieza siguen el idioma de la interfaz, incluidos los de instancias enlazadas antiguas. Los detalles técnicos desconocidos se conservan sin cambios.
+
+**2026-11-04 — Terminal web** — El terminal web declara correctamente xterm-256color: funcionan los colores y la limpieza de pantalla sin cambiar los permisos ni los entornos restringidos explícitamente.
+
+**2026-11-04 — Enlaces de servicios** — Una página independiente para administradores agrupa accesos HTTP/HTTPS manuales y `x-dockge.urls` de stacks locales y vinculadas, con búsqueda y ordenación. El inicio no cambia. Actualiza las instancias vinculadas para mostrar sus enlaces; los accesos no comprueban la disponibilidad de los servicios.
+
+**2026-11-04 — Reparación de red al iniciar** — Desactivado por defecto. Al iniciar/desplegar, recrea este servicio detenido solo si su red se ha recreado con el mismo nombre. No se elimina ningún volumen. Las réplicas o dependientes del espacio de red en ejecución requieren una recreación explícita. Actualice también las instancias enlazadas que alojan las stacks.
+
+**2026-11-04 — Herramientas de configuración** — Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Herramientas de configuración](docs/configuration-tools.es.md).
 
 **2026-11-02 — Conteo anónimo por período** — Estimaciones independientes por semana, mes y año; Discord muestra la semana anterior, mes actual, todos los meses pasados y año sin sumar los meses. Se conserva el historial mensual y se indican períodos incompletos y límites de migración.
 

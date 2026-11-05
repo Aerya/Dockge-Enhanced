@@ -17,7 +17,7 @@ for (const name of [ "a", "b" ]) {
     await fs.mkdir(path.join(root, "stacks", name), { recursive: true });
     await fs.writeFile(path.join(root, "stacks", name, "compose.yaml"), "services:\n  app:\n    image: fixture/shared:latest\n");
 }
-await fs.writeFile(path.join(root, "bin", "docker"), `#!${process.execPath}
+await fs.writeFile(path.join(root, "bin", "docker"), `#!${process.execPath} --
 const fs = require("node:fs"), path = require("node:path");
 const root = ${JSON.stringify(root)}, args = process.argv.slice(2);
 fs.appendFileSync(path.join(root, "commands"), JSON.stringify(args) + "\\n");
@@ -33,8 +33,12 @@ if (fs.existsSync(path.join(root, "rollout-valid"))) {
       Mounts:[],NetworkSettings:{Networks:{fixture:{}}}});
     let output = "";
     if (args.includes("config")) output=JSON.stringify({name:"fixture",services:{app:{image:"fixture/shared:latest",labels,healthcheck:{test:["CMD-SHELL",health+"true"]}},sibling:{image:"fixture/shared:latest"}}});
-    else if (args.includes("ps")) output=args.includes("paused")?"":args.includes("--services")?"app\\nsibling":args[0]!=="compose"?proxy+"\\n"+old:args.includes("-aq")?[...(state.removed?[]:[old]),...(state.created?[next]:[])].join("\\n"):old;
-    else if (args[0]==="container") output=args.includes("{{json .}}") ? JSON.stringify({ ...container(old),State:{Running:true,Health:{Status:"healthy"}},Image:state.siblingUpdated?target:previous,Config:{Labels:{"com.docker.compose.service":"sibling"}} }) : previous;
+    else if (args.includes("ps")) output=args.includes("paused")?"":args.includes("--services")?"app\\nsibling":args[0]!=="compose"?proxy+"\\n"+old:args.includes("--all")?(args.at(-1)==="sibling"?"sibling":[...(state.removed?[]:[old]),...(state.created?[next]:[])].join("\\n")):args.includes("-aq")?[...(state.removed?[]:[old]),...(state.created?[next]:[])].join("\\n"):old;
+    else if (args[0]==="container") {
+        if (args.some(a=>a.includes('"Config"'))) {
+            output=args.slice(4).map(id=>{ const c=id==="sibling"?{Image:state.siblingUpdated?target:previous,State:{Running:true},Config:{Labels:{"com.docker.compose.service":"sibling"}}}:container(id);return JSON.stringify(c); }).join("\\n");
+        } else output=args.includes("{{json .}}") ? JSON.stringify({ ...container(old),State:{Running:true,Health:{Status:"healthy"}},Image:state.siblingUpdated?target:previous,Config:{Labels:{"com.docker.compose.service":"sibling"}} }) : previous;
+    }
     else if (args[0]==="inspect") output=JSON.stringify(args.slice(1).map(container));
     else if (args[0]==="image") output=args.includes("{{json .}}") ? JSON.stringify({Id:target}) : target;
     else if (args.includes("--scale")) state.created=true;
@@ -62,8 +66,9 @@ if (args.includes("config")) {
 else if (args.includes("ps")) console.log(args.includes("paused") ? "" : args.includes("-q") ? "container-fixture" : "app");
 else if (args.includes("inspect")) {
     const imageId = "sha256:" + "d".repeat(64);
-    console.log(args.includes("{{json .}}") ? JSON.stringify(args[0] === "image" ? {Id:imageId} : {Image:imageId,State:{Running:true},Config:{Labels:{"com.docker.compose.service":"app"}}}) : imageId);
+    console.log(args.some(a=>a.includes('"Config"')) ? JSON.stringify({Image:imageId,State:{Running:true},Config:{Labels:{"com.docker.compose.service":"app"}}}) : args.includes("{{json .}}") ? JSON.stringify(args[0] === "image" ? {Id:imageId} : {Image:imageId,State:{Running:true},Config:{Labels:{"com.docker.compose.service":"app"}}}) : imageId);
 }
+else if (args[0] === "images") console.log("");
 else if (!args.some(a => ["pull", "up", "tag", "rmi"].includes(a))) process.exit(3);
 `, { mode: 0o700 });
 process.env.PATH = path.join(root, "bin") + path.delimiter + savedEnv.PATH;
@@ -143,12 +148,17 @@ test("ImageWatcher executes rolling update, recreates only remaining services, p
     assert.equal(updateHistoryStore[0].mode, "scheduled");
     assert.ok(JSON.parse(await fs.readFile(path.join(root, "stacks", "a", ".dockge-meta.json"), "utf8")).lastUpdated);
     assert.equal(JSON.parse(await fs.readFile(path.join(root, "data", "update-history.json"), "utf8"))[0].success, true);
-    await w.performRollback(key("a"));
+    const entries = [ ...rollbackStore.values() ].filter(entry => entry.stack === "a");
+    assert.deepEqual(entries.map(entry => entry.service).sort(), [ "app", "sibling" ]);
+    for (const entry of entries) {
+        await w.performRollback(entry.key);
+    }
     const rollbackCalls = (await commands()).slice(calls.length);
     assert.ok(rollbackCalls.some(args => args[0] === "tag" && args[1] === "sha256:" + "d".repeat(64)));
-    assert.ok(rollbackCalls.some(args => args.includes("up") && args.includes("app") && args.includes("sibling")));
+    assert.ok(rollbackCalls.some(args => args.includes("up") && args.includes("app")));
+    assert.ok(rollbackCalls.some(args => args.includes("up") && args.includes("sibling")));
     assert.equal(rollbackCalls.some(args => args.includes("--scale")), false, "explicit rollback retains the ordinary recreation contract");
-    assert.equal(rollbackStore.has(key("a")), false);
+    assert.equal([ ...rollbackStore.values() ].some(entry => entry.stack === "a"), false);
 });
 after(async () => {
     for (const [ name, value ] of Object.entries(savedEnv)) {
@@ -447,4 +457,73 @@ test("manual cleanup and image mutations exclude one another in both directions"
     } finally {
         reservation.release();
     }
+});
+
+test("post-update worker runs without registry scanning and does not block on its own reservation", async t => {
+    const { Settings } = await import("../settings");
+    const { AutoPruneManager } = await import("./auto-prune-manager");
+    const { tryReserveDockerUpdate } = await import("../self-update/operation-coordinator");
+    const manager = AutoPruneManager.getInstance();
+    const saved = { get: Settings.get,
+        inspect: manager.assertImageRemovalAllowed,
+        remove: manager.removePhysicalImageSafely };
+    t.after(() => {
+        Settings.get = saved.get;
+        manager.assertImageRemovalAllowed = saved.inspect;
+        manager.removePhysicalImageSafely = saved.remove;
+    });
+    Settings.get = async () => null;
+    const removed: string[] = [];
+    manager.assertImageRemovalAllowed = async id => ({ Id: id });
+    manager.removePhysicalImageSafely = async image => {
+        removed.push(image.Id);
+        return true;
+    };
+    const w = new ImageWatcher(path.join(root, "data"));
+    const imageId = `sha256:${"9".repeat(64)}`;
+    await w.retainPostUpdateImages([{ service: "app",
+        image: "fixture/cleanup:latest",
+        oldImageId: imageId,
+        targetImageId: `sha256:${"8".repeat(64)}`,
+        replicas: 1,
+        policy: { cleanup: true,
+            rollback: false } }], { ...watched("a"),
+        name: "a" }, true);
+    const reservation = tryReserveDockerUpdate("self-update");
+    assert.ok(reservation);
+    try {
+        await w.runPostUpdateCleanup();
+        assert.deepEqual(removed, []);
+    } finally {
+        reservation.release();
+    }
+    await w.runPostUpdateCleanup();
+    assert.deepEqual(removed, [ imageId ]);
+    await w.runPostUpdateCleanup();
+    assert.deepEqual(removed, [ imageId ]);
+});
+
+test("manual rollback preserves the exact Compose file, environment and project options", async () => {
+    const w = new ImageWatcher(path.join(root, "data"));
+    (w as unknown as Harness).checkOneImage = async () => ({ ...status("a"),
+        hasUpdate: false });
+    const base = [ "compose", "--project-name", "fixture", "--env-file", "fixture.env", "-f", "custom.yaml", "-f", "custom.override.yaml" ];
+    await w.retainPostUpdateImages([{ service: "app",
+        image: "fixture/shared:latest",
+        oldImageId: `sha256:${"d".repeat(64)}`,
+        targetImageId: `sha256:${"e".repeat(64)}`,
+        replicas: 1,
+        policy: { cleanup: false,
+            rollback: true } }], {
+        ...watched("a"),
+        name: "a",
+        workingDir: path.dirname(watched("a").composePath),
+        composeBaseArgs: base,
+    });
+    const entry = [ ...rollbackStore.values() ].find(value => value.stack === "a");
+    assert.ok(entry);
+    await w.performRollback(entry.key);
+    const up = (await commands()).find(args => args.includes("up"));
+    assert.ok(up);
+    assert.deepEqual(up.slice(0, base.length), base);
 });

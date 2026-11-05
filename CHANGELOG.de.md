@@ -1,12 +1,29 @@
 # Dockge-Enhanced-Changelog
 
-> **Testbranch — optionale kompakte Oberfläche:** visueller Prototyp nach dem Vorbild von [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod), nicht in `main` oder im Image `latest` enthalten. Unter **Einstellungen → Erscheinungsbild → Darstellung** die Option **Kompakt** wählen (oder die Schaltfläche im Kopfbereich verwenden). Klassisch bleibt die Standardeinstellung. Dienste erscheinen als Zeilen über den Logs- und Compose-Bereichen; die Auswahl wird pro Konto in diesem Browser gespeichert. Eine separate Testinstanz und entbehrliche Stacks verwenden, niemals Produktionsdaten; automatische Bereinigung und Selbstaktualisierung deaktiviert lassen.
 
 > **Validierung unter Windows 11 / WSL2:** Installationsanleitung, Compose-Aktionen, Restic-/Zerobyte-Sicherungen und verbundene Instanzen getestet. Die Korrekturen für Windows-Sidecar-Mounts und geordnete Neustarts bei gemeinsamem Netzwerk erhalten Linux-/Unraid-Pfade und Berechtigungen. [Windows 11 mit Docker Desktop (WSL2)](docs/windows.de.md). Nach einem Windows-Neustart benötigen manche WSL-Mounts die im Leitfaden beschriebene manuelle Wiederaufnahme.
 
 Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag, an dem die Änderung in `main` gemergt wurde. Anwendungsänderungen in `main` werden vom Build-Workflow als `ghcr.io/aerya/dockge-enhanced:latest` veröffentlicht; reine Dokumentations-Commits erzeugen kein neues Image. Funktionen, die nur in einem offenen Pull Request oder einem Test-Image existieren, werden hier nicht aufgeführt.
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
+
+**2026-11-05 — Kompakte Oberfläche** — Optionale Ansicht, inspiriert von ethanpil/dockge-mod: Dienste als Zeilen über Logs und Compose. Kompakt unter Einstellungen → Erscheinungsbild → Layout oder in der Kopfzeile wählen. Klassisch bleibt Standard. Pro Konto in diesem Browser gespeichert.
+
+**2026-11-05 — Eigene Stack-Gruppen** — Einklappbare Gruppen mit Stacks mehrerer Instanzen erstellen. Die Suche zeigt Treffer auch in geschlossenen Gruppen; Sortierung, Favoriten und Zugriffsrechte bleiben erhalten. Einstellungen gelten pro Konto in diesem Browser und werden nicht zwischen Browsern synchronisiert.
+
+**2026-11-05 — Bereinigung nach Updates** — Zwei unabhängige Optionen, beide standardmäßig aktiviert: ersetzte Images bereinigen und Rollback 24 Stunden aufbewahren. Im Stack-Editor alle aktuellen Dienste einstellen oder jeden Dienst einzeln anpassen. Ohne Rollback ist die Bereinigung nach einem verifizierten Update möglich; mit Rollback wartet sie 24 Stunden. Die gezielte Warteschlange übersteht Neustarts und funktioniert auch ohne globale Bereinigung. Anderweitig verwendete, ausgeschlossene oder geschützte Images bleiben erhalten. Auch verknüpfte Instanzen aktualisieren. Ein Image-Rollback stellt keine Anwendungsdaten wieder her.
+
+**2026-11-05 — Docker-Verbindung wiederherstellen** — Optionale Wiederherstellung, wenn nach einem Docker-Neustart der alte Socket eingebunden bleibt. `DOCKGE_DOCKER_RECOVERY_RETRIES` (Standard `0`, deaktiviert) und `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (Standard `30`) konfigurieren. Nach aufeinanderfolgenden Verbindungsfehlern beendet sich Enhanced geordnet, damit `restart: unless-stopped` oder `always` es neu startet; aktive Vorgänge verschieben das Beenden. Jeder Prozess muss Docker zuvor erfolgreich erreicht haben, um Startschleifen zu verhindern. Berechtigungs-, TLS- und Konfigurationsfehler lösen keine Wiederherstellung aus.
+
+**2026-11-04 — Oberflächenmeldungen** — Häufige Meldungen zu Sicherung, Zeitplanung, ImageWatcher und Bereinigung folgen der Oberflächensprache, auch von älteren verknüpften Instanzen. Unbekannte technische Details bleiben unverändert sichtbar.
+
+**2026-11-04 — Webterminal** — Das Webterminal meldet xterm-256color korrekt: Farben und Bildschirmleeren funktionieren, ohne Berechtigungen oder ausdrücklich eingeschränkte Umgebungen zu ändern.
+
+**2026-11-04 — Dienstlinks** — Eine eigene Administratorseite bündelt manuelle HTTP/HTTPS-Verknüpfungen und Compose-`x-dockge.urls` lokaler und verbundener Instanzen, mit Suche und Sortierung. Die Startseite bleibt unverändert. Verbundene Instanzen müssen für ihre Links aktualisiert werden; die Verknüpfungen prüfen nicht die Dienstverfügbarkeit.
+
+**2026-11-04 — Netzwerkreparatur beim Start** — Standardmäßig deaktiviert. Beim Start/Bereitstellen wird dieser gestoppte Dienst nur neu erstellt, wenn sein Netzwerk unter demselben Namen neu erstellt wurde. Keine Volumes werden gelöscht. Laufende Replikate oder Netzwerk-Namespace-Abhängige erfordern eine ausdrückliche Neuerstellung. Auch die verknüpften Hosting-Instanzen aktualisieren.
+
+**2026-11-04 — Konfigurationswerkzeuge** — Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Konfigurationswerkzeuge](docs/configuration-tools.de.md).
 
 **2026-11-02 — Anonyme Zählung nach Zeitraum** — Unabhängige Schätzungen für Woche, Monat und Jahr; Discord zeigt vergangene Woche, laufenden Monat, alle früheren Monate und das Jahr ohne Addition der Monatswerte. Monatshistorie bleibt erhalten; unvollständige Zeiträume und Migrationsgrenzen werden gekennzeichnet.
 

@@ -1,4 +1,8 @@
 import { DockgeServer } from "./dockge-server";
+import { capturePostUpdateSnapshot, resolvePostUpdateTargets, verifiedPostUpdateSnapshots, type PostUpdateSnapshot } from "./post-update-snapshot";
+import { StackFileHistory } from "./stack-file-history";
+import { networkRepairTargets } from "./compose-network-repair";
+import type { ResolvedComposeModel } from "./compose-network-namespace";
 import fs, { promises as fsAsync } from "fs";
 import { log } from "./log";
 import yaml from "yaml";
@@ -34,7 +38,7 @@ import {
     targetedComposeRecreateArgsForTargets,
 } from "./compose-network-namespace";
 import { ContainerInstance, parseContainerInstances, requireContainerInstance } from "./container-instances";
-import { trackDockerBuild } from "./docker-operation-state";
+import { trackDockerBuild, isDockerCleanupActive } from "./docker-operation-state";
 import { withStackMetadataWriteLock } from "./stack-metadata-lock";
 import { prepareRollout, rolloutTransport, type ComposeRun } from "./service-rollout";
 import { rolloutStates } from "./rollout-recovery";
@@ -427,6 +431,7 @@ export class Stack {
             isManagedByDockge: this.isManagedByDockge,
             composeFileName: this._composeFileName,
             supportsServiceRollout: true,
+            supportsPostUpdateCleanup: true,
             rollingUpdates: rolloutStates(this.path, true),
             buildServices: this.getBuildServices(),
             createdAt,
@@ -570,6 +575,18 @@ export class Stack {
         return path.resolve(this.path);
     }
 
+    get configurationFiles(): Record<string, string> {
+        const files = this.isExternal ? [
+            ...(this._externalConfigFiles?.length ? this._externalConfigFiles : [ this._configFilePath ?? path.join(this.path, this._composeFileName) ]),
+            ...(this._externalEnvFiles?.length ? this._externalEnvFiles : [ path.join(this.path, ".env") ]),
+        ] : [ path.join(this.path, this._composeFileName), path.join(this.path, ".env"), path.join(this.path, COMPOSE_OVERRIDE_FILE) ];
+        return Object.fromEntries(files.map(file => [ path.resolve(file), path.resolve(file) ]));
+    }
+
+    get fileHistory(): StackFileHistory {
+        return new StackFileHistory(this.server.config.dataDir, this.operationProject);
+    }
+
     private get metaPath() : string {
         if (!this.isExternal) return path.join(this.path, ".dockge-meta.json");
         return path.join(this.server.config.dataDir, "external-stack-meta", `${this.name}.json`);
@@ -627,6 +644,10 @@ export class Stack {
             if (!await fileExists(dir)) {
                 throw new ValidationError("Stack not found");
             }
+        }
+
+        if (!isAdd) {
+            await this.fileHistory.capture(this.configurationFiles, "save");
         }
 
         // Write or overwrite the compose.yaml
@@ -997,6 +1018,7 @@ export class Stack {
     @stackMutation
     async deploy(socket : DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
+        await this.repairStartNetworks();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const outputChunks : string[] = [];
         let outputLength = 0;
@@ -1427,6 +1449,7 @@ export class Stack {
     @stackMutation
     async start(socket: DockgeSocket) {
         await this.assertStartGuard();
+        await this.repairStartNetworks();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--remove-orphans"), this.path);
         if (exitCode !== 0) {
@@ -1471,6 +1494,7 @@ export class Stack {
     @stackMutation
     async startScheduled(): Promise<number> {
         await this.assertStartGuard();
+        await this.repairStartNetworks();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--remove-orphans"), {
             cwd: this.path,
             encoding: "utf-8",
@@ -1523,6 +1547,9 @@ export class Stack {
         const args = action === "start"
             ? this.getComposeOptions("up", "-d", serviceName)
             : this.getComposeOptions("stop", ...[ ...targets ].reverse());
+        if (action === "start") {
+            await this.repairStartNetworks(undefined, [ serviceName ]);
+        }
         const res = await childProcessAsync.spawn("docker", args, {
             cwd: this.path,
             encoding: "utf-8",
@@ -1610,6 +1637,32 @@ export class Stack {
         return targets;
     }
 
+    // Called only inside the existing stack mutation lock, on the hosting agent.
+    private async repairStartNetworks(model?: ResolvedComposeModel, requested?: string[], authorizeTargets?: (targets: string[]) => Promise<void>): Promise<void> {
+        model ??= await this.getResolvedServiceModel();
+        const run = async (args: string[], compose: boolean) => {
+            const result = await childProcessAsync.spawn("docker", compose ? this.getComposeOptions(args[0], ...args.slice(1)) : args, {
+                cwd: this.path,
+                encoding: "utf-8",
+            });
+            if ((result.code ?? 0) !== 0) {
+                throw new Error("Network repair failed; Docker could not inspect or recreate the selected service");
+            }
+            return result.stdout?.toString() || "";
+        };
+        const targets = await networkRepairTargets(model, requested ?? Object.keys(model.services), run);
+        if (!targets.length) {
+            return;
+        }
+        if (authorizeTargets) {
+            await authorizeTargets(targets);
+        }
+        // Keep normal Compose dependency/start ordering. Repair attachments first,
+        // but do not start a service before the caller's regular up operation.
+        await run([ "up", "--no-start", "--force-recreate", "--no-deps", ...targets ], true);
+        serviceStatusCache.delete(this.name);
+    }
+
     @stackMutation
     async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate", authorizeTargets?: (targets: string[], managedRelays?: string[]) => Promise<void>): Promise<string[]> {
         if (action !== "stop") {
@@ -1631,6 +1684,7 @@ export class Stack {
             }
         };
         if (action === "start") {
+            await this.repairStartNetworks(model, [ serviceName ], authorizeTargets);
             await exec("up", "-d", ...(authorizeTargets ? [ "--no-deps" ] : []), serviceName);
         } else if (action === "stop") {
             await exec("stop", ...[ ...targets ].reverse());
@@ -1645,12 +1699,21 @@ export class Stack {
             // refreshed locally, force the selected service onto that image.
             // Network namespace dependants are recreated in the same operation
             // so they cannot remain attached to the old container namespace.
-            await exec("pull", serviceName);
-            await exec(...targetedComposeRecreateArgsForTargets(targets));
-            await this.writeMeta({ lastUpdated: new Date().toISOString(), lastStartedAt: new Date().toISOString() });
+            await this.withImageUpdateReservation(async () => {
+                const transport = rolloutTransport(this.getComposeOptions("config").slice(0, -1), this.path);
+                const postUpdate = await capturePostUpdateSnapshot(transport.compose, transport.docker, [ serviceName ]);
+                await exec("pull", serviceName);
+                await resolvePostUpdateTargets(postUpdate, transport.docker);
+                await this.retainUpdateImages(postUpdate);
+                await exec(...targetedComposeRecreateArgsForTargets(targets));
+                await this.writeMeta({ lastUpdated: new Date().toISOString(),
+                    lastStartedAt: new Date().toISOString() });
+                await this.retainUpdateImages(await verifiedPostUpdateSnapshots(postUpdate, transport.compose, transport.docker), true);
+            });
         } else {
             await exec(...targetedComposeRecreateArgsForTargets(targets));
-            await this.writeMeta({ lastUpdated: new Date().toISOString(), lastStartedAt: new Date().toISOString() });
+            await this.writeMeta({ lastUpdated: new Date().toISOString(),
+                lastStartedAt: new Date().toISOString() });
         }
         serviceStatusCache.delete(this.name);
         return targets;
@@ -1700,27 +1763,70 @@ export class Stack {
         return this.pullAndRecreate(socket);
     }
 
+    private async withImageUpdateReservation<T>(action: () => Promise<T>): Promise<T> {
+        if (isDockerCleanupActive()) {
+            throw new Error("Docker cleanup is active; retry later");
+        }
+        const reservation = tryReserveDockerUpdate("image-update");
+        if (!reservation) {
+            throw new Error("Another Docker update is active; retry later");
+        }
+        try {
+            const { isSelfUpdateBlockingImageMutations } = await import("./watchers/image-watcher");
+            if (await isSelfUpdateBlockingImageMutations(this.server.config.dataDir)) {
+                throw new Error("Self-update is active; retry later");
+            }
+            return await action();
+        } finally {
+            reservation.release();
+        }
+    }
+
+    private async retainUpdateImages(snapshots: PostUpdateSnapshot[], completed = false): Promise<void> {
+        const { ImageWatcher } = await import("./watchers/image-watcher");
+        const options = this.getComposeOptions("config");
+        const envFiles = options.flatMap((value, index) => value === "--env-file" ? [ path.resolve(this.path, options[index + 1]) ] : []);
+        const configFiles = this._externalConfigFiles?.length ? this._externalConfigFiles :
+            [ path.join(this.path, this._composeFileName), ...(fs.existsSync(path.join(this.path, COMPOSE_OVERRIDE_FILE)) ? [ path.join(this.path, COMPOSE_OVERRIDE_FILE) ] : []) ];
+        await ImageWatcher.getInstance().retainPostUpdateImages(snapshots.filter(snapshot => snapshot.targetImageId && snapshot.targetImageId !== snapshot.oldImageId), {
+            name: this.name,
+            composePath: configFiles[0],
+            configFiles,
+            workingDir: this.path,
+            project: this._externalProject,
+            envFiles,
+            composeBaseArgs: options.slice(0, -1),
+        }, completed);
+    }
+
     @stackMutation
     async pullAndRecreate(socket: DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
         if (await this.tryRollingUpdate()) {
             return 0;
         }
-        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("pull"), this.path);
-        if (exitCode !== 0) {
-            throw new Error("Failed to pull, please check the terminal output for more information.");
-        }
+        return this.withImageUpdateReservation(async () => {
+            const transport = rolloutTransport(this.getComposeOptions("config").slice(0, -1), this.path);
+            const postUpdate = await capturePostUpdateSnapshot(transport.compose, transport.docker);
+            const terminalName = getComposeTerminalName(socket.endpoint, this.name);
+            let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("pull"), this.path);
+            if (exitCode !== 0) {
+                throw new Error("Failed to pull, please check the terminal output for more information.");
+            }
+            await resolvePostUpdateTargets(postUpdate, transport.docker);
+            await this.retainUpdateImages(postUpdate);
 
-        const now = new Date().toISOString();
-        await this.writeMeta({ lastUpdated: now });
+            const now = new Date().toISOString();
+            await this.writeMeta({ lastUpdated: now });
 
-        exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), this.path);
-        if (exitCode !== 0) {
-            throw new Error("Failed to recreate, please check the terminal output for more information.");
-        }
-        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
-        return exitCode;
+            exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--force-recreate", "--remove-orphans"), this.path);
+            if (exitCode !== 0) {
+                throw new Error("Failed to recreate, please check the terminal output for more information.");
+            }
+            await this.writeMeta({ lastStartedAt: new Date().toISOString() });
+            await this.retainUpdateImages(await verifiedPostUpdateSnapshots(postUpdate, transport.compose, transport.docker), true);
+            return exitCode;
+        });
     }
 
     /** Only the opted-in update path changes; explicit recreate remains a recreate. */
@@ -1733,6 +1839,9 @@ export class Stack {
         }
         if (!targets && Object.values(resolved.services).some(service => Array.isArray(service.profiles) && service.profiles.length)) {
             throw new Error("Rolling updates on a stack with profiles must target an individual service");
+        }
+        if (isDockerCleanupActive()) {
+            throw new Error("Docker cleanup is active; retry later");
         }
         const reservation = tryReserveDockerUpdate("image-update");
         if (!reservation) {
@@ -1769,11 +1878,14 @@ export class Stack {
             if (authorize) {
                 await authorize([ ...names, ...plan.managedServices ], plan.managedServices);
             }
+            const postUpdate = await capturePostUpdateSnapshot(compose, transport.docker, names);
             await compose([ "pull", ...names ], 600_000);
+            await resolvePostUpdateTargets(postUpdate, transport.docker);
+            await this.retainUpdateImages(postUpdate);
             if (authorize) {
                 await authorize([ ...names, ...plan.managedServices ], plan.managedServices);
             }
-            await plan.execute(async () => {
+            const rolloutResult = await plan.execute(async () => {
                 if (authorize) {
                     await authorize([ ...names, ...plan.managedServices ], plan.managedServices);
                 }
@@ -1785,6 +1897,7 @@ export class Stack {
             }
             await this.writeMeta({ lastUpdated: new Date().toISOString(),
                 lastStartedAt: new Date().toISOString() });
+            await this.retainUpdateImages(rolloutResult.pending.length ? postUpdate : await verifiedPostUpdateSnapshots(postUpdate, compose, transport.docker), true);
             return true;
         } finally {
             reservation.release();

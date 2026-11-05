@@ -3,17 +3,19 @@
         <div v-if="settingsLoaded" class="my-4">
             <form class="my-4" autocomplete="off" @submit.prevent="saveGeneral">
                 <div class="shadow-box mb-3 editor-box edit-mode">
-                    <code-mirror
-                        ref="editor"
-                        v-model="settings.globalENV"
-                        :extensions="extensionsEnv"
-                        minimal
-                        wrap="true"
-                        :dark="$root.isDark"
-                        tab="true"
-                        :hasFocus="editorFocus"
-                        @change="onChange"
-                    />
+                    <EnvForm v-model="settings.globalENV">
+                        <code-mirror
+                            ref="editor"
+                            v-model="settings.globalENV"
+                            :extensions="extensionsEnv"
+                            minimal
+                            wrap="true"
+                            :dark="$root.isDark"
+                            tab="true"
+                            :hasFocus="editorFocus"
+                            @change="onChange"
+                        />
+                    </EnvForm>
                 </div>
 
                 <div class="my-4">
@@ -31,6 +33,7 @@
 
 <script>
 import CodeMirror from "vue-codemirror6";
+import EnvForm from "../EnvForm.vue";
 import { python } from "@codemirror/lang-python"; // good enough for .env key=value highlighting
 import { dracula, tomorrow } from "thememirror";
 import { lineNumbers, EditorView } from "@codemirror/view";
@@ -40,6 +43,7 @@ export default {
     name: "GlobalEnv",
     components: {
         CodeMirror,
+        EnvForm,
     },
 
     setup() {
@@ -59,7 +63,8 @@ export default {
             EditorView.focusChangeEffect.of(focusEffectHandler),
         ]);
 
-        return { editorFocus, extensionsEnv };
+        return { editorFocus,
+            extensionsEnv };
     },
 
     computed: {

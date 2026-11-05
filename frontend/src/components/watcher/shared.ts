@@ -3,6 +3,8 @@
  * (WatcherSettings.vue) et ses onglets extraits (watcher/Watcher*Tab.vue).
  */
 
+import { localizeApiResponse } from "../../server-message-browser";
+
 // ─── Types ────────────────────────────────────────────────────────
 
 export interface AppriseSettings {
@@ -141,5 +143,5 @@ export async function watcherApi(method: string, path: string, body?: unknown): 
         },
         body: body ? JSON.stringify(body) : undefined,
     });
-    return res.json();
+    return localizeApiResponse(await res.json());
 }

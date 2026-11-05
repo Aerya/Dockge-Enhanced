@@ -1,5 +1,41 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-05-compact-interface",
+        items: [ "releaseNews.item.compactInterface" ],
+    },
+    {
+        id: "2026-11-05-stack-groups",
+        items: [ "releaseNews.item.stackGroups" ],
+    },
+    {
+        id: "2026-11-05-post-update-cleanup",
+        items: [ "releaseNews.item.postUpdateCleanup" ],
+    },
+    {
+        id: "2026-11-05-docker-recovery",
+        items: [ "releaseNews.item.dockerRecovery" ],
+    },
+    {
+        id: "2026-11-04-server-messages",
+        items: [ "releaseNews.item.serverMessages" ],
+    },
+    {
+        id: "2026-11-04-web-terminal",
+        items: [ "releaseNews.item.webTerminal" ],
+    },
+    {
+        id: "2026-11-04-service-links",
+        items: [ "releaseNews.item.serviceLinks" ],
+    },
+    {
+        id: "2026-11-04-network-repair",
+        items: [ "releaseNews.item.networkRepair" ],
+    },
+    {
+        id: "2026-11-04-configuration-tools",
+        items: [ "releaseNews.item.configurationTools" ],
+    },
+    {
         id: "2026-11-02-command-buffers",
         items: [ "releaseNews.item.commandBuffers" ],
     },

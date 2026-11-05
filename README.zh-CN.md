@@ -4,7 +4,6 @@
 
 # Dockge Enhanced
 
-> **测试分支 — 可选紧凑界面：** 参考 [ethanpil/dockge-mod](https://github.com/ethanpil/dockge-mod) 的视觉原型，尚未包含在 `main` 或 `latest` 镜像中。在 **设置 → 外观 → 界面布局** 中选择 **紧凑**，也可使用页首切换按钮。默认仍为经典布局。服务以行显示在日志和 Compose 面板上方；布局选择按账户保存在当前浏览器中。请使用独立测试实例和可丢弃的测试堆栈，切勿使用生产数据，并保持自动清理及自动更新关闭。
 
 Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通过 Web 界面管理一台或多台服务器上的 Docker Compose 环境。它集成了 Stack 与容器管理、全局搜索与文件访问、迁移与复制、Restic 或 Zerobyte 备份、支持回滚的更新，以及监控、安全检查和自动化。丰富的集成与恢复工具帮助您日常跟踪和维护服务。
 
@@ -63,6 +62,24 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 本节汇总近期最重要的变化，方便快速了解 Dockge-Enhanced 最近新增了什么。
 
 ### 🆕 2026 年 11 月
+
+**紧凑界面 :** 可选布局借鉴 ethanpil/dockge-mod，在日志和 Compose 上方以行显示服务。在设置 → 外观 → 布局或页头选择紧凑模式。默认仍为经典模式；选择按账户保存在当前浏览器中。
+
+**自定义堆栈分组：** 创建包含多个实例堆栈的可折叠分组。搜索时会显示已折叠分组中的匹配项，保留排序、收藏和访问权限。设置按账户保存在当前浏览器中，不跨浏览器同步。
+
+**更新后清理 :** 两个独立选项，默认均启用：清理被替换的镜像，以及保留回滚 24 小时。可以在堆栈编辑器中设置所有现有服务，也可以逐个调整。禁用回滚时，更新验证成功后即可清理；启用回滚时等待 24 小时。定向清理队列在重启后保留，即使全局清理关闭也会运行。其他容器正在使用、已排除或受保护的镜像会保留。请同时更新关联实例。镜像回滚不会恢复应用数据。
+
+**Docker 连接恢复 :** 当 Docker 重启后容器仍挂载旧套接字时，可选择启用恢复。设置 `DOCKGE_DOCKER_RECOVERY_RETRIES`（默认 `0`，禁用）和 `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`（默认 `30`）。连续连接失败后，Enhanced 正常退出，由 `restart: unless-stopped` 或 `always` 重启；活动操作会推迟退出。每个进程必须至少成功连接 Docker 一次才能触发退出，避免启动循环。权限、TLS 或配置错误不会触发恢复。
+
+**界面消息 :** 常见的备份、计划、ImageWatcher 和清理消息遵循界面语言，也支持旧版关联实例的消息。未知技术细节保持原样显示。
+
+**网页终端 :** 网页终端正确声明 xterm-256color，恢复颜色和清屏功能，不改变权限或显式限制的环境变量。
+
+**服务链接 :** 独立的管理员页面汇集手动 HTTP/HTTPS 快捷链接以及本地和关联实例的 Compose `x-dockge.urls`，支持搜索和排序。原有首页不变。请更新关联实例以显示其链接；这些快捷链接不检测服务是否可用。
+
+**启动时修复网络 :** 默认关闭。启动或部署时，仅当网络以相同名称重新创建后，才重建此已停止的服务。不删除任何卷。仍在运行的副本或共享网络命名空间的依赖服务需要明确执行重建。也请更新托管 Stack 的关联实例。 `dockge.start.repair-network: "true"`.
+
+**配置工具 :** 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [配置工具](docs/configuration-tools.zh-CN.md).
 
 **按周期匿名统计 :** 独立估算周度、月度和年度数据；Discord 显示上一完整周、当月、所有历史月份及当年，不累加月度数据。保留月度历史，明确标注不完整周期及迁移限制。
 
@@ -481,6 +498,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 每个实例可选择端口链接使用主机名还是 IP 地址
 
 ### Stack 管理
+- 跨实例的可折叠自定义分组，设置按账户保存在浏览器中
+- 启动时修复重新创建的网络 (`dockge.start.repair-network`)
 - Windows 11 与 Docker Desktop/WSL2：[安装和限制](docs/windows.zh-CN.md)
 - 创建、编辑、启动、停止、重启、更新、重建、暂停/恢复和拆除 Compose Stack
 - 直接可用的 Stack 操作栏，支持仅图标或图标加文字，并说明实际执行的 Compose 命令
@@ -500,6 +519,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 可按服务设置在 Stack 整体状态中忽略某个可选服务
 
 ### Compose 编辑
+
+- **配置工具** — 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [Guide](docs/configuration-tools.zh-CN.md).
 
 - **默认 Compose 文件名** — COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。
 - 可选的服务级 CPU/RAM 限制 — 本 PR 中准备的功能，尚未正式发布。 仅修改草稿。请保存后明确部署或重建，才能应用到容器；此处不会修改运行中的容器。
@@ -543,6 +564,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ### 更新与 ImageWatcher
 
+- 每个服务可设置更新后定向镜像清理和独立的 24 小时回滚
+
 - **服务不中断更新** — `dockge.rollout.enabled: "true"`. 启用前请先确认兼容性。应用容器数量会暂时翻倍，请预留足够的 CPU/RAM。固定容器名和共享可写卷会被拒绝。中继会增加一个容器和一个配置卷。首次安装会将访问端口移到中继，可能短暂中断访问。之后请使用“更新”；Recreate、重启和回滚不保证保持现有连接。仅支持 TCP，不支持 UDP/QUIC，也不保证所有场景零中断。 [部署](docs/service-rollout.zh-CN.md).
 - 通过 digest 检测镜像更新，无需拉取，也适用于远程实例 [验证镜像更新: 仅为本分支提案，不属于已发布版本。](docs/image-update-verification.zh-CN.md).
 - 每个镜像可设为关闭、立即或定时，并支持按 Stack 批量设置，默认保留单独例外
@@ -576,6 +599,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - eMudhra 事件后的 TLS 证书库检查（[TLS 检查](security/emudhra/README.md)）
 
 ### 监控
+- **Docker 连接恢复** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - 系统、Stack 和容器的 CPU、RAM 和磁盘统计，以及可配置的状态栏
 - 主机系统详情、温度和受监控磁盘分区
 - 可选的每 5 分钟主机及 Compose 服务 CPU/RAM 历史，并显示数据空档
@@ -617,6 +641,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Home Assistant
 
 ### 外观与语言
+- **服务链接** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - 独立的日间和夜间配色，包括 Dockge-Enhanced 原有主题
 - Catppuccin、Nord、Solarized、Dracula、Gruvbox、Tokyo Night 和 Rosé Pine 选项
 - 偏好保存在浏览器中，“自动”模式跟随系统
@@ -918,6 +943,8 @@ PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics �
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Docker Compose Stack 所在目录 |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。 |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge 数据目录；仅在使用自定义持久化挂载时覆盖 |
+| `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | 退出前的连续失败次数（0 禁用；最大 100） |
+| `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | 每次检查结束后的等待秒数（5–3600；单次检查超时为 5 秒） |
 | `DOCKGE_PUBLIC_URL` | *(无)* | Discord 通知链接使用的公开 URL（例如 `https://dockge.example.com`） |
 | `DOCKER_API_VERSION` | *(无)* | 固定 Docker 客户端协商的 API 版本，适用于部分 NAS 系统（例如 Synology DSM 7.x） |
 | `TZ` | `UTC` | 容器运行时时区；在**设置 → 常规**中明确配置之前，计划任务默认使用它。WebUI 中的选择对 Enhanced 计划任务优先 |
@@ -1032,6 +1059,8 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 
 ## 致谢
 
+- [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — 服务链接面板的灵感来源.
+
 - [**Apprise**](https://github.com/caronc/apprise-api) — 多平台通知网关
 - [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — 端口冲突检测、Compose 差异检查和 Home Assistant 集成的灵感来源。
 - [**crossly/Dockge-Enhanced**](https://github.com/crossly/Dockge-Enhanced) — 已整合的重要 UI/UX、主题、国际化和前端架构改进来源
@@ -1041,6 +1070,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — 为可选的服务级 CPU/RAM 限制提供灵感，适配时保留受限账户权限
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — 默认 Compose 文件名.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — 服务不中断更新.
+- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — 文件历史、合并 Compose、`.env` 表单和诊断功能的灵感来源。 紧凑界面.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — 可选 DNS / Nginx Proxy Manager 自动化

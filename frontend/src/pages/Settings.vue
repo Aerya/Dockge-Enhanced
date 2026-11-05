@@ -76,6 +76,9 @@ export default {
                 integrations: {
                     title: this.$t("Integrations"),
                 },
+                diagnostics: {
+                    title: this.$t("configTools.diagnostics"),
+                },
                 automation: {
                     title: this.$t("automation.heading"),
                 },
