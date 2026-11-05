@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-05-post-update-cleanup",
+        items: [ "releaseNews.item.postUpdateCleanup" ],
+    },
+    {
         id: "2026-11-05-docker-recovery",
         items: [ "releaseNews.item.dockerRecovery" ],
     },

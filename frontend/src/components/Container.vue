@@ -201,6 +201,7 @@
                 </div>
 
                 <ServiceResourceLimits :service="service" @apply="jsonObject.services[name] = $event" />
+                <PostUpdateOptions :id="`post-update-${name}`" :services="{ [name]: service }" :supported="stack?.supportsPostUpdateCleanup === true || ($parent.$parent.isAdd && !$parent.$parent.endpoint)" />
 
                 <div class="mb-4">
                     <div class="form-check">
@@ -340,6 +341,7 @@ import VolumeBrowser from "./VolumeBrowser.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
 import ServiceResourceLimits from "./ServiceResourceLimits.vue";
+import PostUpdateOptions from "./PostUpdateOptions.vue";
 import { LABEL_ROLLOUT, rolloutEnabled, ROLLOUT_HEALTH_PREFIX } from "../../../common/service-rollout";
 import { addRolloutRelay } from "../rollout-relay";
 import { toRaw } from "vue";
@@ -352,6 +354,7 @@ export default defineComponent({
         ContainerStatsBadge,
         StackScheduleEditor,
         ServiceResourceLimits,
+        PostUpdateOptions,
     },
     props: {
         portLinkAddressMode: {

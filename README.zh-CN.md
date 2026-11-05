@@ -62,6 +62,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**更新后清理 :** 两个独立选项，默认均启用：清理被替换的镜像，以及保留回滚 24 小时。可以在堆栈编辑器中设置所有现有服务，也可以逐个调整。禁用回滚时，更新验证成功后即可清理；启用回滚时等待 24 小时。定向清理队列在重启后保留，即使全局清理关闭也会运行。其他容器正在使用、已排除或受保护的镜像会保留。请同时更新关联实例。镜像回滚不会恢复应用数据。
+
 **Docker 连接恢复 :** 当 Docker 重启后容器仍挂载旧套接字时，可选择启用恢复。设置 `DOCKGE_DOCKER_RECOVERY_RETRIES`（默认 `0`，禁用）和 `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`（默认 `30`）。连续连接失败后，Enhanced 正常退出，由 `restart: unless-stopped` 或 `always` 重启；活动操作会推迟退出。每个进程必须至少成功连接 Docker 一次才能触发退出，避免启动循环。权限、TLS 或配置错误不会触发恢复。
 
 **界面消息 :** 常见的备份、计划、ImageWatcher 和清理消息遵循界面语言，也支持旧版关联实例的消息。未知技术细节保持原样显示。
@@ -555,6 +557,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 指南：[Restic 备份与恢复](docs/restic.zh-CN.md) · [Zerobyte 安装与恢复](docs/zerobyte.zh-CN.md)
 
 ### 更新与 ImageWatcher
+
+- 每个服务可设置更新后定向镜像清理和独立的 24 小时回滚
 
 - **服务不中断更新** — `dockge.rollout.enabled: "true"`. 启用前请先确认兼容性。应用容器数量会暂时翻倍，请预留足够的 CPU/RAM。固定容器名和共享可写卷会被拒绝。中继会增加一个容器和一个配置卷。首次安装会将访问端口移到中继，可能短暂中断访问。之后请使用“更新”；Recreate、重启和回滚不保证保持现有连接。仅支持 TCP，不支持 UDP/QUIC，也不保证所有场景零中断。 [部署](docs/service-rollout.zh-CN.md).
 - 通过 digest 检测镜像更新，无需拉取，也适用于远程实例 [验证镜像更新: 仅为本分支提案，不属于已发布版本。](docs/image-update-verification.zh-CN.md).
