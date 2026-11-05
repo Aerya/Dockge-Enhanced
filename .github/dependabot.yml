@@ -19,6 +19,10 @@ updates:
     # publiée de TypeScript-ESLint (contrainte actuelle : TypeScript < 6.1).
     # Les versions mineures et correctives restent suivies automatiquement.
     ignore:
+      # 0.15.0 échoue dans les images Alpine (précompilés glibc et ancien
+      # node-gyp dépendant de distutils). Conserver 0.14.1 ; retester la suivante.
+      - dependency-name: "@homebridge/node-pty-prebuilt-multiarch"
+        versions: ["0.15.0"]
       - dependency-name: "typescript"
         update-types:
           - "version-update:semver-major"
