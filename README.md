@@ -65,6 +65,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Custom stack groups :** Create collapsible groups containing stacks from several instances. Search reveals matching stacks even in closed groups; sorting, favourites and access permissions are preserved. Preferences are saved per account in this browser, not synchronised between browsers.
 
+**Cleanup after updates :** Two independent options, both enabled by default: clean up replaced images and retain rollback for 24 hours. Configure all current services from the stack editor, or customize each service. With rollback disabled, cleanup becomes eligible after a verified update; with rollback enabled, it waits 24 hours. The targeted queue survives restarts and runs even with global pruning disabled. Images used elsewhere, excluded or protected remain retained. Update linked instances too. Image rollback does not restore application data.
+
 **Docker connection recovery :** Optional recovery after a Docker restart leaves an obsolete socket mount. Set `DOCKGE_DOCKER_RECOVERY_RETRIES` (default `0`, disabled) and `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (default `30`). After consecutive connection failures, Enhanced exits gracefully so `restart: unless-stopped` or `always` can restart it; active operations defer the exit. A successful Docker connection is required in each process before restart is armed, preventing startup loops. Permissions, TLS and configuration errors do not trigger recovery.
 
 **Interface messages :** Common backup, scheduling, ImageWatcher and cleanup messages follow the interface language, including messages from older linked instances. Unknown technical details remain visible unchanged.
@@ -557,6 +559,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Guides: [Restic backups and recovery](docs/restic.md) · [Zerobyte setup and recovery](docs/zerobyte.md)
 
 ### Updates & ImageWatcher
+
+- Targeted post-update image cleanup and independent 24-hour rollback, configurable per service
 
 - **Updates without service interruption** — `dockge.rollout.enabled: "true"`. Check compatibility before enabling this option. The application container count temporarily doubles: allow enough CPU/RAM. Fixed container names and shared writable volumes are refused. The relay adds a container and a configuration volume. Its initial installation moves the access port and may cause an outage. Afterwards, use Update; Recreate, restarts and rollback do not guarantee that connections stay open. TCP only, not UDP/QUIC; no universal zero-downtime guarantee. [Deployment](docs/service-rollout.md).
 - Image update detection by digest, without pulling, including remote instances [Verified image updates: Proposed change in this branch; not yet published.](docs/image-update-verification.md).

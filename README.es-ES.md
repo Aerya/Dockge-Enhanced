@@ -65,6 +65,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Grupos personalizados de stacks :** Crea grupos plegables con stacks de varias instancias. La búsqueda muestra coincidencias incluso en grupos cerrados; se mantienen la ordenación, los favoritos y los permisos. Preferencias guardadas por cuenta en este navegador, sin sincronización entre navegadores.
 
+**Limpieza después de actualizar :** Dos opciones independientes, activadas por defecto: limpiar las imágenes sustituidas y conservar un rollback durante 24 horas. Configura todos los servicios actuales desde el editor del stack o personaliza cada servicio. Sin rollback, la limpieza es posible tras una actualización verificada; con rollback, espera 24 horas. La cola específica sobrevive a los reinicios y funciona aunque la limpieza global esté desactivada. Se conservan las imágenes usadas en otro lugar, excluidas o protegidas. Actualiza también las instancias vinculadas. El rollback de imagen no restaura los datos de la aplicación.
+
 **Recuperación de la conexión Docker :** Recuperación opcional cuando un reinicio de Docker deja montado el socket antiguo. Configura `DOCKGE_DOCKER_RECOVERY_RETRIES` (`0` por defecto, desactivado) y `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (`30` por defecto). Tras fallos consecutivos de conexión, Enhanced termina ordenadamente para que `restart: unless-stopped` o `always` lo reinicie; las operaciones activas aplazan la salida. Cada proceso debe haber conectado correctamente con Docker antes de permitir la salida, evitando bucles al arrancar. Los errores de permisos, TLS o configuración no activan la recuperación.
 
 **Mensajes de la interfaz :** Los mensajes habituales de copias, planificación, ImageWatcher y limpieza siguen el idioma de la interfaz, incluidos los de instancias enlazadas antiguas. Los detalles técnicos desconocidos se conservan sin cambios.
@@ -559,6 +561,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Guías: [Copias Restic y recuperación](docs/restic.es.md) · [Instalación y recuperación de Zerobyte](docs/zerobyte.es.md)
 
 ### Actualizaciones e ImageWatcher
+
+- Limpieza de imágenes tras actualizar y rollback independiente de 24 horas por servicio
 
 - **Actualizaciones sin interrupción del servicio** — `dockge.rollout.enabled: "true"`. Compruebe esta compatibilidad antes de activar la opción. El número de contenedores de la aplicación se duplica temporalmente: reserve suficiente CPU/RAM. Se rechazan nombres de contenedor fijos y volúmenes compartidos con escritura. El relé añade un contenedor y un volumen de configuración. Su instalación inicial mueve el puerto de acceso y puede causar un corte. Después, utilice Actualizar; Recreate, los reinicios y el rollback no garantizan mantener las conexiones. Solo TCP, no UDP/QUIC; sin garantía universal de cero interrupciones. [Configuración](docs/service-rollout.es.md). [Verificación de actualizaciones: cambio propuesto en esta rama](docs/image-update-verification.es.md).
 - Detección de actualizaciones de imágenes por digest, sin pull, también en instancias remotas

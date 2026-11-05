@@ -65,6 +65,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 **Eigene Stack-Gruppen :** Einklappbare Gruppen mit Stacks mehrerer Instanzen erstellen. Die Suche zeigt Treffer auch in geschlossenen Gruppen; Sortierung, Favoriten und Zugriffsrechte bleiben erhalten. Einstellungen gelten pro Konto in diesem Browser und werden nicht zwischen Browsern synchronisiert.
 
+**Bereinigung nach Updates :** Zwei unabhängige Optionen, beide standardmäßig aktiviert: ersetzte Images bereinigen und Rollback 24 Stunden aufbewahren. Im Stack-Editor alle aktuellen Dienste einstellen oder jeden Dienst einzeln anpassen. Ohne Rollback ist die Bereinigung nach einem verifizierten Update möglich; mit Rollback wartet sie 24 Stunden. Die gezielte Warteschlange übersteht Neustarts und funktioniert auch ohne globale Bereinigung. Anderweitig verwendete, ausgeschlossene oder geschützte Images bleiben erhalten. Auch verknüpfte Instanzen aktualisieren. Ein Image-Rollback stellt keine Anwendungsdaten wieder her.
+
 **Docker-Verbindung wiederherstellen :** Optionale Wiederherstellung, wenn nach einem Docker-Neustart der alte Socket eingebunden bleibt. `DOCKGE_DOCKER_RECOVERY_RETRIES` (Standard `0`, deaktiviert) und `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (Standard `30`) konfigurieren. Nach aufeinanderfolgenden Verbindungsfehlern beendet sich Enhanced geordnet, damit `restart: unless-stopped` oder `always` es neu startet; aktive Vorgänge verschieben das Beenden. Jeder Prozess muss Docker zuvor erfolgreich erreicht haben, um Startschleifen zu verhindern. Berechtigungs-, TLS- und Konfigurationsfehler lösen keine Wiederherstellung aus.
 
 **Oberflächenmeldungen :** Häufige Meldungen zu Sicherung, Zeitplanung, ImageWatcher und Bereinigung folgen der Oberflächensprache, auch von älteren verknüpften Instanzen. Unbekannte technische Details bleiben unverändert sichtbar.
@@ -557,6 +559,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Anleitungen: [Restic-Backups und Wiederherstellung](docs/restic.de.md) · [Zerobyte-Einrichtung und -Wiederherstellung](docs/zerobyte.de.md)
 
 ### Updates & ImageWatcher
+
+- Gezielte Image-Bereinigung nach Updates und unabhängiger 24-Stunden-Rollback pro Dienst
 
 - **Updates ohne Dienstunterbrechung** — `dockge.rollout.enabled: "true"`. Prüfen Sie diese Kompatibilität vor dem Aktivieren. Die Anzahl der Anwendungscontainer verdoppelt sich vorübergehend: ausreichend CPU/RAM einplanen. Feste Containernamen und gemeinsam beschreibbare Volumes werden abgelehnt. Das Relay ergänzt einen Container und ein Konfigurationsvolume. Bei der Erstinstallation wird der Zugangsport verschoben; dabei kann es zu einer Unterbrechung kommen. Danach Aktualisieren verwenden; Recreate, Neustarts und Rollback garantieren keine offenen Verbindungen. Nur TCP, kein UDP/QUIC; keine allgemeine Garantie für unterbrechungsfreien Betrieb. [Einrichtung](docs/service-rollout.de.md).
 - Erkennung von Image-Updates per Digest, ohne Pull, auch auf entfernten Instanzen [Überprüfung von Image-Updates: Vorgeschlagene Änderung in diesem Branch; noch nicht veröffentlicht.](docs/image-update-verification.de.md).

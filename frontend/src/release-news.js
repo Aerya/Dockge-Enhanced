@@ -4,6 +4,10 @@ export const RELEASE_NEWS = [
         items: [ "releaseNews.item.stackGroups" ],
     },
     {
+        id: "2026-11-05-post-update-cleanup",
+        items: [ "releaseNews.item.postUpdateCleanup" ],
+    },
+    {
         id: "2026-11-05-docker-recovery",
         items: [ "releaseNews.item.dockerRecovery" ],
     },
