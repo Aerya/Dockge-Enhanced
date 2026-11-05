@@ -64,6 +64,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Liens des services :** Une page distincte réservée aux administrateurs regroupe les raccourcis HTTP/HTTPS manuels et les `x-dockge.urls` des stacks locales et liées, avec recherche et classement. L’accueil reste inchangé. Mettez les instances liées à jour pour afficher leurs liens ; ces raccourcis ne contrôlent pas la disponibilité des services.
+
 **Réparation réseau au démarrage :** Désactivé par défaut. Au démarrage/déploiement, recrée ce service arrêté uniquement si son réseau a été recréé sous le même nom. Aucun volume supprimé. Les réplicas ou dépendants réseau encore actifs exigent une recréation explicite. Mettez aussi à jour les instances liées qui hébergent les stacks. `dockge.start.repair-network: "true"`.
 
 **Outils de configuration :** Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Outils de configuration](docs/configuration-tools.fr.md).
@@ -622,6 +624,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Home Assistant
 
 ### Apparence & langues
+- **Liens des services** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Palettes jour et nuit distinctes, y compris les thèmes d’origine de Dockge-Enhanced
 - Options Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night et Rosé Pine
 - Préférences enregistrées dans le navigateur et mode Auto qui suit le système
@@ -1033,6 +1036,8 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 ---
 
 ## Crédits
+
+- [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — inspiration pour le tableau des liens de services.
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
 - [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — inspiration pour la détection des conflits de ports, le contrôle des écarts Compose et l’intégration Home Assistant.

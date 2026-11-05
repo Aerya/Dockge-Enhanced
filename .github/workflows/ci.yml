@@ -94,6 +94,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/service-rollout.test.ts backend/rollout-relay.test.ts backend/rollout-recovery.test.ts backend/stack-mutation.test.ts backend/rollout-monitoring.test.ts frontend/src/rollout-relay.test.ts frontend/src/rollout-relay-ui.test.js
 
+      - name: Tests des liens de services et de leurs permissions
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/service-links.test.ts frontend/src/service-links-ui.test.js
+
       - name: Tests des comptes locaux et des permissions par stack
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/user-access.test.ts backend/scoped-account.test.ts frontend/src/scoped-users.test.js

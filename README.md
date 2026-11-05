@@ -63,6 +63,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Service links :** A separate administrator page groups manual HTTP/HTTPS shortcuts and Compose `x-dockge.urls` from local and linked instances, with search and ordering. The home page stays unchanged. Update linked instances to display their links; these shortcuts do not check service health.
+
 **Network repair on start :** Disabled by default. On Start/Deploy, recreate this stopped service only if its network was recreated under the same name. No volumes are deleted. Running replicas or namespace dependants require an explicit recreation. Update linked hosting instances too. `dockge.start.repair-network: "true"`.
 
 **Configuration tools :** Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Configuration tools](docs/configuration-tools.md).
@@ -621,6 +623,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Home Assistant
 
 ### Appearance & languages
+- **Service links** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Separate day and night palettes, including the original Dockge-Enhanced themes
 - Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night and Rosé Pine options
 - Browser-persisted preferences with a system-aware Auto mode
@@ -1032,6 +1035,8 @@ Commercial third-party clients are allowed by the license, but must not imply of
 ---
 
 ## Credits
+
+- [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — inspiration for the service links dashboard.
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway
 - [**darthrater78/dockge**](https://github.com/darthrater78/dockge) / [**ha-dockge**](https://github.com/darthrater78/ha-dockge) — inspiration for port-conflict detection, Compose drift checks and the Home Assistant companion integration.
