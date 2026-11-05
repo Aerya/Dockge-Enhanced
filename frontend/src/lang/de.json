@@ -1,4 +1,13 @@
 {
+    "releaseNews.item.compactInterface": "Optionale Ansicht, inspiriert von ethanpil/dockge-mod: Dienste als Zeilen über Logs und Compose. Kompakt unter Einstellungen → Erscheinungsbild → Layout oder in der Kopfzeile wählen. Klassisch bleibt Standard. Pro Konto in diesem Browser gespeichert.",
+    "interfaceDensity.actions": "Dienstaktionen",
+    "interfaceDensity.service": "Dienst",
+    "interfaceDensity.image": "Image",
+    "interfaceDensity.state": "Status / Ressourcen",
+    "interfaceDensity.title": "Darstellung",
+    "interfaceDensity.classic": "Klassisch",
+    "interfaceDensity.compact": "Kompakt",
+    "interfaceDensity.hint": "Darstellung für dieses Konto in diesem Browser gespeichert. Wechseln, ohne Stacks zu ändern.",
     "stackGroups.title": "Eigene Gruppen",
     "stackGroups.manage": "Verwalten",
     "stackGroups.name": "Gruppenname",

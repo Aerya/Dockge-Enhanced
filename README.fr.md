@@ -4,6 +4,7 @@
 
 # Dockge Enhanced
 
+
 Dockge Enhanced est un fork de [Dockge](https://github.com/louislam/dockge) pour administrer vos environnements Docker Compose depuis une interface web, sur un ou plusieurs serveurs. Il réunit la gestion des stacks et des conteneurs, la recherche globale et l’accès aux fichiers, la migration et la réplication, les sauvegardes avec Restic ou Zerobyte, les mises à jour avec rollback, ainsi que la supervision, les contrôles de sécurité et l’automatisation. Ses intégrations et ses outils de récupération permettent de suivre et de maintenir vos services au quotidien.
 
 <p align="center">
@@ -63,6 +64,8 @@ Dockge Enhanced est un fork de [Dockge](https://github.com/louislam/dockge) pour
 Les évolutions majeures récentes sont regroupées ici afin de comprendre rapidement ce qui vient d'arriver dans Dockge-Enhanced.
 
 ### 🆕 Novembre 2026
+
+**Interface compacte :** Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation ou l’en-tête. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.
 
 **Groupes de stacks personnalisés :** Créez des groupes repliables réunissant des stacks de plusieurs instances. La recherche révèle les résultats même dans les groupes fermés ; tris, favoris et permissions sont conservés. Préférences enregistrées par compte dans ce navigateur, sans synchronisation entre navigateurs.
 
@@ -1064,7 +1067,7 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration pour les limites CPU/RAM facultatives par service, adaptées sans modifier les permissions des comptes limités
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Nom du fichier Compose par défaut.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Mises à jour sans interruption de service.
-- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiration pour l’historique des fichiers, le Compose fusionné, le formulaire `.env` et la page de diagnostic.
+- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiration pour l’historique des fichiers, le Compose fusionné, le formulaire `.env` et la page de diagnostic. Interface compacte.
 - [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) par Lorwell — inspiration pour le gestionnaire de fichiers hôte restreint et la vue par conteneur réel adaptés à Enhanced (licence MIT)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) par DeepSpace2 — automatisation optionnelle du DNS et de Nginx Proxy Manager (GPLv3)

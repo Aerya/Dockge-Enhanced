@@ -4,6 +4,7 @@
 
 # Dockge Enhanced
 
+
 Dockge Enhanced ist ein Fork von [Dockge](https://github.com/louislam/dockge) zur Verwaltung Ihrer Docker-Compose-Umgebungen über eine Weboberfläche auf einem oder mehreren Servern. Es vereint Stack- und Containerverwaltung, globale Suche und Dateizugriff, Migration und Replikation, Backups mit Restic oder Zerobyte, Updates mit Rollback sowie Monitoring, Sicherheitsprüfungen und Automatisierung. Integrationen und Wiederherstellungswerkzeuge unterstützen den täglichen Betrieb Ihrer Dienste.
 
 <p align="center">
@@ -62,6 +63,8 @@ Dockge Enhanced ist ein Fork von [Dockge](https://github.com/louislam/dockge) zu
 Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell sehen können, was sich in Dockge-Enhanced geändert hat.
 
 ### 🆕 November 2026
+
+**Kompakte Oberfläche :** Optionale Ansicht, inspiriert von ethanpil/dockge-mod: Dienste als Zeilen über Logs und Compose. Kompakt unter Einstellungen → Erscheinungsbild → Layout oder in der Kopfzeile wählen. Klassisch bleibt Standard. Pro Konto in diesem Browser gespeichert.
 
 **Eigene Stack-Gruppen :** Einklappbare Gruppen mit Stacks mehrerer Instanzen erstellen. Die Suche zeigt Treffer auch in geschlossenen Gruppen; Sortierung, Favoriten und Zugriffsrechte bleiben erhalten. Einstellungen gelten pro Konto in diesem Browser und werden nicht zwischen Browsern synchronisiert.
 
@@ -1063,7 +1066,7 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — Inspiration für optionale CPU-/RAM-Limits pro Dienst, ohne Änderungen an eingeschränkten Kontorechten
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Standardname der Compose-Datei.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates ohne Dienstunterbrechung.
-- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — Inspiration für Dateiverlauf, zusammengeführtes Compose, `.env`-Formular und Diagnose.
+- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — Inspiration für Dateiverlauf, zusammengeführtes Compose, `.env`-Formular und Diagnose. Kompakte Oberfläche.
 - [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) von Lorwell – Inspiration für den eingeschränkten Host-Dateimanager und die Ansicht echter Container, angepasst für Enhanced (MIT-Lizenz)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) von DeepSpace2 – optionale DNS- und Nginx-Proxy-Manager-Automatisierung (GPLv3)

@@ -1,5 +1,5 @@
 <template>
-    <div class="shadow-box big-padding mb-3 container">
+    <div class="shadow-box big-padding mb-3 container" :class="{ 'service-readonly': !isEditMode }">
         <div class="row">
             <div class="col-12">
                 <h4>{{ name }}</h4>
@@ -53,7 +53,7 @@
                         {{ $t("watcher.status.auPending") }}
                     </span>
                 </div>
-                <div v-if="!isEditMode">
+                <div v-if="!isEditMode" class="service-status-line">
                     <span class="badge me-1" :class="bgStyle">{{ status }}</span>
 
                     <a v-for="port in (ports ?? envsubstService.ports)" :key="port" :href="parsePort(port).url || undefined" :title="portLinkAddressMode === 'ip' && !parsePort(port).url ? $t('portLinks.missingIp') : undefined" target="_blank" rel="noopener noreferrer">
@@ -111,8 +111,8 @@
                     <router-link class="btn btn-sm btn-normal container-action" :to="terminalRouteLink" :title="$t('containerActionHelp.terminal')" :aria-label="$t('terminal')" disabled=""><font-awesome-icon icon="terminal" /><span>{{ $t("terminal") }}</span></router-link>
                     <a v-if="dozzleUrl" class="btn btn-sm btn-normal container-action" :href="dozzleContainerUrl" :title="$t('containerActionHelp.dozzle')" target="_blank" rel="noopener noreferrer" aria-label="Dozzle"><font-awesome-icon icon="stream" /><span>Dozzle</span></a>
                 </div>
-                <div v-if="!isEditMode && instances.length" class="container-instances mt-3">
-                    <div class="container-instances-heading">{{ $t("containerInstance.heading") }}</div>
+                <component :is="$root.compactInterface ? 'details' : 'div'" v-if="!isEditMode && instances.length" class="container-instances mt-3">
+                    <component :is="$root.compactInterface ? 'summary' : 'div'" class="container-instances-heading">{{ $t("containerInstance.heading") }}<span v-if="$root.compactInterface"> · {{ instances.length }}</span></component>
                     <router-link
                         v-for="instance in instances"
                         :key="instance.id"
@@ -124,7 +124,7 @@
                         <code>{{ instance.id.slice(0, 12) }}</code>
                         <font-awesome-icon icon="chevron-right" />
                     </router-link>
-                </div>
+                </component>
                 <div v-if="!isEditMode && showSchedule" class="container-schedule mt-3">
                     <StackScheduleEditor :stack-name="`${stackName}::${name}`" compact :show-heading="false" />
                 </div>

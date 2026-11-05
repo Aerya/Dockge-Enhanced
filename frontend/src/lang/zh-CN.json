@@ -1,4 +1,13 @@
 {
+    "releaseNews.item.compactInterface": "可选布局借鉴 ethanpil/dockge-mod，在日志和 Compose 上方以行显示服务。在设置 → 外观 → 布局或页头选择紧凑模式。默认仍为经典模式；选择按账户保存在当前浏览器中。",
+    "interfaceDensity.actions": "服务操作",
+    "interfaceDensity.service": "服务",
+    "interfaceDensity.image": "镜像",
+    "interfaceDensity.state": "状态 / 资源",
+    "interfaceDensity.title": "界面布局",
+    "interfaceDensity.classic": "经典",
+    "interfaceDensity.compact": "紧凑",
+    "interfaceDensity.hint": "为此浏览器中的当前账户保存布局。切换布局不会修改堆栈。",
     "stackGroups.title": "自定义分组",
     "stackGroups.manage": "管理",
     "stackGroups.name": "分组名称",

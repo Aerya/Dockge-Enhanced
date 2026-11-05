@@ -4,6 +4,7 @@
 
 # Dockge Enhanced
 
+
 Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通过 Web 界面管理一台或多台服务器上的 Docker Compose 环境。它集成了 Stack 与容器管理、全局搜索与文件访问、迁移与复制、Restic 或 Zerobyte 备份、支持回滚的更新，以及监控、安全检查和自动化。丰富的集成与恢复工具帮助您日常跟踪和维护服务。
 
 <p align="center">
@@ -61,6 +62,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 本节汇总近期最重要的变化，方便快速了解 Dockge-Enhanced 最近新增了什么。
 
 ### 🆕 2026 年 11 月
+
+**紧凑界面 :** 可选布局借鉴 ethanpil/dockge-mod，在日志和 Compose 上方以行显示服务。在设置 → 外观 → 布局或页头选择紧凑模式。默认仍为经典模式；选择按账户保存在当前浏览器中。
 
 **自定义堆栈分组：** 创建包含多个实例堆栈的可折叠分组。搜索时会显示已折叠分组中的匹配项，保留排序、收藏和访问权限。设置按账户保存在当前浏览器中，不跨浏览器同步。
 
@@ -1067,7 +1070,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — 为可选的服务级 CPU/RAM 限制提供灵感，适配时保留受限账户权限
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — 默认 Compose 文件名.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — 服务不中断更新.
-- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — 文件历史、合并 Compose、`.env` 表单和诊断功能的灵感来源。
+- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — 文件历史、合并 Compose、`.env` 表单和诊断功能的灵感来源。 紧凑界面.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — 可选 DNS / Nginx Proxy Manager 自动化

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-05-compact-interface",
+        items: [ "releaseNews.item.compactInterface" ],
+    },
+    {
         id: "2026-11-05-stack-groups",
         items: [ "releaseNews.item.stackGroups" ],
     },

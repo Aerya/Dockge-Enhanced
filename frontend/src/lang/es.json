@@ -1,4 +1,13 @@
 {
+    "releaseNews.item.compactInterface": "Vista opcional inspirada en ethanpil/dockge-mod: servicios en filas sobre Logs y Compose. Seleccione Compacta en Ajustes → Apariencia → Diseño o en la cabecera. Clásica sigue siendo la opción predeterminada. Guardada por cuenta en este navegador.",
+    "interfaceDensity.actions": "Acciones del servicio",
+    "interfaceDensity.service": "Servicio",
+    "interfaceDensity.image": "Imagen",
+    "interfaceDensity.state": "Estado / recursos",
+    "interfaceDensity.title": "Presentación",
+    "interfaceDensity.classic": "Clásica",
+    "interfaceDensity.compact": "Compacta",
+    "interfaceDensity.hint": "Presentación guardada para esta cuenta en este navegador. Cambie sin modificar las stacks.",
     "stackGroups.title": "Grupos personalizados",
     "stackGroups.manage": "Gestionar",
     "stackGroups.name": "Nombre del grupo",

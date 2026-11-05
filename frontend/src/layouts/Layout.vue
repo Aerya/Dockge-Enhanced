@@ -152,6 +152,11 @@
             </div>
 
             <ul class="desktop-nav nav nav-pills">
+                <li v-if="$root.loggedIn" class="nav-item density-switch">
+                    <button type="button" class="nav-link" :aria-pressed="$root.compactInterface" :title="$t('interfaceDensity.hint')" @click="$root.compactInterface = !$root.compactInterface">
+                        {{ $t($root.compactInterface ? 'interfaceDensity.compact' : 'interfaceDensity.classic') }}
+                    </button>
+                </li>
                 <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted'" class="nav-item me-2">
                     <router-link to="/service-links" class="nav-link">{{ $t("serviceLinks.title") }}</router-link>
                 </li>
@@ -439,6 +444,7 @@ export default {
             const classes = {};
             classes[this.$root.theme] = true;
             classes["mobile"] = this.$root.isMobile;
+            classes["compact-interface"] = this.$root.compactInterface;
             return classes;
         },
 

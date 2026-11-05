@@ -1,10 +1,13 @@
 # Dockge Enhanced Changelog
 
+
 > **Windows 11 / WSL2 validation:** installation guide, tested Compose actions, Restic/Zerobyte backups and linked instances. The Windows sidecar mount and shared-network restart fixes preserve Linux/Unraid paths and permissions. [Windows 11 with Docker Desktop (WSL2)](docs/windows.md). After restarting Windows, some WSL mounts require the manual recovery described in the guide.
 
 Complete project history, newest first. Each date is the day the change was merged into `main`. Application changes merged into `main` are published as `ghcr.io/aerya/dockge-enhanced:latest` by the build workflow; documentation-only commits do not produce a new image. Features that exist only in an open pull request or a test image are not listed here.
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
+
+**2026-11-05 — Compact layout** — Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout or the header. Classic remains the default. Saved per account in this browser.
 
 **2026-11-05 — Custom stack groups** — Create collapsible groups containing stacks from several instances. Search reveals matching stacks even in closed groups; sorting, favourites and access permissions are preserved. Preferences are saved per account in this browser, not synchronised between browsers.
 

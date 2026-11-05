@@ -4,6 +4,7 @@
 
 # Dockge Enhanced
 
+
 Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for managing your Docker Compose environments from a web interface, on one or more servers. It brings together stack and container management, global search and file access, migration and replication, backups with Restic or Zerobyte, updates with rollback, monitoring, security checks and automation. Its integrations and recovery tools help you monitor and maintain your services every day.
 
 <p align="center">
@@ -62,6 +63,8 @@ Dockge Enhanced is a fork of [Dockge](https://github.com/louislam/dockge) for ma
 The most important recent changes are grouped here so you can quickly see what has changed in Dockge-Enhanced.
 
 ### 🆕 November 2026
+
+**Compact layout :** Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout or the header. Classic remains the default. Saved per account in this browser.
 
 **Custom stack groups :** Create collapsible groups containing stacks from several instances. Search reveals matching stacks even in closed groups; sorting, favourites and access permissions are preserved. Preferences are saved per account in this browser, not synchronised between browsers.
 
@@ -1063,7 +1066,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration for optional per-service CPU/RAM limits, adapted without changing restricted-account permissions
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Default Compose filename.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates without service interruption.
-- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiration for file history, merged Compose, the `.env` form and diagnostics.
+- [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiration for file history, merged Compose, the `.env` form and diagnostics. Compact layout.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — inspiration for the restricted host file manager and real-container view adapted for Enhanced (MIT licence)
 - [**PlugNPiN**](https://github.com/DeepSpace2/PlugNPiN) by DeepSpace2 — optional DNS and Nginx Proxy Manager automation (GPLv3)

@@ -1,4 +1,13 @@
 {
+    "releaseNews.item.compactInterface": "Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout or the header. Classic remains the default. Saved per account in this browser.",
+    "interfaceDensity.actions": "Service actions",
+    "interfaceDensity.service": "Service",
+    "interfaceDensity.image": "Image",
+    "interfaceDensity.state": "Status / resources",
+    "interfaceDensity.title": "Layout",
+    "interfaceDensity.classic": "Classic",
+    "interfaceDensity.compact": "Compact",
+    "interfaceDensity.hint": "Layout saved for this account in this browser. Switch to compare without changing stacks.",
     "stackGroups.title": "Custom groups",
     "stackGroups.manage": "Manage",
     "stackGroups.name": "Group name",

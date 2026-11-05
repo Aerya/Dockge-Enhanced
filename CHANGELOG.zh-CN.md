@@ -1,10 +1,13 @@
 # Dockge Enhanced 更新日志
 
+
 > **Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。
 
 完整的项目历史，最新条目在前。每个日期均为该变更合并到 `main` 的日期。合并到 `main` 的应用变更会由构建工作流发布为 `ghcr.io/aerya/dockge-enhanced:latest`；仅涉及文档的提交不会生成新镜像。仅存在于未合并 Pull Request 或测试镜像中的功能不会列在这里。
 
 [README](README.zh-CN.md) 介绍近期主要更新和完整功能目录。
+
+**2026-11-05 — 紧凑界面** — 可选布局借鉴 ethanpil/dockge-mod，在日志和 Compose 上方以行显示服务。在设置 → 外观 → 布局或页头选择紧凑模式。默认仍为经典模式；选择按账户保存在当前浏览器中。
 
 **2026-11-05 — 自定义堆栈分组** — 创建包含多个实例堆栈的可折叠分组。搜索时会显示已折叠分组中的匹配项，保留排序、收藏和访问权限。设置按账户保存在当前浏览器中，不跨浏览器同步。
 

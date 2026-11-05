@@ -1,6 +1,6 @@
 <template>
     <transition name="slide-fade" appear>
-        <div class="compose-page" :class="{ 'logs-fullscreen-active': logsFullscreen }">
+        <div class="compose-page" :class="{ 'logs-fullscreen-active': logsFullscreen, 'compact-workspace': $root.compactInterface && !isEditMode }">
             <router-link to="/" class="back-link">
                 <font-awesome-icon icon="chevron-left" /> {{ $t("back") }}
             </router-link>
@@ -416,6 +416,13 @@
                     </button>
 
                     <div v-show="containersExpanded" id="stack-containers">
+                        <div v-if="$root.compactInterface && !isEditMode" class="compact-service-head" aria-hidden="true">
+                            <span>{{ $t('interfaceDensity.service') }}</span>
+                            <span>{{ $t('interfaceDensity.image') }}</span>
+                            <span>{{ $t('interfaceDensity.state') }}</span>
+                            <span>{{ $t('watcher.status.autoUpdate') }}</span>
+                            <span>{{ $t('interfaceDensity.actions') }}</span>
+                        </div>
                         <PostUpdateOptions v-if="isEditMode" id="stack-post-update" :services="jsonConfig.services ?? {}" bulk :supported="stack.supportsPostUpdateCleanup === true || (isAdd && !endpoint)" />
                         <div v-if="isEditMode" class="input-group mb-3 compose-tight">
                             <input

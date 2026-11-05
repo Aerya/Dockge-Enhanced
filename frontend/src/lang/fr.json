@@ -1,4 +1,13 @@
 {
+    "releaseNews.item.compactInterface": "Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation ou l’en-tête. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.",
+    "interfaceDensity.actions": "Actions du service",
+    "interfaceDensity.service": "Service",
+    "interfaceDensity.image": "Image",
+    "interfaceDensity.state": "État / ressources",
+    "interfaceDensity.title": "Présentation",
+    "interfaceDensity.classic": "Classique",
+    "interfaceDensity.compact": "Compacte",
+    "interfaceDensity.hint": "Présentation enregistrée pour ce compte dans ce navigateur. Cliquez pour comparer, sans modifier les stacks.",
     "stackGroups.title": "Groupes personnalisés",
     "stackGroups.manage": "Gérer",
     "stackGroups.name": "Nom du groupe",

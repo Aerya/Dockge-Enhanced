@@ -1,10 +1,13 @@
 # Changelog Dockge Enhanced
 
+
 > **Validation Windows 11 / WSL2 :** guide d’installation, actions Compose, sauvegardes Restic/Zerobyte et instances liées testées. Les corrections du montage Windows du sidecar et du redémarrage des services partageant un réseau préservent les chemins et permissions Linux/Unraid. [Windows 11 avec Docker Desktop (WSL2)](docs/windows.fr.md). Après redémarrage Windows, certains montages WSL nécessitent une reprise manuelle décrite dans le guide.
 
 Historique complet du projet, du plus récent au plus ancien. Chaque date correspond à la fusion de la modification dans `main`. Les modifications applicatives fusionnées dans `main` sont publiées sous `ghcr.io/aerya/dockge-enhanced:latest` par le workflow de construction ; les commits purement documentaires ne produisent pas de nouvelle image. Les fonctionnalités présentes uniquement dans une pull request ouverte ou une image de test ne figurent pas ici.
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
+
+**2026-11-05 — Interface compacte** — Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation ou l’en-tête. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.
 
 **2026-11-05 — Groupes de stacks personnalisés** — Créez des groupes repliables réunissant des stacks de plusieurs instances. La recherche révèle les résultats même dans les groupes fermés ; tris, favoris et permissions sont conservés. Préférences enregistrées par compte dans ce navigateur, sans synchronisation entre navigateurs.
 
