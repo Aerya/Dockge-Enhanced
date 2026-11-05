@@ -9,7 +9,7 @@ El [README](README.es-ES.md) presenta las principales novedades recientes y el c
 
 **2026-11-05 — Interfaz compacta** — Vista opcional inspirada en ethanpil/dockge-mod: servicios en filas sobre Logs y Compose. Seleccione Compacta en Ajustes → Apariencia → Diseño o en la cabecera. Clásica sigue siendo la opción predeterminada. Guardada por cuenta en este navegador.
 
-**2026-11-05 — Grupos personalizados de stacks** — Crea grupos plegables con stacks de varias instancias. La búsqueda muestra coincidencias incluso en grupos cerrados; se mantienen la ordenación, los favoritos y los permisos. Preferencias guardadas por cuenta en este navegador, sin sincronización entre navegadores.
+**2026-11-05 — Grupos personalizados de stacks** — Los grupos se guardan en la base de datos de esta instancia para su cuenta y están disponibles desde cualquier navegador. Pueden reunir stacks locales y vinculados sin cambiar permisos. Importe los grupos del navegador explícitamente sin sustituir los del servidor. Las modificaciones simultáneas se rechazan con una advertencia.
 
 **2026-11-05 — Limpieza después de actualizar** — Dos opciones independientes, activadas por defecto: limpiar las imágenes sustituidas y conservar un rollback durante 24 horas. Configura todos los servicios actuales desde el editor del stack o personaliza cada servicio. Sin rollback, la limpieza es posible tras una actualización verificada; con rollback, espera 24 horas. La cola específica sobrevive a los reinicios y funciona aunque la limpieza global esté desactivada. Se conservan las imágenes usadas en otro lugar, excluidas o protegidas. Actualiza también las instancias vinculadas. El rollback de imagen no restaura los datos de la aplicación.
 
