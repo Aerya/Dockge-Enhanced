@@ -1,5 +1,7 @@
 import { DockgeServer } from "./dockge-server";
 import { StackFileHistory } from "./stack-file-history";
+import { networkRepairTargets } from "./compose-network-repair";
+import type { ResolvedComposeModel } from "./compose-network-namespace";
 import fs, { promises as fsAsync } from "fs";
 import { log } from "./log";
 import yaml from "yaml";
@@ -1014,6 +1016,7 @@ export class Stack {
     @stackMutation
     async deploy(socket : DockgeSocket) : Promise<number> {
         await this.assertStartGuard();
+        await this.repairStartNetworks();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const outputChunks : string[] = [];
         let outputLength = 0;
@@ -1444,6 +1447,7 @@ export class Stack {
     @stackMutation
     async start(socket: DockgeSocket) {
         await this.assertStartGuard();
+        await this.repairStartNetworks();
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--remove-orphans"), this.path);
         if (exitCode !== 0) {
@@ -1488,6 +1492,7 @@ export class Stack {
     @stackMutation
     async startScheduled(): Promise<number> {
         await this.assertStartGuard();
+        await this.repairStartNetworks();
         const res = await childProcessAsync.spawn("docker", this.getComposeOptions("up", "-d", "--remove-orphans"), {
             cwd: this.path,
             encoding: "utf-8",
@@ -1540,6 +1545,9 @@ export class Stack {
         const args = action === "start"
             ? this.getComposeOptions("up", "-d", serviceName)
             : this.getComposeOptions("stop", ...[ ...targets ].reverse());
+        if (action === "start") {
+            await this.repairStartNetworks(undefined, [ serviceName ]);
+        }
         const res = await childProcessAsync.spawn("docker", args, {
             cwd: this.path,
             encoding: "utf-8",
@@ -1627,6 +1635,32 @@ export class Stack {
         return targets;
     }
 
+    // Called only inside the existing stack mutation lock, on the hosting agent.
+    private async repairStartNetworks(model?: ResolvedComposeModel, requested?: string[], authorizeTargets?: (targets: string[]) => Promise<void>): Promise<void> {
+        model ??= await this.getResolvedServiceModel();
+        const run = async (args: string[], compose: boolean) => {
+            const result = await childProcessAsync.spawn("docker", compose ? this.getComposeOptions(args[0], ...args.slice(1)) : args, {
+                cwd: this.path,
+                encoding: "utf-8",
+            });
+            if ((result.code ?? 0) !== 0) {
+                throw new Error("Network repair failed; Docker could not inspect or recreate the selected service");
+            }
+            return result.stdout?.toString() || "";
+        };
+        const targets = await networkRepairTargets(model, requested ?? Object.keys(model.services), run);
+        if (!targets.length) {
+            return;
+        }
+        if (authorizeTargets) {
+            await authorizeTargets(targets);
+        }
+        // Keep normal Compose dependency/start ordering. Repair attachments first,
+        // but do not start a service before the caller's regular up operation.
+        await run([ "up", "--no-start", "--force-recreate", "--no-deps", ...targets ], true);
+        serviceStatusCache.delete(this.name);
+    }
+
     @stackMutation
     async serviceAction(socket: DockgeSocket, serviceName: string, action: "start" | "stop" | "restart" | "update" | "recreate" | "pull-recreate", authorizeTargets?: (targets: string[], managedRelays?: string[]) => Promise<void>): Promise<string[]> {
         if (action !== "stop") {
@@ -1648,6 +1682,7 @@ export class Stack {
             }
         };
         if (action === "start") {
+            await this.repairStartNetworks(model, [ serviceName ], authorizeTargets);
             await exec("up", "-d", ...(authorizeTargets ? [ "--no-deps" ] : []), serviceName);
         } else if (action === "stop") {
             await exec("stop", ...[ ...targets ].reverse());

@@ -4,6 +4,18 @@ export const RELEASE_NEWS = [
         items: [ "releaseNews.item.serverMessages" ],
     },
     {
+        id: "2026-11-04-web-terminal",
+        items: [ "releaseNews.item.webTerminal" ],
+    },
+    {
+        id: "2026-11-04-service-links",
+        items: [ "releaseNews.item.serviceLinks" ],
+    },
+    {
+        id: "2026-11-04-network-repair",
+        items: [ "releaseNews.item.networkRepair" ],
+    },
+    {
         id: "2026-11-04-configuration-tools",
         items: [ "releaseNews.item.configurationTools" ],
     },

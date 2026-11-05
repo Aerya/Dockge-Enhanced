@@ -74,6 +74,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/server-message.test.ts
 
+      - name: Tests natifs du terminal web
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/terminal-env.test.ts
+
       - name: Tests des transports Socket.IO de la WebUI
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/socket-connection.test.ts backend/socket-origin.test.ts
@@ -97,6 +101,10 @@ jobs:
       - name: Tests des mises à jour progressives par service
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/service-rollout.test.ts backend/rollout-relay.test.ts backend/rollout-recovery.test.ts backend/stack-mutation.test.ts backend/rollout-monitoring.test.ts frontend/src/rollout-relay.test.ts frontend/src/rollout-relay-ui.test.js
+
+      - name: Tests des liens de services et de leurs permissions
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/service-links.test.ts frontend/src/service-links-ui.test.js
 
       - name: Tests des comptes locaux et des permissions par stack
         if: steps.docs.outputs.docs_only != 'true'
@@ -140,7 +148,7 @@ jobs:
 
       - name: Tests des labels par service
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test common/compose-labels.test.ts backend/stack-clean-exit-status.test.ts backend/compose-network-namespace.test.ts
+        run: npx tsx --test common/compose-labels.test.ts backend/stack-clean-exit-status.test.ts backend/compose-network-namespace.test.ts backend/compose-network-repair.test.ts
 
       - name: Tests de la purge automatique des images
         if: steps.docs.outputs.docs_only != 'true'
