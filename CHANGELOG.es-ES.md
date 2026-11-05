@@ -6,6 +6,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-05 — Recuperación de la conexión Docker** — Recuperación opcional cuando un reinicio de Docker deja montado el socket antiguo. Configura `DOCKGE_DOCKER_RECOVERY_RETRIES` (`0` por defecto, desactivado) y `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (`30` por defecto). Tras fallos consecutivos de conexión, Enhanced termina ordenadamente para que `restart: unless-stopped` o `always` lo reinicie; las operaciones activas aplazan la salida. Cada proceso debe haber conectado correctamente con Docker antes de permitir la salida, evitando bucles al arrancar. Los errores de permisos, TLS o configuración no activan la recuperación.
+
 **2026-11-04 — Mensajes de la interfaz** — Los mensajes habituales de copias, planificación, ImageWatcher y limpieza siguen el idioma de la interfaz, incluidos los de instancias enlazadas antiguas. Los detalles técnicos desconocidos se conservan sin cambios.
 
 **2026-11-04 — Terminal web** — El terminal web declara correctamente xterm-256color: funcionan los colores y la limpieza de pantalla sin cambiar los permisos ni los entornos restringidos explícitamente.

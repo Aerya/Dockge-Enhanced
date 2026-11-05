@@ -14,7 +14,12 @@ import { IntegrationsRouter } from "./routers/integrations-router";
 import { AutomationRouter } from "./routers/automation-router";
 import { StackToolsRouter } from "./routers/stack-tools-router";
 import { OidcRouter } from "./routers/oidc-router";
-import { ImageWatcher } from "./watchers/image-watcher";
+import { ImageWatcher, isSelfUpdateBlockingImageMutations } from "./watchers/image-watcher";
+import { DockerSocketRecovery, dockerRecoveryConfig, probeDockerConnection } from "./docker-socket-recovery";
+import { getSelfUpdateBlocker } from "./self-update/operation-guard";
+import { activeDockerUpdateOperation } from "./self-update/operation-coordinator";
+import { hasActiveStackMutations } from "./stack-mutation";
+import { isDockerBuildActive, isDockerCleanupActive } from "./docker-operation-state";
 import { TrivyScanner } from "./watchers/trivy-scanner";
 import { BackupManager } from "./watchers/backup-manager";
 import { MonitoringWatcher } from "./watchers/monitoring-watcher";
@@ -96,6 +101,7 @@ import {
 } from "./auth";
 
 export class DockgeServer {
+    private dockerRecovery?: DockerSocketRecovery;
     app : Express;
     httpServer : http.Server;
     packageJSON : PackageJson;
@@ -637,6 +643,15 @@ export class DockgeServer {
 
             startAnonymousInstallCount(this.config.dataDir);
 
+            this.dockerRecovery = new DockerSocketRecovery(
+                dockerRecoveryConfig(process.env), probeDockerConnection,
+                async () => !!(await getSelfUpdateBlocker()) || await isSelfUpdateBlockingImageMutations(this.config.dataDir),
+                () => !!activeDockerUpdateOperation() || hasActiveStackMutations() || isDockerBuildActive() || isDockerCleanupActive() || Terminal.hasActiveCommands(),
+                () => process.kill(process.pid, "SIGTERM"),
+                message => log.warn("docker-recovery", message),
+            );
+            this.dockerRecovery.start();
+
             // Start Enhanced watchers (on leur passe l'URL de la WebUI pour les notifications)
             const baseUrl = this.getBaseUrl();
             ImageWatcher.getInstance().setBaseUrl(baseUrl);
@@ -667,7 +682,10 @@ export class DockgeServer {
             timeout: 30000,                   // timeout: 30 secs
             development: false,               // not in dev mode
             forceExit: true,                  // triggers process.exit() at the end of shutdown process
-            onShutdown: this.shutdownFunction,     // shutdown function (async) - e.g. for cleanup DB, ...
+            onShutdown: async signal => {
+                this.dockerRecovery?.stop();
+                await this.shutdownFunction(signal);
+            },
             finally: this.finalFunction,            // finally function (sync) - e.g. for logging
         });
 

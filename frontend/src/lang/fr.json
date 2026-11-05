@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.dockerRecovery": "Récupération de la connexion Docker : Récupération facultative lorsqu’un redémarrage de Docker laisse un ancien socket monté. Réglez DOCKGE_DOCKER_RECOVERY_RETRIES (0 par défaut, désactivé) et DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS (30 par défaut). Après des échecs de connexion consécutifs, Enhanced s’arrête proprement pour que restart: unless-stopped ou always le relance ; les opérations actives reportent cet arrêt. Chaque processus doit avoir joint Docker au moins une fois avant d’autoriser cet arrêt, pour éviter les boucles au démarrage. Les erreurs de droits, TLS ou configuration ne déclenchent pas la récupération.",
     "releaseNews.item.serverMessages": "Les messages courants de sauvegarde, planification, ImageWatcher et nettoyage suivent la langue de l’interface, y compris lorsqu’ils proviennent d’une instance liée plus ancienne. Les détails techniques inconnus restent affichés sans modification.",
     "serverMessage.required": "{fields} requis{detail}",
     "serverMessage.networkUsed": "Réseau utilisé par {count} conteneur(s)",

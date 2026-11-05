@@ -62,6 +62,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**Docker 连接恢复 :** 当 Docker 重启后容器仍挂载旧套接字时，可选择启用恢复。设置 `DOCKGE_DOCKER_RECOVERY_RETRIES`（默认 `0`，禁用）和 `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`（默认 `30`）。连续连接失败后，Enhanced 正常退出，由 `restart: unless-stopped` 或 `always` 重启；活动操作会推迟退出。每个进程必须至少成功连接 Docker 一次才能触发退出，避免启动循环。权限、TLS 或配置错误不会触发恢复。
+
 **界面消息 :** 常见的备份、计划、ImageWatcher 和清理消息遵循界面语言，也支持旧版关联实例的消息。未知技术细节保持原样显示。
 
 **网页终端 :** 网页终端正确声明 xterm-256color，恢复颜色和清屏功能，不改变权限或显式限制的环境变量。
@@ -587,6 +589,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - eMudhra 事件后的 TLS 证书库检查（[TLS 检查](security/emudhra/README.md)）
 
 ### 监控
+- **Docker 连接恢复** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - 系统、Stack 和容器的 CPU、RAM 和磁盘统计，以及可配置的状态栏
 - 主机系统详情、温度和受监控磁盘分区
 - 可选的每 5 分钟主机及 Compose 服务 CPU/RAM 历史，并显示数据空档
@@ -930,6 +933,8 @@ PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics �
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Docker Compose Stack 所在目录 |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。 |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge 数据目录；仅在使用自定义持久化挂载时覆盖 |
+| `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | 退出前的连续失败次数（0 禁用；最大 100） |
+| `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | 每次检查结束后的等待秒数（5–3600；单次检查超时为 5 秒） |
 | `DOCKGE_PUBLIC_URL` | *(无)* | Discord 通知链接使用的公开 URL（例如 `https://dockge.example.com`） |
 | `DOCKER_API_VERSION` | *(无)* | 固定 Docker 客户端协商的 API 版本，适用于部分 NAS 系统（例如 Synology DSM 7.x） |
 | `TZ` | `UTC` | 容器运行时时区；在**设置 → 常规**中明确配置之前，计划任务默认使用它。WebUI 中的选择对 Enhanced 计划任务优先 |

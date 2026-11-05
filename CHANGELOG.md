@@ -6,6 +6,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-05 — Docker connection recovery** — Optional recovery after a Docker restart leaves an obsolete socket mount. Set `DOCKGE_DOCKER_RECOVERY_RETRIES` (default `0`, disabled) and `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (default `30`). After consecutive connection failures, Enhanced exits gracefully so `restart: unless-stopped` or `always` can restart it; active operations defer the exit. A successful Docker connection is required in each process before restart is armed, preventing startup loops. Permissions, TLS and configuration errors do not trigger recovery.
+
 **2026-11-04 — Interface messages** — Common backup, scheduling, ImageWatcher and cleanup messages follow the interface language, including messages from older linked instances. Unknown technical details remain visible unchanged.
 
 **2026-11-04 — Web terminal** — The web terminal now declares xterm-256color correctly: colours and screen clearing work without changing permissions or explicitly restricted environments.

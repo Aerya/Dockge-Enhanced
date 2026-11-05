@@ -63,6 +63,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Docker connection recovery :** Optional recovery after a Docker restart leaves an obsolete socket mount. Set `DOCKGE_DOCKER_RECOVERY_RETRIES` (default `0`, disabled) and `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (default `30`). After consecutive connection failures, Enhanced exits gracefully so `restart: unless-stopped` or `always` can restart it; active operations defer the exit. A successful Docker connection is required in each process before restart is armed, preventing startup loops. Permissions, TLS and configuration errors do not trigger recovery.
+
 **Interface messages :** Common backup, scheduling, ImageWatcher and cleanup messages follow the interface language, including messages from older linked instances. Unknown technical details remain visible unchanged.
 
 **Web terminal :** The web terminal now declares xterm-256color correctly: colours and screen clearing work without changing permissions or explicitly restricted environments.
@@ -586,6 +588,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - TLS trust-store checks after the eMudhra incident ([TLS checks](security/emudhra/README.md))
 
 ### Monitoring
+- **Docker connection recovery** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - System, stack and container CPU, RAM and disk statistics, with a configurable status bar
 - Host system details, temperatures and monitored disk partitions
 - Optional 5-minute CPU/RAM history for the host and per Compose service, with visible gaps
@@ -927,6 +930,8 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directory containing Docker Compose stacks |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge data directory; override only for a custom persistent mount |
+| `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Consecutive failures before exit (0 disables; maximum 100) |
+| `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Seconds between completed checks (5–3600; each probe times out after 5 seconds) |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(none)* | Fixes the Docker API version negotiated by the client — useful on certain NAS systems (e.g. Synology DSM 7.x) |
 | `TZ` | `UTC` | Container runtime timezone; scheduling defaults to it until explicitly configured in **Settings → General**. The WebUI choice takes precedence for Enhanced schedules. |

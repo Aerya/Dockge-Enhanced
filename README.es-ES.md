@@ -63,6 +63,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Recuperación de la conexión Docker :** Recuperación opcional cuando un reinicio de Docker deja montado el socket antiguo. Configura `DOCKGE_DOCKER_RECOVERY_RETRIES` (`0` por defecto, desactivado) y `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` (`30` por defecto). Tras fallos consecutivos de conexión, Enhanced termina ordenadamente para que `restart: unless-stopped` o `always` lo reinicie; las operaciones activas aplazan la salida. Cada proceso debe haber conectado correctamente con Docker antes de permitir la salida, evitando bucles al arrancar. Los errores de permisos, TLS o configuración no activan la recuperación.
+
 **Mensajes de la interfaz :** Los mensajes habituales de copias, planificación, ImageWatcher y limpieza siguen el idioma de la interfaz, incluidos los de instancias enlazadas antiguas. Los detalles técnicos desconocidos se conservan sin cambios.
 
 **Terminal web :** El terminal web declara correctamente xterm-256color: funcionan los colores y la limpieza de pantalla sin cambiar los permisos ni los entornos restringidos explícitamente.
@@ -588,6 +590,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Comprobaciones de los almacenes de certificados TLS tras el incidente de eMudhra ([comprobaciones TLS](security/emudhra/README.md))
 
 ### Monitorización
+- **Recuperación de la conexión Docker** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - Estadísticas de CPU, RAM y disco del sistema, los stacks y los contenedores, con barra de estado configurable
 - Detalles del sistema host, temperaturas y particiones de disco supervisadas
 - Historial opcional de CPU/RAM cada 5 minutos para el host y por servicio Compose, con interrupciones visibles
@@ -929,6 +932,8 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directorio que contiene los stacks Docker Compose |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Directorio de datos de Dockge; cámbialo solo para un montaje persistente personalizado |
+| `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Fallos consecutivos antes de salir (0 desactiva; máximo 100) |
+| `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Segundos entre comprobaciones terminadas (5–3600; cada comprobación expira en 5 segundos) |
 | `DOCKGE_PUBLIC_URL` | *(ninguna)* | URL pública usada en enlaces de notificaciones Discord (por ejemplo `https://dockge.example.com`) |
 | `DOCKER_API_VERSION` | *(ninguna)* | Fija la versión de la API de Docker negociada por el cliente — útil en ciertos sistemas NAS (por ejemplo Synology DSM 7.x) |
 | `TZ` | `UTC` | Zona del proceso en el contenedor; predeterminada para programaciones hasta elegir una en **Ajustes → General**. La elección WebUI tiene prioridad para las programaciones de Enhanced. |
