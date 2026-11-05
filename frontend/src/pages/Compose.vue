@@ -416,6 +416,7 @@
                     </button>
 
                     <div v-show="containersExpanded" id="stack-containers">
+                        <PostUpdateOptions v-if="isEditMode" id="stack-post-update" :services="jsonConfig.services ?? {}" bulk :supported="stack.supportsPostUpdateCleanup === true || (isAdd && !endpoint)" />
                         <div v-if="isEditMode" class="input-group mb-3 compose-tight">
                             <input
                                 v-model="newContainerName"
@@ -964,6 +965,7 @@ import ConfigurationTools from "../components/ConfigurationTools.vue";
 import EnvForm from "../components/EnvForm.vue";
 import StackResourceHistory from "../components/StackResourceHistory.vue";
 import ComposeDiagnostics from "../components/ComposeDiagnostics.vue";
+import PostUpdateOptions from "../components/PostUpdateOptions.vue";
 import { prepareImageSync } from "../compose-drift";
 import { applyPlugNPiNLabelsToCompose, PlugNPiNSequenceLabelsError } from "../plugnpin-labels";
 import { useStackSchedules } from "../composables/useStackSchedules";
@@ -984,6 +986,7 @@ let serviceStatusTimeout = null;
 
 export default {
     components: {
+        PostUpdateOptions,
         StackURLsInput,
         ComposeDiagnostics,
         NetworkInput,

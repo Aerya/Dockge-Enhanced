@@ -51,7 +51,7 @@ async function hasActiveExternalStackIntegration(): Promise<boolean> {
     }
 }
 
-export async function getSelfUpdateBlocker(): Promise<SelfUpdateBlocker | null> {
+export async function getSelfUpdateBlocker(options: { ownsImageReservation?: boolean } = {}): Promise<SelfUpdateBlocker | null> {
     try {
         const [ stackTransfer, stackReplication, externalStackIntegration ] = await Promise.all([
             hasActiveStackTransfer(),
@@ -60,7 +60,7 @@ export async function getSelfUpdateBlocker(): Promise<SelfUpdateBlocker | null> 
         ]);
         return selectSelfUpdateBlocker({
             activeEditor: ComposeEditLeaseManager.getInstance().hasBlockingLease(),
-            imageWork: ImageWatcher.getInstance().hasDockerOperationInProgress(),
+            imageWork: !options.ownsImageReservation && ImageWatcher.getInstance().hasDockerOperationInProgress(),
             resticBackup: BackupManager.getInstance().isBackupRunActive(),
             zerobyteBackup: isZerobyteApplicationBackupActive(),
             resticRestore: BackupManager.getInstance().isRestoreRunActive(),

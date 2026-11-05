@@ -264,7 +264,8 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
         ]));
         fs.writeFileSync(scenarioPath, JSON.stringify({
             rows: [ keepRow(11, "orphan::keep"), keepRow(12, "expired::three-months"),
-                keepRow(13, "recovery::keep"), keepRow(14, "active::keep"), keepRow(15, "used::keep") ],
+                keepRow(13, "recovery::keep"), keepRow(14, "active::keep"), keepRow(15, "used::keep"),
+                keepRow(16, "expired::one"), keepRow(16, "expired::two") ],
             containers: [{
                 Id: "used-keep",
                 Image: id(15),
@@ -273,9 +274,12 @@ test("chaque image examinée a une raison et les anciens keeps sont réconcilié
         }));
         fs.writeFileSync(callsPath, "");
         const retired = await reconcileRollbackKeepTags(directory);
-        assert.deepEqual(retired.sort(), [ "orphan::keep", "expired::three-months", "recovery::keep", "used::keep" ]
+        assert.deepEqual(retired.sort(), [ "orphan::keep", "expired::three-months", "recovery::keep", "used::keep", "expired::one", "expired::two" ]
             .map(rollbackTagFromKey).sort());
         const keepCalls = fs.readFileSync(callsPath, "utf8").trim().split("\n").map(line => JSON.parse(line) as string[]);
+        for (const number of [ 11, 12, 16 ]) {
+            assert.ok(keepCalls.some(args => args[0] === "tag" && args[1] === id(number)), "expiring a keep must not delete an image outside the cleanup policy");
+        }
         assert.ok(keepCalls.some(args => args[0] === "tag" && args[1] === id(13)));
         assert.ok(keepCalls.some(args => args[0] === "tag" && args[1] === id(15)));
         assert.ok(!keepCalls.some(args => args[0] === "rmi" && args[1] === id(13)));

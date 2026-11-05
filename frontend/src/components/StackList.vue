@@ -147,26 +147,37 @@
                 <router-link to="/compose">{{ $t("addFirstStackMsg") }}</router-link>
             </div>
 
-            <template v-for="group in stackListGroups" :key="group.endpoint || '__local__'">
-                <div
-                    v-if="stackGroupByAgent && agentOptions.length > 1"
-                    class="stack-agent-group"
-                    :style="agentColorStyle(group.endpoint)"
-                >
-                    <span class="agent-color-dot"></span>
-                    <strong>{{ group.label }}</strong>
-                    <span class="stack-agent-count">{{ group.stacks.length }}</span>
-                </div>
-                <StackListItem
-                    v-for="item in group.stacks"
-                    :key="`${item.endpoint || '__local__'}:${item.name}`"
-                    :stack="item"
-                    :agent-colors="agentOptions.length > 1 ? agentColors(item.endpoint) : null"
-                    :scheduled="isStackScheduled(item.name, item.endpoint)"
-                    :pinned="isStackPinned(item)"
-                    @toggle-pin="toggleStackPin(item)"
-                />
-            </template>
+            <StackGroups :stacks="sortedStackList" :available-stacks="allStacks" :username="$root.username || ''" :searching="searchText.trim().length > 0" :endpoint-label="$root.endpointDisplayFunction">
+                <template #stack="{ stack: item }">
+                    <StackListItem
+                        :stack="item"
+                        :agent-colors="agentOptions.length > 1 ? agentColors(item.endpoint) : null"
+                        :scheduled="isStackScheduled(item.name, item.endpoint)"
+                        :pinned="isStackPinned(item)"
+                        @toggle-pin="toggleStackPin(item)"
+                    />
+                </template>
+                <template v-for="group in stackListGroups" :key="group.endpoint || '__local__'">
+                    <div
+                        v-if="stackGroupByAgent && agentOptions.length > 1"
+                        class="stack-agent-group"
+                        :style="agentColorStyle(group.endpoint)"
+                    >
+                        <span class="agent-color-dot"></span>
+                        <strong>{{ group.label }}</strong>
+                        <span class="stack-agent-count">{{ group.stacks.length }}</span>
+                    </div>
+                    <StackListItem
+                        v-for="item in group.stacks"
+                        :key="`${item.endpoint || '__local__'}:${item.name}`"
+                        :stack="item"
+                        :agent-colors="agentOptions.length > 1 ? agentColors(item.endpoint) : null"
+                        :scheduled="isStackScheduled(item.name, item.endpoint)"
+                        :pinned="isStackPinned(item)"
+                        @toggle-pin="toggleStackPin(item)"
+                    />
+                </template>
+            </StackGroups>
         </div>
     </div>
 </template>
@@ -174,6 +185,7 @@
 <script>
 import { filterStacksByAgentTag } from "../../../common/agent-tags";
 import StackListItem from "../components/StackListItem.vue";
+import StackGroups from "./StackGroups.vue";
 import { CREATED_FILE, CREATED_STACK, EXITED, PAUSED, RUNNING, UNKNOWN } from "../../../common/util-common";
 import { useStackSchedules } from "../composables/useStackSchedules";
 import { statsByEndpoint } from "../composables/useStackStats";
@@ -182,17 +194,18 @@ import { compareStackResources } from "../stack-resource-sort";
 export default {
     components: {
         StackListItem,
-    },
-    setup() {
-        const { schedules } = useStackSchedules();
-        return { schedules,
-            resourceStats: statsByEndpoint };
+        StackGroups,
     },
     props: {
         /** Should the scrollbar be shown */
         scrollbar: {
             type: Boolean,
         },
+    },
+    setup() {
+        const { schedules } = useStackSchedules();
+        return { schedules,
+            resourceStats: statsByEndpoint };
     },
     data() {
         return {

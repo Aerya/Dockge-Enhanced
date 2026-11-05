@@ -549,33 +549,34 @@
                                 </td>
                                 <!-- ─── Rollback ─── -->
                                 <td>
-                                    <template v-if="rollbackFor(s)">
-                                        <div class="rollback-cell">
+                                    <template v-if="rollbacksFor(s).length">
+                                        <div v-for="entry in rollbacksFor(s)" :key="entry.key" class="rollback-cell">
+                                            <span v-if="entry.service" class="small">{{ entry.service }}</span>
                                             <div class="d-flex align-items-center gap-1 mb-1">
                                                 <span
                                                     class="rollback-countdown"
                                                     :title="
                                                         $t('watcher.rollback.expiresAt') +
                                                             ' ' +
-                                                            fmtDate(rollbackFor(s)!.expiresAt)
+                                                            fmtDate(entry.expiresAt)
                                                     "
                                                 >
-                                                    ⏳ {{ rollbackCountdown(rollbackFor(s)!) }}
+                                                    ⏳ {{ rollbackCountdown(entry) }}
                                                 </span>
                                             </div>
                                             <div class="d-flex gap-1">
                                                 <button
                                                     class="btn btn-xs btn-rollback image-action-button"
                                                     :disabled="
-                                                        rollbackingKey === `${s.stack}::${s.image}`
+                                                        rollbackingKey === entry.key
                                                     "
                                                     :title="$t('watcher.rollback.btnTitle')"
                                                     :aria-label="$t('watcher.rollback.btnTitle')"
-                                                    @click="doRollback(s)"
+                                                    @click="doRollback(entry)"
                                                 >
                                                     <span
                                                         v-if="
-                                                            rollbackingKey === `${s.stack}::${s.image}`
+                                                            rollbackingKey === entry.key
                                                         "
                                                         class="spinner-border spinner-border-sm"
                                                     />
@@ -587,7 +588,7 @@
                                                     class="btn btn-xs btn-outline-secondary image-action-button"
                                                     :title="$t('watcher.rollback.dismiss')"
                                                     :aria-label="$t('watcher.rollback.dismiss')"
-                                                    @click="dismissRollback(s)"
+                                                    @click="dismissRollback(entry)"
                                                 >
                                                     <font-awesome-icon icon="times" />
                                                 </button>
@@ -986,8 +987,8 @@ async function loadStatus() {
     }
 }
 
-function rollbackFor(s: ImageStatus): RollbackEntry | undefined {
-    return rollbackEntries.value.find((r) => r.key === `${s.stack}::${s.image}`);
+function rollbacksFor(s: ImageStatus): RollbackEntry[] {
+    return rollbackEntries.value.filter((r) => r.stack === s.stack && r.image === s.image);
 }
 
 function rollbackCountdown(entry: RollbackEntry): string {
@@ -1057,8 +1058,8 @@ async function clearUpdateHistory() {
     expandedUpdateHistoryRows.value = new Set();
 }
 
-async function doRollback(s: ImageStatus) {
-    const key = `${s.stack}::${s.image}`;
+async function doRollback(s: RollbackEntry) {
+    const key = s.key;
     if (
         !confirm(t("watcher.rollback.confirm", { image: s.image,
             stack: s.stack }))
@@ -1079,8 +1080,8 @@ async function doRollback(s: ImageStatus) {
     }
 }
 
-async function dismissRollback(s: ImageStatus) {
-    const key = `${s.stack}::${s.image}`;
+async function dismissRollback(s: RollbackEntry) {
+    const key = s.key;
     const res = await watcherApi("DELETE", `/image/rollback/${encodeURIComponent(key)}`);
     if (res.ok) {
         rollbackEntries.value = rollbackEntries.value.filter((r) => r.key !== key);

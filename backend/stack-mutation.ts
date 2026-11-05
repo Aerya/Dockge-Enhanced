@@ -6,6 +6,10 @@ const draining = new Map<string, number>();
 const pending = new Map<string, Set<string>>();
 const recovery = new AsyncLocalStorage<string>();
 
+export function hasActiveStackMutations(): boolean {
+    return owners.size > 0 || pending.size > 0;
+}
+
 /** Durable operations register here before listeners/watchers start. */
 export function registerPendingRollout(project: string, id: string): void {
     const entries = pending.get(project) ?? new Set<string>();
