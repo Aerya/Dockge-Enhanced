@@ -41,7 +41,7 @@ jobs:
         run: node .github/scripts/usage-count.cjs
 
       - name: Conserver le relevé sans secret
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: usage-count-report
           path: ${{ runner.temp }}/usage-count-report.json
