@@ -162,3 +162,28 @@ test("bootstrap only creates the first user and never changes it later", async (
         delete process.env.DOCKGE_BOOTSTRAP_PASSWORD;
     }
 });
+
+test("watcher HTTP authentication rejects non-admin and unauthenticated requests", async t => {
+    process.env.DOCKGE_AUTH_MODE = "local";
+    const original = R.findOne;
+    let role = "viewer";
+    R.findOne = (async () => ({ username: "fixture-user",
+        password: "fixture-hash",
+        role })) as unknown as typeof R.findOne;
+    t.after(() => {
+        R.findOne = original;
+    });
+    const secret = "fixture-secret";
+    const token = jwt.sign({ username: "fixture-user",
+        h: passwordVersionFingerprint("fixture-hash", secret) }, secret);
+    const request = { headers: { authorization: `Bearer ${token}` },
+        query: {} } as never;
+    await assert.rejects(authenticateHttpRequest({ headers: {},
+        query: {} } as never, secret));
+    for (const deniedRole of [ "viewer", "operator" ]) {
+        role = deniedRole;
+        await assert.rejects(authenticateHttpRequest(request, secret));
+    }
+    role = "admin";
+    assert.equal((await authenticateHttpRequest(request, secret)).username, "fixture-user");
+});
