@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-06 — Mobile log viewing** — Opening a stack no longer focuses the log viewer. On touchscreens, interactive terminals wait for a deliberate tap before taking keyboard focus; log searches keep focus in the search field.
+
 **2026-11-06 — Compact layout alignment** — Service rows stay aligned with their headings on wide screens. The update mode and time fields share the same width, with space before the action buttons.
 
 **2026-11-06 — Docker topology** — Read-only map and port inventory for local and linked instances, with account groups and independent stopped/external filters. Open stack/container details and TCP ports using each instance’s IP/hostname preference. Shared network namespaces retain their owner. Administrator access only; update linked instances too. Lines show configuration, not traffic. Traefik and PlugNPiN/NPM declarations are shown separately from verified routes. Host sockets are attributed only when container processes are visible and readable; otherwise this is explicitly reported. No additional privileges or proxy requests.

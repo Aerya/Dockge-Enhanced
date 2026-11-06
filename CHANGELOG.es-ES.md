@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-06 — Consulta de logs en móviles** — Al abrir una stack, el visor de logs ya no recibe el foco. En pantallas táctiles, los terminales interactivos esperan un toque voluntario; la búsqueda en los logs mantiene el foco en su campo.
+
 **2026-11-06 — Alineación de la vista compacta** — Las filas de servicios permanecen alineadas con sus encabezados en pantallas anchas. El modo de actualización y la hora tienen el mismo ancho, con espacio antes de los botones de acción.
 
 **2026-11-06 — Topología Docker** — Mapa e inventario de puertos de solo lectura para instancias locales y vinculadas, con grupos de la cuenta y filtros independientes de detenidos/externos. Acceda a stacks, contenedores y puertos TCP según la preferencia IP/hostname de cada instancia. Los espacios de red compartidos conservan su propietario. Solo administradores; actualice también las instancias vinculadas. Las líneas muestran configuración, no tráfico. Las declaraciones Traefik y PlugNPiN/NPM se distinguen de rutas verificadas. Los puertos host solo se atribuyen con procesos visibles y legibles; en caso contrario se indica. Sin privilegios adicionales ni peticiones a los proxies.
