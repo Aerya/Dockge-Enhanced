@@ -1,4 +1,6 @@
 {
+    "containerInstance.startedAt": "Zuletzt gestartet",
+    "containerInstance.uptime": "Betriebszeit (Stunden:Minuten:Sekunden)",
     "composeVisualEditUnsafe": "Die visuelle Änderung konnte nicht sicher angewendet werden. Der Compose-Text bleibt erhalten; verwenden Sie den Texteditor.",
     "topology.configuredLinks": "Auf dieser Instanz konfigurierte Weblinks",
     "topology.routes": "Deklarierte Web-Routen",

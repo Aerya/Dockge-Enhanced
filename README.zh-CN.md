@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**容器生命周期时间 :** 容器详情分别显示创建时间、上次启动时间及自该次启动以来的运行时长。每个副本的时间均从所属实例的 Docker 读取。已停止的容器不会显示持续增长的运行时长；无法获取的时间不作推测。关联实例也需更新。
+
 **局部编辑 Compose :** 可视化编辑器只修改相关 YAML 区域，不再重建整个文件。无修改保存时保留原文；拒绝不一致的修改。手动格式化仍为独立操作。
 
 **Restic 安全依赖 :** 内置 Restic 0.19.1 使用 golang.org/x/net 0.62.0 替代 0.60.0 重新编译，以修复 CVE-2026-78661。备份设置和 Trivy 检查保持不变；这并不证明 Enhanced 中存在可利用的攻击路径。
@@ -511,7 +513,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Windows 11 与 Docker Desktop/WSL2：[安装和限制](docs/windows.zh-CN.md)
 - 创建、编辑、启动、停止、重启、更新、重建、暂停/恢复和拆除 Compose Stack
 - 直接可用的 Stack 操作栏，支持仅图标或图标加文字，并说明实际执行的 Compose 命令
-- 按服务和按容器操作，包括实际容器和 Compose 副本
+- 按服务和按容器操作，包括实际容器和 Compose 副本；容器详情显示创建时间、上次启动时间和运行时长
 - 通过 `service:` 或 `container:` 共享 VPN/网络命名空间的直接和间接服务会自动重建
 - 本地构建镜像的 Build + Recreate
 - Stack 和容器的计划启动/停止

@@ -23,7 +23,9 @@
                 <div class="shadow-box detail-card"><div class="detail-label">{{ $t("containerInstance.state") }}</div><span>{{ instance.state || $t("notAvailableShort") }}</span></div>
                 <div class="shadow-box detail-card"><div class="detail-label">{{ $t("containerInstance.health") }}</div><span>{{ instance.health || $t("notAvailableShort") }}</span></div>
                 <div class="shadow-box detail-card"><div class="detail-label">{{ $t("port", 2) }}</div><span>{{ instance.ports || $t("notAvailableShort") }}</span></div>
-                <div class="shadow-box detail-card"><div class="detail-label">{{ $t("containerInstance.createdAt") }}</div><span>{{ instance.createdAt || $t("notAvailableShort") }}</span></div>
+                <div class="shadow-box detail-card"><div class="detail-label">{{ $t("containerInstance.createdAt") }}</div><span>{{ formatDate(instance.createdAt) }}</span></div>
+                <div class="shadow-box detail-card"><div class="detail-label">{{ $t("containerInstance.startedAt") }}</div><span>{{ formatDate(instance.startedAt) }}</span></div>
+                <div v-if="uptime" class="shadow-box detail-card"><div class="detail-label">{{ $t("containerInstance.uptime") }}</div><span>{{ uptime }}</span></div>
                 <div v-if="stats" class="shadow-box detail-card"><div class="detail-label">CPU</div><span>{{ stats.CPUPerc }}</span></div>
                 <div v-if="stats" class="shadow-box detail-card"><div class="detail-label">RAM</div><span>{{ stats.MemUsage }}</span></div>
             </div>
@@ -40,6 +42,8 @@
 </template>
 
 <script>
+import { containerUptime } from "../container-lifecycle";
+
 export default {
     data() {
         return {
@@ -73,6 +77,10 @@ export default {
         isRunning() {
             return this.instance?.state === "running";
         },
+        uptime() {
+            // Refreshed together with the Docker state, not from Compose's creation age.
+            return containerUptime(this.instance?.startedAt, this.instance?.state);
+        },
     },
     mounted() {
         this.refresh();
@@ -87,6 +95,13 @@ export default {
         window.clearTimeout(this.requestTimeout);
     },
     methods: {
+        formatDate(value) {
+            if (!value) {
+                return this.$t("notAvailableShort");
+            }
+            const date = new Date(value);
+            return Number.isFinite(date.getTime()) ? date.toLocaleString(this.$i18n.locale) : value;
+        },
         refresh() {
             if (this.instanceLoading) {
                 return;

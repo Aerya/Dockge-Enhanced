@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Container lifecycle dates :** Container details distinguish creation, last start and uptime since that start. Each replica has its own dates, read from Docker on its hosting instance. Stopped containers do not show an increasing uptime; unavailable dates remain unspecified. Update linked instances too.
+
 **Targeted Compose edits :** The visual editor changes affected YAML ranges without rebuilding the whole file. Unchanged saves retain the original text; inconsistent edits are refused. Explicit formatting remains separate.
 
 **Restic security dependency :** The bundled Restic 0.19.1 is rebuilt with golang.org/x/net 0.62.0 instead of 0.60.0 for CVE-2026-78661. Backup settings and Trivy checks remain unchanged; this does not establish exploitability in Enhanced.
@@ -510,7 +512,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md)
 - Create, edit, start, stop, restart, update, recreate, pause/resume and take down Compose stacks
 - Directly accessible stack action bar, with icons-only or icons-and-text modes and explained Compose commands
-- Per-service and per-container actions, including actual containers and Compose replicas
+- Per-service and per-container actions, including actual containers and Compose replicas; creation, last start and uptime in container details
 - Automatic recreation of direct and transitive services sharing a VPN/network namespace through `service:` or `container:`
 - Build + Recreate for locally built images
 - Scheduled stack and container start/stop

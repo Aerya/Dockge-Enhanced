@@ -1,4 +1,6 @@
 {
+    "containerInstance.startedAt": "Last started",
+    "containerInstance.uptime": "Uptime (hours:minutes:seconds)",
     "composeVisualEditUnsafe": "The visual edit could not be applied safely. The Compose text was kept; use the text editor.",
     "topology.configuredLinks": "Web links configured on this instance",
     "topology.routes": "Declared web routes",

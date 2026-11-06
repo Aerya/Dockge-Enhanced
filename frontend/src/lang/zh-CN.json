@@ -1,4 +1,6 @@
 {
+    "containerInstance.startedAt": "上次启动",
+    "containerInstance.uptime": "运行时长（小时:分钟:秒）",
     "composeVisualEditUnsafe": "无法安全应用可视化修改。Compose 原文已保留，请使用文本编辑器。",
     "topology.configuredLinks": "此实例配置的 Web 链接",
     "topology.routes": "声明的 Web 路由",

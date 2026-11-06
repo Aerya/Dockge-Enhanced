@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Fechas de los contenedores :** La ficha de un contenedor distingue su creación, último inicio y tiempo en ejecución desde ese inicio. Cada réplica tiene sus propias fechas, leídas de Docker en su instancia anfitriona. Los contenedores detenidos no muestran un tiempo creciente; las fechas no disponibles quedan sin indicar. Actualice también las instancias vinculadas.
+
 **Edición localizada de Compose :** El editor visual modifica las zonas YAML afectadas sin reconstruir todo el archivo. Guardar sin cambios conserva el texto original; se rechazan cambios incoherentes. El formateo explícito sigue separado.
 
 **Dependencia de seguridad de Restic :** Restic 0.19.1 incluido se recompila con golang.org/x/net 0.62.0 en lugar de 0.60.0 por CVE-2026-78661. No cambian los ajustes de copia ni los controles Trivy; esto no demuestra que sea explotable en Enhanced.
@@ -512,7 +514,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Windows 11 con Docker Desktop/WSL2: [instalación y límites](docs/windows.es.md)
 - Crear, editar, iniciar, detener, reiniciar, actualizar, recrear, pausar/reanudar y desmontar stacks Compose
 - Barra de acciones del stack accesible directamente, en modo solo iconos o iconos con texto, con los comandos Compose explicados
-- Acciones por servicio y por contenedor, incluidos los contenedores reales y las réplicas Compose
+- Acciones por servicio y por contenedor, incluidos los contenedores reales y las réplicas Compose; creación, último inicio y tiempo en ejecución en la ficha del contenedor
 - Recreación automática de los servicios directos y transitivos que comparten un namespace de red VPN mediante `service:` o `container:`
 - Build + Recreate para imágenes construidas localmente
 - Inicio/parada programados de stacks y contenedores

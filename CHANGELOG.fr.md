@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-06 — Dates des conteneurs** — La fiche d’un conteneur distingue sa création, son dernier démarrage et sa durée de fonctionnement depuis ce démarrage. Chaque réplica a ses propres dates, lues dans Docker sur l’instance hôte. Un conteneur arrêté n’affiche pas de durée croissante ; une date indisponible reste non renseignée. Mettez aussi à jour les instances liées.
+
 **2026-11-06 — Édition ciblée du Compose** — L’éditeur visuel modifie les portions YAML concernées sans reconstruire tout le fichier. Un enregistrement sans changement conserve le texte original ; les modifications incohérentes sont refusées. Le formatage explicite reste séparé.
 
 **2026-11-06 — Dépendance de sécurité Restic** — Restic 0.19.1 embarqué est recompilé avec golang.org/x/net 0.62.0 au lieu de 0.60.0 pour CVE-2026-78661. Réglages de sauvegarde et contrôles Trivy inchangés ; cela ne démontre pas une exploitabilité dans Enhanced.

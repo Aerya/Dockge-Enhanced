@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Dates des conteneurs :** La fiche d’un conteneur distingue sa création, son dernier démarrage et sa durée de fonctionnement depuis ce démarrage. Chaque réplica a ses propres dates, lues dans Docker sur l’instance hôte. Un conteneur arrêté n’affiche pas de durée croissante ; une date indisponible reste non renseignée. Mettez aussi à jour les instances liées.
+
 **Édition ciblée du Compose :** L’éditeur visuel modifie les portions YAML concernées sans reconstruire tout le fichier. Un enregistrement sans changement conserve le texte original ; les modifications incohérentes sont refusées. Le formatage explicite reste séparé.
 
 **Dépendance de sécurité Restic :** Restic 0.19.1 embarqué est recompilé avec golang.org/x/net 0.62.0 au lieu de 0.60.0 pour CVE-2026-78661. Réglages de sauvegarde et contrôles Trivy inchangés ; cela ne démontre pas une exploitabilité dans Enhanced.
@@ -511,7 +513,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Windows 11 avec Docker Desktop/WSL2 : [installation et limites](docs/windows.fr.md)
 - Création, édition, démarrage, arrêt, redémarrage, mise à jour, recréation, pause/reprise et démontage des stacks Compose
 - Barre d’actions de stack directement accessible, en mode icônes seules ou icônes avec texte, avec les commandes Compose expliquées
-- Actions par service et par conteneur, y compris sur les conteneurs réels et les réplicas Compose
+- Actions par service et par conteneur, y compris sur les conteneurs réels et les réplicas Compose ; création, dernier démarrage et durée de fonctionnement dans la fiche du conteneur
 - Recréation automatique des services directs et transitifs partageant un namespace réseau VPN via `service:` ou `container:`
 - Build + Recreate pour les images construites localement
 - Démarrage/arrêt planifié des stacks et des conteneurs
