@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Lien Console facultatif :** Paramètres → Apparence permet de masquer Console dans la navigation ordinateur et mobile. Option désactivée par défaut, enregistrée par compte dans ce navigateur. Ce réglage d’affichage ne désactive pas la console et ne modifie pas les permissions.
+
 **Consultation des logs sur mobile :** Ouvrir une stack ne place plus le curseur dans les logs. Sur écran tactile, les terminaux interactifs attendent un appui volontaire avant de prendre le focus du clavier ; la recherche dans les logs conserve le focus dans son champ.
 
 **Variables dans les liens des stacks :** Les liens enregistrés sont résolus par Compose sur l’instance hôte, avec variables globales/locales et overrides. Seuls les liens HTTP/HTTPS validés sont renvoyés, jamais l’environnement complet. Mettez à jour les instances liées ; l’aperçu d’un brouillon reste local jusqu’à l’enregistrement.
@@ -654,6 +656,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Home Assistant
 
 ### Apparence & langues
+- Masquage facultatif de Console dans la navigation ordinateur/mobile, enregistré par compte dans ce navigateur
 - **Liens des services** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Palettes jour et nuit distinctes, y compris les thèmes d’origine de Dockge-Enhanced
 - Options Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night et Rosé Pine

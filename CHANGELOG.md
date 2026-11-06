@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-06 — Optional Console navigation** — Settings → Appearance can hide Console from desktop and mobile navigation. Off by default, saved per account in this browser. This display preference does not disable the console or change permissions.
+
 **2026-11-06 — Mobile log viewing** — Opening a stack no longer focuses the log viewer. On touchscreens, interactive terminals wait for a deliberate tap before taking keyboard focus; log searches keep focus in the search field.
 
 **2026-11-06 — Variables in stack links** — Saved stack links are resolved by Compose on the hosting instance, including global/local variables and overrides. Only validated HTTP/HTTPS links are returned, never the complete environment. Linked instances need this version; draft previews remain local until saved.

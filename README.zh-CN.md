@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**可选的控制台导航链接 :** 设置 → 外观可隐藏桌面和移动端导航中的控制台链接。默认关闭，按账户保存在此浏览器中。这仅影响显示，不会禁用控制台或更改权限。
+
 **移动端日志查看 :** 打开堆栈时不再自动聚焦日志查看器。触摸屏上的交互终端会等待用户主动点击后再获取输入焦点；搜索日志时焦点保留在搜索框中。
 
 **堆栈链接中的变量 :** 已保存的链接由托管实例上的 Compose 解析，支持全局/本地变量和覆盖文件。只返回验证过的 HTTP/HTTPS 链接，不返回完整环境。请更新关联实例；草稿预览在保存前仍使用本地变量。
@@ -654,6 +656,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Home Assistant
 
 ### 外观与语言
+- 可选隐藏桌面及移动端导航中的控制台链接，按账户保存在此浏览器中
 - **服务链接** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - 独立的日间和夜间配色，包括 Dockge-Enhanced 原有主题
 - Catppuccin、Nord、Solarized、Dracula、Gruvbox、Tokyo Night 和 Rosé Pine 选项

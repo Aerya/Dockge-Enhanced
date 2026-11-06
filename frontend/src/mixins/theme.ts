@@ -1,6 +1,7 @@
 import { defineComponent } from "vue";
 import { normalizePalette } from "../theme-palettes";
 import { loadCompactInterface, saveCompactInterface } from "../interface-density";
+import { loadHiddenConsole, saveHiddenConsole } from "../console-navigation";
 
 export default defineComponent({
     data() {
@@ -10,6 +11,7 @@ export default defineComponent({
             dayPalette: normalizePalette(localStorage.dayPalette, "light"),
             nightPalette: normalizePalette(localStorage.nightPalette, "dark"),
             compactInterface: false,
+            hideConsoleNavigation: false,
         };
     },
 
@@ -33,6 +35,11 @@ export default defineComponent({
     watch: {
         username(value) {
             this.compactInterface = loadCompactInterface(localStorage, value);
+            this.hideConsoleNavigation = loadHiddenConsole(localStorage, value);
+        },
+
+        hideConsoleNavigation(value) {
+            saveHiddenConsole(localStorage, this.username, value);
         },
 
         compactInterface(value) {

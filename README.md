@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Optional Console navigation :** Settings → Appearance can hide Console from desktop and mobile navigation. Off by default, saved per account in this browser. This display preference does not disable the console or change permissions.
+
 **Mobile log viewing :** Opening a stack no longer focuses the log viewer. On touchscreens, interactive terminals wait for a deliberate tap before taking keyboard focus; log searches keep focus in the search field.
 
 **Variables in stack links :** Saved stack links are resolved by Compose on the hosting instance, including global/local variables and overrides. Only validated HTTP/HTTPS links are returned, never the complete environment. Linked instances need this version; draft previews remain local until saved.
@@ -653,6 +655,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Home Assistant
 
 ### Appearance & languages
+- Optional per-account hiding of Console in desktop/mobile navigation, saved in this browser
 - **Service links** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Separate day and night palettes, including the original Dockge-Enhanced themes
 - Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night and Rosé Pine options

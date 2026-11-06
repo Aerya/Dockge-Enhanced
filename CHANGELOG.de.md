@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-06 — Optionaler Konsolenlink** — Einstellungen → Darstellung kann Konsole in der Desktop- und Mobilnavigation ausblenden. Standardmäßig deaktiviert, pro Konto in diesem Browser gespeichert. Diese Anzeigeeinstellung deaktiviert weder die Konsole noch ändert sie Berechtigungen.
+
 **2026-11-06 — Loganzeige auf Mobilgeräten** — Beim Öffnen eines Stacks erhält die Loganzeige nicht mehr den Eingabefokus. Auf Touchscreens warten interaktive Terminals auf bewusstes Antippen; bei der Logsuche bleibt der Fokus im Suchfeld.
 
 **2026-11-06 — Variablen in Stack-Links** — Gespeicherte Links werden von Compose auf der Hosting-Instanz mit globalen/lokalen Variablen und Overrides aufgelöst. Nur geprüfte HTTP/HTTPS-Links werden zurückgegeben, nie die gesamte Umgebung. Verknüpfte Instanzen benötigen diese Version; Entwurfsvorschauen bleiben bis zum Speichern lokal.

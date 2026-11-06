@@ -1,4 +1,6 @@
 {
+    "hideConsoleNavigation": "在导航中隐藏控制台",
+    "hideConsoleNavigationHelp": "为此浏览器中的当前账户隐藏桌面和移动端链接。不会禁用控制台或更改权限。",
     "composeVisualEditUnsafe": "无法安全应用可视化修改。Compose 原文已保留，请使用文本编辑器。",
     "topology.configuredLinks": "此实例配置的 Web 链接",
     "topology.routes": "声明的 Web 路由",
