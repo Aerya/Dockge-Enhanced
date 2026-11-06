@@ -7,6 +7,43 @@ import { TopologySocketHandler } from "./agent-socket-handlers/topology-socket-h
 import { AgentSocket } from "../common/agent-socket";
 import type { DockgeSocket } from "./util-server";
 import type { DockgeServer } from "./dockge-server";
+import { topologyRoutes } from "./topology-routes";
+import { parseOwnedSockets, hostContainerPorts } from "./topology-host-ports";
+test("proxy declarations are bounded, explicit and never expose credentials", () => {
+    assert.deepEqual(topologyRoutes({
+        "plugNPiN.url": "one.example,two.example,https://secret:password@private.example",
+        "traefik.http.routers.web.rule": "Host(`secure.example`)",
+        "traefik.http.routers.web.tls": "true",
+        "traefik.http.routers.web.service": "app",
+        "traefik.http.services.app.loadbalancer.server.port": "8080",
+        "traefik.http.middlewares.auth.basicauth.users": "secret",
+        "traefik.http.routers.bad.rule": "!Host(`excluded.example`)",
+        "traefik.http.routers.path.rule": "Host(`path.example`) && Path(`/private`)",
+    }), [
+        { url: "http://one.example/",
+            source: "PlugNPiN" },
+        { url: "http://two.example/",
+            source: "PlugNPiN" },
+        { url: "https://secure.example/",
+            source: "Traefik",
+            targetPort: 8080 },
+    ]);
+    assert.deepEqual(topologyRoutes({ "traefik.enable": "false",
+        "traefik.http.routers.web.rule": "Host(`disabled.example`)" }), []);
+});
+test("host socket attribution excludes other processes and established connections", async () => {
+    const header = "sl local_address rem_address st tx_queue tr retrnsmt uid timeout inode\n";
+    const rows = "0: 0100007F:1F90 00000000:0000 0A 0:0 00:0 0 1000 0 123\n" +
+        "1: 00000000:0016 00000000:0000 0A 0:0 00:0 0 1000 0 999\n" +
+        "2: 0100007F:1F91 00000000:0000 01 0:0 00:0 0 1000 0 123\n";
+    assert.deepEqual(parseOwnedSockets(header + rows, new Set([ "123" ]), "tcp"), [{ address: "127.0.0.1",
+        published: 8080,
+        target: 8080,
+        protocol: "tcp" }]);
+    assert.deepEqual(parseOwnedSockets(header + rows, new Set(), "tcp"), []);
+    assert.equal(await hostContainerPorts("a".repeat(64), process.pid), null);
+    assert.equal(await hostContainerPorts("../1", 1), null);
+});
 test("revocation during collection prevents delivery, including authenticated federation", async (t) => {
     let role = "admin";
     t.mock.method(R, "findOne", async () => ({ role }));

@@ -3,6 +3,7 @@
         <h3 class="h5">{{ label }}</h3>
         <p class="small text-secondary">{{ $t('topology.snapshot') }} {{ snapshot.capturedAt }} · {{ snapshot.containers.length }} {{ $t('topology.containers') }}</p>
         <p v-if="snapshot.unavailable" class="text-warning">{{ $t('topology.partial', { count: snapshot.unavailable }) }}</p>
+        <div v-if="snapshot.webLinks?.length" class="small mb-3"><strong>{{ $t('topology.configuredLinks') }}</strong><a v-for="(link, i) in snapshot.webLinks" :key="i" class="ms-3" :href="safeRoute(link.url)" target="_blank" rel="noopener noreferrer">{{ link.name }} ↗</a></div>
         <p v-if="!containers.length">{{ $t('topology.empty') }}</p>
         <div v-else-if="view === 'ports'" class="table-responsive">
             <table class="table table-sm">
@@ -29,11 +30,21 @@
             <div><h4>{{ $t('topology.ports') }}</h4><div v-for="container in publishing" :key="container.id" class="topology-node" :data-node="'p-' + container.id"><strong>{{ container.name }}</strong><div v-for="(port, index) in container.ports" :key="index" class="small mt-1"><a v-if="portUrl(port)" :href="portUrl(port)" :title="$t('topology.webHint')" target="_blank" rel="noopener noreferrer">{{ port.address.includes(':') ? '[' + port.address + ']' : port.address }}:{{ port.published }} ↗</a><span v-else>{{ port.address }}:{{ port.published }}</span> → {{ port.target }}/{{ port.protocol }}</div></div><p v-if="!publishing.length" class="small">{{ $t('topology.noPorts') }}</p></div>
         </div>
         <div v-if="selected" class="small mt-3 topology-detail" aria-live="polite">{{ selected }}</div>
+        <div v-if="containers.some(c => c.routes?.length)" class="small mt-3">
+            <h4 class="h6">{{ $t('topology.routes') }}</h4>
+            <p class="text-secondary">{{ $t('topology.routesHint') }}</p>
+            <div v-for="c in containers.filter(c => c.routes?.length)" :key="c.id">
+                <strong>{{ c.name }}</strong>
+                <div v-for="(webRoute, i) in c.routes" :key="i"><a :href="safeRoute(webRoute.url)" target="_blank" rel="noopener noreferrer">{{ webRoute.url }}</a> · {{ webRoute.source }}<span v-if="webRoute.targetPort"> → {{ webRoute.targetPort }}</span></div>
+            </div>
+        </div>
+        <p v-for="c in containers.filter(c => c.hostPorts)" :key="c.id" class="small mt-2">{{ c.name }} — {{ $t(c.hostPorts === 'attributed' ? 'topology.hostAttributed' : 'topology.hostUnavailable') }}</p>
         <p v-if="containers.some(c => c.mode === 'host')" class="small text-warning mt-2">{{ $t('topology.hostNotice') }}</p>
     </section>
 </template>
 <script>
 import { topologyOwner } from "../../../common/docker-topology";
+import { safeServiceUrl } from "../../../common/service-links";
 import { topologyPortUrl, topologyRoute } from "../topology";
 export default {
     props: { snapshot: { type: Object,
@@ -98,6 +109,9 @@ export default {
         this.observer?.disconnect();
     },
     methods: {
+        safeRoute(value) {
+            return safeServiceUrl(value) || undefined;
+        },
         route(container, details) {
             return topologyRoute(container, this.endpoint, details);
         },

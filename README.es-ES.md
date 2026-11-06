@@ -64,7 +64,7 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
-**Topología Docker :** Mapa e inventario de puertos de solo lectura para instancias locales y vinculadas, con grupos de la cuenta y filtros independientes de detenidos/externos. Acceda a stacks, contenedores y puertos TCP según la preferencia IP/hostname de cada instancia. Los espacios de red compartidos conservan su propietario. Solo administradores; actualice también las instancias vinculadas. Las líneas no indican tráfico; no se deducen puertos en modo host ni rutas de proxies inversos.
+**Topología Docker :** Mapa e inventario de puertos de solo lectura para instancias locales y vinculadas, con grupos de la cuenta y filtros independientes de detenidos/externos. Acceda a stacks, contenedores y puertos TCP según la preferencia IP/hostname de cada instancia. Los espacios de red compartidos conservan su propietario. Solo administradores; actualice también las instancias vinculadas. Las líneas muestran configuración, no tráfico. Las declaraciones Traefik y PlugNPiN/NPM se distinguen de rutas verificadas. Los puertos host solo se atribuyen con procesos visibles y legibles; en caso contrario se indica. Sin privilegios adicionales ni peticiones a los proxies.
 
 **Interfaz compacta :** Vista opcional inspirada en ethanpil/dockge-mod: servicios en filas sobre Logs y Compose. Seleccione Compacta en Ajustes → Apariencia → Diseño. Clásica sigue siendo la opción predeterminada. Guardada por cuenta en este navegador.
 

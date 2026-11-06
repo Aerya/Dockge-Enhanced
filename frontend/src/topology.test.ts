@@ -26,6 +26,7 @@ test("port links use the owning instance, IP preference, IPv6 and refuse UDP or 
         protocol: "udp" }, { ...port,
         address: "127.0.0.1" }, { ...port,
         address: "::1" }, { ...port,
+        address: "0:0:0:0:0:0:0:1" }, { ...port,
         published: 0 }]) {
         assert.equal(topologyPortUrl(p, snapshot, "", undefined, "central", "http:"), "");
     }

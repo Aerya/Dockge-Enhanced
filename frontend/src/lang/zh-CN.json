@@ -1,4 +1,9 @@
 {
+    "topology.configuredLinks": "此实例配置的 Web 链接",
+    "topology.routes": "声明的 Web 路由",
+    "topology.routesHint": "来自 Traefik 或 PlugNPiN/NPM 标签的路由，未向代理验证。不推断复杂规则或手动创建的 NPM 路由。",
+    "topology.hostAttributed": "已将主机端口归属到容器进程。",
+    "topology.hostUnavailable": "无法确定主机端口归属：进程不可见或权限不足。",
     "topology.externalBadge": "外部",
     "topology.running": "运行中",
     "topology.notRunning": "已停止",
@@ -29,7 +34,7 @@
     "topology.networks": "网络 / 命名空间",
     "topology.context": "关联上下文：筛选范围外的网络所属容器",
     "topology.details": "容器",
-    "topology.hostNotice": "host 模式：此处 Docker 清单不包含实际监听端口。",
+    "topology.hostNotice": "host 模式：仅在无需额外权限即可查看并读取容器进程时归属端口。",
     "topology.shared": "共享网络命名空间",
     "topology.missingOwner": "所属容器缺失",
     "topology.noPorts": "未发现已发布端口。",

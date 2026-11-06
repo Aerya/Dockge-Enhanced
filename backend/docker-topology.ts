@@ -1,4 +1,6 @@
 import { promisify } from "node:util";
+import { topologyRoutes, topologyRouteLabelsFormat } from "./topology-routes";
+import { hostContainerPorts } from "./topology-host-ports";
 import { readdir } from "node:fs/promises";
 import { execFile } from "./buffered-process";
 import { Stack, getManagedStackNameFromConfigFiles } from "./stack";
@@ -7,10 +9,12 @@ import type { TopologyContainer, TopologySnapshot } from "../common/docker-topol
 const exec = promisify(execFile);
 export type TopologyRunner = (args: string[]) => Promise<string>;
 const docker: TopologyRunner = async (args) => (await exec("docker", args, { timeout: 15000 })).stdout;
-// Project/service are the only labels collected. No environment, mounts, commands or arbitrary labels.
+// Base fields; the collector adds an explicit web-route label allowlist. No environment, mounts or commands.
 export const topologyContainerFormat = "{\"id\":{{json .Id}},\"name\":{{json .Name}},\"project\":{{json (index .Config.Labels \"com.docker.compose.project\")}},\"service\":{{json (index .Config.Labels \"com.docker.compose.service\")}},\"state\":{{json .State.Status}},\"mode\":{{json .HostConfig.NetworkMode}},\"ports\":{{json .NetworkSettings.Ports}},\"networks\":{{json .NetworkSettings.Networks}}}";
 const networkFormat = "{\"name\":{{json .Name}},\"driver\":{{json .Driver}},\"internal\":{{json .Internal}},\"subnets\":{{json .IPAM.Config}}}";
 interface InspectedTopologyRow {
+    pid?: number;
+    routes?: Record<string, string>;
     id?: string;
     name: string;
     project?: string;
@@ -87,10 +91,11 @@ export async function collectTopology(names: Map<string, {
     const containers: TopologyContainer[] = [];
     const ids = (await run([ "ps", "-aq", "--no-trunc" ])).trim().split(/\s+/).filter(Boolean);
     for (let i = 0; i < ids.length; i += 16) {
-        for (const c of await read("container", ids.slice(i, i + 16), topologyContainerFormat)) {
+        for (const c of await read("container", ids.slice(i, i + 16), topologyContainerFormat.slice(0, -1) + ",\"pid\":{{json .State.Pid}},\"routes\":" + topologyRouteLabelsFormat + "}")) {
             const project = String(c.project || "");
             const entry = names.get(project);
             containers.push({ id: String(c.id),
+                routes: topologyRoutes(c.routes || {}),
                 name: String(c.name).replace(/^\//, ""),
                 stack: entry?.name || project,
                 service: String(c.service || ""),
@@ -106,6 +111,12 @@ export async function collectTopology(names: Map<string, {
                     protocol: target.split("/")[1] || "tcp",
                 }))).filter(p => Number.isInteger(p.published) && p.published > 0 && p.published <= 65535),
             });
+            if (c.mode === "host" && c.state === "running") {
+                const container = containers[containers.length - 1];
+                const ports = Date.now() - started < 30000 ? await hostContainerPorts(String(c.id), Number(c.pid)) : null;
+                container.hostPorts = ports === null ? "unavailable" : "attributed";
+                container.ports = ports || [];
+            }
         }
     }
     const networkIds = (await run([ "network", "ls", "-q", "--no-trunc" ])).trim().split(/\s+/).filter(Boolean);

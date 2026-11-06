@@ -64,7 +64,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
-**Docker topology :** Read-only map and port inventory for local and linked instances, with account groups and independent stopped/external filters. Open stack/container details and TCP ports using each instance’s IP/hostname preference. Shared network namespaces retain their owner. Administrator access only; update linked instances too. Lines are configured attachments, not traffic; host-mode listening ports and reverse-proxy routes are not inferred.
+**Docker topology :** Read-only map and port inventory for local and linked instances, with account groups and independent stopped/external filters. Open stack/container details and TCP ports using each instance’s IP/hostname preference. Shared network namespaces retain their owner. Administrator access only; update linked instances too. Lines show configuration, not traffic. Traefik and PlugNPiN/NPM declarations are shown separately from verified routes. Host sockets are attributed only when container processes are visible and readable; otherwise this is explicitly reported. No additional privileges or proxy requests.
 
 **Compact layout :** Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout. Classic remains the default. Saved per account in this browser.
 

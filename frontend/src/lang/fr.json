@@ -1,4 +1,9 @@
 {
+    "topology.configuredLinks": "Liens web configurés sur cette instance",
+    "topology.routes": "Routes web déclarées",
+    "topology.routesHint": "Routes issues des labels Traefik ou PlugNPiN/NPM, non vérifiées auprès du proxy. Les règles complexes et les routes NPM créées manuellement ne sont pas déduites.",
+    "topology.hostAttributed": "Ports host attribués aux processus du conteneur.",
+    "topology.hostUnavailable": "Attribution des ports host indisponible : processus non visibles ou permissions insuffisantes.",
     "topology.externalBadge": "Externe",
     "topology.running": "Actif",
     "topology.notRunning": "Arrêté",
@@ -29,7 +34,7 @@
     "topology.networks": "Réseaux / espaces réseau",
     "topology.context": "Contexte : propriétaire réseau, hors filtre",
     "topology.details": "Conteneur",
-    "topology.hostNotice": "Mode host : les ports réellement écoutés ne sont pas inventoriés par Docker ici.",
+    "topology.hostNotice": "Mode host : les ports ne sont attribués que si les processus du conteneur sont visibles et lisibles, sans privilèges supplémentaires.",
     "topology.shared": "Espace réseau partagé",
     "topology.missingOwner": "Propriétaire absent",
     "topology.noPorts": "Aucun port publié observé.",

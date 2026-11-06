@@ -1,4 +1,8 @@
 export interface TopologyContainer {
+    hostPorts?: "attributed" | "unavailable";
+    routes?: Array<{ url: string;
+        source: string;
+        targetPort?: number }>;
     id: string;
     name: string;
     stack: string;
@@ -18,6 +22,8 @@ export interface TopologyContainer {
     }>;
 }
 export interface TopologySnapshot {
+    webLinks?: Array<{ name: string;
+        url: string }>;
     capturedAt: string;
     containers: TopologyContainer[];
     networks: Array<{

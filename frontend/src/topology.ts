@@ -5,7 +5,13 @@ export function topologyPortUrl(port: TopologyContainer["ports"][number], snapsh
         return "";
     }
     // Loopback on a remote host is not the browser's loopback.
-    if (port.address === "::1" || port.address.startsWith("127.")) {
+    let loopbackV6 = false;
+    try {
+        loopbackV6 = new URL(`http://[${port.address}]`).hostname === "[::1]";
+    } catch {
+        // IPv4 and wildcard addresses do not parse as IPv6.
+    }
+    if (loopbackV6 || port.address.startsWith("127.")) {
         return "";
     }
     const host = resolveEndpointHostname(endpoint, agentUrl, hostname, protocol, snapshot.primaryHostname, snapshot.portLinkAddressMode, snapshot.portLinkIp);

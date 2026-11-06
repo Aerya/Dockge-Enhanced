@@ -64,7 +64,7 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
-**Docker-Topologie :** Schreibgeschützte Karte und Portinventar für lokale und verbundene Instanzen, mit Kontogruppen und getrennten Filtern für gestoppte/externe Container. Stack-/Containerdetails und TCP-Ports folgen der IP-/Hostname-Einstellung jeder Instanz. Geteilte Netzwerk-Namensräume behalten ihren Besitzer. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren. Linien zeigen keinen Verkehr; Host-Modus-Ports und Reverse-Proxy-Routen werden nicht abgeleitet.
+**Docker-Topologie :** Schreibgeschützte Karte und Portinventar für lokale und verbundene Instanzen, mit Kontogruppen und getrennten Filtern für gestoppte/externe Container. Stack-/Containerdetails und TCP-Ports folgen der IP-/Hostname-Einstellung jeder Instanz. Geteilte Netzwerk-Namensräume behalten ihren Besitzer. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren. Linien zeigen Konfiguration, keinen Verkehr. Traefik- und PlugNPiN/NPM-Deklarationen werden von verifizierten Routen unterschieden. Host-Ports werden nur bei sichtbaren und lesbaren Containerprozessen zugeordnet; andernfalls wird dies angezeigt. Keine zusätzlichen Rechte oder Proxy-Anfragen.
 
 **Kompakte Oberfläche :** Optionale Ansicht, inspiriert von ethanpil/dockge-mod: Dienste als Zeilen über Logs und Compose. Kompakt unter Einstellungen → Erscheinungsbild → Layout wählen. Klassisch bleibt Standard. Pro Konto in diesem Browser gespeichert.
 

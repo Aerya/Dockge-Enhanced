@@ -1,4 +1,9 @@
 {
+    "topology.configuredLinks": "Web links configured on this instance",
+    "topology.routes": "Declared web routes",
+    "topology.routesHint": "Routes from Traefik or PlugNPiN/NPM labels, not verified against the proxy. Complex rules and manually created NPM routes are not inferred.",
+    "topology.hostAttributed": "Host ports attributed to container processes.",
+    "topology.hostUnavailable": "Host port attribution unavailable: processes not visible or insufficient permissions.",
     "topology.externalBadge": "External",
     "topology.running": "Running",
     "topology.notRunning": "Stopped",
@@ -29,7 +34,7 @@
     "topology.networks": "Networks / namespaces",
     "topology.context": "Context: network owner outside filters",
     "topology.details": "Container",
-    "topology.hostNotice": "Host mode: actual listening ports are not inventoried by Docker here.",
+    "topology.hostNotice": "Host mode: ports are attributed only when container processes are visible and readable, without additional privileges.",
     "topology.shared": "Shared network namespace",
     "topology.missingOwner": "Missing owner",
     "topology.noPorts": "No published ports observed.",
