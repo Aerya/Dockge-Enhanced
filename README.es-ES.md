@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Alineación de la vista compacta :** Las filas de servicios permanecen alineadas con sus encabezados en pantallas anchas. El modo de actualización y la hora tienen el mismo ancho, con espacio antes de los botones de acción.
+
 **Interfaz compacta :** Vista opcional inspirada en ethanpil/dockge-mod: servicios en filas sobre Logs y Compose. Seleccione Compacta en Ajustes → Apariencia → Diseño. Clásica sigue siendo la opción predeterminada. Guardada por cuenta en este navegador.
 
 **Grupos personalizados de stacks :** Los grupos se guardan en la base de datos de esta instancia para su cuenta y están disponibles desde cualquier navegador. Pueden reunir stacks locales y vinculados sin cambiar permisos. Importe los grupos del navegador explícitamente sin sustituir los del servidor. Las modificaciones simultáneas se rechazan con una advertencia.

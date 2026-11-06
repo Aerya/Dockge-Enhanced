@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-06 — Alineación de la vista compacta** — Las filas de servicios permanecen alineadas con sus encabezados en pantallas anchas. El modo de actualización y la hora tienen el mismo ancho, con espacio antes de los botones de acción.
+
 **2026-11-06 — Navegación** — Inicio aparece antes de Enlaces de servicios en escritorio y móvil. Clásica/Compacta se elige solo en Ajustes → Apariencia; se conservan las preferencias existentes.
 
 **2026-11-05 — Interfaz compacta** — Vista opcional inspirada en ethanpil/dockge-mod: servicios en filas sobre Logs y Compose. Seleccione Compacta en Ajustes → Apariencia → Diseño. Clásica sigue siendo la opción predeterminada. Guardada por cuenta en este navegador.

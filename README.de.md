@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Ausrichtung der Kompaktansicht :** Service-Zeilen bleiben auf breiten Bildschirmen an den Überschriften ausgerichtet. Aktualisierungsmodus und Uhrzeit haben dieselbe Breite, mit Abstand zu den Aktionsschaltflächen.
+
 **Kompakte Oberfläche :** Optionale Ansicht, inspiriert von ethanpil/dockge-mod: Dienste als Zeilen über Logs und Compose. Kompakt unter Einstellungen → Erscheinungsbild → Layout wählen. Klassisch bleibt Standard. Pro Konto in diesem Browser gespeichert.
 
 **Eigene Stack-Gruppen :** Gruppen werden in der Datenbank dieser Instanz für Ihr Konto gespeichert und sind in jedem Browser verfügbar. Sie können lokale und verbundene Stacks enthalten, ohne Zugriffsrechte zu ändern. Vorhandene Browser-Gruppen lassen sich ausdrücklich importieren, ohne Server-Gruppen zu ersetzen. Gleichzeitige Änderungen werden mit einer Warnung abgelehnt.

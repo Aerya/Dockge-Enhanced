@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Compact layout alignment :** Service rows stay aligned with their headings on wide screens. The update mode and time fields share the same width, with space before the action buttons.
+
 **Compact layout :** Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout. Classic remains the default. Saved per account in this browser.
 
 **Custom stack groups :** Groups are stored in this instance’s database for your account and available from any browser. Groups can include local and linked stacks without changing access permissions. Import existing browser groups explicitly without replacing server groups. Concurrent edits are rejected with a warning.

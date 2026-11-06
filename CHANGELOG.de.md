@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-06 — Ausrichtung der Kompaktansicht** — Service-Zeilen bleiben auf breiten Bildschirmen an den Überschriften ausgerichtet. Aktualisierungsmodus und Uhrzeit haben dieselbe Breite, mit Abstand zu den Aktionsschaltflächen.
+
 **2026-11-06 — Navigation** — Startseite steht auf Desktop und Mobilgeräten vor Service-Links. Klassisch/Kompakt wird nur noch unter Einstellungen → Erscheinungsbild gewählt; bestehende Einstellungen bleiben erhalten.
 
 **2026-11-05 — Kompakte Oberfläche** — Optionale Ansicht, inspiriert von ethanpil/dockge-mod: Dienste als Zeilen über Logs und Compose. Kompakt unter Einstellungen → Erscheinungsbild → Layout wählen. Klassisch bleibt Standard. Pro Konto in diesem Browser gespeichert.
