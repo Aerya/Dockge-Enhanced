@@ -65,7 +65,7 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
-**Interface compacte :** Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation ou l’en-tête. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.
+**Interface compacte :** Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.
 
 **Groupes de stacks personnalisés :** Les groupes sont enregistrés en base sur cette instance pour votre compte et retrouvés depuis n’importe quel navigateur. Ils peuvent réunir des stacks locales et liées sans modifier les permissions. Importez explicitement les anciens groupes du navigateur sans remplacer ceux du serveur. Les modifications concurrentes sont refusées avec un avertissement.
 
