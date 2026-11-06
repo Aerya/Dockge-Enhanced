@@ -1,6 +1,8 @@
 {
     "containerInstance.startedAt": "Zuletzt gestartet",
     "containerInstance.uptime": "Betriebszeit (Stunden:Minuten:Sekunden)",
+    "hideConsoleNavigation": "Konsole in der Navigation ausblenden",
+    "hideConsoleNavigationHelp": "Blendet den Link auf Desktop und Mobilgeräten für Ihr Konto in diesem Browser aus. Deaktiviert weder die Konsole noch ändert es Berechtigungen.",
     "composeVisualEditUnsafe": "Die visuelle Änderung konnte nicht sicher angewendet werden. Der Compose-Text bleibt erhalten; verwenden Sie den Texteditor.",
     "topology.configuredLinks": "Auf dieser Instanz konfigurierte Weblinks",
     "topology.routes": "Deklarierte Web-Routen",

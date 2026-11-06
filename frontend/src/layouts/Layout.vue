@@ -164,7 +164,7 @@
                     <router-link to="/topology" class="nav-link">{{ $t('topology.title') }}</router-link>
                 </li>
 
-                <li v-if="$root.loggedIn" class="nav-item me-2">
+                <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted' && !$root.hideConsoleNavigation" class="nav-item me-2">
                     <router-link to="/console" class="nav-link">
                         <font-awesome-icon icon="terminal" /> {{ $t("console") }}
                     </router-link>
@@ -313,7 +313,7 @@
                 </router-link>
                 <router-link v-if="$root.userAccess?.role !== 'restricted'" to="/service-links" class="mobile-drawer-link">{{ $t("serviceLinks.title") }}</router-link>
                 <router-link v-if="$root.userAccess?.role !== 'restricted'" to="/topology" class="mobile-drawer-link">{{ $t('topology.title') }}</router-link>
-                <router-link to="/console" class="mobile-drawer-link">
+                <router-link v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted' && !$root.hideConsoleNavigation" to="/console" class="mobile-drawer-link">
                     <font-awesome-icon icon="terminal" /> {{ $t("console") }}
                 </router-link>
                 <router-link to="/watcher" class="mobile-drawer-link">

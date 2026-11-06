@@ -66,6 +66,12 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Container lifecycle dates :** Container details distinguish creation, last start and uptime since that start. Each replica has its own dates, read from Docker on its hosting instance. Stopped containers do not show an increasing uptime; unavailable dates remain unspecified. Update linked instances too.
 
+**Optional Console navigation :** Settings → Appearance can hide Console from desktop and mobile navigation. Off by default, saved per account in this browser. This display preference does not disable the console or change permissions.
+
+**Mobile log viewing :** Opening a stack no longer focuses the log viewer. On touchscreens, interactive terminals wait for a deliberate tap before taking keyboard focus; log searches keep focus in the search field.
+
+**Variables in stack links :** Saved stack links are resolved by Compose on the hosting instance, including global/local variables and overrides. Only validated HTTP/HTTPS links are returned, never the complete environment. Linked instances need this version; draft previews remain local until saved.
+
 **Targeted Compose edits :** The visual editor changes affected YAML ranges without rebuilding the whole file. Unchanged saves retain the original text; inconsistent edits are refused. Explicit formatting remains separate.
 
 **Restic security dependency :** The bundled Restic 0.19.1 is rebuilt with golang.org/x/net 0.62.0 instead of 0.60.0 for CVE-2026-78661. Backup settings and Trivy checks remain unchanged; this does not establish exploitability in Enhanced.
@@ -651,6 +657,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Home Assistant
 
 ### Appearance & languages
+- Optional per-account hiding of Console in desktop/mobile navigation, saved in this browser
 - **Service links** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Separate day and night palettes, including the original Dockge-Enhanced themes
 - Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night and Rosé Pine options

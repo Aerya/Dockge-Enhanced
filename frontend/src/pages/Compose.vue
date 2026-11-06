@@ -227,6 +227,9 @@
             </div>
 
             <!-- URLs -->
+            <div v-if="!isEditMode && stack.stackUrls?.unavailable" class="alert alert-warning" role="status">
+                {{ $t('configTools.configUnavailable') }}
+            </div>
             <div v-if="urls.length > 0" class="mb-3 compose-tight">
                 <a v-for="(url, index) in urls" :key="index" target="_blank" rel="noopener noreferrer" :href="url.url">
                     <span class="badge bg-secondary me-2">{{ url.display }}</span>
@@ -1269,6 +1272,9 @@ export default {
         },
 
         urls() {
+            if (!this.isEditMode && this.stack.stackUrls) {
+                return stackURLLinks(this.stack.stackUrls.links);
+            }
             return stackURLLinks(this.envsubstJSONConfig["x-dockge"]?.urls);
         },
 

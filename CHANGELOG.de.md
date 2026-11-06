@@ -9,6 +9,12 @@ Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den F
 
 **2026-11-06 — Lebenszyklusdaten der Container** — Die Containerdetails unterscheiden Erstellung, letzten Start und Laufzeit seit diesem Start. Jedes Replikat hat eigene Daten aus Docker auf seiner Hostinstanz. Gestoppte Container zeigen keine weiterlaufende Betriebszeit; nicht verfügbare Daten bleiben leer. Auch verbundene Instanzen aktualisieren.
 
+**2026-11-06 — Optionaler Konsolenlink** — Einstellungen → Darstellung kann Konsole in der Desktop- und Mobilnavigation ausblenden. Standardmäßig deaktiviert, pro Konto in diesem Browser gespeichert. Diese Anzeigeeinstellung deaktiviert weder die Konsole noch ändert sie Berechtigungen.
+
+**2026-11-06 — Loganzeige auf Mobilgeräten** — Beim Öffnen eines Stacks erhält die Loganzeige nicht mehr den Eingabefokus. Auf Touchscreens warten interaktive Terminals auf bewusstes Antippen; bei der Logsuche bleibt der Fokus im Suchfeld.
+
+**2026-11-06 — Variablen in Stack-Links** — Gespeicherte Links werden von Compose auf der Hosting-Instanz mit globalen/lokalen Variablen und Overrides aufgelöst. Nur geprüfte HTTP/HTTPS-Links werden zurückgegeben, nie die gesamte Umgebung. Verknüpfte Instanzen benötigen diese Version; Entwurfsvorschauen bleiben bis zum Speichern lokal.
+
 **2026-11-06 — Gezielte Compose-Bearbeitung** — Der visuelle Editor ändert betroffene YAML-Bereiche statt die gesamte Datei neu aufzubauen. Speichern ohne Änderungen erhält den Originaltext; inkonsistente Änderungen werden abgelehnt. Explizites Formatieren bleibt getrennt.
 
 **2026-11-06 — Restic-Sicherheitsabhängigkeit** — Das enthaltene Restic 0.19.1 wird für CVE-2026-78661 mit golang.org/x/net 0.62.0 statt 0.60.0 neu gebaut. Sicherungseinstellungen und Trivy-Prüfungen bleiben unverändert; eine Ausnutzbarkeit in Enhanced ist damit nicht nachgewiesen.

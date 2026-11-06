@@ -9,6 +9,12 @@ The [README](README.md) presents the main recent updates and the feature catalog
 
 **2026-11-06 — Container lifecycle dates** — Container details distinguish creation, last start and uptime since that start. Each replica has its own dates, read from Docker on its hosting instance. Stopped containers do not show an increasing uptime; unavailable dates remain unspecified. Update linked instances too.
 
+**2026-11-06 — Optional Console navigation** — Settings → Appearance can hide Console from desktop and mobile navigation. Off by default, saved per account in this browser. This display preference does not disable the console or change permissions.
+
+**2026-11-06 — Mobile log viewing** — Opening a stack no longer focuses the log viewer. On touchscreens, interactive terminals wait for a deliberate tap before taking keyboard focus; log searches keep focus in the search field.
+
+**2026-11-06 — Variables in stack links** — Saved stack links are resolved by Compose on the hosting instance, including global/local variables and overrides. Only validated HTTP/HTTPS links are returned, never the complete environment. Linked instances need this version; draft previews remain local until saved.
+
 **2026-11-06 — Targeted Compose edits** — The visual editor changes affected YAML ranges without rebuilding the whole file. Unchanged saves retain the original text; inconsistent edits are refused. Explicit formatting remains separate.
 
 **2026-11-06 — Restic security dependency** — The bundled Restic 0.19.1 is rebuilt with golang.org/x/net 0.62.0 instead of 0.60.0 for CVE-2026-78661. Backup settings and Trivy checks remain unchanged; this does not establish exploitability in Enhanced.
