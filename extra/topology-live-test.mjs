@@ -63,6 +63,7 @@ async function start(index) {
     await new Promise(resolve => reservation.close(resolve));
     const child = spawn(process.execPath, ["--import", "tsx", "backend/index.ts"], {
         env: { ...process.env, NODE_ENV: "production", CI: "true", DOCKGE_USAGE_COUNT: "false", DOCKER_HOST: dockerHost,
+            DOCKER_CONTEXT: "", DOCKER_TLS_VERIFY: "", DOCKER_CERT_PATH: "",
             DOCKGE_DATA_DIR: data, DOCKGE_STACKS_DIR: path.join(data, "stacks"), DOCKGE_PORT: String(port), DOCKGE_HOSTNAME: "127.0.0.1" },
         stdio: ["ignore", log.fd, log.fd]
     });
