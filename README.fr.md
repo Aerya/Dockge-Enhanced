@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Dates des conteneurs :** La fiche d’un conteneur distingue sa création, son dernier démarrage et sa durée de fonctionnement depuis ce démarrage. Chaque réplica a ses propres dates, lues dans Docker sur l’instance hôte. Un conteneur arrêté n’affiche pas de durée croissante ; une date indisponible reste non renseignée. Mettez aussi à jour les instances liées.
+
 **Lien Console facultatif :** Paramètres → Apparence permet de masquer Console dans la navigation ordinateur et mobile. Option désactivée par défaut, enregistrée par compte dans ce navigateur. Ce réglage d’affichage ne désactive pas la console et ne modifie pas les permissions.
 
 **Consultation des logs sur mobile :** Ouvrir une stack ne place plus le curseur dans les logs. Sur écran tactile, les terminaux interactifs attendent un appui volontaire avant de prendre le focus du clavier ; la recherche dans les logs conserve le focus dans son champ.
@@ -517,7 +519,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Windows 11 avec Docker Desktop/WSL2 : [installation et limites](docs/windows.fr.md)
 - Création, édition, démarrage, arrêt, redémarrage, mise à jour, recréation, pause/reprise et démontage des stacks Compose
 - Barre d’actions de stack directement accessible, en mode icônes seules ou icônes avec texte, avec les commandes Compose expliquées
-- Actions par service et par conteneur, y compris sur les conteneurs réels et les réplicas Compose
+- Actions par service et par conteneur, y compris sur les conteneurs réels et les réplicas Compose ; création, dernier démarrage et durée de fonctionnement dans la fiche du conteneur
 - Recréation automatique des services directs et transitifs partageant un namespace réseau VPN via `service:` ou `container:`
 - Build + Recreate pour les images construites localement
 - Démarrage/arrêt planifié des stacks et des conteneurs

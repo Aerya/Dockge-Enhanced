@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-06 — Dates des conteneurs** — La fiche d’un conteneur distingue sa création, son dernier démarrage et sa durée de fonctionnement depuis ce démarrage. Chaque réplica a ses propres dates, lues dans Docker sur l’instance hôte. Un conteneur arrêté n’affiche pas de durée croissante ; une date indisponible reste non renseignée. Mettez aussi à jour les instances liées.
+
 **2026-11-06 — Lien Console facultatif** — Paramètres → Apparence permet de masquer Console dans la navigation ordinateur et mobile. Option désactivée par défaut, enregistrée par compte dans ce navigateur. Ce réglage d’affichage ne désactive pas la console et ne modifie pas les permissions.
 
 **2026-11-06 — Consultation des logs sur mobile** — Ouvrir une stack ne place plus le curseur dans les logs. Sur écran tactile, les terminaux interactifs attendent un appui volontaire avant de prendre le focus du clavier ; la recherche dans les logs conserve le focus dans son champ.

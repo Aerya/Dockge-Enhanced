@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseContainerInstances, requireContainerInstance } from "./container-instances";
+import { parseContainerInstances, requireContainerInstance, addContainerDates } from "./container-instances";
 import { Stack } from "./stack";
 import type { DockgeServer } from "./dockge-server";
 
@@ -20,6 +20,59 @@ const second = {
     Health: "",
     Image: "nginx:stable",
 };
+
+test("creation and restart dates are distinct for each replica", async () => {
+    const instances = parseContainerInstances(JSON.stringify([ first, second ]));
+    const created = "2026-10-01T12:00:00Z";
+    for (const started of [ "2026-10-02T12:00:00Z", "2026-11-06T12:00:00Z" ]) {
+        const result = await addContainerDates(instances, async () => [
+            { Id: first.ID,
+                Created: created,
+                StartedAt: started,
+                Status: "running" },
+            { Id: second.ID,
+                Created: created,
+                StartedAt: "0001-01-01T00:00:00Z",
+                Status: "created" },
+        ].map(row => JSON.stringify(row)).join("\n"));
+        assert.equal(result[0].createdAt, "2026-10-01T12:00:00.000Z");
+        assert.equal(result[0].startedAt, new Date(started).toISOString());
+        assert.equal(result[1].startedAt, null);
+        assert.equal(result[1].state, "created");
+        assert.equal(instances[0].startedAt, undefined);
+    }
+});
+
+test("date inspection is selective, batched and tolerant of removed containers", async () => {
+    const instances = parseContainerInstances(JSON.stringify(Array.from({ length: 33 }, (_, i) => ({ ...first,
+        ID: i.toString(16).padStart(64, "0") }))));
+    const batches: number[] = [];
+    const result = await addContainerDates(instances, async args => {
+        const ids = args.slice(3);
+        batches.push(ids.length);
+        assert.ok(!args[2].includes("Config"));
+        assert.ok(args[2].includes(".State.StartedAt"));
+        if (batches.length === 1) {
+            throw new Error("one container disappeared");
+        }
+        return ids.map(id => JSON.stringify({ Id: id,
+            StartedAt: "2026-11-06T12:00:00Z" })).join("\n");
+    });
+    assert.deepEqual(batches, [ 16, 16, 1 ]);
+    assert.equal(result.length, 33);
+    assert.equal(result[0].startedAt, null);
+    assert.equal(result[32].startedAt, "2026-11-06T12:00:00.000Z");
+});
+
+test("invalid dates and foreign IDs cannot populate a container's timestamps", async () => {
+    const instances = parseContainerInstances(JSON.stringify(first));
+    const result = await addContainerDates(instances, async () => `null\ninvalid\n${JSON.stringify({ Id: second.ID,
+        StartedAt: "2026-11-06T12:00:00Z" })}\n${JSON.stringify({ Id: first.ID,
+            StartedAt: "invalid",
+            Created: "invalid" })}`);
+    assert.equal(result[0].startedAt, null);
+    assert.equal(result[0].createdAt, instances[0].createdAt);
+});
 
 test("keeps separate real containers for replicas of one Compose service", () => {
     const instances = parseContainerInstances(`${JSON.stringify(first)}\n${JSON.stringify(second)}\n`);

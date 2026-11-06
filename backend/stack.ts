@@ -39,7 +39,7 @@ import {
     restartComposeServices,
     targetedComposeRecreateArgsForTargets,
 } from "./compose-network-namespace";
-import { ContainerInstance, parseContainerInstances, requireContainerInstance } from "./container-instances";
+import { ContainerInstance, parseContainerInstances, requireContainerInstance, addContainerDates } from "./container-instances";
 import { trackDockerBuild, isDockerCleanupActive } from "./docker-operation-state";
 import { withStackMetadataWriteLock } from "./stack-metadata-lock";
 import { prepareRollout, rolloutTransport, type ComposeRun } from "./service-rollout";
@@ -2090,7 +2090,7 @@ export class Stack {
         terminal.start();
     }
 
-    async getContainerInstances(): Promise<ContainerInstance[]> {
+    async getContainerInstances(includeDates = false): Promise<ContainerInstance[]> {
         const result = await childProcessAsync.spawn("docker", this.getComposeOptions("ps", "--all", "--format", "json"), {
             cwd: this.path,
             encoding: "utf-8",
@@ -2100,7 +2100,18 @@ export class Stack {
         if (result.code !== 0) {
             throw new Error("Unable to list the containers of this Compose stack");
         }
-        return parseContainerInstances(result.stdout?.toString() ?? "");
+        const instances = parseContainerInstances(result.stdout?.toString() ?? "");
+        if (!includeDates) {
+            return instances;
+        }
+        return addContainerDates(instances, async args => {
+            const details = await childProcessAsync.spawn("docker", args, {
+                encoding: "utf-8",
+                timeout: 5000,
+                maxBuffer: 256 * 1024,
+            });
+            return details.stdout?.toString() ?? "";
+        });
     }
 
     async getContainerInstance(id: unknown): Promise<ContainerInstance> {

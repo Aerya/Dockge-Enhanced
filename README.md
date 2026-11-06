@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Container lifecycle dates :** Container details distinguish creation, last start and uptime since that start. Each replica has its own dates, read from Docker on its hosting instance. Stopped containers do not show an increasing uptime; unavailable dates remain unspecified. Update linked instances too.
+
 **Optional Console navigation :** Settings → Appearance can hide Console from desktop and mobile navigation. Off by default, saved per account in this browser. This display preference does not disable the console or change permissions.
 
 **Mobile log viewing :** Opening a stack no longer focuses the log viewer. On touchscreens, interactive terminals wait for a deliberate tap before taking keyboard focus; log searches keep focus in the search field.
@@ -516,7 +518,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md)
 - Create, edit, start, stop, restart, update, recreate, pause/resume and take down Compose stacks
 - Directly accessible stack action bar, with icons-only or icons-and-text modes and explained Compose commands
-- Per-service and per-container actions, including actual containers and Compose replicas
+- Per-service and per-container actions, including actual containers and Compose replicas; creation, last start and uptime in container details
 - Automatic recreation of direct and transitive services sharing a VPN/network namespace through `service:` or `container:`
 - Build + Recreate for locally built images
 - Scheduled stack and container start/stop

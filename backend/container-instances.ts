@@ -10,6 +10,39 @@ export interface ContainerInstance {
     ports: string;
     createdAt: string;
     runningFor: string;
+    startedAt?: string | null;
+}
+
+/** Inspect only lifecycle fields, never full configurations or environment values. */
+export async function addContainerDates(instances: ContainerInstance[], inspect: (args: string[]) => Promise<string>): Promise<ContainerInstance[]> {
+    const result = instances.map(instance => ({ ...instance,
+        startedAt: null as string | null }));
+    const date = (value: unknown): string | null => typeof value === "string" && !value.startsWith("0001-") && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null;
+    for (let offset = 0; offset < result.length; offset += 16) {
+        const batch = result.slice(offset, offset + 16);
+        try {
+            const output = await inspect([ "inspect", "--format", "{\"Id\":{{json .Id}},\"Created\":{{json .Created}},\"StartedAt\":{{json .State.StartedAt}},\"Status\":{{json .State.Status}}}", ...batch.map(instance => instance.id) ]);
+            for (const line of output.split("\n").filter(Boolean)) {
+                try {
+                    const row = JSON.parse(line);
+                    const matches = batch.filter(item => typeof row.Id === "string" && row.Id.startsWith(item.id));
+                    const instance = matches.length === 1 ? matches[0] : undefined;
+                    if (instance) {
+                        instance.createdAt = date(row.Created) ?? instance.createdAt;
+                        instance.startedAt = date(row.StartedAt);
+                        if (typeof row.Status === "string") {
+                            instance.state = row.Status;
+                        }
+                    }
+                } catch {
+                    // Keep other containers visible if one inspect result is malformed.
+                }
+            }
+        } catch {
+            // A removed container or unavailable daemon must not hide the whole list.
+        }
+    }
+    return result;
 }
 
 /** Parse both newline-delimited and array-shaped `docker compose ps --format json` output. */
