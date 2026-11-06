@@ -772,3 +772,47 @@ test("MSR plus NVIDIA compose keeps both environment variables under environment
     assert.match(environment ?? "", /NVIDIA_DRIVER_CAPABILITIES: utility/);
     assert.match(yaml, / {4}cap_add:\n {6}- SYS_RAWIO/);
 });
+
+test("real HTTP transport preserves LAN access and refuses redirects without leaking tokens", async t => {
+    const { createServer } = await import("node:http");
+    const requests: Array<{ url: string | undefined;
+        token: string | undefined }> = [];
+    let redirect = false;
+    const server = createServer((req, res) => {
+        requests.push({ url: req.url,
+            token: req.headers.authorization });
+        if (redirect) {
+            res.writeHead(302, { Location: "/unexpected-target" });
+            res.end();
+        } else {
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ total: { watts: 25,
+                confidence: "Measured" } }));
+        }
+    });
+    await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+    t.after(() => new Promise<void>((resolve, reject) => {
+        server.close(error => error ? reject(error) : resolve());
+        server.closeAllConnections();
+    }));
+    const address = server.address();
+    assert.ok(address && typeof address !== "string");
+    const manager = new PowerWatchManager();
+    const settings = { enabled: true,
+        apiUrl: `http://127.0.0.1:${address.port}/power`,
+        apiToken: "fixture-readonly" };
+    assert.equal((await manager.test(settings)).totalWatts, 25);
+    redirect = true;
+    assert.equal((await manager.test(settings)).reachable, false);
+    assert.deepEqual(requests, [
+        { url: "/power/api/snapshot",
+            token: "Bearer fixture-readonly" },
+        { url: "/power/api/snapshot",
+            token: "Bearer fixture-readonly" },
+    ]);
+    await assert.rejects(manager.test({ ...settings,
+        apiUrl: "file:///tmp/power" }), /only HTTP/);
+    await assert.rejects(manager.test({ ...settings,
+        apiUrl: "http://user:password@localhost" }), /credentials/);
+    assert.equal(requests.length, 2);
+});
