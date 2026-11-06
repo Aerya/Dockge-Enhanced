@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Targeted Compose edits :** The visual editor changes affected YAML ranges without rebuilding the whole file. Unchanged saves retain the original text; inconsistent edits are refused. Explicit formatting remains separate.
+
 **Compact layout alignment :** Service rows stay aligned with their headings on wide screens. The update mode and time fields share the same width, with space before the action buttons.
 
 **Docker topology :** Read-only map and port inventory for local and linked instances, with account groups and independent stopped/external filters. Open stack/container details and TCP ports using each instance’s IP/hostname preference. Shared network namespaces retain their owner. Administrator access only; update linked instances too. Lines show configuration, not traffic. Traefik and PlugNPiN/NPM declarations are shown separately from verified routes. Host sockets are attributed only when container processes are visible and readable; otherwise this is explicitly reported. No additional privileges or proxy requests.

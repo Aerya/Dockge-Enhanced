@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Gezielte Compose-Bearbeitung :** Der visuelle Editor ändert betroffene YAML-Bereiche statt die gesamte Datei neu aufzubauen. Speichern ohne Änderungen erhält den Originaltext; inkonsistente Änderungen werden abgelehnt. Explizites Formatieren bleibt getrennt.
+
 **Ausrichtung der Kompaktansicht :** Service-Zeilen bleiben auf breiten Bildschirmen an den Überschriften ausgerichtet. Aktualisierungsmodus und Uhrzeit haben dieselbe Breite, mit Abstand zu den Aktionsschaltflächen.
 
 **Docker-Topologie :** Schreibgeschützte Karte und Portinventar für lokale und verbundene Instanzen, mit Kontogruppen und getrennten Filtern für gestoppte/externe Container. Stack-/Containerdetails und TCP-Ports folgen der IP-/Hostname-Einstellung jeder Instanz. Geteilte Netzwerk-Namensräume behalten ihren Besitzer. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren. Linien zeigen Konfiguration, keinen Verkehr. Traefik- und PlugNPiN/NPM-Deklarationen werden von verifizierten Routen unterschieden. Host-Ports werden nur bei sichtbaren und lesbaren Containerprozessen zugeordnet; andernfalls wird dies angezeigt. Keine zusätzlichen Rechte oder Proxy-Anfragen.

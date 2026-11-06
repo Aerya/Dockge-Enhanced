@@ -935,8 +935,8 @@ import { lineNumbers, EditorView, keymap } from "@codemirror/view";
 import { foldGutter, foldKeymap } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
-import { parseDocument, Document } from "yaml";
-import { preserveQuotedScalarStyles, preserveTmpfsModeLiterals } from "../compose-yaml-preserve";
+import { parseDocument } from "yaml";
+import { editComposeYAML } from "../compose-yaml-edit";
 import { repairAndFormatComposeYAML } from "../compose-yaml-format";
 import { yamlVariableHighlight, setDefinedVars } from "../composables/codemirrorVariables";
 
@@ -944,7 +944,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
     COMBINED_TERMINAL_COLS,
     COMBINED_TERMINAL_ROWS,
-    copyYAMLComments, envsubstYAML,
+    envsubstYAML,
     getCombinedTerminalName,
     getComposeTerminalName,
     getStackLogsTerminalName,
@@ -1476,17 +1476,15 @@ export default {
                 if (!this.editorFocus) {
                     console.debug("jsonConfig changed");
 
-                    let doc = new Document(this.jsonConfig);
-
-                    // Stick back the yaml comments
-                    if (this.yamlDoc) {
-                        copyYAMLComments(doc, this.yamlDoc);
+                    try {
+                        this.stack.composeYAML = editComposeYAML(this.stack.composeYAML, this.jsonConfig);
+                        this.yamlDoc = parseDocument(this.stack.composeYAML);
+                        this.yamlError = "";
+                    } catch (error) {
+                        // Never save a partially rewritten file or leave the form out of sync.
+                        this.yamlCodeChange();
+                        this.$root.toastError(this.$t("composeVisualEditUnsafe"));
                     }
-
-                    const originalComposeYAML = this.stack.composeYAML;
-                    const regeneratedYAML = preserveQuotedScalarStyles(originalComposeYAML, doc.toString({ lineWidth: 0 }));
-                    this.stack.composeYAML = preserveTmpfsModeLiterals(originalComposeYAML, regeneratedYAML);
-                    this.yamlDoc = doc;
                 }
             },
             deep: true,
