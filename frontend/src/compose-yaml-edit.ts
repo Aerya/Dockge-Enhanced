@@ -149,11 +149,13 @@ export function editComposeYAML(source: string, next: Record<string, unknown>): 
             end,
             text });
     };
-    if (!doc.contents) {
-        return new Document(target).toString({ lineWidth: 0 });
-    }
-    patch(doc.contents as Node, original, target);
     let result = source;
+    if (!doc.contents) {
+        // Keep comments and document headers when adding the first service.
+        result += (source && !source.endsWith("\n") ? eol : "") + new Document(target).toString({ lineWidth: 0 }).replaceAll("\n", eol);
+    } else {
+        patch(doc.contents as Node, original, target);
+    }
     let boundary = source.length + 1;
     for (const edit of edits.sort((a, b) => b.start - a.start || b.end - a.end)) {
         if (edit.end > boundary) {

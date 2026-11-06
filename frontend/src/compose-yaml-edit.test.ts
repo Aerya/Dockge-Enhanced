@@ -91,6 +91,15 @@ test("invalid source is rejected, not normalized into another document", () => {
     assert.throws(() => editComposeYAML("services: [\n", { services: {} }));
 });
 
+test("creating the first service preserves a comment-only document", () => {
+    const source = "# keep this header\r\n";
+    const config = { services: { web: { image: "nginx" } } };
+    const result = editComposeYAML(source, config);
+    assert.ok(result.startsWith(source));
+    assert.deepEqual(parseDocument(result).toJS(), config);
+    assert.ok(!result.replaceAll("\r\n", "").includes("\n"));
+});
+
 test("editing a block scalar preserves its string value and unrelated source", () => {
     const config = parseDocument(fixture).toJS();
     config.services.web.command = "echo new\necho again\n";
