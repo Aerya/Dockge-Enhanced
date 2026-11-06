@@ -66,6 +66,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Mobile log viewing :** Opening a stack no longer focuses the log viewer. On touchscreens, interactive terminals wait for a deliberate tap before taking keyboard focus; log searches keep focus in the search field.
 
+**Variables in stack links :** Saved stack links are resolved by Compose on the hosting instance, including global/local variables and overrides. Only validated HTTP/HTTPS links are returned, never the complete environment. Linked instances need this version; draft previews remain local until saved.
+
 **Targeted Compose edits :** The visual editor changes affected YAML ranges without rebuilding the whole file. Unchanged saves retain the original text; inconsistent edits are refused. Explicit formatting remains separate.
 
 **Restic security dependency :** The bundled Restic 0.19.1 is rebuilt with golang.org/x/net 0.62.0 instead of 0.60.0 for CVE-2026-78661. Backup settings and Trivy checks remain unchanged; this does not establish exploitability in Enhanced.
