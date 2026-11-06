@@ -9,6 +9,10 @@ Le [README](README.fr.md) présente les principales nouveautés récentes et le 
 
 **2026-11-06 — Chemins des stacks cohérents** — Les exemples d’installation montent désormais /opt/stacks au même chemin hôte/conteneur et expliquent les volumes relatifs. Les configurations et données existantes ne sont pas déplacées automatiquement ; préservez-les avant d’adapter une installation.
 
+**2026-11-06 — Lien Console facultatif** — Paramètres → Apparence permet de masquer Console dans la navigation ordinateur et mobile. Option désactivée par défaut, enregistrée par compte dans ce navigateur. Ce réglage d’affichage ne désactive pas la console et ne modifie pas les permissions.
+
+**2026-11-06 — Consultation des logs sur mobile** — Ouvrir une stack ne place plus le curseur dans les logs. Sur écran tactile, les terminaux interactifs attendent un appui volontaire avant de prendre le focus du clavier ; la recherche dans les logs conserve le focus dans son champ.
+
 **2026-11-06 — Variables dans les liens des stacks** — Les liens enregistrés sont résolus par Compose sur l’instance hôte, avec variables globales/locales et overrides. Seuls les liens HTTP/HTTPS validés sont renvoyés, jamais l’environnement complet. Mettez à jour les instances liées ; l’aperçu d’un brouillon reste local jusqu’à l’enregistrement.
 
 **2026-11-06 — Édition ciblée du Compose** — L’éditeur visuel modifie les portions YAML concernées sans reconstruire tout le fichier. Un enregistrement sans changement conserve le texte original ; les modifications incohérentes sont refusées. Le formatage explicite reste séparé.

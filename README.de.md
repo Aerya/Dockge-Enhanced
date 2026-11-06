@@ -66,6 +66,10 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 **Konsistente Stack-Pfade :** Die Installationsbeispiele binden /opt/stacks unter demselben Host-/Containerpfad ein und erläutern relative Bind-Mounts. Vorhandene Konfigurationen und Daten werden nicht automatisch verschoben; vor Anpassungen erhalten.
 
+**Optionaler Konsolenlink :** Einstellungen → Darstellung kann Konsole in der Desktop- und Mobilnavigation ausblenden. Standardmäßig deaktiviert, pro Konto in diesem Browser gespeichert. Diese Anzeigeeinstellung deaktiviert weder die Konsole noch ändert sie Berechtigungen.
+
+**Loganzeige auf Mobilgeräten :** Beim Öffnen eines Stacks erhält die Loganzeige nicht mehr den Eingabefokus. Auf Touchscreens warten interaktive Terminals auf bewusstes Antippen; bei der Logsuche bleibt der Fokus im Suchfeld.
+
 **Variablen in Stack-Links :** Gespeicherte Links werden von Compose auf der Hosting-Instanz mit globalen/lokalen Variablen und Overrides aufgelöst. Nur geprüfte HTTP/HTTPS-Links werden zurückgegeben, nie die gesamte Umgebung. Verknüpfte Instanzen benötigen diese Version; Entwurfsvorschauen bleiben bis zum Speichern lokal.
 
 **Gezielte Compose-Bearbeitung :** Der visuelle Editor ändert betroffene YAML-Bereiche statt die gesamte Datei neu aufzubauen. Speichern ohne Änderungen erhält den Originaltext; inkonsistente Änderungen werden abgelehnt. Explizites Formatieren bleibt getrennt.
@@ -653,6 +657,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Home Assistant
 
 ### Darstellung & Sprachen
+- Konsole optional in Desktop-/Mobilnavigation ausblenden, pro Konto in diesem Browser gespeichert
 - **Dienstlinks** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Getrennte Tag- und Nachtpaletten, einschließlich der ursprünglichen Dockge-Enhanced-Themes
 - Optionen Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night und Rosé Pine
