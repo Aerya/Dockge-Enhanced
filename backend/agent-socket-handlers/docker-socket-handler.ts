@@ -1160,7 +1160,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 const stack = await Stack.getStack(server, stackName);
                 callbackResult({
                     ok: true,
-                    instances: await stack.getContainerInstances(),
+                    instances: await stack.getContainerInstances(true),
                 }, callback);
             } catch (error) {
                 callbackError(error, callback);

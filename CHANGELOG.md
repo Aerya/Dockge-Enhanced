@@ -9,6 +9,8 @@ The [README](README.md) presents the main recent updates and the feature catalog
 
 **2026-11-06 — Consistent stack paths** — The installation examples now mount /opt/stacks at the same host/container path and explain relative bind mounts. Existing configurations and data are not moved automatically; preserve them before adjusting an installation.
 
+**2026-11-06 — Container lifecycle dates** — Container details distinguish creation, last start and uptime since that start. Each replica has its own dates, read from Docker on its hosting instance. Stopped containers do not show an increasing uptime; unavailable dates remain unspecified. Update linked instances too.
+
 **2026-11-06 — Optional Console navigation** — Settings → Appearance can hide Console from desktop and mobile navigation. Off by default, saved per account in this browser. This display preference does not disable the console or change permissions.
 
 **2026-11-06 — Mobile log viewing** — Opening a stack no longer focuses the log viewer. On touchscreens, interactive terminals wait for a deliberate tap before taking keyboard focus; log searches keep focus in the search field.

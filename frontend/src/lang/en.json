@@ -1,4 +1,6 @@
 {
+    "containerInstance.startedAt": "Last started",
+    "containerInstance.uptime": "Uptime (hours:minutes:seconds)",
     "hideConsoleNavigation": "Hide Console in navigation",
     "hideConsoleNavigationHelp": "Hides the desktop and mobile link for your account in this browser. Does not disable the console or change permissions.",
     "composeVisualEditUnsafe": "The visual edit could not be applied safely. The Compose text was kept; use the text editor.",

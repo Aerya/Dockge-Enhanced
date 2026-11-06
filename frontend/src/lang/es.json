@@ -1,4 +1,6 @@
 {
+    "containerInstance.startedAt": "Último inicio",
+    "containerInstance.uptime": "Tiempo en ejecución (horas:minutos:segundos)",
     "hideConsoleNavigation": "Ocultar Consola en la navegación",
     "hideConsoleNavigationHelp": "Oculta el enlace en escritorio y móvil para su cuenta en este navegador. No desactiva la consola ni cambia los permisos.",
     "composeVisualEditUnsafe": "No se pudo aplicar el cambio visual de forma segura. Se conserva el texto Compose; utilice el editor de texto.",

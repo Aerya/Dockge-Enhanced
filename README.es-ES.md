@@ -66,6 +66,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Rutas de stacks coherentes :** Los ejemplos de instalación montan /opt/stacks en la misma ruta del anfitrión y del contenedor y explican los montajes relativos. No se trasladan automáticamente las configuraciones ni los datos existentes; consérvelos antes de adaptar una instalación.
 
+**Fechas de los contenedores :** La ficha de un contenedor distingue su creación, último inicio y tiempo en ejecución desde ese inicio. Cada réplica tiene sus propias fechas, leídas de Docker en su instancia anfitriona. Los contenedores detenidos no muestran un tiempo creciente; las fechas no disponibles quedan sin indicar. Actualice también las instancias vinculadas.
+
 **Enlace Consola opcional :** Ajustes → Apariencia permite ocultar Consola en la navegación de escritorio y móvil. Desactivado por defecto y guardado por cuenta en este navegador. Esta preferencia visual no desactiva la consola ni cambia los permisos.
 
 **Consulta de logs en móviles :** Al abrir una stack, el visor de logs ya no recibe el foco. En pantallas táctiles, los terminales interactivos esperan un toque voluntario; la búsqueda en los logs mantiene el foco en su campo.
@@ -520,7 +522,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Windows 11 con Docker Desktop/WSL2: [instalación y límites](docs/windows.es.md)
 - Crear, editar, iniciar, detener, reiniciar, actualizar, recrear, pausar/reanudar y desmontar stacks Compose
 - Barra de acciones del stack accesible directamente, en modo solo iconos o iconos con texto, con los comandos Compose explicados
-- Acciones por servicio y por contenedor, incluidos los contenedores reales y las réplicas Compose
+- Acciones por servicio y por contenedor, incluidos los contenedores reales y las réplicas Compose; creación, último inicio y tiempo en ejecución en la ficha del contenedor
 - Recreación automática de los servicios directos y transitivos que comparten un namespace de red VPN mediante `service:` o `container:`
 - Build + Recreate para imágenes construidas localmente
 - Inicio/parada programados de stacks y contenedores
