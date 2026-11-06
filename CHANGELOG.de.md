@@ -7,7 +7,9 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
-**2026-11-05 — Kompakte Oberfläche** — Optionale Ansicht, inspiriert von ethanpil/dockge-mod: Dienste als Zeilen über Logs und Compose. Kompakt unter Einstellungen → Erscheinungsbild → Layout oder in der Kopfzeile wählen. Klassisch bleibt Standard. Pro Konto in diesem Browser gespeichert.
+**2026-11-06 — Navigation** — Startseite steht auf Desktop und Mobilgeräten vor Service-Links. Klassisch/Kompakt wird nur noch unter Einstellungen → Erscheinungsbild gewählt; bestehende Einstellungen bleiben erhalten.
+
+**2026-11-05 — Kompakte Oberfläche** — Optionale Ansicht, inspiriert von ethanpil/dockge-mod: Dienste als Zeilen über Logs und Compose. Kompakt unter Einstellungen → Erscheinungsbild → Layout wählen. Klassisch bleibt Standard. Pro Konto in diesem Browser gespeichert.
 
 **2026-11-05 — Eigene Stack-Gruppen** — Gruppen werden in der Datenbank dieser Instanz für Ihr Konto gespeichert und sind in jedem Browser verfügbar. Sie können lokale und verbundene Stacks enthalten, ohne Zugriffsrechte zu ändern. Vorhandene Browser-Gruppen lassen sich ausdrücklich importieren, ohne Server-Gruppen zu ersetzen. Gleichzeitige Änderungen werden mit einer Warnung abgelehnt.
 

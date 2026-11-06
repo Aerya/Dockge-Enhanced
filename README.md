@@ -64,7 +64,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
-**Compact layout :** Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout or the header. Classic remains the default. Saved per account in this browser.
+**Compact layout :** Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout. Classic remains the default. Saved per account in this browser.
 
 **Custom stack groups :** Groups are stored in this instance’s database for your account and available from any browser. Groups can include local and linked stacks without changing access permissions. Import existing browser groups explicitly without replacing server groups. Concurrent edits are rejected with a warning.
 
