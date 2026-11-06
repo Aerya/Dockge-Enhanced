@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Optional Console navigation :** Settings → Appearance can hide Console from desktop and mobile navigation. Off by default, saved per account in this browser. This display preference does not disable the console or change permissions.
+
 **Restic security dependency :** The bundled Restic 0.19.1 is rebuilt with golang.org/x/net 0.62.0 instead of 0.60.0 for CVE-2026-78661. Backup settings and Trivy checks remain unchanged; this does not establish exploitability in Enhanced.
 
 **Compact layout alignment :** Service rows stay aligned with their headings on wide screens. The update mode and time fields share the same width, with space before the action buttons.

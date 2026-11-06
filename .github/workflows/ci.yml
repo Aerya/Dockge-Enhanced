@@ -88,7 +88,7 @@ jobs:
 
       - name: Tests natifs du terminal web
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/terminal-env.test.ts
+        run: npx tsx --test backend/terminal-env.test.ts frontend/src/console-navigation.test.ts
 
       - name: Tests des transports Socket.IO de la WebUI
         if: steps.docs.outputs.docs_only != 'true'

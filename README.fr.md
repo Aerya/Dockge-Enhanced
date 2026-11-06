@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Lien Console facultatif :** Paramètres → Apparence permet de masquer Console dans la navigation ordinateur et mobile. Option désactivée par défaut, enregistrée par compte dans ce navigateur. Ce réglage d’affichage ne désactive pas la console et ne modifie pas les permissions.
+
 **Dépendance de sécurité Restic :** Restic 0.19.1 embarqué est recompilé avec golang.org/x/net 0.62.0 au lieu de 0.60.0 pour CVE-2026-78661. Réglages de sauvegarde et contrôles Trivy inchangés ; cela ne démontre pas une exploitabilité dans Enhanced.
 
 **Alignement de la vue compacte :** Les lignes de services restent alignées avec leurs en-têtes sur grand écran. Le mode de mise à jour et l’heure ont la même largeur, avec un espace avant les boutons d’action.
