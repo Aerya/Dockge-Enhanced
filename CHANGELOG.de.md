@@ -9,6 +9,8 @@ Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den F
 
 **2026-11-06 — Loganzeige auf Mobilgeräten** — Beim Öffnen eines Stacks erhält die Loganzeige nicht mehr den Eingabefokus. Auf Touchscreens warten interaktive Terminals auf bewusstes Antippen; bei der Logsuche bleibt der Fokus im Suchfeld.
 
+**2026-11-06 — Restic-Sicherheitsabhängigkeit** — Das enthaltene Restic 0.19.1 wird für CVE-2026-78661 mit golang.org/x/net 0.62.0 statt 0.60.0 neu gebaut. Sicherungseinstellungen und Trivy-Prüfungen bleiben unverändert; eine Ausnutzbarkeit in Enhanced ist damit nicht nachgewiesen.
+
 **2026-11-06 — Ausrichtung der Kompaktansicht** — Service-Zeilen bleiben auf breiten Bildschirmen an den Überschriften ausgerichtet. Aktualisierungsmodus und Uhrzeit haben dieselbe Breite, mit Abstand zu den Aktionsschaltflächen.
 
 **2026-11-06 — Docker-Topologie** — Schreibgeschützte Karte und Portinventar für lokale und verbundene Instanzen, mit Kontogruppen und getrennten Filtern für gestoppte/externe Container. Stack-/Containerdetails und TCP-Ports folgen der IP-/Hostname-Einstellung jeder Instanz. Geteilte Netzwerk-Namensräume behalten ihren Besitzer. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren. Linien zeigen Konfiguration, keinen Verkehr. Traefik- und PlugNPiN/NPM-Deklarationen werden von verifizierten Routen unterschieden. Host-Ports werden nur bei sichtbaren und lesbaren Containerprozessen zugeordnet; andernfalls wird dies angezeigt. Keine zusätzlichen Rechte oder Proxy-Anfragen.
