@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Loganzeige auf Mobilgeräten :** Beim Öffnen eines Stacks erhält die Loganzeige nicht mehr den Eingabefokus. Auf Touchscreens warten interaktive Terminals auf bewusstes Antippen; bei der Logsuche bleibt der Fokus im Suchfeld.
+
 **Variablen in Stack-Links :** Gespeicherte Links werden von Compose auf der Hosting-Instanz mit globalen/lokalen Variablen und Overrides aufgelöst. Nur geprüfte HTTP/HTTPS-Links werden zurückgegeben, nie die gesamte Umgebung. Verknüpfte Instanzen benötigen diese Version; Entwurfsvorschauen bleiben bis zum Speichern lokal.
 
 **Gezielte Compose-Bearbeitung :** Der visuelle Editor ändert betroffene YAML-Bereiche statt die gesamte Datei neu aufzubauen. Speichern ohne Änderungen erhält den Originaltext; inkonsistente Änderungen werden abgelehnt. Explizites Formatieren bleibt getrennt.

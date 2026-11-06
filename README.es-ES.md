@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Consulta de logs en móviles :** Al abrir una stack, el visor de logs ya no recibe el foco. En pantallas táctiles, los terminales interactivos esperan un toque voluntario; la búsqueda en los logs mantiene el foco en su campo.
+
 **Variables en enlaces de stacks :** Compose resuelve los enlaces guardados en la instancia anfitriona, con variables globales/locales y overrides. Solo se devuelven enlaces HTTP/HTTPS validados, nunca el entorno completo. Actualice las instancias enlazadas; la vista previa del borrador sigue siendo local hasta guardarlo.
 
 **Edición localizada de Compose :** El editor visual modifica las zonas YAML afectadas sin reconstruir todo el archivo. Guardar sin cambios conserva el texto original; se rechazan cambios incoherentes. El formateo explícito sigue separado.

@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Consultation des logs sur mobile :** Ouvrir une stack ne place plus le curseur dans les logs. Sur écran tactile, les terminaux interactifs attendent un appui volontaire avant de prendre le focus du clavier ; la recherche dans les logs conserve le focus dans son champ.
+
 **Variables dans les liens des stacks :** Les liens enregistrés sont résolus par Compose sur l’instance hôte, avec variables globales/locales et overrides. Seuls les liens HTTP/HTTPS validés sont renvoyés, jamais l’environnement complet. Mettez à jour les instances liées ; l’aperçu d’un brouillon reste local jusqu’à l’enregistrement.
 
 **Édition ciblée du Compose :** L’éditeur visuel modifie les portions YAML concernées sans reconstruire tout le fichier. Un enregistrement sans changement conserve le texte original ; les modifications incohérentes sont refusées. Le formatage explicite reste séparé.
