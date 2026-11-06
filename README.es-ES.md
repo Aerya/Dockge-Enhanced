@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Rutas de stacks coherentes :** Los ejemplos de instalación montan /opt/stacks en la misma ruta del anfitrión y del contenedor y explican los montajes relativos. No se trasladan automáticamente las configuraciones ni los datos existentes; consérvelos antes de adaptar una instalación.
+
 **Variables en enlaces de stacks :** Compose resuelve los enlaces guardados en la instancia anfitriona, con variables globales/locales y overrides. Solo se devuelven enlaces HTTP/HTTPS validados, nunca el entorno completo. Actualice las instancias enlazadas; la vista previa del borrador sigue siendo local hasta guardarlo.
 
 **Edición localizada de Compose :** El editor visual modifica las zonas YAML afectadas sin reconstruir todo el archivo. Guardar sin cambios conserva el texto original; se rechazan cambios incoherentes. El formateo explícito sigue separado.
@@ -848,7 +850,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../../data:/app/data
-      - ../../opt/stacks:/opt/stacks
+      - /opt/stacks:/opt/stacks
       - ../../backup/dockge:/backup          # opcional — volumen local dedicado para copias de seguridad
       - ../../docker:/dockers-data           # opcional — datos adicionales para copiar de seguridad
     environment:
@@ -861,6 +863,8 @@ services:
 ```bash
 docker compose up -d
 ```
+
+> **Rutas del directorio de stacks:** use la misma ruta absoluta en el anfitrión Docker y dentro de Enhanced, y configure `DOCKGE_STACKS_DIR` con ella. Por ejemplo, `/srv/stacks:/srv/stacks` y `DOCKGE_STACKS_DIR=/srv/stacks`. Compose resuelve `./data` desde el directorio de la stack; el daemon Docker abre esa ruta en su propio anfitrión. Rutas diferentes pueden crear o utilizar un directorio incorrecto. En instalaciones existentes, localice y conserve sus stacks y datos antes de cambiar los montajes: este ejemplo no los migra. Para Unraid y Windows/WSL2, siga las guías anteriores.
 
 Abre **http://localhost:5001**, crea tu cuenta de administrador y luego haz clic en **Monitoreo** en la barra de navegación.
 

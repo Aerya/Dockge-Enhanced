@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Konsistente Stack-Pfade :** Die Installationsbeispiele binden /opt/stacks unter demselben Host-/Containerpfad ein und erläutern relative Bind-Mounts. Vorhandene Konfigurationen und Daten werden nicht automatisch verschoben; vor Anpassungen erhalten.
+
 **Variablen in Stack-Links :** Gespeicherte Links werden von Compose auf der Hosting-Instanz mit globalen/lokalen Variablen und Overrides aufgelöst. Nur geprüfte HTTP/HTTPS-Links werden zurückgegeben, nie die gesamte Umgebung. Verknüpfte Instanzen benötigen diese Version; Entwurfsvorschauen bleiben bis zum Speichern lokal.
 
 **Gezielte Compose-Bearbeitung :** Der visuelle Editor ändert betroffene YAML-Bereiche statt die gesamte Datei neu aufzubauen. Speichern ohne Änderungen erhält den Originaltext; inkonsistente Änderungen werden abgelehnt. Explizites Formatieren bleibt getrennt.
@@ -846,7 +848,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../../data:/app/data
-      - ../../opt/stacks:/opt/stacks
+      - /opt/stacks:/opt/stacks
       - ../../backup/dockge:/backup          # optional — dedicated local backup volume
       - ../../docker:/dockers-data           # optional — extra data to back up
     environment:
@@ -859,6 +861,8 @@ services:
 ```bash
 docker compose up -d
 ```
+
+> **Pfade des Stack-Verzeichnisses:** verwenden Sie denselben absoluten Pfad auf dem Docker-Host und in Enhanced und setzen Sie `DOCKGE_STACKS_DIR` darauf. Zum Beispiel `/srv/stacks:/srv/stacks` mit `DOCKGE_STACKS_DIR=/srv/stacks`. Compose löst `./data` relativ zum Stack-Verzeichnis auf; der Docker-Daemon öffnet diesen Pfad auf seinem eigenen Host. Unterschiedliche Pfade können daher das falsche Host-Verzeichnis verwenden oder erstellen. Vor Änderungen an bestehenden Installationen die bisherigen Stacks und Daten lokalisieren und erhalten: dieses Beispiel migriert sie nicht. Für Unraid und Windows/WSL2 gelten die oben verlinkten Anleitungen.
 
 Öffnen Sie **http://localhost:5001**, erstellen Sie Ihr Administrator-Konto und klicken Sie dann in der Navigationsleiste auf **Monitoring**.
 

@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-06 — Chemins des stacks cohérents** — Les exemples d’installation montent désormais /opt/stacks au même chemin hôte/conteneur et expliquent les volumes relatifs. Les configurations et données existantes ne sont pas déplacées automatiquement ; préservez-les avant d’adapter une installation.
+
 **2026-11-06 — Variables dans les liens des stacks** — Les liens enregistrés sont résolus par Compose sur l’instance hôte, avec variables globales/locales et overrides. Seuls les liens HTTP/HTTPS validés sont renvoyés, jamais l’environnement complet. Mettez à jour les instances liées ; l’aperçu d’un brouillon reste local jusqu’à l’enregistrement.
 
 **2026-11-06 — Édition ciblée du Compose** — L’éditeur visuel modifie les portions YAML concernées sans reconstruire tout le fichier. Un enregistrement sans changement conserve le texte original ; les modifications incohérentes sont refusées. Le formatage explicite reste séparé.

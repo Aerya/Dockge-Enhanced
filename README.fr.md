@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Chemins des stacks cohérents :** Les exemples d’installation montent désormais /opt/stacks au même chemin hôte/conteneur et expliquent les volumes relatifs. Les configurations et données existantes ne sont pas déplacées automatiquement ; préservez-les avant d’adapter une installation.
+
 **Variables dans les liens des stacks :** Les liens enregistrés sont résolus par Compose sur l’instance hôte, avec variables globales/locales et overrides. Seuls les liens HTTP/HTTPS validés sont renvoyés, jamais l’environnement complet. Mettez à jour les instances liées ; l’aperçu d’un brouillon reste local jusqu’à l’enregistrement.
 
 **Édition ciblée du Compose :** L’éditeur visuel modifie les portions YAML concernées sans reconstruire tout le fichier. Un enregistrement sans changement conserve le texte original ; les modifications incohérentes sont refusées. Le formatage explicite reste séparé.
@@ -847,7 +849,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../../data:/app/data
-      - ../../opt/stacks:/opt/stacks
+      - /opt/stacks:/opt/stacks
       - ../../backup/dockge:/backup          # optionnel — volume dédié au backup local
       - ../../docker:/dockers-data           # optionnel — données supplémentaires à sauvegarder
     environment:
@@ -860,6 +862,8 @@ services:
 ```bash
 docker compose up -d
 ```
+
+> **Chemins du dossier des stacks :** utilisez le même chemin absolu sur l’hôte Docker et dans Enhanced, avec `DOCKGE_STACKS_DIR` réglé sur ce chemin. Par exemple, `/srv/stacks:/srv/stacks` et `DOCKGE_STACKS_DIR=/srv/stacks`. Compose résout le `./data` d’une stack depuis son dossier ; le démon Docker ouvre ensuite ce chemin sur son propre hôte. Des chemins différents peuvent donc créer ou utiliser le mauvais dossier hôte. Sur une installation existante, repérez et préservez vos stacks et données avant de modifier les montages : cet exemple ne les migre pas. Pour Unraid et Windows/WSL2, suivez les guides dédiés ci-dessus.
 
 Ouvrez **http://localhost:5001**, créez votre compte administrateur, puis cliquez sur **Surveillance** dans la barre de navigation.
 

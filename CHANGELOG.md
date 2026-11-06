@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-06 — Consistent stack paths** — The installation examples now mount /opt/stacks at the same host/container path and explain relative bind mounts. Existing configurations and data are not moved automatically; preserve them before adjusting an installation.
+
 **2026-11-06 — Variables in stack links** — Saved stack links are resolved by Compose on the hosting instance, including global/local variables and overrides. Only validated HTTP/HTTPS links are returned, never the complete environment. Linked instances need this version; draft previews remain local until saved.
 
 **2026-11-06 — Targeted Compose edits** — The visual editor changes affected YAML ranges without rebuilding the whole file. Unchanged saves retain the original text; inconsistent edits are refused. Explicit formatting remains separate.

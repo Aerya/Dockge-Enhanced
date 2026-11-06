@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**一致的堆栈路径 :** 安装示例现在将 /opt/stacks 挂载到相同的主机与容器路径，并解释相对绑定挂载。不会自动移动现有配置或数据；调整现有安装前请先保留这些内容。
+
 **堆栈链接中的变量 :** 已保存的链接由托管实例上的 Compose 解析，支持全局/本地变量和覆盖文件。只返回验证过的 HTTP/HTTPS 链接，不返回完整环境。请更新关联实例；草稿预览在保存前仍使用本地变量。
 
 **局部编辑 Compose :** 可视化编辑器只修改相关 YAML 区域，不再重建整个文件。无修改保存时保留原文；拒绝不一致的修改。手动格式化仍为独立操作。
@@ -849,7 +851,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../../data:/app/data
-      - ../../opt/stacks:/opt/stacks
+      - /opt/stacks:/opt/stacks
       - ../../backup/dockge:/backup          # 可选：独立本地备份目录
       - ../../docker:/dockers-data           # 可选：额外需要备份的数据
     environment:
@@ -862,6 +864,8 @@ services:
 ```bash
 docker compose up -d
 ```
+
+> **堆栈目录路径：** Docker 主机与 Enhanced 容器内应使用相同的绝对路径，并将 `DOCKGE_STACKS_DIR` 设置为该路径。例如使用 `/srv/stacks:/srv/stacks` 和 `DOCKGE_STACKS_DIR=/srv/stacks`。Compose 会相对于堆栈目录解析 `./data`，随后 Docker 守护进程在其所在主机上打开该路径。路径不一致可能创建或使用错误的主机目录。对于现有安装，请先确认并保留现有堆栈及数据，再修改挂载；此示例不会迁移数据。Unraid 和 Windows/WSL2 用户请参照上方专用指南。
 
 打开 `http://localhost:5001`，创建管理员账户，然后点击导航栏中的**监控**。
 

@@ -90,6 +90,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/terminal-env.test.ts
 
+      - name: Tests des chemins des exemples Compose
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test common/stack-path-examples.test.ts
+
       - name: Tests des transports Socket.IO de la WebUI
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/socket-connection.test.ts backend/socket-origin.test.ts

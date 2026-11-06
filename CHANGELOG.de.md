@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-06 — Konsistente Stack-Pfade** — Die Installationsbeispiele binden /opt/stacks unter demselben Host-/Containerpfad ein und erläutern relative Bind-Mounts. Vorhandene Konfigurationen und Daten werden nicht automatisch verschoben; vor Anpassungen erhalten.
+
 **2026-11-06 — Variablen in Stack-Links** — Gespeicherte Links werden von Compose auf der Hosting-Instanz mit globalen/lokalen Variablen und Overrides aufgelöst. Nur geprüfte HTTP/HTTPS-Links werden zurückgegeben, nie die gesamte Umgebung. Verknüpfte Instanzen benötigen diese Version; Entwurfsvorschauen bleiben bis zum Speichern lokal.
 
 **2026-11-06 — Gezielte Compose-Bearbeitung** — Der visuelle Editor ändert betroffene YAML-Bereiche statt die gesamte Datei neu aufzubauen. Speichern ohne Änderungen erhält den Originaltext; inkonsistente Änderungen werden abgelehnt. Explizites Formatieren bleibt getrennt.

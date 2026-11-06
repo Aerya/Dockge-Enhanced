@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Consistent stack paths :** The installation examples now mount /opt/stacks at the same host/container path and explain relative bind mounts. Existing configurations and data are not moved automatically; preserve them before adjusting an installation.
+
 **Variables in stack links :** Saved stack links are resolved by Compose on the hosting instance, including global/local variables and overrides. Only validated HTTP/HTTPS links are returned, never the complete environment. Linked instances need this version; draft previews remain local until saved.
 
 **Targeted Compose edits :** The visual editor changes affected YAML ranges without rebuilding the whole file. Unchanged saves retain the original text; inconsistent edits are refused. Explicit formatting remains separate.
@@ -846,7 +848,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../../data:/app/data
-      - ../../opt/stacks:/opt/stacks
+      - /opt/stacks:/opt/stacks
       - ../../backup/dockge:/backup          # optional — dedicated local backup volume
       - ../../docker:/dockers-data           # optional — extra data to back up
     environment:
@@ -859,6 +861,8 @@ services:
 ```bash
 docker compose up -d
 ```
+
+> **Stack directory paths:** use the same absolute path on the Docker host and inside Enhanced, and set `DOCKGE_STACKS_DIR` to that path. For example, `/srv/stacks:/srv/stacks` with `DOCKGE_STACKS_DIR=/srv/stacks`. Compose resolves a stack’s `./data` relative to its directory; the Docker daemon then opens that path on its own host. Different paths can therefore create or use the wrong host directory. For an existing installation, locate and preserve your current stacks and data before changing mounts: this example does not migrate them. For Unraid and Windows/WSL2, follow the dedicated guides above.
 
 Open **http://localhost:5001**, create your admin account, then click **Monitoring** in the navigation bar.
 
