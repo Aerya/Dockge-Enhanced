@@ -1,5 +1,18 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-06-compose-containers-security",
+        items: [
+            "releaseNews.item.topologyNovember",
+            "releaseNews.item.compactAlignmentNovember",
+            "releaseNews.item.composeEditingNovember",
+            "releaseNews.item.stackLinksNovember",
+            "releaseNews.item.navigationNovember",
+            "releaseNews.item.containerDatesNovember",
+            "releaseNews.item.resticSecurityNovember",
+            "releaseNews.item.stackPathsNovember",
+        ],
+    },
+    {
         id: "2026-11-05-compact-interface",
         items: [ "releaseNews.item.compactInterface" ],
     },

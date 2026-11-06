@@ -1,4 +1,12 @@
 {
+    "releaseNews.item.compactAlignmentNovember": "紧凑视图改进了列、计划时间和操作按钮的对齐。首页位于服务链接之前；经典/紧凑布局仍在设置 → 外观中选择。",
+    "releaseNews.item.topologyNovember": "Docker 拓扑汇总本地及关联实例的网络、堆栈和端口，支持分组及已停止/外部容器筛选。仅管理员可用；请同时更新关联实例。它展示配置，不表示实际流量或已验证的代理路由。",
+    "releaseNews.item.composeEditingNovember": "Compose 可视化编辑器会保留未修改部分的注释和格式。",
+    "releaseNews.item.stackLinksNovember": "堆栈链接使用宿主实例的全局/本地变量及覆盖配置。请同时更新关联实例。",
+    "releaseNews.item.navigationNovember": "在移动设备上打开日志不再抢占键盘焦点。还可以在设置 → 外观中隐藏控制台链接，而不改变权限。",
+    "releaseNews.item.containerDatesNovember": "每个容器的详情分别显示创建时间、最近启动时间和运行时长。无法获取的日期保持空缺。",
+    "releaseNews.item.resticSecurityNovember": "内置 Restic 的网络依赖已获得安全修复。",
+    "releaseNews.item.stackPathsNovember": "安装示例在宿主机和 Enhanced 内使用相同的堆栈绝对路径。不会移动现有数据：修改挂载前，请保留好您的堆栈和数据。",
     "containerInstance.startedAt": "上次启动",
     "containerInstance.uptime": "运行时长（小时:分钟:秒）",
     "hideConsoleNavigation": "在导航中隐藏控制台",

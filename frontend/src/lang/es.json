@@ -1,4 +1,12 @@
 {
+    "releaseNews.item.compactAlignmentNovember": "La vista compacta alinea mejor columnas, horarios y acciones. Inicio precede a Enlaces de servicios; Clásica/Compacta sigue en Configuración → Apariencia.",
+    "releaseNews.item.topologyNovember": "La topología Docker reúne redes, stacks y puertos de instancias locales y vinculadas, con grupos y filtros de detenidos/externos. Solo para administradores; actualice también las instancias vinculadas. Muestra la configuración, no el tráfico ni rutas de proxy verificadas.",
+    "releaseNews.item.composeEditingNovember": "El editor visual de Compose conserva los comentarios y el formato fuera de los elementos modificados.",
+    "releaseNews.item.stackLinksNovember": "Los enlaces de las stacks utilizan las variables globales/locales y los overrides de la instancia anfitriona. Actualice también las instancias vinculadas.",
+    "releaseNews.item.navigationNovember": "Al abrir los logs en móvil ya no se toma el foco del teclado. Configuración → Apariencia también permite ocultar el enlace Consola sin cambiar los permisos.",
+    "releaseNews.item.containerDatesNovember": "Los detalles de cada contenedor distinguen su creación, último arranque y tiempo de actividad. Las fechas no disponibles quedan sin indicar.",
+    "releaseNews.item.resticSecurityNovember": "Restic integrado recibe una corrección de seguridad en su dependencia de red.",
+    "releaseNews.item.stackPathsNovember": "Los ejemplos de instalación usan la misma ruta absoluta para las stacks en el host y dentro de Enhanced. No se mueven datos existentes: preserve sus stacks y datos antes de cambiar los montajes.",
     "containerInstance.startedAt": "Último inicio",
     "containerInstance.uptime": "Tiempo en ejecución (horas:minutos:segundos)",
     "hideConsoleNavigation": "Ocultar Consola en la navegación",

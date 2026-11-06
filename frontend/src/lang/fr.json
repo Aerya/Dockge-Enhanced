@@ -1,4 +1,12 @@
 {
+    "releaseNews.item.compactAlignmentNovember": "La vue compacte aligne mieux les colonnes, horaires et actions. Accueil précède Liens des services ; le choix Classique/Compacte reste dans Paramètres → Apparence.",
+    "releaseNews.item.topologyNovember": "La cartographie Docker réunit réseaux, stacks et ports des instances locales et liées, avec groupes et filtres arrêtés/externes. Réservée aux administrateurs ; mettez aussi à jour les instances liées. Elle montre la configuration, pas le trafic ni des routes proxy vérifiées.",
+    "releaseNews.item.composeEditingNovember": "L’éditeur visuel du Compose conserve les commentaires et la mise en forme hors des éléments modifiés.",
+    "releaseNews.item.stackLinksNovember": "Les liens des stacks utilisent les variables globales/locales et les overrides de l’instance hôte. Mettez aussi à jour les instances liées.",
+    "releaseNews.item.navigationNovember": "Les logs ne prennent plus le focus à l’ouverture sur mobile. Paramètres → Apparence permet aussi de masquer le lien Console, sans changer les permissions.",
+    "releaseNews.item.containerDatesNovember": "La fiche de chaque conteneur distingue sa création, son dernier démarrage et sa durée de fonctionnement. Une date indisponible reste non renseignée.",
+    "releaseNews.item.resticSecurityNovember": "Le Restic intégré reçoit une correction de sécurité de sa dépendance réseau.",
+    "releaseNews.item.stackPathsNovember": "Les exemples d’installation utilisent le même chemin absolu pour les stacks sur l’hôte et dans Enhanced. Aucune donnée existante n’est déplacée : préservez vos stacks et données avant de modifier les montages.",
     "containerInstance.startedAt": "Dernier démarrage",
     "containerInstance.uptime": "Durée de fonctionnement (heures:minutes:secondes)",
     "hideConsoleNavigation": "Masquer Console dans la navigation",
