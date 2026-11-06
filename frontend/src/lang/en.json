@@ -1,4 +1,12 @@
 {
+    "releaseNews.item.compactAlignmentNovember": "Compact view better aligns columns, schedules and actions. Home comes before Service links; Classic/Compact remains in Settings → Appearance.",
+    "releaseNews.item.topologyNovember": "Docker topology brings together networks, stacks and ports from local and linked instances, with groups and stopped/external filters. Administrators only; update linked instances too. It shows configuration, not traffic or verified proxy routes.",
+    "releaseNews.item.composeEditingNovember": "The visual Compose editor preserves comments and formatting outside the elements being changed.",
+    "releaseNews.item.stackLinksNovember": "Stack links use the hosting instance’s global/local variables and overrides. Update linked instances too.",
+    "releaseNews.item.navigationNovember": "Opening logs on mobile no longer takes keyboard focus. Settings → Appearance also lets you hide the Console link without changing permissions.",
+    "releaseNews.item.containerDatesNovember": "Each container’s details distinguish creation, last start and uptime. Unavailable dates remain unspecified.",
+    "releaseNews.item.resticSecurityNovember": "Bundled Restic receives a security fix for its networking dependency.",
+    "releaseNews.item.stackPathsNovember": "Installation examples use the same absolute stack path on the host and inside Enhanced. Existing data is not moved: preserve your stacks and data before changing mounts.",
     "containerInstance.startedAt": "Last started",
     "containerInstance.uptime": "Uptime (hours:minutes:seconds)",
     "hideConsoleNavigation": "Hide Console in navigation",

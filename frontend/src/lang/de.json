@@ -1,4 +1,12 @@
 {
+    "releaseNews.item.compactAlignmentNovember": "Die kompakte Ansicht richtet Spalten, Zeitpläne und Aktionen besser aus. Start steht vor Service-Links; Klassisch/Kompakt bleibt unter Einstellungen → Darstellung.",
+    "releaseNews.item.topologyNovember": "Die Docker-Topologie zeigt Netzwerke, Stacks und Ports lokaler und verknüpfter Instanzen, mit Gruppen und Filtern für gestoppte/externe Container. Nur für Administratoren; aktualisieren Sie auch verknüpfte Instanzen. Sie zeigt die Konfiguration, nicht den Datenverkehr oder verifizierte Proxy-Routen.",
+    "releaseNews.item.composeEditingNovember": "Der visuelle Compose-Editor erhält Kommentare und Formatierung außerhalb der geänderten Elemente.",
+    "releaseNews.item.stackLinksNovember": "Stack-Links verwenden globale/lokale Variablen und Overrides der ausführenden Instanz. Aktualisieren Sie auch verknüpfte Instanzen.",
+    "releaseNews.item.navigationNovember": "Beim Öffnen von Logs auf Mobilgeräten wird der Tastaturfokus nicht mehr übernommen. Unter Einstellungen → Darstellung lässt sich außerdem der Console-Link ausblenden, ohne Berechtigungen zu ändern.",
+    "releaseNews.item.containerDatesNovember": "Die Details jedes Containers unterscheiden Erstellung, letzten Start und Laufzeit. Nicht verfügbare Datumsangaben bleiben leer.",
+    "releaseNews.item.resticSecurityNovember": "Das integrierte Restic erhält eine Sicherheitskorrektur für seine Netzwerkabhängigkeit.",
+    "releaseNews.item.stackPathsNovember": "Die Installationsbeispiele verwenden denselben absoluten Stack-Pfad auf dem Host und in Enhanced. Bestehende Daten werden nicht verschoben: Sichern Sie Ihre Stacks und Daten, bevor Sie Mounts ändern.",
     "containerInstance.startedAt": "Zuletzt gestartet",
     "containerInstance.uptime": "Betriebszeit (Stunden:Minuten:Sekunden)",
     "hideConsoleNavigation": "Konsole in der Navigation ausblenden",
