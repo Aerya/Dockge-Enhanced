@@ -656,6 +656,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Home Assistant
 
 ### Apparence & langues
+- Masquage facultatif de Console dans la navigation ordinateur/mobile, enregistré par compte dans ce navigateur
 - **Liens des services** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Palettes jour et nuit distinctes, y compris les thèmes d’origine de Dockge-Enhanced
 - Options Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night et Rosé Pine

@@ -657,6 +657,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Home Assistant
 
 ### Apariencia e idiomas
+- Ocultación opcional de Consola en la navegación de escritorio/móvil, guardada por cuenta en este navegador
 - **Enlaces de servicios** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Paletas de día y de noche separadas, incluidos los temas originales de Dockge-Enhanced
 - Opciones Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night y Rosé Pine

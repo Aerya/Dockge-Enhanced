@@ -655,6 +655,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Home Assistant
 
 ### Appearance & languages
+- Optional per-account hiding of Console in desktop/mobile navigation, saved in this browser
 - **Service links** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Separate day and night palettes, including the original Dockge-Enhanced themes
 - Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night and Rosé Pine options

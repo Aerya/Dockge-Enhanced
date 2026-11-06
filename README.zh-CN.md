@@ -656,6 +656,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Home Assistant
 
 ### 外观与语言
+- 可选隐藏桌面及移动端导航中的控制台链接，按账户保存在此浏览器中
 - **服务链接** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - 独立的日间和夜间配色，包括 Dockge-Enhanced 原有主题
 - Catppuccin、Nord、Solarized、Dracula、Gruvbox、Tokyo Night 和 Rosé Pine 选项
