@@ -9,6 +9,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
 import { TERMINAL_COLS, TERMINAL_ROWS } from "../../../common/util-common";
+import { configureTerminalFocus } from "../terminal-focus";
 
 export default {
     /**
@@ -140,7 +141,7 @@ export default {
 
         // Bind to a div
         this.terminal.open(this.$refs.terminal);
-        this.terminal.focus();
+        configureTerminalFocus(this.terminal, this.mode, window.matchMedia("(any-pointer: coarse)").matches);
 
         // Let xterm position its textarea and expose the native Copy/Paste menu.
         // Capture browser paste before xterm handles it so both terminal modes
@@ -621,7 +622,7 @@ export default {
             window.requestAnimationFrame(() => {
                 this.suppressSelectionCopy = true;
                 this.terminal.selectLines(match.line, match.line);
-                this.terminal.focus();
+                // Keep focus in the search field, not xterm's hidden keyboard input.
                 window.setTimeout(() => {
                     this.suppressSelectionCopy = false;
                 }, 100);

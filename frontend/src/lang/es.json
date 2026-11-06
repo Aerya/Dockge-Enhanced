@@ -1,6 +1,7 @@
 {
     "hideConsoleNavigation": "Ocultar Consola en la navegación",
     "hideConsoleNavigationHelp": "Oculta el enlace en escritorio y móvil para su cuenta en este navegador. No desactiva la consola ni cambia los permisos.",
+    "composeVisualEditUnsafe": "No se pudo aplicar el cambio visual de forma segura. Se conserva el texto Compose; utilice el editor de texto.",
     "topology.configuredLinks": "Enlaces web configurados en esta instancia",
     "topology.routes": "Rutas web declaradas",
     "topology.routesHint": "Rutas de etiquetas Traefik o PlugNPiN/NPM, sin verificar con el proxy. No se deducen reglas complejas ni rutas NPM creadas manualmente.",

@@ -1,6 +1,7 @@
 {
     "hideConsoleNavigation": "Hide Console in navigation",
     "hideConsoleNavigationHelp": "Hides the desktop and mobile link for your account in this browser. Does not disable the console or change permissions.",
+    "composeVisualEditUnsafe": "The visual edit could not be applied safely. The Compose text was kept; use the text editor.",
     "topology.configuredLinks": "Web links configured on this instance",
     "topology.routes": "Declared web routes",
     "topology.routesHint": "Routes from Traefik or PlugNPiN/NPM labels, not verified against the proxy. Complex rules and manually created NPM routes are not inferred.",
