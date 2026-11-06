@@ -142,8 +142,11 @@ async function defaultFetchJson(url: string, timeoutMs: number, options: { beare
     // This URL is deliberately configured by an authenticated Dockge administrator and is
     // validated as credential-free HTTP(S). Private LAN targets are a supported use case, so
     // they cannot be blocked; redirects are refused to keep the request on the approved origin.
-    // codeql[js/request-forgery]
-    const response = await fetch(url, {
+    const validatedUrl = validatePowerWatchUrl(url, "PowerWatch request");
+    if (!validatedUrl) {
+        throw new Error("PowerWatch URL is required");
+    }
+    const response = await fetch(validatedUrl, {
         signal: AbortSignal.timeout(timeoutMs),
         redirect: "error",
         headers: options.bearerToken ? { Authorization: `Bearer ${options.bearerToken}` } : undefined,
