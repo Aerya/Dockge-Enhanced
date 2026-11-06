@@ -1,4 +1,5 @@
 {
+    "composeVisualEditUnsafe": "The visual edit could not be applied safely. The Compose text was kept; use the text editor.",
     "topology.configuredLinks": "Web links configured on this instance",
     "topology.routes": "Declared web routes",
     "topology.routesHint": "Routes from Traefik or PlugNPiN/NPM labels, not verified against the proxy. Complex rules and manually created NPM routes are not inferred.",

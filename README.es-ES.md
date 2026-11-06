@@ -66,6 +66,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Variables en enlaces de stacks :** Compose resuelve los enlaces guardados en la instancia anfitriona, con variables globales/locales y overrides. Solo se devuelven enlaces HTTP/HTTPS validados, nunca el entorno completo. Actualice las instancias enlazadas; la vista previa del borrador sigue siendo local hasta guardarlo.
 
+**Edición localizada de Compose :** El editor visual modifica las zonas YAML afectadas sin reconstruir todo el archivo. Guardar sin cambios conserva el texto original; se rechazan cambios incoherentes. El formateo explícito sigue separado.
+
 **Dependencia de seguridad de Restic :** Restic 0.19.1 incluido se recompila con golang.org/x/net 0.62.0 en lugar de 0.60.0 por CVE-2026-78661. No cambian los ajustes de copia ni los controles Trivy; esto no demuestra que sea explotable en Enhanced.
 
 **Alineación de la vista compacta :** Las filas de servicios permanecen alineadas con sus encabezados en pantallas anchas. El modo de actualización y la hora tienen el mismo ancho, con espacio antes de los botones de acción.

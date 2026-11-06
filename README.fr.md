@@ -67,6 +67,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Variables dans les liens des stacks :** Les liens enregistrés sont résolus par Compose sur l’instance hôte, avec variables globales/locales et overrides. Seuls les liens HTTP/HTTPS validés sont renvoyés, jamais l’environnement complet. Mettez à jour les instances liées ; l’aperçu d’un brouillon reste local jusqu’à l’enregistrement.
 
+**Édition ciblée du Compose :** L’éditeur visuel modifie les portions YAML concernées sans reconstruire tout le fichier. Un enregistrement sans changement conserve le texte original ; les modifications incohérentes sont refusées. Le formatage explicite reste séparé.
+
 **Dépendance de sécurité Restic :** Restic 0.19.1 embarqué est recompilé avec golang.org/x/net 0.62.0 au lieu de 0.60.0 pour CVE-2026-78661. Réglages de sauvegarde et contrôles Trivy inchangés ; cela ne démontre pas une exploitabilité dans Enhanced.
 
 **Alignement de la vue compacte :** Les lignes de services restent alignées avec leurs en-têtes sur grand écran. Le mode de mise à jour et l’heure ont la même largeur, avec un espace avant les boutons d’action.

@@ -9,6 +9,8 @@ The [README](README.md) presents the main recent updates and the feature catalog
 
 **2026-11-06 — Variables in stack links** — Saved stack links are resolved by Compose on the hosting instance, including global/local variables and overrides. Only validated HTTP/HTTPS links are returned, never the complete environment. Linked instances need this version; draft previews remain local until saved.
 
+**2026-11-06 — Targeted Compose edits** — The visual editor changes affected YAML ranges without rebuilding the whole file. Unchanged saves retain the original text; inconsistent edits are refused. Explicit formatting remains separate.
+
 **2026-11-06 — Restic security dependency** — The bundled Restic 0.19.1 is rebuilt with golang.org/x/net 0.62.0 instead of 0.60.0 for CVE-2026-78661. Backup settings and Trivy checks remain unchanged; this does not establish exploitability in Enhanced.
 
 **2026-11-06 — Compact layout alignment** — Service rows stay aligned with their headings on wide screens. The update mode and time fields share the same width, with space before the action buttons.
