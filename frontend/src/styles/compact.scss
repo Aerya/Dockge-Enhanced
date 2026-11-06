@@ -87,20 +87,30 @@
         .editor-header, .terminal-toolbar { background: var(--bg-surface); padding: 8px 10px; margin-bottom: 0 !important; border-bottom: 1px solid var(--border-color); }
         .editor-header h4, .terminal-toolbar h4, .containers-toggle-title { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
         .editor-box { border-radius: 0; margin-bottom: 0 !important; }
-        .service-readonly { margin: 0 !important; border-radius: 0; border-bottom: 1px solid var(--border-color); background: transparent; }
+        // Bootstrap's .container has breakpoint max-widths; service rows must
+        // occupy the same full width as the column headings, even on ultrawide.
+        .service-readonly { width: 100%; max-width: none; margin: 0 !important; border-radius: 0; border-bottom: 1px solid var(--border-color); background: transparent; }
+        .service-readonly .container-auto-update {
+            width: 128px;
+            max-width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .service-readonly .container-auto-update-select,
+        .service-readonly .container-auto-update-time { width: 100%; min-width: 0; box-sizing: border-box; }
         .service-readonly:last-child { border-bottom: 0; }
         .service-readonly:hover { background: var(--hover-soft); }
         .stack-action-toolbar .stack-action { border-radius: 3px; }
 
         @media (min-width: 1200px) {
-            --service-columns: minmax(110px, 1fr) minmax(150px, 1.4fr) minmax(140px, 1.3fr) 110px minmax(230px, 1.6fr);
-            .compact-service-head { display: grid; grid-template-columns: var(--service-columns); gap: 8px; padding: 7px 10px; background: var(--bg-surface); border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+            --service-columns: minmax(110px, 1fr) minmax(150px, 1.4fr) minmax(140px, 1.3fr) 128px minmax(230px, 1.6fr);
+            .compact-service-head { display: grid; grid-template-columns: var(--service-columns); column-gap: 12px; padding: 7px 10px; background: var(--bg-surface); border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
             .service-readonly { padding: 8px 10px; }
             .service-readonly > .row { margin: 0; }
             .service-readonly > .row > .col-12 {
                 padding: 0;
                 grid-template-columns: var(--service-columns);
-                gap: 4px 8px;
+                gap: 4px 12px;
                 align-items: center;
                 > h4 { grid-column: 1; grid-row: 1; margin: 0; font-size: 13px; overflow-wrap: anywhere; }
                 > .image { grid-column: 2; grid-row: 1; font-size: 12px; }
