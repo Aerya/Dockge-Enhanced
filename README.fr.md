@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Dépendance de sécurité Restic :** Restic 0.19.1 embarqué est recompilé avec golang.org/x/net 0.62.0 au lieu de 0.60.0 pour CVE-2026-78661. Réglages de sauvegarde et contrôles Trivy inchangés ; cela ne démontre pas une exploitabilité dans Enhanced.
+
 **Alignement de la vue compacte :** Les lignes de services restent alignées avec leurs en-têtes sur grand écran. Le mode de mise à jour et l’heure ont la même largeur, avec un espace avant les boutons d’action.
 
 **Cartographie Docker :** Carte et inventaire des ports en lecture seule pour les instances locales et liées, avec groupes du compte et filtres arrêtés/externes indépendants. Accédez aux stacks, conteneurs et ports TCP selon le réglage IP/hostname de chaque instance. Les espaces réseau partagés conservent leur propriétaire. Accès administrateur ; mettez aussi à jour les instances liées. Les traits montrent la configuration, pas le trafic. Les déclarations Traefik et PlugNPiN/NPM sont distinguées des routes vérifiées. Les ports host sont attribués uniquement si les processus sont visibles et lisibles ; sinon l’indisponibilité est explicite. Aucun privilège supplémentaire ni requête vers les proxies.
