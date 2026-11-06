@@ -1,4 +1,5 @@
 {
+    "composeVisualEditUnsafe": "无法安全应用可视化修改。Compose 原文已保留，请使用文本编辑器。",
     "topology.configuredLinks": "此实例配置的 Web 链接",
     "topology.routes": "声明的 Web 路由",
     "topology.routesHint": "来自 Traefik 或 PlugNPiN/NPM 标签的路由，未向代理验证。不推断复杂规则或手动创建的 NPM 路由。",

@@ -9,6 +9,8 @@ Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den F
 
 **2026-11-06 — Loganzeige auf Mobilgeräten** — Beim Öffnen eines Stacks erhält die Loganzeige nicht mehr den Eingabefokus. Auf Touchscreens warten interaktive Terminals auf bewusstes Antippen; bei der Logsuche bleibt der Fokus im Suchfeld.
 
+**2026-11-06 — Gezielte Compose-Bearbeitung** — Der visuelle Editor ändert betroffene YAML-Bereiche statt die gesamte Datei neu aufzubauen. Speichern ohne Änderungen erhält den Originaltext; inkonsistente Änderungen werden abgelehnt. Explizites Formatieren bleibt getrennt.
+
 **2026-11-06 — Restic-Sicherheitsabhängigkeit** — Das enthaltene Restic 0.19.1 wird für CVE-2026-78661 mit golang.org/x/net 0.62.0 statt 0.60.0 neu gebaut. Sicherungseinstellungen und Trivy-Prüfungen bleiben unverändert; eine Ausnutzbarkeit in Enhanced ist damit nicht nachgewiesen.
 
 **2026-11-06 — Ausrichtung der Kompaktansicht** — Service-Zeilen bleiben auf breiten Bildschirmen an den Überschriften ausgerichtet. Aktualisierungsmodus und Uhrzeit haben dieselbe Breite, mit Abstand zu den Aktionsschaltflächen.
