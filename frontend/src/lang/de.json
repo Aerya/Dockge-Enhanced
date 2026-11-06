@@ -1,4 +1,5 @@
 {
+    "composeVisualEditUnsafe": "Die visuelle Änderung konnte nicht sicher angewendet werden. Der Compose-Text bleibt erhalten; verwenden Sie den Texteditor.",
     "topology.configuredLinks": "Auf dieser Instanz konfigurierte Weblinks",
     "topology.routes": "Deklarierte Web-Routen",
     "topology.routesHint": "Routen aus Traefik- oder PlugNPiN/NPM-Labels, nicht am Proxy verifiziert. Komplexe Regeln und manuell erstellte NPM-Routen werden nicht abgeleitet.",
