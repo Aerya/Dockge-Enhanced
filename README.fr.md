@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Cartographie Docker :** Carte et inventaire des ports en lecture seule pour les instances locales et liées, avec groupes du compte et filtres arrêtés/externes indépendants. Accédez aux stacks, conteneurs et ports TCP selon le réglage IP/hostname de chaque instance. Les espaces réseau partagés conservent leur propriétaire. Accès administrateur ; mettez aussi à jour les instances liées. Les traits ne représentent pas du trafic ; les écoutes en mode host et les routes des reverse proxies ne sont pas déduites.
+
 **Interface compacte :** Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.
 
 **Groupes de stacks personnalisés :** Les groupes sont enregistrés en base sur cette instance pour votre compte et retrouvés depuis n’importe quel navigateur. Ils peuvent réunir des stacks locales et liées sans modifier les permissions. Importez explicitement les anciens groupes du navigateur sans remplacer ceux du serveur. Les modifications concurrentes sont refusées avec un avertissement.
@@ -609,6 +611,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Intégrations facultatives Kula, Dozzle, PowerWatch et PowerWatch Hub, avec la puissance PowerWatch affichée sur les instances liées
 
 ### Ressources Docker
+- **Cartographie Docker** — `/topology` · TCP/UDP
 - Images, volumes, réseaux et conteneurs non gérés, avec recherche
 - Gestion des réseaux `bridge`, `macvlan` et `ipvlan`
 - Nettoyage manuel et automatique unifié des images, réseaux, volumes et caches de build, avec aperçus, exclusions et historique

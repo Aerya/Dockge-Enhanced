@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-06 — Docker topology** — Read-only map and port inventory for local and linked instances, with account groups and independent stopped/external filters. Open stack/container details and TCP ports using each instance’s IP/hostname preference. Shared network namespaces retain their owner. Administrator access only; update linked instances too. Lines are configured attachments, not traffic; host-mode listening ports and reverse-proxy routes are not inferred.
+
 **2026-11-06 — Navigation** — Home now comes before Service Links on desktop and mobile. Choose Classic or Compact only in Settings → Appearance; existing preferences are preserved.
 
 **2026-11-05 — Compact layout** — Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout. Classic remains the default. Saved per account in this browser.

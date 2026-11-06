@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-06 — Topología Docker** — Mapa e inventario de puertos de solo lectura para instancias locales y vinculadas, con grupos de la cuenta y filtros independientes de detenidos/externos. Acceda a stacks, contenedores y puertos TCP según la preferencia IP/hostname de cada instancia. Los espacios de red compartidos conservan su propietario. Solo administradores; actualice también las instancias vinculadas. Las líneas no indican tráfico; no se deducen puertos en modo host ni rutas de proxies inversos.
+
 **2026-11-06 — Navegación** — Inicio aparece antes de Enlaces de servicios en escritorio y móvil. Clásica/Compacta se elige solo en Ajustes → Apariencia; se conservan las preferencias existentes.
 
 **2026-11-05 — Interfaz compacta** — Vista opcional inspirada en ethanpil/dockge-mod: servicios en filas sobre Logs y Compose. Seleccione Compacta en Ajustes → Apariencia → Diseño. Clásica sigue siendo la opción predeterminada. Guardada por cuenta en este navegador.

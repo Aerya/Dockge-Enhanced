@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-06 — Docker-Topologie** — Schreibgeschützte Karte und Portinventar für lokale und verbundene Instanzen, mit Kontogruppen und getrennten Filtern für gestoppte/externe Container. Stack-/Containerdetails und TCP-Ports folgen der IP-/Hostname-Einstellung jeder Instanz. Geteilte Netzwerk-Namensräume behalten ihren Besitzer. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren. Linien zeigen keinen Verkehr; Host-Modus-Ports und Reverse-Proxy-Routen werden nicht abgeleitet.
+
 **2026-11-06 — Navigation** — Startseite steht auf Desktop und Mobilgeräten vor Service-Links. Klassisch/Kompakt wird nur noch unter Einstellungen → Erscheinungsbild gewählt; bestehende Einstellungen bleiben erhalten.
 
 **2026-11-05 — Kompakte Oberfläche** — Optionale Ansicht, inspiriert von ethanpil/dockge-mod: Dienste als Zeilen über Logs und Compose. Kompakt unter Einstellungen → Erscheinungsbild → Layout wählen. Klassisch bleibt Standard. Pro Konto in diesem Browser gespeichert.

@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Topología Docker :** Mapa e inventario de puertos de solo lectura para instancias locales y vinculadas, con grupos de la cuenta y filtros independientes de detenidos/externos. Acceda a stacks, contenedores y puertos TCP según la preferencia IP/hostname de cada instancia. Los espacios de red compartidos conservan su propietario. Solo administradores; actualice también las instancias vinculadas. Las líneas no indican tráfico; no se deducen puertos en modo host ni rutas de proxies inversos.
+
 **Interfaz compacta :** Vista opcional inspirada en ethanpil/dockge-mod: servicios en filas sobre Logs y Compose. Seleccione Compacta en Ajustes → Apariencia → Diseño. Clásica sigue siendo la opción predeterminada. Guardada por cuenta en este navegador.
 
 **Grupos personalizados de stacks :** Los grupos se guardan en la base de datos de esta instancia para su cuenta y están disponibles desde cualquier navegador. Pueden reunir stacks locales y vinculados sin cambiar permisos. Importe los grupos del navegador explícitamente sin sustituir los del servidor. Las modificaciones simultáneas se rechazan con una advertencia.
@@ -610,6 +612,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Integraciones opcionales Kula, Dozzle, PowerWatch y PowerWatch Hub, con la potencia de PowerWatch visible en las instancias vinculadas
 
 ### Recursos Docker
+- **Topología Docker** — `/topology` · TCP/UDP
 - Imágenes, volúmenes, redes y contenedores no gestionados, con búsqueda
 - Gestión de redes `bridge`, `macvlan` e `ipvlan`
 - Limpieza manual y automática unificada de imágenes, redes, volúmenes y caché de compilación, con vistas previas, exclusiones e historial
