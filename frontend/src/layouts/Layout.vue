@@ -160,6 +160,9 @@
                 <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted'" class="nav-item me-2">
                     <router-link to="/service-links" class="nav-link">{{ $t("serviceLinks.title") }}</router-link>
                 </li>
+                <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted'" class="nav-item me-2">
+                    <router-link to="/topology" class="nav-link">{{ $t('topology.title') }}</router-link>
+                </li>
 
                 <li v-if="$root.loggedIn" class="nav-item me-2">
                     <router-link to="/console" class="nav-link">
@@ -309,6 +312,7 @@
                     <font-awesome-icon icon="home" /> {{ $t("home") }}
                 </router-link>
                 <router-link v-if="$root.userAccess?.role !== 'restricted'" to="/service-links" class="mobile-drawer-link">{{ $t("serviceLinks.title") }}</router-link>
+                <router-link v-if="$root.userAccess?.role !== 'restricted'" to="/topology" class="mobile-drawer-link">{{ $t('topology.title') }}</router-link>
                 <router-link to="/console" class="mobile-drawer-link">
                     <font-awesome-icon icon="terminal" /> {{ $t("console") }}
                 </router-link>
