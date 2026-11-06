@@ -1,4 +1,6 @@
 import { DockgeServer } from "./dockge-server";
+import { resolvedStackUrls } from "./stack-url-environment";
+import { mergedStackConfiguration } from "./configuration-tools";
 import { capturePostUpdateSnapshot, resolvePostUpdateTargets, verifiedPostUpdateSnapshots, type PostUpdateSnapshot } from "./post-update-snapshot";
 import { StackFileHistory } from "./stack-file-history";
 import { networkRepairTargets } from "./compose-network-repair";
@@ -402,6 +404,7 @@ export class Stack {
             composeYAML: this.composeYAML,
             composeENV: this.composeENV,
             composeOverrideYAML: this.composeOverrideYAML,
+            stackUrls: await this.getResolvedUrls(),
             note: metadata.note,
             readme,
             readmeUnavailable,
@@ -411,6 +414,10 @@ export class Stack {
             portLinkAddressMode: await Settings.get("portLinkAddressMode") === "ip" ? "ip" : "hostname",
             portLinkIp: await Settings.get("portLinkIp") || "",
         };
+    }
+
+    async getResolvedUrls() {
+        return resolvedStackUrls(this.composeYAML, () => mergedStackConfiguration(this), this.getComposeConfigTexts().length > 1);
     }
 
     toSimpleJSON(endpoint : string) : object {

@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Variablen in Stack-Links :** Gespeicherte Links werden von Compose auf der Hosting-Instanz mit globalen/lokalen Variablen und Overrides aufgelöst. Nur geprüfte HTTP/HTTPS-Links werden zurückgegeben, nie die gesamte Umgebung. Verknüpfte Instanzen benötigen diese Version; Entwurfsvorschauen bleiben bis zum Speichern lokal.
+
 **Gezielte Compose-Bearbeitung :** Der visuelle Editor ändert betroffene YAML-Bereiche statt die gesamte Datei neu aufzubauen. Speichern ohne Änderungen erhält den Originaltext; inkonsistente Änderungen werden abgelehnt. Explizites Formatieren bleibt getrennt.
 
 **Restic-Sicherheitsabhängigkeit :** Das enthaltene Restic 0.19.1 wird für CVE-2026-78661 mit golang.org/x/net 0.62.0 statt 0.60.0 neu gebaut. Sicherungseinstellungen und Trivy-Prüfungen bleiben unverändert; eine Ausnutzbarkeit in Enhanced ist damit nicht nachgewiesen.
