@@ -8,7 +8,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../../data:/app/data
-      - ../../data/stacks:/opt/stacks
+      # Same absolute path on the Docker host and inside Enhanced: Compose resolves relative bind mounts here.
+      - /opt/stacks:/opt/stacks
       - ../../backup/dockge:/backup          # optionnel — volume dédié au backup local
       - ../../docker:/dockers-data           # optionnel — données des Dockers pour savuvegarde
     environment:

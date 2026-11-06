@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-06 — Konsistente Stack-Pfade** — Die Installationsbeispiele binden /opt/stacks unter demselben Host-/Containerpfad ein und erläutern relative Bind-Mounts. Vorhandene Konfigurationen und Daten werden nicht automatisch verschoben; vor Anpassungen erhalten.
+
 **2026-11-06 — Lebenszyklusdaten der Container** — Die Containerdetails unterscheiden Erstellung, letzten Start und Laufzeit seit diesem Start. Jedes Replikat hat eigene Daten aus Docker auf seiner Hostinstanz. Gestoppte Container zeigen keine weiterlaufende Betriebszeit; nicht verfügbare Daten bleiben leer. Auch verbundene Instanzen aktualisieren.
 
 **2026-11-06 — Optionaler Konsolenlink** — Einstellungen → Darstellung kann Konsole in der Desktop- und Mobilnavigation ausblenden. Standardmäßig deaktiviert, pro Konto in diesem Browser gespeichert. Diese Anzeigeeinstellung deaktiviert weder die Konsole noch ändert sie Berechtigungen.

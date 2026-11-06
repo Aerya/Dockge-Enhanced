@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Konsistente Stack-Pfade :** Die Installationsbeispiele binden /opt/stacks unter demselben Host-/Containerpfad ein und erläutern relative Bind-Mounts. Vorhandene Konfigurationen und Daten werden nicht automatisch verschoben; vor Anpassungen erhalten.
+
 **Lebenszyklusdaten der Container :** Die Containerdetails unterscheiden Erstellung, letzten Start und Laufzeit seit diesem Start. Jedes Replikat hat eigene Daten aus Docker auf seiner Hostinstanz. Gestoppte Container zeigen keine weiterlaufende Betriebszeit; nicht verfügbare Daten bleiben leer. Auch verbundene Instanzen aktualisieren.
 
 **Optionaler Konsolenlink :** Einstellungen → Darstellung kann Konsole in der Desktop- und Mobilnavigation ausblenden. Standardmäßig deaktiviert, pro Konto in diesem Browser gespeichert. Diese Anzeigeeinstellung deaktiviert weder die Konsole noch ändert sie Berechtigungen.
@@ -853,7 +855,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../../data:/app/data
-      - ../../opt/stacks:/opt/stacks
+      - /opt/stacks:/opt/stacks
       - ../../backup/dockge:/backup          # optional — dedicated local backup volume
       - ../../docker:/dockers-data           # optional — extra data to back up
     environment:
@@ -866,6 +868,8 @@ services:
 ```bash
 docker compose up -d
 ```
+
+> **Pfade des Stack-Verzeichnisses:** verwenden Sie denselben absoluten Pfad auf dem Docker-Host und in Enhanced und setzen Sie `DOCKGE_STACKS_DIR` darauf. Zum Beispiel `/srv/stacks:/srv/stacks` mit `DOCKGE_STACKS_DIR=/srv/stacks`. Compose löst `./data` relativ zum Stack-Verzeichnis auf; der Docker-Daemon öffnet diesen Pfad auf seinem eigenen Host. Unterschiedliche Pfade können daher das falsche Host-Verzeichnis verwenden oder erstellen. Vor Änderungen an bestehenden Installationen die bisherigen Stacks und Daten lokalisieren und erhalten: dieses Beispiel migriert sie nicht. Für Unraid und Windows/WSL2 gelten die oben verlinkten Anleitungen.
 
 Öffnen Sie **http://localhost:5001**, erstellen Sie Ihr Administrator-Konto und klicken Sie dann in der Navigationsleiste auf **Monitoring**.
 

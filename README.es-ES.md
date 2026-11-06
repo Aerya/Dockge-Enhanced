@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Rutas de stacks coherentes :** Los ejemplos de instalación montan /opt/stacks en la misma ruta del anfitrión y del contenedor y explican los montajes relativos. No se trasladan automáticamente las configuraciones ni los datos existentes; consérvelos antes de adaptar una instalación.
+
 **Fechas de los contenedores :** La ficha de un contenedor distingue su creación, último inicio y tiempo en ejecución desde ese inicio. Cada réplica tiene sus propias fechas, leídas de Docker en su instancia anfitriona. Los contenedores detenidos no muestran un tiempo creciente; las fechas no disponibles quedan sin indicar. Actualice también las instancias vinculadas.
 
 **Enlace Consola opcional :** Ajustes → Apariencia permite ocultar Consola en la navegación de escritorio y móvil. Desactivado por defecto y guardado por cuenta en este navegador. Esta preferencia visual no desactiva la consola ni cambia los permisos.
@@ -855,7 +857,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../../data:/app/data
-      - ../../opt/stacks:/opt/stacks
+      - /opt/stacks:/opt/stacks
       - ../../backup/dockge:/backup          # opcional — volumen local dedicado para copias de seguridad
       - ../../docker:/dockers-data           # opcional — datos adicionales para copiar de seguridad
     environment:
@@ -868,6 +870,8 @@ services:
 ```bash
 docker compose up -d
 ```
+
+> **Rutas del directorio de stacks:** use la misma ruta absoluta en el anfitrión Docker y dentro de Enhanced, y configure `DOCKGE_STACKS_DIR` con ella. Por ejemplo, `/srv/stacks:/srv/stacks` y `DOCKGE_STACKS_DIR=/srv/stacks`. Compose resuelve `./data` desde el directorio de la stack; el daemon Docker abre esa ruta en su propio anfitrión. Rutas diferentes pueden crear o utilizar un directorio incorrecto. En instalaciones existentes, localice y conserve sus stacks y datos antes de cambiar los montajes: este ejemplo no los migra. Para Unraid y Windows/WSL2, siga las guías anteriores.
 
 Abre **http://localhost:5001**, crea tu cuenta de administrador y luego haz clic en **Monitoreo** en la barra de navegación.
 
