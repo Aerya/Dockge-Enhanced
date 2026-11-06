@@ -22,6 +22,7 @@ const Security = () => import("./components/settings/Security.vue");
 const GlobalEnv = () => import("./components/settings/GlobalEnv.vue");
 const Diagnostics = () => import("./components/settings/Diagnostics.vue");
 const ServiceLinks = () => import("./pages/ServiceLinks.vue");
+const Topology = () => import("./pages/Topology.vue");
 const Integrations = () => import("./components/settings/Integrations.vue");
 const Automation = () => import("./components/settings/Automation.vue");
 import About from "./components/settings/About.vue";
@@ -100,6 +101,11 @@ const routes = [
                         path: "/service-links",
                         component: ServiceLinks,
                         meta: { title: "serviceLinks.title" },
+                    },
+                    {
+                        path: "/topology",
+                        component: Topology,
+                        meta: { title: "topology.title" },
                     },
                     {
                         path: "/watcher",

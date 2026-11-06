@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-06 — Cartographie Docker** — Carte et inventaire des ports en lecture seule pour les instances locales et liées, avec groupes du compte et filtres arrêtés/externes indépendants. Accédez aux stacks, conteneurs et ports TCP selon le réglage IP/hostname de chaque instance. Les espaces réseau partagés conservent leur propriétaire. Accès administrateur ; mettez aussi à jour les instances liées. Les traits montrent la configuration, pas le trafic. Les déclarations Traefik et PlugNPiN/NPM sont distinguées des routes vérifiées. Les ports host sont attribués uniquement si les processus sont visibles et lisibles ; sinon l’indisponibilité est explicite. Aucun privilège supplémentaire ni requête vers les proxies.
+
 **2026-11-06 — Navigation** — Accueil précède désormais Liens des services sur ordinateur et mobile. Le choix Classique/Compacte reste uniquement dans Paramètres → Apparence ; les préférences existantes sont conservées.
 
 **2026-11-05 — Interface compacte** — Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.

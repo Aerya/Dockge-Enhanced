@@ -72,6 +72,7 @@ declare module 'vue' {
     StackURLsInput: typeof import('./src/components/StackURLsInput.vue')['default']
     SystemStatsBar: typeof import('./src/components/SystemStatsBar.vue')['default']
     Terminal: typeof import('./src/components/Terminal.vue')['default']
+    TopologyInstance: typeof import('./src/components/TopologyInstance.vue')['default']
     TwoFADialog: typeof import('./src/components/TwoFADialog.vue')['default']
     Uptime: typeof import('./src/components/Uptime.vue')['default']
     Users: typeof import('./src/components/settings/Users.vue')['default']

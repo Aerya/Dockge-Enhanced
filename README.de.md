@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Docker-Topologie :** Schreibgeschützte Karte und Portinventar für lokale und verbundene Instanzen, mit Kontogruppen und getrennten Filtern für gestoppte/externe Container. Stack-/Containerdetails und TCP-Ports folgen der IP-/Hostname-Einstellung jeder Instanz. Geteilte Netzwerk-Namensräume behalten ihren Besitzer. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren. Linien zeigen Konfiguration, keinen Verkehr. Traefik- und PlugNPiN/NPM-Deklarationen werden von verifizierten Routen unterschieden. Host-Ports werden nur bei sichtbaren und lesbaren Containerprozessen zugeordnet; andernfalls wird dies angezeigt. Keine zusätzlichen Rechte oder Proxy-Anfragen.
+
 **Kompakte Oberfläche :** Optionale Ansicht, inspiriert von ethanpil/dockge-mod: Dienste als Zeilen über Logs und Compose. Kompakt unter Einstellungen → Erscheinungsbild → Layout wählen. Klassisch bleibt Standard. Pro Konto in diesem Browser gespeichert.
 
 **Eigene Stack-Gruppen :** Gruppen werden in der Datenbank dieser Instanz für Ihr Konto gespeichert und sind in jedem Browser verfügbar. Sie können lokale und verbundene Stacks enthalten, ohne Zugriffsrechte zu ändern. Vorhandene Browser-Gruppen lassen sich ausdrücklich importieren, ohne Server-Gruppen zu ersetzen. Gleichzeitige Änderungen werden mit einer Warnung abgelehnt.
@@ -608,6 +610,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Optionale Integrationen für Kula, Dozzle, PowerWatch und PowerWatch Hub, mit aktueller PowerWatch-Leistung auf verknüpften Instanzen
 
 ### Docker-Ressourcen
+- **Docker-Topologie** — `/topology` · TCP/UDP
 - Images, Volumes, Netzwerke und nicht verwaltete Container, mit Suche
 - Verwaltung von `bridge`-, `macvlan`- und `ipvlan`-Netzwerken
 - Einheitliche manuelle und automatische Bereinigung für Images, Netzwerke, Volumes und Build-Cache, mit Vorschau, Ausschlüssen und Verlauf
