@@ -7,7 +7,9 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
-**2026-11-05 — Compact layout** — Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout or the header. Classic remains the default. Saved per account in this browser.
+**2026-11-06 — Navigation** — Home now comes before Service Links on desktop and mobile. Choose Classic or Compact only in Settings → Appearance; existing preferences are preserved.
+
+**2026-11-05 — Compact layout** — Optional layout inspired by ethanpil/dockge-mod: service rows above Logs and Compose. Select Compact in Settings → Appearance → Layout. Classic remains the default. Saved per account in this browser.
 
 **2026-11-05 — Custom stack groups** — Groups are stored in this instance’s database for your account and available from any browser. Groups can include local and linked stacks without changing access permissions. Import existing browser groups explicitly without replacing server groups. Concurrent edits are rejected with a warning.
 

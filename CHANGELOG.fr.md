@@ -7,7 +7,9 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
-**2026-11-05 — Interface compacte** — Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation ou l’en-tête. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.
+**2026-11-06 — Navigation** — Accueil précède désormais Liens des services sur ordinateur et mobile. Le choix Classique/Compacte reste uniquement dans Paramètres → Apparence ; les préférences existantes sont conservées.
+
+**2026-11-05 — Interface compacte** — Présentation facultative inspirée de ethanpil/dockge-mod : services en lignes au-dessus de Logs et Compose. Choisissez Compacte dans Paramètres → Apparence → Présentation. Classique reste le choix par défaut. Préférence enregistrée par compte dans ce navigateur.
 
 **2026-11-05 — Groupes de stacks personnalisés** — Les groupes sont enregistrés en base sur cette instance pour votre compte et retrouvés depuis n’importe quel navigateur. Ils peuvent réunir des stacks locales et liées sans modifier les permissions. Importez explicitement les anciens groupes du navigateur sans remplacer ceux du serveur. Les modifications concurrentes sont refusées avec un avertissement.
 
