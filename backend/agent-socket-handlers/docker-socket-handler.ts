@@ -1,6 +1,5 @@
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import yaml from "yaml";
-import { composeServiceUrls } from "../../common/service-links";
 import { configurationDiagnostics, mergedStackConfiguration } from "../configuration-tools";
 import { withStackMutation } from "../stack-mutation";
 import { loadUserAccess } from "../user-access";
@@ -59,7 +58,11 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 let unavailable = 0;
                 for (const [ name, stack ] of await Stack.getStackList(server, true)) {
                     try {
-                        for (const url of composeServiceUrls(yaml.parse(stack.composeYAML))) {
+                        const resolved = await stack.getResolvedUrls();
+                        if (resolved.unavailable) {
+                            unavailable++;
+                        }
+                        for (const { url } of resolved.links) {
                             if (links.length < 2000) {
                                 links.push({ stack: name,
                                     url });

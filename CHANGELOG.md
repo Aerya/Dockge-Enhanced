@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-06 — Variables in stack links** — Saved stack links are resolved by Compose on the hosting instance, including global/local variables and overrides. Only validated HTTP/HTTPS links are returned, never the complete environment. Linked instances need this version; draft previews remain local until saved.
+
 **2026-11-06 — Compact layout alignment** — Service rows stay aligned with their headings on wide screens. The update mode and time fields share the same width, with space before the action buttons.
 
 **2026-11-06 — Docker topology** — Read-only map and port inventory for local and linked instances, with account groups and independent stopped/external filters. Open stack/container details and TCP ports using each instance’s IP/hostname preference. Shared network namespaces retain their owner. Administrator access only; update linked instances too. Lines show configuration, not traffic. Traefik and PlugNPiN/NPM declarations are shown separately from verified routes. Host sockets are attributed only when container processes are visible and readable; otherwise this is explicitly reported. No additional privileges or proxy requests.

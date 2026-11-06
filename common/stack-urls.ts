@@ -31,7 +31,7 @@ export function stackURLLinks(values: unknown): { url: string;
         }
         try {
             const parsed = new URL(item.url);
-            if (![ "http:", "https:" ].includes(parsed.protocol)) {
+            if (![ "http:", "https:" ].includes(parsed.protocol) || parsed.username || parsed.password || /\$\{[^}]*\}/.test(item.url)) {
                 return [];
             }
             return [{
