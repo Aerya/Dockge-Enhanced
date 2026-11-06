@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Restic-Sicherheitsabhängigkeit :** Das enthaltene Restic 0.19.1 wird für CVE-2026-78661 mit golang.org/x/net 0.62.0 statt 0.60.0 neu gebaut. Sicherungseinstellungen und Trivy-Prüfungen bleiben unverändert; eine Ausnutzbarkeit in Enhanced ist damit nicht nachgewiesen.
+
 **Ausrichtung der Kompaktansicht :** Service-Zeilen bleiben auf breiten Bildschirmen an den Überschriften ausgerichtet. Aktualisierungsmodus und Uhrzeit haben dieselbe Breite, mit Abstand zu den Aktionsschaltflächen.
 
 **Docker-Topologie :** Schreibgeschützte Karte und Portinventar für lokale und verbundene Instanzen, mit Kontogruppen und getrennten Filtern für gestoppte/externe Container. Stack-/Containerdetails und TCP-Ports folgen der IP-/Hostname-Einstellung jeder Instanz. Geteilte Netzwerk-Namensräume behalten ihren Besitzer. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren. Linien zeigen Konfiguration, keinen Verkehr. Traefik- und PlugNPiN/NPM-Deklarationen werden von verifizierten Routen unterschieden. Host-Ports werden nur bei sichtbaren und lesbaren Containerprozessen zugeordnet; andernfalls wird dies angezeigt. Keine zusätzlichen Rechte oder Proxy-Anfragen.
