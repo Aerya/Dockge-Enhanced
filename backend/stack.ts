@@ -2088,7 +2088,7 @@ export class Stack {
     }
 
     async joinContainerTerminal(socket: DockgeSocket, serviceName: string, shell: string = "sh", index = 0, separateShell = false) {
-        if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(serviceName) || !validContainerShell(shell)) {
+        if (!/^[a-zA-Z0-9_.-]+$/.test(serviceName) || !validContainerShell(shell)) {
             throw new Error("containerShell.invalid");
         }
         const base = getContainerExecTerminalName(socket.endpoint, this.name, serviceName, index);
@@ -2102,7 +2102,7 @@ export class Stack {
             }
             const resolved = await resolveContainerShell(shell, process.env.DOCKGE_DEFAULT_SHELL, async selected => {
                 try {
-                    const result = await childProcessAsync.spawn("docker", this.getComposeOptions("exec", "-T", serviceName, selected, "-c", "exit 0"), {
+                    const result = await childProcessAsync.spawn("docker", this.getComposeOptions("exec", "-T", "--", serviceName, selected, "-c", "exit 0"), {
                         cwd: this.path,
                         encoding: "utf8",
                         timeout: 3000,
@@ -2121,7 +2121,7 @@ export class Stack {
                         stderr: result.stderr };
                 }
             });
-            terminal = new InteractiveTerminal(this.server, terminalName, "docker", this.getComposeOptions("exec", serviceName, resolved.shell), this.path);
+            terminal = new InteractiveTerminal(this.server, terminalName, "docker", this.getComposeOptions("exec", "--", serviceName, resolved.shell), this.path);
             terminal.rows = TERMINAL_ROWS;
             terminal.join(socket);
             terminal.start();

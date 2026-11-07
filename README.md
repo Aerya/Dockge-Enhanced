@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Container service names :** The container terminal accepts valid Compose service names such as _app. Names are passed as arguments after --, never interpreted as Docker options.
+
 **Coordinated network restart :** The stack action Network restart previews and confirms the restart order for running containers sharing a Docker network namespace across stacks on the same instance. Stopped containers stay stopped; Compose files and images are unchanged. Healthchecks are awaited when present, otherwise only running state is checked, not VPN connectivity. This manual action interrupts service and does not change automatic updates. A failure stops further steps; refresh the preview before retrying. Administrator access only; update linked instances too.
 
 **Container shell selection :** Choose sh, bash, ash, zsh or fish in the container terminal. DOCKGE_DEFAULT_SHELL sets the hosting instance’s default (sh otherwise); a missing shell falls back once to sh. The shell must exist in the image. Switching opens a separate session without stopping the other shell. Administrator access only; update linked instances for the selector, while older agents retain their legacy terminal.
@@ -523,9 +525,9 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-instance choice of Hostname or IP address for container port links
 
 ### Stack management
-- Coordinated manual restart of network-namespace dependents across stacks, with preview, health checks and explicit confirmation.
+- Container terminal shell selector with a per-instance default and fallback to sh. Supports valid Compose service names.
 
-- Container terminal shell selector with a per-instance default and fallback to sh.
+- Coordinated manual restart of network-namespace dependents across stacks, with preview, health checks and explicit confirmation.
 - Custom stack groups with up to five levels, stored per account in this instance’s database and available from any browser.
 - Repair a recreated network on start (`dockge.start.repair-network`)
 - Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md)

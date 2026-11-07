@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Dienstnamen im Container-Terminal :** Das Terminal akzeptiert gültige Compose-Dienstnamen wie _app. Namen werden nach -- als Argumente übergeben, niemals als Docker-Optionen ausgewertet.
+
 **Koordinierter Netzwerk-Neustart :** Die Stack-Aktion Netzwerk-Neustart zeigt die Neustartreihenfolge laufender Container mit gemeinsamem Docker-Netzwerk-Namensraum über mehrere Stacks derselben Instanz und verlangt eine Bestätigung. Gestoppte Container bleiben gestoppt; Compose-Dateien und Images bleiben unverändert. Vorhandene Healthchecks werden abgewartet, sonst wird nur der Laufzustand geprüft, nicht die VPN-Verbindung. Die manuelle Aktion unterbricht den Dienst und ändert automatische Updates nicht. Nach einem Fehler werden weitere Schritte gestoppt; vor einem neuen Versuch die Vorschau aktualisieren. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren.
 
 **Shell-Auswahl für Container :** Wählen Sie sh, bash, ash, zsh oder fish im Container-Terminal. DOCKGE_DEFAULT_SHELL legt den Standard der hostenden Instanz fest (sonst sh); fehlt die Shell, wird einmal auf sh zurückgegriffen. Die Shell muss im Image vorhanden sein. Ein Wechsel öffnet eine eigene Sitzung und beendet die andere nicht. Nur für Administratoren; aktualisieren Sie verbundene Instanzen für die Auswahl, ältere Agenten behalten ihr bisheriges Terminal.
@@ -523,9 +525,9 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Wahl von Hostname oder IP-Adresse für Container-Port-Links pro Instanz
 
 ### Stack-Verwaltung
-- Koordinierter manueller Neustart von Netzwerkabhängigkeiten zwischen Stacks mit Vorschau, Healthchecks und Bestätigung.
+- Shell-Auswahl im Container-Terminal mit Instanzstandard und Rückfall auf sh. Gültige Compose-Dienstnamen werden unterstützt.
 
-- Shell-Auswahl im Container-Terminal mit Instanzstandard und Rückfall auf sh.
+- Koordinierter manueller Neustart von Netzwerkabhängigkeiten zwischen Stacks mit Vorschau, Healthchecks und Bestätigung.
 - Eigene Stack-Gruppen auf bis zu fünf Ebenen, pro Konto in der Datenbank dieser Instanz gespeichert und in jedem Browser verfügbar.
 - Neu erstelltes Netzwerk beim Start reparieren (`dockge.start.repair-network`)
 - Windows 11 mit Docker Desktop/WSL2: [Installation und Grenzen](docs/windows.de.md)

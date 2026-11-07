@@ -91,7 +91,13 @@ test("Stack opens real isolated PTYs with a missing-shell fallback and separate 
     writeFileSync(join(root, "docker"), "#!/bin/sh\nfor arg do\n case \"$arg\" in\n bash) echo \"exec: bash: executable file not found\" >&2; exit 127;;\n sh) shift; break;;\n esac\n shift\ndone\nexec /bin/sh \"$@\"\n", { mode: 0o700 });
     const oldPath = process.env.PATH;
     process.env.PATH = root + ":" + oldPath;
-    const stack = new Stack({ stacksDir: root } as DockgeServer, "demo", "services:\n  app:\n    image: busybox\n", "", true);
+    const stack = new Stack({ stacksDir: root } as DockgeServer, "demo", "services:\n  _app:\n    image: busybox\n", "", true);
+    const commands: string[][] = [];
+    const originalOptions = stack.getComposeOptions.bind(stack);
+    stack.getComposeOptions = (command, ...args) => {
+        commands.push([ command, ...args ]);
+        return originalOptions(command, ...args);
+    };
     const output: string[] = [];
     const socket = { id: "shell-fixture",
         endpoint: "linked",
@@ -103,16 +109,17 @@ test("Stack opens real isolated PTYs with a missing-shell fallback and separate 
         } } as unknown as DockgeSocket;
     const terminals: Terminal[] = [];
     try {
-        const first = await stack.joinContainerTerminal(socket, "app", "bash", 0, true);
+        const first = await stack.joinContainerTerminal(socket, "_app", "bash", 0, true);
         assert.equal(first.shell, "sh");
         assert.equal(first.fallback, true);
         terminals.push(Terminal.getTerminal(first.terminalName)!);
-        const second = await stack.joinContainerTerminal(socket, "app", "sh", 0, true);
+        const second = await stack.joinContainerTerminal(socket, "_app", "sh", 0, true);
         terminals.push(Terminal.getTerminal(second.terminalName)!);
         assert.notEqual(first.terminalName, second.terminalName);
         assert.ok(terminals.every(terminal => terminal.ptyProcess));
-        const reused = await stack.joinContainerTerminal(socket, "app", "bash", 0, true);
+        const reused = await stack.joinContainerTerminal(socket, "_app", "bash", 0, true);
         assert.equal(reused.terminalName, first.terminalName);
+        assert.ok(commands.every(args => args.includes("--") && args[args.indexOf("--") + 1] === "_app"));
         for (const terminal of terminals) {
             const exit = new Promise<number>(resolve => terminal.onExit(resolve));
             terminal.ptyProcess!.write("printf 'SHELL_OK\\n'; exit\r");

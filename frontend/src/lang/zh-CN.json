@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.containerShellNames": "容器终端接受 _app 等有效的 Compose 服务名。服务名作为 -- 后的参数传递，不会被解释为 Docker 选项。",
     "releaseNews.item.networkRestart": "协调网络依赖重启 : 堆栈的网络依赖重启操作会预览并要求确认同一实例上跨堆栈共享 Docker 网络命名空间的运行中容器的重启顺序。已停止的容器保持停止；Compose 和镜像不变。有健康检查时会等待其通过，否则只检查运行状态，不验证 VPN 连接。此手动操作会中断服务，不改变自动更新。失败后停止剩余步骤；重试前请刷新预览。仅限管理员，关联实例也需更新。",
     "networkRestart.title": "网络依赖重启",
     "networkRestart.explanation": "先重启此堆栈中正在运行的容器，再重启共享其 Docker 网络命名空间的容器，包括此实例上的其他堆栈。按下列顺序执行。",

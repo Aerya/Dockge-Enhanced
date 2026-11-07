@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.containerShellNames": "El terminal acepta nombres de servicio Compose válidos, como _app. Se pasan como argumentos después de --, nunca como opciones Docker.",
     "releaseNews.item.networkRestart": "Reinicio de red coordinado : La acción de stack Reinicio de red muestra y pide confirmar el orden de reinicio de los contenedores activos que comparten un espacio de red Docker entre stacks de la misma instancia. Los detenidos siguen detenidos; Compose e imágenes no cambian. Se esperan los healthchecks existentes; sin ellos solo se comprueba el arranque, no la conexión VPN. Esta acción manual interrumpe el servicio y no modifica las actualizaciones automáticas. Un fallo detiene los pasos siguientes; actualice la vista previa antes de reintentar. Solo administradores; actualice también las instancias vinculadas.",
     "networkRestart.title": "Reinicio de red",
     "networkRestart.explanation": "Reinicia los contenedores activos de esta stack y después los que comparten su espacio de red Docker, incluso en otras stacks de esta instancia. Se respeta el orden indicado.",
