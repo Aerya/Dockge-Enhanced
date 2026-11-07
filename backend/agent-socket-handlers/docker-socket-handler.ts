@@ -1,5 +1,7 @@
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { registerContainerFiles } from "./container-files-socket-handler";
+import { deploymentStore } from "../deployment-progress";
+import { registerCatalog } from "./catalog-socket-handler";
 import { previewNetworkRestart, restartNetworkDependents } from "../network-restart-manager";
 import yaml from "yaml";
 import { configurationDiagnostics, mergedStackConfiguration } from "../configuration-tools";
@@ -49,6 +51,7 @@ export function instanceSystemStatsResponse(
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         registerContainerFiles(server, socket, agentSocket);
+        registerCatalog(socket, agentSocket);
         // Do not call super.create()
         agentSocket.on("serviceLinks:stacks", async callback => {
             try {
@@ -373,6 +376,41 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("deploymentStatus", async (name: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if ((await loadUserAccess(socket.userID)).role !== "admin" || typeof name !== "string") {
+                    throw new ValidationError("Permission denied");
+                }
+                callbackResult({ ok: true,
+                    progress: await deploymentStore(server.config.dataDir).get(name) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+        agentSocket.on("deploymentRetry", async (name: unknown, id: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if ((await loadUserAccess(socket.userID)).role !== "admin" || typeof name !== "string") {
+                    throw new ValidationError("Permission denied");
+                }
+                const store = deploymentStore(server.config.dataDir);
+                const previous = await store.get(name);
+                if (!previous?.saved || previous.id !== id || ![ "failed", "interrupted" ].includes(previous.state)) {
+                    throw new ValidationError("deployment.changed");
+                }
+                await store.run(name, async (phase, output) => {
+                    const stack = await Stack.getStack(server, name);
+                    await stack.deploy(socket, { phase,
+                        output });
+                }, true, previous.id);
+                await this.auditStack(socket, "stack.deploy-retry", name);
+                server.sendStackList();
+                callbackResult({ ok: true }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
         agentSocket.on("deployStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, composeOverrideYAML : unknown, callback) => {
             // Compat : ancien client sans override → le dernier arg est le callback
             if (typeof composeOverrideYAML === "function") {
@@ -381,9 +419,16 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
             try {
                 checkLogin(socket);
-                const stack = await this.saveStack(server, name, composeYAML, composeENV, isAdd, composeOverrideYAML);
-                BackupManager.getInstance().triggerBackupOnSave(typeof name === "string" ? name : "unknown");
-                await stack.deploy(socket);
+                if ((await loadUserAccess(socket.userID)).role !== "admin" || typeof name !== "string") {
+                    throw new ValidationError("Permission denied");
+                }
+                const stack = await deploymentStore(server.config.dataDir).run(name, async (phase, output) => {
+                    const saved = await this.saveStack(server, name, composeYAML, composeENV, isAdd, composeOverrideYAML);
+                    BackupManager.getInstance().triggerBackupOnSave(name);
+                    await saved.deploy(socket, { phase,
+                        output });
+                    return saved;
+                });
                 await this.auditStack(socket, "stack.deploy", String(name));
                 server.sendStackList();
                 callbackResult({

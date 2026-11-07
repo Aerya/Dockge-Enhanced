@@ -32,6 +32,7 @@ declare module 'vue' {
     Container: typeof import('./src/components/Container.vue')['default']
     ContainerFiles: typeof import('./src/components/ContainerFiles.vue')['default']
     ContainerStatsBadge: typeof import('./src/components/ContainerStatsBadge.vue')['default']
+    DeploymentProgress: typeof import('./src/components/DeploymentProgress.vue')['default']
     Diagnostics: typeof import('./src/components/settings/Diagnostics.vue')['default']
     DockerStat: typeof import('./src/components/DockerStat.vue')['default']
     EnvForm: typeof import('./src/components/EnvForm.vue')['default']

@@ -65,6 +65,12 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 **只读容器文件浏览器 :** 管理员可浏览、预览和下载运行中容器或副本的文件，也支持更新到此版本的关联实例。保留容器配置的用户权限，不提升特权；每次请求均检查容器归属。卷以外的文件会在重建时丢失，也可能包含凭据。限制为 500 条记录、每个文件 1 MiB；需要 sh、timeout、readlink、stat、dd。已停止容器或极简镜像请使用现有卷浏览器。不提供写入或删除。
 
+**部署进度 :** 部署显示实际阶段：保存、前提检查、Docker Compose 和元数据。Enhanced 重启后保留最后状态；未完成操作标为“已中断”，不会误报成功。管理员检查容器后可明确重试当前保存的 Compose。控制台输出仅保留在内存中，可能包含凭据。关联实例需更新到此版本。Compose 成功不保证应用健康。
+
+**应用目录（测试版） :** 按分类、图标和仓库浏览应用，并访问其官方网站。选择来源后导入可编辑的 Compose/.env 草稿，不会自动部署。提供 Lissy93、Portainer、Pi-Hosted、LinuxServer、Umbrel、Runtipi、RoqueOS 和 Yundera；TrueNAS 仅供浏览。平台专用模板需要手动适配。仅限管理员：部署前检查端口、挂载、权限、凭据和缺失的附加文件。
+
+**文件管理器中的实例名称 :** 实例选择器使用已配置的名称，与首页保持一致。未命名的关联实例仍显示地址。
+
 **容器终端服务名 :** 容器终端接受 _app 等有效的 Compose 服务名。服务名作为 -- 后的参数传递，不会被解释为 Docker 选项。
 
 **协调网络依赖重启 :** 堆栈的网络依赖重启操作会预览并要求确认同一实例上跨堆栈共享 Docker 网络命名空间的运行中容器的重启顺序。已停止的容器保持停止；Compose 和镜像不变。有健康检查时会等待其通过，否则只检查运行状态，不验证 VPN 连接。此手动操作会中断服务，不改变自动更新。失败后停止剩余步骤；重试前请刷新预览。仅限管理员，关联实例也需更新。
@@ -528,6 +534,10 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 每个实例可选择端口链接使用主机名还是 IP 地址
 
 ### Stack 管理
+
+- 部署进度：实际阶段、有大小限制的控制台和明确重试。
+
+- 应用目录（测试版）：将社区模板导入可编辑草稿，显示来源和安全提示。 [应用目录（测试版）](docs/application-catalog.zh-CN.md).
 - 容器终端 Shell 选择器，支持实例默认值及回退到 sh。 支持有效的 Compose 服务名。
 
 - 跨堆栈手动协调重启网络依赖容器，支持预览、健康检查及明确确认。
@@ -1112,7 +1122,8 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — 为可选的服务级 CPU/RAM 限制提供灵感，适配时保留受限账户权限
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — 默认 Compose 文件名.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — 服务不中断更新.
-- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — 容器文件浏览器的灵感来源。
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — 应用目录、部署进度和容器文件浏览器的灵感来源。
+- [**Lissy93/portainer-templates**](https://github.com/Lissy93/portainer-templates) — 应用目录（测试版）.
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — 文件历史、合并 Compose、`.env` 表单和诊断功能的灵感来源。 紧凑界面.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）

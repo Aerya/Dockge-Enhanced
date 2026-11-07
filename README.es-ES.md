@@ -66,6 +66,12 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Explorador de contenedores de solo lectura :** Los administradores pueden explorar, previsualizar y descargar archivos de un contenedor o réplica activo, también en instancias vinculadas con esta versión. Se conserva el usuario del contenedor sin privilegios adicionales; su pertenencia al stack se verifica en cada solicitud. Los archivos fuera de volúmenes desaparecen al recrear y pueden contener secretos. Límites: 500 entradas, 1 MiB por archivo; requiere sh, timeout, readlink, stat y dd. Para contenedores detenidos o imágenes mínimas, use el explorador de volúmenes existente. Sin escritura ni eliminación.
 
+**Progreso de los despliegues :** Los despliegues muestran etapas reales: guardado, requisitos, Docker Compose y metadatos. El último estado persiste tras reiniciar Enhanced; una operación incompleta queda « interrumpida », nunca como falso éxito. Los administradores pueden reintentar explícitamente el Compose guardado tras revisar los contenedores. La consola solo permanece en memoria y puede contener secretos. Las instancias vinculadas necesitan esta versión. El éxito de Compose no garantiza la salud de la aplicación.
+
+**Catálogo de aplicaciones (BETA) :** Explore aplicaciones por categoría, logotipo y repositorio, con enlaces a sus sitios web. Elija una fuente e importe un borrador Compose/.env editable; sin despliegue automático. Se ofrecen Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS y Yundera; TrueNAS es solo de consulta. Las plantillas específicas de una plataforma requieren adaptación. Solo administradores: revise puertos, montajes, permisos, secretos y archivos adicionales ausentes antes de desplegar.
+
+**Nombres de instancias en Archivos :** El selector utiliza los nombres configurados, como en la página de inicio. Las instancias vinculadas sin nombre siguen mostrando su dirección.
+
 **Nombres de servicios del terminal :** El terminal acepta nombres de servicio Compose válidos, como _app. Se pasan como argumentos después de --, nunca como opciones Docker.
 
 **Reinicio de red coordinado :** La acción de stack Reinicio de red muestra y pide confirmar el orden de reinicio de los contenedores activos que comparten un espacio de red Docker entre stacks de la misma instancia. Los detenidos siguen detenidos; Compose e imágenes no cambian. Se esperan los healthchecks existentes; sin ellos solo se comprueba el arranque, no la conexión VPN. Esta acción manual interrumpe el servicio y no modifica las actualizaciones automáticas. Un fallo detiene los pasos siguientes; actualice la vista previa antes de reintentar. Solo administradores; actualice también las instancias vinculadas.
@@ -529,6 +535,10 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Elección por instancia de nombre de host o dirección IP para los enlaces de puertos de los contenedores
 
 ### Gestión de stacks
+
+- Progreso de despliegues con etapas reales, consola limitada y reintento explícito.
+
+- Catálogo de aplicaciones (BETA): plantillas comunitarias importadas como borradores editables, con procedencia y advertencias. [Catálogo de aplicaciones (BETA)](docs/application-catalog.es.md).
 - Selector de shell del contenedor, valor predeterminado por instancia y alternativa sh. Admite nombres de servicio Compose válidos.
 
 - Reinicio manual coordinado de dependientes de red entre stacks, con vista previa, healthchecks y confirmación.
@@ -1110,7 +1120,8 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiración para límites opcionales de CPU/RAM por servicio, sin modificar los permisos restringidos
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Nombre predeterminado del archivo Compose.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Actualizaciones sin interrupción del servicio.
-- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — inspiración para el explorador de archivos de contenedores.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — inspiración para el catálogo de aplicaciones, el seguimiento de despliegues y el explorador de contenedores.
+- [**Lissy93/portainer-templates**](https://github.com/Lissy93/portainer-templates) — Catálogo de aplicaciones (BETA).
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiración para el historial, Compose combinado, formulario `.env` y diagnóstico. Interfaz compacta.
 - [**Kula**](https://github.com/c0m4r/kula) por c0m4r — monitor de sistema ligero (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — inspiración para el gestor de archivos del host restringido y la vista por contenedor real adaptados a Enhanced (licencia MIT)

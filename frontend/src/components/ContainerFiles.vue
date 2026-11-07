@@ -85,7 +85,7 @@
                 <table class="table table-sm">
                     <thead>
                         <tr>
-                            <th>{{ $t("name") }}</th>
+                            <th>{{ $t("containerFiles.name") }}</th>
                             <th>{{ $t("containerFiles.type") }}</th>
                             <th>{{ $t("containerFiles.size") }}</th>
                         </tr>

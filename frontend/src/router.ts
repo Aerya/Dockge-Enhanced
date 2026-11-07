@@ -10,6 +10,7 @@ import ContainerTerminal from "./pages/ContainerTerminal.vue";
 const ContainerDetails = () => import("./pages/ContainerDetails.vue");
 const ExternalStacks = () => import("./pages/ExternalStacks.vue");
 const Files = () => import("./pages/Files.vue");
+const AppCatalog = () => import("./pages/AppCatalog.vue");
 import WatcherSettings from "./components/WatcherSettings.vue";
 import { i18n } from "./i18n";
 
@@ -101,6 +102,11 @@ const routes = [
                         path: "/service-links",
                         component: ServiceLinks,
                         meta: { title: "serviceLinks.title" },
+                    },
+                    {
+                        path: "/apps",
+                        component: AppCatalog,
+                        meta: { title: "appCatalog.title" },
                     },
                     {
                         path: "/topology",
