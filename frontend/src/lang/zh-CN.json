@@ -1,4 +1,8 @@
 {
+    "releaseNews.item.sharedEnvironment": "全局 .env 设置解释了受管理堆栈现有的继承顺序：先 global.env，再堆栈的 .env，包括空值覆盖。使用宿主实例的文件；外部堆栈保留其已声明的文件。保存不会重新部署容器。Compose 必须引用变量；服务专用密钥应保留在本地文件中。",
+    "globalEnv.inheritance": "公共变量从堆栈目录中的 global.env 读取。各堆栈的 .env 优先，即使其值明确为空。Enhanced 进程环境中的变量优先于这两个文件。",
+    "globalEnv.scope": "仅适用于此实例管理的堆栈。关联实例使用自己的 global.env；外部堆栈保留已声明的环境文件。不会自动搜索父目录中的 .env。",
+    "globalEnv.apply": "保存不会重启容器。在 Compose 中引用变量才能使用它，然后检查并重新部署受影响的堆栈。请勿将服务专用密钥放入公共文件。",
     "releaseNews.item.compactAlignmentNovember": "紧凑视图改进了列、计划时间和操作按钮的对齐。首页位于服务链接之前；经典/紧凑布局仍在设置 → 外观中选择。",
     "releaseNews.item.topologyNovember": "Docker 拓扑汇总本地及关联实例的网络、堆栈和端口，支持分组及已停止/外部容器筛选。仅管理员可用；请同时更新关联实例。它展示配置，不表示实际流量或已验证的代理路由。",
     "releaseNews.item.composeEditingNovember": "Compose 可视化编辑器会保留未修改部分的注释和格式。",

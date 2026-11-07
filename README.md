@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Shared environment variables :** Settings → Global .env explains the inheritance already used by managed stacks: global.env, then the stack’s .env, including empty overrides. The hosting instance’s files are used; external stacks keep their declared files. Saving does not redeploy containers. Compose must reference the variables; service-specific secrets should stay local.
+
 **Consistent stack paths :** The installation examples now mount /opt/stacks at the same host/container path and explain relative bind mounts. Existing configurations and data are not moved automatically; preserve them before adjusting an installation.
 
 **Container lifecycle dates :** Container details distinguish creation, last start and uptime since that start. Each replica has its own dates, read from Docker on its hosting instance. Stopped containers do not show an increasing uptime; unavailable dates remain unspecified. Update linked instances too.
@@ -536,6 +538,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-service option to ignore an optional service in the overall stack status
 
 ### Compose editing
+
+- Shared global.env with per-stack .env overrides; explicit precedence and instance scope in Settings.
 
 - **Configuration tools** — Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Guide](docs/configuration-tools.md).
 
