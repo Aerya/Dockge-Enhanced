@@ -1025,14 +1025,17 @@ export class Stack {
     }
 
     @stackMutation
-    async deploy(socket : DockgeSocket) : Promise<number> {
+    async deploy(socket : DockgeSocket, progress?: { phase: (phase: "prerequisites" | "compose" | "metadata") => Promise<void>; output: (chunk: string) => void }) : Promise<number> {
+        await progress?.phase("prerequisites");
         await this.assertStartGuard();
         await this.repairStartNetworks();
+        await progress?.phase("compose");
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         const outputChunks : string[] = [];
         let outputLength = 0;
         const maxOutputLength = 16_384;
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--remove-orphans"), this.path, (data) => {
+            progress?.output(data);
             outputChunks.push(data);
             outputLength += data.length;
             while (outputLength > maxOutputLength && outputChunks.length > 1) {
@@ -1046,6 +1049,7 @@ export class Stack {
                 .trim();
             throw new Error(output || "Docker Compose failed to deploy the stack.");
         }
+        await progress?.phase("metadata");
         const now = new Date().toISOString();
         await this.writeMeta({ lastUpdated: now, lastStartedAt: now });
         return exitCode;
