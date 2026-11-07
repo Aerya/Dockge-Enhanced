@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Application catalog (BETA) :** Browse applications by category, logo and repository, with links to their websites. Choose a source and import an editable Compose/.env draft; nothing is deployed automatically. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS and Yundera are available; TrueNAS is browse-only. Platform templates require adaptation. Administrator only: review ports, mounts, permissions, secrets and missing companion files before deployment.
+
 **File manager instance names :** The instance selector uses the configured names, as on the home page. Addresses remain the fallback for unnamed linked instances.
 
 **Container service names :** The container terminal accepts valid Compose service names such as _app. Names are passed as arguments after --, never interpreted as Docker options.
@@ -527,6 +529,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-instance choice of Hostname or IP address for container port links
 
 ### Stack management
+
+- Application catalog (BETA): community templates imported into editable drafts, with provenance and safety warnings. [Application catalog (BETA)](docs/application-catalog.md).
 - Container terminal shell selector with a per-instance default and fallback to sh. Supports valid Compose service names.
 
 - Coordinated manual restart of network-namespace dependents across stacks, with preview, health checks and explicit confirmation.
@@ -1106,6 +1110,8 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration for optional per-service CPU/RAM limits, adapted without changing restricted-account permissions
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Default Compose filename.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates without service interruption.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — inspiration for the application catalog.
+- [**Lissy93/portainer-templates**](https://github.com/Lissy93/portainer-templates) — Application catalog (BETA).
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiration for file history, merged Compose, the `.env` form and diagnostics. Compact layout.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — inspiration for the restricted host file manager and real-container view adapted for Enhanced (MIT licence)

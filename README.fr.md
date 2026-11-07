@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Catalogue d’applications (BÊTA) :** Parcourez les applications par catégorie, logo et dépôt, avec un lien vers leur site. Choisissez une source et importez un brouillon Compose/.env éditable ; aucun déploiement automatique. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS et Yundera sont proposés ; TrueNAS reste consultable uniquement. Les modèles spécifiques à une plateforme nécessitent une adaptation. Réservé aux administrateurs : vérifiez ports, montages, permissions, secrets et fichiers complémentaires manquants avant de déployer.
+
 **Noms des instances dans Fichiers :** Le sélecteur reprend les noms configurés, comme sur l’accueil. Les adresses restent affichées en secours pour les instances liées sans nom.
 
 **Noms des services du terminal :** Le terminal accepte les noms de services Compose valides, comme _app. Ils sont transmis comme arguments après --, jamais interprétés comme des options Docker.
@@ -528,6 +530,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Choix par instance du nom d’hôte ou de l’adresse IP pour les liens de ports des conteneurs
 
 ### Gestion des stacks
+
+- Catalogue d’applications (BÊTA) : modèles communautaires importés dans des brouillons éditables, avec provenance et avertissements. [Catalogue d’applications (BÊTA)](docs/application-catalog.fr.md).
 - Sélecteur de shell du conteneur, choix par défaut par instance et repli sur sh. Noms de services Compose valides conservés.
 
 - Redémarrage manuel coordonné des dépendants réseau entre stacks, avec aperçu, healthchecks et confirmation explicite.
@@ -1107,6 +1111,8 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration pour les limites CPU/RAM facultatives par service, adaptées sans modifier les permissions des comptes limités
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Nom du fichier Compose par défaut.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Mises à jour sans interruption de service.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — inspiration du catalogue d’applications.
+- [**Lissy93/portainer-templates**](https://github.com/Lissy93/portainer-templates) — Catalogue d’applications (BÊTA).
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiration pour l’historique des fichiers, le Compose fusionné, le formulaire `.env` et la page de diagnostic. Interface compacte.
 - [**Kula**](https://github.com/c0m4r/kula) par c0m4r — monitoring système léger (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) par Lorwell — inspiration pour le gestionnaire de fichiers hôte restreint et la vue par conteneur réel adaptés à Enhanced (licence MIT)

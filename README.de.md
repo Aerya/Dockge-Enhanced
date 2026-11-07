@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Anwendungskatalog (BETA) :** Anwendungen nach Kategorie, Logo und Repository mit Links zu ihren Websites durchsuchen. Quelle wählen und einen editierbaren Compose/.env-Entwurf importieren; keine automatische Bereitstellung. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS und Yundera sind verfügbar; TrueNAS ist nur einsehbar. Plattformspezifische Vorlagen müssen angepasst werden. Nur Administratoren: Ports, Mounts, Berechtigungen, Geheimnisse und fehlende Zusatzdateien vor der Bereitstellung prüfen.
+
 **Instanznamen im Dateimanager :** Die Instanzauswahl verwendet die konfigurierten Namen wie auf der Startseite. Für unbenannte verknüpfte Instanzen wird weiterhin die Adresse angezeigt.
 
 **Dienstnamen im Container-Terminal :** Das Terminal akzeptiert gültige Compose-Dienstnamen wie _app. Namen werden nach -- als Argumente übergeben, niemals als Docker-Optionen ausgewertet.
@@ -527,6 +529,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Wahl von Hostname oder IP-Adresse für Container-Port-Links pro Instanz
 
 ### Stack-Verwaltung
+
+- Anwendungskatalog (BETA): Community-Vorlagen als editierbare Entwürfe mit Herkunft und Sicherheitshinweisen. [Anwendungskatalog (BETA)](docs/application-catalog.de.md).
 - Shell-Auswahl im Container-Terminal mit Instanzstandard und Rückfall auf sh. Gültige Compose-Dienstnamen werden unterstützt.
 
 - Koordinierter manueller Neustart von Netzwerkabhängigkeiten zwischen Stacks mit Vorschau, Healthchecks und Bestätigung.
@@ -1106,6 +1110,8 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — Inspiration für optionale CPU-/RAM-Limits pro Dienst, ohne Änderungen an eingeschränkten Kontorechten
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Standardname der Compose-Datei.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates ohne Dienstunterbrechung.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — Inspiration für den Anwendungskatalog.
+- [**Lissy93/portainer-templates**](https://github.com/Lissy93/portainer-templates) — Anwendungskatalog (BETA).
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — Inspiration für Dateiverlauf, zusammengeführtes Compose, `.env`-Formular und Diagnose. Kompakte Oberfläche.
 - [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) von Lorwell – Inspiration für den eingeschränkten Host-Dateimanager und die Ansicht echter Container, angepasst für Enhanced (MIT-Lizenz)

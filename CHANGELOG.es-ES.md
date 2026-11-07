@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-07 — Catálogo de aplicaciones (BETA)** — Explore aplicaciones por categoría, logotipo y repositorio, con enlaces a sus sitios web. Elija una fuente e importe un borrador Compose/.env editable; sin despliegue automático. Se ofrecen Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS y Yundera; TrueNAS es solo de consulta. Las plantillas específicas de una plataforma requieren adaptación. Solo administradores: revise puertos, montajes, permisos, secretos y archivos adicionales ausentes antes de desplegar.
+
 **2026-11-07 — Nombres de instancias en Archivos** — El selector utiliza los nombres configurados, como en la página de inicio. Las instancias vinculadas sin nombre siguen mostrando su dirección.
 
 **2026-11-07 — Nombres de servicios del terminal** — El terminal acepta nombres de servicio Compose válidos, como _app. Se pasan como argumentos después de --, nunca como opciones Docker.

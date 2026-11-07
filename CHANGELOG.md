@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-07 — Application catalog (BETA)** — Browse applications by category, logo and repository, with links to their websites. Choose a source and import an editable Compose/.env draft; nothing is deployed automatically. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS and Yundera are available; TrueNAS is browse-only. Platform templates require adaptation. Administrator only: review ports, mounts, permissions, secrets and missing companion files before deployment.
+
 **2026-11-07 — File manager instance names** — The instance selector uses the configured names, as on the home page. Addresses remain the fallback for unnamed linked instances.
 
 **2026-11-07 — Container service names** — The container terminal accepts valid Compose service names such as _app. Names are passed as arguments after --, never interpreted as Docker options.
