@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.containerShellNames": "容器终端接受 _app 等有效的 Compose 服务名。服务名作为 -- 后的参数传递，不会被解释为 Docker 选项。",
     "releaseNews.item.containerShell": "容器 Shell 选择 : 在容器终端中选择 sh、bash、ash、zsh 或 fish。DOCKGE_DEFAULT_SHELL 设置托管实例的默认值（未设置时为 sh）；所选 Shell 不存在时仅回退到 sh 一次。Shell 必须已安装在镜像中。切换会打开独立会话，不会停止另一个 Shell。仅限管理员；关联实例需更新才能使用选择器，旧代理仍使用原有终端。",
     "containerShell.choose": "Shell",
     "containerShell.default": "实例默认值",

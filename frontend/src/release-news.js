@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-07-container-shell-names",
+        items: [ "releaseNews.item.containerShellNames" ],
+    },
+    {
         id: "2026-11-07-container-shell",
         items: [ "releaseNews.item.containerShell" ],
     },

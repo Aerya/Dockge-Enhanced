@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.containerShellNames": "The container terminal accepts valid Compose service names such as _app. Names are passed as arguments after --, never interpreted as Docker options.",
     "releaseNews.item.containerShell": "Container shell selection : Choose sh, bash, ash, zsh or fish in the container terminal. DOCKGE_DEFAULT_SHELL sets the hosting instance’s default (sh otherwise); a missing shell falls back once to sh. The shell must exist in the image. Switching opens a separate session without stopping the other shell. Administrator access only; update linked instances for the selector, while older agents retain their legacy terminal.",
     "containerShell.choose": "Shell",
     "containerShell.default": "Instance default",

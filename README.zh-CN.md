@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**容器终端服务名 :** 容器终端接受 _app 等有效的 Compose 服务名。服务名作为 -- 后的参数传递，不会被解释为 Docker 选项。
+
 **容器 Shell 选择 :** 在容器终端中选择 sh、bash、ash、zsh 或 fish。DOCKGE_DEFAULT_SHELL 设置托管实例的默认值（未设置时为 sh）；所选 Shell 不存在时仅回退到 sh 一次。Shell 必须已安装在镜像中。切换会打开独立会话，不会停止另一个 Shell。仅限管理员；关联实例需更新才能使用选择器，旧代理仍使用原有终端。
 
 **共享环境变量 :** 全局 .env 设置解释了受管理堆栈现有的继承顺序：先 global.env，再堆栈的 .env，包括空值覆盖。使用宿主实例的文件；外部堆栈保留其已声明的文件。保存不会重新部署容器。Compose 必须引用变量；服务专用密钥应保留在本地文件中。
@@ -522,7 +524,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 每个实例可选择端口链接使用主机名还是 IP 地址
 
 ### Stack 管理
-- 容器终端 Shell 选择器，支持实例默认值及回退到 sh。
+- 容器终端 Shell 选择器，支持实例默认值及回退到 sh。 支持有效的 Compose 服务名。
 - 最多五级的自定义堆栈分组，按账户存储于此实例的数据库中，可从任意浏览器访问。
 - 启动时修复重新创建的网络 (`dockge.start.repair-network`)
 - Windows 11 与 Docker Desktop/WSL2：[安装和限制](docs/windows.zh-CN.md)

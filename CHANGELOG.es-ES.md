@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-07 — Nombres de servicios del terminal** — El terminal acepta nombres de servicio Compose válidos, como _app. Se pasan como argumentos después de --, nunca como opciones Docker.
+
 **2026-11-07 — Selección de shell del contenedor** — Elija sh, bash, ash, zsh o fish en el terminal del contenedor. DOCKGE_DEFAULT_SHELL define el valor predeterminado de la instancia que aloja la stack (sh en su defecto); si falta la shell, se intenta sh una sola vez. La shell debe existir en la imagen. Cambiarla abre una sesión distinta sin detener la anterior. Solo administradores; actualice las instancias vinculadas para el selector, los agentes antiguos conservan su terminal habitual.
 
 **2026-11-07 — Variables de entorno compartidas** — La configuración de .env global explica la herencia ya utilizada por las stacks gestionadas: global.env y después el .env de la stack, incluidos valores vacíos. Se usan los archivos de la instancia anfitriona; las stacks externas conservan sus archivos declarados. Guardar no redespliega contenedores. Compose debe referenciar las variables; los secretos de cada servicio deben seguir siendo locales.

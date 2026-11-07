@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Container service names :** The container terminal accepts valid Compose service names such as _app. Names are passed as arguments after --, never interpreted as Docker options.
+
 **Container shell selection :** Choose sh, bash, ash, zsh or fish in the container terminal. DOCKGE_DEFAULT_SHELL sets the hosting instance’s default (sh otherwise); a missing shell falls back once to sh. The shell must exist in the image. Switching opens a separate session without stopping the other shell. Administrator access only; update linked instances for the selector, while older agents retain their legacy terminal.
 
 **Shared environment variables :** Settings → Global .env explains the inheritance already used by managed stacks: global.env, then the stack’s .env, including empty overrides. The hosting instance’s files are used; external stacks keep their declared files. Saving does not redeploy containers. Compose must reference the variables; service-specific secrets should stay local.
@@ -521,7 +523,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-instance choice of Hostname or IP address for container port links
 
 ### Stack management
-- Container terminal shell selector with a per-instance default and fallback to sh.
+- Container terminal shell selector with a per-instance default and fallback to sh. Supports valid Compose service names.
 - Custom stack groups with up to five levels, stored per account in this instance’s database and available from any browser.
 - Repair a recreated network on start (`dockge.start.repair-network`)
 - Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md)
