@@ -9,6 +9,47 @@ export interface StackGroup {
     name: string;
     collapsed: boolean;
     members: string[];
+    parentId?: string;
+}
+
+export const MAX_STACK_GROUP_DEPTH = 4; // Root plus four nested levels.
+
+function validParentChain(group: StackGroup, groups: StackGroup[]): boolean {
+    const visited = new Set([ group.id ]);
+    let parentId = group.parentId;
+    while (parentId) {
+        if (visited.has(parentId) || visited.size > MAX_STACK_GROUP_DEPTH) {
+            return false;
+        }
+        visited.add(parentId);
+        const parent = groups.find(item => item.id === parentId);
+        if (!parent) {
+            return false;
+        }
+        parentId = parent.parentId;
+    }
+    return true;
+}
+
+export function canReparentStackGroup(groups: StackGroup[], id: string, parentId: string): boolean {
+    if (!groups.some(group => group.id === id)) {
+        return false;
+    }
+    const next = groups.map(group => group.id === id ? { ...group,
+        parentId } : group);
+    return next.every(group => validParentChain(group, next));
+}
+
+export function stackGroupPath(groups: StackGroup[], id: string): string {
+    const names: string[] = [];
+    const visited = new Set<string>();
+    let group = groups.find(item => item.id === id);
+    while (group && !visited.has(group.id)) {
+        visited.add(group.id);
+        names.unshift(group.name);
+        group = groups.find(item => item.id === group?.parentId);
+    }
+    return names.join(" / ");
 }
 
 export interface StackGroupPreferences {
@@ -58,7 +99,13 @@ export function parseStackGroups(raw: string | null): StackGroupPreferences {
             groups.push({ id: group.id,
                 name: group.name.trim().slice(0, 80),
                 collapsed: group.collapsed === true,
-                members: clean });
+                members: clean,
+                ...(typeof group.parentId === "string" && group.parentId ? { parentId: group.parentId } : {}) });
+        }
+        // Reads recover old/corrupt data safely; the store rejects altered writes.
+        const invalid = groups.filter(group => !validParentChain(group, groups));
+        for (const group of invalid) {
+            delete group.parentId;
         }
         return { enabled: value.enabled === true,
             groups };
@@ -70,7 +117,7 @@ export function parseStackGroups(raw: string | null): StackGroupPreferences {
 /** Input must already be permission-filtered, filtered and sorted by the caller. */
 export function groupVisibleStacks<T extends StackIdentity>(stacks: T[], groups: StackGroup[], searching = false) {
     const assigned = new Set<string>();
-    const result = groups.map(group => {
+    const rows = groups.map(group => {
         const members = new Set(group.members);
         const visible = stacks.filter(stack => {
             const key = stackIdentity(stack);
@@ -82,14 +129,38 @@ export function groupVisibleStacks<T extends StackIdentity>(stacks: T[], groups:
         });
         return { id: group.id,
             name: group.name,
+            parentId: group.parentId || "",
             collapsed: group.collapsed && !searching,
-            stacks: visible };
-    }).filter(group => group.stacks.length > 0);
+            stacks: visible,
+            depth: 0,
+            descendantStacks: [] as T[] };
+    });
+    const result: typeof rows = [];
+    const visited = new Set<string>();
+    const visit = (parentId: string, depth: number): typeof rows => rows.filter(row => row.parentId === parentId && !visited.has(row.id)).flatMap(row => {
+        visited.add(row.id);
+        row.depth = depth;
+        const children = visit(row.id, depth + 1);
+        row.descendantStacks = [ ...row.stacks, ...children.filter(child => child.parentId === row.id).flatMap(child => child.descendantStacks) ];
+        return row.descendantStacks.length ? [ row, ...children ] : [];
+    });
+    const tree = visit("", 0);
+    let hiddenBelow = Number.POSITIVE_INFINITY;
+    for (const row of tree) {
+        if (row.depth > hiddenBelow) {
+            continue;
+        }
+        result.push(row);
+        hiddenBelow = row.collapsed ? row.depth : Number.POSITIVE_INFINITY;
+    }
     const ungrouped = stacks.filter(stack => !assigned.has(stackIdentity(stack)));
     if (ungrouped.length) {
         result.push({ id: "",
             name: "",
+            parentId: "",
             collapsed: false,
+            depth: 0,
+            descendantStacks: ungrouped,
             stacks: ungrouped });
     }
     return result;

@@ -1,4 +1,8 @@
 {
+    "releaseNews.item.nestedStackGroups": "Organisez les groupes personnalisés sur cinq niveaux depuis Gérer → Groupe parent. Ils restent enregistrés par compte sur cette instance, y compris pour les stacks liées. La recherche révèle les branches correspondantes. Supprimer un groupe conserve ses enfants à la racine et ne supprime aucune stack ni donnée Docker.",
+    "stackGroups.parent": "Groupe parent",
+    "stackGroups.root": "À la racine",
+    "stackGroups.hierarchyHelp": "Jusqu’à cinq niveaux. Supprimer un groupe remet ses sous-groupes à la racine ; aucune stack ni donnée Docker n’est supprimée.",
     "releaseNews.item.compactAlignmentNovember": "La vue compacte aligne mieux les colonnes, horaires et actions. Accueil précède Liens des services ; le choix Classique/Compacte reste dans Paramètres → Apparence.",
     "releaseNews.item.topologyNovember": "La cartographie Docker réunit réseaux, stacks et ports des instances locales et liées, avec groupes et filtres arrêtés/externes. Réservée aux administrateurs ; mettez aussi à jour les instances liées. Elle montre la configuration, pas le trafic ni des routes proxy vérifiées.",
     "releaseNews.item.composeEditingNovember": "L’éditeur visuel du Compose conserve les commentaires et la mise en forme hors des éléments modifiés.",

@@ -102,6 +102,38 @@ test("legacy import preserves server groups and assignments, is idempotent and r
     assert.equal(full.groups.length, 100);
 });
 
+test("nested preferences persist in SQLite and invalid parent writes leave the saved hierarchy intact", async t => {
+    const db = knex({ client: TestDialect,
+        connection: { filename: ":memory:" },
+        useNullAsDefault: true });
+    t.after(() => db.destroy());
+    await db.schema.createTable("user", table => table.increments("id"));
+    await db("user").insert({ id: 1 });
+    await up(db);
+    const store = new StackGroupPreferencesStore(db);
+    const nested = { enabled: true,
+        groups: [
+            { id: "root",
+                name: "Root",
+                collapsed: true,
+                members: [] },
+            { ...preferences.groups[0],
+                parentId: "root" },
+        ] };
+    await store.save(1, { revision: 0,
+        preferences: nested });
+    assert.deepEqual((await new StackGroupPreferencesStore(db).load(1)).preferences, nested);
+    for (const parentId of [ "web", "missing" ]) {
+        await assert.rejects(store.save(1, { revision: 1,
+            preferences: { ...nested,
+                groups: nested.groups.map(group => ({ ...group,
+                    parentId })) } }), /invalid/);
+    }
+    assert.deepEqual(await store.load(1), { revision: 1,
+        preferences: nested });
+    assert.deepEqual((await store.load(2)).preferences.groups, []);
+});
+
 test("real sockets enforce account ownership, active users and federation boundaries", async t => {
     const db = knex({ client: TestDialect,
         connection: { filename: ":memory:" },

@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Nested stack groups :** Organize custom groups into up to five levels from Manage → Parent group. Groups remain stored per account on this instance, including linked stacks. Search reveals matching branches. Deleting a group keeps its children at the root and never deletes stacks or Docker data.
+
 **Consistent stack paths :** The installation examples now mount /opt/stacks at the same host/container path and explain relative bind mounts. Existing configurations and data are not moved automatically; preserve them before adjusting an installation.
 
 **Container lifecycle dates :** Container details distinguish creation, last start and uptime since that start. Each replica has its own dates, read from Docker on its hosting instance. Stopped containers do not show an increasing uptime; unavailable dates remain unspecified. Update linked instances too.
@@ -515,7 +517,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-instance choice of Hostname or IP address for container port links
 
 ### Stack management
-- Custom stack groups — Groups are stored in this instance’s database for your account and available from any browser.
+- Custom stack groups with up to five levels, stored per account in this instance’s database and available from any browser.
 - Repair a recreated network on start (`dockge.start.repair-network`)
 - Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md)
 - Create, edit, start, stop, restart, update, recreate, pause/resume and take down Compose stacks

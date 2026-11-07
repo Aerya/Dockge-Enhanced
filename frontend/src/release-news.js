@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-07-nested-stack-groups",
+        items: [ "releaseNews.item.nestedStackGroups" ],
+    },
+    {
         id: "2026-11-06-compose-containers-security",
         items: [
             "releaseNews.item.topologyNovember",
