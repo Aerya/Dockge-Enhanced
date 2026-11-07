@@ -8,7 +8,7 @@ const server = await createServer({ configFile: "frontend/vite.config.ts", serve
         if (id !== "/__deployment.js") return;
         return `import {createApp,h} from 'vue';import Progress from '/src/components/DeploymentProgress.vue';import 'bootstrap/dist/css/bootstrap.min.css';
 window.calls=[];window.result={id:'one',stack:'demo',state:'failed',phase:'compose',saved:true,startedAt:new Date().toISOString(),steps:[{phase:'save',finishedAt:'now'},{phase:'compose'}],output:'<img src=x onerror=alert(1)> Docker failed'};
-const app=createApp({data:()=>({socketIO:{connected:true}}),methods:{emitAgent(endpoint,event,...args){window.calls.push({endpoint,event,args:args.slice(0,-1)});const cb=args.at(-1);if(event==='deploymentRetry'){window.result={...window.result,id:'two',state:'running'};window.finish=cb;}else cb({ok:true,progress:window.result});}},render(){return h(Progress,{ref:'progress',stackName:'demo',endpoint:'linked'});}});app.config.globalProperties.$t=k=>k;window.vm=app.mount('#app');`;
+const app=createApp({data:()=>({socketIO:{connected:true},userAccess:{role:'admin'}}),methods:{emitAgent(endpoint,event,...args){window.calls.push({endpoint,event,args:args.slice(0,-1)});const cb=args.at(-1);if(window.auth===false){cb({ok:false,msg:'deployment.unavailable'});return;}if(event==='deploymentRetry'){window.result={...window.result,id:'two',state:'running'};window.finish=cb;}else cb({ok:true,progress:window.result});}},render(){return h(Progress,{ref:'progress',stackName:'demo',endpoint:'linked'});}});app.config.globalProperties.$t=k=>k;window.vm=app.mount('#app');`;
     },
     configureServer(vite) { vite.middlewares.use((req,res,next)=>{if(req.url!=="/__deployment")return next();res.setHeader("Content-Type","text/html");res.end('<div id="app"></div><script type="module" src="/__deployment.js"></script>')}); },
 }] });
@@ -27,7 +27,9 @@ try {
         await page.getByRole('button',{name:'deployment.retry',exact:true}).click();
         assert.deepEqual(await page.evaluate(()=>window.calls.find(c=>c.event==='deploymentRetry')),{endpoint:'linked',event:'deploymentRetry',args:['demo','one']});
         await page.getByRole('heading',{name:'deployment.title — deployment.running'}).waitFor();
-        await page.evaluate(async()=>{window.vm.socketIO.connected=false;await window.vm.$nextTick();window.result={...window.result,state:'completed',output:undefined};window.vm.socketIO.connected=true;});
+        await page.evaluate(async()=>{window.vm.socketIO.connected=false;await window.vm.$nextTick();window.auth=false;window.result={...window.result,state:'completed',output:undefined};window.vm.socketIO.connected=true;});
+        await page.getByText('deployment.unavailable',{exact:true}).waitFor();
+        await page.evaluate(()=>{window.auth=true;window.vm.userAccess={role:'admin'};});
         await page.getByRole('heading',{name:'deployment.title — deployment.completed'}).waitFor();
         await page.getByText('deployment.noConsole',{exact:true}).waitFor();
         await page.evaluate(()=>window.finish({ok:true}));

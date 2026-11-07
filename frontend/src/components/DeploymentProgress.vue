@@ -67,6 +67,9 @@ export default {
         disposed: false,
     }),
     computed: {
+        endpointState() {
+            return this.$root.agentStatusList?.[this.endpoint];
+        },
         phases: () => [ "save", "prerequisites", "compose", "metadata" ],
         cleanOutput() {
             return (this.progress?.output || "").replace(
@@ -87,6 +90,18 @@ export default {
         },
         "$root.socketIO.connected"(connected) {
             if (connected) {
+                this.failures = 0;
+                this.poll();
+            }
+        },
+        "$root.userAccess"(access) {
+            if (access?.role === "admin") {
+                this.failures = 0;
+                this.poll();
+            }
+        },
+        endpointState(state) {
+            if (state === "online") {
                 this.failures = 0;
                 this.poll();
             }
@@ -172,6 +187,10 @@ export default {
                         next();
                     } else {
                         this.error = result?.msg || "deployment.unavailable";
+                        this.failures++;
+                        if (this.failures < 3) {
+                            next();
+                        }
                     }
                 },
             );
