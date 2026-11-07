@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Koordinierter Netzwerk-Neustart :** Die Stack-Aktion Netzwerk-Neustart zeigt die Neustartreihenfolge laufender Container mit gemeinsamem Docker-Netzwerk-Namensraum über mehrere Stacks derselben Instanz und verlangt eine Bestätigung. Gestoppte Container bleiben gestoppt; Compose-Dateien und Images bleiben unverändert. Vorhandene Healthchecks werden abgewartet, sonst wird nur der Laufzustand geprüft, nicht die VPN-Verbindung. Die manuelle Aktion unterbricht den Dienst und ändert automatische Updates nicht. Nach einem Fehler werden weitere Schritte gestoppt; vor einem neuen Versuch die Vorschau aktualisieren. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren.
+
 **Gemeinsame Umgebungsvariablen :** Die Einstellungen für die globale .env erklären die bestehende Vererbung verwalteter Stacks: global.env, dann die .env des Stacks, auch mit leeren Werten. Es gelten die Dateien der ausführenden Instanz; externe Stacks behalten ihre angegebenen Dateien. Speichern löst kein Deployment aus. Compose muss die Variablen referenzieren; dienstspezifische Geheimnisse sollten lokal bleiben.
 
 **Verschachtelte Stack-Gruppen :** Ordnen Sie eigene Gruppen unter Verwalten → Übergeordnete Gruppe auf bis zu fünf Ebenen an. Sie bleiben pro Konto auf dieser Instanz gespeichert, auch für verbundene Stacks. Die Suche öffnet passende Zweige. Beim Löschen einer Gruppe bleiben ihre Kinder auf oberster Ebene erhalten; Stacks und Docker-Daten werden nicht gelöscht.
@@ -519,6 +521,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Wahl von Hostname oder IP-Adresse für Container-Port-Links pro Instanz
 
 ### Stack-Verwaltung
+- Koordinierter manueller Neustart von Netzwerkabhängigkeiten zwischen Stacks mit Vorschau, Healthchecks und Bestätigung.
 - Eigene Stack-Gruppen auf bis zu fünf Ebenen, pro Konto in der Datenbank dieser Instanz gespeichert und in jedem Browser verfügbar.
 - Neu erstelltes Netzwerk beim Start reparieren (`dockge.start.repair-network`)
 - Windows 11 mit Docker Desktop/WSL2: [Installation und Grenzen](docs/windows.de.md)

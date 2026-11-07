@@ -1,4 +1,5 @@
 import { TrivyScanner } from "../watchers/trivy-scanner";
+import { previewNetworkRestart, restartNetworkDependents } from "../network-restart-manager";
 import yaml from "yaml";
 import { configurationDiagnostics, mergedStackConfiguration } from "../configuration-tools";
 import { withStackMutation } from "../stack-mutation";
@@ -856,6 +857,40 @@ export class DockerSocketHandler extends AgentSocketHandler {
         });
 
         // restartStack
+        agentSocket.on("networkRestartPreview", async (stackName: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if ((await loadUserAccess(socket.userID)).role !== "admin" || typeof stackName !== "string") {
+                    throw new ValidationError("Permission denied");
+                }
+                callbackResult({ ok: true,
+                    ...await previewNetworkRestart(server, stackName) }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+        agentSocket.on("networkRestartExecute", async (stackName: unknown, token: unknown, callback) => {
+            let authorized = false;
+            try {
+                checkLogin(socket);
+                if ((await loadUserAccess(socket.userID)).role !== "admin" || typeof stackName !== "string") {
+                    throw new ValidationError("Permission denied");
+                }
+                authorized = true;
+                const completed = await restartNetworkDependents(server, stackName, token);
+                await this.auditStack(socket, "stack.network-restart", stackName);
+                callbackResult({ ok: true,
+                    completed,
+                    msg: "Restarted",
+                    msgi18n: true }, callback);
+                server.sendStackList();
+            } catch (error) {
+                if (authorized) {
+                    await this.auditStack(socket, "stack.network-restart", String(stackName), "failure", error instanceof Error ? error.message : "Restart failed");
+                }
+                callbackError(error, callback);
+            }
+        });
         agentSocket.on("restartStack", async (stackName : unknown, callback) => {
             try {
                 checkLogin(socket);

@@ -1586,6 +1586,11 @@ export class Stack {
         return 0;
     }
 
+    /** Cross-stack restart checks every hosting stack before the first Docker mutation. */
+    async checkNetworkRestartPrerequisites(): Promise<void> {
+        await this.assertStartGuard();
+    }
+
     @stackMutation
     async restartService(serviceName: string) : Promise<number> {
         if (!serviceName) {

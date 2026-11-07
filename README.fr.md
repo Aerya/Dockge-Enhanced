@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Redémarrage réseau coordonné :** L’action de stack Redémarrage réseau affiche puis fait confirmer l’ordre de redémarrage des conteneurs actifs partageant un réseau Docker entre stacks de la même instance. Les conteneurs arrêtés restent arrêtés ; Compose et images sont inchangés. Les healthchecks existants sont attendus ; sinon seul le démarrage est vérifié, pas la connexion VPN. Cette action manuelle interrompt le service et ne modifie pas les mises à jour automatiques. Un échec arrête les étapes suivantes ; rechargez l’aperçu avant de réessayer. Réservé aux administrateurs ; mettez aussi à jour les instances liées.
+
 **Variables d’environnement partagées :** Paramètres → .env global explique l’héritage déjà utilisé par les stacks gérées : global.env puis le .env de la stack, y compris les surcharges vides. Les fichiers de l’instance hôte sont utilisés ; les stacks externes conservent leurs fichiers déclarés. Enregistrer ne redéploie rien. Le Compose doit référencer les variables ; les secrets propres à un service doivent rester locaux.
 
 **Groupes de stacks imbriqués :** Organisez les groupes personnalisés sur cinq niveaux depuis Gérer → Groupe parent. Ils restent enregistrés par compte sur cette instance, y compris pour les stacks liées. La recherche révèle les branches correspondantes. Supprimer un groupe conserve ses enfants à la racine et ne supprime aucune stack ni donnée Docker.
@@ -520,6 +522,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Choix par instance du nom d’hôte ou de l’adresse IP pour les liens de ports des conteneurs
 
 ### Gestion des stacks
+- Redémarrage manuel coordonné des dépendants réseau entre stacks, avec aperçu, healthchecks et confirmation explicite.
 - Groupes de stacks personnalisés sur cinq niveaux, enregistrés par compte en base sur cette instance et retrouvés depuis n’importe quel navigateur.
 - Réparer un réseau recréé au démarrage (`dockge.start.repair-network`)
 - Windows 11 avec Docker Desktop/WSL2 : [installation et limites](docs/windows.fr.md)

@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
     faArrowAltCircleUp,
     faBars,
+    faNetworkWired,
     faCog,
     faEdit,
     faEye,
@@ -108,6 +109,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
+    faNetworkWired,
     faArrowAltCircleUp,
     faBars,
     faCog,
