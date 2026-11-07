@@ -66,6 +66,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Nombres de servicios del terminal :** El terminal acepta nombres de servicio Compose válidos, como _app. Se pasan como argumentos después de --, nunca como opciones Docker.
 
+**Reinicio de red coordinado :** La acción de stack Reinicio de red muestra y pide confirmar el orden de reinicio de los contenedores activos que comparten un espacio de red Docker entre stacks de la misma instancia. Los detenidos siguen detenidos; Compose e imágenes no cambian. Se esperan los healthchecks existentes; sin ellos solo se comprueba el arranque, no la conexión VPN. Esta acción manual interrumpe el servicio y no modifica las actualizaciones automáticas. Un fallo detiene los pasos siguientes; actualice la vista previa antes de reintentar. Solo administradores; actualice también las instancias vinculadas.
+
 **Selección de shell del contenedor :** Elija sh, bash, ash, zsh o fish en el terminal del contenedor. DOCKGE_DEFAULT_SHELL define el valor predeterminado de la instancia que aloja la stack (sh en su defecto); si falta la shell, se intenta sh una sola vez. La shell debe existir en la imagen. Cambiarla abre una sesión distinta sin detener la anterior. Solo administradores; actualice las instancias vinculadas para el selector, los agentes antiguos conservan su terminal habitual.
 
 **Variables de entorno compartidas :** La configuración de .env global explica la herencia ya utilizada por las stacks gestionadas: global.env y después el .env de la stack, incluidos valores vacíos. Se usan los archivos de la instancia anfitriona; las stacks externas conservan sus archivos declarados. Guardar no redespliega contenedores. Compose debe referenciar las variables; los secretos de cada servicio deben seguir siendo locales.
@@ -526,6 +528,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Gestión de stacks
 - Selector de shell del contenedor, valor predeterminado por instancia y alternativa sh. Admite nombres de servicio Compose válidos.
+
+- Reinicio manual coordinado de dependientes de red entre stacks, con vista previa, healthchecks y confirmación.
 - Grupos personalizados de stacks de hasta cinco niveles, guardados por cuenta en la base de datos de esta instancia y disponibles desde cualquier navegador.
 - Reparar una red recreada al iniciar (`dockge.start.repair-network`)
 - Windows 11 con Docker Desktop/WSL2: [instalación y límites](docs/windows.es.md)

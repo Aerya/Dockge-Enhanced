@@ -103,6 +103,10 @@
                             <font-awesome-icon icon="arrows-rotate" />
                             <span class="stack-action-label">{{ $t("restartStack") }}</span>
                         </button>
+                        <button v-if="!isEditMode && active" class="btn btn-normal stack-action" :title="$t('networkRestart.title')" :aria-label="$t('networkRestart.title')" :disabled="processing" @click="showNetworkRestart = true">
+                            <font-awesome-icon icon="network-wired" />
+                            <span class="stack-action-label">{{ $t("networkRestart.title") }}</span>
+                        </button>
                         <button v-if="!isEditMode" class="btn btn-normal stack-action" :title="$t('stackActionHelp.update')" :aria-label="$t('updateStack')" :disabled="processing" @click="updateStack">
                             <font-awesome-icon icon="cloud-arrow-down" />
                             <span class="stack-action-label">{{ $t("updateStack") }}</span>
@@ -819,6 +823,7 @@
                 <p v-else class="text-muted" role="status">{{ $t("stackBulk.loading") }}</p>
             </BModal>
 
+            <NetworkRestartDialog v-if="showNetworkRestart" :key="endpoint + stack.name" :endpoint="endpoint" :stack-name="stack.name" @close="showNetworkRestart = false" @completed="loadStack" />
             <BModal v-model="showDisplayNameDialog" :title="$t('stackDisplayName.edit')" no-footer>
                 <form @submit.prevent="saveStackDisplayName">
                     <label for="stack-display-name" class="form-label">{{ $t('stackDisplayName.label') }}</label>
@@ -957,6 +962,7 @@ import {
 } from "../../../common/util-common";
 import { BModal } from "bootstrap-vue-next";
 import NetworkInput from "../components/NetworkInput.vue";
+import NetworkRestartDialog from "../components/NetworkRestartDialog.vue";
 import StackAutoUpdateBulk from "../components/StackAutoUpdateBulk.vue";
 import dotenv from "dotenv";
 import { renderStackReadme } from "../stack-readme";
@@ -996,6 +1002,7 @@ let serviceStatusTimeout = null;
 
 export default {
     components: {
+        NetworkRestartDialog,
         PostUpdateOptions,
         StackURLsInput,
         ComposeDiagnostics,
@@ -1016,6 +1023,7 @@ export default {
         StackResourceHistory,
     },
     beforeRouteUpdate(to, from, next) {
+        this.showNetworkRestart = false;
         this.containersExpanded = true;
         this.showStackResourceHistory = false;
         this.exitConfirm(next);
@@ -1104,6 +1112,7 @@ export default {
             isEditMode: false,
             submitted: false,
             showDeleteDialog: false,
+            showNetworkRestart: false,
             showDisplayNameDialog: false,
             showStackActionHelp: false,
             stackActionHelpLoading: false,
