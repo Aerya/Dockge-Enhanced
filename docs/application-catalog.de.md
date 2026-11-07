@@ -4,7 +4,9 @@
 
 ## Durchsuchen und auswählen
 
-Repository laden, nach Kategorie oder Name filtern und eine Anwendung öffnen. Die kombinierte Ansicht durchsucht bereits geladene Quellen. Gleiche Anwendungsnamen bieten eine Quellenauswahl; Vorlagen sind nicht austauschbar. Websites und Logos werden angezeigt, sofern die Quelle sie bereitstellt. Kataloge ausdrücklich aktualisieren; bestehende Stacks bleiben unverändert.
+Alle Quellen sind standardmäßig aktiviert und werden beim Öffnen von Anwendungen schrittweise geladen. Deaktivieren Sie einzelne Quellen unter Quellen verwalten. Kategorien haben eine eigene Suche und eine höhenbegrenzte Liste mit Bildlauf, getrennt von der Anwendungssuche. Die Auswahl wird pro Konto auf dieser Instanz gespeichert.
+
+Gleiche Anwendungsnamen bieten eine Quellenauswahl; Vorlagen sind nicht austauschbar. Websites und Logos werden angezeigt, sofern die Quelle sie bereitstellt. Kataloge ausdrücklich aktualisieren; bestehende Stacks bleiben unverändert.
 
 ## Vor der Bereitstellung prüfen
 

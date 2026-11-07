@@ -7,6 +7,10 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-07 — Catálogos cargados automáticamente** — Todos los repositorios están activados por defecto y se cargan progresivamente al abrir Aplicaciones. Desactive los que desee en Gestionar repositorios. Las categorías tienen búsqueda propia y una lista de altura limitada con desplazamiento, separada de la búsqueda de aplicaciones. Preferencias guardadas por cuenta en esta instancia.
+
+**2026-11-07 — Menú superior personalizable** — Ajustes → Apariencia permite mostrar u ocultar enlaces de navegación en escritorio y móvil. Inicio y Enhanced siguen visibles; se mantiene el acceso a los ajustes de la cuenta. Preferencias guardadas por cuenta en esta instancia entre navegadores. Se conserva la elección anterior de Consola; permisos y acceso directo no cambian.
+
 **2026-11-07 — Explorador de contenedores de solo lectura** — Los administradores pueden explorar, previsualizar y descargar archivos de un contenedor o réplica activo, también en instancias vinculadas con esta versión. Se conserva el usuario del contenedor sin privilegios adicionales; su pertenencia al stack se verifica en cada solicitud. Los archivos fuera de volúmenes desaparecen al recrear y pueden contener secretos. Límites: 500 entradas, 1 MiB por archivo; requiere sh, timeout, readlink, stat y dd. Para contenedores detenidos o imágenes mínimas, use el explorador de volúmenes existente. Sin escritura ni eliminación.
 
 **2026-11-07 — Progreso de los despliegues** — Los despliegues muestran etapas reales: guardado, requisitos, Docker Compose y metadatos. El último estado persiste tras reiniciar Enhanced; una operación incompleta queda « interrumpida », nunca como falso éxito. Los administradores pueden reintentar explícitamente el Compose guardado tras revisar los contenedores. La consola solo permanece en memoria y puede contener secretos. Las instancias vinculadas necesitan esta versión. El éxito de Compose no garantiza la salud de la aplicación.

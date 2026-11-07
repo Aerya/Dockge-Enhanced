@@ -7,6 +7,10 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-07 — Automatic application catalogs** — All repositories are enabled by default and load progressively when Applications opens. Disable individual repositories from Manage repositories. Search categories in a height-limited scrolling list, separately from application search. Choices are stored per account on this instance.
+
+**2026-11-07 — Customizable top navigation** — Settings → Appearance lets you show or hide navigation links on desktop and mobile. Home and Enhanced remain visible; access to account settings is retained. Choices are stored per account on this instance across browsers. Existing Console preferences are preserved; permissions and direct access are unchanged.
+
 **2026-11-07 — Read-only container explorer** — Administrators can browse, preview and download files from a running service container or replica, including linked instances running this version. Access uses the container’s configured user without extra privileges; ownership is checked on every request. Files outside mounted volumes disappear when recreated and may contain secrets. Limits: 500 entries, 1 MiB per file; sh, timeout, readlink, stat and dd required. For stopped containers or minimal images, use the existing volume explorer. No writes or deletions.
 
 **2026-11-07 — Deployment progress** — Stack deployments now show real stages: save, prerequisites, Docker Compose and metadata. The latest status survives an Enhanced restart; an unfinished operation becomes « interrupted », never a false success. Administrators can explicitly retry the current saved Compose after checking the containers. Console output stays in memory only and may contain secrets. Linked instances need this version. Compose success does not guarantee application health.

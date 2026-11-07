@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Catalogue chargé automatiquement :** Tous les dépôts sont activés par défaut et chargés progressivement à l’ouverture d’Applications. Désactivez ceux de votre choix dans Gérer les dépôts. Les catégories disposent d’une recherche dédiée et d’une liste à hauteur limitée avec défilement, distincte de la recherche d’applications. Choix enregistrés par compte sur cette instance.
+
 **Explorateur de conteneurs en lecture seule :** Les administrateurs peuvent parcourir, lire et télécharger les fichiers d’un conteneur ou réplica démarré, y compris sur une instance liée à jour. L’utilisateur du conteneur et ses permissions sont conservés ; son appartenance à la stack est revérifiée à chaque requête. Les fichiers hors volumes disparaissent à la recréation et peuvent contenir des secrets. Limites : 500 entrées, 1 Mio par fichier ; sh, timeout, readlink, stat et dd requis. Pour les conteneurs arrêtés ou images minimales, utilisez l’explorateur des volumes existant. Aucune écriture ni suppression.
 
 **Suivi des déploiements :** Les déploiements affichent leurs étapes réelles : enregistrement, prérequis, Docker Compose et métadonnées. Le dernier état survit au redémarrage d’Enhanced ; une opération inachevée devient « interrompue », jamais un faux succès. Les administrateurs peuvent relancer explicitement le Compose actuellement enregistré après vérification des conteneurs. La console reste uniquement en mémoire et peut contenir des secrets. Les instances liées doivent être à jour. La réussite de Compose ne garantit pas la santé de l’application.
@@ -87,7 +89,7 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Dates des conteneurs :** La fiche d’un conteneur distingue sa création, son dernier démarrage et sa durée de fonctionnement depuis ce démarrage. Chaque réplica a ses propres dates, lues dans Docker sur l’instance hôte. Un conteneur arrêté n’affiche pas de durée croissante ; une date indisponible reste non renseignée. Mettez aussi à jour les instances liées.
 
-**Lien Console facultatif :** Paramètres → Apparence permet de masquer Console dans la navigation ordinateur et mobile. Option désactivée par défaut, enregistrée par compte dans ce navigateur. Ce réglage d’affichage ne désactive pas la console et ne modifie pas les permissions.
+**Menu supérieur personnalisable :** Paramètres → Apparence permet d’afficher ou masquer les liens de navigation sur ordinateur et mobile. Accueil et Enhanced restent visibles ; l’accès aux paramètres du compte est conservé. Choix enregistrés par compte sur cette instance, entre navigateurs. L’ancien choix pour Console est préservé ; permissions et accès directs inchangés.
 
 **Consultation des logs sur mobile :** Ouvrir une stack ne place plus le curseur dans les logs. Sur écran tactile, les terminaux interactifs attendent un appui volontaire avant de prendre le focus du clavier ; la recherche dans les logs conserve le focus dans son champ.
 
@@ -689,7 +691,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Home Assistant
 
 ### Apparence & langues
-- Masquage facultatif de Console dans la navigation ordinateur/mobile, enregistré par compte dans ce navigateur
+- Liens de navigation au choix, enregistrés par compte ; Accueil et Enhanced toujours visibles.
 - **Liens des services** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Palettes jour et nuit distinctes, y compris les thèmes d’origine de Dockge-Enhanced
 - Options Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night et Rosé Pine

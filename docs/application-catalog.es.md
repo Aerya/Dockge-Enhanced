@@ -4,7 +4,9 @@
 
 ## Explorar y elegir
 
-Cargue un repositorio, filtre por categoría o nombre y abra una ficha. La vista combinada busca en fuentes ya cargadas. Nombres de aplicación iguales ofrecen un selector de fuente; las plantillas no son intercambiables. Sitios web y logos aparecen cuando la fuente los proporciona. Actualice explícitamente el catálogo; nunca modifica stacks existentes.
+Todos los repositorios están activados por defecto y se cargan progresivamente al abrir Aplicaciones. Desactive los que desee en Gestionar repositorios. Las categorías tienen búsqueda propia y una lista de altura limitada con desplazamiento, separada de la búsqueda de aplicaciones. Preferencias guardadas por cuenta en esta instancia.
+
+Nombres de aplicación iguales ofrecen un selector de fuente; las plantillas no son intercambiables. Sitios web y logos aparecen cuando la fuente los proporciona. Actualice explícitamente el catálogo; nunca modifica stacks existentes.
 
 ## Revisar antes de desplegar
 

@@ -91,6 +91,7 @@ import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-
 import { ServiceLinksSocketHandler } from "./socket-handlers/service-links-socket-handler";
 import { TopologySocketHandler } from "./agent-socket-handlers/topology-socket-handler";
 import { StackGroupsSocketHandler } from "./socket-handlers/stack-groups-socket-handler";
+import { UiPreferencesSocketHandler } from "./socket-handlers/ui-preferences-socket-handler";
 import { StackReplicationSocketHandler } from "./socket-handlers/stack-replication-socket-handler";
 import { StackMoveSocketHandler } from "./socket-handlers/stack-move-socket-handler";
 import { Terminal } from "./terminal";
@@ -138,6 +139,7 @@ export class DockgeServer {
         new ManageAgentSocketHandler(),
         new ServiceLinksSocketHandler(),
         new StackGroupsSocketHandler(),
+        new UiPreferencesSocketHandler(),
         new StackReplicationSocketHandler(),
         new StackMoveSocketHandler(),
     ];

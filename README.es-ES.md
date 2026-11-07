@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Catálogos cargados automáticamente :** Todos los repositorios están activados por defecto y se cargan progresivamente al abrir Aplicaciones. Desactive los que desee en Gestionar repositorios. Las categorías tienen búsqueda propia y una lista de altura limitada con desplazamiento, separada de la búsqueda de aplicaciones. Preferencias guardadas por cuenta en esta instancia.
+
 **Explorador de contenedores de solo lectura :** Los administradores pueden explorar, previsualizar y descargar archivos de un contenedor o réplica activo, también en instancias vinculadas con esta versión. Se conserva el usuario del contenedor sin privilegios adicionales; su pertenencia al stack se verifica en cada solicitud. Los archivos fuera de volúmenes desaparecen al recrear y pueden contener secretos. Límites: 500 entradas, 1 MiB por archivo; requiere sh, timeout, readlink, stat y dd. Para contenedores detenidos o imágenes mínimas, use el explorador de volúmenes existente. Sin escritura ni eliminación.
 
 **Progreso de los despliegues :** Los despliegues muestran etapas reales: guardado, requisitos, Docker Compose y metadatos. El último estado persiste tras reiniciar Enhanced; una operación incompleta queda « interrumpida », nunca como falso éxito. Los administradores pueden reintentar explícitamente el Compose guardado tras revisar los contenedores. La consola solo permanece en memoria y puede contener secretos. Las instancias vinculadas necesitan esta versión. El éxito de Compose no garantiza la salud de la aplicación.
@@ -86,7 +88,7 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Fechas de los contenedores :** La ficha de un contenedor distingue su creación, último inicio y tiempo en ejecución desde ese inicio. Cada réplica tiene sus propias fechas, leídas de Docker en su instancia anfitriona. Los contenedores detenidos no muestran un tiempo creciente; las fechas no disponibles quedan sin indicar. Actualice también las instancias vinculadas.
 
-**Enlace Consola opcional :** Ajustes → Apariencia permite ocultar Consola en la navegación de escritorio y móvil. Desactivado por defecto y guardado por cuenta en este navegador. Esta preferencia visual no desactiva la consola ni cambia los permisos.
+**Menú superior personalizable :** Ajustes → Apariencia permite mostrar u ocultar enlaces de navegación en escritorio y móvil. Inicio y Enhanced siguen visibles; se mantiene el acceso a los ajustes de la cuenta. Preferencias guardadas por cuenta en esta instancia entre navegadores. Se conserva la elección anterior de Consola; permisos y acceso directo no cambian.
 
 **Consulta de logs en móviles :** Al abrir una stack, el visor de logs ya no recibe el foco. En pantallas táctiles, los terminales interactivos esperan un toque voluntario; la búsqueda en los logs mantiene el foco en su campo.
 
@@ -690,7 +692,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Home Assistant
 
 ### Apariencia e idiomas
-- Ocultación opcional de Consola en la navegación de escritorio/móvil, guardada por cuenta en este navegador
+- Enlaces de navegación opcionales por cuenta; Inicio y Enhanced siempre visibles.
 - **Enlaces de servicios** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Paletas de día y de noche separadas, incluidos los temas originales de Dockge-Enhanced
 - Opciones Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night y Rosé Pine
