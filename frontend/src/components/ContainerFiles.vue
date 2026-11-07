@@ -1,6 +1,7 @@
 <template>
     <button
         class="btn btn-sm btn-normal container-action"
+        :class="{ labeled: showLabels }"
         :title="$t('containerFiles.title')"
         :aria-label="$t('containerFiles.title')"
         @click="open"
@@ -121,6 +122,8 @@ import { BModal } from "bootstrap-vue-next";
 export default {
     components: { BModal },
     props: {
+        showLabels: { type: Boolean,
+            default: false },
         stackName: { type: String,
             required: true },
         serviceName: { type: String,
@@ -284,6 +287,10 @@ export default {
 };
 </script>
 <style scoped>
+.container-action { display: inline-flex; align-items: center; justify-content: center; min-width: 2.35rem; min-height: 2.15rem; gap: .2rem; }
+.container-action span { display: none; }
+.container-action.labeled { flex-direction: column; min-width: 5rem; min-height: 3.5rem; padding: .3rem .45rem; }
+.container-action.labeled span { display: block; max-width: 7rem; font-size: var(--fs-xs); line-height: 1.05; white-space: normal; text-align: center; }
 .file-preview {
     max-height: 50vh;
     overflow: auto;

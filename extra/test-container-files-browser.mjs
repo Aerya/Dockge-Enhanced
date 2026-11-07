@@ -7,7 +7,7 @@ const server = await createServer({ configFile: "frontend/vite.config.ts", serve
     load(id) {
         if (id !== "/__files.js") return;
         return `import {createApp,h} from 'vue';import Files from '/src/components/ContainerFiles.vue';import 'bootstrap/dist/css/bootstrap.min.css';
-window.calls=[];const app=createApp({methods:{emitAgent(endpoint,event,input,cb){window.calls.push({endpoint,event,input});if(event==='containerInstances'){cb({ok:true,instances:[{id:'a'.repeat(64),name:'app-1',service:'app',state:'running'},{id:'b'.repeat(64),name:'other',service:'other',state:'running'}]});return;}if(input.path==='/denied'){cb({ok:false,msg:'containerFiles.denied'});return;}cb({ok:true,data:input.action==='list'?{path:input.path,entries:[{name:'hello.txt',type:'file',size:30}],truncated:false}:{path:input.path,content:btoa('<script>window.xss=true</script>'),size:30}});}},render(){return h(Files,{stackName:'demo',serviceName:'app',endpoint:'linked'});}});app.config.globalProperties.$t=k=>k;app.component('font-awesome-icon',{render:()=>null});app.mount('#app');`;
+window.calls=[];const app=createApp({data:()=>({labels:false}),methods:{emitAgent(endpoint,event,input,cb){window.calls.push({endpoint,event,input});if(event==='containerInstances'){cb({ok:true,instances:[{id:'a'.repeat(64),name:'app-1',service:'app',state:'running'},{id:'b'.repeat(64),name:'other',service:'other',state:'running'}]});return;}if(input.path==='/denied'){cb({ok:false,msg:'containerFiles.denied'});return;}cb({ok:true,data:input.action==='list'?{path:input.path,entries:[{name:'hello.txt',type:'file',size:30}],truncated:false}:{path:input.path,content:btoa('<script>window.xss=true</script>'),size:30}});}},render(){return h(Files,{stackName:'demo',serviceName:'app',endpoint:'linked',showLabels:this.labels});}});app.config.globalProperties.$t=k=>k;app.component('font-awesome-icon',{render:()=>null});window.vm=app.mount('#app');`;
     },
     configureServer(vite) { vite.middlewares.use((req,res,next)=>{if(req.url!=="/__files")return next();res.setHeader("Content-Type","text/html");res.end('<div id="app"></div><script type="module" src="/__files.js"></script>')}); },
 }] });
@@ -19,7 +19,11 @@ try {
         const page=await browser.newPage({viewport:{width,height:900},acceptDownloads:true});
         const errors=[];page.on('pageerror',error=>errors.push(error.message));
         await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/__files`);
-        await page.getByRole('button',{name:'containerFiles.title',exact:true}).click();
+        const action=page.getByRole('button',{name:'containerFiles.title',exact:true});
+        assert.equal(await action.locator('span').isVisible(),false);
+        await page.evaluate(()=>window.vm.labels=true);
+        await action.locator('span').waitFor({state:'visible'});
+        await action.click();
         await page.getByRole('button',{name:'hello.txt',exact:true}).waitFor();
         assert.equal(await page.locator('select option').count(),1);
         await page.getByRole('button',{name:'hello.txt',exact:true}).click();
