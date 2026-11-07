@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**只读容器文件浏览器 :** 管理员可浏览、预览和下载运行中容器或副本的文件，也支持更新到此版本的关联实例。保留容器配置的用户权限，不提升特权；每次请求均检查容器归属。卷以外的文件会在重建时丢失，也可能包含凭据。限制为 500 条记录、每个文件 1 MiB；需要 sh、timeout、readlink、stat、dd。已停止容器或极简镜像请使用现有卷浏览器。不提供写入或删除。
+
 **容器终端服务名 :** 容器终端接受 _app 等有效的 Compose 服务名。服务名作为 -- 后的参数传递，不会被解释为 Docker 选项。
 
 **协调网络依赖重启 :** 堆栈的网络依赖重启操作会预览并要求确认同一实例上跨堆栈共享 Docker 网络命名空间的运行中容器的重启顺序。已停止的容器保持停止；Compose 和镜像不变。有健康检查时会等待其通过，否则只检查运行状态，不验证 VPN 连接。此手动操作会中断服务，不改变自动更新。失败后停止剩余步骤；重试前请刷新预览。仅限管理员，关联实例也需更新。
@@ -651,6 +653,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 保护运行中和已停止容器、回滚和恢复镜像以及较新的 Dockge-Enhanced 镜像
 
 ### 搜索与文件
+
+- 只读容器文件浏览器，支持副本选择和有大小限制的下载。
 - 跨实例全局搜索（`Ctrl+K`），覆盖 Stack、Compose/`.env` 文件、Docker 资源和最近的 Restic 快照
 - 可选搜索 `.env` 值，这些值从不返回，也不会保存到历史中
 - 紧凑的已挂载卷行及大小显示，每个容器都有卷浏览器/编辑器，即使 Stack 已停止也可使用；分批检查保留所有容器和挂载
@@ -1108,6 +1112,7 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — 为可选的服务级 CPU/RAM 限制提供灵感，适配时保留受限账户权限
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — 默认 Compose 文件名.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — 服务不中断更新.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — 容器文件浏览器的灵感来源。
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — 文件历史、合并 Compose、`.env` 表单和诊断功能的灵感来源。 紧凑界面.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — 轻量系统监控
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — 为 Enhanced 适配的受限主机文件管理器和实际容器视图提供灵感（MIT）

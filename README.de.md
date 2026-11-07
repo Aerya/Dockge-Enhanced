@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Schreibgeschützter Container-Explorer :** Administratoren können Dateien laufender Container oder Replikate durchsuchen, ansehen und herunterladen, auch auf verbundenen Instanzen mit dieser Version. Der konfigurierte Container-Benutzer bleibt ohne Zusatzprivilegien erhalten; Stack-Zugehörigkeit wird bei jeder Anfrage geprüft. Dateien außerhalb von Volumes gehen bei Neuerstellung verloren und können Geheimnisse enthalten. Grenzen: 500 Einträge, 1 MiB pro Datei; sh, timeout, readlink, stat und dd erforderlich. Für gestoppte Container oder minimale Images den bestehenden Volume-Explorer nutzen. Kein Schreiben oder Löschen.
+
 **Dienstnamen im Container-Terminal :** Das Terminal akzeptiert gültige Compose-Dienstnamen wie _app. Namen werden nach -- als Argumente übergeben, niemals als Docker-Optionen ausgewertet.
 
 **Koordinierter Netzwerk-Neustart :** Die Stack-Aktion Netzwerk-Neustart zeigt die Neustartreihenfolge laufender Container mit gemeinsamem Docker-Netzwerk-Namensraum über mehrere Stacks derselben Instanz und verlangt eine Bestätigung. Gestoppte Container bleiben gestoppt; Compose-Dateien und Images bleiben unverändert. Vorhandene Healthchecks werden abgewartet, sonst wird nur der Laufzustand geprüft, nicht die VPN-Verbindung. Die manuelle Aktion unterbricht den Dienst und ändert automatische Updates nicht. Nach einem Fehler werden weitere Schritte gestoppt; vor einem neuen Versuch die Vorschau aktualisieren. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren.
@@ -650,6 +652,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Schutz laufender und gestoppter Container, von Rollback- und Wiederherstellungs-Images sowie aktueller Dockge-Enhanced-Images
 
 ### Suche & Dateien
+
+- Schreibgeschützter Container-Dateiexplorer mit Replikatauswahl und begrenzten Downloads.
 - Globale instanzübergreifende Suche (`Ctrl+K`) in Stacks, Compose-/`.env`-Dateien, Docker-Ressourcen und aktuellen Restic-Snapshots
 - Optionale Suche in `.env`-Werten, die nie zurückgegeben oder im Verlauf gespeichert werden
 - Kompakte Zeilen für eingebundene Volumes mit Größen und ein Volume-Browser/-Editor pro Container, auch bei gestopptem Stack; begrenzte Abfragegruppen erhalten alle Container und Mounts
@@ -1104,6 +1108,7 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — Inspiration für optionale CPU-/RAM-Limits pro Dienst, ohne Änderungen an eingeschränkten Kontorechten
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Standardname der Compose-Datei.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates ohne Dienstunterbrechung.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — Inspiration für den Container-Dateiexplorer.
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — Inspiration für Dateiverlauf, zusammengeführtes Compose, `.env`-Formular und Diagnose. Kompakte Oberfläche.
 - [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) von Lorwell – Inspiration für den eingeschränkten Host-Dateimanager und die Ansicht echter Container, angepasst für Enhanced (MIT-Lizenz)

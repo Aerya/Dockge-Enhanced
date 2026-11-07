@@ -108,6 +108,7 @@
                     <button class="btn btn-sm container-action" :class="showSchedule ? 'btn-primary' : 'btn-normal'" :title="$t('containerActionHelp.schedule')" :aria-label="$t('stackScheduler.action')" @click="showSchedule = !showSchedule"><font-awesome-icon icon="calendar-days" /><span>{{ $t("stackScheduler.action") }}</span></button>
                     <button type="button" class="btn btn-sm btn-normal container-action" :title="$t('serviceHealthcheck.configure') + (service.healthcheck ? ` · ${$t('serviceHealthcheck.configured')}` : '')" :aria-label="$t('serviceHealthcheck.configure')" @click="$emit('edit-healthcheck')"><font-awesome-icon icon="heartbeat" /><span>{{ $t("serviceHealthcheck.action") }}</span></button>
                     <button class="btn btn-sm container-action" :class="containerActionLabels ? 'btn-primary' : 'btn-normal'" :title="$t('containerActionHelp.labels')" :aria-label="$t('stackActionLabels')" @click="$emit('container-action-labels-change', !containerActionLabels)"><font-awesome-icon icon="list" /><span>{{ $t("stackActionLabels") }}</span></button>
+                    <ContainerFiles v-if="$root.userAccess?.role === 'admin'" :stack-name="stackName" :service-name="name" :endpoint="endpoint" />
                     <router-link class="btn btn-sm btn-normal container-action" :to="terminalRouteLink" :title="$t('containerActionHelp.terminal')" :aria-label="$t('terminal')" disabled=""><font-awesome-icon icon="terminal" /><span>{{ $t("terminal") }}</span></router-link>
                     <a v-if="dozzleUrl" class="btn btn-sm btn-normal container-action" :href="dozzleContainerUrl" :title="$t('containerActionHelp.dozzle')" target="_blank" rel="noopener noreferrer" aria-label="Dozzle"><font-awesome-icon icon="stream" /><span>Dozzle</span></a>
                 </div>
@@ -338,6 +339,7 @@ import {
     setComposeLabel,
 } from "../../../common/compose-labels";
 import VolumeBrowser from "./VolumeBrowser.vue";
+import ContainerFiles from "./ContainerFiles.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
 import ServiceResourceLimits from "./ServiceResourceLimits.vue";
@@ -351,6 +353,7 @@ export default defineComponent({
     components: {
         FontAwesomeIcon,
         VolumeBrowser,
+        ContainerFiles,
         ContainerStatsBadge,
         StackScheduleEditor,
         ServiceResourceLimits,

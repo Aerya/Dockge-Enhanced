@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Explorador de contenedores de solo lectura :** Los administradores pueden explorar, previsualizar y descargar archivos de un contenedor o réplica activo, también en instancias vinculadas con esta versión. Se conserva el usuario del contenedor sin privilegios adicionales; su pertenencia al stack se verifica en cada solicitud. Los archivos fuera de volúmenes desaparecen al recrear y pueden contener secretos. Límites: 500 entradas, 1 MiB por archivo; requiere sh, timeout, readlink, stat y dd. Para contenedores detenidos o imágenes mínimas, use el explorador de volúmenes existente. Sin escritura ni eliminación.
+
 **Nombres de servicios del terminal :** El terminal acepta nombres de servicio Compose válidos, como _app. Se pasan como argumentos después de --, nunca como opciones Docker.
 
 **Reinicio de red coordinado :** La acción de stack Reinicio de red muestra y pide confirmar el orden de reinicio de los contenedores activos que comparten un espacio de red Docker entre stacks de la misma instancia. Los detenidos siguen detenidos; Compose e imágenes no cambian. Se esperan los healthchecks existentes; sin ellos solo se comprueba el arranque, no la conexión VPN. Esta acción manual interrumpe el servicio y no modifica las actualizaciones automáticas. Un fallo detiene los pasos siguientes; actualice la vista previa antes de reintentar. Solo administradores; actualice también las instancias vinculadas.
@@ -652,6 +654,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Protección de los contenedores activos y detenidos, de las imágenes de rollback y recuperación y de las imágenes recientes de Dockge-Enhanced
 
 ### Búsqueda y archivos
+
+- Explorador de archivos de contenedores de solo lectura, selección de réplica y descargas limitadas.
 - Búsqueda global multiinstancia (`Ctrl+K`) en stacks, archivos Compose/`.env`, recursos Docker y snapshots Restic recientes
 - Búsqueda opcional en los valores de `.env`, que nunca se devuelven ni se guardan en el historial
 - Filas compactas de volúmenes montados con su tamaño y explorador/editor de volúmenes para cada contenedor, incluso con el stack detenido; la inspección por lotes acotados conserva todos los contenedores y montajes
@@ -1106,6 +1110,7 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiración para límites opcionales de CPU/RAM por servicio, sin modificar los permisos restringidos
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Nombre predeterminado del archivo Compose.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Actualizaciones sin interrupción del servicio.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — inspiración para el explorador de archivos de contenedores.
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiración para el historial, Compose combinado, formulario `.env` y diagnóstico. Interfaz compacta.
 - [**Kula**](https://github.com/c0m4r/kula) por c0m4r — monitor de sistema ligero (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) por Lorwell — inspiración para el gestor de archivos del host restringido y la vista por contenedor real adaptados a Enhanced (licencia MIT)

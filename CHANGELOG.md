@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-07 — Read-only container explorer** — Administrators can browse, preview and download files from a running service container or replica, including linked instances running this version. Access uses the container’s configured user without extra privileges; ownership is checked on every request. Files outside mounted volumes disappear when recreated and may contain secrets. Limits: 500 entries, 1 MiB per file; sh, timeout, readlink, stat and dd required. For stopped containers or minimal images, use the existing volume explorer. No writes or deletions.
+
 **2026-11-07 — Container service names** — The container terminal accepts valid Compose service names such as _app. Names are passed as arguments after --, never interpreted as Docker options.
 
 **2026-11-07 — Coordinated network restart** — The stack action Network restart previews and confirms the restart order for running containers sharing a Docker network namespace across stacks on the same instance. Stopped containers stay stopped; Compose files and images are unchanged. Healthchecks are awaited when present, otherwise only running state is checked, not VPN connectivity. This manual action interrupts service and does not change automatic updates. A failure stops further steps; refresh the preview before retrying. Administrator access only; update linked instances too.
