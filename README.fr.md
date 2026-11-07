@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Redémarrage réseau coordonné :** L’action de stack Redémarrage réseau affiche puis fait confirmer l’ordre de redémarrage des conteneurs actifs partageant un réseau Docker entre stacks de la même instance. Les conteneurs arrêtés restent arrêtés ; Compose et images sont inchangés. Les healthchecks existants sont attendus ; sinon seul le démarrage est vérifié, pas la connexion VPN. Cette action manuelle interrompt le service et ne modifie pas les mises à jour automatiques. Un échec arrête les étapes suivantes ; rechargez l’aperçu avant de réessayer. Réservé aux administrateurs ; mettez aussi à jour les instances liées.
+
 **Choix du shell des conteneurs :** Choisissez sh, bash, ash, zsh ou fish dans le terminal du conteneur. DOCKGE_DEFAULT_SHELL définit le choix par défaut de l’instance hébergeant la stack (sh sinon) ; un shell absent déclenche un seul repli sur sh. Le shell doit être présent dans l’image. Changer de shell ouvre une session distincte sans arrêter l’autre. Accès administrateur uniquement ; mettez à jour les instances liées pour le sélecteur, les anciens agents conservent leur terminal habituel.
 
 **Variables d’environnement partagées :** Paramètres → .env global explique l’héritage déjà utilisé par les stacks gérées : global.env puis le .env de la stack, y compris les surcharges vides. Les fichiers de l’instance hôte sont utilisés ; les stacks externes conservent leurs fichiers déclarés. Enregistrer ne redéploie rien. Le Compose doit référencer les variables ; les secrets propres à un service doivent rester locaux.
@@ -522,6 +524,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Choix par instance du nom d’hôte ou de l’adresse IP pour les liens de ports des conteneurs
 
 ### Gestion des stacks
+- Redémarrage manuel coordonné des dépendants réseau entre stacks, avec aperçu, healthchecks et confirmation explicite.
+
 - Sélecteur de shell du conteneur, choix par défaut par instance et repli sur sh.
 - Groupes de stacks personnalisés sur cinq niveaux, enregistrés par compte en base sur cette instance et retrouvés depuis n’importe quel navigateur.
 - Réparer un réseau recréé au démarrage (`dockge.start.repair-network`)

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-07-network-restart",
+        items: [ "releaseNews.item.networkRestart" ],
+    },
+    {
         id: "2026-11-07-container-shell",
         items: [ "releaseNews.item.containerShell" ],
     },

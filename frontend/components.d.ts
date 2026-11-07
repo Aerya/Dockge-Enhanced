@@ -44,6 +44,7 @@ declare module 'vue' {
     Login: typeof import('./src/components/Login.vue')['default']
     MonitoringTab: typeof import('./src/components/MonitoringTab.vue')['default']
     NetworkInput: typeof import('./src/components/NetworkInput.vue')['default']
+    NetworkRestartDialog: typeof import('./src/components/NetworkRestartDialog.vue')['default']
     PendingStackMoveStatus: typeof import('./src/components/PendingStackMoveStatus.vue')['default']
     PlugNPiNLabelAssistant: typeof import('./src/components/PlugNPiNLabelAssistant.vue')['default']
     PostUpdateOptions: typeof import('./src/components/PostUpdateOptions.vue')['default']

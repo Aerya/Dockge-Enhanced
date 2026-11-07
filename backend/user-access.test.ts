@@ -262,7 +262,7 @@ test("real Socket.IO default-deny blocks sensitive and future events, emissions 
     const server = new Server(http);
     let revoked = false;
     let dispatched = 0;
-    const sensitive = [ "agent", "getSettings", "setSettings", "usersSave", "usersList", "createAgentFederationToken", "createReverseAgent", "terminalInput", "interactiveTerminalV2", "containerShellOptions", "fileRead", "unknownFutureHandler", "changePassword", "setUILocale" ];
+    const sensitive = [ "agent", "networkRestartPreview", "networkRestartExecute", "getSettings", "setSettings", "usersSave", "usersList", "createAgentFederationToken", "createReverseAgent", "terminalInput", "fileRead", "unknownFutureHandler", "changePassword", "setUILocale", "interactiveTerminalV2", "containerShellOptions" ];
     server.on("connection", raw => {
         const socket = raw as DockgeSocket;
         socket.userID = 2;
