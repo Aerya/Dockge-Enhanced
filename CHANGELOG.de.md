@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-07 — Anwendungskatalog (BETA)** — Community-Portainer-Vorlagen aus öffentlichen GitHub-Katalogen, darunter Lissy93, als editierbaren Compose/.env-Entwurf importieren. Nur Administratoren; keine automatische Bereitstellung. Zielinstanz im Editor wählen. Ports, Mounts, Berechtigungen und Geheimnisse prüfen; Zusatzdateien werden nicht heruntergeladen. Swarm, Windows und nicht unterstützte Optionen werden abgelehnt. Katalogaktualisierungen ändern keine bestehenden Stacks.
+
 **2026-11-07 — Dienstnamen im Container-Terminal** — Das Terminal akzeptiert gültige Compose-Dienstnamen wie _app. Namen werden nach -- als Argumente übergeben, niemals als Docker-Optionen ausgewertet.
 
 **2026-11-07 — Koordinierter Netzwerk-Neustart** — Die Stack-Aktion Netzwerk-Neustart zeigt die Neustartreihenfolge laufender Container mit gemeinsamem Docker-Netzwerk-Namensraum über mehrere Stacks derselben Instanz und verlangt eine Bestätigung. Gestoppte Container bleiben gestoppt; Compose-Dateien und Images bleiben unverändert. Vorhandene Healthchecks werden abgewartet, sonst wird nur der Laufzustand geprüft, nicht die VPN-Verbindung. Die manuelle Aktion unterbricht den Dienst und ändert automatische Updates nicht. Nach einem Fehler werden weitere Schritte gestoppt; vor einem neuen Versuch die Vorschau aktualisieren. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren.

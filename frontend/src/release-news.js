@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-07-application-catalog",
+        items: [ "releaseNews.item.applicationCatalog" ],
+    },
+    {
         id: "2026-11-07-container-shell-names",
         items: [ "releaseNews.item.containerShellNames" ],
     },

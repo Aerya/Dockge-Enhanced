@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-07 — Catalogue d’applications (BÊTA)** — Importez les modèles communautaires Portainer depuis des catalogues GitHub publics, dont Lissy93, dans un brouillon Compose/.env éditable. Réservé aux administrateurs ; aucun déploiement automatique. Choisissez l’instance cible dans l’éditeur. Vérifiez ports, montages, permissions et secrets ; les fichiers complémentaires ne sont pas téléchargés. Swarm, Windows et options non prises en charge sont refusés. Actualiser le catalogue ne modifie jamais les stacks existantes.
+
 **2026-11-07 — Noms des services du terminal** — Le terminal accepte les noms de services Compose valides, comme _app. Ils sont transmis comme arguments après --, jamais interprétés comme des options Docker.
 
 **2026-11-07 — Redémarrage réseau coordonné** — L’action de stack Redémarrage réseau affiche puis fait confirmer l’ordre de redémarrage des conteneurs actifs partageant un réseau Docker entre stacks de la même instance. Les conteneurs arrêtés restent arrêtés ; Compose et images sont inchangés. Les healthchecks existants sont attendus ; sinon seul le démarrage est vérifié, pas la connexion VPN. Cette action manuelle interrompt le service et ne modifie pas les mises à jour automatiques. Un échec arrête les étapes suivantes ; rechargez l’aperçu avant de réessayer. Réservé aux administrateurs ; mettez aussi à jour les instances liées.
