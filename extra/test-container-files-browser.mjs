@@ -28,7 +28,7 @@ try {
         assert.equal(await page.locator('select option').count(),1);
         await page.getByRole('button',{name:'hello.txt',exact:true}).click();
         await page.locator('pre').waitFor();
-        assert.match(await page.locator('pre').textContent(),/<script>/);
+        assert.equal(await page.locator('pre').textContent(),'<script>window.xss=true</script>');
         assert.equal(await page.evaluate(()=>window.xss),undefined);
         const downloading=page.waitForEvent('download');
         await page.getByRole('button',{name:'containerFiles.download',exact:true}).click();
