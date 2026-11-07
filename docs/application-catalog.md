@@ -4,7 +4,9 @@
 
 ## Browse and choose
 
-Load a repository, filter by category or name, then open an application card. The combined view searches sources already loaded. Matching application names offer a source selector; templates from different sources are not interchangeable. Website links and logos appear when upstream metadata supplies them. Refresh explicitly to update a catalog; existing stacks are never changed.
+All repositories are enabled by default and load progressively when Applications opens. Disable individual repositories from Manage repositories. Search categories in a height-limited scrolling list, separately from application search. Choices are stored per account on this instance.
+
+Matching application names offer a source selector; templates from different sources are not interchangeable. Website links and logos appear when upstream metadata supplies them. Refresh explicitly to update a catalog; existing stacks are never changed.
 
 ## Review before deployment
 

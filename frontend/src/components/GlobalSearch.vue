@@ -1,6 +1,7 @@
 <template>
     <div class="global-search-shell">
         <button
+            v-if="showTrigger"
             type="button"
             class="nav-link global-search-trigger"
             :class="{ 'global-search-trigger--mobile': mobile }"
@@ -231,6 +232,10 @@ function simpleFuzzy(haystackInput: string, needleInput: string): boolean {
 
 export default defineComponent({
     props: {
+        showTrigger: {
+            type: Boolean,
+            default: true,
+        },
         mobile: {
             type: Boolean,
             default: false,

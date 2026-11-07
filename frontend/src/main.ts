@@ -25,6 +25,7 @@ import socket from "./mixins/socket";
 import lang from "./mixins/lang";
 import theme from "./mixins/theme";
 import mobile from "./mixins/mobile";
+import uiPreferences from "./mixins/ui-preferences";
 
 const app = createApp(rootApp());
 
@@ -49,6 +50,7 @@ function rootApp() {
             lang,
             theme,
             mobile,
+            uiPreferences,
         ],
         data() {
             return {

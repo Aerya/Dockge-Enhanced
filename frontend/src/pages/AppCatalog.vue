@@ -21,7 +21,7 @@
                         {{ $t("appCatalog.allLoaded") }}
                     </option>
                     <option
-                        v-for="source in sources"
+                        v-for="source in enabledSources"
                         :key="source.id"
                         :value="source.id"
                     >
@@ -33,6 +33,24 @@
                 </select>
             </label>
         </header>
+        <details class="mb-3 catalog-source-settings">
+            <summary>{{ $t("appCatalog.manageSources") }}</summary>
+            <p class="form-text">{{ $t("appCatalog.autoLoadHelp") }}</p>
+            <fieldset :disabled="!$root.uiPreferencesLoaded || $root.uiPreferencesSaving">
+                <div v-for="source in sources" :key="source.id" class="form-check">
+                    <input
+                        :id="'catalog-source-' + source.id" type="checkbox" class="form-check-input"
+                        :checked="!disabledSources.includes(source.id)" @change="$root.setCatalogSourceEnabled(source.id, $event.target.checked)"
+                    />
+                    <label :for="'catalog-source-' + source.id" class="form-check-label">{{ source.name }}</label>
+                </div>
+            </fieldset>
+        </details>
+        <p v-if="$root.uiPreferencesError" class="alert alert-warning">
+            {{ $t($root.uiPreferencesError) }}
+            <button class="btn btn-normal" @click="$root.loadUiPreferences()">{{ $t("retry") }}</button>
+        </p>
+        <p v-if="$root.uiPreferencesLoaded && sources.length && !enabledSources.length" class="alert alert-info">{{ $t("appCatalog.noSources") }}</p>
         <details class="mb-3">
             <summary>{{ $t("appCatalog.precautions") }}</summary>
             <p>{{ $t("appCatalog.warning") }}</p>
@@ -61,8 +79,13 @@
         </div>
         <p v-if="error" class="alert alert-danger" role="alert">
             {{ $t(error) }}
+            <button v-if="!sources.length" class="btn btn-normal" @click="initializeSources()">{{ $t("retry") }}</button>
         </p>
         <p v-if="busy" role="status">{{ $t("loading") }}</p>
+        <div v-for="(message, key) in sourceErrors" :key="key" class="alert alert-warning">
+            {{ sources.find(source => source.id === key)?.name || key }} — {{ $t(message) }}
+            <button class="btn btn-sm btn-normal" @click="retrySource(key)">{{ $t("retry") }}</button>
+        </div>
         <p
             v-for="status in loadingSources"
             :key="status.key"
@@ -99,18 +122,25 @@
                 >
                     {{ $t("appCatalog.allCategories") }}
                 </button>
-                <button
-                    v-for="entry in categories"
-                    :key="entry"
-                    class="btn w-100 text-start mb-1"
-                    :class="category === entry ? 'btn-primary' : 'btn-normal'"
-                    @click="
-                        category = entry;
-                        page = 1;
-                    "
-                >
-                    {{ entry }}
-                </button>
+                <input
+                    v-model="categorySearch" type="search" class="form-control my-2"
+                    :placeholder="$t('appCatalog.searchCategory')" :aria-label="$t('appCatalog.searchCategory')"
+                />
+                <div class="category-scroll" tabindex="0" :aria-label="$t('appCatalog.allCategories')">
+                    <button
+                        v-for="entry in visibleCategories"
+                        :key="entry"
+                        class="btn w-100 text-start mb-1"
+                        :class="category === entry ? 'btn-primary' : 'btn-normal'"
+                        @click="
+                            category = entry;
+                            page = 1;
+                        "
+                    >
+                        {{ entry }}
+                    </button>
+                    <p v-if="!visibleCategories.length" class="small text-muted">{{ $t("appCatalog.noCategories") }}</p>
+                </div>
             </aside>
             <div>
                 <p class="small text-muted">
@@ -300,11 +330,12 @@ export default {
     components: { BModal },
     data: () => ({
         sources: [],
-        sourceId: "lissy93",
+        sourceId: "all",
         customSource: "",
         catalogs: {},
         search: "",
         category: "",
+        categorySearch: "",
         page: 1,
         selected: null,
         draft: null,
@@ -315,13 +346,31 @@ export default {
         timer: null,
         polling: null,
         brokenLogos: {},
+        sourceErrors: {},
+        attemptedSources: {},
+        sourceStarted: {},
+        nextPoll: {},
+        backgroundBusy: false,
+        backgroundEpoch: 0,
+        disposed: false,
     }),
     computed: {
+        disabledSources() {
+            return this.$root.uiPreferences?.disabledCatalogSources || [];
+        },
+        enabledSources() {
+            return this.sources.filter(source => !this.disabledSources.includes(source.id));
+        },
+        visibleCategories() {
+            const normalize = value => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
+            const query = normalize(this.categorySearch.trim());
+            return this.categories.filter(category => normalize(category).includes(query));
+        },
         sourceDefinition() {
             return this.sources.find((source) => source.id === this.sourceId);
         },
         entries() {
-            return Object.entries(this.catalogs).flatMap(([ key, catalog ]) =>
+            return Object.entries(this.catalogs).filter(([ key ]) => !this.disabledSources.includes(key)).flatMap(([ key, catalog ]) =>
                 catalog.items.map((item) => ({
                     ...item,
                     key: `${key}:${item.index}`,
@@ -372,7 +421,7 @@ export default {
         },
         loadingSources() {
             return Object.entries(this.catalogs)
-                .filter(([ , item ]) => item.loading)
+                .filter(([ key, item ]) => item.loading && !this.sourceErrors[key])
                 .map(([ key, item ]) => ({ ...item,
                     key }));
         },
@@ -394,18 +443,64 @@ export default {
                 : [];
         },
     },
+    watch: {
+        "$root.uiPreferencesLoaded"(ready) {
+            if (ready && !this.sources.length) {
+                this.initializeSources();
+            }
+        },
+        "$root.username"() {
+            this.backgroundEpoch++;
+            this.catalogs = {};
+            this.attemptedSources = {};
+            this.sourceErrors = {};
+            this.sourceStarted = {};
+            this.nextPoll = {};
+            this.closeDetails();
+        },
+        disabledSources: {
+            deep: true,
+            handler() {
+                this.backgroundEpoch++;
+                for (const key of this.disabledSources) {
+                    delete this.catalogs[key];
+                    delete this.attemptedSources[key];
+                    delete this.sourceErrors[key];
+                    delete this.sourceStarted[key];
+                    delete this.nextPoll[key];
+                }
+                if (this.disabledSources.includes(this.sourceId)) {
+                    this.sourceId = "all";
+                }
+                this.category = "";
+                this.page = 1;
+                if (this.selected && this.disabledSources.includes(this.selected.sourceKey)) {
+                    this.closeDetails();
+                }
+            },
+        },
+    },
     mounted() {
-        this.request("appCatalogSources", {}, (data) => {
-            this.sources = data;
-        });
-        this.polling = setInterval(() => this.pollSources(), 4000);
+        this.initializeSources();
+        this.polling = setInterval(() => this.pollSources(), 500);
     },
     beforeUnmount() {
         this.generation++;
+        this.disposed = true;
+        this.backgroundEpoch++;
         clearTimeout(this.timer);
         clearInterval(this.polling);
     },
     methods: {
+        initializeSources() {
+            if (!this.$root.uiPreferencesLoaded || this.busy) {
+                return;
+            }
+            this.request("appCatalogSources", {}, (data) => {
+                this.sources = data;
+                this.pollSources();
+            });
+        },
         request(event, input, receive) {
             const generation = ++this.generation;
             this.busy = true;
@@ -449,30 +544,89 @@ export default {
                 { source,
                     refresh },
                 (data) => {
+                    if (this.disabledSources.includes(key)) {
+                        return;
+                    }
                     this.catalogs[key] = {
                         ...data,
                         name: definition?.name || this.$t("appCatalog.custom"),
                         native,
                     };
+                    this.attemptedSources[key] = true;
+                    this.sourceStarted[key] = Date.now();
+                    this.nextPoll[key] = Date.now() + 4000;
+                    delete this.sourceErrors[key];
                     this.page = 1;
                 },
             );
         },
-        pollSources() {
-            if (this.busy || this.selected) {
+        retrySource(key) {
+            delete this.sourceErrors[key];
+            delete this.attemptedSources[key];
+            delete this.catalogs[key];
+            delete this.sourceStarted[key];
+            delete this.nextPoll[key];
+        },
+        async pollSources() {
+            if (this.busy || this.backgroundBusy || this.selected || this.disposed || !this.$root.uiPreferencesLoaded) {
                 return;
             }
-            const item = this.loadingSources[0];
-            if (!item) {
+            const loading = this.loadingSources.filter(item => !this.disabledSources.includes(item.key) && !this.sourceErrors[item.key]);
+            // The backend permits two native indexers. Start other sources as slots become free.
+            const pending = this.enabledSources.find(source => !this.attemptedSources[source.id]
+                && (this.nextPoll[source.id] || 0) <= Date.now()
+                && (source.format === "portainer" || loading.length < 2));
+            const polling = loading.filter(item => (this.nextPoll[item.key] || 0) <= Date.now())
+                .sort((a, b) => (this.nextPoll[a.key] || 0) - (this.nextPoll[b.key] || 0))[0];
+            const definition = pending || this.sources.find(source => source.id === polling?.key);
+            if (!definition) {
                 return;
             }
-            this.request("appCatalogBrowse", { source: item.key }, (data) => {
-                this.catalogs[item.key] = {
-                    ...data,
-                    name: item.name,
-                    native: true,
-                };
-            });
+            const key = definition.id;
+            if (this.sourceStarted[key] && Date.now() - this.sourceStarted[key] > 15 * 60 * 1000) {
+                this.attemptedSources[key] = true;
+                this.sourceErrors[key] = "appCatalog.fetchFailed";
+                return;
+            }
+            const native = definition.format !== "portainer";
+            const source = native ? key : `https://raw.githubusercontent.com/${definition.repo}/${definition.file}`;
+            const epoch = this.backgroundEpoch;
+            this.attemptedSources[key] = true;
+            if (!this.sourceStarted[key]) {
+                this.sourceStarted[key] = Date.now();
+            }
+            this.backgroundBusy = true;
+            try {
+                const result = await new Promise(resolve => {
+                    const timeout = setTimeout(() => resolve({ ok: false,
+                        msg: "appCatalog.fetchFailed" }), 20000);
+                    this.$root.emitAgent("", native ? "appCatalogBrowse" : "appCatalogList", { source }, result => {
+                        clearTimeout(timeout);
+                        resolve(result);
+                    });
+                });
+                if (this.disposed || epoch !== this.backgroundEpoch || this.disabledSources.includes(key)) {
+                    // A preference/account change invalidates the result, never the next load.
+                    delete this.attemptedSources[key];
+                    return;
+                }
+                if (!result?.ok) {
+                    if (result?.msg === "appCatalog.busy") {
+                        delete this.attemptedSources[key];
+                        this.nextPoll[key] = Date.now() + 4000;
+                        return;
+                    }
+                    this.sourceErrors[key] = result?.msg || "appCatalog.fetchFailed";
+                    return;
+                }
+                this.catalogs[key] = { ...result.data,
+                    name: definition.name,
+                    native };
+                this.nextPoll[key] = Date.now() + 4000;
+                delete this.sourceErrors[key];
+            } finally {
+                this.backgroundBusy = false;
+            }
         },
         showDetails(item) {
             this.selected = item;
@@ -522,6 +676,12 @@ export default {
     grid-template-columns: 200px minmax(0, 1fr);
     gap: 24px;
 }
+.category-scroll {
+    max-height: min(45vh, 420px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
 .catalog-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
@@ -562,9 +722,8 @@ export default {
     .store-layout {
         grid-template-columns: 1fr;
     }
-    .store-layout aside {
-        max-height: 220px;
-        overflow: auto;
+    .category-scroll {
+        max-height: 180px;
     }
 }
 </style>

@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Automatisch geladene Anwendungskataloge :** Alle Quellen sind standardmäßig aktiviert und werden beim Öffnen von Anwendungen schrittweise geladen. Deaktivieren Sie einzelne Quellen unter Quellen verwalten. Kategorien haben eine eigene Suche und eine höhenbegrenzte Liste mit Bildlauf, getrennt von der Anwendungssuche. Die Auswahl wird pro Konto auf dieser Instanz gespeichert.
+
 **Schreibgeschützter Container-Explorer :** Administratoren können Dateien laufender Container oder Replikate durchsuchen, ansehen und herunterladen, auch auf verbundenen Instanzen mit dieser Version. Der konfigurierte Container-Benutzer bleibt ohne Zusatzprivilegien erhalten; Stack-Zugehörigkeit wird bei jeder Anfrage geprüft. Dateien außerhalb von Volumes gehen bei Neuerstellung verloren und können Geheimnisse enthalten. Grenzen: 500 Einträge, 1 MiB pro Datei; sh, timeout, readlink, stat und dd erforderlich. Für gestoppte Container oder minimale Images den bestehenden Volume-Explorer nutzen. Kein Schreiben oder Löschen.
 
 **Bereitstellungsfortschritt :** Stack-Bereitstellungen zeigen reale Schritte: Speichern, Voraussetzungen, Docker Compose und Metadaten. Der letzte Status bleibt nach Enhanced-Neustart erhalten; unvollständige Vorgänge werden « unterbrochen », nie fälschlich erfolgreich. Administratoren können nach Containerprüfung den aktuell gespeicherten Compose ausdrücklich erneut bereitstellen. Konsolenausgabe bleibt nur im Arbeitsspeicher und kann Geheimnisse enthalten. Verbundene Instanzen benötigen diese Version. Compose-Erfolg garantiert keine Anwendungsgesundheit.
@@ -86,7 +88,7 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 **Lebenszyklusdaten der Container :** Die Containerdetails unterscheiden Erstellung, letzten Start und Laufzeit seit diesem Start. Jedes Replikat hat eigene Daten aus Docker auf seiner Hostinstanz. Gestoppte Container zeigen keine weiterlaufende Betriebszeit; nicht verfügbare Daten bleiben leer. Auch verbundene Instanzen aktualisieren.
 
-**Optionaler Konsolenlink :** Einstellungen → Darstellung kann Konsole in der Desktop- und Mobilnavigation ausblenden. Standardmäßig deaktiviert, pro Konto in diesem Browser gespeichert. Diese Anzeigeeinstellung deaktiviert weder die Konsole noch ändert sie Berechtigungen.
+**Anpassbare obere Navigation :** Einstellungen → Darstellung ermöglicht das Ein- und Ausblenden von Navigationslinks auf Desktop und Mobilgeräten. Startseite und Enhanced bleiben sichtbar; der Zugang zu den Kontoeinstellungen bleibt erhalten. Die Auswahl wird pro Konto auf dieser Instanz browserübergreifend gespeichert. Die bisherige Konsoleneinstellung bleibt erhalten; Berechtigungen und direkte Zugriffe ändern sich nicht.
 
 **Loganzeige auf Mobilgeräten :** Beim Öffnen eines Stacks erhält die Loganzeige nicht mehr den Eingabefokus. Auf Touchscreens warten interaktive Terminals auf bewusstes Antippen; bei der Logsuche bleibt der Fokus im Suchfeld.
 
@@ -688,7 +690,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Home Assistant
 
 ### Darstellung & Sprachen
-- Konsole optional in Desktop-/Mobilnavigation ausblenden, pro Konto in diesem Browser gespeichert
+- Optionale Navigationslinks pro Konto; Startseite und Enhanced bleiben sichtbar.
 - **Dienstlinks** — `/service-links` · HTTP/HTTPS · `x-dockge.urls`
 - Getrennte Tag- und Nachtpaletten, einschließlich der ursprünglichen Dockge-Enhanced-Themes
 - Optionen Catppuccin, Nord, Solarized, Dracula, Gruvbox, Tokyo Night und Rosé Pine

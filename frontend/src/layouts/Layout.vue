@@ -157,15 +157,15 @@
                         <font-awesome-icon icon="home" /> {{ $t("home") }}
                     </router-link>
                 </li>
-                <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted'" class="nav-item me-2">
-                    <router-link to="/service-links" class="nav-link">{{ $t("serviceLinks.title") }}</router-link>
-                    <router-link v-if="$root.userAccess?.role === 'admin'" to="/apps" class="nav-link">{{ $t('appCatalog.title') }} <small>BETA</small></router-link>
+                <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted' && ($root.navigationVisible('services') || ($root.userAccess?.role === 'admin' && $root.navigationVisible('apps')))" class="nav-item me-2">
+                    <router-link v-if="$root.navigationVisible('services')" to="/service-links" class="nav-link">{{ $t("serviceLinks.title") }}</router-link>
+                    <router-link v-if="$root.userAccess?.role === 'admin' && $root.navigationVisible('apps')" to="/apps" class="nav-link">{{ $t('appCatalog.title') }} <small>BETA</small></router-link>
                 </li>
-                <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted'" class="nav-item me-2">
-                    <router-link to="/topology" class="nav-link">{{ $t('topology.title') }}</router-link>
+                <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted' && $root.navigationVisible('topology')" class="nav-item me-2">
+                    <router-link v-if="$root.navigationVisible('topology')" to="/topology" class="nav-link">{{ $t('topology.title') }}</router-link>
                 </li>
 
-                <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted' && !$root.hideConsoleNavigation" class="nav-item me-2">
+                <li v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted' && $root.navigationVisible('console')" class="nav-item me-2">
                     <router-link to="/console" class="nav-link">
                         <font-awesome-icon icon="terminal" /> {{ $t("console") }}
                     </router-link>
@@ -177,20 +177,20 @@
                     </router-link>
                 </li>
 
-                <li v-if="$root.loggedIn" class="nav-item me-2">
+                <li v-if="$root.loggedIn && $root.navigationVisible('external')" class="nav-item me-2">
                     <router-link to="/external-stacks" class="nav-link">
                         <font-awesome-icon icon="folder-open" /> {{ $t("externalStacks.nav") }}
                     </router-link>
                 </li>
 
-                <li v-if="$root.loggedIn" class="nav-item me-2">
+                <li v-if="$root.loggedIn && $root.navigationVisible('files')" class="nav-item me-2">
                     <router-link to="/files" class="nav-link">
                         <font-awesome-icon icon="folder" /> {{ $t("files") }}
                     </router-link>
                 </li>
 
-                <li v-if="$root.loggedIn" class="nav-item me-2 d-flex align-items-center">
-                    <GlobalSearch />
+                <li v-if="$root.loggedIn" v-show="$root.navigationVisible('search')" class="nav-item me-2 d-flex align-items-center">
+                    <GlobalSearch :show-trigger="$root.navigationVisible('search')" />
                 </li>
 
                 <li class="nav-item me-2 d-flex align-items-center">
@@ -273,7 +273,7 @@
                 <span class="instance-identity-dot" aria-hidden="true"></span>
                 <span class="instance-identity-name">{{ localInstanceName }}</span>
             </span>
-            <GlobalSearch v-if="$root.loggedIn" :mobile="true" class="ms-auto" />
+            <GlobalSearch v-if="$root.loggedIn" :show-trigger="$root.navigationVisible('search')" :mobile="true" class="ms-auto" />
             <a
                 v-if="$root.loggedIn && powerWatchUrl"
                 :href="powerWatchUrl"
@@ -312,19 +312,19 @@
                 <router-link to="/" class="mobile-drawer-link">
                     <font-awesome-icon icon="home" /> {{ $t("home") }}
                 </router-link>
-                <router-link v-if="$root.userAccess?.role !== 'restricted'" to="/service-links" class="mobile-drawer-link">{{ $t("serviceLinks.title") }}</router-link>
-                <router-link v-if="$root.userAccess?.role === 'admin'" to="/apps" class="mobile-drawer-link">{{ $t('appCatalog.title') }} BETA</router-link>
-                <router-link v-if="$root.userAccess?.role !== 'restricted'" to="/topology" class="mobile-drawer-link">{{ $t('topology.title') }}</router-link>
-                <router-link v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted' && !$root.hideConsoleNavigation" to="/console" class="mobile-drawer-link">
+                <router-link v-if="$root.userAccess?.role !== 'restricted' && $root.navigationVisible('services')" to="/service-links" class="mobile-drawer-link">{{ $t("serviceLinks.title") }}</router-link>
+                <router-link v-if="$root.userAccess?.role === 'admin' && $root.navigationVisible('apps')" to="/apps" class="mobile-drawer-link">{{ $t('appCatalog.title') }} BETA</router-link>
+                <router-link v-if="$root.userAccess?.role !== 'restricted' && $root.navigationVisible('topology')" to="/topology" class="mobile-drawer-link">{{ $t('topology.title') }}</router-link>
+                <router-link v-if="$root.loggedIn && $root.userAccess?.role !== 'restricted' && $root.navigationVisible('console')" to="/console" class="mobile-drawer-link">
                     <font-awesome-icon icon="terminal" /> {{ $t("console") }}
                 </router-link>
                 <router-link to="/watcher" class="mobile-drawer-link">
                     <font-awesome-icon icon="bolt" /> {{ $t("watcher.title") }}
                 </router-link>
-                <router-link to="/external-stacks" class="mobile-drawer-link">
+                <router-link v-if="$root.navigationVisible('external')" to="/external-stacks" class="mobile-drawer-link">
                     <font-awesome-icon icon="folder-open" /> {{ $t("externalStacks.nav") }}
                 </router-link>
-                <router-link to="/files" class="mobile-drawer-link">
+                <router-link v-if="$root.navigationVisible('files')" to="/files" class="mobile-drawer-link">
                     <font-awesome-icon icon="folder" /> {{ $t("files") }}
                 </router-link>
                 <button type="button" class="mobile-drawer-link" @click="mobileScanFolder">

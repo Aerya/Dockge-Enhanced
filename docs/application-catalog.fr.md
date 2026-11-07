@@ -4,7 +4,9 @@
 
 ## Parcourir et choisir
 
-Chargez un dépôt, filtrez par catégorie ou nom, puis ouvrez la fiche d’une application. La vue combinée recherche dans les sources déjà chargées. Les noms d’applications identiques proposent un choix de source ; les modèles ne sont pas interchangeables. Sites et logos apparaissent lorsqu’ils sont fournis par la source. Actualisez explicitement le catalogue ; les stacks existantes ne sont jamais modifiées.
+Tous les dépôts sont activés par défaut et chargés progressivement à l’ouverture d’Applications. Désactivez ceux de votre choix dans Gérer les dépôts. Les catégories disposent d’une recherche dédiée et d’une liste à hauteur limitée avec défilement, distincte de la recherche d’applications. Choix enregistrés par compte sur cette instance.
+
+Les noms d’applications identiques proposent un choix de source ; les modèles ne sont pas interchangeables. Sites et logos apparaissent lorsqu’ils sont fournis par la source. Actualisez explicitement le catalogue ; les stacks existantes ne sont jamais modifiées.
 
 ## Vérifier avant de déployer
 

@@ -32,6 +32,7 @@ test("console visibility is applied to the actual desktop and mobile templates",
                         data: () => ({ loggedIn,
                             hideConsoleNavigation,
                             userAccess: { role } }),
+                        methods: { navigationVisible: () => !hideConsoleNavigation },
                         render: compile(template),
                     });
                     app.config.globalProperties.$t = (key: string) => key;

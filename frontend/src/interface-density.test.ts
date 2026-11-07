@@ -34,6 +34,7 @@ test("desktop and mobile navigation put Home first without exposing the layout s
                     data: () => ({ loggedIn: true,
                         userAccess: { role },
                         compactInterface }),
+                    methods: { navigationVisible: () => true },
                     render: compile(template),
                 });
                 app.config.globalProperties.$t = (key: string) => key;

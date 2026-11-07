@@ -88,10 +88,20 @@
             </select>
             <div class="form-text">{{ $t("themePalette.help") }}</div>
         </div>
-        <div class="form-check my-4">
-            <input id="hide-console-navigation" v-model="$root.hideConsoleNavigation" type="checkbox" class="form-check-input" />
-            <label for="hide-console-navigation" class="form-check-label">{{ $t("hideConsoleNavigation") }}</label>
-            <div class="form-text">{{ $t("hideConsoleNavigationHelp") }}</div>
+        <fieldset class="my-4" :disabled="!$root.uiPreferencesLoaded || $root.uiPreferencesSaving">
+            <legend class="h5">{{ $t("uiPreferences.navigation") }}</legend>
+            <p class="form-text">{{ $t("uiPreferences.help") }}</p>
+            <div v-for="item in navigationItems" :key="item.id" class="form-check">
+                <input
+                    :id="'navigation-' + item.id" type="checkbox" class="form-check-input"
+                    :checked="$root.navigationVisible(item.id)" @change="$root.setNavigationVisible(item.id, $event.target.checked)"
+                />
+                <label :for="'navigation-' + item.id" class="form-check-label">{{ $t(item.label) }}</label>
+            </div>
+        </fieldset>
+        <div v-if="$root.uiPreferencesError" class="alert alert-warning">
+            {{ $t($root.uiPreferencesError) }}
+            <button class="btn btn-normal" @click="$root.loadUiPreferences()">{{ $t("retry") }}</button>
         </div>
         <div class="form-check my-4">
             <input id="log-timestamps-default" v-model="logTimestampsDefault" type="checkbox" class="form-check-input" />
@@ -103,11 +113,13 @@
 
 <script>
 import { LIGHT_PALETTES, DARK_PALETTES } from "../../theme-palettes";
+import { NAVIGATION_ITEMS } from "../../../../common/ui-preferences";
 
 export default {
     data() {
         return {
             lightPalettes: LIGHT_PALETTES,
+            navigationItems: NAVIGATION_ITEMS,
             darkPalettes: DARK_PALETTES,
             logTimestampsDefault: localStorage.getItem("logTimestampsDefault") === "true",
         };
