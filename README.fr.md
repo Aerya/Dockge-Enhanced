@@ -67,6 +67,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Variables d’environnement partagées :** Paramètres → .env global explique l’héritage déjà utilisé par les stacks gérées : global.env puis le .env de la stack, y compris les surcharges vides. Les fichiers de l’instance hôte sont utilisés ; les stacks externes conservent leurs fichiers déclarés. Enregistrer ne redéploie rien. Le Compose doit référencer les variables ; les secrets propres à un service doivent rester locaux.
 
+**Groupes de stacks imbriqués :** Organisez les groupes personnalisés sur cinq niveaux depuis Gérer → Groupe parent. Ils restent enregistrés par compte sur cette instance, y compris pour les stacks liées. La recherche révèle les branches correspondantes. Supprimer un groupe conserve ses enfants à la racine et ne supprime aucune stack ni donnée Docker.
+
 **Chemins des stacks cohérents :** Les exemples d’installation montent désormais /opt/stacks au même chemin hôte/conteneur et expliquent les volumes relatifs. Les configurations et données existantes ne sont pas déplacées automatiquement ; préservez-les avant d’adapter une installation.
 
 **Dates des conteneurs :** La fiche d’un conteneur distingue sa création, son dernier démarrage et sa durée de fonctionnement depuis ce démarrage. Chaque réplica a ses propres dates, lues dans Docker sur l’instance hôte. Un conteneur arrêté n’affiche pas de durée croissante ; une date indisponible reste non renseignée. Mettez aussi à jour les instances liées.
@@ -518,7 +520,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Choix par instance du nom d’hôte ou de l’adresse IP pour les liens de ports des conteneurs
 
 ### Gestion des stacks
-- Groupes de stacks personnalisés — Les groupes sont enregistrés en base sur cette instance pour votre compte et retrouvés depuis n’importe quel navigateur.
+- Groupes de stacks personnalisés sur cinq niveaux, enregistrés par compte en base sur cette instance et retrouvés depuis n’importe quel navigateur.
 - Réparer un réseau recréé au démarrage (`dockge.start.repair-network`)
 - Windows 11 avec Docker Desktop/WSL2 : [installation et limites](docs/windows.fr.md)
 - Création, édition, démarrage, arrêt, redémarrage, mise à jour, recréation, pause/reprise et démontage des stacks Compose

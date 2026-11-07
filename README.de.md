@@ -66,6 +66,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 **Gemeinsame Umgebungsvariablen :** Die Einstellungen für die globale .env erklären die bestehende Vererbung verwalteter Stacks: global.env, dann die .env des Stacks, auch mit leeren Werten. Es gelten die Dateien der ausführenden Instanz; externe Stacks behalten ihre angegebenen Dateien. Speichern löst kein Deployment aus. Compose muss die Variablen referenzieren; dienstspezifische Geheimnisse sollten lokal bleiben.
 
+**Verschachtelte Stack-Gruppen :** Ordnen Sie eigene Gruppen unter Verwalten → Übergeordnete Gruppe auf bis zu fünf Ebenen an. Sie bleiben pro Konto auf dieser Instanz gespeichert, auch für verbundene Stacks. Die Suche öffnet passende Zweige. Beim Löschen einer Gruppe bleiben ihre Kinder auf oberster Ebene erhalten; Stacks und Docker-Daten werden nicht gelöscht.
+
 **Konsistente Stack-Pfade :** Die Installationsbeispiele binden /opt/stacks unter demselben Host-/Containerpfad ein und erläutern relative Bind-Mounts. Vorhandene Konfigurationen und Daten werden nicht automatisch verschoben; vor Anpassungen erhalten.
 
 **Lebenszyklusdaten der Container :** Die Containerdetails unterscheiden Erstellung, letzten Start und Laufzeit seit diesem Start. Jedes Replikat hat eigene Daten aus Docker auf seiner Hostinstanz. Gestoppte Container zeigen keine weiterlaufende Betriebszeit; nicht verfügbare Daten bleiben leer. Auch verbundene Instanzen aktualisieren.
@@ -517,7 +519,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Wahl von Hostname oder IP-Adresse für Container-Port-Links pro Instanz
 
 ### Stack-Verwaltung
-- Einklappbare eigene Gruppen über mehrere Instanzen, pro Konto in der Datenbank dieser Instanz gespeichert und in jedem Browser verfügbar
+- Eigene Stack-Gruppen auf bis zu fünf Ebenen, pro Konto in der Datenbank dieser Instanz gespeichert und in jedem Browser verfügbar.
 - Neu erstelltes Netzwerk beim Start reparieren (`dockge.start.repair-network`)
 - Windows 11 mit Docker Desktop/WSL2: [Installation und Grenzen](docs/windows.de.md)
 - Compose-Stacks erstellen, bearbeiten, starten, stoppen, neu starten, aktualisieren, neu erstellen, pausieren/fortsetzen und abbauen
