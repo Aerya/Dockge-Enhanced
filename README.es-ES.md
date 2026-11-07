@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Selección de shell del contenedor :** Elija sh, bash, ash, zsh o fish en el terminal del contenedor. DOCKGE_DEFAULT_SHELL define el valor predeterminado de la instancia que aloja la stack (sh en su defecto); si falta la shell, se intenta sh una sola vez. La shell debe existir en la imagen. Cambiarla abre una sesión distinta sin detener la anterior. Solo administradores; actualice las instancias vinculadas para el selector, los agentes antiguos conservan su terminal habitual.
+
 **Grupos de stacks anidados :** Organice los grupos personalizados en hasta cinco niveles desde Gestionar → Grupo padre. Se guardan por cuenta en esta instancia, también para stacks vinculadas. La búsqueda revela las ramas correspondientes. Eliminar un grupo conserva sus hijos en la raíz y no elimina stacks ni datos Docker.
 
 **Rutas de stacks coherentes :** Los ejemplos de instalación montan /opt/stacks en la misma ruta del anfitrión y del contenedor y explican los montajes relativos. No se trasladan automáticamente las configuraciones ni los datos existentes; consérvelos antes de adaptar una instalación.
@@ -519,6 +521,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Elección por instancia de nombre de host o dirección IP para los enlaces de puertos de los contenedores
 
 ### Gestión de stacks
+- Selector de shell del contenedor, valor predeterminado por instancia y alternativa sh.
 - Grupos personalizados de stacks de hasta cinco niveles, guardados por cuenta en la base de datos de esta instancia y disponibles desde cualquier navegador.
 - Reparar una red recreada al iniciar (`dockge.start.repair-network`)
 - Windows 11 con Docker Desktop/WSL2: [instalación y límites](docs/windows.es.md)
@@ -972,6 +975,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKER_API_VERSION` | *(ninguna)* | Fija la versión de la API de Docker negociada por el cliente — útil en ciertos sistemas NAS (por ejemplo Synology DSM 7.x) |
 | `TZ` | `UTC` | Zona del proceso en el contenedor; predeterminada para programaciones hasta elegir una en **Ajustes → General**. La elección WebUI tiene prioridad para las programaciones de Enhanced. |
 | `DOCKGE_PORT` | `5001` | Puerto de la interfaz web |
+| `DOCKGE_DEFAULT_SHELL` | `sh` | Shell predeterminada del contenedor, nombre de ejecutable o ruta absoluta sin argumentos |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Habilita HTTPS |
 | `DOCKGE_AUTH_MODE` | *(no establecido)* | Modo de autenticación: `local`, `disabled`, o `trusted-proxy`. Cuando no está establecido, se conserva el comportamiento histórico y la configuración `disableAuth` |
 | `DOCKGE_AUTH_PROXY_HEADER` | `x-forwarded-user` | Encabezado que contiene la identidad validada por proxy en modo `trusted-proxy` |

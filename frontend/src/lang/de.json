@@ -1,4 +1,12 @@
 {
+    "releaseNews.item.containerShell": "Shell-Auswahl für Container : Wählen Sie sh, bash, ash, zsh oder fish im Container-Terminal. DOCKGE_DEFAULT_SHELL legt den Standard der hostenden Instanz fest (sonst sh); fehlt die Shell, wird einmal auf sh zurückgegriffen. Die Shell muss im Image vorhanden sein. Ein Wechsel öffnet eine eigene Sitzung und beendet die andere nicht. Nur für Administratoren; aktualisieren Sie verbundene Instanzen für die Auswahl, ältere Agenten behalten ihr bisheriges Terminal.",
+    "containerShell.choose": "Shell",
+    "containerShell.default": "Standard dieser Instanz",
+    "containerShell.active": "Aktive Shell",
+    "containerShell.fallback": "auf sh zurückgefallen",
+    "containerShell.legacy": "Diese Instanz unterstützt die erweiterte Shell-Auswahl nicht. Aktualisieren Sie sie; das bisherige Terminal bleibt verfügbar.",
+    "containerShell.invalid": "Ungültige Shell oder ungültiger Dienst.",
+    "containerShell.unavailable": "Diese Shell oder sh kann nicht geöffnet werden. Prüfen Sie, ob der Container läuft und Docker erreichbar ist.",
     "releaseNews.item.nestedStackGroups": "Ordnen Sie eigene Gruppen unter Verwalten → Übergeordnete Gruppe auf bis zu fünf Ebenen an. Sie bleiben pro Konto auf dieser Instanz gespeichert, auch für verbundene Stacks. Die Suche öffnet passende Zweige. Beim Löschen einer Gruppe bleiben ihre Kinder auf oberster Ebene erhalten; Stacks und Docker-Daten werden nicht gelöscht.",
     "stackGroups.parent": "Übergeordnete Gruppe",
     "stackGroups.root": "Auf oberster Ebene",

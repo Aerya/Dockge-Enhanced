@@ -7,23 +7,39 @@
             <h1 class="mb-3">{{ $t("terminal") }} - {{ serviceName }} ({{ stackName }})</h1>
 
             <div class="mb-3">
-                <router-link :to="sh" class="btn btn-normal me-2">{{ $t("Switch to sh") }}</router-link>
+                <label v-if="shellSession">
+                    {{ $t("containerShell.choose") }}
+                    <select class="form-select" :value="$route.params.type" @change="$router.push(shellRoute($event.target.value))">
+                        <option value="default">{{ $t("containerShell.default") }} ({{ defaultShell }})</option>
+                        <option v-for="choice in choices" :key="choice" :value="choice">{{ choice }}</option>
+                    </select>
+                </label>
+                <router-link v-else-if="ready" :to="shellRoute('sh')" class="btn btn-normal me-2">{{ $t("Switch to sh") }}</router-link>
+                <p v-if="ready && !shellSession" class="small text-muted">{{ $t("containerShell.legacy") }}</p>
+                <p v-if="actualShell" class="small">{{ $t("containerShell.active") }}: {{ actualShell }}<span v-if="fallback"> — {{ $t("containerShell.fallback") }}</span></p>
             </div>
 
-            <Terminal class="terminal" :rows="20" mode="interactive" :name="terminalName" :stack-name="stackName" :service-name="serviceName" :shell="shell" :endpoint="endpoint"></Terminal>
+            <Terminal v-if="ready" :key="terminalName + shell" class="terminal" :rows="20" mode="interactive" :name="terminalName" :stack-name="stackName" :service-name="serviceName" :shell="shell" :shell-session="shellSession" :endpoint="endpoint" @shell-ready="shellReady"></Terminal>
         </div>
     </transition>
 </template>
 
 <script>
 import { getContainerExecTerminalName } from "../../../common/util-common";
+import { CONTAINER_SHELLS, shellTerminalName, validContainerShell } from "../../../common/container-shell";
 
 export default {
     components: {
     },
     data() {
         return {
-
+            ready: false,
+            shellSession: false,
+            defaultShell: "sh",
+            actualShell: "",
+            fallback: false,
+            generation: 0,
+            optionsTimer: null,
         };
     },
     computed: {
@@ -34,7 +50,10 @@ export default {
             return this.$route.params.endpoint || "";
         },
         shell() {
-            return this.$route.params.type;
+            return !this.shellSession && this.$route.params.type === "default" ? "bash" : this.$route.params.type;
+        },
+        choices() {
+            return [ ...new Set([ ...CONTAINER_SHELLS, this.defaultShell, this.$route.params.type ].filter(value => value !== "default" && validContainerShell(value))) ];
         },
         serviceName() {
             return this.$route.params.serviceName;
@@ -47,33 +66,57 @@ export default {
             return path;
         },
         terminalName() {
-            return getContainerExecTerminalName(this.endpoint, this.stackName, this.serviceName, 0);
-        },
-        sh() {
-            let endpoint = this.$route.params.endpoint;
-
-            let data = {
-                name: "containerTerminal",
-                params: {
-                    stackName: this.stackName,
-                    serviceName: this.serviceName,
-                    type: "sh",
-                },
-            };
-
-            if (endpoint) {
-                data.name = "containerTerminalEndpoint";
-                data.params.endpoint = endpoint;
-            }
-
-            return data;
+            const base = getContainerExecTerminalName(this.endpoint, this.stackName, this.serviceName, 0);
+            return this.shellSession ? shellTerminalName(base, this.shell) : base;
         },
     },
-    mounted() {
-
+    watch: {
+        endpoint: { immediate: true,
+            handler() {
+                this.loadOptions();
+            } },
+        shell() {
+            this.actualShell = "";
+            this.fallback = false;
+        },
+    },
+    beforeUnmount() {
+        this.generation++;
+        clearTimeout(this.optionsTimer);
     },
     methods: {
-
+        shellRoute(shell) {
+            return { name: this.endpoint ? "containerTerminalEndpoint" : "containerTerminal",
+                params: { stackName: this.stackName,
+                    serviceName: this.serviceName,
+                    type: shell,
+                    ...(this.endpoint ? { endpoint: this.endpoint } : {}) } };
+        },
+        loadOptions() {
+            const generation = ++this.generation;
+            clearTimeout(this.optionsTimer);
+            this.ready = false;
+            this.shellSession = false;
+            this.actualShell = "";
+            this.optionsTimer = setTimeout(() => {
+                if (generation === this.generation) {
+                    this.ready = true;
+                }
+            }, 3000);
+            this.$root.emitAgent(this.endpoint, "containerShellOptions", result => {
+                if (generation !== this.generation || this.ready) {
+                    return;
+                }
+                clearTimeout(this.optionsTimer);
+                this.shellSession = result?.ok === true && validContainerShell(result.defaultShell);
+                this.defaultShell = this.shellSession ? result.defaultShell : "sh";
+                this.ready = true;
+            });
+        },
+        shellReady(result) {
+            this.actualShell = result.shell || "";
+            this.fallback = result.fallback === true;
+        },
     }
 };
 </script>

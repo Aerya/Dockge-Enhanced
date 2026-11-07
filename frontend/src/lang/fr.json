@@ -1,4 +1,12 @@
 {
+    "releaseNews.item.containerShell": "Choix du shell des conteneurs : Choisissez sh, bash, ash, zsh ou fish dans le terminal du conteneur. DOCKGE_DEFAULT_SHELL définit le choix par défaut de l’instance hébergeant la stack (sh sinon) ; un shell absent déclenche un seul repli sur sh. Le shell doit être présent dans l’image. Changer de shell ouvre une session distincte sans arrêter l’autre. Accès administrateur uniquement ; mettez à jour les instances liées pour le sélecteur, les anciens agents conservent leur terminal habituel.",
+    "containerShell.choose": "Shell",
+    "containerShell.default": "Par défaut sur l’instance",
+    "containerShell.active": "Shell actif",
+    "containerShell.fallback": "repli sur sh",
+    "containerShell.legacy": "Cette instance ne prend pas en charge le choix avancé du shell. Mettez-la à jour ; le terminal historique reste disponible.",
+    "containerShell.invalid": "Shell ou service invalide.",
+    "containerShell.unavailable": "Impossible d’ouvrir ce shell ou sh. Vérifiez que le conteneur est démarré et que Docker est accessible.",
     "releaseNews.item.nestedStackGroups": "Organisez les groupes personnalisés sur cinq niveaux depuis Gérer → Groupe parent. Ils restent enregistrés par compte sur cette instance, y compris pour les stacks liées. La recherche révèle les branches correspondantes. Supprimer un groupe conserve ses enfants à la racine et ne supprime aucune stack ni donnée Docker.",
     "stackGroups.parent": "Groupe parent",
     "stackGroups.root": "À la racine",

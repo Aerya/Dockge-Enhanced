@@ -1,4 +1,12 @@
 {
+    "releaseNews.item.containerShell": "容器 Shell 选择 : 在容器终端中选择 sh、bash、ash、zsh 或 fish。DOCKGE_DEFAULT_SHELL 设置托管实例的默认值（未设置时为 sh）；所选 Shell 不存在时仅回退到 sh 一次。Shell 必须已安装在镜像中。切换会打开独立会话，不会停止另一个 Shell。仅限管理员；关联实例需更新才能使用选择器，旧代理仍使用原有终端。",
+    "containerShell.choose": "Shell",
+    "containerShell.default": "实例默认值",
+    "containerShell.active": "当前 Shell",
+    "containerShell.fallback": "已回退到 sh",
+    "containerShell.legacy": "此实例不支持高级 Shell 选择。请更新实例；原有终端仍可使用。",
+    "containerShell.invalid": "Shell 或服务无效。",
+    "containerShell.unavailable": "无法打开此 Shell 或 sh。请检查容器是否正在运行以及 Docker 是否可访问。",
     "releaseNews.item.nestedStackGroups": "通过管理 → 父分组将自定义分组组织为最多五级。分组仍按账户保存在此实例中，也支持关联实例的堆栈。搜索会展开匹配的分支。删除分组会将其子分组保留在根级别，不会删除任何堆栈或 Docker 数据。",
     "stackGroups.parent": "父分组",
     "stackGroups.root": "根级别",
