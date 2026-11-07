@@ -5,6 +5,7 @@ import { InteractiveTerminal, MainTerminal, Terminal } from "../terminal";
 import { Stack } from "../stack";
 import { AgentSocketHandler } from "../agent-socket-handler";
 import { AgentSocket } from "../../common/agent-socket";
+import { CONTAINER_SHELLS, preferredContainerShell } from "../../common/container-shell";
 
 export class TerminalSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
@@ -87,7 +88,17 @@ export class TerminalSocketHandler extends AgentSocketHandler {
         });
 
         // Interactive Terminal for containers
-        agentSocket.on("interactiveTerminal", async (stackName : unknown, serviceName : unknown, shell : unknown, callback) => {
+        agentSocket.on("containerShellOptions", async callback => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true,
+                    defaultShell: preferredContainerShell(process.env.DOCKGE_DEFAULT_SHELL),
+                    shells: CONTAINER_SHELLS }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+        const openContainerTerminal = (separateShell: boolean) => async (stackName : unknown, serviceName : unknown, shell : unknown, callback: unknown) => {
             try {
                 checkLogin(socket);
 
@@ -108,15 +119,18 @@ export class TerminalSocketHandler extends AgentSocketHandler {
 
                 // Get stack
                 const stack = await Stack.getStack(server, stackName);
-                stack.joinContainerTerminal(socket, serviceName, shell);
+                const result = await stack.joinContainerTerminal(socket, serviceName, shell, 0, separateShell);
 
                 callbackResult({
                     ok: true,
+                    ...result,
                 }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
-        });
+        };
+        agentSocket.on("interactiveTerminal", openContainerTerminal(false));
+        agentSocket.on("interactiveTerminalV2", openContainerTerminal(true));
 
         // Join Output Terminal
         agentSocket.on("terminalJoin", async (terminalName : unknown, callback) => {

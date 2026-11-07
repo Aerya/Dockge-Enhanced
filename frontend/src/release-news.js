@@ -4,6 +4,10 @@ export const RELEASE_NEWS = [
         items: [ "releaseNews.item.networkRestart" ],
     },
     {
+        id: "2026-11-07-container-shell",
+        items: [ "releaseNews.item.containerShell" ],
+    },
+    {
         id: "2026-11-07-shared-environment",
         items: [ "releaseNews.item.sharedEnvironment" ],
     },

@@ -66,6 +66,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Reinicio de red coordinado :** La acción de stack Reinicio de red muestra y pide confirmar el orden de reinicio de los contenedores activos que comparten un espacio de red Docker entre stacks de la misma instancia. Los detenidos siguen detenidos; Compose e imágenes no cambian. Se esperan los healthchecks existentes; sin ellos solo se comprueba el arranque, no la conexión VPN. Esta acción manual interrumpe el servicio y no modifica las actualizaciones automáticas. Un fallo detiene los pasos siguientes; actualice la vista previa antes de reintentar. Solo administradores; actualice también las instancias vinculadas.
 
+**Selección de shell del contenedor :** Elija sh, bash, ash, zsh o fish en el terminal del contenedor. DOCKGE_DEFAULT_SHELL define el valor predeterminado de la instancia que aloja la stack (sh en su defecto); si falta la shell, se intenta sh una sola vez. La shell debe existir en la imagen. Cambiarla abre una sesión distinta sin detener la anterior. Solo administradores; actualice las instancias vinculadas para el selector, los agentes antiguos conservan su terminal habitual.
+
 **Variables de entorno compartidas :** La configuración de .env global explica la herencia ya utilizada por las stacks gestionadas: global.env y después el .env de la stack, incluidos valores vacíos. Se usan los archivos de la instancia anfitriona; las stacks externas conservan sus archivos declarados. Guardar no redespliega contenedores. Compose debe referenciar las variables; los secretos de cada servicio deben seguir siendo locales.
 
 **Grupos de stacks anidados :** Organice los grupos personalizados en hasta cinco niveles desde Gestionar → Grupo padre. Se guardan por cuenta en esta instancia, también para stacks vinculadas. La búsqueda revela las ramas correspondientes. Eliminar un grupo conserva sus hijos en la raíz y no elimina stacks ni datos Docker.
@@ -524,6 +526,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Gestión de stacks
 - Reinicio manual coordinado de dependientes de red entre stacks, con vista previa, healthchecks y confirmación.
+
+- Selector de shell del contenedor, valor predeterminado por instancia y alternativa sh.
 - Grupos personalizados de stacks de hasta cinco niveles, guardados por cuenta en la base de datos de esta instancia y disponibles desde cualquier navegador.
 - Reparar una red recreada al iniciar (`dockge.start.repair-network`)
 - Windows 11 con Docker Desktop/WSL2: [instalación y límites](docs/windows.es.md)
@@ -979,6 +983,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKER_API_VERSION` | *(ninguna)* | Fija la versión de la API de Docker negociada por el cliente — útil en ciertos sistemas NAS (por ejemplo Synology DSM 7.x) |
 | `TZ` | `UTC` | Zona del proceso en el contenedor; predeterminada para programaciones hasta elegir una en **Ajustes → General**. La elección WebUI tiene prioridad para las programaciones de Enhanced. |
 | `DOCKGE_PORT` | `5001` | Puerto de la interfaz web |
+| `DOCKGE_DEFAULT_SHELL` | `sh` | Shell predeterminada del contenedor, nombre de ejecutable o ruta absoluta sin argumentos |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Habilita HTTPS |
 | `DOCKGE_AUTH_MODE` | *(no establecido)* | Modo de autenticación: `local`, `disabled`, o `trusted-proxy`. Cuando no está establecido, se conserva el comportamiento histórico y la configuración `disableAuth` |
 | `DOCKGE_AUTH_PROXY_HEADER` | `x-forwarded-user` | Encabezado que contiene la identidad validada por proxy en modo `trusted-proxy` |

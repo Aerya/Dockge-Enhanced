@@ -66,6 +66,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 **Koordinierter Netzwerk-Neustart :** Die Stack-Aktion Netzwerk-Neustart zeigt die Neustartreihenfolge laufender Container mit gemeinsamem Docker-Netzwerk-Namensraum über mehrere Stacks derselben Instanz und verlangt eine Bestätigung. Gestoppte Container bleiben gestoppt; Compose-Dateien und Images bleiben unverändert. Vorhandene Healthchecks werden abgewartet, sonst wird nur der Laufzustand geprüft, nicht die VPN-Verbindung. Die manuelle Aktion unterbricht den Dienst und ändert automatische Updates nicht. Nach einem Fehler werden weitere Schritte gestoppt; vor einem neuen Versuch die Vorschau aktualisieren. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren.
 
+**Shell-Auswahl für Container :** Wählen Sie sh, bash, ash, zsh oder fish im Container-Terminal. DOCKGE_DEFAULT_SHELL legt den Standard der hostenden Instanz fest (sonst sh); fehlt die Shell, wird einmal auf sh zurückgegriffen. Die Shell muss im Image vorhanden sein. Ein Wechsel öffnet eine eigene Sitzung und beendet die andere nicht. Nur für Administratoren; aktualisieren Sie verbundene Instanzen für die Auswahl, ältere Agenten behalten ihr bisheriges Terminal.
+
 **Gemeinsame Umgebungsvariablen :** Die Einstellungen für die globale .env erklären die bestehende Vererbung verwalteter Stacks: global.env, dann die .env des Stacks, auch mit leeren Werten. Es gelten die Dateien der ausführenden Instanz; externe Stacks behalten ihre angegebenen Dateien. Speichern löst kein Deployment aus. Compose muss die Variablen referenzieren; dienstspezifische Geheimnisse sollten lokal bleiben.
 
 **Verschachtelte Stack-Gruppen :** Ordnen Sie eigene Gruppen unter Verwalten → Übergeordnete Gruppe auf bis zu fünf Ebenen an. Sie bleiben pro Konto auf dieser Instanz gespeichert, auch für verbundene Stacks. Die Suche öffnet passende Zweige. Beim Löschen einer Gruppe bleiben ihre Kinder auf oberster Ebene erhalten; Stacks und Docker-Daten werden nicht gelöscht.
@@ -522,6 +524,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 
 ### Stack-Verwaltung
 - Koordinierter manueller Neustart von Netzwerkabhängigkeiten zwischen Stacks mit Vorschau, Healthchecks und Bestätigung.
+
+- Shell-Auswahl im Container-Terminal mit Instanzstandard und Rückfall auf sh.
 - Eigene Stack-Gruppen auf bis zu fünf Ebenen, pro Konto in der Datenbank dieser Instanz gespeichert und in jedem Browser verfügbar.
 - Neu erstelltes Netzwerk beim Start reparieren (`dockge.start.repair-network`)
 - Windows 11 mit Docker Desktop/WSL2: [Installation und Grenzen](docs/windows.de.md)
@@ -977,6 +981,7 @@ Um einen Dienst zu veröffentlichen, bearbeiten Sie dessen Stack und verwenden S
 | `DOCKER_API_VERSION` | *(keine)* | Legt die vom Client ausgehandelte Docker-API-Version fest — nützlich auf bestimmten NAS-Systemen (z. B. Synology DSM 7.x) |
 | `TZ` | `UTC` | Laufzeit-Zeitzone des Containers; Standard für Zeitpläne bis zur ausdrücklichen Auswahl unter **Einstellungen → Allgemein**. Die WebUI-Auswahl hat für Enhanced-Zeitpläne Vorrang. |
 | `DOCKGE_PORT` | `5001` | Port der Web-Benutzeroberfläche |
+| `DOCKGE_DEFAULT_SHELL` | `sh` | Standard-Shell für Container, Programmname oder absoluter Pfad ohne Argumente |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | HTTPS aktivieren |
 | `DOCKGE_AUTH_MODE` | *(nicht gesetzt)* | Authentifizierungsmodus: `local`, `disabled` oder `trusted-proxy`. Wenn nicht gesetzt, bleiben das historische Verhalten und die Einstellung `disableAuth` erhalten |
 | `DOCKGE_AUTH_PROXY_HEADER` | `x-forwarded-user` | Header, der die vom Proxy validierte Identität im Modus `trusted-proxy` enthält |

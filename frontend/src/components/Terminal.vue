@@ -45,6 +45,8 @@ export default {
             type: String,
             default: "bash",
         },
+        shellSession: { type: Boolean,
+            default: false },
 
         rows: {
             type: Number,
@@ -75,9 +77,10 @@ export default {
             default: "displayOnly",
         }
     },
-    emits: [ "has-data" ],
+    emits: [ "has-data", "shell-ready" ],
     data() {
         return {
+            terminalDisposed: false,
             first: true,
             terminalInputBuffer: "",
             cursorPosition: 0,
@@ -168,7 +171,9 @@ export default {
             }
         });
 
-        this.bind();
+        if (this.mode !== "interactive") {
+            this.bind();
+        }
 
         // Create a new Terminal
         if (this.mode === "mainTerminal") {
@@ -179,9 +184,15 @@ export default {
             });
         } else if (this.mode === "interactive") {
             console.debug("Create Interactive terminal:", this.name);
-            this.$root.emitAgent(this.endpoint, "interactiveTerminal", this.stackName, this.serviceName, this.shell, (res) => {
+            this.$root.emitAgent(this.endpoint, this.shellSession ? "interactiveTerminalV2" : "interactiveTerminal", this.stackName, this.serviceName, this.shell, (res) => {
+                if (this.terminalDisposed) {
+                    return;
+                }
                 if (!res.ok) {
                     this.$root.toastRes(res);
+                } else {
+                    this.bind();
+                    this.$emit("shell-ready", res);
                 }
             });
         }
@@ -192,6 +203,7 @@ export default {
     },
 
     unmounted() {
+        this.terminalDisposed = true;
         window.removeEventListener("resize", this.onResizeEvent); // Remove the resize event listener from the window object.
         this.terminalResizeObserver?.disconnect();
         if (this.terminalResizeFrame) {

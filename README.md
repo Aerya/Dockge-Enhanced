@@ -66,6 +66,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Coordinated network restart :** The stack action Network restart previews and confirms the restart order for running containers sharing a Docker network namespace across stacks on the same instance. Stopped containers stay stopped; Compose files and images are unchanged. Healthchecks are awaited when present, otherwise only running state is checked, not VPN connectivity. This manual action interrupts service and does not change automatic updates. A failure stops further steps; refresh the preview before retrying. Administrator access only; update linked instances too.
 
+**Container shell selection :** Choose sh, bash, ash, zsh or fish in the container terminal. DOCKGE_DEFAULT_SHELL sets the hosting instance’s default (sh otherwise); a missing shell falls back once to sh. The shell must exist in the image. Switching opens a separate session without stopping the other shell. Administrator access only; update linked instances for the selector, while older agents retain their legacy terminal.
+
 **Shared environment variables :** Settings → Global .env explains the inheritance already used by managed stacks: global.env, then the stack’s .env, including empty overrides. The hosting instance’s files are used; external stacks keep their declared files. Saving does not redeploy containers. Compose must reference the variables; service-specific secrets should stay local.
 
 **Nested stack groups :** Organize custom groups into up to five levels from Manage → Parent group. Groups remain stored per account on this instance, including linked stacks. Search reveals matching branches. Deleting a group keeps its children at the root and never deletes stacks or Docker data.
@@ -522,6 +524,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Stack management
 - Coordinated manual restart of network-namespace dependents across stacks, with preview, health checks and explicit confirmation.
+
+- Container terminal shell selector with a per-instance default and fallback to sh.
 - Custom stack groups with up to five levels, stored per account in this instance’s database and available from any browser.
 - Repair a recreated network on start (`dockge.start.repair-network`)
 - Windows 11 with Docker Desktop/WSL2: [installation and limits](docs/windows.md)
@@ -977,6 +981,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKER_API_VERSION` | *(none)* | Fixes the Docker API version negotiated by the client — useful on certain NAS systems (e.g. Synology DSM 7.x) |
 | `TZ` | `UTC` | Container runtime timezone; scheduling defaults to it until explicitly configured in **Settings → General**. The WebUI choice takes precedence for Enhanced schedules. |
 | `DOCKGE_PORT` | `5001` | Web UI port |
+| `DOCKGE_DEFAULT_SHELL` | `sh` | Default container shell, executable name or absolute path without arguments |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | Enable HTTPS |
 | `DOCKGE_AUTH_MODE` | *(unset)* | Authentication mode: `local`, `disabled`, or `trusted-proxy`. When unset, the historical behavior and `disableAuth` setting are preserved |
 | `DOCKGE_AUTH_PROXY_HEADER` | `x-forwarded-user` | Header containing the proxy-validated identity in `trusted-proxy` mode |
