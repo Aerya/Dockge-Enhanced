@@ -66,6 +66,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Application catalog (BETA) :** Browse applications by category, logo and repository, with links to their websites. Choose a source and import an editable Compose/.env draft; nothing is deployed automatically. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS and Yundera are available; TrueNAS is browse-only. Platform templates require adaptation. Administrator only: review ports, mounts, permissions, secrets and missing companion files before deployment.
 
+**File manager instance names :** The instance selector uses the configured names, as on the home page. Addresses remain the fallback for unnamed linked instances.
+
 **Container service names :** The container terminal accepts valid Compose service names such as _app. Names are passed as arguments after --, never interpreted as Docker options.
 
 **Coordinated network restart :** The stack action Network restart previews and confirms the restart order for running containers sharing a Docker network namespace across stacks on the same instance. Stopped containers stay stopped; Compose files and images are unchanged. Healthchecks are awaited when present, otherwise only running state is checked, not VPN connectivity. This manual action interrupts service and does not change automatic updates. A failure stops further steps; refresh the preview before retrying. Administrator access only; update linked instances too.

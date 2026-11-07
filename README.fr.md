@@ -67,6 +67,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Catalogue d’applications (BÊTA) :** Parcourez les applications par catégorie, logo et dépôt, avec un lien vers leur site. Choisissez une source et importez un brouillon Compose/.env éditable ; aucun déploiement automatique. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS et Yundera sont proposés ; TrueNAS reste consultable uniquement. Les modèles spécifiques à une plateforme nécessitent une adaptation. Réservé aux administrateurs : vérifiez ports, montages, permissions, secrets et fichiers complémentaires manquants avant de déployer.
 
+**Noms des instances dans Fichiers :** Le sélecteur reprend les noms configurés, comme sur l’accueil. Les adresses restent affichées en secours pour les instances liées sans nom.
+
 **Noms des services du terminal :** Le terminal accepte les noms de services Compose valides, comme _app. Ils sont transmis comme arguments après --, jamais interprétés comme des options Docker.
 
 **Redémarrage réseau coordonné :** L’action de stack Redémarrage réseau affiche puis fait confirmer l’ordre de redémarrage des conteneurs actifs partageant un réseau Docker entre stacks de la même instance. Les conteneurs arrêtés restent arrêtés ; Compose et images sont inchangés. Les healthchecks existants sont attendus ; sinon seul le démarrage est vérifié, pas la connexion VPN. Cette action manuelle interrompt le service et ne modifie pas les mises à jour automatiques. Un échec arrête les étapes suivantes ; rechargez l’aperçu avant de réessayer. Réservé aux administrateurs ; mettez aussi à jour les instances liées.
