@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Read-only container explorer :** Administrators can browse, preview and download files from a running service container or replica, including linked instances running this version. Access uses the container’s configured user without extra privileges; ownership is checked on every request. Files outside mounted volumes disappear when recreated and may contain secrets. Limits: 500 entries, 1 MiB per file; sh, timeout, readlink, stat and dd required. For stopped containers or minimal images, use the existing volume explorer. No writes or deletions.
+
 **Deployment progress :** Stack deployments now show real stages: save, prerequisites, Docker Compose and metadata. The latest status survives an Enhanced restart; an unfinished operation becomes « interrupted », never a false success. Administrators can explicitly retry the current saved Compose after checking the containers. Console output stays in memory only and may contain secrets. Linked instances need this version. Compose success does not guarantee application health.
 
 **Application catalog (BETA) :** Browse applications by category, logo and repository, with links to their websites. Choose a source and import an editable Compose/.env draft; nothing is deployed automatically. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS and Yundera are available; TrueNAS is browse-only. Platform templates require adaptation. Administrator only: review ports, mounts, permissions, secrets and missing companion files before deployment.
@@ -660,6 +662,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Protection of running and stopped containers, rollback and recovery images, and recent Dockge-Enhanced images
 
 ### Search & files
+
+- Read-only container file explorer with replica selection and bounded downloads.
 - Global multi-instance search (`Ctrl+K`) across stacks, Compose/`.env` files, Docker resources and recent Restic snapshots
 - Opt-in search in `.env` values, which are never returned or stored in history
 - Compact mounted-volume rows with sizes and a volume browser/editor for each container, even when the stack is stopped; bounded inspection batches preserve every container and mount
@@ -1114,7 +1118,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration for optional per-service CPU/RAM limits, adapted without changing restricted-account permissions
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Default Compose filename.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates without service interruption.
-- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — inspiration for the application catalog and deployment progress.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — inspiration for the application catalog, deployment progress and container file explorer.
 - [**Lissy93/portainer-templates**](https://github.com/Lissy93/portainer-templates) — Application catalog (BETA).
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiration for file history, merged Compose, the `.env` form and diagnostics. Compact layout.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)

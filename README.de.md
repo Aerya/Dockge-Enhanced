@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Schreibgeschützter Container-Explorer :** Administratoren können Dateien laufender Container oder Replikate durchsuchen, ansehen und herunterladen, auch auf verbundenen Instanzen mit dieser Version. Der konfigurierte Container-Benutzer bleibt ohne Zusatzprivilegien erhalten; Stack-Zugehörigkeit wird bei jeder Anfrage geprüft. Dateien außerhalb von Volumes gehen bei Neuerstellung verloren und können Geheimnisse enthalten. Grenzen: 500 Einträge, 1 MiB pro Datei; sh, timeout, readlink, stat und dd erforderlich. Für gestoppte Container oder minimale Images den bestehenden Volume-Explorer nutzen. Kein Schreiben oder Löschen.
+
 **Bereitstellungsfortschritt :** Stack-Bereitstellungen zeigen reale Schritte: Speichern, Voraussetzungen, Docker Compose und Metadaten. Der letzte Status bleibt nach Enhanced-Neustart erhalten; unvollständige Vorgänge werden « unterbrochen », nie fälschlich erfolgreich. Administratoren können nach Containerprüfung den aktuell gespeicherten Compose ausdrücklich erneut bereitstellen. Konsolenausgabe bleibt nur im Arbeitsspeicher und kann Geheimnisse enthalten. Verbundene Instanzen benötigen diese Version. Compose-Erfolg garantiert keine Anwendungsgesundheit.
 
 **Anwendungskatalog (BETA) :** Anwendungen nach Kategorie, Logo und Repository mit Links zu ihren Websites durchsuchen. Quelle wählen und einen editierbaren Compose/.env-Entwurf importieren; keine automatische Bereitstellung. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS und Yundera sind verfügbar; TrueNAS ist nur einsehbar. Plattformspezifische Vorlagen müssen angepasst werden. Nur Administratoren: Ports, Mounts, Berechtigungen, Geheimnisse und fehlende Zusatzdateien vor der Bereitstellung prüfen.
@@ -660,6 +662,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Schutz laufender und gestoppter Container, von Rollback- und Wiederherstellungs-Images sowie aktueller Dockge-Enhanced-Images
 
 ### Suche & Dateien
+
+- Schreibgeschützter Container-Dateiexplorer mit Replikatauswahl und begrenzten Downloads.
 - Globale instanzübergreifende Suche (`Ctrl+K`) in Stacks, Compose-/`.env`-Dateien, Docker-Ressourcen und aktuellen Restic-Snapshots
 - Optionale Suche in `.env`-Werten, die nie zurückgegeben oder im Verlauf gespeichert werden
 - Kompakte Zeilen für eingebundene Volumes mit Größen und ein Volume-Browser/-Editor pro Container, auch bei gestopptem Stack; begrenzte Abfragegruppen erhalten alle Container und Mounts
@@ -1114,7 +1118,7 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — Inspiration für optionale CPU-/RAM-Limits pro Dienst, ohne Änderungen an eingeschränkten Kontorechten
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Standardname der Compose-Datei.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates ohne Dienstunterbrechung.
-- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — Inspiration für Anwendungskatalog und Bereitstellungsfortschritt.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — Inspiration für Anwendungskatalog, Bereitstellungsfortschritt und Container-Dateibrowser.
 - [**Lissy93/portainer-templates**](https://github.com/Lissy93/portainer-templates) — Anwendungskatalog (BETA).
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — Inspiration für Dateiverlauf, zusammengeführtes Compose, `.env`-Formular und Diagnose. Kompakte Oberfläche.
 - [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)

@@ -1,4 +1,5 @@
 import { TrivyScanner } from "../watchers/trivy-scanner";
+import { registerContainerFiles } from "./container-files-socket-handler";
 import { deploymentStore } from "../deployment-progress";
 import { registerCatalog } from "./catalog-socket-handler";
 import { previewNetworkRestart, restartNetworkDependents } from "../network-restart-manager";
@@ -49,6 +50,7 @@ export function instanceSystemStatsResponse(
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
+        registerContainerFiles(server, socket, agentSocket);
         registerCatalog(socket, agentSocket);
         // Do not call super.create()
         agentSocket.on("serviceLinks:stacks", async callback => {
