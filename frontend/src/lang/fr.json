@@ -1,4 +1,5 @@
 {
+    "appCatalog.search": "Rechercher une application",
     "appCatalog.intro": "Parcourez les applications par catégorie et choisissez le dépôt de leur modèle.",
     "appCatalog.repository": "Dépôt source",
     "appCatalog.allLoaded": "Tous les dépôts chargés",

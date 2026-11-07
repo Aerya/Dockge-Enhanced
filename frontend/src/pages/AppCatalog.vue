@@ -85,8 +85,8 @@
                 <input
                     v-model="search"
                     class="form-control mb-3"
-                    :placeholder="$t('search')"
-                    :aria-label="$t('search')"
+                    :placeholder="$t('appCatalog.search')"
+                    :aria-label="$t('appCatalog.search')"
                     @input="page = 1"
                 />
                 <button

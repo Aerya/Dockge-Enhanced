@@ -1,4 +1,5 @@
 {
+    "appCatalog.search": "Buscar aplicaciones",
     "appCatalog.intro": "Explore aplicaciones por categoría y elija el repositorio de su plantilla.",
     "appCatalog.repository": "Repositorio de origen",
     "appCatalog.allLoaded": "Todos los repositorios cargados",

@@ -1,4 +1,5 @@
 {
+    "appCatalog.search": "搜索应用",
     "appCatalog.intro": "按分类浏览应用并选择模板来源仓库。",
     "appCatalog.repository": "来源仓库",
     "appCatalog.allLoaded": "所有已加载仓库",

@@ -1,4 +1,5 @@
 {
+    "appCatalog.search": "Search applications",
     "appCatalog.intro": "Browse applications by category and choose their template repository.",
     "appCatalog.repository": "Source repository",
     "appCatalog.allLoaded": "All loaded repositories",
