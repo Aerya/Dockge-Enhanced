@@ -122,6 +122,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/service-rollout.test.ts backend/rollout-relay.test.ts backend/rollout-recovery.test.ts backend/stack-mutation.test.ts backend/rollout-monitoring.test.ts frontend/src/rollout-relay.test.ts frontend/src/rollout-relay-ui.test.js
 
+      - name: Tests du suivi des déploiements
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/deployment-progress.test.ts
+
       - name: Tests des liens de services et de leurs permissions
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/service-links.test.ts backend/stack-url-environment.test.ts backend/shared-env.test.ts frontend/src/service-links-ui.test.js

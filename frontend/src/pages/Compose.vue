@@ -338,6 +338,7 @@
             />
 
             <!-- Progress Terminal -->
+            <DeploymentProgress v-if="stack.name && $root.userAccess?.role === 'admin'" :stack-name="stack.name" :endpoint="endpoint" />
             <transition name="slide-fade" appear>
                 <Terminal
                     v-show="showProgressTerminal"
@@ -963,6 +964,7 @@ import {
 import { BModal } from "bootstrap-vue-next";
 import NetworkInput from "../components/NetworkInput.vue";
 import NetworkRestartDialog from "../components/NetworkRestartDialog.vue";
+import DeploymentProgress from "../components/DeploymentProgress.vue";
 import StackAutoUpdateBulk from "../components/StackAutoUpdateBulk.vue";
 import dotenv from "dotenv";
 import { renderStackReadme } from "../stack-readme";
@@ -1002,6 +1004,7 @@ let serviceStatusTimeout = null;
 
 export default {
     components: {
+        DeploymentProgress,
         NetworkRestartDialog,
         PostUpdateOptions,
         StackURLsInput,

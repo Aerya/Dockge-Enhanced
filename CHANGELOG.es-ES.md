@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-07 — Progreso de los despliegues** — Los despliegues muestran etapas reales: guardado, requisitos, Docker Compose y metadatos. El último estado persiste tras reiniciar Enhanced; una operación incompleta queda « interrumpida », nunca como falso éxito. Los administradores pueden reintentar explícitamente el Compose guardado tras revisar los contenedores. La consola solo permanece en memoria y puede contener secretos. Las instancias vinculadas necesitan esta versión. El éxito de Compose no garantiza la salud de la aplicación.
+
 **2026-11-07 — Catálogo de aplicaciones (BETA)** — Explore aplicaciones por categoría, logotipo y repositorio, con enlaces a sus sitios web. Elija una fuente e importe un borrador Compose/.env editable; sin despliegue automático. Se ofrecen Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS y Yundera; TrueNAS es solo de consulta. Las plantillas específicas de una plataforma requieren adaptación. Solo administradores: revise puertos, montajes, permisos, secretos y archivos adicionales ausentes antes de desplegar.
 
 **2026-11-07 — Nombres de instancias en Archivos** — El selector utiliza los nombres configurados, como en la página de inicio. Las instancias vinculadas sin nombre siguen mostrando su dirección.

@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-07 — Suivi des déploiements** — Les déploiements affichent leurs étapes réelles : enregistrement, prérequis, Docker Compose et métadonnées. Le dernier état survit au redémarrage d’Enhanced ; une opération inachevée devient « interrompue », jamais un faux succès. Les administrateurs peuvent relancer explicitement le Compose actuellement enregistré après vérification des conteneurs. La console reste uniquement en mémoire et peut contenir des secrets. Les instances liées doivent être à jour. La réussite de Compose ne garantit pas la santé de l’application.
+
 **2026-11-07 — Catalogue d’applications (BÊTA)** — Parcourez les applications par catégorie, logo et dépôt, avec un lien vers leur site. Choisissez une source et importez un brouillon Compose/.env éditable ; aucun déploiement automatique. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS et Yundera sont proposés ; TrueNAS reste consultable uniquement. Les modèles spécifiques à une plateforme nécessitent une adaptation. Réservé aux administrateurs : vérifiez ports, montages, permissions, secrets et fichiers complémentaires manquants avant de déployer.
 
 **2026-11-07 — Noms des instances dans Fichiers** — Le sélecteur reprend les noms configurés, comme sur l’accueil. Les adresses restent affichées en secours pour les instances liées sans nom.

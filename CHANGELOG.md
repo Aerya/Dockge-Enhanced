@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-07 — Deployment progress** — Stack deployments now show real stages: save, prerequisites, Docker Compose and metadata. The latest status survives an Enhanced restart; an unfinished operation becomes « interrupted », never a false success. Administrators can explicitly retry the current saved Compose after checking the containers. Console output stays in memory only and may contain secrets. Linked instances need this version. Compose success does not guarantee application health.
+
 **2026-11-07 — Application catalog (BETA)** — Browse applications by category, logo and repository, with links to their websites. Choose a source and import an editable Compose/.env draft; nothing is deployed automatically. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS and Yundera are available; TrueNAS is browse-only. Platform templates require adaptation. Administrator only: review ports, mounts, permissions, secrets and missing companion files before deployment.
 
 **2026-11-07 — File manager instance names** — The instance selector uses the configured names, as on the home page. Addresses remain the fallback for unnamed linked instances.

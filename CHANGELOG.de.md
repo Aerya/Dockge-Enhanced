@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-07 — Bereitstellungsfortschritt** — Stack-Bereitstellungen zeigen reale Schritte: Speichern, Voraussetzungen, Docker Compose und Metadaten. Der letzte Status bleibt nach Enhanced-Neustart erhalten; unvollständige Vorgänge werden « unterbrochen », nie fälschlich erfolgreich. Administratoren können nach Containerprüfung den aktuell gespeicherten Compose ausdrücklich erneut bereitstellen. Konsolenausgabe bleibt nur im Arbeitsspeicher und kann Geheimnisse enthalten. Verbundene Instanzen benötigen diese Version. Compose-Erfolg garantiert keine Anwendungsgesundheit.
+
 **2026-11-07 — Anwendungskatalog (BETA)** — Anwendungen nach Kategorie, Logo und Repository mit Links zu ihren Websites durchsuchen. Quelle wählen und einen editierbaren Compose/.env-Entwurf importieren; keine automatische Bereitstellung. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS und Yundera sind verfügbar; TrueNAS ist nur einsehbar. Plattformspezifische Vorlagen müssen angepasst werden. Nur Administratoren: Ports, Mounts, Berechtigungen, Geheimnisse und fehlende Zusatzdateien vor der Bereitstellung prüfen.
 
 **2026-11-07 — Instanznamen im Dateimanager** — Die Instanzauswahl verwendet die konfigurierten Namen wie auf der Startseite. Für unbenannte verknüpfte Instanzen wird weiterhin die Adresse angezeigt.
