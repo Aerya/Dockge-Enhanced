@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-07 — Variables de entorno compartidas** — La configuración de .env global explica la herencia ya utilizada por las stacks gestionadas: global.env y después el .env de la stack, incluidos valores vacíos. Se usan los archivos de la instancia anfitriona; las stacks externas conservan sus archivos declarados. Guardar no redespliega contenedores. Compose debe referenciar las variables; los secretos de cada servicio deben seguir siendo locales.
+
 **2026-11-07 — Grupos de stacks anidados** — Organice los grupos personalizados en hasta cinco niveles desde Gestionar → Grupo padre. Se guardan por cuenta en esta instancia, también para stacks vinculadas. La búsqueda revela las ramas correspondientes. Eliminar un grupo conserva sus hijos en la raíz y no elimina stacks ni datos Docker.
 
 **2026-11-06 — Rutas de stacks coherentes** — Los ejemplos de instalación montan /opt/stacks en la misma ruta del anfitrión y del contenedor y explican los montajes relativos. No se trasladan automáticamente las configuraciones ni los datos existentes; consérvelos antes de adaptar una instalación.

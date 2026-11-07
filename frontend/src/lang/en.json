@@ -1,4 +1,8 @@
 {
+    "releaseNews.item.sharedEnvironment": "Settings → Global .env explains the inheritance already used by managed stacks: global.env, then the stack’s .env, including empty overrides. The hosting instance’s files are used; external stacks keep their declared files. Saving does not redeploy containers. Compose must reference the variables; service-specific secrets should stay local.",
+    "globalEnv.inheritance": "Shared values are loaded from global.env in the stack directory. Each stack’s .env takes precedence, including an explicitly empty value. Variables in the Enhanced process environment take precedence over both files.",
+    "globalEnv.scope": "Applies to managed stacks on this instance only. Linked instances use their own global.env; external stacks keep their declared environment files. Parent-directory .env files are not searched automatically.",
+    "globalEnv.apply": "Saving does not restart containers. Reference a variable in Compose to use it, then review and redeploy the affected stacks. Avoid putting service-specific secrets in the shared file.",
     "releaseNews.item.nestedStackGroups": "Organize custom groups into up to five levels from Manage → Parent group. Groups remain stored per account on this instance, including linked stacks. Search reveals matching branches. Deleting a group keeps its children at the root and never deletes stacks or Docker data.",
     "stackGroups.parent": "Parent group",
     "stackGroups.root": "At root",
