@@ -1,4 +1,12 @@
 {
+    "releaseNews.item.containerShell": "容器 Shell 选择 : 在容器终端中选择 sh、bash、ash、zsh 或 fish。DOCKGE_DEFAULT_SHELL 设置托管实例的默认值（未设置时为 sh）；所选 Shell 不存在时仅回退到 sh 一次。Shell 必须已安装在镜像中。切换会打开独立会话，不会停止另一个 Shell。仅限管理员；关联实例需更新才能使用选择器，旧代理仍使用原有终端。",
+    "containerShell.choose": "Shell",
+    "containerShell.default": "实例默认值",
+    "containerShell.active": "当前 Shell",
+    "containerShell.fallback": "已回退到 sh",
+    "containerShell.legacy": "此实例不支持高级 Shell 选择。请更新实例；原有终端仍可使用。",
+    "containerShell.invalid": "Shell 或服务无效。",
+    "containerShell.unavailable": "无法打开此 Shell 或 sh。请检查容器是否正在运行以及 Docker 是否可访问。",
     "releaseNews.item.sharedEnvironment": "全局 .env 设置解释了受管理堆栈现有的继承顺序：先 global.env，再堆栈的 .env，包括空值覆盖。使用宿主实例的文件；外部堆栈保留其已声明的文件。保存不会重新部署容器。Compose 必须引用变量；服务专用密钥应保留在本地文件中。",
     "globalEnv.inheritance": "公共变量从堆栈目录中的 global.env 读取。各堆栈的 .env 优先，即使其值明确为空。Enhanced 进程环境中的变量优先于这两个文件。",
     "globalEnv.scope": "仅适用于此实例管理的堆栈。关联实例使用自己的 global.env；外部堆栈保留已声明的环境文件。不会自动搜索父目录中的 .env。",

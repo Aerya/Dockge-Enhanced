@@ -1,4 +1,12 @@
 {
+    "releaseNews.item.containerShell": "Shell-Auswahl für Container : Wählen Sie sh, bash, ash, zsh oder fish im Container-Terminal. DOCKGE_DEFAULT_SHELL legt den Standard der hostenden Instanz fest (sonst sh); fehlt die Shell, wird einmal auf sh zurückgegriffen. Die Shell muss im Image vorhanden sein. Ein Wechsel öffnet eine eigene Sitzung und beendet die andere nicht. Nur für Administratoren; aktualisieren Sie verbundene Instanzen für die Auswahl, ältere Agenten behalten ihr bisheriges Terminal.",
+    "containerShell.choose": "Shell",
+    "containerShell.default": "Standard dieser Instanz",
+    "containerShell.active": "Aktive Shell",
+    "containerShell.fallback": "auf sh zurückgefallen",
+    "containerShell.legacy": "Diese Instanz unterstützt die erweiterte Shell-Auswahl nicht. Aktualisieren Sie sie; das bisherige Terminal bleibt verfügbar.",
+    "containerShell.invalid": "Ungültige Shell oder ungültiger Dienst.",
+    "containerShell.unavailable": "Diese Shell oder sh kann nicht geöffnet werden. Prüfen Sie, ob der Container läuft und Docker erreichbar ist.",
     "releaseNews.item.sharedEnvironment": "Die Einstellungen für die globale .env erklären die bestehende Vererbung verwalteter Stacks: global.env, dann die .env des Stacks, auch mit leeren Werten. Es gelten die Dateien der ausführenden Instanz; externe Stacks behalten ihre angegebenen Dateien. Speichern löst kein Deployment aus. Compose muss die Variablen referenzieren; dienstspezifische Geheimnisse sollten lokal bleiben.",
     "globalEnv.inheritance": "Gemeinsame Werte werden aus global.env im Stack-Verzeichnis geladen. Die .env-Datei jedes Stacks hat Vorrang, auch bei ausdrücklich leeren Werten. Variablen der Enhanced-Prozessumgebung haben Vorrang vor beiden Dateien.",
     "globalEnv.scope": "Gilt nur für verwaltete Stacks dieser Instanz. Verbundene Instanzen verwenden ihre eigene global.env; externe Stacks behalten ihre angegebenen Umgebungsdateien. Übergeordnete Verzeichnisse werden nicht automatisch nach .env durchsucht.",

@@ -517,7 +517,7 @@ export default defineComponent({
                         endpoint: this.endpoint,
                         stackName: this.stackName,
                         serviceName: this.name,
-                        type: "bash",
+                        type: "default",
                     },
                 };
             } else {
@@ -526,7 +526,7 @@ export default defineComponent({
                     params: {
                         stackName: this.stackName,
                         serviceName: this.name,
-                        type: "bash",
+                        type: "default",
                     },
                 };
             }

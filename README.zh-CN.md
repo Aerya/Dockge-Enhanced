@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**容器 Shell 选择 :** 在容器终端中选择 sh、bash、ash、zsh 或 fish。DOCKGE_DEFAULT_SHELL 设置托管实例的默认值（未设置时为 sh）；所选 Shell 不存在时仅回退到 sh 一次。Shell 必须已安装在镜像中。切换会打开独立会话，不会停止另一个 Shell。仅限管理员；关联实例需更新才能使用选择器，旧代理仍使用原有终端。
+
 **共享环境变量 :** 全局 .env 设置解释了受管理堆栈现有的继承顺序：先 global.env，再堆栈的 .env，包括空值覆盖。使用宿主实例的文件；外部堆栈保留其已声明的文件。保存不会重新部署容器。Compose 必须引用变量；服务专用密钥应保留在本地文件中。
 
 **嵌套堆栈分组 :** 通过管理 → 父分组将自定义分组组织为最多五级。分组仍按账户保存在此实例中，也支持关联实例的堆栈。搜索会展开匹配的分支。删除分组会将其子分组保留在根级别，不会删除任何堆栈或 Docker 数据。
@@ -520,6 +522,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 每个实例可选择端口链接使用主机名还是 IP 地址
 
 ### Stack 管理
+- 容器终端 Shell 选择器，支持实例默认值及回退到 sh。
 - 最多五级的自定义堆栈分组，按账户存储于此实例的数据库中，可从任意浏览器访问。
 - 启动时修复重新创建的网络 (`dockge.start.repair-network`)
 - Windows 11 与 Docker Desktop/WSL2：[安装和限制](docs/windows.zh-CN.md)
@@ -977,6 +980,7 @@ PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics �
 | `DOCKER_API_VERSION` | *(无)* | 固定 Docker 客户端协商的 API 版本，适用于部分 NAS 系统（例如 Synology DSM 7.x） |
 | `TZ` | `UTC` | 容器运行时时区；在**设置 → 常规**中明确配置之前，计划任务默认使用它。WebUI 中的选择对 Enhanced 计划任务优先 |
 | `DOCKGE_PORT` | `5001` | Web UI 端口 |
+| `DOCKGE_DEFAULT_SHELL` | `sh` | 容器默认 Shell，使用可执行文件名或不带参数的绝对路径 |
 | `DOCKGE_SSL_KEY` / `DOCKGE_SSL_CERT` | — | 启用 HTTPS |
 | `DOCKGE_AUTH_MODE` | *(未设置)* | 认证模式：`local`、`disabled` 或 `trusted-proxy`。未设置时保留历史行为和 `disableAuth` 设置 |
 | `DOCKGE_AUTH_PROXY_HEADER` | `x-forwarded-user` | `trusted-proxy` 模式下包含已由代理验证身份的 Header |

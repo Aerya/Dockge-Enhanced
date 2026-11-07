@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-07 — Container shell selection** — Choose sh, bash, ash, zsh or fish in the container terminal. DOCKGE_DEFAULT_SHELL sets the hosting instance’s default (sh otherwise); a missing shell falls back once to sh. The shell must exist in the image. Switching opens a separate session without stopping the other shell. Administrator access only; update linked instances for the selector, while older agents retain their legacy terminal.
+
 **2026-11-07 — Shared environment variables** — Settings → Global .env explains the inheritance already used by managed stacks: global.env, then the stack’s .env, including empty overrides. The hosting instance’s files are used; external stacks keep their declared files. Saving does not redeploy containers. Compose must reference the variables; service-specific secrets should stay local.
 
 **2026-11-07 — Nested stack groups** — Organize custom groups into up to five levels from Manage → Parent group. Groups remain stored per account on this instance, including linked stacks. Search reveals matching branches. Deleting a group keeps its children at the root and never deletes stacks or Docker data.
