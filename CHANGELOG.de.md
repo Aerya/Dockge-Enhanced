@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-07 — Bereitstellungsfortschritt** — Stack-Bereitstellungen zeigen reale Schritte: Speichern, Voraussetzungen, Docker Compose und Metadaten. Der letzte Status bleibt nach Enhanced-Neustart erhalten; unvollständige Vorgänge werden « unterbrochen », nie fälschlich erfolgreich. Administratoren können nach Containerprüfung den aktuell gespeicherten Compose ausdrücklich erneut bereitstellen. Konsolenausgabe bleibt nur im Arbeitsspeicher und kann Geheimnisse enthalten. Verbundene Instanzen benötigen diese Version. Compose-Erfolg garantiert keine Anwendungsgesundheit.
+
 **2026-11-07 — Dienstnamen im Container-Terminal** — Das Terminal akzeptiert gültige Compose-Dienstnamen wie _app. Namen werden nach -- als Argumente übergeben, niemals als Docker-Optionen ausgewertet.
 
 **2026-11-07 — Koordinierter Netzwerk-Neustart** — Die Stack-Aktion Netzwerk-Neustart zeigt die Neustartreihenfolge laufender Container mit gemeinsamem Docker-Netzwerk-Namensraum über mehrere Stacks derselben Instanz und verlangt eine Bestätigung. Gestoppte Container bleiben gestoppt; Compose-Dateien und Images bleiben unverändert. Vorhandene Healthchecks werden abgewartet, sonst wird nur der Laufzustand geprüft, nicht die VPN-Verbindung. Die manuelle Aktion unterbricht den Dienst und ändert automatische Updates nicht. Nach einem Fehler werden weitere Schritte gestoppt; vor einem neuen Versuch die Vorschau aktualisieren. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren.

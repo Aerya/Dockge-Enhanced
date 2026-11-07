@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-07 — Progreso de los despliegues** — Los despliegues muestran etapas reales: guardado, requisitos, Docker Compose y metadatos. El último estado persiste tras reiniciar Enhanced; una operación incompleta queda « interrumpida », nunca como falso éxito. Los administradores pueden reintentar explícitamente el Compose guardado tras revisar los contenedores. La consola solo permanece en memoria y puede contener secretos. Las instancias vinculadas necesitan esta versión. El éxito de Compose no garantiza la salud de la aplicación.
+
 **2026-11-07 — Nombres de servicios del terminal** — El terminal acepta nombres de servicio Compose válidos, como _app. Se pasan como argumentos después de --, nunca como opciones Docker.
 
 **2026-11-07 — Reinicio de red coordinado** — La acción de stack Reinicio de red muestra y pide confirmar el orden de reinicio de los contenedores activos que comparten un espacio de red Docker entre stacks de la misma instancia. Los detenidos siguen detenidos; Compose e imágenes no cambian. Se esperan los healthchecks existentes; sin ellos solo se comprueba el arranque, no la conexión VPN. Esta acción manual interrumpe el servicio y no modifica las actualizaciones automáticas. Un fallo detiene los pasos siguientes; actualice la vista previa antes de reintentar. Solo administradores; actualice también las instancias vinculadas.

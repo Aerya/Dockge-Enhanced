@@ -378,7 +378,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 if ((await loadUserAccess(socket.userID)).role !== "admin" || typeof name !== "string") {
                     throw new ValidationError("Permission denied");
                 }
-                callbackResult({ ok: true, progress: await deploymentStore(server.config.dataDir).get(name) }, callback);
+                callbackResult({ ok: true,
+                    progress: await deploymentStore(server.config.dataDir).get(name) }, callback);
             } catch (error) {
                 callbackError(error, callback);
             }
@@ -396,8 +397,9 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 }
                 await store.run(name, async (phase, output) => {
                     const stack = await Stack.getStack(server, name);
-                    await stack.deploy(socket, { phase, output });
-                }, true);
+                    await stack.deploy(socket, { phase,
+                        output });
+                }, true, previous.id);
                 await this.auditStack(socket, "stack.deploy-retry", name);
                 server.sendStackList();
                 callbackResult({ ok: true }, callback);
@@ -419,7 +421,8 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 const stack = await deploymentStore(server.config.dataDir).run(name, async (phase, output) => {
                     const saved = await this.saveStack(server, name, composeYAML, composeENV, isAdd, composeOverrideYAML);
                     BackupManager.getInstance().triggerBackupOnSave(name);
-                    await saved.deploy(socket, { phase, output });
+                    await saved.deploy(socket, { phase,
+                        output });
                     return saved;
                 });
                 await this.auditStack(socket, "stack.deploy", String(name));

@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-07 — Suivi des déploiements** — Les déploiements affichent leurs étapes réelles : enregistrement, prérequis, Docker Compose et métadonnées. Le dernier état survit au redémarrage d’Enhanced ; une opération inachevée devient « interrompue », jamais un faux succès. Les administrateurs peuvent relancer explicitement le Compose actuellement enregistré après vérification des conteneurs. La console reste uniquement en mémoire et peut contenir des secrets. Les instances liées doivent être à jour. La réussite de Compose ne garantit pas la santé de l’application.
+
 **2026-11-07 — Noms des services du terminal** — Le terminal accepte les noms de services Compose valides, comme _app. Ils sont transmis comme arguments après --, jamais interprétés comme des options Docker.
 
 **2026-11-07 — Redémarrage réseau coordonné** — L’action de stack Redémarrage réseau affiche puis fait confirmer l’ordre de redémarrage des conteneurs actifs partageant un réseau Docker entre stacks de la même instance. Les conteneurs arrêtés restent arrêtés ; Compose et images sont inchangés. Les healthchecks existants sont attendus ; sinon seul le démarrage est vérifié, pas la connexion VPN. Cette action manuelle interrompt le service et ne modifie pas les mises à jour automatiques. Un échec arrête les étapes suivantes ; rechargez l’aperçu avant de réessayer. Réservé aux administrateurs ; mettez aussi à jour les instances liées.

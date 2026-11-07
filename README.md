@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Deployment progress :** Stack deployments now show real stages: save, prerequisites, Docker Compose and metadata. The latest status survives an Enhanced restart; an unfinished operation becomes « interrupted », never a false success. Administrators can explicitly retry the current saved Compose after checking the containers. Console output stays in memory only and may contain secrets. Linked instances need this version. Compose success does not guarantee application health.
+
 **Container service names :** The container terminal accepts valid Compose service names such as _app. Names are passed as arguments after --, never interpreted as Docker options.
 
 **Coordinated network restart :** The stack action Network restart previews and confirms the restart order for running containers sharing a Docker network namespace across stacks on the same instance. Stopped containers stay stopped; Compose files and images are unchanged. Healthchecks are awaited when present, otherwise only running state is checked, not VPN connectivity. This manual action interrupts service and does not change automatic updates. A failure stops further steps; refresh the preview before retrying. Administrator access only; update linked instances too.
@@ -525,6 +527,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-instance choice of Hostname or IP address for container port links
 
 ### Stack management
+
+- Deployment progress with real stages, bounded console and explicit retry.
 - Container terminal shell selector with a per-instance default and fallback to sh. Supports valid Compose service names.
 
 - Coordinated manual restart of network-namespace dependents across stacks, with preview, health checks and explicit confirmation.
@@ -1104,6 +1108,7 @@ Commercial third-party clients are allowed by the license, but must not imply of
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — inspiration for optional per-service CPU/RAM limits, adapted without changing restricted-account permissions
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Default Compose filename.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates without service interruption.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — inspiration for deployment progress.
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — inspiration for file history, merged Compose, the `.env` form and diagnostics. Compact layout.
 - [**Kula**](https://github.com/c0m4r/kula) by c0m4r — lightweight system monitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) by Lorwell — inspiration for the restricted host file manager and real-container view adapted for Enhanced (MIT licence)

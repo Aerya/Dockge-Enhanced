@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Bereitstellungsfortschritt :** Stack-Bereitstellungen zeigen reale Schritte: Speichern, Voraussetzungen, Docker Compose und Metadaten. Der letzte Status bleibt nach Enhanced-Neustart erhalten; unvollständige Vorgänge werden « unterbrochen », nie fälschlich erfolgreich. Administratoren können nach Containerprüfung den aktuell gespeicherten Compose ausdrücklich erneut bereitstellen. Konsolenausgabe bleibt nur im Arbeitsspeicher und kann Geheimnisse enthalten. Verbundene Instanzen benötigen diese Version. Compose-Erfolg garantiert keine Anwendungsgesundheit.
+
 **Dienstnamen im Container-Terminal :** Das Terminal akzeptiert gültige Compose-Dienstnamen wie _app. Namen werden nach -- als Argumente übergeben, niemals als Docker-Optionen ausgewertet.
 
 **Koordinierter Netzwerk-Neustart :** Die Stack-Aktion Netzwerk-Neustart zeigt die Neustartreihenfolge laufender Container mit gemeinsamem Docker-Netzwerk-Namensraum über mehrere Stacks derselben Instanz und verlangt eine Bestätigung. Gestoppte Container bleiben gestoppt; Compose-Dateien und Images bleiben unverändert. Vorhandene Healthchecks werden abgewartet, sonst wird nur der Laufzustand geprüft, nicht die VPN-Verbindung. Die manuelle Aktion unterbricht den Dienst und ändert automatische Updates nicht. Nach einem Fehler werden weitere Schritte gestoppt; vor einem neuen Versuch die Vorschau aktualisieren. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren.
@@ -525,6 +527,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Wahl von Hostname oder IP-Adresse für Container-Port-Links pro Instanz
 
 ### Stack-Verwaltung
+
+- Bereitstellungsfortschritt mit realen Schritten, begrenzter Konsole und ausdrücklicher Wiederholung.
 - Shell-Auswahl im Container-Terminal mit Instanzstandard und Rückfall auf sh. Gültige Compose-Dienstnamen werden unterstützt.
 
 - Koordinierter manueller Neustart von Netzwerkabhängigkeiten zwischen Stacks mit Vorschau, Healthchecks und Bestätigung.
@@ -1104,6 +1108,7 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 - [**Isurupro7**](https://github.com/Isurupro7) / [**Dockge #1006**](https://github.com/louislam/dockge/pull/1006) — Inspiration für optionale CPU-/RAM-Limits pro Dienst, ohne Änderungen an eingeschränkten Kontorechten
 - [**RichyHBM**](https://github.com/RichyHBM) / [**Dockge #84**](https://github.com/louislam/dockge/pull/84) — Standardname der Compose-Datei.
 - [**Wowu/docker-rollout**](https://github.com/Wowu/docker-rollout) — Updates ohne Dienstunterbrechung.
+- [**NekoSuneProjectsForks/dockge**](https://github.com/NekoSuneProjectsForks/dockge) — Inspiration für den Bereitstellungsfortschritt.
 - [**ethanpil/dockge-mod**](https://github.com/ethanpil/dockge-mod) — Inspiration für Dateiverlauf, zusammengeführtes Compose, `.env`-Formular und Diagnose. Kompakte Oberfläche.
 - [**Kula**](https://github.com/c0m4r/kula) von c0m4r – leichtgewichtiger Systemmonitor (AGPLv3)
 - [**Lorwell/dockge**](https://github.com/Lorwell/dockge) von Lorwell – Inspiration für den eingeschränkten Host-Dateimanager und die Ansicht echter Container, angepasst für Enhanced (MIT-Lizenz)

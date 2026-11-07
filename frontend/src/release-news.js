@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-07-deployment-progress",
+        items: [ "releaseNews.item.deploymentProgress" ],
+    },
+    {
         id: "2026-11-07-container-shell-names",
         items: [ "releaseNews.item.containerShellNames" ],
     },

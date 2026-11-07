@@ -1025,7 +1025,8 @@ export class Stack {
     }
 
     @stackMutation
-    async deploy(socket : DockgeSocket, progress?: { phase: (phase: "prerequisites" | "compose" | "metadata") => Promise<void>; output: (chunk: string) => void }) : Promise<number> {
+    async deploy(socket : DockgeSocket, progress?: { phase: (phase: "prerequisites" | "compose" | "metadata") => Promise<void>;
+        output: (chunk: string) => void }) : Promise<number> {
         await progress?.phase("prerequisites");
         await this.assertStartGuard();
         await this.repairStartNetworks();

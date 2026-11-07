@@ -11,9 +11,11 @@ export interface DeploymentProgress {
     startedAt: string;
     updatedAt: string;
     saved: boolean;
-    steps: Array<{ phase: DeploymentPhase;
+    steps: Array<{
+        phase: DeploymentPhase;
         startedAt: string;
-        finishedAt?: string }>;
+        finishedAt?: string;
+    }>;
     output?: string;
 }
 const stores = new Map<string, DeploymentStore>();
@@ -47,11 +49,21 @@ export class DeploymentStore {
                     throw new Error("Invalid deployment history");
                 }
                 for (const row of rows.slice(-100)) {
-                    if (row && typeof row.stack === "string" && /^[a-z0-9_-]{1,200}$/.test(row.stack) && Array.isArray(row.steps)) {
+                    if (
+                        row &&
+                        typeof row.stack === "string" &&
+                        /^[a-z0-9_-]{1,200}$/.test(row.stack) &&
+                        Array.isArray(row.steps)
+                    ) {
                         // A stopped backend cannot know whether its old Compose process finished.
-                        this.records.set(row.stack, { ...row,
+                        this.records.set(row.stack, {
+                            ...row,
                             output: undefined,
-                            state: row.state === "running" ? "interrupted" : row.state });
+                            state:
+                                row.state === "running"
+                                    ? "interrupted"
+                                    : row.state,
+                        });
                     }
                 }
             } catch (error) {
@@ -64,11 +76,15 @@ export class DeploymentStore {
     }
 
     private persist() {
-        const rows = [ ...this.records.values() ].map(({ output: _output, ...record }) => record);
+        const snapshot = JSON.stringify(
+            [ ...this.records.values() ].map(
+                ({ output: _output, ...record }) => record,
+            ),
+        );
         const write = async () => {
             await mkdir(this.dataDir, { recursive: true });
             const temp = this.file + ".tmp";
-            await writeFile(temp, JSON.stringify(rows), { mode: 0o600 });
+            await writeFile(temp, snapshot, { mode: 0o600 });
             await rename(temp, this.file);
         };
         this.writing = this.writing.then(write, write);
@@ -81,7 +97,15 @@ export class DeploymentStore {
         return row ? structuredClone(row) : null;
     }
 
-    async run<T>(stack: string, action: (report: (phase: DeploymentPhase) => Promise<void>, output: (chunk: string) => void) => Promise<T>, saved = false): Promise<T> {
+    async run<T>(
+        stack: string,
+        action: (
+            report: (phase: DeploymentPhase) => Promise<void>,
+            output: (chunk: string) => void,
+        ) => Promise<T>,
+        saved = false,
+        expectedId?: string,
+    ): Promise<T> {
         if (!/^[a-z0-9_-]{1,200}$/.test(stack) || this.active.has(stack)) {
             throw new Error("deployment.busy");
         }
@@ -89,8 +113,19 @@ export class DeploymentStore {
         this.active.add(stack);
         try {
             await this.load();
+            if (expectedId) {
+                const previous = this.records.get(stack);
+                if (
+                    previous?.id !== expectedId ||
+                    !previous.saved ||
+                    ![ "failed", "interrupted" ].includes(previous.state)
+                ) {
+                    throw new Error("deployment.changed");
+                }
+            }
             const now = new Date().toISOString();
-            const row: DeploymentProgress = { id: randomUUID(),
+            const row: DeploymentProgress = {
+                id: randomUUID(),
                 stack,
                 state: "running",
                 phase: saved ? "prerequisites" : "save",
@@ -98,17 +133,23 @@ export class DeploymentStore {
                 updatedAt: now,
                 saved,
                 steps: [],
-                output: "" };
+                output: "",
+            };
             this.records.delete(stack);
             this.records.set(stack, row);
             while (this.records.size > 100) {
-                const removable = [ ...this.records.keys() ].find(name => !this.active.has(name));
+                const removable = [ ...this.records.keys() ].find(
+                    (name) => !this.active.has(name),
+                );
                 if (!removable) {
                     throw new Error("deployment.busy");
                 }
                 this.records.delete(removable);
             }
             const report = async (phase: DeploymentPhase) => {
+                if (row.steps.at(-1)?.phase === phase) {
+                    return;
+                }
                 const time = new Date().toISOString();
                 if (row.steps.length) {
                     row.steps[row.steps.length - 1].finishedAt = time;
@@ -120,16 +161,20 @@ export class DeploymentStore {
                     startedAt: time });
                 await this.persist();
             };
-            await report(row.phase);
             try {
-                const result = await action(report, chunk => {
+                await report(row.phase);
+                const result = await action(report, (chunk) => {
                     row.output = ((row.output || "") + chunk).slice(-65536);
                 });
                 row.state = "completed";
-                row.steps[row.steps.length - 1].finishedAt = new Date().toISOString();
+                row.steps[row.steps.length - 1].finishedAt =
+                    new Date().toISOString();
                 return result;
             } catch (error) {
                 row.state = "failed";
+                row.output = ((row.output || "") + "\n" + String(error)).slice(
+                    -65536,
+                );
                 throw error;
             } finally {
                 row.updatedAt = new Date().toISOString();
