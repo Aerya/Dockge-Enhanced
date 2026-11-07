@@ -4,6 +4,10 @@ export const RELEASE_NEWS = [
         items: [ "releaseNews.item.containerShell" ],
     },
     {
+        id: "2026-11-07-shared-environment",
+        items: [ "releaseNews.item.sharedEnvironment" ],
+    },
+    {
         id: "2026-11-07-nested-stack-groups",
         items: [ "releaseNews.item.nestedStackGroups" ],
     },

@@ -66,6 +66,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 **Shell-Auswahl für Container :** Wählen Sie sh, bash, ash, zsh oder fish im Container-Terminal. DOCKGE_DEFAULT_SHELL legt den Standard der hostenden Instanz fest (sonst sh); fehlt die Shell, wird einmal auf sh zurückgegriffen. Die Shell muss im Image vorhanden sein. Ein Wechsel öffnet eine eigene Sitzung und beendet die andere nicht. Nur für Administratoren; aktualisieren Sie verbundene Instanzen für die Auswahl, ältere Agenten behalten ihr bisheriges Terminal.
 
+**Gemeinsame Umgebungsvariablen :** Die Einstellungen für die globale .env erklären die bestehende Vererbung verwalteter Stacks: global.env, dann die .env des Stacks, auch mit leeren Werten. Es gelten die Dateien der ausführenden Instanz; externe Stacks behalten ihre angegebenen Dateien. Speichern löst kein Deployment aus. Compose muss die Variablen referenzieren; dienstspezifische Geheimnisse sollten lokal bleiben.
+
 **Verschachtelte Stack-Gruppen :** Ordnen Sie eigene Gruppen unter Verwalten → Übergeordnete Gruppe auf bis zu fünf Ebenen an. Sie bleiben pro Konto auf dieser Instanz gespeichert, auch für verbundene Stacks. Die Suche öffnet passende Zweige. Beim Löschen einer Gruppe bleiben ihre Kinder auf oberster Ebene erhalten; Stacks und Docker-Daten werden nicht gelöscht.
 
 **Konsistente Stack-Pfade :** Die Installationsbeispiele binden /opt/stacks unter demselben Host-/Containerpfad ein und erläutern relative Bind-Mounts. Vorhandene Konfigurationen und Daten werden nicht automatisch verschoben; vor Anpassungen erhalten.
@@ -541,6 +543,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Option pro Dienst, einen optionalen Dienst beim Gesamtstatus des Stacks zu ignorieren
 
 ### Compose-Bearbeitung
+
+- Gemeinsame global.env mit Vorrang der jeweiligen Stack-.env; Priorität und Instanzgrenzen in den Einstellungen erklärt.
 
 - **Konfigurationswerkzeuge** — Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Guide](docs/configuration-tools.de.md).
 

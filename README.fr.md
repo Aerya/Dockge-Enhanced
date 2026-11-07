@@ -67,6 +67,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Choix du shell des conteneurs :** Choisissez sh, bash, ash, zsh ou fish dans le terminal du conteneur. DOCKGE_DEFAULT_SHELL définit le choix par défaut de l’instance hébergeant la stack (sh sinon) ; un shell absent déclenche un seul repli sur sh. Le shell doit être présent dans l’image. Changer de shell ouvre une session distincte sans arrêter l’autre. Accès administrateur uniquement ; mettez à jour les instances liées pour le sélecteur, les anciens agents conservent leur terminal habituel.
 
+**Variables d’environnement partagées :** Paramètres → .env global explique l’héritage déjà utilisé par les stacks gérées : global.env puis le .env de la stack, y compris les surcharges vides. Les fichiers de l’instance hôte sont utilisés ; les stacks externes conservent leurs fichiers déclarés. Enregistrer ne redéploie rien. Le Compose doit référencer les variables ; les secrets propres à un service doivent rester locaux.
+
 **Groupes de stacks imbriqués :** Organisez les groupes personnalisés sur cinq niveaux depuis Gérer → Groupe parent. Ils restent enregistrés par compte sur cette instance, y compris pour les stacks liées. La recherche révèle les branches correspondantes. Supprimer un groupe conserve ses enfants à la racine et ne supprime aucune stack ni donnée Docker.
 
 **Chemins des stacks cohérents :** Les exemples d’installation montent désormais /opt/stacks au même chemin hôte/conteneur et expliquent les volumes relatifs. Les configurations et données existantes ne sont pas déplacées automatiquement ; préservez-les avant d’adapter une installation.
@@ -542,6 +544,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Option par service pour ignorer un service facultatif dans l’état global de la stack
 
 ### Édition Compose
+
+- global.env partagé avec surcharge par le .env de chaque stack ; priorité et périmètre par instance expliqués dans les paramètres.
 
 - **Outils de configuration** — Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Guide](docs/configuration-tools.fr.md).
 

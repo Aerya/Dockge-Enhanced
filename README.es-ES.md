@@ -66,6 +66,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Selección de shell del contenedor :** Elija sh, bash, ash, zsh o fish en el terminal del contenedor. DOCKGE_DEFAULT_SHELL define el valor predeterminado de la instancia que aloja la stack (sh en su defecto); si falta la shell, se intenta sh una sola vez. La shell debe existir en la imagen. Cambiarla abre una sesión distinta sin detener la anterior. Solo administradores; actualice las instancias vinculadas para el selector, los agentes antiguos conservan su terminal habitual.
 
+**Variables de entorno compartidas :** La configuración de .env global explica la herencia ya utilizada por las stacks gestionadas: global.env y después el .env de la stack, incluidos valores vacíos. Se usan los archivos de la instancia anfitriona; las stacks externas conservan sus archivos declarados. Guardar no redespliega contenedores. Compose debe referenciar las variables; los secretos de cada servicio deben seguir siendo locales.
+
 **Grupos de stacks anidados :** Organice los grupos personalizados en hasta cinco niveles desde Gestionar → Grupo padre. Se guardan por cuenta en esta instancia, también para stacks vinculadas. La búsqueda revela las ramas correspondientes. Eliminar un grupo conserva sus hijos en la raíz y no elimina stacks ni datos Docker.
 
 **Rutas de stacks coherentes :** Los ejemplos de instalación montan /opt/stacks en la misma ruta del anfitrión y del contenedor y explican los montajes relativos. No se trasladan automáticamente las configuraciones ni los datos existentes; consérvelos antes de adaptar una instalación.
@@ -543,6 +545,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Opción por servicio para ignorar un servicio opcional en el estado global del stack
 
 ### Edición de Compose
+
+- global.env compartido con prioridad del .env de cada stack; precedencia y ámbito por instancia explicados en la configuración.
 
 - **Herramientas de configuración** — Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Guide](docs/configuration-tools.es.md).
 

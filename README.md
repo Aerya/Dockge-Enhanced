@@ -66,6 +66,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Container shell selection :** Choose sh, bash, ash, zsh or fish in the container terminal. DOCKGE_DEFAULT_SHELL sets the hosting instance’s default (sh otherwise); a missing shell falls back once to sh. The shell must exist in the image. Switching opens a separate session without stopping the other shell. Administrator access only; update linked instances for the selector, while older agents retain their legacy terminal.
 
+**Shared environment variables :** Settings → Global .env explains the inheritance already used by managed stacks: global.env, then the stack’s .env, including empty overrides. The hosting instance’s files are used; external stacks keep their declared files. Saving does not redeploy containers. Compose must reference the variables; service-specific secrets should stay local.
+
 **Nested stack groups :** Organize custom groups into up to five levels from Manage → Parent group. Groups remain stored per account on this instance, including linked stacks. Search reveals matching branches. Deleting a group keeps its children at the root and never deletes stacks or Docker data.
 
 **Consistent stack paths :** The installation examples now mount /opt/stacks at the same host/container path and explain relative bind mounts. Existing configurations and data are not moved automatically; preserve them before adjusting an installation.
@@ -541,6 +543,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Per-service option to ignore an optional service in the overall stack status
 
 ### Compose editing
+
+- Shared global.env with per-stack .env overrides; explicit precedence and instance scope in Settings.
 
 - **Configuration tools** — Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Guide](docs/configuration-tools.md).
 

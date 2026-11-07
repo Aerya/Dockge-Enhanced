@@ -1,6 +1,16 @@
 <template>
     <div>
         <div v-if="settingsLoaded" class="my-4">
+            <div class="shadow-box mb-3">
+                <p>{{ $t("globalEnv.inheritance") }}</p>
+                <p>{{ $t("globalEnv.scope") }}</p>
+                <p class="mb-2">{{ $t("globalEnv.apply") }}</p>
+                <pre class="mb-0">global.env: TZ=Europe/Paris
+.env: TZ=America/New_York
+Compose:
+  environment:
+    - TZ=${TZ}</pre>
+            </div>
             <form class="my-4" autocomplete="off" @submit.prevent="saveGeneral">
                 <div class="shadow-box mb-3 editor-box edit-mode">
                     <EnvForm v-model="settings.globalENV">

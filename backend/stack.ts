@@ -1425,7 +1425,7 @@ export class Stack {
             if (fs.existsSync(path.join(this.path, ".env"))) {
                 options.splice(1, 0, "--env-file", "./.env");
             }
-            options.splice(1, 0, "--env-file", "../global.env");
+            options.splice(1, 0, "--env-file", path.resolve(this.server.stacksDir, "global.env"));
         }
         return options;
     }
