@@ -3,13 +3,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { parse } from "@vue/compiler-sfc";
-import { assignStackGroup, groupVisibleStacks, importStackGroups, parseStackGroups, stackGroupStorageKey, stackIdentity } from "./stack-groups.ts";
+import { assignStackGroup, groupVisibleStacks, importStackGroups, parseStackGroups, stackGroupStorageKey, stackIdentity, canReparentStackGroup, stackGroupPath } from "./stack-groups.ts";
 import { RUNNING, EXITED } from "../../common/util-common.ts";
 
 const { descriptor } = parse(readFileSync(new URL("./components/StackGroups.vue", import.meta.url), "utf8"));
 const storage = new Map();
 const component = runInNewContext(descriptor.script.content.replace(/^import .*;$/gm, "").replace("export default", "result ="), {
-    assignStackGroup, groupVisibleStacks, importStackGroups, parseStackGroups, stackGroupStorageKey, stackIdentity, RUNNING,
+    assignStackGroup, groupVisibleStacks, importStackGroups, parseStackGroups, stackGroupStorageKey, stackIdentity, canReparentStackGroup, stackGroupPath, RUNNING,
     localStorage: { getItem: key => storage.get(key) || null, removeItem: key => storage.delete(key) },
 });
 function context(server, username = "alice") {
@@ -42,6 +42,26 @@ test("manager actions persist server-side across fresh browsers and preserve fed
     await restored.removeGroup(id);
     await ctx.load();
     assert.equal(ctx.preferences.groups.length, 0);
+});
+test("parent changes persist, cycles are excluded and removing a parent preserves its children", async () => {
+    const server = new Map();
+    const ctx = context(server);
+    await ctx.load();
+    ctx.newName = "Production"; await ctx.addGroup();
+    const parent = ctx.preferences.groups[0].id;
+    ctx.newName = "Media"; await ctx.addGroup();
+    const child = ctx.preferences.groups[1].id;
+    await ctx.reparent(child, parent);
+    assert.equal(ctx.preferences.groups[1].parentId, parent);
+    assert.equal(ctx.parentOptions(parent).length, 0);
+    await ctx.reparent(parent, child);
+    assert.equal(ctx.preferences.groups[0].parentId, undefined);
+    await ctx.assign({ name: "plex", endpoint: "linked.example" }, child);
+    const restored = context(server); await restored.load();
+    assert.equal(restored.groupPath(child), "Production / Media");
+    await restored.removeGroup(parent);
+    assert.equal(restored.preferences.groups[0].parentId, undefined);
+    assert.equal(restored.preferences.groups[0].members.length, 1);
 });
 test("account switching clears form drafts and never inherits another account's groups", async () => {
     const server = new Map();

@@ -1,4 +1,8 @@
 {
+    "releaseNews.item.nestedStackGroups": "Organize custom groups into up to five levels from Manage → Parent group. Groups remain stored per account on this instance, including linked stacks. Search reveals matching branches. Deleting a group keeps its children at the root and never deletes stacks or Docker data.",
+    "stackGroups.parent": "Parent group",
+    "stackGroups.root": "At root",
+    "stackGroups.hierarchyHelp": "Up to five levels. Deleting a group moves its children to the root; no Docker stacks or data are deleted.",
     "releaseNews.item.compactAlignmentNovember": "Compact view better aligns columns, schedules and actions. Home comes before Service links; Classic/Compact remains in Settings → Appearance.",
     "releaseNews.item.topologyNovember": "Docker topology brings together networks, stacks and ports from local and linked instances, with groups and stopped/external filters. Administrators only; update linked instances too. It shows configuration, not traffic or verified proxy routes.",
     "releaseNews.item.composeEditingNovember": "The visual Compose editor preserves comments and formatting outside the elements being changed.",

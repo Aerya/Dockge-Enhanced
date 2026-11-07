@@ -1,4 +1,8 @@
 {
+    "releaseNews.item.nestedStackGroups": "Ordnen Sie eigene Gruppen unter Verwalten → Übergeordnete Gruppe auf bis zu fünf Ebenen an. Sie bleiben pro Konto auf dieser Instanz gespeichert, auch für verbundene Stacks. Die Suche öffnet passende Zweige. Beim Löschen einer Gruppe bleiben ihre Kinder auf oberster Ebene erhalten; Stacks und Docker-Daten werden nicht gelöscht.",
+    "stackGroups.parent": "Übergeordnete Gruppe",
+    "stackGroups.root": "Auf oberster Ebene",
+    "stackGroups.hierarchyHelp": "Bis zu fünf Ebenen. Beim Löschen einer Gruppe werden ihre Untergruppen auf die oberste Ebene verschoben; Docker-Stacks und Daten bleiben erhalten.",
     "releaseNews.item.compactAlignmentNovember": "Die kompakte Ansicht richtet Spalten, Zeitpläne und Aktionen besser aus. Start steht vor Service-Links; Klassisch/Kompakt bleibt unter Einstellungen → Darstellung.",
     "releaseNews.item.topologyNovember": "Die Docker-Topologie zeigt Netzwerke, Stacks und Ports lokaler und verknüpfter Instanzen, mit Gruppen und Filtern für gestoppte/externe Container. Nur für Administratoren; aktualisieren Sie auch verknüpfte Instanzen. Sie zeigt die Konfiguration, nicht den Datenverkehr oder verifizierte Proxy-Routen.",
     "releaseNews.item.composeEditingNovember": "Der visuelle Compose-Editor erhält Kommentare und Formatierung außerhalb der geänderten Elemente.",

@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-07 — Groupes de stacks imbriqués** — Organisez les groupes personnalisés sur cinq niveaux depuis Gérer → Groupe parent. Ils restent enregistrés par compte sur cette instance, y compris pour les stacks liées. La recherche révèle les branches correspondantes. Supprimer un groupe conserve ses enfants à la racine et ne supprime aucune stack ni donnée Docker.
+
 **2026-11-06 — Chemins des stacks cohérents** — Les exemples d’installation montent désormais /opt/stacks au même chemin hôte/conteneur et expliquent les volumes relatifs. Les configurations et données existantes ne sont pas déplacées automatiquement ; préservez-les avant d’adapter une installation.
 
 **2026-11-06 — Dates des conteneurs** — La fiche d’un conteneur distingue sa création, son dernier démarrage et sa durée de fonctionnement depuis ce démarrage. Chaque réplica a ses propres dates, lues dans Docker sur l’instance hôte. Un conteneur arrêté n’affiche pas de durée croissante ; une date indisponible reste non renseignée. Mettez aussi à jour les instances liées.

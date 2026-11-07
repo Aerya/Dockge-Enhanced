@@ -20,8 +20,13 @@
                     <input v-model="newName" maxlength="80" class="form-control form-control-sm" :aria-label="$t('stackGroups.name')" :placeholder="$t('stackGroups.name')" />
                     <button class="btn btn-sm btn-primary" :disabled="!newName.trim() || preferences.groups.length >= 100">{{ $t('stackGroups.add') }}</button>
                 </form>
-                <div v-for="group in preferences.groups" :key="group.id" class="d-flex gap-1 mb-1">
+                <p class="small text-muted">{{ $t('stackGroups.hierarchyHelp') }}</p>
+                <div v-for="group in preferences.groups" :key="group.id" class="group-edit-row mb-2">
                     <input :value="group.name" maxlength="80" class="form-control form-control-sm" :aria-label="$t('stackGroups.name')" @change="renameGroup(group.id, $event.target.value)" />
+                    <select class="form-select form-select-sm" :value="group.parentId || ''" :aria-label="$t('stackGroups.parent')" @change="reparent(group.id, $event.target.value)">
+                        <option value="">{{ $t('stackGroups.root') }}</option>
+                        <option v-for="parent in parentOptions(group.id)" :key="parent.id" :value="parent.id">{{ groupPath(parent.id) }}</option>
+                    </select>
                     <button type="button" class="btn btn-sm btn-outline-danger" :title="$t('stackGroups.removeHint')" @click="removeGroup(group.id)">{{ $t('stackGroups.remove') }}</button>
                 </div>
                 <input v-model="assignmentSearch" class="form-control form-control-sm my-2" :aria-label="$t('stackGroups.find')" :placeholder="$t('stackGroups.find')" />
@@ -30,19 +35,19 @@
                         <span>{{ stack.displayName || stack.name }} · {{ endpointLabel(stack.endpoint || '') }}</span>
                         <select class="form-select form-select-sm" :value="groupFor(stack)" @change="assign(stack, $event.target.value)">
                             <option value="">{{ $t('stackGroups.ungrouped') }}</option>
-                            <option v-for="group in preferences.groups" :key="group.id" :value="group.id">{{ group.name }}</option>
+                            <option v-for="group in preferences.groups" :key="group.id" :value="group.id">{{ groupPath(group.id) }}</option>
                         </select>
                     </label>
                 </div>
             </section>
         </fieldset>
         <template v-if="preferences.enabled">
-            <section v-for="group in visibleGroups" :key="group.id" class="custom-stack-group">
+            <section v-for="group in visibleGroups" :key="group.id" class="custom-stack-group" :style="{ marginInlineStart: `${group.depth * 0.65}rem` }">
                 <button v-if="group.id" type="button" class="group-heading" :disabled="!ready || busy" :aria-expanded="!group.collapsed" @click="toggle(group.id)">
                     <span aria-hidden="true">{{ group.collapsed ? '▸' : '▾' }}</span>
                     <span class="group-name">{{ group.name }}</span>
-                    <span class="badge bg-secondary">{{ group.stacks.length }}</span>
-                    <span v-if="notRunning(group.stacks)" class="badge bg-warning text-dark" :title="$t('stackGroups.notRunning')">{{ notRunning(group.stacks) }}</span>
+                    <span class="badge bg-secondary">{{ group.descendantStacks.length }}</span>
+                    <span v-if="notRunning(group.descendantStacks)" class="badge bg-warning text-dark" :title="$t('stackGroups.notRunning')">{{ notRunning(group.descendantStacks) }}</span>
                 </button>
                 <div v-else class="group-heading">{{ $t('stackGroups.ungrouped') }} <span class="badge bg-secondary">{{ group.stacks.length }}</span></div>
                 <template v-if="!group.collapsed">
@@ -55,7 +60,7 @@
 </template>
 
 <script>
-import { assignStackGroup, groupVisibleStacks, importStackGroups, parseStackGroups, stackGroupStorageKey, stackIdentity } from "../stack-groups";
+import { assignStackGroup, groupVisibleStacks, importStackGroups, parseStackGroups, stackGroupStorageKey, stackIdentity, canReparentStackGroup, stackGroupPath } from "../stack-groups";
 import { RUNNING } from "../../../common/util-common";
 
 export default {
@@ -245,7 +250,32 @@ export default {
         },
         removeGroup(id) {
             return this.save({ ...this.preferences,
-                groups: this.preferences.groups.filter(group => group.id !== id) });
+                groups: this.preferences.groups.filter(group => group.id !== id).map(group => {
+                    const copy = { ...group };
+                    if (copy.parentId === id) {
+                        delete copy.parentId;
+                    }
+                    return copy;
+                }) });
+        },
+        groupPath(id) {
+            return stackGroupPath(this.preferences.groups, id);
+        },
+        parentOptions(id) {
+            return this.preferences.groups.filter(group => canReparentStackGroup(this.preferences.groups, id, group.id));
+        },
+        reparent(id, parentId) {
+            if (!canReparentStackGroup(this.preferences.groups, id, parentId)) {
+                return;
+            }
+            const next = parseStackGroups(JSON.stringify(this.preferences));
+            const group = next.groups.find(item => item.id === id);
+            if (parentId) {
+                group.parentId = parentId;
+            } else {
+                delete group.parentId;
+            }
+            return this.save(next);
         },
         groupFor(stack) {
             return this.preferences.groups.find(group => group.members.includes(stackIdentity(stack)))?.id || "";
@@ -278,6 +308,8 @@ export default {
 
 <style scoped>
 .group-editor { border: 1px solid var(--bs-border-color); border-radius: .5rem; }
+.group-edit-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .25rem; }
+.group-edit-row select { grid-row: 2; grid-column: 1 / -1; }
 .group-assignments { max-height: 18rem; overflow-y: auto; }
 .group-heading { display: flex; align-items: center; gap: .5rem; width: 100%; padding: .6rem; border: 0; background: transparent; color: inherit; text-align: left; }
 .group-name { flex: 1; overflow-wrap: anywhere; }
