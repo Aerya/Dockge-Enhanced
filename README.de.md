@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Instanznamen im Dateimanager :** Die Instanzauswahl verwendet die konfigurierten Namen wie auf der Startseite. Für unbenannte verknüpfte Instanzen wird weiterhin die Adresse angezeigt.
+
 **Dienstnamen im Container-Terminal :** Das Terminal akzeptiert gültige Compose-Dienstnamen wie _app. Namen werden nach -- als Argumente übergeben, niemals als Docker-Optionen ausgewertet.
 
 **Koordinierter Netzwerk-Neustart :** Die Stack-Aktion Netzwerk-Neustart zeigt die Neustartreihenfolge laufender Container mit gemeinsamem Docker-Netzwerk-Namensraum über mehrere Stacks derselben Instanz und verlangt eine Bestätigung. Gestoppte Container bleiben gestoppt; Compose-Dateien und Images bleiben unverändert. Vorhandene Healthchecks werden abgewartet, sonst wird nur der Laufzustand geprüft, nicht die VPN-Verbindung. Die manuelle Aktion unterbricht den Dienst und ändert automatische Updates nicht. Nach einem Fehler werden weitere Schritte gestoppt; vor einem neuen Versuch die Vorschau aktualisieren. Nur für Administratoren; verbundene Instanzen ebenfalls aktualisieren.

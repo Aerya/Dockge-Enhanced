@@ -278,7 +278,7 @@ export default {
         endpointOptions() {
             return Object.entries(this.$root.agentList).map(([ value, agent ]) => ({
                 value,
-                label: value === "" ? this.$t("currentEndpoint") : agent.name || value,
+                label: agent.displayName || (value === "" ? this.$t("currentEndpoint") : value),
                 offline: this.$root.agentStatusList[value] !== "online",
             }));
         },
