@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { executeNetworkRestart, planNetworkRestart, readNetworkRestartContainers, type NetworkRestartContainer } from "./network-restart";
@@ -8,6 +8,31 @@ import { restartNetworkDependents } from "./network-restart-manager";
 import { tryReserveDockerUpdate, activeDockerUpdateOperation } from "./self-update/operation-coordinator";
 import { hasActiveStackMutations, withStackMutation } from "./stack-mutation";
 import type { DockgeServer } from "./dockge-server";
+import { Stack } from "./stack";
+
+test("network restart records lastStartedAt without changing update dates or notes", async () => {
+    const root = await mkdtemp(join(tmpdir(), "network-restart-meta-"));
+    try {
+        await mkdir(join(root, "demo"));
+        const metadata = { createdAt: "2026-01-01T00:00:00.000Z",
+            lastUpdated: "2026-02-01T00:00:00.000Z",
+            lastStartedAt: "2026-03-01T00:00:00.000Z",
+            note: "keep",
+            displayName: "VPN" };
+        const file = join(root, "demo", ".dockge-meta.json");
+        await writeFile(file, JSON.stringify(metadata));
+        const stack = new Stack({ stacksDir: root } as DockgeServer, "demo", "services:\n  app:\n    image: busybox\n", "", true);
+        await stack.recordNetworkRestart();
+        const updated = JSON.parse(await readFile(file, "utf8"));
+        for (const key of [ "createdAt", "lastUpdated", "note", "displayName" ] as const) {
+            assert.equal(updated[key], metadata[key]);
+        }
+        assert.notEqual(updated.lastStartedAt, metadata.lastStartedAt);
+    } finally {
+        await rm(root, { recursive: true,
+            force: true });
+    }
+});
 
 const row = (id: string, stack: string, mode = "bridge", state = "running"): NetworkRestartContainer => ({ id,
     name: id,
@@ -146,7 +171,8 @@ test("manager reserves before awaiting, respects persisted self-update and relea
     const dependencies = {
         preview: async () => plan,
         getStack: async (_server: DockgeServer, name: string) => ({ operationProject: name,
-            checkNetworkRestartPrerequisites: async () => {} }),
+            checkNetworkRestartPrerequisites: async () => {},
+            recordNetworkRestart: async () => {} }),
         current: async () => ({ Id: "enhanced" }),
         blocked: async () => blocked,
         execute: async () => {

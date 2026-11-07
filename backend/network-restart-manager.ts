@@ -16,7 +16,7 @@ export async function previewNetworkRestart(server: DockgeServer, stackName: str
 
 const runtime = {
     preview: previewNetworkRestart,
-    getStack: async (server: DockgeServer, name: string): Promise<Pick<Stack, "operationProject" | "checkNetworkRestartPrerequisites">> => Stack.getStack(server, name),
+    getStack: async (server: DockgeServer, name: string): Promise<Pick<Stack, "operationProject" | "checkNetworkRestartPrerequisites" | "recordNetworkRestart">> => Stack.getStack(server, name),
     current: resolveCurrentContainer,
     blocked: async (dataDir: string) => {
         const { isSelfUpdateBlockingImageMutations } = await import("./watchers/image-watcher");
@@ -57,7 +57,11 @@ export async function restartNetworkDependents(server: DockgeServer, stackName: 
             for (const stack of stacks) {
                 await stack.checkNetworkRestartPrerequisites();
             }
-            return dependencies.execute(checked);
+            const completed = await dependencies.execute(checked);
+            for (const stack of stacks) {
+                await stack.recordNetworkRestart();
+            }
+            return completed;
         };
         return await lock(0);
     } finally {

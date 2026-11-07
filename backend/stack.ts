@@ -1593,6 +1593,10 @@ export class Stack {
         await this.assertStartGuard();
     }
 
+    async recordNetworkRestart(): Promise<void> {
+        await this.writeMeta({ lastStartedAt: new Date().toISOString() });
+    }
+
     @stackMutation
     async restartService(serviceName: string) : Promise<number> {
         if (!serviceName) {
