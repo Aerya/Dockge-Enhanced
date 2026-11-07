@@ -7,7 +7,7 @@
 
 [README](README.zh-CN.md) 介绍近期主要更新和完整功能目录。
 
-**2026-11-07 — 应用目录（测试版）** — 从公开 GitHub 目录（包括 Lissy93）导入社区 Portainer 模板，生成可编辑的 Compose/.env 草稿。仅限管理员，不会自动部署。在编辑器中选择目标实例。请检查端口、挂载、权限和凭据；不会下载附加文件。拒绝 Swarm、Windows 及不支持的选项。刷新目录不会修改现有 stack。
+**2026-11-07 — 应用目录（测试版）** — 按分类、图标和仓库浏览应用，并访问其官方网站。选择来源后导入可编辑的 Compose/.env 草稿，不会自动部署。提供 Lissy93、Portainer、Pi-Hosted、LinuxServer、Umbrel、Runtipi、RoqueOS 和 Yundera；TrueNAS 仅供浏览。平台专用模板需要手动适配。仅限管理员：部署前检查端口、挂载、权限、凭据和缺失的附加文件。
 
 **2026-11-07 — 容器终端服务名** — 容器终端接受 _app 等有效的 Compose 服务名。服务名作为 -- 后的参数传递，不会被解释为 Docker 选项。
 

@@ -7,7 +7,7 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
-**2026-11-07 — Catalogue d’applications (BÊTA)** — Importez les modèles communautaires Portainer depuis des catalogues GitHub publics, dont Lissy93, dans un brouillon Compose/.env éditable. Réservé aux administrateurs ; aucun déploiement automatique. Choisissez l’instance cible dans l’éditeur. Vérifiez ports, montages, permissions et secrets ; les fichiers complémentaires ne sont pas téléchargés. Swarm, Windows et options non prises en charge sont refusés. Actualiser le catalogue ne modifie jamais les stacks existantes.
+**2026-11-07 — Catalogue d’applications (BÊTA)** — Parcourez les applications par catégorie, logo et dépôt, avec un lien vers leur site. Choisissez une source et importez un brouillon Compose/.env éditable ; aucun déploiement automatique. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS et Yundera sont proposés ; TrueNAS reste consultable uniquement. Les modèles spécifiques à une plateforme nécessitent une adaptation. Réservé aux administrateurs : vérifiez ports, montages, permissions, secrets et fichiers complémentaires manquants avant de déployer.
 
 **2026-11-07 — Noms des services du terminal** — Le terminal accepte les noms de services Compose valides, comme _app. Ils sont transmis comme arguments après --, jamais interprétés comme des options Docker.
 

@@ -7,7 +7,7 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
-**2026-11-07 — Application catalog (BETA)** — Import community Portainer templates from public GitHub catalogs, including Lissy93, into an editable Compose/.env draft. Administrator only; nothing is deployed automatically. Choose the target instance in the editor. Review ports, mounts, permissions and secrets; companion files are not downloaded. Swarm, Windows and unsupported options are refused. Refreshing the catalog never changes existing stacks.
+**2026-11-07 — Application catalog (BETA)** — Browse applications by category, logo and repository, with links to their websites. Choose a source and import an editable Compose/.env draft; nothing is deployed automatically. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS and Yundera are available; TrueNAS is browse-only. Platform templates require adaptation. Administrator only: review ports, mounts, permissions, secrets and missing companion files before deployment.
 
 **2026-11-07 — Container service names** — The container terminal accepts valid Compose service names such as _app. Names are passed as arguments after --, never interpreted as Docker options.
 

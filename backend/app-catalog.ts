@@ -22,10 +22,15 @@ export function catalogURL(input: unknown): URL {
 
 export function fetchCatalogText(input: unknown): Promise<string> {
     const url = catalogURL(input);
+    return fetchCatalogResource("raw.githubusercontent.com", url.pathname);
+}
+
+/** Only trusted adapters may select the GitHub API; callers cannot supply hosts. */
+export function fetchCatalogResource(hostname: "raw.githubusercontent.com" | "api.github.com", resource: string): Promise<string> {
     return new Promise((resolve, reject) => {
         // Fixed origin, no redirect following, no proxy or credentials from templates.
-        const request = https.get({ hostname: "raw.githubusercontent.com",
-            path: url.pathname,
+        const request = https.get({ hostname,
+            path: resource,
             port: 443,
             headers: { "User-Agent": "Dockge-Enhanced-catalog" } }, response => {
             if (response.statusCode !== 200) {
@@ -65,11 +70,26 @@ export function parseCatalog(raw: string) {
         return { index,
             title: text(item.title, 160),
             description: text(item.description),
+            logo: safeCatalogLink(item.logo),
+            origin: safeCatalogLink(object(item.repository).url) || safeCatalogLink(item.maintainer),
+            website: safeCatalogLink(item.website || item.webpage || item.officialDoc) || safeCatalogLink(text(item.description).match(/https:\/\/[^\s<>]+/)?.[0]),
             note: text(item.note, 8000),
             categories: Array.isArray(item.categories) ? item.categories.filter(v => typeof v === "string").slice(0, 10) : [],
             supported: [ 1, 3 ].includes(Number(item.type)) && (!item.platform || item.platform === "linux"),
             type: Number(item.type) };
     });
+}
+
+export function safeCatalogLink(value: unknown): string {
+    try {
+        const url = new URL(String(value));
+        if (url.protocol !== "https:" || url.username || url.password || !url.hostname.includes(".") || /(^[\d.]+$|:|\.(local|localhost|internal)$)/i.test(url.hostname)) {
+            return "";
+        }
+        return url.href;
+    } catch {
+        return "";
+    }
 }
 
 export function stackfileURL(repository: unknown): string {
@@ -87,6 +107,7 @@ export function stackfileURL(repository: unknown): string {
 /** Convert supported container fields explicitly; never silently discard execution options. */
 export function containerCompose(item: RecordValue): string {
     const allowed = new Set([ "id", "type", "title", "name", "description", "categories", "platform", "logo", "maintainer", "note", "image", "env", "ports", "volumes", "restart_policy", "command", "hostname", "network", "privileged", "interactive", "labels" ]);
+    [ "website", "webpage", "officialDoc" ].forEach(key => allowed.add(key));
     if (Object.keys(item).some(key => !allowed.has(key)) || !text(item.image)) {
         throw new Error("appCatalog.unsupported");
     }
@@ -99,6 +120,15 @@ export function containerCompose(item: RecordValue): string {
     if (item.interactive) {
         service.stdin_open = true;
         service.tty = true;
+    }
+    if (Array.isArray(item.labels)) {
+        service.labels = Object.fromEntries(item.labels.map(value => {
+            const label = object(value);
+            if (typeof label.name !== "string" || typeof label.value !== "string") {
+                throw new Error("appCatalog.unsupported");
+            }
+            return [ label.name, label.value ];
+        }));
     }
     if (item.network) {
         if (![ "host", "bridge", "none" ].includes(String(item.network))) {

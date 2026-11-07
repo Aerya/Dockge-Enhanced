@@ -1,11 +1,13 @@
 import { ApplicationCatalog } from "../app-catalog";
+import { CatalogSources, CATALOG_SOURCES } from "../catalog-sources";
 import { loadUserAccess } from "../user-access";
 import { callbackError, callbackResult, checkLogin, type DockgeSocket } from "../util-server";
 import type { AgentSocket } from "../../common/agent-socket";
 
 const catalog = new ApplicationCatalog();
+const sources = new CatalogSources();
 export function registerCatalog(socket: DockgeSocket, agent: AgentSocket) {
-    for (const event of [ "appCatalogList", "appCatalogDraft" ]) {
+    for (const event of [ "appCatalogList", "appCatalogDraft", "appCatalogSources", "appCatalogBrowse", "appCatalogSourceDraft" ]) {
         let busy = false;
         agent.on(event, async (request, callback) => {
             try {
@@ -19,7 +21,7 @@ export function registerCatalog(socket: DockgeSocket, agent: AgentSocket) {
                 busy = true;
                 try {
                     const input = request as Record<string, unknown>;
-                    const data = event === "appCatalogList" ? await catalog.list(input.source, input.refresh === true) : await catalog.draft(input.source, input.revision, input.index);
+                    const data = event === "appCatalogSources" ? CATALOG_SOURCES : event === "appCatalogBrowse" ? await sources.browse(input.source, input.refresh === true) : event === "appCatalogSourceDraft" ? await sources.draft(input.source, input.revision, input.index) : event === "appCatalogList" ? await catalog.list(input.source, input.refresh === true) : await catalog.draft(input.source, input.revision, input.index);
                     callbackResult({ ok: true,
                         data }, callback);
                 } finally {

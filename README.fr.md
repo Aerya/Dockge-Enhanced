@@ -65,7 +65,7 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
-**Catalogue d’applications (BÊTA) :** Importez les modèles communautaires Portainer depuis des catalogues GitHub publics, dont Lissy93, dans un brouillon Compose/.env éditable. Réservé aux administrateurs ; aucun déploiement automatique. Choisissez l’instance cible dans l’éditeur. Vérifiez ports, montages, permissions et secrets ; les fichiers complémentaires ne sont pas téléchargés. Swarm, Windows et options non prises en charge sont refusés. Actualiser le catalogue ne modifie jamais les stacks existantes.
+**Catalogue d’applications (BÊTA) :** Parcourez les applications par catégorie, logo et dépôt, avec un lien vers leur site. Choisissez une source et importez un brouillon Compose/.env éditable ; aucun déploiement automatique. Lissy93, Portainer, Pi-Hosted, LinuxServer, Umbrel, Runtipi, RoqueOS et Yundera sont proposés ; TrueNAS reste consultable uniquement. Les modèles spécifiques à une plateforme nécessitent une adaptation. Réservé aux administrateurs : vérifiez ports, montages, permissions, secrets et fichiers complémentaires manquants avant de déployer.
 
 **Noms des services du terminal :** Le terminal accepte les noms de services Compose valides, comme _app. Ils sont transmis comme arguments après --, jamais interprétés comme des options Docker.
 
@@ -529,7 +529,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Gestion des stacks
 
-- Catalogue d’applications (BÊTA) : modèles communautaires importés dans des brouillons éditables, avec provenance et avertissements.
+- Catalogue d’applications (BÊTA) : modèles communautaires importés dans des brouillons éditables, avec provenance et avertissements. [Catalogue d’applications (BÊTA)](docs/application-catalog.fr.md).
 - Sélecteur de shell du conteneur, choix par défaut par instance et repli sur sh. Noms de services Compose valides conservés.
 
 - Redémarrage manuel coordonné des dépendants réseau entre stacks, avec aperçu, healthchecks et confirmation explicite.
