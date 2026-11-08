@@ -236,10 +236,15 @@ export class AutomationManager {
         if (Object.keys(fields).some(key => ![ "name", "composeYAML", "composeENV", "composeOverrideYAML" ].includes(key))) {
             throw new ValidationError("Unknown stack field; deployment and remote endpoints are not accepted");
         }
-        if (typeof fields.name !== "string" || fields.name.length > 64 || !/^[a-z0-9][a-z0-9_-]*$/.test(fields.name)) {
+        if (typeof fields.name !== "string") {
             throw new ValidationError("Invalid stack name");
         }
-        const name = fields.name;
+        // Derive the path component only from the explicit ASCII allowlist, then
+        // reject (never silently normalize) anything removed from the input.
+        const name = fields.name.replace(/[^a-z0-9_-]/g, "");
+        if (name !== fields.name || name.length > 64 || !/^[a-z0-9][a-z0-9_-]*$/.test(name)) {
+            throw new ValidationError("Invalid stack name");
+        }
         const compose = fields.composeYAML;
         const env = fields.composeENV ?? "";
         const override = fields.composeOverrideYAML ?? "";
