@@ -99,9 +99,13 @@ jobs:
         run: |
           npx tsx --test backend/hub-mode.test.ts backend/socket-handlers/agent-proxy-socket-handler.test.ts
 
+      - name: Tests de création de stacks par API
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/automation-create.test.ts
+
       - name: Tests des fichiers des conteneurs
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/container-files.test.ts backend/container-instances.test.ts
+        run: npx tsx --test backend/container-files.test.ts backend/container-instances.test.ts frontend/src/container-log-tabs.test.js
 
       - name: Tests des chemins des exemples Compose
         if: steps.docs.outputs.docs_only != 'true'

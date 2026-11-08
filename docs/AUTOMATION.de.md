@@ -1,5 +1,17 @@
 # REST-API, Webhooks und Automatisierung
 
+## Stacks per API erstellen
+
+POST /api/v1/stacks speichert eine neue Compose-Datei sowie optional Override und .env, ohne Bereitstellung. Die separate Berechtigung stack:create erfordert Zugriff auf alle Stacks und eine ausdrückliche Risikobestätigung: beliebige Compose-Dateien sind ein Administratorrecht, keine Mandantentrennung. Bestehende Stacks werden nicht überschrieben; die Bereitstellung benötigt eine separate Berechtigung.
+
+```json
+{"name":"example","composeYAML":"services:\n  app:\n    image: nginx:alpine\n","composeENV":"","composeOverrideYAML":""}
+```
+
+`Authorization: Bearer <token>` · `POST /api/v1/stacks` · 201: `{"ok":true,"data":{"name":"example","deployed":false}}`.
+
+60 KiB · `POST /api/v1/stacks/example/actions/start` → `stack:start`.
+
 [English](AUTOMATION.md) · [Français](AUTOMATION.fr.md) · [Español](AUTOMATION.es.md) · [Deutsch](AUTOMATION.de.md) · [简体中文](AUTOMATION.zh-CN.md)
 
 Alles auf dieser Seite ist optional. Tokens oder Webhooks werden erst erstellt, wenn ein Administrator sie unter **Einstellungen → Automatisierung** anfordert.
