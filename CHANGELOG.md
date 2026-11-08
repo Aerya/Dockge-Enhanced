@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-08 — Agent without WebUI** — Optional DOCKGE_AGENT_ONLY=1 disables the local WebUI; the dedicated dockge-enhanced-agent image omits frontend assets. The authenticated HTTP/Socket.IO transport and backend remain necessary: this is not a promise of reduced RAM. Use local authentication and initialize a new agent with DOCKGE_BOOTSTRAP_USERNAME and DOCKGE_BOOTSTRAP_PASSWORD_FILE, then add its address from the central instance or configure the existing reverse connection. Never expose it without trusted-network/firewall or TLS protection. Update the agent through its hosting Compose, not internal self-update; stacks and schedules keep their existing behavior.
+
 **2026-11-07 — Automatic application catalogs** — All repositories are enabled by default and load progressively when Applications opens. Disable individual repositories from Manage repositories. Search categories in a height-limited scrolling list, separately from application search. Choices are stored per account on this instance.
 
 **2026-11-07 — Customizable top navigation** — Settings → Appearance lets you show or hide navigation links on desktop and mobile. Home and Enhanced remain visible; access to account settings is retained. Choices are stored per account on this instance across browsers. Existing Console preferences are preserved; permissions and direct access are unchanged.

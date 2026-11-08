@@ -1,4 +1,5 @@
 import { execFile } from "../buffered-process";
+import { requireInteractiveSelfUpdate } from "../agent-mode";
 import { commandBufferEnvArgs } from "../../extra/command-buffer.cjs";
 import { promisify } from "util";
 import * as crypto from "crypto";
@@ -379,6 +380,7 @@ export class SelfUpdateManager {
     }
 
     async requestSidecarUpdate(targetImage: string, automatic = false, targetRevision?: string): Promise<SelfUpdateOperation> {
+        requireInteractiveSelfUpdate();
         const resumingScheduled = automatic && this.operation.state === "scheduled";
         if (this.requestInFlight || (isSelfUpdateActive(this.operation.state) && !resumingScheduled)) {
             throw new Error("A self-update is already running");

@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Agente sin interfaz web :** DOCKGE_AGENT_ONLY=1 desactiva opcionalmente la WebUI local; la imagen dedicada dockge-enhanced-agent no incluye archivos frontend. El transporte HTTP/Socket.IO autenticado y el backend siguen siendo necesarios: no se promete reducir la RAM. Use autenticación local e inicialice un agente nuevo con DOCKGE_BOOTSTRAP_USERNAME y DOCKGE_BOOTSTRAP_PASSWORD_FILE; añada su dirección desde la instancia central o configure la conexión inversa existente. Proteja el acceso mediante red de confianza/cortafuegos o TLS. Actualice el agente desde su Compose anfitrión, no mediante autoactualización interna; stacks y programaciones conservan su funcionamiento.
+
 **Catálogos cargados automáticamente :** Todos los repositorios están activados por defecto y se cargan progresivamente al abrir Aplicaciones. Desactive los que desee en Gestionar repositorios. Las categorías tienen búsqueda propia y una lista de altura limitada con desplazamiento, separada de la búsqueda de aplicaciones. Preferencias guardadas por cuenta en esta instancia.
 
 **Explorador de contenedores de solo lectura :** Los administradores pueden explorar, previsualizar y descargar archivos de un contenedor o réplica activo, también en instancias vinculadas con esta versión. Se conserva el usuario del contenedor sin privilegios adicionales; su pertenencia al stack se verifica en cada solicitud. Los archivos fuera de volúmenes desaparecen al recrear y pueden contener secretos. Límites: 500 entradas, 1 MiB por archivo; requiere sh, timeout, readlink, stat y dd. Para contenedores detenidos o imágenes mínimas, use el explorador de volúmenes existente. Sin escritura ni eliminación.
@@ -524,6 +526,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 <summary>Mostrar todas las funcionalidades</summary>
 
 ### Multiservidor y federación
+
+- **Agente sin interfaz web** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
 - Federación en malla completa entre instancias Dockge-Enhanced, administrables desde cualquier WebUI vinculada
 - Conexiones inversas opcionales para hosts detrás de NAT/CGNAT, con un token por nodo, conexión automática y revocación; los agentes inversos pertenecen a su servidor central ([guía](docs/compose-and-reverse-agents.md))
 - Etiquetas de agente persistentes y filtrado por etiqueta, combinados con el filtro por instancia
@@ -995,6 +999,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directorio que contiene los stacks Docker Compose |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Directorio de datos de Dockge; cámbialo solo para un montaje persistente personalizado |
+| `DOCKGE_AGENT_ONLY` | `0` | Agente sin interfaz web (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Fallos consecutivos antes de salir (0 desactiva; máximo 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Segundos entre comprobaciones terminadas (5–3600; cada comprobación expira en 5 segundos) |
 | `DOCKGE_PUBLIC_URL` | *(ninguna)* | URL pública usada en enlaces de notificaciones Discord (por ejemplo `https://dockge.example.com`) |

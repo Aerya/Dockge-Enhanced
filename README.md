@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Agent without WebUI :** Optional DOCKGE_AGENT_ONLY=1 disables the local WebUI; the dedicated dockge-enhanced-agent image omits frontend assets. The authenticated HTTP/Socket.IO transport and backend remain necessary: this is not a promise of reduced RAM. Use local authentication and initialize a new agent with DOCKGE_BOOTSTRAP_USERNAME and DOCKGE_BOOTSTRAP_PASSWORD_FILE, then add its address from the central instance or configure the existing reverse connection. Never expose it without trusted-network/firewall or TLS protection. Update the agent through its hosting Compose, not internal self-update; stacks and schedules keep their existing behavior.
+
 **Automatic application catalogs :** All repositories are enabled by default and load progressively when Applications opens. Disable individual repositories from Manage repositories. Search categories in a height-limited scrolling list, separately from application search. Choices are stored per account on this instance.
 
 **Read-only container explorer :** Administrators can browse, preview and download files from a running service container or replica, including linked instances running this version. Access uses the container’s configured user without extra privileges; ownership is checked on every request. Files outside mounted volumes disappear when recreated and may contain secrets. Limits: 500 entries, 1 MiB per file; sh, timeout, readlink, stat and dd required. For stopped containers or minimal images, use the existing volume explorer. No writes or deletions.
@@ -522,6 +524,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 <summary>Show all features</summary>
 
 ### Multi-server & federation
+
+- **Agent without WebUI** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
 - Full-mesh federation between Dockge-Enhanced instances, managed from any linked WebUI
 - Optional reverse agent connections for hosts behind NAT/CGNAT, with one token per node, automatic attachment and revocation; reverse agents belong to their hub ([guide](docs/compose-and-reverse-agents.md))
 - Persistent agent tags and tag filtering, combined with the instance filter
@@ -993,6 +997,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directory containing Docker Compose stacks |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge data directory; override only for a custom persistent mount |
+| `DOCKGE_AGENT_ONLY` | `0` | Agent without WebUI (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Consecutive failures before exit (0 disables; maximum 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Seconds between completed checks (5–3600; each probe times out after 5 seconds) |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |

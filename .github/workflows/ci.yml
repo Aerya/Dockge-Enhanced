@@ -94,6 +94,11 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/terminal-env.test.ts backend/container-shell.test.ts frontend/src/terminal-focus.test.ts frontend/src/console-navigation.test.ts
 
+      - name: Tests de l’agent sans interface
+        if: steps.docs.outputs.docs_only != 'true'
+        run: |
+          npx tsx --test backend/agent-mode.test.ts backend/user-access.test.ts
+
       - name: Tests des fichiers des conteneurs
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/container-files.test.ts backend/container-instances.test.ts
@@ -283,6 +288,10 @@ jobs:
       - name: Build frontend (Vite)
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run build:frontend
+
+      - name: Tester la fédération avec un agent sans interface isolé
+        if: steps.docs.outputs.docs_only != 'true'
+        run: node extra/test-agent-live.mjs
 
       - name: Tester la comparaison des audits npm
         if: steps.docs.outputs.docs_only != 'true' && github.event_name == 'pull_request'
