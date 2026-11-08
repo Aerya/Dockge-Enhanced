@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Créer des stacks par API :** POST /api/v1/stacks enregistre un nouveau Compose, un override et un .env facultatifs, sans déployer. La permission distincte stack:create exige l’accès à toutes les stacks et une confirmation du risque : fournir un Compose arbitraire est un privilège d’administration, pas une isolation entre clients. Aucune stack existante n’est écrasée ; le déploiement reste autorisé séparément. [API](docs/AUTOMATION.fr.md).
+
 **Catalogue chargé automatiquement :** Tous les dépôts sont activés par défaut et chargés progressivement à l’ouverture d’Applications. Désactivez ceux de votre choix dans Gérer les dépôts. Les catégories disposent d’une recherche dédiée et d’une liste à hauteur limitée avec défilement, distincte de la recherche d’applications. Choix enregistrés par compte sur cette instance.
 
 **Explorateur de conteneurs en lecture seule :** Les administrateurs peuvent parcourir, lire et télécharger les fichiers d’un conteneur ou réplica démarré, y compris sur une instance liée à jour. L’utilisateur du conteneur et ses permissions sont conservés ; son appartenance à la stack est revérifiée à chaque requête. Les fichiers hors volumes disparaissent à la recréation et peuvent contenir des secrets. Limites : 500 entrées, 1 Mio par fichier ; sh, timeout, readlink, stat et dd requis. Pour les conteneurs arrêtés ou images minimales, utilisez l’explorateur des volumes existant. Aucune écriture ni suppression.
@@ -674,7 +676,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Automatisation & audit
 - [Buffers de commandes configurables](docs/command-buffers.fr.md)
-- Jetons d’API REST limités par permissions et par stack
+- Jetons d’API REST limités par permissions et par stack ; permission explicite de niveau administrateur pour créer des stacks sans déployer
 - Webhooks par stack
 - Intégration personnalisée et exemples Home Assistant facultatifs
 - Historique d’audit centralisé avec origine, statut et durée

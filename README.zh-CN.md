@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**通过 API 创建堆栈 :** POST /api/v1/stacks 保存新的 Compose 文件以及可选的 override 和 .env，但不会部署。独立的 stack:create 权限要求访问所有堆栈并明确确认风险：提交任意 Compose 属于管理员权限，不提供租户隔离。不会覆盖现有堆栈；部署需要单独授权。 [API](docs/AUTOMATION.zh-CN.md).
+
 **自动加载应用目录 :** 所有仓库默认启用，打开应用页面时逐步加载。可在管理仓库中禁用不需要的仓库。分类提供独立搜索和限高滚动列表，与应用搜索分开。设置按账户保存在此实例中。
 
 **只读容器文件浏览器 :** 管理员可浏览、预览和下载运行中容器或副本的文件，也支持更新到此版本的关联实例。保留容器配置的用户权限，不提升特权；每次请求均检查容器归属。卷以外的文件会在重建时丢失，也可能包含凭据。限制为 500 条记录、每个文件 1 MiB；需要 sh、timeout、readlink、stat、dd。已停止容器或极简镜像请使用现有卷浏览器。不提供写入或删除。
@@ -674,7 +676,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ### 自动化与审计
 - [可配置的命令缓冲区](docs/command-buffers.zh-CN.md)
-- 按权限和 Stack 限定范围的 REST API 令牌
+- 按权限和 Stack 限定范围的 REST API 令牌；创建新堆栈而不部署需要明确的管理员权限
 - 按 Stack 的 Webhook
 - 可选的 Home Assistant 自定义集成和示例
 - 集中审计历史，记录来源、状态和耗时

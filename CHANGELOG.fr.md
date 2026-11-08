@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-08 — Créer des stacks par API** — POST /api/v1/stacks enregistre un nouveau Compose, un override et un .env facultatifs, sans déployer. La permission distincte stack:create exige l’accès à toutes les stacks et une confirmation du risque : fournir un Compose arbitraire est un privilège d’administration, pas une isolation entre clients. Aucune stack existante n’est écrasée ; le déploiement reste autorisé séparément.
+
 **2026-11-07 — Catalogue chargé automatiquement** — Tous les dépôts sont activés par défaut et chargés progressivement à l’ouverture d’Applications. Désactivez ceux de votre choix dans Gérer les dépôts. Les catégories disposent d’une recherche dédiée et d’une liste à hauteur limitée avec défilement, distincte de la recherche d’applications. Choix enregistrés par compte sur cette instance.
 
 **2026-11-07 — Menu supérieur personnalisable** — Paramètres → Apparence permet d’afficher ou masquer les liens de navigation sur ordinateur et mobile. Accueil et Enhanced restent visibles ; l’accès aux paramètres du compte est conservé. Choix enregistrés par compte sur cette instance, entre navigateurs. L’ancien choix pour Console est préservé ; permissions et accès directs inchangés.

@@ -9,6 +9,7 @@ import { Stack } from "../stack";
 import { ValidationError } from "../util-server";
 import { BackupManager } from "../watchers/backup-manager";
 import { trackDockerBuild } from "../docker-operation-state";
+import { parseDocument } from "yaml";
 
 export const STACK_ACTIONS = [
     "start",
@@ -25,6 +26,7 @@ export type StackAutomationAction = typeof STACK_ACTIONS[number];
 
 export const AUTOMATION_PERMISSIONS = [
     "stack:read",
+    "stack:create",
     ...STACK_ACTIONS.map(action => `stack:${action}` as const),
     "history:read",
 ] as const;
@@ -174,6 +176,7 @@ export class AutomationManager {
         permissions?: unknown;
         stacks?: unknown;
         expiresAt?: unknown;
+        acknowledgeCreateRisk?: unknown;
     }) {
         const name = String(input.name ?? "").trim();
         if (!name || name.length > 120) {
@@ -190,6 +193,9 @@ export class AutomationManager {
             : [];
         if (stacks.length === 0 || stacks.some(stack => stack !== "*" && !/^[a-z0-9_-]+$/.test(stack))) {
             throw new ValidationError("At least one valid stack or * is required");
+        }
+        if (permissions.includes("stack:create") && (input.acknowledgeCreateRisk !== true || !stacks.includes("*"))) {
+            throw new ValidationError("stack:create requires all stacks and explicit acknowledgement of administrator-level Compose access");
         }
         const expiresAt = normalizeExpiration(input.expiresAt);
         const prefix = randomBytes(6).toString("hex");
@@ -215,6 +221,60 @@ export class AutomationManager {
     async listTokens() {
         const rows = await R.knex("automation_token").select("*").orderBy("id", "desc") as AutomationTokenRow[];
         return rows.map(row => this.safeToken(row));
+    }
+
+    /** Creation only: deployment remains an explicit, separately authorized action. */
+    async createStack(server: DockgeServer, identity: AutomationIdentity, input: unknown) {
+        this.assertAccess(identity, "stack:create");
+        if (!identity.stacks.includes("*")) {
+            throw new AutomationAuthorizationError("Stack creation requires all-stack access");
+        }
+        if (!input || typeof input !== "object" || Array.isArray(input)) {
+            throw new ValidationError("Expected a stack object");
+        }
+        const fields = input as Record<string, unknown>;
+        if (Object.keys(fields).some(key => ![ "name", "composeYAML", "composeENV", "composeOverrideYAML" ].includes(key))) {
+            throw new ValidationError("Unknown stack field; deployment and remote endpoints are not accepted");
+        }
+        if (typeof fields.name !== "string" || fields.name.length > 64 || !/^[a-z0-9][a-z0-9_-]*$/.test(fields.name)) {
+            throw new ValidationError("Invalid stack name");
+        }
+        const name = fields.name;
+        const compose = fields.composeYAML;
+        const env = fields.composeENV ?? "";
+        const override = fields.composeOverrideYAML ?? "";
+        if (typeof compose !== "string" || typeof env !== "string" || typeof override !== "string"
+            || Buffer.byteLength(compose + env + override) > 60 * 1024) {
+            throw new ValidationError("Compose fields must be strings, limited to 60 KiB in total");
+        }
+        // Do not echo parser diagnostics: the source may contain credentials.
+        for (const [ source, required ] of [[ compose, true ], [ override, false ]] as const) {
+            if (!source.trim() && !required) {
+                continue;
+            }
+            const doc = parseDocument(source);
+            let model;
+            try {
+                model = doc.toJS({ maxAliasCount: 100 });
+            } catch {
+                throw new ValidationError("Invalid Compose document");
+            }
+            if (doc.errors.length || !model || typeof model !== "object" || Array.isArray(model)
+                || (required && (!model.services || typeof model.services !== "object" || Array.isArray(model.services)
+                    || Object.keys(model.services).length === 0))) {
+                throw new ValidationError("Invalid Compose document; at least one service is required");
+            }
+        }
+        const stack = new Stack(server, name, compose, env, false, override);
+        try {
+            stack.validate();
+        } catch {
+            throw new ValidationError("Invalid Compose or environment document");
+        }
+        // Existing stack mutation lock + exclusive mkdir prevent overwriting or racing creation.
+        await stack.save(true);
+        return { name,
+            deployed: false };
     }
 
     async revokeToken(id: number) {
