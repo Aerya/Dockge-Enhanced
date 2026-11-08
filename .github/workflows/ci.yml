@@ -99,9 +99,18 @@ jobs:
         run: |
           npx tsx --test backend/agent-mode.test.ts backend/user-access.test.ts
 
+      - name: Tests du mode hub et de la fédération isolée
+        if: steps.docs.outputs.docs_only != 'true'
+        run: |
+          npx tsx --test backend/hub-mode.test.ts backend/socket-handlers/agent-proxy-socket-handler.test.ts
+
+      - name: Tests de création de stacks par API
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/automation-create.test.ts
+
       - name: Tests des fichiers des conteneurs
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/container-files.test.ts backend/container-instances.test.ts
+        run: npx tsx --test backend/container-files.test.ts backend/container-instances.test.ts frontend/src/container-log-tabs.test.js
 
       - name: Tests des chemins des exemples Compose
         if: steps.docs.outputs.docs_only != 'true'
@@ -292,6 +301,10 @@ jobs:
       - name: Tester la fédération avec un agent sans interface isolé
         if: steps.docs.outputs.docs_only != 'true'
         run: node extra/test-agent-live.mjs
+
+      - name: Tester deux instances isolées sans accès Docker
+        if: steps.docs.outputs.docs_only != 'true'
+        run: node extra/test-hub-live.mjs
 
       - name: Tester la comparaison des audits npm
         if: steps.docs.outputs.docs_only != 'true' && github.event_name == 'pull_request'

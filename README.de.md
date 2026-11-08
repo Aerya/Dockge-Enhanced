@@ -66,6 +66,12 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 **Agent ohne Weboberfläche :** DOCKGE_AGENT_ONLY=1 deaktiviert optional die lokale Weboberfläche; das eigene Image dockge-enhanced-agent enthält keine Frontend-Dateien. Authentifiziertes HTTP/Socket.IO und das Backend bleiben erforderlich: eine RAM-Ersparnis wird nicht versprochen. Nutzen Sie lokale Anmeldung und initialisieren Sie neue Agenten mit DOCKGE_BOOTSTRAP_USERNAME und DOCKGE_BOOTSTRAP_PASSWORD_FILE. Fügen Sie anschließend die Adresse auf der zentralen Instanz hinzu oder konfigurieren Sie die vorhandene Rückverbindung. Schützen Sie den Zugriff durch ein vertrauenswürdiges Netz/Firewall oder TLS. Aktualisieren Sie den Agenten über seinen Host-Compose, nicht per interner Selbstaktualisierung; Stacks und Zeitpläne funktionieren wie bisher.
 
+**Reiner Hub-Modus :** DOCKGE_HUB_ONLY=1 macht diese Instanz zur zentralen Oberfläche für verbundene Server, ohne lokale Docker-Aktionen, Überwachung, Zeitpläne oder Selbstaktualisierungen. Standardmäßig deaktiviert; Neustart erforderlich. Verwenden Sie für einen neuen Hub ein eigenes Datenvolume ohne Docker-Socket und Stack-Verzeichnisse des Hosts. Nutzen Sie eine separate Instanz und wechseln Sie nicht während eines Vorgangs. Vorhandene lokale Dateien bleiben unverändert, werden aber ausgeblendet; nach Deaktivierung läuft die Instanz wieder normal.
+
+**Protokoll-Tabs pro Container :** Das Protokollfeld bietet Alle und einen Tab pro tatsächlichem Container, einschließlich Replikas verknüpfter Instanzen. Jeder Tab behält Suche, Pause und Bildlaufposition solange diese Seite geöffnet bleibt (höchstens 20 gespeicherte Ansichten). Einzelne Tabs aktualisieren alle 10 Sekunden die letzten 200 Zeilen; Alle behält den bestehenden Live-Stream und die Dienstfilter.
+
+**Stacks per API erstellen :** POST /api/v1/stacks speichert eine neue Compose-Datei sowie optional Override und .env, ohne Bereitstellung. Die separate Berechtigung stack:create erfordert Zugriff auf alle Stacks und eine ausdrückliche Risikobestätigung: beliebige Compose-Dateien sind ein Administratorrecht, keine Mandantentrennung. Bestehende Stacks werden nicht überschrieben; die Bereitstellung benötigt eine separate Berechtigung. [API](docs/AUTOMATION.de.md).
+
 **Automatisch geladene Anwendungskataloge :** Alle Quellen sind standardmäßig aktiviert und werden beim Öffnen von Anwendungen schrittweise geladen. Deaktivieren Sie einzelne Quellen unter Quellen verwalten. Kategorien haben eine eigene Suche und eine höhenbegrenzte Liste mit Bildlauf, getrennt von der Anwendungssuche. Die Auswahl wird pro Konto auf dieser Instanz gespeichert.
 
 **Schreibgeschützter Container-Explorer :** Administratoren können Dateien laufender Container oder Replikate durchsuchen, ansehen und herunterladen, auch auf verbundenen Instanzen mit dieser Version. Der konfigurierte Container-Benutzer bleibt ohne Zusatzprivilegien erhalten; Stack-Zugehörigkeit wird bei jeder Anfrage geprüft. Dateien außerhalb von Volumes gehen bei Neuerstellung verloren und können Geheimnisse enthalten. Grenzen: 500 Einträge, 1 MiB pro Datei; sh, timeout, readlink, stat und dd erforderlich. Für gestoppte Container oder minimale Images den bestehenden Volume-Explorer nutzen. Kein Schreiben oder Löschen.
@@ -526,6 +532,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 ### Multi-Server & Föderation
 
 - **Agent ohne Weboberfläche** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
+
+- **Reiner Hub-Modus** — `DOCKGE_HUB_ONLY=1`
 - Full-Mesh-Föderation zwischen Dockge-Enhanced-Instanzen, verwaltbar über jede verknüpfte WebUI
 - Optionale Rückwärtsverbindungen für Hosts hinter NAT/CGNAT, mit einem Token pro Knoten, automatischer Anbindung und Widerruf; Rückwärts-Agents gehören zu ihrem Hub ([Anleitung](docs/compose-and-reverse-agents.md))
 - Persistente Agent-Tags und Tag-Filter, kombinierbar mit dem Instanzfilter
@@ -654,7 +662,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Host-Systemdetails, Temperaturen und überwachte Partitionen
 - Optionaler 5-Minuten-CPU/RAM-Verlauf für den Host und pro Compose-Dienst, mit sichtbaren Lücken
 - Health-Cards im Dashboard, Crash-Loop-Erkennung und Healthcheck-Auto-Heal
-- Responsive Live- und Vollbild-Logs mit Dienstfilter, Suche, Zeitbereichen, **seit dem letzten Neustart**, Kopieren der letzten 50 / 100 / 150 oder aller geladenen Zeilen, pausierbarem Autoscroll, Umgang mit langen Zeilen und optionalen Standard-Zeitstempeln
+- Responsive Live- und Vollbild-Logs mit Dienstfilter, Suche, Zeitbereichen, **seit dem letzten Neustart**, Kopieren der letzten 50 / 100 / 150 oder aller geladenen Zeilen, pausierbarem Autoscroll, Umgang mit langen Zeilen und optionalen Standard-Zeitstempeln; Container-Tabs mit unabhängiger Suche und Pause
 - Energiesparmodus für NAS und kleine Hosts
 - Optionale Integrationen für Kula, Dozzle, PowerWatch und PowerWatch Hub, mit aktueller PowerWatch-Leistung auf verknüpften Instanzen
 
@@ -677,7 +685,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 
 ### Automatisierung & Audit
 - [Konfigurierbare Befehlspuffer](docs/command-buffers.de.md)
-- REST-API-Tokens, beschränkt nach Berechtigungen und Stacks
+- REST-API-Tokens, beschränkt nach Berechtigungen und Stacks; ausdrückliches Administratorrecht zum Erstellen neuer Stacks ohne Bereitstellung
 - Webhooks pro Stack
 - Optionale benutzerdefinierte Home-Assistant-Integration und Beispiele
 - Zentraler Audit-Verlauf mit Ursprung, Status und Dauer
@@ -998,6 +1006,7 @@ Um einen Dienst zu veröffentlichen, bearbeiten Sie dessen Stack und verwenden S
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge-Datenverzeichnis; nur für einen benutzerdefinierten persistenten Einhängepunkt überschreiben |
 | `DOCKGE_AGENT_ONLY` | `0` | Agent ohne Weboberfläche (`1`) |
+| `DOCKGE_HUB_ONLY` | `0` | Reiner Hub — wählen Sie eine verbundene Instanz für Docker-Aktionen. (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Aufeinanderfolgende Fehler vor dem Beenden (0 deaktiviert; höchstens 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Sekunden zwischen abgeschlossenen Prüfungen (5–3600; Zeitlimit je Prüfung 5 Sekunden) |
 | `DOCKGE_PUBLIC_URL` | *(keine)* | Öffentliche URL, die in Discord-Benachrichtigungslinks verwendet wird (z. B. `https://dockge.example.com`) |

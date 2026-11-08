@@ -8,6 +8,7 @@ import semver from "semver";
 import { R } from "redbean-node";
 import dayjs, { Dayjs } from "dayjs";
 import { Settings } from "./settings";
+import { hubOnly } from "./hub-mode";
 import {
     FEDERATION_CIRCUIT_OPEN_MS,
     FEDERATION_FAILURE_THRESHOLD,
@@ -743,6 +744,10 @@ export class AgentManager {
         for (const endpoint in list) {
             result[endpoint] = { ...list[endpoint].toJSON(),
                 tags: await Settings.get(`agentTags:${endpoint}`) || [] };
+        }
+
+        if (hubOnly()) {
+            delete result[""];
         }
 
         this.socket.emit("agentList", {

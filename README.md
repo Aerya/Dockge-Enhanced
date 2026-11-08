@@ -66,6 +66,12 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Agent without WebUI :** Optional DOCKGE_AGENT_ONLY=1 disables the local WebUI; the dedicated dockge-enhanced-agent image omits frontend assets. The authenticated HTTP/Socket.IO transport and backend remain necessary: this is not a promise of reduced RAM. Use local authentication and initialize a new agent with DOCKGE_BOOTSTRAP_USERNAME and DOCKGE_BOOTSTRAP_PASSWORD_FILE, then add its address from the central instance or configure the existing reverse connection. Never expose it without trusted-network/firewall or TLS protection. Update the agent through its hosting Compose, not internal self-update; stacks and schedules keep their existing behavior.
 
+**Hub-only mode :** DOCKGE_HUB_ONLY=1 makes this instance a central interface for linked servers, without local Docker actions, monitoring, schedules or self-updates. Disabled by default; restart required. For a new hub, keep a dedicated data volume and omit the Docker socket and host stacks mounts. Use a separate instance: do not switch during an operation. Existing local files remain untouched but hidden; disabling this mode restores normal operation.
+
+**Container log tabs :** The Logs panel offers All and one tab per actual container, including replicas on linked instances. Each tab keeps its search, pause and scroll position while this page stays open (up to 20 cached views). Individual tabs refresh the latest 200 lines every 10 seconds; All retains the existing live stream and service filters.
+
+**Create stacks through the API :** POST /api/v1/stacks saves a new Compose, optional override and .env without deploying. A separate stack:create permission requires all-stack access and explicit risk acknowledgement: arbitrary Compose is an administrator privilege, not tenant isolation. Existing stacks are never overwritten; deployment remains separately authorized. [API](docs/AUTOMATION.md).
+
 **Automatic application catalogs :** All repositories are enabled by default and load progressively when Applications opens. Disable individual repositories from Manage repositories. Search categories in a height-limited scrolling list, separately from application search. Choices are stored per account on this instance.
 
 **Read-only container explorer :** Administrators can browse, preview and download files from a running service container or replica, including linked instances running this version. Access uses the container’s configured user without extra privileges; ownership is checked on every request. Files outside mounted volumes disappear when recreated and may contain secrets. Limits: 500 entries, 1 MiB per file; sh, timeout, readlink, stat and dd required. For stopped containers or minimal images, use the existing volume explorer. No writes or deletions.
@@ -526,6 +532,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 ### Multi-server & federation
 
 - **Agent without WebUI** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
+
+- **Hub-only mode** — `DOCKGE_HUB_ONLY=1`
 - Full-mesh federation between Dockge-Enhanced instances, managed from any linked WebUI
 - Optional reverse agent connections for hosts behind NAT/CGNAT, with one token per node, automatic attachment and revocation; reverse agents belong to their hub ([guide](docs/compose-and-reverse-agents.md))
 - Persistent agent tags and tag filtering, combined with the instance filter
@@ -654,7 +662,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Host system details, temperatures and monitored disk partitions
 - Optional 5-minute CPU/RAM history for the host and per Compose service, with visible gaps
 - Dashboard health cards, crash-loop detection and healthcheck auto-heal
-- Responsive live and fullscreen logs with service filter, search, time ranges, **since last restart**, copy of the latest 50 / 100 / 150 or all loaded lines, autoscroll pause, long-line handling and optional default timestamps
+- Responsive live and fullscreen logs with service filter, search, time ranges, **since last restart**, copy of the latest 50 / 100 / 150 or all loaded lines, autoscroll pause, long-line handling and optional default timestamps; individual container tabs with independent search and pause
 - Low-power mode for NAS and small hosts
 - Optional Kula, Dozzle, PowerWatch and PowerWatch Hub integrations, with current PowerWatch power shown across linked instances
 
@@ -677,7 +685,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Automation & audit
 - [Configurable command buffers](docs/command-buffers.md)
-- Permission- and stack-scoped REST API tokens
+- Permission- and stack-scoped REST API tokens; explicit administrator-level permission to create new stacks without deploying
 - Per-stack webhooks
 - Optional Home Assistant custom integration and examples
 - Centralized audit history with origin, status and duration
@@ -998,6 +1006,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge data directory; override only for a custom persistent mount |
 | `DOCKGE_AGENT_ONLY` | `0` | Agent without WebUI (`1`) |
+| `DOCKGE_HUB_ONLY` | `0` | Hub only — select a linked instance for Docker operations. (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Consecutive failures before exit (0 disables; maximum 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Seconds between completed checks (5–3600; each probe times out after 5 seconds) |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |

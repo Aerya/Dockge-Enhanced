@@ -66,6 +66,12 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Agente sin interfaz web :** DOCKGE_AGENT_ONLY=1 desactiva opcionalmente la WebUI local; la imagen dedicada dockge-enhanced-agent no incluye archivos frontend. El transporte HTTP/Socket.IO autenticado y el backend siguen siendo necesarios: no se promete reducir la RAM. Use autenticación local e inicialice un agente nuevo con DOCKGE_BOOTSTRAP_USERNAME y DOCKGE_BOOTSTRAP_PASSWORD_FILE; añada su dirección desde la instancia central o configure la conexión inversa existente. Proteja el acceso mediante red de confianza/cortafuegos o TLS. Actualice el agente desde su Compose anfitrión, no mediante autoactualización interna; stacks y programaciones conservan su funcionamiento.
 
+**Modo solo hub :** DOCKGE_HUB_ONLY=1 convierte esta instancia en una interfaz central para servidores vinculados, sin acciones Docker, supervisión, programaciones ni autoactualizaciones locales. Desactivado por defecto; requiere reinicio. Para un nuevo hub, use un volumen de datos propio sin montar el socket Docker ni directorios de stacks del host. Use una instancia separada y no cambie durante una operación. Los archivos locales existentes quedan intactos pero ocultos; desactivar el modo restaura el funcionamiento normal.
+
+**Pestañas de registros por contenedor :** El panel de registros ofrece Todos y una pestaña por contenedor real, incluidas las réplicas de instancias vinculadas. Cada pestaña conserva búsqueda, pausa y posición mientras esta página permanezca abierta (hasta 20 vistas guardadas). Las pestañas individuales actualizan las últimas 200 líneas cada 10 segundos; Todos conserva el flujo en directo y los filtros por servicio existentes.
+
+**Crear stacks mediante la API :** POST /api/v1/stacks guarda un Compose nuevo, un override y un .env opcionales, sin desplegar. El permiso separado stack:create requiere acceso a todos los stacks y confirmación del riesgo: proporcionar un Compose arbitrario es un privilegio de administrador, no aislamiento entre clientes. No se sobrescriben stacks existentes; el despliegue requiere autorización independiente. [API](docs/AUTOMATION.es.md).
+
 **Catálogos cargados automáticamente :** Todos los repositorios están activados por defecto y se cargan progresivamente al abrir Aplicaciones. Desactive los que desee en Gestionar repositorios. Las categorías tienen búsqueda propia y una lista de altura limitada con desplazamiento, separada de la búsqueda de aplicaciones. Preferencias guardadas por cuenta en esta instancia.
 
 **Explorador de contenedores de solo lectura :** Los administradores pueden explorar, previsualizar y descargar archivos de un contenedor o réplica activo, también en instancias vinculadas con esta versión. Se conserva el usuario del contenedor sin privilegios adicionales; su pertenencia al stack se verifica en cada solicitud. Los archivos fuera de volúmenes desaparecen al recrear y pueden contener secretos. Límites: 500 entradas, 1 MiB por archivo; requiere sh, timeout, readlink, stat y dd. Para contenedores detenidos o imágenes mínimas, use el explorador de volúmenes existente. Sin escritura ni eliminación.
@@ -528,6 +534,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 ### Multiservidor y federación
 
 - **Agente sin interfaz web** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
+
+- **Modo solo hub** — `DOCKGE_HUB_ONLY=1`
 - Federación en malla completa entre instancias Dockge-Enhanced, administrables desde cualquier WebUI vinculada
 - Conexiones inversas opcionales para hosts detrás de NAT/CGNAT, con un token por nodo, conexión automática y revocación; los agentes inversos pertenecen a su servidor central ([guía](docs/compose-and-reverse-agents.md))
 - Etiquetas de agente persistentes y filtrado por etiqueta, combinados con el filtro por instancia
@@ -656,7 +664,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Detalles del sistema host, temperaturas y particiones de disco supervisadas
 - Historial opcional de CPU/RAM cada 5 minutos para el host y por servicio Compose, con interrupciones visibles
 - Tarjetas de salud del panel, detección de bucles de fallos y auto-reparación de healthchecks
-- Logs en directo responsivos y a pantalla completa con filtro por servicio, búsqueda, rangos de tiempo, **desde el último reinicio**, copia de las últimas 50 / 100 / 150 líneas o de todo lo cargado, pausa del desplazamiento, gestión de líneas largas y marcas de tiempo por defecto opcionales
+- Logs en directo responsivos y a pantalla completa con filtro por servicio, búsqueda, rangos de tiempo, **desde el último reinicio**, copia de las últimas 50 / 100 / 150 líneas o de todo lo cargado, pausa del desplazamiento, gestión de líneas largas y marcas de tiempo por defecto opcionales; pestañas por contenedor con búsqueda y pausa independientes
 - Modo de bajo consumo para NAS y hosts pequeños
 - Integraciones opcionales Kula, Dozzle, PowerWatch y PowerWatch Hub, con la potencia de PowerWatch visible en las instancias vinculadas
 
@@ -679,7 +687,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Automatización y auditoría
 - [Búferes de comandos configurables](docs/command-buffers.es.md)
-- Tokens de API REST limitados por permisos y por stack
+- Tokens de API REST limitados por permisos y por stack; permiso explícito de administrador para crear stacks sin desplegar
 - Webhooks por stack
 - Integración personalizada y ejemplos opcionales de Home Assistant
 - Historial de auditoría centralizado con origen, estado y duración
@@ -1000,6 +1008,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Directorio de datos de Dockge; cámbialo solo para un montaje persistente personalizado |
 | `DOCKGE_AGENT_ONLY` | `0` | Agente sin interfaz web (`1`) |
+| `DOCKGE_HUB_ONLY` | `0` | Solo hub — seleccione una instancia vinculada para las acciones Docker. (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Fallos consecutivos antes de salir (0 desactiva; máximo 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Segundos entre comprobaciones terminadas (5–3600; cada comprobación expira en 5 segundos) |
 | `DOCKGE_PUBLIC_URL` | *(ninguna)* | URL pública usada en enlaces de notificaciones Discord (por ejemplo `https://dockge.example.com`) |

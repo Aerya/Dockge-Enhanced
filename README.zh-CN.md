@@ -65,6 +65,12 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 **无 WebUI 的代理 :** 可选的 DOCKGE_AGENT_ONLY=1 禁用本地 WebUI；专用 dockge-enhanced-agent 镜像不包含前端文件。仍需经过身份验证的 HTTP/Socket.IO 传输及后端，因此不承诺降低内存用量。使用本地认证，通过 DOCKGE_BOOTSTRAP_USERNAME 和 DOCKGE_BOOTSTRAP_PASSWORD_FILE 初始化新代理，然后在中心实例添加其地址或配置现有反向连接。请通过可信网络/防火墙或 TLS 保护访问。通过代理所在的 Compose 更新代理，不使用内部自动更新；Stack 和计划任务的行为不变。
 
+**仅中心模式 :** DOCKGE_HUB_ONLY=1 将此实例用作关联服务器的中央界面，不运行本地 Docker 操作、监控、计划或自动更新。默认禁用，修改后需要重启。新建中心实例时，请使用独立数据卷，不挂载 Docker 套接字或主机 Stack 目录。请使用独立实例，不要在操作期间切换。现有本地文件保持不变但被隐藏；禁用此模式即可恢复正常运行。
+
+**按容器分栏查看日志 :** 日志面板提供全部以及每个实际容器的独立标签，包括关联实例上的副本。页面保持打开时，每个标签保留搜索、暂停和滚动位置（最多缓存 20 个视图）。独立标签每 10 秒刷新最近 200 行；全部标签保留现有实时日志流和服务筛选。
+
+**通过 API 创建堆栈 :** POST /api/v1/stacks 保存新的 Compose 文件以及可选的 override 和 .env，但不会部署。独立的 stack:create 权限要求访问所有堆栈并明确确认风险：提交任意 Compose 属于管理员权限，不提供租户隔离。不会覆盖现有堆栈；部署需要单独授权。 [API](docs/AUTOMATION.zh-CN.md).
+
 **自动加载应用目录 :** 所有仓库默认启用，打开应用页面时逐步加载。可在管理仓库中禁用不需要的仓库。分类提供独立搜索和限高滚动列表，与应用搜索分开。设置按账户保存在此实例中。
 
 **只读容器文件浏览器 :** 管理员可浏览、预览和下载运行中容器或副本的文件，也支持更新到此版本的关联实例。保留容器配置的用户权限，不提升特权；每次请求均检查容器归属。卷以外的文件会在重建时丢失，也可能包含凭据。限制为 500 条记录、每个文件 1 MiB；需要 sh、timeout、readlink、stat、dd。已停止容器或极简镜像请使用现有卷浏览器。不提供写入或删除。
@@ -527,6 +533,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 ### 多服务器与联邦
 
 - **无 WebUI 的代理** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
+
+- **仅中心模式** — `DOCKGE_HUB_ONLY=1`
 - Dockge-Enhanced 实例之间的全网格联邦，可从任意关联 WebUI 管理
 - 为 NAT/CGNAT 后的主机提供可选反向连接：每个节点独立令牌、自动接入和撤销；反向代理只属于其中心服务器（[指南](docs/compose-and-reverse-agents.md)）
 - 持久化代理标签和标签筛选，可与实例筛选组合使用
@@ -655,7 +663,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 主机系统详情、温度和受监控磁盘分区
 - 可选的每 5 分钟主机及 Compose 服务 CPU/RAM 历史，并显示数据空档
 - 仪表板健康卡片、崩溃循环检测和健康检查自动修复
-- 响应式实时日志和全屏日志：服务筛选、搜索、时间范围、**自上次重启以来**、复制最近 50 / 100 / 150 行或全部已加载行、暂停自动滚动、长行处理和可选默认时间戳
+- 响应式实时日志和全屏日志：服务筛选、搜索、时间范围、**自上次重启以来**、复制最近 50 / 100 / 150 行或全部已加载行、暂停自动滚动、长行处理和可选默认时间戳；独立容器标签具有各自的搜索与暂停
 - 适用于 NAS 和小型主机的低功耗模式
 - 可选 Kula、Dozzle、PowerWatch 和 PowerWatch Hub 集成，关联实例上也显示 PowerWatch 当前功率
 
@@ -678,7 +686,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ### 自动化与审计
 - [可配置的命令缓冲区](docs/command-buffers.zh-CN.md)
-- 按权限和 Stack 限定范围的 REST API 令牌
+- 按权限和 Stack 限定范围的 REST API 令牌；创建新堆栈而不部署需要明确的管理员权限
 - 按 Stack 的 Webhook
 - 可选的 Home Assistant 自定义集成和示例
 - 集中审计历史，记录来源、状态和耗时
@@ -1001,6 +1009,7 @@ PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics �
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。 |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge 数据目录；仅在使用自定义持久化挂载时覆盖 |
 | `DOCKGE_AGENT_ONLY` | `0` | 无 WebUI 的代理 (`1`) |
+| `DOCKGE_HUB_ONLY` | `0` | 仅中心模式 — 请为 Docker 操作选择关联实例。 (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | 退出前的连续失败次数（0 禁用；最大 100） |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | 每次检查结束后的等待秒数（5–3600；单次检查超时为 5 秒） |
 | `DOCKGE_PUBLIC_URL` | *(无)* | Discord 通知链接使用的公开 URL（例如 `https://dockge.example.com`） |

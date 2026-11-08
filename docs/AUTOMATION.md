@@ -1,5 +1,17 @@
 # REST API, webhooks and automation
 
+## Create stacks through the API
+
+POST /api/v1/stacks saves a new Compose, optional override and .env without deploying. A separate stack:create permission requires all-stack access and explicit risk acknowledgement: arbitrary Compose is an administrator privilege, not tenant isolation. Existing stacks are never overwritten; deployment remains separately authorized.
+
+```json
+{"name":"example","composeYAML":"services:\n  app:\n    image: nginx:alpine\n","composeENV":"","composeOverrideYAML":""}
+```
+
+`Authorization: Bearer <token>` · `POST /api/v1/stacks` · 201: `{"ok":true,"data":{"name":"example","deployed":false}}`.
+
+60 KiB · `POST /api/v1/stacks/example/actions/start` → `stack:start`.
+
 [English](AUTOMATION.md) · [Français](AUTOMATION.fr.md) · [Español](AUTOMATION.es.md) · [Deutsch](AUTOMATION.de.md) · [简体中文](AUTOMATION.zh-CN.md)
 
 Everything on this page is optional. No token or webhook is created until an administrator requests one under **Settings → Automation**.

@@ -53,6 +53,12 @@
                         </label>
                     </div>
                 </div>
+                <div v-if="tokenForm.permissions.includes('stack:create')" class="col-12">
+                    <label class="alert alert-warning d-block">
+                        <input v-model="tokenForm.acknowledgeCreateRisk" type="checkbox" required class="form-check-input me-2">
+                        {{ $t("automation.createRisk") }}
+                    </label>
+                </div>
                 <div class="col-12">
                     <button class="btn btn-primary" :disabled="savingToken">
                         <font-awesome-icon :icon="savingToken ? 'spinner' : 'key'" :spin="savingToken" class="me-1" />
@@ -189,6 +195,7 @@
 <script>
 const permissions = [
     "stack:read",
+    "stack:create",
     "stack:start",
     "stack:stop",
     "stack:restart",
@@ -215,6 +222,7 @@ export default {
             createdToken: "",
             createdWebhook: null,
             tokenForm: {
+                acknowledgeCreateRisk: false,
                 name: "",
                 permissions: [ "stack:read" ],
                 stacks: [],
@@ -278,9 +286,11 @@ export default {
                     permissions: this.tokenForm.permissions,
                     stacks: this.tokenForm.allStacks ? [ "*" ] : this.tokenForm.stacks,
                     expiresAt: this.expiration(this.tokenForm.expiresAt),
+                    acknowledgeCreateRisk: this.tokenForm.acknowledgeCreateRisk,
                 });
                 this.createdToken = data.token;
                 this.tokenForm.name = "";
+                this.tokenForm.acknowledgeCreateRisk = false;
                 this.tokens = await this.api("GET", "/tokens");
             } catch (error) {
                 this.error = error instanceof Error ? error.message : String(error);

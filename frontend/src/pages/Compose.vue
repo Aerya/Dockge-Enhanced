@@ -71,11 +71,11 @@
             <div v-if="stack.isManagedByDockge" class="mb-3 compose-tight">
                 <div class="stack-action-toolbar" :class="{ 'stack-action-toolbar--labeled': stackActionLabels }" role="toolbar" :aria-label="$t('stackActions')">
                     <div class="stack-action-group stack-action-group--operations">
-                        <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('stackActionHelp.deploy')" :aria-label="$t('deployStack')" :disabled="processing" @click="deployStack">
+                        <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('stackActionHelp.deploy')" :aria-label="$t('deployStack')" :disabled="processing || ($root.info.hubOnly && !endpoint)" @click="deployStack">
                             <font-awesome-icon icon="rocket" />
                             <span class="stack-action-label">{{ $t("deployStack") }}</span>
                         </button>
-                        <button v-if="isEditMode" class="btn btn-normal stack-action" :title="$t('saveStackDraft')" :aria-label="$t('saveStackDraft')" :disabled="processing" @click="saveStack">
+                        <button v-if="isEditMode" class="btn btn-normal stack-action" :title="$t('saveStackDraft')" :aria-label="$t('saveStackDraft')" :disabled="processing || ($root.info.hubOnly && !endpoint)" @click="saveStack">
                             <font-awesome-icon icon="save" />
                             <span class="stack-action-label">{{ $t("saveStackDraft") }}</span>
                         </button>
@@ -388,6 +388,7 @@
                             <div class="mt-3">
                                 <label for="name" class="form-label">{{ $t("dockgeAgent") }}</label>
                                 <select v-model="stack.endpoint" class="form-select">
+                                    <option v-if="$root.info.hubOnly" disabled value="">{{ $t("hubOnly.chooseAgent") }}</option>
                                     <option v-for="(agent, endpoint) in $root.agentList" :key="endpoint" :value="endpoint" :disabled="$root.agentStatusList[endpoint] != 'online'">
                                         {{ agentOptionLabel(endpoint) }}
                                     </option>
@@ -510,7 +511,8 @@
 
                     <!-- Combined Terminal Output -->
                     <div v-show="!isEditMode" class="logs-panel" :class="{ 'logs-fullscreen': logsFullscreen }">
-                        <div class="terminal-toolbar mb-3 compose-tight">
+                        <ContainerLogTabs :key="`${endpoint}:${stack.name}`" :stack-name="stack.name || ''" :endpoint="endpoint" :containers="containerInstances" :enabled="!isEditMode" @selection="containerLogSelected = $event" />
+                        <div v-show="!containerLogSelected" class="terminal-toolbar mb-3 compose-tight">
                             <h4 class="mb-0">{{ $t("stackLogs") }}</h4>
                             <div class="terminal-toolbar-right">
                                 <div class="terminal-log-filters">
@@ -633,6 +635,7 @@
                             </div>
                         </div>
                         <Terminal
+                            v-show="!containerLogSelected"
                             :key="selectedLogTerminalName"
                             ref="combinedTerminal"
                             class="mb-3 compose-tight terminal combined-terminal"
@@ -936,6 +939,7 @@ import StackURLsInput from "../components/StackURLsInput.vue";
 import { stackURLLinks } from "../../../common/stack-urls";
 import { applyComposeTemplates, DEFAULT_COMPOSE_ENV } from "../../../common/compose-templates";
 import CodeMirror from "vue-codemirror6";
+import ContainerLogTabs from "../components/ContainerLogTabs.vue";
 import { prepareComposeTimezone } from "../../../common/compose-timezone";
 import { yaml } from "@codemirror/lang-yaml";
 import { python } from "@codemirror/lang-python";
@@ -1004,6 +1008,7 @@ let serviceStatusTimeout = null;
 
 export default {
     components: {
+        ContainerLogTabs,
         DeploymentProgress,
         NetworkRestartDialog,
         PostUpdateOptions,
@@ -1104,6 +1109,7 @@ export default {
             },
             serviceStatusList: {},
             containerInstances: [],
+            containerLogSelected: false,
             lastContainerInstancesFetchAt: 0,
             containerInstancesLoading: false,
             containerInstancesRequestTimeout: null,

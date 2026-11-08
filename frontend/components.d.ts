@@ -31,6 +31,7 @@ declare module 'vue' {
     Confirm: typeof import('./src/components/Confirm.vue')['default']
     Container: typeof import('./src/components/Container.vue')['default']
     ContainerFiles: typeof import('./src/components/ContainerFiles.vue')['default']
+    ContainerLogTabs: typeof import('./src/components/ContainerLogTabs.vue')['default']
     ContainerStatsBadge: typeof import('./src/components/ContainerStatsBadge.vue')['default']
     DeploymentProgress: typeof import('./src/components/DeploymentProgress.vue')['default']
     Diagnostics: typeof import('./src/components/settings/Diagnostics.vue')['default']
